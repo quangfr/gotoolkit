@@ -450,13 +450,13 @@
             width: 24px;
             height: 24px;
             background: rgba(255, 255, 255, 0.85);
-            font-size: 20px;
+            font-size: 16px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             border: none;
-            color: var(--app-muted);
+            color: #918b7f;
             border-radius: 999px;
             transition: box-shadow 0.2s ease, opacity 0.2s ease;
             opacity: 1;
@@ -1400,10 +1400,10 @@
                 </div>
 
                 <div class="global-actions">
+                    <button class="btn" id="gtContextModalTrigger" aria-label="Ouvrir ⌘ Commande" title="⌘ Commande">⌘
+                        Commande</button>
                     <button class="btn" id="gtTemplateModalTrigger" aria-label="Ouvrir ⊞ Modèles" title="⊞ Modèles">⊞
                         Modèles</button>
-                    <button class="btn" id="gtContextModalTrigger" aria-label="Ouvrir ⌘ Agent" title="⌘ Agent">⌘
-                        Agent</button>
                     <button class="btn" id="gtPromptModalTrigger" aria-label="Ouvrir Prompt" title="⌬ Prompt">⌬
                         Prompt</button>
 
@@ -1607,7 +1607,7 @@
                             <label for="promptModify"
                                 style="margin-top:0;display:block;font-size:13px;color:var(--muted)">Script</label>
                             <button class="btn" type="button" id="restoreScriptBtn"
-                                title="Restaurer la dernière réponse IA">↺ Restaurer</button>
+                                title="Restaurer la dernière réponse IA">↺</button>
                             <!-- `openModifyPromptBtn` removed: button hidden per user request -->
                         </div>
                         <div class="ia-prompt-fields">
@@ -3875,10 +3875,10 @@
                     syncFiltersForActiveView(getVisibleViewTypeIds());
                     renderColorModalContent();
                     updateTimelineFilter();
-                updateEmptyViewMessage();
-                persistTimelineState();
-                updateTimelineClearButtonState();
-            }
+                    updateEmptyViewMessage();
+                    persistTimelineState();
+                    updateTimelineClearButtonState();
+                }
 
                 function openColorModal() {
                     captureColorPreferencesState();
@@ -5204,12 +5204,12 @@
                         ctx.templateId = null;
                     }
                     selectedRoadmapPromptId = null;
-                if (txtPromptCreate) txtPromptCreate.value = "";
-                if (txtPromptModify) txtPromptModify.value = "";
-                updatePromptTemplateMeta();
-                persistTimelineState();
-                updateTimelineClearButtonState();
-            }
+                    if (txtPromptCreate) txtPromptCreate.value = "";
+                    if (txtPromptModify) txtPromptModify.value = "";
+                    updatePromptTemplateMeta();
+                    persistTimelineState();
+                    updateTimelineClearButtonState();
+                }
 
                 if (headerTitleElement) {
                     headerTitleElement.addEventListener("dblclick", function () {
@@ -6166,11 +6166,11 @@
                     (btnCallLabel && btnCallLabel.textContent) || (btnCall && btnCall.textContent) || "";
                 var timelineGenerateCountdown =
                     window.GoToolkitSharedUI &&
-                    typeof window.GoToolkitSharedUI.createActionCountdown === "function"
+                        typeof window.GoToolkitSharedUI.createActionCountdown === "function"
                         ? window.GoToolkitSharedUI.createActionCountdown(
-                              { element: btnCallLabel, defaultLabel: defaultTimelineLabel },
-                              { duration: 30 }
-                          )
+                            { element: btnCallLabel, defaultLabel: defaultTimelineLabel },
+                            { duration: 30 }
+                        )
                         : null;
                 var clearTimelineBtn = document.getElementById("clearTimelineBtn");
                 var iaTemplateEditor = document.getElementById("iaTemplateEditor");

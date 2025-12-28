@@ -123,7 +123,7 @@
         @media (min-width: 1400px) {
             .app-main:not(.context-open) .panel-columns {
                 display: grid;
-                grid-template-columns: minmax(600px, 1fr) minmax(0, 1fr);
+                grid-template-columns: minmax(550px, 1fr) minmax(0, 1fr);
                 gap: 12px;
                 flex: 1 1 0;
                 min-height: 0;
@@ -154,7 +154,7 @@
             flex-direction: column;
             flex: 1 1 0;
             min-height: 0;
-            gap: 12px;
+            gap: 6px;
         }
 
         .app-main.context-open .note-column {
@@ -173,7 +173,7 @@
         }
 
         .note-column {
-            min-width: 600px;
+            min-width: 550px;
         }
 
         .summary-column {
@@ -219,7 +219,6 @@
         .panel-header {
             display: flex;
             align-items: center;
-            justify-content: space-between;
             gap: 8px;
             font-weight: 500;
             color: var(--text);
@@ -405,7 +404,7 @@
             cursor: pointer;
             user-select: none;
             line-height: 1;
-            margin: 0 auto;
+            margin: 100px auto 0;
             transition: transform 0.2s ease, color 0.2s ease;
         }
 
@@ -550,8 +549,8 @@
         .recording-live-subject-header {
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 12px;
+            justify-content: space-between;
+            gap: 0;
             font-size: 40px;
             font-weight: 800;
             text-align: center;
@@ -566,6 +565,13 @@
             width: 60px;
             height: 60px;
             cursor: pointer;
+        }
+
+        .recording-live-subject-title {
+            flex: 1 1 auto;
+            text-align: center;
+            padding: 0 12px;
+            line-height: 1.2;
         }
 
         .recording-live-keylist {
@@ -949,7 +955,7 @@
         .subject-tabs {
             display: flex;
             flex-wrap: nowrap;
-            gap: 6px;
+            gap: 4px;
             width: 100%;
             flex-direction: row;
             padding: 8px 0px 8px 0px;
@@ -957,7 +963,7 @@
 
         .subject-tab {
             border: 1px solid var(--border-strong);
-            border-radius: 999px;
+            border-radius: 8px;
             padding: 6px 10px;
             font-size: 12px;
             cursor: pointer;
@@ -1043,7 +1049,8 @@
         .participants-header {
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            justify-content: flex-start;
+            gap: 4px;
             padding-top: 8px;
             padding-bottom: 8px;
         }
@@ -1064,6 +1071,7 @@
             align-items: center;
             gap: 6px;
             flex-wrap: wrap;
+            margin-left: auto;
         }
 
         .guideline-actions label {
@@ -1291,7 +1299,6 @@
 
         #clearScenarioBtn {
             margin-left: auto;
-            margin-right: 4px;
         }
 
         @media (max-width: 1100px) {
@@ -1360,10 +1367,10 @@
             </div>
 
             <div class="global-actions">
+                <button class="btn" id="gtContextModalTrigger" aria-label="Ouvrir ⌘ Commande" title="⌘ Commande">⌘
+                    Commande</button>
                 <button class="btn" id="gtTemplateModalTrigger" aria-label="Ouvrir ⊞ Modèles" title="⊞ Modèles">⊞
                     Modèles</button>
-                <button class="btn" id="gtContextModalTrigger" aria-label="Ouvrir ⌘ Agent" title="⌘ Agent">⌘
-                    Agent</button>
                 <button class="btn" id="gtPromptModalTrigger" aria-label="Ouvrir Prompt" title="⌬ Prompt">⌬
                     Prompt</button>
 
@@ -1498,19 +1505,20 @@
                             <div class="panel-header panel-progress" style="align-items:flex-start;">
                                 <div style="display:flex;align-items:center;gap:8px;font-weight:600;">
                                     <div>Sujets</div>
-                                    <span style="font-size:12px;color:var(--muted);">Durée prévue</span>
+                                    <button id="addSubjectBtn" type="button" class="btn">+</button>
+
+                                    <span style="font-size:12px;color:var(--muted);">Durée
+                                        prévue</span>
                                     <select id="guidelineDuration">
                                         <!-- options filled by JS -->
                                     </select>
                                 </div>
                                 <div class="guideline-actions guideline-ai-btn">
                                     <button id="completeBtn" type="button" class="btn">⌘ Remplir</button>
-                                    <button id="addSubjectBtn" type="button" class="btn">+ Sujet</button>
                                 </div>
                             </div>
                             <div class="subject-tabs" id="subjectTabs"></div>
                             <div id="subjectRanges" class="subject-ranges"></div>
-                            <button id="evaluateBtn" type="button" class="btn" style="display:none;">⌘ Évaluer</button>
                             <ul class="guideline-list" id="guidelineList">
                                 <li style="color:var(--muted);font-size:13px;">Ajoute un scénario et clique sur ⌘
                                     Répondre
@@ -1543,9 +1551,9 @@
                         <div class="gutenberg-recette-header">
                             <label for="promptModify"
                                 style="margin-top:0;display:block;font-size:13px;color:var(--muted)">Script
-                                (JSON)</label>
+                            </label>
                             <button class="btn" type="button" id="applyScriptBtn"
-                                title="Restaurer la dernière réponse IA">↺ Restaurer</button>
+                                title="Restaurer la dernière réponse IA">↺</button>
                         </div>
                         <div class="ia-prompt-fields">
                             <textarea id="promptModify" class="ia-prompt-field" rows="16"
@@ -1572,7 +1580,6 @@
                             <label for="iaTemplateEditor" style="margin:0;">Prompt</label>
                             <select id="iaPromptSelect" style="min-width:160px;">
                                 <option value="system">Répondre</option>
-                                <option value="evaluate">Évaluer</option>
                                 <option value="summary">Résumer</option>
                                 <option value="complete">Remplir</option>
                             </select>
@@ -1639,7 +1646,6 @@
             const defaultTemplate = templateList.find(tpl => tpl.id === DEFAULT_TEMPLATE_ID) || templateList[0] || null;
             const promptDefaults = {
                 system: (window.GoPrompts && window.GoPrompts.voiceCreateSystemTemplate) || "",
-                evaluate: (window.GoPrompts && window.GoPrompts.voiceEvaluatePrompt) || "",
                 summary: (window.GoPrompts && window.GoPrompts.voiceSummaryPrompt) || "",
                 complete: (window.GoPrompts && window.GoPrompts.voiceCompletePrompt) || ""
             };
@@ -1674,6 +1680,7 @@
                 </div>
             </div>`;
             document.body.appendChild(subjectModal);
+            let subjectModalContextOpen = null;
             const enforceSubjectPointsLimit = () => {
                 const el = document.getElementById("newSubjectPoints");
                 if (!el) return;
@@ -1752,8 +1759,6 @@
             const guidelineMeta = document.getElementById("guidelineMeta");
             let guidelineDuration = document.getElementById("guidelineDuration");
             const addSubjectBtn = document.getElementById("addSubjectBtn");
-            const evaluateBtn = document.getElementById("evaluateBtn");
-            const evaluateDefaultLabel = evaluateBtn?.textContent || "⌘ Évaluer";
             const refreshFromScriptBtn = document.getElementById("refreshFromScriptBtn");
             let recordingCountdownTimer = null;
             let recordingCountdownOverlay = null;
@@ -1765,14 +1770,6 @@
                     typeof window.GoToolkitSharedUI.createActionCountdown === "function"
                     ? window.GoToolkitSharedUI.createActionCountdown(
                         { element: completeBtn, defaultLabel: completeDefaultLabel },
-                        { duration: 30 }
-                    )
-                    : null;
-            const evaluateActionCountdown =
-                window.GoToolkitSharedUI &&
-                    typeof window.GoToolkitSharedUI.createActionCountdown === "function"
-                    ? window.GoToolkitSharedUI.createActionCountdown(
-                        { element: evaluateBtn, defaultLabel: evaluateDefaultLabel },
                         { duration: 30 }
                     )
                     : null;
@@ -2500,6 +2497,7 @@
             function openSubjectModal(subjectId) {
                 const page = getActivePage();
                 if (!page) return;
+                subjectModalContextOpen = contextPanel ? contextPanel.classList.contains("open") : null;
                 const subject = page.subjects?.find(s => s.id === subjectId);
                 const titleInput = document.getElementById("newSubjectTitle");
                 const durationInput = document.getElementById("newSubjectDuration");
@@ -2514,6 +2512,15 @@
                 confirmBtn.dataset.subjectId = subject?.id || "";
                 subjectModalOverlay?.classList.add("open");
                 subjectModalOverlay?.setAttribute("aria-hidden", "false");
+            }
+
+            function closeSubjectModalOverlay() {
+                subjectModalOverlay.classList.remove("open");
+                subjectModalOverlay.setAttribute("aria-hidden", "true");
+                if (subjectModalContextOpen !== null) {
+                    setContextPanelOpen(subjectModalContextOpen);
+                    subjectModalContextOpen = null;
+                }
             }
 
             function renderGuidelines() {
@@ -2564,13 +2571,14 @@
                         tab.className = "subject-tab" + (subject.id === page.activeSubjectId ? " active" : "");
                         tab.type = "button";
                         tab.innerHTML = `<div style="display:flex;flex-direction:column;align-items:flex-start;gap:4px;width:100%;">
-<span style="display:flex;align-items:center;gap:8px;justify-content:space-between;width:100%;"><span><span class="${statusClass}" aria-hidden="true"></span>${subject.title}</span><span class="edit-subject-btn" role="button" data-id="${subject.id}" title="Éditer">✎</span></span>
+<span style="display:flex;align-items:center;gap:8px;justify-content:space-between;width:100%;"><span><span class="${statusClass}" aria-hidden="true"></span>${subject.title}</span><span class="edit-subject-btn" role="button" data-id="${subject.id}" title="Éditer">✐</span></span>
 </div>`;
                         tab.addEventListener("click", () => {
                             page.activeSubjectId = subject.id;
                             persistState();
                             renderGuidelines();
                         });
+                        tab.addEventListener("dblclick", () => openSubjectModal(subject.id));
                         subjectTabs.appendChild(tab);
                     });
                     subjectTabs.querySelectorAll(".edit-subject-btn").forEach(btn => {
@@ -2598,7 +2606,7 @@
                     const addBtn = document.createElement("button");
                     addBtn.type = "button";
                     addBtn.className = "btn";
-                    addBtn.textContent = "+ Participant";
+                    addBtn.textContent = "+";
                     addBtn.addEventListener("click", () => {
                         if (page.participants.length >= MAX_PARTICIPANTS) {
                             showToast(`Maximum ${MAX_PARTICIPANTS} participants.`, true);
@@ -2779,16 +2787,8 @@
                         durationLabel.textContent = isNaN(initialDuration) ? "" : `${initialDuration} mn`;
                         rangeContainer.append(durationLabel, rangeInput, meta);
                         row.append(rangeContainer);
-                        if (evaluateBtn) {
-                            row.append(evaluateBtn);
-                            evaluateBtn.style.display = "";
-                            evaluateBtn.style.marginLeft = "auto";
-                        }
                         subjectRanges.appendChild(row);
                     } else {
-                        if (evaluateBtn) {
-                            evaluateBtn.style.display = "none";
-                        }
                     }
                 }
 
@@ -2838,6 +2838,11 @@
                             indirect.appendChild(document.createTextNode("Abordé"));
                             actions.append(direct, indirect);
                             li.append(title, actions);
+                            li.addEventListener("dblclick", () => {
+                                if (activeSubject?.id) {
+                                    openSubjectModal(activeSubject.id);
+                                }
+                            });
                             guidelineList.appendChild(li);
                         });
                     }
@@ -3376,10 +3381,10 @@
             }
 
             async function ensureScreenCapture() {
-                if (screenStream) return true;
+                if (screenStream) return { ok: true, cancelled: false };
                 if (!navigator.mediaDevices?.getDisplayMedia) {
                     showToast("Capture d'écran indisponible.", true);
-                    return false;
+                    return { ok: false, cancelled: false };
                 }
                 try {
                     const displayStream = await navigator.mediaDevices.getDisplayMedia({
@@ -3397,11 +3402,15 @@
                         updateRecordingPrepTiles();
                         updateRecordingLiveOverlay();
                     });
-                    return true;
+                    return { ok: true, cancelled: false };
                 } catch (err) {
+                    const cancelled = err?.name === "AbortError" || err?.name === "NotAllowedError";
                     console.warn("Capture écran impossible", err);
-                    showToast("Capture d'écran annulée.", true);
-                    return false;
+                    const toastMessage = cancelled
+                        ? "Capture d'écran annulée. Capture désactivée pour cette session."
+                        : "Capture d'écran annulée.";
+                    showToast(toastMessage, !cancelled);
+                    return { ok: false, cancelled };
                 }
             }
 
@@ -3614,7 +3623,7 @@
                 webcamTile.addEventListener("click", () => { void toggleWebcamTile(); });
 
                 tilesRow.append(screenTile, micTile, webcamTile);
-                overlay.append(ready, caption, tilesRow);
+                overlay.append(ready, tilesRow);
                 document.body.appendChild(overlay);
                 recordingPrepOverlay = overlay;
                 recordingReadyNode = ready;
@@ -3691,9 +3700,16 @@
                     releaseScreenCaptureStream();
                     applyScreenCapturePreference(false);
                 } else {
-                    const ok = await ensureScreenCapture();
-                    if (!ok) return;
-                    applyScreenCapturePreference(true);
+                    const { ok, cancelled } = await ensureScreenCapture();
+                    if (!ok) {
+                        applyScreenCapturePreference(false);
+                        updateRecordingPrepTiles();
+                        updateRecordingLiveOverlay();
+                        return;
+                    }
+                    if (!cancelled) {
+                        applyScreenCapturePreference(true);
+                    }
                 }
                 updateRecordingPrepTiles();
                 updateRecordingLiveOverlay();
@@ -3804,6 +3820,7 @@
                 prevBtn.textContent = "←";
                 prevBtn.addEventListener("click", () => navigateRecordingSubject(-1));
                 const subjectTitle = document.createElement("div");
+                subjectTitle.className = "recording-live-subject-title";
                 subjectTitle.textContent = "";
                 const nextBtn = document.createElement("button");
                 nextBtn.className = "recording-live-arrow";
@@ -3911,8 +3928,12 @@
                     const startMin = parseMinutes(subject?.timeframe?.start, 0);
                     const endMin = parseMinutes(subject?.timeframe?.end, startMin);
                     const duration = Math.max(0, endMin - startMin);
-                    const durationLabel = duration > 0 ? ` (${Math.round(duration)}")` : "";
-                    recordingSubjectTitle.textContent = `${title}${durationLabel}`;
+                    const durationLabel = duration > 0 ? ` ${Math.round(duration)}'` : "";
+                    const subjects = getSortedSubjects();
+                    const total = subjects.length;
+                    const idx = total ? subjects.findIndex(s => s.id === recordingCurrentSubjectId) : -1;
+                    const positionLabel = total ? `${idx >= 0 ? idx + 1 : 1}/${total}` : "0/0";
+                    recordingSubjectTitle.textContent = `${positionLabel} — ${title}${durationLabel}`;
                 }
                 const page = getActivePage();
                 if (page) {
@@ -3927,6 +3948,20 @@
                 const currentIndex = subjects.findIndex(s => s.id === recordingCurrentSubjectId);
                 const nextIndex = (currentIndex + offset + subjects.length) % subjects.length;
                 setRecordingSubject(subjects[nextIndex]);
+            }
+
+            function handleSubjectArrowKey(event) {
+                if (!recordingActiveOverlay || !recordingActiveOverlay.classList.contains("visible")) return;
+                const target = event.target;
+                const tagName = target?.tagName || "";
+                if (["INPUT", "TEXTAREA", "SELECT", "OPTION"].includes(tagName) || target?.isContentEditable) return;
+                if (event.key === "ArrowLeft") {
+                    navigateRecordingSubject(-1);
+                    event.preventDefault();
+                } else if (event.key === "ArrowRight") {
+                    navigateRecordingSubject(1);
+                    event.preventDefault();
+                }
             }
 
             function setInitialRecordingSubject() {
@@ -3977,9 +4012,11 @@
             async function requestInitialMediaPermissions() {
                 await ensureWebcamPreview().catch(() => false);
                 await ensureMicPreviewStream().catch(() => false);
-                const screenOk = await ensureScreenCapture();
+                const { ok: screenOk, cancelled } = await ensureScreenCapture();
                 if (screenOk) {
                     applyScreenCapturePreference(true);
+                } else if (cancelled) {
+                    applyScreenCapturePreference(false);
                 }
                 updateRecordingPrepTiles();
             }
@@ -5022,11 +5059,24 @@
                 summaryLabel.textContent = isTranscriptSummaryMode(mode) ? "Résumé du transcript" : "Résumé";
             }
 
+            function hasSummaryContent() {
+                if (!summaryTextarea) return false;
+                return Boolean((summaryTextarea.value || "").trim());
+            }
+
+            function updateCompleteButtonState() {
+                if (!completeBtn) return;
+                const disabled = !hasSummaryContent();
+                completeBtn.disabled = disabled;
+                completeBtn.setAttribute("aria-disabled", disabled ? "true" : "false");
+            }
+
             function refreshSummaryTextarea() {
                 const page = getActivePage();
                 if (!page || !summaryTextarea) return;
                 summaryTextarea.value = getActiveSummaryValue(page);
                 updateSummaryLabel(activeNoteMode);
+                updateCompleteButtonState();
             }
 
             function setActiveSummaryValue(page, value) {
@@ -5751,6 +5801,11 @@
             async function completeGuidelinesFromTranscript() {
                 const page = getActivePage();
                 if (!page) return;
+                const summaryContent = (summaryTextarea?.value || "").trim();
+                if (!summaryContent) {
+                    showToast("Ajoute un résumé avant d'exécuter ⌘ Remplir.", true);
+                    return;
+                }
                 const transcript = (transcribeInput?.value || "").trim();
                 if (!transcript) {
                     showToast("Ajoute une transcription avant de compléter.", true);
@@ -5769,7 +5824,11 @@
                 completeActionCountdown?.start(30);
                 try {
                     const promptTemplate = promptState.complete || promptDefaults.complete || "";
-                    const prompt = promptTemplate.replace(/{{transcript_content}}/gi, transcript);
+                    const transcriptContentParts = [];
+                    if (summaryContent) transcriptContentParts.push(summaryContent);
+                    if (transcript && transcript !== summaryContent) transcriptContentParts.push(transcript);
+                    const transcriptPayload = transcriptContentParts.join("\n\n");
+                    const prompt = promptTemplate.replace(/{{transcript_content}}/gi, transcriptPayload);
                     const payload = {
                         model: (window.GoToolkitIAConfig && window.GoToolkitIAConfig.getOpenAiModel?.()) || "gpt-5-nano",
                         input: [
@@ -5838,68 +5897,6 @@
                 } finally {
                     completeBtn?.removeAttribute("disabled");
                     completeActionCountdown?.stop();
-                }
-            }
-
-            async function evaluateGuidelines() {
-                const page = getActivePage();
-                if (!page || !page.subjects.length) {
-                    showToast("Pas de sujets à évaluer.", true);
-                    return;
-                }
-                const transcript = transcribeInput?.value?.trim() || "";
-                if (!transcript) {
-                    showToast("Ajoute une transcription avant d'évaluer.", true);
-                    return;
-                }
-                evaluateBtn?.setAttribute("disabled", "true");
-                evaluateActionCountdown?.start(30);
-                try {
-                    const evaluatePrompt = promptState.evaluate || promptDefaults.evaluate;
-                    const summary = page.subjects.map(s => {
-                        return {
-                            title: s.title,
-                            keySentences: s.keySentences.map(k => k.text)
-                        };
-                    });
-                    const payload = {
-                        model: (window.GoToolkitIAConfig && window.GoToolkitIAConfig.getOpenAiModel?.()) || "gpt-5-nano",
-                        input: [
-                            {
-                                role: "system",
-                                content: evaluatePrompt
-                            },
-                            {
-                                role: "user",
-                                content: `Transcription :\n${transcript}\nGuidelines : ${JSON.stringify(summary)}`
-                            }
-                        ],
-                        max_output_tokens: 900
-                    };
-                    const response = await window.GoToolkitIA.chatCompletion({ payload });
-                    const cleaned = response.trim().replace(/^```(?:json)?/i, "").replace(/```$/i, "");
-                    const parsed = JSON.parse(cleaned);
-                    if (parsed && Array.isArray(parsed.subjects)) {
-                        parsed.subjects.forEach(subjectResult => {
-                            const target = page.subjects.find(s => s.title === subjectResult.title);
-                            if (!target) return;
-                            (subjectResult.keySentences || []).forEach(ks => {
-                                const found = target.keySentences.find(k => k.text === ks.text);
-                                if (found && ks.match) {
-                                    found.match = ks.match;
-                                }
-                            });
-                        });
-                        persistState();
-                        renderGuidelines();
-                        showToast("Évaluation terminée.");
-                    }
-                } catch (err) {
-                    console.error("Evaluation failed", err);
-                    showToast("Impossible d'évaluer via IA.", true);
-                } finally {
-                    evaluateBtn?.removeAttribute("disabled");
-                    evaluateActionCountdown?.stop();
                 }
             }
 
@@ -6391,13 +6388,20 @@
                     hideRecordingCountdownOverlay();
                     return false;
                 }
-                if (screenCaptureEnabled) {
-                    const screenReady = await ensureScreenCapture();
-                    if (!screenReady) {
+                let shouldRecordScreen = screenCaptureEnabled;
+                if (shouldRecordScreen) {
+                    const { ok: screenReady, cancelled } = await ensureScreenCapture();
+                    if (!screenReady && !cancelled) {
                         applyScreenCapturePreference(false);
                         hideRecordingCountdownOverlay();
                         return false;
                     }
+                    if (cancelled) {
+                        shouldRecordScreen = false;
+                        applyScreenCapturePreference(false);
+                    }
+                }
+                if (shouldRecordScreen) {
                     const startedScreen = startScreenRecordingSegment();
                     if (!startedScreen) {
                         applyScreenCapturePreference(false);
@@ -6476,6 +6480,11 @@
                         console.warn("Impossible d'ouvrir le lecteur vidéo après enregistrement", err);
                     }
                 }
+                applyScreenCapturePreference(false);
+                stopWebcamPreview();
+                stopMicPreview();
+                updateRecordingPrepTiles();
+                updateRecordingLiveOverlay();
                 if (recordingTimer) {
                     clearInterval(recordingTimer);
                     recordingTimer = null;
@@ -6752,7 +6761,6 @@
             iaResetBtn?.addEventListener("click", resetIaEditorValue);
             iaPromptSelect?.addEventListener("change", () => syncIaEditor(iaPromptSelect.value));
             completeBtn?.addEventListener("click", completeGuidelinesFromTranscript);
-            evaluateBtn?.addEventListener("click", evaluateGuidelines);
             summarizeBtn?.addEventListener("click", summarizeTranscript);
             revertSummaryBtn?.addEventListener("click", () => {
                 const page = getActivePage();
@@ -6768,8 +6776,7 @@
                 if (deleteBtn) deleteBtn.style.display = "none";
             });
             document.getElementById("closeSubjectModal")?.addEventListener("click", () => {
-                subjectModalOverlay.classList.remove("open");
-                subjectModalOverlay.setAttribute("aria-hidden", "true");
+                closeSubjectModalOverlay();
             });
             document.getElementById("cancelSubjectModal")?.addEventListener("click", () => {
                 const existingId = document.getElementById("confirmSubjectModal")?.dataset?.subjectId || "";
@@ -6789,8 +6796,7 @@
                 } else if (deleteBtn) {
                     deleteBtn.style.display = "none";
                 }
-                subjectModalOverlay.classList.remove("open");
-                subjectModalOverlay.setAttribute("aria-hidden", "true");
+                closeSubjectModalOverlay();
             });
             document.getElementById("confirmSubjectModal")?.addEventListener("click", () => {
                 const titleInput = document.getElementById("newSubjectTitle");
@@ -6829,8 +6835,7 @@
                 }
                 persistState();
                 renderGuidelines();
-                subjectModalOverlay.classList.remove("open");
-                subjectModalOverlay.setAttribute("aria-hidden", "true");
+                closeSubjectModalOverlay();
             });
             const escapeRegExp = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
             function getBaseWithoutInterim() {
@@ -6924,7 +6929,9 @@
                 if (!page) return;
                 setActiveSummaryValue(page, summaryTextarea.value);
                 persistState();
+                updateCompleteButtonState();
             });
+            updateCompleteButtonState();
             noteModeSelect?.addEventListener("change", () => {
                 void handleNoteModeSelection(noteModeSelect.value);
             });
@@ -6949,6 +6956,7 @@
                 if (audioDownloadMenu.contains(ev.target) || audioDownloadBtn?.contains(ev.target)) return;
                 toggleDownloadMenu(false);
             });
+            document.addEventListener("keydown", handleSubjectArrowKey);
             audioClearBtn?.addEventListener("click", clearCurrentAudioWithConfirm);
             screenCaptureToggleBtn?.addEventListener("click", async () => {
                 if (screenCaptureEnabled) {
@@ -6972,8 +6980,19 @@
                     }
                     await discardAudioRecording();
                 }
-                const granted = await ensureScreenCapture();
-                if (!granted) return;
+                const { ok: granted, cancelled } = await ensureScreenCapture();
+                if (!granted) {
+                    applyScreenCapturePreference(false);
+                    updateRecordingPrepTiles();
+                    updateRecordingLiveOverlay();
+                    return;
+                }
+                if (cancelled) {
+                    applyScreenCapturePreference(false);
+                    updateRecordingPrepTiles();
+                    updateRecordingLiveOverlay();
+                    return;
+                }
                 void ensureFfmpegReady();
                 applyScreenCapturePreference(true);
             });

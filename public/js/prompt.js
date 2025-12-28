@@ -287,8 +287,7 @@
                 "Modèle générique pour structurer tes idées.\n",
             columns: [
                 { stage: "first-col", label: "Colonne 1" },
-                { stage: "second-col", label: "Colonne 2" },
-                { stage: "third-col", label: "Colonne 3" }
+                { stage: "second-col", label: "Colonne 2" }
             ],
             sections: [
                 {
@@ -299,11 +298,6 @@
                 {
                     key: "second-section",
                     label: "Section 2",
-                    examples: ""
-                },
-                {
-                    key: "third-section",
-                    label: "Section 3",
                     examples: ""
                 }
             ]

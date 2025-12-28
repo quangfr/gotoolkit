@@ -154,13 +154,13 @@
             width: 24px;
             height: 24px;
             background: rgba(255, 255, 255, 0.85);
-            font-size: 20px;
+            font-size: 16px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             border: none;
-            color: var(--app-muted);
+            color: #918b7f;
             border-radius: 999px;
             transition: box-shadow 0.2s ease, opacity 0.2s ease;
             opacity: 1;
@@ -691,8 +691,10 @@
                 <button id="deletePageBtn" class="tab-action" title="Supprimer la page">×</button>
             </div>
             <div class="global-actions">
-                <button id="gtTemplateModalTrigger" class="btn drawer-toggle-btn" type="button" title="⊞ Modèles">⊞ Modèles</button>
-                <button id="gtContextModalTrigger" class="btn drawer-toggle-btn" type="button" title="⌘ Agent">⌘ Agent</button>
+                <button id="gtContextModalTrigger" class="btn drawer-toggle-btn" type="button" title="⌘ Commande">⌘
+                    Commande</button>
+                <button id="gtTemplateModalTrigger" class="btn drawer-toggle-btn" type="button" title="⊞ Modèles">⊞
+                    Modèles</button>
                 <button id="gtPromptModalTrigger" class="btn ai-button" type="button" title="⌬ Prompt">⌬ Prompt</button>
                 <div class="menu-trigger" id="capsuleMenuTrigger">
                     <button id="capsuleMenuBtn" class="btn" type="button" title="Document">⬠ Document</button>
@@ -777,7 +779,7 @@
                     <div class="card-title-row">
                         <label>Script</label>
 
-                        <button id="refreshExcalidrawBtn" class="btn" type="button">↺ Restaurer</button>
+                        <button id="refreshExcalidrawBtn" class="btn" type="button">↺</button>
                     </div>
                     <textarea id="mermaidOutput"></textarea>
                 </div>
@@ -1681,17 +1683,17 @@
             const drawerMediaQuery = window.matchMedia("(max-width: 1200px)");
             const shareHistory = window.goToolkitShareHistory;
             const generateDefaultLabel = generateBtn?.textContent || "⌘ Envoyer";
-            const drawerDefaultLabel = toggleDrawerBtn?.textContent || "⌘ Agent";
+            const drawerDefaultLabel = toggleDrawerBtn?.textContent || "⌘ Commande";
             const drawGenerateCountdown =
                 window.GoToolkitSharedUI &&
-                typeof window.GoToolkitSharedUI.createActionCountdown === "function"
+                    typeof window.GoToolkitSharedUI.createActionCountdown === "function"
                     ? window.GoToolkitSharedUI.createActionCountdown(
-                          [
-                              { element: generateBtn, defaultLabel: generateDefaultLabel },
-                              { element: toggleDrawerBtn, defaultLabel: drawerDefaultLabel }
-                          ],
-                          { duration: 30 }
-                      )
+                        [
+                            { element: generateBtn, defaultLabel: generateDefaultLabel },
+                            { element: toggleDrawerBtn, defaultLabel: drawerDefaultLabel }
+                        ],
+                        { duration: 30 }
+                    )
                     : null;
             let activeIaAbortController = null;
             // Start open on desktop by default; auto logic can rehydrate stored state
@@ -4403,13 +4405,13 @@
                     mermaidOutput.value = "";
                     diagramTitleInput.value = page.title;
                     updateActivePageDrawType(DEFAULT_DRAW_TYPE);
-                refreshPromptSuggestion();
-                syncPromptSuggestionScroll();
-                clearPromptAiSuggestion();
-                clearPromptAlternatives();
-                updateExcalidrawScene("");
-                updateDrawClearButtonState();
-            }
+                    refreshPromptSuggestion();
+                    syncPromptSuggestionScroll();
+                    clearPromptAiSuggestion();
+                    clearPromptAlternatives();
+                    updateExcalidrawScene("");
+                    updateDrawClearButtonState();
+                }
                 deletePageBtn.addEventListener("click", () => {
                     const page = getActivePage();
                     if (!page || state.pages.length <= 1) return;
@@ -4507,11 +4509,11 @@
                     closeCapsuleMenu();
                     infoPopup?.classList.toggle("open");
                 });
-            updateAppBtn?.addEventListener("click", event => {
-                event.stopPropagation();
-                closeInfoPopup();
-                reloadAppWithVersion(getBrowserDateVersion());
-            });
+                updateAppBtn?.addEventListener("click", event => {
+                    event.stopPropagation();
+                    closeInfoPopup();
+                    reloadAppWithVersion(getBrowserDateVersion());
+                });
                 document.addEventListener("click", event => {
                     if (!infoPopup?.contains(event.target) && event.target !== infoButton) {
                         closeInfoPopup();

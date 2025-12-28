@@ -13,7 +13,7 @@
         - button "Supprimer la vue active" [ref=e11] [cursor=pointer]: ×
       - generic [ref=e12]:
         - button "Ouvrir ⊞ Modèles" [ref=e13] [cursor=pointer]: ⊞ Modèles
-        - button "Ouvrir ⌘ Agent" [ref=e14] [cursor=pointer]: ⌘ Agent
+        - button "Ouvrir ⌘ Commande" [ref=e14] [cursor=pointer]: ⌘ Commande
         - button "Ouvrir Prompt" [ref=e15] [cursor=pointer]: ⌬ Prompt
         - button "Document" [ref=e17] [cursor=pointer]: ⬠ Document
         - button "Partager" [ref=e19] [cursor=pointer]: ☍ Partage
@@ -199,7 +199,7 @@
           - generic [ref=e166]:
             - generic [ref=e167]:
               - generic [ref=e168]: Script (JSON)
-              - button "↺ Restaurer" [ref=e169] [cursor=pointer]
+              - button "↺" [ref=e169] [cursor=pointer]
             - textbox "Script (JSON)" [ref=e171]:
               - /placeholder: "{\"title\": \"...\", \"subjects\": [...]}"
               - text: "{ \"title\": \"Page 1\", \"duration\": 15, \"participants\": [ { \"name\": \"\", \"role\": \"\" } ], \"subjects\": [ { \"title\": \"Sujet 1\", \"timeframe\": { \"start\": 0, \"end\": 15 }, \"keySentences\": [ { \"text\": \"Point 1.1\", \"match\": \"missing\" }, { \"text\": \"Point 1.2\", \"match\": \"missing\" } ] }, { \"title\": \"Sujet 2\", \"timeframe\": { \"start\": 15, \"end\": 30 }, \"keySentences\": [ { \"text\": \"Point 2.1\", \"match\": \"missing\" }, { \"text\": \"Point 2.2\", \"match\": \"missing\" } ] } ] }{ \"title\": \"Manual before AI\" }"

@@ -991,23 +991,23 @@
             font-weight: 600;
         }
 
-	        .info-popup button {
-	            border-radius: 8px;
-	            padding: 6px 12px;
-	            font-size: 12px;
-	            background: var(--app-primary, #2a7a57);
-	            border-color: var(--app-primary, #2a7a57);
-	            cursor: pointer;
-	        }
+        .info-popup button {
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 12px;
+            background: var(--app-primary, #2a7a57);
+            border-color: var(--app-primary, #2a7a57);
+            cursor: pointer;
+        }
 
-	        .info-popup .info-actions {
-	            display: flex;
-	            gap: 8px;
-	        }
+        .info-popup .info-actions {
+            display: flex;
+            gap: 8px;
+        }
 
-	        .info-popup .info-actions button {
-	            flex: 1;
-	        }
+        .info-popup .info-actions button {
+            flex: 1;
+        }
 
         #gridContainer {
             flex: 1;
@@ -1104,9 +1104,11 @@
                 <button id="deletePageBtn" class="tab-action" title="Supprimer la page">×</button>
             </div>
             <div class="global-actions">
-                <button id="gtContextModalTrigger" class="btn drawer-toggle-btn" type="button" title="⌘ Agent">⌘ Agent</button>
+                <button id="gtContextModalTrigger" class="btn drawer-toggle-btn" type="button" title="⌘ Commande">⌘
+                    Commande</button>
                 <button id="gtPromptModalTrigger" class="btn ai-button" type="button" title="⌬ Prompt">⌬ Prompt</button>
-                <button id="gtTemplateModalTrigger" class="btn" type="button" title="⊞ Modèles" style="display: none;">⊞ Modèles</button>
+                <button id="gtTemplateModalTrigger" class="btn" type="button" title="⊞ Modèles" style="display: none;">⊞
+                    Modèles</button>
                 <div class="menu-trigger">
                     <button id="affichageBtn" class="btn" type="button" aria-label="Affichage" title="Affichage">◯
                         Affichage</button>
@@ -1219,11 +1221,13 @@
         </div>
     </div>
 
-    <div class="modal-overlay gt-template-modal" id="gtTemplateModal" role="dialog" aria-modal="true" aria-labelledby="gtTemplateModalTitle">
+    <div class="modal-overlay gt-template-modal" id="gtTemplateModal" role="dialog" aria-modal="true"
+        aria-labelledby="gtTemplateModalTitle">
         <div class="modal gt-template-modal__dialog">
             <header class="modal-header">
                 <h3 id="gtTemplateModalTitle" title="⊞ Modèles">⊞ Modèles</h3>
-                <button class="modal-close btn-secondary" id="gtTemplateModalClose" type="button" aria-label="Fermer">✕</button>
+                <button class="modal-close btn-secondary" id="gtTemplateModalClose" type="button"
+                    aria-label="Fermer">✕</button>
             </header>
             <div class="gt-template-modal__list" id="gtTemplateModalList"></div>
             <div class="modal-actions template-actions">
@@ -1232,7 +1236,8 @@
         </div>
     </div>
 
-    <div class="modal-overlay gt-prompt-modal" id="gtPromptModal" role="dialog" aria-modal="true" aria-labelledby="gtPromptModalTitle">
+    <div class="modal-overlay gt-prompt-modal" id="gtPromptModal" role="dialog" aria-modal="true"
+        aria-labelledby="gtPromptModalTitle">
         <div class="modal">
             <header class="modal-header">
                 <h3 id="gtPromptModalTitle" title="⌬ Prompt">⌬ Prompt</h3>
@@ -1291,16 +1296,16 @@
         </div>
     </div>
 
-		    <script src="js/prompt.js?v=2025.12.27.2"></script>
-	    <script src="js/ia-config.js"></script>
-	    <script src="js/ia-client.js"></script>
-	    <script src="js/idb-doc-store.js"></script>
-	    <script src="js/storage-service.js"></script>
-	    <script src="js/shared-ui.js"></script>
-	    <script src="js/cgu.js?v=2025.12.27.2"></script>
-	    <script src="js/share-worker-client.js"></script>
-	    <script src="js/share-history.js"></script>
-	    <script src="js/capsule-drafts.js"></script>
+    <script src="js/prompt.js?v=2025.12.27.2"></script>
+    <script src="js/ia-config.js"></script>
+    <script src="js/ia-client.js"></script>
+    <script src="js/idb-doc-store.js"></script>
+    <script src="js/storage-service.js"></script>
+    <script src="js/shared-ui.js"></script>
+    <script src="js/cgu.js?v=2025.12.27.2"></script>
+    <script src="js/share-worker-client.js"></script>
+    <script src="js/share-history.js"></script>
+    <script src="js/capsule-drafts.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/dist/ag-grid-community.min.noStyle.js"></script>
     <script>
             (() => {
@@ -1432,21 +1437,21 @@
                 const shareService = window.goToolkitShareWorker;
                 const capsuleDrafts = window.goToolkitCapsuleDrafts;
                 const generateDefaultLabel = generateBtn?.textContent || "⌘ Envoyer";
-                const drawerDefaultLabel = drawerBtn?.textContent || "⌘ Agent";
+                const drawerDefaultLabel = drawerBtn?.textContent || "⌘ Commande";
                 const hasSeenTemplateModal =
                     typeof localStorage !== "undefined" &&
                     localStorage.getItem(TEMPLATE_MODAL_SEEN_KEY) === "1";
                 let templateModalContext = null;
                 const generateCountdown =
                     window.GoToolkitSharedUI &&
-                    typeof window.GoToolkitSharedUI.createActionCountdown === "function"
+                        typeof window.GoToolkitSharedUI.createActionCountdown === "function"
                         ? window.GoToolkitSharedUI.createActionCountdown(
-                              [
-                                  { element: generateBtn, defaultLabel: generateDefaultLabel },
-                                  { element: drawerBtn, defaultLabel: drawerDefaultLabel }
-                              ],
-                              { duration: 30 }
-                          )
+                            [
+                                { element: generateBtn, defaultLabel: generateDefaultLabel },
+                                { element: drawerBtn, defaultLabel: drawerDefaultLabel }
+                            ],
+                            { duration: 30 }
+                        )
                         : null;
 
                 let activeRequestController = null;
@@ -3328,10 +3333,10 @@
                     if (systemPromptField) {
                         systemPromptField.value = defaults.systemPrompt;
                     }
-                if (promptInput) {
-                    promptInput.value = page?.scenario || "";
-                }
-                updateGridClearButtonState();
+                    if (promptInput) {
+                        promptInput.value = page?.scenario || "";
+                    }
+                    updateGridClearButtonState();
                     if (gridScript) {
                         gridScript.value = page?.datasetScript || "";
                     }

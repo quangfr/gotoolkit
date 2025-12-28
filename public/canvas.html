@@ -343,6 +343,7 @@
             margin: 0;
             padding: 0;
             font-family: var(--app-font, "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif);
+            font-size: 15px;
             background: #f3f4f6;
             color: var(--text-main);
             display: flex;
@@ -509,7 +510,7 @@
            so the `#pageContextField` occupies the remaining space instead of roughly half. */
         .gutenberg-card-body>label:first-child textarea,
         #globalContextField {
-            height: 250px;
+            height: 100%;
             flex: none;
             min-height: 0;
         }
@@ -578,13 +579,13 @@
             width: 24px;
             height: 24px;
             background: rgba(255, 255, 255, 0.85);
-            font-size: 20px;
+            font-size: 16px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             border: none;
-            color: var(--app-muted);
+            color: #918b7f;
             border-radius: 999px;
             transition: box-shadow 0.2s ease, opacity 0.2s ease;
             opacity: 1;
@@ -1102,7 +1103,6 @@
             color: var(--slide-text-color, var(--text-main));
             line-height: 1.2;
             border-radius: 4px;
-            transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
             padding: 2px 4px;
         }
 
@@ -1161,7 +1161,7 @@
             background: var(--slide-bg, #ffffff);
             border-bottom: 1px solid rgba(0, 0, 0, 0.02);
             border-radius: 4px 4px 0 0;
-            padding: 4px 4px 4px;
+            padding: 4px 4px 0px 4px;
             min-height: 20px;
             display: flex;
             flex-direction: column;
@@ -1298,19 +1298,33 @@
         .column-copy-btn {
             border: none;
             background: transparent;
-            font-size: 13px;
+            font-size: 14px;
             border-radius: 999px;
             cursor: pointer;
             color: #918b7f;
             padding: 0px;
             opacity: 0;
             pointer-events: none;
+            margin-right: 4px;
         }
 
 
 
-        .column-delete-btn,
+        .section-insert-btn {
+            border: none;
+            background: transparent;
+            font-size: 14px;
+            border-radius: 999px;
+            cursor: pointer;
+            color: #918b7f;
+            padding: 0px;
+            opacity: 0;
+            pointer-events: none;
+            margin-left: auto;
+            margin-right: 4px;
+        }
 
+        .column-delete-btn,
         .section-delete-btn,
         .bottom-section-delete {
             border: none;
@@ -1326,6 +1340,9 @@
 
         .column-title-row:hover .column-delete-btn,
         .column-title-row:hover .column-copy-btn,
+        .section-label-row:hover .section-insert-btn,
+        .section:hover .section-insert-btn,
+        .section:focus-within .section-insert-btn,
         .section-label-row:hover .section-delete-btn,
         .section:hover .section-delete-btn,
         .section:focus-within .section-delete-btn {
@@ -1333,15 +1350,7 @@
             pointer-events: auto;
         }
 
-        .column-title:focus-visible~.column-delete-btn,
-        .column-title:focus-visible~.column-copy-btn,
-        .section-label:focus-visible+.section-delete-btn,
-        .slide-title-input:focus-visible {
-            outline: none;
-            border-color: #2a7a57;
-            box-shadow: 0 0 0 3px rgba(42, 122, 87, 0.2);
-            background: rgba(42, 122, 87, 0.05);
-        }
+
 
         .section-text-row {
             position: relative;
@@ -1752,10 +1761,10 @@
 
 
                 <div class="menu-trigger" id="settingsMenuTrigger">
+                    <button id="gtContextModalTrigger" class="btn" type="button" aria-label="Ouvrir Contexte"
+                        title="⌘ Commande">⌘ Commande</button>
                     <button id="gtTemplateModalTrigger" class="btn" type="button" aria-label="Choisir un modèle"
                         title="⊞ Modèles">⊞ Modèles</button>
-                    <button id="gtContextModalTrigger" class="btn" type="button" aria-label="Ouvrir Contexte"
-                        title="⌘ Agent">⌘ Agent</button>
                     <button id="gtPromptModalTrigger" class="btn" type="button" aria-label="Prompt" title="⌬ Prompt">⌬
                         Prompt</button>
 
@@ -1770,14 +1779,14 @@
                             <label>
                                 Taille (px)
                                 <select id="fontSizeInput">
-                                    <option value="9">9</option>
-                                    <option value="10">10</option>
                                     <option value="11">11</option>
                                     <option value="12">12</option>
                                     <option value="13">13</option>
                                     <option value="14">14</option>
                                     <option value="15">15</option>
                                     <option value="16">16</option>
+                                    <option value="16">17</option>
+                                    <option value="16">18</option>
                                 </select>
                             </label>
                             <label>
@@ -1846,7 +1855,7 @@
                 </div>
                 <div class="gutenberg-card-body">
                     <div class="gutenberg-card-actions-row">
-                        <label>Histoire</label>
+                        <label>Contexte</label>
                         <div class="gutenberg-card-actions-row-right">
 
 
@@ -4522,6 +4531,7 @@
         <div class="section" data-section="${sectionKey}">
           <div class="section-label-row">
             <span class="section-label" data-section="${sectionKey}" contenteditable="true">${labelText}</span>
+            <button type="button" class="section-insert-btn" aria-label="Ajouter une section sous celle-ci">⧉</button>
             <button type="button" class="section-delete-btn" aria-label="Supprimer la section">×</button>
           </div>
                     <div class="section-text-row">
@@ -4612,6 +4622,11 @@
                     monitorTextareaOverflow(textarea);
                 }
                 const deleteBtn = sectionEl.querySelector(".section-delete-btn");
+                const insertBtn = sectionEl.querySelector(".section-insert-btn");
+                insertBtn?.addEventListener("click", event => {
+                    event.stopPropagation();
+                    insertSectionBelow(sectionEl);
+                });
                 deleteBtn?.addEventListener("click", event => {
                     event.stopPropagation();
                     deleteSection(sectionEl);
@@ -4728,10 +4743,50 @@
             schedulePersist();
         }
 
+        function generateSectionKey(column, baseKey) {
+            const existingKeys = new Set(Array.from(column.querySelectorAll(".section")).map(sec => sec.dataset.section));
+            const safeBase = (baseKey || "section").toString().trim().replace(/[^\w-]+/g, "-") || "section";
+            let attempt = `${safeBase}-copy`;
+            let counter = 1;
+            while (existingKeys.has(attempt)) {
+                counter += 1;
+                attempt = `${safeBase}-copy-${counter}`;
+            }
+            return attempt;
+        }
+
+        function insertSectionBelow(sectionEl) {
+            if (!sectionEl) return;
+            const column = sectionEl.closest(".column");
+            const slide = sectionEl.closest(".slide");
+            if (!column || !slide) return;
+            const templateId = slide.dataset.templateId || currentTemplateId || "";
+            const stage = column.dataset.stage;
+            const labelSpan = sectionEl.querySelector(".section-label");
+            const textarea = sectionEl.querySelector("textarea");
+            const baseKey = sectionEl.dataset.section || "section";
+            const newSectionKey = generateSectionKey(column, baseKey);
+            const seed = {
+                label: labelSpan?.textContent?.trim() || baseKey,
+                text: textarea?.value || "",
+                suggestions: (labelSpan?.dataset.suggestions || textarea?.dataset.suggestionPlaceholder || "").trim(),
+                placeholder: textarea?.dataset.placeholder || textarea?.dataset.suggestionPlaceholder || ""
+            };
+            const newSection = createSectionElement(templateId, newSectionKey, stage, seed);
+            sectionEl.insertAdjacentElement("afterend", newSection);
+            redistributeSectionHeights(column);
+            schedulePersist();
+            newSection.querySelector(".section-label")?.focus();
+        }
+
         function createSectionElement(templateId, sectionKey, stage, seed = {}) {
             const sectionMeta = getTemplateSection(templateId, sectionKey) || { label: sectionKey, examples: "" };
-            const exampleText = getSectionExample(templateId, stage, sectionKey) || sectionMeta.examples || "";
-            const placeholder = exampleText.replace(/"/g, '&quot;');
+            const exampleSource =
+                seed.placeholder ??
+                getSectionExample(templateId, stage, sectionKey) ??
+                sectionMeta.examples ??
+                "";
+            const placeholder = exampleSource.toString().replace(/"/g, '&quot;');
             const labelText = seed.label || sectionMeta.label || sectionKey;
 
             const section = document.createElement("div");
@@ -4745,12 +4800,17 @@
             labelSpan.dataset.section = sectionKey;
             labelSpan.contentEditable = "true";
             labelSpan.textContent = labelText;
+            const insertBtn = document.createElement("button");
+            insertBtn.type = "button";
+            insertBtn.className = "section-insert-btn";
+            insertBtn.setAttribute("aria-label", "Ajouter une section sous celle-ci");
+            insertBtn.textContent = "⧉";
             const deleteBtn = document.createElement("button");
             deleteBtn.type = "button";
             deleteBtn.className = "section-delete-btn";
             deleteBtn.setAttribute("aria-label", "Supprimer la section");
             deleteBtn.textContent = "×";
-            labelRow.append(labelSpan, deleteBtn);
+            labelRow.append(labelSpan, insertBtn, deleteBtn);
 
             const textRow = document.createElement("div");
             textRow.className = "section-text-row";
@@ -4802,6 +4862,10 @@
             monitorTextareaOverflow(textarea);
             sectionCriteriaSentenceCount.set(textarea, countCompletedSentences(textarea.value || ""));
             sectionCriteriaLastText.set(textarea, textarea.value || "");
+            insertBtn.addEventListener("click", event => {
+                event.stopPropagation();
+                insertSectionBelow(section);
+            });
             deleteBtn.addEventListener("click", event => {
                 event.stopPropagation();
                 deleteSection(section);
