@@ -27,6 +27,33 @@
             --shadow-soft: 0 14px 34px rgba(15, 23, 42, 0.1);
         }
 
+        #audioDownloadBtn:disabled,
+        .audio-import-btn:disabled,
+        .audio-import-btn[disabled] {
+            opacity: 0.4;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .audio-import-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 6px;
+            border: 1px solid var(--app-border, #dfe3f5);
+            background: var(--app-surface, #ffffff);
+            color: var(--app-primary-strong, #1f2a56);
+            padding: 6px 10px;
+            min-height: 30px;
+            border-radius: 10px;
+            font-size: 12px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease;
+            box-shadow: none;
+
+        }
+
         body {
             margin: 0;
             background: var(--bg);
@@ -187,8 +214,7 @@
         }
 
         .note-column .transcribe-area {
-            flex: 1;
-            min-height: 0;
+            min-height: 100px;
         }
 
         .summary-column .summary-wrapper {
@@ -243,16 +269,44 @@
         }
 
         .audio-controls {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            min-width: 170px;
+            flex: 1 1 auto;
+        }
+
+        .audio-controls-left {
             display: inline-flex;
             align-items: center;
-            gap: 4px;
-            min-width: 170px;
+            gap: 6px;
+        }
+
+        .audio-controls-right {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-left: auto;
+            padding-left: 6px;
+            margin-right: 6px;
+        }
+
+        .audio-download-right {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
         }
 
         .audio-download {
             position: relative;
             display: inline-flex;
         }
+
+        #audioClearBtn {
+            margin-left: auto;
+        }
+
+
 
         .audio-download-menu {
             position: absolute;
@@ -294,16 +348,6 @@
         }
 
         .audio-play-btn,
-        .screen-toggle {
-            border: 1px solid var(--border-strong);
-            background: transparent;
-            border-radius: 8px;
-            padding: 4px 8px;
-            font-size: 15px;
-            cursor: pointer;
-        }
-
-        .audio-play-btn,
         .audio-download-btn,
         .screen-toggle {
             border: 1px solid var(--border-strong);
@@ -313,6 +357,7 @@
             font-size: 15px;
             cursor: pointer;
         }
+
 
         .audio-progress {
             width: 90px;
@@ -1522,41 +1567,44 @@
                                         <option value="transcript-ia">Transcript audio</option>
                                         <option value="transcript-video">Transcript vidéo</option>
                                     </select>
-                                    <div class="recording-toolbar">
-                                        <span id="transcriptMeta" class="badge"
-                                            style="background:#e5e7eb;color:#000;">0' /
-                                            0'</span>
-                                        <div class="audio-controls">
-                                            <button id="audioImportBtn" type="button" class="audio-play-btn"
+                                    <button id="audioClearBtn" type="button" class="audio-download-btn"
+                                        title="Supprimer l'enregistrement"
+                                        aria-label="Supprimer l'enregistrement">⊘</button>
+                                </div>
+                                <div class="recording-toolbar">
+                                    <div class="audio-controls">
+                                        <div class="audio-controls-left">
+                                            <button id="audioImportBtn" type="button" class="audio-import-btn"
                                                 title="Importer un fichier audio"
-                                                aria-label="Importer un fichier audio">♪</button>
+                                                aria-label="Importer un fichier audio">♪ Fichier</button>
+                                            <button id="audioPlayBtn" type="button" class="btn-primary"
+                                                title="Démarrer l'enregistrement"
+                                                aria-label="Démarrer l'enregistrement">◉ Enregistrer</button>
+                                            <span id="transcriptMeta" class="badge"
+                                                style="background:#e5e7eb;color:#000;">0' / 0'</span>
                                             <button id="screenCaptureToggleBtn" type="button" class="screen-toggle"
                                                 title="Capturer l'écran" aria-label="Capturer l'écran">⧉</button>
-
-
-                                            <button id="audioPlayBtn" type="button" class="audio-play-btn"
-                                                title="Démarrer l'enregistrement"
-                                                aria-label="Démarrer l'enregistrement">◉</button>
                                             <input id="audioProgress" class="audio-progress" type="range" min="0"
                                                 max="1" step="0.01" value="0" aria-label="Progression audio" disabled>
                                             <select id="audioSpeedSelect" class="audio-speed" title="Vitesse de lecture"
                                                 aria-label="Vitesse de lecture"></select>
-                                            <div class="audio-download">
-                                                <button id="audioDownloadBtn" type="button" class="audio-download-btn"
-                                                    title="Télécharger l'enregistrement"
-                                                    aria-label="Télécharger">🡇</button>
-                                                <div id="audioDownloadMenu" class="audio-download-menu"
-                                                    aria-hidden="true">
-                                                    <button type="button" id="audioDownloadAudio"
-                                                        class="audio-download-option">Fichier Audio .webm</button>
-                                                    <button type="button" id="audioDownloadVideo"
-                                                        class="audio-download-option">Fichier Vidéo .webm</button>
-                                                </div>
-                                            </div>
-                                            <button id="audioClearBtn" type="button" class="audio-download-btn"
-                                                title="Supprimer l'enregistrement"
-                                                aria-label="Supprimer l'enregistrement">⊘</button>
+                                        </div>
 
+                                    </div>
+
+                                    <div class="audio-download-right">
+                                        <div class="audio-download">
+                                            <button id="audioDownloadBtn" type="button" class="btn"
+                                                title="Télécharger l'enregistrement" aria-label="Télécharger">🡇
+                                            </button>
+                                            <div id="audioDownloadMenu" class="audio-download-menu" aria-hidden="true">
+                                                <button type="button" id="audioDownloadAudio"
+                                                    class="audio-download-option">Fichier Audio
+                                                    .webm</button>
+                                                <button type="button" id="audioDownloadVideo"
+                                                    class="audio-download-option">Fichier Vidéo
+                                                    .webm</button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -2439,15 +2487,15 @@
                     const isPlaying = !audioPlayer?.paused && !audioPlayer?.ended && Boolean(audioUrl);
                     audioPlayBtn.disabled = audioMergeInProgress;
                     if (audioRecordingActive) {
-                        audioPlayBtn.textContent = "■";
+                        audioPlayBtn.textContent = "■ Arrêter";
                         audioPlayBtn.title = "Arrêter l'enregistrement";
                         audioPlayBtn.setAttribute("aria-label", "Arrêter l'enregistrement");
                     } else if (!hasAudio && !recordingInProgress) {
-                        audioPlayBtn.textContent = "◉";
+                        audioPlayBtn.textContent = "◉ Enregistrer";
                         audioPlayBtn.title = "Démarrer l'enregistrement";
                         audioPlayBtn.setAttribute("aria-label", "Démarrer l'enregistrement");
                     } else if (hasAudio) {
-                        audioPlayBtn.textContent = isPlaying ? "⏸" : "▶";
+                        audioPlayBtn.textContent = isPlaying ? "⏸ Pause" : "▶ Lire";
                         audioPlayBtn.title = isPlaying ? "Pause" : "Lire l'enregistrement";
                         audioPlayBtn.setAttribute("aria-label", isPlaying ? "Mettre en pause" : "Lire l'enregistrement");
                     }
@@ -2913,7 +2961,8 @@
                             const li = document.createElement("li");
                             li.className = "guideline-item";
                             const title = document.createElement("div");
-                            title.textContent = item.text || `Point ${idx + 1}`;
+                            const getTitleText = () => (item.text || `Point ${idx + 1}`);
+                            title.textContent = getTitleText();
                             const actions = document.createElement("div");
                             actions.className = "guideline-actions";
                             const directId = `${activeSubject.id}-direct-${idx}`;
@@ -2949,12 +2998,55 @@
                             indirect.appendChild(indirectInput);
                             indirect.appendChild(document.createTextNode("Abordé"));
                             actions.append(direct, indirect);
-                            li.append(title, actions);
-                            li.addEventListener("dblclick", () => {
-                                if (activeSubject?.id) {
-                                    openSubjectModal(activeSubject.id);
+                            const startInlineEdit = () => {
+                                if (title.isContentEditable) {
+                                    return;
                                 }
+                                const previousText = title.textContent || "";
+                                title.contentEditable = "true";
+                                const range = document.createRange();
+                                range.selectNodeContents(title);
+                                const selection = window.getSelection();
+                                selection?.removeAllRanges();
+                                selection?.addRange(range);
+                                const finishEditing = (commit) => {
+                                    title.contentEditable = "false";
+                                    title.removeEventListener("blur", handleBlur);
+                                    title.removeEventListener("keydown", handleKeyDown);
+                                    if (commit) {
+                                        const trimmed = title.textContent?.trim();
+                                        if (trimmed) {
+                                            item.text = trimmed;
+                                        } else {
+                                            delete item.text;
+                                        }
+                                        title.textContent = getTitleText();
+                                        persistState();
+                                        renderGuidelines();
+                                    } else {
+                                        title.textContent = previousText;
+                                    }
+                                };
+                                const handleBlur = () => finishEditing(true);
+                                const handleKeyDown = (event) => {
+                                    if (event.key === "Enter") {
+                                        event.preventDefault();
+                                        finishEditing(true);
+                                        title.blur();
+                                    } else if (event.key === "Escape") {
+                                        event.preventDefault();
+                                        finishEditing(false);
+                                        title.blur();
+                                    }
+                                };
+                                title.addEventListener("blur", handleBlur);
+                                title.addEventListener("keydown", handleKeyDown);
+                            };
+                            title.addEventListener("dblclick", (event) => {
+                                event.stopPropagation();
+                                startInlineEdit();
                             });
+                            li.append(title, actions);
                             guidelineList.appendChild(li);
                         });
                     }
@@ -3314,11 +3406,11 @@
                     const isPlaying = !audioPlayer?.paused && !audioPlayer?.ended && Boolean(audioUrl);
                     audioPlayBtn.disabled = audioMergeInProgress;
                     if (audioRecordingActive) {
-                        audioPlayBtn.textContent = "■";
+                        audioPlayBtn.textContent = "■ Arrêter";
                     } else if (!audioUrl) {
-                        audioPlayBtn.textContent = "◉";
+                        audioPlayBtn.textContent = "◉ Enregistrer";
                     } else {
-                        audioPlayBtn.textContent = isPlaying ? "⏸" : "▶";
+                        audioPlayBtn.textContent = isPlaying ? "⏸ Pause" : "▶ Lire";
                     }
                 }
                 if (audioImportBtn) {
@@ -5972,10 +6064,10 @@
                     }
                     if (audioPlayer.paused) {
                         audioPlayer.play();
-                        if (audioPlayBtn) audioPlayBtn.textContent = "⏸";
+                        if (audioPlayBtn) audioPlayBtn.textContent = "⏸ Pause";
                     } else {
                         audioPlayer.pause();
-                        if (audioPlayBtn) audioPlayBtn.textContent = "▶";
+                        if (audioPlayBtn) audioPlayBtn.textContent = "▶ Lire";
                     }
                 });
             }
@@ -6853,7 +6945,7 @@
                     showRecordingLiveOverlay();
                 }
                 if (audioPlayBtn) {
-                    audioPlayBtn.textContent = "■";
+                    audioPlayBtn.textContent = "■ Arrêter";
                     audioPlayBtn.title = "Arrêter l'enregistrement";
                     audioPlayBtn.setAttribute("aria-label", "Arrêter l'enregistrement");
                 }
@@ -7457,7 +7549,7 @@
             audioPlayer.addEventListener("timeupdate", updateAudioProgress);
             audioPlayer.addEventListener("loadedmetadata", updateAudioProgress);
             audioPlayer.addEventListener("ended", () => {
-                if (audioPlayBtn) audioPlayBtn.textContent = "▶";
+                if (audioPlayBtn) audioPlayBtn.textContent = "▶ Lire";
                 audioPlayer.currentTime = 0;
                 if (audioProgress) audioProgress.value = 0;
                 updateAudioProgress();
