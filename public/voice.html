@@ -459,6 +459,10 @@
             font-size: 18px;
         }
 
+        .voice-overlay__tile-label:empty {
+            display: none;
+        }
+
         .voice-overlay__tile--active {
             border-color: #facc15;
             box-shadow: 0 18px 50px rgba(0, 0, 0, 0.65), 0 0 0 6px rgba(250, 204, 21, 0.18);
@@ -473,12 +477,13 @@
 
         .voice-overlay--recording {
             padding: 28px;
+            background: #000;
         }
 
         .recording-live-grid {
             display: grid;
             grid-template-columns: 2fr 1fr;
-            grid-template-rows: 150px 1fr;
+            grid-template-rows: auto 1fr;
             gap: 18px;
             width: 100%;
             height: 100%;
@@ -495,6 +500,8 @@
             display: flex;
             align-items: center;
             justify-content: flex-start;
+            height: 150px;
+            align-self: start;
         }
 
         .recording-live-timer:hover .recording-live-stop {
@@ -522,13 +529,48 @@
             border-radius: 16px;
             overflow: hidden;
             position: relative;
+            height: 300px;
         }
 
-        .recording-live-visual video {
+        .recording-live-visual video,
+        .recording-live-visual canvas {
             width: 100%;
             height: 100%;
             object-fit: cover;
             background: rgba(255, 255, 255, 0.05);
+        }
+
+        .recording-live-note {
+            background: transparent;
+            border-radius: 16px;
+            padding: 0;
+            height: 100%;
+            display: flex;
+        }
+
+        .recording-live-note-field {
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 20px;
+            font-family: var(--app-font, "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif);
+            resize: none;
+            width: 100%;
+            min-height: 100px;
+            outline: none;
+            padding: 16px;
+            border-radius: 16px;
+            box-shadow: 0 0 0 1px transparent;
+            line-height: 1.4;
+        }
+
+        .recording-live-note-field:focus,
+        .recording-live-note-field:focus-visible {
+            border: 2px solid white;
+        }
+
+        .recording-live-note-field::placeholder {
+            color: rgba(255, 255, 255, 0.6);
         }
 
         .recording-live-subjects {
@@ -1508,7 +1550,7 @@
                                     </select>
                                 </div>
                                 <div class="guideline-actions guideline-ai-btn">
-                                    <button id="completeBtn" type="button" class="btn">⌘ Remplir</button>
+                                    <button id="completeBtn" type="button" class="btn">⌘ Retranscrire</button>
                                 </div>
                             </div>
                             <div class="subject-tabs" id="subjectTabs"></div>
@@ -1575,7 +1617,7 @@
                             <select id="iaPromptSelect" style="min-width:160px;">
                                 <option value="system">Répondre</option>
                                 <option value="summary">Résumer</option>
-                                <option value="complete">Remplir</option>
+                                <option value="complete">Retranscrire</option>
                             </select>
                         </div>
                         <textarea id="iaTemplateEditor" rows="14"
@@ -1715,7 +1757,7 @@
             const respondBtn = document.getElementById("respondBtn");
             const respondDefaultLabel = respondBtn?.textContent || "⌘ Envoyer";
             const completeBtn = document.getElementById("completeBtn");
-            const completeDefaultLabel = completeBtn?.textContent || "⌘ Remplir";
+            const completeDefaultLabel = completeBtn?.textContent || "⌘ Retranscrire";
             const clearScenarioBtn = document.getElementById("clearScenarioBtn");
             const applyScriptBtn = document.getElementById("applyScriptBtn");
             const voiceRestoreTargets = new Map();
@@ -1840,6 +1882,11 @@
             const MIN_SUBJECT_MINUTES = 10;
             const MAX_SUBJECT_MINUTES = 90;
             const MAX_PARTICIPANTS = 8;
+            const COMPOSITE_WEBCAM_WIDTH_RATIO = 0.2;
+            const COMPOSITE_MARGIN_RATIO = 0.02;
+            const COMPOSITE_FRAME_RATE = 30;
+            const COMPOSITE_DEFAULT_WIDTH = 1280;
+            const COMPOSITE_DEFAULT_HEIGHT = 720;
             const setSpeechButtonState = isActive => {
                 const btn = speechToggleBtn || recordBtn || pauseBtn;
                 if (btn) {
@@ -1894,8 +1941,16 @@
             let recordingSubjectTitle = null;
             let recordingKeyList = null;
             let recordingScreenPreview = null;
-            let recordingWebcamPreview = null;
+            let recordingLiveNoteField = null;
             let recordingCurrentSubjectId = null;
+            let recordingPrepKeydownHandler = null;
+            let recordingLiveKeydownHandler = null;
+            let compositeCanvas = null;
+            let compositeCtx = null;
+            let compositeScreenVideo = null;
+            let compositeWebcamVideo = null;
+            let compositeAnimationFrameId = null;
+            let compositeCaptureStream = null;
             const keySentenceMarks = new Map();
             let prepCountdownTimeout = null;
 
@@ -3363,6 +3418,7 @@
                 if (!nextEnabled) {
                     stopScreenRecording();
                     releaseScreenCaptureStream();
+                    releaseCompositeRecordingResources();
                 }
                 screenCaptureEnabled = nextEnabled;
                 if (page) {
@@ -3396,6 +3452,13 @@
                         updateRecordingPrepTiles();
                         updateRecordingLiveOverlay();
                     });
+                    if (typeof window.focus === "function") {
+                        try {
+                            window.focus();
+                        } catch (err) {
+                            console.warn("Impossible de ramener le focus après capture écran", err);
+                        }
+                    }
                     return { ok: true, cancelled: false };
                 } catch (err) {
                     const cancelled = err?.name === "AbortError" || err?.name === "NotAllowedError";
@@ -3416,6 +3479,7 @@
                 } catch (err) {
                     console.warn("Arrêt capture écran", err);
                 }
+                releaseCompositeRecordingResources();
                 updateRecordingControlsState();
             }
 
@@ -3458,19 +3522,28 @@
                 const draw = () => {
                     if (!micAnalyser || !micWaveCanvas) return;
                     micAnalyser.getByteTimeDomainData(micAnalyserData);
-                    const avg = micAnalyserData.reduce((acc, val) => acc + val, 0) / micAnalyserData.length;
-                    const centered = Math.abs(avg - 128) / 128;
-                    const amplitude = Math.min(1, centered * 4);
+                    let sumSquares = 0;
+                    const length = Math.max(1, micAnalyserData.length);
+                    for (let i = 0; i < micAnalyserData.length; i++) {
+                        const normalized = (micAnalyserData[i] - 128) / 128;
+                        sumSquares += normalized * normalized;
+                    }
+                    const rms = Math.sqrt(sumSquares / length);
+                    const amplitude = Math.min(1, rms * 2.5);
                     buffer.push(amplitude);
                     if (buffer.length > maxPoints) buffer.shift();
                     ctx.clearRect(0, 0, width, height);
                     ctx.beginPath();
                     const baseline = height / 2;
                     buffer.forEach((val, idx) => {
-                        const x = (idx / Math.max(1, maxPoints - 1)) * width;
-                        const y = baseline + Math.sin((idx / maxPoints) * Math.PI * 2) * 8 + (val * 42 - 22);
-                        if (idx === 0) ctx.moveTo(x, y);
-                        else ctx.lineTo(x, y);
+                        const pointX = (idx / Math.max(1, maxPoints - 1)) * width;
+                        const waveHeight = Math.max(1, val * height * 0.35);
+                        const harmonic = Math.sin((idx / maxPoints) * Math.PI * 2);
+                        const jitterScale = Math.max(1, 6 * (1 - val));
+                        const jitter = Math.sin((idx / maxPoints) * Math.PI * 4) * jitterScale;
+                        const pointY = baseline + harmonic * waveHeight + jitter;
+                        if (idx === 0) ctx.moveTo(pointX, pointY);
+                        else ctx.lineTo(pointX, pointY);
                     });
                     ctx.strokeStyle = "#facc15";
                     ctx.lineWidth = 3;
@@ -3520,9 +3593,7 @@
                 if (webcamTileVideo) {
                     webcamTileVideo.srcObject = null;
                 }
-                if (recordingWebcamPreview) {
-                    recordingWebcamPreview.srcObject = null;
-                }
+                releaseCompositeRecordingResources();
             }
 
             async function ensureWebcamPreview() {
@@ -3563,10 +3634,155 @@
                 }
             }
 
+            function ensureCompositeResources() {
+                if (!compositeCanvas) {
+                    compositeCanvas = document.createElement("canvas");
+                    compositeCanvas.width = COMPOSITE_DEFAULT_WIDTH;
+                    compositeCanvas.height = COMPOSITE_DEFAULT_HEIGHT;
+                }
+                if (!compositeCtx && compositeCanvas) {
+                    compositeCtx = compositeCanvas.getContext("2d");
+                }
+                if (!compositeScreenVideo) {
+                    compositeScreenVideo = document.createElement("video");
+                    compositeScreenVideo.autoplay = true;
+                    compositeScreenVideo.muted = true;
+                    compositeScreenVideo.playsInline = true;
+                }
+                if (!compositeWebcamVideo) {
+                    compositeWebcamVideo = document.createElement("video");
+                    compositeWebcamVideo.autoplay = true;
+                    compositeWebcamVideo.muted = true;
+                    compositeWebcamVideo.playsInline = true;
+                }
+            }
+
+            function updateCompositeCanvasSize() {
+                if (!compositeCanvas || !compositeScreenVideo) return;
+                const nextWidth = compositeScreenVideo.videoWidth || COMPOSITE_DEFAULT_WIDTH;
+                const nextHeight = compositeScreenVideo.videoHeight || COMPOSITE_DEFAULT_HEIGHT;
+                if (!nextWidth || !nextHeight) return;
+                if (compositeCanvas.width !== nextWidth || compositeCanvas.height !== nextHeight) {
+                    compositeCanvas.width = nextWidth;
+                    compositeCanvas.height = nextHeight;
+                }
+            }
+
+            function drawCompositeFrame() {
+                if (!compositeCtx || !compositeCanvas || !compositeScreenVideo) return;
+                updateCompositeCanvasSize();
+                const { width, height } = compositeCanvas;
+                if (!width || !height) return;
+                compositeCtx.fillStyle = "#000";
+                compositeCtx.fillRect(0, 0, width, height);
+                if (compositeScreenVideo.readyState >= compositeScreenVideo.HAVE_CURRENT_DATA) {
+                    compositeCtx.drawImage(compositeScreenVideo, 0, 0, width, height);
+                }
+                if (!compositeWebcamVideo) return;
+                if (compositeWebcamVideo.readyState < compositeWebcamVideo.HAVE_CURRENT_DATA) return;
+                const overlaySize = Math.max(1, Math.round(width * COMPOSITE_WEBCAM_WIDTH_RATIO));
+                const margin = Math.max(8, Math.round(width * COMPOSITE_MARGIN_RATIO));
+                const overlayX = Math.max(margin, width - overlaySize - margin);
+                const overlayY = Math.max(margin, height - overlaySize - margin);
+                const sourceWidth = compositeWebcamVideo.videoWidth || overlaySize;
+                const sourceHeight = compositeWebcamVideo.videoHeight || overlaySize;
+                let sx = 0;
+                let sy = 0;
+                let sw = sourceWidth;
+                let sh = sourceHeight;
+                if (sourceWidth > sourceHeight) {
+                    sw = sourceHeight;
+                    sx = Math.max(0, Math.floor((sourceWidth - sourceHeight) / 2));
+                } else if (sourceHeight > sourceWidth) {
+                    sh = sourceWidth;
+                    sy = Math.max(0, Math.floor((sourceHeight - sourceWidth) / 2));
+                }
+                compositeCtx.drawImage(
+                    compositeWebcamVideo,
+                    sx,
+                    sy,
+                    sw,
+                    sh,
+                    overlayX,
+                    overlayY,
+                    overlaySize,
+                    overlaySize
+                );
+            }
+
+            function startCompositeLoop() {
+                if (compositeAnimationFrameId) return;
+                const loop = () => {
+                    drawCompositeFrame();
+                    compositeAnimationFrameId = requestAnimationFrame(loop);
+                };
+                compositeAnimationFrameId = requestAnimationFrame(loop);
+            }
+
+            function stopCompositeLoop() {
+                if (compositeAnimationFrameId) {
+                    cancelAnimationFrame(compositeAnimationFrameId);
+                    compositeAnimationFrameId = null;
+                }
+            }
+
+            function releaseCompositeRecordingResources() {
+                stopCompositeLoop();
+                if (compositeCaptureStream) {
+                    compositeCaptureStream.getTracks().forEach(track => track.stop());
+                    compositeCaptureStream = null;
+                }
+                if (compositeCtx && compositeCanvas) {
+                    compositeCtx.clearRect(0, 0, compositeCanvas.width, compositeCanvas.height);
+                }
+                if (compositeScreenVideo) {
+                    compositeScreenVideo.srcObject = null;
+                }
+                if (compositeWebcamVideo) {
+                    compositeWebcamVideo.srcObject = null;
+                }
+                if (compositeCanvas) {
+                    compositeCanvas.width = COMPOSITE_DEFAULT_WIDTH;
+                    compositeCanvas.height = COMPOSITE_DEFAULT_HEIGHT;
+                }
+            }
+
+            function createCompositeRecordingStream() {
+                if (!screenStream || !webcamStream) return null;
+                releaseCompositeRecordingResources();
+                ensureCompositeResources();
+                attachVideoStream(compositeScreenVideo, screenStream);
+                attachVideoStream(compositeWebcamVideo, webcamStream);
+                startCompositeLoop();
+                if (!compositeCanvas) return null;
+                let captureStream = null;
+                try {
+                    captureStream = compositeCanvas.captureStream(COMPOSITE_FRAME_RATE);
+                } catch (err) {
+                    console.warn("Capture composite indisponible", err);
+                    return null;
+                }
+                if (!captureStream) return null;
+                const videoTrack = captureStream.getVideoTracks()[0];
+                if (!videoTrack) {
+                    captureStream.getTracks().forEach(track => track.stop());
+                    return null;
+                }
+                compositeCaptureStream = captureStream;
+                const combined = new MediaStream();
+                combined.addTrack(videoTrack);
+                const micTrack = mediaStream?.getAudioTracks?.()[0];
+                if (micTrack) {
+                    combined.addTrack(micTrack.clone());
+                }
+                return combined;
+            }
+
             function ensureRecordingPrepOverlay() {
                 if (recordingPrepOverlay) return;
                 const overlay = document.createElement("div");
                 overlay.className = "voice-overlay voice-overlay--prep";
+                overlay.tabIndex = -1;
 
                 const ready = document.createElement("div");
                 ready.className = "voice-overlay__ready";
@@ -3635,6 +3851,8 @@
                 updateRecordingPrepTiles();
                 if (recordingPrepOverlay) {
                     recordingPrepOverlay.classList.add("visible");
+                    setRecordingPrepKeyListener(true);
+                    recordingPrepOverlay.focus();
                 }
             }
 
@@ -3642,6 +3860,7 @@
                 if (recordingPrepOverlay) {
                     recordingPrepOverlay.classList.remove("visible");
                 }
+                setRecordingPrepKeyListener(false);
                 if (recordingReadyNode) {
                     recordingReadyNode.textContent = "◉ Prêt";
                 }
@@ -3732,6 +3951,41 @@
                 updateRecordingLiveOverlay();
             }
 
+            function setRecordingPrepKeyListener(enabled) {
+                if (enabled) {
+                    if (recordingPrepKeydownHandler) return;
+                    recordingPrepKeydownHandler = event => {
+                        if (event.key !== "Escape") return;
+                        if (!recordingPrepOverlay?.classList.contains("visible")) return;
+                        event.preventDefault();
+                        closeRecordingPrepOverlay();
+                    };
+                    document.addEventListener("keydown", recordingPrepKeydownHandler);
+                } else if (recordingPrepKeydownHandler) {
+                    document.removeEventListener("keydown", recordingPrepKeydownHandler);
+                    recordingPrepKeydownHandler = null;
+                }
+            }
+
+            function setRecordingLiveKeyListener(enabled) {
+                if (enabled) {
+                    if (recordingLiveKeydownHandler) return;
+                    recordingLiveKeydownHandler = event => {
+                        if (event.key !== "Escape") return;
+                        if (!recordingActiveOverlay?.classList.contains("visible")) return;
+                        event.preventDefault();
+                        const confirmed = window.confirm("Arrêter l'enregistrement ?");
+                        if (confirmed) {
+                            pauseRecording();
+                        }
+                    };
+                    document.addEventListener("keydown", recordingLiveKeydownHandler);
+                } else if (recordingLiveKeydownHandler) {
+                    document.removeEventListener("keydown", recordingLiveKeydownHandler);
+                    recordingLiveKeydownHandler = null;
+                }
+            }
+
             async function runPrepCountdown() {
                 if (!recordingReadyNode) return true;
                 if (prepCountdownTimeout) {
@@ -3780,6 +4034,7 @@
                 if (recordingActiveOverlay) return;
                 const overlay = document.createElement("div");
                 overlay.className = "voice-overlay voice-overlay--recording";
+                overlay.tabIndex = -1;
 
                 const grid = document.createElement("div");
                 grid.className = "recording-live-grid";
@@ -3825,15 +4080,14 @@
                 keyList.className = "recording-live-keylist";
                 subjectBlock.append(subjectHeader, keyList);
 
-                const webcamBlock = document.createElement("div");
-                webcamBlock.className = "recording-live-visual";
-                const webcamVideo = document.createElement("video");
-                webcamVideo.autoplay = true;
-                webcamVideo.muted = true;
-                webcamVideo.playsInline = true;
-                webcamBlock.append(webcamVideo);
+                const noteBlock = document.createElement("div");
+                noteBlock.className = "recording-live-note";
+                const noteTextarea = document.createElement("textarea");
+                noteTextarea.className = "recording-live-note-field";
+                noteTextarea.placeholder = "Note";
+                noteBlock.append(noteTextarea);
 
-                grid.append(timerBlock, screenBlock, subjectBlock, webcamBlock);
+                grid.append(timerBlock, screenBlock, subjectBlock, noteBlock);
                 overlay.append(grid);
                 document.body.appendChild(overlay);
 
@@ -3842,13 +4096,14 @@
                 recordingSubjectTitle = subjectTitle;
                 recordingKeyList = keyList;
                 recordingScreenPreview = screenVideo;
-                recordingWebcamPreview = webcamVideo;
+                recordingLiveNoteField = noteTextarea;
             }
 
             function hideRecordingLiveOverlay() {
                 if (recordingActiveOverlay) {
                     recordingActiveOverlay.classList.remove("visible");
                 }
+                setRecordingLiveKeyListener(false);
             }
 
             function updateRecordingLiveTimer() {
@@ -3971,25 +4226,30 @@
                 setRecordingSubject(existing || subjects[0]);
             }
 
+            function getRecordingLiveVisualStream() {
+                if (screenCaptureEnabled && webcamEnabled && compositeCaptureStream) {
+                    return compositeCaptureStream;
+                }
+                if (screenCaptureEnabled && screenStream) {
+                    return screenStream;
+                }
+                if (webcamEnabled && webcamStream) {
+                    return webcamStream;
+                }
+                return null;
+            }
+
             function updateRecordingLiveOverlay() {
                 if (!recordingActiveOverlay) return;
                 updateRecordingLiveTimer();
                 if (recordingScreenPreview) {
-                    const hasScreen = screenCaptureEnabled && Boolean(screenStream);
-                    recordingScreenPreview.style.display = hasScreen ? "block" : "none";
-                    if (hasScreen) {
-                        attachVideoStream(recordingScreenPreview, screenStream);
+                    const liveStream = getRecordingLiveVisualStream();
+                    const visible = Boolean(liveStream);
+                    recordingScreenPreview.style.display = visible ? "block" : "none";
+                    if (visible) {
+                        attachVideoStream(recordingScreenPreview, liveStream);
                     } else {
                         recordingScreenPreview.srcObject = null;
-                    }
-                }
-                if (recordingWebcamPreview) {
-                    const hasCam = webcamEnabled && Boolean(webcamStream);
-                    recordingWebcamPreview.style.display = hasCam ? "block" : "none";
-                    if (hasCam) {
-                        attachVideoStream(recordingWebcamPreview, webcamStream);
-                    } else {
-                        recordingWebcamPreview.srcObject = null;
                     }
                 }
             }
@@ -4000,6 +4260,8 @@
                 updateRecordingLiveOverlay();
                 if (recordingActiveOverlay) {
                     recordingActiveOverlay.classList.add("visible");
+                    setRecordingLiveKeyListener(true);
+                    recordingActiveOverlay.focus();
                 }
             }
 
@@ -4093,6 +4355,12 @@
             }
 
             function createRecordingStream() {
+                if (screenCaptureEnabled && webcamEnabled && screenStream && webcamStream) {
+                    const compositeStream = createCompositeRecordingStream();
+                    if (compositeStream) {
+                        return compositeStream;
+                    }
+                }
                 if (screenCaptureEnabled) {
                     return createScreenRecordingStream();
                 }
@@ -5821,7 +6089,7 @@
                 if (!page) return;
                 const summaryContent = (summaryTextarea?.value || "").trim();
                 if (!summaryContent) {
-                    showToast("Ajoute un résumé avant d'exécuter ⌘ Remplir.", true);
+                    showToast("Ajoute un résumé avant d'exécuter ⌘ Retranscrire.", true);
                     return;
                 }
                 const transcript = (transcribeInput?.value || "").trim();
@@ -6573,6 +6841,26 @@
             }
 
             const isResponsiveContextMode = () => (window.innerWidth || 0) < CONTEXT_RESPONSIVE_BREAKPOINT;
+            const CONTEXT_PANEL_STATE_STORAGE_KEY = "voice-context-panel-open";
+
+            function persistContextPanelState(isOpen) {
+                try {
+                    localStorage.setItem(CONTEXT_PANEL_STATE_STORAGE_KEY, isOpen ? "1" : "0");
+                } catch (err) {
+                    console.warn("Contexte : impossible de sauvegarder l'état", err);
+                }
+            }
+
+            function getPersistedContextPanelState() {
+                try {
+                    const stored = localStorage.getItem(CONTEXT_PANEL_STATE_STORAGE_KEY);
+                    if (stored === "1") return true;
+                    if (stored === "0") return false;
+                } catch (err) {
+                    console.warn("Contexte : impossible de lire l'état", err);
+                }
+                return null;
+            }
 
             function syncContextBackdrop(show) {
                 if (!contextBackdrop) return;
@@ -6590,6 +6878,7 @@
                     appMain.classList.toggle("context-closed", !isOpen);
                 }
                 syncContextBackdrop(isOpen && isResponsiveContextMode());
+                persistContextPanelState(Boolean(isOpen));
             }
 
             function toggleContextPanel(forceOpen) {
@@ -6608,6 +6897,10 @@
 
             contextBackdrop?.addEventListener("pointerdown", () => setContextPanelOpen(false));
             window.addEventListener("resize", ensureContextPanelForBreakpoint);
+            const persistedContextPanelState = getPersistedContextPanelState();
+            if (persistedContextPanelState !== null) {
+                setContextPanelOpen(persistedContextPanelState);
+            }
 
             function closeInfoPopup() {
                 infoPopup?.classList.remove("open");
