@@ -130,8 +130,11 @@
                 align-content: stretch;
             }
 
+
+
             .app-main:not(.context-open) .summary-column {
                 height: 100%;
+                gap: 4px;
             }
 
             .app-main:not(.context-open) .summary-wrapper {
@@ -174,15 +177,6 @@
 
         .note-column {
             min-width: 550px;
-        }
-
-        .summary-column {
-            display: flex;
-            flex-direction: column;
-            gap: px;
-            min-height: 0;
-            height: 100%;
-            margin-top: 0;
         }
 
         .note-column .transcribe-wrapper {
@@ -4085,11 +4079,35 @@
                 return combined;
             }
 
+            function createWebcamRecordingStream() {
+                if (!webcamStream) return null;
+                const videoTrack = webcamStream.getVideoTracks()[0];
+                if (!videoTrack) return null;
+                const combined = new MediaStream();
+                combined.addTrack(videoTrack.clone());
+                const micTrack = mediaStream?.getAudioTracks?.()[0];
+                if (micTrack) {
+                    combined.addTrack(micTrack.clone());
+                }
+                return combined;
+            }
+
+            function createRecordingStream() {
+                if (screenCaptureEnabled) {
+                    return createScreenRecordingStream();
+                }
+                if (webcamEnabled) {
+                    return createWebcamRecordingStream();
+                }
+                return null;
+            }
+
             function startScreenRecordingSegment() {
                 stopScreenRecording();
-                const combinedStream = createScreenRecordingStream();
+                const combinedStream = createRecordingStream();
                 if (!combinedStream) {
-                    showToast("Capture d'écran indisponible.", true);
+                    const label = screenCaptureEnabled ? "Capture d'écran" : "Webcam";
+                    showToast(`${label} indisponible.`, true);
                     return false;
                 }
                 const mimeType = chooseVideoTranscodeMimeType() || "video/webm";
@@ -6388,8 +6406,8 @@
                     hideRecordingCountdownOverlay();
                     return false;
                 }
-                let shouldRecordScreen = screenCaptureEnabled;
-                if (shouldRecordScreen) {
+                let shouldRecordVideo = screenCaptureEnabled || webcamEnabled;
+                if (shouldRecordVideo && screenCaptureEnabled) {
                     const { ok: screenReady, cancelled } = await ensureScreenCapture();
                     if (!screenReady && !cancelled) {
                         applyScreenCapturePreference(false);
@@ -6397,14 +6415,16 @@
                         return false;
                     }
                     if (cancelled) {
-                        shouldRecordScreen = false;
+                        shouldRecordVideo = webcamEnabled;
                         applyScreenCapturePreference(false);
                     }
                 }
-                if (shouldRecordScreen) {
-                    const startedScreen = startScreenRecordingSegment();
-                    if (!startedScreen) {
-                        applyScreenCapturePreference(false);
+                if (shouldRecordVideo) {
+                    const startedVideo = startScreenRecordingSegment();
+                    if (!startedVideo) {
+                        if (screenCaptureEnabled) {
+                            applyScreenCapturePreference(false);
+                        }
                         hideRecordingCountdownOverlay();
                         return false;
                     }
