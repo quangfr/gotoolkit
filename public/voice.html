@@ -483,9 +483,16 @@
         .recording-live-grid {
             display: grid;
             grid-template-columns: 2fr 1fr;
-            grid-template-rows: auto 1fr;
             gap: 18px;
             width: 100%;
+            height: 100%;
+            align-items: stretch;
+        }
+
+        .recording-live-column {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
             height: 100%;
         }
 
@@ -498,30 +505,60 @@
             overflow: hidden;
             cursor: pointer;
             display: flex;
-            align-items: center;
-            justify-content: flex-start;
+            align-items: flex-start;
+            justify-content: space-between;
             height: 150px;
             align-self: start;
+            width: 100%;
         }
 
-        .recording-live-timer:hover .recording-live-stop {
-            opacity: 1;
-            transform: translateY(0);
+        .recording-live-timer__logo {
+            width: auto;
+            height: 150px;
+            object-fit: contain;
+            transition: opacity 0.2s ease;
         }
 
-        .recording-live-stop {
+        .recording-live-timer__value {
+            min-width: 0;
+            transition: opacity 0.2s ease;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            margin-left: auto;
+            height: 100%;
+            text-align: center;
+        }
+
+        .recording-live-timer__text {
+            z-index: 1;
+            width: 100%;
+        }
+
+        .recording-live-stop-label {
             position: absolute;
             inset: 0;
             display: flex;
             align-items: center;
             justify-content: center;
+            padding-right: 18px;
             font-size: 48px;
-            background: rgba(0, 0, 0, 0.45);
-            color: #f87171;
             font-weight: 800;
+            color: #f87171;
             opacity: 0;
-            transform: translateY(12px);
-            transition: opacity 0.12s ease, transform 0.12s ease;
+            pointer-events: none;
+            transition: opacity 0.12s ease;
+            z-index: 2;
+        }
+
+        .recording-live-timer__value:hover .recording-live-stop-label {
+            opacity: 1;
+        }
+
+        .recording-live-timer__value:hover .recording-live-timer__text {
+            opacity: 0.15;
         }
 
         .recording-live-visual {
@@ -546,6 +583,20 @@
             padding: 0;
             height: 100%;
             display: flex;
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .recording-live-column--left .recording-live-subjects {
+            flex: 1;
+        }
+
+        .recording-live-column--right .recording-live-visual {
+            flex: 0 0 auto;
+        }
+
+        .recording-live-column--right .recording-live-note {
+            flex: 1;
         }
 
         .recording-live-note-field {
@@ -562,6 +613,7 @@
             border-radius: 16px;
             box-shadow: 0 0 0 1px transparent;
             line-height: 1.4;
+            flex: 1;
         }
 
         .recording-live-note-field:focus,
@@ -587,8 +639,8 @@
             align-items: center;
             justify-content: space-between;
             gap: 0;
-            font-size: 40px;
-            font-weight: 800;
+            font-size: 36px;
+            font-weight: 700;
             text-align: center;
         }
 
@@ -612,24 +664,26 @@
 
         .recording-live-keylist {
             display: flex;
-            flex-direction: row;
+            flex-direction: column;
             flex-wrap: wrap;
             gap: 10px;
+            align-items: flex-start;
         }
 
         .recording-live-key {
             border: 5px solid transparent;
             border-radius: 14px;
             padding: 12px;
-            font-size: 36px;
+            font-size: 30px;
             min-height: 110px;
             background: rgba(0, 0, 0, 0.25);
             display: flex;
             align-items: center;
-            justify-content: center;
-            text-align: center;
+            justify-content: left;
+            text-align: left;
             cursor: pointer;
             transition: border-color 0.12s ease, background 0.12s ease;
+
         }
 
         .recording-live-key.status-addressed {
@@ -689,7 +743,7 @@
         }
 
         .toast {
-            z-index: 10050;
+            z-index: 12100;
         }
 
         .info-popup {
@@ -1201,7 +1255,7 @@
             pointer-events: none;
             transition: opacity 0.2s ease, transform 0.2s ease;
             transform: translateY(10px);
-            z-index: 11000;
+            z-index: 12100;
         }
 
         .toast.visible {
@@ -1942,6 +1996,8 @@
             let recordingKeyList = null;
             let recordingScreenPreview = null;
             let recordingLiveNoteField = null;
+            let recordingVisualBlock = null;
+            let skipRecordingCompleteModal = false;
             let recordingCurrentSubjectId = null;
             let recordingPrepKeydownHandler = null;
             let recordingLiveKeydownHandler = null;
@@ -4041,12 +4097,20 @@
 
                 const timerBlock = document.createElement("div");
                 timerBlock.className = "recording-live-timer";
+                const logoImg = document.createElement("img");
+                logoImg.className = "recording-live-timer__logo";
+                logoImg.src = "/logo_inverted.gif";
+                logoImg.alt = "GoToolkit logo";
+                const timerValue = document.createElement("div");
+                timerValue.className = "recording-live-timer__value";
                 const timerText = document.createElement("div");
+                timerText.className = "recording-live-timer__text";
                 timerText.textContent = "00:00";
-                const stopCover = document.createElement("div");
-                stopCover.className = "recording-live-stop";
-                stopCover.textContent = "■ Arrêt";
-                timerBlock.append(timerText, stopCover);
+                const stopLabel = document.createElement("div");
+                stopLabel.className = "recording-live-stop-label";
+                stopLabel.textContent = "■ Arrêt";
+                timerValue.append(timerText, stopLabel);
+                timerBlock.append(logoImg, timerValue);
                 timerBlock.addEventListener("click", () => {
                     pauseRecording();
                     hideRecordingLiveOverlay();
@@ -4054,6 +4118,7 @@
 
                 const screenBlock = document.createElement("div");
                 screenBlock.className = "recording-live-visual";
+                recordingVisualBlock = screenBlock;
                 const screenVideo = document.createElement("video");
                 screenVideo.autoplay = true;
                 screenVideo.muted = true;
@@ -4087,7 +4152,13 @@
                 noteTextarea.placeholder = "Note";
                 noteBlock.append(noteTextarea);
 
-                grid.append(timerBlock, screenBlock, subjectBlock, noteBlock);
+                const leftColumn = document.createElement("div");
+                leftColumn.className = "recording-live-column recording-live-column--left";
+                const rightColumn = document.createElement("div");
+                rightColumn.className = "recording-live-column recording-live-column--right";
+                leftColumn.append(timerBlock, subjectBlock);
+                rightColumn.append(screenBlock, noteBlock);
+                grid.append(leftColumn, rightColumn);
                 overlay.append(grid);
                 document.body.appendChild(overlay);
 
@@ -4111,12 +4182,33 @@
                 const total = Math.max(0, Math.floor(recordingElapsedSec || 0));
                 const m = String(Math.floor(total / 60)).padStart(2, "0");
                 const s = String(total % 60).padStart(2, "0");
-                recordingTimerText.textContent = `${m}:${s}`;
+                const guidelinesDurationLabel = guidelineDuration ? formatGuidelineDurationClock(guidelineDuration.value) : "";
+                const guidelinesSuffix = guidelinesDurationLabel ? ` / ${guidelinesDurationLabel}` : "";
+                recordingTimerText.textContent = `${m}:${s}${guidelinesSuffix}`;
             }
 
             function parseMinutes(value, fallback = 0) {
                 const num = Number(value);
                 return Number.isFinite(num) ? num : fallback;
+            }
+
+            function formatMinutesLabel(value) {
+                const minutes = Number(value);
+                return Number.isFinite(minutes) && minutes > 0 ? `${Math.round(minutes)}'` : "";
+            }
+
+            function formatGuidelineDurationClock(value) {
+                const minutes = Number(value);
+                if (!Number.isFinite(minutes) || minutes <= 0) return "";
+                const totalSeconds = Math.max(0, Math.round(minutes * 60));
+                const hours = Math.floor(totalSeconds / 3600);
+                const mins = Math.floor((totalSeconds % 3600) / 60);
+                const secs = totalSeconds % 60;
+                const mm = String(mins).padStart(2, "0");
+                const ss = String(secs).padStart(2, "0");
+                return hours > 0
+                    ? `${hours}:${mm}:${ss}`
+                    : `${mm}:${ss}`;
             }
 
             function getSortedSubjects() {
@@ -4177,12 +4269,13 @@
                     const startMin = parseMinutes(subject?.timeframe?.start, 0);
                     const endMin = parseMinutes(subject?.timeframe?.end, startMin);
                     const duration = Math.max(0, endMin - startMin);
-                    const durationLabel = duration > 0 ? ` ${Math.round(duration)}'` : "";
+                    const durationLabel = formatMinutesLabel(duration);
                     const subjects = getSortedSubjects();
                     const total = subjects.length;
                     const idx = total ? subjects.findIndex(s => s.id === recordingCurrentSubjectId) : -1;
                     const positionLabel = total ? `${idx >= 0 ? idx + 1 : 1}/${total}` : "0/0";
-                    recordingSubjectTitle.textContent = `${positionLabel} — ${title}${durationLabel}`;
+                    const durationSuffix = durationLabel ? ` (${durationLabel})` : "";
+                    recordingSubjectTitle.textContent = `${positionLabel} — ${title}${durationSuffix}`;
                 }
                 const page = getActivePage();
                 if (page) {
@@ -4242,11 +4335,14 @@
             function updateRecordingLiveOverlay() {
                 if (!recordingActiveOverlay) return;
                 updateRecordingLiveTimer();
+                const liveStream = getRecordingLiveVisualStream();
+                const hasLiveVisual = Boolean(liveStream);
+                if (recordingVisualBlock) {
+                    recordingVisualBlock.style.display = hasLiveVisual ? "block" : "none";
+                }
                 if (recordingScreenPreview) {
-                    const liveStream = getRecordingLiveVisualStream();
-                    const visible = Boolean(liveStream);
-                    recordingScreenPreview.style.display = visible ? "block" : "none";
-                    if (visible) {
+                    recordingScreenPreview.style.display = hasLiveVisual ? "block" : "none";
+                    if (hasLiveVisual) {
                         attachVideoStream(recordingScreenPreview, liveStream);
                     } else {
                         recordingScreenPreview.srcObject = null;
@@ -6749,6 +6845,8 @@
             }
 
             function pauseRecording() {
+                const shouldShowVideoModal = !skipRecordingCompleteModal;
+                skipRecordingCompleteModal = false;
                 if (!audioRecordingActive && !recognitionActive) return;
                 const hadRecognition = recognitionActive;
                 recognitionPaused = hadRecognition;
@@ -6761,7 +6859,7 @@
                 setRecordingVisual(false);
                 recordingStartedAt = null;
                 recordingBaseElapsedSec = recordingElapsedSec;
-                if (videoBlob && screenCaptureEnabled) {
+                if (videoBlob && screenCaptureEnabled && shouldShowVideoModal) {
                     try {
                         openVoiceVideoModal();
                     } catch (err) {
@@ -7410,6 +7508,24 @@
             shareLinkField?.addEventListener("focus", ev => ev.target.select());
             shareLinkField?.addEventListener("click", ev => ev.target.select());
 
+            function isRecordingSessionActive() {
+                return Boolean(audioRecordingActive || screenRecordingActive);
+            }
+
+            function handleRecordingBeforeUnload(event) {
+                if (!isRecordingSessionActive()) return;
+                const warning = "Fermer cette page interrompra l'enregistrement en cours.";
+                event.preventDefault();
+                event.returnValue = warning;
+                return warning;
+            }
+
+            function handleRecordingUnload() {
+                if (!isRecordingSessionActive()) return;
+                skipRecordingCompleteModal = true;
+                pauseRecording();
+            }
+
             window.addEventListener("keydown", ev => {
                 if (ev.key === "Escape") {
                     closeMenus();
@@ -7425,6 +7541,8 @@
                     }
                 }
             });
+            window.addEventListener("beforeunload", handleRecordingBeforeUnload);
+            window.addEventListener("unload", handleRecordingUnload);
 
             // Init
             syncIaEditor(activeIaPrompt);
