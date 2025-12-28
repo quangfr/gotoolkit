@@ -1941,6 +1941,8 @@
             const COMPOSITE_FRAME_RATE = 20;
             const COMPOSITE_DEFAULT_WIDTH = 960;
             const COMPOSITE_DEFAULT_HEIGHT = 540;
+            const COMPOSITE_MAX_WIDTH = 1280;
+            const COMPOSITE_MAX_HEIGHT = 720;
             const setSpeechButtonState = isActive => {
                 const btn = speechToggleBtn || recordBtn || pauseBtn;
                 if (btn) {
@@ -2006,6 +2008,7 @@
             let compositeScreenVideo = null;
             let compositeWebcamVideo = null;
             let compositeAnimationFrameId = null;
+            let lastCompositeFrameTime = 0;
             let compositeCaptureStream = null;
             const keySentenceMarks = new Map();
             let prepCountdownTimeout = null;
@@ -3717,10 +3720,24 @@
                 }
             }
 
+            function clampCompositeSize(width, height) {
+                const safeWidth = width || COMPOSITE_DEFAULT_WIDTH;
+                const safeHeight = height || COMPOSITE_DEFAULT_HEIGHT;
+                const aspect = safeWidth && safeHeight ? safeWidth / safeHeight : 16 / 9;
+                let clampedWidth = Math.min(safeWidth, COMPOSITE_MAX_WIDTH);
+                let clampedHeight = Math.round(clampedWidth / aspect);
+                if (clampedHeight > COMPOSITE_MAX_HEIGHT) {
+                    clampedHeight = COMPOSITE_MAX_HEIGHT;
+                    clampedWidth = Math.round(clampedHeight * aspect);
+                }
+                return { width: clampedWidth, height: clampedHeight };
+            }
+
             function updateCompositeCanvasSize() {
                 if (!compositeCanvas || !compositeScreenVideo) return;
-                const nextWidth = compositeScreenVideo.videoWidth || COMPOSITE_DEFAULT_WIDTH;
-                const nextHeight = compositeScreenVideo.videoHeight || COMPOSITE_DEFAULT_HEIGHT;
+                const sourceWidth = compositeScreenVideo.videoWidth || COMPOSITE_DEFAULT_WIDTH;
+                const sourceHeight = compositeScreenVideo.videoHeight || COMPOSITE_DEFAULT_HEIGHT;
+                const { width: nextWidth, height: nextHeight } = clampCompositeSize(sourceWidth, sourceHeight);
                 if (!nextWidth || !nextHeight) return;
                 if (compositeCanvas.width !== nextWidth || compositeCanvas.height !== nextHeight) {
                     compositeCanvas.width = nextWidth;
@@ -3772,8 +3789,12 @@
 
             function startCompositeLoop() {
                 if (compositeAnimationFrameId) return;
-                const loop = () => {
-                    drawCompositeFrame();
+                const frameInterval = 1000 / COMPOSITE_FRAME_RATE;
+                const loop = timestamp => {
+                    if (!lastCompositeFrameTime || (timestamp - lastCompositeFrameTime) >= frameInterval) {
+                        lastCompositeFrameTime = timestamp;
+                        drawCompositeFrame();
+                    }
                     compositeAnimationFrameId = requestAnimationFrame(loop);
                 };
                 compositeAnimationFrameId = requestAnimationFrame(loop);
@@ -3784,6 +3805,7 @@
                     cancelAnimationFrame(compositeAnimationFrameId);
                     compositeAnimationFrameId = null;
                 }
+                lastCompositeFrameTime = 0;
             }
 
             function releaseCompositeRecordingResources() {
@@ -4324,8 +4346,16 @@
             }
 
             function getRecordingLiveVisualStream() {
-                if (screenCaptureEnabled && webcamEnabled && compositeCaptureStream) {
-                    return compositeCaptureStream;
+                if (screenCaptureEnabled && webcamEnabled) {
+                    if (!compositeCaptureStream) {
+                        const compositeStream = createCompositeRecordingStream();
+                        if (compositeStream) {
+                            return compositeStream;
+                        }
+                    }
+                    if (compositeCaptureStream) {
+                        return compositeCaptureStream;
+                    }
                 }
                 if (screenCaptureEnabled && screenStream) {
                     return screenStream;
