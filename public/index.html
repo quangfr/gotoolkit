@@ -927,6 +927,178 @@
             line-height: 1.2;
         }
 
+        .release-notes-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.45);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 1200;
+        }
+
+        .release-notes-modal.open {
+            display: flex;
+        }
+
+        .release-notes-modal__dialog {
+            width: min(720px, 100%);
+            max-height: 90vh;
+            border-radius: 18px;
+            padding: 24px;
+            background: var(--surface);
+            box-shadow: 0 24px 50px rgba(15, 23, 42, 0.35);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .release-notes-header {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+        }
+
+        .release-notes-header h2 {
+            margin: 0;
+            font-size: 1.2rem;
+        }
+
+        .release-notes-close {
+            border: none;
+            background: transparent;
+            font-size: 1.4rem;
+            line-height: 1;
+            cursor: pointer;
+            padding: 4px 6px;
+            color: var(--muted);
+        }
+
+        .release-notes-close:hover,
+        .release-notes-close:focus-visible {
+            color: var(--text);
+        }
+
+        .release-notes-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .release-note {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-size: 0.9rem;
+        }
+
+        .release-note-date {
+            font-size: 0.72rem;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .release-note-text {
+            margin: 0;
+            font-size: 0.92rem;
+            color: var(--text);
+            line-height: 1.4;
+        }
+
+        .release-notes-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .release-tab {
+            flex: 1;
+            border-radius: 8px;
+            border: 1px solid transparent;
+            padding: 8px 10px;
+            font-size: 0.8rem;
+            background: transparent;
+            color: var(--muted);
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .release-tab--active {
+            border-color: var(--border-strong);
+        }
+
+        .release-tab:focus,
+        .release-tab:focus-visible {
+            background: transparent;
+            outline: none;
+            box-shadow: none;
+        }
+
+        .release-notes-content {
+            display: none;
+        }
+
+        .release-notes-content--active {
+            display: block;
+        }
+
+        .release-roadmap-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .release-roadmap-item {
+            border: 1px solid rgba(42, 122, 87, 0.15);
+            border-radius: 10px;
+            padding: 10px 12px;
+            background: #f8fbfa;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .release-roadmap-title {
+            font-size: 0.85rem;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .release-roadmap-text {
+            margin: 0;
+            color: var(--text);
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .release-roadmap-text ul {
+            margin: 6px 0 0 16px;
+            padding-left: 0;
+        }
+
+        .release-roadmap-tags {
+            display: block;
+            margin-top: 6px;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .release-roadmap-tag {
+            background: #e9ecef;
+            color: #495057;
+            font-size: 0.75rem;
+            padding: 3px 8px;
+            border-radius: 999px;
+            letter-spacing: 0;
+            display: inline-block;
+        }
+
         @media (max-width: 720px) {
             body {
                 padding: 8px;
@@ -960,7 +1132,7 @@
             </div>
             <h1>Go-Toolkit</h1>
             <p>La boîte à outils des Product Owners</p>
-            <span class="hero-version">v2025.12.28</span>
+            <span class="hero-version label-link" id="releaseNotesTrigger" tabindex="0">v2025.12.28</span>
 
             <div class="hero-meta">
                 <button id="openFeedbackBtn" class="feedback-button" type="button">☄ Feedback</button>
@@ -1497,6 +1669,134 @@
         </div>
     </div>
 
+    <div class="release-notes-modal" id="releaseNotesModal" aria-hidden="true" role="dialog" aria-modal="true"
+        aria-labelledby="releaseNotesTitle">
+        <div class="release-notes-modal__dialog">
+            <div class="release-notes-header">
+                <div>
+                    <h2 id="releaseNotesTitle">Actualités Go-Toolkit</h2>
+                </div>
+                <button type="button" class="release-notes-close" id="releaseNotesClose"
+                    aria-label="Fermer les notes de version">×</button>
+            </div>
+            <div class="release-notes-tabs">
+                <button class="release-tab release-tab--active" data-target="releaseNotesContent">Notes de
+                    version</button>
+                <button class="release-tab" data-target="roadmapContent">Feuille de route</button>
+            </div>
+            <div class="release-notes-content release-notes-content--active" id="releaseNotesContent">
+                <div class="release-notes-list">
+                    <div class="release-note">
+                        <span class="release-note-date">2025-12-28</span>
+                        <p class="release-note-text">Module Voice : audio, webcam et partage d’écran. Transcription
+                            vocale AssemblyAI intégrée. Notes de version et feuille de route.</p>
+                    </div>
+                    <div class="release-note">
+                        <span class="release-note-date">2025-12-27</span>
+                        <p class="release-note-text">Ajout du fournisseur IA OpenRouter et clarifications des conditions
+                            d’usage.</p>
+                    </div>
+                    <div class="release-note">
+                        <span class="release-note-date">2025-12-24</span>
+                        <p class="release-note-text">Uniformisation des retours utilisateurs dans tous les modules et
+                            gestion de la liste.</p>
+                    </div>
+                    <div class="release-note">
+                        <span class="release-note-date">2025-12-20</span>
+                        <p class="release-note-text">Nouveaux templates Grid pour la cartographie des données et la
+                            structure arborescente.</p>
+                    </div>
+                    <div class="release-note">
+                        <span class="release-note-date">2025-12-17</span>
+                        <p class="release-note-text">Lancement du module Grid avec génération de données et pilote IA
+                            WebLLM.</p>
+                    </div>
+                    <div class="release-note">
+                        <span class="release-note-date">2025-12-16</span>
+                        <p class="release-note-text">Brouillons et stockage local pour préserver les documents en cours.
+                        </p>
+                    </div>
+                    <div class="release-note">
+                        <span class="release-note-date">2025-12-08</span>
+                        <p class="release-note-text">Templates plus product, harmonisation de l’interface, isolation des
+                            prompts et module Feedback.</p>
+                    </div>
+                    <div class="release-note">
+                        <span class="release-note-date">2025-12-04</span>
+                        <p class="release-note-text">Module Draw : diagrammes de classes, de flux et séquentiels avec
+                            Excalidraw.</p>
+                    </div>
+                    <div class="release-note">
+                        <span class="release-note-date">2025-11-30</span>
+                        <p class="release-note-text">Module Timeline : repères, actions et groupes avec Vis-timeline.
+                        </p>
+                    </div>
+                    <div class="release-note">
+                        <span class="release-note-date">2025-11-24</span>
+                        <p class="release-note-text">Homepage avec partage de liens et intégration Cloudflare +
+                            Firebase.</p>
+                    </div>
+                    <div class="release-note">
+                        <span class="release-note-date">2025-11-22</span>
+                        <p class="release-note-text">Initialisation du module Canvas et intégration OpenAI.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="release-notes-content" id="roadmapContent">
+                <div class="release-roadmap-list">
+                    <div class="release-roadmap-item">
+                        <span class="release-roadmap-title">Compte utilisateur</span>
+                        <div class="release-roadmap-tags">
+                            <span class="release-roadmap-tag">Facile</span>
+                            <span class="release-roadmap-tag">À planifier</span>
+                        </div>
+                        <ul class="release-roadmap-text">
+                            <li>Authentification et quota d'utilisation par utilisateur</li>
+                            <li>Accès à l'espace de partage en ligne sur d’autres
+                                appareils</li>
+                        </ul>
+
+                    </div>
+                    <div class="release-roadmap-item">
+                        <span class="release-roadmap-title">Base documentaire IA</span>
+                        <div class="release-roadmap-tags">
+                            <span class="release-roadmap-tag">Moyen</span>
+                            <span class="release-roadmap-tag">À étudier</span>
+                        </div>
+                        <ul class="release-roadmap-text">
+                            <li>Enrichissement RAG et intégration à un moteur IA</li>
+                            <li>Demandes d'information et génération de documents à partir des données</li>
+                            <li>Import de fichiers (PDF, Word, Excel, PowerPoint) et autres connecteurs</li>
+                        </ul>
+                    </div>
+                    <div class="release-roadmap-item">
+                        <span class="release-roadmap-title">Chatbot d'assistance</span>
+                        <div class="release-roadmap-tags">
+                            <span class="release-roadmap-tag">Moyen</span>
+                            <span class="release-roadmap-tag">À étudier</span>
+                        </div>
+                        <ul class="release-roadmap-text">
+                            <li>Chatbot pour discuter des outils et méthodes Go-Live</li>
+                            <li>Aide à la génération de prompts</li>
+
+                        </ul>
+                    </div>
+                    <div class="release-roadmap-item">
+                        <span class="release-roadmap-title">Commande IA contextualisé</span>
+                        <div class="release-roadmap-tags">
+                            <span class="release-roadmap-tag">Complexe</span>
+                            <span class="release-roadmap-tag">À étudier</span>
+                        </div>
+                        <ul class="release-roadmap-text">
+                            <li>RAG des documents de la bibliothèque locale</li>
+                            <li>Ajout de documents en contexte dans les modules</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         window.GO_TOOLKIT_SHARE_API_URL =
             window.GO_TOOLKIT_SHARE_API_URL || "https://share.gotoolkit.workers.dev/";
@@ -1547,6 +1847,22 @@
                 if (event.key !== "Escape" && event.key !== "Esc") return;
                 closeModalById("superpowerModal");
                 window.goToolkitNexusModal?.close?.();
+            });
+        })();
+    </script>
+    <script>
+        (function () {
+            const tabs = document.querySelectorAll(".release-tab");
+            const contents = document.querySelectorAll(".release-notes-content");
+            if (!tabs.length) return;
+            tabs.forEach(tab => {
+                tab.addEventListener("click", () => {
+                    tabs.forEach(btn => btn.classList.remove("release-tab--active"));
+                    contents.forEach(content => content.classList.remove("release-notes-content--active"));
+                    tab.classList.add("release-tab--active");
+                    const target = document.getElementById(tab.dataset.target);
+                    if (target) target.classList.add("release-notes-content--active");
+                });
             });
         })();
     </script>
@@ -4091,6 +4407,43 @@
                     // ignore
                 }
                 window.open(TARGET_URL, "_blank", "noopener");
+            });
+        })();
+    </script>
+    <script>
+        (function () {
+            const trigger = document.getElementById("releaseNotesTrigger");
+            const modal = document.getElementById("releaseNotesModal");
+            const closeBtn = document.getElementById("releaseNotesClose");
+            if (!modal) return;
+            const openReleaseNotes = () => {
+                modal.classList.add("open");
+                modal.setAttribute("aria-hidden", "false");
+            };
+            const closeReleaseNotes = () => {
+                modal.classList.remove("open");
+                modal.setAttribute("aria-hidden", "true");
+                trigger?.focus();
+            };
+            trigger?.addEventListener("click", openReleaseNotes);
+            trigger?.addEventListener("keydown", event => {
+                if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    openReleaseNotes();
+                }
+            });
+            closeBtn?.addEventListener("click", closeReleaseNotes);
+            modal.addEventListener("click", event => {
+                if (event.target === modal) {
+                    closeReleaseNotes();
+                }
+            });
+            document.addEventListener("keydown", event => {
+                if (event.key !== "Escape" && event.key !== "Esc") return;
+                if (modal.classList.contains("open")) {
+                    closeReleaseNotes();
+                    event.stopPropagation();
+                }
             });
         })();
     </script>

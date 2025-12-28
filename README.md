@@ -4,38 +4,38 @@ Boîte à outils 100 % navigateur pour produire vite des livrables partageables 
 
 ## Release notes
 
-2025-12-28
-Voice module with audio, webcam and screen-sharing. Voice transcription with AssemblyAI
+2025-12-28  
+Module Voice : audio, webcam et partage d’écran. Transcription AssemblyAI intégrée.
 
-2025-12-27
-AI provider OpenRouter. Clear terms for use.
+2025-12-27  
+Ajout du fournisseur IA OpenRouter et clarifications des conditions d’usage.
 
-2025-12-24
-Feedback across modules and list.
+2025-12-24  
+Uniformisation des retours utilisateurs dans tous les modules et gestion de la liste.
 
-2025-12-20
-Grid templates : data mapping and structure
+2025-12-20  
+Nouveaux templates Grid pour la cartographie des données et la structure arborescente.
 
-2025-12-17
-Grid module with data generation. Exprimental local AI engine WebLLM
+2025-12-17  
+Lancement du module Grid avec génération de données et pilote IA WebLLM.
 
-2025-12-16
-Drafts documents and local storage.
+2025-12-16  
+Brouillons et stockage local pour préserver les documents en cours.
 
-2025-12-08
-More product-like templates and prompts and UI harmonization. Feedback module.
+2025-12-08  
+Templates plus product. Harmonisation de l’interface. Isolation des prompts . Module Feedback.
 
-2025-12-04
-Draw module with class, flow and sequential diagrams. Excalidraw integration.
+2025-12-04  
+Module Draw : diagrammes de classes, de flux et séquentiels avec Excalidraw.
 
-2025-11-30
-Timeline module with markers, actions and groups. Vis-timeline integration.
+2025-11-30  
+Module Timeline : repères, actions et groupes sur Vis-timeline.
 
-2025-11-24
-Homepage with link shares. Cloudflare and Firebase integration.
+2025-11-24  
+Homepage avec partage de liens, intégration Cloudflare + Firebase.
 
-2025-11-22
-Canvas module intialization. OpenAI integration.
+2025-11-22  
+Initialisation du module Canvas + intégration OpenAI.
 
 ## Ce qui compose le projet
 - Site statique dans `public/` : modules HTML/JS/CSS écrits à la main + assets vendoriés. Ouvrable directement ou via un serveur local.
