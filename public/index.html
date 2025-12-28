@@ -1349,7 +1349,7 @@
                         <label>
                             <span class="label-title">Moteur IA</span>
                             <select id="aiBackendSelect">
-                                <option value="openrouter">OpenRouter (recommandé)</option>
+                                <option value="openrouter">OpenRouter (défaut)</option>
                                 <option value="openai">OpenAI</option>
                                 <option value="webllm">WebLLM </option>
                             </select>
@@ -1377,8 +1377,7 @@
                                     </div>
                                 </div>
                                 <span class="label-subtitle">Accès privé payant sans rétention des
-                                    données (~1ct/100 requêtes). Réponses plus rapides
-                                    (~2s)</span>
+                                    données (~1ct/100 requêtes)</span>
                                 <input id="iaApiKeyInput" type="password" placeholder="sk-..."
                                     autocomplete="current-password" />
                             </label>
@@ -1418,7 +1417,7 @@
                                         <span class="ia-model-label" id="openrouterModelLabel"
                                             aria-live="polite"></span><br>
                                         <span class="label-subtitle">Accès privé payant sans rétention des
-                                            données (~1-5ct/100 requêtes)</span>
+                                            données (~1ct/100 requêtes)</span>
                                     </div>
                                     <div style="display:flex; gap:0.35rem;">
                                         <button id="openrouterVerifyBtn" type="button"
@@ -2596,7 +2595,7 @@
             if (accessType === "private") {
                 baseLabel = "Accès privé";
             } else if (accessType === "shared") {
-                baseLabel = "Accès partagé";
+                baseLabel = "Clé invalide. Accès partagé";
             }
             if (!baseLabel) {
                 openrouterModelLabelEl.textContent = "";
@@ -3201,9 +3200,9 @@
                     }
                 }
                 if (showToasts) {
-                    showToast("Accès partagé indisponible (" + message + ")", true);
+                    showToast("Clé invalide (" + message + ")", true);
                 }
-                setOpenAiStatusLabel("Accès partagé indisponible", { state: "error", sticky: true });
+                setOpenAiStatusLabel("Clé invalide", { state: "error", sticky: true });
                 return false;
             }
         }
