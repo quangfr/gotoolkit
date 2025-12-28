@@ -1349,9 +1349,9 @@
                         <label>
                             <span class="label-title">Moteur IA</span>
                             <select id="aiBackendSelect">
-                                <option value="openrouter">OpenRouter (défaut)</option>
+                                <option value="openrouter">OpenRouter (recommandé)</option>
                                 <option value="openai">OpenAI</option>
-                                <option value="webllm">WebLLM </option>
+                                <option value="webllm">WebLLM local (expérimental))</option>
                             </select>
                         </label>
                     </div>
@@ -2391,7 +2391,8 @@
         const IA_STATUS_ICONS = {
             ready: "🗹",
             verifying: "",
-            error: "✕"
+            error: "✕",
+            warning: "⚠"
         };
         const STATUS_SPINNER_FRAMES = ["◴", "◷", "◶", "◵"];
         const statusSpinnerTimers = new WeakMap();
@@ -2449,6 +2450,35 @@
             } else {
                 el.classList.remove("ia-status--error");
             }
+        }
+
+        function setAssemblyAiStatusLabel(label = "", options = {}) {
+            if (!assemblyAiStatusEl) return;
+            stopStatusSpinner(assemblyAiStatusEl);
+            const iconState = options.state;
+            const icon = iconState && IA_STATUS_ICONS[iconState] ? IA_STATUS_ICONS[iconState] : "";
+            const trimmedLabel = (label || "").trim();
+            const combined =
+                icon && trimmedLabel
+                    ? `${icon} ${trimmedLabel}`
+                    : icon
+                        ? icon
+                        : trimmedLabel;
+            if (iconState === "error") {
+                assemblyAiStatusEl.classList.add("ia-status--error");
+            } else {
+                assemblyAiStatusEl.classList.remove("ia-status--error");
+            }
+            assemblyAiStatusEl.textContent = combined;
+            assemblyAiStatusEl.setAttribute("aria-hidden", combined ? "false" : "true");
+        }
+
+        function resolveAssemblyAiProxyBase() {
+            const tokenUrl = (window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL || "https://assemblyai.gotoolkit.workers.dev/token")
+                .replace(/\/$/, "");
+            const defaultProxy = tokenUrl.replace(/\/token$/, "");
+            const proxyUrl = (window.GO_TOOLKIT_ASSEMBLYAI_PROXY_URL || defaultProxy).replace(/\/$/, "");
+            return proxyUrl;
         }
 
         function formatLatencyMs(value) {
@@ -2511,6 +2541,7 @@
 
         const openAiLatencies = { private: null, shared: null };
         const openAiRateLimits = { private: null, shared: null };
+        let openAiProxyVerified = false;
 
         function setOpenAiStatusLabel(label, options = {}) {
             if (!openaiStatusEl) return;
@@ -2606,6 +2637,9 @@
                 labelWithLatency,
                 options.rateLimitRemaining
             );
+            if (accessType === "shared") {
+                updateStatusIcon(openrouterStatusEl, "warning");
+            }
         }
 
         if (typeof window.GoToolkitForceOpenRouterProxy !== "boolean") {
@@ -2676,7 +2710,7 @@
                 const latencyMs = Math.max(0, getTimestampMs() - startTime);
                 openrouterLatencies.shared = latencyMs;
                 openrouterRateLimits.shared = rateLimitRemaining;
-                updateStatusIcon(openrouterStatusEl, "ready");
+                updateStatusIcon(openrouterStatusEl, "warning");
                 updateOpenRouterModelLabel("shared", { latencyMs, rateLimitRemaining });
                 if (showToasts) {
                     showToast("Accès partagé OpenRouter prêt (" + modelLabel + ")");
@@ -3180,6 +3214,7 @@
                 if (showToasts) {
                     showToast("Connexion partagée prête");
                 }
+                openAiProxyVerified = true;
                 const latencyMs = Math.max(0, getTimestampMs() - startTime);
                 const rateLimitRemaining = getRateLimitRemaining(response.headers);
                 openAiLatencies.shared = latencyMs;
@@ -3193,6 +3228,7 @@
             } catch (err) {
                 console.warn("OpenAI proxy test failed", err);
                 var message = (err && err.message) || String(err) || "erreur inconnue";
+                openAiProxyVerified = false;
                 if (isOpenAiProxyCorsError(err)) {
                     var corsMessage = getOpenAiProxyCorsMessage(endpoint);
                     if (corsMessage) {
@@ -3238,7 +3274,47 @@
                 if (showToasts) {
                     showToast("Échec de la connexion AssemblyAI (" + message + ")", true);
                 }
-                updateStatusIcon(assemblyAiStatusEl, "error");
+            }
+            return await testAssemblyAiProxyConnection({ showToasts });
+        }
+
+        async function testAssemblyAiProxyConnection({ showToasts = true } = {}) {
+            var apiKey = (assemblyAiKeyInput?.value || "").trim();
+            if (!apiKey) {
+                setAssemblyAiStatusLabel("Accès partagé indisponible", { state: "error" });
+                if (showToasts) {
+                    showToast("Clé AssemblyAI requise pour tester la connexion.", true);
+                }
+                return false;
+            }
+            const proxyBase = resolveAssemblyAiProxyBase();
+            if (!proxyBase) {
+                setAssemblyAiStatusLabel("Accès partagé indisponible", { state: "error" });
+                if (showToasts) {
+                    showToast("Proxy AssemblyAI indisponible", true);
+                }
+                return false;
+            }
+            updateStatusIcon(assemblyAiStatusEl, "verifying");
+            try {
+                const response = await fetch(proxyBase + "/transcript", {
+                    method: "GET",
+                    headers: {
+                        Authorization: apiKey
+                    }
+                });
+                if (!response.ok) {
+                    throw new Error("HTTP " + response.status + " " + (response.statusText || ""));
+                }
+                setAssemblyAiStatusLabel("Clé invalide. Accès partagé", { state: "warning" });
+                return true;
+            } catch (err) {
+                console.warn("AssemblyAI proxy test failed", err);
+                var message = (err && err.message) || String(err) || "erreur inconnue";
+                if (showToasts) {
+                    showToast("Accès partagé indisponible (" + message + ")", true);
+                }
+                setAssemblyAiStatusLabel("Accès partagé indisponible", { state: "error" });
                 return false;
             }
         }
@@ -3914,7 +3990,7 @@
                         latencyMs: openAiLatencies.private,
                         rateLimitRemaining: openAiRateLimits.private
                     });
-                } else if (backend?.type === "proxy") {
+                } else if (backend?.type === "proxy" && openAiProxyVerified) {
                     setOpenAiStatusLabel("Accès partagé", {
                         state: "ready",
                         latencyMs: openAiLatencies.shared,
@@ -3931,7 +4007,11 @@
             }
             if (openrouterStatusEl) {
                 const ready = typeof backend?.type === "string" && backend.type.startsWith("openrouter");
-                updateStatusIcon(openrouterStatusEl, ready ? "ready" : null);
+                let openrouterIconState = ready ? "ready" : null;
+                if (openrouterIconState && (!openrouterHasValidPrivateKey || backend?.type === "openrouter-proxy")) {
+                    openrouterIconState = "warning";
+                }
+                updateStatusIcon(openrouterStatusEl, openrouterIconState);
                 openrouterStatusEl.setAttribute("aria-hidden", ready ? "false" : "true");
                 if (ready) {
                     const accessType =
