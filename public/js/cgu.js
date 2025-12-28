@@ -12,7 +12,7 @@
                 <button id="closeNexusBtn" class="btn" type="button" aria-label="Fermer" ${CLOSE_ATTR}>✕</button>
             </header>
             <div class="nexus-content">
-                <p><strong>⌬ Présentation</strong><br>
+                <p>
 Go-Toolkit est un outil professionnel développé par Savane Go Live destiné à l’animation d’ateliers, au cadrage et à la documentation produit,
 ainsi qu’à la collaboration entre équipes métier et techniques.</p>
 
@@ -27,15 +27,14 @@ au fonctionnement du service. Elles peuvent être perdues en cas de nettoyage ou
 <p><strong>⌘ Services tiers et intelligence artificielle</strong><br>
 Certaines fonctionnalités reposent sur des API tierces (ex. IA, transcription, reconnaissance vocale).
 Lorsque vous les déclenchez, seules les données strictement nécessaires sont transmises aux prestataires concernés.
-Ne transmettez jamais de données sensibles.</p>
+Ne transmettez pas de données confidentielles.</p>
 
 <p><strong>◉ Reconnaissance et transcription vocale</strong><br>
 La dictée et la transcription peuvent impliquer un traitement externe de l’audio par des fournisseurs spécialisés.
 Informez les participants et recueillez leur consentement si nécessaire.</p>
 
 <p><strong>⟐ Accès privé ou partagé avec quota</strong><br>
-Vous pouvez utiliser vos propres clés API (accès privé) ou un accès partagé avec quota journalier.
-Dans tous les cas, les données transmises sont limitées à la fonctionnalité demandée.</p>
+Vous pouvez choisir entre l'accès privé (sans rétention de données avec vos propres clés API) ou l'accès partagé par défaut (gratuit limité). Dans ce dernier cas, le fournisseur tiers pourra utiliser vos données pour améliorer ses services dont l'entrainement de ses modèles IA.</p>
 
 <p><strong>⧉ Partage et cloud</strong><br>
 Les contenus peuvent être partagés via des liens et stockés dans le cloud.

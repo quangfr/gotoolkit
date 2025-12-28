@@ -15,8 +15,8 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Sora:wght@400;500;600&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles/app-shell.css?v=2025.12.27.2">
-    <link rel="stylesheet" href="styles/cgu.css?v=2025.12.27.2">
+    <link rel="stylesheet" href="styles/app-shell.css?v=2025.12.28">
+    <link rel="stylesheet" href="styles/cgu.css?v=2025.12.28">
     <style>
         :root {
             --bg: #f5f2eb;
@@ -466,7 +466,7 @@
         }
 
         .superpower-modal {
-            width: min(640px, 90vw);
+            width: min(900px, 90vw);
             background: #fff;
             border-radius: 18px;
             box-shadow: 0 22px 45px rgba(15, 23, 42, 0.25);
@@ -476,7 +476,7 @@
             gap: 10px;
             max-height: 80vh;
             overflow-y: auto;
-            font-size: 0.78rem;
+            font-size: 0.72rem;
         }
 
         .superpower-modal header {
@@ -549,9 +549,9 @@
         }
 
         .superpower-tag--cockpit {
-            border-color: #b43a3f;
-            background: rgba(180, 58, 63, 0.12);
-            color: #b43a3f;
+            border-color: #2563eb;
+            background: rgba(37, 99, 235, 0.12);
+            color: #1d4ed8;
         }
 
         .superpower-tag--satellite {
@@ -959,8 +959,8 @@
                 <img src="logo.gif" alt="Logo Go-Toolkit">
             </div>
             <h1>Go-Toolkit</h1>
-            <p>La boîte à outils des super Product Owners</p>
-            <span class="hero-version">v2025.12.27.2</span>
+            <p>La boîte à outils des Product Owners</p>
+            <span class="hero-version">v2025.12.28</span>
 
             <div class="hero-meta">
                 <button id="openFeedbackBtn" class="feedback-button" type="button">☄ Feedback</button>
@@ -973,35 +973,35 @@
                 <p class="section-label superpower-label label-link" id="superpowerToggle">⚡︎ Super-pouvoirs</p>
             </div>
             <div class="launcher-grid">
-                <a class="launcher" href="canvas.html?v=2025.12.27.2">
+                <a class="launcher" href="canvas.html?v=2025.12.28">
                     <span class="launcher-emoji">◍</span>
                     <span class="launcher-name">
                         Canvas (50 Nuances)
                         <div class="launcher-desc">Varie ton vocabulaire</div>
                     </span>
                 </a>
-                <a class="launcher" href="timeline.html?v=2025.12.27.2">
+                <a class="launcher" href="timeline.html?v=2025.12.28">
                     <span class="launcher-emoji">⇥</span>
                     <span class="launcher-name">
                         Timeline (Goal Digger)
                         <div class="launcher-desc">Trace ta feuille de route</div>
                     </span>
                 </a>
-                <a class="launcher" href="draw.html?v=2025.12.27.2">
+                <a class="launcher" href="draw.html?v=2025.12.28">
                     <span class="launcher-emoji">◇</span>
                     <span class="launcher-name">
                         Draw (Indélébile)
                         <div class="launcher-desc">Modélise tes idées</div>
                     </span>
                 </a>
-                <a class="launcher" href="voice.html?v=2025.12.27.2">
+                <a class="launcher" href="voice.html?v=2025.12.28">
                     <span class="launcher-emoji">▷</span>
                     <span class="launcher-name">
                         Voice (Tuto Tarantino)
                         <div class="launcher-desc">Pilote tes réunions</div>
                     </span>
                 </a>
-                <a class="launcher" href="grid.html?v=2025.12.27.2">
+                <a class="launcher" href="grid.html?v=2025.12.28">
                     <span class="launcher-emoji">▦</span>
                     <span class="launcher-name">
                         Grid (Le Cardinal)
@@ -1019,7 +1019,7 @@
                 <div id="pinnedGallery" class="share-gallery" aria-live="polite"></div>
             </div>
             <div class="section-title-row">
-                <p class="section-label nexus-label label-link" data-open-nexus-modal>☍ Espace de partage</p>
+                <p class="section-label nexus-label label-link" data-open-nexus-modal>☍ Espace en ligne</p>
             </div>
 
             <div id="shareGallery" class="share-gallery" aria-live="polite"></div>
@@ -1027,7 +1027,7 @@
             <p id="shareEmpty" class="share-helper" hidden>Aucun document enregistré en ligne.</p>
             <p id="shareError" class="share-helper share-helper-error" hidden></p>
             <div class="section-title-row" style="margin-top: 12px;">
-                <p class="section-label">⬠ Ma bibliothèque</p>
+                <p class="section-label nexus-label label-link" data-open-nexus-modal>⬠ Bibliothèque locale</p>
             </div>
             <div id="savedGallery" class="share-gallery" aria-live="polite"></div>
             <p id="savedEmpty" class="share-helper" hidden>Aucun document enregistré localement.</p>
@@ -1336,7 +1336,8 @@
                                         class="btn-secondary">Vérifier</button>
                                 </div>
                             </div>
-                            <input id="assemblyAiKeyInput" type="password" placeholder="sk-..." autocomplete="current-password" />
+                            <input id="assemblyAiKeyInput" type="password" placeholder="sk-..."
+                                autocomplete="current-password" />
                             <span class="label-subtitle">
                                 Accès privé pour la transcription automatique (~15ct/h. Crédit offert de 50€
                                 à l'inscription)
@@ -1375,7 +1376,8 @@
                                     </div>
                                 </div>
                                 <span class="label-subtitle">Requêtes plus rapides</span>
-                                <input id="iaApiKeyInput" type="password" placeholder="sk-..." autocomplete="current-password" />
+                                <input id="iaApiKeyInput" type="password" placeholder="sk-..."
+                                    autocomplete="current-password" />
                             </label>
                         </div>
 
@@ -1420,7 +1422,8 @@
                                             class="btn-secondary">Vérifier</button>
                                     </div>
                                 </div>
-                                <input id="openrouterApiKeyInput" type="password" placeholder="or-..." autocomplete="current-password" />
+                                <input id="openrouterApiKeyInput" type="password" placeholder="or-..."
+                                    autocomplete="current-password" />
                             </label>
                         </div>
                         <div id="openrouterExtras" style="display:none; margin-top:8px;">
@@ -1501,7 +1504,7 @@
     <script src="js/idb-doc-store.js"></script>
     <script src="js/storage-service.js"></script>
     <script src="js/shared-ui.js"></script>
-    <script src="js/cgu.js?v=2025.12.27.2"></script>
+    <script src="js/cgu.js?v=2025.12.28"></script>
     <script src="js/share-worker-client.js"></script>
     <script src="js/share-history.js"></script>
     <script src="js/capsule-drafts.js"></script>
@@ -1561,11 +1564,11 @@
             const capsuleDrafts = window.goToolkitCapsuleDrafts;
 
             const APP_DEFINITIONS = {
-                nuances: { emoji: "◍", name: "Canvas", page: "canvas.html?v=2025.12.27.2", collection: "slides" },
-                plan: { emoji: "⇥", name: "Timeline", page: "timeline.html?v=2025.12.27.2", collection: "timelines" },
-                draw: { emoji: "◇", name: "Draw", page: "draw.html?v=2025.12.27.2", collection: "diagrams" },
-                grid: { emoji: "▦", name: "Grid", page: "grid.html?v=2025.12.27.2", collection: "grids" },
-                voice: { emoji: "▷", name: "Voice", page: "voice.html?v=2025.12.27.2", collection: "voices" }
+                nuances: { emoji: "◍", name: "Canvas", page: "canvas.html?v=2025.12.28", collection: "slides" },
+                plan: { emoji: "⇥", name: "Timeline", page: "timeline.html?v=2025.12.28", collection: "timelines" },
+                draw: { emoji: "◇", name: "Draw", page: "draw.html?v=2025.12.28", collection: "diagrams" },
+                grid: { emoji: "▦", name: "Grid", page: "grid.html?v=2025.12.28", collection: "grids" },
+                voice: { emoji: "▷", name: "Voice", page: "voice.html?v=2025.12.28", collection: "voices" }
             };
             const GRID_TEMPLATE_LABELS = {
                 "tree-structure": "Structure de données",
@@ -2623,19 +2626,19 @@
         }
 
         async function verifyOpenRouterDirect(apiKey, { showToasts } = {}) {
-                const startTime = getTimestampMs();
-                const { modelLabel, rateLimitRemaining } = await testOpenRouterChatCompletion({ apiKey, useProxy: false });
-                const latencyMs = Math.max(0, getTimestampMs() - startTime);
-                openrouterLatencies.private = latencyMs;
-                openrouterRateLimits.private = rateLimitRemaining;
-                window.GoToolkitForceOpenRouterProxy = false;
-                openrouterHasValidPrivateKey = true;
-                updateOpenRouterExtrasVisibility();
-                updateStatusIcon(openrouterStatusEl, "ready");
-                updateOpenRouterModelLabel("private", { latencyMs, rateLimitRemaining });
-                if (showToasts) {
-                    showToast("Accès privé OpenRouter prêt (" + modelLabel + ")");
-                }
+            const startTime = getTimestampMs();
+            const { modelLabel, rateLimitRemaining } = await testOpenRouterChatCompletion({ apiKey, useProxy: false });
+            const latencyMs = Math.max(0, getTimestampMs() - startTime);
+            openrouterLatencies.private = latencyMs;
+            openrouterRateLimits.private = rateLimitRemaining;
+            window.GoToolkitForceOpenRouterProxy = false;
+            openrouterHasValidPrivateKey = true;
+            updateOpenRouterExtrasVisibility();
+            updateStatusIcon(openrouterStatusEl, "ready");
+            updateOpenRouterModelLabel("private", { latencyMs, rateLimitRemaining });
+            if (showToasts) {
+                showToast("Accès privé OpenRouter prêt (" + modelLabel + ")");
+            }
             return true;
         }
 
