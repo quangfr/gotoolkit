@@ -127,7 +127,7 @@
         }
 
         .app-main:not(.context-open) .voice-main-body {
-            grid-template-columns: minmax(0, 1fr) 500px;
+            grid-template-columns: minmax(0, 1fr) 450px;
         }
 
         .panel {
@@ -150,7 +150,7 @@
         @media (min-width: 1400px) {
             .app-main:not(.context-open) .panel-columns {
                 display: grid;
-                grid-template-columns: minmax(550px, 1fr) minmax(0, 1fr);
+                grid-template-columns: minmax(450px, 1fr) minmax(0, 1fr);
                 gap: 12px;
                 flex: 1 1 0;
                 min-height: 0;
@@ -203,7 +203,7 @@
         }
 
         .note-column {
-            min-width: 550px;
+            min-width: 400px;
         }
 
         .note-column .transcribe-wrapper {
@@ -345,6 +345,10 @@
         .audio-download-option:disabled {
             opacity: 0.5;
             cursor: not-allowed;
+        }
+
+        #audioDownloadBtn {
+            margin-right: 4px;
         }
 
         .audio-play-btn,
@@ -1199,6 +1203,12 @@
             gap: 6px;
             background: var(--surface-soft);
             font-size: 13px;
+            cursor: pointer;
+            transition: border-color 0.2s ease;
+        }
+
+        .guideline-item:hover {
+            border-color: var(--app-border-strong);
         }
 
         .guideline-actions {
@@ -1567,16 +1577,34 @@
                                         <option value="transcript-ia">Transcript audio</option>
                                         <option value="transcript-video">Transcript vidéo</option>
                                     </select>
-                                    <button id="audioClearBtn" type="button" class="audio-download-btn"
-                                        title="Supprimer l'enregistrement"
-                                        aria-label="Supprimer l'enregistrement">⊘</button>
+                                    <div class="audio-download-right">
+
+
+                                        <div class="audio-download">
+                                            <button id="audioDownloadBtn" type="button" class="btn"
+                                                title="Télécharger l'enregistrement" aria-label="Télécharger">🡇
+                                            </button>
+                                            <div id="audioDownloadMenu" class="audio-download-menu" aria-hidden="true">
+                                                <button type="button" id="audioDownloadAudio"
+                                                    class="audio-download-option">Fichier Audio
+                                                    .webm</button>
+                                                <button type="button" id="audioDownloadVideo"
+                                                    class="audio-download-option">Fichier Vidéo
+                                                    .webm</button>
+                                            </div>
+                                        </div>
+
+                                        <button id="audioClearBtn" type="button" class="btn"
+                                            title="Supprimer l'enregistrement"
+                                            aria-label="Supprimer l'enregistrement">⊘</button>
+                                    </div>
                                 </div>
                                 <div class="recording-toolbar">
                                     <div class="audio-controls">
                                         <div class="audio-controls-left">
                                             <button id="audioImportBtn" type="button" class="audio-import-btn"
                                                 title="Importer un fichier audio"
-                                                aria-label="Importer un fichier audio">♪ Fichier</button>
+                                                aria-label="Importer un fichier audio">🡅</button>
                                             <button id="audioPlayBtn" type="button" class="btn-primary"
                                                 title="Démarrer l'enregistrement"
                                                 aria-label="Démarrer l'enregistrement">◉ Enregistrer</button>
@@ -1592,21 +1620,7 @@
 
                                     </div>
 
-                                    <div class="audio-download-right">
-                                        <div class="audio-download">
-                                            <button id="audioDownloadBtn" type="button" class="btn"
-                                                title="Télécharger l'enregistrement" aria-label="Télécharger">🡇
-                                            </button>
-                                            <div id="audioDownloadMenu" class="audio-download-menu" aria-hidden="true">
-                                                <button type="button" id="audioDownloadAudio"
-                                                    class="audio-download-option">Fichier Audio
-                                                    .webm</button>
-                                                <button type="button" id="audioDownloadVideo"
-                                                    class="audio-download-option">Fichier Vidéo
-                                                    .webm</button>
-                                            </div>
-                                        </div>
-                                    </div>
+
                                 </div>
                                 <div class="transcribe-wrapper speech-field-wrapper">
                                     <textarea id="transcribeInput" class="transcribe-area" placeholder=""
@@ -3042,7 +3056,7 @@
                                 title.addEventListener("blur", handleBlur);
                                 title.addEventListener("keydown", handleKeyDown);
                             };
-                            title.addEventListener("dblclick", (event) => {
+                            title.addEventListener("click", (event) => {
                                 event.stopPropagation();
                                 startInlineEdit();
                             });
