@@ -1139,6 +1139,14 @@ classDiagram
 Contexte utilisateur : {{scenario_prompt}}
 Objectifs de la réunion : {{template_text}}
 
+RÈGLES MÉTIER :
+- subjects contient exactement 3 éléments
+- keySentences contient exactement 3 phrases
+- Les timeframes doivent couvrir toute la durée sans chevauchement
+- Le dernier timeframe.end = duration
+- Le contenu doit être adapté à une réunion professionnelle
+- Ne pas mettre d'autres participants à part soi si non spécifié par l'utilisateur
+
 ⚠️ SORTIE STRICTE
 - Réponds UNIQUEMENT avec un objet JSON valide
 - Aucune phrase explicative, aucun markdown, aucun commentaire
@@ -1173,15 +1181,9 @@ STRUCTURE ATTENDUE :
       }
     }
   ]
-}
+}`
 
-RÈGLES MÉTIER :
-- subjects contient exactement 3 éléments
-- keySentences contient exactement 3 phrases
-- Les timeframes doivent couvrir toute la durée sans chevauchement
-- Le dernier timeframe.end = duration
-- Le contenu doit être adapté à une réunion professionnelle
-- Ne pas mettre d'autres participants à part soi si non spécifié par l'utilisateur`
+
         ;
 
     const voiceEvaluatePrompt = `Analyse {{transcript_content}} et indique si chaque phrase clé est exprimée directement, indirectement ou absente.
