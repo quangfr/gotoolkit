@@ -2481,6 +2481,28 @@
             return `${label} • Disponible : ${normalized}`;
         }
 
+        function isOpenAiProxyCorsError(err) {
+            if (!err) return false;
+            const message =
+                typeof err?.message === "string"
+                    ? err.message
+                    : err != null
+                        ? String(err)
+                        : "";
+            if (!message) {
+                return false;
+            }
+            return /Failed to fetch/i.test(message) || /NetworkError/i.test(message);
+        }
+
+        function getOpenAiProxyCorsMessage(endpoint) {
+            if (!endpoint) return null;
+            if (typeof window !== "object" || !window?.location?.origin) {
+                return null;
+            }
+            return `Access to fetch at '${endpoint}' from origin '${window.location.origin}' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.`;
+        }
+
         function getTimestampMs() {
             if (typeof performance === "object" && typeof performance.now === "function") {
                 return performance.now();
@@ -3172,6 +3194,12 @@
             } catch (err) {
                 console.warn("OpenAI proxy test failed", err);
                 var message = (err && err.message) || String(err) || "erreur inconnue";
+                if (isOpenAiProxyCorsError(err)) {
+                    var corsMessage = getOpenAiProxyCorsMessage(endpoint);
+                    if (corsMessage) {
+                        message = corsMessage;
+                    }
+                }
                 if (showToasts) {
                     showToast("Accès partagé indisponible (" + message + ")", true);
                 }
