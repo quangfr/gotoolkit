@@ -1938,9 +1938,9 @@
             const MAX_PARTICIPANTS = 8;
             const COMPOSITE_WEBCAM_WIDTH_RATIO = 0.2;
             const COMPOSITE_MARGIN_RATIO = 0.02;
-            const COMPOSITE_FRAME_RATE = 30;
-            const COMPOSITE_DEFAULT_WIDTH = 1280;
-            const COMPOSITE_DEFAULT_HEIGHT = 720;
+            const COMPOSITE_FRAME_RATE = 20;
+            const COMPOSITE_DEFAULT_WIDTH = 960;
+            const COMPOSITE_DEFAULT_HEIGHT = 540;
             const setSpeechButtonState = isActive => {
                 const btn = speechToggleBtn || recordBtn || pauseBtn;
                 if (btn) {
@@ -2411,17 +2411,21 @@
                 }
             }
 
-            function updateRecordingUi() {
+            function refreshRecordingCounters() {
                 updateTranscriptMeta();
-                updateNoteModeOptions();
                 const page = getActivePage();
                 const total = page?.duration || 0;
                 const activeRange = subjectRanges?.querySelector('input[type="range"]');
                 if (activeRange) {
                     updateRangeVisual(activeRange, total);
                 }
-                updateRecordingControlsState();
                 updateRecordingLiveOverlay();
+            }
+
+            function updateRecordingUi() {
+                refreshRecordingCounters();
+                updateNoteModeOptions();
+                updateRecordingControlsState();
             }
 
             function updateRecordingControlsState() {
@@ -6808,8 +6812,7 @@
                     if (!recordingStartedAt) return;
                     const sessionElapsed = Math.floor((Date.now() - recordingStartedAt) / 1000);
                     recordingElapsedSec = Math.max(recordingElapsedSec, recordingBaseElapsedSec + Math.max(0, sessionElapsed));
-                    updateRecordingUi();
-                    updateRecordingLiveOverlay();
+                    refreshRecordingCounters();
                 }, 1000);
                 if (transcribeGhost) {
                     updateGhostOverlay("");
