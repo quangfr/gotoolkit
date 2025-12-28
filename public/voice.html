@@ -428,8 +428,8 @@
         }
 
         .voice-overlay__tile {
-            width: 150px;
-            height: 150px;
+            width: 300px;
+            height: 300px;
             border-radius: 16px;
             border: 2px solid rgba(255, 255, 255, 0.4);
             background: radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.18), rgba(0, 0, 0, 0.5));
@@ -485,14 +485,13 @@
         .recording-live-grid {
             display: grid;
             grid-template-columns: 2fr 1fr;
-            grid-template-rows: 200px 1fr;
+            grid-template-rows: 150px 1fr;
             gap: 18px;
             width: 100%;
             height: 100%;
         }
 
         .recording-live-timer {
-            background: rgba(255, 255, 255, 0.06);
             border-radius: 16px;
             padding: 16px 20px;
             font-size: 32px;
@@ -540,7 +539,6 @@
         }
 
         .recording-live-subjects {
-            background: rgba(255, 255, 255, 0.05);
             border-radius: 16px;
             padding: 14px 16px;
             display: flex;
@@ -561,7 +559,7 @@
 
         .recording-live-arrow {
             border: none;
-            background: rgba(255, 255, 255, 0.12);
+            background: transparent;
             color: #fff;
             border-radius: 12px;
             font-size: 28px;
@@ -571,8 +569,9 @@
         }
 
         .recording-live-keylist {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
             gap: 10px;
         }
 
@@ -580,7 +579,7 @@
             border: 5px solid transparent;
             border-radius: 14px;
             padding: 12px;
-            font-size: 40px;
+            font-size: 36px;
             min-height: 110px;
             background: rgba(0, 0, 0, 0.25);
             display: flex;
@@ -604,13 +603,14 @@
         @media (max-width: 1100px) {
             .recording-live-grid {
                 grid-template-columns: 1fr;
-                grid-template-rows: 200px minmax(220px, 1fr) minmax(120px, 1fr);
+                grid-template-rows: 150px minmax(150px, 1fr) minmax(120px, 1fr);
             }
 
             .voice-overlay__tiles {
                 height: 58vh;
             }
         }
+
         .audio-progress::-webkit-slider-thumb {
             appearance: none;
             width: 14px;
@@ -3572,10 +3572,6 @@
                     void handleReadyCountdown();
                 });
 
-                const caption = document.createElement("div");
-                caption.className = "voice-overlay__caption";
-                caption.textContent = "Active ou désactive une source en cliquant sur la vignette.";
-
                 const tilesRow = document.createElement("div");
                 tilesRow.className = "voice-overlay__tiles";
 
@@ -3852,30 +3848,19 @@
                 recordingTimerText.textContent = `${m}:${s}`;
             }
 
+            function parseMinutes(value, fallback = 0) {
+                const num = Number(value);
+                return Number.isFinite(num) ? num : fallback;
+            }
+
             function getSortedSubjects() {
                 const page = getActivePage();
                 if (!page || !Array.isArray(page.subjects)) return [];
                 return [...page.subjects].sort((a, b) => {
-                    const aStart = Number.isFinite(a?.timeframe?.start) ? a.timeframe.start : 0;
-                    const bStart = Number.isFinite(b?.timeframe?.start) ? b.timeframe.start : 0;
+                    const aStart = parseMinutes(a?.timeframe?.start, 0);
+                    const bStart = parseMinutes(b?.timeframe?.start, 0);
                     return aStart - bStart;
                 });
-            }
-
-            function findSubjectForElapsed(seconds = 0) {
-                const subjects = getSortedSubjects();
-                if (!subjects.length) return null;
-                const elapsedMinutes = seconds / 60;
-                let current = subjects[0];
-                for (const subject of subjects) {
-                    const start = Number.isFinite(subject?.timeframe?.start) ? subject.timeframe.start : 0;
-                    if (elapsedMinutes >= start) {
-                        current = subject;
-                    } else {
-                        break;
-                    }
-                }
-                return current;
             }
 
             function applyKeyStatusClass(el, status) {
@@ -3922,24 +3907,18 @@
             function setRecordingSubject(subject) {
                 recordingCurrentSubjectId = subject?.id || null;
                 if (recordingSubjectTitle) {
-                    recordingSubjectTitle.textContent = subject?.title || "Sujet";
+                    const title = subject?.title || "Sujet";
+                    const startMin = parseMinutes(subject?.timeframe?.start, 0);
+                    const endMin = parseMinutes(subject?.timeframe?.end, startMin);
+                    const duration = Math.max(0, endMin - startMin);
+                    const durationLabel = duration > 0 ? ` (${Math.round(duration)}")` : "";
+                    recordingSubjectTitle.textContent = `${title}${durationLabel}`;
                 }
                 const page = getActivePage();
                 if (page) {
                     page.activeSubjectId = recordingCurrentSubjectId;
                 }
                 renderRecordingKeys(subject);
-            }
-
-            function updateRecordingSubjectFromElapsed() {
-                const subject = findSubjectForElapsed(recordingElapsedSec || 0);
-                if (!subject) {
-                    setRecordingSubject(null);
-                    return;
-                }
-                if (subject.id !== recordingCurrentSubjectId) {
-                    setRecordingSubject(subject);
-                }
             }
 
             function navigateRecordingSubject(offset = 1) {
@@ -3950,10 +3929,22 @@
                 setRecordingSubject(subjects[nextIndex]);
             }
 
+            function setInitialRecordingSubject() {
+                const subjects = getSortedSubjects();
+                if (!subjects.length) {
+                    setRecordingSubject(null);
+                    return;
+                }
+                const page = getActivePage();
+                const existing = page?.activeSubjectId
+                    ? subjects.find(s => s.id === page.activeSubjectId)
+                    : null;
+                setRecordingSubject(existing || subjects[0]);
+            }
+
             function updateRecordingLiveOverlay() {
                 if (!recordingActiveOverlay) return;
                 updateRecordingLiveTimer();
-                updateRecordingSubjectFromElapsed();
                 if (recordingScreenPreview) {
                     const hasScreen = screenCaptureEnabled && Boolean(screenStream);
                     recordingScreenPreview.style.display = hasScreen ? "block" : "none";
@@ -3976,6 +3967,7 @@
 
             function showRecordingLiveOverlay() {
                 ensureRecordingLiveOverlay();
+                setInitialRecordingSubject();
                 updateRecordingLiveOverlay();
                 if (recordingActiveOverlay) {
                     recordingActiveOverlay.classList.add("visible");
