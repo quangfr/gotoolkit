@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="fr">
 
-	<head>
-	    <meta charset="UTF-8" />
-	    <title>Canvas | Go-Toolkit</title>
-	    <link rel="stylesheet" href="styles/app-shell.css?v=2025.12.27.2">
-	    <link rel="stylesheet" href="styles/cgu.css?v=2025.12.27.2">
-	    <style>
+<head>
+    <meta charset="UTF-8" />
+    <title>Canvas | Go-Toolkit</title>
+    <link rel="stylesheet" href="styles/app-shell.css?v=2025.12.27.2">
+    <link rel="stylesheet" href="styles/cgu.css?v=2025.12.27.2">
+    <style>
         :root {
             --app-bg: #f3f4f6;
             --app-border: #cdd4ed;
@@ -1735,10 +1735,10 @@
                     <button id="navSwitcherBtn" class="nav-switch-btn" type="button" aria-haspopup="true"
                         aria-expanded="false">◍ Canvas ▾</button>
                     <div id="navSwitcherMenu" class="nav-switch-menu" role="menu">
-	                        <a class="nav-switch-link" href="grid.html?v=2025.12.27.2" role="menuitem">▦ Grid</a>
-	                        <a class="nav-switch-link" href="timeline.html?v=2025.12.27.2" role="menuitem">⇥ Timeline</a>
-	                        <a class="nav-switch-link" href="draw.html?v=2025.12.27.2" role="menuitem">◇ Draw</a>
-	                        <a class="nav-switch-link" href="voice.html?v=2025.12.27.2" role="menuitem">▷ Voice</a>
+                        <a class="nav-switch-link" href="grid.html?v=2025.12.27.2" role="menuitem">▦ Grid</a>
+                        <a class="nav-switch-link" href="timeline.html?v=2025.12.27.2" role="menuitem">⇥ Timeline</a>
+                        <a class="nav-switch-link" href="draw.html?v=2025.12.27.2" role="menuitem">◇ Draw</a>
+                        <a class="nav-switch-link" href="voice.html?v=2025.12.27.2" role="menuitem">▷ Voice</a>
                     </div>
                 </div>
 
@@ -1756,7 +1756,8 @@
                         title="⊞ Modèles">⊞ Modèles</button>
                     <button id="gtContextModalTrigger" class="btn" type="button" aria-label="Ouvrir Contexte"
                         title="⌘ Agent">⌘ Agent</button>
-                    <button id="gtPromptModalTrigger" class="btn" type="button" aria-label="Prompt" title="⌬ Prompt">⌬ Prompt</button>
+                    <button id="gtPromptModalTrigger" class="btn" type="button" aria-label="Prompt" title="⌬ Prompt">⌬
+                        Prompt</button>
 
                     <button id="textStyleBtn" class="btn" type="button" aria-label="Affichage" title="Affichage">◯
                         Affichage</button>
@@ -1804,7 +1805,7 @@
                             <button id="exportPptxBtn" type="button" class="menu-panel-btn">▭ Powerpoint</button>
                             <button id="exportTextBtn" type="button" class="menu-panel-btn">¶ Texte</button>
                             <button id="exportPngBtn" type="button" class="menu-panel-btn">◩ Image</button>
-	                            <button id="infoButton" type="button" class="menu-panel-btn">⎉ À propos</button>
+                            <button id="infoButton" type="button" class="menu-panel-btn">⎉ À propos</button>
                         </div>
                     </div>
                 </div>
@@ -1816,16 +1817,16 @@
             </div>
         </div>
 
-	        <div id="infoPopup" class="info-popup" role="dialog" aria-live="polite">
-	            <img src="logo.gif" alt="Logo Go-Toolkit">
-	            <strong>Module Canvas (50 Nuances de Vrai)</strong>
-	            <span>Version 2025.12.27.2</span>
-	            <span>Usage réservé à Savane Consulting.</span>
-	            <div class="info-actions">
-	                <button id="updateAppBtn" type="button" class="update-btn">Mettre à jour</button>
-	                <button type="button" class="secondary" data-open-nexus-modal>Mentions légales</button>
-	            </div>
-	        </div>
+        <div id="infoPopup" class="info-popup" role="dialog" aria-live="polite">
+            <img src="logo.gif" alt="Logo Go-Toolkit">
+            <strong>Module Canvas (50 Nuances de Vrai)</strong>
+            <span>Version 2025.12.27.2</span>
+            <span>Usage réservé à Savane Consulting.</span>
+            <div class="info-actions">
+                <button id="updateAppBtn" type="button" class="update-btn">Mettre à jour</button>
+                <button type="button" class="secondary" data-open-nexus-modal>Mentions légales</button>
+            </div>
+        </div>
 
         <div class="app-main">
             <div class="slides-container">
@@ -1865,7 +1866,8 @@
                     <div class="scenario-section">
                         <div class="scenario-header-row">
                             <label>Commande</label>
-                            <button class="btn" id="clearSectionsBtn" type="button" aria-label="Vider les sections">⊘</button>
+                            <button class="btn" id="clearSectionsBtn" type="button"
+                                aria-label="Vider les sections">⊘</button>
                             <button class="btn-primary" id="generateFullSlideBtn" type="button"
                                 aria-label="Générer toutes les sections et la synthèse">⌘
                                 Générer</button>
@@ -1892,7 +1894,8 @@
         <div id="errorToast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
     </div>
 
-    <div class="modal-overlay gt-prompt-modal" id="gtPromptModal" role="dialog" aria-modal="true" aria-labelledby="gtPromptModalTitle">
+    <div class="modal-overlay gt-prompt-modal" id="gtPromptModal" role="dialog" aria-modal="true"
+        aria-labelledby="gtPromptModalTitle">
         <div class="modal">
             <div class="modal-header">
                 <h3 id="gtPromptModalTitle" title="⌬ Prompt">⌬ Prompt</h3>
@@ -1931,14 +1934,16 @@
         </div>
     </div>
 
-    <div class="modal-overlay gt-template-modal" id="gtTemplateModal" role="dialog" aria-modal="true" aria-labelledby="gtTemplateModalTitle">
+    <div class="modal-overlay gt-template-modal" id="gtTemplateModal" role="dialog" aria-modal="true"
+        aria-labelledby="gtTemplateModalTitle">
         <div class="modal gt-template-modal__dialog">
             <div class="modal-header">
                 <h3 id="gtTemplateModalTitle" title="⊞ Modèles">⊞ Modèles</h3>
                 <button class="modal-close" data-close="gtTemplateModal">×</button>
             </div>
             <div class="modal-panel">
-                <div class="gt-template-modal__list" id="gtTemplateModalList" role="radiogroup" aria-label="Modèles disponibles">
+                <div class="gt-template-modal__list" id="gtTemplateModalList" role="radiogroup"
+                    aria-label="Modèles disponibles">
                 </div>
             </div>
             <div class="modal-footer">
@@ -2007,14 +2012,14 @@
             }
         })();
     </script>
-	    <script src="js/idb-doc-store.js"></script>
-	    <script src="js/storage-service.js"></script>
-	    <script src="js/shared-ui.js"></script>
-	    <script src="js/cgu.js?v=2025.12.27.2"></script>
-		    <script src="js/prompt.js?v=2025.12.27.2"></script>
-	    <script src="js/share-worker-client.js"></script>
-	    <script src="js/share-history.js"></script>
-	    <script src="js/capsule-drafts.js"></script>
+    <script src="js/idb-doc-store.js"></script>
+    <script src="js/storage-service.js"></script>
+    <script src="js/shared-ui.js"></script>
+    <script src="js/cgu.js?v=2025.12.27.2"></script>
+    <script src="js/prompt.js?v=2025.12.27.2"></script>
+    <script src="js/share-worker-client.js"></script>
+    <script src="js/share-history.js"></script>
+    <script src="js/capsule-drafts.js"></script>
     <script src="js/ia-config.js"></script>
     <script src="js/ia-client.js"></script>
     <script src="js/template-criteria.js"></script>
@@ -2231,6 +2236,7 @@
         const slideContextLink = document.getElementById("slideContextLink");
         const navSwitcherBtn = document.getElementById("navSwitcherBtn");
         const navSwitcherMenu = document.getElementById("navSwitcherMenu");
+        const PLACEHOLDER_COOLDOWN_DURATION = 30;
         const addTabBtn = document.getElementById("addTabBtn");
         const deleteTabBtn = document.getElementById("deleteTabBtn");
         const restoreStructureBtn = document.getElementById("restoreStructureBtn");
@@ -2240,11 +2246,11 @@
         ensureButtonBaseLabel(adviceBtn);
         const canvasGenerateCountdown =
             window.GoToolkitSharedUI &&
-            typeof window.GoToolkitSharedUI.createActionCountdown === "function"
+                typeof window.GoToolkitSharedUI.createActionCountdown === "function"
                 ? window.GoToolkitSharedUI.createActionCountdown(
-                      { element: generateFullSlideBtn, defaultLabel: generateFullSlideBaseLabel },
-                      { duration: PLACEHOLDER_COOLDOWN_DURATION }
-                  )
+                    { element: generateFullSlideBtn, defaultLabel: generateFullSlideBaseLabel },
+                    { duration: PLACEHOLDER_COOLDOWN_DURATION }
+                )
                 : null;
         const clearSectionsBtn = document.getElementById("clearSectionsBtn");
         function updateCanvasClearButtonState() {
@@ -3247,8 +3253,8 @@
             };
             return acc;
         }, {});
-        const PLACEHOLDER_COOLDOWN_DURATION = 30;
         let suggestionCooldownTimer = null;
+
         let isGeneratingSuggestions = false;
         let isGeneratingAdvice = false;
         let activeIaAbortController = null;
