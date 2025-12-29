@@ -1982,6 +1982,7 @@
             const RECORDING_PANEL_DEFAULT_WIDTH = 520;
             const RECORDING_PANEL_MIN_WIDTH = 320;
             const RECORDING_PANEL_MIN_GUIDELINES_WIDTH = 410;
+            const SUMMARY_STACK_THRESHOLD = 200;
             const iaModalOverlay = document.getElementById("gtPromptModal");
             const iaModalClose = document.getElementById("gtPromptModalClose");
             const iaApplyBtn = document.getElementById("iaApplyBtn");
@@ -7263,7 +7264,7 @@
                     CONTEXT_PANEL_RESIZE_MIN_WIDTH,
                     appWidth - CONTEXT_PANEL_MIN_MAIN_WIDTH
                 );
-                const upperBound = guidelinesMax > 0 ? Math.min(baseMax, guidelinesMax) : 0;
+                const upperBound = guidelinesMax > 0 ? Math.min(baseMax, guidelinesMax) : baseMax;
                 const bounded = Math.min(
                     upperBound,
                     Math.max(CONTEXT_PANEL_RESIZE_MIN_WIDTH, value)
@@ -7300,6 +7301,7 @@
                     appMain.classList.toggle("context-closed", !isOpen);
                 }
                 syncContextBackdrop(isOpen && isResponsiveContextMode());
+                updateSummaryStacking();
                 persistContextPanelState(Boolean(isOpen));
             }
 
@@ -7414,7 +7416,19 @@
                 if (voiceMainBody) {
                     voiceMainBody.style.setProperty("--recording-panel-width", `${nextWidth}px`);
                 }
+                updateSummaryStacking();
                 return nextWidth;
+            }
+
+            function updateSummaryStacking() {
+                if (!appMain || !summaryColumn) return;
+                if (contextPanel?.classList.contains("open")) {
+                    appMain.classList.remove("summary-stacked");
+                    return;
+                }
+                const width = summaryColumn.getBoundingClientRect().width || 0;
+                const shouldStack = width < SUMMARY_STACK_THRESHOLD;
+                appMain.classList.toggle("summary-stacked", shouldStack);
             }
 
             function getInitialRecordingPanelWidth() {
@@ -7462,6 +7476,7 @@
                 if (window.innerWidth > RECORDING_PANEL_RESPONSIVE_BREAKPOINT) {
                     applyRecordingPanelWidth(recordingPanelWidth);
                 }
+                updateSummaryStacking();
             });
 
             function closeInfoPopup() {
