@@ -3,7 +3,7 @@
 Quick reference for contributors and copilots.
 
 - **Structure.** Static HTML modules live in `public/`; `src/connect/index.tsx` bundles the Excalidraw bridge into `public/js/connect.bundle.js`. Cloudflare workers are in `workers/` (OpenAI proxy, sharing, feedback). Everything outside `src/connect` is hand-written HTML/JS/CSS.
-- **Navigation.** `public/index.html` links to `canvas.html`, `grid.html`, `draw.html`, `timeline.html`, and `voice.html` with the cache-buster `?v=2025.12.28`. Each page can be opened directly. Pages set `window.GO_TOOLKIT_SHARE_API_URL` (launcher → `https://gotoolkit.workers.dev`, modules → `https://share.gotoolkit.workers.dev/`).
+- **Navigation.** `public/index.html` links to `canvas.html`, `grid.html`, `draw.html`, `timeline.html`, and `voice.html` with the cache-buster `?v=2025.12.29`. Each page can be opened directly. Pages set `window.GO_TOOLKIT_SHARE_API_URL` (launcher → `https://gotoolkit.workers.dev`, modules → `https://share.gotoolkit.workers.dev/`).
 - **Modules.**
 	- Canvas (`slides`): exports PPTX/PNG/JSON and uses templates in `public/js/prompt.js`.
 	- Grid (`grids`): multi-page AG Grid with CSV/JSON export, template/criteria modal (`public/js/template-criteria.js`), covered by Playwright tests.
@@ -15,7 +15,7 @@ Quick reference for contributors and copilots.
 - **Sharing.** `public/js/share-worker-client.js` builds share URLs from `GO_TOOLKIT_SHARE_API_URL(S)` (includes `https://share.gotoolkit.workers.dev`). The `workers/share-proxy` worker writes to Firestore and rate-limits via KV `RATE_LIMIT`; allowed collections: `slides`, `timelines`, `diagrams`, `grids`, `voices`. Local history: `public/js/share-history.js`. Capsules/drafts: `public/js/idb-doc-store.js` + `public/js/capsule-drafts.js` (IndexedDB with `localStorage` fallback).
 - **Excalidraw Bridge.** `src/connect/index.tsx` renders Excalidraw, forces a light theme, reuses current state to apply a scene, and normalizes Mermaid elements (stroke/rounding). Exposed as `window.GoToolkitExcalidraw` for Draw.
 - **Build / Test.** `npm install` → `npm run build` (esbuild bundling `src/connect/index.tsx` into `public/js/connect.bundle.js`). `npm start` serves `public/` on port 5000. `npm run test:playwright` runs `tests/grid-mock.spec.ts` against `public/grid.html`.
-- **Cache / Version.** Update `?v=2025.12.28` everywhere (launcher links, `prompt.js` includes, navigation) when assets change.
+- **Cache / Version.** Update `?v=2025.12.29` everywhere (launcher links, `prompt.js` includes, navigation) when assets change.
 - **Workers.** `workers/openai-proxy` requires `OPENAI_API_KEY` + KV `RATE_LIMIT`; handles CORS, payload size, and IP quotas. `workers/share-proxy` requires `FIREBASE_SERVICE_ACCOUNT` JSON, optional `FIREBASE_PROJECT_ID`, `SHARE_ALLOWED_ORIGINS`, and KV `RATE_LIMIT`. `workers/feedback-proxy` shares these secrets and KV. `workers/assemblyai-proxy` proxies the AssemblyAI streaming token endpoint; the browser calls it with `X-AssemblyAI-Key` (no secret stored in the worker) so `voice.html` can establish the WebSocket despite CORS. Code targets the Cloudflare runtime.
 - **Debug.** Inspect `window.GoToolkit*` in the console for the AI backend, Excalidraw API, share worker state, or drafts. Local state lives mainly in `localStorage` (`go-toolkit-*`) and IndexedDB (`capsule-drafts` / `share-history`).
 - **Contributing guide.** For step-by-step instructions on creating a new module (header, tabs, sharing, IndexedDB drafts, context sidebar, IA wiring, prompt templates, and checklist), see `CONTRIBUTE.md`.

@@ -44,7 +44,7 @@ Initialisation du module Canvas + intégration OpenAI.
 - Test de fumée Playwright dans `tests/` (`grid-mock.spec.ts`).
 
 ## Modules
-- **Launcher** (`public/index.html`) : page d’entrée vers les modules avec le cache-buster `?v=2025.12.28` et une URL de partage par défaut.
+- **Launcher** (`public/index.html`) : page d’entrée vers les modules avec le cache-buster `?v=2025.12.29` et une URL de partage par défaut.
 - **Canvas** (`public/canvas.html`) : planches multi-slides alimentées par les templates de `public/js/prompt.js`. Exports PNG, PPTX, capsule JSON, brouillons locaux et lien de partage (collection Firestore `slides`).
 - **Grid** (`public/grid.html`) : générateur de tableaux AG Grid avec modal de templates + bulles de critères (`prompt.js`, `public/js/template-criteria.js`). Pages multiples, export CSV/JSON, brouillons locaux, partage (`grids`). Couvert par le test Playwright.
 - **Draw** (`public/draw.html`) : hôte Excalidraw branché sur `window.GoToolkitExcalidraw` (Mermaid → Excalidraw, application de scènes, accès API brut). Templates `prompt.js`, capsules, partage (`diagrams`), prompts IA pour générer un schéma.
@@ -70,7 +70,7 @@ Initialisation du module Canvas + intégration OpenAI.
 
 ## Déploiement
 - Déployer le dossier `public/` sur n’importe quel hébergeur statique. `firebase.json` est prêt (assets immuables, `index.html` no-cache).
-- Anti-cache : requiert le `?v=2025.12.28` sur les liens du launcher et les scripts (ex. `js/prompt.js?v=...`) ; à incrémenter partout quand les assets changent.
+- Anti-cache : requiert le `?v=2025.12.29` sur les liens du launcher et les scripts (ex. `js/prompt.js?v=...`) ; à incrémenter partout quand les assets changent.
 - Workers Cloudflare :
   - `workers/openai-proxy` : CORS + quotas + garde-fous payload ; secrets `OPENAI_API_KEY` et KV `RATE_LIMIT`.
   - `workers/share-proxy` : partage Firestore ; `FIREBASE_SERVICE_ACCOUNT` (JSON), `FIREBASE_PROJECT_ID` optionnel, `SHARE_ALLOWED_ORIGINS`, KV `RATE_LIMIT`.
