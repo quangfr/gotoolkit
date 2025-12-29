@@ -1080,15 +1080,6 @@
             padding-left: 0;
         }
 
-        .release-roadmap-tags {
-            display: block;
-            margin-top: 6px;
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-
         .release-roadmap-tag {
             background: #e9ecef;
             color: #495057;
@@ -1097,6 +1088,11 @@
             border-radius: 999px;
             letter-spacing: 0;
             display: inline-block;
+        }
+
+        .release-roadmap-title .release-roadmap-tag {
+            letter-spacing: 0;
+            text-transform: none;
         }
 
         @media (max-width: 720px) {
@@ -1685,114 +1681,10 @@
                 <button class="release-tab" data-target="roadmapContent">Feuille de route</button>
             </div>
             <div class="release-notes-content release-notes-content--active" id="releaseNotesContent">
-                <div class="release-notes-list">
-                    <div class="release-note">
-                        <span class="release-note-date">2025-12-28</span>
-                        <p class="release-note-text">Module Voice : audio, webcam et partage d’écran. Transcription
-                            vocale AssemblyAI intégrée. Notes de version et feuille de route.</p>
-                    </div>
-                    <div class="release-note">
-                        <span class="release-note-date">2025-12-27</span>
-                        <p class="release-note-text">Ajout du fournisseur IA OpenRouter et clarifications des conditions
-                            d’usage.</p>
-                    </div>
-                    <div class="release-note">
-                        <span class="release-note-date">2025-12-24</span>
-                        <p class="release-note-text">Uniformisation des retours utilisateurs dans tous les modules et
-                            gestion de la liste.</p>
-                    </div>
-                    <div class="release-note">
-                        <span class="release-note-date">2025-12-20</span>
-                        <p class="release-note-text">Nouveaux templates Grid pour la cartographie des données et la
-                            structure arborescente.</p>
-                    </div>
-                    <div class="release-note">
-                        <span class="release-note-date">2025-12-17</span>
-                        <p class="release-note-text">Lancement du module Grid avec génération de données et pilote IA
-                            WebLLM.</p>
-                    </div>
-                    <div class="release-note">
-                        <span class="release-note-date">2025-12-16</span>
-                        <p class="release-note-text">Brouillons et stockage local pour préserver les documents en cours.
-                        </p>
-                    </div>
-                    <div class="release-note">
-                        <span class="release-note-date">2025-12-08</span>
-                        <p class="release-note-text">Templates plus product, harmonisation de l’interface, isolation des
-                            prompts et module Feedback.</p>
-                    </div>
-                    <div class="release-note">
-                        <span class="release-note-date">2025-12-04</span>
-                        <p class="release-note-text">Module Draw : diagrammes de classes, de flux et séquentiels avec
-                            Excalidraw.</p>
-                    </div>
-                    <div class="release-note">
-                        <span class="release-note-date">2025-11-30</span>
-                        <p class="release-note-text">Module Timeline : repères, actions et groupes avec Vis-timeline.
-                        </p>
-                    </div>
-                    <div class="release-note">
-                        <span class="release-note-date">2025-11-24</span>
-                        <p class="release-note-text">Homepage avec partage de liens et intégration Cloudflare +
-                            Firebase.</p>
-                    </div>
-                    <div class="release-note">
-                        <span class="release-note-date">2025-11-22</span>
-                        <p class="release-note-text">Initialisation du module Canvas et intégration OpenAI.</p>
-                    </div>
-                </div>
+                <div class="release-notes-list"></div>
             </div>
             <div class="release-notes-content" id="roadmapContent">
-                <div class="release-roadmap-list">
-                    <div class="release-roadmap-item">
-                        <span class="release-roadmap-title">Compte utilisateur</span>
-                        <div class="release-roadmap-tags">
-                            <span class="release-roadmap-tag">Facile</span>
-                            <span class="release-roadmap-tag">À planifier</span>
-                        </div>
-                        <ul class="release-roadmap-text">
-                            <li>Authentification et quota d'utilisation par utilisateur</li>
-                            <li>Accès à l'espace de partage en ligne sur d’autres
-                                appareils</li>
-                        </ul>
-
-                    </div>
-                    <div class="release-roadmap-item">
-                        <span class="release-roadmap-title">Base documentaire IA</span>
-                        <div class="release-roadmap-tags">
-                            <span class="release-roadmap-tag">Moyen</span>
-                            <span class="release-roadmap-tag">À étudier</span>
-                        </div>
-                        <ul class="release-roadmap-text">
-                            <li>Enrichissement RAG et intégration à un moteur IA</li>
-                            <li>Demandes d'information et génération de documents à partir des données</li>
-                            <li>Import de fichiers (PDF, Word, Excel, PowerPoint) et autres connecteurs</li>
-                        </ul>
-                    </div>
-                    <div class="release-roadmap-item">
-                        <span class="release-roadmap-title">Chatbot d'assistance</span>
-                        <div class="release-roadmap-tags">
-                            <span class="release-roadmap-tag">Moyen</span>
-                            <span class="release-roadmap-tag">À étudier</span>
-                        </div>
-                        <ul class="release-roadmap-text">
-                            <li>Chatbot pour discuter des outils et méthodes Go-Live</li>
-                            <li>Aide à la génération de prompts</li>
-
-                        </ul>
-                    </div>
-                    <div class="release-roadmap-item">
-                        <span class="release-roadmap-title">Commande IA contextualisé</span>
-                        <div class="release-roadmap-tags">
-                            <span class="release-roadmap-tag">Complexe</span>
-                            <span class="release-roadmap-tag">À étudier</span>
-                        </div>
-                        <ul class="release-roadmap-text">
-                            <li>RAG des documents de la bibliothèque locale</li>
-                            <li>Ajout de documents en contexte dans les modules</li>
-                        </ul>
-                    </div>
-                </div>
+                <div class="release-roadmap-list"></div>
             </div>
         </div>
     </div>
@@ -1855,17 +1747,251 @@
             const tabs = document.querySelectorAll(".release-tab");
             const contents = document.querySelectorAll(".release-notes-content");
             if (!tabs.length) return;
-            tabs.forEach(tab => {
-                tab.addEventListener("click", () => {
-                    tabs.forEach(btn => btn.classList.remove("release-tab--active"));
-                    contents.forEach(content => content.classList.remove("release-notes-content--active"));
-                    tab.classList.add("release-tab--active");
-                    const target = document.getElementById(tab.dataset.target);
-                    if (target) target.classList.add("release-notes-content--active");
+
+            const sectionMap = {
+                releaseNotesContent: {
+                    wrapper: document.getElementById("releaseNotesContent"),
+                    list: document.querySelector("#releaseNotesContent .release-notes-list")
+                },
+                roadmapContent: {
+                    wrapper: document.getElementById("roadmapContent"),
+                    list: document.querySelector("#roadmapContent .release-roadmap-list")
+                }
+            };
+
+            function activateTab(tab) {
+                tabs.forEach(btn => btn.classList.remove("release-tab--active"));
+                contents.forEach(content => content.classList.remove("release-notes-content--active"));
+                tab.classList.add("release-tab--active");
+                const target = document.getElementById(tab.dataset.target);
+                target?.classList.add("release-notes-content--active");
+            }
+
+            tabs.forEach(tab => tab.addEventListener("click", () => activateTab(tab)));
+
+            function parseMarkdownSections(markdown) {
+                const lines = (markdown || "").split(/\r?\n/);
+                const sections = [];
+                let current = null;
+
+                function flushCurrent() {
+                    if (current) {
+                        sections.push(current);
+                        current = null;
+                    }
+                }
+
+                function ensureCurrent() {
+                    if (!current) {
+                        current = { title: "", tags: [], blocks: [] };
+                    }
+                    return current;
+                }
+
+                function cleanTag(token) {
+                    if (!token) return "";
+                    return token.replace(/^`|`$/g, "").replace(/^"|"$/g, "").trim();
+                }
+
+                lines.forEach(line => {
+                    const trimmed = line.trim();
+                    if (!trimmed) return;
+                    const headerMatch = trimmed.match(/^##\s*(.*)$/);
+                    if (headerMatch) {
+                        flushCurrent();
+                        const headerLine = headerMatch[1];
+                        const inlineTags = [];
+                        const inlineRegex = /`([^`]+)`/g;
+                        let inlineMatch;
+                        while ((inlineMatch = inlineRegex.exec(headerLine))) {
+                            const tag = cleanTag(inlineMatch[1]);
+                            if (tag) {
+                                inlineTags.push(tag);
+                            }
+                        }
+                        const titleWithoutTags = headerLine
+                            .replace(/`[^`]+`/g, " ")
+                            .replace(/\s+/g, " ")
+                            .trim();
+                        current = {
+                            title: titleWithoutTags || "",
+                            tags: inlineTags,
+                            blocks: []
+                        };
+                        return;
+                    }
+                    const tagMatch = trimmed.match(/^###\s*(.*)$/);
+                    if (tagMatch) {
+                        const section = ensureCurrent();
+                        tagMatch[1]
+                            .split(",")
+                            .map(token => cleanTag(token))
+                            .filter(Boolean)
+                            .forEach(tag => section.tags.push(tag));
+                        return;
+                    }
+                    const section = ensureCurrent();
+                    const listMatch = trimmed.match(/^-\s*(.*)$/);
+                    if (listMatch) {
+                        section.blocks.push({ type: "list", text: listMatch[1].trim() });
+                    } else {
+                        section.blocks.push({ type: "paragraph", text: trimmed });
+                    }
                 });
+
+                flushCurrent();
+                return sections;
+            }
+
+            function renderReleaseNotes(entries) {
+                const section = sectionMap.releaseNotesContent;
+                if (!section?.list) return;
+                const list = section.list;
+                list.innerHTML = "";
+                if (!entries.length) {
+                    const placeholder = document.createElement("div");
+                    placeholder.className = "release-note";
+                    const message = document.createElement("p");
+                    message.className = "release-note-text";
+                    message.textContent = "Aucune note de version disponible.";
+                    placeholder.appendChild(message);
+                    list.appendChild(placeholder);
+                    return;
+                }
+                entries.forEach(entryData => {
+                    const entry = document.createElement("div");
+                    entry.className = "release-note";
+                    const date = document.createElement("span");
+                    date.className = "release-note-date";
+                    date.textContent = entryData.title || "Sans date";
+                    entry.appendChild(date);
+                    if (!entryData.blocks.length) {
+                        const message = document.createElement("p");
+                        message.className = "release-note-text";
+                        message.textContent = "Aucune description enregistrée.";
+                        entry.appendChild(message);
+                    } else {
+                        entryData.blocks.forEach(block => {
+                            const paragraph = document.createElement("p");
+                            paragraph.className = "release-note-text";
+                            paragraph.append(createInlineFragment(block.text));
+                            entry.appendChild(paragraph);
+                        });
+                    }
+                    list.appendChild(entry);
+                });
+            }
+
+            function createInlineFragment(text) {
+                const fragment = document.createDocumentFragment();
+                const regex = /\[([^\]]+)\]\(([^)\s]+)(?:\s+"[^"]+")?\)/g;
+                let lastIndex = 0;
+                let match;
+                while ((match = regex.exec(text))) {
+                    if (match.index > lastIndex) {
+                        fragment.append(document.createTextNode(text.slice(lastIndex, match.index)));
+                    }
+                    const href = match[2].trim();
+                    const label = match[1];
+                    const anchor = document.createElement("a");
+                    anchor.href = href;
+                    anchor.target = "_blank";
+                    anchor.rel = "noopener noreferrer";
+                    anchor.textContent = label;
+                    fragment.append(anchor);
+                    lastIndex = regex.lastIndex;
+                }
+                if (lastIndex < text.length) {
+                    fragment.append(document.createTextNode(text.slice(lastIndex)));
+                }
+                return fragment;
+            }
+
+            function renderRoadmap(entries) {
+                const section = sectionMap.roadmapContent;
+                if (!section?.list) return;
+                const list = section.list;
+                list.innerHTML = "";
+                if (!entries.length) {
+                    const message = document.createElement("p");
+                    message.className = "release-roadmap-text";
+                    message.textContent = "Feuille de route vide.";
+                    list.appendChild(message);
+                    return;
+                }
+                entries.forEach(entryData => {
+                    const item = document.createElement("div");
+                    item.className = "release-roadmap-item";
+                    const title = document.createElement("span");
+                    title.className = "release-roadmap-title";
+                    title.appendChild(document.createTextNode(entryData.title || "Sans titre"));
+                    entryData.tags.forEach(tag => {
+                        title.appendChild(document.createTextNode(" "));
+                        const tagEl = document.createElement("span");
+                        tagEl.className = "release-roadmap-tag";
+                        tagEl.textContent = tag;
+                        title.appendChild(tagEl);
+                    });
+                    item.appendChild(title);
+                    const listBlocks = entryData.blocks.filter(block => block.type === "list");
+                    if (listBlocks.length) {
+                        const ul = document.createElement("ul");
+                        ul.className = "release-roadmap-text";
+                        listBlocks.forEach(block => {
+                    const li = document.createElement("li");
+                    li.append(createInlineFragment(block.text));
+                    ul.appendChild(li);
+                });
+                item.appendChild(ul);
+            }
+            const paragraphBlocks = entryData.blocks.filter(block => block.type === "paragraph");
+            paragraphBlocks.forEach(block => {
+                const paragraph = document.createElement("p");
+                paragraph.className = "release-roadmap-text";
+                paragraph.append(createInlineFragment(block.text));
+                item.appendChild(paragraph);
             });
+                    if (!listBlocks.length && !paragraphBlocks.length) {
+                        const message = document.createElement("p");
+                        message.className = "release-roadmap-text";
+                        message.textContent = "Aucun détail renseigné.";
+                        item.appendChild(message);
+                    }
+                    list.appendChild(item);
+                });
+            }
+
+            async function loadMarkdown(path) {
+                const response = await fetch(path);
+                if (!response.ok) {
+                    throw new Error(`Impossible de charger ${path}`);
+                }
+                return response.text();
+            }
+
+            async function refresh(key, path) {
+                const section = sectionMap[key];
+                if (!section?.list) return;
+                try {
+                    const markdown = await loadMarkdown(path);
+                    const entries = parseMarkdownSections(markdown);
+                    if (key === "releaseNotesContent") {
+                        renderReleaseNotes(entries);
+                    } else {
+                        renderRoadmap(entries);
+                    }
+                } catch (err) {
+                    console.error(err);
+                    const targetClass = key === "releaseNotesContent" ? "release-note-text" : "release-roadmap-text";
+                    section.list.innerHTML = `<p class="${targetClass}">Impossible de charger le contenu.</p>`;
+                }
+            }
+
+            refresh("releaseNotesContent", "releases.md");
+            refresh("roadmapContent", "roadmap.md");
         })();
     </script>
+
     <script>
         (function () {
             const gallery = document.getElementById("shareGallery");
