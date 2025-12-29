@@ -979,8 +979,8 @@
         }
 
         .info-popup img {
-            width: 48px;
-            height: 48px;
+            width: 144px;
+            height: 144px;
             object-fit: contain;
             align-self: center;
         }
@@ -1211,7 +1211,8 @@
 
     <div data-toast-slot="statusToast" data-toast-class="status-toast" data-toast-role="status"></div>
     <div id="infoPopup" class="context-menu info-popup" role="dialog" aria-live="polite">
-        <img src="logo.gif" alt="Logo Go-Toolkit">
+        <img src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs="
+            data-src="img/logo.gif" alt="Logo Go-Toolkit">
         <strong>Module Grid (Le Cardinal)</strong>
         <p>Les tableaux générés ici peuvent être partagés et exportés pour enrichir vos capsules métier.</p>
         <span>Version 2025.12.28</span>
@@ -8515,9 +8516,18 @@
                         handleShareUpdateClick();
                     });
                 }
+                function ensureInfoLogoLoaded(popup) {
+                    const logo = popup?.querySelector("img[data-src]");
+                    if (logo && !logo.dataset.loaded) {
+                        logo.src = logo.dataset.src;
+                        logo.dataset.loaded = "1";
+                    }
+                }
+
                 if (infoButton && infoPopup) {
                     infoButton.addEventListener("click", event => {
                         event.stopPropagation();
+                        ensureInfoLogoLoaded(infoPopup);
                         infoPopup.classList.toggle("open");
                     });
                 }

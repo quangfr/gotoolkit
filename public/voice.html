@@ -816,8 +816,8 @@
         }
 
         .info-popup img {
-            width: 48px;
-            height: 48px;
+            width: 144px;
+            height: 144px;
             object-fit: contain;
             align-self: center;
         }
@@ -1748,7 +1748,8 @@
         </div>
 
         <div id="infoPopup" class="info-popup" role="dialog" aria-live="polite">
-            <img src="logo.gif" alt="Logo Go-Toolkit">
+            <img src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs="
+                data-src="img/logo.gif" alt="Logo Go-Toolkit">
             <strong>Module Voice (Goal Digger)</strong>
             <span>Version 2025.12.28</span>
             <span>Usage réservé à Savane Consulting.</span>
@@ -4231,7 +4232,7 @@
                 timerBlock.className = "recording-live-timer";
                 const logoImg = document.createElement("img");
                 logoImg.className = "recording-live-timer__logo";
-                logoImg.src = "/logo_inverted.gif";
+                logoImg.src = "/img/logo_inverted.gif";
                 logoImg.alt = "GoToolkit logo";
                 const timerValue = document.createElement("div");
                 timerValue.className = "recording-live-timer__value";
@@ -7143,6 +7144,14 @@
                 infoPopup?.classList.remove("open");
             }
 
+            function ensureInfoLogoLoaded(popup) {
+                const logo = popup?.querySelector("img[data-src]");
+                if (logo && !logo.dataset.loaded) {
+                    logo.src = logo.dataset.src;
+                    logo.dataset.loaded = "1";
+                }
+            }
+
             function reloadAppWithVersion(version = APP_VERSION) {
                 try {
                     const url = new URL(window.location.href);
@@ -7154,6 +7163,7 @@
             }
 
             function toggleInfoPopup() {
+                ensureInfoLogoLoaded(infoPopup);
                 infoPopup?.classList.toggle("open");
             }
 
