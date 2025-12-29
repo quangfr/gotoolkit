@@ -26,7 +26,7 @@ Templates plus product, harmonisation de l’interface, isolation des prompts et
 Module [Draw](/draw?v=v) : diagrammes de classe, de flux et séquentiel.
 
 ## 2025-11-30
-Module [Timeline](/timeline?v=v) : repères, actions, groupes, types et modèles → 
+Module [Timeline](/timeline?v=v) : repères, actions, groupes, types et modèles. 
 
 ## 2025-11-24
 Homepage avec partage de liens et espace en ligne.

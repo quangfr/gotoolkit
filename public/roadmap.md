@@ -7,9 +7,12 @@
 - Aide à la création de prompts
 
 ## Module Mémo `À planifier` `T1 2026`
-- Import de fichiers en mémoire utilisable par l'IA (corpus)
-- Chatbot pour Q&A et création de mémos à partir d'un corpus
+- Import de fichiers en mémoire utilisable par l'IA 
+- Chatbot pour Q&A et création de mémos à partir d'une mémoire
 
-## Commande IA avec corpus `À étudier`
-- Création de corpus à partir des donnés de la bibliothèque locale
-- Ajout du corpus en contexte dans les autres modules
+## Commande IA avec mémoire `À étudier`
+- Création de mémoires à partir des donnés de la bibliothèque locale
+- Ajout de mémoires en contexte dans les modules
+
+## Module Voice
+- Analyse des transcripts pour conseils IA `À planifier` `T1 2026`

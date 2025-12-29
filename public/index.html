@@ -1884,21 +1884,31 @@
 
             function createInlineFragment(text) {
                 const fragment = document.createDocumentFragment();
-                const regex = /\[([^\]]+)\]\(([^)\s]+)(?:\s+"[^"]+")?\)/g;
+                const regex = /\[([^\]]+)\]\(([^)\s]+)(?:\s+"[^"]+")?\)|`([^`]+)`/g;
                 let lastIndex = 0;
                 let match;
                 while ((match = regex.exec(text))) {
                     if (match.index > lastIndex) {
                         fragment.append(document.createTextNode(text.slice(lastIndex, match.index)));
                     }
-                    const href = match[2].trim();
+                    const href = match[2] && match[2].trim();
                     const label = match[1];
-                    const anchor = document.createElement("a");
-                    anchor.href = href;
-                    anchor.target = "_blank";
-                    anchor.rel = "noopener noreferrer";
-                    anchor.textContent = label;
-                    fragment.append(anchor);
+                    if (href && label) {
+                        const anchor = document.createElement("a");
+                        anchor.href = href;
+                        anchor.target = "_blank";
+                        anchor.rel = "noopener noreferrer";
+                        anchor.textContent = label;
+                        fragment.append(anchor);
+                    } else if (match[3]) {
+                        const tag = match[3].trim();
+                        if (tag) {
+                            const tagEl = document.createElement("span");
+                            tagEl.className = "release-roadmap-tag";
+                            tagEl.textContent = tag;
+                            fragment.append(tagEl);
+                        }
+                    }
                     lastIndex = regex.lastIndex;
                 }
                 if (lastIndex < text.length) {
