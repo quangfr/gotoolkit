@@ -1166,6 +1166,7 @@
             </section>
 
             <section class="connect-left">
+                <div id="gtContextModalResizer" class="context-resizer" aria-hidden="true"></div>
                 <div class="prompt-input-card" id="prompt-input-card">
                     <div class="card-title-row">
                         <label>Commande</label>
@@ -1395,6 +1396,21 @@
                 const drawerBtn = document.getElementById("gtContextModalTrigger");
                 const sidebar = document.querySelector(".connect-left");
                 const connectRight = document.querySelector(".connect-right");
+                const contextResizer = document.getElementById("gtContextModalResizer");
+                const GRID_CONTEXT_WIDTH_STORAGE_KEY = "grid-context-width";
+                const GRID_CONTEXT_PANEL_DEFAULT_WIDTH = 350;
+                const GRID_CONTEXT_PANEL_RESIZE_MIN_WIDTH = 120;
+                const GRID_CONTEXT_PANEL_CLOSE_THRESHOLD = 200;
+                const GRID_CONTEXT_PANEL_MIN_MAIN_WIDTH = 320;
+                let gridContextPanelWidth = GRID_CONTEXT_PANEL_DEFAULT_WIDTH;
+                let gridContextResizeStartWidth = GRID_CONTEXT_PANEL_DEFAULT_WIDTH;
+                let gridContextResizeStartX = 0;
+                let isGridContextResizing = false;
+                const storedGridContextWidth = getPersistedGridContextPanelWidth();
+                if (storedGridContextWidth !== null) {
+                    gridContextPanelWidth = storedGridContextWidth;
+                }
+                setGridContextPanelWidth(gridContextPanelWidth);
                 const promptSpeechSuggestion = document.querySelector('[data-speech-suggestion="promptInput"]');
                 const promptFileRow = document.getElementById("promptFileRow");
                 const promptFileList = document.getElementById("promptFileList");
@@ -5148,6 +5164,91 @@
                     return typeof window !== "undefined" && window.innerWidth > DESKTOP_DRAWER_BREAKPOINT;
                 }
 
+                function persistGridContextPanelWidth(width) {
+                    try {
+                        if (!window.localStorage) return;
+                        localStorage.setItem(GRID_CONTEXT_WIDTH_STORAGE_KEY, Math.round(width).toString());
+                    } catch (err) {
+                        console.warn("Impossible de sauvegarder la largeur du contexte", err);
+                    }
+                }
+
+                function getPersistedGridContextPanelWidth() {
+                    try {
+                        if (!window.localStorage) return null;
+                        const raw = localStorage.getItem(GRID_CONTEXT_WIDTH_STORAGE_KEY);
+                        const parsed = Number.parseInt(raw, 10);
+                        if (Number.isNaN(parsed) || !Number.isFinite(parsed)) return null;
+                        if (parsed < GRID_CONTEXT_PANEL_RESIZE_MIN_WIDTH) return null;
+                        return parsed;
+                    } catch (err) {
+                        console.warn("Impossible de lire la largeur du contexte", err);
+                    }
+                    return null;
+                }
+
+                function clampGridContextPanelWidth(value) {
+                    const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
+                    const maxAvailable = Math.max(
+                        GRID_CONTEXT_PANEL_RESIZE_MIN_WIDTH,
+                        viewportWidth - GRID_CONTEXT_PANEL_MIN_MAIN_WIDTH
+                    );
+                    return Math.min(maxAvailable, Math.max(GRID_CONTEXT_PANEL_RESIZE_MIN_WIDTH, value));
+                }
+
+                function setGridContextPanelWidth(width) {
+                    const nextWidth = clampGridContextPanelWidth(width);
+                    gridContextPanelWidth = nextWidth;
+                    if (!sidebar) return;
+                    sidebar.style.setProperty("--context-panel-width", `${nextWidth}px`);
+                    sidebar.style.width = `${nextWidth}px`;
+                    sidebar.style.flexBasis = `${nextWidth}px`;
+                    sidebar.style.maxWidth = `${nextWidth}px`;
+                }
+
+                function resetGridContextPanelWidthToStored() {
+                    const storedWidth = getPersistedGridContextPanelWidth() || GRID_CONTEXT_PANEL_DEFAULT_WIDTH;
+                    setGridContextPanelWidth(storedWidth);
+                }
+
+                function handleGridContextResizerPointerDown(ev) {
+                    if (ev.button !== 0) return;
+                    if (!isDesktopDrawerMode()) return;
+                    if (!sidebarOpenDesktop) return;
+                    if (!sidebar || sidebar.classList.contains("collapsed")) return;
+                    isGridContextResizing = true;
+                    gridContextResizeStartWidth = gridContextPanelWidth;
+                    gridContextResizeStartX = ev.clientX;
+                    document.body.classList.add("context-resizing");
+                    window.addEventListener("pointermove", handleGridContextResizerPointerMove);
+                    window.addEventListener("pointerup", handleGridContextResizerPointerUp);
+                    window.addEventListener("pointercancel", handleGridContextResizerPointerUp);
+                    contextResizer?.setPointerCapture?.(ev.pointerId);
+                    ev.preventDefault();
+                }
+
+                function handleGridContextResizerPointerMove(ev) {
+                    if (!isGridContextResizing) return;
+                    const delta = gridContextResizeStartX - ev.clientX;
+                    setGridContextPanelWidth(gridContextResizeStartWidth + delta);
+                }
+
+                function handleGridContextResizerPointerUp(ev) {
+                    if (!isGridContextResizing) return;
+                    isGridContextResizing = false;
+                    document.body.classList.remove("context-resizing");
+                    window.removeEventListener("pointermove", handleGridContextResizerPointerMove);
+                    window.removeEventListener("pointerup", handleGridContextResizerPointerUp);
+                    window.removeEventListener("pointercancel", handleGridContextResizerPointerUp);
+                    contextResizer?.releasePointerCapture?.(ev.pointerId);
+                    if (gridContextPanelWidth < GRID_CONTEXT_PANEL_CLOSE_THRESHOLD) {
+                        toggleSidebar(false);
+                        resetGridContextPanelWidthToStored();
+                    } else {
+                        persistGridContextPanelWidth(gridContextPanelWidth);
+                    }
+                }
+
                 function getGridScriptValue() {
                     const pageScript = getActivePageScriptOr("");
                     if (pageScript.trim()) return pageScript;
@@ -5167,6 +5268,9 @@
                     sidebar.classList.toggle("collapsed", !sidebarOpenDesktop);
                     if (connectRight) {
                         connectRight.classList.toggle("full-width", !sidebarOpenDesktop);
+                    }
+                    if (sidebarOpenDesktop) {
+                        setGridContextPanelWidth(gridContextPanelWidth);
                     }
                 }
 
@@ -8913,6 +9017,7 @@
                     if (drawerOverlay) {
                         drawerOverlay.addEventListener("click", () => toggleSidebar(false));
                     }
+                    contextResizer?.addEventListener("pointerdown", handleGridContextResizerPointerDown);
                     window.addEventListener("resize", syncSidebarLayout);
                     syncSidebarLayout();
                     updateFileRowVisibility();

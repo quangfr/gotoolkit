@@ -246,6 +246,7 @@ button.btn-primary {
 
 /* Shared connect layout + panels */
 .connect-layout {
+  --context-panel-width: 350px;
   flex: 1;
   padding: 5px 10px;
   display: flex;
@@ -265,8 +266,9 @@ button.btn-primary {
 }
 
 .connect-left {
-  flex: 0 0 350px;
-  max-width: 350px;
+  position: relative;
+  flex: 0 0 var(--context-panel-width, 350px);
+  max-width: var(--context-panel-width, 350px);
   width: 100%;
   padding: 10px;
 }
@@ -277,6 +279,44 @@ button.btn-primary {
 
 .connect-right {
   padding: 0;
+}
+
+.gt-context-modal {
+  position: relative;
+  --context-panel-width: 350px;
+}
+
+.context-resizer {
+  position: absolute;
+  top: 0;
+  left: -7px;
+  width: 14px;
+  height: 100%;
+  cursor: ew-resize;
+  z-index: 2;
+  background: transparent;
+  display: none;
+}
+
+.context-resizer::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 2px;
+  height: 28px;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.22);
+  transform: translate(-50%, -50%);
+}
+
+.connect-left:not(.collapsed) .context-resizer,
+.gt-context-modal.open .context-resizer {
+  display: block;
+}
+
+body.context-resizing {
+  cursor: ew-resize;
 }
 
 .connect-right.full-width {

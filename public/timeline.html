@@ -307,9 +307,11 @@
         }
 
         .gutenberg-card {
+            --context-panel-width: 350px;
             display: none;
-            flex: 0 0 350px;
-            width: 350px;
+            flex: 0 0 var(--context-panel-width);
+            width: var(--context-panel-width);
+            max-width: var(--context-panel-width);
             background: var(--surface);
             border-radius: 8px;
             border: 1px solid var(--border);
@@ -1577,8 +1579,9 @@
                 </div>
             </div>
 
-            <div class="gutenberg-card" id="gtContextModal" role="complementary" aria-label="Contexte"
+            <div class="gutenberg-card gt-context-modal" id="gtContextModal" role="complementary" aria-label="Contexte"
                 aria-hidden="true">
+                <div id="gtContextModalResizer" class="context-resizer" aria-hidden="true"></div>
 
                 <div class="ia-actions">
                     <div class="header-row ia-header-actions gutenberg-recette">
@@ -2886,19 +2889,39 @@
                 window.addEventListener("resize", function () {
                     if (!timeline) return;
                     var currentRange = timeline.getWindow();
+                    if (isTimelineDesktopMode()) {
+                        setTimelineContextPanelWidth(timelineContextPanelWidth);
+                    }
                 });
 
                 // No automatic seeding of timeline content. Show overlay when empty.
 
                 var contextModalOverlay = document.getElementById("gtContextModal");
                 var contextModalButton = document.getElementById("gtContextModalTrigger");
+                var contextResizer = document.getElementById("gtContextModalResizer");
                 var iaModalOverlay = document.getElementById("gtPromptModal");
                 var iaModalButton = document.getElementById("gtPromptModalTrigger");
                 var iaModalClose = document.getElementById("gtPromptModalClose");
+                var TIMELINE_CONTEXT_WIDTH_KEY = "timeline-context-width";
+                var TIMELINE_CONTEXT_PANEL_DEFAULT_WIDTH = 350;
+                var TIMELINE_CONTEXT_PANEL_RESIZE_MIN_WIDTH = 120;
+                var TIMELINE_CONTEXT_PANEL_CLOSE_THRESHOLD = 200;
+                var TIMELINE_CONTEXT_PANEL_MIN_MAIN_WIDTH = 320;
+                var TIMELINE_DESKTOP_BREAKPOINT = 900;
+                var timelineContextPanelWidth = TIMELINE_CONTEXT_PANEL_DEFAULT_WIDTH;
+                var timelineContextResizeStartX = 0;
+                var timelineContextResizeStartWidth = TIMELINE_CONTEXT_PANEL_DEFAULT_WIDTH;
+                var isTimelineResizing = false;
+                var storedTimelineContextWidth = getPersistedTimelineContextPanelWidth();
+                if (storedTimelineContextWidth !== null) {
+                    timelineContextPanelWidth = storedTimelineContextWidth;
+                }
+                setTimelineContextPanelWidth(timelineContextPanelWidth);
 
                 function openContextModal(options) {
                     ensureModifyPrompt({ refreshModify: true });
                     if (contextModalOverlay) {
+                        setTimelineContextPanelWidth(timelineContextPanelWidth);
                         contextModalOverlay.classList.add("open");
                         contextModalOverlay.setAttribute("aria-hidden", "false");
                     }
@@ -2919,6 +2942,94 @@
                         closeContextModal();
                     } else {
                         openContextModal(options);
+                    }
+                }
+
+                function persistTimelineContextPanelWidth(width) {
+                    try {
+                        if (!window.localStorage) return;
+                        localStorage.setItem(TIMELINE_CONTEXT_WIDTH_KEY, Math.round(width).toString());
+                    } catch (err) {
+                        console.warn("Impossible de sauvegarder la largeur du contexte", err);
+                    }
+                }
+
+                function getPersistedTimelineContextPanelWidth() {
+                    try {
+                        if (!window.localStorage) return null;
+                        var raw = localStorage.getItem(TIMELINE_CONTEXT_WIDTH_KEY);
+                        var parsed = Number.parseInt(raw, 10);
+                        if (Number.isNaN(parsed) || !Number.isFinite(parsed)) return null;
+                        if (parsed < TIMELINE_CONTEXT_PANEL_RESIZE_MIN_WIDTH) return null;
+                        return parsed;
+                    } catch (err) {
+                        console.warn("Impossible de lire la largeur du contexte", err);
+                    }
+                    return null;
+                }
+
+                function clampTimelineContextPanelWidth(value) {
+                    var viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
+                    var maxAvailable = Math.max(
+                        TIMELINE_CONTEXT_PANEL_RESIZE_MIN_WIDTH,
+                        viewportWidth - TIMELINE_CONTEXT_PANEL_MIN_MAIN_WIDTH
+                    );
+                    return Math.min(maxAvailable, Math.max(TIMELINE_CONTEXT_PANEL_RESIZE_MIN_WIDTH, value));
+                }
+
+                function setTimelineContextPanelWidth(width) {
+                    var nextWidth = clampTimelineContextPanelWidth(width);
+                    timelineContextPanelWidth = nextWidth;
+                    if (!contextModalOverlay) return;
+                    contextModalOverlay.style.setProperty("--context-panel-width", nextWidth + "px");
+                    contextModalOverlay.style.width = nextWidth + "px";
+                    contextModalOverlay.style.flex = "0 0 " + nextWidth + "px";
+                    contextModalOverlay.style.maxWidth = nextWidth + "px";
+                }
+
+                function resetTimelineContextPanelWidthToStored() {
+                    var stored = getPersistedTimelineContextPanelWidth() || TIMELINE_CONTEXT_PANEL_DEFAULT_WIDTH;
+                    setTimelineContextPanelWidth(stored);
+                }
+
+                function isTimelineDesktopMode() {
+                    return (window.innerWidth || 0) >= TIMELINE_DESKTOP_BREAKPOINT;
+                }
+
+                function handleTimelineContextResizerPointerDown(ev) {
+                    if (ev.button !== 0) return;
+                    if (!contextModalOverlay?.classList.contains("open")) return;
+                    if (!isTimelineDesktopMode()) return;
+                    isTimelineResizing = true;
+                    timelineContextResizeStartWidth = timelineContextPanelWidth;
+                    timelineContextResizeStartX = ev.clientX;
+                    document.body.classList.add("context-resizing");
+                    window.addEventListener("pointermove", handleTimelineContextResizerPointerMove);
+                    window.addEventListener("pointerup", handleTimelineContextResizerPointerUp);
+                    window.addEventListener("pointercancel", handleTimelineContextResizerPointerUp);
+                    contextResizer?.setPointerCapture?.(ev.pointerId);
+                    ev.preventDefault();
+                }
+
+                function handleTimelineContextResizerPointerMove(ev) {
+                    if (!isTimelineResizing) return;
+                    var delta = timelineContextResizeStartX - ev.clientX;
+                    setTimelineContextPanelWidth(timelineContextResizeStartWidth + delta);
+                }
+
+                function handleTimelineContextResizerPointerUp(ev) {
+                    if (!isTimelineResizing) return;
+                    isTimelineResizing = false;
+                    document.body.classList.remove("context-resizing");
+                    window.removeEventListener("pointermove", handleTimelineContextResizerPointerMove);
+                    window.removeEventListener("pointerup", handleTimelineContextResizerPointerUp);
+                    window.removeEventListener("pointercancel", handleTimelineContextResizerPointerUp);
+                    contextResizer?.releasePointerCapture?.(ev.pointerId);
+                    if (timelineContextPanelWidth < TIMELINE_CONTEXT_PANEL_CLOSE_THRESHOLD) {
+                        closeContextModal();
+                        resetTimelineContextPanelWidthToStored();
+                    } else {
+                        persistTimelineContextPanelWidth(timelineContextPanelWidth);
                     }
                 }
 
@@ -2961,6 +3072,7 @@
                             /* noop */
                         }
                     }, true);
+                    contextResizer?.addEventListener("pointerdown", handleTimelineContextResizerPointerDown);
                 }
                 // Evaluate and show empty overlay if timeline has no items
                 try { updateEmptyViewMessage(); } catch (e) { /* noop */ }

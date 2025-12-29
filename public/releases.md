@@ -1,5 +1,5 @@
 ## 2025-12-29
-Ajout des [notes de versions](#notes) et une [feuille de route](/#roadmap). 
+Ajout des [notes de versions](#notes) et une [feuille de route](/#roadmap).
 
 ## 2025-12-28
 Module [Voice](/voice?v=v) : audio, webcam et partage d’écran. Transcription vocale AssemblyAI.
@@ -29,7 +29,7 @@ Module [Draw](/draw?v=v) : diagrammes de classe, de flux et séquentiel.
 Module [Timeline](/timeline?v=v) : repères, actions, groupes, types et modèles. 
 
 ## 2025-11-24
-Homepage avec partage de liens et espace en ligne.
+Page d'accueil avec partage de liens et espace en ligne.
 
 ## 2025-11-22
 Initialisation du module [Canvas](/canvas?v=v) et intégration moteur IA OpenAI.

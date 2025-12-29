@@ -71,13 +71,14 @@
             display: grid;
             grid-template-columns: 1fr;
             grid-template-rows: 1fr;
-            gap: 12px;
+            gap: 6px;
             min-height: 0;
             height: calc(100vh - 20px);
+            --context-panel-width: 350px;
         }
 
         .app-main.context-open {
-            grid-template-columns: 1fr 350px;
+            grid-template-columns: 1fr var(--context-panel-width, 350px);
         }
 
         .voice-card {
@@ -120,14 +121,15 @@
 
         .voice-main-body {
             display: grid;
-            grid-template-columns: 1.1fr 0.9fr;
-            gap: 8px;
+            grid-template-columns: minmax(0, var(--recording-panel-width, 1.1fr)) minmax(0, 1fr);
+            gap: 2px;
             min-height: 0;
             flex: 1 1 auto;
+            position: relative;
         }
 
         .app-main:not(.context-open) .voice-main-body {
-            grid-template-columns: minmax(0, 1fr) 450px;
+            grid-template-columns: minmax(0, var(--recording-panel-width, 1.1fr)) minmax(0, 1fr);
         }
 
         .panel {
@@ -141,6 +143,10 @@
             min-height: 0;
             height: 100%;
             overflow: hidden;
+        }
+
+        #recordingPanel {
+            position: relative;
         }
 
         .panel-columns {
@@ -191,6 +197,18 @@
             flex: 1 1 0;
         }
 
+        .app-main.summary-stacked .panel-columns {
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 0;
+            min-height: 0;
+            gap: 6px;
+        }
+
+        .app-main.summary-stacked .note-column {
+            flex: 1 1 0;
+        }
+
 
         .note-column,
         .summary-column {
@@ -204,6 +222,14 @@
 
         .note-column {
             min-width: 400px;
+        }
+
+        .summary-column {
+            min-width: 200px;
+        }
+
+        .summary-column .summary-wrapper {
+            min-width: 200px;
         }
 
         .note-column .transcribe-wrapper {
@@ -224,6 +250,12 @@
 
         .app-main.context-open .note-column,
         .app-main.context-open .summary-column {
+            height: auto;
+            margin-top: 6px;
+        }
+
+        .app-main.summary-stacked .note-column,
+        .app-main.summary-stacked .summary-column {
             height: auto;
             margin-top: 6px;
         }
@@ -996,6 +1028,7 @@
         .summary-wrapper {
             min-height: 0;
             height: 100%;
+            min-width: 200px;
         }
 
         .summary-area {
@@ -1006,7 +1039,9 @@
         }
 
         .app-main.context-open .summary-wrapper,
-        .app-main.context-open .summary-area {
+        .app-main.context-open .summary-area,
+        .app-main.summary-stacked .summary-wrapper,
+        .app-main.summary-stacked .summary-area {
             height: auto;
         }
 
@@ -1272,6 +1307,72 @@
             min-height: 0;
         }
 
+        .gt-context-modal {
+            position: relative;
+            width: 100%;
+            max-width: none;
+        }
+
+        .context-resizer {
+            position: absolute;
+            top: 0;
+            left: -7px;
+            width: 14px;
+            height: 100%;
+            cursor: ew-resize;
+            z-index: 2;
+            background: transparent;
+            display: none;
+        }
+
+        .context-resizer::before {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 2px;
+            height: 28px;
+            border-radius: 10px;
+            background: rgba(15, 23, 42, 0.22);
+            transform: translate(-50%, -50%);
+        }
+
+        .app-main.context-open .gt-context-modal .context-resizer {
+            display: block;
+        }
+
+        body.context-resizing {
+            cursor: ew-resize;
+        }
+
+        .recording-panel-resizer {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            right: -7px;
+            width: 14px;
+            cursor: ew-resize;
+            z-index: 4;
+            background: transparent;
+            display: block;
+        }
+
+        .recording-panel-resizer::before {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 2px;
+            height: 32px;
+            border-radius: 10px;
+            background: rgba(15, 23, 42, 0.24);
+            transform: translate(-50%, -50%);
+        }
+
+        body.recording-resizing {
+            cursor: ew-resize;
+        }
+
         .gutenberg-card.open {
             display: flex;
         }
@@ -1479,6 +1580,13 @@
                 opacity: 1;
                 pointer-events: auto;
             }
+
+            .gt-context-modal .context-resizer {
+                display: none;
+            }
+            .recording-panel-resizer {
+                display: none;
+            }
         }
 
         @media (max-width: 1000px) {
@@ -1568,7 +1676,8 @@
                     </div>
                 </div>
                 <div class="voice-main-body">
-                    <div class="panel">
+                    <div class="panel" id="recordingPanel">
+                        <div id="recordingPanelResizer" class="recording-panel-resizer" aria-hidden="true"></div>
                         <div class="panel-columns">
                             <div class="note-column">
                                 <div class="panel-header">
@@ -1683,6 +1792,7 @@
             </div>
 
             <div class="gutenberg-card gt-context-modal" id="gtContextModal" role="complementary" aria-hidden="true">
+                <div id="gtContextModalResizer" class="context-resizer" aria-hidden="true"></div>
                 <div class="ia-actions">
                     <div class="header-row ia-header-actions gutenberg-recette">
                         <div class="gutenberg-recette-header">
@@ -1860,8 +1970,18 @@
             const contextPanel = document.getElementById("gtContextModal");
             const contextBackdrop = document.getElementById("gtContextModalBackdrop");
             const appMain = document.querySelector(".app-main");
+            const voiceMainBody = document.querySelector(".voice-main-body");
+            const recordingPanel = document.getElementById("recordingPanel");
+            const recordingPanelResizer = document.getElementById("recordingPanelResizer");
+            const contextResizer = document.getElementById("gtContextModalResizer");
+            const summaryColumn = document.querySelector(".summary-column");
             const openIaModalBtn = document.getElementById("gtPromptModalTrigger");
             const CONTEXT_RESPONSIVE_BREAKPOINT = 1000;
+            const RECORDING_PANEL_RESPONSIVE_BREAKPOINT = 1100;
+            const RECORDING_PANEL_WIDTH_STORAGE_KEY = "voice-recording-panel-width";
+            const RECORDING_PANEL_DEFAULT_WIDTH = 520;
+            const RECORDING_PANEL_MIN_WIDTH = 320;
+            const RECORDING_PANEL_MIN_GUIDELINES_WIDTH = 410;
             const iaModalOverlay = document.getElementById("gtPromptModal");
             const iaModalClose = document.getElementById("gtPromptModalClose");
             const iaApplyBtn = document.getElementById("iaApplyBtn");
@@ -7079,6 +7199,15 @@
 
             const isResponsiveContextMode = () => (window.innerWidth || 0) < CONTEXT_RESPONSIVE_BREAKPOINT;
             const CONTEXT_PANEL_STATE_STORAGE_KEY = "voice-context-panel-open";
+            const CONTEXT_PANEL_WIDTH_STORAGE_KEY = "voice-context-panel-width";
+            const CONTEXT_PANEL_DEFAULT_WIDTH = 350;
+            const CONTEXT_PANEL_RESIZE_MIN_WIDTH = 120;
+            const CONTEXT_PANEL_CLOSE_THRESHOLD = 200;
+            const CONTEXT_PANEL_MIN_MAIN_WIDTH = 320;
+            let contextPanelWidth = CONTEXT_PANEL_DEFAULT_WIDTH;
+            let isResizingContextPanel = false;
+            let contextResizeStartX = 0;
+            let contextResizeStartWidth = CONTEXT_PANEL_DEFAULT_WIDTH;
 
             function persistContextPanelState(isOpen) {
                 try {
@@ -7097,6 +7226,62 @@
                     console.warn("Contexte : impossible de lire l'état", err);
                 }
                 return null;
+            }
+
+            function persistContextPanelWidth(width) {
+                try {
+                    localStorage.setItem(CONTEXT_PANEL_WIDTH_STORAGE_KEY, Math.round(width).toString());
+                } catch (err) {
+                    console.warn("Contexte : impossible de sauvegarder la largeur", err);
+                }
+            }
+
+            function getPersistedContextPanelWidth() {
+                try {
+                    const raw = localStorage.getItem(CONTEXT_PANEL_WIDTH_STORAGE_KEY);
+                    const parsed = Number.parseInt(raw, 10);
+                    if (!Number.isNaN(parsed) && Number.isFinite(parsed) && parsed >= CONTEXT_PANEL_RESIZE_MIN_WIDTH) {
+                        return parsed;
+                    }
+                } catch (err) {
+                    console.warn("Contexte : impossible de lire la largeur", err);
+                }
+                return null;
+            }
+
+            function clampContextPanelWidth(value) {
+                const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
+                const appWidth = appMain?.clientWidth || viewportWidth;
+                const gapValue = appMain ? window.getComputedStyle(appMain).getPropertyValue("gap") : "";
+                const gap = parseFloat(gapValue) || 0;
+                const recordingWidth = Math.max(
+                    RECORDING_PANEL_MIN_WIDTH,
+                    recordingPanel?.getBoundingClientRect().width || RECORDING_PANEL_DEFAULT_WIDTH
+                );
+                const guidelinesMax = Math.max(0, appWidth - gap - (recordingWidth + RECORDING_PANEL_MIN_GUIDELINES_WIDTH));
+                const baseMax = Math.max(
+                    CONTEXT_PANEL_RESIZE_MIN_WIDTH,
+                    appWidth - CONTEXT_PANEL_MIN_MAIN_WIDTH
+                );
+                const upperBound = guidelinesMax > 0 ? Math.min(baseMax, guidelinesMax) : 0;
+                const bounded = Math.min(
+                    upperBound,
+                    Math.max(CONTEXT_PANEL_RESIZE_MIN_WIDTH, value)
+                );
+                return bounded;
+            }
+
+            function setContextPanelWidth(width) {
+                const nextWidth = clampContextPanelWidth(width);
+                contextPanelWidth = nextWidth;
+                if (appMain) {
+                    appMain.style.setProperty("--context-panel-width", `${nextWidth}px`);
+                }
+            }
+
+            function resetContextPanelWidthToStored() {
+                const storedWidth = getPersistedContextPanelWidth() || CONTEXT_PANEL_DEFAULT_WIDTH;
+                setContextPanelWidth(storedWidth);
             }
 
             function syncContextBackdrop(show) {
@@ -7132,26 +7317,166 @@
                 }
             }
 
+            function handleContextResizerPointerDown(ev) {
+                if (ev.button !== 0) return;
+                if (!contextPanel?.classList.contains("open")) return;
+                if (isResponsiveContextMode()) return;
+                isResizingContextPanel = true;
+                contextResizeStartX = ev.clientX;
+                contextResizeStartWidth = contextPanelWidth;
+                document.body.classList.add("context-resizing");
+                window.addEventListener("pointermove", handleContextResizerPointerMove);
+                window.addEventListener("pointerup", handleContextResizerPointerUp);
+                window.addEventListener("pointercancel", handleContextResizerPointerUp);
+                contextResizer?.setPointerCapture?.(ev.pointerId);
+                ev.preventDefault();
+            }
+
+            function handleContextResizerPointerMove(ev) {
+                if (!isResizingContextPanel) return;
+                const delta = contextResizeStartX - ev.clientX;
+                setContextPanelWidth(contextResizeStartWidth + delta);
+            }
+
+            function handleContextResizerPointerUp(ev) {
+                if (!isResizingContextPanel) return;
+                isResizingContextPanel = false;
+                document.body.classList.remove("context-resizing");
+                window.removeEventListener("pointermove", handleContextResizerPointerMove);
+                window.removeEventListener("pointerup", handleContextResizerPointerUp);
+                window.removeEventListener("pointercancel", handleContextResizerPointerUp);
+                contextResizer?.releasePointerCapture?.(ev.pointerId);
+                if (contextPanelWidth < CONTEXT_PANEL_CLOSE_THRESHOLD) {
+                    setContextPanelOpen(false);
+                    resetContextPanelWidthToStored();
+                } else {
+                    persistContextPanelWidth(contextPanelWidth);
+                }
+            }
+
+            contextResizer?.addEventListener("pointerdown", handleContextResizerPointerDown);
             contextBackdrop?.addEventListener("pointerdown", () => setContextPanelOpen(false));
-            window.addEventListener("resize", ensureContextPanelForBreakpoint);
+            window.addEventListener("resize", () => {
+                ensureContextPanelForBreakpoint();
+                if (!isResponsiveContextMode()) {
+                    setContextPanelWidth(contextPanelWidth);
+                }
+            });
+            const persistedContextPanelWidth = getPersistedContextPanelWidth();
+            setContextPanelWidth(persistedContextPanelWidth ?? CONTEXT_PANEL_DEFAULT_WIDTH);
             const persistedContextPanelState = getPersistedContextPanelState();
             if (persistedContextPanelState !== null) {
                 setContextPanelOpen(persistedContextPanelState);
             }
 
+            let recordingPanelWidth = RECORDING_PANEL_DEFAULT_WIDTH;
+            let isResizingRecordingPanel = false;
+            let recordingResizeStartX = 0;
+            let recordingResizeStartWidth = RECORDING_PANEL_DEFAULT_WIDTH;
+
+            function persistRecordingPanelWidth(width) {
+                try {
+                    localStorage.setItem(RECORDING_PANEL_WIDTH_STORAGE_KEY, Math.round(width).toString());
+                } catch (err) {
+                    console.warn("Enregistrement : impossible de sauvegarder la largeur", err);
+                }
+            }
+
+            function getPersistedRecordingPanelWidth() {
+                try {
+                    const raw = localStorage.getItem(RECORDING_PANEL_WIDTH_STORAGE_KEY);
+                    const parsed = Number.parseInt(raw, 10);
+                    if (!Number.isNaN(parsed) && Number.isFinite(parsed)) {
+                        return parsed;
+                    }
+                } catch (err) {
+                    console.warn("Enregistrement : impossible de lire la largeur", err);
+                }
+                return null;
+            }
+
+            function getRecordingContainerWidth() {
+                return Math.max(0, voiceMainBody?.clientWidth || window.innerWidth || 0);
+            }
+
+            function clampRecordingPanelWidth(value) {
+                const containerWidth = getRecordingContainerWidth();
+                const maxAllowed = Math.max(0, containerWidth - RECORDING_PANEL_MIN_GUIDELINES_WIDTH);
+                if (maxAllowed <= RECORDING_PANEL_MIN_WIDTH) {
+                    return maxAllowed;
+                }
+                return Math.min(maxAllowed, Math.max(RECORDING_PANEL_MIN_WIDTH, value));
+            }
+
+            function applyRecordingPanelWidth(value) {
+                const nextWidth = clampRecordingPanelWidth(value);
+                recordingPanelWidth = nextWidth;
+                if (voiceMainBody) {
+                    voiceMainBody.style.setProperty("--recording-panel-width", `${nextWidth}px`);
+                }
+                return nextWidth;
+            }
+
+            function getInitialRecordingPanelWidth() {
+                const containerWidth = getRecordingContainerWidth();
+                const preferred = Math.round(Math.max(RECORDING_PANEL_MIN_WIDTH, containerWidth * 0.55));
+                return clampRecordingPanelWidth(preferred);
+            }
+
+            function handleRecordingResizerPointerDown(ev) {
+                if (ev.button !== 0) return;
+                if (window.innerWidth <= RECORDING_PANEL_RESPONSIVE_BREAKPOINT) return;
+                if (!recordingPanel) return;
+                isResizingRecordingPanel = true;
+                recordingResizeStartX = ev.clientX;
+                recordingResizeStartWidth = recordingPanelWidth;
+                document.body.classList.add("recording-resizing");
+                window.addEventListener("pointermove", handleRecordingResizerPointerMove);
+                window.addEventListener("pointerup", handleRecordingResizerPointerUp);
+                window.addEventListener("pointercancel", handleRecordingResizerPointerUp);
+                recordingPanelResizer?.setPointerCapture?.(ev.pointerId);
+                ev.preventDefault();
+            }
+
+            function handleRecordingResizerPointerMove(ev) {
+                if (!isResizingRecordingPanel) return;
+                const delta = ev.clientX - recordingResizeStartX;
+                applyRecordingPanelWidth(recordingResizeStartWidth + delta);
+            }
+
+            function handleRecordingResizerPointerUp(ev) {
+                if (!isResizingRecordingPanel) return;
+                isResizingRecordingPanel = false;
+                document.body.classList.remove("recording-resizing");
+                window.removeEventListener("pointermove", handleRecordingResizerPointerMove);
+                window.removeEventListener("pointerup", handleRecordingResizerPointerUp);
+                window.removeEventListener("pointercancel", handleRecordingResizerPointerUp);
+                recordingPanelResizer?.releasePointerCapture?.(ev.pointerId);
+                persistRecordingPanelWidth(recordingPanelWidth);
+            }
+
+            const persistedRecordingPanelWidth = getPersistedRecordingPanelWidth();
+            applyRecordingPanelWidth(persistedRecordingPanelWidth ?? getInitialRecordingPanelWidth());
+            recordingPanelResizer?.addEventListener("pointerdown", handleRecordingResizerPointerDown);
+            window.addEventListener("resize", () => {
+                if (window.innerWidth > RECORDING_PANEL_RESPONSIVE_BREAKPOINT) {
+                    applyRecordingPanelWidth(recordingPanelWidth);
+                }
+            });
+
             function closeInfoPopup() {
                 infoPopup?.classList.remove("open");
             }
 
-                function resetInfoLogo(popup) {
-                    const logo = popup?.querySelector("img");
-                    if (!logo) return;
-                    const src = logo.getAttribute("src");
-                    if (!src) return;
-                    logo.src = "";
-                    void logo.offsetWidth;
-                    logo.src = src;
-                }
+            function resetInfoLogo(popup) {
+                const logo = popup?.querySelector("img");
+                if (!logo) return;
+                const src = logo.getAttribute("src");
+                if (!src) return;
+                logo.src = "";
+                void logo.offsetWidth;
+                logo.src = src;
+            }
 
             function reloadAppWithVersion(version = APP_VERSION) {
                 try {

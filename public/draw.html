@@ -743,6 +743,7 @@
             </section>
 
             <section class="connect-left">
+                <div id="gtContextModalResizer" class="context-resizer" aria-hidden="true"></div>
                 <div class="prompt-input-card" id="prompt-input-card">
                     <div class="card-title-row">
                         <label>Commande</label>
@@ -1680,6 +1681,7 @@
             const drawerOverlay = document.getElementById("gtContextModalBackdrop");
             const connectLeft = document.querySelector(".connect-left");
             const connectRight = document.querySelector(".connect-right");
+            const contextResizer = document.getElementById("gtContextModalResizer");
             const drawerMediaQuery = window.matchMedia("(max-width: 1200px)");
             const shareHistory = window.goToolkitShareHistory;
             const generateDefaultLabel = generateBtn?.textContent || "⌘ Envoyer";
@@ -1701,6 +1703,20 @@
             const DESKTOP_GUTENBERG_BREAKPOINT = 900;
             const GUTENBERG_SEEN_KEY = "robert-gutenberg-opened-draw";
             const GUTENBERG_OPEN_STATE_KEY = "robert-gutenberg-open-state-draw";
+            const DRAW_CONTEXT_WIDTH_KEY = "draw-context-width";
+            const DRAW_CONTEXT_PANEL_DEFAULT_WIDTH = 350;
+            const DRAW_CONTEXT_PANEL_RESIZE_MIN_WIDTH = 120;
+            const DRAW_CONTEXT_PANEL_CLOSE_THRESHOLD = 200;
+            const DRAW_CONTEXT_PANEL_MIN_MAIN_WIDTH = 320;
+            let drawContextPanelWidth = DRAW_CONTEXT_PANEL_DEFAULT_WIDTH;
+            let drawContextResizeStartX = 0;
+            let drawContextResizeStartWidth = DRAW_CONTEXT_PANEL_DEFAULT_WIDTH;
+            let isDrawContextResizing = false;
+            const storedDrawContextWidth = getPersistedDrawContextPanelWidth();
+            if (storedDrawContextWidth !== null) {
+                drawContextPanelWidth = storedDrawContextWidth;
+            }
+            setDrawContextPanelWidth(drawContextPanelWidth);
             const capsuleImportInput = document.createElement("input");
             capsuleImportInput.type = "file";
             capsuleImportInput.accept = "application/json";
@@ -1759,6 +1775,9 @@
                     toggleDrawerBtn?.setAttribute("aria-expanded", isOpen ? "true" : "false");
                     connectLeft?.classList.toggle("collapsed", !isOpen);
                     connectRight?.classList.toggle("full-width", !isOpen);
+                    if (isOpen) {
+                        setDrawContextPanelWidth(drawContextPanelWidth);
+                    }
                 }
             }
 
@@ -1783,6 +1802,94 @@
                 }
             }
 
+            function persistDrawContextPanelWidth(width) {
+                try {
+                    if (!window.localStorage) return;
+                    localStorage.setItem(DRAW_CONTEXT_WIDTH_KEY, Math.round(width).toString());
+                } catch (err) {
+                    console.warn("Impossible de sauvegarder la largeur du contexte", err);
+                }
+            }
+
+            function getPersistedDrawContextPanelWidth() {
+                try {
+                    if (!window.localStorage) return null;
+                    const raw = localStorage.getItem(DRAW_CONTEXT_WIDTH_KEY);
+                    const parsed = Number.parseInt(raw, 10);
+                    if (Number.isNaN(parsed) || !Number.isFinite(parsed)) return null;
+                    if (parsed < DRAW_CONTEXT_PANEL_RESIZE_MIN_WIDTH) return null;
+                    return parsed;
+                } catch (err) {
+                    console.warn("Impossible de lire la largeur du contexte", err);
+                }
+                return null;
+            }
+
+            function clampDrawContextPanelWidth(value) {
+                const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
+                const maxAvailable = Math.max(
+                    DRAW_CONTEXT_PANEL_RESIZE_MIN_WIDTH,
+                    viewportWidth - DRAW_CONTEXT_PANEL_MIN_MAIN_WIDTH
+                );
+                return Math.min(maxAvailable, Math.max(DRAW_CONTEXT_PANEL_RESIZE_MIN_WIDTH, value));
+            }
+
+            function setDrawContextPanelWidth(width) {
+                const nextWidth = clampDrawContextPanelWidth(width);
+                drawContextPanelWidth = nextWidth;
+                if (!connectLeft) return;
+                connectLeft.style.setProperty("--context-panel-width", `${nextWidth}px`);
+                connectLeft.style.setProperty("width", `${nextWidth}px`);
+                connectLeft.style.setProperty("flex-basis", `${nextWidth}px`);
+                connectLeft.style.setProperty("max-width", `${nextWidth}px`);
+            }
+
+            function resetDrawContextPanelWidthToStored() {
+                const storedWidth = getPersistedDrawContextPanelWidth() || DRAW_CONTEXT_PANEL_DEFAULT_WIDTH;
+                setDrawContextPanelWidth(storedWidth);
+            }
+
+            function isDrawDesktopMode() {
+                return !drawerMediaQuery.matches;
+            }
+
+            function handleDrawContextResizerPointerDown(ev) {
+                if (ev.button !== 0) return;
+                if (!isDrawDesktopMode()) return;
+                if (!isDrawerOpen) return;
+                if (!connectLeft || connectLeft.classList.contains("collapsed")) return;
+                isDrawContextResizing = true;
+                drawContextResizeStartWidth = drawContextPanelWidth;
+                drawContextResizeStartX = ev.clientX;
+                document.body.classList.add("context-resizing");
+                window.addEventListener("pointermove", handleDrawContextResizerPointerMove);
+                window.addEventListener("pointerup", handleDrawContextResizerPointerUp);
+                window.addEventListener("pointercancel", handleDrawContextResizerPointerUp);
+                contextResizer?.setPointerCapture?.(ev.pointerId);
+                ev.preventDefault();
+            }
+
+            function handleDrawContextResizerPointerMove(ev) {
+                if (!isDrawContextResizing) return;
+                const delta = drawContextResizeStartX - ev.clientX;
+                setDrawContextPanelWidth(drawContextResizeStartWidth + delta);
+            }
+
+            function handleDrawContextResizerPointerUp(ev) {
+                if (!isDrawContextResizing) return;
+                isDrawContextResizing = false;
+                document.body.classList.remove("context-resizing");
+                window.removeEventListener("pointermove", handleDrawContextResizerPointerMove);
+                window.removeEventListener("pointerup", handleDrawContextResizerPointerUp);
+                window.removeEventListener("pointercancel", handleDrawContextResizerPointerUp);
+                contextResizer?.releasePointerCapture?.(ev.pointerId);
+                if (drawContextPanelWidth < DRAW_CONTEXT_PANEL_CLOSE_THRESHOLD) {
+                    closeDrawer();
+                    resetDrawContextPanelWidthToStored();
+                } else {
+                    persistDrawContextPanelWidth(drawContextPanelWidth);
+                }
+            }
             syncDrawerToggleUi();
 
             function loadState() {
@@ -4558,6 +4665,7 @@
                 drawerOverlay?.addEventListener("click", () => {
                     closeDrawer();
                 });
+                contextResizer?.addEventListener("pointerdown", handleDrawContextResizerPointerDown);
 
                 drawerMediaQuery.addEventListener("change", handleDrawerBreakpointChange);
 

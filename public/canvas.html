@@ -367,6 +367,7 @@
         }
 
         .app-main {
+            --context-panel-width: 350px;
             flex: 1;
             display: grid;
             grid-template-columns: minmax(0, 1fr);
@@ -378,7 +379,7 @@
 
         .app-main.gutenberg-open {
             /* make the right-hand card responsive: at most 350px, at least 200px */
-            grid-template-columns: minmax(0, 1fr) minmax(200px, 350px);
+            grid-template-columns: minmax(0, 1fr) minmax(200px, var(--context-panel-width));
         }
 
         .gutenberg-card {
@@ -1848,6 +1849,7 @@
                 <div id="slides" class="slide-wrapper"></div>
             </div>
             <aside class="gutenberg-card gt-context-modal" id="gtContextModal" aria-label="Contexte" aria-hidden="true">
+                <div id="gtContextModalResizer" class="context-resizer" aria-hidden="true"></div>
                 <div class="gutenberg-card-header">
                     <div class="gutenberg-card-actions">
                         <!-- header left intentionally minimal; status and actions placed below -->
@@ -2284,7 +2286,22 @@
         const promptModal = document.getElementById("gtPromptModal");
         const appMain = document.querySelector(".app-main");
         const contextPanel = document.getElementById("gtContextModal");
+        const contextResizer = document.getElementById("gtContextModalResizer");
         const contextBackdrop = document.getElementById("gtContextModalBackdrop");
+        const CONTEXT_PANEL_WIDTH_STORAGE_KEY = "canvas-context-panel-width";
+        const CONTEXT_PANEL_DEFAULT_WIDTH = 350;
+        const CONTEXT_PANEL_RESIZE_MIN_WIDTH = 120;
+        const CONTEXT_PANEL_CLOSE_THRESHOLD = 200;
+        const CONTEXT_PANEL_MIN_MAIN_WIDTH = 320;
+        let contextPanelWidth = CONTEXT_PANEL_DEFAULT_WIDTH;
+        let contextResizeStartWidth = CONTEXT_PANEL_DEFAULT_WIDTH;
+        let contextResizeStartX = 0;
+        let isResizingContextPanel = false;
+        const storedContextWidth = getPersistedCanvasContextPanelWidth();
+        if (storedContextWidth !== null) {
+            contextPanelWidth = storedContextWidth;
+        }
+        setCanvasContextPanelWidth(contextPanelWidth);
         const templateModal = document.getElementById("gtTemplateModal");
         const templateList = document.getElementById("gtTemplateModalList");
         const templateApplyBtn = document.getElementById("gtTemplateModalApply");
@@ -2652,6 +2669,88 @@
             return window.innerWidth >= DESKTOP_GUTENBERG_BREAKPOINT;
         }
 
+        function persistCanvasContextPanelWidth(width) {
+            try {
+                if (!window.localStorage) return;
+                localStorage.setItem(CONTEXT_PANEL_WIDTH_STORAGE_KEY, Math.round(width).toString());
+            } catch (err) {
+                console.warn("Impossible de sauvegarder la largeur du contexte", err);
+            }
+        }
+
+        function getPersistedCanvasContextPanelWidth() {
+            try {
+                if (!window.localStorage) return null;
+                const raw = localStorage.getItem(CONTEXT_PANEL_WIDTH_STORAGE_KEY);
+                const parsed = Number.parseInt(raw, 10);
+                if (Number.isNaN(parsed) || !Number.isFinite(parsed)) return null;
+                if (parsed < CONTEXT_PANEL_RESIZE_MIN_WIDTH) return null;
+                return parsed;
+            } catch (err) {
+                console.warn("Impossible de lire la largeur du contexte", err);
+            }
+            return null;
+        }
+
+        function clampCanvasContextPanelWidth(value) {
+            const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
+            const maxAvailable = Math.max(
+                CONTEXT_PANEL_RESIZE_MIN_WIDTH,
+                viewportWidth - CONTEXT_PANEL_MIN_MAIN_WIDTH
+            );
+            return Math.min(maxAvailable, Math.max(CONTEXT_PANEL_RESIZE_MIN_WIDTH, value));
+        }
+
+        function setCanvasContextPanelWidth(width) {
+            const nextWidth = clampCanvasContextPanelWidth(width);
+            contextPanelWidth = nextWidth;
+            if (appMain) {
+                appMain.style.setProperty("--context-panel-width", `${nextWidth}px`);
+            }
+        }
+
+        function resetCanvasContextPanelWidthToStored() {
+            const storedWidth = getPersistedCanvasContextPanelWidth() || CONTEXT_PANEL_DEFAULT_WIDTH;
+            setCanvasContextPanelWidth(storedWidth);
+        }
+
+        function handleCanvasContextResizerPointerDown(ev) {
+            if (ev.button !== 0) return;
+            if (!contextPanel?.classList.contains("open")) return;
+            if (!isDesktopGutenberg()) return;
+            isResizingContextPanel = true;
+            contextResizeStartWidth = contextPanelWidth;
+            contextResizeStartX = ev.clientX;
+            document.body.classList.add("context-resizing");
+            window.addEventListener("pointermove", handleCanvasContextResizerPointerMove);
+            window.addEventListener("pointerup", handleCanvasContextResizerPointerUp);
+            window.addEventListener("pointercancel", handleCanvasContextResizerPointerUp);
+            contextResizer?.setPointerCapture?.(ev.pointerId);
+            ev.preventDefault();
+        }
+
+        function handleCanvasContextResizerPointerMove(ev) {
+            if (!isResizingContextPanel) return;
+            const delta = contextResizeStartX - ev.clientX;
+            setCanvasContextPanelWidth(contextResizeStartWidth + delta);
+        }
+
+        function handleCanvasContextResizerPointerUp(ev) {
+            if (!isResizingContextPanel) return;
+            isResizingContextPanel = false;
+            document.body.classList.remove("context-resizing");
+            window.removeEventListener("pointermove", handleCanvasContextResizerPointerMove);
+            window.removeEventListener("pointerup", handleCanvasContextResizerPointerUp);
+            window.removeEventListener("pointercancel", handleCanvasContextResizerPointerUp);
+            contextResizer?.releasePointerCapture?.(ev.pointerId);
+            if (contextPanelWidth < CONTEXT_PANEL_CLOSE_THRESHOLD) {
+                setGutenbergOpen(false);
+                resetCanvasContextPanelWidthToStored();
+            } else {
+                persistCanvasContextPanelWidth(contextPanelWidth);
+            }
+        }
+
         function isGutenbergOpen() {
             return Boolean(contextPanel?.classList.contains("open"));
         }
@@ -2747,6 +2846,7 @@
         function handleResize() {
             scheduleSlideClampUpdate();
             syncGutenbergLayoutState();
+            setCanvasContextPanelWidth(contextPanelWidth);
         }
 
         window.addEventListener("resize", handleResize);
@@ -6663,6 +6763,7 @@
                 /* noop */
             }
         }, true);
+        contextResizer?.addEventListener("pointerdown", handleCanvasContextResizerPointerDown);
         switchModalTab("settings");
         slideContextLink?.addEventListener("click", event => {
             event.stopPropagation();
