@@ -1,35 +1,35 @@
 ## 2025-12-29
-Notes de version et feuille de route. 
+Ajout des [notes de versions](#notes) et une [feuille de route](/#roadmap). 
 
 ## 2025-12-28
-Module [Voice](/voice?v=2025.12.28) : audio, webcam et partage d’écran. Transcription vocale AssemblyAI.
+Module [Voice](/voice?v=v) : audio, webcam et partage d’écran. Transcription vocale AssemblyAI.
 
 ## 2025-12-27
-Ajout du fournisseur IA OpenRouter. Clarifications des conditions d’usage.
+Utilisation du fournisseur IA OpenRouter par défaut. Clarification des [CGU](/#legal).
 
 ## 2025-12-24
 Ajout du Feedback dans tous les modules et gestion de la liste.
 
 ## 2025-12-20
-Nouveaux templates [Grid](/grid?v=2025.12.28) pour la cartographie des données et la structure arborescente.
+Nouveaux modèles [Grid](/grid?v=v) pour la cartographie des données et la structure arborescente.
 
 ## 2025-12-17
-Lancement du module [Grid](/grid?v=2025.12.28) avec génération de données et pilote IA local WebLLM.
+Lancement du module [Grid](/grid?v=v) avec génération de données.
 
 ## 2025-12-16
 Brouillons et stockage local pour préserver les documents en cours.
 
 ## 2025-12-08
-Templates plus product, harmonisation de l’interface, isolation des prompts et module Feedback.
+Templates plus product, harmonisation de l’interface, isolation des prompts et module [Feedback](/#feedback?v=v).
 
 ## 2025-12-04
-Module [Draw](/draw?v=2025.12.28) : diagrammes de classes, de flux et séquentiels avec Excalidraw.
+Module [Draw](/draw?v=v) : diagrammes de classe, de flux et séquentiel.
 
 ## 2025-11-30
-Module [Timeline](/timeline?v=2025.12.28) : repères, actions et groupes avec Vis-timeline. → 
+Module [Timeline](/timeline?v=v) : repères, actions, groupes, types et modèles → 
 
 ## 2025-11-24
-Homepage avec partage de liens et intégration Cloudflare + Firebase.
+Homepage avec partage de liens et espace en ligne.
 
 ## 2025-11-22
-Initialisation du module [Canvas](/canvas?v=2025.12.28) et intégration OpenAI.
+Initialisation du module [Canvas](/canvas?v=v) et intégration moteur IA OpenAI.

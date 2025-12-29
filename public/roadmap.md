@@ -8,7 +8,7 @@
 
 ## Module Mémo `À étudier`
 - Import de fichiers en mémoire pour une utilisation par l'IA
-- Questions et création de mémos à partir d'une mémoire
+- Q&A et création de mémos à partir d'une mémoire en contexte
 
 ## Commande IA avec corpus `À étudier`
 - Créations de mémoires à partir de la bibliothèque locale

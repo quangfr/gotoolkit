@@ -1748,8 +1748,7 @@
         </div>
 
         <div id="infoPopup" class="info-popup" role="dialog" aria-live="polite">
-            <img src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs="
-                data-src="img/logo.gif" alt="Logo Go-Toolkit">
+            <img src="img/logo.gif" alt="Logo Go-Toolkit">
             <strong>Module Voice (Goal Digger)</strong>
             <span>Version 2025.12.28</span>
             <span>Usage réservé à Savane Consulting.</span>
@@ -7144,13 +7143,15 @@
                 infoPopup?.classList.remove("open");
             }
 
-            function ensureInfoLogoLoaded(popup) {
-                const logo = popup?.querySelector("img[data-src]");
-                if (logo && !logo.dataset.loaded) {
-                    logo.src = logo.dataset.src;
-                    logo.dataset.loaded = "1";
+                function resetInfoLogo(popup) {
+                    const logo = popup?.querySelector("img");
+                    if (!logo) return;
+                    const src = logo.getAttribute("src");
+                    if (!src) return;
+                    logo.src = "";
+                    void logo.offsetWidth;
+                    logo.src = src;
                 }
-            }
 
             function reloadAppWithVersion(version = APP_VERSION) {
                 try {
@@ -7163,7 +7164,7 @@
             }
 
             function toggleInfoPopup() {
-                ensureInfoLogoLoaded(infoPopup);
+                resetInfoLogo(infoPopup);
                 infoPopup?.classList.toggle("open");
             }
 
@@ -7754,6 +7755,89 @@
         })();
     </script>
     <script src="js/feedback.js"></script>
+    <script>
+        (function () {
+            const templateTrigger = document.getElementById("gtTemplateModalTrigger");
+            const aiTrigger = document.getElementById("gtContextModalTrigger");
+            const contextPanel = document.getElementById("gtContextModal");
+            const promptTrigger = document.getElementById("gtPromptModalTrigger");
+            const shareTrigger = document.getElementById("shareBtn");
+            const shareMenu = document.getElementById("shareMenu");
+            const infoTrigger = document.getElementById("aboutVoiceBtn");
+            const infoPanel = document.getElementById("infoPopup");
+            const feedbackTrigger = document.getElementById("feedback-app-voice-openBtn");
+            const fileTrigger = document.getElementById("fileMenuBtn");
+            const fileMenu = document.getElementById("fileMenu");
+            const displayTrigger = document.getElementById("optionsBtn");
+            const displayMenu = document.getElementById("optionsMenu");
+
+            function clickWhenClosed(trigger, menu) {
+                if (!trigger) return false;
+                if (menu && menu.classList.contains("open")) return true;
+                trigger.click();
+                return true;
+            }
+
+            function openContextPanel() {
+                if (!aiTrigger) return false;
+                if (contextPanel?.classList.contains("open")) {
+                    return true;
+                }
+                aiTrigger.click();
+                return true;
+            }
+
+            function openInfo() {
+                if (!infoTrigger || !infoPanel) return false;
+                if (infoPanel.classList.contains("open")) return true;
+                infoTrigger.click();
+                return true;
+            }
+
+            const handlers = {
+                "#template": () => clickWhenClosed(templateTrigger),
+                "#ai": openContextPanel,
+                "#share": () => clickWhenClosed(shareTrigger, shareMenu),
+                "#info": openInfo,
+                "#feedback": () => {
+                    if (!feedbackTrigger) return false;
+                    feedbackTrigger.click();
+                    return true;
+                },
+                "#prompt": () => clickWhenClosed(promptTrigger),
+                "#file": () => clickWhenClosed(fileTrigger, fileMenu),
+                "#display": () => clickWhenClosed(displayTrigger, displayMenu)
+            };
+
+            function normalize(hash) {
+                if (!hash) return "";
+                return hash.split(/[?#]/)[0].toLowerCase();
+            }
+
+            function removeHash() {
+                try {
+                    window.history.replaceState(null, "", window.location.pathname + window.location.search);
+                } catch (error) {
+                    // ignore
+                }
+            }
+
+            function handleFragment(hash) {
+                const target = normalize(hash);
+                if (!target) return;
+                const action = handlers[target];
+                if (typeof action !== "function") return;
+                const opened = action();
+                if (opened) {
+                    removeHash();
+                }
+            }
+
+            window.addEventListener("hashchange", () => handleFragment(window.location.hash));
+            window.addEventListener("DOMContentLoaded", () => handleFragment(window.location.hash));
+            handleFragment(window.location.hash);
+        })();
+    </script>
 </body>
 
 </html>

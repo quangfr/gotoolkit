@@ -1938,19 +1938,19 @@
                         const ul = document.createElement("ul");
                         ul.className = "release-roadmap-text";
                         listBlocks.forEach(block => {
-                    const li = document.createElement("li");
-                    li.append(createInlineFragment(block.text));
-                    ul.appendChild(li);
-                });
-                item.appendChild(ul);
-            }
-            const paragraphBlocks = entryData.blocks.filter(block => block.type === "paragraph");
-            paragraphBlocks.forEach(block => {
-                const paragraph = document.createElement("p");
-                paragraph.className = "release-roadmap-text";
-                paragraph.append(createInlineFragment(block.text));
-                item.appendChild(paragraph);
-            });
+                            const li = document.createElement("li");
+                            li.append(createInlineFragment(block.text));
+                            ul.appendChild(li);
+                        });
+                        item.appendChild(ul);
+                    }
+                    const paragraphBlocks = entryData.blocks.filter(block => block.type === "paragraph");
+                    paragraphBlocks.forEach(block => {
+                        const paragraph = document.createElement("p");
+                        paragraph.className = "release-roadmap-text";
+                        paragraph.append(createInlineFragment(block.text));
+                        item.appendChild(paragraph);
+                    });
                     if (!listBlocks.length && !paragraphBlocks.length) {
                         const message = document.createElement("p");
                         message.className = "release-roadmap-text";
@@ -4536,15 +4536,84 @@
             });
         })();
     </script>
+
+    <script>
+        (function () {
+            // Hash-fragment → open modal shortcuts
+            function showModalById(id, focusSelector) {
+                const m = document.getElementById(id);
+                if (!m) return;
+                m.classList.add('open');
+                m.setAttribute('aria-hidden', 'false');
+                const focusEl = m.querySelector(focusSelector) || m.querySelector('button, [tabindex], input, textarea, select');
+                try { focusEl?.focus(); } catch (e) { /* ignore */ }
+            }
+
+            function handleFragment(hash) {
+                if (!hash) return;
+                const h = String(hash).toLowerCase();
+                if (h === '#feedback') {
+                    showModalById('feedbackModal', '#feedbackType');
+                } else if (h === '#config' || h === '#parametres' || h === '#paramètres') {
+                    if (typeof openSettings === 'function') {
+                        try { openSettings(); } catch (e) { showModalById('settingsModal', '#saveSettingsBtn'); }
+                    } else {
+                        showModalById('settingsModal', '#saveSettingsBtn');
+                    }
+                } else if (h === '#legal') {
+                    if (window.goToolkitNexusModal && typeof window.goToolkitNexusModal.open === 'function') {
+                        try { window.goToolkitNexusModal.open(); } catch (e) { document.querySelector('[data-open-nexus-modal]')?.click(); }
+                    } else {
+                        document.querySelector('[data-open-nexus-modal]')?.click();
+                    }
+                } else if (h === '#info') {
+                    showModalById('superpowerModal', '#closeSuperpowerBtn');
+                } else if (h === '#notes') {
+                    if (typeof window.GoToolkitOpenReleaseNotes === 'function') {
+                        window.GoToolkitOpenReleaseNotes();
+                    } else {
+                        showModalById('releaseNotesModal', '#releaseNotesClose');
+                    }
+                } else if (h === '#roadmap') {
+                    if (typeof window.GoToolkitOpenReleaseNotesTab === 'function') {
+                        window.GoToolkitOpenReleaseNotesTab('roadmapContent');
+                    }
+                }
+                try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { /* ignore */ }
+            }
+
+            window.addEventListener('DOMContentLoaded', () => { handleFragment(location.hash); });
+            window.addEventListener('hashchange', () => { handleFragment(location.hash); });
+        })();
+    </script>
+
     <script>
         (function () {
             const trigger = document.getElementById("releaseNotesTrigger");
             const modal = document.getElementById("releaseNotesModal");
             const closeBtn = document.getElementById("releaseNotesClose");
+            const heroLogo = document.querySelector(".hero-logo-wrapper img");
+            function resetHeroLogo() {
+                if (!heroLogo) return;
+                const src = heroLogo.getAttribute("src");
+                if (!src) return;
+                heroLogo.src = "";
+                void heroLogo.offsetWidth;
+                heroLogo.src = src;
+            }
             if (!modal) return;
             const openReleaseNotes = () => {
+                resetHeroLogo();
                 modal.classList.add("open");
                 modal.setAttribute("aria-hidden", "false");
+            };
+            window.GoToolkitOpenReleaseNotes = openReleaseNotes;
+            window.GoToolkitOpenReleaseNotesTab = targetId => {
+                openReleaseNotes();
+                requestAnimationFrame(() => {
+                    const tab = document.querySelector(`.release-tab[data-target="${targetId}"]`);
+                    tab?.click();
+                });
             };
             const closeReleaseNotes = () => {
                 modal.classList.remove("open");
