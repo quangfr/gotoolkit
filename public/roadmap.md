@@ -1,4 +1,4 @@
-## Compte utilisateur `T1 2026`
+## Compte en ligne sécurisé `T1 2026`
 - Accès à l'espace de partage en ligne sur d’autres appareils `À planifier` 
 - Quota par utilisateur pour les requêtes API `À planifier`
 
@@ -17,3 +17,8 @@
 
 ## Module Voice `T1 2026`
 - Analyse des transcripts pour conseils IA `À planifier` 
+
+## Confidentialité des données `T1 2026`
+- Pseudonymisation des données sensibles envoyées et hébergées en ligne `À étudier`
+- Connexion à un service IA cloud agrée ou auto-hébergé `À étudier`
+- Reconstruction locale suite à pseudonomisation `À étudier` 
