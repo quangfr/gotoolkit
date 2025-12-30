@@ -8,7 +8,7 @@
 - Création de mémos à partir d'une mémoire `À étudier`
 
 ## Commande IA avec mémoire `T1 2026`
-- Création assistée de mémoires à partir des données de la bibliothèque locale `À étudier`
+- Création assistée de mémoires à partir de la bibliothèque locale `À étudier`
 - Ajout de mémoires et de fichiers en commande dans les modules `À étudier`
 
 ## Module Voice `T1 2026`

@@ -4629,7 +4629,7 @@
                     }
                 } else if (h === '#info') {
                     showModalById('superpowerModal', '#closeSuperpowerBtn');
-                } else if (h === '#notes') {
+                } else if (h === '#news') {
                     if (typeof window.GoToolkitOpenReleaseNotes === 'function') {
                         window.GoToolkitOpenReleaseNotes();
                     } else {
@@ -4682,12 +4682,12 @@
                 trigger?.focus();
             };
             trigger?.addEventListener("click", () => {
-                window.location.href = "/?v=v#notes";
+                window.location.href = "/?v=v#news";
             });
             trigger?.addEventListener("keydown", event => {
                 if (event.key === "Enter" || event.key === " ") {
                     event.preventDefault();
-                    window.location.href = "/?v=v#notes";
+                    window.location.href = "/?v=v#news";
                 }
             });
             closeBtn?.addEventListener("click", closeReleaseNotes);
