@@ -5,11 +5,11 @@
 ## Module Mémo `T1 2026`
 - Import de fichiers en mémoire utilisable par l'IA `À planifier` 
 - Chatbot pour questions / réponses avec références aux source `À étudier` 
-- Création de mémos à partir d'une mémoire `À étudier`
+- Création assistée de mémos à partir d'une mémoire `À étudier`
 
 ## Commande IA avec mémoire `T1 2026`
-- Création assistée de mémoires à partir de la bibliothèque locale `À étudier`
-- Ajout de mémoires et de fichiers en commande dans les modules `À étudier`
+- Génération de mémoires à partir de la bibliothèque locale `À étudier`
+- Ajout de mémoires en contexte dans les modules `À étudier`
 
 ## Module Voice `T1 2026`
 - Analyse des transcripts pour conseils IA `À planifier` 
