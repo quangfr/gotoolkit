@@ -87,59 +87,6 @@
         hydrateToastSlots();
     }
 
-    let contextCollapseIdSeed = 0;
-
-    function ensureContextCollapseTargetId(element) {
-        if (element.id) {
-            return element.id;
-        }
-        contextCollapseIdSeed += 1;
-        const generatedId = `gt-context-collapse-${contextCollapseIdSeed}`;
-        element.id = generatedId;
-        return generatedId;
-    }
-
-    function hydrateContextCollapsibles() {
-        const OPEN_ICON = "▾";
-        const CLOSED_ICON = "▸";
-        const panels = Array.from(document.querySelectorAll("[data-context-collapse-target]"));
-        if (!panels.length) {
-            return;
-        }
-        panels.forEach(panel => {
-            if (panel.dataset.contextCollapseInitialized === "true") {
-                return;
-            }
-            const label = panel.querySelector(".gt-context-label.gt-context-toggle");
-            const icon = label ? label.querySelector(".gt-context-toggle-icon") : null;
-            const targetSelector = panel.dataset.contextCollapseTarget;
-            const target =
-                (targetSelector && panel.querySelector(targetSelector)) || panel.querySelector("textarea");
-            if (!label || !icon || !target) {
-                return;
-            }
-            panel.dataset.contextCollapseInitialized = "true";
-            label.setAttribute("role", "button");
-            label.tabIndex = 0;
-            const targetId = ensureContextCollapseTargetId(target);
-            label.setAttribute("aria-controls", targetId);
-            const updateState = collapsed => {
-                target.hidden = collapsed;
-                icon.textContent = collapsed ? CLOSED_ICON : OPEN_ICON;
-                label.setAttribute("aria-expanded", String(!collapsed));
-            };
-            const toggle = () => updateState(!target.hidden);
-            label.addEventListener("click", toggle);
-            label.addEventListener("keydown", event => {
-                if (event.key === "Enter" || event.key === " " || event.key === "Spacebar") {
-                    event.preventDefault();
-                    toggle();
-                }
-            });
-            updateState(Boolean(target.hidden));
-        });
-    }
-
     const ACTION_COUNTDOWN_FRAMES = ["◴", "◷", "◶", "◵"];
 
     function normalizeActionCountdownTargets(targets) {
@@ -411,10 +358,8 @@
     }
 
     hydrateSharedUI();
-    hydrateContextCollapsibles();
     if (document.readyState === "loading") {
         window.addEventListener("DOMContentLoaded", hydrateSharedUI);
-        window.addEventListener("DOMContentLoaded", hydrateContextCollapsibles);
     }
 
     window.GoToolkitSharedUI = window.GoToolkitSharedUI || {};

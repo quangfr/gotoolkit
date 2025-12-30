@@ -380,24 +380,6 @@ body.context-resizing {
   color: var(--app-primary-strong, #1f2a56);
 }
 
-.gt-context-label.gt-context-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  cursor: pointer;
-  user-select: none;
-  flex-direction: row;
-}
-
-.gt-context-toggle-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.1em;
-  line-height: 1;
-  font-size: 0.95em;
-}
-
 .prompt-input-wrapper {
   position: relative;
 }
