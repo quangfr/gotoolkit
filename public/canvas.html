@@ -505,10 +505,8 @@
         }
 
         .gutenberg-card label {
-            font-size: 13px;
             display: flex;
             flex-direction: column;
-            gap: 6px;
         }
 
         .gutenberg-card textarea {
@@ -1771,8 +1769,6 @@
 
                 <div id="tabs"></div>
                 <button class="tab-action" id="addTabBtn" type="button" aria-label="Ajouter un onglet">+</button>
-                <button class="tab-action" id="restoreStructureBtn" type="button"
-                    aria-label="Restaurer les colonnes et sections">↺</button>
                 <button class="tab-action" id="deleteTabBtn" type="button" aria-label="Supprimer l'onglet">×</button>
             </div>
             <div class="global-actions">
@@ -2257,7 +2253,6 @@
         const PLACEHOLDER_COOLDOWN_DURATION = 30;
         const addTabBtn = document.getElementById("addTabBtn");
         const deleteTabBtn = document.getElementById("deleteTabBtn");
-        const restoreStructureBtn = document.getElementById("restoreStructureBtn");
         const generateFullSlideBtn = document.getElementById("generateFullSlideBtn");
         const adviceBtn = document.getElementById("adviceBtn");
         const generateFullSlideBaseLabel = ensureButtonBaseLabel(generateFullSlideBtn);
@@ -5575,9 +5570,6 @@
         }
 
         addTabBtn.addEventListener("click", addTab);
-        restoreStructureBtn?.addEventListener("click", () => {
-            restoreColumnsAndSections();
-        });
         generateFullSlideBtn?.addEventListener("click", () => {
             generateFullSlideContent();
         });

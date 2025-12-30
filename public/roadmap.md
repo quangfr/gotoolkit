@@ -1,18 +1,19 @@
-## Compte utilisateur `À planifier` `T1 2026`
-- Accès à l'espace de partage en ligne sur d’autres appareils
-- Quota par utilisateur pour les requêtes API
+## Compte utilisateur `T1 2026`
+- Accès à l'espace de partage en ligne sur d’autres appareils `À planifier` 
+- Quota par utilisateur pour les requêtes API `À planifier`
 
-## Chatbot IA `En cours` `T1 2026`
-- Navigation page d'accueil (outils, documents)
-- Mode d'édition en conversation pour les modules
+## Chatbot IA `T1 2026`
+- Navigation page d'accueil (outils, documents) `À étudier`
+- Mode d'édition en conversation pour les modules `À planifier`
 
-## Module Mémo `À planifier` `T1 2026`
-- Import de fichiers en mémoire utilisable par l'IA 
-- Chatbot pour Q&A et création de mémos à partir d'une mémoire
+## Module Mémo `T1 2026`
+- Import de fichiers en mémoire utilisable par l'IA `À planifier` 
+- Chatbot pour questions / réponses avec visualisation de la source `À étudier` 
+- Création de mémos à partir d'une mémoire `À étudier`
 
-## Commande IA avec mémoire `À étudier`
-- Création de mémoires à partir des donnés de la bibliothèque locale
-- Ajout de mémoires en contexte dans les modules
+## Commande IA avec mémoire `T1 2026`
+- Création de mémoires à partir des données de la bibliothèque locale `À étudier`
+- Ajout de mémoires et de fichiers en commande dans les modules `À étudier`
 
-## Module Voice
-- Analyse des transcripts pour conseils IA `À planifier` `T1 2026`
+## Module Voice `T1 2026`
+- Analyse des transcripts pour conseils IA `À planifier` 
