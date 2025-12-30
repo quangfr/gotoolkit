@@ -286,6 +286,50 @@ button.btn-primary {
   --context-panel-width: 350px;
 }
 
+.context-panels {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.command-panel,
+.script-panel {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.command-panel textarea,
+.script-panel textarea {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.context-vertical-resizer {
+  position: relative;
+  flex: 0 0 auto;
+  height: 16px;
+  cursor: ns-resize;
+  margin: 4px 0;
+}
+
+.context-vertical-resizer::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 32px;
+  height: 2px;
+  background: rgba(15, 23, 42, 0.2);
+  border-radius: 999px;
+  transform: translate(-50%, -50%);
+}
+
 .context-resizer {
   position: absolute;
   top: 0;
@@ -327,6 +371,30 @@ body.context-resizing {
 .connect-left textarea {
   font-size: 12px;
   font-family: var(--app-font);
+}
+
+.gt-context-label {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--app-primary-strong, #1f2a56);
+}
+
+.gt-context-label.gt-context-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.gt-context-toggle-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1em;
+  line-height: 1;
+  font-size: 0.95em;
 }
 
 .prompt-input-wrapper {

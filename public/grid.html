@@ -655,8 +655,8 @@
         }
 
         .prompt-input-card textarea {
-            height: 260px;
-            margin-bottom: 0px;
+            min-height: 160px;
+            margin-bottom: 0;
         }
 
         .mermaid-output-card {
@@ -1167,44 +1167,56 @@
 
             <section class="connect-left">
                 <div id="gtContextModalResizer" class="context-resizer" aria-hidden="true"></div>
-                <div class="prompt-input-card" id="prompt-input-card">
-                    <div class="card-title-row">
-                        <label>Commande</label>
-                        <button id="clearGridBtn" class="btn" type="button">⊘</button>
-                        <button id="generateBtn" class="btn-primary generate-btn" type="button">⌘ Envoyer</button>
-                    </div>
-                    <div id="templateMeta" class="template-meta"></div>
-                    <div class="prompt-input-wrapper">
-                        <div id="promptSuggestion" class="prompt-suggestion" aria-hidden="true"></div>
-                        <div id="templateTooltip" class="template-tooltip" aria-hidden="true"></div>
-                        <div class="speech-field-wrapper">
-                            <div class="speech-suggestion" data-speech-suggestion="promptInput" aria-hidden="true">
-                            </div>
-                            <textarea id="promptInput" rows="5"
-                                placeholder="Décris le contexte des données attendues (acteur, périmètre, règles)..."></textarea>
-                            <button class="speech-button" type="button" data-speech-target="promptInput"
-                                title="Dictée vocale" aria-label="Activer la dictée vocale">◉</button>
-                            <div id="promptFileRow" class="prompt-file-row" aria-hidden="true">
-                                <div id="promptFileList" class="prompt-file-list"></div>
-                                <div class="prompt-file-actions">
-                                    <input id="promptFileInput" type="file" multiple style="display: none;"
-                                        aria-hidden="true">
-                                    <button id="promptFileBtn" class="prompt-file-btn" type="button"
-                                        title="Ajouter des fichiers" aria-label="Ajouter des fichiers">🗁</button>
+                <div class="context-panels">
+                    <div class="prompt-input-card command-panel" id="prompt-input-card"
+                        data-context-collapse-target=".prompt-input-wrapper">
+                        <div class="card-title-row">
+                            <label class="gt-context-label gt-context-toggle">
+                                <span class="gt-context-toggle-icon" aria-hidden="true">▾</span>
+                                Commande
+                            </label>
+                            <button id="clearGridBtn" class="btn" type="button">⊘</button>
+                            <button id="generateBtn" class="btn-primary generate-btn" type="button">⌘ Envoyer</button>
+                        </div>
+                        <div id="templateMeta" class="template-meta"></div>
+                        <div class="prompt-input-wrapper">
+                            <div id="promptSuggestion" class="prompt-suggestion" aria-hidden="true"></div>
+                            <div id="templateTooltip" class="template-tooltip" aria-hidden="true"></div>
+                            <div class="speech-field-wrapper">
+                                <div class="speech-suggestion" data-speech-suggestion="promptInput" aria-hidden="true">
+                                </div>
+                                <textarea id="promptInput" rows="5"
+                                    placeholder="Décris le contexte des données attendues (acteur, périmètre, règles)..."></textarea>
+                                <button class="speech-button" type="button" data-speech-target="promptInput"
+                                    title="Dictée vocale" aria-label="Activer la dictée vocale">◉</button>
+                                <div id="promptFileRow" class="prompt-file-row" aria-hidden="true">
+                                    <div id="promptFileList" class="prompt-file-list"></div>
+                                    <div class="prompt-file-actions">
+                                        <input id="promptFileInput" type="file" multiple style="display: none;"
+                                            aria-hidden="true">
+                                        <button id="promptFileBtn" class="prompt-file-btn" type="button"
+                                            title="Ajouter des fichiers" aria-label="Ajouter des fichiers">🗁</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
+                        <div id="promptAltRow" class="prompt-alt-row" aria-live="polite"></div>
                     </div>
-                    <div id="promptAltRow" class="prompt-alt-row" aria-live="polite"></div>
-                </div>
-                <div class="mermaid-output-card">
-                    <div class="card-title-row">
-                        <label>Script</label>
-                        <div class="card-actions">
-                            <button id="applyScriptBtn" class="btn" type="button">↺ Restaurer</button>
+                    <div id="gtContextModalVerticalResizer" class="context-vertical-resizer" role="separator"
+                        tabindex="0" aria-orientation="horizontal"
+                        aria-label="Ajuster la hauteur des panneaux Commande et Script"></div>
+                    <div class="mermaid-output-card script-panel" data-context-collapse-target="textarea">
+                        <div class="card-title-row">
+                            <label class="gt-context-label gt-context-toggle">
+                                <span class="gt-context-toggle-icon" aria-hidden="true">▾</span>
+                                Script
+                            </label>
+                            <div class="card-actions">
+                                <button id="applyScriptBtn" class="btn" type="button">↺ Restaurer</button>
+                            </div>
                         </div>
+                        <textarea id="gridScript" spellcheck="false"></textarea>
                     </div>
-                    <textarea id="gridScript" spellcheck="false"></textarea>
                 </div>
             </section>
         </main>
@@ -1397,6 +1409,10 @@
                 const sidebar = document.querySelector(".connect-left");
                 const connectRight = document.querySelector(".connect-right");
                 const contextResizer = document.getElementById("gtContextModalResizer");
+                const contextPanels = document.querySelector(".context-panels");
+                const contextSplitter = document.getElementById("gtContextModalVerticalResizer");
+                const commandPanel = document.querySelector(".prompt-input-card.command-panel");
+                const scriptPanel = document.querySelector(".mermaid-output-card.script-panel");
                 const GRID_CONTEXT_WIDTH_STORAGE_KEY = "grid-context-width";
                 const GRID_CONTEXT_PANEL_DEFAULT_WIDTH = 350;
                 const GRID_CONTEXT_PANEL_RESIZE_MIN_WIDTH = 120;
@@ -9018,6 +9034,24 @@
                         drawerOverlay.addEventListener("click", () => toggleSidebar(false));
                     }
                     contextResizer?.addEventListener("pointerdown", handleGridContextResizerPointerDown);
+                    if (
+                        window.GoToolkitContextSplitter &&
+                        contextPanels &&
+                        contextSplitter &&
+                        commandPanel &&
+                        scriptPanel
+                    ) {
+                        window.GoToolkitContextSplitter.init({
+                            container: contextPanels,
+                            topPanel: commandPanel,
+                            bottomPanel: scriptPanel,
+                            splitter: contextSplitter,
+                            storageKey: "grid-context-command-height",
+                            defaultHeight: 260,
+                            minTopHeight: 140,
+                            minBottomHeight: 120
+                        });
+                    }
                     window.addEventListener("resize", syncSidebarLayout);
                     syncSidebarLayout();
                     updateFileRowVisibility();

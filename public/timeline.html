@@ -1582,39 +1582,50 @@
             <div class="gutenberg-card gt-context-modal" id="gtContextModal" role="complementary" aria-label="Contexte"
                 aria-hidden="true">
                 <div id="gtContextModalResizer" class="context-resizer" aria-hidden="true"></div>
-
-                <div class="ia-actions">
-                    <div class="header-row ia-header-actions gutenberg-recette">
-                        <div class="gutenberg-recette-header">
-                            <label for="promptCreate">Commande</label>
-                            <button class="btn" type="button" id="clearTimelineBtn"
-                                aria-label="Réinitialiser la timeline et le script">⊘</button>
-                            <button class="btn btn-primary" id="btn-call">
-                                <span>⌘ Envoyer</span>
-                            </button>
-                        </div>
-                        <div class="ia-prompt-fields">
-                            <div class="prompt-template-meta" id="promptTemplateMeta">Modèle : —</div>
-                            <div class="speech-field-wrapper">
-                                <div class="speech-suggestion" data-speech-suggestion="promptCreate" aria-hidden="true">
+                <div class="context-panels">
+                    <div class="ia-actions command-panel" data-context-collapse-target=".ia-prompt-fields">
+                        <div class="header-row ia-header-actions gutenberg-recette">
+                            <div class="gutenberg-recette-header">
+                                <label for="promptCreate" class="gt-context-label gt-context-toggle">
+                                    <span class="gt-context-toggle-icon" aria-hidden="true">▾</span>
+                                    Commande
+                                </label>
+                                <button class="btn" type="button" id="clearTimelineBtn"
+                                    aria-label="Réinitialiser la timeline et le script">⊘</button>
+                                <button class="btn btn-primary" id="btn-call">
+                                    <span>⌘ Envoyer</span>
+                                </button>
+                            </div>
+                            <div class="ia-prompt-fields">
+                                <div class="prompt-template-meta" id="promptTemplateMeta">Modèle : —</div>
+                                <div class="speech-field-wrapper">
+                                    <div class="speech-suggestion" data-speech-suggestion="promptCreate"
+                                        aria-hidden="true"></div>
+                                    <textarea id="promptCreate" class="ia-prompt-field" rows="16"
+                                        placeholder="Décris ici ton objectif, ton échéance et tes actions"></textarea>
+                                    <button class="speech-button" type="button" data-speech-target="promptCreate"
+                                        title="Dictée vocale" aria-label="Activer la dictée vocale">◉</button>
                                 </div>
-                                <textarea id="promptCreate" class="ia-prompt-field" rows="16"
-                                    placeholder="Décris ici ton objectif, ton échéance et tes actions"></textarea>
-                                <button class="speech-button" type="button" data-speech-target="promptCreate"
-                                    title="Dictée vocale" aria-label="Activer la dictée vocale">◉</button>
                             </div>
                         </div>
                     </div>
-                    <div class="header-row ia-header-actions gutenberg-script">
-                        <div class="gutenberg-recette-header">
-                            <label for="promptModify"
-                                style="margin-top:0;display:block;font-size:13px;color:var(--muted)">Script</label>
-                            <button class="btn" type="button" id="restoreScriptBtn"
-                                title="Restaurer la dernière réponse IA">↺</button>
-                            <!-- `openModifyPromptBtn` removed: button hidden per user request -->
-                        </div>
-                        <div class="ia-prompt-fields">
-                            <textarea id="promptModify" class="ia-prompt-field" rows="20"></textarea>
+                    <div id="gtContextModalVerticalResizer" class="context-vertical-resizer" role="separator"
+                        tabindex="0" aria-orientation="horizontal"
+                        aria-label="Ajuster la hauteur des panneaux Commande et Script"></div>
+                    <div class="ia-actions script-panel" data-context-collapse-target=".ia-prompt-fields">
+                        <div class="header-row ia-header-actions gutenberg-script">
+                            <div class="gutenberg-recette-header">
+                                <label for="promptModify" class="gt-context-label gt-context-toggle">
+                                    <span class="gt-context-toggle-icon" aria-hidden="true">▾</span>
+                                    Script
+                                </label>
+                                <button class="btn" type="button" id="restoreScriptBtn"
+                                    title="Restaurer la dernière réponse IA">↺</button>
+                                <!-- `openModifyPromptBtn` removed: button hidden per user request -->
+                            </div>
+                            <div class="ia-prompt-fields">
+                                <textarea id="promptModify" class="ia-prompt-field" rows="20"></textarea>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2899,6 +2910,10 @@
                 var contextModalOverlay = document.getElementById("gtContextModal");
                 var contextModalButton = document.getElementById("gtContextModalTrigger");
                 var contextResizer = document.getElementById("gtContextModalResizer");
+                var contextPanels = contextModalOverlay?.querySelector(".context-panels");
+                var contextSplitter = document.getElementById("gtContextModalVerticalResizer");
+                var commandPanel = contextModalOverlay?.querySelector(".command-panel");
+                var scriptPanel = contextModalOverlay?.querySelector(".script-panel");
                 var iaModalOverlay = document.getElementById("gtPromptModal");
                 var iaModalButton = document.getElementById("gtPromptModalTrigger");
                 var iaModalClose = document.getElementById("gtPromptModalClose");
@@ -3073,6 +3088,24 @@
                         }
                     }, true);
                     contextResizer?.addEventListener("pointerdown", handleTimelineContextResizerPointerDown);
+                    if (
+                        window.GoToolkitContextSplitter &&
+                        contextPanels &&
+                        contextSplitter &&
+                        commandPanel &&
+                        scriptPanel
+                    ) {
+                        window.GoToolkitContextSplitter.init({
+                            container: contextPanels,
+                            topPanel: commandPanel,
+                            bottomPanel: scriptPanel,
+                            splitter: contextSplitter,
+                            storageKey: "timeline-context-command-height",
+                            defaultHeight: 280,
+                            minTopHeight: 160,
+                            minBottomHeight: 140
+                        });
+                    }
                 }
                 // Evaluate and show empty overlay if timeline has no items
                 try { updateEmptyViewMessage(); } catch (e) { /* noop */ }

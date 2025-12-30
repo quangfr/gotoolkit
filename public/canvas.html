@@ -1876,9 +1876,12 @@
                         <button type="button" class="speech-button" data-speech-target="globalContextField"
                             aria-label="Activer la dictée vocale">◉</button>
                     </label>
-                    <div class="scenario-section">
+                    <div class="scenario-section" data-context-collapse-target=".prompt-input-wrapper">
                         <div class="scenario-header-row">
-                            <label>Commande</label>
+                            <label class="gt-context-label gt-context-toggle">
+                                <span class="gt-context-toggle-icon" aria-hidden="true">▾</span>
+                                Commande
+                            </label>
                             <button class="btn" id="clearSectionsBtn" type="button"
                                 aria-label="Vider les sections">⊘</button>
                             <button class="btn-primary" id="generateFullSlideBtn" type="button"

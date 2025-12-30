@@ -1793,33 +1793,44 @@
 
             <div class="gutenberg-card gt-context-modal" id="gtContextModal" role="complementary" aria-hidden="true">
                 <div id="gtContextModalResizer" class="context-resizer" aria-hidden="true"></div>
-                <div class="ia-actions">
+            <div class="context-panels">
+                <div class="ia-actions command-panel" data-context-collapse-target=".ia-prompt-fields">
                     <div class="header-row ia-header-actions gutenberg-recette">
                         <div class="gutenberg-recette-header">
-                            <label for="promptCreate">Commande</label>
+                            <label for="promptCreate" class="gt-context-label gt-context-toggle">
+                                <span class="gt-context-toggle-icon" aria-hidden="true">▾</span>
+                                Commande
+                            </label>
                             <button class="btn" type="button" id="clearScenarioBtn"
                                 aria-label="Réinitialiser le scénario">⊘</button>
                             <button class="btn btn-primary" id="respondBtn" type="button">
-                                <span>⌘ Envoyer</span>
-                            </button>
-                        </div>
-                        <div class="ia-prompt-fields">
-                            <div class="prompt-template-meta" id="promptTemplateMeta">Modèle : —</div>
-                            <textarea id="promptCreate" class="ia-prompt-field" rows="10"
-                                placeholder="Décris le contexte, les objectifs et les interlocuteurs."></textarea>
+                                    <span>⌘ Envoyer</span>
+                                </button>
+                            </div>
+                            <div class="ia-prompt-fields">
+                                <div class="prompt-template-meta" id="promptTemplateMeta">Modèle : —</div>
+                                <textarea id="promptCreate" class="ia-prompt-field" rows="10"
+                                    placeholder="Décris le contexte, les objectifs et les interlocuteurs."></textarea>
+                            </div>
                         </div>
                     </div>
+                    <div id="gtContextModalVerticalResizer" class="context-vertical-resizer" role="separator"
+                        tabindex="0" aria-orientation="horizontal"
+                        aria-label="Ajuster la hauteur des panneaux Commande et Script"></div>
+                <div class="ia-actions script-panel" data-context-collapse-target=".ia-prompt-fields">
                     <div class="header-row ia-header-actions gutenberg-script">
                         <div class="gutenberg-recette-header">
-                            <label for="promptModify"
-                                style="margin-top:0;display:block;font-size:13px;color:var(--muted)">Script
+                            <label for="promptModify" class="gt-context-label gt-context-toggle">
+                                <span class="gt-context-toggle-icon" aria-hidden="true">▾</span>
+                                Script
                             </label>
-                            <button class="btn" type="button" id="applyScriptBtn"
-                                title="Restaurer la dernière réponse IA">↺</button>
-                        </div>
-                        <div class="ia-prompt-fields">
-                            <textarea id="promptModify" class="ia-prompt-field" rows="16"
-                                placeholder='{"title": "...", "subjects": [...]}'></textarea>
+                                <button class="btn" type="button" id="applyScriptBtn"
+                                    title="Restaurer la dernière réponse IA">↺</button>
+                            </div>
+                            <div class="ia-prompt-fields">
+                                <textarea id="promptModify" class="ia-prompt-field" rows="16"
+                                    placeholder='{"title": "...", "subjects": [...]}'></textarea>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1974,6 +1985,10 @@
             const recordingPanel = document.getElementById("recordingPanel");
             const recordingPanelResizer = document.getElementById("recordingPanelResizer");
             const contextResizer = document.getElementById("gtContextModalResizer");
+            const contextPanels = contextPanel?.querySelector(".context-panels");
+            const contextSplitter = document.getElementById("gtContextModalVerticalResizer");
+            const commandPanel = contextPanel?.querySelector(".command-panel");
+            const scriptPanel = contextPanel?.querySelector(".script-panel");
             const summaryColumn = document.querySelector(".summary-column");
             const openIaModalBtn = document.getElementById("gtPromptModalTrigger");
             const CONTEXT_RESPONSIVE_BREAKPOINT = 1000;
@@ -7357,6 +7372,24 @@
             }
 
             contextResizer?.addEventListener("pointerdown", handleContextResizerPointerDown);
+            if (
+                window.GoToolkitContextSplitter &&
+                contextPanels &&
+                contextSplitter &&
+                commandPanel &&
+                scriptPanel
+            ) {
+                window.GoToolkitContextSplitter.init({
+                    container: contextPanels,
+                    topPanel: commandPanel,
+                    bottomPanel: scriptPanel,
+                    splitter: contextSplitter,
+                    storageKey: "voice-context-command-height",
+                    defaultHeight: 240,
+                    minTopHeight: 150,
+                    minBottomHeight: 150
+                });
+            }
             contextBackdrop?.addEventListener("pointerdown", () => setContextPanelOpen(false));
             window.addEventListener("resize", () => {
                 ensureContextPanelForBreakpoint();
