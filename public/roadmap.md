@@ -1,14 +1,14 @@
-## Compte en ligne sécurisé `T1 2026`
+## Compte en ligne sécurisé `T1 2026` 
 - Accès à l'espace de partage en ligne sur d’autres appareils `À planifier` 
 - Quota par utilisateur pour les requêtes API `À planifier`
 
 ## Chatbot IA `T1 2026`
-- Navigation page d'accueil (outils, documents) `À étudier`
+- Navigation page d'accueil (suggestion d'outils, de méthodes, recherche documents) `À étudier`
 - Mode d'édition en conversation pour les modules `À planifier`
 
 ## Module Mémo `T1 2026`
 - Import de fichiers en mémoire utilisable par l'IA `À planifier` 
-- Chatbot pour questions / réponses avec visualisation de la source `À étudier` 
+- Chatbot pour questions / réponses avec références aux source `À étudier` 
 - Création de mémos à partir d'une mémoire `À étudier`
 
 ## Commande IA avec mémoire `T1 2026`

@@ -6,7 +6,7 @@
         popupId: "infoPopup",
         moduleLabel: "Go-Toolkit",
         description: "Usage réservé à Savane Consulting.",
-        version: "2025.12.29",
+        version: "2025.12.30",
         logoSrc: "img/logo.gif",
         logoAlt: "Logo Go-Toolkit",
         versionQueryParam: "v",

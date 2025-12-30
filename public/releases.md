@@ -1,3 +1,6 @@
+## 2025-12-30
+- Mise à jour de la version et des cache-busters sur l'accueil et les modules
+
 ## 2025-12-29
 - Ajout des notes de versions et de la feuille de route
 
@@ -30,7 +33,7 @@
 - Module [Draw](/draw?v=v) : diagrammes de classe, de flux et séquentiel
 
 ## 2025-11-30
-- Module [Timeline](/timeline?v=v) : repères, actions, groupes, types et modèles
+- Module [Timeline](/timeline?v=v) : planning temporel de projet ou de produit 
 
 ## 2025-11-24
 - Partage des liens de document et espace en ligne
