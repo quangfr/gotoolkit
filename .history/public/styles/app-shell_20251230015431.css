@@ -313,9 +313,9 @@ button.btn-primary {
 .context-vertical-resizer {
   position: relative;
   flex: 0 0 auto;
-  height: 16px;
+  height: 2px;
   cursor: ns-resize;
-  margin: 4px 0;
+  margin: px 0;
 }
 
 .context-vertical-resizer::before {
@@ -333,7 +333,7 @@ button.btn-primary {
 .context-resizer {
   position: absolute;
   top: 0;
-  left: -7px;
+  left: -3px;
   width: 14px;
   height: 100%;
   cursor: ew-resize;
@@ -386,6 +386,7 @@ body.context-resizing {
   gap: 0.35rem;
   cursor: pointer;
   user-select: none;
+  flex-direction: row;
 }
 
 .gt-context-toggle-icon {

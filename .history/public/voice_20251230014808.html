@@ -36,7 +36,7 @@
         }
 
         .context-text-area {
-            height: 100%;
+            flex: 1;
         }
 
         .audio-import-btn {
@@ -1832,8 +1832,8 @@
                                 <button class="btn" type="button" id="applyScriptBtn"
                                     title="Restaurer la dernière réponse IA">↺</button>
                             </div>
-                            <div class="ia-prompt-fields">
-                                <textarea id="promptModify" class="ia-prompt-field" rows="16"
+                            <div class="ia-prompt-fields context-text-area">
+                                <textarea id="promptModify" class="ia-prompt-field"
                                     placeholder='{"title": "...", "subjects": [...]}'></textarea>
                             </div>
                         </div>

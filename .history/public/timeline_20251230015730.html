@@ -54,9 +54,12 @@
         .gutenberg-card,
         .ia-actions,
         .gutenberg-script,
-        .gutenberg-recette,
-        .ia-prompt-fields {
+        .gutenberg-recette {
             min-height: 0;
+        }
+
+        .ia-prompt-fields {
+            height: 100%;
         }
 
         body {
@@ -395,8 +398,8 @@
 
         #promptModify {
             height: 100%;
-            min-height: 120px;
-            max-height: 2ee00px;
+            min-height: 90px;
+            max-height: 100%;
         }
 
         .gutenberg-card .gutenberg-recette {
@@ -406,6 +409,7 @@
             display: flex;
             flex-direction: column;
             gap: 6px;
+            height: 100%;
         }
 
         .gutenberg-recette-header {
@@ -1601,7 +1605,7 @@
                                 <div class="speech-field-wrapper">
                                     <div class="speech-suggestion" data-speech-suggestion="promptCreate"
                                         aria-hidden="true"></div>
-                                    <textarea id="promptCreate" class="ia-prompt-field" rows="16"
+                                    <textarea id="promptCreate" class="ia-prompt-field"
                                         placeholder="Décris ici ton objectif, ton échéance et tes actions"></textarea>
                                     <button class="speech-button" type="button" data-speech-target="promptCreate"
                                         title="Dictée vocale" aria-label="Activer la dictée vocale">◉</button>
@@ -4972,15 +4976,15 @@
                     infoPopup.classList.remove("open");
                 }
 
-                    function resetInfoLogo(popup) {
-                        const logo = popup?.querySelector("img");
-                        if (!logo) return;
-                        const src = logo.getAttribute("src");
-                        if (!src) return;
-                        logo.src = "";
-                        void logo.offsetWidth;
-                        logo.src = src;
-                    }
+                function resetInfoLogo(popup) {
+                    const logo = popup?.querySelector("img");
+                    if (!logo) return;
+                    const src = logo.getAttribute("src");
+                    if (!src) return;
+                    logo.src = "";
+                    void logo.offsetWidth;
+                    logo.src = src;
+                }
 
                 function toggleTimelineInfoPopup(event) {
                     if (!infoPopup) return;

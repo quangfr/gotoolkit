@@ -315,7 +315,7 @@ button.btn-primary {
   flex: 0 0 auto;
   height: 2px;
   cursor: ns-resize;
-  margin: 4px 0;
+  margin: 2px 0;
 }
 
 .context-vertical-resizer::before {
