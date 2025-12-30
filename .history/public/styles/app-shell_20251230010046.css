@@ -386,7 +386,6 @@ body.context-resizing {
   gap: 0.35rem;
   cursor: pointer;
   user-select: none;
-  flex-direction: row;
 }
 
 .gt-context-toggle-icon {
