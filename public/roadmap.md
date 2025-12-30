@@ -3,13 +3,13 @@
 - Mode d'édition en conversation pour les modules `À planifier`
 
 ## Module Mémo `T1 2026`
-- Import de fichiers en mémoire utilisable par l'IA `À planifier` 
+- Import de fichiers en corpus utilisable par l'IA `À planifier` 
 - Chatbot pour questions / réponses avec références aux source `À étudier` 
-- Création assistée de mémos à partir d'une mémoire `À étudier`
+- Création assistée de mémos à partir d'un corpus `À étudier`
 
 ## Commande IA avec mémoire `T1 2026`
-- Génération de mémoires à partir de la bibliothèque locale `À étudier`
-- Ajout de mémoires en contexte dans les modules `À étudier`
+- Génération de corpus à partir de la bibliothèque locale `À étudier`
+- Ajout de corpus en contexte dans les modules `À étudier`
 
 ## Module Voice `T1 2026`
 - Analyse des transcripts pour conseils IA `À planifier` 
