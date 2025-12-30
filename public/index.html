@@ -3962,11 +3962,45 @@
                 window.location.reload();
             }
         }
+
+        function reloadWithCacheBustedHash(fragment, versionValue = "v", options = {}) {
+            const normalizedFragment = String(fragment || "").replace(/^#/, "");
+            const { reload = true } = options;
+            const navigateTo = urlString => {
+                if (reload) {
+                    window.location.href = urlString;
+                    return urlString;
+                }
+                try {
+                    window.history.replaceState(null, "", urlString);
+                } catch (err) {
+                    window.location.href = urlString;
+                }
+                return urlString;
+            };
+            try {
+                const url = new URL(window.location.href);
+                url.search = "";
+                url.hash = "";
+                url.searchParams.set(VERSION_QUERY_PARAM, versionValue);
+                if (normalizedFragment) {
+                    url.hash = `#${normalizedFragment}`;
+                }
+                return navigateTo(url.toString());
+            } catch (err) {
+                const fallbackBase = `${window.location.origin}${window.location.pathname}`;
+                let fallbackUrl = `${fallbackBase}?${VERSION_QUERY_PARAM}=${versionValue}`;
+                if (normalizedFragment) {
+                    fallbackUrl += `#${normalizedFragment}`;
+                }
+                return navigateTo(fallbackUrl);
+            }
+        }
         (function removeVersionQueryParam() {
             try {
                 const url = new URL(window.location.href);
                 const versionValue = url.searchParams.get(VERSION_QUERY_PARAM);
-                if (versionValue && DATE_VERSION_PATTERN.test(versionValue) && window.history?.replaceState) {
+                if (versionValue && (DATE_VERSION_PATTERN.test(versionValue) || versionValue === "v") && window.history?.replaceState) {
                     url.searchParams.delete(VERSION_QUERY_PARAM);
                     window.history.replaceState(null, "", url.toString());
                 }
@@ -4356,12 +4390,11 @@
             if (updateRequestsButtonVisibility()) {
                 fetchRequests().catch(() => { /* noop */ });
             }
-            if (result?.success) {
-                reloadIndexWithVersion();
-            }
         }
 
-        if (openSettingsBtn) openSettingsBtn.addEventListener("click", openSettings);
+        if (openSettingsBtn) openSettingsBtn.addEventListener("click", () => {
+            reloadWithCacheBustedHash("settings");
+        });
         if (closeSettingsBtn) closeSettingsBtn.addEventListener("click", closeSettings);
         if (cancelSettingsBtn) cancelSettingsBtn.addEventListener("click", closeSettings);
         if (saveSettingsBtn) saveSettingsBtn.addEventListener("click", saveSettings);
@@ -4582,7 +4615,7 @@
                 const h = String(hash).toLowerCase();
                 if (h === '#feedback') {
                     showModalById('feedbackModal', '#feedbackType');
-                } else if (h === '#config' || h === '#parametres' || h === '#paramètres') {
+                } else if (h === '#config' || h === '#parametres' || h === '#paramètres' || h === '#settings') {
                     if (typeof openSettings === 'function') {
                         try { openSettings(); } catch (e) { showModalById('settingsModal', '#saveSettingsBtn'); }
                     } else {
@@ -4648,11 +4681,13 @@
                 modal.setAttribute("aria-hidden", "true");
                 trigger?.focus();
             };
-            trigger?.addEventListener("click", openReleaseNotes);
+            trigger?.addEventListener("click", () => {
+                window.location.href = "/?v=v#notes";
+            });
             trigger?.addEventListener("keydown", event => {
                 if (event.key === "Enter" || event.key === " ") {
                     event.preventDefault();
-                    openReleaseNotes();
+                    window.location.href = "/?v=v#notes";
                 }
             });
             closeBtn?.addEventListener("click", closeReleaseNotes);

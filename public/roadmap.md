@@ -1,9 +1,5 @@
-## Compte en ligne sécurisé `T1 2026` 
-- Accès à l'espace de partage en ligne sur d’autres appareils `À planifier` 
-- Quota par utilisateur pour les requêtes API `À planifier`
-
 ## Chatbot IA `T1 2026`
-- Navigation page d'accueil (suggestion d'outils, de méthodes, recherche documents) `À étudier`
+- Intégration en page d'accueil (suggestions, recherche...) `À étudier`
 - Mode d'édition en conversation pour les modules `À planifier`
 
 ## Module Mémo `T1 2026`
@@ -22,3 +18,7 @@
 - Pseudonymisation des données sensibles envoyées et hébergées en ligne `À étudier`
 - Connexion à un service IA cloud agrée ou auto-hébergé `À étudier`
 - Reconstruction locale suite à pseudonomisation `À étudier` 
+
+## Compte en ligne sécurisé `T1 2026` 
+- Accès à l'espace de partage en ligne sur d’autres appareils `À planifier` 
+- Quota par utilisateur pour les requêtes API `À planifier`
