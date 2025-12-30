@@ -35,10 +35,6 @@
             pointer-events: none;
         }
 
-        .context-text-area {
-            flex: 1;
-        }
-
         .audio-import-btn {
             display: inline-flex;
             align-items: center;
@@ -1544,7 +1540,7 @@
 
         .ia-prompt-fields textarea {
             width: 100%;
-            height: 100%;
+            min-height: 250px;
         }
 
         #clearScenarioBtn {
@@ -1588,7 +1584,6 @@
             .gt-context-modal .context-resizer {
                 display: none;
             }
-
             .recording-panel-resizer {
                 display: none;
             }
@@ -1798,23 +1793,23 @@
 
             <div class="gutenberg-card gt-context-modal" id="gtContextModal" role="complementary" aria-hidden="true">
                 <div id="gtContextModalResizer" class="context-resizer" aria-hidden="true"></div>
-                <div class="context-panels">
-                    <div class="ia-actions command-panel" data-context-collapse-target=".ia-prompt-fields">
-                        <div class="header-row ia-header-actions gutenberg-recette">
-                            <div class="gutenberg-recette-header">
-                                <label for="promptCreate" class="gt-context-label gt-context-toggle">
-                                    <span class="gt-context-toggle-icon" aria-hidden="true">▾</span>
-                                    Commande
-                                </label>
-                                <button class="btn" type="button" id="clearScenarioBtn"
-                                    aria-label="Réinitialiser le scénario">⊘</button>
-                                <button class="btn btn-primary" id="respondBtn" type="button">
+            <div class="context-panels">
+                <div class="ia-actions command-panel" data-context-collapse-target=".ia-prompt-fields">
+                    <div class="header-row ia-header-actions gutenberg-recette">
+                        <div class="gutenberg-recette-header">
+                            <label for="promptCreate" class="gt-context-label gt-context-toggle">
+                                <span class="gt-context-toggle-icon" aria-hidden="true">▾</span>
+                                Commande
+                            </label>
+                            <button class="btn" type="button" id="clearScenarioBtn"
+                                aria-label="Réinitialiser le scénario">⊘</button>
+                            <button class="btn btn-primary" id="respondBtn" type="button">
                                     <span>⌘ Envoyer</span>
                                 </button>
                             </div>
-                            <div class="ia-prompt-fields context-text-area">
+                            <div class="ia-prompt-fields">
                                 <div class="prompt-template-meta" id="promptTemplateMeta">Modèle : —</div>
-                                <textarea id="promptCreate" class="ia-prompt-field"
+                                <textarea id="promptCreate" class="ia-prompt-field" rows="10"
                                     placeholder="Décris le contexte, les objectifs et les interlocuteurs."></textarea>
                             </div>
                         </div>
@@ -1822,13 +1817,13 @@
                     <div id="gtContextModalVerticalResizer" class="context-vertical-resizer" role="separator"
                         tabindex="0" aria-orientation="horizontal"
                         aria-label="Ajuster la hauteur des panneaux Commande et Script"></div>
-                    <div class="ia-actions script-panel" data-context-collapse-target=".ia-prompt-fields">
-                        <div class="header-row ia-header-actions gutenberg-script">
-                            <div class="gutenberg-recette-header">
-                                <label for="promptModify" class="gt-context-label gt-context-toggle">
-                                    <span class="gt-context-toggle-icon" aria-hidden="true">▾</span>
-                                    Script
-                                </label>
+                <div class="ia-actions script-panel" data-context-collapse-target=".ia-prompt-fields">
+                    <div class="header-row ia-header-actions gutenberg-script">
+                        <div class="gutenberg-recette-header">
+                            <label for="promptModify" class="gt-context-label gt-context-toggle">
+                                <span class="gt-context-toggle-icon" aria-hidden="true">▾</span>
+                                Script
+                            </label>
                                 <button class="btn" type="button" id="applyScriptBtn"
                                     title="Restaurer la dernière réponse IA">↺</button>
                             </div>

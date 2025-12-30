@@ -19,10 +19,6 @@
             box-sizing: border-box;
         }
 
-        .scrip-panel {
-            flex: 1 1 auto;
-        }
-
         .template-actions {
             display: flex;
             justify-content: flex-end;
@@ -449,8 +445,7 @@
             display: flex;
             flex-direction: column;
             gap: 6px;
-            flex: 1 1 auto;
-            min-height: 0;
+            height: 100%;
         }
 
         .scenario-header-row {
@@ -470,18 +465,7 @@
             display: flex;
             flex-direction: column;
             gap: 6px;
-            flex: 1 1 auto;
-            min-height: 0;
-        }
-
-        .scenario-template-row {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .scenario-template-row .btn {
-            margin-left: auto;
+            height: 100%;
         }
 
         /* Make the full generate button primary green */
@@ -525,6 +509,14 @@
             /* Firefox: hide by default */
         }
 
+        /* Layout: make the global context smaller and let the page context fill the card
+           so the `#pageContextField` occupies the remaining space instead of roughly half. */
+        .gutenberg-card-body>label:first-child textarea,
+        #globalContextField {
+            height: 100%;
+            flex: none;
+            min-height: 0;
+        }
 
 
 
@@ -719,11 +711,6 @@
             display: flex;
             height: 100%;
             flex-direction: column;
-        }
-
-        .prompt-input-wrapper textarea {
-            flex: 1 1 auto;
-            min-height: 0;
         }
 
         .template-tooltip {
@@ -1873,7 +1860,26 @@
                     </div>
                 </div>
                 <div class="gutenberg-card-body">
-                    <div id="scriptPanel" class="script-panel"></div>
+                    <div id="scriptPanel">
+                    <div class="gutenberg-card-actions-row gt-context-label gt-context-toggle">
+                        <span class="gt-context-toggle-icon" aria-hidden="true">▾</span>
+                        <label>Contexte</label>
+                        <div class="gutenberg-card-actions-row-right">
+
+
+
+                            <button class="btn" id="adviceBtn" type="button" aria-label="Conseiller la saisie IA">✧
+                                Suggérer</button>
+                        </div>
+                    </div>
+                    <label class="speech-field-wrapper">
+                        <textarea id="globalContextField" rows="10"
+                            placeholder="Décris le domaine, les utilisateurs, la problématique et l'intention"></textarea>
+                        <div class="speech-suggestion" data-speech-suggestion="globalContextField" aria-hidden="true">
+                        </div>
+                        <button type="button" class="speech-button" data-speech-target="globalContextField"
+                            aria-label="Activer la dictée vocale">◉</button>
+                    </label>
                     <div class="scenario-section" data-context-collapse-target=".prompt-input-wrapper">
                         <div class="scenario-header-row">
                             <label class="gt-context-label gt-context-toggle">
@@ -1887,13 +1893,9 @@
                                 Générer</button>
                         </div>
                         <label class="scenario-input-group">
-                            <div class="scenario-template-row">
-                                <div id="canvasSelectedTemplateLabel" class="template-label"></div>
-                                <button class="btn" id="adviceBtn" type="button" aria-label="Conseiller la saisie IA">✧
-                                    Suggérer</button>
-                            </div>
+                            <div id="canvasSelectedTemplateLabel" class="template-label"></div>
                             <div class="prompt-input-wrapper speech-field-wrapper">
-                                <textarea id="pageContextField"
+                                <textarea id="pageContextField" rows="10"
                                     placeholder="Décrire la situation de manière quantitative et qualitative"></textarea>
                                 <div class="speech-suggestion" data-speech-suggestion="pageContextField"
                                     aria-hidden="true"></div>
@@ -1904,13 +1906,12 @@
                         </label>
                     </div>
                 </div>
+            </aside>
         </div>
-        </aside>
-    </div>
 
-    <div id="gtContextModalBackdrop" class="gutenberg-backdrop"></div>
-    <div id="copyToast" class="toast" aria-live="polite" aria-atomic="true"></div>
-    <div id="errorToast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+        <div id="gtContextModalBackdrop" class="gutenberg-backdrop"></div>
+        <div id="copyToast" class="toast" aria-live="polite" aria-atomic="true"></div>
+        <div id="errorToast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
     </div>
 
     <div class="modal-overlay gt-prompt-modal" id="gtPromptModal" role="dialog" aria-modal="true"
@@ -2315,6 +2316,7 @@
         const templateApplyBtn = document.getElementById("gtTemplateModalApply");
         let selectedTemplateId = null;
         let hasPromptModalOpenedForNewSlide = false;
+        const globalContextField = document.getElementById("globalContextField");
         const pageContextField = document.getElementById("pageContextField");
         const promptModalTabs = promptModal?.querySelectorAll(".modal-tab") ?? [];
         const promptModalPanels = promptModal?.querySelectorAll(".modal-panel") ?? [];
@@ -2462,6 +2464,7 @@
             if (field) {
                 clearSpeechSuggestion(field);
             }
+            clearSpeechSuggestion(globalContextField);
             clearSpeechSuggestion(pageContextField);
             // Hide canvas template tooltip when speech recognition ends
             try {
@@ -2599,7 +2602,7 @@
 
         function initAutoSpeechOnCanvasLoad() {
             if (!isSpeechAutoEnabled()) return;
-            autoStartSpeechForField("pageContextField");
+            autoStartSpeechForField("globalContextField");
         }
 
         if (document.readyState === "loading") {
@@ -2818,7 +2821,7 @@
             }
             setGutenbergOpen(shouldOpen);
             if (shouldOpen) {
-                pageContextField?.focus();
+                globalContextField?.focus();
             }
         }
 
@@ -2946,7 +2949,7 @@
 
         function buildStatePayload() {
             storeCurrentSlides();
-            const contextValue = (pageContextField?.value || getActivePageContext() || "").trim();
+            const globalContextValue = getActiveHistoryValue() || "";
             return {
                 slides: collectAllSlides(),
                 settings: {
@@ -2954,8 +2957,8 @@
                     textStyleIndex: currentTextStyleIndex,
                     fontSize: currentFontSize,
                     apiKey: readSharedApiKey(),
-                    globalContext: contextValue,
-                    context: contextValue,
+                    globalContext: globalContextValue,
+                    context: globalContextValue,
                     prompts: promptLibrary,
                     promptTemplateId: activePromptTemplateId,
                     iaMode: activeIaMode,
@@ -3401,15 +3404,14 @@
             const storedReasoning = localStorage.getItem(reasoningEffortKey) || "low";
             // reasoning effort is managed globally in Settings (index.html); stored value is read from localStorage
             const inheritedHistory = payload.globalContext ?? payload.context ?? "";
-            if (pageContextField && inheritedHistory) {
-                pageContextField.value = inheritedHistory;
-                setActivePageContext(inheritedHistory);
+            if (globalContextField && inheritedHistory) {
+                globalContextField.value = inheritedHistory;
             }
             if (inheritedHistory) {
                 Object.values(templateSlides).forEach(slides => {
                     slides.forEach(slide => {
-                        if (!slide.dataset.history && !slide.dataset.pageContext) {
-                            setSlideHistory(slide, inheritedHistory);
+                        if (!slide.history) {
+                            slide.history = inheritedHistory;
                         }
                     });
                 });
@@ -3644,6 +3646,14 @@
         });
         pageContextField?.addEventListener("keydown", () => {
             hideCanvasScenarioTooltip({ keepFocusClass: true });
+        });
+        globalContextField?.addEventListener("blur", () => {
+            // no-op: suggestion generation removed
+        });
+        globalContextField?.addEventListener("input", () => {
+            clearSpeechSuggestion(globalContextField);
+            setSlideHistory(getActiveSlideElement(), globalContextField.value);
+            schedulePersist();
         });
         function isSpeechTypingKey(event) {
             if (!event?.key) return false;
@@ -4207,10 +4217,8 @@
 
         async function requestSectionAdvice({ slide, sectionKey, sectionLabel, columnKey, columnSection, textarea, fieldValue }, controller) {
             try {
-                const contextValue =
-                    (pageContextField?.value || getSlidePageContext(slide) || "").trim();
                 const promptText = buildAdvicePrompt({
-                    globalContext: contextValue,
+                    globalContext: (getSlideHistory(slide) || "").trim(),
                     sectionLabel,
                     columnSection,
                     fieldValue
@@ -5126,9 +5134,8 @@
             const subtitleValue = (seed.subtitle || defaultSubtitle).replace(/"/g, '&quot;');
             slide.dataset.templateId = templateId;
             slide.dataset.tabLabel = seed.tabLabel || `Page ${index + 1}`;
-            const savedContext =
-                seed.pageContext ?? seed.context ?? seed.history ?? seed.globalContext ?? "";
-            setSlideHistory(slide, savedContext);
+            slide.dataset.pageContext = seed.pageContext ?? seed.context ?? "";
+            setSlideHistory(slide, seed.history ?? seed.globalContext ?? "");
             if (seed.canvasExamples) {
                 setSlideCanvasExamples(slide, seed.canvasExamples);
             }
@@ -5298,24 +5305,31 @@
         function setActivePageContext(value) {
             const slide = getActiveSlideElement();
             if (!slide) return;
-            const normalized = value || "";
-            slide.dataset.pageContext = normalized;
-            setSlideHistory(slide, normalized);
+            slide.dataset.pageContext = value || "";
         }
 
         function getSlideHistory(slide) {
-            if (!slide) return "";
-            return slide.dataset.history || slide.dataset.pageContext || "";
+            return slide?.dataset.history || "";
         }
 
         function setSlideHistory(slide, value) {
             if (!slide) return;
             if (value) {
                 slide.dataset.history = value;
-                slide.dataset.pageContext = value;
             } else {
                 delete slide.dataset.history;
-                slide.dataset.pageContext = "";
+            }
+        }
+
+        function getActiveHistoryValue() {
+            return getSlideHistory(getActiveSlideElement());
+        }
+
+        function syncHistoryFieldWithActiveSlide() {
+            if (!globalContextField) return;
+            const history = getActiveHistoryValue() || "";
+            if (globalContextField.value !== history) {
+                globalContextField.value = history;
             }
         }
 
@@ -5430,6 +5444,7 @@
                 lastAppliedTemplateId = currentTemplateId;
             }
             setPromptFieldsForTemplate(currentTemplateId);
+            syncHistoryFieldWithActiveSlide();
             syncPageContextFieldWithActiveSlide();
             updateSlideEmptyState();
             updateSelectedTemplateLabelDisplay();
@@ -5629,11 +5644,11 @@
             const bottomSection = slide.querySelector(".bottom-section-text");
             if (bottomSection) bottomSection.value = "";
             if (clearRecits) {
-                if (pageContextField) {
-                    pageContextField.value = "";
-                }
-                setActivePageContext("");
+                setSlideHistory(slide, "");
+                syncHistoryFieldWithActiveSlide();
+                if (pageContextField) pageContextField.value = "";
                 updateCanvasClearButtonState();
+                slide.dataset.pageContext = "";
             }
         }
 
@@ -6840,7 +6855,7 @@
             const firstSlide = Array.isArray(slides) && slides.length ? slides[0] : null;
             const title = (firstSlide?.title || "Sans titre").trim();
             const descSource = firstSlide?.history || firstSlide?.pageContext || "";
-            const desc = (descSource || pageContextField?.value || "")
+            const desc = (descSource || globalContextField?.value || "")
                 .split(/\r?\n/)
                 .map(line => line.trim())
                 .filter(Boolean)

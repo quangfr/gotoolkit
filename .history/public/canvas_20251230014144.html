@@ -19,10 +19,6 @@
             box-sizing: border-box;
         }
 
-        .scrip-panel {
-            flex: 1 1 auto;
-        }
-
         .template-actions {
             display: flex;
             justify-content: flex-end;
@@ -1873,44 +1869,45 @@
                     </div>
                 </div>
                 <div class="gutenberg-card-body">
-                    <div id="scriptPanel" class="script-panel"></div>
-                    <div class="scenario-section" data-context-collapse-target=".prompt-input-wrapper">
-                        <div class="scenario-header-row">
-                            <label class="gt-context-label gt-context-toggle">
-                                <span class="gt-context-toggle-icon" aria-hidden="true">▾</span>
-                                Commande
+                    <div id="scriptPanel">
+                        <div class="scenario-section" data-context-collapse-target=".prompt-input-wrapper">
+                            <div class="scenario-header-row">
+                                <label class="gt-context-label gt-context-toggle">
+                                    <span class="gt-context-toggle-icon" aria-hidden="true">▾</span>
+                                    Commande
+                                </label>
+                                <button class="btn" id="clearSectionsBtn" type="button"
+                                    aria-label="Vider les sections">⊘</button>
+                                <button class="btn-primary" id="generateFullSlideBtn" type="button"
+                                    aria-label="Générer toutes les sections et la synthèse">⌘
+                                    Générer</button>
+                            </div>
+                            <label class="scenario-input-group">
+                                <div class="scenario-template-row">
+                                    <div id="canvasSelectedTemplateLabel" class="template-label"></div>
+                                    <button class="btn" id="adviceBtn" type="button"
+                                        aria-label="Conseiller la saisie IA">✧
+                                        Suggérer</button>
+                                </div>
+                                <div class="prompt-input-wrapper speech-field-wrapper">
+                                    <textarea id="pageContextField"
+                                        placeholder="Décrire la situation de manière quantitative et qualitative"></textarea>
+                                    <div class="speech-suggestion" data-speech-suggestion="pageContextField"
+                                        aria-hidden="true"></div>
+                                    <button type="button" class="speech-button" data-speech-target="pageContextField"
+                                        aria-label="Activer la dictée vocale">◉</button>
+                                    <div id="canvasTemplateTooltip" class="template-tooltip" aria-hidden="true"></div>
+                                </div>
                             </label>
-                            <button class="btn" id="clearSectionsBtn" type="button"
-                                aria-label="Vider les sections">⊘</button>
-                            <button class="btn-primary" id="generateFullSlideBtn" type="button"
-                                aria-label="Générer toutes les sections et la synthèse">⌘
-                                Générer</button>
                         </div>
-                        <label class="scenario-input-group">
-                            <div class="scenario-template-row">
-                                <div id="canvasSelectedTemplateLabel" class="template-label"></div>
-                                <button class="btn" id="adviceBtn" type="button" aria-label="Conseiller la saisie IA">✧
-                                    Suggérer</button>
-                            </div>
-                            <div class="prompt-input-wrapper speech-field-wrapper">
-                                <textarea id="pageContextField"
-                                    placeholder="Décrire la situation de manière quantitative et qualitative"></textarea>
-                                <div class="speech-suggestion" data-speech-suggestion="pageContextField"
-                                    aria-hidden="true"></div>
-                                <button type="button" class="speech-button" data-speech-target="pageContextField"
-                                    aria-label="Activer la dictée vocale">◉</button>
-                                <div id="canvasTemplateTooltip" class="template-tooltip" aria-hidden="true"></div>
-                            </div>
-                        </label>
                     </div>
                 </div>
+            </aside>
         </div>
-        </aside>
-    </div>
 
-    <div id="gtContextModalBackdrop" class="gutenberg-backdrop"></div>
-    <div id="copyToast" class="toast" aria-live="polite" aria-atomic="true"></div>
-    <div id="errorToast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+        <div id="gtContextModalBackdrop" class="gutenberg-backdrop"></div>
+        <div id="copyToast" class="toast" aria-live="polite" aria-atomic="true"></div>
+        <div id="errorToast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
     </div>
 
     <div class="modal-overlay gt-prompt-modal" id="gtPromptModal" role="dialog" aria-modal="true"
