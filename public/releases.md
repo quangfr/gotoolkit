@@ -1,8 +1,5 @@
-## 2025-12-30
-- Mise à jour de la version et des cache-busters sur l'accueil et les modules
-
 ## 2025-12-29
-- Ajout des notes de versions et de la feuille de route
+- Ajout des notes de version et de la feuille de route
 
 ## 2025-12-28
 - Module [Voice](/voice?v=v) : audio, webcam et partage d’écran
