@@ -2,41 +2,6 @@
 
 Boîte à outils 100 % navigateur pour produire vite des livrables partageables (planches, tableaux, diagrammes, timelines, comptes-rendus vocaux) avec aide IA optionnelle et liens de partage.
 
-## Release notes
-
-2025-12-28  
-Module Voice : audio, webcam et partage d’écran. Transcription AssemblyAI intégrée.
-
-2025-12-27  
-Ajout du fournisseur IA OpenRouter et clarifications des conditions d’usage.
-
-2025-12-24  
-Uniformisation des retours utilisateurs dans tous les modules et gestion de la liste.
-
-2025-12-20  
-Nouveaux templates Grid pour la cartographie des données et la structure arborescente.
-
-2025-12-17  
-Lancement du module Grid avec génération de données et pilote IA WebLLM.
-
-2025-12-16  
-Brouillons et stockage local pour préserver les documents en cours.
-
-2025-12-08  
-Templates plus product. Harmonisation de l’interface. Isolation des prompts . Module Feedback.
-
-2025-12-04  
-Module Draw : diagrammes de classes, de flux et séquentiels avec Excalidraw.
-
-2025-11-30  
-Module Timeline : repères, actions et groupes sur Vis-timeline.
-
-2025-11-24  
-Homepage avec partage de liens, intégration Cloudflare + Firebase.
-
-2025-11-22  
-Initialisation du module Canvas + intégration OpenAI.
-
 ## Ce qui compose le projet
 - Site statique dans `public/` : modules HTML/JS/CSS écrits à la main + assets vendoriés. Ouvrable directement ou via un serveur local.
 - Pont React/Excalidraw dans `src/connect/index.tsx`, bundlé en `public/js/connect.bundle.js` avec `npm run build`.
