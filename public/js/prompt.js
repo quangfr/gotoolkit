@@ -1166,7 +1166,7 @@ STRUCTURE ATTENDUE :
       "keySentences": [
         {
           "text": "string (phrase clé 1, action ou décision attendue)",
-          "match": "missing" // "direct", "indirect" ou "missing" (default)
+          "match": "missing"
         }
       ],
       "timeframe": {
@@ -1176,22 +1176,7 @@ STRUCTURE ATTENDUE :
     }
   ]
 }`
-
-
         ;
-
-    const voiceEvaluatePrompt = `Analyse {{transcript_content}} et indique si chaque phrase clé est exprimée directement, indirectement ou absente.
-Réponds en JSON strict:
-{
-  "subjects": [
-    {
-      "title": "string",
-      "keySentences": [
-        { "text": "string", "match": "direct"|"indirect"|"missing" }
-      ]
-    }
-  ]
-}`;
 
     const voiceSummaryPrompt = `Tu es un assistant qui synthétise des échanges oraux en français.
 
@@ -1244,12 +1229,12 @@ Réponds en texte brut, sans JSON ni balisage.`;
       },
       "keySentences": [
         {
-          "text": "point cle de 3-7 mots discute longuement",
+          "text": "point cle de 3-7 mots",
           "match": "direct"
         },
         {
-          "text": "point cle de 3-7 mots aborde brievement",
-          "match": "indirect"
+          "text": "point cle de 3-7 mots",
+          "match": "direct"
         }
       ]
     }

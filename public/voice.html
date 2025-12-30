@@ -2006,7 +2006,8 @@
             const RECORDING_PANEL_RESPONSIVE_BREAKPOINT = 1100;
             const RECORDING_PANEL_WIDTH_STORAGE_KEY = "voice-recording-panel-width";
             const RECORDING_PANEL_DEFAULT_WIDTH = 520;
-            const RECORDING_PANEL_MIN_WIDTH = 320;
+            const RECORDING_PANEL_MIN_WIDTH = 470;
+            const RECORDING_PANEL_CONTEXT_CLOSED_DEFAULT_WIDTH = 850;
             const RECORDING_PANEL_MIN_GUIDELINES_WIDTH = 410;
             const SUMMARY_STACK_THRESHOLD = 200;
             const iaModalOverlay = document.getElementById("gtPromptModal");
@@ -7329,6 +7330,14 @@
                 syncContextBackdrop(isOpen && isResponsiveContextMode());
                 updateSummaryStacking();
                 persistContextPanelState(Boolean(isOpen));
+                if (
+                    !isOpen &&
+                    !isResponsiveContextMode() &&
+                    !hasCustomRecordingPanelWidth &&
+                    recordingPanelWidth < RECORDING_PANEL_CONTEXT_CLOSED_DEFAULT_WIDTH
+                ) {
+                    applyRecordingPanelWidth(RECORDING_PANEL_CONTEXT_CLOSED_DEFAULT_WIDTH);
+                }
             }
 
             function toggleContextPanel(forceOpen) {
@@ -7408,19 +7417,15 @@
                     setContextPanelWidth(contextPanelWidth);
                 }
             });
-            const persistedContextPanelWidth = getPersistedContextPanelWidth();
-            setContextPanelWidth(persistedContextPanelWidth ?? CONTEXT_PANEL_DEFAULT_WIDTH);
-            const persistedContextPanelState = getPersistedContextPanelState();
-            if (persistedContextPanelState !== null) {
-                setContextPanelOpen(persistedContextPanelState);
-            }
 
             let recordingPanelWidth = RECORDING_PANEL_DEFAULT_WIDTH;
+            let hasCustomRecordingPanelWidth = false;
             let isResizingRecordingPanel = false;
             let recordingResizeStartX = 0;
             let recordingResizeStartWidth = RECORDING_PANEL_DEFAULT_WIDTH;
 
             function persistRecordingPanelWidth(width) {
+                hasCustomRecordingPanelWidth = true;
                 try {
                     localStorage.setItem(RECORDING_PANEL_WIDTH_STORAGE_KEY, Math.round(width).toString());
                 } catch (err) {
@@ -7514,6 +7519,7 @@
             }
 
             const persistedRecordingPanelWidth = getPersistedRecordingPanelWidth();
+            hasCustomRecordingPanelWidth = persistedRecordingPanelWidth !== null;
             applyRecordingPanelWidth(persistedRecordingPanelWidth ?? getInitialRecordingPanelWidth());
             recordingPanelResizer?.addEventListener("pointerdown", handleRecordingResizerPointerDown);
             window.addEventListener("resize", () => {
@@ -7522,6 +7528,12 @@
                 }
                 updateSummaryStacking();
             });
+            const persistedContextPanelWidth = getPersistedContextPanelWidth();
+            setContextPanelWidth(persistedContextPanelWidth ?? CONTEXT_PANEL_DEFAULT_WIDTH);
+            const persistedContextPanelState = getPersistedContextPanelState();
+            if (persistedContextPanelState !== null) {
+                setContextPanelOpen(persistedContextPanelState);
+            }
 
             function closeInfoPopup() {
                 infoPopup?.classList.remove("open");
@@ -7689,7 +7701,6 @@
             clearScenarioBtn?.addEventListener("click", () => {
                 const ok = confirm("Supprimer le scénario ? Cette action est irréversible.");
                 if (!ok) return;
-                if (promptCreate) promptCreate.value = "";
                 persistScenario();
                 clearGuidelineData();
                 showToast("Commande vidé.");

@@ -2,16 +2,16 @@
 - Intégration en page d'accueil (suggestions, recherche...) `À étudier`
 - Mode d'édition en conversation pour les modules `À planifier`
 
-## Module Mémo `T1 2026`
+## Module Mémo (Le Petit Robert) `T1 2026`
 - Import de fichiers en corpus utilisable par l'IA `À planifier` 
 - Chatbot pour questions / réponses avec références aux source `À étudier` 
 - Création assistée de mémos à partir d'un corpus `À étudier`
 
-## Commande IA avec mémoire `T1 2026`
+## IA contextuel (Soulgorithm)`T1 2026`
 - Génération de corpus à partir de la bibliothèque locale `À étudier`
 - Ajout de corpus en contexte dans les modules `À étudier`
 
-## Module Voice `T1 2026`
+## Module Voice (Tuto Tarantino)`T1 2026`
 - Analyse des transcripts pour conseils IA `À planifier` 
 
 ## Confidentialité des données `T1 2026`
