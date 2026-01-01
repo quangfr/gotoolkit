@@ -5012,7 +5012,7 @@
                     const backendValue =
                         (window.GoToolkitIAConfig && typeof window.GoToolkitIAConfig.getBackend === "function"
                             ? window.GoToolkitIAConfig.getBackend()
-                            : "openai") || "openai";
+                            : "openrouter") || "openrouter";
                     return String(backendValue).toLowerCase() === "openai";
                 }
 
@@ -5522,7 +5522,7 @@
                     } catch (err) {
                         console.warn("Impossible de lire le backend IA", err);
                     }
-                    return "openai";
+                    return "openrouter";
                 }
 
                 function isWebllmBackendSelected() {

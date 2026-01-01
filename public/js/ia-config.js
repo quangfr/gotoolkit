@@ -298,7 +298,7 @@
         },
         setBackend: function (value) {
             var v = (value || "").trim().toLowerCase();
-            if (!v) v = "openai";
+            if (!v) v = "openrouter";
             safeStorageWrite(STORAGE_KEYS_BACKEND, v);
         },
         normalizeOllamaUrl: normalizeUrl,
@@ -390,7 +390,7 @@
                 };
             }
             // Check selected backend preference (global flag or storage)
-            var selected = (global.GoToolkitSelectedAIBackend && String(global.GoToolkitSelectedAIBackend)) || safeStorageRead(STORAGE_KEYS_BACKEND) || "openai";
+            var selected = (global.GoToolkitSelectedAIBackend && String(global.GoToolkitSelectedAIBackend)) || safeStorageRead(STORAGE_KEYS_BACKEND) || "openrouter";
 
             if (selected === "openai") {
                 var apiKey = GoToolkitIAConfig.getApiKey();
@@ -442,9 +442,9 @@
             }
 
             // Ollama is intentionally disabled in the launcher UI.
-            // If a stale selection remains in localStorage, fall back to OpenAI/proxy.
+            // If a stale selection remains in localStorage, fall back to OpenRouter.
             if (selected === "ollama") {
-                selected = "openai";
+                selected = "openrouter";
                 safeStorageWrite(STORAGE_KEYS_BACKEND, selected);
                 try { global.GoToolkitSelectedAIBackend = selected; } catch (err) { /* ignore */ }
             }

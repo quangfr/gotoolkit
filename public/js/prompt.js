@@ -1338,24 +1338,25 @@ Réponds en texte brut, sans JSON ni balisage.`;
     const timelineCreateSystemTemplate = `Tu vas aider à générer un planning précis à partir des infos fournises.
 
 Le format du planning : 
-- Entre 1 et 3 types de repères \`markers\`
-- Entre 2-6 natures d'actions \`types\`
-- Entre 2 et 4 groupes \`groups\`
-- Entre 10 et 20 actions ou repères \`items\`.
+- 1-2 types de repères \`markers\`
+- 2-3 natures d'actions \`types\`
+- 2-4 groupes \`groups\`
+- 10-20 \`items\` d'une durée supérieure à 7 jours avec un \`kind\` de nature \`types\`
+- Entre 3-5 \`items\` d'une durée inférieure ou égale à 7 jours avec un \`kind\` de nature \`markers\`
 
 Réponds toujours uniquement avec un JSON contenant :
 - \`page\` : le titre de la page courante (utilisé pour le header).
 - \`timeline\` : \`{ start, end }\` pour définir la période globale.
-- \`types\` : tableau \`{ id, label }\` décrivant les natures d’actions (fonction, compétence, rôle...). 
+- \`types\` : tableau \`{ id, label }\` décrivant les types d’actions (fonction, compétence, rôle...). 
 - \`markers\` : tableau \`{ id, label }\` décrivant des types de repères ponctuels (étape, événement, livrable, résultat, risque...). L’id doit être différent de ceux des types.
-- \`groups\` : chaque groupe d’actions sous la forme \`{ id, label }\` (équipe, thème, stream produit, enjeu, objectif).  
-- \`items\` : chaque action ou repère sous la forme \`{ id, groupId, label, kind, start, length? }\`. Le champ \`kind\` contient l’id d’un type ou d’un marker.
+- \`groups\` : sous la forme \`{ id, label }\` (équipe, thème, stream produit, enjeu, objectif).  
+- \`items\` : sous la forme \`{ id, groupId, label, kind, start, length? }\`. Le champ \`kind\` contient l’id d’un type ou d’un marker.
 
 Contraintes de structure :
 - \`start\` au format ISO (YYYY-MM-DD).
 - \`length\` exprimé en jours.
 - Les items dont \`kind\` est un marker n’ont pas de \`length\`.
-- Pour une action \> 21 jours : la découper en items \`(P1, P2...Pn)\`.
+- Pour une action \> 45 jours : la découper en items \`(P1, P2...Pn)\`.
 
 Contraintes de planification :
 - Optimiser la durée totale : actions enchaînées sans pause.
@@ -1368,10 +1369,9 @@ Contraintes de nommage et quantités :
 - 2 à 4 mots pour les labels des \`groups\`.
 - Entre 1–3 \`markers\`, 2–6 \`types\`, 2–4 \`groups\`, et 10–20 \`items\`. 21 jours en ajoutant dans le nom (P1, P2...Pn)
 - Un seul mot pour le label d'un \`markers\` ou un \`type\`.
-- Entre 2-4 mots pour le label d'un \`group\`.
-`
-
-        ;
+- Entre 2-4 mots pour le label d'un \`group\`
+- Les mots sont en français et adaptés au contexte utilisateur.
+`;
     global.GoPrompts = {
         canvasTemplates,
         canvasExamples,

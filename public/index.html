@@ -4169,9 +4169,9 @@
                     webllmModelSelect.value = storedWebllmModel;
                 }
                 var storedBackend = (config && typeof config.getBackend === "function" ? config.getBackend() : null) || localStorage.getItem("go-toolkit-ai-backend") || "openrouter";
-                // Ollama access is disabled on the launcher; if it was previously selected, migrate to OpenAI.
+                // Ollama access is disabled on the launcher; if it was previously selected, migrate to OpenRouter.
                 if (storedBackend === "ollama") {
-                    storedBackend = "openai";
+                    storedBackend = "openrouter";
                     try { localStorage.setItem("go-toolkit-ai-backend", storedBackend); } catch (e) { }
                     try { config && typeof config.setBackend === "function" && config.setBackend(storedBackend); } catch (e) { }
                 }
