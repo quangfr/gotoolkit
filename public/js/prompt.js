@@ -1387,7 +1387,6 @@ Contraintes de nommage et quantités :
         canvasSuggestionsPromptTemplate,
         voicePrompts,
         voiceCreateSystemTemplate,
-        voiceEvaluatePrompt,
         voiceSummaryPrompt,
         voiceCompletePrompt,
         timelinePrompts,
