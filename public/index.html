@@ -1518,152 +1518,204 @@
                     <button id="closeSettingsBtn" class="btn-secondary" type="button" aria-label="Fermer">✕</button>
                 </header>
                 <form class="feedback-form" onsubmit="return false;">
-                    <div class="field-row">
-                        <label style="width:100%">
-                            <span class="label-title">Commande vocale</span>
-                            <select id="speechModeSelect">
-                                <option value="manual">Manuel</option>
-                                <option value="auto">Auto</option>
-                            </select>
-                        </label>
+                    <div class="settings-tabs tabs">
+                        <button type="button" class="tab-btn active" data-tab="servicesTab">🧠 Services IA</button>
+                        <button type="button" class="tab-btn" data-tab="promptTab">💬 Prompt Chat</button>
+                        <button type="button" class="tab-btn" data-tab="documentsTab">📚 Documents</button>
                     </div>
-                    <div class="field-row">
-                        <label style="width:100%">
-                            <div style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem;">
-                                <div>
-                                    <a class="label-title dashed-link"
-                                        href="https://www.assemblyai.com/dashboard/api-keys" target="_blank"
-                                        rel="noopener noreferrer">Clé AssemblyAI</a>
-                                    <span class="ia-status" id="assemblyAiStatus" aria-hidden="true"></span>
-                                </div>
-                                <div style="display:flex; gap:0.35rem;">
-                                    <button id="assemblyAiVerifyBtn" type="button"
-                                        class="btn-secondary">Vérifier</button>
-                                </div>
-                            </div>
-                            <input id="assemblyAiKeyInput" type="password" placeholder="sk-..."
-                                autocomplete="current-password" />
-                            <span class="label-subtitle">
-                                Accès privé pour la transcription automatique (~15ct/h. Crédit offert de 50€
-                                à l'inscription)
-                            </span>
-                        </label>
-                    </div>
-                    <div class="field-row">
-                        <label>
-                            <span class="label-title">Moteur IA</span>
-                            <select id="aiBackendSelect">
-                                <option value="openrouter" selected>OpenRouter (partagé ou privé)</option>
-                                <option value="openai">OpenAI (privé) </option>
-                            </select>
-                        </label>
-                    </div>
-
-                    <div id="openaiSettings">
-                        <div class="field-row">
-                            <label>
-                            </label>
-                        </div>
-                        <div class="field-row">
-                            <label style="width:100%">
-                                <div
-                                    style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem;">
-                                    <div>
-                                        <a href="https://platform.openai.com/settings/organization/api-keys"
-                                            class="label-title dashed-link" target="_blank"
-                                            rel="noopener noreferrer">Clé OpenAI</a>
-                                        <span class="ia-status" id="openaiStatus" aria-hidden="true"></span>
-                                    </div>
-                                    <div style="display:flex; gap:0.35rem;">
-                                        <button id="openaiVerifyBtn" type="button"
-                                            class="btn-secondary">Vérifier</button>
-                                    </div>
-                                </div>
-                                <span class="label-subtitle">Accès privé payant sans rétention des
-                                    données (~1ct/100 requêtes)</span>
-                                <input id="iaApiKeyInput" type="password" placeholder="sk-..."
-                                    autocomplete="current-password" />
-                            </label>
-                        </div>
-
-                        <div class="field-row">
-                            <label>
-                                <span class="label-title">Modèle OpenAI</span>
-                                <select id="openaiModelSelect">
-                                    <option value="gpt-5-nano">gpt-5-nano</option>
-                                    <option value="gpt-5-mini">gpt-5-mini</option>
-                                </select>
-                            </label>
-                        </div>
-                        <div class="field-row">
-                            <label>
-                                <span class="label-title">Effort de raisonnement OpenAI</span>
-                                <select id="reasoningEffortSelect">
-                                    <option value="minimal">Minimal</option>
-                                    <option value="low">Faible</option>
-                                    <option value="medium">Moyen </option>
-                                    <option value="high">Élevé</option>
-                                </select>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div id="openrouterSettings" style="display:none;">
-                        <div class="field-row">
-                            <label style="width:100%">
-                                <div
-                                    style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem;">
-                                    <div>
-                                        <a class="label-title" href="https://openrouter.ai/settings/keys"
-                                            target="_blank" rel="noopener noreferrer">Clé OpenRouter</a>
-                                        <span class="ia-status" id="openrouterStatus" aria-hidden="true"></span>
-                                        <span class="ia-model-label" id="openrouterModelLabel"
-                                            aria-live="polite"></span><br>
-                                        <span class="label-subtitle">Accès privé payant sans rétention des
-                                            données (~1ct/100 requêtes)</span>
-                                    </div>
-                                    <div style="display:flex; gap:0.35rem;">
-                                        <button id="openrouterVerifyBtn" type="button"
-                                            class="btn-secondary">Vérifier</button>
-                                    </div>
-                                </div>
-                                <input id="openrouterApiKeyInput" type="password" placeholder="or-..."
-                                    autocomplete="current-password" />
-                            </label>
-                        </div>
-                        <div class="field-row">
-                            <label style="width:100%">
-                                <span class="label-title">Modèle OpenAI</span>
-                                <select id="openrouterModelSelect"></select>
-                            </label>
-                        </div>
-                        <div id="openrouterExtras" style="display:none; margin-top:8px;">
+                    <div class="settings-tab-panels-wrapper">
+                        <div class="settings-tab-panel" data-panel="servicesTab">
                             <div class="field-row">
-                                <label>
-                                    <span class="label-title">Collecte et rétention des données</span>
-                                    <select id="openrouterDataCollectionSelect">
-                                        <option value="deny-zdr">Non</option>
-                                        <option value="allow">Oui</option>
+                                <label style="width:100%">
+                                    <span class="label-title">Commande vocale</span>
+                                    <select id="speechModeSelect">
+                                        <option value="manual">Manuel</option>
+                                        <option value="auto">Auto</option>
                                     </select>
                                 </label>
                             </div>
                             <div class="field-row">
+                                <label style="width:100%">
+                                    <div style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem;">
+                                        <div>
+                                            <a class="label-title dashed-link"
+                                                href="https://www.assemblyai.com/dashboard/api-keys" target="_blank"
+                                                rel="noopener noreferrer">Clé AssemblyAI</a>
+                                            <span class="ia-status" id="assemblyAiStatus" aria-hidden="true"></span>
+                                        </div>
+                                        <div style="display:flex; gap:0.35rem;">
+                                            <button id="assemblyAiVerifyBtn" type="button"
+                                                class="btn-secondary">Vérifier</button>
+                                        </div>
+                                    </div>
+                                    <input id="assemblyAiKeyInput" type="password" placeholder="sk-..."
+                                        autocomplete="current-password" />
+                                    <span class="label-subtitle">
+                                        Accès privé pour la transcription automatique (~15ct/h. Crédit offert de 50€
+                                        à l'inscription)
+                                    </span>
+                                </label>
+                            </div>
+                            <div class="field-row">
                                 <label>
-                                    <span class="label-title">Prix max en € pour 1M token</span>
-                                    <input id="openrouterMaxPriceInput" type="number" min="1" step="0.01"
-                                        placeholder="0" />
+                                    <span class="label-title">Moteur IA</span>
+                                    <select id="aiBackendSelect">
+                                        <option value="openrouter" selected>OpenRouter (partagé ou privé)</option>
+                                        <option value="openai">OpenAI (privé) </option>
+                                    </select>
+                                </label>
+                            </div>
+
+                            <div id="openaiSettings">
+                                <div class="field-row">
+                                    <label>
+                                    </label>
+                                </div>
+                                <div class="field-row">
+                                    <label style="width:100%">
+                                        <div
+                                            style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem;">
+                                            <div>
+                                                <a href="https://platform.openai.com/settings/organization/api-keys"
+                                                    class="label-title dashed-link" target="_blank"
+                                                    rel="noopener noreferrer">Clé OpenAI</a>
+                                                <span class="ia-status" id="openaiStatus" aria-hidden="true"></span>
+                                            </div>
+                                            <div style="display:flex; gap:0.35rem;">
+                                                <button id="openaiVerifyBtn" type="button"
+                                                    class="btn-secondary">Vérifier</button>
+                                            </div>
+                                        </div>
+                                        <span class="label-subtitle">Accès privé payant sans rétention des
+                                            données (~1ct/100 requêtes)</span>
+                                        <input id="iaApiKeyInput" type="password" placeholder="sk-..."
+                                            autocomplete="current-password" />
+                                    </label>
+                                </div>
+
+                                <div class="field-row">
+                                    <label>
+                                        <span class="label-title">Modèle OpenAI</span>
+                                        <select id="openaiModelSelect">
+                                            <option value="gpt-5-nano">gpt-5-nano</option>
+                                            <option value="gpt-5-mini">gpt-5-mini</option>
+                                        </select>
+                                    </label>
+                                </div>
+                                <div class="field-row">
+                                    <label>
+                                        <span class="label-title">Effort de raisonnement OpenAI</span>
+                                        <select id="reasoningEffortSelect">
+                                            <option value="minimal">Minimal</option>
+                                            <option value="low">Faible</option>
+                                            <option value="medium">Moyen </option>
+                                            <option value="high">Élevé</option>
+                                        </select>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div id="openrouterSettings" style="display:none;">
+                                <div class="field-row">
+                                    <label style="width:100%">
+                                        <div
+                                            style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem;">
+                                            <div>
+                                                <a class="label-title" href="https://openrouter.ai/settings/keys"
+                                                    target="_blank" rel="noopener noreferrer">Clé OpenRouter</a>
+                                                <span class="ia-status" id="openrouterStatus" aria-hidden="true"></span>
+                                                <span class="ia-model-label" id="openrouterModelLabel"
+                                                    aria-live="polite"></span><br>
+                                                <span class="label-subtitle">Accès privé payant sans rétention des
+                                                    données (~1ct/100 requêtes)</span>
+                                            </div>
+                                            <div style="display:flex; gap:0.35rem;">
+                                                <button id="openrouterVerifyBtn" type="button"
+                                                    class="btn-secondary">Vérifier</button>
+                                            </div>
+                                        </div>
+                                        <input id="openrouterApiKeyInput" type="password" placeholder="or-..."
+                                            autocomplete="current-password" />
+                                    </label>
+                                </div>
+                                <div class="field-row">
+                                    <label style="width:100%">
+                                        <span class="label-title">Modèle OpenAI</span>
+                                        <select id="openrouterModelSelect"></select>
+                                    </label>
+                                </div>
+                                <div id="openrouterExtras" style="display:none; margin-top:8px;">
+                                    <div class="field-row">
+                                        <label>
+                                            <span class="label-title">Collecte et rétention des données</span>
+                                            <select id="openrouterDataCollectionSelect">
+                                                <option value="deny-zdr">Non</option>
+                                                <option value="allow">Oui</option>
+                                            </select>
+                                        </label>
+                                    </div>
+                                    <div class="field-row">
+                                        <label>
+                                            <span class="label-title">Prix max en € pour 1M token</span>
+                                            <input id="openrouterMaxPriceInput" type="number" min="1" step="0.01"
+                                                placeholder="0" />
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="field-row" style="margin-top:8px;">
+                                <label style="width:100%">
+                                    <span class="label-title">Token Admin</span>
+                                    <input id="adminTokenInput" type="text" />
                                 </label>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="field-row" style="margin-top:8px;">
-                        <label style="width:100%">
-                            <span class="label-title">Token Admin</span>
-                            <input id="adminTokenInput" type="text" />
-                        </label>
-                    </div>
+                        <div class="settings-tab-panel" data-panel="promptTab" hidden>
+                            <label class="label-title" for="chatPromptTextarea">Prompt système</label>
+                            <textarea id="chatPromptTextarea" rows="6"></textarea>
+                            <p class="label-subtitle">
+                                Le prompt sera enrichi avec les extraits récupérés via les documents et partagé à
+                                toutes les conversations.
+                            </p>
+                        </div>
 
+                        <div class="settings-tab-panel" data-panel="documentsTab" hidden>
+                            <div class="field-row">
+                                <label>
+                                    <span class="label-title">Taille des chunks</span>
+                                    <input id="documentChunkSizeInput" type="number" min="128" step="1" value="900" />
+                                </label>
+                                <label>
+                                    <span class="label-title">Overlap des chunks</span>
+                                    <input id="documentChunkOverlapInput" type="number" min="0" step="1" value="120" />
+                                </label>
+                            </div>
+                            <div class="field-row">
+                                <label>
+                                    <span class="label-title">topK (retrieval)</span>
+                                    <input id="documentTopKInput" type="number" min="1" step="1" value="6" />
+                                </label>
+                                <label>
+                                    <span class="label-title">Seuil minScore</span>
+                                    <input id="documentMinScoreInput" type="number" min="0" max="1" step="0.01" value="0.2" />
+                                </label>
+                            </div>
+                            <div class="field-row">
+                                <label>
+                                    <span class="label-title">Modèle embeddings</span>
+                                    <select id="documentEmbedModelSelect">
+                                        <option value="Xenova/all-MiniLM-L6-v2">Xenova/all-MiniLM-L6-v2 (384d)</option>
+                                        <option value="Xenova/bge-small-en-v1.5">Xenova/bge-small-en-v1.5</option>
+                                    </select>
+                                </label>
+                            </div>
+                            <p class="label-subtitle">
+                                Ces réglages partagés pilotent l’index local de documents utilisé par le chat.
+                            </p>
+                        </div>
+                    </div>
                     <div class="feedback-actions">
                         <button id="cancelSettingsBtn" type="button" class="btn-secondary">Annuler</button>
                         <button id="saveSettingsBtn" type="button" class="btn-primary">Sauvegarder</button>
@@ -1721,6 +1773,7 @@
     <script src="js/prompt.js?v=2026.1.2.1"></script>
     <script src="js/ia-client.js?v=2026.1.2.1"></script>
     <script src="js/markdown.js?v=2026.1.2.1"></script>
+    <script src="js/documents.js"></script>
     <script src="components/chatSidebar.js?v=2026.1.2.1"></script>
     <script>
         (function () {
@@ -2036,8 +2089,8 @@
                 }
             }
 
-            refresh("releaseNotesContent", "releases.md");
-            refresh("roadmapContent", "roadmap.md");
+            refresh("releaseNotesContent", "content/releases.md");
+            refresh("roadmapContent", "content/roadmap.md");
         })();
     </script>
 
@@ -4024,6 +4077,33 @@
         const openrouterModelLabelEl = document.getElementById("openrouterModelLabel");
         const openrouterVerifyBtn = document.getElementById("openrouterVerifyBtn");
         const openrouterModelSelect = document.getElementById("openrouterModelSelect");
+        const documentChunkSizeInput = document.getElementById("documentChunkSizeInput");
+        const documentChunkOverlapInput = document.getElementById("documentChunkOverlapInput");
+        const documentTopKInput = document.getElementById("documentTopKInput");
+        const documentMinScoreInput = document.getElementById("documentMinScoreInput");
+        const documentEmbedModelSelect = document.getElementById("documentEmbedModelSelect");
+        const chatPromptTextarea = document.getElementById("chatPromptTextarea");
+        const CHAT_PROMPT_STORAGE_KEY = "goToolkit.chat.prompt";
+
+        if (window.GoToolkitDocumentManager && typeof window.GoToolkitDocumentManager.onSettingsChange === "function") {
+            window.GoToolkitDocumentManager.onSettingsChange(function (settings) {
+                if (documentChunkSizeInput) {
+                    documentChunkSizeInput.value = settings.chunkSize || "900";
+                }
+                if (documentChunkOverlapInput) {
+                    documentChunkOverlapInput.value = settings.chunkOverlap || "120";
+                }
+                if (documentTopKInput) {
+                    documentTopKInput.value = settings.topK || "6";
+                }
+                if (documentMinScoreInput) {
+                    documentMinScoreInput.value = settings.minScore || "0.2";
+                }
+                if (documentEmbedModelSelect && settings.embedModelId) {
+                    documentEmbedModelSelect.value = settings.embedModelId;
+                }
+            });
+        }
         const DEFAULT_AI_BACKEND = "openrouter";
         populateOpenrouterModelSelect();
         const VERSION_QUERY_PARAM = "v";
@@ -4314,11 +4394,103 @@
                 const storedAdmin = localStorage.getItem("feedback-admin-token");
                 if (adminTokenInput && storedAdmin) adminTokenInput.value = storedAdmin;
             } catch (e) { /* noop */ }
+            loadChatPrompt();
+            activateSettingsTab("servicesTab");
             updateRequestsButtonVisibility();
             settingsModal.classList.add("open");
             settingsModal.setAttribute("aria-hidden", "false");
+            if (typeof syncSettingsTabHeights === "function") {
+                if (typeof requestAnimationFrame === "function") {
+                    requestAnimationFrame(syncSettingsTabHeights);
+                } else {
+                    setTimeout(syncSettingsTabHeights, 0);
+                }
+            }
             settingsReasoningSelect?.focus();
         }
+
+        const settingsTabButtons = Array.from(document.querySelectorAll("#settingsModal .settings-tabs .tab-btn"));
+        const settingsTabPanelsWrapper = document.querySelector("#settingsModal .settings-tab-panels-wrapper");
+        const settingsTabPanels = Array.from(
+            (settingsTabPanelsWrapper?.querySelectorAll(".settings-tab-panel")) ||
+            document.querySelectorAll("#settingsModal .settings-tab-panel")
+        );
+
+        function syncSettingsTabHeights() {
+            if (!settingsTabPanels.length) return;
+            let maxHeight = 0;
+            const backups = [];
+            settingsTabPanels.forEach(function (panel, index) {
+                backups[index] = {
+                    hidden: panel.hidden,
+                    position: panel.style.position || "",
+                    visibility: panel.style.visibility || ""
+                };
+                panel.style.position = "absolute";
+                panel.style.visibility = "hidden";
+                panel.hidden = false;
+                const height = panel.offsetHeight;
+                if (height > maxHeight) {
+                    maxHeight = height;
+                }
+                panel.hidden = backups[index].hidden;
+                panel.style.position = backups[index].position;
+                panel.style.visibility = backups[index].visibility;
+            });
+            if (settingsTabPanelsWrapper) {
+                settingsTabPanelsWrapper.style.minHeight = (maxHeight || 0) + "px";
+            }
+        }
+
+        function activateSettingsTab(tabId) {
+            settingsTabButtons.forEach(function (btn) {
+                btn.classList.toggle("active", btn.dataset.tab === tabId);
+            });
+            settingsTabPanels.forEach(function (panel) {
+                panel.hidden = panel.dataset.panel !== tabId;
+            });
+            syncSettingsTabHeights();
+        }
+
+        settingsTabButtons.forEach(function (button) {
+            button.addEventListener("click", function () {
+                activateSettingsTab(button.dataset.tab);
+            });
+        });
+
+        function loadChatPrompt() {
+            if (!chatPromptTextarea) return;
+            var stored = "";
+            try {
+                stored = (localStorage.getItem(CHAT_PROMPT_STORAGE_KEY) || "").trim();
+            } catch (err) {
+                console.warn("Lecture prompt chat", err);
+            }
+            var fallback = (window.GoToolkitChatPrompt?.DEFAULT_SYSTEM_PROMPT || window.GoToolkitChatPrompt?.SYSTEM_PROMPT || "").trim();
+            var next = stored || fallback;
+            chatPromptTextarea.value = next;
+            if (window.GoToolkitChatPrompt) {
+                window.GoToolkitChatPrompt.SYSTEM_PROMPT = next;
+            }
+        }
+
+        function persistChatPrompt(value) {
+            var trimmed = (value || "").trim();
+            var fallback = (window.GoToolkitChatPrompt?.DEFAULT_SYSTEM_PROMPT || "").trim();
+            var next = trimmed || fallback;
+            try {
+                localStorage.setItem(CHAT_PROMPT_STORAGE_KEY, next);
+            } catch (err) {
+                console.warn("Sauvegarde prompt chat", err);
+            }
+            if (window.GoToolkitChatPrompt) {
+                window.GoToolkitChatPrompt.SYSTEM_PROMPT = next;
+            }
+            return next;
+        }
+
+        loadChatPrompt();
+        activateSettingsTab("servicesTab");
 
         function closeSettings() {
             if (!settingsModal) return;
@@ -4353,6 +4525,9 @@
                 const apiKey = (settingsApiKeyInput?.value || "").trim();
                 const reasoning = settingsReasoningSelect?.value || "low";
                 const iaConfig = window.GoToolkitIAConfig;
+                if (chatPromptTextarea) {
+                    persistChatPrompt(chatPromptTextarea.value);
+                }
                 if (iaConfig && typeof iaConfig.setApiKey === "function") {
                     iaConfig.setApiKey(apiKey);
                 } else {
@@ -4438,6 +4613,32 @@
                 }
                 if (window.GoToolkitWebLLM && typeof window.GoToolkitWebLLM.resetEngine === "function") {
                     window.GoToolkitWebLLM.resetEngine();
+                }
+                if (window.GoToolkitDocumentManager && typeof window.GoToolkitDocumentManager.updateSettings === "function") {
+                    var docSettings = {};
+                    var chunkValue = parseInt(documentChunkSizeInput?.value || "", 10);
+                    if (!isNaN(chunkValue) && chunkValue > 0) {
+                        docSettings.chunkSize = chunkValue;
+                    }
+                    var overlapValue = parseInt(documentChunkOverlapInput?.value || "", 10);
+                    if (!isNaN(overlapValue) && overlapValue >= 0) {
+                        docSettings.chunkOverlap = overlapValue;
+                    }
+                    var topKValue = parseInt(documentTopKInput?.value || "", 10);
+                    if (!isNaN(topKValue) && topKValue > 0) {
+                        docSettings.topK = topKValue;
+                    }
+                    var minScoreValue = parseFloat(documentMinScoreInput?.value || "");
+                    if (!isNaN(minScoreValue) && minScoreValue >= 0) {
+                        docSettings.minScore = minScoreValue;
+                    }
+                    var embedModelValue = (documentEmbedModelSelect?.value || "").trim();
+                    if (embedModelValue) {
+                        docSettings.embedModelId = embedModelValue;
+                    }
+                    if (Object.keys(docSettings).length) {
+                        await window.GoToolkitDocumentManager.updateSettings(docSettings);
+                    }
                 }
                 localStorage.setItem("plan-reasoning-effort", reasoning);
                 try { localStorage.setItem("nuances-reasoning-effort", reasoning); } catch (e) { }
