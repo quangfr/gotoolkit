@@ -25,7 +25,7 @@
         OLLAMA_API_KEY: "",
         WEBLLM_MODEL: "Llama-3.2-3B-Instruct-q4f16_1-MLC",
         CONTEXT_WINDOW: "0",
-        OPENROUTER_MODEL: "openai/gpt-oss-120b:free",
+        OPENROUTER_MODEL: "@preset/gotoolkit",
         OPENROUTER_DATA_COLLECTION: "allow",
         OPENROUTER_MAX_PRICE_PROMPT: "0",
         OPENROUTER_MAX_PRICE_COMPLETION: "0",
@@ -37,15 +37,6 @@
     var OPENROUTER_MODELS = [
         "openai/gpt-oss-120b:free",
         "openai/gpt-oss-20b:free",
-        "meta-llama/llama-3.1-405b-instruct:free",
-        "meta-llama/llama-3.3-70b-instruct:free",
-        "meta-llama/llama-3.2-3b-instruct:free",
-        "xiaomi/mimo-v2-flash:free",
-        "mistralai/mistral-7b-instruct:free",
-        "mistralai/mistral-small-3.1-24b-instruct:free",
-        "google/gemma-3n-e4b-it:free",
-        "google/gemma-3-12b-it:free",
-        "google/gemma-3-27b-it:free",
         "openai/gpt-5-mini",
         "openai/gpt-5-nano"
     ];
