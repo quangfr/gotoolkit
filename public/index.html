@@ -3956,6 +3956,7 @@
                 if (!window.GoToolkitSelectedAIBackend) {
                     window.GoToolkitSelectedAIBackend = resolved;
                 }
+                updateBackendVisibility();
             } catch (err) {
                 console.warn("Failed to enforce default AI backend", err);
             }
