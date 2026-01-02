@@ -1014,6 +1014,16 @@ classDiagram
     ];
 
     const voicePrompts = [
+
+        {
+            id: "default",
+            title: "🕊️ Générique",
+            text:
+                ".\n" +
+                "☐ Informations\n" +
+                "☐ Décisions\n" +
+                "☐ Actions"
+        },
         {
             id: "backlog-grooming",
             title: "🧹 Backlog Grooming",
@@ -1116,16 +1126,7 @@ classDiagram
                 "☐ Problèmes rencontrés\n" +
                 "☐ Attentes / priorités\n" +
                 "☐ Actions / suivis"
-        },
-        {
-            id: "default",
-            title: "🕊️ Réunion générique",
-            text:
-                ".\n" +
-                "☐ Informations\n" +
-                "☐ Décisions\n" +
-                "☐ Actions"
-        },
+        }
     ];
 
     const voiceCreateSystemTemplate = `Tu es un product owner expérimenté chargé de générer une trame de discussion pour une réunion.

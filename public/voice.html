@@ -1887,7 +1887,21 @@
             const NOTE_MODE_TRANSCRIPT_VIDEO = "transcript-video";
             const templateList = (window.GoPrompts && window.GoPrompts.voicePrompts) || [];
             const DEFAULT_TEMPLATE_ID = "default";
-            const defaultTemplate = templateList.find(tpl => tpl.id === DEFAULT_TEMPLATE_ID) || templateList[0] || null;
+            const DEFAULT_TEMPLATE_LABEL = "🕊️ Réunion générique";
+            let defaultTemplate = templateList.find(tpl => tpl.id === DEFAULT_TEMPLATE_ID) || templateList[0] || null;
+            if (defaultTemplate) {
+                defaultTemplate = {
+                    ...defaultTemplate,
+                    title: defaultTemplate.title || DEFAULT_TEMPLATE_LABEL,
+                    text: defaultTemplate.text || DEFAULT_TEMPLATE_LABEL
+                };
+            } else {
+                defaultTemplate = {
+                    id: DEFAULT_TEMPLATE_ID,
+                    title: DEFAULT_TEMPLATE_LABEL,
+                    text: DEFAULT_TEMPLATE_LABEL
+                };
+            }
             const promptDefaults = {
                 system: (window.GoPrompts && window.GoPrompts.voiceCreateSystemTemplate) || "",
                 summary: (window.GoPrompts && window.GoPrompts.voiceSummaryPrompt) || "",
@@ -2452,7 +2466,6 @@
                     persistState();
                     renderTabs();
                     renderPage();
-                    openTemplateModal();
                     return;
                 }
                 state.pages = state.pages.filter(p => p.id !== state.activePageId);
@@ -2465,7 +2478,6 @@
                     persistState();
                     renderTabs();
                     renderPage();
-                    openTemplateModal();
                     return;
                 }
                 state.activePageId = state.pages[0]?.id || null;
@@ -6621,7 +6633,6 @@
                 renderTabs();
                 renderPage();
                 clearAudioStoreAll();
-                openTemplateModal();
             }
 
             function importFromFile(file) {
@@ -8148,12 +8159,6 @@
             void hydrateMediaFromDb();
             toggleContextPanel(!isResponsiveContextMode());
             audioPlayer.playbackRate = getAudioSpeed();
-            try {
-                const params = new URLSearchParams(window.location.search);
-                if (!loadedFromStorage && !params.get(SHARE_QUERY_PARAM)) {
-                    openTemplateModal();
-                }
-            } catch (err) { /* ignore */ }
             document.addEventListener("pointerdown", ev => {
                 if (!contextPanel?.classList.contains("open")) return;
                 if (!isResponsiveContextMode()) return;
