@@ -287,7 +287,7 @@ button.btn-primary {
 }
 
 .context-panels {
-  flex: 1;
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -301,6 +301,15 @@ button.btn-primary {
   flex-direction: column;
   gap: 8px;
   overflow: hidden;
+
+}
+
+.command-panel {
+  flex: 1 1 auto;
+}
+
+.script-panel {
+  flex: 0 0 auto;
 }
 
 .command-panel textarea,
@@ -546,7 +555,7 @@ body.context-resizing {
 
 .feedback-app-launcher-row {
   position: fixed;
-  right: 16px;
+  left: 16px;
   bottom: 16px;
   z-index: 220;
   display: flex;

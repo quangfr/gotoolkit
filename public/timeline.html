@@ -487,36 +487,6 @@
             }
         }
 
-        .speech-suggestion {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            right: 10px;
-            bottom: 10px;
-            pointer-events: none;
-            font: inherit;
-            line-height: 1.4;
-            white-space: pre-wrap;
-            word-break: break-word;
-            z-index: 4;
-        }
-
-        .speech-suggestion span {
-            display: inline;
-        }
-
-        .speech-suggestion-current {
-            color: transparent;
-        }
-
-        .speech-suggestion-partial {
-            color: rgba(15, 23, 42, 0.45);
-        }
-
-        .speech-suggestion:not(.visible) {
-            visibility: hidden;
-        }
-
         @keyframes speech-border {
 
             0%,
@@ -632,30 +602,6 @@
 
         .edit-tooltip.visible {
             opacity: 1;
-        }
-
-        /* Tooltip affiché sous le textarea Commande (noir semi-transparent, texte blanc) */
-        .scenario-template-tooltip {
-            position: absolute;
-            z-index: 120;
-            background: rgba(0, 0, 0, 0.82);
-            color: #fff;
-            padding: 8px 10px;
-            border-radius: 8px;
-            font-size: 12px;
-            max-width: 420px;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
-            pointer-events: none;
-            white-space: pre-wrap;
-            opacity: 0;
-            transform-origin: top left;
-            transform: translateY(8px);
-            transition: opacity 0.12s ease, transform 0.12s ease;
-        }
-
-        .scenario-template-tooltip.visible {
-            opacity: 1;
-            transform: translateY(0);
         }
 
         .header-buttons {
@@ -1554,12 +1500,10 @@
                             <div class="ia-prompt-fields">
                                 <div class="prompt-template-meta" id="promptTemplateMeta">Modèle : —</div>
                                 <div class="speech-field-wrapper">
-                                    <div class="speech-suggestion" data-speech-suggestion="promptCreate"
-                                        aria-hidden="true"></div>
                                     <textarea id="promptCreate" class="ia-prompt-field"
                                         placeholder="Décris ici ton objectif, ton échéance et tes actions"></textarea>
                                     <button class="speech-button" type="button" data-speech-target="promptCreate"
-                                        title="Dictée vocale" aria-label="Activer la dictée vocale">◉</button>
+                                        aria-label="Activer la dictée vocale">◉</button>
                                 </div>
                             </div>
                         </div>
@@ -3055,7 +2999,7 @@
                             bottomPanel: scriptPanel,
                             splitter: contextSplitter,
                             storageKey: "timeline-context-command-height",
-                            defaultHeight: 40,
+                            defaultHeight: 9999,
                             minTopHeight: 160,
                             minBottomHeight: 40
                         });
@@ -6260,16 +6204,6 @@
                     clearTimelineBtn.disabled = !hasScenario;
                 }
                 var promptTemplateMeta = document.getElementById("promptTemplateMeta");
-                var templateCriteriaStatus = {};
-                var lastAnalyzedSentenceCount = 0;
-                var lastAnalyzedTemplateId = null;
-                var criteriaAnalysisAbortController = null;
-                // Tooltip element shown under the scenario textarea on focus
-                var scenarioTooltip = document.createElement('div');
-                scenarioTooltip.className = 'scenario-template-tooltip';
-                scenarioTooltip.style.display = 'none';
-                document.body.appendChild(scenarioTooltip);
-                var scenarioTooltipTimer = null;
                 var btnCall = document.getElementById("btn-call");
                 var btnCallLabel = btnCall?.querySelector("span") || btnCall;
                 var defaultTimelineLabel =
@@ -6290,16 +6224,6 @@
                 var activeSpeechButton = null;
                 var activeSpeechWrapper = null;
                 var activeSpeechField = null;
-                var lastSpeechInterim = "";
-
-                function escapeHtml(value) {
-                    return String(value || "")
-                        .replace(/&/g, "&amp;")
-                        .replace(/</g, "&lt;")
-                        .replace(/>/g, "&gt;")
-                        .replace(/"/g, "&quot;")
-                        .replace(/'/g, "&#39;");
-                }
 
                 function appendSpeechText(field, transcript) {
                     if (!field || !transcript) {
@@ -6312,60 +6236,6 @@
                     var separator = field.value ? (/\s$/.test(field.value) ? "" : " ") : "";
                     field.value = field.value + (field.value ? separator : "") + normalized;
                     field.dispatchEvent(new Event("input", { bubbles: true }));
-                    clearSpeechSuggestion(field);
-                }
-
-                function getSpeechSuggestionElement(field) {
-                    if (!field) {
-                        return null;
-                    }
-                    return document.querySelector('[data-speech-suggestion="' + field.id + '"]');
-                }
-
-                function updateSpeechSuggestion(field, partial) {
-                    var suggestionEl = getSpeechSuggestionElement(field);
-                    if (!suggestionEl) {
-                        return;
-                    }
-                    if (!partial) {
-                        suggestionEl.classList.remove("visible");
-                        suggestionEl.innerHTML = "";
-                        return;
-                    }
-                    var safeCurrent = escapeHtml(field.value);
-                    var safePartial = escapeHtml(partial);
-                    suggestionEl.innerHTML =
-                        '<span class="speech-suggestion-current">' + safeCurrent + '</span>' +
-                        '<span class="speech-suggestion-partial">' + safePartial + '</span>';
-                    suggestionEl.classList.add("visible");
-                    if (field === activeSpeechField) {
-                        lastSpeechInterim = partial || "";
-                    }
-                    // hide placeholder while interim speech suggestion is visible
-                    try {
-                        if (field && field.setAttribute) {
-                            var existing = field.getAttribute('placeholder') || '';
-                            if (existing) field.setAttribute('data-original-placeholder', existing);
-                            field.setAttribute('placeholder', '');
-                        }
-                    } catch (e) { /* noop */ }
-                }
-
-                function clearSpeechSuggestion(field) {
-                    updateSpeechSuggestion(field, "");
-                    if (field === activeSpeechField) {
-                        lastSpeechInterim = "";
-                    }
-                    // restore placeholder if it was hidden for speech
-                    try {
-                        if (field && field.setAttribute) {
-                            var saved = field.getAttribute('data-original-placeholder');
-                            if (saved !== null) {
-                                field.setAttribute('placeholder', saved || '');
-                                field.removeAttribute('data-original-placeholder');
-                            }
-                        }
-                    } catch (e) { /* noop */ }
                 }
 
                 function deactivateSpeechUiClasses() {
@@ -6381,13 +6251,7 @@
 
                 function stopActiveSpeechSession(options) {
                     options = options || {};
-                    var flushInterim = Boolean(options.flushInterim);
                     var skipAbort = Boolean(options.skipAbort);
-                    var field = activeSpeechField;
-                    if (flushInterim && field && lastSpeechInterim) {
-                        appendSpeechText(field, lastSpeechInterim);
-                    }
-                    lastSpeechInterim = "";
                     if (activeSpeechRecognition) {
                         if (!skipAbort) {
                             activeSpeechRecognition.abort();
@@ -6395,17 +6259,6 @@
                         activeSpeechRecognition = null;
                     }
                     deactivateSpeechUiClasses();
-                    if (field) {
-                        clearSpeechSuggestion(field);
-                    }
-                    if (txtPromptCreate) {
-                        clearSpeechSuggestion(txtPromptCreate);
-                    }
-                    // Hide scenario tooltip when speech recognition ends
-                    try {
-                        if (typeof hideScenarioTooltip === 'function') hideScenarioTooltip();
-                    } catch (e) { /* noop */ }
-
                     activeSpeechField = null;
                 }
 
@@ -6433,38 +6286,24 @@
                         activeSpeechRecognition = recognition;
                         activeSpeechButton = button;
                         activeSpeechField = field;
-                        lastSpeechInterim = "";
                         field.focus();
-                        clearSpeechSuggestion(field);
                         if (wrapper) {
                             wrapper.classList.add("speech-active");
                             activeSpeechWrapper = wrapper;
                         }
                     });
                     recognition.addEventListener("result", function (event) {
-                        var interimText = "";
                         for (var i = event.resultIndex; i < event.results.length; i++) {
                             var result = event.results[i];
                             var transcript = (result[0] && result[0].transcript ? result[0].transcript : "").trim();
                             if (!transcript) continue;
                             if (result.isFinal) {
                                 appendSpeechText(field, transcript);
-                            } else {
-                                interimText += (interimText ? " " : "") + transcript;
-                            }
-                        }
-                        if (interimText) {
-                            updateSpeechSuggestion(field, interimText);
-                        } else {
-                            var lastResult = event.results[event.results.length - 1];
-                            if (lastResult && !lastResult.isFinal) {
-                                clearSpeechSuggestion(field);
                             }
                         }
                     });
                     recognition.addEventListener("error", function () {
                         console.warn("Speech recognition error");
-                        clearSpeechSuggestion(field);
                         stopActiveSpeechSession();
                     });
                     recognition.addEventListener("end", function () {
@@ -6552,7 +6391,7 @@
                     if (!activeSpeechRecognition || !activeSpeechField) return;
                     if (event.target !== activeSpeechField) return;
                     if (!isSpeechTypingKey(event)) return;
-                    stopActiveSpeechSession({ flushInterim: true });
+                    stopActiveSpeechSession();
                 }
                 document.addEventListener("keydown", handleSpeechKeydown, true);
 
@@ -6568,152 +6407,9 @@
                     var tpl = getTemplateById(currentId);
                     var label = tpl ? tpl.title : "—";
                     promptTemplateMeta.textContent = "Modèle : " + label;
-                    renderScenarioTooltip(tpl, tpl && tpl.id ? templateCriteriaStatus[tpl.id] : null);
-                    if (document.activeElement === txtPromptCreate) {
-                        showScenarioTooltip(txtPromptCreate);
-                    }
                     if (txtPromptCreate) {
                         txtPromptCreate.title = "";
                     }
-                    triggerScenarioCriteriaAnalysis({ force: true });
-                }
-
-                function positionScenarioTooltipForTextarea(textarea) {
-                    if (!textarea || !scenarioTooltip) return;
-                    var rect = textarea.getBoundingClientRect();
-                    scenarioTooltip.dataset.targetLeft = (rect.left + window.scrollX).toString();
-                    scenarioTooltip.dataset.targetTop = (rect.top + window.scrollY).toString();
-                    scenarioTooltip.dataset.targetHeight = rect.height.toString();
-                    var maxW = Math.min(rect.width, 420);
-                    scenarioTooltip.style.maxWidth = maxW + 'px';
-                }
-
-                function showScenarioTooltip(textarea) {
-                    if (!textarea || !scenarioTooltip) return;
-                    var tooltipText = (scenarioTooltip.textContent || "").trim();
-                    if (!tooltipText || scenarioTooltip.getAttribute("aria-hidden") === "true") {
-                        hideScenarioTooltip();
-                        return;
-                    }
-                    positionScenarioTooltipForTextarea(textarea);
-                    scenarioTooltip.style.display = 'block';
-                    scenarioTooltip.style.transform = 'translateX(8px)';
-                    requestAnimationFrame(function () {
-                        var tipRect = scenarioTooltip.getBoundingClientRect();
-                        var baseLeft = parseFloat(scenarioTooltip.dataset.targetLeft || '0') || 0;
-                        var baseTop = parseFloat(scenarioTooltip.dataset.targetTop || '0') || 0;
-                        var targetHeight = parseFloat(scenarioTooltip.dataset.targetHeight || '0') || 0;
-                        var gap = 10;
-                        var maxLeft = Math.max(gap, window.innerWidth - tipRect.width - gap);
-                        var left = Math.min(maxLeft, Math.max(gap, baseLeft));
-                        var maxTop = Math.max(gap, window.innerHeight - tipRect.height - gap);
-                        var topCandidate = baseTop + targetHeight + gap;
-                        var top = Math.min(maxTop, Math.max(gap, topCandidate));
-                        scenarioTooltip.style.left = left + 'px';
-                        scenarioTooltip.style.top = top + 'px';
-                        scenarioTooltip.classList.add('visible');
-                        scenarioTooltip.style.transform = 'translateY(0)';
-                    });
-                    // reset timer
-                    if (scenarioTooltipTimer) {
-                        clearTimeout(scenarioTooltipTimer);
-                    }
-                    scenarioTooltipTimer = setTimeout(function () {
-                        hideScenarioTooltip();
-                    }, 5000);
-                }
-
-                function hideScenarioTooltip() {
-                    if (scenarioTooltipTimer) {
-                        clearTimeout(scenarioTooltipTimer);
-                        scenarioTooltipTimer = null;
-                    }
-                    scenarioTooltip.classList.remove('visible');
-                    // allow transition then hide
-                    setTimeout(function () {
-                        scenarioTooltip.style.display = 'none';
-                    }, 140);
-                }
-
-                function renderScenarioTooltip(template, statusMap) {
-                    if (!scenarioTooltip) return;
-                    const lines = GoToolkitTemplateCriteria.renderTooltipLines(template, statusMap);
-                    if (lines.length) {
-                        scenarioTooltip.innerHTML = lines.join("<br>");
-                        scenarioTooltip.setAttribute("aria-hidden", "false");
-                        return;
-                    }
-                    const fallback = template ? template.text || template.description || "" : "";
-                    scenarioTooltip.textContent = fallback;
-                    scenarioTooltip.setAttribute("aria-hidden", fallback ? "false" : "true");
-                }
-
-                async function analyzeScenarioCriteria(text, template) {
-                    if (!template || !template.id) return;
-                    if (criteriaAnalysisAbortController) {
-                        try { criteriaAnalysisAbortController.abort(); } catch (e) { /* noop */ }
-                    }
-                    const controller = new AbortController();
-                    criteriaAnalysisAbortController = controller;
-                    const storedKey = (iaApiKeyInput?.value || "").trim() || readSharedTimelineApiKey();
-                    const useProxy = !storedKey;
-                    const endpoint = useProxy ? OPENAI_PROXY_URL : GoToolkitTemplateCriteria.DEFAULT_DIRECT_ENDPOINT;
-                    try {
-                        const normalized = await GoToolkitTemplateCriteria.analyzeCriteria({
-                            text,
-                            template,
-                            apiKey: useProxy ? "" : storedKey,
-                            endpoint,
-                            signal: controller.signal,
-                            model: "gpt-5-nano"
-                        });
-                        templateCriteriaStatus[template.id] = normalized;
-                        renderScenarioTooltip(template, normalized);
-                    } catch (err) {
-                        if (err?.name === "AbortError") return;
-                        console.warn("Analyse des critères impossible", err);
-                    } finally {
-                        if (criteriaAnalysisAbortController === controller) {
-                            criteriaAnalysisAbortController = null;
-                        }
-                    }
-                }
-
-                function triggerScenarioCriteriaAnalysis(options) {
-                    var force = options && options.force;
-                    var template = getTemplateById(selectedRoadmapPromptId || "");
-                    var templateId = template?.id || null;
-                    if (templateId && !templateCriteriaStatus[templateId]) {
-                        templateCriteriaStatus[templateId] = {};
-                    }
-                    if (templateId !== lastAnalyzedTemplateId) {
-                        lastAnalyzedSentenceCount = 0;
-                        lastAnalyzedTemplateId = templateId;
-                    }
-                    var status = templateId ? templateCriteriaStatus[templateId] : null;
-                    renderScenarioTooltip(template, status);
-                    if (!txtPromptCreate) return;
-                    var text = txtPromptCreate.value || "";
-                    var trimmed = text.trim();
-                    var criteria = GoToolkitTemplateCriteria.getTemplateCriteria(template);
-                    if (!trimmed || !criteria.length) {
-                        lastAnalyzedSentenceCount = GoToolkitTemplateCriteria.countCompletedSentences(text);
-                        if (templateId) {
-                            templateCriteriaStatus[templateId] = {};
-                            renderScenarioTooltip(template, templateCriteriaStatus[templateId]);
-                        }
-                        if (criteriaAnalysisAbortController) {
-                            try { criteriaAnalysisAbortController.abort(); } catch (e) { /* noop */ }
-                            criteriaAnalysisAbortController = null;
-                        }
-                        return;
-                    }
-                    var sentenceCount = GoToolkitTemplateCriteria.countCompletedSentences(text);
-                    if (!force && sentenceCount === lastAnalyzedSentenceCount) {
-                        return;
-                    }
-                    lastAnalyzedSentenceCount = sentenceCount;
-                    analyzeScenarioCriteria(trimmed, template);
                 }
 
                 function setSelectedTemplateId(id, options) {
@@ -6757,25 +6453,8 @@
                     }
                 }
 
-                // Show tooltip under the Commande textarea on focus; hide after 5s inactivity.
                 if (txtPromptCreate) {
-                    txtPromptCreate.addEventListener('focus', function () {
-                        var tpl = getTemplateById(selectedRoadmapPromptId || "");
-                        renderScenarioTooltip(tpl, tpl && tpl.id ? templateCriteriaStatus[tpl.id] : null);
-                        showScenarioTooltip(txtPromptCreate);
-                    });
-                    txtPromptCreate.addEventListener('input', function () {
-                        hideScenarioTooltip();
-                        clearSpeechSuggestion(txtPromptCreate);
-                        triggerScenarioCriteriaAnalysis();
-                        updateTimelineClearButtonState();
-                    });
-                    txtPromptCreate.addEventListener('keydown', function () {
-                        hideScenarioTooltip();
-                    });
-                    txtPromptCreate.addEventListener('blur', function () {
-                        hideScenarioTooltip();
-                    });
+                    txtPromptCreate.addEventListener('input', updateTimelineClearButtonState);
                 }
 
                 function syncContextFieldsFromState(options) {
@@ -7196,7 +6875,7 @@
                         try { showCopyToast("Requête IA annulée."); } catch (e) { }
                         return;
                     }
-                    stopActiveSpeechSession({ flushInterim: true });
+                    stopActiveSpeechSession();
                     if (!triggerButton) triggerButton = null;
                     if (mode === "modify") {
                         ensureModifyPrompt({ refreshModify: true });

@@ -141,9 +141,9 @@
             typeof options.labelFormatter === "function"
                 ? options.labelFormatter
                 : function (frame, seconds) {
-                      const padded = seconds < 10 ? "0" + seconds : String(seconds);
-                      return frame + " " + padded + "s";
-                  };
+                    const padded = seconds < 10 ? "0" + seconds : String(seconds);
+                    return frame + " " + padded + "s";
+                };
         let globalDefaultLabel =
             typeof options.defaultLabel === "string" ? options.defaultLabel : null;
         resolvedTargets.forEach(target => {
@@ -223,18 +223,13 @@
             return null;
         }
         const storageKey = typeof options.storageKey === "string" && options.storageKey ? options.storageKey : null;
-        const defaultHeight =
-            Number.isFinite(Number(options.defaultHeight)) && Number(options.defaultHeight) > 0
-                ? Math.round(Number(options.defaultHeight))
-                : 260;
+        const requestedDefaultHeight = 999;
+        const defaultHeight = requestedDefaultHeight;
         const minTopHeight =
             Number.isFinite(Number(options.minTopHeight)) && Number(options.minTopHeight) > 0
                 ? Math.round(Number(options.minTopHeight))
                 : 120;
-        const minBottomHeight =
-            Number.isFinite(Number(options.minBottomHeight)) && Number(options.minBottomHeight) > 0
-                ? Math.round(Number(options.minBottomHeight))
-                : 120;
+        const minBottomHeight = 70;
         const keyboardStep =
             Number.isFinite(Number(options.keyboardStep)) && Number(options.keyboardStep) > 0
                 ? Math.round(Number(options.keyboardStep))
@@ -284,8 +279,8 @@
             currentHeight = nextHeight;
             topPanel.style.flexBasis = `${nextHeight}px`;
             topPanel.style.height = `${nextHeight}px`;
-            topPanel.style.flexGrow = "0";
-            topPanel.style.flexShrink = "0";
+            topPanel.style.flexGrow = "1";
+            topPanel.style.flexShrink = "1";
         }
 
         bottomPanel.style.flex = "1 1 0";

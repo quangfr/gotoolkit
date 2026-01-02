@@ -656,11 +656,34 @@
             display: flex;
             flex-direction: column;
             gap: 6px;
+            flex: 1;
+            min-height: 0;
         }
 
         .prompt-input-card textarea {
-            height: 100%;
             margin-bottom: 0;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .prompt-input-wrapper {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .speech-field-wrapper {
+            position: relative;
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .speech-field-wrapper textarea {
+            flex: 1;
+            min-height: 0;
         }
 
         .mermaid-output-card {
@@ -3010,6 +3033,7 @@
 
                 function getTemplateIcon(templateId) {
                     const tpl = getTemplateConfigById(templateId);
+                    if (tpl.id === "data-mapping") return "🧩";
                     if (tpl.parser === "tree") return "🧬";
                     return "🧪";
                 }
@@ -9052,7 +9076,7 @@
                             bottomPanel: scriptPanel,
                             splitter: contextSplitter,
                             storageKey: "grid-context-command-height",
-                            defaultHeight: 40,
+                            defaultHeight: 999,
                             minTopHeight: 140,
                             minBottomHeight: 40
                         });
