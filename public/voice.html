@@ -999,6 +999,11 @@
             z-index: 2;
         }
 
+        .speech-field-wrapper.speech-active textarea {
+            border: 2px solid #B11226 !important;
+            animation: speech-border 2s infinite ease-in-out;
+        }
+
         .speech-button {
             position: absolute;
             top: 6px;
@@ -1057,6 +1062,18 @@
 
             50% {
                 opacity: 0.4;
+            }
+        }
+
+        @keyframes speech-border {
+
+            0%,
+            100% {
+                box-shadow: none;
+            }
+
+            50% {
+                box-shadow: 0 0 0 8px rgba(177, 18, 38, 0.15);
             }
         }
 
@@ -2025,6 +2042,7 @@
             const promptCreate = document.getElementById("promptCreate");
             const promptModify = document.getElementById("promptModify");
             const promptCreateSpeechButton = document.getElementById("promptCreateSpeechBtn");
+            const promptCreateSpeechWrapper = promptCreate?.closest(".speech-field-wrapper");
             const promptCreateSpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
             let promptCreateSpeechRecognition = null;
             const respondBtn = document.getElementById("respondBtn");
@@ -7057,6 +7075,7 @@
                 if (!recognition) return;
                 promptCreateSpeechRecognition = null;
                 promptCreateSpeechButton?.classList.remove("speech-button--active");
+                promptCreateSpeechWrapper?.classList.remove("speech-active");
                 try {
                     recognition.stop();
                 } catch (err) { /* noop */ }
@@ -7082,6 +7101,7 @@
                 recognition.continuous = true;
                 recognition.addEventListener("start", () => {
                     promptCreateSpeechButton?.classList.add("speech-button--active");
+                    promptCreateSpeechWrapper?.classList.add("speech-active");
                     promptCreate?.focus({ preventScroll: true });
                 });
                 recognition.addEventListener("result", event => {
