@@ -10,7 +10,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
     <link rel="stylesheet" href="styles/app-shell.css?v=2026.01.01">
-    <link rel="stylesheet" href="styles/cgu.css?v=2026.01.01">
     <style>
         :root {
             --bg: #f3f4f6;
@@ -828,68 +827,6 @@
 
         .toast {
             z-index: 12100;
-        }
-
-        .info-popup {
-            position: absolute;
-            top: 56px;
-            right: 12px;
-            width: 280px;
-            background: #fff;
-            border-radius: 14px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-            padding: 15px;
-            display: none;
-            flex-direction: column;
-            gap: 6px;
-            font-size: 12px;
-            z-index: 200;
-        }
-
-        .info-popup.open {
-            display: flex;
-        }
-
-        .info-popup img {
-            width: 144px;
-            height: 144px;
-            object-fit: contain;
-            align-self: center;
-        }
-
-        .info-popup a {
-            color: #2a7a57;
-            text-decoration: none;
-            font-weight: 600;
-        }
-
-        .info-popup button {
-            border-radius: 8px;
-            border: 1px solid rgba(15, 23, 42, 0.15);
-            background: #fff;
-            color: #0f172a;
-            padding: 6px 10px;
-            font-size: 12px;
-            cursor: pointer;
-            min-width: 110px;
-        }
-
-        .info-popup button.update-btn {
-            background: #2a7a57;
-            border-color: #2a7a57;
-            color: #fff;
-        }
-
-        .info-popup button.secondary {
-            background: #fff;
-            border-color: rgba(15, 23, 42, 0.15);
-            color: #0f172a;
-        }
-
-        .info-actions {
-            display: flex;
-            gap: 8px;
-            margin-top: 8px;
         }
 
         textarea {

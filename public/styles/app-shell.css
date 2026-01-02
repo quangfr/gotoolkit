@@ -995,3 +995,138 @@ label {
     overflow: auto;
   }
 }
+
+/* Shared CGU modal styles */
+.gt-nexus-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  z-index: 260;
+}
+
+.gt-nexus-backdrop.open {
+  display: flex;
+}
+
+#closeNexusBtn {
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  font-size: 18px;
+}
+
+.nexus-modal {
+  width: min(1000px, 95vw);
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 22px 45px rgba(15, 23, 42, 0.25);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 95vh;
+  overflow-y: auto;
+  font-size: 15px;
+}
+
+.nexus-modal header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  position: relative;
+}
+
+.nexus-modal header button {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
+.nexus-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nexus-content p {
+  margin: 0;
+  line-height: 1.4;
+}
+
+.nexus-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* Shared info modal styles */
+.info-popup {
+  position: absolute;
+  top: 56px;
+  right: 12px;
+  width: 280px;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  padding: 15px;
+  display: none;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  z-index: 200;
+}
+
+.info-popup.open {
+  display: flex;
+}
+
+.info-popup img {
+  width: 144px;
+  height: 144px;
+  object-fit: contain;
+  align-self: center;
+}
+
+.info-popup a {
+  color: #2a7a57;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.info-popup button {
+  border-radius: 8px;
+  border: 1px solid rgba(15, 23, 42, 0.15);
+  background: #fff;
+  color: #0f172a;
+  padding: 6px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  min-width: 110px;
+}
+
+.info-popup button.update-btn {
+  background: #2a7a57;
+  border-color: #2a7a57;
+  color: #fff;
+}
+
+.info-popup button.secondary {
+  background: #fff;
+  border-width: 1px;
+  border-style: solid;
+  border-color: rgba(15, 23, 42, 0.15);
+  color: #0f172a;
+}
+
+.info-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
