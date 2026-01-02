@@ -1278,6 +1278,22 @@
             </div>
         </div>
     </div>
+    <div class="modal-overlay" id="treeStatusModal">
+        <div class="modal tree-source-modal">
+            <header class="modal-header">
+                <h3>Statuts</h3>
+                <button id="closeTreeStatusModal" class="btn-secondary" type="button">✕</button>
+            </header>
+            <label>
+                <span>Liste des statuts (un par ligne)</span>
+                <textarea id="treeStatusListInput" rows="8" placeholder="À faire\nÀ valider\nEn cours\nFait"></textarea>
+            </label>
+            <div class="modal-actions">
+                <button id="cancelTreeStatusModal" class="btn" type="button">Réinitialiser</button>
+                <button id="saveTreeStatusModal" class="btn-primary" type="button">Enregistrer</button>
+            </div>
+        </div>
+    </div>
     <div class="modal-overlay" id="treeTypeModal">
         <div class="modal tree-source-modal">
             <header class="modal-header">
@@ -1372,6 +1388,11 @@
                 const saveTreeTypeModal = document.getElementById("saveTreeTypeModal");
                 const cancelTreeTypeModal = document.getElementById("cancelTreeTypeModal");
                 const closeTreeTypeModal = document.getElementById("closeTreeTypeModal");
+                const treeStatusModal = document.getElementById("treeStatusModal");
+                const treeStatusListInput = document.getElementById("treeStatusListInput");
+                const saveTreeStatusModal = document.getElementById("saveTreeStatusModal");
+                const cancelTreeStatusModal = document.getElementById("cancelTreeStatusModal");
+                const closeTreeStatusModal = document.getElementById("closeTreeStatusModal");
                 const resetPromptBtn = document.getElementById("resetPromptBtn");
                 const applyAiSettingsBtn = document.getElementById("applyAiSettingsBtn");
                 const generateBtn = document.getElementById("generateBtn");
@@ -2058,7 +2079,7 @@
                         btn.addEventListener("click", event => {
                             event.preventDefault();
                             event.stopPropagation();
-                            openStatusOptionsPrompt();
+                            openStatusOptionsModal();
                         });
                         this.eGui.append(label, btn);
                     }
@@ -3138,15 +3159,41 @@
                     treeSourceModal.classList.remove("open");
                 }
 
-                function openStatusOptionsPrompt() {
-                    const current = getStatusOptions().join("\n");
-                    const raw = window.prompt("Définis les statuts (un par ligne)", current);
-                    if (raw == null) return;
+                function openStatusOptionsModal() {
+                    if (!treeStatusModal || !treeStatusListInput) return;
+                    const options = getStatusOptions();
+                    treeStatusListInput.value = options.join("\n");
+                    treeStatusModal.classList.add("open");
+                }
+
+                function closeStatusOptionsModal() {
+                    if (!treeStatusModal) return;
+                    treeStatusModal.classList.remove("open");
+                }
+
+                function saveStatusOptions() {
+                    if (!treeStatusListInput) return;
+                    const raw = treeStatusListInput.value || "";
                     const lines = raw.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
                     const options = normalizeOptionList(lines.length ? lines : STATUS_OPTIONS_DEFAULT);
                     if (!options.length) return;
+                    if (!state) state = {};
                     state.statusOptions = options;
                     persistState();
+                    if (gridApi && isDataMappingTemplateActive()) {
+                        setGridColumnDefs(buildTreeColumnDefs());
+                        gridApi.refreshHeader();
+                    }
+                    closeStatusOptionsModal();
+                }
+
+                function resetStatusOptions() {
+                    if (!state) state = {};
+                    state.statusOptions = STATUS_OPTIONS_DEFAULT.slice();
+                    persistState();
+                    if (treeStatusListInput) {
+                        treeStatusListInput.value = state.statusOptions.join("\n");
+                    }
                     if (gridApi && isDataMappingTemplateActive()) {
                         setGridColumnDefs(buildTreeColumnDefs());
                         gridApi.refreshHeader();
@@ -8612,6 +8659,31 @@
                         }
                     });
                 }
+                if (saveTreeStatusModal) {
+                    saveTreeStatusModal.addEventListener("click", event => {
+                        event.preventDefault();
+                        saveStatusOptions();
+                    });
+                }
+                if (cancelTreeStatusModal) {
+                    cancelTreeStatusModal.addEventListener("click", event => {
+                        event.preventDefault();
+                        resetStatusOptions();
+                    });
+                }
+                if (closeTreeStatusModal) {
+                    closeTreeStatusModal.addEventListener("click", event => {
+                        event.preventDefault();
+                        closeStatusOptionsModal();
+                    });
+                }
+                if (treeStatusModal) {
+                    treeStatusModal.addEventListener("click", event => {
+                        if (event.target === treeStatusModal) {
+                            closeStatusOptionsModal();
+                        }
+                    });
+                }
                 document.addEventListener("keydown", event => {
                     if (event.key !== "Escape") return;
                     if (treeSourceModal?.classList.contains("open")) {
@@ -8619,6 +8691,9 @@
                     }
                     if (treeTypeModal?.classList.contains("open")) {
                         closeTreeTypeOptionsModal();
+                    }
+                    if (treeStatusModal?.classList.contains("open")) {
+                        closeStatusOptionsModal();
                     }
                 });
                 if (templateApplyBtn) {

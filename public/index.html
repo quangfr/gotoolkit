@@ -1538,7 +1538,7 @@
                         <label>
                             <span class="label-title">Moteur IA</span>
                             <select id="aiBackendSelect">
-                                <option value="openrouter">OpenRouter (partagé ou privé)</option>
+                                <option value="openrouter" selected>OpenRouter (partagé ou privé)</option>
                                 <option value="openai">OpenAI (privé) </option>
                             </select>
                         </label>
@@ -3940,8 +3940,26 @@
         const openrouterApiKeyInput = document.getElementById("openrouterApiKeyInput");
         const openrouterExtras = document.getElementById("openrouterExtras");
         const openrouterDataCollectionSelect = document.getElementById("openrouterDataCollectionSelect");
+        const DEFAULT_AI_BACKEND = "openrouter";
         const VERSION_QUERY_PARAM = "v";
         const DATE_VERSION_PATTERN = /^\d{4}\.\d{2}\.\d{2}(?:\.\d+)?$/;
+        (function ensureDefaultAIBackend() {
+            try {
+                const stored = (typeof localStorage !== "undefined" ? localStorage.getItem("go-toolkit-ai-backend") : null) || "";
+                const resolved = stored || (aiBackendSelect && aiBackendSelect.value) || DEFAULT_AI_BACKEND;
+                if (!stored && typeof localStorage !== "undefined") {
+                    localStorage.setItem("go-toolkit-ai-backend", resolved);
+                }
+                if (aiBackendSelect) {
+                    aiBackendSelect.value = resolved;
+                }
+                if (!window.GoToolkitSelectedAIBackend) {
+                    window.GoToolkitSelectedAIBackend = resolved;
+                }
+            } catch (err) {
+                console.warn("Failed to enforce default AI backend", err);
+            }
+        })();
         function getBrowserDateVersion() {
             const now = new Date();
             const month = String(now.getMonth() + 1).padStart(2, "0");
