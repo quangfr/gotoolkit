@@ -1,5 +1,5 @@
 ## Chatbot IA (Promptzilla)`T1 2026`
-- Conversation en page d'accueil (suggestions, recherche...) `À étudier`
+- Conversation en page d'accueil (suggestions, recherche...) `En cours`
 - Conversations dans les modules (personnalisation templates, prompts...) `À planifier`
 
 ## Module Mémo (Le Petit Robert) `T1 2026`
