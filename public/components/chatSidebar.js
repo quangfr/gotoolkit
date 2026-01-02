@@ -422,10 +422,15 @@
             this.updateBotMessage(botMessage);
             this.persist();
         } catch (err) {
-            if (err?.name === "AbortError") {
+            var isAbort = err?.name === "AbortError";
+            if (isAbort) {
                 botMessage.content = botMessage.content || "Requête interrompue.";
             } else {
-                botMessage.content = "Désolé, une erreur est survenue.";
+                var msg = (err && err.message) || "";
+                var isBadRequest = /400|Bad Request/i.test(msg);
+                botMessage.content = isBadRequest
+                    ? "Désolé, une erreur de configuration est survenue (400). Vérifie le moteur IA ou ta clé dans Paramètres."
+                    : "Désolé, une erreur est survenue.";
             }
             this.updateBotMessage(botMessage);
             this.persist();

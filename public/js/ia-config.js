@@ -25,7 +25,7 @@
         OLLAMA_API_KEY: "",
         WEBLLM_MODEL: "Llama-3.2-3B-Instruct-q4f16_1-MLC",
         CONTEXT_WINDOW: "0",
-        OPENROUTER_MODEL: "@preset/gotoolkit",
+        OPENROUTER_MODEL: "openai/gpt-5-nano",
         OPENROUTER_DATA_COLLECTION: "allow",
         OPENROUTER_MAX_PRICE_PROMPT: "0",
         OPENROUTER_MAX_PRICE_COMPLETION: "0",
@@ -35,10 +35,10 @@
     var OPENAI_MODELS = ["gpt-5-nano", "gpt-5-mini"];
     var OLLAMA_MODELS = ["gpt-oss:latest", "gemma3", "ministral-3:latest", "deepseek-r1"];
     var OPENROUTER_MODELS = [
-        "openai/gpt-oss-120b:free",
-        "openai/gpt-oss-20b:free",
+        "openai/gpt-5-nano",
         "openai/gpt-5-mini",
-        "openai/gpt-5-nano"
+        "gpt-oss-120b",
+        "gpt-oss-20b"
     ];
     function isAllowedWebllmModelId(id) {
         return typeof id === "string" && /q4f16/i.test(id);

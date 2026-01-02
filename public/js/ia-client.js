@@ -728,6 +728,10 @@
             } catch (err) { /* ignore */ }
             modelCandidates = [fallbackModel];
         }
+        modelCandidates = Array.from(new Set(modelCandidates)).filter(Boolean);
+        if (modelCandidates.length > 3) {
+            modelCandidates = modelCandidates.slice(0, 3);
+        }
 
         const isDirect = Boolean(backend?.hasOpenRouterKey);
         if (!isDirect) {
@@ -741,6 +745,10 @@
         const defaultModel = "openrouter/auto";
         if (!modelCandidates.includes(defaultModel)) {
             modelCandidates.unshift(defaultModel);
+        }
+        modelCandidates = Array.from(new Set(modelCandidates)).filter(Boolean);
+        if (modelCandidates.length > 3) {
+            modelCandidates = modelCandidates.slice(0, 3);
         }
         const result = {
             model: defaultModel,
@@ -967,6 +975,20 @@
                 if (fallback) {
                     const fallbackPayload = { ...initial };
                     return executeOpenRouter(fallback, fallbackPayload, stopCondition, signal, onChunk);
+                }
+            }
+            if (backend?.type === "openrouter-proxy" && global.GoToolkitAIBackend) {
+                const fallback = await global.GoToolkitAIBackend.getBackend(endpointType, { forceProxy: true });
+                if (fallback) {
+                    const fallbackPayload = { ...initial };
+                    return chatCompletion({
+                        endpoint: fallback.endpoint,
+                        apiKey: fallback.apiKey,
+                        payload: fallbackPayload,
+                        stopCondition,
+                        signal,
+                        onChunk
+                    });
                 }
             }
             throw err;

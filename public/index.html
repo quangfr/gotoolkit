@@ -15,7 +15,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Sora:wght@400;500;600&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles/style.css?v=2026.01.02">
+    <link rel="stylesheet" href="styles/style.css?v=2026.1.2.1">
     <style>
         :root {
             --bg: #f5f2eb;
@@ -1178,7 +1178,7 @@
             </div>
             <h1>Go-Toolkit <span class="hero-beta">beta</span></h1>
             <p>La boîte à outils IA des Product Owners</p>
-            <span class="hero-version label-link" id="releaseNotesTrigger" tabindex="0">v2026.01.01</span>
+            <span class="hero-version label-link" id="releaseNotesTrigger" tabindex="0">v2026.1.2.1</span>
 
             <div class="hero-meta">
                 <button id="openFeedbackBtn" class="feedback-button" type="button">☄ Feedback</button>
@@ -1191,35 +1191,35 @@
                 <p class="section-label superpower-label label-link" id="superpowerToggle">⚡︎ Super-pouvoirs</p>
             </div>
             <div class="launcher-grid">
-                <a class="launcher" href="canvas.html?v=2026.01.01">
+                <a class="launcher" href="canvas.html?v=2026.1.2.1">
                     <span class="launcher-emoji">◍</span>
                     <span class="launcher-name">
                         Canvas (50 Nuances)
                         <div class="launcher-desc">Varie ton vocabulaire</div>
                     </span>
                 </a>
-                <a class="launcher" href="timeline.html?v=2026.01.01">
+                <a class="launcher" href="timeline.html?v=2026.1.2.1">
                     <span class="launcher-emoji">⇥</span>
                     <span class="launcher-name">
                         Timeline (Goal Digger)
                         <div class="launcher-desc">Trace ton planning</div>
                     </span>
                 </a>
-                <a class="launcher" href="draw.html?v=2026.01.01">
+                <a class="launcher" href="draw.html?v=2026.1.2.1">
                     <span class="launcher-emoji">◇</span>
                     <span class="launcher-name">
                         Draw (Indélébile)
                         <div class="launcher-desc">Modélise tes idées</div>
                     </span>
                 </a>
-                <a class="launcher" href="voice.html?v=2026.01.01">
+                <a class="launcher" href="voice.html?v=2026.1.2.1">
                     <span class="launcher-emoji">▷</span>
                     <span class="launcher-name">
                         Voice (Tuto Tarantino)
                         <div class="launcher-desc">Pilote tes réunions</div>
                     </span>
                 </a>
-                <a class="launcher" href="grid.html?v=2026.01.01">
+                <a class="launcher" href="grid.html?v=2026.1.2.1">
                     <span class="launcher-emoji">◇</span>
                     <span class="launcher-name">
                         Grid (Le Cardinal)
@@ -1631,6 +1631,12 @@
                                     autocomplete="current-password" />
                             </label>
                         </div>
+                        <div class="field-row">
+                            <label style="width:100%">
+                                <span class="label-title">Modèle OpenAI</span>
+                                <select id="openrouterModelSelect"></select>
+                            </label>
+                        </div>
                         <div id="openrouterExtras" style="display:none; margin-top:8px;">
                             <div class="field-row">
                                 <label>
@@ -1707,15 +1713,15 @@
     <script src="js/idb-doc-store.js"></script>
     <script src="js/storage-service.js"></script>
     <script src="js/shared-ui.js"></script>
-    <script src="js/cgu.js?v=2026.01.01"></script>
+    <script src="js/cgu.js?v=2026.1.2.1"></script>
     <script src="js/share-worker-client.js"></script>
     <script src="js/share-history.js"></script>
     <script src="js/capsule-drafts.js"></script>
     <script src="js/ia-config.js"></script>
-    <script src="js/prompt.js?v=2026.01.01"></script>
-    <script src="js/ia-client.js?v=2026.01.01"></script>
-    <script src="js/markdown.js?v=2026.01.01"></script>
-    <script src="components/chatSidebar.js?v=2026.01.01"></script>
+    <script src="js/prompt.js?v=2026.1.2.1"></script>
+    <script src="js/ia-client.js?v=2026.1.2.1"></script>
+    <script src="js/markdown.js?v=2026.1.2.1"></script>
+    <script src="components/chatSidebar.js?v=2026.1.2.1"></script>
     <script>
         (function () {
             const modal = document.getElementById("superpowerModal");
@@ -2051,11 +2057,11 @@
             const capsuleDrafts = window.goToolkitCapsuleDrafts;
 
             const APP_DEFINITIONS = {
-                nuances: { emoji: "◍", name: "Canvas", page: "canvas.html?v=2026.01.01", collection: "slides" },
-                plan: { emoji: "⇥", name: "Timeline", page: "timeline.html?v=2026.01.01", collection: "timelines" },
-                draw: { emoji: "◇", name: "Draw", page: "draw.html?v=2026.01.01", collection: "diagrams" },
-                grid: { emoji: "◇", name: "Grid", page: "grid.html?v=2026.01.01", collection: "grids" },
-                voice: { emoji: "▷", name: "Voice", page: "voice.html?v=2026.01.01", collection: "voices" }
+                nuances: { emoji: "◍", name: "Canvas", page: "canvas.html?v=2026.1.2.1", collection: "slides" },
+                plan: { emoji: "⇥", name: "Timeline", page: "timeline.html?v=2026.1.2.1", collection: "timelines" },
+                draw: { emoji: "◇", name: "Draw", page: "draw.html?v=2026.1.2.1", collection: "diagrams" },
+                grid: { emoji: "◇", name: "Grid", page: "grid.html?v=2026.1.2.1", collection: "grids" },
+                voice: { emoji: "▷", name: "Voice", page: "voice.html?v=2026.1.2.1", collection: "voices" }
             };
             const GRID_TEMPLATE_LABELS = {
                 "tree-structure": "Structure de données",
@@ -3095,14 +3101,42 @@
             );
         }
 
+        let currentOpenRouterAccessType = null;
+        let currentOpenRouterModelOptions = {};
+
+        function getSelectedOpenRouterModel() {
+            if (openrouterModelSelect && openrouterModelSelect.value) {
+                return openrouterModelSelect.value;
+            }
+            return resolveOpenRouterModel();
+        }
+
+        function appendModelToLabel(label, model) {
+            if (!label) return "";
+            const normalizedModel = (model || "").trim();
+            if (!normalizedModel) {
+                return label;
+            }
+            return `${label} · ${normalizedModel}`;
+        }
+
+        function refreshOpenRouterModelLabel() {
+            if (!currentOpenRouterAccessType) return;
+            updateOpenRouterModelLabel(currentOpenRouterAccessType, currentOpenRouterModelOptions);
+        }
+
         function updateOpenRouterModelLabel(accessType, options = {}) {
             if (!openrouterModelLabelEl) {
                 return;
             }
             if (!accessType) {
                 openrouterModelLabelEl.textContent = "";
+                currentOpenRouterAccessType = null;
+                currentOpenRouterModelOptions = {};
                 return;
             }
+            currentOpenRouterAccessType = accessType;
+            currentOpenRouterModelOptions = { ...(options || {}) };
             if (accessType === "error") {
                 openrouterModelLabelEl.textContent = "Accès partagé indisponible";
                 return;
@@ -3118,9 +3152,13 @@
                 return;
             }
             const labelWithLatency = appendLatencyToLabel(baseLabel, options.latencyMs);
-            openrouterModelLabelEl.textContent = appendRateLimitAvailability(
+            const labelWithRateLimit = appendRateLimitAvailability(
                 labelWithLatency,
                 options.rateLimitRemaining
+            );
+            openrouterModelLabelEl.textContent = appendModelToLabel(
+                labelWithRateLimit,
+                options.model || getSelectedOpenRouterModel()
             );
             if (accessType === "shared") {
                 updateStatusIcon(openrouterStatusEl, "warning");
@@ -3387,6 +3425,31 @@
                     : (window.GoToolkitIAConfig?.DEFAULTS?.WEBLLM_MODEL || "");
             }
             return window.GoToolkitIAConfig?.DEFAULTS?.WEBLLM_MODEL || "";
+        }
+
+        function populateOpenrouterModelSelect() {
+            if (!openrouterModelSelect) return;
+            openrouterModelSelect.innerHTML = "";
+            const models = (window.GoToolkitIAConfig && window.GoToolkitIAConfig.OPENROUTER_MODELS) || [];
+            if (!models.length) {
+                const option = document.createElement("option");
+                option.textContent = "Modèles OpenRouter indisponibles";
+                option.disabled = true;
+                openrouterModelSelect.appendChild(option);
+                return;
+            }
+            models.forEach(entry => {
+                const option = document.createElement("option");
+                option.value = entry;
+                option.textContent = entry;
+                openrouterModelSelect.appendChild(option);
+            });
+            const stored = (window.GoToolkitIAConfig && typeof window.GoToolkitIAConfig.getOpenRouterModel === "function"
+                ? window.GoToolkitIAConfig.getOpenRouterModel()
+                : "") || (window.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_MODEL || "");
+            if (stored) {
+                openrouterModelSelect.value = stored;
+            }
         }
 
         async function installWebllmModel() {
@@ -3940,9 +4003,6 @@
         const openaiStatusEl = document.getElementById("openaiStatus");
         const ollamaStatusEl = document.getElementById("ollamaStatus");
         const webllmStatusEl = document.getElementById("webllmStatus");
-        const openrouterStatusEl = document.getElementById("openrouterStatus");
-        const openrouterModelLabelEl = document.getElementById("openrouterModelLabel");
-        const openrouterVerifyBtn = document.getElementById("openrouterVerifyBtn");
         const assemblyAiStatusEl = document.getElementById("assemblyAiStatus");
         const openaiVerifyBtn = document.getElementById("openaiVerifyBtn");
         const ollamaVerifyBtn = document.getElementById("ollamaVerifyBtn");
@@ -3960,7 +4020,12 @@
         const openrouterApiKeyInput = document.getElementById("openrouterApiKeyInput");
         const openrouterExtras = document.getElementById("openrouterExtras");
         const openrouterDataCollectionSelect = document.getElementById("openrouterDataCollectionSelect");
+        const openrouterStatusEl = document.getElementById("openrouterStatus");
+        const openrouterModelLabelEl = document.getElementById("openrouterModelLabel");
+        const openrouterVerifyBtn = document.getElementById("openrouterVerifyBtn");
+        const openrouterModelSelect = document.getElementById("openrouterModelSelect");
         const DEFAULT_AI_BACKEND = "openrouter";
+        populateOpenrouterModelSelect();
         const VERSION_QUERY_PARAM = "v";
         const DATE_VERSION_PATTERN = /^\d{4}\.\d{2}\.\d{2}(?:\.\d+)?$/;
         (function ensureDefaultAIBackend() {
@@ -4061,6 +4126,9 @@
             if (openrouterSettingsEl) openrouterSettingsEl.style.display = val === "openrouter" ? "" : "none";
             if (ollamaSettingsEl) ollamaSettingsEl.style.display = val === "ollama" ? "" : "none";
             if (webllmSettingsEl) webllmSettingsEl.style.display = val === "webllm" ? "" : "none";
+            if (val === "openrouter") {
+                populateOpenrouterModelSelect();
+            }
             window.GoToolkitSelectedAIBackend = val;
         }
 
@@ -4206,6 +4274,13 @@
                 if (openrouterApiKeyInput) {
                     openrouterApiKeyInput.value = storedOpenRouterKey;
                 }
+                populateOpenrouterModelSelect();
+                const storedOpenRouterModel =
+                    (config && typeof config.getOpenRouterModel === "function" ? config.getOpenRouterModel() : "") ||
+                    (window.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_MODEL || "");
+                if (openrouterModelSelect && storedOpenRouterModel) {
+                    openrouterModelSelect.value = storedOpenRouterModel;
+                }
                 const dataCollectionDefault = window.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_DATA_COLLECTION || "deny";
                 const storedOpenRouterDataCollection =
                     (config && typeof config.getOpenRouterDataCollectionOption === "function"
@@ -4309,6 +4384,12 @@
                 }
                 if (iaConfig && typeof iaConfig.setOpenRouterMaxPriceCompletion === "function") {
                     iaConfig.setOpenRouterMaxPriceCompletion(openrouterMaxPriceValue);
+                }
+                const openrouterModelValue =
+                    (openrouterModelSelect?.value || "").trim() ||
+                    (window.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_MODEL || "");
+                if (iaConfig && typeof iaConfig.setOpenRouterModel === "function") {
+                    iaConfig.setOpenRouterModel(openrouterModelValue);
                 }
                 selectedBackend = (aiBackendSelect && aiBackendSelect.value) || "openrouter";
                 if (iaConfig && typeof iaConfig.setBackend === "function") {
@@ -4460,6 +4541,9 @@
             window.GoToolkitForceOpenRouterProxy = false;
             openrouterHasValidPrivateKey = false;
             updateOpenRouterExtrasVisibility();
+        });
+        openrouterModelSelect?.addEventListener("change", () => {
+            refreshOpenRouterModelLabel();
         });
 
         openFeedbackBtn?.addEventListener("click", openModal);
