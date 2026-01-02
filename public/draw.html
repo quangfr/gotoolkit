@@ -9,8 +9,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
-    <link rel="stylesheet" href="styles/app-shell.css?v=2025.12.31">
-    <link rel="stylesheet" href="styles/cgu.css?v=2025.12.31">
+    <link rel="stylesheet" href="styles/app-shell.css?v=2026.01.01">
+    <link rel="stylesheet" href="styles/cgu.css?v=2026.01.01">
     <link rel="stylesheet" href="https://unpkg.com/@excalidraw/excalidraw@0.17.6/dist/excalidraw.min.css">
     <style>
         .clear-btn {
@@ -658,14 +658,14 @@
 <body class="app-body">
     <div class="app">
         <header class="app-header">
-            <a class="app-home-link" href="/?v=2025.12.31" title="Revenir à l'accueil">☍</a>
+            <a class="app-home-link" href="/?v=2026.01.01" title="Revenir à l'accueil">☍</a>
             <div class="nav-switch">
                 <button id="navSwitcherBtn" class="nav-switch-btn" type="button">◇ Draw ▾</button>
                 <div id="navSwitcherMenu" class="nav-switch-menu">
-                    <a class="nav-switch-link" href="canvas.html?v=2025.12.31">◍ Canvas</a>
-                    <a class="nav-switch-link" href="grid.html?v=2025.12.31">▦ Grid</a>
-                    <a class="nav-switch-link" href="timeline.html?v=2025.12.31">⇥ Timeline</a>
-                    <a class="nav-switch-link" href="voice.html?v=2025.12.31">▷ Voice</a>
+                    <a class="nav-switch-link" href="canvas.html?v=2026.01.01">◍ Canvas</a>
+                    <a class="nav-switch-link" href="grid.html?v=2026.01.01">▦ Grid</a>
+                    <a class="nav-switch-link" href="timeline.html?v=2026.01.01">⇥ Timeline</a>
+                    <a class="nav-switch-link" href="voice.html?v=2026.01.01">▷ Voice</a>
                 </div>
             </div>
 
@@ -724,7 +724,7 @@
         <div id="infoPopup" class="info-popup" role="dialog" aria-live="polite">
             <img src="img/logo.gif" alt="Logo Go-Toolkit">
             <strong>Module Draw (Le Cardinal)</strong>
-            <span>Version 2025.12.31</span>
+            <span>Version 2026.01.01</span>
             <span>Usage réservé à Savane Consulting.</span>
             <div class="info-actions">
                 <button id="updateAppBtn" type="button" class="update-btn">Mettre à jour</button>
@@ -779,7 +779,6 @@
                                     title="Dictée vocale" aria-label="Activer la dictée vocale">◉</button>
                             </div>
                         </div>
-                        <div id="promptAltRow" class="prompt-alt-row" aria-live="polite"></div>
                     </div>
                     <div id="gtContextModalVerticalResizer" class="context-vertical-resizer" role="separator"
                         tabindex="0" aria-orientation="horizontal"
@@ -829,11 +828,11 @@
     <script src="js/idb-doc-store.js"></script>
     <script src="js/storage-service.js"></script>
     <script src="js/shared-ui.js"></script>
-    <script src="js/cgu.js?v=2025.12.31"></script>
+    <script src="js/cgu.js?v=2026.01.01"></script>
     <script src="js/share-worker-client.js"></script>
     <script src="js/share-history.js"></script>
     <script src="js/capsule-drafts.js"></script>
-    <script src="js/prompt.js?v=2025.12.31"></script>
+    <script src="js/prompt.js?v=2026.01.01"></script>
     <script src="js/ia-client.js"></script>
     <script src="js/ia-config.js"></script>
     <script src="js/template-criteria.js"></script>
@@ -2532,7 +2531,7 @@
                 capsuleMenu?.classList.remove("open");
             }
 
-            const APP_VERSION = "2025.12.31";
+            const APP_VERSION = "2026.01.01";
             const VERSION_QUERY_PARAM = "v";
 
             function getBrowserDateVersion() {

@@ -382,6 +382,7 @@ body.context-resizing {
 
 .prompt-input-wrapper {
   position: relative;
+  height:100%;
 }
 
 .prompt-input-wrapper textarea {

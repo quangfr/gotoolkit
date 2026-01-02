@@ -9,8 +9,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
-    <link rel="stylesheet" href="styles/app-shell.css?v=2025.12.31">
-    <link rel="stylesheet" href="styles/cgu.css?v=2025.12.31">
+    <link rel="stylesheet" href="styles/app-shell.css?v=2026.01.01">
+    <link rel="stylesheet" href="styles/cgu.css?v=2026.01.01">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-grid.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-theme-quartz.css">
     <script
@@ -268,6 +268,7 @@
             color: #c8cee8;
             overflow: hidden;
             z-index: 40;
+            height: 100%;
         }
 
         .prompt-suggestion .prompt-suggestion-mask {
@@ -655,7 +656,7 @@
         }
 
         .prompt-input-card textarea {
-            min-height: 160px;
+            height: 100%;
             margin-bottom: 0;
         }
 
@@ -1087,14 +1088,14 @@
 <body class="app-body">
     <div class="app">
         <header class="app-header">
-            <a class="app-home-link" href="/?v=2025.12.31" title="Revenir à l'accueil">☍</a>
+            <a class="app-home-link" href="/?v=2026.01.01" title="Revenir à l'accueil">☍</a>
             <div class="nav-switch">
                 <button id="navSwitcherBtn" class="nav-switch-btn" type="button">▦ Grid ▾</button>
                 <div id="navSwitcherMenu" class="nav-switch-menu">
-                    <a class="nav-switch-link" href="canvas.html?v=2025.12.31">◍ Canvas</a>
-                    <a class="nav-switch-link" href="draw.html?v=2025.12.31">◇ Draw</a>
-                    <a class="nav-switch-link" href="timeline.html?v=2025.12.31">⇥ Timeline</a>
-                    <a class="nav-switch-link" href="voice.html?v=2025.12.31">▷ Voice</a>
+                    <a class="nav-switch-link" href="canvas.html?v=2026.01.01">◍ Canvas</a>
+                    <a class="nav-switch-link" href="draw.html?v=2026.01.01">◇ Draw</a>
+                    <a class="nav-switch-link" href="timeline.html?v=2026.01.01">⇥ Timeline</a>
+                    <a class="nav-switch-link" href="voice.html?v=2026.01.01">▷ Voice</a>
                 </div>
             </div>
 
@@ -1198,7 +1199,6 @@
                                 </div>
                             </div>
                         </div>
-                        <div id="promptAltRow" class="prompt-alt-row" aria-live="polite"></div>
                     </div>
                     <div id="gtContextModalVerticalResizer" class="context-vertical-resizer" role="separator"
                         tabindex="0" aria-orientation="horizontal"
@@ -1209,7 +1209,7 @@
                                 Script
                             </label>
                             <div class="card-actions">
-                                <button id="applyScriptBtn" class="btn" type="button">↺ Restaurer</button>
+                                <button id="applyScriptBtn" class="btn" type="button">↺</button>
                             </div>
                         </div>
                         <textarea id="gridScript" spellcheck="false"></textarea>
@@ -1224,7 +1224,7 @@
         <img src="img/logo.gif" alt="Logo Go-Toolkit">
         <strong>Module Grid (Le Cardinal)</strong>
         <p>Les tableaux générés ici peuvent être partagés et exportés pour enrichir vos capsules métier.</p>
-        <span>Version 2025.12.31</span>
+        <span>Version 2026.01.01</span>
         <div class="info-actions">
             <button id="updateAppBtn" type="button" class="btn-primary">Mettre à jour</button>
             <button type="button" data-open-nexus-modal>Mentions légales</button>
@@ -1306,13 +1306,13 @@
         </div>
     </div>
 
-    <script src="js/prompt.js?v=2025.12.31"></script>
+    <script src="js/prompt.js?v=2026.01.01"></script>
     <script src="js/ia-config.js"></script>
     <script src="js/ia-client.js"></script>
     <script src="js/idb-doc-store.js"></script>
     <script src="js/storage-service.js"></script>
     <script src="js/shared-ui.js"></script>
-    <script src="js/cgu.js?v=2025.12.31"></script>
+    <script src="js/cgu.js?v=2026.01.01"></script>
     <script src="js/share-worker-client.js"></script>
     <script src="js/share-history.js"></script>
     <script src="js/capsule-drafts.js"></script>
@@ -1452,7 +1452,7 @@
                 const infoButton = document.getElementById("infoButton");
                 const infoPopup = document.getElementById("infoPopup");
                 const updateAppBtn = document.getElementById("updateAppBtn");
-                const APP_VERSION = "2025.12.31";
+                const APP_VERSION = "2026.01.01";
                 const VERSION_QUERY_PARAM = "v";
                 const gridRestoreTargets = new Map();
                 function getBrowserDateVersion() {

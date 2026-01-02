@@ -1342,7 +1342,7 @@ Le format du planning :
 - 2-3 natures d'actions \`types\`
 - 2-4 groupes \`groups\`
 - 10-20 \`items\` d'une durée supérieure à 7 jours avec un \`kind\` de nature \`types\`
-- Entre 3-5 \`items\` d'une durée inférieure ou égale à 7 jours avec un \`kind\` de nature \`markers\`
+- Entre 3-5 \`items\` d'une durée inférieure ou égale à 7 jours avec un \`kind\` avec un id \`markers\` et sans \`length\`
 
 Réponds toujours uniquement avec un JSON contenant :
 - \`page\` : le titre de la page courante (utilisé pour le header).
@@ -1355,7 +1355,6 @@ Réponds toujours uniquement avec un JSON contenant :
 Contraintes de structure :
 - \`start\` au format ISO (YYYY-MM-DD).
 - \`length\` exprimé en jours.
-- Les items dont \`kind\` est un marker n’ont pas de \`length\`.
 - Pour une action \> 45 jours : la découper en items \`(P1, P2...Pn)\`.
 
 Contraintes de planification :

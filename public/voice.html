@@ -9,8 +9,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
-    <link rel="stylesheet" href="styles/app-shell.css?v=2025.12.31">
-    <link rel="stylesheet" href="styles/cgu.css?v=2025.12.31">
+    <link rel="stylesheet" href="styles/app-shell.css?v=2026.01.01">
+    <link rel="stylesheet" href="styles/cgu.css?v=2026.01.01">
     <style>
         :root {
             --bg: #f3f4f6;
@@ -1553,6 +1553,7 @@
             flex: 1;
             min-height: 0;
             box-sizing: border-box;
+            height: 100%;
         }
 
         #clearScenarioBtn {
@@ -1613,15 +1614,15 @@
 <body class="app-body">
     <div class="app">
         <div class="app-header">
-            <a class="app-home-link" href="/?v=2025.12.31" title="Revenir à l'accueil">☍</a>
+            <a class="app-home-link" href="/?v=2026.01.01" title="Revenir à l'accueil">☍</a>
             <div class="nav-switch">
                 <button id="navSwitcherBtn" class="nav-switch-btn" type="button" aria-haspopup="true"
                     aria-expanded="false">▷ Voice ▾</button>
                 <div id="navSwitcherMenu" class="nav-switch-menu" role="menu">
-                    <a class="nav-switch-link" href="canvas.html?v=2025.12.31" role="menuitem"> ◍ Canvas</a>
-                    <a class="nav-switch-link" href="grid.html?v=2025.12.31" role="menuitem">▦ Grid</a>
-                    <a class="nav-switch-link" href="draw.html?v=2025.12.31" role="menuitem">◇ Draw</a>
-                    <a class="nav-switch-link" href="timeline.html?v=2025.12.31" role="menuitem">⇥ Timeline</a>
+                    <a class="nav-switch-link" href="canvas.html?v=2026.01.01" role="menuitem"> ◍ Canvas</a>
+                    <a class="nav-switch-link" href="grid.html?v=2026.01.01" role="menuitem">▦ Grid</a>
+                    <a class="nav-switch-link" href="draw.html?v=2026.01.01" role="menuitem">◇ Draw</a>
+                    <a class="nav-switch-link" href="timeline.html?v=2026.01.01" role="menuitem">⇥ Timeline</a>
                 </div>
             </div>
 
@@ -1821,8 +1822,13 @@
                             </div>
                             <div class="ia-prompt-fields context-text-area">
                                 <div class="prompt-template-meta" id="promptTemplateMeta">Modèle : —</div>
-                                <textarea id="promptCreate" class="ia-prompt-field"
-                                    placeholder="Décris le contexte, les objectifs et les interlocuteurs."></textarea>
+                                <div class="speech-field-wrapper">
+                                    <textarea id="promptCreate" class="ia-prompt-field"
+                                        placeholder="Décris le contexte, les objectifs et les interlocuteurs."></textarea>
+                                    <button id="promptCreateSpeechBtn" class="speech-button" type="button"
+                                        data-speech-target="promptCreate" title="Dictée vocale"
+                                        aria-label="Activer la dictée vocale">◉</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1882,7 +1888,7 @@
         <div id="infoPopup" class="info-popup" role="dialog" aria-live="polite">
             <img src="img/logo.gif" alt="Logo Go-Toolkit">
             <strong>Module Voice (Goal Digger)</strong>
-            <span>Version 2025.12.31</span>
+            <span>Version 2026.01.01</span>
             <span>Usage réservé à Savane Consulting.</span>
             <div class="info-actions">
                 <button id="updateAppBtn" type="button" class="update-btn">Mettre à jour</button>
@@ -1903,12 +1909,12 @@
     <script src="js/idb-doc-store.js"></script>
     <script src="js/storage-service.js"></script>
     <script src="js/shared-ui.js"></script>
-    <script src="js/cgu.js?v=2025.12.31"></script>
+    <script src="js/cgu.js?v=2026.01.01"></script>
     <script src="js/share-worker-client.js"></script>
     <script src="js/share-history.js"></script>
     <script src="js/capsule-drafts.js"></script>
     <script src="js/ia-config.js"></script>
-    <script src="js/prompt.js?v=2025.12.31"></script>
+    <script src="js/prompt.js?v=2026.01.01"></script>
     <script src="js/ia-client.js"></script>
     <script src="js/voice-video-player.js"></script>
 
@@ -2018,6 +2024,9 @@
             const iaTemplateEditor = document.getElementById("iaTemplateEditor");
             const promptCreate = document.getElementById("promptCreate");
             const promptModify = document.getElementById("promptModify");
+            const promptCreateSpeechButton = document.getElementById("promptCreateSpeechBtn");
+            const promptCreateSpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+            let promptCreateSpeechRecognition = null;
             const respondBtn = document.getElementById("respondBtn");
             const respondDefaultLabel = respondBtn?.textContent || "⌘ Envoyer";
             const completeBtn = document.getElementById("completeBtn");
@@ -2091,7 +2100,7 @@
             const infoPopup = document.getElementById("infoPopup");
             const infoButton = aboutVoiceBtn;
             const updateAppBtn = document.getElementById("updateAppBtn");
-            const APP_VERSION = "2025.12.31";
+            const APP_VERSION = "2026.01.01";
             const VERSION_QUERY_PARAM = "v";
             function getBrowserDateVersion() {
                 const now = new Date();
@@ -7033,6 +7042,80 @@
                 };
             }
 
+            function appendSpeechToPromptCreateField(text) {
+                if (!promptCreate || !text) return;
+                const trimmed = text.trim();
+                if (!trimmed) return;
+                const current = promptCreate.value || "";
+                const needsSpace = current && !/\s$/.test(current) ? " " : "";
+                promptCreate.value = `${current}${needsSpace}${trimmed}`;
+                promptCreate.dispatchEvent(new Event("input", { bubbles: true }));
+            }
+
+            function stopPromptCreateSpeechRecognition() {
+                const recognition = promptCreateSpeechRecognition;
+                if (!recognition) return;
+                promptCreateSpeechRecognition = null;
+                promptCreateSpeechButton?.classList.remove("speech-button--active");
+                try {
+                    recognition.stop();
+                } catch (err) { /* noop */ }
+            }
+
+            function startPromptCreateSpeechRecognition() {
+                if (!promptCreate || !promptCreateSpeechButton) return;
+                if (!promptCreateSpeechRecognitionCtor) {
+                    showToast("Dictée vocale indisponible.", true);
+                    return;
+                }
+                stopPromptCreateSpeechRecognition();
+                let recognition;
+                try {
+                    recognition = new promptCreateSpeechRecognitionCtor();
+                } catch (err) {
+                    console.warn("Impossible de créer la dictée vocale pour le scénario", err);
+                    showToast("Dictée vocale indisponible.", true);
+                    return;
+                }
+                recognition.lang = "fr-FR";
+                recognition.interimResults = true;
+                recognition.continuous = true;
+                recognition.addEventListener("start", () => {
+                    promptCreateSpeechButton?.classList.add("speech-button--active");
+                    promptCreate?.focus({ preventScroll: true });
+                });
+                recognition.addEventListener("result", event => {
+                    const finals = [];
+                    for (let i = event.resultIndex || 0; i < event.results.length; i++) {
+                        const result = event.results[i];
+                        const transcript = (result[0]?.transcript || "").trim();
+                        if (!transcript) continue;
+                        if (result.isFinal) {
+                            finals.push(transcript);
+                        }
+                    }
+                    if (finals.length) {
+                        appendSpeechToPromptCreateField(finals.join(" "));
+                    }
+                });
+                recognition.addEventListener("error", event => {
+                    console.warn("Erreur de dictée vocale pour le scénario", event);
+                    stopPromptCreateSpeechRecognition();
+                    showToast("Erreur de dictée vocale.", true);
+                });
+                recognition.addEventListener("end", () => {
+                    stopPromptCreateSpeechRecognition();
+                });
+                promptCreateSpeechRecognition = recognition;
+                try {
+                    recognition.start();
+                } catch (err) {
+                    console.error("Impossible de démarrer la dictée vocale pour le scénario", err);
+                    stopPromptCreateSpeechRecognition();
+                    showToast("Impossible de démarrer la dictée vocale.", true);
+                }
+            }
+
             async function startRecording(options = {}) {
                 const { skipCountdown = false, openLiveOverlay = false, requireMicReady = false } = options;
                 if (audioRecordingActive) return false;
@@ -7689,6 +7772,14 @@
             templateModalOverlay?.addEventListener("click", ev => { if (ev.target === templateModalOverlay) closeTemplateModal(); });
             templateModalValidate?.addEventListener("click", applySelectedTemplate);
             promptCreate?.addEventListener("input", persistScenario);
+            promptCreateSpeechButton?.addEventListener("click", event => {
+                event.preventDefault();
+                if (promptCreateSpeechRecognition) {
+                    stopPromptCreateSpeechRecognition();
+                } else {
+                    startPromptCreateSpeechRecognition();
+                }
+            });
             promptModify?.addEventListener("focus", exportPageStateToScriptField);
             promptModify?.addEventListener("blur", () => applyScriptFromTextarea({ silent: true }));
             promptModify?.addEventListener("input", () => {
