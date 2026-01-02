@@ -230,6 +230,10 @@
             visibility: hidden;
         }
 
+        .grid-large-text-cell .ag-cell-value {
+            line-height: 1.25;
+        }
+
         @keyframes speech-border {
 
             0%,
@@ -1608,6 +1612,20 @@
                 document.body.appendChild(gridCellTooltip);
                 let tooltipOwnerCell = null;
 
+                function handleLargeTextEditorBlur(event) {
+                    const target = event.target;
+                    if (!target || !(target instanceof HTMLElement)) return;
+                    if (!target.classList.contains("ag-text-area-input")) return;
+                    const popup = target.closest(".ag-popup-editor");
+                    if (!popup) return;
+                    const related = event.relatedTarget instanceof HTMLElement ? event.relatedTarget : null;
+                    if (related && popup.contains(related)) {
+                        return;
+                    }
+                    gridApi?.stopEditing();
+                }
+                document.addEventListener("focusout", handleLargeTextEditorBlur);
+
                 function hideCellTooltip() {
                     tooltipOwnerCell = null;
                     gridCellTooltip.textContent = "";
@@ -2145,7 +2163,15 @@
                             sortable: false,
                             filter: false,
                             resizable: true,
-                            tooltipField: "description"
+                            tooltipField: "description",
+                            cellEditor: "agLargeTextCellEditor",
+                            cellClass: "grid-large-text-cell",
+                            cellEditorParams: () => ({
+                                maxLength: 2048,
+                                rows: 8
+                            }),
+                            autoHeight: true,
+                            wrapText: true
                         },
                         {
                             field: "sample",
@@ -2154,7 +2180,15 @@
                             sortable: false,
                             filter: false,
                             resizable: true,
-                            tooltipField: "sample"
+                            tooltipField: "sample",
+                            cellEditor: "agLargeTextCellEditor",
+                            cellClass: "grid-large-text-cell",
+                            cellEditorParams: () => ({
+                                maxLength: 2048,
+                                rows: 8
+                            }),
+                            autoHeight: true,
+                            wrapText: true
                         },
                         {
                             field: "source",
@@ -2257,7 +2291,15 @@
                             filter: false,
                             resizable: true,
                             tooltipField: "description",
-                            width: 240
+                            width: 240,
+                            cellEditor: "agLargeTextCellEditor",
+                            cellClass: "grid-large-text-cell",
+                            cellEditorParams: () => ({
+                                maxLength: 2048,
+                                rows: 8
+                            }),
+                            autoHeight: true,
+                            wrapText: true
                         },
                         {
                             field: "rules",
@@ -2268,9 +2310,10 @@
                             resizable: true,
                             tooltipField: "rules",
                             cellEditor: "agLargeTextCellEditor",
+                            cellClass: "grid-large-text-cell",
                             cellEditorParams: () => ({
                                 maxLength: 2048,
-                                rows: 4
+                                rows: 8
                             }),
                             autoHeight: true,
                             wrapText: true
