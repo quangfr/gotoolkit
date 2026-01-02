@@ -22,3 +22,7 @@
 ## Compte en ligne sécurisé `T1 2026` 
 - Accès à l'espace de partage en ligne sur d’autres appareils `À planifier` 
 - Quota par utilisateur pour les requêtes API `À planifier`
+
+## Accès ressources tiers (Polène)`T1 2026`
+- MS Sharepoint / Outlook / OneDrive `À étudier`
+- Google Workspace `À étudier`
