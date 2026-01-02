@@ -44,6 +44,6 @@ Boîte à outils 100 % navigateur pour produire vite des livrables partageables 
 
 ## Repères utiles
 - Templates et métadonnées : `public/js/prompt.js`, `public/js/template-criteria.js`.
-- CGU (modal) : `public/js/cgu.js`, shared styles in `public/styles/app-shell.css`.
-- Shell visuel commun : `public/styles/app-shell.css`.
+- CGU (modal) : `public/js/cgu.js`, shared styles in `public/styles/style.css`.
+- Shell visuel commun : `public/styles/style.css`.
 - Attendus Playwright : `tests/grid-mock.spec.ts`.

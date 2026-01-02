@@ -15,7 +15,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Sora:wght@400;500;600&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles/app-shell.css?v=2026.01.01">
+    <link rel="stylesheet" href="styles/style.css?v=2026.01.02">
     <style>
         :root {
             --bg: #f5f2eb;
@@ -122,6 +122,21 @@
             margin: 0;
             font-size: clamp(1.4rem, 2.8vw, 1.9rem);
             letter-spacing: -0.02em;
+        }
+
+        .hero-beta {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2px 6px;
+            border-radius: 8px;
+            border: 1px solid var(--border-strong);
+            background: #fff7e6;
+            color: #b45309;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
         }
 
         .hero p {
@@ -1156,12 +1171,12 @@
 </head>
 
 <body>
-    <div class="page">
+    <div id="page" class="page">
         <header class="hero">
             <div class="hero-logo-wrapper">
                 <img src="img/logo.gif" alt="Logo Go-Toolkit">
             </div>
-            <h1>Go-Toolkit</h1>
+            <h1>Go-Toolkit <span class="hero-beta">beta</span></h1>
             <p>La boîte à outils IA des Product Owners</p>
             <span class="hero-version label-link" id="releaseNotesTrigger" tabindex="0">v2026.01.01</span>
 
@@ -1657,6 +1672,7 @@
             <a href="#" data-open-nexus-modal>Mentions légales</a>
         </div>
     </div>
+    <div id="chat-root"></div>
 
     <div class="release-notes-modal" id="releaseNotesModal" aria-hidden="true" role="dialog" aria-modal="true"
         aria-labelledby="releaseNotesTitle">
@@ -1696,6 +1712,10 @@
     <script src="js/share-history.js"></script>
     <script src="js/capsule-drafts.js"></script>
     <script src="js/ia-config.js"></script>
+    <script src="js/prompt.js?v=2026.01.01"></script>
+    <script src="js/ia-client.js?v=2026.01.01"></script>
+    <script src="js/markdown.js?v=2026.01.01"></script>
+    <script src="components/chatSidebar.js?v=2026.01.01"></script>
     <script>
         (function () {
             const modal = document.getElementById("superpowerModal");
@@ -4717,6 +4737,14 @@
                     event.stopPropagation();
                 }
             });
+        })();
+    </script>
+    <script>
+        (function () {
+            const chatRoot = document.getElementById("chat-root");
+            if (chatRoot && window.GoToolkitChatSidebar) {
+                window.GoToolkitChatSidebar.mount(chatRoot);
+            }
         })();
     </script>
 </body>

@@ -1392,4 +1392,9 @@ Contraintes de nommage et quantités :
         timelinePrompts,
         timelineCreateSystemTemplate
     };
+
+    global.GoToolkitChatPrompt = global.GoToolkitChatPrompt || {
+        SYSTEM_PROMPT:
+            "Tu es Go-Toolkit un outil conversationnel pour product owners. Tu réponds à la demande en cours de l'utilisateur en tenant compte de l'historique de la conversation. N'utilise ni tableau Markdown ni emoji dans tes réponses."
+    };
 })(window);
