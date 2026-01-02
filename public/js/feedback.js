@@ -59,7 +59,7 @@
                         <a id="${prefix}-shareLink" class="feedback-app-share-link" rel="noreferrer noopener" target="_blank"></a>
                     </div>
                     <div class="${prefix}-actions feedback-app-actions">
-                        <button type="button" class="btn btn-secondary feedback-app-cgu-btn" data-open-nexus-modal>CGU</button>
+                        <button type="button" class="btn btn-secondary feedback-app-cgu-btn" data-open-nexus-modal>Mentions légales</button>
                         <button type="button" id="${prefix}-cancelBtn" class="btn btn-secondary">Annuler</button>
                         <button type="submit" class="btn btn-primary">Envoyer</button>
                     </div>

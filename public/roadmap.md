@@ -1,6 +1,6 @@
 ## Chatbot IA (Promptzilla)`T1 2026`
-- Intégration en page d'accueil (suggestions, recherche...) `À étudier`
-- Mode d'édition en conversation pour les modules `À planifier`
+- Conversation en page d'accueil (suggestions, recherche...) `À étudier`
+- Conversations dans les modules (personnalisation templates, prompts...) `À planifier`
 
 ## Module Mémo (Le Petit Robert) `T1 2026`
 - Import de fichiers en corpus utilisable par l'IA `À planifier` 
