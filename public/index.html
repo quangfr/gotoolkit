@@ -1789,12 +1789,6 @@
             const manager = window.GoToolkitDocumentManager;
             if (!manager || typeof manager.ingestFiles !== "function") return;
 
-            // Preload every index_* Markdown file so the chat can query them.
-            const INDEX_DOCUMENTS = [
-                { path: "content/index_releases.md", fileName: "index_releases.md" },
-                { path: "content/index_roadmap.md", fileName: "index_roadmap.md" },
-                { path: "content/tools_superpowers.md", fileName: "tools_superpowers.md" }
-            ];
             const CONVERSATION_ID = "default";
 
             function getVersionParam() {
@@ -1812,6 +1806,54 @@
                 return blob;
             }
 
+            function getFileNameFromPath(path) {
+                if (!path) return "";
+                const parts = path.split("/");
+                return parts[parts.length - 1] || path;
+            }
+
+            function parseUpdatedAt(value) {
+                if (typeof value === "number" && Number.isFinite(value)) {
+                    return value;
+                }
+                if (typeof value === "string" && value.trim()) {
+                    const parsed = Number(value);
+                    if (Number.isFinite(parsed)) return parsed;
+                    const date = Date.parse(value);
+                    if (Number.isFinite(date)) return date;
+                }
+                return 0;
+            }
+
+            async function loadManifest() {
+                try {
+                    const url = new URL("content/files.json", window.location.href);
+                    url.searchParams.set("v", getVersionParam());
+                    const response = await fetch(url.toString(), { cache: "no-cache" });
+                    if (!response.ok) {
+                        console.warn("Index manifest fetch failed", response.status);
+                        return [];
+                    }
+                    const items = await response.json();
+                    if (!Array.isArray(items)) return [];
+                    return items
+                        .map((entry) => {
+                            const fileName = (entry.fileName || getFileNameFromPath(entry.path || "")).trim();
+                            return {
+                                path: entry.path,
+                                name: (entry.name || fileName).trim(),
+                                abstract: entry.abstract || "",
+                                updatedAt: parseUpdatedAt(entry.updatedAt),
+                                fileName: fileName
+                            };
+                        })
+                        .filter(entry => entry.path && entry.fileName && entry.name);
+                } catch (err) {
+                    console.error("Index manifest load failed", err);
+                    return [];
+                }
+            }
+
             async function fetchDocument(doc) {
                 try {
                     const url = new URL(doc.path, window.location.href);
@@ -1822,7 +1864,8 @@
                         return null;
                     }
                     const text = await response.text();
-                    return createFileLike(text, doc.fileName);
+                    const fileName = doc.fileName || getFileNameFromPath(doc.path);
+                    return createFileLike(text, fileName);
                 } catch (err) {
                     console.error("Index doc fetch error", doc.path, err);
                     return null;
@@ -1832,23 +1875,50 @@
             async function syncIndexDocs() {
                 try {
                     await manager.waitReady();
+                    const manifest = await loadManifest();
+                    if (!manifest.length) return;
+
                     const existingDocs = await manager.getDocuments(CONVERSATION_ID);
-                    const existingNames = new Set(existingDocs.map(doc => doc.name));
-                    const stale = existingDocs.filter(doc =>
-                        INDEX_DOCUMENTS.some(item => item.fileName === doc.name) && doc.sourceType !== "embedded"
-                    );
-                    if (stale.length) {
-                        const staleNames = stale.map(doc => doc.name);
+                    const existingMap = new Map();
+                    existingDocs.forEach((doc) => {
+                        if (!doc || doc.sourceType !== "embedded") return;
+                        const key = doc.sourceFileName || doc.name;
+                        existingMap.set(key, doc);
+                    });
+
+                    const staleNames = [];
+                    manifest.forEach((entry) => {
+                        const stored = existingMap.get(entry.fileName);
+                        if (!stored) return;
+                        const storedUpdated = Number(stored.updatedAt) || 0;
+                        if (!storedUpdated || entry.updatedAt > storedUpdated) {
+                            staleNames.push(stored.name);
+                            existingMap.delete(entry.fileName);
+                        }
+                    });
+                    if (staleNames.length) {
                         await manager.deleteDocumentsByNames(CONVERSATION_ID, staleNames);
-                        staleNames.forEach(name => existingNames.delete(name));
                     }
-                    const missing = INDEX_DOCUMENTS.filter(doc => !existingNames.has(doc.fileName));
-                    if (!missing.length) {
-                        return;
-                    }
-                    const files = (await Promise.all(missing.map(fetchDocument))).filter(Boolean);
+
+                    const toIngest = manifest.filter(entry => !existingMap.has(entry.fileName));
+                    if (!toIngest.length) return;
+
+                    const files = (await Promise.all(toIngest.map(fetchDocument))).filter(Boolean);
                     if (!files.length) return;
-                    await manager.ingestFiles(files, CONVERSATION_ID, { sourceType: "embedded" });
+
+                    const metadata = new Map();
+                    toIngest.forEach((entry) => {
+                        metadata.set(entry.fileName, {
+                            name: entry.name,
+                            abstract: entry.abstract,
+                            updatedAt: entry.updatedAt,
+                            fileName: entry.fileName
+                        });
+                    });
+                    await manager.ingestFiles(files, CONVERSATION_ID, {
+                        sourceType: "embedded",
+                        metadata
+                    });
                 } catch (err) {
                     console.error("Index document sync failed", err);
                 }
@@ -1857,8 +1927,11 @@
             async function refreshIndexDocs() {
                 try {
                     await manager.waitReady();
-                    const fileNames = INDEX_DOCUMENTS.map(doc => doc.fileName);
-                    await manager.deleteDocumentsByNames(CONVERSATION_ID, fileNames);
+                    const manifest = await loadManifest();
+                    const fileNames = manifest.map(entry => entry.fileName);
+                    if (fileNames.length) {
+                        await manager.deleteDocumentsByNames(CONVERSATION_ID, fileNames);
+                    }
                 } catch (err) {
                     console.error("Index document cleanup failed", err);
                 }

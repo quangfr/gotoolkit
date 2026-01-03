@@ -1,0 +1,36 @@
+[
+  {
+    "name": "Notes de version",
+    "abstract": "Résumé des dernières fonctionnalités et correctifs publiés.",
+    "path": "content/index_releases.md",
+    "updatedAt": "2025-12-29T00:00:00Z",
+    "collections": [
+    ]
+  },
+  {
+    "name": "Roadmap",
+    "abstract": "Vue d'ensemble des initiatives à venir et de la planification stratégique.",
+    "path": "content/index_roadmap.md",
+    "updatedAt": "2025-12-29T00:00:00Z",
+    "collections": [
+    ]
+  },
+  {
+    "name": "Super pouvoirs",
+    "abstract": "Guide des outils et assistants disponibles pour aller plus vite.",
+    "path": "content/tools_superpowers.md",
+    "updatedAt": "2025-12-29T00:00:00Z",
+    "collections": [
+      "tools"
+    ]
+  },
+  {
+    "name": "CV Quang",
+    "abstract": "CV de Quang",
+    "path": "content/cv_quang.pdf",
+    "updatedAt": "2025-12-29T00:00:00Z",
+    "collections": [
+      "tools"
+    ]
+  }
+]

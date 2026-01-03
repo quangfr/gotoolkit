@@ -48,6 +48,19 @@
         return chunks;
     }
 
+    function parseTimestamp(value) {
+        if (typeof value === "number" && Number.isFinite(value)) {
+            return value;
+        }
+        if (typeof value === "string" && value.trim()) {
+            const numeric = Number(value);
+            if (Number.isFinite(numeric)) return numeric;
+            const date = Date.parse(value);
+            if (Number.isFinite(date)) return date;
+        }
+        return 0;
+    }
+
     function cosineSim(a, b) {
         let dot = 0;
         let na = 0;
@@ -61,6 +74,13 @@
         }
         const denom = Math.sqrt(na) * Math.sqrt(nb);
         return denom ? dot / denom : 0;
+    }
+
+    function normalizeScopes(value) {
+        if (!Array.isArray(value)) return [];
+        return value
+            .map((scope) => (typeof scope === "string" ? scope.trim().toLowerCase() : ""))
+            .filter(Boolean);
     }
 
     function getExtension(filename) {
@@ -395,26 +415,50 @@
                 ? options.sourceType
                 : "context";
             const results = [];
-            const queue = Array.from(files);
-            for (let i = 0; i < queue.length; i++) {
-                const file = queue[i];
-                const docId = crypto.randomUUID();
-                const baseEntry = {
-                    id: docId,
-                    conversationId,
-                    name: file.name,
-                    size: file.size,
-                    mime: file.type || "",
-                    uploadedAt: Date.now(),
-                    status: "pending",
-                    chunkCount: 0,
-                    sourceType
-                };
-                await this.putDocument(baseEntry);
-                onProgress?.({ type: "file-start", index: i + 1, total: queue.length, file: file.name });
-                let extracted = "";
-                let success = true;
-                let errorMessage = "";
+        const queue = Array.from(files);
+        const metadataEntries = new Map();
+        const rawMetadata = options.metadata;
+        if (rawMetadata instanceof Map) {
+            for (const [key, value] of rawMetadata.entries()) {
+                metadataEntries.set(key, value);
+            }
+        } else if (rawMetadata && typeof rawMetadata === "object") {
+            Object.entries(rawMetadata).forEach(([key, value]) => metadataEntries.set(key, value));
+        }
+        for (let i = 0; i < queue.length; i++) {
+            const file = queue[i];
+            const docId = crypto.randomUUID();
+            const meta = metadataEntries.get(file.name) || {};
+            const friendlyName =
+                typeof meta.name === "string" && meta.name.trim()
+                    ? meta.name.trim()
+                    : file.name;
+            const docAbstract = typeof meta.abstract === "string" ? meta.abstract : "";
+            const docUpdatedAt = parseTimestamp(meta.updatedAt) || Date.now();
+            const sourceFileName = typeof meta.fileName === "string" && meta.fileName.trim()
+                ? meta.fileName.trim()
+                : file.name;
+            const docScopes = normalizeScopes(meta.scope);
+            const baseEntry = {
+                id: docId,
+                conversationId,
+                name: friendlyName,
+                size: file.size,
+                mime: file.type || "",
+                uploadedAt: Date.now(),
+                status: "pending",
+                chunkCount: 0,
+                sourceType,
+                abstract: docAbstract,
+                updatedAt: docUpdatedAt,
+                scope: docScopes,
+                sourceFileName
+            };
+            await this.putDocument(baseEntry);
+            onProgress?.({ type: "file-start", index: i + 1, total: queue.length, file: file.name });
+            let extracted = "";
+            let success = true;
+            let errorMessage = "";
                 try {
                     extracted = await this.extractText(file);
                 } catch (err) {
@@ -578,6 +622,7 @@
                     score: cosineSim(vector, target),
                     docName: docMeta?.name || "Document",
                     sourceType: docMeta?.sourceType || "context",
+                    docAbstract: docMeta?.abstract || "",
                     text: chunk.text
                 };
             });

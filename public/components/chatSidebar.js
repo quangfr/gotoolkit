@@ -213,6 +213,7 @@
         if (this.isOpen) {
             this.applyPagePadding();
         }
+        this.updateSidebarWidthVar();
     };
 
     ChatSidebar.prototype.applyPagePadding = function () {
@@ -222,12 +223,19 @@
         this.page.style.paddingRight = "";
     };
 
+    ChatSidebar.prototype.updateSidebarWidthVar = function () {
+        var doc = global.document;
+        if (!doc || !doc.documentElement?.style) return;
+        doc.documentElement.style.setProperty("--chat-sidebar-width", this.isOpen ? this.sidebarWidth + "px" : "0px");
+    };
+
     ChatSidebar.prototype.open = function () {
         if (!this.sidebar) return;
         this.isOpen = true;
         this.sidebar.classList.add("chat-sidebar--open");
         this.sidebar.style.display = "flex";
         this.applyPagePadding();
+        this.updateSidebarWidthVar();
         if (this.toggleButton) {
             this.toggleButton.classList.add("active");
         }
@@ -243,6 +251,7 @@
         this.sidebar.classList.remove("chat-sidebar--open");
         this.sidebar.style.display = "none";
         this.applyPagePadding();
+        this.updateSidebarWidthVar();
         if (this.toggleButton) {
             this.toggleButton.classList.remove("active");
         }
@@ -454,7 +463,7 @@
     };
 
     ChatSidebar.prototype.renderBotContent = function (message) {
-        return escapeHtml(message.content || "").replace(/\n/g, "<br>");
+        return renderBotMarkdown(message.content || "");
     };
 
     ChatSidebar.prototype.syncBotExtras = function (entry, message) {
@@ -466,30 +475,24 @@
             entry.refsEl.innerHTML = "";
             if (references.length) {
                 entry.refsEl.style.display = "";
-                var refsTitle = document.createElement("div");
-                refsTitle.className = "chat-references-title";
-                refsTitle.textContent = "Références";
-                entry.refsEl.appendChild(refsTitle);
                 var list = document.createElement("ul");
                 list.className = "chat-references-list";
                 references.forEach(function (ref) {
+                    var label = ref.document || "Document";
+                    if (label === "Non fourni") return;
+                    var sectionLabel = (ref.section || "").trim();
+                    var displayTitle = sectionLabel || label;
                     var item = document.createElement("li");
                     item.className = "chat-reference-item";
                     var link = document.createElement("button");
                     link.type = "button";
                     link.className = "chat-reference-link";
-                    link.textContent = ref.document || "Document";
+                    link.textContent = displayTitle;
+                    link.title = label;
                     link.addEventListener("click", function () {
                         this.openReferencePreview(message, ref);
                     }.bind(this));
-                    var detail = document.createElement("span");
-                    detail.className = "chat-reference-detail";
-                    var section = ref.section || "Section inconnue";
-                    var page = ref.page == null ? "page ?" : "p. " + ref.page;
-                    var line = ref.line == null ? "ligne ?" : "l. " + ref.line;
-                    detail.textContent = section + " · " + page + " · " + line;
                     item.appendChild(link);
-                    item.appendChild(detail);
                     list.appendChild(item);
                 }, this);
                 entry.refsEl.appendChild(list);
@@ -586,10 +589,11 @@
     ChatSidebar.prototype.buildPayload = function (systemPrompt, userMessage, docInfo) {
         var promptContent = (systemPrompt && systemPrompt.trim()) ? systemPrompt : getSystemPrompt();
         var messages = [{ role: "system", content: promptContent }];
+        var userContent = (userMessage?.content || "").trim();
         if (userMessage) {
             messages.push({
                 role: "user",
-                content: userMessage.content || ""
+                content: userContent
             });
         }
         var payload = {
@@ -608,7 +612,20 @@
                 embeddedSections.context = this.formatEntriesForPayload(docInfo.embedded.context);
             }
             if (Object.keys(embeddedSections).length) {
-                payload.embeddedResults = embeddedSections;
+                var embedText = this.buildEmbeddedResultsText(embeddedSections);
+                if (embedText) {
+                    var idx = messages.findIndex(function (msg) {
+                        return msg.role === "user";
+                    });
+                    if (idx >= 0) {
+                        messages[idx].content += (messages[idx].content ? "\n\n" : "") + embedText;
+                    } else {
+                        messages.push({
+                            role: "user",
+                            content: embedText
+                        });
+                    }
+                }
             }
         }
         if (Array.isArray(docInfo?.context) && docInfo.context.length) {
@@ -639,6 +656,31 @@
             formatted.push(record);
         });
         return formatted;
+    };
+
+    ChatSidebar.prototype.buildEmbeddedResultsText = function (sections) {
+        if (!sections || typeof sections !== "object") return "";
+        var parts = [];
+        Object.keys(sections).forEach(function (key) {
+            var entries = sections[key];
+            if (!entries || !entries.length) return;
+            var header = key.toUpperCase();
+            var rows = entries
+                .map(function (entry) {
+                    var doc = entry.docName || "Document";
+                    var snippet = entry.text ? entry.text.trim() : "";
+                    if (snippet) {
+                        snippet = snippet.replace(/\s+/g, " ").slice(0, 200);
+                        return "- " + doc + ": " + snippet;
+                    }
+                    return "- " + doc;
+                })
+                .join("\n");
+            if (rows) {
+                parts.push(header + "\n" + rows);
+            }
+        });
+        return parts.join("\n\n");
     };
 
     ChatSidebar.prototype.stripDocExtension = function (value) {
@@ -674,16 +716,19 @@
             var entry = this.buildHitEntry(hit);
             if (!entry) return;
             if (entry.sourceType === "embedded" || entry.sourceType === "gallery") {
-                if (entry.keyName.startsWith("method_")) {
+                if (entry.keyName.startsWith("methods_")) {
                     entry.category = "method";
                     embedded.methods.push(entry);
-                } else if (entry.keyName.startsWith("tools_")) {
+                    return;
+                }
+                if (entry.keyName.startsWith("tools_")) {
                     entry.category = "tool";
                     embedded.tools.push(entry);
-                } else {
-                    entry.category = "context";
-                    embedded.context.push(entry);
+                    return;
                 }
+                return;
+            }
+            if (entry.keyName.startsWith("index_")) {
                 return;
             }
             entry.category = "context";
@@ -754,7 +799,7 @@
         this.textarea.value = "";
         this.textarea.style.height = "auto";
 
-        var botMessage = createMessage("bot", "");
+        var botMessage = createMessage("bot", "...");
         botMessage.references = [];
         botMessage.suggestions = [];
         botMessage.retrievalEntries = docInfo;
@@ -770,21 +815,51 @@
         console.log("AI payload", payload);
         var self = this;
 
-        function appendBotMessageIfNeeded() {
-            if (botMessageAppended) return;
-            botMessageAppended = true;
-            self.conversation.messages.push(botMessage);
-            self.appendMessage(botMessage);
+        // Pre-append a placeholder bubble so the user sees activity immediately.
+        botMessageAppended = true;
+        this.conversation.messages.push(botMessage);
+        this.appendMessage(botMessage);
+
+        function extractContent(buffer) {
+            var key = "\"content\"";
+            var idx = buffer.indexOf(key);
+            if (idx === -1) return null;
+            var colon = buffer.indexOf(":", idx + key.length);
+            if (colon === -1) return null;
+            var rest = buffer.slice(colon + 1);
+            var quote = rest.indexOf("\"");
+            if (quote === -1) return null;
+            var tail = rest.slice(quote + 1);
+            var closing = tail.indexOf("\"");
+            if (closing === -1) {
+                return tail;
+            }
+            return tail.slice(0, closing);
         }
 
         function handleChunk(chunk) {
             console.log("AI chunk", chunk);
-            appendBotMessageIfNeeded();
-            botMessage.content += chunk;
+            botMessage._jsonBuffer = (botMessage._jsonBuffer || "") + chunk;
+            var parsed = null;
+            try {
+                parsed = JSON.parse(botMessage._jsonBuffer);
+            } catch (err) {
+                parsed = null;
+            }
+            if (parsed && parsed.answer && typeof parsed.answer.content === "string") {
+                botMessage.content = parsed.answer.content;
+                botMessage.references = Array.isArray(parsed.references) ? parsed.references : [];
+                botMessage.suggestions = Array.isArray(parsed.suggestions) ? parsed.suggestions : [];
+            } else {
+                var partial = extractContent(botMessage._jsonBuffer);
+                if (partial) {
+                    botMessage.content = partial;
+                }
+            }
             self.updateBotMessage(botMessage);
             var liveEntry = self.messageNodes[botMessage.id];
             if (liveEntry && liveEntry.contentEl) {
-                liveEntry.contentEl.textContent = botMessage.content;
+                liveEntry.contentEl.innerHTML = renderBotMarkdown(botMessage.content || "");
             }
             self.throttledPersist();
         }
@@ -797,8 +872,10 @@
                 onChunk: payload.stream ? handleChunk : undefined
             });
             console.log("AI response complete", result);
-            appendBotMessageIfNeeded();
             var parsed = this.parseAssistantResponse(result || "");
+            if (parsed.content === "Réponse illisible." && botMessage.content) {
+                parsed.content = botMessage.content;
+            }
             botMessage.content = parsed.content;
             botMessage.references = parsed.references;
             botMessage.suggestions = parsed.suggestions;
@@ -989,7 +1066,7 @@
 
         this.headerDocCountEl = document.createElement("span");
         this.headerDocCountEl.className = "chat-header-doc-count";
-        this.headerDocCountEl.hidden = true;
+        this.headerDocCountEl.textContent = "🗎 0";
         this.headerDocCountEl.tabIndex = 0;
         this.headerDocCountEl.setAttribute("role", "button");
         this.headerDocCountEl.setAttribute("title", "Rafraîchir les documents indexés");
@@ -1227,12 +1304,39 @@
         if (!this.headerDocCountEl) return;
         var counts = this.documentCounts || { context: 0, gallery: 0 };
         var total = counts.context + (this.promptPresetId === "info" ? counts.gallery : 0);
-        if (total <= 0) {
-            this.headerDocCountEl.hidden = true;
-            return;
-        }
-        this.headerDocCountEl.hidden = false;
+        this.headerDocCountEl.dataset.count = total;
         this.headerDocCountEl.textContent = "🗎 " + total;
+    };
+
+    ChatSidebar.prototype.getVersionParam = function () {
+        try {
+            const params = new URLSearchParams(window.location.search || "");
+            return params.get("v") || "v";
+        } catch (err) {
+            return "v";
+        }
+    };
+
+    ChatSidebar.prototype.fetchContentManifest = function () {
+        try {
+            const url = new URL("content/files.json", window.location.href);
+            url.searchParams.set("v", this.getVersionParam());
+            return fetch(url.toString(), { cache: "no-cache" })
+                .then(function (response) {
+                    if (!response.ok) {
+                        console.warn("Failed to fetch files.json", response.status);
+                        return [];
+                    }
+                    return response.json();
+                })
+                .catch(function (err) {
+                    console.error("files.json fetch error", err);
+                    return [];
+                });
+        } catch (err) {
+            console.error("files.json manifest URL error", err);
+            return Promise.resolve([]);
+        }
     };
 
     ChatSidebar.prototype.handleHeaderDocCountClick = function () {
@@ -1244,6 +1348,19 @@
         this.headerDocCountEl.classList.add("chat-header-doc-count--refreshing");
         var self = this;
         Promise.resolve()
+            .then(function () {
+                return self.fetchContentManifest();
+            })
+            .then(function (manifest) {
+                if (Array.isArray(manifest)) {
+                    var total = manifest.length;
+                    self.headerDocCountEl.dataset.manifestTotal = total;
+                    self.headerDocCountEl.textContent = "🗎 " + total;
+                }
+            })
+            .catch(function (err) {
+                console.error("Index manifest fetch failed", err);
+            })
             .then(function () {
                 return syncFn();
             })
@@ -1295,6 +1412,58 @@
         ].join("\\n");
     };
 
+    function parseNdjsonResponse(raw) {
+        if (!raw || typeof raw !== "string") return null;
+        var lines = raw
+            .split(/\r?\n/)
+            .map(function (line) {
+                return line.trim();
+            })
+            .filter(Boolean);
+        if (!lines.length) return null;
+        var content = "";
+        var references = [];
+        var suggestions = [];
+        var seenAny = false;
+        lines.forEach(function (line) {
+            try {
+                var payload = JSON.parse(line);
+                if (!payload || typeof payload.t !== "string") {
+                    return;
+                }
+                seenAny = true;
+                if (payload.t === "delta" && payload.path === "answer" && typeof payload.s === "string") {
+                    content += payload.s;
+                    return;
+                }
+                if (payload.t === "ref" && references.length < 3) {
+                    references.push({
+                        document: payload?.document || "Document",
+                        section: payload?.section || "",
+                        page: typeof payload?.page === "number" ? payload.page : null,
+                        line: typeof payload?.line === "number" ? payload.line : null,
+                        type: payload?.type || ""
+                    });
+                    return;
+                }
+                if (payload.t === "suggestion" && suggestions.length < 3 && typeof payload?.label === "string") {
+                    var label = payload.label.trim();
+                    if (label) {
+                        suggestions.push(label);
+                    }
+                }
+            } catch (err) {
+                // ignore non-JSON lines
+            }
+        });
+        if (!seenAny) return null;
+        return {
+            content: content.trim() || "Réponse illisible.",
+            references: references,
+            suggestions: suggestions
+        };
+    }
+
     ChatSidebar.prototype.parseAssistantResponse = function (raw) {
         var fallback = {
             content: "Réponse illisible.",
@@ -1304,8 +1473,12 @@
         if (!raw || typeof raw !== "string") {
             return fallback;
         }
+        var trimmed = raw.trim();
+        if (!trimmed) {
+            return fallback;
+        }
         try {
-            var parsed = JSON.parse(raw);
+            var parsed = JSON.parse(trimmed);
             var content = parsed?.answer?.content;
             var references = Array.isArray(parsed?.references) ? parsed.references : [];
             var suggestions = Array.isArray(parsed?.suggestions) ? parsed.suggestions : [];
@@ -1323,7 +1496,11 @@
                 suggestions: suggestions.filter(Boolean).slice(0, 3)
             };
         } catch (err) {
-            return fallback;
+            return {
+                content: trimmed,
+                references: [],
+                suggestions: []
+            };
         }
     };
 

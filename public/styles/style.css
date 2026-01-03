@@ -1189,6 +1189,7 @@ label {
   top: 0;
   right: 0;
   z-index: 30;
+  --chat-sidebar-width: 0px;
 }
 
 .chat-sidebar {
@@ -1290,7 +1291,7 @@ label {
 .chat-bubble {
   max-width: 88%;
   border-radius: 14px;
-  padding: 10px 12px;
+  padding: 10px 6px 10px 4px;
   background: #ffffff;
   border: 1px solid transparent;
   box-shadow: none;
@@ -1303,6 +1304,8 @@ label {
   background: var(--surface-soft);
   border-color: var(--border-soft);
   box-shadow: none;
+  margin-right: 10px;
+  
 }
 
 .chat-content {
@@ -1435,8 +1438,8 @@ label {
   position: fixed;
   top: 0;
   left: 0;
+  right: var(--chat-sidebar-width, 0px);
   height: 100vh;
-  width: min(440px, 82vw);
   background: #ffffff;
   border-right: 1px solid #e2e8f0;
   box-shadow: 12px 0 32px rgba(15, 23, 42, 0.08);
@@ -1492,6 +1495,63 @@ label {
   background: #f8fafc;
   font-size: 0.78rem;
   line-height: 1.45;
+}
+
+.chat-doc-preview__body h1,
+.chat-doc-preview__body h2,
+.chat-doc-preview__body h3,
+.chat-doc-preview__body h4 {
+  margin: 1rem 0 0.5rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: #0f172a;
+}
+
+.chat-doc-preview__body p {
+  margin: 0 0 0.75rem;
+  color: #1f2937;
+}
+
+.chat-doc-preview__body ul,
+.chat-doc-preview__body ol {
+  margin: 0 0 0.75rem 1.25rem;
+  color: #1f2937;
+}
+
+.chat-doc-preview__body blockquote {
+  margin: 1rem 0;
+  padding-left: 1rem;
+  border-left: 3px solid #cbd5f5;
+  color: #475569;
+  background: rgba(203, 213, 245, 0.3);
+}
+
+.chat-doc-preview__body pre,
+.chat-doc-preview__body code {
+  background: #0f172a;
+  color: #f8fafc;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  font-family: "JetBrains Mono", "Fira Code", "SFMono-Regular", monospace;
+  font-size: 0.7rem;
+}
+
+.chat-doc-preview__body pre {
+  padding: 0.75rem;
+  overflow: auto;
+}
+
+.chat-doc-preview__body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 1rem;
+}
+
+.chat-doc-preview__body th,
+.chat-doc-preview__body td {
+  border: 1px solid #e2e8f0;
+  padding: 0.4rem;
+  text-align: left;
 }
 
 .chat-doc-preview__loading {
@@ -1745,13 +1805,23 @@ label {
 
 .chat-input::-webkit-scrollbar,
 .chat-messages::-webkit-scrollbar {
-  width: 6px;
+  width: 3px;
 }
 
 .chat-input::-webkit-scrollbar-thumb,
 .chat-messages::-webkit-scrollbar-thumb {
   background: rgba(0, 0, 0, 0.2);
   border-radius: 999px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.chat-messages::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-messages:hover::-webkit-scrollbar-thumb {
+  opacity: 1;
 }
 
 .chat-input {
@@ -1760,4 +1830,9 @@ label {
 
 .chat-messages {
   scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+.chat-messages:hover {
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
 }

@@ -1396,21 +1396,33 @@ Contraintes de nommage et quantités :
     (function () {
         var coachChatPrompt = `SYSTEM — Coach PO RAG (JSON)
 
-Coach pragmatique pour Product Owners.
-Répond uniquement à partir de (1. METHOD, 2. TOOL, 3. CONTEXT, 4. PRODUCT MANAGEMENT).
+Coach pragmatique pour Product Owners. Répond uniquement à partir de :
+1. METHOD
+2. TOOL
+3. CONTEXT
+4. PRODUCT MANAGEMENT.
 
 RÈGLES
 - Pas d’info → le dire.
-- Français, ≤120 mots, tutoiement.
+- Français, ≤150 mots, tutoiement.
 - Sortie : UN SEUL JSON strict.
-- Références : 0-3 documents cités.
+- Références : 0-3 documents cités. Une seule référence par document.
+- Line : Mettre plusieurs lignes séparées par des virgules.
 - Suggestions : 0-3 thématiques proches présents dans [DOCUMENTS].
+- Pas d'émojis, pas de tableau en markdown.
+- Content : Syntaxe markdown autorisé gras, italique, liste, titre ###.
 
 SORTIE
 {
   "answer": { "content": "Réponse claire et actionnable." },
   "references": [
-    { "document": "Nom", "section": "Section", "page": null, "line": null, "type": "method|tool|context|product" }
+    {
+      "document": "Nom",
+      "section": "Section",
+      "page": null,
+      "line": null,
+      "type": "method|tool|context|product"
+    }
   ],
   "suggestions": ["3–6 mots"]
 }
@@ -1427,16 +1439,25 @@ Assistant Q&A basé uniquement sur [DOCUMENTS] (tous égaux).
 
 RÈGLES
 - Pas d’info → le dire.
-- Français, ≤120 mots, tutoiement.
+- Français, ≤150 mots, tutoiement.
 - Sortie : UN SEUL JSON strict.
-- Références : 0-3 documents cités.
+- Références : 0-3 documents cités. Une seule référence par document.
+- Line : Mettre plusieurs lignes séparées par des virgules.
 - Suggestions : 0-3 thématiques proches présents dans [DOCUMENTS].
+- Pas d'émojis, pas de tableau en markdown.
+- Content : Syntaxe markdown autorisé gras, italique, liste, titre ###.
+
 
 SORTIE
 {
   "answer": { "content": "Réponse issue des documents." },
   "references": [
-    { "document": "Nom", "section": "Section", "page": null, "line": null }
+    {
+      "document": "Nom du docName",
+      "section": "Section du docSection",
+      "page": "numéro du docPage",
+      "line": "numéro du docLine"
+    }
   ],
   "suggestions": ["3–6 mots"]
 }
@@ -1445,11 +1466,8 @@ ENTRÉE
 - [QUESTION]
 - [DOCUMENTS]
 
-Réponds à [QUESTION] avec [DOCUMENTS].`
-
-        var legacyDefaults = [
-            "Tu es Go-Toolkit un outil conversationnel pour product owners. Tu réponds à la demande en cours de l'utilisateur en tenant compte de l'historique de la conversation. N'utilise ni tableau Markdown ni emoji dans tes réponses."
-        ];
+Réponds à [QUESTION] avec [DOCUMENTS].
+`
 
         var persisted = "";
         try {
@@ -1465,23 +1483,10 @@ Réponds à [QUESTION] avec [DOCUMENTS].`
         }
 
         var normalized = (persisted || "").trim();
-        var isLegacyDefault = normalized
-            ? legacyDefaults.some(function (value) {
-                return value === normalized;
-            })
-            : false;
-        var useDefaultPrompt = !normalized || isLegacyDefault;
+        var useDefaultPrompt = !normalized;
         var initial = useDefaultPrompt ? coachChatPrompt : normalized;
         var normalizedInfo = (persistedInfo || "").trim();
         var initialInfo = normalizedInfo || infoChatPrompt;
-
-        if (isLegacyDefault) {
-            try {
-                window.localStorage?.setItem("goToolkit.chat.prompt", coachChatPrompt);
-            } catch (err) {
-                console.warn("Mise à jour du prompt chat", err);
-            }
-        }
 
         if (!global.GoToolkitChatPrompt) {
             global.GoToolkitChatPrompt = {};

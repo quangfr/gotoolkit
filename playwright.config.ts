@@ -9,5 +9,11 @@ export default defineConfig({
     viewport: { width: 1280, height: 720 },
     actionTimeout: 30 * 1000,
     navigationTimeout: 30 * 1000
+  },
+  webServer: {
+    command: "npm start",
+    port: 5000,
+    reuseExistingServer: true,
+    timeout: 60_000
   }
 });
