@@ -33,6 +33,7 @@
             box-sizing: border-box;
         }
 
+
         html,
         body {
             height: 100%;
@@ -117,6 +118,7 @@
         .hero-logo-wrapper img {
             width: 90px;
         }
+
 
         h1 {
             margin: 0;
@@ -1677,15 +1679,14 @@
                                 <label>
                                     <span class="label-title">Preset</span>
                                     <select id="chatPromptPresetSelect">
-                                        <option value="coach">/coach</option>
-                                        <option value="info">/info</option>
+                                        <option value="advice">⟡ Conseil</option>
+                                        <option value="ask">? Demande</option>
                                     </select>
                                 </label>
                             </div>
                             <div class="field-row">
-                                <label class="label-title" for="chatPromptTextarea"
-                                    style="flex:0 0 140px; align-self:flex-start;">Prompt système</label>
-                                <textarea id="chatPromptTextarea" rows="12" style="flex:1 1 320px;"></textarea>
+
+                                <textarea id="chatPromptTextarea" rows="15"></textarea>
                             </div>
                         </div>
 
@@ -4814,15 +4815,15 @@
             var presets = window.GoToolkitChatPrompt?.PRESETS;
             if (presets) return presets;
             return {
-                coach: {
-                    id: "coach",
-                    label: "/coach",
+                advice: {
+                    id: "advice",
+                    label: "⟡ Conseil",
                     prompt: (window.GoToolkitChatPrompt?.SYSTEM_PROMPT || "").trim(),
                     defaultPrompt: (window.GoToolkitChatPrompt?.DEFAULT_SYSTEM_PROMPT || "").trim()
                 },
-                info: {
-                    id: "info",
-                    label: "/info",
+                ask: {
+                    id: "ask",
+                    label: "? Demande",
                     prompt: (window.GoToolkitChatPrompt?.INFO_PROMPT || "").trim(),
                     defaultPrompt: (window.GoToolkitChatPrompt?.DEFAULT_INFO_PROMPT || "").trim()
                 }
@@ -4830,7 +4831,7 @@
         }
 
         function resolvePromptPresetId() {
-            var fallback = "coach";
+            var fallback = "advice";
             if (chatPromptPresetSelect && chatPromptPresetSelect.value) {
                 return chatPromptPresetSelect.value;
             }
@@ -4852,8 +4853,8 @@
             if (!chatPromptTextarea) return;
             var presets = getPromptPresets();
             var resolvedId = presetId || resolvePromptPresetId();
-            var preset = presets[resolvedId] || presets.coach;
-            var storageKey = resolvedId === "info" ? CHAT_PROMPT_INFO_KEY : CHAT_PROMPT_STORAGE_KEY;
+            var preset = presets[resolvedId] || presets.advice;
+            var storageKey = resolvedId === "ask" ? CHAT_PROMPT_INFO_KEY : CHAT_PROMPT_STORAGE_KEY;
             var stored = "";
             try {
                 stored = (localStorage.getItem(storageKey) || "").trim();
@@ -4870,7 +4871,7 @@
                 console.warn("Sauvegarde preset prompt chat", err);
             }
             if (window.GoToolkitChatPrompt) {
-                if (resolvedId === "info") {
+                if (resolvedId === "ask") {
                     window.GoToolkitChatPrompt.INFO_PROMPT = next;
                 } else {
                     window.GoToolkitChatPrompt.SYSTEM_PROMPT = next;
@@ -4881,18 +4882,18 @@
         function persistChatPrompt(value, presetId) {
             var presets = getPromptPresets();
             var resolvedId = presetId || resolvePromptPresetId();
-            var preset = presets[resolvedId] || presets.coach;
+            var preset = presets[resolvedId] || presets.advice;
             var trimmed = (value || "").trim();
             var fallback = (preset.defaultPrompt || "").trim();
             var next = trimmed || fallback;
-            var storageKey = resolvedId === "info" ? CHAT_PROMPT_INFO_KEY : CHAT_PROMPT_STORAGE_KEY;
+            var storageKey = resolvedId === "ask" ? CHAT_PROMPT_INFO_KEY : CHAT_PROMPT_STORAGE_KEY;
             try {
                 localStorage.setItem(storageKey, next);
             } catch (err) {
                 console.warn("Sauvegarde prompt chat", err);
             }
             if (window.GoToolkitChatPrompt) {
-                if (resolvedId === "info") {
+                if (resolvedId === "ask") {
                     window.GoToolkitChatPrompt.INFO_PROMPT = next;
                 } else {
                     window.GoToolkitChatPrompt.SYSTEM_PROMPT = next;
@@ -4905,7 +4906,7 @@
             if (!chatPromptTextarea) return;
             var presets = getPromptPresets();
             var resolvedId = resolvePromptPresetId();
-            var preset = presets[resolvedId] || presets.coach;
+            var preset = presets[resolvedId] || presets.advice;
             var defaultPrompt = (preset.defaultPrompt || "").trim();
             if (!defaultPrompt) return;
             chatPromptTextarea.value = defaultPrompt;

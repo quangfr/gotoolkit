@@ -80,13 +80,13 @@
     function readPromptPreset() {
         try {
             var stored = global.localStorage.getItem(PROMPT_PRESET_KEY);
-            if (stored === "info" || stored === "coach") {
+            if (stored === "ask" || stored === "advice") {
                 return stored;
             }
         } catch (err) {
             console.warn("Chat prompt preset read failed", err);
         }
-        return "coach";
+        return "advice";
     }
 
     function persistPromptPreset(value) {
@@ -316,6 +316,21 @@
         this.attachmentsParsedCount = 0;
         this.updateAttachmentIndicator();
         this.updateComposerState();
+    };
+
+    ChatSidebar.prototype.handleRemoveAttachedDocuments = function () {
+        var names = (this.pendingDocumentAttachments || []).slice();
+        if (!names.length) return;
+        this.clearAttachments();
+        if (!this.docManager) return;
+        var self = this;
+        this.docManager.deleteDocumentsByNames(this.conversation.id, names)
+            .then(function () {
+                self.refreshDocumentStats();
+            })
+            .catch(function (err) {
+                console.warn("Suppression des documents attachés échouée", err);
+            });
     };
 
     ChatSidebar.prototype.toggleListeningStyles = function (listening) {
@@ -556,21 +571,21 @@
         var presets = global.GoToolkitChatPrompt?.PRESETS;
         if (presets) return presets;
         return {
-            coach: {
-                id: "coach",
-                label: "/coach",
+            advice: {
+                id: "advice",
+                label: "⟡ Conseil",
                 prompt: getSystemPrompt()
             },
-            info: {
-                id: "info",
-                label: "/info",
+            ask: {
+                id: "ask",
+                label: "? Demande",
                 prompt: global.GoToolkitChatPrompt?.INFO_PROMPT || global.GoToolkitChatPrompt?.DEFAULT_INFO_PROMPT || ""
             }
         };
     };
 
     ChatSidebar.prototype.setPromptPreset = function (presetId) {
-        var next = presetId === "info" ? "info" : "coach";
+        var next = presetId === "ask" ? "ask" : "advice";
         this.promptPresetId = next;
         persistPromptPreset(next);
         this.updatePromptDropdownLabel();
@@ -579,7 +594,7 @@
     };
 
     ChatSidebar.prototype.getActiveSystemPrompt = function () {
-        if (this.promptPresetId === "info") {
+        if (this.promptPresetId === "ask") {
             return global.GoToolkitChatPrompt?.INFO_PROMPT
                 || global.GoToolkitChatPrompt?.DEFAULT_INFO_PROMPT
                 || "";
@@ -679,7 +694,7 @@
 
         var contextDocInfo = docInfo?.context;
         var knowledgeDocInfo = docInfo?.knowledge;
-        if (this.promptPresetId !== "info" && hasDocEntries(knowledgeDocInfo)) {
+        if (this.promptPresetId !== "ask" && hasDocEntries(knowledgeDocInfo)) {
             appendDocSections(knowledgeDocInfo, "KNOWLEDGE");
         }
         appendDocSections(contextDocInfo, "CONTEXT");
@@ -839,7 +854,7 @@
         var contextHits = [];
         var knowledgeHits = [];
         var systemPrompt = this.getActiveSystemPrompt();
-        var shouldFetchKnowledge = this.promptPresetId !== "info";
+        var shouldFetchKnowledge = this.promptPresetId !== "ask";
         if (this.docManager) {
             try {
                 contextHits = await this.docManager.retrieve(value, this.conversation.id);
@@ -1208,9 +1223,20 @@
         this.docsIndicatorButton = document.createElement("button");
         this.docsIndicatorButton.type = "button";
         this.docsIndicatorButton.className = "btn-secondary chat-docs-indicator";
-        this.docsIndicatorButton.textContent = "🗎 0 / 0";
         this.docsIndicatorButton.hidden = true;
         this.docsIndicatorButton.addEventListener("click", this.openDocumentSelector.bind(this));
+        this.docsIndicatorLabelEl = document.createElement("span");
+        this.docsIndicatorLabelEl.className = "chat-docs-indicator__label";
+        this.docsIndicatorButton.appendChild(this.docsIndicatorLabelEl);
+        this.docsIndicatorDeleteEl = document.createElement("span");
+        this.docsIndicatorDeleteEl.className = "chat-docs-indicator__delete";
+        this.docsIndicatorDeleteEl.textContent = "×";
+        this.docsIndicatorDeleteEl.setAttribute("aria-label", "Supprimer les documents");
+        this.docsIndicatorDeleteEl.addEventListener("click", function (event) {
+            event.stopPropagation();
+            this.handleRemoveAttachedDocuments();
+        }.bind(this));
+        this.docsIndicatorButton.appendChild(this.docsIndicatorDeleteEl);
         composerLeftActions.appendChild(this.docsIndicatorButton);
 
         composerActions.appendChild(composerLeftActions);
@@ -1286,25 +1312,37 @@
 
     ChatSidebar.prototype.updateAttachmentIndicator = function () {
         if (!this.docsIndicatorButton) return;
-        if (!this.pendingDocumentAttachments.length) {
-            this.docsIndicatorButton.hidden = true;
+        var hasPending = this.pendingDocumentAttachments.length > 0;
+        this.docsIndicatorButton.hidden = !hasPending;
+        if (!hasPending) {
             if (this.docsIndicatorLabelEl) {
                 this.docsIndicatorLabelEl.textContent = "";
             }
+            if (this.docsIndicatorDeleteEl) {
+                this.docsIndicatorDeleteEl.style.display = "none";
+            }
             return;
         }
-        var label;
-        if (this.pendingDocumentAttachments.length === 1 && this.attachmentsTotalCount <= 1) {
-            label = this.pendingDocumentAttachments[0];
-        } else if (this.attachmentsTotalCount > 0) {
-            label = "🗎 " + this.attachmentsParsedCount + "/" + this.attachmentsTotalCount;
-        } else {
-            label = "🗎 " + this.pendingDocumentAttachments.length;
-        }
         if (this.docsIndicatorLabelEl) {
-            this.docsIndicatorLabelEl.textContent = label;
+            this.docsIndicatorLabelEl.textContent = this.computeDocsIndicatorLabel();
         }
-        this.docsIndicatorButton.hidden = false;
+        if (this.docsIndicatorDeleteEl) {
+            this.docsIndicatorDeleteEl.style.display = "";
+        }
+    };
+
+    ChatSidebar.prototype.computeDocsIndicatorLabel = function () {
+        var parsed = Number(this.attachmentsParsedCount) || 0;
+        var total = Number(this.attachmentsTotalCount) || 0;
+        var count = this.pendingDocumentAttachments.length;
+        if (!count) return "";
+        if (count === 1 && this.attachmentsTotalCount <= 1) {
+            return this.pendingDocumentAttachments[0];
+        }
+        if (parsed && total) {
+            return parsed === total ? "🗎 " + parsed : "🗎 " + parsed + " / " + total;
+        }
+        return "🗎 " + count;
     };
 
     ChatSidebar.prototype.handleDocumentFilesSelected = function (event) {
@@ -1413,7 +1451,7 @@
     ChatSidebar.prototype.updateHeaderDocumentCount = function () {
         if (!this.headerDocCountEl) return;
         var counts = this.documentCounts || { context: 0, gallery: 0 };
-        var total = counts.context + (this.promptPresetId === "info" ? counts.gallery : 0);
+        var total = counts.context + (this.promptPresetId === "ask" ? counts.gallery : 0);
         this.headerDocCountEl.dataset.count = total;
         this.headerDocCountEl.textContent = "🗎 " + total;
     };

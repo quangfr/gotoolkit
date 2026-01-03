@@ -1394,7 +1394,7 @@ Contraintes de nommage et quantités :
     };
 
     (function () {
-        var coachChatPrompt = `SYSTEM — Coach PO RAG (JSON)
+        var adviceChatPrompt = `SYSTEM — Coach PO RAG (JSON)
 
 Coach pragmatique pour Product Owners. Répond à partir dans l'ordre :
 
@@ -1431,10 +1431,9 @@ SORTIE
 }
 
 Réponds à ASK sur CONTEXT avec prioritairement les connaissances KNOWLEDGE en tenant compte de HISTORY, et éventuellement de PRODUCT.
-
 `
 
-        var infoChatPrompt = `SYSTEM — RAG Q&A (JSON strict)
+        var askChatPrompt = `SYSTEM — RAG Q&A (JSON strict)
 
 Assistant Q&A basé sur CONTEXT
 
@@ -1486,29 +1485,29 @@ Réponds à ASK avec CONTEXT en tenant compte de HISTORY.
 
         var normalized = (persisted || "").trim();
         var useDefaultPrompt = !normalized;
-        var initial = useDefaultPrompt ? coachChatPrompt : normalized;
+        var initial = useDefaultPrompt ? adviceChatPrompt : normalized;
         var normalizedInfo = (persistedInfo || "").trim();
-        var initialInfo = normalizedInfo || infoChatPrompt;
+        var initialInfo = normalizedInfo || askChatPrompt;
 
         if (!global.GoToolkitChatPrompt) {
             global.GoToolkitChatPrompt = {};
         }
         global.GoToolkitChatPrompt.SYSTEM_PROMPT = initial;
-        global.GoToolkitChatPrompt.DEFAULT_SYSTEM_PROMPT = coachChatPrompt;
+        global.GoToolkitChatPrompt.DEFAULT_SYSTEM_PROMPT = adviceChatPrompt;
         global.GoToolkitChatPrompt.INFO_PROMPT = initialInfo;
-        global.GoToolkitChatPrompt.DEFAULT_INFO_PROMPT = infoChatPrompt;
+        global.GoToolkitChatPrompt.DEFAULT_INFO_PROMPT = askChatPrompt;
         global.GoToolkitChatPrompt.PRESETS = {
-            coach: {
-                id: "coach",
-                label: "/coach",
+            advice: {
+                id: "advice",
+                label: "⟡ Conseil",
                 prompt: initial,
-                defaultPrompt: coachChatPrompt
+                defaultPrompt: adviceChatPrompt
             },
-            info: {
-                id: "info",
-                label: "/info",
+            ask: {
+                id: "ask",
+                label: "? Demande",
                 prompt: initialInfo,
-                defaultPrompt: infoChatPrompt
+                defaultPrompt: askChatPrompt
             }
         };
     })();
