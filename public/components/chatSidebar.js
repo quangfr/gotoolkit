@@ -309,6 +309,14 @@
         }
     };
 
+    ChatSidebar.prototype.clearAttachments = function () {
+        this.pendingDocumentAttachments = [];
+        this.attachmentsTotalCount = 0;
+        this.attachmentsParsedCount = 0;
+        this.updateAttachmentIndicator();
+        this.updateComposerState();
+    };
+
     ChatSidebar.prototype.toggleListeningStyles = function (listening) {
         if (this.composer) {
             this.composer.classList.toggle("chat-composer--listening", Boolean(listening));
@@ -435,8 +443,11 @@
                 var tag = document.createElement("span");
                 tag.className = "chat-attachment";
                 tag.textContent = name;
+                tag.addEventListener("click", function () {
+                    this.openAttachmentPreview(name);
+                }.bind(this));
                 attachmentList.appendChild(tag);
-            });
+            }, this);
             bubble.appendChild(attachmentList);
         }
 
@@ -629,7 +640,22 @@
             }
         }
         if (Array.isArray(docInfo?.context) && docInfo.context.length) {
-            payload.context = this.formatEntriesForPayload(docInfo.context);
+            var contextEntries = this.formatEntriesForPayload(docInfo.context);
+            var contextText = this.buildEmbeddedResultsText({ context: contextEntries });
+            if (contextText) {
+                var contextIdx = messages.findIndex(function (msg) {
+                    return msg.role === "user";
+                });
+                var contextBlock = "CONTEXT\n" + contextText;
+                if (contextIdx >= 0) {
+                    messages[contextIdx].content += (messages[contextIdx].content ? "\n\n" : "") + contextBlock;
+                } else {
+                    messages.push({
+                        role: "user",
+                        content: contextBlock
+                    });
+                }
+            }
         }
         return payload;
     };
@@ -791,7 +817,7 @@
         var attachments = this.pendingDocumentAttachments;
         if (attachments && attachments.length) {
             userMessage.attachments = attachments.slice();
-            this.setPendingDocumentAttachments([]);
+            this.clearAttachments();
         }
         this.conversation.messages.push(userMessage);
         this.appendMessage(userMessage);
@@ -1199,18 +1225,35 @@
 
     ChatSidebar.prototype.setPendingDocumentAttachments = function (names) {
         this.pendingDocumentAttachments = (names || []).filter(Boolean);
+        this.attachmentsParsedCount = this.pendingDocumentAttachments.length;
+        if (!this.pendingDocumentAttachments.length) {
+            this.attachmentsTotalCount = 0;
+        }
+        this.updateAttachmentIndicator();
+        this.syncDocumentIndicatorTitle(this.documentChunkCount);
+    };
+
+    ChatSidebar.prototype.updateAttachmentIndicator = function () {
+        if (!this.docsIndicatorButton) return;
         if (!this.pendingDocumentAttachments.length) {
             this.docsIndicatorButton.hidden = true;
-            this.syncDocumentIndicatorTitle(this.documentChunkCount);
+            if (this.docsIndicatorLabelEl) {
+                this.docsIndicatorLabelEl.textContent = "";
+            }
             return;
         }
-        this.docsIndicatorButton.hidden = false;
-        if (this.pendingDocumentAttachments.length === 1) {
-            this.docsIndicatorButton.textContent = "🗎 " + this.pendingDocumentAttachments[0];
+        var label;
+        if (this.pendingDocumentAttachments.length === 1 && this.attachmentsTotalCount <= 1) {
+            label = this.pendingDocumentAttachments[0];
+        } else if (this.attachmentsTotalCount > 0) {
+            label = "🗎 " + this.attachmentsParsedCount + "/" + this.attachmentsTotalCount;
         } else {
-            this.docsIndicatorButton.textContent = "🗎 " + this.pendingDocumentAttachments.length + " docs prêts";
+            label = "🗎 " + this.pendingDocumentAttachments.length;
         }
-        this.syncDocumentIndicatorTitle(this.documentChunkCount);
+        if (this.docsIndicatorLabelEl) {
+            this.docsIndicatorLabelEl.textContent = label;
+        }
+        this.docsIndicatorButton.hidden = false;
     };
 
     ChatSidebar.prototype.handleDocumentFilesSelected = function (event) {
@@ -1228,11 +1271,27 @@
         var fileArray = Array.from(files);
         if (!fileArray.length) return;
         if (this.documentsFileInput) this.documentsFileInput.disabled = true;
+        this.attachmentsTotalCount = fileArray.length;
+        this.attachmentsParsedCount = 0;
+        this.pendingDocumentAttachments = fileArray.map(function (file) {
+            return file.name;
+        });
+        this.updateAttachmentIndicator();
+        this.updateComposerState();
         this.setDocumentUploadStatus("Indexation en cours…");
         try {
+            var metadata = new Map();
+            fileArray.forEach(function (file) {
+                metadata.set(file.name, {
+                    scope: "attachments",
+                    name: file.name,
+                    abstract: "Pièce jointe"
+                });
+            });
             var results = await this.docManager.ingestFiles(fileArray, this.conversation.id, {
                 onProgress: this.handleDocumentProgress.bind(this),
-                sourceType: "context"
+                sourceType: "context",
+                metadata: metadata
             });
             var errors = results.filter(function (item) {
                 return !item.success;
@@ -1584,6 +1643,39 @@
         } catch (err) {
             console.warn("Preview resolve failed", err);
             return "";
+        }
+    };
+
+    ChatSidebar.prototype.openAttachmentPreview = async function (name) {
+        if (!name || !this.docManager) return;
+        this.buildPreviewPanel();
+        if (!this.previewPanel) return;
+        this.previewPanel.classList.add("open");
+        this.previewPanel.setAttribute("aria-hidden", "false");
+        this.previewTitleEl && (this.previewTitleEl.textContent = name);
+        var metaText = "Pièce jointe";
+        var snippet = "";
+        try {
+            var doc = await this.docManager.findDocumentByName(this.conversation.id, name);
+            if (doc?.abstract) {
+                metaText = doc.abstract;
+            }
+            if (doc?.id) {
+                var chunks = await this.docManager.getChunks(this.conversation.id);
+                var chunk = chunks.find(function (item) {
+                    return item.docId === doc.id;
+                });
+                snippet = (chunk && chunk.text) || "";
+            }
+        } catch (err) {
+            console.warn("Attachment preview failed", err);
+        }
+        if (this.previewMetaEl) {
+            this.previewMetaEl.textContent = metaText || "Pièce jointe";
+        }
+        if (this.previewBodyEl) {
+            var content = snippet || "(extrait indisponible)";
+            this.previewBodyEl.innerHTML = this.formatPreviewText(content);
         }
     };
 
