@@ -180,6 +180,7 @@
         const decoder = new TextDecoder();
         let buffer = "";
         let aggregated = "";
+        let eventData = [];
 
         const releaseReader = () => {
             try {
@@ -197,66 +198,118 @@
             }
         };
 
+        function handleDataLine(dataLine) {
+            if (!dataLine) {
+                return;
+            }
+            if (dataLine === "[DONE]") {
+                return "done";
+            }
+            try {
+                const payload = JSON.parse(dataLine);
+                const chunk = normalizeChunk(payload);
+                if (chunk) {
+                    if (globalThis?.console) {
+                        console.info("[AI stream chunk]", chunk);
+                    }
+                    aggregated += chunk;
+                    if (typeof onChunk === "function") {
+                        try {
+                            onChunk(chunk);
+                        } catch (err) {
+                            console.warn("onChunk handler failed", err);
+                        }
+                    }
+                    if (typeof stopCondition === "function" && stopCondition(aggregated)) {
+                        return "stop";
+                    }
+                }
+                if (payload?.type === "response.error") {
+                    throw new Error(payload?.error?.message || "OpenAI response error");
+                }
+                if (
+                    payload?.type === "response.completed" ||
+                    payload?.type === "response.output_text.done"
+                ) {
+                    if (!aggregated && chunk) {
+                        return "done-with-chunk";
+                    }
+                    return "done";
+                }
+            } catch (error) {
+                console.warn("OpenAI stream chunk parse failed", error);
+            }
+            return "";
+        }
+
+        function flushEventData() {
+            if (!eventData.length) {
+                return "";
+            }
+            const dataLine = eventData.join("").trim();
+            eventData = [];
+            return handleDataLine(dataLine);
+        }
+
         while (true) {
             const { done, value } = await reader.read();
             if (done) {
+                const tailStatus = flushEventData();
                 releaseReader();
+                if (tailStatus === "done-with-chunk") {
+                    return aggregated.trim();
+                }
                 return aggregated.trim();
             }
             buffer += decoder.decode(value, { stream: true });
-            const events = buffer.split("\n\n");
-            buffer = events.pop() || "";
-            for (const event of events) {
-                const dataLine = event
-                    .split("\n")
-                    .filter(line => line.startsWith("data:"))
-                    .map(line => line.replace(/^data:\s*/, ""))
-                    .join("")
-                    .trim();
-                if (!dataLine) {
-                    continue;
-                }
-                if (dataLine === "[DONE]") {
-                    await cancelStream();
-                    releaseReader();
-                    return aggregated.trim();
-                }
-                try {
-                    const payload = JSON.parse(dataLine);
-                    const chunk = normalizeChunk(payload);
-                    if (chunk) {
-                        aggregated += chunk;
-                        if (typeof onChunk === "function") {
-                            try {
-                                onChunk(chunk);
-                            } catch (err) {
-                                console.warn("onChunk handler failed", err);
-                            }
-                        }
-                        if (typeof stopCondition === "function" && stopCondition(aggregated)) {
-                            await cancelStream();
-                            releaseReader();
-                            return aggregated.trim();
-                        }
-                    }
-                    if (payload?.type === "response.error") {
+            const lines = buffer.split(/\r?\n/);
+            buffer = lines.pop() || "";
+            for (const line of lines) {
+                if (!line) {
+                    const status = flushEventData();
+                    if (status === "done") {
                         await cancelStream();
                         releaseReader();
-                        throw new Error(payload?.error?.message || "OpenAI response error");
-                    }
-                    if (
-                        payload?.type === "response.completed" ||
-                        payload?.type === "response.output_text.done"
-                    ) {
-                        await cancelStream();
-                        releaseReader();
-                        if (!aggregated && chunk) {
-                            return String(chunk).trim();
-                        }
                         return aggregated.trim();
                     }
-                } catch (error) {
-                    console.warn("OpenAI stream chunk parse failed", error);
+                    if (status === "done-with-chunk") {
+                        await cancelStream();
+                        releaseReader();
+                        return aggregated.trim();
+                    }
+                    if (status === "stop") {
+                        await cancelStream();
+                        releaseReader();
+                        return aggregated.trim();
+                    }
+                    continue;
+                }
+                if (!line.startsWith("data:")) {
+                    continue;
+                }
+                const dataLine = line.replace(/^data:\s*/, "").trim();
+                eventData.push(dataLine);
+                if (
+                    dataLine === "[DONE]" ||
+                    dataLine.endsWith("}") ||
+                    dataLine.endsWith("]")
+                ) {
+                    const status = flushEventData();
+                    if (status === "done") {
+                        await cancelStream();
+                        releaseReader();
+                        return aggregated.trim();
+                    }
+                    if (status === "done-with-chunk") {
+                        await cancelStream();
+                        releaseReader();
+                        return aggregated.trim();
+                    }
+                    if (status === "stop") {
+                        await cancelStream();
+                        releaseReader();
+                        return aggregated.trim();
+                    }
                 }
             }
         }
@@ -410,9 +463,13 @@
         if (!wantsStream) {
             delete requestPayload.stream;
         }
+        const requestHeaders = buildHeaders(apiKey, headers);
+        if (wantsStream) {
+            requestHeaders.Accept = "text/event-stream";
+        }
         const response = await fetch(endpoint, {
             method: "POST",
-            headers: buildHeaders(apiKey, headers),
+            headers: requestHeaders,
             body: JSON.stringify(requestPayload),
             signal
         });
@@ -736,10 +793,14 @@
         const isDirect = Boolean(backend?.hasOpenRouterKey);
         if (!isDirect) {
             const proxyModel = configuredModel || modelCandidates[0] || "openai/gpt-oss-120b:free";
-            return {
+            const proxyPayload = {
                 model: proxyModel,
                 messages: buildOpenRouterMessages(source)
             };
+            if (typeof source?.stream !== "undefined") {
+                proxyPayload.stream = Boolean(source.stream);
+            }
+            return proxyPayload;
         }
 
         const defaultModel = "openrouter/auto";
@@ -817,9 +878,13 @@
     async function executeOpenRouter(backend, payload, stopCondition, signal, onChunk) {
         const requestPayload = buildOpenRouterPayload(payload, backend);
         const wantsStream = Boolean(requestPayload.stream);
+        const requestHeaders = buildHeaders(backend.apiKey);
+        if (wantsStream) {
+            requestHeaders.Accept = "text/event-stream";
+        }
         const response = await fetch(backend.endpoint, {
             method: "POST",
-            headers: buildHeaders(backend.apiKey),
+            headers: requestHeaders,
             body: JSON.stringify(requestPayload),
             signal
         });

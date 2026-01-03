@@ -296,6 +296,54 @@
             });
         }
 
+        async deleteDocumentById(docId) {
+            if (!docId) return;
+            const store = await this.getStore("documents", "readwrite");
+            if (!store) return;
+            return new Promise((resolve, reject) => {
+                const request = store.delete(docId);
+                request.onsuccess = () => resolve(true);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        async deleteChunksByDocId(docId) {
+            if (!docId) return;
+            return this.deleteByIndex("chunks", "docId", docId);
+        }
+
+        async deleteDocumentsByNames(conversationId, names) {
+            if (!conversationId || !Array.isArray(names) || !names.length) return;
+            const targetNames = new Set(names.filter(Boolean));
+            if (!targetNames.size) return;
+            const docs = await this.getDocuments(conversationId);
+            const toDelete = docs.filter(doc => targetNames.has(doc.name));
+            if (!toDelete.length) return;
+            await Promise.all(toDelete.map(async doc => {
+                await this.deleteChunksByDocId(doc.id);
+                await this.deleteDocumentById(doc.id);
+            }));
+            await this.emitStats(conversationId);
+        }
+
+        async deleteDocumentsBySourceTypes(conversationId, sourceTypes) {
+            if (!conversationId || !Array.isArray(sourceTypes) || !sourceTypes.length) return;
+            await this.waitReady();
+            const targetTypes = new Set(sourceTypes.filter(Boolean));
+            if (!targetTypes.size) return;
+            const docs = await this.getDocuments(conversationId);
+            const toDelete = docs.filter(doc => {
+                const sourceType = doc.sourceType || "context";
+                return targetTypes.has(sourceType);
+            });
+            if (!toDelete.length) return;
+            await Promise.all(toDelete.map(async doc => {
+                await this.deleteChunksByDocId(doc.id);
+                await this.deleteDocumentById(doc.id);
+            }));
+            await this.emitStats(conversationId);
+        }
+
         async deleteByIndex(storeName, indexName, value) {
             const db = await this.ensureDb();
             if (!db) return;
@@ -343,6 +391,9 @@
             const chunkSize = Number(this.settings.chunkSize) || DEFAULT_SETTINGS.chunkSize;
             const chunkOverlap = Number(this.settings.chunkOverlap) || DEFAULT_SETTINGS.chunkOverlap;
             const onProgress = options.onProgress;
+            const sourceType = typeof options.sourceType === "string" && options.sourceType
+                ? options.sourceType
+                : "context";
             const results = [];
             const queue = Array.from(files);
             for (let i = 0; i < queue.length; i++) {
@@ -356,7 +407,8 @@
                     mime: file.type || "",
                     uploadedAt: Date.now(),
                     status: "pending",
-                    chunkCount: 0
+                    chunkCount: 0,
+                    sourceType
                 };
                 await this.putDocument(baseEntry);
                 onProgress?.({ type: "file-start", index: i + 1, total: queue.length, file: file.name });
@@ -519,11 +571,13 @@
             const docMap = new Map();
             docs.forEach((doc) => docMap.set(doc.id, doc));
             const scored = chunks.map((chunk) => {
+                const docMeta = docMap.get(chunk.docId);
                 const target = new Float32Array(chunk.emb);
                 return {
                     ...chunk,
                     score: cosineSim(vector, target),
-                    docName: docMap.get(chunk.docId)?.name || "Document",
+                    docName: docMeta?.name || "Document",
+                    sourceType: docMeta?.sourceType || "context",
                     text: chunk.text
                 };
             });

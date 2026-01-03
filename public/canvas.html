@@ -3352,7 +3352,13 @@
             if (inheritedHistory) {
                 Object.values(templateSlides).forEach(slides => {
                     slides.forEach(slide => {
-                        if (!slide.dataset.history && !slide.dataset.pageContext) {
+                        if (slide && typeof slide === "object" && !(slide instanceof Element)) {
+                            if (!slide.pageContext && !slide.history) {
+                                slide.pageContext = inheritedHistory;
+                                slide.history = inheritedHistory;
+                            }
+                        }
+                        if (slide instanceof Element && !slide.dataset.history && !slide.dataset.pageContext) {
                             setSlideHistory(slide, inheritedHistory);
                         }
                     });

@@ -109,12 +109,15 @@ async function forwardToOpenRouter(request, env, corsOrigin) {
   }
 
   let upstreamResponse;
+  const wantsStream = Boolean(payload && payload.stream);
+  const acceptHeader = request.headers.get("Accept");
   try {
     upstreamResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${env.OPENROUTER_API_KEY}`,
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        ...(wantsStream || acceptHeader ? { Accept: acceptHeader || "text/event-stream" } : {})
       },
       body: JSON.stringify(payload)
     });

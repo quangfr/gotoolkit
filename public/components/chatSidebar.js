@@ -6,6 +6,7 @@
     var MIN_WIDTH = 320;
     var MAX_WIDTH = 800;
     var MAX_WIDTH_RATIO = 0.6;
+    var PROMPT_PRESET_KEY = "goToolkit.chat.prompt.preset";
 
     function clampWidth(value) {
         var viewportMax = Math.min(MAX_WIDTH, Math.floor(window.innerWidth * MAX_WIDTH_RATIO));
@@ -76,6 +77,26 @@
         }
     }
 
+    function readPromptPreset() {
+        try {
+            var stored = global.localStorage.getItem(PROMPT_PRESET_KEY);
+            if (stored === "info" || stored === "coach") {
+                return stored;
+            }
+        } catch (err) {
+            console.warn("Chat prompt preset read failed", err);
+        }
+        return "coach";
+    }
+
+    function persistPromptPreset(value) {
+        try {
+            global.localStorage.setItem(PROMPT_PRESET_KEY, value);
+        } catch (err) {
+            console.warn("Chat prompt preset save failed", err);
+        }
+    }
+
     function persistConversation(conversation) {
         try {
             var payload = JSON.stringify(conversation);
@@ -135,7 +156,11 @@
         if (prompt && typeof prompt === "string") {
             return prompt;
         }
-        return "Tu es Go-Toolkit un outil conversationnel pour product owners. Tu réponds à la demande en cours de l'utilisateur en tenant compte de l'historique de la conversation.";
+        var fallback = global.GoToolkitChatPrompt?.DEFAULT_SYSTEM_PROMPT;
+        if (fallback && typeof fallback === "string") {
+            return fallback;
+        }
+        return "";
     }
 
     function ChatSidebar(root) {
@@ -163,6 +188,16 @@
         this.documentUploadStatus = "";
         this.pendingDocumentAttachments = [];
         this.headerDocCountEl = null;
+        this.previewPanel = null;
+        this.previewTitleEl = null;
+        this.previewMetaEl = null;
+        this.previewBodyEl = null;
+        this.previewCloseBtn = null;
+        this.promptPresetId = readPromptPreset();
+        this.promptDropdown = null;
+        this.promptDropdownButton = null;
+        this.promptDropdownMenu = null;
+        this.documentCounts = { context: 0, gallery: 0 };
     }
 
     ChatSidebar.prototype.persist = function () {
@@ -236,7 +271,7 @@
     ChatSidebar.prototype.clearConversation = function () {
         this.abortStream();
         if (this.docManager) {
-            this.docManager.clearConversation(this.conversation.id).catch(function () { /* ignore */ });
+            this.docManager.deleteDocumentsBySourceTypes(this.conversation.id, ["context"]).catch(function () { /* ignore */ });
         }
         this.conversation = {
             id: "default",
@@ -244,6 +279,7 @@
             messages: []
         };
         this.messageNodes = {};
+        this.setPendingDocumentAttachments([]);
         if (this.messagesEl) {
             this.messagesEl.innerHTML = "";
         }
@@ -342,41 +378,19 @@
         }.bind(this));
     };
 
-    ChatSidebar.prototype.renderReferences = function (message, refsPanel, countEl, toggleBtn) {
-        var sources = Array.isArray(message.sources) ? message.sources : [];
-        if (countEl) {
-            countEl.textContent = "⌗ " + sources.length + " références";
-        }
-        if (toggleBtn) {
-            toggleBtn.hidden = sources.length === 0;
-        }
-        if (!refsPanel) return;
-        refsPanel.style.display = sources.length ? "block" : "none";
-        refsPanel.innerHTML = "";
-        sources.forEach(function (source) {
-            var item = document.createElement("div");
-            item.className = "chat-ref-item";
-            var link = document.createElement("a");
-            link.href = source.url || "#";
-            link.target = "_blank";
-            link.rel = "noopener noreferrer";
-            link.textContent = source.title || source.url || "Source";
-            item.appendChild(link);
-            if (source.url && source.title) {
-                var small = document.createElement("div");
-                small.className = "chat-ref-url";
-                small.textContent = source.url;
-                item.appendChild(small);
-            }
-            refsPanel.appendChild(item);
-        });
-    };
-
     ChatSidebar.prototype.updateBotMessage = function (message) {
         var entry = this.messageNodes[message.id];
+        if (!entry || !entry.contentEl) {
+            this.appendMessage(message);
+            entry = this.messageNodes[message.id];
+        }
         if (!entry || !entry.contentEl) return;
-        entry.contentEl.innerHTML = renderBotMarkdown(message.content || "");
-        this.renderReferences(message, entry.refsPanel, entry.refsCount, entry.refsToggle);
+        if (this.isStreaming) {
+            entry.contentEl.textContent = message.content || "";
+        } else {
+            entry.contentEl.innerHTML = this.renderBotContent(message);
+        }
+        this.syncBotExtras(entry, message);
         this.scrollToBottom();
     };
 
@@ -394,33 +408,12 @@
         var bubble = document.createElement("div");
         bubble.className = "chat-bubble";
 
-        var refsCount;
-        var refsPanel;
-        var refsToggle;
-        if (message.role === "bot") {
-            refsToggle = document.createElement("button");
-            refsToggle.type = "button";
-            refsToggle.className = "chat-refs-toggle";
-            refsCount = document.createElement("span");
-            refsToggle.appendChild(refsCount);
-            refsToggle.addEventListener("click", function () {
-                refsPanel.hidden = !refsPanel.hidden;
-            });
-
-            refsPanel = document.createElement("div");
-            refsPanel.className = "chat-refs-list";
-            refsPanel.hidden = true;
-
-            bubble.appendChild(refsToggle);
-        }
-
         var content = document.createElement("div");
         content.className = "chat-content";
         bubble.appendChild(content);
 
         if (message.role === "bot") {
-            bubble.appendChild(refsPanel);
-            content.innerHTML = renderBotMarkdown(message.content || "");
+            content.innerHTML = this.renderBotContent(message);
         } else {
             content.innerHTML = escapeHtml(message.content || "").replace(/\n/g, "<br>");
         }
@@ -439,17 +432,101 @@
 
         wrapper.appendChild(bubble);
         this.messagesEl.appendChild(wrapper);
-        this.messageNodes[message.id] = {
+        var entry = {
             wrapper: wrapper,
             contentEl: content,
-            refsCount: refsCount,
-            refsPanel: refsPanel,
-            refsToggle: refsToggle
+            refsEl: null,
+            suggestionsEl: null
         };
         if (message.role === "bot") {
-            this.renderReferences(message, refsPanel, refsCount, refsToggle);
+            entry.refsEl = document.createElement("div");
+            entry.refsEl.className = "chat-references";
+            bubble.appendChild(entry.refsEl);
+            entry.suggestionsEl = document.createElement("div");
+            entry.suggestionsEl.className = "chat-suggestions";
+            bubble.appendChild(entry.suggestionsEl);
+            this.syncBotExtras(entry, message);
         }
+        this.messageNodes[message.id] = entry;
         this.scrollToBottom();
+    };
+
+    ChatSidebar.prototype.renderBotContent = function (message) {
+        return escapeHtml(message.content || "").replace(/\n/g, "<br>");
+    };
+
+    ChatSidebar.prototype.syncBotExtras = function (entry, message) {
+        if (!entry) return;
+        var references = Array.isArray(message.references) ? message.references : [];
+        var suggestions = Array.isArray(message.suggestions) ? message.suggestions : [];
+
+        if (entry.refsEl) {
+            entry.refsEl.innerHTML = "";
+            if (references.length) {
+                entry.refsEl.style.display = "";
+                var refsTitle = document.createElement("div");
+                refsTitle.className = "chat-references-title";
+                refsTitle.textContent = "Références";
+                entry.refsEl.appendChild(refsTitle);
+                var list = document.createElement("ul");
+                list.className = "chat-references-list";
+                references.forEach(function (ref) {
+                    var item = document.createElement("li");
+                    item.className = "chat-reference-item";
+                    var link = document.createElement("button");
+                    link.type = "button";
+                    link.className = "chat-reference-link";
+                    link.textContent = ref.document || "Document";
+                    link.addEventListener("click", function () {
+                        this.openReferencePreview(message, ref);
+                    }.bind(this));
+                    var detail = document.createElement("span");
+                    detail.className = "chat-reference-detail";
+                    var section = ref.section || "Section inconnue";
+                    var page = ref.page == null ? "page ?" : "p. " + ref.page;
+                    var line = ref.line == null ? "ligne ?" : "l. " + ref.line;
+                    detail.textContent = section + " · " + page + " · " + line;
+                    item.appendChild(link);
+                    item.appendChild(detail);
+                    list.appendChild(item);
+                }, this);
+                entry.refsEl.appendChild(list);
+            } else {
+                entry.refsEl.style.display = "none";
+            }
+        }
+
+        if (entry.suggestionsEl) {
+            entry.suggestionsEl.innerHTML = "";
+            if (suggestions.length) {
+                entry.suggestionsEl.style.display = "";
+                var wrap = document.createElement("div");
+                wrap.className = "chat-suggestions-list";
+                suggestions.forEach(function (text) {
+                    if (!text) return;
+                    var btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.className = "chat-suggestion-btn";
+                    btn.textContent = text;
+                    btn.addEventListener("click", function () {
+                        this.handleSuggestionClick(text);
+                    }.bind(this));
+                    wrap.appendChild(btn);
+                }, this);
+                entry.suggestionsEl.appendChild(wrap);
+            } else {
+                entry.suggestionsEl.style.display = "none";
+            }
+        }
+    };
+
+    ChatSidebar.prototype.handleSuggestionClick = function (text) {
+        if (!text || !this.textarea) return;
+        if (this.isStreaming) return;
+        this.textarea.value = text;
+        this.handleInputResize();
+        this.updateComposerState();
+        this.handleSend();
     };
 
     ChatSidebar.prototype.renderInitialMessages = function () {
@@ -459,16 +536,188 @@
         });
     };
 
-    ChatSidebar.prototype.buildPayload = function (systemPrompt) {
-        var history = (this.conversation.messages || []).map(function (message) {
-            var role = message.role === "bot" ? "assistant" : "user";
-            return { role: role, content: message.content || "" };
-        });
-        var payload = {
-            stream: Boolean(global.GoToolkitIAClient?.supportsStreaming?.() !== false),
-            messages: [{ role: "system", content: (systemPrompt && systemPrompt.trim()) ? systemPrompt : getSystemPrompt() }].concat(history)
+    ChatSidebar.prototype.getPromptPresets = function () {
+        var presets = global.GoToolkitChatPrompt?.PRESETS;
+        if (presets) return presets;
+        return {
+            coach: {
+                id: "coach",
+                label: "/coach",
+                prompt: getSystemPrompt()
+            },
+            info: {
+                id: "info",
+                label: "/info",
+                prompt: global.GoToolkitChatPrompt?.INFO_PROMPT || global.GoToolkitChatPrompt?.DEFAULT_INFO_PROMPT || ""
+            }
         };
+    };
+
+    ChatSidebar.prototype.setPromptPreset = function (presetId) {
+        var next = presetId === "info" ? "info" : "coach";
+        this.promptPresetId = next;
+        persistPromptPreset(next);
+        this.updatePromptDropdownLabel();
+        this.updateHeaderDocumentCount();
+        this.refreshDocumentStats();
+    };
+
+    ChatSidebar.prototype.getActiveSystemPrompt = function () {
+        if (this.promptPresetId === "info") {
+            return global.GoToolkitChatPrompt?.INFO_PROMPT
+                || global.GoToolkitChatPrompt?.DEFAULT_INFO_PROMPT
+                || "";
+        }
+        return getSystemPrompt();
+    };
+
+    ChatSidebar.prototype.filterHitsByPromptPreset = function (hits) {
+        if (!Array.isArray(hits)) return [];
+        if (this.promptPresetId === "info") {
+            return hits;
+        }
+        return hits.filter(function (hit) {
+            return hit?.sourceType !== "gallery";
+        });
+    };
+
+    ChatSidebar.prototype.buildPayload = function (systemPrompt, userMessage, docInfo) {
+        var promptContent = (systemPrompt && systemPrompt.trim()) ? systemPrompt : getSystemPrompt();
+        var messages = [{ role: "system", content: promptContent }];
+        if (userMessage) {
+            messages.push({
+                role: "user",
+                content: userMessage.content || ""
+            });
+        }
+        var payload = {
+            stream: true,
+            messages: messages
+        };
+        if (docInfo?.embedded) {
+            var embeddedSections = {};
+            if (docInfo.embedded.methods.length) {
+                embeddedSections.methods = this.formatEntriesForPayload(docInfo.embedded.methods);
+            }
+            if (docInfo.embedded.tools.length) {
+                embeddedSections.tools = this.formatEntriesForPayload(docInfo.embedded.tools);
+            }
+            if (docInfo.embedded.context.length) {
+                embeddedSections.context = this.formatEntriesForPayload(docInfo.embedded.context);
+            }
+            if (Object.keys(embeddedSections).length) {
+                payload.embeddedResults = embeddedSections;
+            }
+        }
+        if (Array.isArray(docInfo?.context) && docInfo.context.length) {
+            payload.context = this.formatEntriesForPayload(docInfo.context);
+        }
         return payload;
+    };
+
+    ChatSidebar.prototype.formatEntriesForPayload = function (entries) {
+        if (!entries || !entries.length) return [];
+        var formatted = [];
+        entries.forEach(function (entry) {
+            var record = {
+                docName: entry.docName,
+                category: entry.category || "",
+                text: entry.text || "",
+                section: entry.section || "",
+                page: typeof entry.page === "number" ? entry.page : null,
+                line: typeof entry.line === "number" ? entry.line : null,
+                sourceType: entry.sourceType || ""
+            };
+            if (typeof entry.score === "number") {
+                record.score = entry.score;
+            }
+            if (typeof entry.chunk === "number") {
+                record.chunk = entry.chunk;
+            }
+            formatted.push(record);
+        });
+        return formatted;
+    };
+
+    ChatSidebar.prototype.stripDocExtension = function (value) {
+        if (!value) return "";
+        var idx = value.lastIndexOf(".");
+        if (idx > 0) {
+            return value.slice(0, idx);
+        }
+        return value;
+    };
+
+    ChatSidebar.prototype.buildHitEntry = function (hit) {
+        if (!hit) return null;
+        var rawName = (hit.docName || "Document").toString();
+        var stripped = this.stripDocExtension(rawName);
+        return {
+            docName: stripped,
+            keyName: stripped.toLowerCase(),
+            text: hit.text || "",
+            score: typeof hit.score === "number" ? hit.score : undefined,
+            chunk: typeof hit.idx === "number" ? hit.idx : undefined,
+            section: hit.section || "",
+            page: typeof hit.page === "number" ? hit.page : undefined,
+            line: typeof hit.line === "number" ? hit.line : undefined,
+            sourceType: hit.sourceType || "context"
+        };
+    };
+
+    ChatSidebar.prototype.categorizeHits = function (hits) {
+        var embedded = { methods: [], tools: [], context: [] };
+        var context = [];
+        (hits || []).forEach(function (hit) {
+            var entry = this.buildHitEntry(hit);
+            if (!entry) return;
+            if (entry.sourceType === "embedded" || entry.sourceType === "gallery") {
+                if (entry.keyName.startsWith("method_")) {
+                    entry.category = "method";
+                    embedded.methods.push(entry);
+                } else if (entry.keyName.startsWith("tools_")) {
+                    entry.category = "tool";
+                    embedded.tools.push(entry);
+                } else {
+                    entry.category = "context";
+                    embedded.context.push(entry);
+                }
+                return;
+            }
+            entry.category = "context";
+            context.push(entry);
+        }, this);
+        return { embedded: embedded, context: context };
+    };
+
+    ChatSidebar.prototype.buildSourcesFromEntries = function (embedded, context) {
+        var sources = [];
+        function appendEntries(list) {
+            (list || []).forEach(function (entry) {
+                var prefix = "";
+                if (entry.category === "method") {
+                    prefix = "Méthode · ";
+                } else if (entry.category === "tool") {
+                    prefix = "Outil · ";
+                } else if (entry.category === "context") {
+                    prefix = "Contexte · ";
+                }
+                var title = prefix + (entry.docName || "Document");
+                if (typeof entry.chunk === "number") {
+                    title += " (chunk=" + entry.chunk + ")";
+                }
+                sources.push({
+                    title: title,
+                    url: "",
+                    text: entry.text || ""
+                });
+            });
+        }
+        appendEntries(embedded.methods || []);
+        appendEntries(embedded.tools || []);
+        appendEntries(embedded.knowledge || []);
+        appendEntries(context || []);
+        return sources;
     };
 
     ChatSidebar.prototype.handleSend = async function () {
@@ -481,18 +730,17 @@
 
         var userMessage = createMessage("user", value);
         var contextHits = [];
-        var systemPrompt = getSystemPrompt();
+        var systemPrompt = this.getActiveSystemPrompt();
         if (this.docManager) {
             try {
                 contextHits = await this.docManager.retrieve(value, this.conversation.id);
                 console.log("embeddings retrieval", { query: value, hits: contextHits });
-                if (contextHits && contextHits.length) {
-                    systemPrompt = this.buildContextPrompt(contextHits);
-                }
             } catch (err) {
                 console.warn("Document retrieval échoué", err);
             }
         }
+        contextHits = this.filterHitsByPromptPreset(contextHits);
+        var docInfo = this.categorizeHits(contextHits);
         var attachments = this.pendingDocumentAttachments;
         if (attachments && attachments.length) {
             userMessage.attachments = attachments.slice();
@@ -505,17 +753,10 @@
         this.textarea.style.height = "auto";
 
         var botMessage = createMessage("bot", "");
-        if (contextHits && contextHits.length) {
-            botMessage.sources = contextHits.map(function (hit, index) {
-                return {
-                    title: (hit.docName || "Document") + " (#" + (index + 1) + ")",
-                    url: "",
-                    text: hit.text
-                };
-            });
-        }
-        this.conversation.messages.push(botMessage);
-        this.appendMessage(botMessage);
+        botMessage.references = [];
+        botMessage.suggestions = [];
+        botMessage.retrievalEntries = docInfo;
+        var botMessageAppended = false;
         this.isStreaming = true;
         this.updateComposerState();
         this.scrollToBottom();
@@ -523,14 +764,29 @@
         var controller = new AbortController();
         this.controller = controller;
 
-        var payload = this.buildPayload(systemPrompt);
+        var payload = this.buildPayload(systemPrompt, userMessage, docInfo);
         console.log("AI payload", payload);
         var self = this;
 
+        function appendBotMessageIfNeeded() {
+            if (botMessageAppended) return;
+            botMessageAppended = true;
+            self.conversation.messages.push(botMessage);
+            self.appendMessage(botMessage);
+        }
+
         function handleChunk(chunk) {
             console.log("AI chunk", chunk);
+            appendBotMessageIfNeeded();
             botMessage.content += chunk;
             self.updateBotMessage(botMessage);
+            if (self.messagesEl) {
+                var entries = self.messagesEl.querySelectorAll(".chat-message--bot .chat-content");
+                var live = entries.length ? entries[entries.length - 1] : null;
+                if (live) {
+                    live.textContent = botMessage.content;
+                }
+            }
             self.throttledPersist();
         }
 
@@ -542,9 +798,11 @@
                 onChunk: payload.stream ? handleChunk : undefined
             });
             console.log("AI response complete", result);
-            if (result) {
-                botMessage.content = result;
-            }
+            appendBotMessageIfNeeded();
+            var parsed = this.parseAssistantResponse(result || "");
+            botMessage.content = parsed.content;
+            botMessage.references = parsed.references;
+            botMessage.suggestions = parsed.suggestions;
             this.updateBotMessage(botMessage);
             this.persist();
         } catch (err) {
@@ -558,6 +816,9 @@
                     ? "Désolé, une erreur de configuration est survenue (400). Vérifie le moteur IA ou ta clé dans Paramètres."
                     : "Désolé, une erreur est survenue.";
             }
+            botMessage.references = [];
+            botMessage.suggestions = [];
+            appendBotMessageIfNeeded();
             this.updateBotMessage(botMessage);
             this.persist();
         } finally {
@@ -600,6 +861,89 @@
             global.addEventListener("mousemove", onMouseMove);
             global.addEventListener("mouseup", onMouseUp);
         });
+    };
+
+    ChatSidebar.prototype.updatePromptDropdownLabel = function () {
+        if (this.promptDropdownButton) {
+            var presets = this.getPromptPresets();
+            var activePreset = presets && presets[this.promptPresetId];
+            var label = activePreset?.label || ("/" + this.promptPresetId);
+            this.promptDropdownButton.textContent = label;
+            this.promptDropdownButton.title = "Mode: " + label;
+        }
+        if (this.promptDropdownMenu) {
+            var buttons = this.promptDropdownMenu.querySelectorAll("[data-preset]");
+            buttons.forEach(function (btn) {
+                btn.classList.toggle("active", btn.dataset.preset === this.promptPresetId);
+            }, this);
+        }
+    };
+
+    ChatSidebar.prototype.closePromptDropdown = function () {
+        if (!this.promptDropdownMenu) return;
+        this.promptDropdownMenu.classList.remove("open");
+        this.promptDropdownMenu.hidden = true;
+    };
+
+    ChatSidebar.prototype.togglePromptDropdown = function () {
+        if (!this.promptDropdownMenu) return;
+        var willOpen = this.promptDropdownMenu.hidden;
+        if (willOpen) {
+            this.promptDropdownMenu.hidden = false;
+            this.promptDropdownMenu.classList.add("open");
+        } else {
+            this.closePromptDropdown();
+        }
+    };
+
+    ChatSidebar.prototype.buildPromptDropdown = function () {
+        var wrapper = document.createElement("div");
+        wrapper.className = "chat-prompt-dropdown";
+
+        var button = document.createElement("button");
+        button.type = "button";
+        button.className = "btn-secondary chat-prompt-btn";
+        button.textContent = "/";
+        button.addEventListener("click", function (event) {
+            event.stopPropagation();
+            this.togglePromptDropdown();
+        }.bind(this));
+
+        var menu = document.createElement("div");
+        menu.className = "chat-prompt-menu";
+        menu.hidden = true;
+
+        var presets = this.getPromptPresets();
+        Object.keys(presets).forEach(function (key) {
+            var preset = presets[key];
+            var item = document.createElement("button");
+            item.type = "button";
+            item.className = "chat-prompt-menu-item";
+            item.dataset.preset = preset.id;
+            item.textContent = preset.label || ("/" + preset.id);
+            item.addEventListener("click", function (event) {
+                event.stopPropagation();
+                this.setPromptPreset(preset.id);
+                this.closePromptDropdown();
+            }.bind(this));
+            menu.appendChild(item);
+        }, this);
+
+        wrapper.appendChild(button);
+        wrapper.appendChild(menu);
+
+        this.promptDropdown = wrapper;
+        this.promptDropdownButton = button;
+        this.promptDropdownMenu = menu;
+        this.updatePromptDropdownLabel();
+
+        document.addEventListener("click", function (event) {
+            if (!this.promptDropdownMenu) return;
+            if (wrapper.contains(event.target)) return;
+            this.closePromptDropdown();
+        }.bind(this));
+
+        return wrapper;
     };
 
     ChatSidebar.prototype.buildUI = function () {
@@ -647,6 +991,16 @@
         this.headerDocCountEl = document.createElement("span");
         this.headerDocCountEl.className = "chat-header-doc-count";
         this.headerDocCountEl.hidden = true;
+        this.headerDocCountEl.tabIndex = 0;
+        this.headerDocCountEl.setAttribute("role", "button");
+        this.headerDocCountEl.setAttribute("title", "Rafraîchir les documents indexés");
+        this.headerDocCountEl.addEventListener("click", this.handleHeaderDocCountClick.bind(this));
+        this.headerDocCountEl.addEventListener("keydown", function (event) {
+            if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                this.handleHeaderDocCountClick();
+            }
+        }.bind(this));
         headerActions.appendChild(this.headerDocCountEl);
         this.clearButton = document.createElement("button");
         this.clearButton.type = "button";
@@ -685,12 +1039,18 @@
         var composerActions = document.createElement("div");
         composerActions.className = "chat-composer-actions";
 
+        var composerLeftActions = document.createElement("div");
+        composerLeftActions.className = "chat-composer-left-actions";
+
+        var promptDropdown = this.buildPromptDropdown();
+        composerLeftActions.appendChild(promptDropdown);
+
         this.scrollButton = document.createElement("button");
         this.scrollButton.type = "button";
         this.scrollButton.className = "btn-secondary chat-scroll-btn";
         this.scrollButton.textContent = "+";
         this.scrollButton.addEventListener("click", this.openDocumentSelector.bind(this));
-        composerActions.appendChild(this.scrollButton);
+        composerLeftActions.appendChild(this.scrollButton);
 
         this.docsIndicatorButton = document.createElement("button");
         this.docsIndicatorButton.type = "button";
@@ -698,7 +1058,9 @@
         this.docsIndicatorButton.textContent = "🗎 0 / 0";
         this.docsIndicatorButton.hidden = true;
         this.docsIndicatorButton.addEventListener("click", this.openDocumentSelector.bind(this));
-        composerActions.appendChild(this.docsIndicatorButton);
+        composerLeftActions.appendChild(this.docsIndicatorButton);
+
+        composerActions.appendChild(composerLeftActions);
 
         this.sendButton = document.createElement("button");
         this.sendButton.type = "button";
@@ -720,6 +1082,7 @@
         this.root.appendChild(this.sidebar);
         this.mountResizer(resizer);
         this.createDocumentPickers();
+        this.buildPreviewPanel();
     };
 
     ChatSidebar.prototype.createDocumentPickers = function () {
@@ -792,7 +1155,8 @@
         this.setDocumentUploadStatus("Indexation en cours…");
         try {
             var results = await this.docManager.ingestFiles(fileArray, this.conversation.id, {
-                onProgress: this.handleDocumentProgress.bind(this)
+                onProgress: this.handleDocumentProgress.bind(this),
+                sourceType: "context"
             });
             var errors = results.filter(function (item) {
                 return !item.success;
@@ -828,11 +1192,12 @@
             this.setDocumentUploadStatus("Fichier traité : " + (progress.file || ""));
         }
     };
-    ChatSidebar.prototype.updateDocumentIndicator = function (stats) {
+    ChatSidebar.prototype.updateDocumentIndicator = function (stats, docs) {
         if (!this.docsIndicatorButton) return;
         var chunkCount = stats ? Number(stats.chunkCount) || 0 : 0;
         this.documentChunkCount = chunkCount;
-        this.updateHeaderDocumentCount(stats);
+        this.computeDocumentCounts(docs);
+        this.updateHeaderDocumentCount();
         if (!this.pendingDocumentAttachments.length) {
             this.docsIndicatorButton.hidden = true;
             return;
@@ -842,24 +1207,71 @@
         this.syncDocumentIndicatorTitle(chunkCount);
     };
 
-    ChatSidebar.prototype.updateHeaderDocumentCount = function (stats) {
+    ChatSidebar.prototype.computeDocumentCounts = function (docs) {
+        var counts = { context: 0, gallery: 0 };
+        (docs || []).forEach(function (doc) {
+            var source = doc?.sourceType || "context";
+            if (source === "embedded") {
+                return;
+            }
+            if (source === "gallery") {
+                counts.gallery += 1;
+                return;
+            }
+            counts.context += 1;
+        });
+        this.documentCounts = counts;
+        return counts;
+    };
+
+    ChatSidebar.prototype.updateHeaderDocumentCount = function () {
         if (!this.headerDocCountEl) return;
-        var parsed = stats ? Number(stats.docsParsed) || 0 : 0;
-        if (parsed <= 0) {
+        var counts = this.documentCounts || { context: 0, gallery: 0 };
+        var total = counts.context + (this.promptPresetId === "info" ? counts.gallery : 0);
+        if (total <= 0) {
             this.headerDocCountEl.hidden = true;
             return;
         }
         this.headerDocCountEl.hidden = false;
-        this.headerDocCountEl.textContent = "🗎 " + parsed;
+        this.headerDocCountEl.textContent = "🗎 " + total;
+    };
+
+    ChatSidebar.prototype.handleHeaderDocCountClick = function () {
+        if (!this.headerDocCountEl) return;
+        var syncFn = global.GoToolkitIndexDocSync;
+        if (typeof syncFn !== "function") return;
+        if (this.headerDocCountEl.dataset.refreshing === "1") return;
+        this.headerDocCountEl.dataset.refreshing = "1";
+        this.headerDocCountEl.classList.add("chat-header-doc-count--refreshing");
+        var self = this;
+        Promise.resolve()
+            .then(function () {
+                return syncFn();
+            })
+            .catch(function (err) {
+                console.error("Index document refresh failed", err);
+            })
+            .finally(function () {
+                self.headerDocCountEl.dataset.refreshing = "0";
+                self.headerDocCountEl.classList.remove("chat-header-doc-count--refreshing");
+                self.refreshDocumentStats();
+            });
     };
 
     ChatSidebar.prototype.refreshDocumentStats = function () {
         if (!this.docManager) return;
         this.docManager.waitReady?.()
             .then(function () {
-                return this.docManager.getStats(this.conversation.id);
+                return Promise.all([
+                    this.docManager.getStats(this.conversation.id),
+                    this.docManager.getDocuments(this.conversation.id)
+                ]);
             }.bind(this))
-            .then(this.updateDocumentIndicator.bind(this))
+            .then(function (results) {
+                var stats = results ? results[0] : null;
+                var docs = results ? results[1] : [];
+                this.updateDocumentIndicator(stats, docs);
+            }.bind(this))
             .catch(function (err) {
                 console.warn("Documents stats", err);
             });
@@ -884,6 +1296,177 @@
         ].join("\\n");
     };
 
+    ChatSidebar.prototype.parseAssistantResponse = function (raw) {
+        var fallback = {
+            content: "Réponse illisible.",
+            references: [],
+            suggestions: []
+        };
+        if (!raw || typeof raw !== "string") {
+            return fallback;
+        }
+        try {
+            var parsed = JSON.parse(raw);
+            var content = parsed?.answer?.content;
+            var references = Array.isArray(parsed?.references) ? parsed.references : [];
+            var suggestions = Array.isArray(parsed?.suggestions) ? parsed.suggestions : [];
+            return {
+                content: typeof content === "string" && content.trim() ? content : "Non trouvé dans la base",
+                references: references.map(function (ref) {
+                    return {
+                        document: ref?.document || "Document",
+                        section: ref?.section || "",
+                        page: typeof ref?.page === "number" ? ref.page : null,
+                        line: typeof ref?.line === "number" ? ref.line : null,
+                        type: ref?.type || ""
+                    };
+                }),
+                suggestions: suggestions.filter(Boolean).slice(0, 3)
+            };
+        } catch (err) {
+            return fallback;
+        }
+    };
+
+    ChatSidebar.prototype.buildPreviewPanel = function () {
+        if (this.previewPanel) return;
+        var panel = document.createElement("div");
+        panel.className = "chat-doc-preview";
+        panel.setAttribute("aria-hidden", "true");
+
+        var header = document.createElement("div");
+        header.className = "chat-doc-preview__header";
+        var title = document.createElement("div");
+        title.className = "chat-doc-preview__title";
+        var closeBtn = document.createElement("button");
+        closeBtn.type = "button";
+        closeBtn.className = "chat-doc-preview__close";
+        closeBtn.textContent = "✕";
+        closeBtn.addEventListener("click", this.closePreviewPanel.bind(this));
+        header.appendChild(title);
+        header.appendChild(closeBtn);
+
+        var meta = document.createElement("div");
+        meta.className = "chat-doc-preview__meta";
+
+        var body = document.createElement("div");
+        body.className = "chat-doc-preview__body";
+
+        panel.appendChild(header);
+        panel.appendChild(meta);
+        panel.appendChild(body);
+        document.body.appendChild(panel);
+
+        this.previewPanel = panel;
+        this.previewTitleEl = title;
+        this.previewMetaEl = meta;
+        this.previewBodyEl = body;
+        this.previewCloseBtn = closeBtn;
+    };
+
+    ChatSidebar.prototype.closePreviewPanel = function () {
+        if (!this.previewPanel) return;
+        this.previewPanel.classList.remove("open");
+        this.previewPanel.setAttribute("aria-hidden", "true");
+    };
+
+    ChatSidebar.prototype.normalizeDocName = function (value) {
+        return this.stripDocExtension(String(value || "")).toLowerCase();
+    };
+
+    ChatSidebar.prototype.resolvePreviewSnippet = async function (message, reference) {
+        var targetName = this.normalizeDocName(reference?.document);
+        var entries = [];
+        if (message?.retrievalEntries) {
+            var embedded = message.retrievalEntries.embedded || {};
+            entries = []
+                .concat(embedded.methods || [], embedded.tools || [], embedded.context || [])
+                .concat(message.retrievalEntries.context || []);
+        }
+        var match = entries.find(function (entry) {
+            return this.normalizeDocName(entry.docName) === targetName;
+        }.bind(this));
+        if (match?.text) {
+            return match.text;
+        }
+        if (!this.docManager || !targetName) return "";
+        try {
+            var docs = await this.docManager.getDocuments(this.conversation.id);
+            var doc = docs.find(function (item) {
+                return this.normalizeDocName(item.name) === targetName;
+            }.bind(this));
+            if (!doc) return "";
+            var chunks = await this.docManager.getChunks(this.conversation.id);
+            var candidates = chunks.filter(function (chunk) {
+                return chunk.docId === doc.id;
+            });
+            if (!candidates.length) return "";
+            candidates.sort(function (a, b) {
+                return (a.idx || 0) - (b.idx || 0);
+            });
+            return candidates[0].text || "";
+        } catch (err) {
+            console.warn("Preview resolve failed", err);
+            return "";
+        }
+    };
+
+    ChatSidebar.prototype.formatPreviewText = function (text, highlightLine) {
+        var lines = String(text || "").split(/\r?\n/);
+        if (!lines.length) return "";
+        return lines.map(function (line, index) {
+            var lineNo = index + 1;
+            var cls = "chat-doc-preview__line";
+            if (typeof highlightLine === "number" && highlightLine === lineNo) {
+                cls += " chat-doc-preview__line--highlight";
+            }
+            return (
+                "<div class=\"" + cls + "\" data-line=\"" + lineNo + "\">" +
+                "<span class=\"chat-doc-preview__line-number\">" + lineNo + "</span>" +
+                "<span class=\"chat-doc-preview__line-text\">" + escapeHtml(line) + "</span>" +
+                "</div>"
+            );
+        }).join("");
+    };
+
+    ChatSidebar.prototype.openReferencePreview = async function (message, reference) {
+        if (!reference) return;
+        this.buildPreviewPanel();
+        if (!this.previewPanel) return;
+        this.previewPanel.classList.add("open");
+        this.previewPanel.setAttribute("aria-hidden", "false");
+        if (this.previewTitleEl) {
+            this.previewTitleEl.textContent = reference.document || "Document";
+        }
+        if (this.previewMetaEl) {
+            var metaParts = [];
+            if (reference.section) {
+                metaParts.push(reference.section);
+            }
+            if (typeof reference.page === "number") {
+                metaParts.push("p. " + reference.page);
+            }
+            if (typeof reference.line === "number") {
+                metaParts.push("l. " + reference.line);
+            }
+            this.previewMetaEl.textContent = metaParts.join(" · ") || "Référence";
+        }
+        if (this.previewBodyEl) {
+            this.previewBodyEl.innerHTML = "<div class=\"chat-doc-preview__loading\">Chargement…</div>";
+        }
+        var snippet = await this.resolvePreviewSnippet(message, reference);
+        if (this.previewBodyEl) {
+            var content = snippet || "(extrait indisponible)";
+            this.previewBodyEl.innerHTML = this.formatPreviewText(content, reference.line);
+            if (typeof reference.line === "number") {
+                var target = this.previewBodyEl.querySelector("[data-line=\"" + reference.line + "\"]");
+                if (target && typeof target.scrollIntoView === "function") {
+                    target.scrollIntoView({ block: "center" });
+                }
+            }
+        }
+    };
+
     ChatSidebar.prototype.init = function () {
         if (!this.root) return;
         if (!global.GoToolkitIA || typeof global.GoToolkitIA.chatCompletion !== "function") {
@@ -894,7 +1477,7 @@
         this.renderInitialMessages();
         this.updateComposerState();
         if (this.docManager) {
-            this.documentStatsWatcher = this.docManager.onStatsChange(this.updateDocumentIndicator.bind(this));
+            this.documentStatsWatcher = this.docManager.onStatsChange(this.refreshDocumentStats.bind(this));
             this.refreshDocumentStats();
         }
         if (this.isOpen) {
@@ -913,5 +1496,5 @@
 
     global.GoToolkitChatSidebar = global.GoToolkitChatSidebar || GoToolkitChatSidebar;
 })(typeof window !== "undefined" ? window : this);
-        this.speechRecognition = null;
-        this.isListening = false;
+this.speechRecognition = null;
+this.isListening = false;
