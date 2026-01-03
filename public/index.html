@@ -4918,7 +4918,11 @@
                 if (iaConfig && typeof iaConfig.setOpenRouterModel === "function") {
                     iaConfig.setOpenRouterModel(openrouterModelValue);
                 }
-                selectedBackend = (aiBackendSelect && aiBackendSelect.value) || "openrouter";
+                const requiresOpenAi = Boolean(apiKey && apiKey.length);
+                if (requiresOpenAi && aiBackendSelect) {
+                    aiBackendSelect.value = "openai";
+                }
+                selectedBackend = requiresOpenAi ? "openai" : ((aiBackendSelect && aiBackendSelect.value) || "openrouter");
                 if (iaConfig && typeof iaConfig.setBackend === "function") {
                     iaConfig.setBackend(selectedBackend);
                 } else {

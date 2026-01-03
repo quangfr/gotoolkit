@@ -459,6 +459,9 @@
         }
         const { onChunk: _omitOnChunk, ...restPayload } = payload || {};
         const requestPayload = toResponsesPayload(restPayload);
+        if (typeof requestPayload.effort === "undefined") {
+            requestPayload.effort = "minimal";
+        }
         const wantsStream = hasStreamingSupport && requestPayload.stream === true;
         if (!wantsStream) {
             delete requestPayload.stream;
@@ -800,6 +803,9 @@
             if (typeof source?.stream !== "undefined") {
                 proxyPayload.stream = Boolean(source.stream);
             }
+            if (typeof proxyPayload.effort === "undefined") {
+                proxyPayload.effort = "minimal";
+            }
             return proxyPayload;
         }
 
@@ -844,6 +850,9 @@
         }
         if (typeof result.temperature === "undefined") {
             result.temperature = 1;
+        }
+        if (typeof result.effort === "undefined") {
+            result.effort = "minimal";
         }
 
         const parsePositive = value => {

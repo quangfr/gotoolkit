@@ -381,6 +381,7 @@
     ChatSidebar.prototype.updateBotMessage = function (message) {
         var entry = this.messageNodes[message.id];
         if (!entry || !entry.contentEl) {
+            console.warn("updateBotMessage: missing entry", message.id);
             this.appendMessage(message);
             entry = this.messageNodes[message.id];
         }
@@ -438,6 +439,7 @@
             refsEl: null,
             suggestionsEl: null
         };
+        console.info("appendMessage", message.id, message.role);
         if (message.role === "bot") {
             entry.refsEl = document.createElement("div");
             entry.refsEl.className = "chat-references";
@@ -780,12 +782,9 @@
             appendBotMessageIfNeeded();
             botMessage.content += chunk;
             self.updateBotMessage(botMessage);
-            if (self.messagesEl) {
-                var entries = self.messagesEl.querySelectorAll(".chat-message--bot .chat-content");
-                var live = entries.length ? entries[entries.length - 1] : null;
-                if (live) {
-                    live.textContent = botMessage.content;
-                }
+            var liveEntry = self.messageNodes[botMessage.id];
+            if (liveEntry && liveEntry.contentEl) {
+                liveEntry.contentEl.textContent = botMessage.content;
             }
             self.throttledPersist();
         }
