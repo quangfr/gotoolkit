@@ -190,9 +190,9 @@
         this.headerDocCountEl = null;
         this.previewPanel = null;
         this.previewTitleEl = null;
-        this.previewMetaEl = null;
         this.previewBodyEl = null;
         this.previewCloseBtn = null;
+        this.previewBlobUrl = null;
         this.promptPresetId = readPromptPreset();
         this.promptDropdown = null;
         this.promptDropdownButton = null;
@@ -993,6 +993,9 @@
             this.isStreaming = false;
             this.controller = null;
             this.updateComposerState();
+            if (botMessage) {
+                this.updateBotMessage(botMessage);
+            }
         }
     };
 
@@ -1229,13 +1232,14 @@
         this.docsIndicatorLabelEl.className = "chat-docs-indicator__label";
         this.docsIndicatorButton.appendChild(this.docsIndicatorLabelEl);
         this.docsIndicatorDeleteEl = document.createElement("span");
-        this.docsIndicatorDeleteEl.className = "chat-docs-indicator__delete";
+        this.docsIndicatorDeleteEl.className = "chat-delete chat-docs-indicator__delete";
         this.docsIndicatorDeleteEl.textContent = "×";
         this.docsIndicatorDeleteEl.setAttribute("aria-label", "Supprimer les documents");
         this.docsIndicatorDeleteEl.addEventListener("click", function (event) {
             event.stopPropagation();
             this.handleRemoveAttachedDocuments();
         }.bind(this));
+        this.docsIndicatorDeleteEl.style.marginLeft = "4px";
         this.docsIndicatorButton.appendChild(this.docsIndicatorDeleteEl);
         composerLeftActions.appendChild(this.docsIndicatorButton);
 
@@ -1312,9 +1316,9 @@
 
     ChatSidebar.prototype.updateAttachmentIndicator = function () {
         if (!this.docsIndicatorButton) return;
-        var hasPending = this.pendingDocumentAttachments.length > 0;
-        this.docsIndicatorButton.hidden = !hasPending;
-        if (!hasPending) {
+        var label = this.computeDocsIndicatorLabel();
+        if (!label) {
+            this.docsIndicatorButton.hidden = true;
             if (this.docsIndicatorLabelEl) {
                 this.docsIndicatorLabelEl.textContent = "";
             }
@@ -1323,8 +1327,9 @@
             }
             return;
         }
+        this.docsIndicatorButton.hidden = false;
         if (this.docsIndicatorLabelEl) {
-            this.docsIndicatorLabelEl.textContent = this.computeDocsIndicatorLabel();
+            this.docsIndicatorLabelEl.textContent = label;
         }
         if (this.docsIndicatorDeleteEl) {
             this.docsIndicatorDeleteEl.style.display = "";
@@ -1334,15 +1339,19 @@
     ChatSidebar.prototype.computeDocsIndicatorLabel = function () {
         var parsed = Number(this.attachmentsParsedCount) || 0;
         var total = Number(this.attachmentsTotalCount) || 0;
-        var count = this.pendingDocumentAttachments.length;
-        if (!count) return "";
-        if (count === 1 && this.attachmentsTotalCount <= 1) {
+        if (this.pendingDocumentAttachments.length === 1) {
             return this.pendingDocumentAttachments[0];
         }
-        if (parsed && total) {
-            return parsed === total ? "🗎 " + parsed : "🗎 " + parsed + " / " + total;
+        if (total) {
+            if (parsed === total) {
+                return "🗎 " + total + " documents";
+            }
+            return "🗎 " + parsed + " / " + total + " documents";
         }
-        return "🗎 " + count;
+        if (parsed) {
+            return "🗎 " + parsed;
+        }
+        return "";
     };
 
     ChatSidebar.prototype.handleDocumentFilesSelected = function (event) {
@@ -1422,12 +1431,6 @@
         this.documentChunkCount = chunkCount;
         this.computeDocumentCounts(docs);
         this.updateHeaderDocumentCount();
-        if (!this.pendingDocumentAttachments.length) {
-            this.docsIndicatorButton.hidden = true;
-            return;
-        }
-        this.docsIndicatorButton.hidden = false;
-        this.docsIndicatorButton.textContent = "🗎 " + this.pendingDocumentAttachments.length + " docs prêts";
         this.syncDocumentIndicatorTitle(chunkCount);
     };
 
@@ -1465,6 +1468,25 @@
         }
     };
 
+    ChatSidebar.prototype.getFileNameFromPath = function (path) {
+        if (!path) return "";
+        var parts = path.split("/");
+        return parts[parts.length - 1] || path;
+    };
+
+    ChatSidebar.prototype.parseUpdatedAt = function (value) {
+        if (typeof value === "number" && Number.isFinite(value)) {
+            return value;
+        }
+        if (typeof value === "string" && value.trim()) {
+            var numeric = Number(value);
+            if (Number.isFinite(numeric)) return numeric;
+            var date = Date.parse(value);
+            if (Number.isFinite(date)) return date;
+        }
+        return 0;
+    };
+
     ChatSidebar.prototype.fetchContentManifest = function () {
         try {
             const url = new URL("content/files.json", window.location.href);
@@ -1487,34 +1509,173 @@
         }
     };
 
+    ChatSidebar.prototype.loadKnowledgeManifest = async function () {
+        var manifest = await this.fetchContentManifest();
+        if (!Array.isArray(manifest)) {
+            return [];
+        }
+        return manifest
+            .map(function (entry) {
+                var path = entry?.path || "";
+                var fileName = (entry?.fileName || this.getFileNameFromPath(path)).trim();
+                return {
+                    path: path,
+                    name: (entry?.name || fileName).trim(),
+                    abstract: entry?.abstract || "",
+                    updatedAt: this.parseUpdatedAt(entry?.updatedAt),
+                    fileName: fileName
+                };
+            }.bind(this))
+            .filter(function (entry) {
+                return entry.path && entry.fileName && entry.name;
+            });
+    };
+
+    ChatSidebar.prototype.detectFileTypeFromPath = function (path) {
+        if (!path) return "";
+        var lower = path.toLowerCase();
+        if (lower.endsWith(".pdf")) return "pdf";
+        if (lower.endsWith(".md")) return "markdown";
+        if (lower.endsWith(".txt")) return "txt";
+        return "";
+    };
+
+    ChatSidebar.prototype.createKnowledgeFile = function (data, fileName, type) {
+        var normalizedType = (type || "").trim();
+        var parts = [];
+        if (data instanceof Blob) {
+            parts.push(data);
+        } else if (ArrayBuffer.isView(data) || data instanceof ArrayBuffer) {
+            parts.push(data);
+        } else {
+            parts.push(typeof data === "string" ? data : (data != null ? String(data) : ""));
+        }
+        var blobType = normalizedType || (data instanceof Blob ? data.type : "");
+        if (typeof File !== "undefined") {
+            try {
+                return new File(parts, fileName, { type: blobType });
+            } catch (err) {
+                // fall back to Blob
+            }
+        }
+        var fallback = new Blob(parts, { type: blobType });
+        fallback.name = fileName;
+        return fallback;
+    };
+
+    ChatSidebar.prototype.fetchKnowledgeDocument = async function (entry) {
+        if (!entry || !entry.path) return null;
+        try {
+            const url = new URL(entry.path, window.location.href);
+            url.searchParams.set("v", this.getVersionParam());
+            const response = await fetch(url.toString(), { cache: "no-cache" });
+            if (!response.ok) {
+                console.warn("Knowledge doc fetch failed", entry.path, response.status);
+                return null;
+            }
+            const fileName = entry.fileName || this.getFileNameFromPath(entry.path);
+            const contentTypeHeader = (response.headers.get("content-type") || "").toLowerCase();
+            const extensionHint = this.detectFileTypeFromPath(entry.path);
+            const isPdf = contentTypeHeader.includes("pdf") || extensionHint === "pdf";
+            if (isPdf) {
+                const buffer = await response.arrayBuffer();
+                const mime = contentTypeHeader.includes("/") ? contentTypeHeader : "application/pdf";
+                const blob = new Blob([buffer], { type: mime });
+                return this.createKnowledgeFile(blob, fileName, mime);
+            }
+            const text = await response.text();
+            var textMime = "text/plain";
+            if (extensionHint === "markdown" || contentTypeHeader.includes("markdown")) {
+                textMime = "text/markdown";
+            } else if (contentTypeHeader.includes("html")) {
+                textMime = "text/html";
+            }
+            return this.createKnowledgeFile(text, fileName, textMime);
+        } catch (err) {
+            console.error("Knowledge document fetch error", entry.path, err);
+            return null;
+        }
+    };
+
+    ChatSidebar.prototype.syncKnowledgeDocs = async function (manifest) {
+        if (!this.docManager) return;
+        try {
+            await this.docManager.waitReady?.();
+            var entries = Array.isArray(manifest) ? manifest : await this.loadKnowledgeManifest();
+            if (!entries.length) return;
+            var existingDocs = await this.docManager.getDocuments(this.knowledgeConversationId);
+            var existingMap = new Map();
+            (existingDocs || []).forEach(function (doc) {
+                if (!doc || doc.sourceType !== "embedded") return;
+                var key = doc.sourceFileName || doc.name;
+                if (key) {
+                    existingMap.set(key, doc);
+                }
+            });
+            var staleNames = [];
+            entries.forEach(function (entry) {
+                var stored = existingMap.get(entry.fileName);
+                if (!stored) return;
+                var storedUpdated = Number(stored.updatedAt) || 0;
+                if (!storedUpdated || entry.updatedAt > storedUpdated) {
+                    staleNames.push(stored.name);
+                    existingMap.delete(entry.fileName);
+                }
+            });
+            if (staleNames.length) {
+                await this.docManager.deleteDocumentsByNames(this.knowledgeConversationId, staleNames);
+            }
+            var toIngest = entries.filter(function (entry) {
+                return !existingMap.has(entry.fileName);
+            });
+            if (!toIngest.length) return;
+            var filePromises = toIngest.map(function (entry) {
+                return this.fetchKnowledgeDocument(entry);
+            }.bind(this));
+            var files = (await Promise.all(filePromises)).filter(Boolean);
+            if (!files.length) return;
+            var metadata = new Map();
+            toIngest.forEach(function (entry) {
+                metadata.set(entry.fileName, {
+                    name: entry.name,
+                    abstract: entry.abstract,
+                    updatedAt: entry.updatedAt,
+                    fileName: entry.fileName
+                });
+            });
+            await this.docManager.ingestFiles(files, this.knowledgeConversationId, {
+                sourceType: "embedded",
+                metadata
+            });
+        } catch (err) {
+            console.error("Knowledge document sync failed", err);
+        }
+    };
+
     ChatSidebar.prototype.handleHeaderDocCountClick = function () {
         if (!this.headerDocCountEl) return;
-        var syncFn = global.GoToolkitIndexDocSync;
-        if (typeof syncFn !== "function") return;
         if (this.headerDocCountEl.dataset.refreshing === "1") return;
         this.headerDocCountEl.dataset.refreshing = "1";
         this.headerDocCountEl.classList.add("chat-header-doc-count--refreshing");
         var self = this;
-        Promise.resolve()
-            .then(function () {
-                return self.fetchContentManifest();
-            })
+        var manifestPromise = self.loadKnowledgeManifest()
             .then(function (manifest) {
                 if (Array.isArray(manifest)) {
                     var total = manifest.length;
                     self.headerDocCountEl.dataset.manifestTotal = total;
                     self.headerDocCountEl.textContent = "🗎 " + total;
+                    return manifest;
                 }
+                return [];
             })
             .catch(function (err) {
-                console.error("Index manifest fetch failed", err);
-            })
-            .then(function () {
-                return syncFn();
-            })
-            .catch(function (err) {
-                console.error("Index document refresh failed", err);
-            })
+                console.error("Knowledge manifest fetch failed", err);
+                return [];
+            });
+        var syncPromise = manifestPromise.then(function (manifest) {
+            return self.syncKnowledgeDocs(manifest);
+        });
+        Promise.allSettled([manifestPromise, syncPromise])
             .finally(function () {
                 self.headerDocCountEl.dataset.refreshing = "0";
                 self.headerDocCountEl.classList.remove("chat-header-doc-count--refreshing");
@@ -1670,20 +1831,15 @@
         header.appendChild(title);
         header.appendChild(closeBtn);
 
-        var meta = document.createElement("div");
-        meta.className = "chat-doc-preview__meta";
-
         var body = document.createElement("div");
         body.className = "chat-doc-preview__body";
 
         panel.appendChild(header);
-        panel.appendChild(meta);
         panel.appendChild(body);
         document.body.appendChild(panel);
 
         this.previewPanel = panel;
         this.previewTitleEl = title;
-        this.previewMetaEl = meta;
         this.previewBodyEl = body;
         this.previewCloseBtn = closeBtn;
     };
@@ -1692,6 +1848,7 @@
         if (!this.previewPanel) return;
         this.previewPanel.classList.remove("open");
         this.previewPanel.setAttribute("aria-hidden", "true");
+        this.clearPreviewBlobUrl();
     };
 
     ChatSidebar.prototype.normalizeDocName = function (value) {
@@ -1766,6 +1923,37 @@
         }
     };
 
+    ChatSidebar.prototype.findDocumentForPreview = async function (name) {
+        if (!name || !this.docManager) return null;
+        var docs = await this.docManager.getDocuments(this.conversation.id);
+        if (!docs || !docs.length) return null;
+        var target = name.toString().trim().toLowerCase();
+        var normalizedTarget = this.normalizeDocName(name);
+        for (var i = 0; i < docs.length; i++) {
+            var doc = docs[i];
+            var candidate = (doc?.name || "").toString().trim().toLowerCase();
+            if (candidate && candidate === target) {
+                return doc;
+            }
+            var sourceName = (doc?.sourceFileName || "").toString().trim().toLowerCase();
+            if (sourceName && sourceName === target) {
+                return doc;
+            }
+        }
+        if (normalizedTarget) {
+            for (var i = 0; i < docs.length; i++) {
+                var doc = docs[i];
+                if (this.normalizeDocName(doc?.name) === normalizedTarget) {
+                    return doc;
+                }
+                if (this.normalizeDocName(doc?.sourceFileName) === normalizedTarget) {
+                    return doc;
+                }
+            }
+        }
+        return null;
+    };
+
     ChatSidebar.prototype.openAttachmentPreview = async function (name) {
         if (!name || !this.docManager) return;
         this.buildPreviewPanel();
@@ -1773,12 +1961,15 @@
         this.previewPanel.classList.add("open");
         this.previewPanel.setAttribute("aria-hidden", "false");
         this.previewTitleEl && (this.previewTitleEl.textContent = name);
-        var metaText = "Pièce jointe";
+        this.clearPreviewBlobUrl();
+        if (this.previewBodyEl) {
+            this.previewBodyEl.innerHTML = "<div class=\"chat-doc-preview__loading\">Chargement…</div>";
+        }
         var snippet = "";
         try {
-            var doc = await this.docManager.findDocumentByName(this.conversation.id, name);
-            if (doc?.abstract) {
-                metaText = doc.abstract;
+            var doc = await this.findDocumentForPreview(name);
+            if (doc && this.isPdfDocument(doc) && this.renderPdfPreview(doc)) {
+                return;
             }
             if (doc?.id) {
                 var chunks = await this.docManager.getChunks(this.conversation.id);
@@ -1790,12 +1981,48 @@
         } catch (err) {
             console.warn("Attachment preview failed", err);
         }
-        if (this.previewMetaEl) {
-            this.previewMetaEl.textContent = metaText || "Pièce jointe";
-        }
         if (this.previewBodyEl) {
             var content = snippet || "(extrait indisponible)";
             this.previewBodyEl.innerHTML = this.formatPreviewText(content);
+        }
+    };
+
+    ChatSidebar.prototype.openReferencePreview = async function (message, reference) {
+        if (!reference) return;
+        this.buildPreviewPanel();
+        if (!this.previewPanel) return;
+        this.previewPanel.classList.add("open");
+        this.previewPanel.setAttribute("aria-hidden", "false");
+        if (this.previewTitleEl) {
+            this.previewTitleEl.textContent = reference.document || "Document";
+        }
+        this.clearPreviewBlobUrl();
+        if (this.previewBodyEl) {
+            this.previewBodyEl.innerHTML = "<div class=\"chat-doc-preview__loading\">Chargement…</div>";
+        }
+        try {
+            if (this.docManager) {
+                var docName = reference.document;
+                if (docName) {
+                    var doc = await this.findDocumentForPreview(docName);
+                    if (doc && this.isPdfDocument(doc) && this.renderPdfPreview(doc)) {
+                        return;
+                    }
+                }
+            }
+        } catch (err) {
+            console.warn("Reference preview failed", err);
+        }
+        var snippet = await this.resolvePreviewSnippet(message, reference);
+        if (this.previewBodyEl) {
+            var content = snippet || "(extrait indisponible)";
+            this.previewBodyEl.innerHTML = this.formatPreviewText(content, reference.line);
+            if (typeof reference.line === "number") {
+                var target = this.previewBodyEl.querySelector("[data-line=\"" + reference.line + "\"]");
+                if (target && typeof target.scrollIntoView === "function") {
+                    target.scrollIntoView({ block: "center" });
+                }
+            }
         }
     };
 
@@ -1817,42 +2044,72 @@
         }).join("");
     };
 
-    ChatSidebar.prototype.openReferencePreview = async function (message, reference) {
-        if (!reference) return;
-        this.buildPreviewPanel();
-        if (!this.previewPanel) return;
-        this.previewPanel.classList.add("open");
-        this.previewPanel.setAttribute("aria-hidden", "false");
-        if (this.previewTitleEl) {
-            this.previewTitleEl.textContent = reference.document || "Document";
-        }
-        if (this.previewMetaEl) {
-            var metaParts = [];
-            if (reference.section) {
-                metaParts.push(reference.section);
-            }
-            if (typeof reference.page === "number") {
-                metaParts.push("p. " + reference.page);
-            }
-            if (typeof reference.line === "number") {
-                metaParts.push("l. " + reference.line);
-            }
-            this.previewMetaEl.textContent = metaParts.join(" · ") || "Référence";
-        }
-        if (this.previewBodyEl) {
-            this.previewBodyEl.innerHTML = "<div class=\"chat-doc-preview__loading\">Chargement…</div>";
-        }
-        var snippet = await this.resolvePreviewSnippet(message, reference);
-        if (this.previewBodyEl) {
-            var content = snippet || "(extrait indisponible)";
-            this.previewBodyEl.innerHTML = this.formatPreviewText(content, reference.line);
-            if (typeof reference.line === "number") {
-                var target = this.previewBodyEl.querySelector("[data-line=\"" + reference.line + "\"]");
-                if (target && typeof target.scrollIntoView === "function") {
-                    target.scrollIntoView({ block: "center" });
-                }
+    ChatSidebar.prototype.clearPreviewBlobUrl = function () {
+        if (this.previewBlobUrl && global?.URL && typeof global.URL.revokeObjectURL === "function") {
+            try {
+                global.URL.revokeObjectURL(this.previewBlobUrl);
+            } catch (err) {
+                console.warn("Failed to revoke PDF blob URL", err);
             }
         }
+        this.previewBlobUrl = null;
+    };
+
+    ChatSidebar.prototype.isPdfDocument = function (doc) {
+        if (!doc) return false;
+        var mime = (doc.mime || "").toString().toLowerCase();
+        if (mime.includes("pdf")) return true;
+        var name = (doc.name || "").toString().toLowerCase();
+        return name.endsWith(".pdf");
+    };
+
+    ChatSidebar.prototype.createPdfBlobUrl = function (doc) {
+        if (!doc || !doc.fileBuffer || !global?.URL || typeof global.URL.createObjectURL !== "function") {
+            return null;
+        }
+        var buffer = doc.fileBuffer;
+        if (ArrayBuffer.isView(buffer)) {
+            buffer = buffer.buffer;
+        }
+        if (!(buffer instanceof ArrayBuffer)) return null;
+        try {
+            var blob = new Blob([buffer], { type: doc.mime || "application/pdf" });
+            return global.URL.createObjectURL(blob);
+        } catch (err) {
+            console.warn("PDF blob creation failed", err);
+            return null;
+        }
+    };
+
+    ChatSidebar.prototype.buildPdfViewerUrl = function (blobUrl) {
+        if (!blobUrl) return "";
+        try {
+            var viewerUrl = new URL("pdf-viewer.html", global?.location?.href || "");
+            viewerUrl.searchParams.set("file", blobUrl);
+            viewerUrl.hash = "page=1&zoom=page-width&pagemode=none&scrollMode=0&spreadMode=0";
+            return viewerUrl.toString();
+        } catch (err) {
+            console.warn("Failed to build PDF viewer URL", err);
+            return "";
+        }
+    };
+
+    ChatSidebar.prototype.renderPdfPreview = function (doc) {
+        if (!doc || !this.previewBodyEl) return false;
+        var blobUrl = this.createPdfBlobUrl(doc);
+        if (!blobUrl) return false;
+        this.clearPreviewBlobUrl();
+        this.previewBlobUrl = blobUrl;
+        var viewerUrl = this.buildPdfViewerUrl(blobUrl);
+        if (!viewerUrl) return false;
+        this.previewBodyEl.innerHTML = "";
+        var iframe = document.createElement("iframe");
+        iframe.className = "chat-doc-preview__iframe";
+        iframe.src = viewerUrl;
+        iframe.loading = "lazy";
+        iframe.title = doc.name || "PDF document";
+        this.previewBodyEl.appendChild(iframe);
+        return true;
     };
 
     ChatSidebar.prototype.init = function () {

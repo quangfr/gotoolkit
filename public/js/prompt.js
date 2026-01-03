@@ -1427,10 +1427,10 @@ SORTIE
       "type": "knowledge|context"
     }
   ],
-  "suggestions": ["3–6 mots"]
+  "suggestions": ["2–5 mots par suggestion"]
 }
 
-Réponds à ASK sur CONTEXT avec prioritairement les connaissances KNOWLEDGE en tenant compte de HISTORY, et éventuellement de PRODUCT.
+Réponds à ASK prioritairement sur CONTEXT avec les connaissances KNOWLEDGE en tenant compte de HISTORY, et éventuellement de PRODUCT.
 `
 
         var askChatPrompt = `SYSTEM — RAG Q&A (JSON strict)
@@ -1464,7 +1464,7 @@ SORTIE
       "line": "numéro du docLine"
     }
   ],
-  "suggestions": ["3–6 mots"]
+  "suggestions": ["2–5 mots par suggestion"]
 }
 
 Réponds à ASK avec CONTEXT en tenant compte de HISTORY.

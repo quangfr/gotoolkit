@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GoToolkit PDF Viewer</title>
+  <style>
+    :root {
+      background: #0f172a;
+      color: #f8fafc;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #030712;
+      font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+    }
+    #viewer {
+      min-height: 100vh;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      max-width: 100%;
+      margin: 0 auto;
+      background: #030712;
+      color: #e2e8f0;
+    }
+    .pdf-status {
+      width: 100%;
+      text-align: center;
+      font-size: 0.95rem;
+      color: #94a3b8;
+      padding: 16px 8px;
+    }
+    .pdf-page {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+    }
+    .pdf-page canvas {
+      width: 100%;
+      max-width: 960px;
+      height: auto;
+      border-radius: 8px;
+      box-shadow: 0 16px 35px rgba(15, 23, 42, 0.35);
+      background: #ffffff;
+    }
+  </style>
+</head>
+<body>
+  <div id="viewer">
+    <div class="pdf-status" id="status">Chargement…</div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@4.6.82/build/pdf.min.js"></script>
+  <script>
+    (function () {
+      var viewer = document.getElementById("viewer");
+      var statusEl = document.getElementById("status");
+      function showError(message) {
+        if (statusEl) {
+          statusEl.textContent = message;
+          return;
+        }
+        var notice = document.createElement("div");
+        notice.className = "pdf-status";
+        notice.textContent = message;
+        viewer.appendChild(notice);
+      }
+      if (typeof pdfjsLib === "undefined") {
+        showError("PDF.js indisponible.");
+        return;
+      }
+      pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.6.82/build/pdf.worker.min.js";
+      var params = new URLSearchParams(window.location.search);
+      var fileUrl = params.get("file");
+      var hash = (window.location.hash || "").replace(/^#/, "");
+      var hashParams = {};
+      if (hash) {
+        hash.split("&").forEach(function (segment) {
+          if (!segment) return;
+          var index = segment.indexOf("=");
+          var key = index === -1 ? segment : segment.slice(0, index);
+          var value = index === -1 ? "" : segment.slice(index + 1);
+          if (key) {
+            try {
+              hashParams[key] = decodeURIComponent(value);
+            } catch (err) {
+              hashParams[key] = value;
+            }
+          }
+        });
+      }
+      var targetPage = Number.parseInt(hashParams.page, 10);
+      if (!Number.isFinite(targetPage) || targetPage < 1) {
+        targetPage = 1;
+      }
+      var zoomParam = hashParams.zoom || "";
+      var pageWidthZoom = zoomParam === "page-width";
+      var numericZoom = Number.parseFloat(zoomParam);
+      if (!fileUrl) {
+        showError("Fichier introuvable.");
+        return;
+      }
+      function removeStatus() {
+        if (statusEl) {
+          statusEl.remove();
+          statusEl = null;
+        }
+      }
+      function getContainerWidth() {
+        var value = viewer.clientWidth;
+        if (!value || value <= 0) {
+          value = document.documentElement.clientWidth || window.innerWidth || 800;
+        }
+        var available = value - 24;
+        return available > 0 ? available : 1;
+      }
+      async function renderDocument() {
+        try {
+          var loadingTask = pdfjsLib.getDocument(fileUrl);
+          var pdf = await loadingTask.promise;
+          removeStatus();
+          for (var pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+            var page = await pdf.getPage(pageNum);
+            var viewport = page.getViewport({ scale: 1 });
+            var scale = 1;
+            if (pageWidthZoom) {
+              var containerWidth = getContainerWidth();
+              if (containerWidth > 0) {
+                scale = containerWidth / viewport.width;
+              }
+            } else if (Number.isFinite(numericZoom) && numericZoom > 0) {
+              scale = numericZoom;
+            }
+            var scaledViewport = page.getViewport({ scale: scale });
+            var canvas = document.createElement("canvas");
+            var pageWrapper = document.createElement("div");
+            pageWrapper.className = "pdf-page";
+            canvas.dataset.page = pageNum;
+            var outputScale = window.devicePixelRatio || 1;
+            canvas.width = Math.floor(scaledViewport.width * outputScale);
+            canvas.height = Math.floor(scaledViewport.height * outputScale);
+            canvas.style.width = Math.floor(scaledViewport.width) + "px";
+            canvas.style.height = Math.floor(scaledViewport.height) + "px";
+            var ctx = canvas.getContext("2d");
+            ctx.scale(outputScale, outputScale);
+            await page.render({ canvasContext: ctx, viewport: scaledViewport }).promise;
+            pageWrapper.appendChild(canvas);
+            viewer.appendChild(pageWrapper);
+          }
+          if (targetPage > 1) {
+            var targetCanvas = viewer.querySelector("canvas[data-page=\"" + targetPage + "\"]");
+            if (targetCanvas && typeof targetCanvas.scrollIntoView === "function") {
+              targetCanvas.scrollIntoView({ block: "start" });
+            }
+          }
+        } catch (err) {
+          console.error("PDF render failed", err);
+          showError("Impossible de charger le PDF.");
+        }
+      }
+      renderDocument();
+    })();
+  </script>
+</body>
+</html>
