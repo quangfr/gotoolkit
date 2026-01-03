@@ -304,6 +304,16 @@
             });
         }
 
+        async findDocumentByName(conversationId, name) {
+            if (!conversationId || !name) return null;
+            const docs = await this.getDocuments(conversationId);
+            const target = name.toString().trim().toLowerCase();
+            if (!target) return null;
+            return docs.find((doc) => {
+                return (doc?.name || "").toString().trim().toLowerCase() === target;
+            }) || null;
+        }
+
         async getChunks(conversationId) {
             if (!conversationId) return [];
             const store = await this.getStore("chunks");
@@ -439,6 +449,16 @@
                 ? meta.fileName.trim()
                 : file.name;
             const docScopes = normalizeScopes(meta.scope);
+            const isAttachment = docScopes.includes("attachments");
+            let attachmentBuffer = null;
+            if (isAttachment) {
+                try {
+                    attachmentBuffer = await file.arrayBuffer();
+                } catch (err) {
+                    attachmentBuffer = null;
+                    console.warn("Failed to read attachment data for storage", err);
+                }
+            }
             const baseEntry = {
                 id: docId,
                 conversationId,
@@ -452,6 +472,7 @@
                 abstract: docAbstract,
                 updatedAt: docUpdatedAt,
                 scope: docScopes,
+                fileBuffer: attachmentBuffer,
                 sourceFileName
             };
             await this.putDocument(baseEntry);
