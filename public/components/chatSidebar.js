@@ -589,12 +589,13 @@
 
     ChatSidebar.prototype.filterHitsByPromptPreset = function (hits) {
         if (!Array.isArray(hits)) return [];
-        if (this.promptPresetId === "info") {
-            return hits;
+        if (this.promptPresetId === "coach") {
+            return hits.filter(function (hit) {
+                var scopes = Array.isArray(hit?.docScopes) ? hit.docScopes : [];
+                return scopes.includes("methods") || scopes.includes("tools") || scopes.includes("attachments");
+            });
         }
-        return hits.filter(function (hit) {
-            return hit?.sourceType !== "gallery";
-        });
+        return hits;
     };
 
     ChatSidebar.prototype.buildPayload = function (systemPrompt, userMessage, docInfo) {
@@ -611,6 +612,13 @@
             stream: true,
             messages: messages
         };
+        var sections = [];
+        function appendSection(title, text) {
+            if (!text || !text.trim()) return;
+            sections.push("==" + title + "== : " + text.trim());
+        }
+        var knowledgeText = "";
+        var contextText = "";
         if (docInfo?.embedded) {
             var embeddedSections = {};
             if (docInfo.embedded.methods.length) {
@@ -736,25 +744,25 @@
     };
 
     ChatSidebar.prototype.categorizeHits = function (hits) {
-        var embedded = { methods: [], tools: [], context: [] };
+        var embedded = { methods: [], tools: [], attachments: [] };
         var context = [];
         (hits || []).forEach(function (hit) {
             var entry = this.buildHitEntry(hit);
             if (!entry) return;
-            if (entry.sourceType === "embedded" || entry.sourceType === "gallery") {
-                if (entry.keyName.startsWith("methods_")) {
-                    entry.category = "method";
-                    embedded.methods.push(entry);
-                    return;
-                }
-                if (entry.keyName.startsWith("tools_")) {
-                    entry.category = "tool";
-                    embedded.tools.push(entry);
-                    return;
-                }
+            var scopes = Array.isArray(hit?.docScopes) ? hit.docScopes : [];
+            if (scopes.includes("attachments")) {
+                entry.category = "attachment";
+                embedded.attachments.push(entry);
                 return;
             }
-            if (entry.keyName.startsWith("index_")) {
+            if (scopes.includes("methods")) {
+                entry.category = "method";
+                embedded.methods.push(entry);
+                return;
+            }
+            if (scopes.includes("tools")) {
+                entry.category = "tool";
+                embedded.tools.push(entry);
                 return;
             }
             entry.category = "context";
@@ -774,6 +782,8 @@
                     prefix = "Outil · ";
                 } else if (entry.category === "context") {
                     prefix = "Contexte · ";
+                } else if (entry.category === "attachment") {
+                    prefix = "Pièce jointe · ";
                 }
                 var title = prefix + (entry.docName || "Document");
                 if (typeof entry.chunk === "number") {
@@ -788,7 +798,7 @@
         }
         appendEntries(embedded.methods || []);
         appendEntries(embedded.tools || []);
-        appendEntries(embedded.knowledge || []);
+        appendEntries(embedded.attachments || []);
         appendEntries(context || []);
         return sources;
     };
@@ -1607,6 +1617,19 @@
 
     ChatSidebar.prototype.normalizeDocName = function (value) {
         return this.stripDocExtension(String(value || "")).toLowerCase();
+    };
+
+    ChatSidebar.prototype.buildHistoryText = function () {
+        if (!this.conversation?.messages?.length) return "";
+        var entries = [];
+        var msgs = this.conversation.messages;
+        for (var i = msgs.length - 1; i >= 0 && entries.length < 5; i--) {
+            var msg = msgs[i];
+            if (msg.role === "user" && msg.content) {
+                entries.unshift(msg.content.trim());
+            }
+        }
+        return entries.join("\n");
     };
 
     ChatSidebar.prototype.resolvePreviewSnippet = async function (message, reference) {
