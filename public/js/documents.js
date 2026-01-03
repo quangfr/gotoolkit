@@ -1,11 +1,72 @@
 (function (global) {
     const DEFAULT_SETTINGS = {
-        chunkSize: 900,
-        chunkOverlap: 120,
-        topK: 6,
-        minScore: 0.2,
+        chunkSize: 360,
+        chunkOverlap: 160,
         embedModelId: "Xenova/all-MiniLM-L6-v2"
     };
+
+    const DEFAULT_RETRIEVAL_TOP_K = 6;
+    const DEFAULT_RETRIEVAL_MIN_SCORE = 0.2;
+
+    const CHUNK_CATEGORY_DEFINITIONS = {
+        small: {
+            key: "small",
+            chunkSizeRange: { min: 300, max: 420 },
+            overlapRange: { min: 140, max: 180 },
+            defaultChunkSize: 360,
+            defaultOverlap: 160
+        },
+        medium: {
+            key: "medium",
+            chunkSizeRange: { min: 520, max: 680 },
+            overlapRange: { min: 180, max: 240 },
+            defaultChunkSize: 600,
+            defaultOverlap: 210
+        }
+    };
+
+    const CHUNK_HEURISTICS = {
+        lineBreakThreshold: 600,
+        bulletThreshold: 30,
+        tableThreshold: 80,
+        charThreshold: 80000,
+        bulletRegex: /(^|\n)\s*[-*+•]\s+/g
+    };
+
+    function clampNumber(value, min, max, fallback) {
+        const numeric = Number(value);
+        if (!Number.isFinite(numeric)) {
+            return fallback;
+        }
+        return Math.min(Math.max(numeric, min), max);
+    }
+
+    function countMatches(text, regex) {
+        if (!text || !regex) return 0;
+        const matches = text.match(regex);
+        return Array.isArray(matches) ? matches.length : 0;
+    }
+
+    function shouldUseSmallChunks(text) {
+        if (!text) return false;
+        const sample = text.toString();
+        if (sample.length > CHUNK_HEURISTICS.charThreshold) {
+            return true;
+        }
+        const lineBreaks = countMatches(sample, /\n/g);
+        if (lineBreaks > CHUNK_HEURISTICS.lineBreakThreshold) {
+            return true;
+        }
+        const bulletCount = countMatches(sample, CHUNK_HEURISTICS.bulletRegex);
+        if (bulletCount > CHUNK_HEURISTICS.bulletThreshold) {
+            return true;
+        }
+        const tableMarkers = countMatches(sample, /\|/g);
+        if (tableMarkers > CHUNK_HEURISTICS.tableThreshold) {
+            return true;
+        }
+        return false;
+    }
 
     const STORAGE_KEY = "goToolkit.documents.settings";
     const PDFJS_URL = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.6.82/+esm";
@@ -235,6 +296,33 @@
             });
         }
 
+        determineChunkCategory(text) {
+            return shouldUseSmallChunks(text) ? "small" : "medium";
+        }
+
+        getChunkConfig(category) {
+            const info = CHUNK_CATEGORY_DEFINITIONS[category] || CHUNK_CATEGORY_DEFINITIONS.medium;
+            return {
+                category: info.key,
+                chunkSize: clampNumber(
+                    this.settings.chunkSize,
+                    info.chunkSizeRange.min,
+                    info.chunkSizeRange.max,
+                    info.defaultChunkSize
+                ),
+                chunkOverlap: clampNumber(
+                    this.settings.chunkOverlap,
+                    info.overlapRange.min,
+                    info.overlapRange.max,
+                    info.defaultOverlap
+                )
+            };
+        }
+
+        getChunkConfigForText(text) {
+            return this.getChunkConfig(this.determineChunkCategory(text));
+        }
+
         async ensureDb() {
             if (this.dbPromise) return this.dbPromise;
             this.dbPromise = new Promise((resolve, reject) => {
@@ -430,8 +518,6 @@
             if (!files || !files.length) return [];
             const convId = normalizeConversationId(conversationId);
             await this.waitReady();
-            const chunkSize = Number(this.settings.chunkSize) || DEFAULT_SETTINGS.chunkSize;
-            const chunkOverlap = Number(this.settings.chunkOverlap) || DEFAULT_SETTINGS.chunkOverlap;
             const onProgress = options.onProgress;
             const sourceType = typeof options.sourceType === "string" && options.sourceType
                 ? options.sourceType
@@ -461,9 +547,11 @@
                 ? meta.fileName.trim()
                 : file.name;
             const docScopes = normalizeScopes(meta.scope);
-            const isAttachment = docScopes.includes("attachments");
+            const isPdf = (file.type || "").toLowerCase().includes("pdf")
+                || (file.name || "").toLowerCase().endsWith(".pdf");
+            const shouldStoreBuffer = docScopes.includes("attachments") || isPdf;
             let attachmentBuffer = null;
-            if (isAttachment) {
+            if (shouldStoreBuffer) {
                 try {
                     attachmentBuffer = await file.arrayBuffer();
                 } catch (err) {
@@ -506,7 +594,8 @@
                     continue;
                 }
                 const normalized = normalizeText(extracted);
-                const rawChunks = chunkText(normalized, chunkSize, chunkOverlap);
+                const chunkConfig = this.getChunkConfigForText(extracted || normalized);
+                const rawChunks = chunkText(normalized, chunkConfig.chunkSize, chunkConfig.chunkOverlap);
                 const chunkList = rawChunks.length ? rawChunks : [""];
                 const chunkTotal = chunkList.length;
                 let lastProgress = 0;
@@ -525,12 +614,16 @@
                         idx: c,
                         text: chunk,
                         emb: Array.from(emb),
-                        createdAt: Date.now()
+                        createdAt: Date.now(),
+                        size: chunkConfig.category
                     });
                 }
                 baseEntry.status = "ready";
                 baseEntry.parsedAt = Date.now();
                 baseEntry.chunkCount = chunkTotal;
+                baseEntry.chunkSizeCategory = chunkConfig.category;
+                baseEntry.chunkSize = chunkConfig.chunkSize;
+                baseEntry.chunkOverlap = chunkConfig.chunkOverlap;
                 await this.putDocument(baseEntry);
                 results.push({ docId, name: file.name, success: true, chunkTotal });
                 onProgress?.({ type: "file-done", file: file.name });
@@ -662,8 +755,8 @@
                 };
             });
             scored.sort((a, b) => b.score - a.score);
-            const minScore = options.minScore ?? this.settings.minScore;
-            const topK = options.topK ?? this.settings.topK;
+            const minScore = options.minScore ?? DEFAULT_RETRIEVAL_MIN_SCORE;
+            const topK = options.topK ?? DEFAULT_RETRIEVAL_TOP_K;
             return scored.filter((hit) => hit.score >= minScore).slice(0, topK);
         }
     }

@@ -15,7 +15,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Sora:wght@400;500;600&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles/style.css?v=2026.1.3">
+    <link rel="stylesheet" href="styles/style.css?v=2026.01.03">
     <style>
         :root {
             --bg: #f5f2eb;
@@ -1207,7 +1207,7 @@
                     </span>
                 </a>
                 <a class="launcher" href="draw.html?v=2026.1.3">
-                    <span class="launcher-emoji">◇</span>
+                    <span class="launcher-emoji">ʃ</span>
                     <span class="launcher-name">
                         Draw ⚡︎ Indélébile
                         <div class="launcher-desc">Modélise tes idées</div>
@@ -1274,13 +1274,13 @@
                         <span class="label-title">Type <span class="required-asterisk"
                                 aria-hidden="true">*</span></span>
                         <select id="feedbackType" name="type" required>
-                            <option value="bug-general" selected>Bug Général</option>
-                            <option value="bug-canvas">Bug Canvas</option>
-                            <option value="bug-draw">Bug Draw</option>
-                            <option value="bug-grid">Bug Grid</option>
-                            <option value="bug-timeline">Bug Timeline</option>
-                            <option value="bug-voice">Bug Voice</option>
-                            <option value="suggestion">Suggestion</option>
+                            <option value="bug-general" selected>☍ Go-Toolkit</option>
+                            <option value="bug-canvas">◍ Canvas</option>
+                            <option value="bug-draw">ʃ Draw</option>
+                            <option value="bug-grid">◇ Grid</option>
+                            <option value="bug-timeline">⇥ Timeline</option>
+                            <option value="bug-voice">▷ Voice</option>
+                            <option value="suggestion">☄ Suggestion</option>
                         </select>
                     </label>
                     <input type="text" id="feedbackWebsite" name="website"
@@ -1522,7 +1522,6 @@
                     <div class="settings-tabs tabs">
                         <button type="button" class="tab-btn active" data-tab="servicesTab">🧠 Services IA</button>
                         <button type="button" class="tab-btn" data-tab="promptTab">💬 Prompt Chat</button>
-                        <button type="button" class="tab-btn" data-tab="documentsTab">📚 Documents</button>
                     </div>
                     <div class="settings-tab-panels-wrapper">
                         <div class="settings-tab-panel" data-panel="servicesTab">
@@ -1690,41 +1689,6 @@
                             </div>
                         </div>
 
-                        <div class="settings-tab-panel" data-panel="documentsTab" hidden>
-                            <div class="field-row">
-                                <label>
-                                    <span class="label-title">Taille des chunks</span>
-                                    <input id="documentChunkSizeInput" type="number" min="128" step="1" value="900" />
-                                </label>
-                                <label>
-                                    <span class="label-title">Overlap des chunks</span>
-                                    <input id="documentChunkOverlapInput" type="number" min="0" step="1" value="120" />
-                                </label>
-                            </div>
-                            <div class="field-row">
-                                <label>
-                                    <span class="label-title">topK (retrieval)</span>
-                                    <input id="documentTopKInput" type="number" min="1" step="1" value="6" />
-                                </label>
-                                <label>
-                                    <span class="label-title">Seuil minScore</span>
-                                    <input id="documentMinScoreInput" type="number" min="0" max="1" step="0.01"
-                                        value="0.2" />
-                                </label>
-                            </div>
-                            <div class="field-row">
-                                <label>
-                                    <span class="label-title">Modèle embeddings</span>
-                                    <select id="documentEmbedModelSelect">
-                                        <option value="Xenova/all-MiniLM-L6-v2">Xenova/all-MiniLM-L6-v2 (384d)</option>
-                                        <option value="Xenova/bge-small-en-v1.5">Xenova/bge-small-en-v1.5</option>
-                                    </select>
-                                </label>
-                            </div>
-                            <p class="label-subtitle">
-                                Ces réglages partagés pilotent l’index local de documents utilisé par le chat.
-                            </p>
-                        </div>
                     </div>
                     <div class="feedback-actions">
                         <button id="resetChatPromptBtn" type="button" class="btn-secondary"
@@ -1995,7 +1959,7 @@
             }
         })();
     </script>
-    <script src="components/chatSidebar.js"></script>
+    <script src="components/chatSidebar.js?v=2026.01.03"></script>
     <script>
         (function () {
             const modal = document.getElementById("superpowerModal");
@@ -4461,36 +4425,12 @@
         const openrouterModelLabelEl = document.getElementById("openrouterModelLabel");
         const openrouterVerifyBtn = document.getElementById("openrouterVerifyBtn");
         const openrouterModelSelect = document.getElementById("openrouterModelSelect");
-        const documentChunkSizeInput = document.getElementById("documentChunkSizeInput");
-        const documentChunkOverlapInput = document.getElementById("documentChunkOverlapInput");
-        const documentTopKInput = document.getElementById("documentTopKInput");
-        const documentMinScoreInput = document.getElementById("documentMinScoreInput");
-        const documentEmbedModelSelect = document.getElementById("documentEmbedModelSelect");
         const chatPromptTextarea = document.getElementById("chatPromptTextarea");
         const chatPromptPresetSelect = document.getElementById("chatPromptPresetSelect");
         const CHAT_PROMPT_STORAGE_KEY = "goToolkit.chat.prompt";
         const CHAT_PROMPT_INFO_KEY = "goToolkit.chat.prompt.info";
         const CHAT_PROMPT_PRESET_KEY = "goToolkit.chat.prompt.preset";
 
-        if (window.GoToolkitDocumentManager && typeof window.GoToolkitDocumentManager.onSettingsChange === "function") {
-            window.GoToolkitDocumentManager.onSettingsChange(function (settings) {
-                if (documentChunkSizeInput) {
-                    documentChunkSizeInput.value = settings.chunkSize || "900";
-                }
-                if (documentChunkOverlapInput) {
-                    documentChunkOverlapInput.value = settings.chunkOverlap || "120";
-                }
-                if (documentTopKInput) {
-                    documentTopKInput.value = settings.topK || "6";
-                }
-                if (documentMinScoreInput) {
-                    documentMinScoreInput.value = settings.minScore || "0.2";
-                }
-                if (documentEmbedModelSelect && settings.embedModelId) {
-                    documentEmbedModelSelect.value = settings.embedModelId;
-                }
-            });
-        }
         const DEFAULT_AI_BACKEND = "openrouter";
         populateOpenrouterModelSelect();
         const VERSION_QUERY_PARAM = "v";
@@ -5087,32 +5027,6 @@
                 }
                 if (window.GoToolkitWebLLM && typeof window.GoToolkitWebLLM.resetEngine === "function") {
                     window.GoToolkitWebLLM.resetEngine();
-                }
-                if (window.GoToolkitDocumentManager && typeof window.GoToolkitDocumentManager.updateSettings === "function") {
-                    var docSettings = {};
-                    var chunkValue = parseInt(documentChunkSizeInput?.value || "", 10);
-                    if (!isNaN(chunkValue) && chunkValue > 0) {
-                        docSettings.chunkSize = chunkValue;
-                    }
-                    var overlapValue = parseInt(documentChunkOverlapInput?.value || "", 10);
-                    if (!isNaN(overlapValue) && overlapValue >= 0) {
-                        docSettings.chunkOverlap = overlapValue;
-                    }
-                    var topKValue = parseInt(documentTopKInput?.value || "", 10);
-                    if (!isNaN(topKValue) && topKValue > 0) {
-                        docSettings.topK = topKValue;
-                    }
-                    var minScoreValue = parseFloat(documentMinScoreInput?.value || "");
-                    if (!isNaN(minScoreValue) && minScoreValue >= 0) {
-                        docSettings.minScore = minScoreValue;
-                    }
-                    var embedModelValue = (documentEmbedModelSelect?.value || "").trim();
-                    if (embedModelValue) {
-                        docSettings.embedModelId = embedModelValue;
-                    }
-                    if (Object.keys(docSettings).length) {
-                        await window.GoToolkitDocumentManager.updateSettings(docSettings);
-                    }
                 }
                 localStorage.setItem("plan-reasoning-effort", reasoning);
                 try { localStorage.setItem("nuances-reasoning-effort", reasoning); } catch (e) { }

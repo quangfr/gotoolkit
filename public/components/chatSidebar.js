@@ -192,7 +192,6 @@
         this.previewTitleEl = null;
         this.previewBodyEl = null;
         this.previewCloseBtn = null;
-        this.previewBlobUrl = null;
         this.promptPresetId = readPromptPreset();
         this.promptDropdown = null;
         this.promptDropdownButton = null;
@@ -842,45 +841,96 @@
         return sources;
     };
 
+    ChatSidebar.prototype.getRetrievalParamsForQuestion = function (text) {
+        var words = String(text || "").trim().split(/\s+/).filter(Boolean);
+        var count = words.length;
+        if (count === 0 || count <= 2) {
+            return { topK: 18, minScore: 0.05 };
+        }
+        if (count <= 6) {
+            return { topK: 14, minScore: 0.08 };
+        }
+        if (count <= 14) {
+            return { topK: 10, minScore: 0.1 };
+        }
+        return { topK: 8, minScore: 0.12 };
+    };
+
+    ChatSidebar.prototype.getRetrievalFallbackParams = function (params) {
+        if (!params || typeof params !== "object") return null;
+        var baseTopK = typeof params.topK === "number" ? params.topK : 0;
+        var baseMinScore = typeof params.minScore === "number" ? params.minScore : 0;
+        var fallbackTopK = Math.max(1, Math.round(baseTopK * 1.5));
+        var fallbackMinScore = Math.max(0.03, baseMinScore - 0.03);
+        return { topK: fallbackTopK, minScore: fallbackMinScore };
+    };
+
+    ChatSidebar.prototype.executeRetrieval = async function (query, conversationId, params, label) {
+        if (!this.docManager) return [];
+        try {
+            var hits = await this.docManager.retrieve(query, conversationId, params);
+            if (!Array.isArray(hits)) hits = [];
+            console.log("embeddings " + label + " retrieval", {
+                query: query,
+                params: params,
+                hits: hits
+            });
+            return hits;
+        } catch (err) {
+            console.warn("Document " + label + " retrieval échoué", err);
+            return [];
+        }
+    };
+
+    ChatSidebar.prototype.retrieveWithFallback = async function (query, conversationId, params, label) {
+        if (!params) return [];
+        var hits = await this.executeRetrieval(query, conversationId, params, label);
+        if (!hits.length) {
+            var fallbackParams = this.getRetrievalFallbackParams(params);
+            if (fallbackParams) {
+                hits = await this.executeRetrieval(query, conversationId, fallbackParams, label + " fallback");
+            }
+        }
+        return hits;
+    };
+
     ChatSidebar.prototype.handleSend = async function () {
         if (this.isStreaming) return;
         if (!this.textarea) return;
         var value = this.textarea.value.trim();
         var hasAttachment = this.pendingDocumentAttachments.length > 0;
         if (!value && !hasAttachment) return;
-        console.log("chat-send-btn triggered", { message: value });
+        // log the outgoing user content once the payload is ready
 
         var userMessage = createMessage("user", value);
-        var contextHits = [];
-        var knowledgeHits = [];
         var systemPrompt = this.getActiveSystemPrompt();
         var shouldFetchKnowledge = this.promptPresetId !== "ask";
+        var docInfo = null;
         if (this.docManager) {
-            try {
-                contextHits = await this.docManager.retrieve(value, this.conversation.id);
-                console.log("embeddings context retrieval", { query: value, hits: contextHits });
-            } catch (err) {
-                console.warn("Document retrieval échoué", err);
+            var contextParams = this.getRetrievalParamsForQuestion(value);
+            var contextHits = await this.retrieveWithFallback(value, this.conversation.id, contextParams, "context");
+            if (!Array.isArray(contextHits)) {
+                contextHits = [];
             }
+            contextHits = contextHits.filter(function (hit) {
+                return (hit?.sourceType || "context") !== "embedded";
+            });
+            contextHits = this.filterHitsByPromptPreset(contextHits);
+            var knowledgeHits = [];
             if (shouldFetchKnowledge) {
-                try {
-                    knowledgeHits = await this.docManager.retrieve(value, this.knowledgeConversationId);
-                    console.log("embeddings knowledge retrieval", { query: value, hits: knowledgeHits });
-                } catch (err) {
-                    console.warn("Document knowledge retrieval échoué", err);
+                var knowledgeParams = this.getRetrievalParamsForQuestion(value);
+                knowledgeHits = await this.retrieveWithFallback(value, this.knowledgeConversationId, knowledgeParams, "knowledge");
+                if (!Array.isArray(knowledgeHits)) {
+                    knowledgeHits = [];
                 }
             }
+            docInfo = {
+                context: this.categorizeHits(contextHits)
+            };
+            if (shouldFetchKnowledge) {
+                docInfo.knowledge = this.categorizeHits(knowledgeHits);
+            }
         }
-        contextHits = contextHits.filter(function (hit) {
-            return (hit?.sourceType || "context") !== "embedded";
-        });
-        contextHits = this.filterHitsByPromptPreset(contextHits);
-        var contextDocInfo = this.categorizeHits(contextHits);
-        var knowledgeDocInfo = this.categorizeHits(knowledgeHits);
-        var docInfo = {
-            context: contextDocInfo,
-            knowledge: knowledgeDocInfo
-        };
         var attachments = this.pendingDocumentAttachments;
         if (attachments && attachments.length) {
             userMessage.attachments = attachments.slice();
@@ -905,7 +955,9 @@
         this.controller = controller;
 
         var payload = this.buildPayload(systemPrompt, userMessage, docInfo);
-        console.log("AI payload", payload);
+        console.log("AI payload messages", payload.messages.map(function (msg) {
+            return { role: msg.role, content: msg.content };
+        }));
         var self = this;
 
         // Pre-append a placeholder bubble so the user sees activity immediately.
@@ -963,7 +1015,6 @@
                 signal: controller.signal,
                 onChunk: payload.stream ? handleChunk : undefined
             });
-            console.log("AI response complete", result);
             var parsed = this.parseAssistantResponse(result || "");
             if (parsed.content === "Réponse illisible." && botMessage.content) {
                 parsed.content = botMessage.content;
@@ -1848,7 +1899,6 @@
         if (!this.previewPanel) return;
         this.previewPanel.classList.remove("open");
         this.previewPanel.setAttribute("aria-hidden", "true");
-        this.clearPreviewBlobUrl();
     };
 
     ChatSidebar.prototype.normalizeDocName = function (value) {
@@ -1861,10 +1911,11 @@
         var msgs = this.conversation.messages;
         for (var i = msgs.length - 1; i >= 0 && entries.length < 4; i--) {
             var msg = msgs[i];
+            if (msg?.role === "bot") continue;
             var text = (msg?.content || "").toString().trim();
             if (!text) continue;
             entries.unshift({
-                role: msg.role === "bot" ? "BOT" : "USER",
+                role: "USER",
                 text: text
             });
         }
@@ -1961,22 +2012,20 @@
         this.previewPanel.classList.add("open");
         this.previewPanel.setAttribute("aria-hidden", "false");
         this.previewTitleEl && (this.previewTitleEl.textContent = name);
-        this.clearPreviewBlobUrl();
         if (this.previewBodyEl) {
             this.previewBodyEl.innerHTML = "<div class=\"chat-doc-preview__loading\">Chargement…</div>";
         }
         var snippet = "";
         try {
             var doc = await this.findDocumentForPreview(name);
-            if (doc && this.isPdfDocument(doc) && this.renderPdfPreview(doc)) {
-                return;
-            }
             if (doc?.id) {
-                var chunks = await this.docManager.getChunks(this.conversation.id);
-                var chunk = chunks.find(function (item) {
-                    return item.docId === doc.id;
-                });
-                snippet = (chunk && chunk.text) || "";
+                var docChunks = await this.getDocumentChunks(doc.id);
+                snippet = docChunks.length ? (docChunks[0].text || "") : "";
+                var docText = this.combineDocumentText(docChunks);
+                if (docText) {
+                    this.renderDocumentText(docText, snippet);
+                    return;
+                }
             }
         } catch (err) {
             console.warn("Attachment preview failed", err);
@@ -1996,24 +2045,30 @@
         if (this.previewTitleEl) {
             this.previewTitleEl.textContent = reference.document || "Document";
         }
-        this.clearPreviewBlobUrl();
         if (this.previewBodyEl) {
             this.previewBodyEl.innerHTML = "<div class=\"chat-doc-preview__loading\">Chargement…</div>";
         }
+        var snippet = await this.resolvePreviewSnippet(message, reference);
+        var docText = "";
+        var highlight = snippet || "";
         try {
             if (this.docManager) {
-                var docName = reference.document;
-                if (docName) {
-                    var doc = await this.findDocumentForPreview(docName);
-                    if (doc && this.isPdfDocument(doc) && this.renderPdfPreview(doc)) {
-                        return;
+                var doc = await this.findDocumentForPreview(reference.document);
+                if (doc?.id) {
+                    var docChunks = await this.getDocumentChunks(doc.id);
+                    docText = this.combineDocumentText(docChunks);
+                    if (!highlight && docChunks.length) {
+                        highlight = docChunks[0].text || "";
                     }
                 }
             }
         } catch (err) {
             console.warn("Reference preview failed", err);
         }
-        var snippet = await this.resolvePreviewSnippet(message, reference);
+        if (docText) {
+            this.renderDocumentText(docText, highlight);
+            return;
+        }
         if (this.previewBodyEl) {
             var content = snippet || "(extrait indisponible)";
             this.previewBodyEl.innerHTML = this.formatPreviewText(content, reference.line);
@@ -2044,72 +2099,61 @@
         }).join("");
     };
 
-    ChatSidebar.prototype.clearPreviewBlobUrl = function () {
-        if (this.previewBlobUrl && global?.URL && typeof global.URL.revokeObjectURL === "function") {
-            try {
-                global.URL.revokeObjectURL(this.previewBlobUrl);
-            } catch (err) {
-                console.warn("Failed to revoke PDF blob URL", err);
+    ChatSidebar.prototype.getDocumentChunks = async function (docId) {
+        if (!docId || !this.docManager) return [];
+        try {
+            var chunks = await this.docManager.getChunks(this.conversation.id);
+            var filtered = (chunks || []).filter(function (chunk) {
+                return chunk && chunk.docId === docId;
+            });
+            filtered.sort(function (a, b) {
+                return (a.idx || 0) - (b.idx || 0);
+            });
+            return filtered;
+        } catch (err) {
+            console.warn("Document chunk fetch failed", err);
+            return [];
+        }
+    };
+
+    ChatSidebar.prototype.combineDocumentText = function (chunks) {
+        return (chunks || [])
+            .map(function (chunk) {
+                return chunk && chunk.text ? chunk.text : "";
+            })
+            .join("");
+    };
+
+    ChatSidebar.prototype.renderDocumentText = function (text, highlightText) {
+        if (!this.previewBodyEl) return;
+        var lines = String(text || "").split(/\r?\n/);
+        if (!lines.length) {
+            this.previewBodyEl.innerHTML = "(extrait indisponible)";
+            return;
+        }
+        var highlightKey = highlightText ? highlightText.trim().toLowerCase() : "";
+        var html = [];
+        for (var index = 0; index < lines.length; index++) {
+            var line = lines[index];
+            var lineNo = index + 1;
+            var cls = "chat-doc-preview__line";
+            if (highlightKey && line.toLowerCase().includes(highlightKey)) {
+                cls += " chat-doc-preview__line--highlight";
+            }
+            html.push(
+                "<div class=\"" + cls + "\" data-line=\"" + lineNo + "\">" +
+                "<span class=\"chat-doc-preview__line-number\">" + lineNo + "</span>" +
+                "<span class=\"chat-doc-preview__line-text\">" + escapeHtml(line) + "</span>" +
+                "</div>"
+            );
+        }
+        this.previewBodyEl.innerHTML = html.join("");
+        if (highlightKey) {
+            var target = this.previewBodyEl.querySelector(".chat-doc-preview__line--highlight");
+            if (target && typeof target.scrollIntoView === "function") {
+                target.scrollIntoView({ block: "center" });
             }
         }
-        this.previewBlobUrl = null;
-    };
-
-    ChatSidebar.prototype.isPdfDocument = function (doc) {
-        if (!doc) return false;
-        var mime = (doc.mime || "").toString().toLowerCase();
-        if (mime.includes("pdf")) return true;
-        var name = (doc.name || "").toString().toLowerCase();
-        return name.endsWith(".pdf");
-    };
-
-    ChatSidebar.prototype.createPdfBlobUrl = function (doc) {
-        if (!doc || !doc.fileBuffer || !global?.URL || typeof global.URL.createObjectURL !== "function") {
-            return null;
-        }
-        var buffer = doc.fileBuffer;
-        if (ArrayBuffer.isView(buffer)) {
-            buffer = buffer.buffer;
-        }
-        if (!(buffer instanceof ArrayBuffer)) return null;
-        try {
-            var blob = new Blob([buffer], { type: doc.mime || "application/pdf" });
-            return global.URL.createObjectURL(blob);
-        } catch (err) {
-            console.warn("PDF blob creation failed", err);
-            return null;
-        }
-    };
-
-    ChatSidebar.prototype.buildPdfViewerUrl = function (blobUrl) {
-        if (!blobUrl) return "";
-        try {
-            var viewerUrl = new URL("pdf-viewer.html", global?.location?.href || "");
-            viewerUrl.searchParams.set("file", blobUrl);
-            viewerUrl.hash = "page=1&zoom=page-width&pagemode=none&scrollMode=0&spreadMode=0";
-            return viewerUrl.toString();
-        } catch (err) {
-            console.warn("Failed to build PDF viewer URL", err);
-            return "";
-        }
-    };
-
-    ChatSidebar.prototype.renderPdfPreview = function (doc) {
-        if (!doc || !this.previewBodyEl) return false;
-        var blobUrl = this.createPdfBlobUrl(doc);
-        if (!blobUrl) return false;
-        this.clearPreviewBlobUrl();
-        this.previewBlobUrl = blobUrl;
-        var viewerUrl = this.buildPdfViewerUrl(blobUrl);
-        if (!viewerUrl) return false;
-        this.previewBodyEl.innerHTML = "";
-        var iframe = document.createElement("iframe");
-        iframe.className = "chat-doc-preview__iframe";
-        iframe.src = viewerUrl;
-        iframe.loading = "lazy";
-        iframe.title = doc.name || "PDF document";
-        this.previewBodyEl.appendChild(iframe);
-        return true;
     };
 
     ChatSidebar.prototype.init = function () {
