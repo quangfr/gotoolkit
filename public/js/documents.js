@@ -622,6 +622,7 @@
                     score: cosineSim(vector, target),
                     docName: docMeta?.name || "Document",
                     sourceType: docMeta?.sourceType || "context",
+                    docScopes: Array.isArray(docMeta?.scope) ? docMeta.scope : [],
                     docAbstract: docMeta?.abstract || "",
                     text: chunk.text
                 };
