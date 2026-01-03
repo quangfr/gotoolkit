@@ -1789,7 +1789,8 @@
             const manager = window.GoToolkitDocumentManager;
             if (!manager || typeof manager.ingestFiles !== "function") return;
 
-            const CONVERSATION_ID = "default";
+            const KNOWLEDGE_CONVERSATION_ID = window.GoToolkitKnowledgeConversationId || "knowledge";
+            window.GoToolkitKnowledgeConversationId = KNOWLEDGE_CONVERSATION_ID;
 
             function getVersionParam() {
                 try {
@@ -1876,9 +1877,12 @@
                 try {
                     await manager.waitReady();
                     const manifest = await loadManifest();
+                    console.log("embeddings knowledge retrieval", {
+                        manifestCount: manifest.length
+                    });
                     if (!manifest.length) return;
 
-                    const existingDocs = await manager.getDocuments(CONVERSATION_ID);
+                    const existingDocs = await manager.getDocuments(KNOWLEDGE_CONVERSATION_ID);
                     const existingMap = new Map();
                     existingDocs.forEach((doc) => {
                         if (!doc || doc.sourceType !== "embedded") return;
@@ -1897,7 +1901,7 @@
                         }
                     });
                     if (staleNames.length) {
-                        await manager.deleteDocumentsByNames(CONVERSATION_ID, staleNames);
+                        await manager.deleteDocumentsByNames(KNOWLEDGE_CONVERSATION_ID, staleNames);
                     }
 
                     const toIngest = manifest.filter(entry => !existingMap.has(entry.fileName));
@@ -1915,7 +1919,7 @@
                             fileName: entry.fileName
                         });
                     });
-                    await manager.ingestFiles(files, CONVERSATION_ID, {
+                    await manager.ingestFiles(files, KNOWLEDGE_CONVERSATION_ID, {
                         sourceType: "embedded",
                         metadata
                     });
@@ -1930,7 +1934,7 @@
                     const manifest = await loadManifest();
                     const fileNames = manifest.map(entry => entry.fileName);
                     if (fileNames.length) {
-                        await manager.deleteDocumentsByNames(CONVERSATION_ID, fileNames);
+                        await manager.deleteDocumentsByNames(KNOWLEDGE_CONVERSATION_ID, fileNames);
                     }
                 } catch (err) {
                     console.error("Index document cleanup failed", err);

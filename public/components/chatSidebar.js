@@ -198,6 +198,7 @@
         this.promptDropdownButton = null;
         this.promptDropdownMenu = null;
         this.documentCounts = { context: 0, gallery: 0 };
+        this.knowledgeConversationId = global.GoToolkitKnowledgeConversationId || "knowledge";
     }
 
     ChatSidebar.prototype.persist = function () {
@@ -459,7 +460,6 @@
             refsEl: null,
             suggestionsEl: null
         };
-        console.info("appendMessage", message.id, message.role);
         if (message.role === "bot") {
             entry.refsEl = document.createElement("div");
             entry.refsEl.className = "chat-references";
@@ -589,19 +589,17 @@
 
     ChatSidebar.prototype.filterHitsByPromptPreset = function (hits) {
         if (!Array.isArray(hits)) return [];
-        if (this.promptPresetId === "coach") {
-            return hits.filter(function (hit) {
-                var scopes = Array.isArray(hit?.docScopes) ? hit.docScopes : [];
-                return scopes.includes("methods") || scopes.includes("tools") || scopes.includes("attachments");
-            });
-        }
         return hits;
     };
 
     ChatSidebar.prototype.buildPayload = function (systemPrompt, userMessage, docInfo) {
+        var self = this;
         var promptContent = (systemPrompt && systemPrompt.trim()) ? systemPrompt : getSystemPrompt();
         var messages = [{ role: "system", content: promptContent }];
         var userContent = (userMessage?.content || "").trim();
+        if (userContent) {
+            userContent = "ASK\n" + userContent;
+        }
         if (userMessage) {
             messages.push({
                 role: "user",
@@ -612,59 +610,85 @@
             stream: true,
             messages: messages
         };
-        var sections = [];
-        function appendSection(title, text) {
+
+        function appendToUser(text) {
             if (!text || !text.trim()) return;
-            sections.push("==" + title + "== : " + text.trim());
+            var idx = messages.findIndex(function (msg) {
+                return msg.role === "user";
+            });
+            if (idx >= 0) {
+                messages[idx].content += (messages[idx].content ? "\n\n" : "") + text;
+            } else {
+                messages.push({
+                    role: "user",
+                    content: text
+                });
+            }
         }
-        var knowledgeText = "";
-        var contextText = "";
-        if (docInfo?.embedded) {
+
+        function hasDocEntries(info) {
+            if (!info) return false;
+            var embedded = info.embedded || {};
+            return (Array.isArray(embedded.methods) && embedded.methods.length)
+                || (Array.isArray(embedded.tools) && embedded.tools.length)
+                || (Array.isArray(embedded.context) && embedded.context.length)
+                || (Array.isArray(info.context) && info.context.length);
+        }
+
+        function appendDocSections(info, label) {
+            if (!info) return;
             var embeddedSections = {};
-            if (docInfo.embedded.methods.length) {
-                embeddedSections.methods = this.formatEntriesForPayload(docInfo.embedded.methods);
+            var embeddedMethods = Array.isArray(info.embedded?.methods)
+                ? info.embedded.methods
+                : [];
+            var embeddedTools = Array.isArray(info.embedded?.tools)
+                ? info.embedded.tools
+                : [];
+            var embeddedContext = Array.isArray(info.embedded?.context)
+                ? info.embedded.context
+                : [];
+            if (embeddedMethods.length) {
+                embeddedSections.methods = self.formatEntriesForPayload(embeddedMethods);
             }
-            if (docInfo.embedded.tools.length) {
-                embeddedSections.tools = this.formatEntriesForPayload(docInfo.embedded.tools);
+            if (embeddedTools.length) {
+                embeddedSections.tools = self.formatEntriesForPayload(embeddedTools);
             }
-            if (docInfo.embedded.context.length) {
-                embeddedSections.context = this.formatEntriesForPayload(docInfo.embedded.context);
+            if (embeddedContext.length) {
+                var contextKey = label && label !== "CONTEXT"
+                    ? label.toLowerCase()
+                    : "context";
+                embeddedSections[contextKey] = self.formatEntriesForPayload(embeddedContext);
             }
             if (Object.keys(embeddedSections).length) {
-                var embedText = this.buildEmbeddedResultsText(embeddedSections);
+                var embedText = self.buildEmbeddedResultsText(embeddedSections);
                 if (embedText) {
-                    var idx = messages.findIndex(function (msg) {
-                        return msg.role === "user";
-                    });
-                    if (idx >= 0) {
-                        messages[idx].content += (messages[idx].content ? "\n\n" : "") + embedText;
-                    } else {
-                        messages.push({
-                            role: "user",
-                            content: embedText
-                        });
-                    }
+                    appendToUser(embedText);
+                }
+            }
+            if (Array.isArray(info.context) && info.context.length) {
+                var contextEntries = self.formatEntriesForPayload(info.context);
+                var contextKey = (label || "CONTEXT").toLowerCase();
+                var contextSections = {};
+                contextSections[contextKey] = contextEntries;
+                var contextText = self.buildEmbeddedResultsText(contextSections);
+                if (contextText) {
+                    appendToUser(contextText);
                 }
             }
         }
-        if (Array.isArray(docInfo?.context) && docInfo.context.length) {
-            var contextEntries = this.formatEntriesForPayload(docInfo.context);
-            var contextText = this.buildEmbeddedResultsText({ context: contextEntries });
-            if (contextText) {
-                var contextIdx = messages.findIndex(function (msg) {
-                    return msg.role === "user";
-                });
-                var contextBlock = "CONTEXT\n" + contextText;
-                if (contextIdx >= 0) {
-                    messages[contextIdx].content += (messages[contextIdx].content ? "\n\n" : "") + contextBlock;
-                } else {
-                    messages.push({
-                        role: "user",
-                        content: contextBlock
-                    });
-                }
-            }
+
+        var contextDocInfo = docInfo?.context;
+        var knowledgeDocInfo = docInfo?.knowledge;
+        if (this.promptPresetId !== "info" && hasDocEntries(knowledgeDocInfo)) {
+            appendDocSections(knowledgeDocInfo, "KNOWLEDGE");
         }
+        appendDocSections(contextDocInfo, "CONTEXT");
+
+        var historyText = self.buildHistoryText();
+        if (historyText) {
+            appendToUser("HISTORY\n" + historyText);
+        }
+
         return payload;
     };
 
@@ -813,17 +837,35 @@
 
         var userMessage = createMessage("user", value);
         var contextHits = [];
+        var knowledgeHits = [];
         var systemPrompt = this.getActiveSystemPrompt();
+        var shouldFetchKnowledge = this.promptPresetId !== "info";
         if (this.docManager) {
             try {
                 contextHits = await this.docManager.retrieve(value, this.conversation.id);
-                console.log("embeddings retrieval", { query: value, hits: contextHits });
+                console.log("embeddings context retrieval", { query: value, hits: contextHits });
             } catch (err) {
                 console.warn("Document retrieval échoué", err);
             }
+            if (shouldFetchKnowledge) {
+                try {
+                    knowledgeHits = await this.docManager.retrieve(value, this.knowledgeConversationId);
+                    console.log("embeddings knowledge retrieval", { query: value, hits: knowledgeHits });
+                } catch (err) {
+                    console.warn("Document knowledge retrieval échoué", err);
+                }
+            }
         }
+        contextHits = contextHits.filter(function (hit) {
+            return (hit?.sourceType || "context") !== "embedded";
+        });
         contextHits = this.filterHitsByPromptPreset(contextHits);
-        var docInfo = this.categorizeHits(contextHits);
+        var contextDocInfo = this.categorizeHits(contextHits);
+        var knowledgeDocInfo = this.categorizeHits(knowledgeHits);
+        var docInfo = {
+            context: contextDocInfo,
+            knowledge: knowledgeDocInfo
+        };
         var attachments = this.pendingDocumentAttachments;
         if (attachments && attachments.length) {
             userMessage.attachments = attachments.slice();
@@ -874,7 +916,6 @@
         }
 
         function handleChunk(chunk) {
-            console.log("AI chunk", chunk);
             botMessage._jsonBuffer = (botMessage._jsonBuffer || "") + chunk;
             var parsed = null;
             try {
@@ -1623,23 +1664,41 @@
         if (!this.conversation?.messages?.length) return "";
         var entries = [];
         var msgs = this.conversation.messages;
-        for (var i = msgs.length - 1; i >= 0 && entries.length < 5; i--) {
+        for (var i = msgs.length - 1; i >= 0 && entries.length < 4; i--) {
             var msg = msgs[i];
-            if (msg.role === "user" && msg.content) {
-                entries.unshift(msg.content.trim());
-            }
+            var text = (msg?.content || "").toString().trim();
+            if (!text) continue;
+            entries.unshift({
+                role: msg.role === "bot" ? "BOT" : "USER",
+                text: text
+            });
         }
-        return entries.join("\n");
+        return entries
+            .map(function (entry) {
+                return entry.role + ": " + entry.text;
+            })
+            .join("\n");
     };
 
     ChatSidebar.prototype.resolvePreviewSnippet = async function (message, reference) {
         var targetName = this.normalizeDocName(reference?.document);
         var entries = [];
         if (message?.retrievalEntries) {
-            var embedded = message.retrievalEntries.embedded || {};
+            var contextEntries = message.retrievalEntries.context || { embedded: {}, context: [] };
+            var knowledgeEntries = message.retrievalEntries.knowledge || { embedded: {}, context: [] };
             entries = []
-                .concat(embedded.methods || [], embedded.tools || [], embedded.context || [])
-                .concat(message.retrievalEntries.context || []);
+                .concat(
+                    contextEntries.embedded?.methods || [],
+                    contextEntries.embedded?.tools || [],
+                    contextEntries.embedded?.context || []
+                )
+                .concat(contextEntries.context || [])
+                .concat(
+                    knowledgeEntries.embedded?.methods || [],
+                    knowledgeEntries.embedded?.tools || [],
+                    knowledgeEntries.embedded?.context || []
+                )
+                .concat(knowledgeEntries.context || []);
         }
         var match = entries.find(function (entry) {
             return this.normalizeDocName(entry.docName) === targetName;

@@ -209,9 +209,6 @@
                 const payload = JSON.parse(dataLine);
                 const chunk = normalizeChunk(payload);
                 if (chunk) {
-                    if (globalThis?.console) {
-                        console.info("[AI stream chunk]", chunk);
-                    }
                     aggregated += chunk;
                     if (typeof onChunk === "function") {
                         try {

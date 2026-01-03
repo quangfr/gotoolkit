@@ -83,6 +83,17 @@
             .filter(Boolean);
     }
 
+    function normalizeConversationId(value) {
+        if (typeof value === "string" && value.trim()) {
+            return value.trim();
+        }
+        if (value && typeof value.toString === "function") {
+            const str = value.toString().trim();
+            if (str) return str;
+        }
+        return "global";
+    }
+
     function getExtension(filename) {
         const match = /\.([^.]+)$/.exec(filename);
         return match ? match[1].toLowerCase() : "";
@@ -293,19 +304,19 @@
         }
 
         async getDocuments(conversationId) {
-            if (!conversationId) return [];
+            const convId = normalizeConversationId(conversationId);
             const store = await this.getStore("documents");
             if (!store) return [];
             const index = store.index("conversationId");
             return new Promise((resolve, reject) => {
-                const request = index.getAll(conversationId);
+                const request = index.getAll(convId);
                 request.onsuccess = () => resolve(request.result || []);
                 request.onerror = () => reject(request.error);
             });
         }
 
         async findDocumentByName(conversationId, name) {
-            if (!conversationId || !name) return null;
+            if (!name) return null;
             const docs = await this.getDocuments(conversationId);
             const target = name.toString().trim().toLowerCase();
             if (!target) return null;
@@ -315,12 +326,12 @@
         }
 
         async getChunks(conversationId) {
-            if (!conversationId) return [];
+            const convId = normalizeConversationId(conversationId);
             const store = await this.getStore("chunks");
             if (!store) return [];
             const index = store.index("conversationId");
             return new Promise((resolve, reject) => {
-                const request = index.getAll(conversationId);
+                const request = index.getAll(convId);
                 request.onsuccess = () => resolve(request.result || []);
                 request.onerror = () => reject(request.error);
             });
@@ -343,25 +354,27 @@
         }
 
         async deleteDocumentsByNames(conversationId, names) {
-            if (!conversationId || !Array.isArray(names) || !names.length) return;
+            if (!Array.isArray(names) || !names.length) return;
+            const convId = normalizeConversationId(conversationId);
             const targetNames = new Set(names.filter(Boolean));
             if (!targetNames.size) return;
-            const docs = await this.getDocuments(conversationId);
+            const docs = await this.getDocuments(convId);
             const toDelete = docs.filter(doc => targetNames.has(doc.name));
             if (!toDelete.length) return;
             await Promise.all(toDelete.map(async doc => {
                 await this.deleteChunksByDocId(doc.id);
                 await this.deleteDocumentById(doc.id);
             }));
-            await this.emitStats(conversationId);
+            await this.emitStats(convId);
         }
 
         async deleteDocumentsBySourceTypes(conversationId, sourceTypes) {
-            if (!conversationId || !Array.isArray(sourceTypes) || !sourceTypes.length) return;
+            if (!Array.isArray(sourceTypes) || !sourceTypes.length) return;
+            const convId = normalizeConversationId(conversationId);
             await this.waitReady();
             const targetTypes = new Set(sourceTypes.filter(Boolean));
             if (!targetTypes.size) return;
-            const docs = await this.getDocuments(conversationId);
+            const docs = await this.getDocuments(convId);
             const toDelete = docs.filter(doc => {
                 const sourceType = doc.sourceType || "context";
                 return targetTypes.has(sourceType);
@@ -371,7 +384,7 @@
                 await this.deleteChunksByDocId(doc.id);
                 await this.deleteDocumentById(doc.id);
             }));
-            await this.emitStats(conversationId);
+            await this.emitStats(convId);
         }
 
         async deleteByIndex(storeName, indexName, value) {
@@ -393,22 +406,20 @@
         }
 
         async clearConversation(conversationId) {
-            if (!conversationId) return;
+            const convId = normalizeConversationId(conversationId);
             await this.waitReady();
-            await this.deleteByIndex("documents", "conversationId", conversationId);
-            await this.deleteByIndex("chunks", "conversationId", conversationId);
-            await this.emitStats(conversationId);
+            await this.deleteByIndex("documents", "conversationId", convId);
+            await this.deleteByIndex("chunks", "conversationId", convId);
+            await this.emitStats(convId);
         }
 
         async getStats(conversationId) {
-            if (!conversationId) {
-                return { conversationId: "", docsUploaded: 0, docsParsed: 0, chunkCount: 0 };
-            }
-            const docs = await this.getDocuments(conversationId);
+            const convId = normalizeConversationId(conversationId);
+            const docs = await this.getDocuments(convId);
             const docsParsed = docs.filter((doc) => doc.status === "ready").length;
             const chunkCount = docs.reduce((acc, doc) => acc + (doc.chunkCount || 0), 0);
             return {
-                conversationId,
+                conversationId: convId,
                 docsUploaded: docs.length,
                 docsParsed,
                 chunkCount
@@ -416,7 +427,8 @@
         }
 
         async ingestFiles(files, conversationId, options = {}) {
-            if (!files || !files.length || !conversationId) return [];
+            if (!files || !files.length) return [];
+            const convId = normalizeConversationId(conversationId);
             await this.waitReady();
             const chunkSize = Number(this.settings.chunkSize) || DEFAULT_SETTINGS.chunkSize;
             const chunkOverlap = Number(this.settings.chunkOverlap) || DEFAULT_SETTINGS.chunkOverlap;
@@ -461,7 +473,7 @@
             }
             const baseEntry = {
                 id: docId,
-                conversationId,
+                conversationId: convId,
                 name: friendlyName,
                 size: file.size,
                 mime: file.type || "",
@@ -508,7 +520,7 @@
                     const emb = await this.embed(chunk);
                     await this.putChunk({
                         id: crypto.randomUUID(),
-                        conversationId,
+                        conversationId: convId,
                         docId,
                         idx: c,
                         text: chunk,
@@ -523,7 +535,7 @@
                 results.push({ docId, name: file.name, success: true, chunkTotal });
                 onProgress?.({ type: "file-done", file: file.name });
             }
-            await this.emitStats(conversationId);
+            await this.emitStats(convId);
             return results;
         }
 
@@ -628,11 +640,12 @@
         }
 
         async retrieve(query, conversationId, options = {}) {
-            if (!conversationId || !query) return [];
+            if (!query) return [];
+            const convId = normalizeConversationId(conversationId);
             await this.waitReady();
             const vector = await this.embed(query);
-            const chunks = await this.getChunks(conversationId);
-            const docs = await this.getDocuments(conversationId);
+            const chunks = await this.getChunks(convId);
+            const docs = await this.getDocuments(convId);
             const docMap = new Map();
             docs.forEach((doc) => docMap.set(doc.id, doc));
             const scored = chunks.map((chunk) => {
