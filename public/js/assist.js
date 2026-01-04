@@ -2706,9 +2706,7 @@
             if (highlightChunk || highlightLineActive) {
                 cls += " chat-doc-preview__line--highlight";
             }
-            var snippetText = matchesSnippet
-                ? highlightSnippetText(chunkText, normalizedSnippet)
-                : escapeHtml(chunkText);
+            var snippetText = escapeHtml(chunkText);
             html.push(
                 "<div class=\"" + cls + "\" data-line=\"" + chunkLineStart + "\" data-chunk=\"" + escapeHtml(entry.chunkKey || "") + "\">" +
                 "<span class=\"chat-doc-preview__line-number\">" + chunkLineStart + "</span>" +
