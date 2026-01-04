@@ -158,6 +158,30 @@
         return escapeHtml(text).replace(/\n/g, "<br>");
     }
 
+    function isMarkdownDocument(doc, options) {
+        var config = options || {};
+        if (config.forceMarkdown) return true;
+        var mime = "";
+        if (typeof config.mime === "string") {
+            mime = config.mime;
+        } else if (doc && typeof doc.mime === "string") {
+            mime = doc.mime;
+        }
+        if (mime && mime.toLowerCase().includes("markdown")) {
+            return true;
+        }
+        var fileName = "";
+        if (typeof config.fileName === "string") {
+            fileName = config.fileName;
+        } else if (doc && typeof doc.sourceFileName === "string") {
+            fileName = doc.sourceFileName;
+        } else if (doc && typeof doc.name === "string") {
+            fileName = doc.name;
+        }
+        var normalized = (fileName || "").toLowerCase();
+        return normalized.endsWith(".md") || normalized.endsWith(".markdown");
+    }
+
     function normalizeReference(payload) {
         if (!payload || typeof payload !== "object") return null;
         var documentId = payload.documentId || payload.docId || payload.doc_id || null;
@@ -2562,7 +2586,7 @@
             if (doc?.id) {
                 var docChunks = await this.getDocumentChunks(doc.id, doc.conversationId);
                 snippet = docChunks.length ? (docChunks[0].text || "") : "";
-                this.renderDocumentText(docChunks, { snippet: snippet });
+                this.renderDocumentText(docChunks, { snippet: snippet, doc: doc });
                 return;
             }
         } catch (err) {
@@ -2606,7 +2630,8 @@
                 this.renderDocumentText(docChunks, {
                     highlightChunkIds: Array.from(relatedChunkIds),
                     snippet: snippet,
-                    highlightLine: typeof reference.line === "number" ? reference.line : undefined
+                    highlightLine: typeof reference.line === "number" ? reference.line : undefined,
+                    doc: doc
                 });
                 return;
             }
@@ -2625,7 +2650,12 @@
         }
     };
 
-    AssistSidebar.prototype.formatPreviewText = function (text, highlightLine) {
+    AssistSidebar.prototype.formatPreviewText = function (text, highlightLine, options) {
+        var opts = options || {};
+        var docMeta = opts.doc || null;
+        if (isMarkdownDocument(docMeta, opts)) {
+            return renderBotMarkdown(String(text || ""));
+        }
         var lines = String(text || "").split(/\r?\n/);
         if (!lines.length) return "";
         return lines.map(function (line, index) {
@@ -2670,13 +2700,25 @@
                 .filter(Boolean)
         );
         var highlightLine = Number.isFinite(opts.highlightLine) ? opts.highlightLine : null;
+        var docMeta = opts.doc || null;
+        var renderMarkdown = isMarkdownDocument(docMeta, opts);
         var normalized = normalizePreviewChunks(chunks);
         if (!normalized.length) {
             if (snippet) {
-                this.previewBodyEl.innerHTML = this.formatPreviewText(snippet, highlightLine);
+                this.previewBodyEl.innerHTML = this.formatPreviewText(snippet, highlightLine, opts);
             } else {
                 this.previewBodyEl.innerHTML = "(extrait indisponible)";
             }
+            return;
+        }
+        if (renderMarkdown) {
+            var mergedText = normalized
+                .map(function (entry) {
+                    return String(entry.text || "");
+                })
+                .join("");
+            var markdownHtml = renderBotMarkdown(mergedText);
+            this.previewBodyEl.innerHTML = markdownHtml || "(extrait indisponible)";
             return;
         }
         var html = [];
@@ -2684,19 +2726,22 @@
         var highlightLines = new Set();
         var normalizedSnippet = normalizeSpaces(snippet);
         normalized.forEach(function (entry) {
-            var rawLines = String(entry.text || "").split(/\r?\n/);
+            var chunkRaw = String(entry.text || "");
+            var rawLines = chunkRaw.split(/\r?\n/);
             if (!rawLines.length) rawLines = [""];
             var chunkLineStart = lineNo + 1;
             var chunkLineEnd = chunkLineStart + rawLines.length - 1;
             lineNo = chunkLineEnd;
-            var chunkText = rawLines
+            var chunkContent = rawLines
                 .map(function (line) {
                     return normalizeSpaces(line);
                 })
                 .filter(Boolean)
                 .join(" ");
-            if (!chunkText) return;
-            var matchesSnippet = normalizedSnippet && chunkText.toLowerCase().includes(normalizedSnippet.toLowerCase());
+            if (!chunkContent) return;
+            var matchesSnippet = normalizedSnippet
+                ? chunkContent.toLowerCase().includes(normalizedSnippet.toLowerCase())
+                : false;
             var highlightChunk = entry.chunkKey && highlightChunkIds.has(entry.chunkKey);
             var highlightLineActive = highlightLine && highlightLine >= chunkLineStart && highlightLine <= chunkLineEnd;
             if (highlightChunk || highlightLineActive) {
@@ -2706,11 +2751,13 @@
             if (highlightChunk || highlightLineActive) {
                 cls += " chat-doc-preview__line--highlight";
             }
-            var snippetText = escapeHtml(chunkText);
+            var snippetHtml = matchesSnippet
+                ? highlightSnippetText(chunkContent, normalizedSnippet)
+                : escapeHtml(chunkContent);
             html.push(
                 "<div class=\"" + cls + "\" data-line=\"" + chunkLineStart + "\" data-chunk=\"" + escapeHtml(entry.chunkKey || "") + "\">" +
                 "<span class=\"chat-doc-preview__line-number\">" + chunkLineStart + "</span>" +
-                "<span class=\"chat-doc-preview__line-text\">" + snippetText + "</span>" +
+                "<div class=\"chat-doc-preview__line-text\">" + snippetHtml + "</div>" +
                 "</div>"
             );
         });

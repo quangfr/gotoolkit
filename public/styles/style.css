@@ -1599,6 +1599,8 @@ label {
 .chat-doc-preview__line-text {
   white-space: pre-wrap;
   word-break: break-word;
+  display: block;
+  flex: 1;
 }
 
 .chat-attachment-list {
