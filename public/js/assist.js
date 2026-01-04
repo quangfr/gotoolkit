@@ -2,7 +2,7 @@
     var STORAGE_KEY = "goToolkit.chat.conversation.default";
     var WIDTH_KEY = "goToolkit.chat.sidebarWidth";
     var OPEN_KEY = "goToolkit.chat.sidebarOpen";
-    var DEFAULT_WIDTH = 400;
+    var DEFAULT_WIDTH = 450;
     var MIN_WIDTH = 320;
     var MAX_WIDTH = 800;
     var MAX_WIDTH_RATIO = 0.6;
@@ -418,10 +418,13 @@
         this.knowledgeModal = null;
         this.knowledgeModalHeader = null;
         this.knowledgeModalListEl = null;
-        this.knowledgeModalStatusEl = null;
+        this.knowledgeModalTitleEl = null;
         this.knowledgeModalCloseBtn = null;
         this.knowledgeModalAddBtn = null;
         this.knowledgeModalFileInput = null;
+        this.knowledgeModalStatusMessage = "";
+        this.knowledgeModalStatusIsError = false;
+        this.knowledgeModalIndexingProgress = null;
         this.knowledgeEditOverlay = null;
         this.knowledgeEditNameInput = null;
         this.knowledgeEditAbstractInput = null;
@@ -1666,19 +1669,20 @@
     AssistSidebar.prototype.buildUI = function () {
         if (!this.root) return;
         this.page = document.getElementById("page");
-        this.toggleButton = document.createElement("button");
-        this.toggleButton.id = "chatToggleBtn";
-        this.toggleButton.type = "button";
-        this.toggleButton.className = "feedback-button chat-toggle-button";
-        this.toggleButton.textContent = "⌬ Assist";
-        this.toggleButton.addEventListener("click", this.toggle.bind(this));
-
-        var heroMeta = document.querySelector(".hero-meta");
-        if (heroMeta) {
-            heroMeta.insertBefore(this.toggleButton, heroMeta.firstChild);
+        var staticLauncher = document.getElementById("assistLauncherBtn");
+        if (staticLauncher) {
+            this.toggleButton = staticLauncher;
+            this.toggleButton.classList.add("chat-toggle-button");
         } else {
+            this.toggleButton = document.createElement("button");
+            this.toggleButton.id = "chatToggleBtn";
+            this.toggleButton.type = "button";
+            this.toggleButton.className = "feedback-button chat-toggle-button";
+            this.toggleButton.textContent = "⌬ Assist";
             document.body.appendChild(this.toggleButton);
         }
+
+        this.toggleButton.addEventListener("click", this.toggle.bind(this));
 
         this.sidebar = document.createElement("div");
         this.sidebar.id = "assistSidebar";
@@ -1693,7 +1697,8 @@
         var header = document.createElement("div");
         header.className = "chat-header";
         var title = document.createElement("span");
-        title.textContent = "⌬ Assist ⚡︎ Promptzilla";
+        title.className = "chat-header-title";
+        title.textContent = "⌬ Assist";
         header.appendChild(title);
 
         var headerActions = document.createElement("div");
@@ -1705,11 +1710,10 @@
         closeBtn.addEventListener("click", this.close.bind(this));
         header.insertBefore(closeBtn, title);
 
-        this.headerDocCountEl = document.createElement("span");
+        this.headerDocCountEl = document.createElement("button");
+        this.headerDocCountEl.type = "button";
         this.headerDocCountEl.className = "chat-header-doc-count";
         this.headerDocCountEl.textContent = "🗎 0";
-        this.headerDocCountEl.tabIndex = 0;
-        this.headerDocCountEl.setAttribute("role", "button");
         this.headerDocCountEl.setAttribute("title", this.headerDocCountTooltipDefault);
         this.headerDocCountEl.addEventListener("click", this.handleHeaderDocCountClick.bind(this));
         this.headerDocCountEl.addEventListener("keydown", function (event) {
@@ -1992,6 +1996,7 @@
             };
         }
         this.syncDocumentIndicatorTitle(chunkCount);
+        this.renderKnowledgeModalTitle();
     };
 
     AssistSidebar.prototype.computeDocumentCounts = function (docs) {
@@ -2011,12 +2016,34 @@
         return counts;
     };
 
+    AssistSidebar.prototype.getCorpusDocumentCount = function () {
+        var entries = Array.isArray(this.knowledgeManifestEntries) ? this.knowledgeManifestEntries : [];
+        var seen = new Set();
+        var count = 0;
+        entries.forEach(function (entry) {
+            var source = (entry?.source || "").toString();
+            if (source !== "Local" && source !== "Web") {
+                return;
+            }
+            var key = this.normalizeKnowledgeKey(entry.fileName || entry.name);
+            if (!key || seen.has(key)) {
+                return;
+            }
+            seen.add(key);
+            count += 1;
+        }.bind(this));
+        if (count) {
+            return count;
+        }
+        var fallback = Number.isFinite(this.knowledgeDocumentCount) ? this.knowledgeDocumentCount : 0;
+        return fallback;
+    };
+
     AssistSidebar.prototype.updateHeaderDocumentCount = function () {
         if (!this.headerDocCountEl) return;
-        var counts = this.documentCounts || { context: 0, gallery: 0 };
-        var total = counts.context + (this.promptPresetId === "ask" ? counts.gallery : 0) + (this.knowledgeDocumentCount || 0);
-        this.headerDocCountEl.dataset.count = total;
-        this.headerDocCountEl.textContent = "🗎 " + total;
+        var count = this.getCorpusDocumentCount();
+        this.headerDocCountEl.dataset.count = count;
+        this.headerDocCountEl.textContent = "🗎 Corpus " + count;
     };
 
     AssistSidebar.prototype.getVersionParam = function () {
@@ -2191,11 +2218,8 @@
         left.className = "chat-knowledge-modal__header-left";
         var title = document.createElement("div");
         title.className = "chat-knowledge-modal__title";
-        title.textContent = "Base de connaissance";
-        var status = document.createElement("div");
-        status.className = "chat-knowledge-modal__status";
+        title.textContent = "🗎 Corpus | 0 documents";
         left.appendChild(title);
-        left.appendChild(status);
         var actions = document.createElement("div");
         actions.className = "chat-knowledge-modal__header-actions";
         var addBtn = document.createElement("button");
@@ -2231,17 +2255,38 @@
         this.knowledgeModal = modal;
         this.knowledgeModalHeader = header;
         this.knowledgeModalListEl = list;
-        this.knowledgeModalStatusEl = status;
+        this.knowledgeModalTitleEl = title;
         this.knowledgeModalCloseBtn = closeBtn;
         this.knowledgeModalAddBtn = addBtn;
         this.buildKnowledgeFilePicker();
         this.buildKnowledgeEditModal();
+        this.renderKnowledgeModalTitle();
+    };
+
+    AssistSidebar.prototype.renderKnowledgeModalTitle = function () {
+        if (!this.knowledgeModalTitleEl) return;
+        if (this.knowledgeIndexing && this.knowledgeModalIndexingProgress) {
+            var processed = Number(this.knowledgeModalIndexingProgress.processed) || 0;
+            var total = Number(this.knowledgeModalIndexingProgress.total) || 0;
+            this.knowledgeModalTitleEl.textContent = "🗎 Indexation en cours " + processed + " / " + total;
+            return;
+        }
+        if (this.knowledgeModalStatusMessage) {
+            this.knowledgeModalTitleEl.textContent = this.knowledgeModalStatusMessage;
+            return;
+        }
+        var count = this.getCorpusDocumentCount();
+        var suffix = count === 1 ? "document" : "documents";
+        this.knowledgeModalTitleEl.textContent = "🗎 Corpus | " + count + " " + suffix;
     };
 
     AssistSidebar.prototype.setKnowledgeModalStatus = function (message, isError) {
-        if (!this.knowledgeModalStatusEl) return;
-        this.knowledgeModalStatusEl.textContent = message || "";
-        this.knowledgeModalStatusEl.classList.toggle("chat-knowledge-modal__status--danger", Boolean(isError));
+        this.knowledgeModalStatusMessage = message || "";
+        this.knowledgeModalStatusIsError = Boolean(isError);
+        if (this.knowledgeModalTitleEl) {
+            this.knowledgeModalTitleEl.dataset.status = this.knowledgeModalStatusIsError ? "error" : "";
+        }
+        this.renderKnowledgeModalTitle();
     };
 
     AssistSidebar.prototype.handleKnowledgeResetClick = function () {
@@ -2535,6 +2580,8 @@
                 webEntries.map(function (entry) { return entry.fileName; })
             );
         }
+        this.updateHeaderDocumentCount();
+        this.renderKnowledgeModalTitle();
     };
 
     AssistSidebar.prototype.renderKnowledgeModalList = function (entries, selectionSet) {
@@ -2895,6 +2942,11 @@
             var processed = 0;
             var files = [];
             var metadata = new Map();
+            this.knowledgeModalIndexingProgress = {
+                processed: 0,
+                total: total
+            };
+            this.renderKnowledgeModalTitle();
             for (var i = 0; i < filtered.length; i++) {
                 var entry = filtered[i];
                 var key = this.normalizeKnowledgeKey(entry.fileName);
@@ -2929,6 +2981,9 @@
                 }
                 processed += 1;
                 var label = total ? processed + " / " + total : processed;
+                if (this.knowledgeModalIndexingProgress) {
+                    this.knowledgeModalIndexingProgress.processed = processed;
+                }
                 this.setKnowledgeModalStatus("Indexation " + label);
                 if (file) {
                     files.push(file);
@@ -2947,6 +3002,8 @@
             this.setKnowledgeModalStatus("Indexation échouée.", true);
         } finally {
             this.knowledgeIndexing = false;
+            this.knowledgeModalIndexingProgress = null;
+            this.renderKnowledgeModalTitle();
             if (!hadError) {
                 this.setKnowledgeModalStatus("");
             }
@@ -2955,6 +3012,10 @@
     };
 
     AssistSidebar.prototype.handleHeaderDocCountClick = function () {
+        if (this.knowledgeModal && this.knowledgeModal.classList.contains("open")) {
+            this.closeKnowledgeModal();
+            return;
+        }
         this.openKnowledgeModal();
     };
 

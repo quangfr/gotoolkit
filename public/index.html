@@ -271,6 +271,16 @@
             height: 30px;
         }
 
+        #assistLauncherBtn {
+            justify-content: flex-start;
+        }
+
+        #assistLauncherBtn .launcher-name {
+            font-size: 13px;
+            font-weight: 600;
+            text-align: left;
+        }
+
         .launcher:hover,
         .launcher:focus-visible {
             transform: translateY(-2px);
@@ -1209,6 +1219,12 @@
                 <p class="section-label superpower-label label-link" id="superpowerToggle">⚡︎ Super-pouvoirs</p>
             </div>
             <div class="launcher-grid">
+                <button id="assistLauncherBtn" class="launcher chat-toggle-button" type="button">
+                    <span class="launcher-emoji">⌬</span>
+                    <span class="launcher-name">Assist ⚡︎ Promptzilla
+                        <div class="launcher-desc">Accélère ta productivité</div>
+                    </span>
+                </button>
                 <a class="launcher" href="canvas.html?v=2026.01.04">
                     <span class="launcher-emoji">◍</span>
                     <span class="launcher-name">
@@ -1290,10 +1306,10 @@
                     <label>
                         <span class="label-title">Type <span class="required-asterisk"
                                 aria-hidden="true">*</span></span>
-                            <select id="feedbackType" name="type" required>
-                                <option value="bug-general" selected>☍ Go-Toolkit</option>
-                                <option value="bug-assist">⌬ Assist</option>
-                                <option value="bug-canvas">◍ Canvas</option>
+                        <select id="feedbackType" name="type" required>
+                            <option value="bug-general" selected>☍ Go-Toolkit</option>
+                            <option value="bug-assist">⌬ Assist</option>
+                            <option value="bug-canvas">◍ Canvas</option>
                             <option value="bug-draw">ʃ Draw</option>
                             <option value="bug-grid">◇ Grid</option>
                             <option value="bug-timeline">⇥ Timeline</option>
