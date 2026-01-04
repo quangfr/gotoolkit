@@ -1421,9 +1421,9 @@ FORMAT DE SORTIE (JSON strict)
   },
   "references": [
     {
-      "doc_id": "id exact sans inventer du documentId",
+      "documentId": "id exact sans inventer du documentId en entrée",
       "abstract": "sujet du chunk en 3-5 mots",
-      "chunk_id": "id exact sans inventer du chunkID",
+      "chunkId": "id exact sans inventer du chunkId en entrée",
     }
   ],
   "suggestions": ["thème proche de ASK et HISTORY", "thème proche de ASK et HISTORY"]
@@ -1457,9 +1457,9 @@ FORMAT DE SORTIE (JSON strict)
   },
   "references": [
     {
-      "doc_id": "id exact sans inventer du documentId",
+      "documentId": "id exact sans inventer du documentId en entrée",
       "abstract": "sujet du chunk en 3-5 mots",
-      "chunk_id": "id exact sans inventer du chunkID",
+      "chunkId": "id exact sans inventer du chunkId en entrée",
     }
   ],
   "suggestions": ["thème proche de ASK et HISTORY", "thème proche de ASK et HISTORY"]
@@ -1497,13 +1497,13 @@ Réponds à ASK avec CONTEXT en tenant compte de HISTORY.
         global.GoToolkitChatPrompt.PRESETS = {
             advice: {
                 id: "advice",
-                label: "⟡ Conseil",
+                label: "↬ Conseiller",
                 prompt: initial,
                 defaultPrompt: adviceChatPrompt
             },
             ask: {
                 id: "ask",
-                label: "? Demande",
+                label: "⌕ Explorer",
                 prompt: initialInfo,
                 defaultPrompt: askChatPrompt
             }

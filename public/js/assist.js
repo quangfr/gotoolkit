@@ -208,8 +208,20 @@
 
     function normalizeReference(payload) {
         if (!payload || typeof payload !== "object") return null;
-        var documentId = payload.documentId || payload.docId || payload.doc_id || null;
-        var chunkId = payload.chunkId || payload.chunk_id || payload.chunk || null;
+        var documentId = payload.documentId
+            || payload.docId
+            || payload.doc_id
+            || payload.docid
+            || payload.document_id
+            || payload.documentid
+            || payload.document
+            || payload.doc
+            || null;
+        var chunkId = payload.chunkId
+            || payload.chunk_id
+            || payload.chunkid
+            || payload.chunk
+            || null;
         var abstractLabel = typeof payload.abstract === "string" ? payload.abstract.trim() : "";
         var line = typeof payload.line === "number" ? payload.line : null;
         return {
@@ -816,12 +828,12 @@
         return {
             advice: {
                 id: "advice",
-                label: "⎆ Conseil",
+                label: "↬ Conseiller",
                 prompt: getSystemPrompt()
             },
             ask: {
                 id: "ask",
-                label: "⌕ Recherche",
+                label: "⌕ Explorer",
                 prompt: global.GoToolkitChatPrompt?.INFO_PROMPT || global.GoToolkitChatPrompt?.DEFAULT_INFO_PROMPT || ""
             }
         };
@@ -3152,15 +3164,10 @@
                     return;
                 }
                 if (payload.t === "ref" && references.length < 3) {
-                    references.push({
-                        document: payload?.document || "Document",
-                        documentId: payload?.documentId || payload?.docId || null,
-                        chunkId: payload?.chunkId || null,
-                        section: payload?.section || "",
-                        page: typeof payload?.page === "number" ? payload.page : null,
-                        line: typeof payload?.line === "number" ? payload.line : null,
-                        type: payload?.type || ""
-                    });
+                    var normalizedRef = normalizeReference(payload);
+                    if (normalizedRef) {
+                        references.push(normalizedRef);
+                    }
                     return;
                 }
                 if (payload.t === "suggestion" && suggestions.length < 3 && typeof payload?.label === "string") {
@@ -3193,6 +3200,10 @@
         var trimmed = raw.trim();
         if (!trimmed) {
             return fallback;
+        }
+        var ndjsonResult = parseNdjsonResponse(trimmed);
+        if (ndjsonResult) {
+            return ndjsonResult;
         }
         try {
             var parsed = JSON.parse(trimmed);
