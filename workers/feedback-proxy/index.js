@@ -12,6 +12,7 @@ var DEFAULT_PROJECT_ID = "gotoolkit";
 
 var FEEDBACK_TYPES = /* @__PURE__ */ new Set([
     "bug-general",
+    "bug-assist",
     "bug-canvas",
     "bug-draw",
     "bug-grid",

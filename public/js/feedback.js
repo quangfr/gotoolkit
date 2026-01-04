@@ -9,6 +9,7 @@
     const prefix = `feedback-app-${APP_ID}`;
     const types = [
         { value: "bug-general", label: "Bug Général" },
+        { value: "bug-assist", label: "Bug Assist" },
         { value: "bug-canvas", label: "Bug Canvas" },
         { value: "bug-draw", label: "Bug Draw" },
         { value: "bug-grid", label: "Bug Grid" },

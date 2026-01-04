@@ -2830,6 +2830,15 @@
             var key = this.normalizeKnowledgeKey(entry.fileName);
             return key && selected.has(key);
         }.bind(this));
+        var seenPaths = new Set();
+        filtered = filtered.filter(function (entry) {
+            if (!entry || !entry.path) return true;
+            var normalizedPath = entry.path.toString().trim();
+            if (!normalizedPath) return true;
+            if (seenPaths.has(normalizedPath)) return false;
+            seenPaths.add(normalizedPath);
+            return true;
+        });
         var hadError = false;
         this.knowledgeIndexing = true;
         this.setKnowledgeModalStatus("Indexation en cours…");
