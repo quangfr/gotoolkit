@@ -303,6 +303,8 @@
         this.documentUploadStatus = "";
         this.pendingDocumentAttachments = [];
         this.headerDocCountEl = null;
+        this.knowledgeDocumentNames = [];
+        this.headerDocCountTooltipDefault = "Rafraîchir les documents indexés";
         this.previewPanel = null;
         this.previewTitleEl = null;
         this.previewBodyEl = null;
@@ -1592,7 +1594,7 @@
         this.headerDocCountEl.textContent = "🗎 0";
         this.headerDocCountEl.tabIndex = 0;
         this.headerDocCountEl.setAttribute("role", "button");
-        this.headerDocCountEl.setAttribute("title", "Rafraîchir les documents indexés");
+        this.headerDocCountEl.setAttribute("title", this.headerDocCountTooltipDefault);
         this.headerDocCountEl.addEventListener("click", this.handleHeaderDocCountClick.bind(this));
         this.headerDocCountEl.addEventListener("keydown", function (event) {
             if (event.key === "Enter" || event.key === " ") {
@@ -1973,6 +1975,56 @@
             });
     };
 
+    AssistSidebar.prototype.fetchCurrentManifest = async function () {
+        try {
+            const url = new URL("content/files.json", window.location.href);
+            url.searchParams.set("v", this.getVersionParam());
+            const response = await fetch(url.toString(), { cache: "no-cache" });
+            if (!response.ok) {
+                console.warn("Current manifest fetch failed", response.status);
+                return [];
+            }
+            const manifest = await response.json();
+            if (!Array.isArray(manifest)) return [];
+            return manifest
+                .map(function (entry) {
+                    var path = entry?.path || "";
+                    var fileName = (entry?.fileName || this.getFileNameFromPath(path)).trim();
+                    return {
+                        path: path,
+                        name: (entry?.name || fileName).trim(),
+                        abstract: entry?.abstract || "",
+                        updatedAt: this.parseUpdatedAt(entry?.updatedAt),
+                        fileName: fileName
+                    };
+                }.bind(this))
+                .filter(function (entry) {
+                    return entry.path && entry.fileName && entry.name;
+                });
+        } catch (err) {
+            console.error("Current manifest error", err);
+            return [];
+        }
+    };
+
+    AssistSidebar.prototype.cacheKnowledgeDocumentNames = function (entries) {
+        this.knowledgeDocumentNames = (Array.isArray(entries) ? entries : [])
+            .map(function (entry) {
+                return (entry?.name || "").toString().trim();
+            })
+            .filter(Boolean);
+        this.updateHeaderDocTooltip();
+    };
+
+    AssistSidebar.prototype.updateHeaderDocTooltip = function () {
+        if (!this.headerDocCountEl) return;
+        if (!this.knowledgeDocumentNames || !this.knowledgeDocumentNames.length) {
+            this.headerDocCountEl.setAttribute("title", this.headerDocCountTooltipDefault);
+            return;
+        }
+        this.headerDocCountEl.setAttribute("title", this.knowledgeDocumentNames.join("\n"));
+    };
+
     AssistSidebar.prototype.detectFileTypeFromPath = function (path) {
         if (!path) return "";
         var lower = path.toLowerCase();
@@ -2094,33 +2146,110 @@
         }
     };
 
+    AssistSidebar.prototype.purgeKnowledgeIndex = async function () {
+        if (!this.docManager) return;
+        try {
+            await this.docManager.waitReady?.();
+            await this.docManager.deleteDocumentsBySourceTypes?.(this.knowledgeConversationId, ["embedded"]);
+        } catch (err) {
+            console.warn("Knowledge index purge failed", err);
+        }
+    };
+
+    AssistSidebar.prototype.reindexKnowledgeFromManifest = async function (manifest, options) {
+        if (!this.docManager) return { total: 0, consumed: 0 };
+        var entries = Array.isArray(manifest) ? manifest : [];
+        var total = entries.length;
+        var onProgress = options?.onProgress;
+        if (onProgress) {
+            onProgress(0, total);
+        }
+        var files = [];
+        try {
+            await this.docManager.waitReady?.();
+            for (var i = 0; i < entries.length; i++) {
+                var entry = entries[i];
+                if (!entry || !entry.path) {
+                    if (onProgress) {
+                        onProgress(i + 1, total);
+                    }
+                    continue;
+                }
+                entry.fileName = entry.fileName || this.getFileNameFromPath(entry.path);
+                var file = await this.fetchKnowledgeDocument(entry);
+                if (file) {
+                    files.push({
+                        entry: entry,
+                        file: file
+                    });
+                }
+                if (onProgress) {
+                    onProgress(i + 1, total);
+                }
+            }
+            if (!files.length) {
+                return { total: total, consumed: 0 };
+            }
+            var metadata = new Map();
+            files.forEach(function (item) {
+                metadata.set(item.entry.fileName, {
+                    name: item.entry.name,
+                    abstract: item.entry.abstract || "",
+                    updatedAt: item.entry.updatedAt,
+                    fileName: item.entry.fileName
+                });
+            });
+            await this.docManager.ingestFiles(files.map(function (item) {
+                return item.file;
+            }), this.knowledgeConversationId, {
+                sourceType: "embedded",
+                metadata: metadata
+            });
+            return { total: total, consumed: files.length };
+        } catch (err) {
+            console.error("Knowledge reindex failed", err);
+            return { total: total, consumed: files.length };
+        }
+    };
+
     AssistSidebar.prototype.handleHeaderDocCountClick = function () {
         if (!this.headerDocCountEl) return;
         if (this.headerDocCountEl.dataset.refreshing === "1") return;
         this.headerDocCountEl.dataset.refreshing = "1";
         this.headerDocCountEl.classList.add("chat-header-doc-count--refreshing");
         var self = this;
-        var manifestPromise = self.loadKnowledgeManifest()
-            .then(function (manifest) {
-                if (Array.isArray(manifest)) {
-                    var total = manifest.length;
-                    self.headerDocCountEl.dataset.manifestTotal = total;
-                    self.headerDocCountEl.textContent = "🗎 " + total;
-                    return manifest;
+        var total = 0;
+        var updateCount = function (parsed, count) {
+            if (!self.headerDocCountEl) return;
+            if (typeof count === "number" && count > 0) {
+                self.headerDocCountEl.textContent = "🗎 " + parsed + " / " + count;
+                self.headerDocCountEl.dataset.manifestTotal = count;
+            } else {
+                self.headerDocCountEl.textContent = "🗎 " + parsed;
+            }
+        };
+        self.fetchCurrentManifest()
+            .then(async function (manifest) {
+                if (!Array.isArray(manifest)) {
+                    manifest = [];
                 }
-                return [];
+                total = manifest.length;
+                self.cacheKnowledgeDocumentNames(manifest);
+                updateCount(0, total);
+                await self.purgeKnowledgeIndex();
+                await self.reindexKnowledgeFromManifest(manifest, {
+                    onProgress: function (parsed) {
+                        updateCount(parsed, total);
+                    }
+                });
             })
             .catch(function (err) {
-                console.error("Knowledge manifest fetch failed", err);
-                return [];
-            });
-        var syncPromise = manifestPromise.then(function (manifest) {
-            return self.syncKnowledgeDocs(manifest);
-        });
-        Promise.allSettled([manifestPromise, syncPromise])
+                console.error("Knowledge refresh failed", err);
+            })
             .finally(function () {
                 self.headerDocCountEl.dataset.refreshing = "0";
                 self.headerDocCountEl.classList.remove("chat-header-doc-count--refreshing");
+                updateCount(total, total);
                 self.refreshDocumentStats();
             });
     };

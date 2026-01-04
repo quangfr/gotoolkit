@@ -3,8 +3,8 @@
 - Conversations dans les modules (personnalisation templates, prompts...) `À planifier`
 
 ## Module Mémo (Le Petit Robert) `T1 2026`
-- Import de fichiers en corpus utilisable par l'IA `À planifier` 
-- Chatbot pour questions / réponses avec références aux source `À étudier` 
+- Import de document en corpus utilisable par l'IA `En cours` 
+- Chatbot pour questions / réponses avec références aux sources `En cours` 
 - Création assistée de mémos à partir d'un corpus `À étudier`
 
 ## IA contextuel (Soulgorithm)`T1 2026`
