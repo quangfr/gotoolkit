@@ -1248,7 +1248,7 @@ label {
   align-items: center;
 }
 
-.chat-header-doc-count {
+.chat-corpus-modal-toggle {
   font-size: 0.85rem;
   color: #475569;
   padding: 4px 9px;
@@ -1260,7 +1260,7 @@ label {
   transition: opacity 0.2s ease;
 }
 
-.chat-header-doc-count--refreshing {
+.chat-corpus-modal-toggle--refreshing {
   opacity: 0.5;
 }
 

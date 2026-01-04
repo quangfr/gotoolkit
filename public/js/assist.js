@@ -424,6 +424,7 @@
         this.knowledgeModalFileInput = null;
         this.knowledgeModalStatusMessage = "";
         this.knowledgeModalStatusIsError = false;
+        this.knowledgeModalStatusTimer = null;
         this.knowledgeModalIndexingProgress = null;
         this.knowledgeEditOverlay = null;
         this.knowledgeEditNameInput = null;
@@ -1712,8 +1713,8 @@
 
         this.headerDocCountEl = document.createElement("button");
         this.headerDocCountEl.type = "button";
-        this.headerDocCountEl.className = "chat-header-doc-count";
-        this.headerDocCountEl.textContent = "🗎 0";
+        this.headerDocCountEl.className = "chat-corpus-modal-toggle";
+        this.headerDocCountEl.textContent = "🗎 Corpus";
         this.headerDocCountEl.setAttribute("title", this.headerDocCountTooltipDefault);
         this.headerDocCountEl.addEventListener("click", this.handleHeaderDocCountClick.bind(this));
         this.headerDocCountEl.addEventListener("keydown", function (event) {
@@ -2043,7 +2044,7 @@
         if (!this.headerDocCountEl) return;
         var count = this.getCorpusDocumentCount();
         this.headerDocCountEl.dataset.count = count;
-        this.headerDocCountEl.textContent = "🗎 Corpus " + count;
+        this.headerDocCountEl.textContent = "🗎 Corpus";
     };
 
     AssistSidebar.prototype.getVersionParam = function () {
@@ -2280,13 +2281,22 @@
         this.knowledgeModalTitleEl.textContent = "🗎 Corpus | " + count + " " + suffix;
     };
 
-    AssistSidebar.prototype.setKnowledgeModalStatus = function (message, isError) {
+    AssistSidebar.prototype.setKnowledgeModalStatus = function (message, isError, autoClearMs) {
+        if (this.knowledgeModalStatusTimer) {
+            clearTimeout(this.knowledgeModalStatusTimer);
+            this.knowledgeModalStatusTimer = null;
+        }
         this.knowledgeModalStatusMessage = message || "";
         this.knowledgeModalStatusIsError = Boolean(isError);
         if (this.knowledgeModalTitleEl) {
             this.knowledgeModalTitleEl.dataset.status = this.knowledgeModalStatusIsError ? "error" : "";
         }
         this.renderKnowledgeModalTitle();
+        if (autoClearMs && autoClearMs > 0) {
+            this.knowledgeModalStatusTimer = setTimeout(function () {
+                this.setKnowledgeModalStatus("", false);
+            }.bind(this), autoClearMs);
+        }
     };
 
     AssistSidebar.prototype.handleKnowledgeResetClick = function () {
@@ -2663,6 +2673,7 @@
         var target = event?.currentTarget || event?.target;
         var key = this.normalizeKnowledgeKey(target?.dataset?.key || "");
         var checked = target && target.checked;
+        var removalMessage = "Document actuel retiré de l'indexation.";
         var entry = (this.knowledgeManifestEntries || []).find(function (item) {
             return this.normalizeKnowledgeKey(item.fileName) === key;
         }.bind(this));
@@ -2690,11 +2701,16 @@
             await this.refreshKnowledgeModal();
             var selection = this.collectKnowledgeSelection();
             await this.reindexKnowledgeSelection(this.knowledgeManifestEntries, selection);
-            this.setKnowledgeModalStatus("");
+            this.setKnowledgeModalStatus(removalMessage, false, 4000);
             return;
         }
         var selection = this.collectKnowledgeSelection();
         await this.reindexKnowledgeSelection(this.knowledgeManifestEntries, selection);
+        if (!checked) {
+            this.setKnowledgeModalStatus(removalMessage, false, 4000);
+        } else {
+            this.setKnowledgeModalStatus("");
+        }
     };
 
     AssistSidebar.prototype.handleKnowledgePreviewClick = function (event) {
