@@ -205,6 +205,7 @@
         return (fileName || "").toLowerCase().endsWith(".pdf");
     }
 
+
     function normalizeReference(payload) {
         if (!payload || typeof payload !== "object") return null;
         var documentId = payload.documentId || payload.docId || payload.doc_id || null;
@@ -2693,11 +2694,6 @@
             var title = doc?.name || "Document";
             this.previewTitleEl && (this.previewTitleEl.textContent = title);
             if (doc?.id) {
-                if (isPdfDocument(doc)) {
-                    if (this.showPdfPreview(doc)) {
-                        return;
-                    }
-                }
                 var docChunks = await this.getDocumentChunks(doc.id, doc.conversationId);
                 var relatedChunkIds = new Set(
                     (message?.references || [])
@@ -2709,6 +2705,11 @@
                         })
                         .filter(Boolean)
                 );
+                if (isPdfDocument(doc)) {
+                    if (this.showPdfPreview(doc)) {
+                        return;
+                    }
+                }
                 this.renderDocumentText(docChunks, {
                     highlightChunkIds: Array.from(relatedChunkIds),
                     snippet: snippet,

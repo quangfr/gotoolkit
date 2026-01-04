@@ -82,6 +82,7 @@
         max-height: none;
       }
 
+
       .error {
         margin: 24px auto;
         padding: 12px 16px;
@@ -145,6 +146,7 @@
         if (nextBtn) nextBtn.disabled = !pdfDoc || pageNum >= pdfDoc.numPages;
       }
 
+
       async function renderPage(num) {
         if (!pdfDoc) return;
         if (rendering) {
@@ -175,10 +177,10 @@
         }
       }
 
-      function showError(message) {
+      function showError(message, detail) {
         const panel = document.createElement("div");
         panel.className = "error";
-        panel.textContent = message;
+        panel.textContent = detail ? `${message} (${detail})` : message;
         canvas.replaceWith(panel);
         setStatus("Failed");
       }
@@ -228,7 +230,7 @@
           await renderPage(pageNum);
         } catch (err) {
           logDebug("pdf:error", err);
-          showError("Unable to load PDF preview.");
+          showError("Unable to load PDF preview.", err?.message || String(err));
         }
       }
     </script>
