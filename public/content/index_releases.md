@@ -1,3 +1,6 @@
+## 2026-01-04
+- Module [Ask](/#ask) avec documents en conversation et en référence
+
 ## 2025-12-29
 - Ajout des notes de version et de la feuille de route
 

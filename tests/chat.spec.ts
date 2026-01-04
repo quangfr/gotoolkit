@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test.describe("Chat IA smoke", () => {
+test.describe("Assist smoke", () => {
   test("opens the chat, sends a message, and measures response latency", async ({ page }) => {
     const baseUrl = "http://127.0.0.1:5000";
     const logs: string[] = [];

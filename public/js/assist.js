@@ -276,7 +276,7 @@
         return "";
     }
 
-    function ChatSidebar(root) {
+    function AssistSidebar(root) {
         this.root = root;
         this.sidebar = null;
         this.toggleButton = null;
@@ -315,12 +315,12 @@
         this.knowledgeConversationId = global.GoToolkitKnowledgeConversationId || "knowledge";
     }
 
-    ChatSidebar.prototype.persist = function () {
+    AssistSidebar.prototype.persist = function () {
         this.conversation.updatedAt = Date.now();
         persistConversation(this.conversation);
     };
 
-    ChatSidebar.prototype.setWidth = function (value) {
+    AssistSidebar.prototype.setWidth = function (value) {
         this.sidebarWidth = clampWidth(value);
         if (this.sidebar) {
             this.sidebar.style.width = this.sidebarWidth + "px";
@@ -331,20 +331,20 @@
         this.updateSidebarWidthVar();
     };
 
-    ChatSidebar.prototype.applyPagePadding = function () {
+    AssistSidebar.prototype.applyPagePadding = function () {
         if (!this.page) return;
         var offset = Math.max(0, this.sidebarWidth);
         this.page.style.marginRight = this.isOpen ? offset + "px" : "";
         this.page.style.paddingRight = "";
     };
 
-    ChatSidebar.prototype.updateSidebarWidthVar = function () {
+    AssistSidebar.prototype.updateSidebarWidthVar = function () {
         var doc = global.document;
         if (!doc || !doc.documentElement?.style) return;
         doc.documentElement.style.setProperty("--chat-sidebar-width", this.isOpen ? this.sidebarWidth + "px" : "0px");
     };
 
-    ChatSidebar.prototype.open = function () {
+    AssistSidebar.prototype.open = function () {
         if (!this.sidebar) return;
         this.isOpen = true;
         this.sidebar.classList.add("chat-sidebar--open");
@@ -360,7 +360,7 @@
         }
     };
 
-    ChatSidebar.prototype.close = function () {
+    AssistSidebar.prototype.close = function () {
         if (!this.sidebar) return;
         this.isOpen = false;
         this.sidebar.classList.remove("chat-sidebar--open");
@@ -373,7 +373,7 @@
         persistOpenState(false);
     };
 
-    ChatSidebar.prototype.toggle = function () {
+    AssistSidebar.prototype.toggle = function () {
         if (this.isOpen) {
             this.close();
         } else {
@@ -381,7 +381,7 @@
         }
     };
 
-    ChatSidebar.prototype.abortStream = function () {
+    AssistSidebar.prototype.abortStream = function () {
         if (this.controller) {
             try {
                 this.controller.abort();
@@ -392,7 +392,7 @@
         this.updateComposerState();
     };
 
-    ChatSidebar.prototype.clearConversation = function () {
+    AssistSidebar.prototype.clearConversation = function () {
         this.abortStream();
         if (this.docManager) {
             this.docManager.deleteDocumentsBySourceTypes(this.conversation.id, ["context"]).catch(function () { /* ignore */ });
@@ -411,7 +411,7 @@
         this.updateComposerState();
     };
 
-    ChatSidebar.prototype.updateComposerState = function () {
+    AssistSidebar.prototype.updateComposerState = function () {
         var hasText = Boolean(this.textarea && this.textarea.value.trim());
         if (this.sendButton) {
             this.sendButton.disabled = this.isStreaming || !hasText;
@@ -424,7 +424,7 @@
         }
     };
 
-    ChatSidebar.prototype.clearAttachments = function () {
+    AssistSidebar.prototype.clearAttachments = function () {
         this.pendingDocumentAttachments = [];
         this.attachmentsTotalCount = 0;
         this.attachmentsParsedCount = 0;
@@ -432,7 +432,7 @@
         this.updateComposerState();
     };
 
-    ChatSidebar.prototype.handleRemoveAttachedDocuments = function () {
+    AssistSidebar.prototype.handleRemoveAttachedDocuments = function () {
         var names = (this.pendingDocumentAttachments || []).slice();
         if (!names.length) return;
         this.clearAttachments();
@@ -447,7 +447,7 @@
             });
     };
 
-    ChatSidebar.prototype.toggleListeningStyles = function (listening) {
+    AssistSidebar.prototype.toggleListeningStyles = function (listening) {
         if (this.composer) {
             this.composer.classList.toggle("chat-composer--listening", Boolean(listening));
         }
@@ -456,7 +456,7 @@
         }
     };
 
-    ChatSidebar.prototype.handleSpeechToggle = function () {
+    AssistSidebar.prototype.handleSpeechToggle = function () {
         if (this.isListening) {
             this.stopSpeechRecognition();
             return;
@@ -464,7 +464,7 @@
         this.startSpeechRecognition();
     };
 
-    ChatSidebar.prototype.startSpeechRecognition = function () {
+    AssistSidebar.prototype.startSpeechRecognition = function () {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
             alert("Reconnaissance vocale indisponible dans ce navigateur.");
@@ -506,7 +506,7 @@
         }
     };
 
-    ChatSidebar.prototype.stopSpeechRecognition = function () {
+    AssistSidebar.prototype.stopSpeechRecognition = function () {
         if (this.speechRecognition) {
             try {
                 this.speechRecognition.stop();
@@ -518,14 +518,14 @@
         this.updateComposerState();
     };
 
-    ChatSidebar.prototype.scrollToBottom = function () {
+    AssistSidebar.prototype.scrollToBottom = function () {
         if (!this.messagesEl) return;
         requestAnimationFrame(function () {
             this.messagesEl.scrollTop = this.messagesEl.scrollHeight + 200;
         }.bind(this));
     };
 
-    ChatSidebar.prototype.updateBotMessage = function (message) {
+    AssistSidebar.prototype.updateBotMessage = function (message) {
         var entry = this.messageNodes[message.id];
         if (!entry || !entry.contentEl) {
             console.warn("updateBotMessage: missing entry", message.id);
@@ -542,14 +542,14 @@
         this.scrollToBottom();
     };
 
-    ChatSidebar.prototype.updateUserMessage = function (message) {
+    AssistSidebar.prototype.updateUserMessage = function (message) {
         var entry = this.messageNodes[message.id];
         if (!entry || !entry.contentEl) return;
         entry.contentEl.innerHTML = escapeHtml(message.content || "").replace(/\n/g, "<br>");
         this.scrollToBottom();
     };
 
-    ChatSidebar.prototype.appendMessage = function (message) {
+    AssistSidebar.prototype.appendMessage = function (message) {
         if (!this.messagesEl) return;
         var wrapper = document.createElement("div");
         wrapper.className = "chat-message chat-message--" + message.role;
@@ -602,11 +602,11 @@
         this.scrollToBottom();
     };
 
-    ChatSidebar.prototype.renderBotContent = function (message) {
+    AssistSidebar.prototype.renderBotContent = function (message) {
         return renderBotMarkdown(message.content || "");
     };
 
-    ChatSidebar.prototype.syncBotExtras = function (entry, message) {
+    AssistSidebar.prototype.syncBotExtras = function (entry, message) {
         if (!entry) return;
         var references = Array.isArray(message.references) ? message.references : [];
         var suggestions = Array.isArray(message.suggestions) ? message.suggestions : [];
@@ -672,7 +672,7 @@
         }
     };
 
-    ChatSidebar.prototype.handleSuggestionClick = function (text) {
+    AssistSidebar.prototype.handleSuggestionClick = function (text) {
         if (!text || !this.textarea) return;
         if (this.isStreaming) return;
         this.textarea.value = text;
@@ -681,14 +681,14 @@
         this.handleSend();
     };
 
-    ChatSidebar.prototype.renderInitialMessages = function () {
+    AssistSidebar.prototype.renderInitialMessages = function () {
         var _this = this;
         (this.conversation.messages || []).forEach(function (message) {
             _this.appendMessage(message);
         });
     };
 
-    ChatSidebar.prototype.getPromptPresets = function () {
+    AssistSidebar.prototype.getPromptPresets = function () {
         var presets = global.GoToolkitChatPrompt?.PRESETS;
         if (presets) return presets;
         return {
@@ -705,7 +705,7 @@
         };
     };
 
-    ChatSidebar.prototype.setPromptPreset = function (presetId) {
+    AssistSidebar.prototype.setPromptPreset = function (presetId) {
         var next = presetId === "ask" ? "ask" : "advice";
         this.promptPresetId = next;
         persistPromptPreset(next);
@@ -714,7 +714,7 @@
         this.refreshDocumentStats();
     };
 
-    ChatSidebar.prototype.getActiveSystemPrompt = function () {
+    AssistSidebar.prototype.getActiveSystemPrompt = function () {
         if (this.promptPresetId === "ask") {
             return global.GoToolkitChatPrompt?.INFO_PROMPT
                 || global.GoToolkitChatPrompt?.DEFAULT_INFO_PROMPT
@@ -723,12 +723,12 @@
         return getSystemPrompt();
     };
 
-    ChatSidebar.prototype.filterHitsByPromptPreset = function (hits) {
+    AssistSidebar.prototype.filterHitsByPromptPreset = function (hits) {
         if (!Array.isArray(hits)) return [];
         return hits;
     };
 
-    ChatSidebar.prototype.buildPayload = function (systemPrompt, userMessage, docInfo) {
+    AssistSidebar.prototype.buildPayload = function (systemPrompt, userMessage, docInfo) {
         var self = this;
         var promptContent = (systemPrompt && systemPrompt.trim()) ? systemPrompt : getSystemPrompt();
         var messages = [{ role: "system", content: promptContent }];
@@ -828,7 +828,7 @@
         return payload;
     };
 
-    ChatSidebar.prototype.formatEntriesForPayload = function (entries) {
+    AssistSidebar.prototype.formatEntriesForPayload = function (entries) {
         if (!entries || !entries.length) return [];
         var formatted = [];
         entries.forEach(function (entry) {
@@ -854,7 +854,7 @@
         return formatted;
     };
 
-    ChatSidebar.prototype.buildEmbeddedResultsText = function (sections) {
+    AssistSidebar.prototype.buildEmbeddedResultsText = function (sections) {
         if (!sections || typeof sections !== "object") return "";
         var parts = [];
         Object.keys(sections).forEach(function (key) {
@@ -901,7 +901,7 @@
         return parts.join("\n\n");
     };
 
-    ChatSidebar.prototype.stripDocExtension = function (value) {
+    AssistSidebar.prototype.stripDocExtension = function (value) {
         if (!value) return "";
         var idx = value.lastIndexOf(".");
         if (idx > 0) {
@@ -910,7 +910,7 @@
         return value;
     };
 
-    ChatSidebar.prototype.buildHitEntry = function (hit) {
+    AssistSidebar.prototype.buildHitEntry = function (hit) {
         if (!hit) return null;
         var rawName = (hit.docName || "Document").toString();
         var stripped = this.stripDocExtension(rawName);
@@ -929,7 +929,7 @@
         };
     };
 
-    ChatSidebar.prototype.categorizeHits = function (hits) {
+    AssistSidebar.prototype.categorizeHits = function (hits) {
         var embedded = { methods: [], tools: [], attachments: [] };
         var context = [];
         (hits || []).forEach(function (hit) {
@@ -957,7 +957,7 @@
         return { embedded: embedded, context: context };
     };
 
-    ChatSidebar.prototype.buildSourcesFromEntries = function (embedded, context) {
+    AssistSidebar.prototype.buildSourcesFromEntries = function (embedded, context) {
         var sources = [];
         function appendEntries(list) {
             (list || []).forEach(function (entry) {
@@ -989,7 +989,7 @@
         return sources;
     };
 
-    ChatSidebar.prototype.getRetrievalParamsForQuestion = function (text) {
+    AssistSidebar.prototype.getRetrievalParamsForQuestion = function (text) {
         var words = String(text || "").trim().split(/\s+/).filter(Boolean);
         var count = words.length;
         if (count === 0 || count <= 2) {
@@ -1004,7 +1004,7 @@
         return { topK: 8, minScore: 0.12 };
     };
 
-    ChatSidebar.prototype.getRetrievalFallbackParams = function (params) {
+    AssistSidebar.prototype.getRetrievalFallbackParams = function (params) {
         if (!params || typeof params !== "object") return null;
         var baseTopK = typeof params.topK === "number" ? params.topK : 0;
         var baseMinScore = typeof params.minScore === "number" ? params.minScore : 0;
@@ -1013,7 +1013,7 @@
         return { topK: fallbackTopK, minScore: fallbackMinScore };
     };
 
-    ChatSidebar.prototype.buildRetrievalContext = async function (conversationId) {
+    AssistSidebar.prototype.buildRetrievalContext = async function (conversationId) {
         if (!this.docManager) return { chunks: [], docs: [], chunkMap: new Map(), docMap: new Map() };
         await this.docManager.waitReady?.();
         const [chunks, docs] = await Promise.all([
@@ -1040,7 +1040,7 @@
         return { chunks, docs, chunkMap, docMap };
     };
 
-    ChatSidebar.prototype.cacheDocuments = function (docs) {
+    AssistSidebar.prototype.cacheDocuments = function (docs) {
         if (!Array.isArray(docs)) return;
         docs.forEach(function (doc) {
             if (doc && doc.id) {
@@ -1049,7 +1049,7 @@
         }, this);
     };
 
-    ChatSidebar.prototype.resolveDocName = function (docId) {
+    AssistSidebar.prototype.resolveDocName = function (docId) {
         if (!docId) return "";
         var doc = this.docCache.get(docId);
         if (doc) {
@@ -1058,7 +1058,7 @@
         return "";
     };
 
-    ChatSidebar.prototype.ensureDocumentCached = async function (docId) {
+    AssistSidebar.prototype.ensureDocumentCached = async function (docId) {
         if (!docId || !this.docManager) return null;
         var cached = this.docCache.get(docId);
         if (cached) return cached;
@@ -1074,7 +1074,7 @@
         return null;
     };
 
-    ChatSidebar.prototype.mergeHybridHits = function (vectorHits, keywordHits, limit, options) {
+    AssistSidebar.prototype.mergeHybridHits = function (vectorHits, keywordHits, limit, options) {
         var chunkMap = options?.chunkMap || new Map();
         var wordCount = Number(options?.wordCount) || 0;
         var preferSmall = wordCount > 0 && wordCount <= 6;
@@ -1138,7 +1138,7 @@
         return merged;
     };
 
-    ChatSidebar.prototype.logHybridRetrieval = function (info) {
+    AssistSidebar.prototype.logHybridRetrieval = function (info) {
         console.log("hybrid retrieval", {
             label: info.label,
             query: info.query,
@@ -1162,7 +1162,7 @@
         });
     };
 
-    ChatSidebar.prototype.hybridRetrieveOnce = async function (query, conversationId, params, options) {
+    AssistSidebar.prototype.hybridRetrieveOnce = async function (query, conversationId, params, options) {
         if (!this.docManager || !params) return [];
         var contextLimit = Math.max(
             CONTEXT_LIMIT_MIN,
@@ -1220,7 +1220,7 @@
         return merged;
     };
 
-    ChatSidebar.prototype.retrieveWithFallback = async function (query, conversationId, params, label) {
+    AssistSidebar.prototype.retrieveWithFallback = async function (query, conversationId, params, label) {
         if (!params || !this.docManager) return [];
         await this.docManager.waitReady?.();
         var words = String(query || "").trim().split(/\s+/).filter(Boolean);
@@ -1264,7 +1264,7 @@
         return hits;
     };
 
-    ChatSidebar.prototype.handleSend = async function () {
+    AssistSidebar.prototype.handleSend = async function () {
         if (this.isStreaming) return;
         if (!this.textarea) return;
         var value = this.textarea.value.trim();
@@ -1427,7 +1427,7 @@
         }
     };
 
-    ChatSidebar.prototype.handleInputResize = function () {
+    AssistSidebar.prototype.handleInputResize = function () {
         if (!this.textarea) return;
         this.textarea.style.height = "auto";
         var maxHeight = this.textarea.scrollHeight;
@@ -1437,7 +1437,7 @@
         this.textarea.style.height = nextHeight + "px";
     };
 
-    ChatSidebar.prototype.mountResizer = function (resizer) {
+    AssistSidebar.prototype.mountResizer = function (resizer) {
         var self = this;
         var startX = 0;
         var startWidth = this.sidebarWidth;
@@ -1462,7 +1462,7 @@
         });
     };
 
-    ChatSidebar.prototype.updatePromptDropdownLabel = function () {
+    AssistSidebar.prototype.updatePromptDropdownLabel = function () {
         if (this.promptDropdownButton) {
             var presets = this.getPromptPresets();
             var activePreset = presets && presets[this.promptPresetId];
@@ -1478,13 +1478,13 @@
         }
     };
 
-    ChatSidebar.prototype.closePromptDropdown = function () {
+    AssistSidebar.prototype.closePromptDropdown = function () {
         if (!this.promptDropdownMenu) return;
         this.promptDropdownMenu.classList.remove("open");
         this.promptDropdownMenu.hidden = true;
     };
 
-    ChatSidebar.prototype.togglePromptDropdown = function () {
+    AssistSidebar.prototype.togglePromptDropdown = function () {
         if (!this.promptDropdownMenu) return;
         var willOpen = this.promptDropdownMenu.hidden;
         if (willOpen) {
@@ -1495,7 +1495,7 @@
         }
     };
 
-    ChatSidebar.prototype.buildPromptDropdown = function () {
+    AssistSidebar.prototype.buildPromptDropdown = function () {
         var wrapper = document.createElement("div");
         wrapper.className = "chat-prompt-dropdown";
 
@@ -1545,14 +1545,14 @@
         return wrapper;
     };
 
-    ChatSidebar.prototype.buildUI = function () {
+    AssistSidebar.prototype.buildUI = function () {
         if (!this.root) return;
         this.page = document.getElementById("page");
         this.toggleButton = document.createElement("button");
         this.toggleButton.id = "chatToggleBtn";
         this.toggleButton.type = "button";
         this.toggleButton.className = "feedback-button chat-toggle-button";
-        this.toggleButton.textContent = "⌬ Chat IA";
+        this.toggleButton.textContent = "Assist";
         this.toggleButton.addEventListener("click", this.toggle.bind(this));
 
         var heroMeta = document.querySelector(".hero-meta");
@@ -1563,7 +1563,7 @@
         }
 
         this.sidebar = document.createElement("div");
-        this.sidebar.id = "chatSidebar";
+        this.sidebar.id = "assistSidebar";
         this.sidebar.className = "chat-sidebar";
         this.sidebar.style.display = "none";
         this.sidebar.style.width = this.sidebarWidth + "px";
@@ -1575,7 +1575,7 @@
         var header = document.createElement("div");
         header.className = "chat-header";
         var title = document.createElement("span");
-        title.textContent = "⌬ Chat IA";
+        title.textContent = "Assist";
         header.appendChild(title);
 
         var headerActions = document.createElement("div");
@@ -1696,7 +1696,7 @@
         this.buildPreviewPanel();
     };
 
-    ChatSidebar.prototype.createDocumentPickers = function () {
+    AssistSidebar.prototype.createDocumentPickers = function () {
         if (this.documentsFileInput) return;
         this.documentsFileInput = document.createElement("input");
         this.documentsFileInput.type = "file";
@@ -1709,18 +1709,18 @@
         document.body.appendChild(this.documentsFileInput);
     };
 
-    ChatSidebar.prototype.openDocumentSelector = function () {
+    AssistSidebar.prototype.openDocumentSelector = function () {
         if (this.documentsFileInput) {
             this.documentsFileInput.click();
         }
     };
 
-    ChatSidebar.prototype.setDocumentUploadStatus = function (message) {
+    AssistSidebar.prototype.setDocumentUploadStatus = function (message) {
         this.documentUploadStatus = message || "";
         this.syncDocumentIndicatorTitle(this.documentChunkCount);
     };
 
-    ChatSidebar.prototype.syncDocumentIndicatorTitle = function (chunkCount) {
+    AssistSidebar.prototype.syncDocumentIndicatorTitle = function (chunkCount) {
         if (!this.docsIndicatorButton) return;
         var parts = [];
         if (typeof chunkCount === "number" && !isNaN(chunkCount)) {
@@ -1740,7 +1740,7 @@
         this.docsIndicatorButton.title = parts.join("\n");
     };
 
-    ChatSidebar.prototype.setPendingDocumentAttachments = function (names) {
+    AssistSidebar.prototype.setPendingDocumentAttachments = function (names) {
         this.pendingDocumentAttachments = (names || []).filter(Boolean);
         this.attachmentsParsedCount = this.pendingDocumentAttachments.length;
         if (!this.pendingDocumentAttachments.length) {
@@ -1750,7 +1750,7 @@
         this.syncDocumentIndicatorTitle(this.documentChunkCount);
     };
 
-    ChatSidebar.prototype.updateAttachmentIndicator = function () {
+    AssistSidebar.prototype.updateAttachmentIndicator = function () {
         if (!this.docsIndicatorButton) return;
         var label = this.computeDocsIndicatorLabel();
         if (!label) {
@@ -1772,7 +1772,7 @@
         }
     };
 
-    ChatSidebar.prototype.computeDocsIndicatorLabel = function () {
+    AssistSidebar.prototype.computeDocsIndicatorLabel = function () {
         var parsed = Number(this.attachmentsParsedCount) || 0;
         var total = Number(this.attachmentsTotalCount) || 0;
         if (this.pendingDocumentAttachments.length === 1) {
@@ -1790,14 +1790,14 @@
         return "";
     };
 
-    ChatSidebar.prototype.handleDocumentFilesSelected = function (event) {
+    AssistSidebar.prototype.handleDocumentFilesSelected = function (event) {
         var files = event.target.files;
         if (!files || !files.length) return;
         this.startDocumentIngestion(files);
         event.target.value = "";
     };
 
-    ChatSidebar.prototype.startDocumentIngestion = async function (files) {
+    AssistSidebar.prototype.startDocumentIngestion = async function (files) {
         if (!this.docManager) {
             this.setDocumentUploadStatus("Gestion des documents indisponible.");
             return;
@@ -1851,7 +1851,7 @@
         }
     };
 
-    ChatSidebar.prototype.handleDocumentProgress = function (progress) {
+    AssistSidebar.prototype.handleDocumentProgress = function (progress) {
         if (!progress) return;
         if (progress.type === "chunk") {
             this.setDocumentUploadStatus("Indexation " + progress.progress + "% → " + (progress.file || ""));
@@ -1861,7 +1861,7 @@
             this.setDocumentUploadStatus("Fichier traité : " + (progress.file || ""));
         }
     };
-    ChatSidebar.prototype.updateDocumentIndicator = function (stats, docs, keywordSizes) {
+    AssistSidebar.prototype.updateDocumentIndicator = function (stats, docs, keywordSizes) {
         if (!this.docsIndicatorButton) return;
         var chunkCount = stats ? Number(stats.chunkCount) || 0 : 0;
         this.documentChunkCount = chunkCount;
@@ -1876,7 +1876,7 @@
         this.syncDocumentIndicatorTitle(chunkCount);
     };
 
-    ChatSidebar.prototype.computeDocumentCounts = function (docs) {
+    AssistSidebar.prototype.computeDocumentCounts = function (docs) {
         var counts = { context: 0, gallery: 0 };
         (docs || []).forEach(function (doc) {
             var source = doc?.sourceType || "context";
@@ -1893,7 +1893,7 @@
         return counts;
     };
 
-    ChatSidebar.prototype.updateHeaderDocumentCount = function () {
+    AssistSidebar.prototype.updateHeaderDocumentCount = function () {
         if (!this.headerDocCountEl) return;
         var counts = this.documentCounts || { context: 0, gallery: 0 };
         var total = counts.context + (this.promptPresetId === "ask" ? counts.gallery : 0);
@@ -1901,7 +1901,7 @@
         this.headerDocCountEl.textContent = "🗎 " + total;
     };
 
-    ChatSidebar.prototype.getVersionParam = function () {
+    AssistSidebar.prototype.getVersionParam = function () {
         try {
             const params = new URLSearchParams(window.location.search || "");
             return params.get("v") || "v";
@@ -1910,13 +1910,13 @@
         }
     };
 
-    ChatSidebar.prototype.getFileNameFromPath = function (path) {
+    AssistSidebar.prototype.getFileNameFromPath = function (path) {
         if (!path) return "";
         var parts = path.split("/");
         return parts[parts.length - 1] || path;
     };
 
-    ChatSidebar.prototype.parseUpdatedAt = function (value) {
+    AssistSidebar.prototype.parseUpdatedAt = function (value) {
         if (typeof value === "number" && Number.isFinite(value)) {
             return value;
         }
@@ -1929,7 +1929,7 @@
         return 0;
     };
 
-    ChatSidebar.prototype.fetchContentManifest = function () {
+    AssistSidebar.prototype.fetchContentManifest = function () {
         try {
             const url = new URL("content/files.json", window.location.href);
             url.searchParams.set("v", this.getVersionParam());
@@ -1951,7 +1951,7 @@
         }
     };
 
-    ChatSidebar.prototype.loadKnowledgeManifest = async function () {
+    AssistSidebar.prototype.loadKnowledgeManifest = async function () {
         var manifest = await this.fetchContentManifest();
         if (!Array.isArray(manifest)) {
             return [];
@@ -1973,7 +1973,7 @@
             });
     };
 
-    ChatSidebar.prototype.detectFileTypeFromPath = function (path) {
+    AssistSidebar.prototype.detectFileTypeFromPath = function (path) {
         if (!path) return "";
         var lower = path.toLowerCase();
         if (lower.endsWith(".pdf")) return "pdf";
@@ -1982,7 +1982,7 @@
         return "";
     };
 
-    ChatSidebar.prototype.createKnowledgeFile = function (data, fileName, type) {
+    AssistSidebar.prototype.createKnowledgeFile = function (data, fileName, type) {
         var normalizedType = (type || "").trim();
         var parts = [];
         if (data instanceof Blob) {
@@ -2005,7 +2005,7 @@
         return fallback;
     };
 
-    ChatSidebar.prototype.fetchKnowledgeDocument = async function (entry) {
+    AssistSidebar.prototype.fetchKnowledgeDocument = async function (entry) {
         if (!entry || !entry.path) return null;
         try {
             const url = new URL(entry.path, window.location.href);
@@ -2039,7 +2039,7 @@
         }
     };
 
-    ChatSidebar.prototype.syncKnowledgeDocs = async function (manifest) {
+    AssistSidebar.prototype.syncKnowledgeDocs = async function (manifest) {
         if (!this.docManager) return;
         try {
             await this.docManager.waitReady?.();
@@ -2094,7 +2094,7 @@
         }
     };
 
-    ChatSidebar.prototype.handleHeaderDocCountClick = function () {
+    AssistSidebar.prototype.handleHeaderDocCountClick = function () {
         if (!this.headerDocCountEl) return;
         if (this.headerDocCountEl.dataset.refreshing === "1") return;
         this.headerDocCountEl.dataset.refreshing = "1";
@@ -2125,7 +2125,7 @@
             });
     };
 
-    ChatSidebar.prototype.refreshDocumentStats = function () {
+    AssistSidebar.prototype.refreshDocumentStats = function () {
         if (!this.docManager) return;
         this.docManager.waitReady?.()
             .then(function () {
@@ -2151,7 +2151,7 @@
             });
     };
 
-    ChatSidebar.prototype.buildContextPrompt = function (hits) {
+    AssistSidebar.prototype.buildContextPrompt = function (hits) {
         var base = getSystemPrompt();
         if (!hits || !hits.length) return base;
         var parts = hits.map(function (hit, index) {
@@ -2224,7 +2224,7 @@
         };
     }
 
-    ChatSidebar.prototype.parseAssistantResponse = function (raw) {
+    AssistSidebar.prototype.parseAssistantResponse = function (raw) {
         var fallback = {
             content: "Réponse illisible.",
             references: [],
@@ -2277,7 +2277,7 @@
         }
     };
 
-    ChatSidebar.prototype.buildPreviewPanel = function () {
+    AssistSidebar.prototype.buildPreviewPanel = function () {
         if (this.previewPanel) return;
         var panel = document.createElement("div");
         panel.className = "chat-doc-preview";
@@ -2308,17 +2308,17 @@
         this.previewCloseBtn = closeBtn;
     };
 
-    ChatSidebar.prototype.closePreviewPanel = function () {
+    AssistSidebar.prototype.closePreviewPanel = function () {
         if (!this.previewPanel) return;
         this.previewPanel.classList.remove("open");
         this.previewPanel.setAttribute("aria-hidden", "true");
     };
 
-    ChatSidebar.prototype.normalizeDocName = function (value) {
+    AssistSidebar.prototype.normalizeDocName = function (value) {
         return this.stripDocExtension(String(value || "")).toLowerCase();
     };
 
-    ChatSidebar.prototype.buildHistoryText = function () {
+    AssistSidebar.prototype.buildHistoryText = function () {
         if (!this.conversation?.messages?.length) return "";
         var entries = [];
         var msgs = this.conversation.messages;
@@ -2339,7 +2339,7 @@
             .join("\n");
     };
 
-    ChatSidebar.prototype.resolvePreviewSnippet = async function (message, reference) {
+    AssistSidebar.prototype.resolvePreviewSnippet = async function (message, reference) {
         var targetDocId = reference?.documentId;
         var entries = [];
         if (message?.retrievalEntries) {
@@ -2381,7 +2381,7 @@
         }
     };
 
-    ChatSidebar.prototype.findDocumentForPreview = async function (name) {
+    AssistSidebar.prototype.findDocumentForPreview = async function (name) {
         if (!name || !this.docManager) return null;
         var docs = await this.docManager.getDocuments(this.conversation.id);
         if (!docs || !docs.length) return null;
@@ -2412,7 +2412,7 @@
         return null;
     };
 
-    ChatSidebar.prototype.openAttachmentPreview = async function (name) {
+    AssistSidebar.prototype.openAttachmentPreview = async function (name) {
         if (!name || !this.docManager) return;
         this.buildPreviewPanel();
         if (!this.previewPanel) return;
@@ -2440,7 +2440,7 @@
         }
     };
 
-    ChatSidebar.prototype.openReferencePreview = async function (message, reference) {
+    AssistSidebar.prototype.openReferencePreview = async function (message, reference) {
         if (!reference) return;
         this.buildPreviewPanel();
         if (!this.previewPanel) return;
@@ -2491,7 +2491,7 @@
         }
     };
 
-    ChatSidebar.prototype.formatPreviewText = function (text, highlightLine) {
+    AssistSidebar.prototype.formatPreviewText = function (text, highlightLine) {
         var lines = String(text || "").split(/\r?\n/);
         if (!lines.length) return "";
         return lines.map(function (line, index) {
@@ -2509,7 +2509,7 @@
         }).join("");
     };
 
-    ChatSidebar.prototype.getDocumentChunks = async function (docId, conversationId) {
+    AssistSidebar.prototype.getDocumentChunks = async function (docId, conversationId) {
         if (!docId || !this.docManager) return [];
         try {
             var convId = conversationId || this.conversation.id;
@@ -2527,7 +2527,7 @@
         }
     };
 
-    ChatSidebar.prototype.renderDocumentText = function (chunks, options) {
+    AssistSidebar.prototype.renderDocumentText = function (chunks, options) {
         if (!this.previewBodyEl) return;
         var opts = options || {};
         var snippet = typeof opts.snippet === "string" ? opts.snippet.trim() : "";
@@ -2595,7 +2595,7 @@
         }
     };
 
-    ChatSidebar.prototype.init = function () {
+    AssistSidebar.prototype.init = function () {
         if (!this.root) return;
         if (!global.GoToolkitIA || typeof global.GoToolkitIA.chatCompletion !== "function") {
             console.error("GoToolkitIA indisponible pour le chat.");
@@ -2613,16 +2613,16 @@
         }
     };
 
-    var GoToolkitChatSidebar = {
+    var GoToolkitAssist = {
         mount: function (target) {
             if (!target) return null;
-            var instance = new ChatSidebar(target);
+            var instance = new AssistSidebar(target);
             instance.init();
             return instance;
         }
     };
 
-    global.GoToolkitChatSidebar = global.GoToolkitChatSidebar || GoToolkitChatSidebar;
+    global.GoToolkitAssist = global.GoToolkitAssist || GoToolkitAssist;
 })(typeof window !== "undefined" ? window : this);
 this.speechRecognition = null;
 this.isListening = false;

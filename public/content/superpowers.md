@@ -5,13 +5,13 @@ La Go-Toolkit illustre les super-pouvoirs du Product Owner assistés par l'IA.
 ---
 
 ## ◇ Le Cardinal  
-**Module Grid**  
+**Grid**  
 Le pouvoir de modéliser avec clarté. Vulgariser des structures complexes, expliquer la cardinalité avec pédagogie, et co-créer des schémas métiers structurés. Transformer des brainstorms flous en artefacts limpides.
 
 ---
 
 ## ◍ 50 nuances de vrai  
-**Module Canvas**  
+**Canvas**  
 Varier sincèrement les messages. Dire une même vérité de plusieurs façons, sans trahir son intention. Adapter sa voix à chaque contexte, avec justesse, empathie et cohérence.
 
 ---
@@ -23,7 +23,7 @@ Le pouvoir du discernement sémantique. Rétablir la clarté quand les mots se c
 ---
 
 ## ʃ Indélébile  
-**Module Draw**  
+**Draw**  
 Le pouvoir de l’ancrage visuel. Facilitation graphique en réunion, ateliers et supports. Faire durer les idées grâce à l’image.
 
 ---
@@ -35,19 +35,19 @@ Le pouvoir de prototyper vite et bien. Donner corps à l’idée avant le dével
 ---
 
 ## ▷ Tuto Tarantino  
-**Module Voice**  
+**Voice**  
 Le pouvoir de captiver par des tutoriels vidéo percutants. Rythme, narration, pédagogie : transmettre devient un art.
 
 ---
 
 ## ⇥ Goal Digger  
-**Module Timeline**  
+**Timeline**  
 Le pouvoir de creuser au bon endroit pour faire émerger une vraie roadmap de valeur. Tracer une route claire autour d’objectifs d’impact.
 
 ---
 
 ## ⌬ Promptzilla  
-**Module Chat IA**  
+**Assist**  
 Le pouvoir d'invoquer l'IA avec précision et créativité. Utiliser l'IA pour accélérer la production sans sacrifier la rigueur.
 
 ---

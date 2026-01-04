@@ -1,14 +1,50 @@
 [
   {
-    "name": "Super pouvoirs",
-    "abstract": "Guide des outils et assistants disponibles pour aller plus vite.",
-    "path": "content/tools_superpowers.md",
+    "name": "Home & Navigation",
+    "abstract": "Résumé métier de l’index et des modules accessibles depuis l’accueil.",
+    "path": "content/guide_home.md",
     "updatedAt": "2025-12-29T00:00:00Z"
   },
-    {
-    "name": "CV Quang",
-    "abstract": "CV Quang",
-    "path": "content/tools_quang.pdf",
+  {
+    "name": "Canvas (slides)",
+    "abstract": "Comment structurer une présentation et lancer un template métier.",
+    "path": "content/guide_canvas.md",
+    "updatedAt": "2025-12-29T00:00:00Z"
+  },
+  {
+    "name": "Grid (tableaux)",
+    "abstract": "Utiliser les filtres, templates et exports pour explorer des données.",
+    "path": "content/guide_grid.md",
+    "updatedAt": "2025-12-29T00:00:00Z"
+  },
+  {
+    "name": "Draw (diagrammes)",
+    "abstract": "Créer rapidement des schémas avec des templates et la passerelle Excalidraw.",
+    "path": "content/guide_draw.md",
+    "updatedAt": "2025-12-29T00:00:00Z"
+  },
+  {
+    "name": "Timeline",
+    "abstract": "Construire une frise narrative et exporter vers XLSX/PNG/JSON.",
+    "path": "content/guide_timeline.md",
+    "updatedAt": "2025-12-29T00:00:00Z"
+  },
+  {
+    "name": "Voice",
+    "abstract": "Enregistrements, transcription, regroupement par locuteur et partage.",
+    "path": "content/guide_voice.md",
+    "updatedAt": "2025-12-29T00:00:00Z"
+  },
+  {
+    "name": "Assist",
+    "abstract": "Explication métier du comportement RAG du module Assist.",
+    "path": "content/guide_assist.md",
+    "updatedAt": "2025-12-29T00:00:00Z"
+  },
+  {
+    "name": "Super pouvoirs",
+    "abstract": "Guide des outils et assistants disponibles pour aller plus vite.",
+    "path": "content/superpowers.md",
     "updatedAt": "2025-12-29T00:00:00Z"
   }
 ]

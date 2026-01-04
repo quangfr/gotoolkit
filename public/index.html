@@ -15,7 +15,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Sora:wght@400;500;600&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles/style.css?v=2026.01.03">
+    <link rel="stylesheet" href="styles/style.css?v=2026.01.04">
     <style>
         :root {
             --bg: #f5f2eb;
@@ -1479,7 +1479,7 @@
                         <div class="superpower-head">
                             <h4>⌬ Promptzilla</h4>
                             <div class="superpower-tag-row">
-                                <span class="superpower-tag superpower-tag">Module Chat IA</span>
+                                <span class="superpower-tag superpower-tag">Module Assist</span>
                                 </span>
                             </div>
                         </div>
@@ -1961,7 +1961,7 @@
             }
         })();
     </script>
-    <script src="components/chatSidebar.js?v=2026.01.03"></script>
+    <script src="js/assist.js?v=2026.01.04"></script>
     <script>
         (function () {
             const modal = document.getElementById("superpowerModal");
@@ -5423,9 +5423,15 @@
     <script>
         (function () {
             const chatRoot = document.getElementById("chat-root");
-            if (chatRoot && window.GoToolkitChatSidebar) {
-                window.GoToolkitChatSidebar.mount(chatRoot);
+            if (!chatRoot || !window.GoToolkitAssist) return;
+            const chatInstance = window.GoToolkitAssist.mount(chatRoot);
+            window.GoToolkitAssistInstance = chatInstance;
+            function openChatForHash() {
+                if (!chatInstance || window.location.hash !== "#ask") return;
+                chatInstance.open?.();
             }
+            openChatForHash();
+            window.addEventListener("hashchange", openChatForHash);
         })();
     </script>
 </body>
