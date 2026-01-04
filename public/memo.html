@@ -5,6 +5,10 @@
     <meta charset="UTF-8" />
     <title>Mémo | Go-Toolkit</title>
     <link rel="stylesheet" href="styles/style.css?v=2026.1.3">
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@milkdown/crepe@7.17.3/theme/common/style.css">
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@milkdown/crepe@7.17.3/theme/frame.css">
     <style>
         :root {
             --app-bg: #f3f4f6;
@@ -86,15 +90,17 @@
         .memo-editor {
             flex: 1;
             width: 100%;
-            resize: none;
+            min-height: 0;
             border-radius: 10px;
             border: 1px solid var(--app-border);
             padding: 14px;
             font-size: 14px;
-            font-family: "Menlo", "SFMono-Regular", "Consolas", "Liberation Mono", "Courier New", monospace;
             line-height: 1.5;
             background: #fffdf8;
             color: var(--app-text);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
 
         .memo-editor:focus-visible {
@@ -175,8 +181,8 @@
 
         <div class="app-main">
             <section class="memo-card">
-                <textarea id="memoEditor" class="memo-editor editable"
-                    placeholder="Rédige ici ton mémo en markdown..."></textarea>
+                <div id="memoEditor" class="memo-editor editable" role="region"
+                    aria-label="Éditeur de mémo"></div>
             </section>
         </div>
     </div>
@@ -252,6 +258,60 @@
     <script src="https://cdn.jsdelivr.net/npm/minisearch@7.2.0/dist/umd/index.min.js"></script>
     <script src="js/keywordIndex.js"></script>
     <script src="js/documents.js"></script>
+    <script type="module">
+        import { Editor, rootCtx, defaultValueCtx } from "https://esm.sh/@milkdown/kit@7.17.3/core?bundle";
+        import { commonmark } from "https://esm.sh/@milkdown/kit@7.17.3/preset/commonmark?bundle";
+        import { nord } from "https://esm.sh/@milkdown/theme-nord@7.17.3?bundle";
+        import { listener, listenerCtx } from "https://esm.sh/@milkdown/plugin-listener@7.17.3?bundle";
+        import { replaceAll, getMarkdown } from "https://esm.sh/@milkdown/kit@7.17.3/utils?bundle";
+
+        async function createMilkdownEditor(root) {
+            if (!root) {
+                throw new Error("Memo editor racine introuvable");
+            }
+            root.innerHTML = "";
+            const handlers = new Set();
+
+            const editor = await Editor.make()
+                .config((ctx) => {
+                    ctx.set(rootCtx, root);
+                    ctx.set(defaultValueCtx, "");
+                })
+                .config(nord)
+                .use(commonmark)
+                .use(listener)
+                .create();
+
+            editor.action((ctx) => {
+                const manager = ctx.get(listenerCtx);
+                manager.markdownUpdated((_editorCtx, markdown) => {
+                    handlers.forEach(fn => fn(markdown));
+                });
+            });
+
+            console.log("Editor created");
+
+            return {
+                setValue(value) {
+                    editor.action(replaceAll(value || ""));
+                },
+                getValue() {
+                    return editor.action(getMarkdown());
+                },
+                onChange(fn) {
+                    handlers.add(fn);
+                    return () => handlers.delete(fn);
+                },
+                destroy() {
+                    return editor.destroy();
+                }
+            };
+        }
+
+        if (!window.GoToolkitMemoEditorReady) {
+            window.GoToolkitMemoEditorReady = createMilkdownEditor(document.getElementById("memoEditor"));
+        }
+    </script>
     <script>
         (function () {
             const manager = window.GoToolkitDocumentManager;
@@ -460,7 +520,7 @@
         })();
     </script>
     <script src="js/assist.js?v=v"></script>
-    <script>
+    <script type="module">
         (function () {
             const STORAGE_KEY = "goToolkit.memo.state";
             const SHARE_QUERY_PARAM = "share";
@@ -474,7 +534,6 @@
             const tabsEl = document.getElementById("tabs");
             const addTabBtn = document.getElementById("addTabBtn");
             const deleteTabBtn = document.getElementById("deleteTabBtn");
-            const editor = document.getElementById("memoEditor");
             const fileMenuBtn = document.getElementById("fileMenuBtn");
             const fileMenu = document.getElementById("fileMenu");
             const newDocumentBtn = document.getElementById("newDocumentBtn");
@@ -503,6 +562,8 @@
             const promptEditor = document.getElementById("memoPromptEditor");
             const resetPromptBtn = document.getElementById("resetPromptBtn");
             const applyPromptBtn = document.getElementById("applyPromptBtn");
+            const memoEditorReady = window.GoToolkitMemoEditorReady || Promise.resolve(null);
+            let memoEditorApi = null;
 
             const copyToast = document.getElementById("copyToast");
             const shareWorker = window.goToolkitShareWorker;
@@ -611,8 +672,8 @@
                 const target = state.tabs.find(tab => tab.id === tabId);
                 if (!target) return;
                 state.activeTabId = target.id;
-                if (editor) {
-                    editor.value = target.content || "";
+                if (memoEditorApi) {
+                    memoEditorApi.setValue(target.content || "");
                 }
                 renderTabs();
                 persistState();
@@ -621,7 +682,7 @@
             function updateActiveTabContent(value) {
                 const tab = getActiveTab();
                 if (!tab) return;
-                tab.content = value;
+                tab.content = typeof value === "string" ? value : "";
                 persistState();
             }
 
@@ -637,7 +698,7 @@
                     const tab = getActiveTab();
                     if (tab) {
                         tab.content = "";
-                        if (editor) editor.value = "";
+                        memoEditorApi?.setValue("");
                         persistState();
                     }
                     return;
@@ -849,9 +910,10 @@
             }
 
             function applyTemplateContent(template) {
-                if (!template || !editor) return;
-                editor.value = template.content;
-                updateActiveTabContent(template.content);
+                if (!template) return;
+                const content = template.content || "";
+                memoEditorApi?.setValue(content);
+                updateActiveTabContent(content);
             }
 
             function renderTemplateList() {
@@ -991,12 +1053,18 @@
             let state = loadState() || createDefaultState();
 
             renderTabs();
-            setActiveTab(state.activeTabId);
             setupMemoPrompt();
 
-            editor?.addEventListener("input", event => {
-                updateActiveTabContent(event.target.value);
-            });
+            memoEditorReady
+                .then(api => {
+                    memoEditorApi = api;
+                    if (!memoEditorApi) return;
+                    memoEditorApi.onChange(value => updateActiveTabContent(value));
+                    setActiveTab(state.activeTabId);
+                })
+                .catch(err => {
+                    console.error("Initialisation de l'éditeur Mémo impossible", err);
+                });
 
             addTabBtn?.addEventListener("click", () => {
                 addTab();
