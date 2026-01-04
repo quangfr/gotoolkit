@@ -2210,6 +2210,14 @@
         closeBtn.addEventListener("click", this.closeKnowledgeModal.bind(this));
         actions.appendChild(addBtn);
         actions.appendChild(closeBtn);
+        var resetBtn = document.createElement("button");
+        resetBtn.type = "button";
+        resetBtn.className = "chat-knowledge-modal__reset";
+        resetBtn.textContent = "↺ Réinitialiser";
+        resetBtn.addEventListener("click", this.handleKnowledgeResetClick.bind(this));
+        actions.appendChild(addBtn);
+        actions.appendChild(resetBtn);
+        actions.appendChild(closeBtn);
         header.appendChild(left);
         header.appendChild(actions);
 
@@ -2234,6 +2242,36 @@
         if (!this.knowledgeModalStatusEl) return;
         this.knowledgeModalStatusEl.textContent = message || "";
         this.knowledgeModalStatusEl.classList.toggle("chat-knowledge-modal__status--danger", Boolean(isError));
+    };
+
+    AssistSidebar.prototype.handleKnowledgeResetClick = function () {
+        this.resetKnowledgeIndex();
+    };
+
+    AssistSidebar.prototype.resetKnowledgeIndex = async function () {
+        if (this.knowledgeIndexing) return;
+        this.setKnowledgeModalStatus("Réindexation complète…");
+        try {
+            await this.refreshKnowledgeModal({ skipAutoReindex: true });
+            var entries = Array.isArray(this.knowledgeManifestEntries) ? this.knowledgeManifestEntries : [];
+            var selectionSet = new Set();
+            entries.forEach(function (entry) {
+                var key = this.normalizeKnowledgeKey(entry.fileName);
+                if (key) {
+                    selectionSet.add(key);
+                }
+            }.bind(this));
+            if (!selectionSet.size) {
+                this.setKnowledgeModalStatus("");
+                return;
+            }
+            this.renderKnowledgeModalList(entries, selectionSet);
+            await this.reindexKnowledgeSelection(entries, selectionSet);
+            this.renderKnowledgeModalList(entries, selectionSet);
+        } catch (err) {
+            console.warn("Knowledge reset failed", err);
+            this.setKnowledgeModalStatus("Réindexation échouée.", true);
+        }
     };
 
     AssistSidebar.prototype.buildKnowledgeFilePicker = function () {
@@ -2427,7 +2465,8 @@
         this.setKnowledgeModalStatus("");
     };
 
-    AssistSidebar.prototype.refreshKnowledgeModal = async function () {
+    AssistSidebar.prototype.refreshKnowledgeModal = async function (options) {
+        options = options || {};
         if (!this.knowledgeModalListEl) return;
         var manifest = await this.loadKnowledgeManifest();
         var webEntries = Array.isArray(manifest) ? manifest : [];
@@ -2488,7 +2527,7 @@
             }.bind(this));
         }
         this.renderKnowledgeModalList(this.knowledgeManifestEntries, selectionSet);
-        if (newEntries.length) {
+        if (newEntries.length && !options.skipAutoReindex) {
             await this.reindexKnowledgeSelection(this.knowledgeManifestEntries, selectionSet);
         }
         if (this.knowledgeManifestStore?.write) {

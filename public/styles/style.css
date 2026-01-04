@@ -1557,7 +1557,7 @@ label {
   color: #64748b;
 }
 
-.chat-knowledge-modal__add {
+.chat-knowledge-modal__add, .chat-knowledge-modal__reset {
   border: 1px solid #dfe3f5;
   background: #ffffff;
   border-radius: 8px;
@@ -1566,6 +1566,7 @@ label {
   cursor: pointer;
   color: #1f2937;
 }
+
 
 .chat-knowledge-modal__status {
   min-height: 1rem;
