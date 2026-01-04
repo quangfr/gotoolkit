@@ -5,7 +5,8 @@ const VALID_COLLECTIONS = new Set([
   "timelines",
   "diagrams",
   "grids",
-  "voices" // voice module capsules
+  "voices", // voice module capsules
+  "memos"
 ]);
 const FIRESTORE_SCOPE = "https://www.googleapis.com/auth/datastore";
 const FIREBASE_TOKEN_URL = "https://oauth2.googleapis.com/token";

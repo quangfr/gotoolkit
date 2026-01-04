@@ -954,6 +954,10 @@
             line-height: 1.2;
         }
 
+        #assistLauncherBtn {
+            display: none;
+        }
+
         .hero-meta {
             margin-left: auto;
             display: flex;
@@ -1211,6 +1215,7 @@
             <div class="hero-meta">
                 <button id="openFeedbackBtn" class="feedback-button" type="button">☄ Feedback</button>
                 <button id="openSettingsBtn" class="feedback-button" type="button">⌘ Paramètres</button>
+                <button id="heroAssistBtn" class="feedback-button chat-toggle-button" type="button">⌬ Assist</button>
             </div>
         </header>
 
@@ -1225,6 +1230,13 @@
                         <div class="launcher-desc">Accélère ta productivité</div>
                     </span>
                 </button>
+                <a class="launcher" href="memo.html?v=2026.01.04">
+                    <span class="launcher-emoji">⊞</span>
+                    <span class="launcher-name">
+                        Mémo ⚡︎ Bloc-notes
+                        <div class="launcher-desc">Rédige tes notes</div>
+                    </span>
+                </a>
                 <a class="launcher" href="canvas.html?v=2026.01.04">
                     <span class="launcher-emoji">◍</span>
                     <span class="launcher-name">
@@ -1714,8 +1726,8 @@
                                 <label>
                                     <span class="label-title">Preset</span>
                                     <select id="chatPromptPresetSelect">
-                                        <option value="advice">⟡ Conseil</option>
-                                        <option value="ask">? Demande</option>
+                                        <option value="advice">↬ Conseiller</option>
+                                        <option value="ask">⌕ Explorer</option>
                                     </select>
                                 </label>
                             </div>
@@ -5468,6 +5480,16 @@
             }
             openChatForHash();
             window.addEventListener("hashchange", openChatForHash);
+        })();
+    </script>
+    <script>
+        (function () {
+            const heroAssistBtn = document.getElementById("heroAssistBtn");
+            const assistLauncher = document.getElementById("assistLauncherBtn");
+            if (!heroAssistBtn || !assistLauncher) return;
+            heroAssistBtn.addEventListener("click", () => {
+                assistLauncher.click();
+            });
         })();
     </script>
 </body>

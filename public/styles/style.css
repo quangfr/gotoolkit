@@ -11,6 +11,15 @@
   --app-muted: #65748a;
   --app-radius: 12px;
   --app-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+  --bg: #f5f2eb;
+  --surface: #ffffff;
+  --surface-soft: #fdfbf6;
+  --border-soft: #dfd5c7;
+  --border-strong: #d0c3ad;
+  --text: #2f2922;
+  --muted: #8b8173;
+  --primary: #2a7a57;
+  --shadow-soft: 0 18px 40px rgba(47, 41, 34, 0.08);
 }
 
 * {
@@ -778,9 +787,13 @@ body.context-resizing {
 
 .btn-secondary,
 button.btn-secondary {
-  background: var(--app-surface, #ffffff);
-  border-color: var(--app-border-strong, #cdd4ed);
-  color: var(--app-primary-strong, #1f2a56);
+  border: 1px solid var(--border-soft, #dfd5c7);
+  background: transparent;
+  color: var(--text, #2f2922);
+  border-radius: 10px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 13px;
 }
 
 .btn-ghost,
@@ -1216,6 +1229,10 @@ label {
   height: 100%;
   cursor: col-resize;
   background: transparent;
+}
+#assistLauncherBtn{
+  background: white;
+  border:1px solid var(--app-border, #dfe3f5)
 }
 
 .chat-resizer:hover {
@@ -1820,6 +1837,7 @@ label {
 .chat-input:focus {
   border-color: transparent;
   box-shadow: none;
+  outline: none;
 }
 
 .chat-composer:focus-within {
