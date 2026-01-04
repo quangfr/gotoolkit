@@ -7,6 +7,23 @@
         window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL =
             window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL || "https://assemblyai.gotoolkit.workers.dev/token";
     </script>
+    <script>
+        (function () {
+            if (!window.history.replaceState) {
+                return;
+            }
+            const url = new URL(window.location.href);
+            if (!url.searchParams.has("v")) {
+                return;
+            }
+            url.searchParams.delete("v");
+            window.history.replaceState(
+                null,
+                "",
+                url.pathname + url.search + url.hash
+            );
+        })();
+    </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Go-Toolkit</title>
