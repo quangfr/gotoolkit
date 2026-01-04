@@ -1233,6 +1233,7 @@ label {
 
 .chat-header span {
   font-weight: 700;
+  font-size : 14px;
   letter-spacing: 0.02em;
 }
 
@@ -1378,7 +1379,7 @@ label {
 .chat-reference-link {
   border: none;
   background: transparent;
-  color: #2563eb;
+  color: var(--app-primary);
   font-weight: 600;
   text-align: left;
   padding: 0;
@@ -1464,6 +1465,14 @@ label {
   gap: 10px;
 }
 
+.chat-doc-preview__back {
+  border: none;
+  background: transparent;
+  font-size: 1rem;
+  cursor: pointer;
+  color: #64748b;
+}
+
 .chat-doc-preview__title {
   font-weight: 700;
   font-size: 1rem;
@@ -1490,6 +1499,117 @@ label {
   background: #f8fafc;
   font-size: 0.78rem;
   line-height: 1.45;
+}
+
+.chat-knowledge-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: var(--chat-sidebar-width, 0px);
+  height: 100vh;
+  background: #ffffff;
+  border-right: 1px solid #e2e8f0;
+  box-shadow: 12px 0 32px rgba(15, 23, 42, 0.08);
+  transform: translateX(-100%);
+  transition: transform 0.2s ease;
+  z-index: 27;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.chat-knowledge-modal.open {
+  transform: translateX(0);
+}
+
+.chat-knowledge-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.chat-knowledge-modal__title {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #0f172a;
+}
+
+.chat-knowledge-modal__close {
+  border: none;
+  background: transparent;
+  font-size: 1rem;
+  cursor: pointer;
+  color: #64748b;
+}
+
+.chat-knowledge-modal__status {
+  min-height: 1rem;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.chat-knowledge-modal__status--danger {
+  color: #b91c1c;
+}
+
+.chat-knowledge-modal__list {
+  flex: 1;
+  overflow: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px;
+  background: #f8fafc;
+  font-size: 0.78rem;
+}
+
+.chat-knowledge-modal__row {
+  display: grid;
+  grid-template-columns: 24px minmax(180px, 1.4fr) minmax(240px, 2fr) 110px;
+  gap: 10px;
+  align-items: center;
+  padding: 4px 0;
+}
+
+.chat-knowledge-modal__row--header {
+  font-weight: 600;
+  color: #475569;
+  padding-top: 0;
+}
+
+.chat-knowledge-modal__checkbox {
+  width: 14px;
+  height: 14px;
+}
+
+.chat-knowledge-modal__name {
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.chat-knowledge-modal__name:hover {
+  text-decoration: underline;
+}
+
+.chat-knowledge-modal__abstract {
+  color: #334155;
+}
+
+.chat-knowledge-modal__date {
+  color: #64748b;
+  font-variant-numeric: tabular-nums;
+}
+
+.chat-knowledge-modal__empty {
+  color: #64748b;
+  font-size: 0.85rem;
+  padding: 12px;
 }
 
 .chat-doc-preview__body h1,

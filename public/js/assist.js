@@ -294,22 +294,22 @@
         });
         var normalized = [];
         var tail = "";
-            list.forEach(function (chunk) {
-                var text = String(chunk?.text || "");
-                if (!text) return;
-                var overlap = computeDocumentChunkOverlap(tail, text);
-                var trimmed = overlap ? text.slice(overlap) : text;
-                if (!trimmed) return;
-                normalized.push({
-                    text: trimmed,
-                    chunkKey: getChunkIdentifier(chunk)
-                });
-                tail += trimmed;
-                if (tail.length > PREVIEW_CHUNK_OVERLAP_MAX) {
-                    tail = tail.slice(-PREVIEW_CHUNK_OVERLAP_MAX);
-                }
+        list.forEach(function (chunk) {
+            var text = String(chunk?.text || "");
+            if (!text) return;
+            var overlap = computeDocumentChunkOverlap(tail, text);
+            var trimmed = overlap ? text.slice(overlap) : text;
+            if (!trimmed) return;
+            normalized.push({
+                text: trimmed,
+                chunkKey: getChunkIdentifier(chunk)
             });
-            return normalized;
+            tail += trimmed;
+            if (tail.length > PREVIEW_CHUNK_OVERLAP_MAX) {
+                tail = tail.slice(-PREVIEW_CHUNK_OVERLAP_MAX);
+            }
+        });
+        return normalized;
     }
 
     function getSystemPrompt() {
@@ -322,6 +322,32 @@
             return fallback;
         }
         return "";
+    }
+
+    function createKnowledgeManifestStore() {
+        var factory = global.goToolkitStorageService?.createStore;
+        if (typeof factory !== "function") {
+            return {
+                read: async function () { return []; },
+                write: async function (value) { return value || []; }
+            };
+        }
+        return factory({
+            storeName: "knowledge-manifest",
+            localStorageKey: "goToolkit.knowledge.manifest",
+            defaultValue: function () { return []; },
+            normalize: function (value) {
+                if (!Array.isArray(value)) return null;
+                return value
+                    .map(function (entry) {
+                        if (typeof entry === "string") return entry.trim();
+                        if (entry && typeof entry.fileName === "string") return entry.fileName.trim();
+                        return "";
+                    })
+                    .filter(Boolean);
+            },
+            logPrefix: "goToolkit.knowledge.manifest"
+        });
     }
 
     function AssistSidebar(root) {
@@ -352,7 +378,7 @@
         this.pendingDocumentAttachments = [];
         this.headerDocCountEl = null;
         this.knowledgeDocumentNames = [];
-        this.headerDocCountTooltipDefault = "Rafraîchir les documents indexés";
+        this.headerDocCountTooltipDefault = "Base de connaissance";
         this.previewPanel = null;
         this.previewTitleEl = null;
         this.previewBodyEl = null;
@@ -367,6 +393,14 @@
         this.knowledgeConversationId = global.GoToolkitKnowledgeConversationId || "knowledge";
         this.knowledgeDocumentNames = [];
         this.knowledgeDocumentCount = 0;
+        this.knowledgeManifestStore = createKnowledgeManifestStore();
+        this.knowledgeModal = null;
+        this.knowledgeModalHeader = null;
+        this.knowledgeModalListEl = null;
+        this.knowledgeModalStatusEl = null;
+        this.knowledgeModalCloseBtn = null;
+        this.knowledgeManifestEntries = [];
+        this.knowledgeIndexing = false;
     }
 
     AssistSidebar.prototype.persist = function () {
@@ -1629,7 +1663,7 @@
         var header = document.createElement("div");
         header.className = "chat-header";
         var title = document.createElement("span");
-        title.textContent = "⌬ Assist";
+        title.textContent = "⌬ Assist ⚡︎ Promptzilla";
         header.appendChild(title);
 
         var headerActions = document.createElement("div");
@@ -1983,6 +2017,25 @@
         return 0;
     };
 
+    AssistSidebar.prototype.normalizeKnowledgeKey = function (value) {
+        return (value || "").toString().trim().toLowerCase();
+    };
+
+    AssistSidebar.prototype.formatFriendlyDate = function (value) {
+        var ts = Number(value) || 0;
+        if (!ts) return "—";
+        try {
+            var date = new Date(ts);
+            return date.toLocaleDateString("fr-FR", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric"
+            });
+        } catch (err) {
+            return "—";
+        }
+    };
+
     AssistSidebar.prototype.fetchContentManifest = function () {
         try {
             const url = new URL("content/files.json", window.location.href);
@@ -2075,6 +2128,186 @@
             return;
         }
         this.headerDocCountEl.setAttribute("title", this.knowledgeDocumentNames.join("\n"));
+    };
+
+    AssistSidebar.prototype.buildKnowledgeModal = function () {
+        if (this.knowledgeModal) return;
+        var modal = document.createElement("div");
+        modal.className = "chat-knowledge-modal";
+        modal.setAttribute("aria-hidden", "true");
+
+        var header = document.createElement("div");
+        header.className = "chat-knowledge-modal__header";
+        var title = document.createElement("div");
+        title.className = "chat-knowledge-modal__title";
+        title.textContent = "Base de connaissance";
+        var closeBtn = document.createElement("button");
+        closeBtn.type = "button";
+        closeBtn.className = "chat-knowledge-modal__close";
+        closeBtn.textContent = "✕";
+        closeBtn.addEventListener("click", this.closeKnowledgeModal.bind(this));
+        header.appendChild(title);
+        header.appendChild(closeBtn);
+
+        var status = document.createElement("div");
+        status.className = "chat-knowledge-modal__status";
+
+        var list = document.createElement("div");
+        list.className = "chat-knowledge-modal__list";
+
+        modal.appendChild(header);
+        modal.appendChild(status);
+        modal.appendChild(list);
+        document.body.appendChild(modal);
+
+        this.knowledgeModal = modal;
+        this.knowledgeModalHeader = header;
+        this.knowledgeModalListEl = list;
+        this.knowledgeModalStatusEl = status;
+        this.knowledgeModalCloseBtn = closeBtn;
+    };
+
+    AssistSidebar.prototype.setKnowledgeModalStatus = function (message, isError) {
+        if (!this.knowledgeModalStatusEl) return;
+        this.knowledgeModalStatusEl.textContent = message || "";
+        this.knowledgeModalStatusEl.classList.toggle("chat-knowledge-modal__status--danger", Boolean(isError));
+    };
+
+    AssistSidebar.prototype.openKnowledgeModal = function () {
+        this.buildKnowledgeModal();
+        if (!this.knowledgeModal) return;
+        if (this.previewPanel && this.previewPanel.classList.contains("open")) {
+            this.closePreviewPanel();
+        }
+        this.knowledgeModal.classList.add("open");
+        this.knowledgeModal.setAttribute("aria-hidden", "false");
+        this.refreshKnowledgeModal();
+    };
+
+    AssistSidebar.prototype.closeKnowledgeModal = function () {
+        if (!this.knowledgeModal) return;
+        this.knowledgeModal.classList.remove("open");
+        this.knowledgeModal.setAttribute("aria-hidden", "true");
+        this.setKnowledgeModalStatus("");
+    };
+
+    AssistSidebar.prototype.refreshKnowledgeModal = async function () {
+        if (!this.knowledgeModalListEl) return;
+        var manifest = await this.loadKnowledgeManifest();
+        this.knowledgeManifestEntries = Array.isArray(manifest) ? manifest : [];
+        var storedList = [];
+        if (this.knowledgeManifestStore?.read) {
+            storedList = await this.knowledgeManifestStore.read();
+        }
+        var storedSet = new Set((storedList || []).map(this.normalizeKnowledgeKey.bind(this)));
+        var indexedSet = new Set();
+        if (this.docManager) {
+            try {
+                var docs = await this.docManager.getDocuments(this.knowledgeConversationId);
+                (docs || []).forEach(function (doc) {
+                    if (!doc || doc.sourceType !== "embedded") return;
+                    var key = this.normalizeKnowledgeKey(doc.sourceFileName || doc.name);
+                    if (key) indexedSet.add(key);
+                }.bind(this));
+            } catch (err) {
+                console.warn("Knowledge docs fetch failed", err);
+            }
+        }
+        var selectionSet = new Set(indexedSet);
+        var newEntries = this.knowledgeManifestEntries.filter(function (entry) {
+            var key = this.normalizeKnowledgeKey(entry.fileName);
+            return key && !storedSet.has(key);
+        }.bind(this));
+        var hasStoredList = Array.isArray(storedList) && storedList.length;
+        if (!hasStoredList && indexedSet.size) {
+            newEntries = [];
+        }
+        if (newEntries.length) {
+            newEntries.forEach(function (entry) {
+                var key = this.normalizeKnowledgeKey(entry.fileName);
+                if (key) selectionSet.add(key);
+            }.bind(this));
+        }
+        this.renderKnowledgeModalList(this.knowledgeManifestEntries, selectionSet);
+        if (newEntries.length) {
+            await this.reindexKnowledgeSelection(this.knowledgeManifestEntries, selectionSet);
+        }
+        if (this.knowledgeManifestStore?.write) {
+            await this.knowledgeManifestStore.write(
+                this.knowledgeManifestEntries.map(function (entry) { return entry.fileName; })
+            );
+        }
+    };
+
+    AssistSidebar.prototype.renderKnowledgeModalList = function (entries, selectionSet) {
+        if (!this.knowledgeModalListEl) return;
+        var list = this.knowledgeModalListEl;
+        if (!Array.isArray(entries) || !entries.length) {
+            list.innerHTML = "<div class=\"chat-knowledge-modal__empty\">Aucun document disponible.</div>";
+            return;
+        }
+        var html = [];
+        html.push(
+            "<div class=\"chat-knowledge-modal__row chat-knowledge-modal__row--header\">" +
+            "<div></div>" +
+            "<div>Nom</div>" +
+            "<div>Description</div>" +
+            "<div>MàJ</div>" +
+            "</div>"
+        );
+        entries.forEach(function (entry, idx) {
+            var key = this.normalizeKnowledgeKey(entry.fileName);
+            var checked = selectionSet && selectionSet.has(key);
+            html.push(
+                "<div class=\"chat-knowledge-modal__row\" data-key=\"" + escapeHtml(key) + "\">" +
+                "<div><input type=\"checkbox\" class=\"chat-knowledge-modal__checkbox\" data-key=\"" + escapeHtml(key) + "\" " + (checked ? "checked" : "") + "></div>" +
+                "<div><button type=\"button\" class=\"chat-knowledge-modal__name\" data-key=\"" + escapeHtml(key) + "\">" + escapeHtml(entry.name) + "</button></div>" +
+                "<div class=\"chat-knowledge-modal__abstract\">" + escapeHtml(entry.abstract || "") + "</div>" +
+                "<div class=\"chat-knowledge-modal__date\">" + escapeHtml(this.formatFriendlyDate(entry.updatedAt)) + "</div>" +
+                "</div>"
+            );
+        }.bind(this));
+        list.innerHTML = html.join("");
+
+        var checkboxes = list.querySelectorAll(".chat-knowledge-modal__checkbox");
+        checkboxes.forEach(function (checkbox) {
+            checkbox.addEventListener("change", this.handleKnowledgeToggle.bind(this));
+        }.bind(this));
+        var nameButtons = list.querySelectorAll(".chat-knowledge-modal__name");
+        nameButtons.forEach(function (btn) {
+            btn.addEventListener("click", this.handleKnowledgePreviewClick.bind(this));
+        }.bind(this));
+    };
+
+    AssistSidebar.prototype.collectKnowledgeSelection = function () {
+        var selection = new Set();
+        if (!this.knowledgeModalListEl) return selection;
+        var checkboxes = this.knowledgeModalListEl.querySelectorAll(".chat-knowledge-modal__checkbox");
+        checkboxes.forEach(function (checkbox) {
+            if (checkbox.checked) {
+                var key = this.normalizeKnowledgeKey(checkbox.dataset.key || "");
+                if (key) selection.add(key);
+            }
+        }.bind(this));
+        return selection;
+    };
+
+    AssistSidebar.prototype.handleKnowledgeToggle = function () {
+        if (this.knowledgeIndexing) return;
+        var selection = this.collectKnowledgeSelection();
+        this.reindexKnowledgeSelection(this.knowledgeManifestEntries, selection);
+    };
+
+    AssistSidebar.prototype.handleKnowledgePreviewClick = function (event) {
+        var target = event?.currentTarget;
+        var key = this.normalizeKnowledgeKey(target?.dataset?.key || "");
+        if (!key) return;
+        var entry = (this.knowledgeManifestEntries || []).find(function (item) {
+            return this.normalizeKnowledgeKey(item.fileName) === key;
+        }.bind(this));
+        if (!entry) return;
+        this.closeKnowledgeModal();
+        this.openKnowledgePreview(entry);
     };
 
     AssistSidebar.prototype.detectFileTypeFromPath = function (path) {
@@ -2264,59 +2497,54 @@
         }
     };
 
-    AssistSidebar.prototype.handleHeaderDocCountClick = function () {
-        if (!this.headerDocCountEl) return;
-        if (this.headerDocCountEl.dataset.refreshing === "1") return;
-        this.headerDocCountEl.dataset.refreshing = "1";
-        this.headerDocCountEl.classList.add("chat-header-doc-count--refreshing");
-        var self = this;
-        var total = 0;
-        var updateCount = function (parsed, count) {
-            if (!self.headerDocCountEl) return;
-            if (typeof count === "number" && count > 0) {
-                self.headerDocCountEl.textContent = "🗎 " + parsed + " / " + count;
-                self.headerDocCountEl.dataset.manifestTotal = count;
-            } else {
-                self.headerDocCountEl.textContent = "🗎 " + parsed;
-            }
-        };
-        self.fetchCurrentManifest()
-            .then(async function (manifest) {
-                if (!Array.isArray(manifest)) {
-                    manifest = [];
-                }
-                total = manifest.length;
-                self.cacheKnowledgeDocumentNames(manifest);
-                updateCount(0, total);
-                await self.purgeKnowledgeIndex();
-                await self.reindexKnowledgeFromManifest(manifest, {
-                    onProgress: function (parsed) {
-                        updateCount(parsed, total);
-                    }
-                });
-            })
-            .catch(function (err) {
-                console.error("Knowledge refresh failed", err);
-            })
-            .finally(function () {
-                self.headerDocCountEl.dataset.refreshing = "0";
-                self.headerDocCountEl.classList.remove("chat-header-doc-count--refreshing");
-                updateCount(total, total);
-                self.refreshDocumentStats();
+    AssistSidebar.prototype.reindexKnowledgeSelection = async function (manifest, selectionSet) {
+        if (this.knowledgeIndexing || !this.docManager) return;
+        var entries = Array.isArray(manifest) ? manifest : [];
+        var selected = selectionSet instanceof Set ? selectionSet : new Set();
+        var filtered = entries.filter(function (entry) {
+            var key = this.normalizeKnowledgeKey(entry.fileName);
+            return key && selected.has(key);
+        }.bind(this));
+        var hadError = false;
+        this.knowledgeIndexing = true;
+        this.setKnowledgeModalStatus("Indexation en cours…");
+        try {
+            await this.purgeKnowledgeIndex();
+            await this.reindexKnowledgeFromManifest(filtered, {
+                onProgress: function (parsed, total) {
+                    var label = total ? parsed + " / " + total : parsed;
+                    this.setKnowledgeModalStatus("Indexation " + label);
+                }.bind(this)
             });
+            this.cacheKnowledgeDocumentNames(filtered);
+        } catch (err) {
+            hadError = true;
+            console.warn("Knowledge selection index failed", err);
+            this.setKnowledgeModalStatus("Indexation échouée.", true);
+        } finally {
+            this.knowledgeIndexing = false;
+            if (!hadError) {
+                this.setKnowledgeModalStatus("");
+            }
+            this.refreshDocumentStats();
+        }
+    };
+
+    AssistSidebar.prototype.handleHeaderDocCountClick = function () {
+        this.openKnowledgeModal();
     };
 
     AssistSidebar.prototype.refreshDocumentStats = function () {
         if (!this.docManager) return;
         this.docManager.waitReady?.()
             .then(function () {
-            return Promise.all([
-                this.docManager.getStats(this.conversation.id),
-                this.docManager.getDocuments(this.conversation.id),
-                this.docManager.getDocuments(this.knowledgeConversationId),
-                this.docManager.getKeywordIndexSize?.(this.conversation.id),
-                this.docManager.getKeywordIndexSize?.(this.knowledgeConversationId)
-            ]);
+                return Promise.all([
+                    this.docManager.getStats(this.conversation.id),
+                    this.docManager.getDocuments(this.conversation.id),
+                    this.docManager.getDocuments(this.knowledgeConversationId),
+                    this.docManager.getKeywordIndexSize?.(this.conversation.id),
+                    this.docManager.getKeywordIndexSize?.(this.knowledgeConversationId)
+                ]);
             }.bind(this))
             .then(function (results) {
                 var stats = results ? results[0] : null;
@@ -2325,6 +2553,11 @@
                 var ctxSize = results ? results[3] : 0;
                 var knowledgeSize = results ? results[4] : 0;
                 this.knowledgeDocumentCount = (Array.isArray(knowledgeDocs) ? knowledgeDocs.length : 0);
+                if (Array.isArray(knowledgeDocs) && knowledgeDocs.length) {
+                    this.cacheKnowledgeDocumentNames(knowledgeDocs.map(function (doc) {
+                        return { name: doc?.name || "" };
+                    }));
+                }
                 this.updateDocumentIndicator(stats, docs, {
                     context: ctxSize,
                     knowledge: knowledgeSize
@@ -2332,6 +2565,45 @@
             }.bind(this))
             .catch(function (err) {
                 console.warn("Documents stats", err);
+            });
+    };
+
+    AssistSidebar.prototype.ensureInitialKnowledgeIndex = function () {
+        if (!this.docManager) return;
+        this.docManager.waitReady?.()
+            .then(async function () {
+                var docs = await this.docManager.getDocuments(this.knowledgeConversationId);
+                var embedded = (docs || []).filter(function (doc) {
+                    return doc && doc.sourceType === "embedded";
+                });
+                if (embedded.length) {
+                    if (this.knowledgeManifestStore?.read && this.knowledgeManifestStore?.write) {
+                        var stored = await this.knowledgeManifestStore.read();
+                        if (!stored || !stored.length) {
+                            var manifest = await this.loadKnowledgeManifest();
+                            if (manifest.length) {
+                                await this.knowledgeManifestStore.write(
+                                    manifest.map(function (entry) { return entry.fileName; })
+                                );
+                            }
+                        }
+                    }
+                    return;
+                }
+                var manifest = await this.loadKnowledgeManifest();
+                if (!manifest.length) return;
+                var selection = new Set(manifest.map(function (entry) {
+                    return this.normalizeKnowledgeKey(entry.fileName);
+                }.bind(this)));
+                await this.reindexKnowledgeSelection(manifest, selection);
+                if (this.knowledgeManifestStore?.write) {
+                    await this.knowledgeManifestStore.write(
+                        manifest.map(function (entry) { return entry.fileName; })
+                    );
+                }
+            }.bind(this))
+            .catch(function (err) {
+                console.warn("Initial knowledge index failed", err);
             });
     };
 
@@ -2469,6 +2741,15 @@
 
         var header = document.createElement("div");
         header.className = "chat-doc-preview__header";
+        var backBtn = document.createElement("button");
+        backBtn.type = "button";
+        backBtn.className = "chat-doc-preview__back";
+        backBtn.textContent = "←";
+        backBtn.setAttribute("aria-label", "Retour à la base de connaissance");
+        backBtn.addEventListener("click", function () {
+            this.closePreviewPanel();
+            this.openKnowledgeModal();
+        }.bind(this));
         var title = document.createElement("div");
         title.className = "chat-doc-preview__title";
         var closeBtn = document.createElement("button");
@@ -2476,6 +2757,7 @@
         closeBtn.className = "chat-doc-preview__close";
         closeBtn.textContent = "✕";
         closeBtn.addEventListener("click", this.closePreviewPanel.bind(this));
+        header.appendChild(backBtn);
         header.appendChild(title);
         header.appendChild(closeBtn);
 
@@ -2675,6 +2957,57 @@
         }
     };
 
+    AssistSidebar.prototype.findKnowledgeDocumentForPreview = async function (entry) {
+        if (!entry || !this.docManager) return null;
+        var docs = await this.docManager.getDocuments(this.knowledgeConversationId);
+        if (!docs || !docs.length) return null;
+        var targetKey = this.normalizeKnowledgeKey(entry.fileName || entry.name);
+        for (var i = 0; i < docs.length; i++) {
+            var doc = docs[i];
+            if (!doc || doc.sourceType !== "embedded") continue;
+            var fileKey = this.normalizeKnowledgeKey(doc.sourceFileName || doc.name);
+            if (fileKey && fileKey === targetKey) {
+                return doc;
+            }
+            var nameKey = this.normalizeKnowledgeKey(doc.name || "");
+            if (nameKey && nameKey === targetKey) {
+                return doc;
+            }
+        }
+        return null;
+    };
+
+    AssistSidebar.prototype.openKnowledgePreview = async function (entry) {
+        if (!entry || !this.docManager) return;
+        this.buildPreviewPanel();
+        if (!this.previewPanel) return;
+        this.previewPanel.classList.add("open");
+        this.previewPanel.setAttribute("aria-hidden", "false");
+        this.previewTitleEl && (this.previewTitleEl.textContent = entry.name || "Document");
+        this.clearPreviewIframe();
+        if (this.previewBodyEl) {
+            this.previewBodyEl.innerHTML = "<div class=\"chat-doc-preview__loading\">Chargement…</div>";
+        }
+        try {
+            var doc = await this.findKnowledgeDocumentForPreview(entry);
+            if (doc?.id) {
+                if (isPdfDocument(doc)) {
+                    if (this.showPdfPreview(doc)) {
+                        return;
+                    }
+                }
+                var docChunks = await this.getDocumentChunks(doc.id, doc.conversationId);
+                this.renderDocumentText(docChunks, { doc: doc });
+                return;
+            }
+        } catch (err) {
+            console.warn("Knowledge preview failed", err);
+        }
+        if (this.previewBodyEl) {
+            this.previewBodyEl.innerHTML = "(extrait indisponible)";
+        }
+    };
+
     AssistSidebar.prototype.openReferencePreview = async function (message, reference) {
         if (!reference) return;
         this.buildPreviewPanel();
@@ -2869,6 +3202,7 @@
         if (this.docManager) {
             this.documentStatsWatcher = this.docManager.onStatsChange(this.refreshDocumentStats.bind(this));
             this.refreshDocumentStats();
+            this.ensureInitialKnowledgeIndex();
         }
         if (this.isOpen) {
             this.open();

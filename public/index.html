@@ -5427,7 +5427,7 @@
             const chatInstance = window.GoToolkitAssist.mount(chatRoot);
             window.GoToolkitAssistInstance = chatInstance;
             function openChatForHash() {
-                if (!chatInstance || window.location.hash !== "#ask") return;
+                if (!chatInstance || window.location.hash !== "#assist") return;
                 chatInstance.open?.();
             }
             openChatForHash();

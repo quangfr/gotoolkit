@@ -1,5 +1,7 @@
 ## 2026-01-04
-- Module [Ask](/#ask) avec documents en conversation et en référence
+- Module [Assist](/#assist) avec les modes Conseil et Recherche 
+- Références, prévisualisation et extraits
+- Base de connaissance personnalisable
 
 ## 2025-12-29
 - Ajout des notes de version et de la feuille de route

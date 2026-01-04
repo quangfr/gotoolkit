@@ -1,24 +1,24 @@
 [
   {
-    "name": "Home & Navigation",
+    "name": "Page d'accueil",
     "abstract": "Résumé métier de l’index et des modules accessibles depuis l’accueil.",
     "path": "content/guide_home.md",
     "updatedAt": "2025-12-29T00:00:00Z"
   },
   {
-    "name": "Canvas (slides)",
+    "name": "Canvas",
     "abstract": "Comment structurer une présentation et lancer un template métier.",
     "path": "content/guide_canvas.md",
     "updatedAt": "2025-12-29T00:00:00Z"
   },
   {
-    "name": "Grid (tableaux)",
+    "name": "Grid",
     "abstract": "Utiliser les filtres, templates et exports pour explorer des données.",
     "path": "content/guide_grid.md",
     "updatedAt": "2025-12-29T00:00:00Z"
   },
   {
-    "name": "Draw (diagrammes)",
+    "name": "Draw",
     "abstract": "Créer rapidement des schémas avec des templates et la passerelle Excalidraw.",
     "path": "content/guide_draw.md",
     "updatedAt": "2025-12-29T00:00:00Z"
@@ -42,7 +42,7 @@
     "updatedAt": "2025-12-29T00:00:00Z"
   },
   {
-    "name": "Super pouvoirs",
+    "name": "Super pouvoirs Go-Live",
     "abstract": "Guide des outils et assistants disponibles pour aller plus vite.",
     "path": "content/superpowers.md",
     "updatedAt": "2025-12-29T00:00:00Z"
