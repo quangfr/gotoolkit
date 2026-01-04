@@ -315,6 +315,8 @@
         this.promptDropdownMenu = null;
         this.documentCounts = { context: 0, gallery: 0 };
         this.knowledgeConversationId = global.GoToolkitKnowledgeConversationId || "knowledge";
+        this.knowledgeDocumentNames = [];
+        this.knowledgeDocumentCount = 0;
     }
 
     AssistSidebar.prototype.persist = function () {
@@ -1554,7 +1556,7 @@
         this.toggleButton.id = "chatToggleBtn";
         this.toggleButton.type = "button";
         this.toggleButton.className = "feedback-button chat-toggle-button";
-        this.toggleButton.textContent = "Assist";
+        this.toggleButton.textContent = "⌬ Assist";
         this.toggleButton.addEventListener("click", this.toggle.bind(this));
 
         var heroMeta = document.querySelector(".hero-meta");
@@ -1577,7 +1579,7 @@
         var header = document.createElement("div");
         header.className = "chat-header";
         var title = document.createElement("span");
-        title.textContent = "Assist";
+        title.textContent = "⌬ Assist";
         header.appendChild(title);
 
         var headerActions = document.createElement("div");
@@ -1898,7 +1900,7 @@
     AssistSidebar.prototype.updateHeaderDocumentCount = function () {
         if (!this.headerDocCountEl) return;
         var counts = this.documentCounts || { context: 0, gallery: 0 };
-        var total = counts.context + (this.promptPresetId === "ask" ? counts.gallery : 0);
+        var total = counts.context + (this.promptPresetId === "ask" ? counts.gallery : 0) + (this.knowledgeDocumentCount || 0);
         this.headerDocCountEl.dataset.count = total;
         this.headerDocCountEl.textContent = "🗎 " + total;
     };
@@ -2258,18 +2260,21 @@
         if (!this.docManager) return;
         this.docManager.waitReady?.()
             .then(function () {
-                return Promise.all([
-                    this.docManager.getStats(this.conversation.id),
-                    this.docManager.getDocuments(this.conversation.id),
-                    this.docManager.getKeywordIndexSize?.(this.conversation.id),
-                    this.docManager.getKeywordIndexSize?.(this.knowledgeConversationId)
-                ]);
+            return Promise.all([
+                this.docManager.getStats(this.conversation.id),
+                this.docManager.getDocuments(this.conversation.id),
+                this.docManager.getDocuments(this.knowledgeConversationId),
+                this.docManager.getKeywordIndexSize?.(this.conversation.id),
+                this.docManager.getKeywordIndexSize?.(this.knowledgeConversationId)
+            ]);
             }.bind(this))
             .then(function (results) {
                 var stats = results ? results[0] : null;
                 var docs = results ? results[1] : [];
-                var ctxSize = results ? results[2] : 0;
-                var knowledgeSize = results ? results[3] : 0;
+                var knowledgeDocs = results ? results[2] : [];
+                var ctxSize = results ? results[3] : 0;
+                var knowledgeSize = results ? results[4] : 0;
+                this.knowledgeDocumentCount = (Array.isArray(knowledgeDocs) ? knowledgeDocs.length : 0);
                 this.updateDocumentIndicator(stats, docs, {
                     context: ctxSize,
                     knowledge: knowledgeSize
