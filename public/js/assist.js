@@ -182,6 +182,29 @@
         return normalized.endsWith(".md") || normalized.endsWith(".markdown");
     }
 
+    function isPdfDocument(doc, options) {
+        var config = options || {};
+        if (config.forcePdf) return true;
+        var mime = "";
+        if (typeof config.mime === "string") {
+            mime = config.mime;
+        } else if (doc && typeof doc.mime === "string") {
+            mime = doc.mime;
+        }
+        if (mime && mime.toLowerCase().includes("pdf")) {
+            return true;
+        }
+        var fileName = "";
+        if (typeof config.fileName === "string") {
+            fileName = config.fileName;
+        } else if (doc && typeof doc.sourceFileName === "string") {
+            fileName = doc.sourceFileName;
+        } else if (doc && typeof doc.name === "string") {
+            fileName = doc.name;
+        }
+        return (fileName || "").toLowerCase().endsWith(".pdf");
+    }
+
     function normalizeReference(payload) {
         if (!payload || typeof payload !== "object") return null;
         var documentId = payload.documentId || payload.docId || payload.doc_id || null;
@@ -333,6 +356,8 @@
         this.previewTitleEl = null;
         this.previewBodyEl = null;
         this.previewCloseBtn = null;
+        this.previewIframeEl = null;
+        this.previewPdfUrl = null;
         this.promptPresetId = readPromptPreset();
         this.promptDropdown = null;
         this.promptDropdownButton = null;
@@ -2466,10 +2491,55 @@
         this.previewCloseBtn = closeBtn;
     };
 
+    AssistSidebar.prototype.clearPreviewIframe = function () {
+        if (this.previewIframeEl) {
+            this.previewIframeEl.remove();
+            this.previewIframeEl = null;
+        }
+        if (this.previewPdfUrl) {
+            try {
+                URL.revokeObjectURL(this.previewPdfUrl);
+            } catch (err) {
+                // ignore
+            }
+            this.previewPdfUrl = null;
+        }
+        if (this.previewBodyEl) {
+            this.previewBodyEl.style.display = "";
+        }
+    };
+
+    AssistSidebar.prototype.showPdfPreview = function (doc) {
+        if (!this.previewPanel || !this.previewBodyEl) return false;
+        if (!doc || !doc.fileBuffer) return false;
+        try {
+            var blob = doc.fileBuffer instanceof Blob
+                ? doc.fileBuffer
+                : new Blob([doc.fileBuffer], { type: doc.mime || "application/pdf" });
+            this.clearPreviewIframe();
+            var url = URL.createObjectURL(blob);
+            this.previewPdfUrl = url;
+            var iframe = document.createElement("iframe");
+            iframe.className = "chat-doc-preview__iframe";
+            iframe.setAttribute("loading", "lazy");
+            iframe.setAttribute("referrerpolicy", "no-referrer");
+            iframe.src = "js/pdf-viewer?file=" + encodeURIComponent(url);
+            this.previewBodyEl.style.display = "none";
+            this.previewPanel.appendChild(iframe);
+            this.previewIframeEl = iframe;
+            return true;
+        } catch (err) {
+            console.warn("PDF preview failed", err);
+            this.clearPreviewIframe();
+            return false;
+        }
+    };
+
     AssistSidebar.prototype.closePreviewPanel = function () {
         if (!this.previewPanel) return;
         this.previewPanel.classList.remove("open");
         this.previewPanel.setAttribute("aria-hidden", "true");
+        this.clearPreviewIframe();
     };
 
     AssistSidebar.prototype.normalizeDocName = function (value) {
@@ -2577,6 +2647,7 @@
         this.previewPanel.classList.add("open");
         this.previewPanel.setAttribute("aria-hidden", "false");
         this.previewTitleEl && (this.previewTitleEl.textContent = name);
+        this.clearPreviewIframe();
         if (this.previewBodyEl) {
             this.previewBodyEl.innerHTML = "<div class=\"chat-doc-preview__loading\">Chargement…</div>";
         }
@@ -2584,6 +2655,11 @@
         try {
             var doc = await this.findDocumentForPreview(name);
             if (doc?.id) {
+                if (isPdfDocument(doc)) {
+                    if (this.showPdfPreview(doc)) {
+                        return;
+                    }
+                }
                 var docChunks = await this.getDocumentChunks(doc.id, doc.conversationId);
                 snippet = docChunks.length ? (docChunks[0].text || "") : "";
                 this.renderDocumentText(docChunks, { snippet: snippet, doc: doc });
@@ -2604,6 +2680,7 @@
         if (!this.previewPanel) return;
         this.previewPanel.classList.add("open");
         this.previewPanel.setAttribute("aria-hidden", "false");
+        this.clearPreviewIframe();
         if (this.previewBodyEl) {
             this.previewBodyEl.innerHTML = "<div class=\"chat-doc-preview__loading\">Chargement…</div>";
         }
@@ -2616,6 +2693,11 @@
             var title = doc?.name || "Document";
             this.previewTitleEl && (this.previewTitleEl.textContent = title);
             if (doc?.id) {
+                if (isPdfDocument(doc)) {
+                    if (this.showPdfPreview(doc)) {
+                        return;
+                    }
+                }
                 var docChunks = await this.getDocumentChunks(doc.id, doc.conversationId);
                 var relatedChunkIds = new Set(
                     (message?.references || [])
