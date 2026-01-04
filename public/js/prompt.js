@@ -1412,12 +1412,13 @@ RÈGLES
 - Références : 0-4 documents cités.
 - Pas d'émojis, pas de tableau en markdown.
 - Content : Syntaxe markdown autorisé gras, italique, liste, titre ###.
-
+- Un seul objet JSON en sortie, pas de texte avant/après
+- Les noms de clés et la structure du JSON sont figés
 
 FORMAT DE SORTIE (JSON strict)
 {
   "answer": {
-    "content": "Réponse synthétique issue du contexte."
+    "content": "Réponse fluide à l'utilisateur issue du contexte."
   },
   "references": [
     {
@@ -1448,12 +1449,13 @@ RÈGLES
 - Références : 0-4 documents cités.
 - Pas d'émojis, pas de tableau en markdown.
 - Content : Syntaxe markdown autorisé gras, italique, liste, titre ###.
-
+- Un seul objet JSON en sortie, pas de texte avant/après
+- Les noms de clés et la structure du JSON sont figés
 
 FORMAT DE SORTIE (JSON strict)
 {
   "answer": {
-    "content": "Réponse synthétique issue du contexte."
+    "content": "Réponse fluide à l'utilisateur issue du contexte."
   },
   "references": [
     {

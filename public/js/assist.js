@@ -3188,6 +3188,50 @@
         };
     }
 
+    function sanitizeEmbeddedJson(text) {
+        return text.replace(/[\u0000-\u001f\u2028\u2029]/g, function (char) {
+            switch (char) {
+                case "\r":
+                    return "\\r";
+                case "\n":
+                    return "\\n";
+                case "\t":
+                    return "\\t";
+                case "\b":
+                    return "\\b";
+                case "\f":
+                    return "\\f";
+                case "\u2028":
+                    return "\\u2028";
+                case "\u2029":
+                    return "\\u2029";
+                default:
+                    return "\\u" + char.charCodeAt(0).toString(16).padStart(4, "0");
+            }
+        });
+    }
+
+    function parseEmbeddedContent(text) {
+        if (typeof text !== "string") return null;
+        var trimmed = text.trim();
+        if (!trimmed) return null;
+        var parsed = tryParseJsonString(trimmed);
+        if (parsed && typeof parsed === "object") {
+            return parsed;
+        }
+        var sanitized = sanitizeEmbeddedJson(trimmed);
+        if (sanitized === trimmed) return null;
+        return tryParseJsonString(sanitized);
+    }
+
+    function tryParseJsonString(value) {
+        try {
+            return JSON.parse(value);
+        } catch (err) {
+            return null;
+        }
+    }
+
     AssistSidebar.prototype.parseAssistantResponse = function (raw) {
         var fallback = {
             content: "Réponse illisible.",
@@ -3205,21 +3249,15 @@
         if (ndjsonResult) {
             return ndjsonResult;
         }
+        var parsed = null;
         try {
-            var parsed = JSON.parse(trimmed);
+            parsed = JSON.parse(trimmed);
             var payload = parsed;
-            if (payload && typeof payload.content === "string") {
-                var innerTrim = payload.content.trim();
-                if (innerTrim.startsWith("{")) {
-                    try {
-                        var innerParsed = JSON.parse(innerTrim);
-                        if (innerParsed && typeof innerParsed === "object") {
-                            payload = innerParsed;
-                        }
-                    } catch (innerErr) {
-                        /* ignore */
-                    }
-                }
+            var embedded = parseEmbeddedContent(payload?.content);
+            if (embedded && typeof embedded === "object") {
+                payload = embedded;
+            } else if (payload?.content && typeof payload.content === "object") {
+                payload = payload.content;
             }
             var answerContent = payload?.answer?.content;
             var references = Array.isArray(payload?.references) ? payload.references : [];
