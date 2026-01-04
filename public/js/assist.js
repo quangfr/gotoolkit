@@ -350,6 +350,26 @@
         });
     }
 
+    function createKnowledgeOverridesStore() {
+        var factory = global.goToolkitStorageService?.createStore;
+        if (typeof factory !== "function") {
+            return {
+                read: async function () { return {}; },
+                write: async function (value) { return value || {}; }
+            };
+        }
+        return factory({
+            storeName: "knowledge-overrides",
+            localStorageKey: "goToolkit.knowledge.overrides",
+            defaultValue: function () { return {}; },
+            normalize: function (value) {
+                if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+                return value;
+            },
+            logPrefix: "goToolkit.knowledge.overrides"
+        });
+    }
+
     function AssistSidebar(root) {
         this.root = root;
         this.sidebar = null;
@@ -394,13 +414,23 @@
         this.knowledgeDocumentNames = [];
         this.knowledgeDocumentCount = 0;
         this.knowledgeManifestStore = createKnowledgeManifestStore();
+        this.knowledgeOverridesStore = createKnowledgeOverridesStore();
         this.knowledgeModal = null;
         this.knowledgeModalHeader = null;
         this.knowledgeModalListEl = null;
         this.knowledgeModalStatusEl = null;
         this.knowledgeModalCloseBtn = null;
+        this.knowledgeModalAddBtn = null;
+        this.knowledgeModalFileInput = null;
+        this.knowledgeEditOverlay = null;
+        this.knowledgeEditNameInput = null;
+        this.knowledgeEditAbstractInput = null;
+        this.knowledgeEditSaveBtn = null;
+        this.knowledgeEditCloseBtn = null;
+        this.knowledgeEditTargetKey = null;
         this.knowledgeManifestEntries = [];
         this.knowledgeIndexing = false;
+        this.knowledgeLocalDocRefs = new Map();
     }
 
     AssistSidebar.prototype.persist = function () {
@@ -782,12 +812,12 @@
         return {
             advice: {
                 id: "advice",
-                label: "⟡ Conseil",
+                label: "⎆ Conseil",
                 prompt: getSystemPrompt()
             },
             ask: {
                 id: "ask",
-                label: "? Demande",
+                label: "⌕ Recherche",
                 prompt: global.GoToolkitChatPrompt?.INFO_PROMPT || global.GoToolkitChatPrompt?.DEFAULT_INFO_PROMPT || ""
             }
         };
@@ -2063,7 +2093,7 @@
         if (!Array.isArray(manifest)) {
             return [];
         }
-        return manifest
+        var entries = manifest
             .map(function (entry) {
                 var path = entry?.path || "";
                 var fileName = (entry?.fileName || this.getFileNameFromPath(path)).trim();
@@ -2072,12 +2102,14 @@
                     name: (entry?.name || fileName).trim(),
                     abstract: entry?.abstract || "",
                     updatedAt: this.parseUpdatedAt(entry?.updatedAt),
-                    fileName: fileName
+                    fileName: fileName,
+                    source: "Web"
                 };
             }.bind(this))
             .filter(function (entry) {
                 return entry.path && entry.fileName && entry.name;
             });
+        return this.applyKnowledgeOverrides(entries);
     };
 
     AssistSidebar.prototype.fetchCurrentManifest = async function () {
@@ -2091,7 +2123,7 @@
             }
             const manifest = await response.json();
             if (!Array.isArray(manifest)) return [];
-            return manifest
+            var entries = manifest
                 .map(function (entry) {
                     var path = entry?.path || "";
                     var fileName = (entry?.fileName || this.getFileNameFromPath(path)).trim();
@@ -2100,12 +2132,14 @@
                         name: (entry?.name || fileName).trim(),
                         abstract: entry?.abstract || "",
                         updatedAt: this.parseUpdatedAt(entry?.updatedAt),
-                        fileName: fileName
+                        fileName: fileName,
+                        source: "Web"
                     };
                 }.bind(this))
                 .filter(function (entry) {
                     return entry.path && entry.fileName && entry.name;
                 });
+            return this.applyKnowledgeOverrides(entries);
         } catch (err) {
             console.error("Current manifest error", err);
             return [];
@@ -2130,6 +2164,21 @@
         this.headerDocCountEl.setAttribute("title", this.knowledgeDocumentNames.join("\n"));
     };
 
+    AssistSidebar.prototype.applyKnowledgeOverrides = async function (entries) {
+        if (!this.knowledgeOverridesStore?.read) return entries || [];
+        var overrides = await this.knowledgeOverridesStore.read();
+        if (!overrides || typeof overrides !== "object") return entries || [];
+        return (entries || []).map(function (entry) {
+            var key = this.normalizeKnowledgeKey(entry.fileName);
+            var override = key ? overrides[key] : null;
+            if (!override || typeof override !== "object") return entry;
+            return Object.assign({}, entry, {
+                name: typeof override.name === "string" && override.name.trim() ? override.name.trim() : entry.name,
+                abstract: typeof override.abstract === "string" ? override.abstract : entry.abstract
+            });
+        }.bind(this));
+    };
+
     AssistSidebar.prototype.buildKnowledgeModal = function () {
         if (this.knowledgeModal) return;
         var modal = document.createElement("div");
@@ -2138,25 +2187,36 @@
 
         var header = document.createElement("div");
         header.className = "chat-knowledge-modal__header";
+        var left = document.createElement("div");
+        left.className = "chat-knowledge-modal__header-left";
         var title = document.createElement("div");
         title.className = "chat-knowledge-modal__title";
         title.textContent = "Base de connaissance";
+        var status = document.createElement("div");
+        status.className = "chat-knowledge-modal__status";
+        left.appendChild(title);
+        left.appendChild(status);
+        var actions = document.createElement("div");
+        actions.className = "chat-knowledge-modal__header-actions";
+        var addBtn = document.createElement("button");
+        addBtn.type = "button";
+        addBtn.className = "chat-knowledge-modal__add";
+        addBtn.textContent = "+ Ajouter";
+        addBtn.addEventListener("click", this.openKnowledgeFilePicker.bind(this));
         var closeBtn = document.createElement("button");
         closeBtn.type = "button";
         closeBtn.className = "chat-knowledge-modal__close";
         closeBtn.textContent = "✕";
         closeBtn.addEventListener("click", this.closeKnowledgeModal.bind(this));
-        header.appendChild(title);
-        header.appendChild(closeBtn);
-
-        var status = document.createElement("div");
-        status.className = "chat-knowledge-modal__status";
+        actions.appendChild(addBtn);
+        actions.appendChild(closeBtn);
+        header.appendChild(left);
+        header.appendChild(actions);
 
         var list = document.createElement("div");
         list.className = "chat-knowledge-modal__list";
 
         modal.appendChild(header);
-        modal.appendChild(status);
         modal.appendChild(list);
         document.body.appendChild(modal);
 
@@ -2165,12 +2225,188 @@
         this.knowledgeModalListEl = list;
         this.knowledgeModalStatusEl = status;
         this.knowledgeModalCloseBtn = closeBtn;
+        this.knowledgeModalAddBtn = addBtn;
+        this.buildKnowledgeFilePicker();
+        this.buildKnowledgeEditModal();
     };
 
     AssistSidebar.prototype.setKnowledgeModalStatus = function (message, isError) {
         if (!this.knowledgeModalStatusEl) return;
         this.knowledgeModalStatusEl.textContent = message || "";
         this.knowledgeModalStatusEl.classList.toggle("chat-knowledge-modal__status--danger", Boolean(isError));
+    };
+
+    AssistSidebar.prototype.buildKnowledgeFilePicker = function () {
+        if (this.knowledgeModalFileInput) return;
+        var input = document.createElement("input");
+        input.type = "file";
+        input.multiple = true;
+        input.accept =
+            "application/pdf,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx,application/vnd.openxmlformats-officedocument.presentationml.presentation,.pptx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,.xlsx,text/plain,.txt,text/markdown,.md,application/rtf,.rtf,application/msword,.doc,application/vnd.oasis.opendocument.text,.odt,application/vnd.oasis.opendocument.spreadsheetml.sheet,.ods";
+        input.style.display = "none";
+        input.addEventListener("change", this.handleKnowledgeFilesSelected.bind(this));
+        document.body.appendChild(input);
+        this.knowledgeModalFileInput = input;
+    };
+
+    AssistSidebar.prototype.openKnowledgeFilePicker = function () {
+        if (this.knowledgeModalFileInput) {
+            this.knowledgeModalFileInput.click();
+        }
+    };
+
+    AssistSidebar.prototype.handleKnowledgeFilesSelected = function (event) {
+        var files = event?.target?.files;
+        if (!files || !files.length) return;
+        this.ingestKnowledgeFiles(files);
+        event.target.value = "";
+    };
+
+    AssistSidebar.prototype.ingestKnowledgeFiles = async function (files) {
+        if (!this.docManager) return;
+        var fileArray = Array.from(files);
+        if (!fileArray.length) return;
+        this.setKnowledgeModalStatus("Importation en cours…");
+        try {
+            var metadata = new Map();
+            fileArray.forEach(function (file) {
+                metadata.set(file.name, {
+                    name: file.name,
+                    abstract: "",
+                    updatedAt: file.lastModified || Date.now(),
+                    fileName: file.name,
+                    scope: ["attachments", "local"]
+                });
+            });
+            await this.docManager.ingestFiles(fileArray, this.knowledgeConversationId, {
+                sourceType: "embedded",
+                metadata: metadata
+            });
+            this.setKnowledgeModalStatus("");
+            this.refreshDocumentStats();
+            this.refreshKnowledgeModal();
+        } catch (err) {
+            console.warn("Knowledge import failed", err);
+            this.setKnowledgeModalStatus("Importation échouée.", true);
+        }
+    };
+
+    AssistSidebar.prototype.buildKnowledgeEditModal = function () {
+        if (this.knowledgeEditOverlay) return;
+        var overlay = document.createElement("div");
+        overlay.className = "modal-overlay";
+        overlay.setAttribute("aria-hidden", "true");
+        var modal = document.createElement("div");
+        modal.className = "modal chat-knowledge-edit";
+        var header = document.createElement("div");
+        header.className = "modal-header";
+        var title = document.createElement("h3");
+        title.textContent = "Modifier le document";
+        var closeBtn = document.createElement("button");
+        closeBtn.type = "button";
+        closeBtn.className = "modal-close";
+        closeBtn.textContent = "✕";
+        closeBtn.addEventListener("click", this.closeKnowledgeEditModal.bind(this));
+        header.appendChild(title);
+        header.appendChild(closeBtn);
+
+        var nameLabel = document.createElement("label");
+        nameLabel.textContent = "Nom";
+        var nameInput = document.createElement("input");
+        nameInput.type = "text";
+
+        var abstractLabel = document.createElement("label");
+        abstractLabel.textContent = "Description";
+        var abstractInput = document.createElement("textarea");
+
+        var actions = document.createElement("div");
+        actions.className = "modal-actions";
+        var cancelBtn = document.createElement("button");
+        cancelBtn.type = "button";
+        cancelBtn.className = "btn-secondary";
+        cancelBtn.textContent = "Annuler";
+        cancelBtn.addEventListener("click", this.closeKnowledgeEditModal.bind(this));
+        var saveBtn = document.createElement("button");
+        saveBtn.type = "button";
+        saveBtn.className = "btn-primary";
+        saveBtn.textContent = "Enregistrer";
+        saveBtn.addEventListener("click", this.saveKnowledgeEdit.bind(this));
+        actions.appendChild(cancelBtn);
+        actions.appendChild(saveBtn);
+
+        modal.appendChild(header);
+        modal.appendChild(nameLabel);
+        modal.appendChild(nameInput);
+        modal.appendChild(abstractLabel);
+        modal.appendChild(abstractInput);
+        modal.appendChild(actions);
+        overlay.appendChild(modal);
+        overlay.addEventListener("click", function (event) {
+            if (event.target === overlay) {
+                this.closeKnowledgeEditModal();
+            }
+        }.bind(this));
+        document.body.appendChild(overlay);
+
+        this.knowledgeEditOverlay = overlay;
+        this.knowledgeEditNameInput = nameInput;
+        this.knowledgeEditAbstractInput = abstractInput;
+        this.knowledgeEditSaveBtn = saveBtn;
+        this.knowledgeEditCloseBtn = closeBtn;
+    };
+
+    AssistSidebar.prototype.openKnowledgeEditModal = function (entry) {
+        if (!entry) return;
+        this.buildKnowledgeEditModal();
+        if (!this.knowledgeEditOverlay) return;
+        this.knowledgeEditTargetKey = this.normalizeKnowledgeKey(entry.fileName);
+        this.knowledgeEditNameInput.value = entry.name || "";
+        this.knowledgeEditAbstractInput.value = entry.abstract || "";
+        this.knowledgeEditOverlay.classList.add("open");
+        this.knowledgeEditOverlay.setAttribute("aria-hidden", "false");
+        this.knowledgeEditNameInput.focus();
+    };
+
+    AssistSidebar.prototype.closeKnowledgeEditModal = function () {
+        if (!this.knowledgeEditOverlay) return;
+        this.knowledgeEditOverlay.classList.remove("open");
+        this.knowledgeEditOverlay.setAttribute("aria-hidden", "true");
+        this.knowledgeEditTargetKey = null;
+    };
+
+    AssistSidebar.prototype.saveKnowledgeEdit = async function () {
+        var key = this.normalizeKnowledgeKey(this.knowledgeEditTargetKey || "");
+        if (!key || !this.knowledgeOverridesStore?.read || !this.knowledgeOverridesStore?.write) {
+            this.closeKnowledgeEditModal();
+            return;
+        }
+        var name = (this.knowledgeEditNameInput?.value || "").trim();
+        var abstract = (this.knowledgeEditAbstractInput?.value || "").trim();
+        var overrides = await this.knowledgeOverridesStore.read();
+        overrides = overrides && typeof overrides === "object" ? overrides : {};
+        overrides[key] = { name: name, abstract: abstract };
+        await this.knowledgeOverridesStore.write(overrides);
+        if (this.docManager) {
+            try {
+                var docs = await this.docManager.getDocuments(this.knowledgeConversationId);
+                var match = (docs || []).find(function (doc) {
+                    var docKey = this.normalizeKnowledgeKey(doc?.sourceFileName || doc?.name || "");
+                    return docKey === key;
+                }.bind(this));
+                if (match) {
+                    var updatedDoc = Object.assign({}, match, {
+                        name: name || match.name,
+                        abstract: abstract || match.abstract
+                    });
+                    await this.docManager.putDocument(updatedDoc);
+                }
+            } catch (err) {
+                console.warn("Knowledge edit update failed", err);
+            }
+        }
+        this.closeKnowledgeEditModal();
+        this.refreshKnowledgeModal();
+        this.refreshDocumentStats();
     };
 
     AssistSidebar.prototype.openKnowledgeModal = function () {
@@ -2194,27 +2430,50 @@
     AssistSidebar.prototype.refreshKnowledgeModal = async function () {
         if (!this.knowledgeModalListEl) return;
         var manifest = await this.loadKnowledgeManifest();
-        this.knowledgeManifestEntries = Array.isArray(manifest) ? manifest : [];
+        var webEntries = Array.isArray(manifest) ? manifest : [];
+        var webMap = new Map();
+        webEntries.forEach(function (entry) {
+            var key = this.normalizeKnowledgeKey(entry.fileName);
+            if (key) webMap.set(key, entry);
+        }.bind(this));
         var storedList = [];
         if (this.knowledgeManifestStore?.read) {
             storedList = await this.knowledgeManifestStore.read();
         }
         var storedSet = new Set((storedList || []).map(this.normalizeKnowledgeKey.bind(this)));
         var indexedSet = new Set();
+        var localEntries = [];
+        this.knowledgeLocalDocRefs.clear();
         if (this.docManager) {
             try {
                 var docs = await this.docManager.getDocuments(this.knowledgeConversationId);
                 (docs || []).forEach(function (doc) {
-                    if (!doc || doc.sourceType !== "embedded") return;
+                    if (!doc) return;
                     var key = this.normalizeKnowledgeKey(doc.sourceFileName || doc.name);
-                    if (key) indexedSet.add(key);
+                    if (!key) return;
+                    indexedSet.add(key);
+                    var isLocal = Array.isArray(doc.scope) && doc.scope.includes("local");
+                    if (!isLocal && webMap.has(key)) return;
+                    this.knowledgeLocalDocRefs.set(key, { id: doc.id, name: doc.name || doc.sourceFileName || "" });
+                    localEntries.push({
+                        path: "",
+                        name: doc.name || doc.sourceFileName || "Document",
+                        abstract: doc.abstract || "",
+                        updatedAt: Number(doc.updatedAt) || 0,
+                        fileName: doc.sourceFileName || doc.name || "",
+                        source: "Local"
+                    });
                 }.bind(this));
             } catch (err) {
                 console.warn("Knowledge docs fetch failed", err);
             }
         }
+        if (localEntries.length) {
+            localEntries = await this.applyKnowledgeOverrides(localEntries);
+        }
+        this.knowledgeManifestEntries = webEntries.concat(localEntries);
         var selectionSet = new Set(indexedSet);
-        var newEntries = this.knowledgeManifestEntries.filter(function (entry) {
+        var newEntries = webEntries.filter(function (entry) {
             var key = this.normalizeKnowledgeKey(entry.fileName);
             return key && !storedSet.has(key);
         }.bind(this));
@@ -2234,7 +2493,7 @@
         }
         if (this.knowledgeManifestStore?.write) {
             await this.knowledgeManifestStore.write(
-                this.knowledgeManifestEntries.map(function (entry) { return entry.fileName; })
+                webEntries.map(function (entry) { return entry.fileName; })
             );
         }
     };
@@ -2246,22 +2505,39 @@
             list.innerHTML = "<div class=\"chat-knowledge-modal__empty\">Aucun document disponible.</div>";
             return;
         }
+        var sorted = entries.slice();
+        var selSet = selectionSet instanceof Set ? selectionSet : new Set();
+        sorted.sort(function (a, b) {
+            var aKey = this.normalizeKnowledgeKey(a?.fileName);
+            var bKey = this.normalizeKnowledgeKey(b?.fileName);
+            var aChecked = selSet.has(aKey);
+            var bChecked = selSet.has(bKey);
+            if (aChecked !== bChecked) return aChecked ? -1 : 1;
+            var aName = (a?.name || "").toString();
+            var bName = (b?.name || "").toString();
+            return aName.localeCompare(bName, "fr", { sensitivity: "base" });
+        }.bind(this));
         var html = [];
         html.push(
             "<div class=\"chat-knowledge-modal__row chat-knowledge-modal__row--header\">" +
             "<div></div>" +
             "<div>Nom</div>" +
+            "<div>Source</div>" +
             "<div>Description</div>" +
             "<div>MàJ</div>" +
             "</div>"
         );
-        entries.forEach(function (entry, idx) {
+        sorted.forEach(function (entry) {
             var key = this.normalizeKnowledgeKey(entry.fileName);
             var checked = selectionSet && selectionSet.has(key);
             html.push(
                 "<div class=\"chat-knowledge-modal__row\" data-key=\"" + escapeHtml(key) + "\">" +
                 "<div><input type=\"checkbox\" class=\"chat-knowledge-modal__checkbox\" data-key=\"" + escapeHtml(key) + "\" " + (checked ? "checked" : "") + "></div>" +
-                "<div><button type=\"button\" class=\"chat-knowledge-modal__name\" data-key=\"" + escapeHtml(key) + "\">" + escapeHtml(entry.name) + "</button></div>" +
+                "<div class=\"chat-knowledge-modal__name-cell\">" +
+                "<button type=\"button\" class=\"chat-knowledge-modal__name\" data-key=\"" + escapeHtml(key) + "\">" + escapeHtml(entry.name) + "</button>" +
+                "<button type=\"button\" class=\"chat-knowledge-modal__edit\" data-key=\"" + escapeHtml(key) + "\" aria-label=\"Modifier\">✐</button>" +
+                "</div>" +
+                "<div class=\"chat-knowledge-modal__source\">" + escapeHtml(entry.source || "") + "</div>" +
                 "<div class=\"chat-knowledge-modal__abstract\">" + escapeHtml(entry.abstract || "") + "</div>" +
                 "<div class=\"chat-knowledge-modal__date\">" + escapeHtml(this.formatFriendlyDate(entry.updatedAt)) + "</div>" +
                 "</div>"
@@ -2276,6 +2552,10 @@
         var nameButtons = list.querySelectorAll(".chat-knowledge-modal__name");
         nameButtons.forEach(function (btn) {
             btn.addEventListener("click", this.handleKnowledgePreviewClick.bind(this));
+        }.bind(this));
+        var editButtons = list.querySelectorAll(".chat-knowledge-modal__edit");
+        editButtons.forEach(function (btn) {
+            btn.addEventListener("click", this.handleKnowledgeEditClick.bind(this));
         }.bind(this));
     };
 
@@ -2292,10 +2572,43 @@
         return selection;
     };
 
-    AssistSidebar.prototype.handleKnowledgeToggle = function () {
+    AssistSidebar.prototype.handleKnowledgeToggle = async function (event) {
         if (this.knowledgeIndexing) return;
+        var target = event?.currentTarget || event?.target;
+        var key = this.normalizeKnowledgeKey(target?.dataset?.key || "");
+        var checked = target && target.checked;
+        var entry = (this.knowledgeManifestEntries || []).find(function (item) {
+            return this.normalizeKnowledgeKey(item.fileName) === key;
+        }.bind(this));
+        if (!entry) {
+            target && (target.checked = !checked);
+            return;
+        }
+        if (!checked && entry.source === "Local") {
+            var message = "Le document sera supprimé. Continuer ?";
+            if (!globalThis.confirm(message)) {
+                target.checked = true;
+                return;
+            }
+            this.setKnowledgeModalStatus("Suppression en cours…");
+            var ref = this.knowledgeLocalDocRefs.get(key);
+            if (this.docManager) {
+                try {
+                    var names = ref?.name ? [ref.name] : [];
+                    await this.docManager.deleteDocumentsByNames(this.knowledgeConversationId, names);
+                } catch (err) {
+                    console.warn("Knowledge local delete failed", err);
+                }
+            }
+            this.knowledgeLocalDocRefs.delete(key);
+            await this.refreshKnowledgeModal();
+            var selection = this.collectKnowledgeSelection();
+            await this.reindexKnowledgeSelection(this.knowledgeManifestEntries, selection);
+            this.setKnowledgeModalStatus("");
+            return;
+        }
         var selection = this.collectKnowledgeSelection();
-        this.reindexKnowledgeSelection(this.knowledgeManifestEntries, selection);
+        await this.reindexKnowledgeSelection(this.knowledgeManifestEntries, selection);
     };
 
     AssistSidebar.prototype.handleKnowledgePreviewClick = function (event) {
@@ -2308,6 +2621,18 @@
         if (!entry) return;
         this.closeKnowledgeModal();
         this.openKnowledgePreview(entry);
+    };
+
+    AssistSidebar.prototype.handleKnowledgeEditClick = function (event) {
+        event?.stopPropagation?.();
+        var target = event?.currentTarget;
+        var key = this.normalizeKnowledgeKey(target?.dataset?.key || "");
+        if (!key) return;
+        var entry = (this.knowledgeManifestEntries || []).find(function (item) {
+            return this.normalizeKnowledgeKey(item.fileName) === key;
+        }.bind(this));
+        if (!entry) return;
+        this.openKnowledgeEditModal(entry);
     };
 
     AssistSidebar.prototype.detectFileTypeFromPath = function (path) {
@@ -2509,13 +2834,64 @@
         this.knowledgeIndexing = true;
         this.setKnowledgeModalStatus("Indexation en cours…");
         try {
+            var existingDocs = await this.docManager.getDocuments(this.knowledgeConversationId);
+            var localDocMap = new Map();
+            (existingDocs || []).forEach(function (doc) {
+                if (!doc) return;
+                var key = this.normalizeKnowledgeKey(doc.sourceFileName || doc.name);
+                if (!key) return;
+                localDocMap.set(key, doc);
+            }.bind(this));
             await this.purgeKnowledgeIndex();
-            await this.reindexKnowledgeFromManifest(filtered, {
-                onProgress: function (parsed, total) {
-                    var label = total ? parsed + " / " + total : parsed;
-                    this.setKnowledgeModalStatus("Indexation " + label);
-                }.bind(this)
-            });
+            var total = filtered.length;
+            var processed = 0;
+            var files = [];
+            var metadata = new Map();
+            for (var i = 0; i < filtered.length; i++) {
+                var entry = filtered[i];
+                var key = this.normalizeKnowledgeKey(entry.fileName);
+                var source = entry.source || "Web";
+                var file = null;
+                if (source === "Local") {
+                    var localDoc = localDocMap.get(key);
+                    if (localDoc?.fileBuffer) {
+                        file = this.createKnowledgeFile(
+                            localDoc.fileBuffer,
+                            localDoc.sourceFileName || localDoc.name || entry.fileName,
+                            localDoc.mime || ""
+                        );
+                        metadata.set(entry.fileName, {
+                            name: entry.name,
+                            abstract: entry.abstract || "",
+                            updatedAt: entry.updatedAt,
+                            fileName: entry.fileName,
+                            scope: ["attachments", "local"]
+                        });
+                    }
+                } else {
+                    file = await this.fetchKnowledgeDocument(entry);
+                    if (file) {
+                        metadata.set(entry.fileName, {
+                            name: entry.name,
+                            abstract: entry.abstract || "",
+                            updatedAt: entry.updatedAt,
+                            fileName: entry.fileName
+                        });
+                    }
+                }
+                processed += 1;
+                var label = total ? processed + " / " + total : processed;
+                this.setKnowledgeModalStatus("Indexation " + label);
+                if (file) {
+                    files.push(file);
+                }
+            }
+            if (files.length) {
+                await this.docManager.ingestFiles(files, this.knowledgeConversationId, {
+                    sourceType: "embedded",
+                    metadata: metadata
+                });
+            }
             this.cacheKnowledgeDocumentNames(filtered);
         } catch (err) {
             hadError = true;
@@ -2964,7 +3340,7 @@
         var targetKey = this.normalizeKnowledgeKey(entry.fileName || entry.name);
         for (var i = 0; i < docs.length; i++) {
             var doc = docs[i];
-            if (!doc || doc.sourceType !== "embedded") continue;
+            if (!doc) continue;
             var fileKey = this.normalizeKnowledgeKey(doc.sourceFileName || doc.name);
             if (fileKey && fileKey === targetKey) {
                 return doc;

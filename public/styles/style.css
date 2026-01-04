@@ -1531,6 +1531,18 @@ label {
   gap: 10px;
 }
 
+.chat-knowledge-modal__header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.chat-knowledge-modal__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .chat-knowledge-modal__title {
   font-weight: 700;
   font-size: 1rem;
@@ -1543,6 +1555,16 @@ label {
   font-size: 1rem;
   cursor: pointer;
   color: #64748b;
+}
+
+.chat-knowledge-modal__add {
+  border: 1px solid #dfe3f5;
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  color: #1f2937;
 }
 
 .chat-knowledge-modal__status {
@@ -1567,7 +1589,7 @@ label {
 
 .chat-knowledge-modal__row {
   display: grid;
-  grid-template-columns: 24px minmax(180px, 1.4fr) minmax(240px, 2fr) 110px;
+  grid-template-columns: 24px minmax(180px, 1.2fr) 90px minmax(240px, 2fr) 110px;
   gap: 10px;
   align-items: center;
   padding: 4px 0;
@@ -1591,6 +1613,26 @@ label {
   font-size: inherit;
   cursor: pointer;
   text-align: left;
+  color: #1d4ed8;
+}
+
+.chat-knowledge-modal__name-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chat-knowledge-modal__edit {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+.chat-knowledge-modal__source {
+  color: #475569;
+  font-size: 0.75rem;
 }
 
 .chat-knowledge-modal__name:hover {

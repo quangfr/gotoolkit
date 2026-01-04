@@ -1,6 +1,6 @@
 ## 2026-01-04
 - Module [Assist](/#assist) avec les modes Conseil et Recherche 
-- Références, prévisualisation et extraits
+- Liens source et prévisualisation des documents
 - Base de connaissance personnalisable
 
 ## 2025-12-29

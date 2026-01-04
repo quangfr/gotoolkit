@@ -24,6 +24,7 @@ Ce document décrit de manière métier le cheminement des connaissances lorsque
 - Les morceaux sont réorganisés pour restituer le document dans l’ordre, sans répéter les chevauchements : chaque chunk se colle au précédent, le texte circule sur une seule ligne et le surlignage ne touche que la portion visible concernée.
 - La prévisualisation montre ainsi le document complet, taggé avec les identifiants de chunk, de façon continue et navigable.
 
-## 6. Conserver l’expérience entre les sessions
-- Largeur du volet, mode ouvert/fermé, preset choisi et conversation sont sauvegardés côté utilisateur pour rouvrir la session dans le même état.
-- Les indicateurs de documents, les statistiques et les index s’ajustent au fil des uploads, mais la logique RAG garde une réponse crédible même lorsque l’accès aux documents est momentanément indisponible.
+## 6. Base de connaissance et documents locaux
+- Le compteur de documents 🗎 ouvre la modal “Base de connaissance” : elle rassemble les fichiers décrits dans `public/content/files.json` et ceux ajoutés localement, avec leur origine (Web ou Local) et leur statut (case cochée = indexé).
+- Le bouton “+ Ajouter” récupère un fichier depuis le poste, l’intègre dans l’index en tant que source “Local” et l’affiche dans la liste ; le crayon ✐ permet ensuite d’ajuster son nom et sa description.
+- Si un document local est décoché, le fichier est supprimé et n'est plus indexé.
