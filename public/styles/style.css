@@ -1570,14 +1570,23 @@ label {
 }
 
 .chat-doc-preview__line {
-  display: flex;
+  display: inline-flex;
+  align-items: center;
   gap: 10px;
   padding: 2px 4px;
   border-radius: 6px;
+  vertical-align: top;
+  margin-right: 1rem;
 }
 
 .chat-doc-preview__line--highlight {
   background: #fef9c3;
+}
+
+.chat-doc-preview__text-match {
+  background: rgba(253, 224, 71, 0.4);
+  border-radius: 3px;
+  padding: 0 2px;
 }
 
 .chat-doc-preview__line-number {

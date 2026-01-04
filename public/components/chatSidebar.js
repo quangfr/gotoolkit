@@ -7,6 +7,13 @@
     var MAX_WIDTH = 800;
     var MAX_WIDTH_RATIO = 0.6;
     var PROMPT_PRESET_KEY = "goToolkit.chat.prompt.preset";
+    // Hybrid retrieval tuning knobs (kwCandidateLimit / topK_kw / contextLimit).
+    // KEYWORD_CANDIDATE_LIMIT and KEYWORD_RETRY_LIMIT keep the keyword pre-filter bucket manageable,
+    // getRetrievalParamsForQuestion controls the vector topK (topK_kw), and CONTEXT_LIMIT_MIN/MAX cap the merged hits.
+    var KEYWORD_CANDIDATE_LIMIT = 200;
+    var KEYWORD_RETRY_LIMIT = 400;
+    var CONTEXT_LIMIT_MIN = 6;
+    var CONTEXT_LIMIT_MAX = 10;
 
     function clampWidth(value) {
         var viewportMax = Math.min(MAX_WIDTH, Math.floor(window.innerWidth * MAX_WIDTH_RATIO));
@@ -151,6 +158,112 @@
         return escapeHtml(text).replace(/\n/g, "<br>");
     }
 
+    function normalizeReference(payload) {
+        if (!payload || typeof payload !== "object") return null;
+        var documentId = payload.documentId || payload.docId || payload.doc_id || null;
+        var chunkId = payload.chunkId || payload.chunk_id || payload.chunk || null;
+        var abstractLabel = typeof payload.abstract === "string" ? payload.abstract.trim() : "";
+        var line = typeof payload.line === "number" ? payload.line : null;
+        return {
+            documentId: documentId,
+            chunkId: chunkId,
+            abstract: abstractLabel,
+            line: line
+        };
+    }
+
+    function getChunkIdentifier(chunk) {
+        if (!chunk) return "";
+        if (chunk.chunkId) return chunk.chunkId;
+        if (chunk.id) return chunk.id;
+        if (chunk._id) return chunk._id;
+        return "";
+    }
+
+    function getChunkIndex(chunk) {
+        if (!chunk) return 0;
+        var idx = Number(chunk.idx);
+        if (Number.isFinite(idx)) return idx;
+        var alt = Number(chunk.chunk);
+        if (Number.isFinite(alt)) return alt;
+        return 0;
+    }
+
+    var PREVIEW_CHUNK_OVERLAP_MIN = 16;
+    var PREVIEW_CHUNK_OVERLAP_MAX = 512;
+
+    function computeDocumentChunkOverlap(buffer, nextText) {
+        if (!buffer || !nextText) return 0;
+        var limit = Math.min(buffer.length, nextText.length, PREVIEW_CHUNK_OVERLAP_MAX);
+        for (var len = limit; len >= PREVIEW_CHUNK_OVERLAP_MIN; len--) {
+            if (buffer.slice(-len) === nextText.slice(0, len)) {
+                return len;
+            }
+        }
+        return 0;
+    }
+
+    function normalizeSpaces(value) {
+        return String(value || "")
+            .trim()
+            .replace(/\s+/g, " ");
+    }
+
+    function highlightSnippetText(text, needle) {
+        var normalizedNeedle = normalizeSpaces(needle);
+        if (!normalizedNeedle) return escapeHtml(text);
+        var lowerText = text.toLowerCase();
+        var lowerNeedle = normalizedNeedle.toLowerCase();
+        var parts = [];
+        var lastIndex = 0;
+        var needleLength = normalizedNeedle.length;
+        while (true) {
+            var idx = lowerText.indexOf(lowerNeedle, lastIndex);
+            if (idx === -1) break;
+            parts.push(escapeHtml(text.slice(lastIndex, idx)));
+            parts.push("<span class=\"chat-doc-preview__text-match\">" +
+                escapeHtml(text.slice(idx, idx + needleLength)) +
+                "</span>");
+            lastIndex = idx + needleLength;
+        }
+        parts.push(escapeHtml(text.slice(lastIndex)));
+        if (!parts.length) return escapeHtml(text);
+        return parts.join("");
+    }
+
+    function normalizePreviewChunks(chunks) {
+        if (!Array.isArray(chunks) || !chunks.length) return [];
+        var list = chunks.slice();
+        list.sort(function (a, b) {
+            var diff = getChunkIndex(a) - getChunkIndex(b);
+            if (diff !== 0) return diff;
+            var aKey = getChunkIdentifier(a);
+            var bKey = getChunkIdentifier(b);
+            if (aKey && bKey) return aKey.localeCompare(bKey);
+            if (aKey) return -1;
+            if (bKey) return 1;
+            return 0;
+        });
+        var normalized = [];
+        var tail = "";
+            list.forEach(function (chunk) {
+                var text = String(chunk?.text || "");
+                if (!text) return;
+                var overlap = computeDocumentChunkOverlap(tail, text);
+                var trimmed = overlap ? text.slice(overlap) : text;
+                if (!trimmed) return;
+                normalized.push({
+                    text: trimmed,
+                    chunkKey: getChunkIdentifier(chunk)
+                });
+                tail += trimmed;
+                if (tail.length > PREVIEW_CHUNK_OVERLAP_MAX) {
+                    tail = tail.slice(-PREVIEW_CHUNK_OVERLAP_MAX);
+                }
+            });
+            return normalized;
+    }
+
     function getSystemPrompt() {
         var prompt = global.GoToolkitChatPrompt?.SYSTEM_PROMPT;
         if (prompt && typeof prompt === "string") {
@@ -181,9 +294,11 @@
         this.messageNodes = {};
         this.throttledPersist = throttle(this.persist.bind(this), 500);
         this.docManager = global.GoToolkitDocumentManager;
+        this.docCache = new Map();
         this.docsIndicatorButton = null;
         this.documentsFileInput = null;
         this.documentStatsWatcher = null;
+        this.keywordIndexSizes = { context: 0, knowledge: 0 };
         this.documentChunkCount = 0;
         this.documentUploadStatus = "";
         this.pendingDocumentAttachments = [];
@@ -503,17 +618,24 @@
                 var list = document.createElement("ul");
                 list.className = "chat-references-list";
                 references.forEach(function (ref) {
-                    var label = ref.document || "Document";
-                    if (label === "Non fourni") return;
-                    var sectionLabel = (ref.section || "").trim();
-                    var displayTitle = sectionLabel || label;
+                    var docLabel = this.resolveDocName(ref.documentId) || "Document";
+                    if (docLabel === "Non fourni") return;
+                    var abstractLabel = (ref.abstract || "").trim();
+                    var displayTitle = abstractLabel || docLabel;
+                    var titleText = docLabel;
                     var item = document.createElement("li");
                     item.className = "chat-reference-item";
                     var link = document.createElement("button");
                     link.type = "button";
                     link.className = "chat-reference-link";
                     link.textContent = displayTitle;
-                    link.title = label;
+                    link.title = titleText;
+                    if (ref.documentId) {
+                        link.dataset.documentId = ref.documentId;
+                    }
+                    if (ref.chunkId) {
+                        link.dataset.chunkId = ref.chunkId;
+                    }
                     link.addEventListener("click", function () {
                         this.openReferencePreview(message, ref);
                     }.bind(this));
@@ -711,6 +833,8 @@
         var formatted = [];
         entries.forEach(function (entry) {
             var record = {
+                chunkId: entry.chunkId,
+                documentId: entry.documentId,
                 docName: entry.docName,
                 category: entry.category || "",
                 text: entry.text || "",
@@ -737,19 +861,41 @@
             var entries = sections[key];
             if (!entries || !entries.length) return;
             var header = key.toUpperCase();
-            var rows = entries
-                .map(function (entry) {
-                    var doc = entry.docName || "Document";
-                    var snippet = entry.text ? entry.text.trim() : "";
-                    if (snippet) {
-                        snippet = snippet.replace(/\s+/g, " ").slice(0, 200);
-                        return "- " + doc + ": " + snippet;
-                    }
-                    return "- " + doc;
-                })
-                .join("\n");
-            if (rows) {
-                parts.push(header + "\n" + rows);
+            var includeJson = header === "CONTEXT" || header === "KNOWLEDGE";
+            var includePlain = header !== "CONTEXT" && header !== "KNOWLEDGE";
+            var rows = "";
+            if (includePlain) {
+                rows = entries
+                    .map(function (entry) {
+                        var doc = entry.docName || "Document";
+                        var snippet = entry.text ? entry.text.trim() : "";
+                        if (snippet) {
+                            snippet = snippet.replace(/\s+/g, " ").slice(0, 200);
+                            return "- " + doc + ": " + snippet;
+                        }
+                        return "- " + doc;
+                    })
+                    .join("\n");
+            }
+            var jsonRows = "";
+            if (includeJson) {
+                jsonRows = entries
+                    .map(function (entry) {
+                        if (!entry.chunkId || !entry.documentId) return null;
+                        return JSON.stringify({
+                            chunkId: entry.chunkId,
+                            documentId: entry.documentId,
+                            content: entry.text || ""
+                        });
+                    })
+                    .filter(Boolean)
+                    .join("\n");
+            }
+            var sectionParts = [header];
+            if (rows) sectionParts.push(rows);
+            if (jsonRows) sectionParts.push(jsonRows);
+            if (sectionParts.length > 1) {
+                parts.push(sectionParts.join("\n"));
             }
         });
         return parts.join("\n\n");
@@ -769,6 +915,8 @@
         var rawName = (hit.docName || "Document").toString();
         var stripped = this.stripDocExtension(rawName);
         return {
+            chunkId: hit.id,
+            documentId: hit.docId,
             docName: stripped,
             keyName: stripped.toLowerCase(),
             text: hit.text || "",
@@ -865,31 +1013,253 @@
         return { topK: fallbackTopK, minScore: fallbackMinScore };
     };
 
-    ChatSidebar.prototype.executeRetrieval = async function (query, conversationId, params, label) {
-        if (!this.docManager) return [];
-        try {
-            var hits = await this.docManager.retrieve(query, conversationId, params);
-            if (!Array.isArray(hits)) hits = [];
-            console.log("embeddings " + label + " retrieval", {
-                query: query,
-                params: params,
-                hits: hits
-            });
-            return hits;
-        } catch (err) {
-            console.warn("Document " + label + " retrieval échoué", err);
-            return [];
+    ChatSidebar.prototype.buildRetrievalContext = async function (conversationId) {
+        if (!this.docManager) return { chunks: [], docs: [], chunkMap: new Map(), docMap: new Map() };
+        await this.docManager.waitReady?.();
+        const [chunks, docs] = await Promise.all([
+            this.docManager.getChunks(conversationId),
+            this.docManager.getDocuments(conversationId)
+        ]);
+        const docMap = new Map();
+        (docs || []).forEach(function (doc) {
+            if (doc && doc.id) {
+                docMap.set(doc.id, doc);
+            }
+        });
+        const chunkMap = new Map();
+        (chunks || []).forEach(function (chunk) {
+            const docMeta = docMap.get(chunk.docId);
+            chunkMap.set(chunk.id, Object.assign({}, chunk, {
+                docName: docMeta?.name || "Document",
+                sourceType: docMeta?.sourceType || "context",
+                docScopes: Array.isArray(docMeta?.scope) ? docMeta.scope : [],
+                docAbstract: docMeta?.abstract || ""
+            }));
+        });
+        this.cacheDocuments(docs);
+        return { chunks, docs, chunkMap, docMap };
+    };
+
+    ChatSidebar.prototype.cacheDocuments = function (docs) {
+        if (!Array.isArray(docs)) return;
+        docs.forEach(function (doc) {
+            if (doc && doc.id) {
+                this.docCache.set(doc.id, doc);
+            }
+        }, this);
+    };
+
+    ChatSidebar.prototype.resolveDocName = function (docId) {
+        if (!docId) return "";
+        var doc = this.docCache.get(docId);
+        if (doc) {
+            return (doc.name || doc.sourceFileName || "").trim();
         }
+        return "";
+    };
+
+    ChatSidebar.prototype.ensureDocumentCached = async function (docId) {
+        if (!docId || !this.docManager) return null;
+        var cached = this.docCache.get(docId);
+        if (cached) return cached;
+        try {
+            var doc = await this.docManager.getDocumentById(docId);
+            if (doc && doc.id) {
+                this.docCache.set(doc.id, doc);
+                return doc;
+            }
+        } catch (err) {
+            console.warn("Document cache miss for", docId, err);
+        }
+        return null;
+    };
+
+    ChatSidebar.prototype.mergeHybridHits = function (vectorHits, keywordHits, limit, options) {
+        var chunkMap = options?.chunkMap || new Map();
+        var wordCount = Number(options?.wordCount) || 0;
+        var preferSmall = wordCount > 0 && wordCount <= 6;
+        var preferMedium = wordCount >= 7;
+        function sizeBias(hit) {
+            var size = (hit?.size || "").toString().toLowerCase();
+            if (preferSmall) return size === "small" ? 0 : 1;
+            if (preferMedium) return size === "medium" ? 0 : (size === "small" ? 1 : 2);
+            return 0;
+        }
+        function vectorComparator(a, b) {
+            var diff = (Number(b?.score) || 0) - (Number(a?.score) || 0);
+            if (Math.abs(diff) > 0.0001) return diff;
+            return sizeBias(a) - sizeBias(b);
+        }
+        function keywordComparator(a, b) {
+            var diff = (Number(b?.kwScore) || 0) - (Number(a?.kwScore) || 0);
+            if (Math.abs(diff) > 0.0001) return diff;
+            return sizeBias(a) - sizeBias(b);
+        }
+        var kwMap = new Map();
+        (keywordHits || []).forEach(function (hit) {
+            var id = hit?.chunkId || hit?.id;
+            if (!id) return;
+            kwMap.set(id, hit);
+        });
+        var both = [];
+        var vectorOnly = [];
+        (vectorHits || []).forEach(function (hit) {
+            var id = hit?.id;
+            if (!id) return;
+            var kw = kwMap.get(id);
+            if (kw) {
+                both.push(Object.assign({}, hit, { kwPresent: true, kwScore: kw.score }));
+                kwMap.delete(id);
+            } else {
+                vectorOnly.push(hit);
+            }
+        });
+        both.sort(vectorComparator);
+        vectorOnly.sort(vectorComparator);
+        var keywordOnly = [];
+        kwMap.forEach(function (kw, id) {
+            var chunk = chunkMap.get(id);
+            if (!chunk) return;
+            keywordOnly.push(Object.assign({}, chunk, {
+                id: id,
+                kwScore: kw.score,
+                kwPresent: true,
+                score: chunk.score || 0
+            }));
+        });
+        keywordOnly.sort(keywordComparator);
+        var finalLimit = Math.max(CONTEXT_LIMIT_MIN, Math.min(CONTEXT_LIMIT_MAX, Number(limit) || CONTEXT_LIMIT_MAX));
+        var merged = [];
+        [both, vectorOnly, keywordOnly].forEach(function (bucket) {
+            for (var i = 0; i < bucket.length && merged.length < finalLimit; i++) {
+                merged.push(bucket[i]);
+            }
+        });
+        return merged;
+    };
+
+    ChatSidebar.prototype.logHybridRetrieval = function (info) {
+        console.log("hybrid retrieval", {
+            label: info.label,
+            query: info.query,
+            queryLength: (info.query || "").split(/\s+/).filter(Boolean).length,
+            topK: info.params?.topK,
+            minScore: info.params?.minScore,
+            keywordCandidates: info.keywordCount,
+            keywordFailed: info.keywordFailed,
+            vectorScope: info.vectorScope,
+            contextLimit: info.contextLimit,
+            finalCount: info.finalCount,
+            finalChunks: (info.finalChunks || []).map(function (hit) {
+                return {
+                    docId: hit.docId,
+                    chunkId: hit.id,
+                    size: hit.size,
+                    kwPresent: !!hit.kwPresent,
+                    vecScore: hit.score
+                };
+            })
+        });
+    };
+
+    ChatSidebar.prototype.hybridRetrieveOnce = async function (query, conversationId, params, options) {
+        if (!this.docManager || !params) return [];
+        var contextLimit = Math.max(
+            CONTEXT_LIMIT_MIN,
+            Math.min(CONTEXT_LIMIT_MAX, options.contextLimit || params.topK || CONTEXT_LIMIT_MAX)
+        );
+        var kwLimit = options.kwLimit || KEYWORD_CANDIDATE_LIMIT;
+        var vector = options.vector;
+        var keywordHits = null;
+        try {
+            keywordHits = await this.docManager.searchKeywordCandidates(query, conversationId, kwLimit);
+        } catch (err) {
+            console.warn("Keyword retrieval failed", err);
+            keywordHits = null;
+        }
+        var keywordFailed = keywordHits === null;
+        var keywordCount = Array.isArray(keywordHits) ? keywordHits.length : 0;
+        var candidateIds = keywordCount
+            ? keywordHits.map(function (hit) {
+                return hit?.chunkId || hit?.id;
+            }).filter(Boolean)
+            : [];
+        var vectorScope = candidateIds.length ? "candidates" : "full";
+        var vectorHits = [];
+        try {
+            vectorHits = await this.docManager.vectorSearch(query, conversationId, {
+                minScore: params.minScore,
+                topK: params.topK,
+                candidateIds: candidateIds.length ? candidateIds : null,
+                vector: vector,
+                chunks: options.chunks,
+                docs: options.docs
+            });
+        } catch (err) {
+            console.warn("Vector retrieval failed", err);
+            vectorHits = [];
+        }
+        var merged = this.mergeHybridHits(vectorHits, keywordHits || [], contextLimit, {
+            wordCount: options.wordCount,
+            chunkMap: options.chunkMap
+        });
+        this.logHybridRetrieval({
+            label: options.label,
+            query: query,
+            params: params,
+            keywordCount: keywordCount,
+            keywordFailed: keywordFailed,
+            vectorScope: vectorScope,
+            contextLimit: contextLimit,
+            finalCount: merged.length,
+            finalChunks: merged
+        });
+        if (!merged.length && keywordFailed && Array.isArray(vectorHits) && vectorHits.length) {
+            return vectorHits.slice(0, contextLimit);
+        }
+        return merged;
     };
 
     ChatSidebar.prototype.retrieveWithFallback = async function (query, conversationId, params, label) {
-        if (!params) return [];
-        var hits = await this.executeRetrieval(query, conversationId, params, label);
-        if (!hits.length) {
-            var fallbackParams = this.getRetrievalFallbackParams(params);
-            if (fallbackParams) {
-                hits = await this.executeRetrieval(query, conversationId, fallbackParams, label + " fallback");
+        if (!params || !this.docManager) return [];
+        await this.docManager.waitReady?.();
+        var words = String(query || "").trim().split(/\s+/).filter(Boolean);
+        var wordCount = words.length;
+        var contextLimit = Math.max(CONTEXT_LIMIT_MIN, Math.min(CONTEXT_LIMIT_MAX, params.topK || CONTEXT_LIMIT_MAX));
+        var vector = null;
+        if (typeof this.docManager.embed === "function") {
+            try {
+                vector = await this.docManager.embed(query);
+            } catch (err) {
+                vector = null;
             }
+        }
+        var ctx = await this.buildRetrievalContext(conversationId);
+        // Tuning: bump KEYWORD_CANDIDATE_LIMIT / KEYWORD_RETRY_LIMIT or CONTEXT_LIMIT_* to adjust recall vs. context size.
+        var hits = await this.hybridRetrieveOnce(query, conversationId, params, {
+            label: label,
+            kwLimit: KEYWORD_CANDIDATE_LIMIT,
+            contextLimit: contextLimit,
+            wordCount: wordCount,
+            vector: vector,
+            chunks: ctx.chunks,
+            docs: ctx.docs,
+            chunkMap: ctx.chunkMap
+        });
+        if (hits.length) return hits;
+        var fallbackParams = this.getRetrievalFallbackParams(params);
+        if (fallbackParams) {
+            var fallbackLimit = Math.max(CONTEXT_LIMIT_MIN, Math.min(CONTEXT_LIMIT_MAX, fallbackParams.topK || CONTEXT_LIMIT_MAX));
+            hits = await this.hybridRetrieveOnce(query, conversationId, fallbackParams, {
+                label: label + " fallback",
+                kwLimit: KEYWORD_RETRY_LIMIT,
+                contextLimit: fallbackLimit,
+                wordCount: wordCount,
+                vector: vector,
+                chunks: ctx.chunks,
+                docs: ctx.docs,
+                chunkMap: ctx.chunkMap
+            });
         }
         return hits;
     };
@@ -992,7 +1362,9 @@
             }
             if (parsed && parsed.answer && typeof parsed.answer.content === "string") {
                 botMessage.content = parsed.answer.content;
-                botMessage.references = Array.isArray(parsed.references) ? parsed.references : [];
+                botMessage.references = (Array.isArray(parsed.references) ? parsed.references : [])
+                    .map(normalizeReference)
+                    .filter(Boolean);
                 botMessage.suggestions = Array.isArray(parsed.suggestions) ? parsed.suggestions : [];
             } else {
                 var partial = extractContent(botMessage._jsonBuffer);
@@ -1019,6 +1391,11 @@
             if (parsed.content === "Réponse illisible." && botMessage.content) {
                 parsed.content = botMessage.content;
             }
+            console.log("AI response", {
+                content: parsed.content,
+                references: parsed.references,
+                suggestions: parsed.suggestions
+            });
             botMessage.content = parsed.content;
             botMessage.references = parsed.references;
             botMessage.suggestions = parsed.suggestions;
@@ -1349,6 +1726,14 @@
         if (typeof chunkCount === "number" && !isNaN(chunkCount)) {
             parts.push(chunkCount + " extraits indexés");
         }
+        if (this.keywordIndexSizes) {
+            var ctxSize = Number(this.keywordIndexSizes.context) || 0;
+            var knSize = Number(this.keywordIndexSizes.knowledge) || 0;
+            parts.push("keyword index size (context): " + ctxSize);
+            if (this.promptPresetId !== "ask") {
+                parts.push("keyword index size (knowledge): " + knSize);
+            }
+        }
         if (this.documentUploadStatus) {
             parts.push(this.documentUploadStatus);
         }
@@ -1476,12 +1861,18 @@
             this.setDocumentUploadStatus("Fichier traité : " + (progress.file || ""));
         }
     };
-    ChatSidebar.prototype.updateDocumentIndicator = function (stats, docs) {
+    ChatSidebar.prototype.updateDocumentIndicator = function (stats, docs, keywordSizes) {
         if (!this.docsIndicatorButton) return;
         var chunkCount = stats ? Number(stats.chunkCount) || 0 : 0;
         this.documentChunkCount = chunkCount;
         this.computeDocumentCounts(docs);
         this.updateHeaderDocumentCount();
+        if (keywordSizes && typeof keywordSizes === "object") {
+            this.keywordIndexSizes = {
+                context: Number(keywordSizes.context) || 0,
+                knowledge: Number(keywordSizes.knowledge) || 0
+            };
+        }
         this.syncDocumentIndicatorTitle(chunkCount);
     };
 
@@ -1740,13 +2131,20 @@
             .then(function () {
                 return Promise.all([
                     this.docManager.getStats(this.conversation.id),
-                    this.docManager.getDocuments(this.conversation.id)
+                    this.docManager.getDocuments(this.conversation.id),
+                    this.docManager.getKeywordIndexSize?.(this.conversation.id),
+                    this.docManager.getKeywordIndexSize?.(this.knowledgeConversationId)
                 ]);
             }.bind(this))
             .then(function (results) {
                 var stats = results ? results[0] : null;
                 var docs = results ? results[1] : [];
-                this.updateDocumentIndicator(stats, docs);
+                var ctxSize = results ? results[2] : 0;
+                var knowledgeSize = results ? results[3] : 0;
+                this.updateDocumentIndicator(stats, docs, {
+                    context: ctxSize,
+                    knowledge: knowledgeSize
+                });
             }.bind(this))
             .catch(function (err) {
                 console.warn("Documents stats", err);
@@ -1799,6 +2197,8 @@
                 if (payload.t === "ref" && references.length < 3) {
                     references.push({
                         document: payload?.document || "Document",
+                        documentId: payload?.documentId || payload?.docId || null,
+                        chunkId: payload?.chunkId || null,
                         section: payload?.section || "",
                         page: typeof payload?.page === "number" ? payload.page : null,
                         line: typeof payload?.line === "number" ? payload.line : null,
@@ -1839,20 +2239,33 @@
         }
         try {
             var parsed = JSON.parse(trimmed);
-            var content = parsed?.answer?.content;
-            var references = Array.isArray(parsed?.references) ? parsed.references : [];
-            var suggestions = Array.isArray(parsed?.suggestions) ? parsed.suggestions : [];
+            var payload = parsed;
+            if (payload && typeof payload.content === "string") {
+                var innerTrim = payload.content.trim();
+                if (innerTrim.startsWith("{")) {
+                    try {
+                        var innerParsed = JSON.parse(innerTrim);
+                        if (innerParsed && typeof innerParsed === "object") {
+                            payload = innerParsed;
+                        }
+                    } catch (innerErr) {
+                        /* ignore */
+                    }
+                }
+            }
+            var answerContent = payload?.answer?.content;
+            var references = Array.isArray(payload?.references) ? payload.references : [];
+            var suggestions = Array.isArray(payload?.suggestions) ? payload.suggestions : [];
+            var finalContent = typeof answerContent === "string" && answerContent.trim()
+                ? answerContent.trim()
+                : (typeof payload?.content === "string" && payload.content.trim()
+                    ? payload.content.trim()
+                    : "Non trouvé dans la base");
             return {
-                content: typeof content === "string" && content.trim() ? content : "Non trouvé dans la base",
-                references: references.map(function (ref) {
-                    return {
-                        document: ref?.document || "Document",
-                        section: ref?.section || "",
-                        page: typeof ref?.page === "number" ? ref.page : null,
-                        line: typeof ref?.line === "number" ? ref.line : null,
-                        type: ref?.type || ""
-                    };
-                }),
+                content: finalContent,
+                references: references
+                    .map(normalizeReference)
+                    .filter(Boolean),
                 suggestions: suggestions.filter(Boolean).slice(0, 3)
             };
         } catch (err) {
@@ -1927,7 +2340,7 @@
     };
 
     ChatSidebar.prototype.resolvePreviewSnippet = async function (message, reference) {
-        var targetName = this.normalizeDocName(reference?.document);
+        var targetDocId = reference?.documentId;
         var entries = [];
         if (message?.retrievalEntries) {
             var contextEntries = message.retrievalEntries.context || { embedded: {}, context: [] };
@@ -1946,28 +2359,22 @@
                 )
                 .concat(knowledgeEntries.context || []);
         }
-        var match = entries.find(function (entry) {
-            return this.normalizeDocName(entry.docName) === targetName;
-        }.bind(this));
+        var match = null;
+        if (targetDocId) {
+            match = entries.find(function (entry) {
+                return entry.documentId === targetDocId;
+            });
+        }
         if (match?.text) {
             return match.text;
         }
-        if (!this.docManager || !targetName) return "";
+        if (!this.docManager || !targetDocId) return "";
         try {
-            var docs = await this.docManager.getDocuments(this.conversation.id);
-            var doc = docs.find(function (item) {
-                return this.normalizeDocName(item.name) === targetName;
-            }.bind(this));
-            if (!doc) return "";
-            var chunks = await this.docManager.getChunks(this.conversation.id);
-            var candidates = chunks.filter(function (chunk) {
-                return chunk.docId === doc.id;
-            });
-            if (!candidates.length) return "";
-            candidates.sort(function (a, b) {
-                return (a.idx || 0) - (b.idx || 0);
-            });
-            return candidates[0].text || "";
+            var doc = this.docCache.get(targetDocId) || await this.ensureDocumentCached(targetDocId);
+            if (!doc?.id) return "";
+            var chunks = await this.getDocumentChunks(doc.id, doc.conversationId);
+            if (!chunks.length) return "";
+            return chunks[0].text || "";
         } catch (err) {
             console.warn("Preview resolve failed", err);
             return "";
@@ -2019,13 +2426,10 @@
         try {
             var doc = await this.findDocumentForPreview(name);
             if (doc?.id) {
-                var docChunks = await this.getDocumentChunks(doc.id);
+                var docChunks = await this.getDocumentChunks(doc.id, doc.conversationId);
                 snippet = docChunks.length ? (docChunks[0].text || "") : "";
-                var docText = this.combineDocumentText(docChunks);
-                if (docText) {
-                    this.renderDocumentText(docText, snippet);
-                    return;
-                }
+                this.renderDocumentText(docChunks, { snippet: snippet });
+                return;
             }
         } catch (err) {
             console.warn("Attachment preview failed", err);
@@ -2042,32 +2446,38 @@
         if (!this.previewPanel) return;
         this.previewPanel.classList.add("open");
         this.previewPanel.setAttribute("aria-hidden", "false");
-        if (this.previewTitleEl) {
-            this.previewTitleEl.textContent = reference.document || "Document";
-        }
         if (this.previewBodyEl) {
             this.previewBodyEl.innerHTML = "<div class=\"chat-doc-preview__loading\">Chargement…</div>";
         }
         var snippet = await this.resolvePreviewSnippet(message, reference);
-        var docText = "";
-        var highlight = snippet || "";
         try {
-            if (this.docManager) {
-                var doc = await this.findDocumentForPreview(reference.document);
-                if (doc?.id) {
-                    var docChunks = await this.getDocumentChunks(doc.id);
-                    docText = this.combineDocumentText(docChunks);
-                    if (!highlight && docChunks.length) {
-                        highlight = docChunks[0].text || "";
-                    }
-                }
+            var doc = null;
+            if (reference.documentId) {
+                doc = this.docCache.get(reference.documentId) || await this.ensureDocumentCached(reference.documentId);
+            }
+            var title = doc?.name || "Document";
+            this.previewTitleEl && (this.previewTitleEl.textContent = title);
+            if (doc?.id) {
+                var docChunks = await this.getDocumentChunks(doc.id, doc.conversationId);
+                var relatedChunkIds = new Set(
+                    (message?.references || [])
+                        .filter(function (ref) {
+                            return ref?.documentId && reference.documentId && ref.documentId === reference.documentId;
+                        })
+                        .map(function (ref) {
+                            return ref?.chunkId;
+                        })
+                        .filter(Boolean)
+                );
+                this.renderDocumentText(docChunks, {
+                    highlightChunkIds: Array.from(relatedChunkIds),
+                    snippet: snippet,
+                    highlightLine: typeof reference.line === "number" ? reference.line : undefined
+                });
+                return;
             }
         } catch (err) {
             console.warn("Reference preview failed", err);
-        }
-        if (docText) {
-            this.renderDocumentText(docText, highlight);
-            return;
         }
         if (this.previewBodyEl) {
             var content = snippet || "(extrait indisponible)";
@@ -2099,10 +2509,11 @@
         }).join("");
     };
 
-    ChatSidebar.prototype.getDocumentChunks = async function (docId) {
+    ChatSidebar.prototype.getDocumentChunks = async function (docId, conversationId) {
         if (!docId || !this.docManager) return [];
         try {
-            var chunks = await this.docManager.getChunks(this.conversation.id);
+            var convId = conversationId || this.conversation.id;
+            var chunks = await this.docManager.getChunks(convId);
             var filtered = (chunks || []).filter(function (chunk) {
                 return chunk && chunk.docId === docId;
             });
@@ -2116,43 +2527,71 @@
         }
     };
 
-    ChatSidebar.prototype.combineDocumentText = function (chunks) {
-        return (chunks || [])
-            .map(function (chunk) {
-                return chunk && chunk.text ? chunk.text : "";
-            })
-            .join("");
-    };
-
-    ChatSidebar.prototype.renderDocumentText = function (text, highlightText) {
+    ChatSidebar.prototype.renderDocumentText = function (chunks, options) {
         if (!this.previewBodyEl) return;
-        var lines = String(text || "").split(/\r?\n/);
-        if (!lines.length) {
-            this.previewBodyEl.innerHTML = "(extrait indisponible)";
+        var opts = options || {};
+        var snippet = typeof opts.snippet === "string" ? opts.snippet.trim() : "";
+        var highlightChunkIds = new Set(
+            (Array.isArray(opts.highlightChunkIds) ? opts.highlightChunkIds : [])
+                .filter(Boolean)
+        );
+        var highlightLine = Number.isFinite(opts.highlightLine) ? opts.highlightLine : null;
+        var normalized = normalizePreviewChunks(chunks);
+        if (!normalized.length) {
+            if (snippet) {
+                this.previewBodyEl.innerHTML = this.formatPreviewText(snippet, highlightLine);
+            } else {
+                this.previewBodyEl.innerHTML = "(extrait indisponible)";
+            }
             return;
         }
-        var highlightKey = highlightText ? highlightText.trim().toLowerCase() : "";
         var html = [];
-        for (var index = 0; index < lines.length; index++) {
-            var line = lines[index];
-            var lineNo = index + 1;
+        var lineNo = 0;
+        var highlightLines = new Set();
+        var normalizedSnippet = normalizeSpaces(snippet);
+        normalized.forEach(function (entry) {
+            var rawLines = String(entry.text || "").split(/\r?\n/);
+            if (!rawLines.length) rawLines = [""];
+            var chunkLineStart = lineNo + 1;
+            var chunkLineEnd = chunkLineStart + rawLines.length - 1;
+            lineNo = chunkLineEnd;
+            var chunkText = rawLines
+                .map(function (line) {
+                    return normalizeSpaces(line);
+                })
+                .filter(Boolean)
+                .join(" ");
+            if (!chunkText) return;
+            var matchesSnippet = normalizedSnippet && chunkText.toLowerCase().includes(normalizedSnippet.toLowerCase());
+            var highlightChunk = entry.chunkKey && highlightChunkIds.has(entry.chunkKey);
+            var highlightLineActive = highlightLine && highlightLine >= chunkLineStart && highlightLine <= chunkLineEnd;
+            if (highlightChunk || highlightLineActive) {
+                highlightLines.add(chunkLineStart);
+            }
             var cls = "chat-doc-preview__line";
-            if (highlightKey && line.toLowerCase().includes(highlightKey)) {
+            if (highlightChunk || highlightLineActive) {
                 cls += " chat-doc-preview__line--highlight";
             }
+            var snippetText = matchesSnippet
+                ? highlightSnippetText(chunkText, normalizedSnippet)
+                : escapeHtml(chunkText);
             html.push(
-                "<div class=\"" + cls + "\" data-line=\"" + lineNo + "\">" +
-                "<span class=\"chat-doc-preview__line-number\">" + lineNo + "</span>" +
-                "<span class=\"chat-doc-preview__line-text\">" + escapeHtml(line) + "</span>" +
+                "<div class=\"" + cls + "\" data-line=\"" + chunkLineStart + "\" data-chunk=\"" + escapeHtml(entry.chunkKey || "") + "\">" +
+                "<span class=\"chat-doc-preview__line-number\">" + chunkLineStart + "</span>" +
+                "<span class=\"chat-doc-preview__line-text\">" + snippetText + "</span>" +
                 "</div>"
             );
-        }
+        });
         this.previewBodyEl.innerHTML = html.join("");
-        if (highlightKey) {
-            var target = this.previewBodyEl.querySelector(".chat-doc-preview__line--highlight");
-            if (target && typeof target.scrollIntoView === "function") {
-                target.scrollIntoView({ block: "center" });
-            }
+        var targetLine = null;
+        if (highlightLine && highlightLines.has(highlightLine)) {
+            targetLine = this.previewBodyEl.querySelector("[data-line=\"" + highlightLine + "\"]");
+        }
+        if (!targetLine && highlightLines.size) {
+            targetLine = this.previewBodyEl.querySelector(".chat-doc-preview__line--highlight");
+        }
+        if (targetLine && typeof targetLine.scrollIntoView === "function") {
+            targetLine.scrollIntoView({ block: "center" });
         }
     };
 

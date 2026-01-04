@@ -199,6 +199,7 @@
             this.env = null;
             this.pdfjs = null;
             this.jszip = null;
+            this.keywordIndex = global.GoToolkitKeywordIndex || null;
             this.readyPromise = this.initialize();
         }
 
@@ -223,6 +224,9 @@
                 await this.loadSettings();
                 await this.ensureDb();
                 await this.ensureEmbedder();
+                if (this.keywordIndex) {
+                    await this.rebuildKeywordIndex();
+                }
                 this.emitSettings();
             } catch (err) {
                 console.error("Documents manager initialisation failed", err);
@@ -330,7 +334,7 @@
                     reject(new Error("IndexedDB indisponible"));
                     return;
                 }
-                const request = indexedDB.open("gotoolkit-documents", 1);
+                const request = indexedDB.open("gotoolkit-documents", 2);
                 request.onupgradeneeded = () => {
                     const db = request.result;
                     if (!db.objectStoreNames.contains("documents")) {
@@ -341,6 +345,9 @@
                         const chunks = db.createObjectStore("chunks", { keyPath: "id" });
                         chunks.createIndex("conversationId", "conversationId", { unique: false });
                         chunks.createIndex("docId", "docId", { unique: false });
+                    }
+                    if (!db.objectStoreNames.contains("keyword_meta")) {
+                        db.createObjectStore("keyword_meta", { keyPath: "id" });
                     }
                 };
                 request.onsuccess = () => resolve(request.result);
@@ -369,6 +376,115 @@
             if (!this.embedder) throw new Error("Embedder indisponible");
             const output = await this.embedder(text, { pooling: "mean", normalize: true });
             return output.data;
+        }
+
+        async persistKeywordMeta() {
+            if (!this.keywordIndex) return;
+            const store = await this.getStore("keyword_meta", "readwrite");
+            if (!store) return;
+            const snapshot = this.keywordIndex.getMetaSnapshot();
+            await new Promise((resolve, reject) => {
+                const request = store.put({
+                    id: "keyword-meta",
+                    total: snapshot.total,
+                    perConversation: snapshot.perConversation,
+                    engine: snapshot.engine,
+                    updatedAt: Date.now()
+                });
+                request.onsuccess = () => resolve(true);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        createKeywordDoc(chunk, docMeta) {
+            if (!chunk || !chunk.id) return null;
+            return {
+                id: chunk.id,
+                chunkId: chunk.id,
+                docId: chunk.docId,
+                conversationId: normalizeConversationId(chunk.conversationId),
+                text: chunk.text || "",
+                section: typeof chunk.idx === "number" ? chunk.idx : 0,
+                page: chunk.page || undefined,
+                line: chunk.line || undefined,
+                size: chunk.size || "",
+                sourceType: docMeta?.sourceType || "context"
+            };
+        }
+
+        async rebuildKeywordIndex() {
+            if (!this.keywordIndex) return;
+            try {
+                const [docs, chunks] = await Promise.all([this.getAllDocuments(), this.getAllChunks()]);
+                const docMap = new Map();
+                docs.forEach((doc) => docMap.set(doc.id, doc));
+                const keywordDocs = [];
+                chunks.forEach((chunk) => {
+                    const entry = this.createKeywordDoc(chunk, docMap.get(chunk.docId));
+                    if (entry) keywordDocs.push(entry);
+                });
+                await this.keywordIndex.buildIndex(keywordDocs);
+                await this.persistKeywordMeta();
+            } catch (err) {
+                console.warn("Keyword index rebuild failed", err);
+            }
+        }
+
+        async addChunkToKeywordIndex(chunk, docMeta) {
+            if (!this.keywordIndex || !chunk) return;
+            const doc = this.createKeywordDoc(chunk, docMeta);
+            if (!doc) return;
+            try {
+                await this.keywordIndex.addDocs([doc]);
+                await this.persistKeywordMeta();
+            } catch (err) {
+                console.warn("Keyword index add failed", err);
+            }
+        }
+
+        async removeDocsFromKeywordIndex(docIds) {
+            if (!this.keywordIndex || !Array.isArray(docIds) || !docIds.length) return;
+            try {
+                await this.keywordIndex.removeByDocIds(docIds);
+                await this.persistKeywordMeta();
+            } catch (err) {
+                console.warn("Keyword index remove failed", err);
+            }
+        }
+
+        async removeConversationFromKeywordIndex(conversationId) {
+            if (!this.keywordIndex) return;
+            try {
+                await this.keywordIndex.removeByConversation(normalizeConversationId(conversationId));
+                await this.persistKeywordMeta();
+            } catch (err) {
+                console.warn("Keyword index conversation remove failed", err);
+            }
+        }
+
+        async getKeywordIndexSize(conversationId) {
+            if (this.keywordIndex) {
+                return this.keywordIndex.getSize(conversationId);
+            }
+            const store = await this.getStore("keyword_meta");
+            if (!store) return 0;
+            return new Promise((resolve) => {
+                const request = store.get("keyword-meta");
+                request.onsuccess = () => {
+                    const value = request.result;
+                    if (!value) {
+                        resolve(0);
+                        return;
+                    }
+                    if (!conversationId) {
+                        resolve(Number(value.total) || 0);
+                        return;
+                    }
+                    const perConv = Array.isArray(value.perConversation) ? new Map(value.perConversation) : new Map();
+                    resolve(perConv.get(conversationId) || 0);
+                };
+                request.onerror = () => resolve(0);
+            });
         }
 
         async putDocument(doc) {
@@ -425,6 +541,37 @@
             });
         }
 
+        async getDocumentById(docId) {
+            if (!docId) return null;
+            const store = await this.getStore("documents");
+            if (!store) return null;
+            return new Promise((resolve, reject) => {
+                const request = store.get(docId);
+                request.onsuccess = () => resolve(request.result || null);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        async getAllChunks() {
+            const store = await this.getStore("chunks");
+            if (!store) return [];
+            return new Promise((resolve, reject) => {
+                const request = store.getAll();
+                request.onsuccess = () => resolve(request.result || []);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        async getAllDocuments() {
+            const store = await this.getStore("documents");
+            if (!store) return [];
+            return new Promise((resolve, reject) => {
+                const request = store.getAll();
+                request.onsuccess = () => resolve(request.result || []);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
         async deleteDocumentById(docId) {
             if (!docId) return;
             const store = await this.getStore("documents", "readwrite");
@@ -438,6 +585,7 @@
 
         async deleteChunksByDocId(docId) {
             if (!docId) return;
+            await this.removeDocsFromKeywordIndex([docId]);
             return this.deleteByIndex("chunks", "docId", docId);
         }
 
@@ -449,6 +597,7 @@
             const docs = await this.getDocuments(convId);
             const toDelete = docs.filter(doc => targetNames.has(doc.name));
             if (!toDelete.length) return;
+            await this.removeDocsFromKeywordIndex(toDelete.map((doc) => doc.id));
             await Promise.all(toDelete.map(async doc => {
                 await this.deleteChunksByDocId(doc.id);
                 await this.deleteDocumentById(doc.id);
@@ -468,6 +617,7 @@
                 return targetTypes.has(sourceType);
             });
             if (!toDelete.length) return;
+            await this.removeDocsFromKeywordIndex(toDelete.map((doc) => doc.id));
             await Promise.all(toDelete.map(async doc => {
                 await this.deleteChunksByDocId(doc.id);
                 await this.deleteDocumentById(doc.id);
@@ -496,6 +646,7 @@
         async clearConversation(conversationId) {
             const convId = normalizeConversationId(conversationId);
             await this.waitReady();
+            await this.removeConversationFromKeywordIndex(convId);
             await this.deleteByIndex("documents", "conversationId", convId);
             await this.deleteByIndex("chunks", "conversationId", convId);
             await this.emitStats(convId);
@@ -607,7 +758,7 @@
                         lastProgress = percent;
                     }
                     const emb = await this.embed(chunk);
-                    await this.putChunk({
+                    const chunkEntry = {
                         id: crypto.randomUUID(),
                         conversationId: convId,
                         docId,
@@ -615,8 +766,11 @@
                         text: chunk,
                         emb: Array.from(emb),
                         createdAt: Date.now(),
-                        size: chunkConfig.category
-                    });
+                        size: chunkConfig.category,
+                        sourceType
+                    };
+                    await this.putChunk(chunkEntry);
+                    await this.addChunkToKeywordIndex(chunkEntry, baseEntry);
                 }
                 baseEntry.status = "ready";
                 baseEntry.parsedAt = Date.now();
@@ -732,32 +886,59 @@
             return extractTextFromXml(raw);
         }
 
-        async retrieve(query, conversationId, options = {}) {
+        buildChunkResult(chunk, docMap, score) {
+            const docMeta = docMap.get(chunk.docId);
+            return {
+                ...chunk,
+                score,
+                docName: docMeta?.name || "Document",
+                sourceType: docMeta?.sourceType || "context",
+                docScopes: Array.isArray(docMeta?.scope) ? docMeta.scope : [],
+                docAbstract: docMeta?.abstract || "",
+                text: chunk.text
+            };
+        }
+
+        async vectorSearch(query, conversationId, options = {}) {
             if (!query) return [];
             const convId = normalizeConversationId(conversationId);
             await this.waitReady();
-            const vector = await this.embed(query);
-            const chunks = await this.getChunks(convId);
-            const docs = await this.getDocuments(convId);
-            const docMap = new Map();
-            docs.forEach((doc) => docMap.set(doc.id, doc));
-            const scored = chunks.map((chunk) => {
-                const docMeta = docMap.get(chunk.docId);
-                const target = new Float32Array(chunk.emb);
-                return {
-                    ...chunk,
-                    score: cosineSim(vector, target),
-                    docName: docMeta?.name || "Document",
-                    sourceType: docMeta?.sourceType || "context",
-                    docScopes: Array.isArray(docMeta?.scope) ? docMeta.scope : [],
-                    docAbstract: docMeta?.abstract || "",
-                    text: chunk.text
-                };
-            });
-            scored.sort((a, b) => b.score - a.score);
+            const vector = options.vector || await this.embed(query);
+            const candidateIds = Array.isArray(options.candidateIds)
+                ? new Set(options.candidateIds.filter(Boolean))
+                : null;
             const minScore = options.minScore ?? DEFAULT_RETRIEVAL_MIN_SCORE;
             const topK = options.topK ?? DEFAULT_RETRIEVAL_TOP_K;
-            return scored.filter((hit) => hit.score >= minScore).slice(0, topK);
+            const chunks = Array.isArray(options.chunks) ? options.chunks : await this.getChunks(convId);
+            const docs = Array.isArray(options.docs) ? options.docs : await this.getDocuments(convId);
+            const docMap = new Map();
+            docs.forEach((doc) => docMap.set(doc.id, doc));
+            const scored = [];
+            for (const chunk of chunks) {
+                if (candidateIds && !candidateIds.has(chunk.id)) continue;
+                const target = new Float32Array(chunk.emb);
+                const similarity = cosineSim(vector, target);
+                if (similarity < minScore) continue;
+                scored.push(this.buildChunkResult(chunk, docMap, similarity));
+            }
+            scored.sort((a, b) => b.score - a.score);
+            return scored.slice(0, topK);
+        }
+
+        async searchKeywordCandidates(query, conversationId, limit) {
+            if (!query || !this.keywordIndex) return null;
+            const cappedLimit = typeof limit === "number" ? limit : 200;
+            try {
+                await this.waitReady();
+                return this.keywordIndex.search(query, normalizeConversationId(conversationId), cappedLimit);
+            } catch (err) {
+                console.warn("Keyword search failed", err);
+                return null;
+            }
+        }
+
+        async retrieve(query, conversationId, options = {}) {
+            return this.vectorSearch(query, conversationId, options);
         }
     }
 
