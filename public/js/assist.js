@@ -359,6 +359,22 @@
         return normalized;
     }
 
+    AssistSidebar.prototype.buildMarkdownContent = function (chunks) {
+        if (!Array.isArray(chunks) || !chunks.length) return "";
+        var list = chunks.slice();
+        list.sort(function (a, b) {
+            return getChunkIndex(a) - getChunkIndex(b);
+        });
+        var parts = [];
+        list.forEach(function (chunk) {
+            var text = String(chunk?.text || "");
+            if (text) {
+                parts.push(text);
+            }
+        });
+        return parts.join("\n\n");
+    };
+
     function getSystemPrompt() {
         var prompt = global.GoToolkitChatPrompt?.SYSTEM_PROMPT;
         if (prompt && typeof prompt === "string") {
@@ -1514,8 +1530,16 @@
             } catch (err) {
                 parsed = null;
             }
-            if (parsed && parsed.answer && typeof parsed.answer.content === "string") {
-                botMessage.content = parsed.answer.content;
+            var answerContent = null;
+            if (parsed && parsed.answer) {
+                if (typeof parsed.answer === "string") {
+                    answerContent = parsed.answer;
+                } else if (typeof parsed.answer.content === "string") {
+                    answerContent = parsed.answer.content;
+                }
+            }
+            if (answerContent !== null) {
+                botMessage.content = answerContent;
                 botMessage.references = (Array.isArray(parsed.references) ? parsed.references : [])
                     .map(normalizeReference)
                     .filter(Boolean);
@@ -4011,12 +4035,11 @@
             return;
         }
         if (renderMarkdown) {
-            var mergedText = normalized
-                .map(function (entry) {
-                    return String(entry.text || "");
-                })
-                .join("");
-            var markdownHtml = renderBotMarkdown(mergedText);
+            var markdownSource = this.buildMarkdownContent(chunks);
+            if (!markdownSource && snippet) {
+                markdownSource = snippet;
+            }
+            var markdownHtml = renderBotMarkdown(markdownSource);
             this.previewBodyEl.innerHTML = markdownHtml || "(extrait indisponible)";
             return;
         }

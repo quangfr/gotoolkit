@@ -66,20 +66,20 @@
       color: #475569;
     }
 
-      .viewer {
-        flex: 1;
-        padding: 12px;
-        background: #f6f6f6;
-        position: relative;
-      }
+    .viewer {
+      flex: 1;
+      padding: 12px;
+      background: #f6f6f6;
+      position: relative;
+    }
 
-      #viewerContainer {
-        position: absolute;
-        inset: 12px 12px 12px 12px;
-        overflow: auto;
-        width: calc(100% - 24px);
-        height: calc(100% - 24px);
-      }
+    #viewerContainer {
+      position: absolute;
+      inset: 12px 12px 12px 12px;
+      overflow: auto;
+      width: calc(100% - 24px);
+      height: calc(100% - 24px);
+    }
 
     #viewer {
       position: relative;
@@ -134,7 +134,6 @@
     const fallbackContainer = document.querySelector(".viewer");
     const container = document.getElementById("viewerContainer");
     const viewerElement = document.getElementById("viewer");
-
     const eventBus = new EventBus();
     const linkService = new PDFLinkService({ eventBus });
     const findController = new PDFFindController({ eventBus, linkService });
@@ -194,8 +193,283 @@
       pdfViewer.currentPageNumber = target;
     }
 
-    function normalizeHighlightText(value) {
-      return String(value || "").replace(/\s+/g, " ").trim();
+    eventBus.on("pagesinit", () => {
+      pdfViewer.currentScaleValue = "page-width";
+      refreshStatus();
+      updateControls();
+    });
+    eventBus.on("pagechange", () => {
+      refreshStatus();
+      updateControls();
+    });
+    eventBus.on("scalechange", () => {
+      refreshStatus();
+    });
+
+    toolbar.addEventListener("click", (event) => {
+      const target = event.target;
+      const button = target?.closest ? target.closest("button[data-action]") : null;
+      const action = button?.dataset?.action;
+      if (!action || !pdfDoc) return;
+      if (action === "prev") {
+        setPage(pdfViewer.currentPageNumber - 1);
+        return;
+      }
+      if (action === "next") {
+        setPage(pdfViewer.currentPageNumber + 1);
+        return;
+      }
+      if (action === "zoomOut") {
+        changeScale(-SCALE_STEP);
+        return;
+      }
+      if (action === "zoomIn") {
+        changeScale(SCALE_STEP);
+      }
+    });
+
+    window.addEventListener("message", (event) => {
+      if (event.source !== window.parent) return;
+      const data = event.data;
+      if (!data || data.type !== "chunk-highlight") return;
+      const targetPage = Number.isFinite(data.page) ? data.page : null;
+      if (targetPage && pdfDoc) {
+        setPage(targetPage);
+      }
+      if (data.text) {
+        findController.executeCommand("find", {
+          query: data.text,
+          phraseSearch: true,
+          highlightAll: true,
+          caseSensitive: false,
+          entireWord: false,
+          findPrevious: false
+        });
+      }
+    });
+
+    function showError(message, detail) {
+      if (fallbackContainer) {
+        fallbackContainer.innerHTML = `<div class="error">${detail ? `${message} (${detail})` : message}</div>`;
+      }
+      setStatus("Failed");
+    }
+
+    async function loadDocument() {
+      if (!fileUrl) {
+        showError("No PDF file provided.");
+        return;
+      }
+      try {
+        const loadingTask = pdfjsLib.getDocument({ url: fileUrl });
+        pdfDoc = await loadingTask.promise;
+        pdfViewer.setDocument(pdfDoc);
+        linkService.setDocument(pdfDoc);
+        refreshStatus();
+        updateControls();
+      } catch (err) {
+        showError("Unable to load PDF preview.", err?.message || String(err));
+      }
+    }
+
+    loadDocument();
+  </script>
+</body>
+
+</html>
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PDF Preview</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pdfjs-dist@5.4.530/web/pdf_viewer.min.css">
+  <style>
+    :root {
+      color-scheme: light;
+      --toolbar-bg: #f8fafc;
+      --toolbar-border: #e2e8f0;
+      --text: #0f172a;
+      --shadow: rgba(15, 23, 42, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Inter", "Segoe UI", sans-serif;
+      color: var(--text);
+      background: #eef2f7;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      background: var(--toolbar-bg);
+      border-bottom: 1px solid var(--toolbar-border);
+      box-shadow: 0 6px 14px var(--shadow);
+      position: sticky;
+      top: 0;
+      z-index: 5;
+    }
+
+    .toolbar button {
+      border: 1px solid var(--toolbar-border);
+      background: #fff;
+      color: var(--text);
+      padding: 4px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.78rem;
+    }
+
+    .toolbar button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .toolbar .spacer {
+      flex: 1;
+    }
+
+    .toolbar .status {
+      font-size: 0.78rem;
+      color: #475569;
+    }
+
+    .viewer {
+      flex: 1;
+      padding: 12px;
+      background: #f6f6f6;
+      position: relative;
+    }
+
+    #viewerContainer {
+      position: absolute;
+      inset: 12px 12px 12px 12px;
+      overflow: auto;
+      width: calc(100% - 24px);
+      height: calc(100% - 24px);
+    }
+
+    #viewer {
+      position: relative;
+    }
+
+    .error {
+      margin: 24px auto;
+      padding: 12px 16px;
+      border-radius: 10px;
+      background: #fee2e2;
+      color: #b91c1c;
+      border: 1px solid #fecdd3;
+      max-width: 360px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="toolbar">
+    <button type="button" data-action="prev">Prev</button>
+    <button type="button" data-action="next">Next</button>
+    <button type="button" data-action="zoomOut">-</button>
+    <button type="button" data-action="zoomIn">+</button>
+    <div class="spacer"></div>
+    <div class="status" data-role="status">Loading…</div>
+  </div>
+  <div class="viewer">
+    <div id="viewerContainer" class="pdfViewer">
+      <div id="viewer" class="pdfViewer"></div>
+    </div>
+  </div>
+  <script type="module">
+    import * as pdfjsLib from "https://cdn.jsdelivr.net/npm/pdfjs-dist@5.4.530/build/pdf.min.mjs";
+    import {
+      EventBus,
+      PDFLinkService,
+      PDFFindController,
+      PDFViewer
+    } from "https://cdn.jsdelivr.net/npm/pdfjs-dist@5.4.530/web/pdf_viewer.mjs";
+
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@5.4.530/build/pdf.worker.min.mjs";
+
+    const params = new URLSearchParams(window.location.search);
+    let fileUrl = params.get("file");
+    if (!fileUrl && window.location.hash) {
+      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+      fileUrl = hashParams.get("file");
+    }
+
+    const status = document.querySelector("[data-role=\"status\"]");
+    const toolbar = document.querySelector(".toolbar");
+    const fallbackContainer = document.querySelector(".viewer");
+    const container = document.getElementById("viewerContainer");
+    const viewerElement = document.getElementById("viewer");
+    const eventBus = new EventBus();
+    const linkService = new PDFLinkService({ eventBus });
+    const findController = new PDFFindController({ eventBus, linkService });
+    const pdfViewer = new PDFViewer({
+      container,
+      viewer: viewerElement,
+      eventBus,
+      linkService,
+      findController,
+      textLayerMode: 2
+    });
+    linkService.setViewer(pdfViewer);
+
+    let pdfDoc = null;
+    const MIN_SCALE = 0.6;
+    const MAX_SCALE = 3;
+    const SCALE_STEP = 0.1;
+
+    function setStatus(text) {
+      if (status) {
+        status.textContent = text;
+      }
+    }
+
+    function refreshStatus() {
+      if (!pdfDoc) {
+        setStatus("Loading…");
+        return;
+      }
+      const page = pdfViewer.currentPageNumber || 1;
+      const scale = Math.round((pdfViewer.currentScale || 1) * 100);
+      setStatus(`Page ${page} / ${pdfDoc.numPages} · ${scale}%`);
+    }
+
+    function updateControls() {
+      const prevBtn = toolbar.querySelector("[data-action=prev]");
+      const nextBtn = toolbar.querySelector("[data-action=next]");
+      if (prevBtn) {
+        prevBtn.disabled = !pdfDoc || pdfViewer.currentPageNumber <= 1;
+      }
+      if (nextBtn) {
+        nextBtn.disabled = !pdfDoc || pdfViewer.currentPageNumber >= pdfDoc.numPages;
+      }
+    }
+
+    function changeScale(delta) {
+      const current = pdfViewer.currentScale || 1;
+      const next = Math.min(MAX_SCALE, Math.max(MIN_SCALE, current + delta));
+      if (next === current) return;
+      pdfViewer.currentScale = next;
+    }
+
+    function setPage(pageNumber) {
+      if (!pdfDoc) return;
+      const target = Math.min(Math.max(1, pageNumber), pdfDoc.numPages);
+      if (pdfViewer.currentPageNumber === target) return;
+      pdfViewer.currentPageNumber = target;
     }
 
     eventBus.on("pagesinit", () => {
@@ -237,14 +511,292 @@
       if (event.source !== window.parent) return;
       const data = event.data;
       if (!data || data.type !== "chunk-highlight") return;
-      const snippet = normalizeHighlightText(data.text || "");
       const targetPage = Number.isFinite(data.page) ? data.page : null;
       if (targetPage && pdfDoc) {
         setPage(targetPage);
       }
-      if (snippet) {
+      if (data.text) {
         findController.executeCommand("find", {
-          query: snippet,
+          query: data.text,
+          phraseSearch: true,
+          highlightAll: true,
+          caseSensitive: false,
+          entireWord: false,
+          findPrevious: false
+        });
+      }
+    });
+
+    function showError(message, detail) {
+      if (fallbackContainer) {
+        fallbackContainer.innerHTML = `<div class="error">${detail ? `${message} (${detail})` : message}</div>`;
+      }
+      setStatus("Failed");
+    }
+
+    async function loadDocument() {
+      if (!fileUrl) {
+        showError("No PDF file provided.");
+        return;
+      }
+      try {
+        const loadingTask = pdfjsLib.getDocument({ url: fileUrl });
+        pdfDoc = await loadingTask.promise;
+        pdfViewer.setDocument(pdfDoc);
+        linkService.setDocument(pdfDoc);
+        refreshStatus();
+        updateControls();
+      } catch (err) {
+        showError("Unable to load PDF preview.", err?.message || String(err));
+      }
+    }
+
+    loadDocument();
+  </script>
+</body>
+
+</html>
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PDF Preview</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pdfjs-dist@5.4.530/web/pdf_viewer.min.css">
+  <style>
+    :root {
+      color-scheme: light;
+      --toolbar-bg: #f8fafc;
+      --toolbar-border: #e2e8f0;
+      --text: #0f172a;
+      --shadow: rgba(15, 23, 42, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Inter", "Segoe UI", sans-serif;
+      color: var(--text);
+      background: #eef2f7;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      background: var(--toolbar-bg);
+      border-bottom: 1px solid var(--toolbar-border);
+      box-shadow: 0 6px 14px var(--shadow);
+      position: sticky;
+      top: 0;
+      z-index: 5;
+    }
+
+    .toolbar button {
+      border: 1px solid var(--toolbar-border);
+      background: #fff;
+      color: var(--text);
+      padding: 4px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.78rem;
+    }
+
+    .toolbar button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .toolbar .spacer {
+      flex: 1;
+    }
+
+    .toolbar .status {
+      font-size: 0.78rem;
+      color: #475569;
+    }
+
+    .viewer {
+      flex: 1;
+      padding: 12px;
+      background: #f6f6f6;
+      position: relative;
+    }
+
+    #viewerContainer {
+      position: absolute;
+      inset: 12px 12px 12px 12px;
+      overflow: auto;
+      width: calc(100% - 24px);
+      height: calc(100% - 24px);
+    }
+
+    #viewer {
+      position: relative;
+    }
+
+    .error {
+      margin: 24px auto;
+      padding: 12px 16px;
+      border-radius: 10px;
+      background: #fee2e2;
+      color: #b91c1c;
+      border: 1px solid #fecdd3;
+      max-width: 360px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="toolbar">
+    <button type="button" data-action="prev">Prev</button>
+    <button type="button" data-action="next">Next</button>
+    <button type="button" data-action="zoomOut">-</button>
+    <button type="button" data-action="zoomIn">+</button>
+    <div class="spacer"></div>
+    <div class="status" data-role="status">Loading…</div>
+  </div>
+  <div class="viewer">
+    <div id="viewerContainer" class="pdfViewer">
+      <div id="viewer" class="pdfViewer"></div>
+    </div>
+  </div>
+  <script type="module">
+    import * as pdfjsLib from "https://cdn.jsdelivr.net/npm/pdfjs-dist@5.4.530/build/pdf.min.mjs";
+    import {
+      EventBus,
+      PDFLinkService,
+      PDFFindController,
+      PDFViewer
+    } from "https://cdn.jsdelivr.net/npm/pdfjs-dist@5.4.530/web/pdf_viewer.mjs";
+
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@5.4.530/build/pdf.worker.min.mjs";
+
+    const params = new URLSearchParams(window.location.search);
+    let fileUrl = params.get("file");
+    if (!fileUrl && window.location.hash) {
+      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+      fileUrl = hashParams.get("file");
+    }
+
+    const status = document.querySelector("[data-role=\"status\"]");
+    const toolbar = document.querySelector(".toolbar");
+    const fallbackContainer = document.querySelector(".viewer");
+    const container = document.getElementById("viewerContainer");
+    const viewerElement = document.getElementById("viewer");
+    const eventBus = new EventBus();
+    const linkService = new PDFLinkService({ eventBus });
+    const findController = new PDFFindController({ eventBus, linkService });
+    const pdfViewer = new PDFViewer({
+      container,
+      viewer: viewerElement,
+      eventBus,
+      linkService,
+      findController,
+      textLayerMode: 2
+    });
+    linkService.setViewer(pdfViewer);
+
+    let pdfDoc = null;
+    const MIN_SCALE = 0.6;
+    const MAX_SCALE = 3;
+    const SCALE_STEP = 0.1;
+
+    function setStatus(text) {
+      if (status) {
+        status.textContent = text;
+      }
+    }
+
+    function refreshStatus() {
+      if (!pdfDoc) {
+        setStatus("Loading…");
+        return;
+      }
+      const page = pdfViewer.currentPageNumber || 1;
+      const scale = Math.round((pdfViewer.currentScale || 1) * 100);
+      setStatus(`Page ${page} / ${pdfDoc.numPages} · ${scale}%`);
+    }
+
+    function updateControls() {
+      const prevBtn = toolbar.querySelector("[data-action=prev]");
+      const nextBtn = toolbar.querySelector("[data-action=next]");
+      if (prevBtn) {
+        prevBtn.disabled = !pdfDoc || pdfViewer.currentPageNumber <= 1;
+      }
+      if (nextBtn) {
+        nextBtn.disabled = !pdfDoc || pdfViewer.currentPageNumber >= pdfDoc.numPages;
+      }
+    }
+
+    function changeScale(delta) {
+      const current = pdfViewer.currentScale || 1;
+      const next = Math.min(MAX_SCALE, Math.max(MIN_SCALE, current + delta));
+      if (next === current) return;
+      pdfViewer.currentScale = next;
+    }
+
+    function setPage(pageNumber) {
+      if (!pdfDoc) return;
+      const target = Math.min(Math.max(1, pageNumber), pdfDoc.numPages);
+      if (pdfViewer.currentPageNumber === target) return;
+      pdfViewer.currentPageNumber = target;
+    }
+
+    eventBus.on("pagesinit", () => {
+      pdfViewer.currentScaleValue = "page-width";
+      refreshStatus();
+      updateControls();
+    });
+    eventBus.on("pagechange", () => {
+      refreshStatus();
+      updateControls();
+    });
+    eventBus.on("scalechange", () => {
+      refreshStatus();
+    });
+
+    toolbar.addEventListener("click", (event) => {
+      const target = event.target;
+      const button = target?.closest ? target.closest("button[data-action]") : null;
+      const action = button?.dataset?.action;
+      if (!action || !pdfDoc) return;
+      if (action === "prev") {
+        setPage(pdfViewer.currentPageNumber - 1);
+        return;
+      }
+      if (action === "next") {
+        setPage(pdfViewer.currentPageNumber + 1);
+        return;
+      }
+      if (action === "zoomOut") {
+        changeScale(-SCALE_STEP);
+        return;
+      }
+      if (action === "zoomIn") {
+        changeScale(SCALE_STEP);
+      }
+    });
+
+    window.addEventListener("message", (event) => {
+      if (event.source !== window.parent) return;
+      const data = event.data;
+      if (!data || data.type !== "chunk-highlight") return;
+      const targetPage = Number.isFinite(data.page) ? data.page : null;
+      if (targetPage && pdfDoc) {
+        setPage(targetPage);
+      }
+      if (data.text) {
+        findController.executeCommand("find", {
+          query: data.text,
           phraseSearch: true,
           highlightAll: true,
           caseSensitive: false,

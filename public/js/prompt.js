@@ -1417,9 +1417,7 @@ RÈGLES
 
 FORMAT DE SORTIE (JSON strict)
 {
-  "answer": {
-    "content": "Réponse fluide à l'utilisateur issue du contexte."
-  },
+  "answer": "Réponse fluide à l'utilisateur issue du contexte.",
   "references": [
     {
       "documentId": "reprendre le uuid exact du documentId en CONTEXT ou KNOWLEDGE",
@@ -1455,9 +1453,7 @@ RÈGLES
 
 FORMAT DE SORTIE (JSON strict)
 {
-  "answer": {
-    "content": "Réponse fluide à l'utilisateur issue du contexte."
-  },
+  "answer": "Réponse fluide à l'utilisateur issue du contexte.",
   "references": [
     {
       "documentId": "reprendre le uuid exact du documentId en CONTEXT ou KNOWLEDGE",
