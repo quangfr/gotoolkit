@@ -1612,8 +1612,8 @@
                                     <input id="assemblyAiKeyInput" type="password" placeholder="sk-..."
                                         autocomplete="current-password" />
                                     <span class="label-subtitle">
-                                        Accès privé pour la transcription automatique (~15ct/h. Crédit offert de 50€
-                                        à l'inscription)
+                                        Rétention des données pour entraînement. Accès privé (~15ct/h. Crédit offert de
+                                        50€ à l'inscription)
                                     </span>
                                 </label>
                             </div>
@@ -1636,7 +1636,10 @@
                                     <label style="width:100%">
                                         <div
                                             style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem;">
+
                                             <div>
+                                                <span class="label-subtitle">Rétention limitée des données. Accès privé
+                                                    (~1ct/100 requêtes)</span>
                                                 <a href="https://platform.openai.com/settings/organization/api-keys"
                                                     class="label-title dashed-link" target="_blank"
                                                     rel="noopener noreferrer">Clé OpenAI</a>
@@ -1647,8 +1650,6 @@
                                                     class="btn-secondary">Vérifier</button>
                                             </div>
                                         </div>
-                                        <span class="label-subtitle">Accès privé payant sans rétention des
-                                            données (~1ct/100 requêtes)</span>
                                         <input id="iaApiKeyInput" type="password" placeholder="sk-..."
                                             autocomplete="current-password" />
                                     </label>
@@ -1682,13 +1683,14 @@
                                         <div
                                             style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem;">
                                             <div>
+                                                <span class="label-subtitle">Pas de rétention des données. Accès privé
+                                                    (~1ct/100 requêtes)</span>
                                                 <a class="label-title" href="https://openrouter.ai/settings/keys"
                                                     target="_blank" rel="noopener noreferrer">Clé OpenRouter</a>
                                                 <span class="ia-status" id="openrouterStatus" aria-hidden="true"></span>
                                                 <span class="ia-model-label" id="openrouterModelLabel"
                                                     aria-live="polite"></span><br>
-                                                <span class="label-subtitle">Accès privé payant sans rétention des
-                                                    données (~1ct/100 requêtes)</span>
+
                                             </div>
                                             <div style="display:flex; gap:0.35rem;">
                                                 <button id="openrouterVerifyBtn" type="button"

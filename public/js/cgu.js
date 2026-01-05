@@ -17,20 +17,20 @@ Go-Toolkit est un outil professionnel développé par Savane Go Live destiné à
 ainsi qu’à la collaboration entre équipes métier et techniques.</p>
 
 <p><strong>⛒ Utilisation, responsabilité et légalité</strong><br>
-Aucun compte n’est requis. Vous restez responsable des contenus saisis.
+Aucun compte n’est requis pour utiliser le service. Vous restez responsable des contenus saisis.
 N’y saisissez pas de données personnelles ou sensibles et n’utilisez pas l’outil à des fins illégales.</p>
 
 <p><strong>⚲ Données, stockage et cookies</strong><br>
 Par défaut, les données restent dans votre navigateur et sont utilisées uniquement
 au fonctionnement du service. Elles peuvent être perdues en cas de nettoyage ou de panne de l'appareil. Aucun cookie ou traceur tiers n’est déposé sur votre navigateur.</p>
 
-<p><strong>⌘ Services tiers et intelligence artificielle</strong><br>
-Certaines fonctionnalités reposent sur des API tierces (ex. IA, transcription, reconnaissance vocale).
-Lorsque vous les déclenchez, seules les données strictement nécessaires sont transmises aux prestataires concernés.
-Ne transmettez pas de données confidentielles.</p>
+<p><strong>⌘ Intelligence Artificielle</strong><br>
+Certaines fonctionnalités d'intelligence artificielle reposent sur l'envoi de données à un fournisseur tiers.
+Lorsque vous les déclenchez, seules les données strictement nécessaires sont transmises.
+Ne transmettez pas de données confidentielles. Les données transmisesne sont pas conservées par le fournisseur.</p>
 
 <p><strong>◉ Reconnaissance et transcription vocale</strong><br>
-La dictée et la transcription peuvent impliquer un traitement externe de l’audio par des fournisseurs spécialisés.
+La dictée et la transcription peuvent impliquer un traitement de l’audio par un fournisseur tiers. Les données audio et les transcriptions peuvent être conservées à des fins d’amélioration des services.
 Informez les participants et recueillez leur consentement si nécessaire.</p>
 
 <p><strong>⟐ Accès privé ou partagé avec quota</strong><br>
