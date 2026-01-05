@@ -5433,6 +5433,15 @@
             const modal = document.getElementById("releaseNotesModal");
             const closeBtn = document.getElementById("releaseNotesClose");
             const heroLogo = document.querySelector(".hero-logo-wrapper img");
+            const releaseNotesVersionValue = (() => {
+                const rawLabel = (trigger?.textContent || "").trim();
+                if (!rawLabel) return "v";
+                return rawLabel.startsWith("v") ? rawLabel.slice(1) : rawLabel;
+            })();
+            const releaseNotesNewsUrl = `/?v=${encodeURIComponent(releaseNotesVersionValue)}#news`;
+            function navigateToReleaseNotesNews() {
+                window.location.href = releaseNotesNewsUrl;
+            }
             function resetHeroLogo() {
                 if (!heroLogo) return;
                 const src = heroLogo.getAttribute("src");
@@ -5461,12 +5470,12 @@
                 trigger?.focus();
             };
             trigger?.addEventListener("click", () => {
-                window.location.href = "https://gotoolkit.web.app/?v=v#news";
+                navigateToReleaseNotesNews();
             });
             trigger?.addEventListener("keydown", event => {
                 if (event.key === "Enter" || event.key === " ") {
                     event.preventDefault();
-                    window.location.href = "/?v=v#news";
+                    navigateToReleaseNotesNews();
                 }
             });
             closeBtn?.addEventListener("click", closeReleaseNotes);

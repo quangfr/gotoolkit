@@ -1,7 +1,7 @@
 ## 2026-01-05
 - Module [Assist](/#assist) avec les modes Conseil et Recherche 
-- Corpus de connaissance commun et import de documents
-- Références et prévisualisation des sources
+- Import, référence et prévisualisation des sources
+- Choix du modèle IA `gpt-oss-20b` rapide et sans rétention de données
 
 ## 2025-12-29
 - Ajout des notes de version et de la feuille de route
@@ -11,7 +11,7 @@
 - Transcription vocale AssemblyAI
 
 ## 2025-12-27
-- Utilisation du fournisseur IA OpenRouter par défaut
+- Choix du fournisseur IA OpenRouter par défaut
 - Clarification des [CGU](/#legal)
 
 ## 2025-12-24
