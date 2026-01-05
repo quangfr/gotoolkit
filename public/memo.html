@@ -5,10 +5,6 @@
     <meta charset="UTF-8" />
     <title>Mémo | Go-Toolkit</title>
     <link rel="stylesheet" href="styles/style.css?v=2026.1.3">
-    <link rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/@milkdown/crepe@7.17.3/theme/common/style.css">
-    <link rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/@milkdown/crepe@7.17.3/theme/frame.css">
     <style>
         :root {
             --app-bg: #f3f4f6;
@@ -78,7 +74,7 @@
             border: 1px solid #ebe0d1;
             border-radius: 12px;
             box-shadow: var(--app-shadow);
-            padding: 16px;
+            padding: 4px;
             flex: 1;
             display: flex;
             flex-direction: column;
@@ -92,11 +88,11 @@
             width: 100%;
             min-height: 0;
             border-radius: 10px;
-            border: 1px solid var(--app-border);
+            border: none;
             padding: 14px;
             font-size: 14px;
             line-height: 1.5;
-            background: #fffdf8;
+            background: transparent;
             color: var(--app-text);
             display: flex;
             flex-direction: column;
@@ -125,7 +121,7 @@
             }
 
             .memo-card {
-                padding: 12px;
+                padding: 4px;
             }
         }
     </style>
@@ -153,11 +149,12 @@
                 <button class="tab-action" id="deleteTabBtn" type="button" aria-label="Supprimer l'onglet">×</button>
             </div>
             <div class="global-actions">
-                <button id="assistLauncherBtn" class="btn btn-secondary" type="button" title="⌬ Assist">⌬ Assist</button>
+                <button id="assistLauncherBtn" class="btn btn-secondary" type="button" title="⌬ Assist">⌬
+                    Assist</button>
                 <button id="gtTemplateModalTrigger" class="btn" type="button" aria-label="Choisir un modèle"
                     title="⊞ Modèles">⊞ Modèles</button>
-                <button id="gtPromptModalTrigger" class="btn" type="button" aria-label="Prompt"
-                    title="⌬ Prompt">⌬ Prompt</button>
+                <button id="gtPromptModalTrigger" class="btn" type="button" aria-label="Prompt" title="⌬ Prompt">⌬
+                    Prompt</button>
                 <div class="menu-trigger" id="fileMenuTrigger">
                     <button id="fileMenuBtn" class="btn" type="button" aria-label="Document">⬠ Document</button>
                     <div class="context-menu" id="fileMenu">
@@ -179,10 +176,9 @@
             </div>
         </div>
 
-        <div class="app-main">
+        <div id="app" class="app-main">
             <section class="memo-card">
-                <div id="memoEditor" class="memo-editor editable" role="region"
-                    aria-label="Éditeur de mémo"></div>
+                <div id="editor" class="memo-editor" role="region" aria-label="Éditeur de mémo"></div>
             </section>
         </div>
     </div>
@@ -258,60 +254,8 @@
     <script src="https://cdn.jsdelivr.net/npm/minisearch@7.2.0/dist/umd/index.min.js"></script>
     <script src="js/keywordIndex.js"></script>
     <script src="js/documents.js"></script>
-    <script type="module">
-        import { Editor, rootCtx, defaultValueCtx } from "https://esm.sh/@milkdown/kit@7.17.3/core?bundle";
-        import { commonmark } from "https://esm.sh/@milkdown/kit@7.17.3/preset/commonmark?bundle";
-        import { nord } from "https://esm.sh/@milkdown/theme-nord@7.17.3?bundle";
-        import { listener, listenerCtx } from "https://esm.sh/@milkdown/plugin-listener@7.17.3?bundle";
-        import { replaceAll, getMarkdown } from "https://esm.sh/@milkdown/kit@7.17.3/utils?bundle";
-
-        async function createMilkdownEditor(root) {
-            if (!root) {
-                throw new Error("Memo editor racine introuvable");
-            }
-            root.innerHTML = "";
-            const handlers = new Set();
-
-            const editor = await Editor.make()
-                .config((ctx) => {
-                    ctx.set(rootCtx, root);
-                    ctx.set(defaultValueCtx, "");
-                })
-                .config(nord)
-                .use(commonmark)
-                .use(listener)
-                .create();
-
-            editor.action((ctx) => {
-                const manager = ctx.get(listenerCtx);
-                manager.markdownUpdated((_editorCtx, markdown) => {
-                    handlers.forEach(fn => fn(markdown));
-                });
-            });
-
-            console.log("Editor created");
-
-            return {
-                setValue(value) {
-                    editor.action(replaceAll(value || ""));
-                },
-                getValue() {
-                    return editor.action(getMarkdown());
-                },
-                onChange(fn) {
-                    handlers.add(fn);
-                    return () => handlers.delete(fn);
-                },
-                destroy() {
-                    return editor.destroy();
-                }
-            };
-        }
-
-        if (!window.GoToolkitMemoEditorReady) {
-            window.GoToolkitMemoEditorReady = createMilkdownEditor(document.getElementById("memoEditor"));
-        }
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@latest/dist/editorjs.umd.min.js"></script>
+    <script type="module" src="js/memo-editor.js"></script>
     <script>
         (function () {
             const manager = window.GoToolkitDocumentManager;

@@ -1,6 +1,6 @@
 (function () {
     const DB_NAME = "go-toolkit";
-    const DB_VERSION = 2;
+    const DB_VERSION = 3;
     const STORES = [
         "capsule-drafts",
         "share-history",
