@@ -1,9 +1,0 @@
-{
-  "name": "@tiptap/extension-list-kit",
-  "version": "2.27.1",
-  "main": "src/index.ts",
-  "type": "module",
-  "dependencies": {
-    "@tiptap/core": "^2.27.1"
-  }
-}
