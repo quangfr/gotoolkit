@@ -332,6 +332,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     extensions: [
       StarterKit,
       TaskList,
+      ListKit,
       CustomTaskItem,
       Underline,
       Highlight,
