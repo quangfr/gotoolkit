@@ -4,20 +4,16 @@
 
     if (!editorRoot || typeof window.EditorJS === "undefined") return;
 
-    const editor = new window.EditorJS({
-        holderId: "editor",
-        autofocus: true,
-        placeholder: "Write something…",
-        defaultBlock: "paragraph",
-        onChange: async () => {
-            try {
-                const output = await editor.save();
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(output));
-            } catch (err) {
-                console.warn("Memo editor change sync failed", err);
-            }
+    async function saveData() {
+        try {
+            const output = await editor.save();
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(output));
+            return output;
+        } catch (err) {
+            console.warn("Memo editor save failed", err);
+            return null;
         }
-    });
+    }
 
     async function loadFromStorage() {
         try {
@@ -33,14 +29,63 @@
         }
     }
 
+    const tools = {
+        header: {
+            class: window.Header,
+            inlineToolbar: true
+        },
+        list: {
+            class: window.EditorjsList,
+            inlineToolbar: true,
+            config: {
+                defaultStyle: "unordered"
+            }
+        },
+        code: CodeTool,
+        quote: {
+            class: Quote,
+            inlineToolbar: true,
+            shortcut: 'CMD+SHIFT+O',
+            config: {
+                quotePlaceholder: 'Enter a quote',
+                captionPlaceholder: 'Quote\'s author',
+            },
+        },
+        onReady: () => {
+            new Undo({ editor });
+        },
+        Marker: {
+            class: Marker,
+            shortcut: 'CMD+SHIFT+M',
+        },
+        quote: {
+            class: Quote,
+            inlineToolbar: true,
+            shortcut: 'CMD+SHIFT+O',
+            config: {
+                quotePlaceholder: 'Enter a quote',
+                captionPlaceholder: 'Quote\'s author',
+            },
+        },
+    };
+
+    const editor = new window.EditorJS({
+        holderId: "editor",
+        autofocus: true,
+        placeholder: "Type / for tools…",
+        defaultBlock: "paragraph",
+        tools,
+        onChange: async () => {
+            await saveData();
+        }
+    });
+
     const readyPromise = editor.isReady
         .then(async () => {
             await loadFromStorage();
             return {
                 async save() {
-                    const output = await editor.save();
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(output));
-                    return output;
+                    return saveData();
                 },
                 async load(data) {
                     if (data) {

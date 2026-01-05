@@ -74,35 +74,167 @@
             border: 1px solid #ebe0d1;
             border-radius: 12px;
             box-shadow: var(--app-shadow);
-            padding: 4px;
+            padding: 0;
             flex: 1;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 0;
             min-height: 0;
             overflow: hidden;
         }
 
-        .memo-editor {
+        .editor-wrap {
+            padding: 18px;
             flex: 1;
-            width: 100%;
-            min-height: 0;
-            border-radius: 10px;
-            border: none;
-            padding: 14px;
-            font-size: 14px;
-            line-height: 1.5;
-            background: transparent;
-            color: var(--app-text);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
+            overflow-y: auto;
+            background: #fff;
         }
 
-        .memo-editor:focus-visible {
+        .editor {
+            border-radius: 8px;
+            padding: 16px 16px 22px;
+            min-height: 320px;
             outline: none;
-            border-color: var(--app-primary);
-            box-shadow: 0 0 0 2px rgba(42, 122, 87, 0.2);
+            background: #fff;
+        }
+
+        .editor:focus-within {
+            border-color: #cbd5e1;
+            box-shadow: 0 0 0 4px rgba(203, 213, 225, .35);
+        }
+
+        /* Tiptap content */
+        .ProseMirror {
+            outline: none;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        .ProseMirror p {
+            margin: 0 0 10px;
+        }
+
+        .ProseMirror h1 {
+            font-size: 28px;
+            line-height: 1.2;
+            margin: 10px 0 12px;
+        }
+
+        .ProseMirror h2 {
+            font-size: 22px;
+            line-height: 1.25;
+            margin: 10px 0 10px;
+        }
+
+        .ProseMirror ul {
+            margin: 8px 0 10px 22px;
+        }
+
+        .ProseMirror ol {
+            margin: 8px 0 10px 22px;
+        }
+
+        .ProseMirror li {
+            margin: 4px 0;
+        }
+
+        .ProseMirror blockquote {
+            margin: 10px 0;
+            padding: 10px 12px;
+            border-left: 3px solid #e5e7eb;
+            color: #111827;
+            background: #fafafa;
+            border-radius: 10px;
+        }
+
+        .ProseMirror code {
+            background: #f3f4f6;
+            border: 1px solid #e5e7eb;
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-size: .95em;
+        }
+
+        /* Bubble menu */
+        .menu {
+            display: flex;
+            gap: 6px;
+            padding: 8px;
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            box-shadow: 0 10px 25px rgba(15, 23, 42, .05);
+            z-index: 10000;
+        }
+
+        .menu button {
+            border: none;
+            background: #fff;
+            border-radius: 8px;
+            padding: 7px 10px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .menu button:hover {
+            background: #eef2f7;
+        }
+
+        .menu button[data-active="true"] {
+            border-color: #cbd5e1;
+            background: #f8fafc;
+            font-weight: 650;
+        }
+
+        /* Slash menu */
+        .slash {
+            position: fixed;
+            z-index: 9999;
+            width: 240px;
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            box-shadow: 0 14px 30px rgba(15, 23, 42, .14);
+            padding: 6px;
+            display: none;
+        }
+
+        .slash .item {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            padding: 10px 10px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .slash .item:hover {
+            background: #eef2f7;
+        }
+
+        .slash .ico {
+            width: 24px;
+            height: 24px;
+            display: grid;
+            place-items: center;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 12px;
+            color: #64748b;
+            background: #fff;
+            flex: 0 0 auto;
+        }
+
+        .slash .meta {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .slash .meta small {
+            color: #64748b;
+            font-size: 11px;
         }
 
         .modal textarea {
@@ -125,6 +257,7 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="js/memo.bundle.css">
 </head>
 
 <body class="app-body">
@@ -178,9 +311,13 @@
 
         <div id="app" class="app-main">
             <section class="memo-card">
-                <div id="editor" class="memo-editor" role="region" aria-label="Éditeur de mémo"></div>
+                <div class="editor-wrap">
+                    <div id="editor" class="editor"></div>
+                </div>
             </section>
         </div>
+
+        <div id="slash" class="slash" role="menu" aria-hidden="true"></div>
     </div>
 
     <div class="modal-overlay gt-template-modal" id="gtTemplateModal" role="dialog" aria-modal="true"
@@ -254,8 +391,7 @@
     <script src="https://cdn.jsdelivr.net/npm/minisearch@7.2.0/dist/umd/index.min.js"></script>
     <script src="js/keywordIndex.js"></script>
     <script src="js/documents.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@latest/dist/editorjs.umd.min.js"></script>
-    <script type="module" src="js/memo-editor.js"></script>
+    <script src="js/memo.bundle.js"></script>
     <script>
         (function () {
             const manager = window.GoToolkitDocumentManager;
@@ -531,7 +667,25 @@
                 const id = createId();
                 return {
                     tabs: [
-                        { id, title: "Mémo 1", content: "" }
+                        {
+                            id,
+                            title: "Mémo 1",
+                            content: `
+                                <h1>Bienvenue dans l'éditeur Mémo</h1>
+                                <p>Ceci est un éditeur riche basé sur <strong>Tiptap</strong> et <strong>React</strong>.</p>
+                                <p>Voici quelques fonctionnalités à essayer :</p>
+                                <ul>
+                                    <li>Utilisez la <strong>barre d'outils</strong> en haut pour formater votre texte, ajouter des images ou des liens.</li>
+                                    <li>Sélectionnez du texte pour faire apparaître le <strong>menu bulle</strong> et appliquer des styles rapides.</li>
+                                    <li>Support du <em>gras</em>, l'<em>italique</em>, le <u>souligné</u>, le <s>barré</s>, le <code>code</code>, les exposants<sup>2</sup> et indices<sub>2</sub>.</li>
+                                </ul>
+                                <h2>Exemple de citation</h2>
+                                <blockquote>
+                                    "La simplicité est la sophistication suprême." — Léonard de Vinci
+                                </blockquote>
+                                <p>Tapez <code>/</code> pour commencer à explorer !</p>
+                            `
+                        }
                     ],
                     activeTabId: id
                 };

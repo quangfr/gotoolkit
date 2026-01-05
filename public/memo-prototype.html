@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Novel-like editor (card)</title>
+    <style>
+        :root {
+            --bg: #ffffff;
+            --card: #ffffff;
+            --text: #0f172a;
+            --muted: #64748b;
+            --border: #e5e7eb;
+            --shadow: 0 10px 30px rgba(15, 23, 42, .08);
+            --radius: 16px;
+            --btn: #f8fafc;
+            --btnHover: #eef2f7;
+            --focus: #cbd5e1;
+            --accent: #111827;
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        body {
+            margin: 0;
+            font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+            background: linear-gradient(#fff, #fbfbfd);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 32px;
+        }
+
+        #app {
+            width: min(860px, 100%);
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .card-head {
+            padding: 18px 18px 12px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            justify-content: space-between;
+        }
+
+        .title {
+            font-size: 14px;
+            font-weight: 650;
+            letter-spacing: .2px;
+        }
+
+        .subtitle {
+            margin-top: 4px;
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .head-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .btn {
+            appearance: none;
+            border: 1px solid var(--border);
+            background: var(--btn);
+            color: var(--text);
+            border-radius: 12px;
+            padding: 8px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            user-select: none;
+        }
+
+        .btn:hover {
+            background: var(--btnHover);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .editor-wrap {
+            padding: 18px;
+        }
+
+        .editor {
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 16px 16px 22px;
+            min-height: 320px;
+            outline: none;
+            background: #fff;
+        }
+
+        .editor:focus-within {
+            border-color: var(--focus);
+            box-shadow: 0 0 0 4px rgba(203, 213, 225, .35);
+        }
+
+        /* Tiptap content */
+        .ProseMirror {
+            outline: none;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        .ProseMirror p {
+            margin: 0 0 10px;
+        }
+
+        .ProseMirror h1 {
+            font-size: 28px;
+            line-height: 1.2;
+            margin: 10px 0 12px;
+        }
+
+        .ProseMirror h2 {
+            font-size: 22px;
+            line-height: 1.25;
+            margin: 10px 0 10px;
+        }
+
+        .ProseMirror ul {
+            margin: 8px 0 10px 22px;
+        }
+
+        .ProseMirror ol {
+            margin: 8px 0 10px 22px;
+        }
+
+        .ProseMirror li {
+            margin: 4px 0;
+        }
+
+        .ProseMirror blockquote {
+            margin: 10px 0;
+            padding: 10px 12px;
+            border-left: 3px solid var(--border);
+            color: var(--accent);
+            background: #fafafa;
+            border-radius: 10px;
+        }
+
+        .ProseMirror code {
+            background: #f3f4f6;
+            border: 1px solid #e5e7eb;
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-size: .95em;
+        }
+
+        /* Bubble menu */
+        .menu {
+            display: flex;
+            gap: 6px;
+            padding: 8px;
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            box-shadow: 0 10px 25px rgba(15, 23, 42, .10);
+        }
+
+        .menu button {
+            border: 1px solid var(--border);
+            background: #fff;
+            border-radius: 12px;
+            padding: 7px 10px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .menu button:hover {
+            background: var(--btnHover);
+        }
+
+        .menu button[data-active="true"] {
+            border-color: #cbd5e1;
+            background: #f8fafc;
+            font-weight: 650;
+        }
+
+        /* Slash menu */
+        .slash {
+            position: fixed;
+            z-index: 9999;
+            width: 240px;
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            box-shadow: 0 14px 30px rgba(15, 23, 42, .14);
+            padding: 6px;
+            display: none;
+        }
+
+        .slash .item {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            padding: 10px 10px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .slash .item:hover {
+            background: var(--btnHover);
+        }
+
+        .slash .ico {
+            width: 24px;
+            height: 24px;
+            display: grid;
+            place-items: center;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 12px;
+            color: var(--muted);
+            background: #fff;
+            flex: 0 0 auto;
+        }
+
+        .slash .meta {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .slash .meta small {
+            color: var(--muted);
+            font-size: 11px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app" aria-label="Editor card">
+        <div class="card-head">
+            <div>
+                <div class="title">📝 Memo (Novel-like)</div>
+                <div class="subtitle">Type “/” for blocks • Select text for bubble menu</div>
+            </div>
+            <div class="head-actions">
+                <button class="btn" id="btnClear" type="button">🧹 Clear</button>
+                <button class="btn" id="btnGetHTML" type="button">⎘ Get HTML</button>
+            </div>
+        </div>
+
+        <div class="editor-wrap">
+            <div id="editor" class="editor"></div>
+        </div>
+    </div>
+
+    <div id="slash" class="slash" role="menu" aria-hidden="true"></div>
+
+    <script type="module">
+        import { Editor } from "https://esm.sh/@tiptap/core@2.10.4";
+        import StarterKit from "https://esm.sh/@tiptap/starter-kit@2.10.4";
+        import Underline from "https://esm.sh/@tiptap/extension-underline@2.10.4";
+        import Placeholder from "https://esm.sh/@tiptap/extension-placeholder@2.10.4";
+        import BubbleMenu from "https://esm.sh/@tiptap/extension-bubble-menu@2.10.4";
+
+        const elEditor = document.querySelector("#editor");
+        const elSlash = document.querySelector("#slash");
+
+        // --- Bubble menu DOM
+        const bubble = document.createElement("div");
+        bubble.className = "menu";
+        bubble.innerHTML = `
+      <button data-cmd="bold"><b>B</b></button>
+      <button data-cmd="italic"><i>I</i></button>
+      <button data-cmd="underline"><u>U</u></button>
+      <button data-cmd="h2">H2</button>
+      <button data-cmd="ul">• List</button>
+      <button data-cmd="quote">❝</button>
+    `;
+        document.body.appendChild(bubble);
+
+        const editor = new Editor({
+            element: elEditor,
+            extensions: [
+                StarterKit.configure({
+                    heading: { levels: [1, 2, 3] },
+                }),
+                Underline,
+                Placeholder.configure({
+                    placeholder: "Start writing… (try /h1, /h2, /list, /quote)",
+                }),
+                BubbleMenu.configure({
+                    element: bubble,
+                    tippyOptions: { duration: 100, placement: "top" },
+                    shouldShow: ({ editor }) => editor.isEditable && !editor.state.selection.empty,
+                }),
+            ],
+            content: `
+        <h1>White theme, card layout</h1>
+        <p>This is a <strong>Novel-like</strong> prototype using Tiptap.</p>
+        <p>Type <code>/</code> to insert blocks.</p>
+      `,
+        });
+
+        // Bubble buttons behaviour + active state
+        function syncBubbleActive() {
+            bubble.querySelectorAll("button").forEach(btn => btn.dataset.active = "false");
+            const set = (cmd, active) => {
+                const b = bubble.querySelector(`button[data-cmd="${cmd}"]`);
+                if (b) b.dataset.active = active ? "true" : "false";
+            };
+            set("bold", editor.isActive("bold"));
+            set("italic", editor.isActive("italic"));
+            set("underline", editor.isActive("underline"));
+            set("h2", editor.isActive("heading", { level: 2 }));
+            set("ul", editor.isActive("bulletList"));
+            set("quote", editor.isActive("blockquote"));
+        }
+        editor.on("selectionUpdate", syncBubbleActive);
+        editor.on("transaction", syncBubbleActive);
+
+        bubble.addEventListener("mousedown", (e) => e.preventDefault()); // keep selection
+        bubble.addEventListener("click", (e) => {
+            const btn = e.target.closest("button");
+            if (!btn) return;
+            const cmd = btn.dataset.cmd;
+
+            editor.chain().focus();
+            if (cmd === "bold") editor.chain().toggleBold().run();
+            if (cmd === "italic") editor.chain().toggleItalic().run();
+            if (cmd === "underline") editor.chain().toggleUnderline().run();
+            if (cmd === "h2") editor.chain().toggleHeading({ level: 2 }).run();
+            if (cmd === "ul") editor.chain().toggleBulletList().run();
+            if (cmd === "quote") editor.chain().toggleBlockquote().run();
+            syncBubbleActive();
+        });
+
+        // --- Minimal Slash menu (lightweight, no complex suggestion plugin)
+        const slashItems = [
+            { key: "h1", label: "Heading 1", hint: "Big title", icon: "H1", run: () => editor.chain().focus().toggleHeading({ level: 1 }).run() },
+            { key: "h2", label: "Heading 2", hint: "Section title", icon: "H2", run: () => editor.chain().focus().toggleHeading({ level: 2 }).run() },
+            { key: "p", label: "Paragraph", hint: "Normal text", icon: "¶", run: () => editor.chain().focus().setParagraph().run() },
+            { key: "list", label: "Bulleted list", hint: "Bullet points", icon: "•", run: () => editor.chain().focus().toggleBulletList().run() },
+            { key: "quote", label: "Quote", hint: "Callout text", icon: "❝", run: () => editor.chain().focus().toggleBlockquote().run() },
+        ];
+
+        function hideSlash() {
+            elSlash.style.display = "none";
+            elSlash.setAttribute("aria-hidden", "true");
+            elSlash.innerHTML = "";
+        }
+
+        function showSlashAtCaret() {
+            const sel = window.getSelection();
+            if (!sel || sel.rangeCount === 0) return;
+            const range = sel.getRangeAt(0);
+            const rects = range.getClientRects();
+            const rect = rects[0] || elEditor.getBoundingClientRect();
+
+            elSlash.innerHTML = slashItems.map(it => `
+                <div class="item" data-key="${it.key}">
+                    <div class="ico">${it.icon}</div>
+                    <div class="meta">
+                        <div>${it.label}</div>
+                        <small>${it.hint}</small>
+                    </div>
+                </div>
+            `).join("");
+
+            elSlash.style.left = Math.min(rect.left, window.innerWidth - 260) + "px";
+            elSlash.style.top = (rect.bottom + 10) + "px";
+            elSlash.style.display = "block";
+            elSlash.setAttribute("aria-hidden", "false");
+        }
+
+        // When user types "/" we open the menu; ESC closes.
+        editor.view.dom.addEventListener("keydown", (e) => {
+            if (e.key === "/") {
+                // let "/" appear, then open menu near caret
+                setTimeout(showSlashAtCaret, 0);
+            } else if (e.key === "Escape") {
+                hideSlash();
+            } else if (elSlash.style.display === "block" && e.key === "Enter") {
+                // pick first item quickly
+                e.preventDefault();
+                slashItems[0].run();
+                hideSlash();
+            }
+        });
+
+        // Click outside closes
+        document.addEventListener("mousedown", (e) => {
+            const inside = elSlash.contains(e.target) || elEditor.contains(e.target) || bubble.contains(e.target);
+            if (!inside) hideSlash();
+        });
+
+        // Click item runs action + removes the "/" character if it's right before cursor
+        elSlash.addEventListener("mousedown", (e) => e.preventDefault());
+        elSlash.addEventListener("click", (e) => {
+            const item = e.target.closest(".item");
+            if (!item) return;
+            const key = item.dataset.key;
+            const chosen = slashItems.find(x => x.key === key);
+            if (!chosen) return;
+
+            // Try to delete the last typed "/" if it's just before the cursor
+            const { state } = editor;
+            const { from } = state.selection;
+            const prevChar = state.doc.textBetween(Math.max(0, from - 1), from, "\n", "\n");
+            if (prevChar === "/") {
+                editor.chain().focus().deleteRange({ from: from - 1, to: from }).run();
+            }
+
+            chosen.run();
+            hideSlash();
+        });
+
+        // Header actions
+        document.querySelector("#btnClear").addEventListener("click", () => {
+            editor.commands.setContent("");
+            editor.commands.focus("start");
+        });
+
+        document.querySelector("#btnGetHTML").addEventListener("click", async () => {
+            const html = editor.getHTML();
+            await navigator.clipboard.writeText(html);
+            alert("HTML copied to clipboard ✅");
+        });
+
+        // expose for debugging
+        window.MemoEditor = editor;
+    </script>
+</body>
+
+</html>
