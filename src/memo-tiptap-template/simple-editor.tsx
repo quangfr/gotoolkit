@@ -14,6 +14,7 @@ import Table from '@tiptap/extension-table';
 import TableRow from '@tiptap/extension-table-row';
 import TableHeader from '@tiptap/extension-table-header';
 import TableCell from '@tiptap/extension-table-cell';
+import { CellSelection } from 'prosemirror-tables';
 import { TaskList } from '@tiptap/extension-task-list';
 import { TaskItem } from '@tiptap/extension-task-item';
 import './simple-editor.css';
@@ -67,6 +68,8 @@ const CustomTaskItem = TaskItem.extend({
   },
 });
 
+import { NodeSelection } from 'prosemirror-state';
+
 const Toolbar = ({ editor }: { editor: Editor }) => {
   if (!editor) return null;
 
@@ -80,6 +83,16 @@ const Toolbar = ({ editor }: { editor: Editor }) => {
     }
     editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
   };
+
+  const { selection } = editor.state;
+  const isCellSelection = selection instanceof CellSelection;
+  const isRowSelection = isCellSelection && selection.isRowSelection();
+  const isColSelection = isCellSelection && selection.isColSelection();
+  const isNodeSelection = selection instanceof NodeSelection;
+  const deleteButtonDisabled =
+    isCellSelection && !isRowSelection && !isColSelection
+      ? true
+      : isNodeSelection && selection.node.type.name !== 'table';
 
   return (
     <div role="toolbar" aria-label="toolbar" data-variant="fixed" className="tiptap-toolbar">
@@ -113,7 +126,25 @@ const Toolbar = ({ editor }: { editor: Editor }) => {
           onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
           data-active-state={editor.isActive('heading', { level: 1 }) ? 'on' : 'off'}
         >
-          <svg width="24" height="24" className="tiptap-button-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M6 3C6.55228 3 7 3.44772 7 4V11H17V4C17 3.44772 17.4477 3 18 3C18.5523 3 19 3.44772 19 4V20C19 20.5523 18.5523 21 18 21C17.4477 21 17 20.5523 17 20V13H7V20C7 20.5523 6.55228 21 6 21C5.44772 21 5 20.5523 5 20V4C5 3.44772 5.44772 3 6 3Z" fill="currentColor"></path></svg>
+          <span className="tiptap-heading-label">H1</span>
+        </button>
+        <button
+          className="tiptap-button"
+          aria-label="Heading 2"
+          type="button"
+          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+          data-active-state={editor.isActive('heading', { level: 2 }) ? 'on' : 'off'}
+        >
+          <span className="tiptap-heading-label">H2</span>
+        </button>
+                <button
+          className="tiptap-button"
+          aria-label="Heading 3"
+          type="button"
+          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+          data-active-state={editor.isActive('heading', { level: 3 }) ? 'on' : 'off'}
+        >
+          <span className="tiptap-heading-label">H3</span>
         </button>
         <button
           className="tiptap-button"
@@ -255,38 +286,25 @@ const Toolbar = ({ editor }: { editor: Editor }) => {
             </button>
             <button
               className="tiptap-button"
-              aria-label="Delete Table"
-              type="button"
-              onClick={() => editor.chain().focus().deleteTable().run()}
-            >
-              <svg width="24" height="24" className="tiptap-button-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M17 6H22V8H20V21C20 21.5523 19.5523 22 19 22H5C4.44772 22 4 21.5523 4 21V8H2V6H7V3C7 2.44772 7.44772 2 8 2H16C16.5523 2 17 2.44772 17 3V6ZM18 8H6V20H18V8ZM9 11H11V17H9V11ZM13 11H15V17H13V11ZM9 4V6H15V4H9Z" fill="currentColor"></path></svg>
-            </button>
-            <button
-              className="tiptap-button"
-              aria-label="Merge Cells"
-              type="button"
-              onClick={() => editor.chain().focus().mergeCells().run()}
-            >
-              <svg width="24" height="24" className="tiptap-button-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M11 3H13V11H21V13H13V21H11V13H3V11H11V3Z" fill="currentColor"></path></svg>
-            </button>
-            <button
-              className="tiptap-button"
-              aria-label="Split Cell"
-              type="button"
-              onClick={() => editor.chain().focus().splitCell().run()}
-            >
-              <svg width="24" height="24" className="tiptap-button-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13H5V11H19V13Z" fill="currentColor"></path></svg>
-            </button>
-            <button
-              className="tiptap-button"
-              aria-label="Cell Background"
+              aria-label="Delete Table or Selection"
               type="button"
               onClick={() => {
-                const color = window.prompt('Couleur (ex: #ff0000)');
-                if (color) editor.chain().focus().setCellAttribute('backgroundColor', color).run();
+                if (deleteButtonDisabled) {
+                  return;
+                }
+                if (isRowSelection) {
+                  editor.chain().focus().deleteRow().run();
+                  return;
+                }
+                if (isColSelection) {
+                  editor.chain().focus().deleteColumn().run();
+                  return;
+                }
+                editor.chain().focus().deleteTable().run();
               }}
+              disabled={deleteButtonDisabled}
             >
-              <svg width="24" height="24" className="tiptap-button-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5C3.89543 3 3 3.89543 3 5V19C3 20.1046 3.89543 21 5 21H19C20.1046 21 21 20.1046 21 19V5C21 3.89543 20.1046 3 19 3ZM19 19H5V5H19V19Z" fill="currentColor"></path></svg>
+              <svg width="24" height="24" className="tiptap-button-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M17 6H22V8H20V21C20 21.5523 19.5523 22 19 22H5C4.44772 22 4 21.5523 4 21V8H2V6H7V3C7 2.44772 7.44772 2 8 2H16C16.5523 2 17 2.44772 17 3V6ZM18 8H6V20H18V8ZM9 11H11V17H9V11ZM13 11H15V17H13V11ZM9 4V6H15V4H9Z" fill="currentColor"></path></svg>
             </button>
           </>
         )}
@@ -319,15 +337,6 @@ const Toolbar = ({ editor }: { editor: Editor }) => {
           data-active-state={editor.isActive({ textAlign: 'right' }) ? 'on' : 'off'}
         >
           <svg width="24" height="24" className="tiptap-button-icon" viewBox="0 0 24 24" fill="currentColor"><path fillRule="evenodd" clipRule="evenodd" d="M2 6C2 5.44772 2.44772 5 3 5H21C21.5523 5 22 5.44772 22 6C22 6.55228 21.5523 7 21 7H3C2.44772 7 2 6.55228 2 6Z" fill="currentColor"></path><path fillRule="evenodd" clipRule="evenodd" d="M8 12C8 11.4477 8.44772 11 9 11H21C21.5523 11 22 11.4477 22 12C22 12.5523 21.5523 13 21 13H9C8.44772 13 8 12.5523 8 12Z" fill="currentColor"></path><path fillRule="evenodd" clipRule="evenodd" d="M6 18C6 17.4477 6.44772 17 7 17H21C21.5523 17 22 17.4477 22 18C22 18.5523 21.5523 19 21 19H7C6.44772 19 6 18.5523 6 18Z" fill="currentColor"></path></svg>
-        </button>
-        <button
-          className="tiptap-button"
-          aria-label="Align justify"
-          type="button"
-          onClick={() => editor.chain().focus().setTextAlign('justify').run()}
-          data-active-state={editor.isActive({ textAlign: 'justify' }) ? 'on' : 'off'}
-        >
-          <svg width="24" height="24" className="tiptap-button-icon" viewBox="0 0 24 24" fill="currentColor"><path fillRule="evenodd" clipRule="evenodd" d="M2 6C2 5.44772 2.44772 5 3 5H21C21.5523 5 22 5.44772 22 6C22 6.55228 21.5523 7 21 7H3C2.44772 7 2 6.55228 2 6Z" fill="currentColor"></path><path fillRule="evenodd" clipRule="evenodd" d="M2 12C2 11.4477 2.44772 11 3 11H21C21.5523 11 22 11.4477 22 12C22 12.5523 21.5523 13 21 13H3C2.44772 13 2 12.5523 2 12Z" fill="currentColor"></path><path fillRule="evenodd" clipRule="evenodd" d="M2 18C2 17.4477 2.44772 17 3 17H21C21.5523 17 22 17.4477 22 18C22 18.5523 21.5523 19 21 19H3C2.44772 19 2 18.5523 2 18Z" fill="currentColor"></path></svg>
         </button>
       </div>
       <div className="tiptap-separator" data-orientation="vertical" role="none"></div>

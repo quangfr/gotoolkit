@@ -240,6 +240,15 @@
         return String(value || "").replace(/\s+/g, " ").trim();
     }
 
+    function normalizePageNumber(value) {
+        if (value === null || value === undefined) return null;
+        var numeric = typeof value === "number" ? value : Number(value);
+        if (Number.isFinite(numeric)) {
+            return numeric;
+        }
+        return null;
+    }
+
     function findHighlightSnippet(candidateSnippet, chunkText) {
         var chunkContent = normalizeHighlightSnippet(chunkText);
         if (!chunkContent) return "";
@@ -548,10 +557,25 @@
         if (this.textarea) {
             this.textarea.focus();
         }
+        if (this.promptPresetId === "ask") {
+            this.closeKnowledgeModal();
+        } else {
+            this.openKnowledgeModal();
+        }
+    };
+
+    AssistSidebar.prototype.closeActiveModals = function () {
+        if (this.previewPanel && this.previewPanel.classList.contains("open")) {
+            this.closePreviewPanel();
+        }
+        if (this.knowledgeModal && this.knowledgeModal.classList.contains("open")) {
+            this.closeKnowledgeModal();
+        }
     };
 
     AssistSidebar.prototype.close = function () {
         if (!this.sidebar) return;
+        this.closeActiveModals();
         this.isOpen = false;
         this.sidebar.classList.remove("chat-sidebar--open");
         this.sidebar.style.display = "none";
@@ -599,6 +623,8 @@
         }
         this.persist();
         this.updateComposerState();
+        persistPromptPreset(this.promptPresetId);
+        this.updatePromptDropdownLabel();
     };
 
     AssistSidebar.prototype.updateComposerState = function () {
@@ -902,6 +928,11 @@
         this.updatePromptDropdownLabel();
         this.updateHeaderDocumentCount();
         this.refreshDocumentStats();
+        if (this.promptPresetId === "ask") {
+            this.closeKnowledgeModal();
+        } else {
+            this.openKnowledgeModal();
+        }
     };
 
     AssistSidebar.prototype.getActiveSystemPrompt = function () {
@@ -2101,6 +2132,8 @@
 
     AssistSidebar.prototype.updateHeaderDocumentCount = function () {
         if (!this.headerDocCountEl) return;
+        var showCorpusButton = this.promptPresetId !== "ask";
+        this.headerDocCountEl.style.display = showCorpusButton ? "" : "none";
         var count = this.getCorpusDocumentCount();
         this.headerDocCountEl.dataset.count = count;
         this.headerDocCountEl.textContent = "🗎 Corpus";
@@ -2136,6 +2169,20 @@
 
     AssistSidebar.prototype.normalizeKnowledgeKey = function (value) {
         return (value || "").toString().trim().toLowerCase();
+    };
+
+    AssistSidebar.prototype.deduplicateKnowledgeWebEntries = function (entries) {
+        if (!Array.isArray(entries) || !entries.length) return [];
+        var seen = new Set();
+        var result = [];
+        entries.forEach(function (entry) {
+            if (!entry) return;
+            var pathKey = this.normalizeKnowledgeKey(entry.path || "");
+            if (!pathKey || seen.has(pathKey)) return;
+            seen.add(pathKey);
+            result.push(entry);
+        }.bind(this));
+        return result;
     };
 
     AssistSidebar.prototype.formatFriendlyDate = function (value) {
@@ -2277,7 +2324,7 @@
             .filter(function (entry) {
                 return entry.path && entry.fileName && entry.name;
             });
-        return this.applyKnowledgeOverrides(entries);
+        return this.applyKnowledgeOverrides(this.deduplicateKnowledgeWebEntries(entries));
     };
 
     AssistSidebar.prototype.fetchCurrentManifest = async function () {
@@ -2307,7 +2354,7 @@
                 .filter(function (entry) {
                     return entry.path && entry.fileName && entry.name;
                 });
-            return this.applyKnowledgeOverrides(entries);
+            return this.applyKnowledgeOverrides(this.deduplicateKnowledgeWebEntries(entries));
         } catch (err) {
             console.error("Current manifest error", err);
             return [];
@@ -3560,14 +3607,18 @@
             } else if (payload?.content && typeof payload.content === "object") {
                 payload = payload.content;
             }
-            var answerContent = payload?.answer?.content;
+            var answerPayload = payload?.answer;
+            var answerContent = null;
+            if (typeof answerPayload === "string") {
+                answerContent = answerPayload.trim();
+            } else if (answerPayload && typeof answerPayload.content === "string") {
+                answerContent = answerPayload.content.trim();
+            }
             var references = Array.isArray(payload?.references) ? payload.references : [];
             var suggestions = Array.isArray(payload?.suggestions) ? payload.suggestions : [];
-            var finalContent = typeof answerContent === "string" && answerContent.trim()
-                ? answerContent.trim()
-                : (typeof payload?.content === "string" && payload.content.trim()
-                    ? payload.content.trim()
-                    : "Non trouvé dans la base");
+            var finalContent = (answerContent && answerContent.length)
+                ? answerContent
+                : "Non trouvé dans la base";
             return {
                 content: finalContent,
                 references: references
@@ -3916,13 +3967,25 @@
                 }
                 var highlightInfo = null;
                 var previewSnippet = snippet;
+                var targetPage = normalizePageNumber(reference?.page);
                 if (highlightChunk) {
                     previewSnippet = (highlightChunk.text || "").trim().slice(0, 512);
                     var highlightText = findHighlightSnippet(reference?.snippet, highlightChunk.text);
+                    var chunkPage = normalizePageNumber(highlightChunk.page);
+                    if (chunkPage !== null) {
+                        targetPage = chunkPage;
+                    }
                     highlightInfo = {
                         chunkId: highlightChunk.id,
-                        page: Number.isFinite(highlightChunk.page) ? highlightChunk.page : undefined,
+                        page: targetPage ?? undefined,
                         text: highlightText || previewSnippet
+                    };
+                }
+                if (!highlightInfo && targetPage !== null) {
+                    highlightInfo = {
+                        chunkId: null,
+                        page: targetPage,
+                        text: previewSnippet || snippet || ""
                     };
                 }
                 console.log("chat-reference highlight", {
