@@ -1,4 +1,5 @@
 import React from 'react';
+import { mergeAttributes } from '@tiptap/core';
 import { useEditor, EditorContent, BubbleMenu, Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
@@ -43,17 +44,31 @@ const CustomTableCell = TableCell.extend({
 
 const CustomTaskItem = TaskItem.extend({
   content: 'inline*',
+  renderHTML({ node, HTMLAttributes }) {
+    return [
+      'li',
+      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
+        'data-type': this.name,
+        'data-checked': node.attrs.checked,
+      }),
+      [
+        'label',
+        [
+          'input',
+          {
+            type: 'checkbox',
+            checked: node.attrs.checked ? 'checked' : null,
+          },
+        ],
+        ['span'],
+      ],
+      ['span', { class: 'task-item-content' }, 0],
+    ];
+  },
 });
 
 const Toolbar = ({ editor }: { editor: Editor }) => {
   if (!editor) return null;
-
-  const addImage = () => {
-    const url = window.prompt('URL de l\'image');
-    if (url) {
-      editor.chain().focus().setImage({ src: url }).run();
-    }
-  };
 
   const setLink = () => {
     const previousUrl = editor.getAttributes('link').href;
@@ -332,7 +347,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     extensions: [
       StarterKit,
       TaskList,
-      CustomTaskItem,
+      TaskItem,
       Underline,
       Highlight,
       Link.configure({
