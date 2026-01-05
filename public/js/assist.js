@@ -1676,7 +1676,8 @@
             var presets = this.getPromptPresets();
             var activePreset = presets && presets[this.promptPresetId];
             var label = activePreset?.label || ("/" + this.promptPresetId);
-            this.promptDropdownButton.textContent = label;
+            var displayLabel = label + " ▾";
+            this.promptDropdownButton.textContent = displayLabel;
             this.promptDropdownButton.title = "Mode: " + label;
         }
         if (this.promptDropdownMenu) {
@@ -1711,7 +1712,7 @@
         var button = document.createElement("button");
         button.type = "button";
         button.className = "btn-secondary chat-prompt-btn";
-        button.textContent = "/";
+        button.textContent = "/ ▾";
         button.addEventListener("click", function (event) {
             event.stopPropagation();
             this.togglePromptDropdown();
