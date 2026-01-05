@@ -103,6 +103,30 @@
         return next;
     }
 
+    function formatRelativeDate(value) {
+        if (!value) return "";
+        try {
+            const timestamp = typeof value === "number" ? value : Date.parse(value);
+            if (!Number.isFinite(timestamp)) return "";
+            const deltaSeconds = Math.max(0, Math.floor((Date.now() - timestamp) / 1000));
+            if (deltaSeconds < 60) {
+                return "Mis à jour à l'instant";
+            }
+            const deltaMinutes = Math.floor(deltaSeconds / 60);
+            if (deltaMinutes < 60) {
+                return `Mis à jour il y a ${deltaMinutes} minute${deltaMinutes > 1 ? "s" : ""}`;
+            }
+            const deltaHours = Math.floor(deltaMinutes / 60);
+            if (deltaHours < 24) {
+                return `Mis à jour il y a ${deltaHours} heure${deltaHours > 1 ? "s" : ""}`;
+            }
+            const deltaDays = Math.floor(deltaHours / 24);
+            return `Mis à jour il y a ${deltaDays} jour${deltaDays > 1 ? "s" : ""}`;
+        } catch (err) {
+            return "";
+        }
+    }
+
     async function removeRecord(app) {
         const records = await readRecords();
         if (records && Object.prototype.hasOwnProperty.call(records, app)) {

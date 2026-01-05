@@ -1435,7 +1435,7 @@ Réponds à ASK prioritairement sur CONTEXT avec les connaissances KNOWLEDGE en 
 
         var askChatPrompt = `SYSTEM — RAG Q&A (JSON strict)
 
-Assistant Q&A basé sur CONTEXT
+Tu es un assistant Q&A qui répond aux questions sur la base de documents fournis par l'utilisateur CONTEXT
 
 ENTRÉES
 1. CONTEXT : documents fournis en contexte

@@ -1,7 +1,7 @@
-## 2026-01-04
+## 2026-01-05
 - Module [Assist](/#assist) avec les modes Conseil et Recherche 
-- Liens source et prévisualisation des documents
-- Base de connaissance personnalisable
+- Corpus de connaissance commun et import de documents
+- Références et prévisualisation des sources
 
 ## 2025-12-29
 - Ajout des notes de version et de la feuille de route
