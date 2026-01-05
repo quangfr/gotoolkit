@@ -1422,9 +1422,10 @@ FORMAT DE SORTIE (JSON strict)
   },
   "references": [
     {
-      "documentId": "id exact sans inventer du documentId en entrée",
+      "documentId": "reprendre le uuid exact du documentId en CONTEXT ou KNOWLEDGE",
       "abstract": "sujet du chunk en 3-5 mots",
-      "chunkId": "id exact sans inventer du chunkId en entrée",
+      "snippet": "extrait exact dans le chunk pertinent à la réponse 1-7 mots"
+      "chunkId": "reprendre le uuid exact du chunkId en CONTEXT ou KNOWLEDGE",
     }
   ],
   "suggestions": ["thème proche de ASK et HISTORY", "thème proche de ASK et HISTORY"]
@@ -1459,9 +1460,10 @@ FORMAT DE SORTIE (JSON strict)
   },
   "references": [
     {
-      "documentId": "id exact sans inventer du documentId en entrée",
+      "documentId": "reprendre le uuid exact du documentId en CONTEXT ou KNOWLEDGE",
       "abstract": "sujet du chunk en 3-5 mots",
-      "chunkId": "id exact sans inventer du chunkId en entrée",
+      "snippet": "extrait exact dans le chunk pertinent à la réponse 1-7 mots"
+      "chunkId": "reprendre le uuid exact du chunkId en CONTEXT ou KNOWLEDGE",
     }
   ],
   "suggestions": ["thème proche de ASK et HISTORY", "thème proche de ASK et HISTORY"]

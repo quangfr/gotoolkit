@@ -1811,7 +1811,7 @@
     <script src="js/ia-config.js"></script>
     <script src="js/prompt.js?v=2026.01.05"></script>
     <script src="js/ia-client.js"></script>
-    <script src="js/markdown.js?v=2026.01.05"></script>
+    <script src="js/markdown.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/minisearch@7.2.0/dist/umd/index.min.js"></script>
     <script src="js/keywordIndex.js"></script>
     <script src="js/documents.js"></script>
@@ -5433,14 +5433,16 @@
             const modal = document.getElementById("releaseNotesModal");
             const closeBtn = document.getElementById("releaseNotesClose");
             const heroLogo = document.querySelector(".hero-logo-wrapper img");
-            const releaseNotesVersionValue = (() => {
-                const rawLabel = (trigger?.textContent || "").trim();
-                if (!rawLabel) return "v";
-                return rawLabel.startsWith("v") ? rawLabel.slice(1) : rawLabel;
-            })();
-            const releaseNotesNewsUrl = `/?v=${encodeURIComponent(releaseNotesVersionValue)}#news`;
+            function generateRandomQueryValue() {
+                const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+                let output = "";
+                for (let i = 0; i < 8; i += 1) {
+                    output += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                return output;
+            }
             function navigateToReleaseNotesNews() {
-                window.location.href = releaseNotesNewsUrl;
+                window.location.href = `/?v=${generateRandomQueryValue()}#news`;
             }
             function resetHeroLogo() {
                 if (!heroLogo) return;

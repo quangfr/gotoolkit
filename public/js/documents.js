@@ -1,20 +1,20 @@
 (function (global) {
     const DEFAULT_SETTINGS = {
         chunkSize: 360,
-        chunkOverlap: 160,
+        chunkOverlap: 120,
         embedModelId: "Xenova/all-MiniLM-L6-v2"
     };
 
-    const DEFAULT_RETRIEVAL_TOP_K = 6;
-    const DEFAULT_RETRIEVAL_MIN_SCORE = 0.2;
+    const DEFAULT_RETRIEVAL_TOP_K = 10;
+    const DEFAULT_RETRIEVAL_MIN_SCORE = 0.1;
 
     const CHUNK_CATEGORY_DEFINITIONS = {
         small: {
             key: "small",
             chunkSizeRange: { min: 300, max: 420 },
-            overlapRange: { min: 140, max: 180 },
+            overlapRange: { min: 120, max: 180 },
             defaultChunkSize: 360,
-            defaultOverlap: 160
+            defaultOverlap: 120
         },
         medium: {
             key: "medium",
@@ -26,7 +26,7 @@
     };
 
     const CHUNK_HEURISTICS = {
-        lineBreakThreshold: 600,
+        lineBreakThreshold: 1500,
         bulletThreshold: 30,
         tableThreshold: 80,
         charThreshold: 80000,
@@ -674,65 +674,65 @@
                 ? options.sourceType
                 : "context";
             const results = [];
-        const queue = Array.from(files);
-        const metadataEntries = new Map();
-        const rawMetadata = options.metadata;
-        if (rawMetadata instanceof Map) {
-            for (const [key, value] of rawMetadata.entries()) {
-                metadataEntries.set(key, value);
-            }
-        } else if (rawMetadata && typeof rawMetadata === "object") {
-            Object.entries(rawMetadata).forEach(([key, value]) => metadataEntries.set(key, value));
-        }
-        for (let i = 0; i < queue.length; i++) {
-            const file = queue[i];
-            const docId = crypto.randomUUID();
-            const meta = metadataEntries.get(file.name) || {};
-            const friendlyName =
-                typeof meta.name === "string" && meta.name.trim()
-                    ? meta.name.trim()
-                    : file.name;
-            const docAbstract = typeof meta.abstract === "string" ? meta.abstract : "";
-            const docUpdatedAt = parseTimestamp(meta.updatedAt) || Date.now();
-            const sourceFileName = typeof meta.fileName === "string" && meta.fileName.trim()
-                ? meta.fileName.trim()
-                : file.name;
-            const docScopes = normalizeScopes(meta.scope);
-            const isPdf = (file.type || "").toLowerCase().includes("pdf")
-                || (file.name || "").toLowerCase().endsWith(".pdf");
-            const shouldStoreBuffer = docScopes.includes("attachments") || isPdf;
-            let attachmentBuffer = null;
-            if (shouldStoreBuffer) {
-                try {
-                    attachmentBuffer = await file.arrayBuffer();
-                } catch (err) {
-                    attachmentBuffer = null;
-                    console.warn("Failed to read attachment data for storage", err);
+            const queue = Array.from(files);
+            const metadataEntries = new Map();
+            const rawMetadata = options.metadata;
+            if (rawMetadata instanceof Map) {
+                for (const [key, value] of rawMetadata.entries()) {
+                    metadataEntries.set(key, value);
                 }
+            } else if (rawMetadata && typeof rawMetadata === "object") {
+                Object.entries(rawMetadata).forEach(([key, value]) => metadataEntries.set(key, value));
             }
-            const baseEntry = {
-                id: docId,
-                conversationId: convId,
-                name: friendlyName,
-                size: file.size,
-                mime: file.type || "",
-                uploadedAt: Date.now(),
-                status: "pending",
-                chunkCount: 0,
-                sourceType,
-                abstract: docAbstract,
-                updatedAt: docUpdatedAt,
-                scope: docScopes,
-                fileBuffer: attachmentBuffer,
-                sourceFileName
-            };
-            await this.putDocument(baseEntry);
-            onProgress?.({ type: "file-start", index: i + 1, total: queue.length, file: file.name });
-            let extracted = "";
-            let success = true;
-            let errorMessage = "";
+            for (let i = 0; i < queue.length; i++) {
+                const file = queue[i];
+                const docId = crypto.randomUUID();
+                const meta = metadataEntries.get(file.name) || {};
+                const friendlyName =
+                    typeof meta.name === "string" && meta.name.trim()
+                        ? meta.name.trim()
+                        : file.name;
+                const docAbstract = typeof meta.abstract === "string" ? meta.abstract : "";
+                const docUpdatedAt = parseTimestamp(meta.updatedAt) || Date.now();
+                const sourceFileName = typeof meta.fileName === "string" && meta.fileName.trim()
+                    ? meta.fileName.trim()
+                    : file.name;
+                const docScopes = normalizeScopes(meta.scope);
+                const isPdf = (file.type || "").toLowerCase().includes("pdf")
+                    || (file.name || "").toLowerCase().endsWith(".pdf");
+                const shouldStoreBuffer = docScopes.includes("attachments") || isPdf;
+                let attachmentBuffer = null;
+                if (shouldStoreBuffer) {
+                    try {
+                        attachmentBuffer = await file.arrayBuffer();
+                    } catch (err) {
+                        attachmentBuffer = null;
+                        console.warn("Failed to read attachment data for storage", err);
+                    }
+                }
+                const baseEntry = {
+                    id: docId,
+                    conversationId: convId,
+                    name: friendlyName,
+                    size: file.size,
+                    mime: file.type || "",
+                    uploadedAt: Date.now(),
+                    status: "pending",
+                    chunkCount: 0,
+                    sourceType,
+                    abstract: docAbstract,
+                    updatedAt: docUpdatedAt,
+                    scope: docScopes,
+                    fileBuffer: attachmentBuffer,
+                    sourceFileName
+                };
+                await this.putDocument(baseEntry);
+                onProgress?.({ type: "file-start", index: i + 1, total: queue.length, file: file.name });
+                let extractionResult = null;
+                let success = true;
+                let errorMessage = "";
                 try {
-                    extracted = await this.extractText(file);
+                    extractionResult = await this.extractText(file);
                 } catch (err) {
                     success = false;
                     errorMessage = err?.message || "Erreur d'extraction";
@@ -744,26 +744,50 @@
                     results.push({ docId, name: file.name, success: false, error: errorMessage });
                     continue;
                 }
-                const normalized = normalizeText(extracted);
-                const chunkConfig = this.getChunkConfigForText(extracted || normalized);
-                const rawChunks = chunkText(normalized, chunkConfig.chunkSize, chunkConfig.chunkOverlap);
-                const chunkList = rawChunks.length ? rawChunks : [""];
+                const extractedText = typeof extractionResult?.text === "string" ? extractionResult.text : "";
+                const normalized = normalizeText(extractedText);
+                const chunkConfig = this.getChunkConfigForText(extractedText || normalized);
+                const pageSegments = Array.isArray(extractionResult?.pdfPages) ? extractionResult.pdfPages : null;
+                const segments = [];
+                if (pageSegments && pageSegments.length) {
+                    pageSegments.forEach((pageEntry, pageIndex) => {
+                        const pageText = normalizeText(pageEntry?.text || "");
+                        if (!pageText) return;
+                        const pageNumber = Number.isFinite(pageEntry.pageNumber)
+                            ? pageEntry.pageNumber
+                            : (pageIndex + 1);
+                        segments.push({ text: pageText, pageNumber });
+                    });
+                }
+                if (!segments.length) {
+                    segments.push({ text: normalized, pageNumber: null });
+                }
+                const chunkList = [];
+                segments.forEach((segment) => {
+                    const segmentChunks = chunkText(segment.text, chunkConfig.chunkSize, chunkConfig.chunkOverlap);
+                    const sourceChunks = segmentChunks.length ? segmentChunks : [""];
+                    sourceChunks.forEach((chunkText) => {
+                        chunkList.push({ text: chunkText, pageNumber: segment.pageNumber });
+                    });
+                });
                 const chunkTotal = chunkList.length;
                 let lastProgress = 0;
                 for (let c = 0; c < chunkTotal; c++) {
-                    const chunk = chunkList[c];
+                    const chunkMeta = chunkList[c];
                     const percent = Math.round(((c + 1) / chunkTotal) * 100);
                     if (percent !== lastProgress) {
                         onProgress?.({ type: "chunk", file: file.name, progress: percent });
                         lastProgress = percent;
                     }
-                    const emb = await this.embed(chunk);
+                    const chunkText = chunkMeta?.text || "";
+                    const emb = await this.embed(chunkText);
                     const chunkEntry = {
                         id: crypto.randomUUID(),
                         conversationId: convId,
                         docId,
                         idx: c,
-                        text: chunk,
+                        text: chunkText,
+                        page: Number.isFinite(chunkMeta?.pageNumber) ? chunkMeta.pageNumber : undefined,
                         emb: Array.from(emb),
                         createdAt: Date.now(),
                         size: chunkConfig.category,
@@ -792,43 +816,46 @@
                 return this.extractPdf(file);
             }
             if (ext === "docx") {
-                return this.extractDocx(file);
+                return { text: await this.extractDocx(file) };
             }
             if (ext === "pptx") {
-                return this.extractPptx(file);
+                return { text: await this.extractPptx(file) };
             }
             if (ext === "xlsx" || ext === "ods") {
-                return this.extractSpreadsheet(file);
+                return { text: await this.extractSpreadsheet(file) };
             }
             if (ext === "odt" || ext === "odf") {
-                return this.extractOdf(file);
+                return { text: await this.extractOdf(file) };
             }
             if (ext === "rtf" || ext === "doc") {
-                return file.text();
+                return { text: await file.text() };
             }
             if (ext === "txt" || !ext) {
-                return file.text();
+                return { text: await file.text() };
             }
             if (ACCEPTED_EXTENSIONS.has(ext)) {
-                return file.text();
+                return { text: await file.text() };
             }
-            return file.text();
+            return { text: await file.text() };
         }
 
         async extractPdf(file) {
-            if (!this.pdfjs) return "";
+            if (!this.pdfjs) return { text: "" };
             const buffer = await file.arrayBuffer();
             const pdf = await this.pdfjs.getDocument({ data: buffer }).promise;
             let full = "";
+            const pages = [];
             for (let pageIndex = 1; pageIndex <= pdf.numPages; pageIndex++) {
                 const page = await pdf.getPage(pageIndex);
                 const content = await page.getTextContent();
                 const tokens = (content.items || [])
                     .map((item) => (item.str || ""))
                     .filter(Boolean);
-                full += tokens.join(" ") + "\n\n";
+                const pageText = tokens.join(" ") + "\n\n";
+                pages.push({ pageNumber: pageIndex, text: pageText });
+                full += pageText;
             }
-            return full;
+            return { text: full, pdfPages: pages };
         }
 
         async extractDocx(file) {

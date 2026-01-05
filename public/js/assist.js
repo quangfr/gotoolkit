@@ -224,12 +224,47 @@
             || null;
         var abstractLabel = typeof payload.abstract === "string" ? payload.abstract.trim() : "";
         var line = typeof payload.line === "number" ? payload.line : null;
+        var snippetValue = typeof payload.snippet === "string"
+            ? payload.snippet.trim()
+            : (typeof payload.text === "string" ? payload.text.trim() : "");
         return {
             documentId: documentId,
             chunkId: chunkId,
             abstract: abstractLabel,
-            line: line
+            line: line,
+            snippet: snippetValue
         };
+    }
+
+    function normalizeHighlightSnippet(value) {
+        return String(value || "").replace(/\s+/g, " ").trim();
+    }
+
+    function findHighlightSnippet(candidateSnippet, chunkText) {
+        var chunkContent = normalizeHighlightSnippet(chunkText);
+        if (!chunkContent) return "";
+        var chunkLower = chunkContent.toLowerCase();
+        var target = normalizeHighlightSnippet(candidateSnippet);
+        if (!target) {
+            return chunkContent.slice(0, 512);
+        }
+        var targetLower = target.toLowerCase();
+        if (chunkLower.includes(targetLower)) {
+            var idx = chunkLower.indexOf(targetLower);
+            return chunkContent.substring(idx, idx + targetLower.length).slice(0, 512);
+        }
+        var tokens = targetLower.split(/\s+/).filter(Boolean);
+        for (var len = tokens.length; len > 0; len--) {
+            for (var start = 0; start <= tokens.length - len; start++) {
+                var fragment = tokens.slice(start, start + len).join(" ");
+                if (!fragment) continue;
+                var matchIndex = chunkLower.indexOf(fragment);
+                if (matchIndex >= 0) {
+                    return chunkContent.substring(matchIndex, matchIndex + fragment.length).slice(0, 512);
+                }
+            }
+        }
+        return chunkContent.slice(0, 512);
     }
 
     function getChunkIdentifier(chunk) {
@@ -417,6 +452,7 @@
         this.previewCloseBtn = null;
         this.previewIframeEl = null;
         this.previewPdfUrl = null;
+        this.pendingPdfHighlight = null;
         this.promptPresetId = readPromptPreset();
         this.promptDropdown = null;
         this.promptDropdownButton = null;
@@ -1276,28 +1312,8 @@
         return merged;
     };
 
-    AssistSidebar.prototype.logHybridRetrieval = function (info) {
-        console.log("hybrid retrieval", {
-            label: info.label,
-            query: info.query,
-            queryLength: (info.query || "").split(/\s+/).filter(Boolean).length,
-            topK: info.params?.topK,
-            minScore: info.params?.minScore,
-            keywordCandidates: info.keywordCount,
-            keywordFailed: info.keywordFailed,
-            vectorScope: info.vectorScope,
-            contextLimit: info.contextLimit,
-            finalCount: info.finalCount,
-            finalChunks: (info.finalChunks || []).map(function (hit) {
-                return {
-                    docId: hit.docId,
-                    chunkId: hit.id,
-                    size: hit.size,
-                    kwPresent: !!hit.kwPresent,
-                    vecScore: hit.score
-                };
-            })
-        });
+    AssistSidebar.prototype.logHybridRetrieval = function () {
+        // Intentionally no-op to avoid verbose logging in production.
     };
 
     AssistSidebar.prototype.hybridRetrieveOnce = async function (query, conversationId, params, options) {
@@ -3601,6 +3617,7 @@
         if (this.previewBodyEl) {
             this.previewBodyEl.style.display = "";
         }
+        this.pendingPdfHighlight = null;
     };
 
     AssistSidebar.prototype.showPdfPreview = function (doc) {
@@ -3610,7 +3627,9 @@
             var blob = doc.fileBuffer instanceof Blob
                 ? doc.fileBuffer
                 : new Blob([doc.fileBuffer], { type: doc.mime || "application/pdf" });
+            var restoreHighlight = this.pendingPdfHighlight;
             this.clearPreviewIframe();
+            this.pendingPdfHighlight = restoreHighlight;
             var url = URL.createObjectURL(blob);
             this.previewPdfUrl = url;
             var iframe = document.createElement("iframe");
@@ -3621,11 +3640,37 @@
             this.previewBodyEl.style.display = "none";
             this.previewPanel.appendChild(iframe);
             this.previewIframeEl = iframe;
+            iframe.addEventListener("load", function () {
+                this.postPdfHighlight(this.pendingPdfHighlight);
+            }.bind(this));
             return true;
         } catch (err) {
             console.warn("PDF preview failed", err);
             this.clearPreviewIframe();
             return false;
+        }
+    };
+
+    AssistSidebar.prototype.setPdfHighlight = function (highlight) {
+        this.pendingPdfHighlight = highlight;
+        if (!highlight) return;
+        if (this.previewIframeEl) {
+            this.postPdfHighlight(highlight);
+        }
+    };
+
+    AssistSidebar.prototype.postPdfHighlight = function (highlight) {
+        if (!highlight || !this.previewIframeEl) return;
+        var payload = {
+            type: "chunk-highlight",
+            chunkId: highlight.chunkId,
+            page: Number.isFinite(highlight.page) ? highlight.page : undefined,
+            text: highlight.text || ""
+        };
+        try {
+            this.previewIframeEl.contentWindow?.postMessage(payload, "*");
+        } catch (err) {
+            console.warn("PDF highlight post failed", err);
         }
     };
 
@@ -3839,6 +3884,28 @@
             this.previewTitleEl && (this.previewTitleEl.textContent = title);
             if (doc?.id) {
                 var docChunks = await this.getDocumentChunks(doc.id, doc.conversationId);
+                var highlightChunk = null;
+                if (reference.chunkId) {
+                    highlightChunk = docChunks.find(function (chunk) {
+                        return chunk?.id === reference.chunkId;
+                    });
+                }
+                var highlightInfo = null;
+                var previewSnippet = snippet;
+                if (highlightChunk) {
+                    previewSnippet = (highlightChunk.text || "").trim().slice(0, 512);
+                    var highlightText = findHighlightSnippet(reference?.snippet, highlightChunk.text);
+                    highlightInfo = {
+                        chunkId: highlightChunk.id,
+                        page: Number.isFinite(highlightChunk.page) ? highlightChunk.page : undefined,
+                        text: highlightText || previewSnippet
+                    };
+                }
+                console.log("chat-reference highlight", {
+                    page: highlightInfo?.page,
+                    snippet: highlightInfo?.text,
+                    chunkId: highlightInfo?.chunkId
+                });
                 var relatedChunkIds = new Set(
                     (message?.references || [])
                         .filter(function (ref) {
@@ -3850,13 +3917,18 @@
                         .filter(Boolean)
                 );
                 if (isPdfDocument(doc)) {
+                    this.setPdfHighlight(highlightInfo);
                     if (this.showPdfPreview(doc)) {
                         return;
                     }
+                    this.setPdfHighlight(null);
+                }
+                if (!isPdfDocument(doc)) {
+                    this.setPdfHighlight(null);
                 }
                 this.renderDocumentText(docChunks, {
                     highlightChunkIds: Array.from(relatedChunkIds),
-                    snippet: snippet,
+                    snippet: previewSnippet,
                     highlightLine: typeof reference.line === "number" ? reference.line : undefined,
                     doc: doc
                 });
