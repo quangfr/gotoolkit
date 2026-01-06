@@ -2,13 +2,13 @@
     "name": "Context Safran",
     "abstract": "Brief de missions et de projets IT chez Safran de nos cosultants",
     "path": "content/context_safran.md",
-    "updatedAt": "2025-12-29T00:00:00Z"
+    "updatedAt": "2026-01-06T19:17:13Z"
   },
   {
     "name": "Page d'accueil",
     "abstract": "Résumé métier de l’index et des modules accessibles depuis l’accueil.",
     "path": "content/guide_home.md",
-    "updatedAt": "2025-12-29T00:00:00Z"
+    "updatedAt": "2026-01-04T02:34:35Z"
   },
   {    "name": "Mémo",
     "abstract": "Éditeur riche avec assistants IA, révision collaborative et exports multiformat.",
@@ -18,42 +18,42 @@
   {    "name": "Canvas",
     "abstract": "Comment structurer une présentation et lancer un template métier.",
     "path": "content/guide_canvas.md",
-    "updatedAt": "2025-12-29T00:00:00Z"
+    "updatedAt": "2026-01-04T02:38:13Z"
   },
   {
     "name": "Grid",
     "abstract": "Utiliser les filtres, templates et exports pour explorer des données.",
     "path": "content/guide_grid.md",
-    "updatedAt": "2025-12-29T00:00:00Z"
+    "updatedAt": "2026-01-04T02:38:07Z"
   },
   {
     "name": "Draw",
     "abstract": "Créer rapidement des schémas avec des templates et la passerelle Excalidraw.",
     "path": "content/guide_draw.md",
-    "updatedAt": "2025-12-29T00:00:00Z"
+    "updatedAt": "2026-01-04T02:39:08Z"
   },
   {
     "name": "Timeline",
     "abstract": "Construire une frise narrative et exporter vers XLSX/PNG/JSON.",
     "path": "content/guide_timeline.md",
-    "updatedAt": "2025-12-29T00:00:00Z"
+    "updatedAt": "2026-01-04T02:34:22Z"
   },
   {
     "name": "Voice",
     "abstract": "Enregistrements, transcription, regroupement par locuteur et partage.",
     "path": "content/guide_voice.md",
-    "updatedAt": "2025-12-29T00:00:00Z"
+    "updatedAt": "2026-01-04T11:56:23Z"
   },
   {
     "name": "Assist",
     "abstract": "Explication métier du comportement RAG du module Assist.",
     "path": "content/guide_assist.md",
-    "updatedAt": "2025-12-29T00:00:00Z"
+    "updatedAt": "2026-01-05T16:06:37Z"
   },
   {
     "name": "Super pouvoirs Go-Live",
     "abstract": "Guide des outils et assistants disponibles pour aller plus vite.",
     "path": "content/superpowers.md",
-    "updatedAt": "2025-12-29T00:00:00Z"
+    "updatedAt": "2026-01-04T02:51:35Z"
   }
 ]
