@@ -1,15 +1,10 @@
-## Module Assist (Promptzilla)`T1 2026`
-- Conversation en page d'accueil (suggestions, recherche...) `Fait` 
-- Chatbot pour questions / réponses avec références aux sources `Fait` 
-- Import de documents en corpus utilisable par l'IA `Fait` 
-
 ## Module Mémo (Le Petit Robert) `T1 2026`
-- Création assistée de mémos à partir d'un corpus `À étudier`
+- Création assistée de mémos à partir d'un corpus `En cours`
 
 ## IA contextuel (Soulgorithm)`T1 2026`
 - Ajout de corpus en contexte dans les modules `À étudier`
-- Génération de corpus à partir de la bibliothèque locale `À étudier`
-- Conversations dans les modules (personnalisation templates, prompts...) `À planifier`
+- Affichage de la bibliothèque locale en corpus`À étudier`
+- Module Assist dans les autres modules (personnalisation templates, prompts...) `À planifier`
 
 ## Module Voice (Tuto Tarantino)`T1 2026`
 - Analyse des transcripts pour conseils IA `À planifier` 

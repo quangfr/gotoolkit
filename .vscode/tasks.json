@@ -2,6 +2,17 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "Build",
+      "type": "shell",
+      "command": "npm run build",
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
       "label": "Serve public",
       "type": "shell",
       "command": "npm start",
@@ -12,6 +23,12 @@
         "reveal": "always",
         "panel": "shared"
       }
+    },
+    {
+      "label": "Build + Serve public",
+      "dependsOn": ["Build", "Serve public"],
+      "dependsOrder": "sequence",
+      "problemMatcher": []
     }
   ]
 }

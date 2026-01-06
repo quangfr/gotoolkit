@@ -7,7 +7,7 @@
       "request": "launch",
       "url": "http://localhost:5000",
       "webRoot": "${workspaceFolder}/public",
-      "preLaunchTask": "Serve public"
+      "preLaunchTask": "Build + Serve public"
     }
   ]
 }

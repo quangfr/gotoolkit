@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <title>Mémo | Go-Toolkit</title>
-    <link rel="stylesheet" href="styles/style.css?v=2026.01.05">
+    <link rel="stylesheet" href="styles/style.css?v=2026.01.06.1">
     <style>
         :root {
             --app-bg: #f3f4f6;
@@ -264,16 +264,16 @@
     <div id="page" class="app">
         <div class="app-header">
             <div class="tabs-actions">
-                <a class="app-home-link" href="/?v=2026.01.05" title="Revenir à l'accueil">☍</a>
+                <a class="app-home-link" href="/?v=2026.01.06.1" title="Revenir à l'accueil">☍</a>
                 <div class="nav-switch">
                     <button id="navSwitcherBtn" class="nav-switch-btn" type="button" aria-haspopup="true"
                         aria-expanded="false">⊞ Mémo ▾</button>
                     <div id="navSwitcherMenu" class="nav-switch-menu" role="menu">
-                        <a class="nav-switch-link" href="canvas.html?v=2026.01.05" role="menuitem">◍ Canvas</a>
-                        <a class="nav-switch-link" href="grid.html?v=2026.01.05" role="menuitem">◇ Grid</a>
-                        <a class="nav-switch-link" href="timeline.html?v=2026.01.05" role="menuitem">⇥ Timeline</a>
-                        <a class="nav-switch-link" href="draw.html?v=2026.01.05" role="menuitem">ʃ Draw</a>
-                        <a class="nav-switch-link" href="voice.html?v=2026.01.05" role="menuitem">▷ Voice</a>
+                        <a class="nav-switch-link" href="canvas.html?v=2026.01.06.1" role="menuitem">◍ Canvas</a>
+                        <a class="nav-switch-link" href="grid.html?v=2026.01.06.1" role="menuitem">◇ Grid</a>
+                        <a class="nav-switch-link" href="timeline.html?v=2026.01.06.1" role="menuitem">⇥ Timeline</a>
+                        <a class="nav-switch-link" href="draw.html?v=2026.01.06.1" role="menuitem">ʃ Draw</a>
+                        <a class="nav-switch-link" href="voice.html?v=2026.01.06.1" role="menuitem">▷ Voice</a>
                     </div>
                 </div>
 
@@ -343,6 +343,8 @@
             </div>
             <div class="ia-actions">
                 <div class="header-row ia-header-actions">
+                    <label for="memoPromptPresetSelect">Prompt</label>
+                    <select id="memoPromptPresetSelect"></select>
                     <label for="memoPromptEditor">Prompt markdown</label>
                     <textarea id="memoPromptEditor" rows="14"></textarea>
                 </div>
@@ -359,7 +361,7 @@
     <div id="memoInfoPopup" class="info-popup" role="dialog" aria-live="polite">
         <img src="img/logo.gif" alt="Logo Go-Toolkit">
         <strong>Module Mémo</strong>
-        <span>Version 2026.01.05</span>
+        <span>Version 2026.01.06.1</span>
         <span>Usage réservé à Savane Consulting.</span>
         <div class="info-actions">
             <button id="memoUpdateBtn" type="button" class="update-btn">Mettre à jour</button>
@@ -380,18 +382,18 @@
     <script src="js/idb-doc-store.js"></script>
     <script src="js/storage-service.js"></script>
     <script src="js/shared-ui.js"></script>
-    <script src="js/cgu.js?v=2026.01.05"></script>
+    <script src="js/cgu.js?v=2026.01.06.1"></script>
     <script src="js/share-worker-client.js"></script>
     <script src="js/share-history.js"></script>
     <script src="js/capsule-drafts.js"></script>
     <script src="js/ia-config.js"></script>
-    <script src="js/prompt.js?v=2026.01.05"></script>
+    <script src="js/prompt.js?v=2026.01.06.1"></script>
     <script src="js/ia-client.js"></script>
-    <script src="js/markdown.js?v=2026.01.05"></script>
+    <script src="js/markdown.js?v=2026.01.06.1"></script>
     <script src="https://cdn.jsdelivr.net/npm/minisearch@7.2.0/dist/umd/index.min.js"></script>
     <script src="js/keywordIndex.js"></script>
     <script src="js/documents.js"></script>
-    <script src="js/memo.bundle.js"></script>
+    <script src="js/memo.bundle.js?v=2026.01.06.1"></script>
     <script>
         (function () {
             const manager = window.GoToolkitDocumentManager;
@@ -599,7 +601,7 @@
             }
         })();
     </script>
-    <script src="js/assist.js?v=2026.01.05"></script>
+    <script src="js/assist.js?v=2026.01.06.1"></script>
     <script type="module">
         (function () {
             const STORAGE_KEY = "goToolkit.memo.state";
@@ -639,6 +641,7 @@
             const promptModal = document.getElementById("gtPromptModal");
             const promptModalTrigger = document.getElementById("gtPromptModalTrigger");
             const promptModalClose = document.getElementById("gtPromptModalClose");
+            const promptPresetSelect = document.getElementById("memoPromptPresetSelect");
             const promptEditor = document.getElementById("memoPromptEditor");
             const resetPromptBtn = document.getElementById("resetPromptBtn");
             const applyPromptBtn = document.getElementById("applyPromptBtn");
@@ -1088,8 +1091,52 @@
             }
 
             function openPromptModal() {
+                function readPresetId() {
+                    return "edit";
+                }
+
+                function getPresetIds(presets) {
+                    const ids = Object.keys(presets || {}).filter(Boolean);
+                    const base = ["advice", "ask", "edit"].filter(id => ids.includes(id));
+                    const extra = ids.filter(id => !base.includes(id));
+                    return base.concat(extra);
+                }
+
+                function ensurePresetOptions() {
+                    if (!promptPresetSelect || !window.GoToolkitChatPrompt?.PRESETS) return;
+                    const presets = window.GoToolkitChatPrompt.PRESETS;
+                    const ids = ["edit"].filter(id => Object.prototype.hasOwnProperty.call(presets, id));
+                    promptPresetSelect.innerHTML = "";
+                    ids.forEach(id => {
+                        const preset = presets[id] || {};
+                        const opt = document.createElement("option");
+                        opt.value = id;
+                        opt.textContent = preset.label || id;
+                        promptPresetSelect.appendChild(opt);
+                    });
+                    promptPresetSelect.disabled = true;
+                }
+
+                function readPromptForPreset(presetId) {
+                    const store = window.GoToolkitChatPrompt || {};
+                    const presets = store.PRESETS || {};
+                    if (presetId === "edit") {
+                        try {
+                            return (localStorage.getItem("goToolkit.chat.prompt.edit") || presets.edit?.prompt || presets.edit?.defaultPrompt || "").trim();
+                        } catch (err) {
+                            return (presets.edit?.prompt || presets.edit?.defaultPrompt || "").trim();
+                        }
+                    }
+                    return "";
+                }
+
                 if (promptEditor && window.GoToolkitChatPrompt) {
-                    promptEditor.value = window.GoToolkitChatPrompt.SYSTEM_PROMPT || "";
+                    ensurePresetOptions();
+                    const activeId = readPresetId();
+                    if (promptPresetSelect) {
+                        promptPresetSelect.value = activeId;
+                    }
+                    promptEditor.value = readPromptForPreset(activeId);
                 }
                 promptModal?.classList.add("open");
                 promptModal?.setAttribute("aria-hidden", "false");
@@ -1103,39 +1150,54 @@
             function setupMemoPrompt() {
                 const promptStore = window.GoToolkitChatPrompt || {};
                 const defaultPrompt = promptStore.DEFAULT_SYSTEM_PROMPT || promptStore.SYSTEM_PROMPT || "";
+                const defaultInfoPrompt = promptStore.DEFAULT_INFO_PROMPT || promptStore.INFO_PROMPT || "";
+                const defaultEditPrompt = promptStore.PRESETS?.edit?.defaultPrompt || promptStore.PRESETS?.edit?.prompt || "";
                 promptStore.SYSTEM_PROMPT = promptStore.SYSTEM_PROMPT || defaultPrompt;
                 promptStore.DEFAULT_SYSTEM_PROMPT = defaultPrompt;
-                promptStore.INFO_PROMPT = "";
-                promptStore.DEFAULT_INFO_PROMPT = "";
-                promptStore.PRESETS = {
-                    advice: {
-                        id: "advice",
-                        label: "Markdown",
-                        prompt: promptStore.SYSTEM_PROMPT,
-                        defaultPrompt: defaultPrompt
-                    }
-                };
-                window.GoToolkitChatPrompt = promptStore;
-                try {
-                    localStorage.setItem("goToolkit.chat.prompt.preset", "advice");
-                } catch (err) {
-                    console.warn("Prompt preset save failed", err);
+                promptStore.INFO_PROMPT = promptStore.INFO_PROMPT || defaultInfoPrompt;
+                promptStore.DEFAULT_INFO_PROMPT = defaultInfoPrompt;
+                // Use standard presets from prompt.js if available, otherwise fallback to defaults
+                if (!promptStore.PRESETS) {
+                    promptStore.PRESETS = {
+                        advice: {
+                            id: "advice",
+                            label: "↬ Conseiller",
+                            prompt: promptStore.SYSTEM_PROMPT,
+                            defaultPrompt: defaultPrompt
+                        },
+                        ask: {
+                            id: "ask",
+                            label: "⌕ Explorer",
+                            prompt: promptStore.INFO_PROMPT,
+                            defaultPrompt: defaultInfoPrompt
+                        },
+                        edit: {
+                            id: "edit",
+                            label: "✂ Éditer",
+                            prompt: defaultEditPrompt,
+                            defaultPrompt: defaultEditPrompt
+                        }
+                    };
                 }
+                window.GoToolkitChatPrompt = promptStore;
             }
 
-            function applyPromptChanges(value) {
+            function applyPromptChanges(presetId, value) {
                 if (!window.GoToolkitChatPrompt) return;
                 const trimmed = (value || "").trim();
-                const fallback = window.GoToolkitChatPrompt.DEFAULT_SYSTEM_PROMPT || "";
-                const next = trimmed || fallback;
-                window.GoToolkitChatPrompt.SYSTEM_PROMPT = next;
-                if (window.GoToolkitChatPrompt.PRESETS?.advice) {
-                    window.GoToolkitChatPrompt.PRESETS.advice.prompt = next;
-                }
-                try {
-                    localStorage.setItem("goToolkit.chat.prompt", next);
-                } catch (err) {
-                    console.warn("Prompt save failed", err);
+
+                if (presetId === "edit") {
+                    const fallback = window.GoToolkitChatPrompt.PRESETS?.edit?.defaultPrompt || "";
+                    const next = trimmed || fallback;
+                    if (window.GoToolkitChatPrompt.PRESETS?.edit) {
+                        window.GoToolkitChatPrompt.PRESETS.edit.prompt = next;
+                    }
+                    try {
+                        localStorage.setItem("goToolkit.chat.prompt.edit", next);
+                    } catch (err) {
+                        console.warn("Prompt save failed", err);
+                    }
+                    return;
                 }
             }
 
@@ -1151,7 +1213,9 @@
 
             function exportMarkdown() {
                 const tab = getActiveTab();
-                const content = tab?.content || "";
+                const content = (typeof window.getEditorMarkdown === "function")
+                    ? window.getEditorMarkdown()
+                    : (tab?.content || "");
                 const blob = new Blob([content], { type: "text/markdown" });
                 const link = document.createElement("a");
                 link.href = URL.createObjectURL(blob);
@@ -1305,13 +1369,30 @@
             promptModal?.addEventListener("click", event => {
                 if (event.target === promptModal) closePromptModal();
             });
+            promptPresetSelect?.addEventListener("change", () => {
+                if (!promptEditor || !window.GoToolkitChatPrompt) return;
+                const presetId = "edit";
+                const presets = window.GoToolkitChatPrompt.PRESETS || {};
+                if (presetId === "edit") {
+                    try {
+                        promptEditor.value = (localStorage.getItem("goToolkit.chat.prompt.edit") || presets.edit?.prompt || presets.edit?.defaultPrompt || "").trim();
+                    } catch (err) {
+                        promptEditor.value = (presets.edit?.prompt || presets.edit?.defaultPrompt || "").trim();
+                    }
+                    return;
+                }
+            });
             resetPromptBtn?.addEventListener("click", () => {
                 if (!window.GoToolkitChatPrompt) return;
-                const fallback = window.GoToolkitChatPrompt.DEFAULT_SYSTEM_PROMPT || "";
-                promptEditor.value = fallback;
+                const presetId = "edit";
+                if (presetId === "edit") {
+                    promptEditor.value = window.GoToolkitChatPrompt.PRESETS?.edit?.defaultPrompt || "";
+                    return;
+                }
             });
             applyPromptBtn?.addEventListener("click", () => {
-                applyPromptChanges(promptEditor.value);
+                const presetId = "edit";
+                applyPromptChanges(presetId, promptEditor.value);
                 closePromptModal();
                 setStatus("Prompt mis à jour");
             });
@@ -1346,6 +1427,51 @@
                 if (navSwitcherMenu.contains(event.target) || navSwitcherBtn === event.target) return;
                 navSwitcherMenu.classList.remove("open");
             });
+
+            window.applyMemoOperations = function (operations) {
+                if (!memoEditorApi || !Array.isArray(operations) || !operations.length) return;
+                try {
+                    // Sort by start descending to avoid position shifts
+                    operations.sort((a, b) => (b.start || 0) - (a.start || 0));
+                    operations.forEach(op => {
+                        const action = op.action;
+                        const text = op.text || "";
+                        const start = op.start || 0;
+                        const end = op.end || start;
+                        const newHtml = '<span class="highlight-added">' + text + '</span>';
+                        if (action === 'replace' && op.old_text) {
+                            // Find and replace text
+                            const content = memoEditorApi.getValue();
+                            const updated = content.replace(op.old_text, newHtml);
+                            if (updated !== content) {
+                                memoEditorApi.setValue(updated);
+                            } else {
+                                // Fallback: use start/end, but approximate by replacing at position in text
+                                // Complex, skip for now
+                            }
+                        } else if (action === 'insert' && text) {
+                            // Insert at position in content
+                            const content = memoEditorApi.getValue();
+                            const textContent = content.replace(/<[^>]*>/g, '').replace(/\s+/g, ' '); // rough text
+                            if (start <= textContent.length) {
+                                // Approximate position in HTML
+                                const htmlAtPos = start; // placeholder
+                                const updated = content.slice(0, htmlAtPos) + newHtml + content.slice(htmlAtPos);
+                                memoEditorApi.setValue(updated);
+                            }
+                        } else if (action === 'delete') {
+                            if (op.old_text) {
+                                const content = memoEditorApi.getValue();
+                                const updated = content.replace(op.old_text, '');
+                                memoEditorApi.setValue(updated);
+                            }
+                        }
+                    });
+                    updateActiveTabContent(memoEditorApi.getValue());
+                } catch (err) {
+                    console.warn("Apply operations failed", err);
+                }
+            };
         })();
     </script>
     <script>

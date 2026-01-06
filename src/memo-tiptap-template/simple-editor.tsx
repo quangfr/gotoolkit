@@ -1,5 +1,4 @@
 import React from 'react';
-import { mergeAttributes } from '@tiptap/core';
 import { useEditor, EditorContent, BubbleMenu, Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
@@ -17,6 +16,9 @@ import TableCell from '@tiptap/extension-table-cell';
 import { CellSelection } from 'prosemirror-tables';
 import { TaskList } from '@tiptap/extension-task-list';
 import { TaskItem } from '@tiptap/extension-task-item';
+import TurndownService from 'turndown';
+import { gfm } from 'turndown-plugin-gfm';
+import { marked } from 'marked';
 import './simple-editor.css';
 
 interface SimpleEditorProps {
@@ -42,31 +44,6 @@ const CustomTableCell = TableCell.extend({
     }
   },
 })
-
-const CustomTaskItem = TaskItem.extend({
-  content: 'inline*',
-  renderHTML({ node, HTMLAttributes }) {
-    return [
-      'li',
-      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
-        'data-type': this.name,
-        'data-checked': node.attrs.checked,
-      }),
-      [
-        'label',
-        [
-          'input',
-          {
-            type: 'checkbox',
-            checked: node.attrs.checked ? 'checked' : null,
-          },
-        ],
-        ['span'],
-      ],
-      ['span', { class: 'task-item-content' }, 0],
-    ];
-  },
-});
 
 import { NodeSelection } from 'prosemirror-state';
 
@@ -390,6 +367,46 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   React.useEffect(() => {
     if (editor) {
       (window as any).MemoEditor = editor;
+
+      const turndown = new TurndownService({
+        headingStyle: 'atx',
+        codeBlockStyle: 'fenced',
+        bulletListMarker: '-',
+      });
+      try {
+        turndown.use(gfm);
+      } catch (err) {
+        // ignore plugin load failures
+      }
+
+      (window as any).getEditorMarkdown = () => {
+        try {
+          if (typeof editor.getHTML === 'function') {
+            return turndown.turndown(editor.getHTML());
+          }
+          if (typeof editor.getText === 'function') {
+            return editor.getText();
+          }
+        } catch (err) {
+          // ignore
+        }
+        return '';
+      };
+
+      (window as any).setEditorMarkdown = (markdown: string) => {
+        if (typeof markdown !== 'string') return;
+        try {
+          const html = marked.parse(markdown, { gfm: true }) as string;
+          if ((editor as any)?.commands?.clearContent) {
+            (editor as any).commands.clearContent(true);
+          }
+          if ((editor as any)?.commands?.setContent) {
+            (editor as any).commands.setContent(html, true);
+          }
+        } catch (err) {
+          console.warn('setEditorMarkdown failed', err);
+        }
+      };
     }
   }, [editor]);
 

@@ -1468,24 +1468,45 @@ FORMAT DE SORTIE (JSON strict)
 Réponds à ASK avec CONTEXT en tenant compte de HISTORY.
 `
 
-        var persisted = "";
-        try {
-            persisted = window.localStorage?.getItem("goToolkit.chat.prompt") || "";
-        } catch (err) {
-            console.warn("Lecture prompt chat", err);
-        }
-        var persistedInfo = "";
-        try {
-            persistedInfo = window.localStorage?.getItem("goToolkit.chat.prompt.info") || "";
-        } catch (err) {
-            console.warn("Lecture prompt chat info", err);
-        }
+        var editChatPrompt = `SYSTEM — Éditeur Markdown (JSON)
 
-        var normalized = (persisted || "").trim();
-        var useDefaultPrompt = !normalized;
-        var initial = useDefaultPrompt ? adviceChatPrompt : normalized;
-        var normalizedInfo = (persistedInfo || "").trim();
-        var initialInfo = normalizedInfo || askChatPrompt;
+Tu modifies un document Markdown selon ASK, en utilisant CONTEXT uniquement comme support.
+
+ENTRÉES
+1) DOCUMENT : contenu complet actuel en Markdown
+2) ASK : demande de modification (création, modification, suppression)
+3) CONTEXT : documents joints (optionnel)
+
+OBJECTIF
+- Regénérer le DOCUMENT complet en Markdown, prêt à remplacer l'ancien.
+
+RÈGLES D'ÉDITION (simplicité)
+- Préserve au maximum la structure/syntaxe Markdown existante (titres, listes, tableaux, code, liens).
+- Ajouts (ou texte entièrement réécrit) : entoure le bloc ajouté par ==...==.
+- Suppressions : entoure le bloc supprimé par ~~...~~.
+- Modifications : ne remplace pas quelques caractères. Réécris en bloc :
+    - une ligne (si 1 phrase),
+    - un paragraphe (si plusieurs phrases),
+    - un item de liste,
+    - une ligne/section de tableau,
+    - un bloc de code.
+    En pratique : barre l'ancien bloc avec ~~...~~ puis fait un saut de ligne, puis ajoute la nouvelle version avec ==...==.
+- Ne renvoie PAS d'"operations". Aucune instruction de patch/indices.
+- Ne pas ajouter toi spontanément des émojis s'il n'y en avait pas
+
+RÈGLES DE SORTIE
+- Français, ≤150 mots, tutoiement.
+- Un seul objet JSON strict, sans texte avant/après.
+
+FORMAT DE SORTIE (JSON strict)
+{
+    "answer": "Résumé clair des changements.",
+    "output": "DOCUMENT complet régénéré en Markdown avec ==ajouts== et ~~suppressions~~"
+}
+`
+
+        var initial = adviceChatPrompt;
+        var initialInfo = askChatPrompt;
 
         if (!global.GoToolkitChatPrompt) {
             global.GoToolkitChatPrompt = {};
@@ -1506,6 +1527,12 @@ Réponds à ASK avec CONTEXT en tenant compte de HISTORY.
                 label: "⌕ Explorer",
                 prompt: initialInfo,
                 defaultPrompt: askChatPrompt
+            },
+            edit: {
+                id: "edit",
+                label: "✂ Éditer",
+                prompt: editChatPrompt,
+                defaultPrompt: editChatPrompt
             }
         };
     })();

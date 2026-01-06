@@ -1,12 +1,41 @@
 (function (global) {
-    var STORAGE_KEY = "goToolkit.chat.conversation.default";
+    function resolveChatAppId() {
+        try {
+            var explicit = (global.GoToolkitChatAppId || "").toString().trim();
+            if (explicit) return explicit;
+        } catch (err) { /* ignore */ }
+        try {
+            var fromBody = (global.document?.body?.dataset?.goToolkitChatApp || "").toString().trim();
+            if (fromBody) return fromBody;
+        } catch (err) { /* ignore */ }
+        try {
+            var path = (new URL(global.location.href)).pathname || "";
+            var lower = path.toLowerCase();
+            if (!lower || lower === "/") return "index";
+            if (lower.endsWith("/index.html")) return "index";
+            if (lower.endsWith("/memo.html")) return "memo";
+            var last = lower.split("/").filter(Boolean).slice(-1)[0] || "index";
+            return last.replace(/\.html?$/, "") || "index";
+        } catch (err) {
+            return "index";
+        }
+    }
+
+    var CHAT_APP_ID = resolveChatAppId();
+    var CONVERSATION_ID = "chat:" + CHAT_APP_ID;
+
+    function scopedKey(base) {
+        return base + "." + CHAT_APP_ID;
+    }
+
+    var STORAGE_KEY = scopedKey("goToolkit.chat.conversation");
     var WIDTH_KEY = "goToolkit.chat.sidebarWidth";
-    var OPEN_KEY = "goToolkit.chat.sidebarOpen";
+    var OPEN_KEY = scopedKey("goToolkit.chat.sidebarOpen");
     var DEFAULT_WIDTH = 450;
     var MIN_WIDTH = 320;
     var MAX_WIDTH = 800;
     var MAX_WIDTH_RATIO = 0.6;
-    var PROMPT_PRESET_KEY = "goToolkit.chat.prompt.preset";
+    var PROMPT_PRESET_KEY = scopedKey("goToolkit.chat.prompt.preset");
     // Hybrid retrieval tuning knobs (kwCandidateLimit / topK_kw / contextLimit).
     // KEYWORD_CANDIDATE_LIMIT and KEYWORD_RETRY_LIMIT keep the keyword pre-filter bucket manageable,
     // getRetrievalParamsForQuestion controls the vector topK (topK_kw), and CONTEXT_LIMIT_MIN/MAX cap the merged hits.
@@ -43,7 +72,7 @@
     function safeParseConversation(raw) {
         try {
             var parsed = JSON.parse(raw);
-            if (parsed && parsed.id === "default" && Array.isArray(parsed.messages)) {
+            if (parsed && parsed.id === CONVERSATION_ID && Array.isArray(parsed.messages)) {
                 return parsed;
             }
         } catch (err) {
@@ -61,7 +90,7 @@
             console.warn("Chat conversation read failed", err);
         }
         return {
-            id: "default",
+            id: CONVERSATION_ID,
             updatedAt: Date.now(),
             messages: []
         };
@@ -84,16 +113,23 @@
         }
     }
 
+    function getAllowedPromptPresetIds() {
+        if (CHAT_APP_ID === "memo") return ["edit"];
+        if (CHAT_APP_ID === "index") return ["advice", "ask"];
+        return ["advice", "ask"];
+    }
+
     function readPromptPreset() {
+        var allowed = getAllowedPromptPresetIds();
         try {
             var stored = global.localStorage.getItem(PROMPT_PRESET_KEY);
-            if (stored === "ask" || stored === "advice") {
+            if (stored && allowed.includes(stored)) {
                 return stored;
             }
         } catch (err) {
             console.warn("Chat prompt preset read failed", err);
         }
-        return "advice";
+        return allowed[0] || "advice";
     }
 
     function persistPromptPreset(value) {
@@ -102,6 +138,18 @@
         } catch (err) {
             console.warn("Chat prompt preset save failed", err);
         }
+    }
+
+    function safeReadLocalStorage(key) {
+        try {
+            return (global.localStorage?.getItem(key) || "").toString();
+        } catch (err) {
+            return "";
+        }
+    }
+
+    function getPersistedPromptOrEmpty(key) {
+        return (safeReadLocalStorage(key) || "").trim();
     }
 
     function persistConversation(conversation) {
@@ -385,6 +433,8 @@
     };
 
     function getSystemPrompt() {
+        var persisted = getPersistedPromptOrEmpty("goToolkit.chat.prompt");
+        if (persisted) return persisted;
         var prompt = global.GoToolkitChatPrompt?.SYSTEM_PROMPT;
         if (prompt && typeof prompt === "string") {
             return prompt;
@@ -557,7 +607,7 @@
         if (this.textarea) {
             this.textarea.focus();
         }
-        if (this.promptPresetId === "ask") {
+        if (this.promptPresetId === "ask" || this.promptPresetId === "edit") {
             this.closeKnowledgeModal();
         } else {
             this.openKnowledgeModal();
@@ -612,7 +662,7 @@
             this.docManager.deleteDocumentsBySourceTypes(this.conversation.id, ["context"]).catch(function () { /* ignore */ });
         }
         this.conversation = {
-            id: "default",
+            id: CONVERSATION_ID,
             updatedAt: Date.now(),
             messages: []
         };
@@ -905,30 +955,56 @@
     };
 
     AssistSidebar.prototype.getPromptPresets = function () {
-        var presets = global.GoToolkitChatPrompt?.PRESETS;
-        if (presets) return presets;
-        return {
+        var storePresets = global.GoToolkitChatPrompt?.PRESETS || {};
+        var allowed = getAllowedPromptPresetIds();
+
+        var advicePrompt = getSystemPrompt();
+        var askPersisted = getPersistedPromptOrEmpty("goToolkit.chat.prompt.info");
+        var askPrompt = askPersisted
+            || global.GoToolkitChatPrompt?.INFO_PROMPT
+            || global.GoToolkitChatPrompt?.DEFAULT_INFO_PROMPT
+            || "";
+
+        var editPersisted = getPersistedPromptOrEmpty("goToolkit.chat.prompt.edit");
+        var editPrompt = editPersisted
+            || storePresets?.edit?.prompt
+            || storePresets?.edit?.defaultPrompt
+            || "";
+
+        var all = {
             advice: {
                 id: "advice",
-                label: "↬ Conseiller",
-                prompt: getSystemPrompt()
+                label: storePresets?.advice?.label || "↬ Conseiller",
+                prompt: advicePrompt
             },
             ask: {
                 id: "ask",
-                label: "⌕ Explorer",
-                prompt: global.GoToolkitChatPrompt?.INFO_PROMPT || global.GoToolkitChatPrompt?.DEFAULT_INFO_PROMPT || ""
+                label: storePresets?.ask?.label || "⌕ Explorer",
+                prompt: askPrompt
+            },
+            edit: {
+                id: "edit",
+                label: storePresets?.edit?.label || "✂ Éditer",
+                prompt: editPrompt
             }
         };
+
+        var filtered = {};
+        allowed.forEach(function (id) {
+            if (all[id]) filtered[id] = all[id];
+        });
+        return filtered;
     };
 
     AssistSidebar.prototype.setPromptPreset = function (presetId) {
-        var next = presetId === "ask" ? "ask" : "advice";
+        var allowed = getAllowedPromptPresetIds();
+        var next = allowed.includes(presetId) ? presetId : (allowed[0] || "advice");
         this.promptPresetId = next;
         persistPromptPreset(next);
         this.updatePromptDropdownLabel();
         this.updateHeaderDocumentCount();
         this.refreshDocumentStats();
-        if (this.promptPresetId === "ask") {
+        if (this.promptPresetId === "ask" || this.promptPresetId === "edit") {
             this.closeKnowledgeModal();
         } else {
             this.openKnowledgeModal();
@@ -937,8 +1013,17 @@
 
     AssistSidebar.prototype.getActiveSystemPrompt = function () {
         if (this.promptPresetId === "ask") {
+            var persisted = getPersistedPromptOrEmpty("goToolkit.chat.prompt.info");
+            if (persisted) return persisted;
             return global.GoToolkitChatPrompt?.INFO_PROMPT
                 || global.GoToolkitChatPrompt?.DEFAULT_INFO_PROMPT
+                || "";
+        }
+        if (this.promptPresetId === "edit") {
+            var persistedEdit = getPersistedPromptOrEmpty("goToolkit.chat.prompt.edit");
+            if (persistedEdit) return persistedEdit;
+            return global.GoToolkitChatPrompt?.PRESETS.edit.prompt
+                || global.GoToolkitChatPrompt?.PRESETS.edit.defaultPrompt
                 || "";
         }
         return getSystemPrompt();
@@ -955,7 +1040,12 @@
         var messages = [{ role: "system", content: promptContent }];
         var userContent = (userMessage?.content || "").trim();
         if (userContent) {
-            userContent = "ASK\n" + userContent;
+            if (this.promptPresetId === "edit") {
+                var docContent = window.getEditorMarkdown ? window.getEditorMarkdown() : (window.getEditorContent ? window.getEditorContent() : "");
+                userContent = "DOCUMENT\n" + docContent + "\n\nASK\n" + userContent;
+            } else {
+                userContent = "ASK\n" + userContent;
+            }
         }
         if (userMessage) {
             messages.push({
@@ -1475,7 +1565,7 @@
 
         var userMessage = createMessage("user", value);
         var systemPrompt = this.getActiveSystemPrompt();
-        var shouldFetchKnowledge = this.promptPresetId !== "ask";
+        var shouldFetchKnowledge = this.promptPresetId !== "ask" && this.promptPresetId !== "edit";
         var docInfo = null;
         if (this.docManager) {
             var contextParams = this.getRetrievalParamsForQuestion(value);
@@ -1603,11 +1693,47 @@
             console.log("AI response", {
                 content: parsed.content,
                 references: parsed.references,
-                suggestions: parsed.suggestions
+                suggestions: parsed.suggestions,
+                operations: parsed.operations,
+                output: parsed.output
             });
             botMessage.content = parsed.content;
             botMessage.references = parsed.references;
             botMessage.suggestions = parsed.suggestions;
+            if (this.promptPresetId === "edit") {
+                var applied = false;
+                if (parsed.output && typeof window.setEditorMarkdown === "function") {
+                    window.setEditorMarkdown(parsed.output);
+                    applied = true;
+                } else if (parsed.output && typeof window.setEditorContent === "function") {
+                    // Fallback: treat output as raw content if the host editor doesn't support markdown.
+                    window.setEditorContent(parsed.output);
+                    applied = true;
+                } else if (parsed.operations && parsed.operations.length && typeof window.setEditorContent === "function") {
+                    // Backward compatibility: apply legacy character-index operations.
+                    var currentContent = window.getEditorContent();
+                    var reversedOps = parsed.operations.slice().reverse();
+                    for (var i = 0; i < reversedOps.length; i++) {
+                        var op = reversedOps[i];
+                        var action = op.action;
+                        var start = op.start;
+                        var end = op.end;
+                        var text = op.text || "";
+                        if (action === "replace") {
+                            currentContent = currentContent.slice(0, start) + text + currentContent.slice(end);
+                        } else if (action === "insert") {
+                            currentContent = currentContent.slice(0, start) + text + currentContent.slice(start);
+                        } else if (action === "delete") {
+                            currentContent = currentContent.slice(0, start) + currentContent.slice(end);
+                        }
+                    }
+                    window.setEditorContent(currentContent);
+                    applied = true;
+                }
+                if (applied) {
+                    botMessage.content += " [Document régénéré.]";
+                }
+            }
             this.updateBotMessage(botMessage);
             this.persist();
         } catch (err) {
@@ -1857,21 +1983,24 @@
 
         this.scrollButton = document.createElement("button");
         this.scrollButton.type = "button";
-        this.scrollButton.className = "btn-secondary chat-scroll-btn";
+        this.scrollButton.id = "chatAttachFilesBtn";
+        this.scrollButton.className = "btn-secondary chat-attach-files-btn chat-scroll-btn";
         this.scrollButton.textContent = "+";
         this.scrollButton.addEventListener("click", this.openDocumentSelector.bind(this));
         composerLeftActions.appendChild(this.scrollButton);
 
         this.docsIndicatorButton = document.createElement("button");
         this.docsIndicatorButton.type = "button";
-        this.docsIndicatorButton.className = "btn-secondary chat-docs-indicator";
+        this.docsIndicatorButton.id = "chatAttachedFilesIndicatorBtn";
+        this.docsIndicatorButton.className = "btn-secondary chat-attached-files-indicator chat-docs-indicator";
         this.docsIndicatorButton.hidden = true;
+        this.docsIndicatorButton.style.display = "none";
         this.docsIndicatorButton.addEventListener("click", this.openDocumentSelector.bind(this));
         this.docsIndicatorLabelEl = document.createElement("span");
-        this.docsIndicatorLabelEl.className = "chat-docs-indicator__label";
+        this.docsIndicatorLabelEl.className = "chat-attached-files-indicator__label chat-docs-indicator__label";
         this.docsIndicatorButton.appendChild(this.docsIndicatorLabelEl);
         this.docsIndicatorDeleteEl = document.createElement("span");
-        this.docsIndicatorDeleteEl.className = "chat-delete chat-docs-indicator__delete";
+        this.docsIndicatorDeleteEl.className = "chat-delete chat-attached-files-indicator__delete chat-docs-indicator__delete";
         this.docsIndicatorDeleteEl.textContent = "×";
         this.docsIndicatorDeleteEl.setAttribute("aria-label", "Supprimer les documents");
         this.docsIndicatorDeleteEl.addEventListener("click", function (event) {
@@ -1966,6 +2095,7 @@
         var label = this.computeDocsIndicatorLabel();
         if (!label) {
             this.docsIndicatorButton.hidden = true;
+            this.docsIndicatorButton.style.display = "none";
             if (this.docsIndicatorLabelEl) {
                 this.docsIndicatorLabelEl.textContent = "";
             }
@@ -1975,6 +2105,7 @@
             return;
         }
         this.docsIndicatorButton.hidden = false;
+        this.docsIndicatorButton.style.display = "";
         if (this.docsIndicatorLabelEl) {
             this.docsIndicatorLabelEl.textContent = label;
         }
@@ -3500,6 +3631,7 @@
         var content = "";
         var references = [];
         var suggestions = [];
+        var operations = [];
         var seenAny = false;
         lines.forEach(function (line) {
             try {
@@ -3525,6 +3657,10 @@
                         suggestions.push(label);
                     }
                 }
+                if (payload.t === "operation") {
+                    operations.push(payload);
+                    return;
+                }
             } catch (err) {
                 // ignore non-JSON lines
             }
@@ -3533,7 +3669,8 @@
         return {
             content: content.trim() || "Réponse illisible.",
             references: references,
-            suggestions: suggestions
+            suggestions: suggestions,
+            operations: operations
         };
     }
 
@@ -3617,6 +3754,8 @@
             }
             var references = Array.isArray(payload?.references) ? payload.references : [];
             var suggestions = Array.isArray(payload?.suggestions) ? payload.suggestions : [];
+            var operations = Array.isArray(payload?.operations) ? payload.operations : [];
+            var output = (typeof payload?.output === "string") ? payload.output : "";
             var finalContent = (answerContent && answerContent.length)
                 ? answerContent
                 : "Non trouvé dans la base";
@@ -3625,13 +3764,17 @@
                 references: references
                     .map(normalizeReference)
                     .filter(Boolean),
-                suggestions: suggestions.filter(Boolean).slice(0, 3)
+                suggestions: suggestions.filter(Boolean).slice(0, 3),
+                operations: operations,
+                output: output
             };
         } catch (err) {
             return {
                 content: trimmed,
                 references: [],
-                suggestions: []
+                suggestions: [],
+                operations: [],
+                output: ""
             };
         }
     };
