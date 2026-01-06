@@ -4489,24 +4489,33 @@
                     }
                 }
 
-                botMessage.content = responseContent;
+                if (responseContent) {
+                    // Mettre à jour le contenu du message bot
+                    botMessage.content = responseContent;
 
-                if (assistInstance) {
-                    assistInstance.updateBotMessage(botMessage);
-                    assistInstance.persist();
-                }
+                    if (assistInstance) {
+                        // Mettre à jour l'affichage du message bot
+                        var entry = assistInstance.messageNodes[botMessage.id];
+                        if (entry && entry.contentEl) {
+                            entry.contentEl.innerHTML = assistInstance.renderBotContent(botMessage);
+                            assistInstance.syncBotExtras(entry, botMessage);
+                            assistInstance.scrollToBottom();
+                        }
+                        assistInstance.persist();
+                    }
 
-                // Traiter la réponse: remplacer SEULEMENT la sélection en cours
-                if (editor && selectionPos && responseContent) {
-                    // Utiliser le chain de commandes Tiptap pour remplacer juste la sélection
-                    editor
-                        .chain()
-                        .focus()
-                        .deleteRange({ from: selectionPos.from, to: selectionPos.to })
-                        .insertContent(responseContent)
-                        .run();
+                    // Traiter la réponse: remplacer SEULEMENT la sélection en cours
+                    if (editor && selectionPos) {
+                        // Utiliser le chain de commandes Tiptap pour remplacer juste la sélection
+                        editor
+                            .chain()
+                            .focus()
+                            .deleteRange({ from: selectionPos.from, to: selectionPos.to })
+                            .insertContent(responseContent)
+                            .run();
 
-                    console.log('   ✅ Sélection remplacée. Reste du document inchangé.');
+                        console.log('   ✅ Sélection remplacée. Reste du document inchangé.');
+                    }
                 }
             }
         } catch (error) {

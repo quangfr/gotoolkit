@@ -481,7 +481,7 @@ const Toolbar = ({ editor }: { editor: Editor }) => {
             title="Garder tout"
             onClick={() => keepAllDocument(editor)}
           >
-            ✓
+            ✓✓
           </button>
         )}
       </div>

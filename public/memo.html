@@ -1561,7 +1561,7 @@
                     to: detail.positionTo,
                 };
                 currentCoords = detail.coords;
-                
+
                 // Stocker les coords du bloc pour l'overlay
                 try {
                     const editorInstance = window.memoEditor;
@@ -1579,11 +1579,10 @@
                     console.warn('Error getting block coords:', err);
                 }
 
-                // Positionner et afficher le composant + overlay
+                // Positionner et afficher le composant (mais pas l'overlay immédiatement)
                 positionEditor();
-                positionOverlay();
                 container.style.display = 'block';
-                selectionOverlay.style.display = 'block';
+                // L'overlay s'affiche seulement au focus du textarea
                 // Pas de focus automatique - l'utilisateur clique quand il est prêt
             });
 
@@ -1591,10 +1590,38 @@
             function positionEditor() {
                 if (!currentCoords) return;
 
+                // Largeur du composant (approximativement 300px d'après le CSS)
+                const componentWidth = editor.offsetWidth || 300;
+                const margin = 40;
+
+                // Centre horizontal de la sélection
+                const selectionCenterX = (currentCoords.left + currentCoords.right) / 2;
+
+                // Position idéale : centrer sur la sélection
+                let leftPos = selectionCenterX - (componentWidth / 2);
+
+                // Vérifier les limites gauche et droite avec marge de 40px
+                const minLeft = margin;
+                const maxLeft = window.innerWidth - componentWidth - margin;
+
+                // Clamper la position dans les limites
+                leftPos = Math.max(minLeft, Math.min(leftPos, maxLeft));
+
                 editor.style.position = 'fixed';
                 editor.style.top = (currentCoords.top + 10) + 'px';
-                editor.style.left = (currentCoords.left - 40) + 'px';
+                editor.style.left = leftPos + 'px';
                 editor.style.zIndex = '1000';
+            }
+
+            // Positionner l'overlay
+            function positionOverlay() {
+                if (!currentBlockCoords) return;
+
+                selectionOverlay.style.position = 'fixed';
+                selectionOverlay.style.top = currentBlockCoords.top + 'px';
+                selectionOverlay.style.left = currentBlockCoords.left + 'px';
+                selectionOverlay.style.width = Math.max(currentBlockCoords.width, 100) + 'px';
+                selectionOverlay.style.height = Math.max(currentBlockCoords.height, 20) + 'px';
             }
 
             // Envoyer le message à l'IA
@@ -1620,13 +1647,13 @@
                         editorInstance.getHTML?.() ||
                         '');
 
-                    // Construire le payload
+                    // Construire le payload avec le texte du bloc complet
                     const payload = {
                         system: window.GoToolkitChatPrompt?.PRESETS?.edit?.prompt || 'Éditer le texte fourni.',
                         messages: [
                             {
                                 role: 'user',
-                                content: `DOCUMENT:\n${documentContent}\n\nSELECTION:\n${currentSelection.text}\n\nASK:\n${input.value}`,
+                                content: `DOCUMENT:\n${documentContent}\n\nSELECTION:\n${currentSelection.blockText}\n\nASK:\n${input.value}`,
                             },
                         ],
                         stream: false,
@@ -1635,13 +1662,15 @@
                     // 📤 Afficher le payload envoyé en console
                     console.log('📤 [Chat Inline] Payload envoyé:', JSON.stringify(payload, null, 2));
 
-                    // ✨ Cacher immédiatement le composant (avant d'attendre la réponse)
+                    // ✨ Cacher immédiatement le composant et l'overlay (avant d'attendre la réponse)
                     const savedExcerpt = currentSelection.excerpt;
                     const savedPos = { from: currentSelection.from, to: currentSelection.to };
                     input.value = '';
                     container.style.display = 'none';
+                    selectionOverlay.style.display = 'none';
                     currentSelection = null;
                     currentCoords = null;
+                    currentBlockCoords = null;
 
                     // Appeler la fonction sendInlineEditToAssist
                     if (window.sendInlineEditToAssist) {
@@ -1662,6 +1691,17 @@
             input.addEventListener('mousedown', (e) => {
                 e.preventDefault();
                 setTimeout(() => input.focus(), 0);
+            });
+            input.addEventListener('focus', () => {
+                // Afficher l'overlay quand le textarea a le focus
+                if (currentBlockCoords) {
+                    positionOverlay();
+                    selectionOverlay.style.display = 'block';
+                }
+            });
+            input.addEventListener('blur', () => {
+                // Cacher l'overlay quand le textarea perd le focus
+                selectionOverlay.style.display = 'none';
             });
             input.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
