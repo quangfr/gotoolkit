@@ -1676,7 +1676,7 @@ OBJECTIF
 
 RÈGLES DE MODIFICATION
 - Préserve au maximum la structure/syntaxe Markdown existante (titres, listes, tableaux, code, liens).
-- Conserve l'intégralité des liens et images entre paranthèses
+- Conserve l'intégralité des liens et images entre parenthèses
 - Ajouts : applique d'abord le Markdown (##, -, etc.), puis ajoute le marqueur ==...== sur le texte : ex: ## ==Titre ajouté== ##, == liste item ==
 - Suppressions : applique d'abord le Markdown, puis barre avec ~~...~~ : ex: ##~~Titre supprimé~~##, ~~liste item~~
 - Modifications : ne remplace pas quelques caractères. Réécris en bloc :
