@@ -1321,6 +1321,10 @@ label {
   width: 100%;
 }
 
+.chat-message--bot .chat-content-wrapper {
+  align-items: flex-start;
+}
+
 .chat-prepend {
   font-size: 13px;
   color: #666;

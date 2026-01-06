@@ -1572,18 +1572,20 @@
             </div>
         </div>
 
-        <div id="settingsModal" class="feedback-modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
-            <div class="feedback-modal settings-modal">
-                <header>
+        <div id="settingsModal" class="feedback-modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true"
+            style="max-height: 90vh; overflow-y: auto;">
+            <div class="feedback-modal settings-modal"
+                style="max-height: calc(90vh - 120px); overflow-y: auto; display: flex; flex-direction: column;">
+                <header style="flex-shrink: 0;">
                     <h3>⌘ Paramètres</h3>
                     <button id="closeSettingsBtn" class="btn-secondary" type="button" aria-label="Fermer">✕</button>
                 </header>
-                <form class="feedback-form" onsubmit="return false;">
+                <form class="feedback-form" onsubmit="return false;" style="flex: 1; overflow-y: auto;">
                     <div class="settings-tabs tabs">
                         <button type="button" class="tab-btn active" data-tab="servicesTab">🧠 Services IA</button>
                         <button type="button" class="tab-btn" data-tab="promptTab">💬 Prompt Chat</button>
                     </div>
-                    <div class="settings-tab-panels-wrapper">
+                    <div class="settings-tab-panels-wrapper" style="max-height: calc(90vh - 200px); overflow-y: auto;">
                         <div class="settings-tab-panel" data-panel="servicesTab">
                             <div class="field-row">
                                 <label style="width:100%">

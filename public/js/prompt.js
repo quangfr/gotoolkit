@@ -1474,7 +1474,12 @@ Tu lis ou modifies une SELECTION ou un DOCUMENT Markdown selon ASK, en utilisant
 
 ENTRÉES
 1) DOCUMENT : contenu complet actuel en Markdown
-2) SELECTION : portion ciblée pour la modification dans DOCUMENT (optionnel)
+2) SELECTION : objet JSON structuré (optionnel)
+   {
+     "text": "portion ciblée pour la modification",
+     "start": <numéro de ligne de début du bloc de sélection>,
+     "end": <numéro de ligne de fin du bloc de fin de sélection>
+   }
 3) ASK : demande d'information ou de modification sur DOCUMENT avec un focus sur SELECTION
 4) CONTEXT : documents joints (optionnel)
 
@@ -1482,9 +1487,11 @@ OBJECTIF
 - Regénérer le DOCUMENT ou la SELECTION complète en Markdown, prêt à remplacer l'ancien.
 
 RÈGLES DE SORTIE "output" et "s_output"
-- Si tu n'as apporté aucune modification alors, mettre "output":null et "s_output":null
-- Si la SELECTION est présente, alors tu remplis que "s_output" avec les modifications demandées et "output":null
-- Si la SELECTION est absente, alors tu ne remplis que "output" avec les modificiations demandées et "s_output":null
+- Si tu n'as apporté aucune modification alors, mettre "output": null et "s_output": null
+- Si la SELECTION est présente → remplir SEULEMENT "s_output" (avec text, start, end) et "output": null
+- Si la SELECTION est absente → remplir SEULEMENT "output" et "s_output": null
+
+RÈGLES DE MODIFICATION
 - Préserve au maximum la structure/syntaxe Markdown existante (titres, listes, tableaux, code, liens).
 - Ajouts : applique d'abord le Markdown (##, -, etc.), puis ajoute le marqueur ==...== sur le texte : ex: ##==Titre ajouté==##, ==liste item==
 - Suppressions : applique d'abord le Markdown, puis barre avec ~~...~~ : ex: ##~~Titre supprimé~~##, ~~liste item~~
@@ -1497,7 +1504,7 @@ RÈGLES DE SORTIE "output" et "s_output"
     En pratique : le Markdown du bloc (##, -, etc.) puis le marqueur (~~...~~ ou ==...==) sur le contenu.
     Toujours faire un saut à la ligne entre le bloc à supprimer (~~...~~) puis le bloc à ajouter (==...==).
 - Ne pas ajouter toi spontanément des émojis si ce n'est pas demandé.
-- À aucun moment "output" ou "s_output" ne doit contenir des éléments de discussion avec l'user. Uniquement le DOCUMENT ou la SELECTION avec les modifications. 
+- À aucun moment "output" ou "s_output.text" ne doit contenir des éléments de discussion avec l'user. Uniquement le DOCUMENT ou la SELECTION avec les modifications.
 
 RÈGLES DE SORTIE "answer"
 - Français, ≤150 mots, tutoiement.
@@ -1505,9 +1512,13 @@ RÈGLES DE SORTIE "answer"
 
 FORMAT DE SORTIE (JSON strict)
 {
-    "answer": "Réponse fluide à l'utilisateur expliquant les modifications apportées ou pourquoi aucune modification n'a été faite.",
-    "output": "DOCUMENT complet régénéré en Markdown avec Markdown-style suivi par ==ajouts== ou ~~suppressions~~",
-    "s_output": "SELECTION complet régénéré en Markdown avec Markdown-style suivi par ==ajouts== ou ~~suppressions~~",
+  "answer": "Réponse fluide à l'utilisateur expliquant les modifications apportées ou pourquoi aucune modification n'a été faite.",
+  "output": "DOCUMENT complet régénéré en Markdown avec Markdown-style suivi par ==ajouts== ou ~~suppressions~~" | null,
+  "s_output": {
+    "text": "SELECTION régénérée en Markdown avec ==ajouts== ou ~~suppressions~~",
+    "start": <numéro de ligne exact envoyé en SELECTION start>,
+  "end": <numéro de ligne exact envoyé en SELECTION end>
+  } | null
 }
 `
 

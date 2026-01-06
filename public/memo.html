@@ -1647,13 +1647,44 @@
                         editorInstance.getHTML?.() ||
                         '');
 
-                    // Construire le payload avec le texte du bloc complet
+                    // Calculer les numéros de ligne du bloc sélectionné
+                    const lines = documentContent.split('\n');
+                    let selectionStartLine = 0;
+                    let currentLineNum = 0;
+                    let charCount = 0;
+
+                    for (let i = 0; i < lines.length; i++) {
+                        const lineLength = lines[i].length + 1; // +1 pour le newline
+                        if (charCount + lineLength > currentSelection.from) {
+                            selectionStartLine = i;
+                            break;
+                        }
+                        charCount += lineLength;
+                    }
+
+                    // Calculer la ligne de fin
+                    charCount = 0;
+                    let selectionEndLine = lines.length;
+                    for (let i = 0; i < lines.length; i++) {
+                        const lineLength = lines[i].length + 1;
+                        if (charCount + lineLength > currentSelection.to) {
+                            selectionEndLine = i + 1;
+                            break;
+                        }
+                        charCount += lineLength;
+                    }
+
+                    // Construire le payload avec SELECTION structuré
                     const payload = {
                         system: window.GoToolkitChatPrompt?.PRESETS?.edit?.prompt || 'Éditer le texte fourni.',
                         messages: [
                             {
                                 role: 'user',
-                                content: `DOCUMENT:\n${documentContent}\n\nSELECTION:\n${currentSelection.blockText}\n\nASK:\n${input.value}`,
+                                content: `DOCUMENT:\n${documentContent}\n\nSELECTION:\n${JSON.stringify({
+                                    text: currentSelection.blockText,
+                                    start: selectionStartLine,
+                                    end: selectionEndLine
+                                })}\n\nASK:\n${input.value}`,
                             },
                         ],
                         stream: false,
