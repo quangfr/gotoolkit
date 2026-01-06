@@ -1590,25 +1590,26 @@
             function positionEditor() {
                 if (!currentCoords) return;
 
-                // Largeur du composant (approximativement 300px d'après le CSS)
-                const componentWidth = editor.offsetWidth || 300;
+                // Largeur du composant : utiliser la largeur du wrapper (350px en CSS)
+                const wrapper = editor.querySelector('.chat-inline-editor__wrapper');
+                const componentWidth = wrapper ? wrapper.offsetWidth : 350;
                 const margin = 40;
 
-                // Centre horizontal de la sélection
-                const selectionCenterX = (currentCoords.left + currentCoords.right) / 2;
+                // Position : left de la sélection + offset de 40px
+                let leftPos = currentCoords.left + 40;
 
-                // Position idéale : centrer sur la sélection
-                let leftPos = selectionCenterX - (componentWidth / 2);
-
-                // Vérifier les limites gauche et droite avec marge de 40px
-                const minLeft = margin;
+                // Vérifier les limites droite avec marge de 40px
                 const maxLeft = window.innerWidth - componentWidth - margin;
 
-                // Clamper la position dans les limites
-                leftPos = Math.max(minLeft, Math.min(leftPos, maxLeft));
+                // Clamper si dépasse à droite
+                leftPos = Math.min(leftPos, maxLeft);
+                // Mais ne pas laisser être trop à gauche
+                if (leftPos < margin) {
+                    leftPos = margin;
+                }
 
                 editor.style.position = 'fixed';
-                editor.style.top = (currentCoords.top + 10) + 'px';
+                editor.style.top = (currentCoords.bottom + 10) + 'px';
                 editor.style.left = leftPos + 'px';
                 editor.style.zIndex = '1000';
             }

@@ -1,6 +1,3 @@
-## Module Mémo (Le Petit Robert) `T1 2026`
-- Création assistée de mémos à partir d'un corpus `En cours`
-
 ## IA contextuel (Soulgorithm)`T1 2026`
 - Ajout de corpus en contexte dans les modules `À étudier`
 - Affichage de la bibliothèque locale en corpus`À étudier`

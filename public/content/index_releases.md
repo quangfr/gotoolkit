@@ -1,7 +1,11 @@
-## 2026-01-05
-- Module [Assist](/#assist) avec les modes Conseil et Recherche 
-- Import, référence et prévisualisation des sources
-- Choix du modèle IA `gpt-oss-20b` rapide et sans rétention de données
+## 2026-01-06
+- Module [Memo](/memo) : création de notes assistée IA
+- Mode édition avec sélection
+
+## 2026-01-04
+- Module [Assist](/#assist) : exploration de documents assistée IA
+- Affichage des sources, prévisualisation de fichiers 
+- Moteur IA `gpt-oss-20b` plus rapide et sans rétention de données
 
 ## 2025-12-29
 - Ajout des notes de version et de la feuille de route
