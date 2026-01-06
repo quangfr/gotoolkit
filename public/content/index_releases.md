@@ -45,5 +45,5 @@
 - Partage des liens de document et espace en ligne
 
 ## 2025-11-22
-- Module [Canvas](/canvas?v=v)
+- Module Canvas (déprécié)
 - Intégration moteur IA OpenAI

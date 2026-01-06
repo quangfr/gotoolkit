@@ -4459,6 +4459,20 @@
             // Avoid leaking non-standard field downstream.
             delete requestPayload.system;
 
+            // Expose the last AI input (for memo source modal: AI In)
+            try {
+                window.__memoEditorLastAIInAt = new Date().toISOString();
+                window.__memoEditorLastAIInMessages = requestMessages;
+                window.__memoEditorLastAIInPayload = requestPayload;
+                window.__memoEditorLastAIInDocumentMarkdown =
+                    (typeof window.getMemoEditorSource === 'function'
+                        ? window.getMemoEditorSource('markdown')
+                        : window.getEditorMarkdown?.()) ||
+                    '';
+            } catch (e) {
+                // noop
+            }
+
             // 2. Extraire le ASK pour afficher le message utilisateur dans le chat.
             //    (Cherche le dernier message user qui contient ASK:)
             let askContent = '';
@@ -4540,6 +4554,20 @@
                 if (sOutput || output) {
                     editMetadata = { sOutput, output };
                 }
+            }
+
+            // Expose the last AI output (for memo source modal: AI Out)
+            try {
+                window.__memoEditorLastAIOutAt = new Date().toISOString();
+                if (editMetadata && (editMetadata.sOutput || editMetadata.output)) {
+                    window.__memoEditorLastAIOut = editMetadata.sOutput || editMetadata.output;
+                } else if (payloadObj && typeof payloadObj === 'object') {
+                    window.__memoEditorLastAIOut = payloadObj.s_output || payloadObj.sOutput || payloadObj.output || null;
+                } else {
+                    window.__memoEditorLastAIOut = rawTextFallback || null;
+                }
+            } catch (e) {
+                // noop
             }
 
             // 7. Parser le contenu pour le chat depuis un JSON “sanitisé” (sans output/s_output)

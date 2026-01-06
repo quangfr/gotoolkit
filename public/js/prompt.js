@@ -1690,6 +1690,16 @@ RÈGLES DE MODIFICATION
 - Ne pas ajouter toi spontanément des émojis si ce n'est pas demandé.
 - À aucun moment "output" ou "s_output.text" ne doit contenir des éléments de discussion avec l'user. Uniquement le DOCUMENT ou la SELECTION avec les modifications.
 
+EXCEPTIONS : 
+- Pour ajouter ou éditer un tableau : pas de markdown, un seul bloc HTML avec les balises HTML suivantes :
+    - <table style="min-width:100px;">
+    - <colgroup> avec N <col style="min-width:25px;"> (N = nb de colonnes)
+    - Uniquement <tbody>
+    - 1ère ligne = en-têtes en <th colspan="1" rowspan="1"><p>…</p></th>
+    - Lignes suivantes = données en <td colspan="1" rowspan="1" style=""><p>…</p></td>
+    - Toujours encapsuler le texte dans <p>
+
+
 FORMAT DE SORTIE (JSON strict)
 {
   "answer": "Réponse en français, ≤150 mots, tutoiement",

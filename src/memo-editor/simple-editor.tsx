@@ -500,7 +500,21 @@ const Toolbar = ({ editor }: { editor: Editor }) => {
           </button>
         )}
       </div>
+        <button
+        className="tiptap-button"
+        aria-label="Voir le code source"
+        title="Voir le code source"
+        type="button"
+        onClick={() => {
+          (window as any).openMemoSourceModal?.();
+          document.dispatchEvent(new CustomEvent('memoEditorOpenSourceModal'));
+        }}
+      >
+        #
+      </button>
       <div style={{ flex: 1 }}></div>
+
+    
     </div>
   );
 };
@@ -577,6 +591,23 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           // ignore
         }
         return '';
+      };
+
+      (window as any).getMemoEditorSource = (format: 'markdown' | 'html' | 'json') => {
+        try {
+          if (format === 'html') {
+            return editor.getHTML();
+          }
+
+          if (format === 'json') {
+            return JSON.stringify(editor.getJSON(), null, 2);
+          }
+
+          // Markdown
+          return (window as any).getEditorMarkdown?.() || '';
+        } catch (err) {
+          return '';
+        }
       };
 
       (window as any).setEditorMarkdown = (markdown: string) => {

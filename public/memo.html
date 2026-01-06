@@ -273,7 +273,6 @@
                     <button id="navSwitcherBtn" class="nav-switch-btn" type="button" aria-haspopup="true"
                         aria-expanded="false">⊞ Mémo ▾</button>
                     <div id="navSwitcherMenu" class="nav-switch-menu" role="menu">
-                        <a class="nav-switch-link" href="canvas.html?v=2026.01.06.2" role="menuitem">◍ Canvas</a>
                         <a class="nav-switch-link" href="grid.html?v=2026.01.06.2" role="menuitem">◇ Grid</a>
                         <a class="nav-switch-link" href="timeline.html?v=2026.01.06.2" role="menuitem">⇥ Timeline</a>
                         <a class="nav-switch-link" href="draw.html?v=2026.01.06.2" role="menuitem">ʃ Draw</a>
@@ -1937,6 +1936,186 @@
                 currentSelection = null;
                 currentCoords = null;
             };
+        })();
+    </script>
+
+    <div id="memo-source-overlay"
+        style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:100000;">
+        <div id="memo-source-modal" role="dialog" aria-modal="true" aria-label="Document source"
+            style="position:absolute; top:1vh; left:50%; transform:translateX(-50%); width:1100px; max-width:calc(100vw - 24px); height:98vh; background:#111; color:#eee; border:1px solid rgba(255,255,255,.12); border-radius:12px; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,.6); font-size:13px;">
+            <div
+                style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-bottom:1px solid rgba(255,255,255,.12); font-size:13px;">
+                <div style="font-weight:600; font-size:13px;">Source</div>
+                <div style="flex:1;"></div>
+
+                <label for="memo-source-format" style="font-size:13px; opacity:.8;">Format</label>
+                <select id="memo-source-format"
+                    style="height:28px; background:#1a1a1a; color:#eee; border:1px solid rgba(255,255,255,.16); border-radius:8px; padding:0 8px; font-size:13px;">
+                    <option value="markdown" selected>Markdown</option>
+                    <option value="html">HTML</option>
+                    <option value="json">JSON</option>
+                    <option value="ai_in">AI In</option>
+                    <option value="ai_out">AI Out</option>
+                </select>
+
+                <button id="memo-source-close" type="button"
+                    style="height:28px; padding:0 10px; background:#1a1a1a; color:#eee; border:1px solid rgba(255,255,255,.16); border-radius:8px; cursor:pointer; font-size:13px;">
+                    Close
+                </button>
+            </div>
+
+            <textarea id="memo-source-text" readonly spellcheck="false" title="Click to copy all"
+                style="width:100%; height:calc(98vh - 52px); padding:12px; border:0; outline:none; resize:none; background:#0b0b0b; color:#eaeaea; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; font-size:13px; line-height:1.45;"></textarea>
+
+            <div id="memo-source-toast" role="status" aria-live="polite"
+                style="position:absolute; left:50%; bottom:14px; transform:translateX(-50%); background:rgba(20,20,20,.95); color:#fff; border:1px solid rgba(255,255,255,.12); padding:8px 10px; border-radius:10px; font-size:13px; display:none; pointer-events:none; max-width:calc(100% - 24px); text-align:center;">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            const overlay = document.getElementById('memo-source-overlay');
+            const closeBtn = document.getElementById('memo-source-close');
+            const formatEl = document.getElementById('memo-source-format');
+            const textarea = document.getElementById('memo-source-text');
+            const toast = document.getElementById('memo-source-toast');
+
+            function showToast(message) {
+                if (!toast) return;
+                toast.textContent = message;
+                toast.style.display = 'block';
+                clearTimeout(showToast._t);
+                showToast._t = setTimeout(() => {
+                    toast.style.display = 'none';
+                }, 1400);
+            }
+
+            function safeStringify(value) {
+                if (value == null) return '';
+                if (typeof value === 'string') return value;
+                try {
+                    return JSON.stringify(value, null, 2);
+                } catch (e) {
+                    return String(value);
+                }
+            }
+
+            function getSource(format) {
+                if (format === 'markdown' || format === 'html' || format === 'json') {
+                    try {
+                        const fn = window.getMemoEditorSource;
+                        if (typeof fn === 'function') {
+                            return fn(format) || '';
+                        }
+                    } catch (e) { }
+                    return '';
+                }
+
+                if (format === 'ai_in') {
+                    const at = window.__memoEditorLastAIInAt || null;
+                    const doc = window.__memoEditorLastAIInDocumentMarkdown || window.getEditorMarkdown?.() || '';
+                    const messages = window.__memoEditorLastAIInMessages || null;
+                    return safeStringify({
+                        header: 'DOCUMENT',
+                        at,
+                        document_markdown: doc,
+                        payload_messages: messages,
+                    });
+                }
+
+                if (format === 'ai_out') {
+                    const at = window.__memoEditorLastAIOutAt || null;
+                    const out = window.__memoEditorLastAIOut || null;
+                    const extractText = () => {
+                        if (typeof out === 'string') {
+                            return out;
+                        }
+                        if (out && typeof out === 'object') {
+                            if (typeof out.text === 'string') {
+                                return out.text;
+                            }
+                            if (typeof out.ai_out === 'string') {
+                                return out.ai_out;
+                            }
+                            if (typeof out.output === 'string') {
+                                return out.output;
+                            }
+                        }
+                        return null;
+                    };
+                    const text = extractText();
+                    if (text) {
+                        return text;
+                    }
+                    return safeStringify({ at, ai_out: out });
+                }
+
+                return '';
+            }
+
+            function refresh() {
+                if (!formatEl || !textarea) return;
+                const value = getSource(formatEl.value);
+                textarea.value = value || '';
+                textarea.focus();
+                textarea.select();
+            }
+
+            async function copyAll() {
+                if (!textarea) return;
+                const text = textarea.value || '';
+                try {
+                    await navigator.clipboard.writeText(text);
+                    showToast('Copié dans le presse-papiers');
+                } catch (e) {
+                    textarea.focus();
+                    textarea.select();
+                    const ok = document.execCommand && document.execCommand('copy');
+                    showToast(ok ? 'Copié dans le presse-papiers' : 'Copie impossible');
+                }
+            }
+
+            function open() {
+                if (!overlay || !formatEl) return;
+                overlay.style.display = 'block';
+                formatEl.value = 'markdown';
+                refresh();
+            }
+
+            function close() {
+                if (!overlay) return;
+                overlay.style.display = 'none';
+            }
+
+            window.openMemoSourceModal = open;
+            document.addEventListener('memoEditorOpenSourceModal', open);
+
+            closeBtn?.addEventListener('click', close);
+            overlay?.addEventListener('click', (e) => {
+                if (e.target === overlay) close();
+            });
+            formatEl?.addEventListener('change', refresh);
+
+            textarea?.addEventListener('click', () => {
+                textarea.focus();
+                textarea.select();
+                copyAll();
+            });
+
+            textarea?.addEventListener('copy', (e) => {
+                try {
+                    e.preventDefault();
+                    e.clipboardData.setData('text/plain', textarea.value || '');
+                    showToast('Copié dans le presse-papiers');
+                } catch (err) { }
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if (overlay?.style.display === 'block' && e.key === 'Escape') {
+                    close();
+                }
+            });
         })();
     </script>
 </body>
