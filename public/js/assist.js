@@ -1733,6 +1733,12 @@
             return { role: msg.role, content: msg.content };
         }));
         var self = this;
+        var appendBotMessageIfNeeded = function () {
+            if (botMessageAppended) return;
+            botMessageAppended = true;
+            self.conversation.messages.push(botMessage);
+            self.appendMessage(botMessage);
+        };
 
         // Pre-append a placeholder bubble so the user sees activity immediately.
         botMessageAppended = true;
