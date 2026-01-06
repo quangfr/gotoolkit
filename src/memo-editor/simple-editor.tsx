@@ -1,6 +1,7 @@
 import React from 'react';
 import { useEditor, EditorContent, BubbleMenu, Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
+import History from '@tiptap/extension-history';
 import Underline from '@tiptap/extension-underline';
 import Placeholder from '@tiptap/extension-placeholder';
 import Highlight from '@tiptap/extension-highlight';
@@ -94,6 +95,22 @@ const keepSelection = (editor: Editor | null) => {
   toDelete.reverse().forEach(({ from: delFrom, to: delTo }) => {
     editor.chain().deleteRange({ from: delFrom, to: delTo }).run();
   });
+  
+  // Enlever les lignes vides laissées
+  editor.chain().focus().command(({ tr }) => {
+    let nodesToDelete: { from: number; to: number }[] = [];
+    tr.doc.descendants((node, pos) => {
+      // Chercher les paragraphes/blocs vides ou ne contenant que de l'espace blanc
+      if ((node.type.name === 'paragraph' || node.type.name === 'heading') && 
+          node.content.size === 0) {
+        nodesToDelete.push({ from: pos, to: pos + node.nodeSize });
+      }
+    });
+    nodesToDelete.reverse().forEach(({ from: delFrom, to: delTo }) => {
+      tr.delete(delFrom, delTo);
+    });
+    return true;
+  }).run();
 };
 
 const rejectSelection = (editor: Editor | null) => {
@@ -115,46 +132,70 @@ const rejectSelection = (editor: Editor | null) => {
   toDelete.reverse().forEach(({ from: delFrom, to: delTo }) => {
     editor.chain().deleteRange({ from: delFrom, to: delTo }).run();
   });
+  
+  // Enlever les lignes vides laissées
+  editor.chain().focus().command(({ tr }) => {
+    let nodesToDelete: { from: number; to: number }[] = [];
+    tr.doc.descendants((node, pos) => {
+      // Chercher les paragraphes/blocs vides ou ne contenant que de l'espace blanc
+      if ((node.type.name === 'paragraph' || node.type.name === 'heading') && 
+          node.content.size === 0) {
+        nodesToDelete.push({ from: pos, to: pos + node.nodeSize });
+      }
+    });
+    nodesToDelete.reverse().forEach(({ from: delFrom, to: delTo }) => {
+      tr.delete(delFrom, delTo);
+    });
+    return true;
+  }).run();
 };
 
 const keepAllDocument = (editor: Editor | null) => {
   if (!editor) return;
   
-  // Enlever highlight de tout
-  editor.chain().focus().selectAll().run();
-  editor.chain().focus().unsetMark('highlight').run();
-  
-  // Supprimer tous les éléments avec strikethrough
-  let toDelete: { from: number; to: number }[] = [];
-  editor.state.doc.descendants((node, pos) => {
-    if (node.marks.some(m => m.type.name === 'strike')) {
-      toDelete.push({ from: pos, to: pos + node.nodeSize });
-    }
-  });
-  
-  toDelete.reverse().forEach(({ from: delFrom, to: delTo }) => {
-    editor.chain().deleteRange({ from: delFrom, to: delTo }).run();
-  });
-};
-
-const rejectAllDocument = (editor: Editor | null) => {
-  if (!editor) return;
-  
-  // Enlever strikethrough de tout
-  editor.chain().focus().selectAll().run();
-  editor.chain().focus().unsetMark('strike').run();
-  
-  // Supprimer tous les éléments avec highlight
-  let toDelete: { from: number; to: number }[] = [];
-  editor.state.doc.descendants((node, pos) => {
-    if (node.marks.some(m => m.type.name === 'highlight')) {
-      toDelete.push({ from: pos, to: pos + node.nodeSize });
-    }
-  });
-  
-  toDelete.reverse().forEach(({ from: delFrom, to: delTo }) => {
-    editor.chain().deleteRange({ from: delFrom, to: delTo }).run();
-  });
+  // Grouper toutes les opérations en une seule transaction pour l'History
+  editor.chain()
+    .focus()
+    .command(({ tr }) => {
+      // Première passe: enlever highlight et supprimer les strikes
+      const toDelete: { from: number; to: number }[] = [];
+      
+      tr.doc.descendants((node, pos) => {
+        // Enlever highlight
+        if (node.marks.some(m => m.type.name === 'highlight')) {
+          node.marks.forEach(mark => {
+            if (mark.type.name === 'highlight') {
+              tr.removeMark(pos, pos + node.nodeSize, mark.type);
+            }
+          });
+        }
+        // Marquer le strike pour suppression
+        if (node.marks.some(m => m.type.name === 'strike')) {
+          toDelete.push({ from: pos, to: pos + node.nodeSize });
+        }
+      });
+      
+      // Supprimer les nœuds strikethrough
+      toDelete.reverse().forEach(({ from: delFrom, to: delTo }) => {
+        tr.delete(delFrom, delTo);
+      });
+      
+      // Deuxième passe: enlever les lignes vides
+      const nodesToDelete: { from: number; to: number }[] = [];
+      tr.doc.descendants((node, pos) => {
+        if ((node.type.name === 'paragraph' || node.type.name === 'heading') && 
+            node.content.size === 0) {
+          nodesToDelete.push({ from: pos, to: pos + node.nodeSize });
+        }
+      });
+      
+      nodesToDelete.reverse().forEach(({ from: delFrom, to: delTo }) => {
+        tr.delete(delFrom, delTo);
+      });
+      
+      return true;
+    })
+    .run();
 };
 
 const Toolbar = ({ editor }: { editor: Editor }) => {
@@ -423,7 +464,7 @@ const Toolbar = ({ editor }: { editor: Editor }) => {
         >
           <svg width="24" height="24" className="tiptap-button-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M9.00039 3H16.0001C16.5524 3 17.0001 3.44772 17.0001 4C17.0001 4.55229 16.5524 5 16.0001 5H9.00011C8.68006 4.99983 8.36412 5.07648 8.07983 5.22349C7.79555 5.37051 7.55069 5.5836 7.36585 5.84487C7.181 6.10614 7.06155 6.40796 7.01754 6.72497C6.97352 7.04198 7.00623 7.36492 7.11292 7.66667C7.29701 8.18737 7.02414 8.75872 6.50344 8.94281C5.98274 9.1269 5.4114 8.85403 5.2273 8.33333C5.01393 7.72984 4.94851 7.08396 5.03654 6.44994C5.12456 5.81592 5.36346 5.21229 5.73316 4.68974C6.10285 4.1672 6.59256 3.74101 7.16113 3.44698C7.72955 3.15303 8.36047 2.99975 9.00039 3Z" fill="currentColor"></path><path d="M18 13H20C20.5523 13 21 12.5523 21 12C21 11.4477 20.5523 11 20 11H4C3.44772 11 3 11.4477 3 12C3 12.5523 3.44772 13 4 13H14C14.7956 13 15.5587 13.3161 16.1213 13.8787C16.6839 14.4413 17 15.2044 17 16C17 16.7956 16.6839 17.5587 16.1213 18.1213C15.5587 18.6839 14.7956 19 14 19H6C5.44772 19 5 19.4477 5 20C5 20.5523 5.44772 21 6 21H14C15.3261 21 16.5979 20.4732 17.5355 19.5355C18.4732 18.5979 19 17.3261 19 16C19 14.9119 18.6453 13.8604 18 13Z" fill="currentColor"></path></svg>
         </button>
-  <button
+        <button
           className="tiptap-button"
           aria-label="Highlight"
           type="button"
@@ -432,33 +473,18 @@ const Toolbar = ({ editor }: { editor: Editor }) => {
         >
           <svg width="24" height="24" className="tiptap-button-icon" viewBox="0 0 24 24" fill="currentColor"><path fillRule="evenodd" clipRule="evenodd" d="M14.7072 4.70711C15.0977 4.31658 15.0977 3.68342 14.7072 3.29289C14.3167 2.90237 13.6835 2.90237 13.293 3.29289L8.69294 7.89286L8.68594 7.9C8.13626 8.46079 7.82837 9.21474 7.82837 10C7.82837 10.2306 7.85491 10.4584 7.90631 10.6795L2.29289 16.2929C2.10536 16.4804 2 16.7348 2 17V20C2 20.5523 2.44772 21 3 21H12C12.2652 21 12.5196 20.8946 12.7071 20.7071L15.3205 18.0937C15.5416 18.1452 15.7695 18.1717 16.0001 18.1717C16.7853 18.1717 17.5393 17.8639 18.1001 17.3142L22.7072 12.7071C23.0977 12.3166 23.0977 11.6834 22.7072 11.2929C22.3167 10.9024 21.6835 10.9024 21.293 11.2929L16.6971 15.8887C16.5105 16.0702 16.2605 16.1717 16.0001 16.1717C15.7397 16.1717 15.4897 16.0702 15.303 15.8887L10.1113 10.697C9.92992 10.5104 9.82837 10.2604 9.82837 10C9.82837 9.73963 9.92992 9.48958 10.1113 9.30297L14.7072 4.70711ZM13.5858 17L9.00004 12.4142L4 17.4142V19H11.5858L13.5858 17Z" fill="currentColor"></path></svg>
         </button>
-           <div className="tiptap-separator" data-orientation="vertical" role="none"></div>
-      <div role="group" className="tiptap-toolbar-group">
-          {editor && hasMarksInDocument(editor) && (
-          <>
-            <button
-              className="tiptap-button toolbar-action-btn toolbar-keep"
-              aria-label="Garder tout"
-              type="button"
-              title="Garder tout"
-              onClick={() => keepAllDocument(editor)}
-            >
-              ✓
-            </button>
-            <button
-              className="tiptap-button toolbar-action-btn toolbar-reject"
-              aria-label="Annuler tout"
-              type="button"
-              title="Annuler tout"
-              onClick={() => rejectAllDocument(editor)}
-            >
-              ✗
-            </button>
-            
-          </>
+        {editor && hasMarksInDocument(editor) && (
+          <button
+            className="tiptap-button toolbar-action-btn toolbar-keep"
+            aria-label="Garder tout"
+            type="button"
+            title="Garder tout"
+            onClick={() => keepAllDocument(editor)}
+          >
+            ✓
+          </button>
         )}
-        </div>
-</div>
+      </div>
       <div style={{ flex: 1 }}></div>
     </div>
   );
@@ -471,7 +497,12 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
 }) => {
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        history: false,
+      }),
+      History.configure({
+        depth: 100,
+      }),
       TaskList,
       TaskItem,
       Underline,
@@ -536,7 +567,13 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       (window as any).setEditorMarkdown = (markdown: string) => {
         if (typeof markdown !== 'string') return;
         try {
-          const html = marked.parse(markdown, { gfm: true }) as string;
+          // Convert == markers to <mark> HTML before parsing
+          const markdownWithHighlight = markdown.replace(
+            /==(.*?)==/g,
+            '<mark>$1</mark>'
+          );
+          
+          const html = marked.parse(markdownWithHighlight, { gfm: true }) as string;
           if ((editor as any)?.commands?.clearContent) {
             (editor as any).commands.clearContent(true);
           }
@@ -547,9 +584,107 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           console.warn('setEditorMarkdown failed', err);
         }
       };
+
+      // Exposer l'éditeur Tiptap pour le composant flottant chat-inline-editor
+      (window as any).memoEditor = editor;
     }
   }, [editor]);
 
+  // Focuser l'input et vider le contenu quand le tippy-box apparaît
+  // Émettre un événement custom quand la sélection change (pour le composant flottant chat-inline-editor)
+  React.useEffect(() => {
+    if (!editor) return;
+
+    let selectionTimeout: NodeJS.Timeout;
+
+    const handleSelectionChange = () => {
+      const { from, to } = editor.state.selection;
+      
+      // Annuler le timeout précédent
+      clearTimeout(selectionTimeout);
+      
+      // Si pas de sélection, émettre l'événement "pas de sélection"
+      if (from === to) {
+        const event = new CustomEvent('memoEditorSelectionChanged', {
+          detail: { isSelected: false }
+        });
+        document.dispatchEvent(event);
+        return;
+      }
+
+      // Attendre que la sélection soit stable (300ms sans changement)
+      selectionTimeout = setTimeout(() => {
+        // Vérifier que la sélection n'a pas changé
+        const currentSelection = editor.state.selection;
+        if (currentSelection.from === from && currentSelection.to === to) {
+          // Récupérer le texte sélectionné
+          const selectedText = editor.state.doc.textBetween(from, to, ' ');
+
+          // Étendre la sélection au bloc complet (paragraphe, tableau, liste, code block)
+          let blockFrom = from;
+          let blockTo = to;
+          let blockText = selectedText;
+
+          editor.state.doc.nodesBetween(from, to, (node, pos) => {
+            // Trouver le bloc parent (paragraphe, heading, table, code block, list item)
+            if (
+              node.type.name === 'paragraph' ||
+              node.type.name === 'heading' ||
+              node.type.name === 'codeBlock' ||
+              node.type.name === 'table' ||
+              node.type.name === 'listItem' ||
+              node.type.name === 'blockquote'
+            ) {
+              blockFrom = Math.min(blockFrom, pos);
+              blockTo = Math.max(blockTo, pos + node.nodeSize);
+            }
+          });
+
+          // Extraire le texte du bloc complet
+          blockText = editor.state.doc.textBetween(blockFrom, blockTo, '\n').trim();
+
+          // Calculer la position (en bas de la sélection, à gauche du début)
+          try {
+            const coordsStart = editor.view.coordsAtPos(blockFrom);
+            const coordsEnd = editor.view.coordsAtPos(blockTo);
+            
+            // Émettre l'événement custom avec les données du bloc
+            const event = new CustomEvent('memoEditorSelectionChanged', {
+              detail: {
+                isSelected: true,
+                selectionText: selectedText,
+                blockText: blockText,
+                selectionExcerpt: blockText.substring(0, 100) + (blockText.length > 100 ? '…' : ''),
+                positionFrom: blockFrom,
+                positionTo: blockTo,
+                coords: {
+                  top: coordsEnd.bottom + 10,
+                  left: coordsStart.left,
+                  bottom: coordsEnd.bottom,
+                  right: coordsEnd.right,
+                }
+              }
+            });
+            document.dispatchEvent(event);
+          } catch (err) {
+            console.warn('Error getting selection coords:', err);
+          }
+        }
+      }, 300);
+    };
+
+    // Écouter les changements de sélection
+    editor.on('update', handleSelectionChange);
+    editor.on('selectionUpdate', handleSelectionChange);
+
+    return () => {
+      clearTimeout(selectionTimeout);
+      editor.off('update', handleSelectionChange);
+      editor.off('selectionUpdate', handleSelectionChange);
+    };
+  }, [editor]);
+
+  // Fonction pour envoyer à l'IA
   if (!editor) {
     return null;
   }
@@ -558,7 +693,23 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     <div className="simple-editor">
       <Toolbar editor={editor} />
       {editor && (
-        <BubbleMenu editor={editor} tippyOptions={{ duration: 100 }}>
+        <BubbleMenu 
+          editor={editor} 
+          tippyOptions={{ 
+            duration: 100,
+            onHidden: () => {
+              // Ne pas cacher si on clique sur le chat-inline-editor
+              const inlineEditor = document.querySelector('.chat-inline-editor');
+              if (inlineEditor?.contains(document.activeElement)) {
+                return false;
+              }
+            }
+          }}
+          shouldShow={({ editor: ed }) => {
+            // Garder le menu ouvert même si le focus est sur le chat-inline-editor
+            return ed.view.state.selection.from !== ed.view.state.selection.to;
+          }}
+        >
           <div className="bubble-menu">
             {(hasMarkInSelection(editor, 'highlight') || hasMarkInSelection(editor, 'strike')) && (
               <>
@@ -581,6 +732,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           </div>
         </BubbleMenu>
       )}
+      
       <EditorContent editor={editor} />
     </div>
   );

@@ -857,12 +857,33 @@
         this.scrollToBottom();
     };
 
-    AssistSidebar.prototype.appendMessage = function (message) {
+    AssistSidebar.prototype.appendMessage = function (message, options) {
+        options = options || {};
         if (!this.messagesEl) return;
         var wrapper = document.createElement("div");
         wrapper.className = "chat-message chat-message--" + message.role;
+
+        // Stocker le selectionExcerpt dans le message pour la persistance
+        if (message.role === "user" && options.selectionExcerpt) {
+            message.selectionExcerpt = options.selectionExcerpt;
+        }
+
+        // Créer un conteneur flex pour le prepend et le bubble
+        var contentWrapper = document.createElement("div");
+        contentWrapper.className = "chat-content-wrapper";
+
+        // Ajouter le prepend pour les messages utilisateurs avec contexte de sélection
+        if (message.role === "user" && (options.selectionExcerpt || message.selectionExcerpt)) {
+            var prepend = document.createElement("div");
+            prepend.className = "chat-prepend";
+            prepend.textContent = "↪︎ " + (options.selectionExcerpt || message.selectionExcerpt);
+            contentWrapper.appendChild(prepend);
+        }
+
         var bubble = document.createElement("div");
         bubble.className = "chat-bubble";
+        contentWrapper.appendChild(bubble);
+        wrapper.appendChild(contentWrapper);
 
         var content = document.createElement("div");
         content.className = "chat-content";
@@ -889,7 +910,6 @@
             bubble.appendChild(attachmentList);
         }
 
-        wrapper.appendChild(bubble);
         this.messagesEl.appendChild(wrapper);
         var entry = {
             wrapper: wrapper,
@@ -4407,7 +4427,95 @@
         }
     };
 
+    // Fonction pour envoyer un message inline du memo-editor
+    // Remplace SEULEMENT la sélection en cours, pas tout le document
+    async function sendInlineEditToAssist(options) {
+        const { payload, selectionExcerpt, selectionPos, editor } = options;
+
+        // 📤 Console log du payload envoyé
+        console.log('📤 [Memo Inline] Payload envoyé à l\'IA:', payload);
+
+        const contentMatch = payload.messages?.[0]?.content;
+        const docMatch = contentMatch?.match(/DOCUMENT:\n([\s\S]*?)\n\nSELECTION/);
+        const selMatch = contentMatch?.match(/SELECTION:\n([\s\S]*?)\n\nASK/);
+        const askMatch = contentMatch?.match(/ASK:\n([\s\S]*)$/);
+
+        console.log('   - DOCUMENT length:', docMatch?.[1]?.length || 'N/A', 'chars');
+        console.log('   - SELECTION:', selMatch?.[1] || 'N/A');
+        console.log('   - ASK:', askMatch?.[1] || 'N/A');
+
+        try {
+            const askContent = askMatch?.[1]?.trim() || '';
+            const assistInstance = window.GoToolkitAssistInstance;
+
+            // Créer un message utilisateur avec contexte de sélection
+            const userMessage = createMessage('user', askContent);
+            if (assistInstance) {
+                assistInstance.conversation.messages.push(userMessage);
+                // Afficher avec contexte de sélection via la nouvelle signature d'appendMessage
+                assistInstance.appendMessage(userMessage, {
+                    selectionExcerpt: selectionExcerpt
+                });
+            }
+
+            // Créer et afficher un message bot avec loading indicator
+            const botMessage = createMessage('bot', '...');
+            botMessage.references = [];
+            botMessage.suggestions = [];
+
+            if (assistInstance) {
+                assistInstance.conversation.messages.push(botMessage);
+                assistInstance.appendMessage(botMessage);
+                assistInstance.persist();
+            }
+
+            // Envoyer à l'IA via GoToolkitIA
+            if (window.GoToolkitIA?.chatCompletion) {
+                const response = await window.GoToolkitIA.chatCompletion({
+                    payload,
+                    endpointType: 'responses',
+                });
+
+                // 📥 Console log de la réponse reçue en JSON
+                console.log('📥 [Chat Inline] Réponse reçue de l\'IA (JSON):', JSON.stringify(response, null, 2));
+
+                // Extraire le contenu de la réponse (answer uniquement)
+                let responseContent = null;
+                if (response && response.answer) {
+                    if (typeof response.answer === 'string') {
+                        responseContent = response.answer;
+                    } else if (typeof response.answer.content === 'string') {
+                        responseContent = response.answer.content;
+                    }
+                }
+
+                botMessage.content = responseContent;
+
+                if (assistInstance) {
+                    assistInstance.updateBotMessage(botMessage);
+                    assistInstance.persist();
+                }
+
+                // Traiter la réponse: remplacer SEULEMENT la sélection en cours
+                if (editor && selectionPos && responseContent) {
+                    // Utiliser le chain de commandes Tiptap pour remplacer juste la sélection
+                    editor
+                        .chain()
+                        .focus()
+                        .deleteRange({ from: selectionPos.from, to: selectionPos.to })
+                        .insertContent(responseContent)
+                        .run();
+
+                    console.log('   ✅ Sélection remplacée. Reste du document inchangé.');
+                }
+            }
+        } catch (error) {
+            console.error('❌ [Memo Inline] Erreur lors de l\'envoi à l\'IA:', error);
+        }
+    }
+
+    // Exposer la fonction globalement
+    global.sendInlineEditToAssist = sendInlineEditToAssist;
+
     global.GoToolkitAssist = global.GoToolkitAssist || GoToolkitAssist;
 })(typeof window !== "undefined" ? window : this);
-this.speechRecognition = null;
-this.isListening = false;

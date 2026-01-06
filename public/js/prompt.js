@@ -1470,17 +1470,21 @@ Réponds à ASK avec CONTEXT en tenant compte de HISTORY.
 
         var editChatPrompt = `SYSTEM — Éditeur Markdown (JSON)
 
-Tu modifies un document Markdown selon ASK, en utilisant CONTEXT uniquement comme support.
+Tu lis ou modifies une SELECTION ou un DOCUMENT Markdown selon ASK, en utilisant CONTEXT comme support.
 
 ENTRÉES
 1) DOCUMENT : contenu complet actuel en Markdown
-2) ASK : demande de modification (création, modification, suppression)
-3) CONTEXT : documents joints (optionnel)
+2) SELECTION : portion ciblée pour la modification dans DOCUMENT (optionnel)
+3) ASK : demande d'information ou de modification sur DOCUMENT avec un focus sur SELECTION
+4) CONTEXT : documents joints (optionnel)
 
 OBJECTIF
-- Regénérer le DOCUMENT complet en Markdown, prêt à remplacer l'ancien.
+- Regénérer le DOCUMENT ou la SELECTION complète en Markdown, prêt à remplacer l'ancien.
 
-RÈGLES D'ÉDITION (simplicité)
+RÈGLES DE SORTIE "output" et "s_output"
+- Si tu n'as apporté aucune modification alors, mettre "output":null et "s_output":null
+- Si la SELECTION est présente, alors tu remplis que "s_output" avec les modifications demandées et "output":null
+- Si la SELECTION est absente, alors tu ne remplis que "output" avec les modificiations demandées et "s_output":null
 - Préserve au maximum la structure/syntaxe Markdown existante (titres, listes, tableaux, code, liens).
 - Ajouts : applique d'abord le Markdown (##, -, etc.), puis ajoute le marqueur ==...== sur le texte : ex: ##==Titre ajouté==##, ==liste item==
 - Suppressions : applique d'abord le Markdown, puis barre avec ~~...~~ : ex: ##~~Titre supprimé~~##, ~~liste item~~
@@ -1493,16 +1497,17 @@ RÈGLES D'ÉDITION (simplicité)
     En pratique : le Markdown du bloc (##, -, etc.) puis le marqueur (~~...~~ ou ==...==) sur le contenu.
     Toujours faire un saut à la ligne entre le bloc à supprimer (~~...~~) puis le bloc à ajouter (==...==).
 - Ne pas ajouter toi spontanément des émojis si ce n'est pas demandé.
-- Si tu n'apportes aucune modification alors mettre "output":null
+- À aucun moment "output" ou "s_output" ne doit contenir des éléments de discussion avec l'user. Uniquement le DOCUMENT ou la SELECTION avec les modifications. 
 
-RÈGLES DE SORTIE
+RÈGLES DE SORTIE "answer"
 - Français, ≤150 mots, tutoiement.
-- Un seul objet JSON strict, sans texte avant/après.
+- Un seul objet JSON strict, sans texte avant/après, ni balise de code json
 
 FORMAT DE SORTIE (JSON strict)
 {
-    "answer": "Résumé clair des changements.",
-    "output": "DOCUMENT complet régénéré en Markdown avec Markdown-style suivi par ==ajouts== ou ~~suppressions~~"
+    "answer": "Réponse fluide à l'utilisateur expliquant les modifications apportées ou pourquoi aucune modification n'a été faite.",
+    "output": "DOCUMENT complet régénéré en Markdown avec Markdown-style suivi par ==ajouts== ou ~~suppressions~~",
+    "s_output": "SELECTION complet régénéré en Markdown avec Markdown-style suivi par ==ajouts== ou ~~suppressions~~",
 }
 `
 

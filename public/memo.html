@@ -379,6 +379,20 @@
     <input type="file" id="importJsonInput" accept="application/json" style="display:none">
     <div id="chat-root"></div>
 
+    <!-- Floating Chat Inline Editor Component -->
+    <div id="chat-inline-editor-container" style="display: none;">
+        <div id="chat-inline-editor" class="chat-inline-editor">
+            <div class="chat-inline-editor__wrapper">
+                <textarea id="chat-inline-editor-input" class="chat-inline-editor__input"
+                    placeholder="Que veux-tu faire ?"></textarea>
+                <button id="chat-inline-editor-btn" class="chat-inline-editor__btn" type="button"
+                    title="Envoyer à l'IA">
+                    ↩︎
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         window.GO_TOOLKIT_SHARE_API_URL =
             window.GO_TOOLKIT_SHARE_API_URL || "https://share.gotoolkit.workers.dev/";
@@ -1493,6 +1507,183 @@
             if (!chatRoot || !window.GoToolkitAssist) return;
             const chatInstance = window.GoToolkitAssist.mount(chatRoot);
             window.GoToolkitAssistInstance = chatInstance;
+        })();
+    </script>
+
+    <!-- Floating Chat Inline Editor -->
+    <script>
+        (function () {
+            // Éléments DOM
+            const container = document.getElementById('chat-inline-editor-container');
+            const editor = document.getElementById('chat-inline-editor');
+            const input = document.getElementById('chat-inline-editor-input');
+            const btn = document.getElementById('chat-inline-editor-btn');
+
+            // Créer l'overlay de sélection
+            const selectionOverlay = document.createElement('div');
+            selectionOverlay.id = 'chat-selection-overlay';
+            selectionOverlay.style.cssText = `
+                position: fixed;
+                background: rgba(255, 235, 59, 0.15);
+                border: 1px solid rgba(255, 235, 59, 0.3);
+                pointer-events: none;
+                display: none;
+                z-index: 998;
+                border-radius: 4px;
+            `;
+            document.body.appendChild(selectionOverlay);
+
+            // État
+            let currentSelection = null;
+            let currentCoords = null;
+            let currentBlockCoords = null;
+
+            // Écouter l'événement custom du memo-editor
+            document.addEventListener('memoEditorSelectionChanged', (e) => {
+                const { detail } = e;
+
+                if (!detail.isSelected) {
+                    // Pas de sélection - cacher le composant et l'overlay
+                    container.style.display = 'none';
+                    selectionOverlay.style.display = 'none';
+                    currentSelection = null;
+                    currentCoords = null;
+                    currentBlockCoords = null;
+                    return;
+                }
+
+                // Mettre à jour l'état avec le bloc complet
+                currentSelection = {
+                    text: detail.selectionText,
+                    blockText: detail.blockText || detail.selectionText,
+                    excerpt: detail.selectionExcerpt,
+                    from: detail.positionFrom,
+                    to: detail.positionTo,
+                };
+                currentCoords = detail.coords;
+                
+                // Stocker les coords du bloc pour l'overlay
+                try {
+                    const editorInstance = window.memoEditor;
+                    if (editorInstance) {
+                        const blockStart = editorInstance.view.coordsAtPos(detail.positionFrom);
+                        const blockEnd = editorInstance.view.coordsAtPos(detail.positionTo);
+                        currentBlockCoords = {
+                            top: blockStart.top,
+                            left: blockStart.left,
+                            width: blockEnd.right - blockStart.left,
+                            height: blockEnd.bottom - blockStart.top,
+                        };
+                    }
+                } catch (err) {
+                    console.warn('Error getting block coords:', err);
+                }
+
+                // Positionner et afficher le composant + overlay
+                positionEditor();
+                positionOverlay();
+                container.style.display = 'block';
+                selectionOverlay.style.display = 'block';
+                // Pas de focus automatique - l'utilisateur clique quand il est prêt
+            });
+
+            // Positionner le composant
+            function positionEditor() {
+                if (!currentCoords) return;
+
+                editor.style.position = 'fixed';
+                editor.style.top = (currentCoords.top + 10) + 'px';
+                editor.style.left = (currentCoords.left - 40) + 'px';
+                editor.style.zIndex = '1000';
+            }
+
+            // Envoyer le message à l'IA
+            async function sendMessage() {
+                if (!input.value.trim() || !currentSelection) return;
+
+                try {
+                    // Récupérer l'éditeur Tiptap
+                    const editorInstance = window.memoEditor;
+                    if (!editorInstance) {
+                        console.error('Éditeur Tiptap non trouvé');
+                        return;
+                    }
+
+                    // S'assurer que le chat est ouvert
+                    const assistSidebar = window.GoToolkitAssistInstance;
+                    if (assistSidebar && !assistSidebar.isOpen) {
+                        assistSidebar.open?.();
+                    }
+
+                    // Récupérer le contenu du document
+                    const documentContent = (window.getEditorMarkdown?.() ||
+                        editorInstance.getHTML?.() ||
+                        '');
+
+                    // Construire le payload
+                    const payload = {
+                        system: window.GoToolkitChatPrompt?.PRESETS?.edit?.prompt || 'Éditer le texte fourni.',
+                        messages: [
+                            {
+                                role: 'user',
+                                content: `DOCUMENT:\n${documentContent}\n\nSELECTION:\n${currentSelection.text}\n\nASK:\n${input.value}`,
+                            },
+                        ],
+                        stream: false,
+                    };
+
+                    // 📤 Afficher le payload envoyé en console
+                    console.log('📤 [Chat Inline] Payload envoyé:', JSON.stringify(payload, null, 2));
+
+                    // ✨ Cacher immédiatement le composant (avant d'attendre la réponse)
+                    const savedExcerpt = currentSelection.excerpt;
+                    const savedPos = { from: currentSelection.from, to: currentSelection.to };
+                    input.value = '';
+                    container.style.display = 'none';
+                    currentSelection = null;
+                    currentCoords = null;
+
+                    // Appeler la fonction sendInlineEditToAssist
+                    if (window.sendInlineEditToAssist) {
+                        await window.sendInlineEditToAssist({
+                            payload,
+                            selectionExcerpt: savedExcerpt,
+                            selectionPos: savedPos,
+                            editor: editorInstance,
+                        });
+                    }
+                } catch (error) {
+                    console.error('Erreur lors de l\'envoi:', error);
+                }
+            }
+
+            // Événements
+            btn.addEventListener('click', sendMessage);
+            input.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                setTimeout(() => input.focus(), 0);
+            });
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                } else if (e.key === 'Enter' && e.shiftKey) {
+                    // SHIFT+ENTER insère une nouvelle ligne (comportement par défaut)
+                    e.preventDefault();
+                    const start = input.selectionStart;
+                    const end = input.selectionEnd;
+                    input.value = input.value.substring(0, start) + '\n' + input.value.substring(end);
+                    input.selectionStart = input.selectionEnd = start + 1;
+                }
+            });
+
+            // Exposer la fonction pour réinitialiser si nécessaire
+            window.closeMemoInlineEditor = function () {
+                container.style.display = 'none';
+                input.value = '';
+                currentSelection = null;
+                currentCoords = null;
+            };
         })();
     </script>
 </body>
