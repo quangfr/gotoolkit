@@ -1,10 +1,10 @@
 ## 2026-01-06
 - Module [Memo](/memo) : création de notes assistée IA
-- Mode édition avec sélection
+- Mode édition avec sélection et contexte
 
 ## 2026-01-04
 - Module [Assist](/#assist) : exploration de documents assistée IA
-- Affichage des sources, prévisualisation de fichiers 
+- Prévisualisation, corpus et références 
 - Moteur IA `gpt-oss-20b` plus rapide et sans rétention de données
 
 ## 2025-12-29
