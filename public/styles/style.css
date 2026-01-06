@@ -1005,8 +1005,10 @@ label {
 
 .gt-template-modal__dialog {
   width: min(900px, 96vw);
-  max-height: 90vh;
-  overflow-y: auto;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
 }
 
 .gt-template-modal__list {
@@ -1014,7 +1016,8 @@ label {
   grid-template-columns: repeat(3, minmax(240px, 1fr));
   gap: 12px;
   margin: 10px 0 12px;
-  justify-items: flex-start;
+  overflow-y: auto;
+  max-height: 60vh;
 }
 
 .gt-template-card {
@@ -1028,6 +1031,8 @@ label {
   cursor: pointer;
   transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.06s ease;
   min-height: 84px;
+  width: 100%;
+  text-align: left;
 }
 
 .gt-template-card:hover {

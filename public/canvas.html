@@ -33,6 +33,45 @@
             margin-left: auto;
         }
 
+        .gt-template-modal__list {
+            max-height: 320px;
+            overflow-y: auto;
+            display: grid;
+            gap: 10px;
+            padding: 4px;
+        }
+
+        .gt-template-card {
+            background: #ffffff;
+            border: 1px solid #ebe0d1;
+            border-radius: 14px;
+            padding: 12px 14px;
+            box-shadow: 0 8px 30px rgba(15, 23, 42, 0.08);
+            cursor: pointer;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .gt-template-card--selected {
+            border-color: #2a7a57;
+            box-shadow: 0 0 0 3px rgba(42, 122, 87, 0.25);
+        }
+
+        .gt-template-card h4 {
+            margin: 0 0 6px;
+            font-size: 16px;
+            line-height: 1.3;
+        }
+
+        .gt-template-card p {
+            margin: 0;
+            font-size: 13px;
+            color: #4b5563;
+            white-space: pre-line;
+        }
+
         .menu-trigger {
             position: relative;
             display: inline-flex;
@@ -5856,10 +5895,12 @@
                 row.tabIndex = 0;
 
                 const title = document.createElement("h4");
-                title.textContent = template.name;
+                const titleText = template.name || template.label || template.defaultTitle || `Modèle ${template.id || ""}`;
+                title.textContent = titleText;
                 const desc = document.createElement("p");
-                const rawDesc = template.description ||
-                    `Colonnes : ${template.columns.map(col => col.label).join(" – ")} | Lignes : ${template.sections.map(sec => sec.label).join(" – ")}`;
+                const rawDesc = (typeof template.description === "string" && template.description.trim())
+                    ? template.description
+                    : template.label || "Modèle libre";
                 desc.innerHTML = escapeHtml(rawDesc).replace(/\n/g, "<br>");
 
                 row.append(title, desc);

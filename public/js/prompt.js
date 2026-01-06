@@ -14,17 +14,20 @@
                 "\n" +
                 "### Listes\n" +
                 "- Utilise des puces (-) pour les idées, et complète chaque item par 1–2 phrases contextuelles.\n" +
-                "- Pour les workflows, préférer des listes numérotées (1., 2., 3.) avec action-clé associée.\n+                "\n" +
+                "- Pour les workflows, préférer des listes numérotées (1., 2., 3.) avec action-clé associée.\n" +
+                "\n" +
                 "### Tâches (cases à cocher)\n" +
                 "- [ ] Mentionne le responsable et l'échéance sur la même ligne pour garder la traçabilité.\n" +
-                "- [x] Ajoute un commentaire sur le résultat ou le suivi afin de capitaliser sur les actions closes.\n+                "\n" +
+                "- [x] Ajoute un commentaire sur le résultat ou le suivi afin de capitaliser sur les actions closes.\n" +
+                "\n" +
                 "## Tableaux\n" +
                 "| Sujet | Statut | Priorité | Détails |\n" +
                 "| --- | --- | --- | --- |\n" +
                 "| Rédaction | En cours | Haute | Définir le message clé proposé à l'équipe marketing. |\n" +
                 "| Relecture | À faire | Moyenne | Vérifier les références et les liens partagés. |\n" +
                 "- Ajoute une colonne « Détails » ou « Prochaines étapes » pour expliciter le suivi.\n" +
-                "- Tu peux imbriquer un mini-tableau ou une liste dans une cellule si ça apporte de la clarté.\n+                "\n" +
+                "- Tu peux imbriquer un mini-tableau ou une liste dans une cellule si ça apporte de la clarté.\n" +
+                "\n" +
                 "## Citations\n" +
                 "> La simplicité est la sophistication suprême.\n" +
                 "> — Léonard de Vinci\n" +
@@ -466,7 +469,7 @@
             id: "default",
             name: "🕊️ Générique",
             label: "Modèle générique pour structurer tes idées",
-            defaultTitle: "🕊️ Générique",
+            defaultTitle: "Générique",
             description:
                 "Modèle générique pour structurer tes idées.\n",
             columns: [
