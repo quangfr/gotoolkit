@@ -4434,28 +4434,56 @@
         const assistInstance = window.GoToolkitAssistInstance;
 
         if (!assistInstance) {
-            console.error('❌ [Chat Inline] Assist instance not found');
             return;
         }
 
-        // 📤 Console log du payload envoyé
-        console.log('📤 [Chat Inline] Payload envoyé:', JSON.stringify(payload, null, 2));
+        let botMessage = null;
 
         try {
-            // 1. Extraire le contenu demandé par l'utilisateur
-            const contentMatch = payload.messages?.[0]?.content;
-            const askMatch = contentMatch?.match(/ASK:\n([\s\S]*)$/);
-            const askContent = askMatch?.[1]?.trim() || '';
+            // 1. Normaliser le payload (memo.html fournit souvent `payload.system`, mais
+            //    le client Responses attend un message `role: system` / instructions).
+            const requestPayload = Object.assign({}, payload || {});
+            const requestMessages = Array.isArray(requestPayload.messages)
+                ? requestPayload.messages.slice()
+                : [];
 
-            // 2. Afficher le message utilisateur dans le chat
+            const systemPrompt = (typeof requestPayload.system === 'string')
+                ? requestPayload.system
+                : '';
+
+            const hasSystemMessage = requestMessages.some(m => m && m.role === 'system');
+            if (!hasSystemMessage && systemPrompt && systemPrompt.trim()) {
+                requestMessages.unshift({ role: 'system', content: systemPrompt });
+            }
+            requestPayload.messages = requestMessages;
+            // Avoid leaking non-standard field downstream.
+            delete requestPayload.system;
+
+            // 2. Extraire le ASK pour afficher le message utilisateur dans le chat.
+            //    (Cherche le dernier message user qui contient ASK:)
+            let askContent = '';
+            for (let i = requestMessages.length - 1; i >= 0; i--) {
+                const msg = requestMessages[i];
+                if (!msg || msg.role !== 'user' || typeof msg.content !== 'string') continue;
+                const match = msg.content.match(/ASK:\n([\s\S]*)$/);
+                if (match && match[1]) {
+                    askContent = match[1].trim();
+                    break;
+                }
+                if (!askContent) {
+                    askContent = msg.content.trim();
+                }
+            }
+
+            // 3. Afficher le message utilisateur dans le chat
             const userMessage = createMessage('user', askContent);
             assistInstance.conversation.messages.push(userMessage);
             assistInstance.appendMessage(userMessage, {
                 selectionExcerpt: selectionExcerpt
             });
 
-            // 3. Créer et afficher le message bot avec loading "..."
-            const botMessage = createMessage('bot', '...');
+            // 4. Créer et afficher le message bot avec loading "..."
+            botMessage = createMessage('bot', '...');
             botMessage.references = [];
             botMessage.suggestions = [];
 
@@ -4463,89 +4491,151 @@
             assistInstance.appendMessage(botMessage);
             assistInstance.persist();
 
-            // 4. Appeler l'IA
-            const response = await window.GoToolkitIA?.chatCompletion({
-                payload,
+            // 5. Appeler l'IA
+            const rawResponse = await window.GoToolkitIA?.chatCompletion({
+                payload: requestPayload,
                 endpointType: 'responses',
             });
 
-            // 📥 Console log du payload complet reçu de l'IA
-            console.log(JSON.stringify(response, null, 2));
-
-            if (!response) {
-                console.error('❌ [Chat Inline] Aucune réponse de l\'IA');
+            if (!rawResponse) {
                 return;
             }
 
-            // 5. Parser la réponse
-            const answerContent = response.answer || 'Aucune modification apportée.';
-            const sOutput = response.s_output;
-            const output = response.output;
+            // 6. Normaliser la réponse et extraire les métadonnées d'édition
+            let editMetadata = null;
+            let responseObj = null;
+            let rawTextFallback = '';
 
-            // 📊 Console log du parsing
-            console.log('📊 [Chat Inline] Parsing:', { answer: answerContent, output, s_output: sOutput });
-
-            // 6. Mettre à jour le message bot avec la réponse (answer)
-            botMessage.content = answerContent;
-            console.log('✅ [Chat Inline] Message bot mis à jour avec answer');
-
-            if (assistInstance.messageNodes[botMessage.id]?.contentEl) {
-                assistInstance.messageNodes[botMessage.id].contentEl.innerHTML = assistInstance.renderBotContent(botMessage);
-                assistInstance.syncBotExtras?.(assistInstance.messageNodes[botMessage.id], botMessage);
-                assistInstance.scrollToBottom?.();
+            if (typeof rawResponse === 'string') {
+                try {
+                    responseObj = JSON.parse(rawResponse);
+                } catch (e) {
+                    // Réponse texte brute (pas de JSON)
+                    rawTextFallback = rawResponse.trim();
+                }
+            } else if (rawResponse && typeof rawResponse === 'object') {
+                responseObj = rawResponse;
             }
 
-            // 7. Mettre à jour l'éditeur selon le type de remplacement
-            if (editor) {
-                if (sOutput && sOutput.text) {
-                    // Cas SELECTION : remplacer les lignes [start, end[
-                    const startLine = sOutput.start;
-                    const endLine = sOutput.end;
-
-                    console.log(`📝 [Chat Inline] Mode: Remplacement de la sélection (lignes ${startLine}-${endLine})`);
-
-                    // Obtenir le contenu du document ligne par ligne
-                    const docContent = window.getEditorMarkdown?.() || editor.getHTML?.() || '';
-                    const lines = docContent.split('\n');
-
-                    // Reconstruire le document avec les lignes remplacées
-                    const newLines = [
-                        ...lines.slice(0, startLine),
-                        ...sOutput.text.split('\n'),
-                        ...lines.slice(endLine)
-                    ];
-                    const newContent = newLines.join('\n');
-
-                    editor
-                        .chain()
-                        .focus()
-                        .selectAll()
-                        .deleteSelection()
-                        .insertContent(newContent)
-                        .run();
-
-                    console.log(`✅ [Chat Inline] Sélection remplacée (lignes ${startLine}-${endLine})`);
-                } else if (output && output.text) {
-                    // Cas DOCUMENT entier
-                    console.log('📝 [Chat Inline] Mode: Remplacement du document entier');
-
-                    editor
-                        .chain()
-                        .focus()
-                        .selectAll()
-                        .deleteSelection()
-                        .insertContent(output.text)
-                        .run();
-
-                    console.log('✅ [Chat Inline] Document entier remplacé');
+            // Certaines intégrations enveloppent le JSON dans `.content` (string ou objet).
+            let payloadObj = responseObj;
+            if (payloadObj && typeof payloadObj === 'object') {
+                if (typeof payloadObj.content === 'string') {
+                    const embedded = tryParseJsonString(payloadObj.content.trim());
+                    if (embedded && typeof embedded === 'object') {
+                        payloadObj = embedded;
+                    }
+                } else if (payloadObj.content && typeof payloadObj.content === 'object') {
+                    payloadObj = payloadObj.content;
                 }
             }
 
-            // 8. Persister la conversation
+            if (payloadObj && typeof payloadObj === 'object') {
+                const sOutput = payloadObj.s_output || payloadObj.sOutput || null;
+                const output = payloadObj.output || null;
+                if (sOutput || output) {
+                    editMetadata = { sOutput, output };
+                }
+            }
+
+            // 7. Parser le contenu pour le chat depuis un JSON “sanitisé” (sans output/s_output)
+            //    Objectif: afficher l'answer dans le chat, garder output/s_output uniquement pour l'édition.
+            let parsedResponse = null;
+            if (payloadObj && typeof payloadObj === 'object') {
+                const chatObj = Object.assign({}, payloadObj);
+                delete chatObj.s_output;
+                delete chatObj.sOutput;
+                delete chatObj.output;
+                parsedResponse = assistInstance.parseAssistantResponse(JSON.stringify(chatObj));
+            } else if (rawTextFallback) {
+                parsedResponse = assistInstance.parseAssistantResponse(rawTextFallback);
+            } else {
+                parsedResponse = {
+                    content: 'Aucune modification apportée.',
+                    references: [],
+                    suggestions: [],
+                    operations: []
+                };
+            }
+
+            if (!parsedResponse || typeof parsedResponse !== 'object') {
+                parsedResponse = {
+                    content: rawTextFallback || 'Aucune modification apportée.',
+                    references: [],
+                    suggestions: [],
+                    operations: []
+                };
+            }
+
+            // 8. Mettre à jour le message bot avec les données parsées (UNIQUEMENT le contenu pour le chat)
+            botMessage.content = parsedResponse.content;
+            botMessage.references = parsedResponse.references || [];
+            botMessage.suggestions = parsedResponse.suggestions || [];
+            botMessage.operations = parsedResponse.operations || [];
+
+            // Stocker les métadonnées d'édition dans le message (PAS affichées dans le chat)
+            botMessage._editMetadata = editMetadata;
+            // 9. Rendre le message dans le DOM
+            const messageEntry = assistInstance.messageNodes[botMessage.id];
+            if (!messageEntry) {
+                return;
+            }
+
+            const contentEl = messageEntry.contentEl || messageEntry.querySelector?.('.chat-message-content');
+            if (contentEl) {
+                contentEl.innerHTML = assistInstance.renderBotContent(botMessage);
+                assistInstance.syncBotExtras?.(messageEntry, botMessage);
+                assistInstance.scrollToBottom?.();
+            }
+
+            // 10. Mettre à jour l'éditeur selon le type de remplacement (continue dans le pipe)
+            if (editor && editMetadata) {
+                if (editMetadata.sOutput && typeof editMetadata.sOutput.text === 'string') {
+                    // Cas SELECTION : remplacer les lignes [start, end[
+                    const startLine = Number(editMetadata.sOutput.start);
+                    const endLine = Number(editMetadata.sOutput.end);
+                    if (Number.isFinite(startLine) && Number.isFinite(endLine) && startLine >= 0 && endLine >= startLine) {
+                        const docMarkdown = window.getEditorMarkdown?.() || '';
+                        const lines = docMarkdown.split('\n');
+                        const newLines = [
+                            ...lines.slice(0, startLine),
+                            ...editMetadata.sOutput.text.split('\n'),
+                            ...lines.slice(endLine)
+                        ];
+                        const newMarkdown = newLines.join('\n');
+
+                        if (typeof window.setEditorMarkdown === 'function') {
+                            window.setEditorMarkdown(newMarkdown);
+                        } else {
+                            editor
+                                .chain()
+                                .focus()
+                                .selectAll()
+                                .deleteSelection()
+                                .insertContent(newMarkdown)
+                                .run();
+                        }
+                    }
+                } else if (typeof editMetadata.output === 'string' && editMetadata.output.trim()) {
+                    // Cas DOCUMENT entier
+                    if (typeof window.setEditorMarkdown === 'function') {
+                        window.setEditorMarkdown(editMetadata.output);
+                    } else {
+                        editor
+                            .chain()
+                            .focus()
+                            .selectAll()
+                            .deleteSelection()
+                            .insertContent(editMetadata.output)
+                            .run();
+                    }
+                }
+            }
+
+            // 11. Persister la conversation
             assistInstance.persist?.();
 
         } catch (error) {
-            console.error('❌ [Chat Inline] Erreur lors de l\'envoi à l\'IA:', error);
             // Mettre à jour le message bot avec l'erreur
             if (botMessage) {
                 botMessage.content = '⚠️ Une erreur s\'est produite.';

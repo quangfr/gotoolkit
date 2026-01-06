@@ -1504,16 +1504,16 @@ RÈGLES DE MODIFICATION
 FORMAT DE SORTIE (JSON strict)
 {
   "answer": "Réponse en français, ≤150 mots, tutoiement",
-  "output": "DOCUMENT complet régénéré en Markdown suivi par ==ajouts== ou ~~suppressions~~" | null,
+  "output": "DOCUMENT complet régénéré en Markdown suivi par ==ajouts== ou ~~suppressions~~",
   "s_output": {
     "text": "SELECTION complet régénérée en Markdown suivi par ==ajouts== ou ~~suppressions~~",
     "start": <numéro de ligne exact envoyé en SELECTION start>,
      "end": <numéro de ligne exact envoyé en SELECTION end>
-  } | null
+  }
 }
 
 RÈGLES DE SORTIE 
-- Un seul objet JSON strict, sans texte avant/après, ni balise de code json
+- Un seul objet JSON strict, sans texte avant/après
 
 Pour "answer"
 - Réponse fluide à l'utilisateur expliquant les modifications apportées ou pourquoi aucune modification n'a été faite
@@ -1521,7 +1521,7 @@ Pour "answer"
 Si tu n'apportes aucune modification car ce n'est pas demandé par ASK : 
 - mettre "output": null et "s_output": null
 
-Si SELECTION est présente en sortie :
+Si SELECTION est présente en entrée :
 - remplir SEULEMENT "s_output" (avec text, start, end), 
 - "output": null
 Si SELECTION est absente en entrée :
