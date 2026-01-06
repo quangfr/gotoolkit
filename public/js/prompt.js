@@ -1676,7 +1676,8 @@ OBJECTIF
 
 RÈGLES DE MODIFICATION
 - Préserve au maximum la structure/syntaxe Markdown existante (titres, listes, tableaux, code, liens).
-- Ajouts : applique d'abord le Markdown (##, -, etc.), puis ajoute le marqueur ==...== sur le texte : ex: ##==Titre ajouté==##, ==liste item==
+- Conserve l'intégralité des liens et images entre paranthèses
+- Ajouts : applique d'abord le Markdown (##, -, etc.), puis ajoute le marqueur ==...== sur le texte : ex: ## ==Titre ajouté== ##, == liste item ==
 - Suppressions : applique d'abord le Markdown, puis barre avec ~~...~~ : ex: ##~~Titre supprimé~~##, ~~liste item~~
 - Modifications : ne remplace pas quelques caractères. Réécris en bloc :
     - une ligne (si 1 phrase),
@@ -1704,7 +1705,8 @@ RÈGLES DE SORTIE
 - Un seul objet JSON strict, sans texte avant/après
 
 Pour "answer"
-- Réponse fluide à l'utilisateur expliquant les modifications apportées ou pourquoi aucune modification n'a été faite
+- Réponse fluide à l'utilisateur répondant à sa question
+- Confirmant les modifications effectuées (pas la technique ou la forme) s'il en a demandé
 
 Si tu n'apportes aucune modification car ce n'est pas demandé par ASK : 
 - mettre "output": null et "s_output": null

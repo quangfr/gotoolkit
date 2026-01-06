@@ -4501,6 +4501,10 @@
                 return;
             }
 
+            // 📥 Log the received payload with structured formatting
+            console.log('%c📥 AI Payload Messages (Received)', 'color: #FFF; background: #2196F3; padding: 8px 12px; border-radius: 4px; font-weight: bold;');
+            console.log(typeof rawResponse === 'string' ? rawResponse : JSON.stringify(rawResponse, null, 2));
+
             // 6. Normaliser la réponse et extraire les métadonnées d'édition
             let editMetadata = null;
             let responseObj = null;

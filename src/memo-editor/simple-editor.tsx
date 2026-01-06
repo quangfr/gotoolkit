@@ -76,6 +76,51 @@ const hasMarksInDocument = (editor: Editor | null): boolean => {
   return hasMarks;
 };
 
+const cleanupEmptyBlocks = (tr: any) => {
+  const nodesToDelete: { from: number; to: number }[] = [];
+  const emptyListItemTypes = new Set(['listItem', 'taskItem']);
+  const emptyListTypes = new Set(['bulletList', 'orderedList', 'taskList']);
+
+  tr.doc.descendants((node: any, pos: number) => {
+    const typeName = node.type?.name;
+
+    if (emptyListItemTypes.has(typeName)) {
+      const hasNestedList = node.childCount > 1 && Array.from({ length: node.childCount }).some((_, idx) => {
+        const childType = node.child(idx)?.type?.name;
+        return emptyListTypes.has(childType);
+      });
+
+      const isSingleEmptyParagraph =
+        node.childCount === 1 &&
+        node.firstChild?.type?.name === 'paragraph' &&
+        node.firstChild?.content?.size === 0;
+
+      if (!hasNestedList && isSingleEmptyParagraph) {
+        nodesToDelete.push({ from: pos, to: pos + node.nodeSize });
+        return;
+      }
+    }
+
+    if ((typeName === 'paragraph' || typeName === 'heading') && node.content.size === 0) {
+      const $pos = tr.doc.resolve(pos);
+      const parentType = $pos.parent?.type?.name;
+      if (emptyListItemTypes.has(parentType)) {
+        return;
+      }
+      nodesToDelete.push({ from: pos, to: pos + node.nodeSize });
+      return;
+    }
+
+    if (emptyListTypes.has(typeName) && node.childCount === 0) {
+      nodesToDelete.push({ from: pos, to: pos + node.nodeSize });
+    }
+  });
+
+  nodesToDelete.reverse().forEach(({ from: delFrom, to: delTo }) => {
+    tr.delete(delFrom, delTo);
+  });
+};
+
 const keepSelection = (editor: Editor | null) => {
   if (!editor) return;
   const { from, to } = editor.state.selection;
@@ -98,17 +143,7 @@ const keepSelection = (editor: Editor | null) => {
   
   // Enlever les lignes vides laissées
   editor.chain().focus().command(({ tr }) => {
-    let nodesToDelete: { from: number; to: number }[] = [];
-    tr.doc.descendants((node, pos) => {
-      // Chercher les paragraphes/blocs vides ou ne contenant que de l'espace blanc
-      if ((node.type.name === 'paragraph' || node.type.name === 'heading') && 
-          node.content.size === 0) {
-        nodesToDelete.push({ from: pos, to: pos + node.nodeSize });
-      }
-    });
-    nodesToDelete.reverse().forEach(({ from: delFrom, to: delTo }) => {
-      tr.delete(delFrom, delTo);
-    });
+    cleanupEmptyBlocks(tr);
     return true;
   }).run();
 };
@@ -135,17 +170,7 @@ const rejectSelection = (editor: Editor | null) => {
   
   // Enlever les lignes vides laissées
   editor.chain().focus().command(({ tr }) => {
-    let nodesToDelete: { from: number; to: number }[] = [];
-    tr.doc.descendants((node, pos) => {
-      // Chercher les paragraphes/blocs vides ou ne contenant que de l'espace blanc
-      if ((node.type.name === 'paragraph' || node.type.name === 'heading') && 
-          node.content.size === 0) {
-        nodesToDelete.push({ from: pos, to: pos + node.nodeSize });
-      }
-    });
-    nodesToDelete.reverse().forEach(({ from: delFrom, to: delTo }) => {
-      tr.delete(delFrom, delTo);
-    });
+    cleanupEmptyBlocks(tr);
     return true;
   }).run();
 };
@@ -181,17 +206,7 @@ const keepAllDocument = (editor: Editor | null) => {
       });
       
       // Deuxième passe: enlever les lignes vides
-      const nodesToDelete: { from: number; to: number }[] = [];
-      tr.doc.descendants((node, pos) => {
-        if ((node.type.name === 'paragraph' || node.type.name === 'heading') && 
-            node.content.size === 0) {
-          nodesToDelete.push({ from: pos, to: pos + node.nodeSize });
-        }
-      });
-      
-      nodesToDelete.reverse().forEach(({ from: delFrom, to: delTo }) => {
-        tr.delete(delFrom, delTo);
-      });
+      cleanupEmptyBlocks(tr);
       
       return true;
     })
