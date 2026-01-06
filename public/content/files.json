@@ -1,4 +1,9 @@
-[
+[ {
+    "name": "Context Safran",
+    "abstract": "Brief de missions et de projets IT chez Safran de nos cosultants",
+    "path": "content/context_safran.md",
+    "updatedAt": "2025-12-29T00:00:00Z"
+  },
   {
     "name": "Page d'accueil",
     "abstract": "Résumé métier de l’index et des modules accessibles depuis l’accueil.",
