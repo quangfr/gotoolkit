@@ -4470,7 +4470,7 @@
             });
 
             // 📥 Console log du payload complet reçu de l'IA
-            console.log('📥 [Chat Inline] Payload complet reçu de l\'IA:', response);
+            console.log(JSON.stringify(response, null, 2));
 
             if (!response) {
                 console.error('❌ [Chat Inline] Aucune réponse de l\'IA');
@@ -4481,6 +4481,9 @@
             const answerContent = response.answer || 'Aucune modification apportée.';
             const sOutput = response.s_output;
             const output = response.output;
+
+            // 📊 Console log du parsing
+            console.log('📊 [Chat Inline] Parsing:', { answer: answerContent, output, s_output: sOutput });
 
             // 6. Mettre à jour le message bot avec la réponse (answer)
             botMessage.content = answerContent;
