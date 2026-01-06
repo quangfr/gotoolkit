@@ -1708,7 +1708,12 @@
                     if (!gridApi) return;
                     const editingCell = document.querySelector(".ag-cell-inline-editing");
                     if (!editingCell) return;
-                    if (editingCell.contains(event.target)) return;
+                    const target = event.target instanceof HTMLElement ? event.target : null;
+                    if (target && editingCell.contains(target)) return;
+
+                    // When editing with popup-based editors (e.g., agSelectCellEditor), the click target
+                    // is outside the cell (popup is attached to body). Don't cancel editing in that case.
+                    if (target && target.closest(".ag-popup, .ag-popup-editor")) return;
                     gridApi.stopEditing();
                 }
 
