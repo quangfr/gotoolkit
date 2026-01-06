@@ -7,7 +7,7 @@
     "start": "npx serve public -l 5000",
     "build": "npm run build:connect && npm run build:memo",
     "build:connect": "esbuild src/connect/index.tsx --bundle --format=iife --platform=browser --target=es2018 --sourcemap --minify-identifiers --define:process.env.NODE_ENV=\\\"'production'\\\" --outdir=public/js --entry-names=connect.bundle --asset-names=assets/[name]-[hash] --loader:.css=text --loader:.woff=file --loader:.woff2=file --loader:.ttf=file --loader:.svg=file --loader:.png=file",
-    "build:memo": "esbuild src/memo-tiptap-bridge/index.tsx --bundle --format=iife --platform=browser --target=es2018 --sourcemap --minify-identifiers --define:process.env.NODE_ENV=\\\"'production'\\\" --outdir=public/js --entry-names=memo.bundle --asset-names=assets/[name]-[hash] --alias:@=./src",
+    "build:memo": "esbuild src/memo-bridge/index.tsx --bundle --format=iife --platform=browser --target=es2018 --sourcemap --minify-identifiers --define:process.env.NODE_ENV=\\\"'production'\\\" --outdir=public/js --entry-names=memo.bundle --asset-names=assets/[name]-[hash] --alias:@=./src",
     "test:playwright": "npx playwright test"
   },
   "repository": {

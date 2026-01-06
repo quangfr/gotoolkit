@@ -31,6 +31,7 @@
     var STORAGE_KEY = scopedKey("goToolkit.chat.conversation");
     var WIDTH_KEY = "goToolkit.chat.sidebarWidth";
     var OPEN_KEY = scopedKey("goToolkit.chat.sidebarOpen");
+    var KNOWLEDGE_MODAL_OPEN_KEY = scopedKey("goToolkit.chat.knowledgeModalOpen");
     var DEFAULT_WIDTH = 450;
     var MIN_WIDTH = 320;
     var MAX_WIDTH = 800;
@@ -111,6 +112,29 @@
         } catch (err) {
             console.warn("Chat open state save failed", err);
         }
+    }
+
+    function loadKnowledgeModalOpenState() {
+        try {
+            var stored = global.localStorage.getItem(KNOWLEDGE_MODAL_OPEN_KEY);
+            if (stored === "1") return true;
+            if (stored === "0") return false;
+        } catch (err) { /* ignore */ }
+        return null;
+    }
+
+    function persistKnowledgeModalOpenState(isOpen) {
+        try {
+            global.localStorage.setItem(KNOWLEDGE_MODAL_OPEN_KEY, isOpen ? "1" : "0");
+        } catch (err) {
+            console.warn("Chat knowledge modal open state save failed", err);
+        }
+    }
+
+    function clearKnowledgeModalOpenPreference() {
+        try {
+            global.localStorage.removeItem(KNOWLEDGE_MODAL_OPEN_KEY);
+        } catch (err) { /* ignore */ }
     }
 
     function getAllowedPromptPresetIds() {
@@ -607,10 +631,28 @@
         if (this.textarea) {
             this.textarea.focus();
         }
+        this.syncKnowledgeModalVisibility();
+    };
+
+    AssistSidebar.prototype.syncKnowledgeModalVisibility = function () {
+        if (!this.isOpen) return;
         if (this.promptPresetId === "ask" || this.promptPresetId === "edit") {
-            this.closeKnowledgeModal();
+            this.closeKnowledgeModal(false);
         } else {
-            this.openKnowledgeModal();
+            // Mode "advice" (conseiller)
+            var preference = loadKnowledgeModalOpenState();
+            if (preference === null) {
+                // No preference yet, auto-open only if conversation is empty
+                if (!this.conversation || !this.conversation.messages || this.conversation.messages.length === 0) {
+                    this.openKnowledgeModal();
+                } else {
+                    this.closeKnowledgeModal(false);
+                }
+            } else if (preference === true) {
+                this.openKnowledgeModal();
+            } else {
+                this.closeKnowledgeModal(false);
+            }
         }
     };
 
@@ -619,7 +661,7 @@
             this.closePreviewPanel();
         }
         if (this.knowledgeModal && this.knowledgeModal.classList.contains("open")) {
-            this.closeKnowledgeModal();
+            this.closeKnowledgeModal(false);
         }
     };
 
@@ -672,9 +714,9 @@
             this.messagesEl.innerHTML = "";
         }
         this.persist();
+        clearKnowledgeModalOpenPreference();
         this.updateComposerState();
-        persistPromptPreset(this.promptPresetId);
-        this.updatePromptDropdownLabel();
+        this.setPromptPreset(this.promptPresetId);
     };
 
     AssistSidebar.prototype.updateComposerState = function () {
@@ -862,6 +904,36 @@
             entry.suggestionsEl = document.createElement("div");
             entry.suggestionsEl.className = "chat-suggestions";
             bubble.appendChild(entry.suggestionsEl);
+
+            // Ajouter les boutons d'actions si output existe
+            if (message.data && message.data.output && message.data.output !== null) {
+                var actionsEl = document.createElement("div");
+                actionsEl.className = "chat-bubble-actions";
+
+                var keepAllBtn = document.createElement("button");
+                keepAllBtn.type = "button";
+                keepAllBtn.className = "chat-bubble-action-btn chat-bubble-action-keep";
+                keepAllBtn.textContent = "✓ Garder tout";
+                keepAllBtn.addEventListener("click", function () {
+                    if (typeof window.setEditorMarkdown === 'function') {
+                        window.setEditorMarkdown(message.data.output);
+                    }
+                    actionsEl.remove();
+                });
+
+                var rejectAllBtn = document.createElement("button");
+                rejectAllBtn.type = "button";
+                rejectAllBtn.className = "chat-bubble-action-btn chat-bubble-action-reject";
+                rejectAllBtn.textContent = "✗ Refuser tout";
+                rejectAllBtn.addEventListener("click", function () {
+                    actionsEl.remove();
+                });
+
+                actionsEl.appendChild(keepAllBtn);
+                actionsEl.appendChild(rejectAllBtn);
+                bubble.appendChild(actionsEl);
+            }
+
             this.syncBotExtras(entry, message);
         }
         this.messageNodes[message.id] = entry;
@@ -1004,11 +1076,7 @@
         this.updatePromptDropdownLabel();
         this.updateHeaderDocumentCount();
         this.refreshDocumentStats();
-        if (this.promptPresetId === "ask" || this.promptPresetId === "edit") {
-            this.closeKnowledgeModal();
-        } else {
-            this.openKnowledgeModal();
-        }
+        this.syncKnowledgeModalVisibility();
     };
 
     AssistSidebar.prototype.getActiveSystemPrompt = function () {
@@ -1939,6 +2007,7 @@
         }.bind(this));
         headerActions.appendChild(this.headerDocCountEl);
         this.clearButton = document.createElement("button");
+        this.clearButton.id = "chatClearBtn";
         this.clearButton.type = "button";
         this.clearButton.className = "btn-secondary chat-header-btn";
         this.clearButton.textContent = "⊘";
@@ -2821,7 +2890,7 @@
         this.refreshDocumentStats();
     };
 
-    AssistSidebar.prototype.openKnowledgeModal = function () {
+    AssistSidebar.prototype.openKnowledgeModal = function (persist) {
         this.buildKnowledgeModal();
         if (!this.knowledgeModal) return;
         if (this.previewPanel && this.previewPanel.classList.contains("open")) {
@@ -2829,13 +2898,19 @@
         }
         this.knowledgeModal.classList.add("open");
         this.knowledgeModal.setAttribute("aria-hidden", "false");
+        if (persist !== false) {
+            persistKnowledgeModalOpenState(true);
+        }
         this.refreshKnowledgeModal();
     };
 
-    AssistSidebar.prototype.closeKnowledgeModal = function () {
+    AssistSidebar.prototype.closeKnowledgeModal = function (persist) {
         if (!this.knowledgeModal) return;
         this.knowledgeModal.classList.remove("open");
         this.knowledgeModal.setAttribute("aria-hidden", "true");
+        if (persist !== false) {
+            persistKnowledgeModalOpenState(false);
+        }
         this.setKnowledgeModalStatus("");
     };
 
@@ -4317,6 +4392,7 @@
             this.refreshDocumentStats();
             this.ensureInitialKnowledgeIndex();
         }
+        this.syncKnowledgeModalVisibility();
         if (this.isOpen) {
             this.open();
         }

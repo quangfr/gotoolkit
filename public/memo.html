@@ -57,7 +57,7 @@
         .global-actions {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 4px;
             flex-wrap: wrap;
             margin-left: auto;
         }
@@ -247,6 +247,10 @@
             resize: vertical;
         }
 
+        #memoPromptPresetSelect {
+            font-size: 11px;
+        }
+
         @media (max-width: 900px) {
             .app-header {
                 gap: 6px;
@@ -346,7 +350,7 @@
                     <label for="memoPromptPresetSelect">Prompt</label>
                     <select id="memoPromptPresetSelect"></select>
                     <label for="memoPromptEditor">Prompt markdown</label>
-                    <textarea id="memoPromptEditor" rows="14"></textarea>
+                    <textarea id="memoPromptEditor" rows="30"></textarea>
                 </div>
                 <div class="ia-actions-footer ia-template-footer">
                     <div class="modal-actions" style="width:100%; justify-content:flex-end;">
@@ -602,6 +606,15 @@
         })();
     </script>
     <script src="js/assist.js?v=2026.01.06.1"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            setTimeout(function () {
+                if (window.GoToolkitAssistSidebar) {
+                    window.GoToolkitAssistSidebar.open?.();
+                }
+            }, 100);
+        });
+    </script>
     <script type="module">
         (function () {
             const STORAGE_KEY = "goToolkit.memo.state";
@@ -610,7 +623,7 @@
             const FIRESTORE_COLLECTION = "memos";
             const DEFAULT_TEMPLATE = "# Mémo\n\n";
             const templates = [
-                { id: "generic", label: "Générique", content: DEFAULT_TEMPLATE }
+                { id: "generic", label: "🕊️ Générique", content: DEFAULT_TEMPLATE }
             ];
 
             const tabsEl = document.getElementById("tabs");

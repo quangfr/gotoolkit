@@ -1,6 +1,6 @@
 import React, { useEffect, useImperativeHandle, forwardRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { SimpleEditor } from '@/memo-tiptap-template';
+import { SimpleEditor } from '@/memo-editor';
 
 // Bridge to maintain compatibility with memo.html
 interface MemoEditorApi {

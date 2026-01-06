@@ -47,6 +47,116 @@ const CustomTableCell = TableCell.extend({
 
 import { NodeSelection } from 'prosemirror-state';
 
+// Fonctions utilitaires pour les marks
+const hasMarkInSelection = (editor: Editor | null, markName: 'highlight' | 'strike'): boolean => {
+  if (!editor) return false;
+  const { from, to } = editor.state.selection;
+  if (from === to) return false; // Pas de sélection
+  
+  let hasMarked = false;
+  editor.state.doc.nodesBetween(from, to, (node) => {
+    if (node.marks.some(m => m.type.name === markName)) {
+      hasMarked = true;
+      return false;
+    }
+  });
+  return hasMarked;
+};
+
+const hasMarksInDocument = (editor: Editor | null): boolean => {
+  if (!editor) return false;
+  let hasMarks = false;
+  editor.state.doc.descendants((node) => {
+    if (node.marks.some(m => m.type.name === 'highlight' || m.type.name === 'strike')) {
+      hasMarks = true;
+      return false;
+    }
+  });
+  return hasMarks;
+};
+
+const keepSelection = (editor: Editor | null) => {
+  if (!editor) return;
+  const { from, to } = editor.state.selection;
+  
+  // Enlever le highlight de la sélection
+  editor.chain().focus().unsetMark('highlight').run();
+  
+  // Supprimer les éléments en strikethrough de la sélection
+  let toDelete: { from: number; to: number }[] = [];
+  editor.state.doc.nodesBetween(from, to, (node, pos) => {
+    if (node.marks.some(m => m.type.name === 'strike')) {
+      toDelete.push({ from: pos, to: pos + node.nodeSize });
+    }
+  });
+  
+  // Supprimer de la fin vers le début
+  toDelete.reverse().forEach(({ from: delFrom, to: delTo }) => {
+    editor.chain().deleteRange({ from: delFrom, to: delTo }).run();
+  });
+};
+
+const rejectSelection = (editor: Editor | null) => {
+  if (!editor) return;
+  const { from, to } = editor.state.selection;
+  
+  // Enlever le strikethrough de la sélection
+  editor.chain().focus().unsetMark('strike').run();
+  
+  // Supprimer les éléments en highlight de la sélection
+  let toDelete: { from: number; to: number }[] = [];
+  editor.state.doc.nodesBetween(from, to, (node, pos) => {
+    if (node.marks.some(m => m.type.name === 'highlight')) {
+      toDelete.push({ from: pos, to: pos + node.nodeSize });
+    }
+  });
+  
+  // Supprimer de la fin vers le début
+  toDelete.reverse().forEach(({ from: delFrom, to: delTo }) => {
+    editor.chain().deleteRange({ from: delFrom, to: delTo }).run();
+  });
+};
+
+const keepAllDocument = (editor: Editor | null) => {
+  if (!editor) return;
+  
+  // Enlever highlight de tout
+  editor.chain().focus().selectAll().run();
+  editor.chain().focus().unsetMark('highlight').run();
+  
+  // Supprimer tous les éléments avec strikethrough
+  let toDelete: { from: number; to: number }[] = [];
+  editor.state.doc.descendants((node, pos) => {
+    if (node.marks.some(m => m.type.name === 'strike')) {
+      toDelete.push({ from: pos, to: pos + node.nodeSize });
+    }
+  });
+  
+  toDelete.reverse().forEach(({ from: delFrom, to: delTo }) => {
+    editor.chain().deleteRange({ from: delFrom, to: delTo }).run();
+  });
+};
+
+const rejectAllDocument = (editor: Editor | null) => {
+  if (!editor) return;
+  
+  // Enlever strikethrough de tout
+  editor.chain().focus().selectAll().run();
+  editor.chain().focus().unsetMark('strike').run();
+  
+  // Supprimer tous les éléments avec highlight
+  let toDelete: { from: number; to: number }[] = [];
+  editor.state.doc.descendants((node, pos) => {
+    if (node.marks.some(m => m.type.name === 'highlight')) {
+      toDelete.push({ from: pos, to: pos + node.nodeSize });
+    }
+  });
+  
+  toDelete.reverse().forEach(({ from: delFrom, to: delTo }) => {
+    editor.chain().deleteRange({ from: delFrom, to: delTo }).run();
+  });
+};
+
 const Toolbar = ({ editor }: { editor: Editor }) => {
   if (!editor) return null;
 
@@ -187,15 +297,7 @@ const Toolbar = ({ editor }: { editor: Editor }) => {
         >
           <svg width="24" height="24" className="tiptap-button-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M15.0222 3H19C19.5523 3 20 3.44772 20 4C20 4.55228 19.5523 5 19 5H15.693L10.443 19H14C14.5523 19 15 19.4477 15 20C15 20.5523 14.5523 21 14 21H9.02418C9.00802 21.0004 8.99181 21.0004 8.97557 21H5C4.44772 21 4 20.5523 4 20C4 19.4477 4.44772 19 5 19H8.30704L13.557 5H10C9.44772 5 9 4.55228 9 4C9 3.44772 9.44772 3 10 3H14.9782C14.9928 2.99968 15.0075 2.99967 15.0222 3Z" fill="currentColor"></path></svg>
         </button>
-        <button
-          className="tiptap-button"
-          aria-label="Strike"
-          type="button"
-          onClick={() => editor.chain().focus().toggleStrike().run()}
-          data-active-state={editor.isActive('strike') ? 'on' : 'off'}
-        >
-          <svg width="24" height="24" className="tiptap-button-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M9.00039 3H16.0001C16.5524 3 17.0001 3.44772 17.0001 4C17.0001 4.55229 16.5524 5 16.0001 5H9.00011C8.68006 4.99983 8.36412 5.07648 8.07983 5.22349C7.79555 5.37051 7.55069 5.5836 7.36585 5.84487C7.181 6.10614 7.06155 6.40796 7.01754 6.72497C6.97352 7.04198 7.00623 7.36492 7.11292 7.66667C7.29701 8.18737 7.02414 8.75872 6.50344 8.94281C5.98274 9.1269 5.4114 8.85403 5.2273 8.33333C5.01393 7.72984 4.94851 7.08396 5.03654 6.44994C5.12456 5.81592 5.36346 5.21229 5.73316 4.68974C6.10285 4.1672 6.59256 3.74101 7.16113 3.44698C7.72955 3.15303 8.36047 2.99975 9.00039 3Z" fill="currentColor"></path><path d="M18 13H20C20.5523 13 21 12.5523 21 12C21 11.4477 20.5523 11 20 11H4C3.44772 11 3 11.4477 3 12C3 12.5523 3.44772 13 4 13H14C14.7956 13 15.5587 13.3161 16.1213 13.8787C16.6839 14.4413 17 15.2044 17 16C17 16.7956 16.6839 17.5587 16.1213 18.1213C15.5587 18.6839 14.7956 19 14 19H6C5.44772 19 5 19.4477 5 20C5 20.5523 5.44772 21 6 21H14C15.3261 21 16.5979 20.4732 17.5355 19.5355C18.4732 18.5979 19 17.3261 19 16C19 14.9119 18.6453 13.8604 18 13Z" fill="currentColor"></path></svg>
-        </button>
+       
         <button
           className="tiptap-button"
           aria-label="Code"
@@ -214,15 +316,7 @@ const Toolbar = ({ editor }: { editor: Editor }) => {
         >
           <svg width="24" height="24" className="tiptap-button-icon" viewBox="0 0 24 24" fill="currentColor"><path fillRule="evenodd" clipRule="evenodd" d="M7 4C7 3.44772 6.55228 3 6 3C5.44772 3 5 3.44772 5 4V10C5 11.8565 5.7375 13.637 7.05025 14.9497C8.36301 16.2625 10.1435 17 12 17C13.8565 17 15.637 16.2625 16.9497 14.9497C18.2625 13.637 19 11.8565 19 10V4C19 3.44772 18.5523 3 18 3C17.4477 3 17 3.44772 17 4V10C17 11.3261 16.4732 12.5979 15.5355 13.5355C14.5979 14.4732 13.3261 15 12 15C10.6739 15 9.40215 14.4732 8.46447 13.5355C7.52678 12.5979 7 11.3261 7 10V4ZM4 19C3.44772 19 3 19.4477 3 20C3 20.5523 3.44772 21 4 21H20C20.5523 21 21 20.5523 21 20C21 19.4477 20.5523 19 20 19H4Z" fill="currentColor"></path></svg>
         </button>
-        <button
-          className="tiptap-button"
-          aria-label="Highlight"
-          type="button"
-          onClick={() => editor.chain().focus().toggleHighlight().run()}
-          data-active-state={editor.isActive('highlight') ? 'on' : 'off'}
-        >
-          <svg width="24" height="24" className="tiptap-button-icon" viewBox="0 0 24 24" fill="currentColor"><path fillRule="evenodd" clipRule="evenodd" d="M14.7072 4.70711C15.0977 4.31658 15.0977 3.68342 14.7072 3.29289C14.3167 2.90237 13.6835 2.90237 13.293 3.29289L8.69294 7.89286L8.68594 7.9C8.13626 8.46079 7.82837 9.21474 7.82837 10C7.82837 10.2306 7.85491 10.4584 7.90631 10.6795L2.29289 16.2929C2.10536 16.4804 2 16.7348 2 17V20C2 20.5523 2.44772 21 3 21H12C12.2652 21 12.5196 20.8946 12.7071 20.7071L15.3205 18.0937C15.5416 18.1452 15.7695 18.1717 16.0001 18.1717C16.7853 18.1717 17.5393 17.8639 18.1001 17.3142L22.7072 12.7071C23.0977 12.3166 23.0977 11.6834 22.7072 11.2929C22.3167 10.9024 21.6835 10.9024 21.293 11.2929L16.6971 15.8887C16.5105 16.0702 16.2605 16.1717 16.0001 16.1717C15.7397 16.1717 15.4897 16.0702 15.303 15.8887L10.1113 10.697C9.92992 10.5104 9.82837 10.2604 9.82837 10C9.82837 9.73963 9.92992 9.48958 10.1113 9.30297L14.7072 4.70711ZM13.5858 17L9.00004 12.4142L4 17.4142V19H11.5858L13.5858 17Z" fill="currentColor"></path></svg>
-        </button>
+      
         <button
           className="tiptap-button"
           aria-label="Link"
@@ -233,7 +327,9 @@ const Toolbar = ({ editor }: { editor: Editor }) => {
           <svg width="24" height="24" className="tiptap-button-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M16.9958 1.06669C15.4226 1.05302 13.907 1.65779 12.7753 2.75074L12.765 2.76086L11.045 4.47086C10.6534 4.86024 10.6515 5.49341 11.0409 5.88507C11.4303 6.27673 12.0634 6.27858 12.4551 5.88919L14.1697 4.18456C14.9236 3.45893 15.9319 3.05752 16.9784 3.06662C18.0272 3.07573 19.0304 3.49641 19.772 4.23804C20.5137 4.97967 20.9344 5.98292 20.9435 7.03171C20.9526 8.07776 20.5515 9.08563 19.8265 9.83941L16.833 12.8329C16.4274 13.2386 15.9393 13.5524 15.4019 13.7529C14.8645 13.9533 14.2903 14.0359 13.7181 13.9949C13.146 13.9539 12.5894 13.7904 12.0861 13.5154C11.5827 13.2404 11.1444 12.8604 10.8008 12.401C10.47 11.9588 9.84333 11.8685 9.40108 12.1993C8.95883 12.5301 8.86849 13.1568 9.1993 13.599C9.71464 14.288 10.3721 14.858 11.1272 15.2705C11.8822 15.683 12.7171 15.9283 13.5753 15.9898C14.4334 16.0513 15.2948 15.9274 16.1009 15.6267C16.907 15.326 17.639 14.8555 18.2473 14.247L21.2472 11.2471L21.2593 11.2347C22.3523 10.1031 22.9571 8.58751 22.9434 7.01433C22.9297 5.44115 22.2987 3.93628 21.1863 2.82383C20.0738 1.71138 18.5689 1.08036 16.9958 1.06669Z" fill="currentColor"></path><path d="M10.4247 8.0102C9.56657 7.94874 8.70522 8.07256 7.89911 8.37326C7.09305 8.67395 6.36096 9.14458 5.75272 9.753L2.75285 12.7529L2.74067 12.7653C1.64772 13.8969 1.04295 15.4125 1.05662 16.9857C1.07029 18.5589 1.70131 20.0637 2.81376 21.1762C3.9262 22.2886 5.43108 22.9196 7.00426 22.9333C8.57744 22.947 10.0931 22.3422 11.2247 21.2493L11.2371 21.2371L12.9471 19.5271C13.3376 19.1366 13.3376 18.5034 12.9471 18.1129C12.5565 17.7223 11.9234 17.7223 11.5328 18.1129L9.82932 19.8164C9.07555 20.5414 8.06768 20.9425 7.02164 20.9334C5.97285 20.9243 4.9696 20.5036 4.22797 19.762C3.48634 19.0203 3.06566 18.0171 3.05655 16.9683C3.04746 15.9222 3.44851 14.9144 4.17355 14.1606L7.16719 11.167C7.5727 10.7613 8.06071 10.4476 8.59811 10.2471C9.13552 10.0467 9.70976 9.96412 10.2819 10.0051C10.854 10.0461 11.4106 10.2096 11.9139 10.4846C12.4173 10.7596 12.8556 11.1397 13.1992 11.599C13.53 12.0412 14.1567 12.1316 14.5989 11.8007C15.0412 11.4699 15.1315 10.8433 14.8007 10.401C14.2854 9.71205 13.6279 9.14198 12.8729 8.72948C12.1178 8.31697 11.2829 8.07166 10.4247 8.0102Z" fill="currentColor"></path></svg>
         </button>
       </div>
+
       <div className="tiptap-separator" data-orientation="vertical" role="none"></div>
+
       <div role="group" className="tiptap-toolbar-group">
         <button
           className="tiptap-button"
@@ -318,7 +414,51 @@ const Toolbar = ({ editor }: { editor: Editor }) => {
       </div>
       <div className="tiptap-separator" data-orientation="vertical" role="none"></div>
       <div role="group" className="tiptap-toolbar-group">
-      </div>
+ <button
+          className="tiptap-button"
+          aria-label="Strike"
+          type="button"
+          onClick={() => editor.chain().focus().toggleStrike().run()}
+          data-active-state={editor.isActive('strike') ? 'on' : 'off'}
+        >
+          <svg width="24" height="24" className="tiptap-button-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M9.00039 3H16.0001C16.5524 3 17.0001 3.44772 17.0001 4C17.0001 4.55229 16.5524 5 16.0001 5H9.00011C8.68006 4.99983 8.36412 5.07648 8.07983 5.22349C7.79555 5.37051 7.55069 5.5836 7.36585 5.84487C7.181 6.10614 7.06155 6.40796 7.01754 6.72497C6.97352 7.04198 7.00623 7.36492 7.11292 7.66667C7.29701 8.18737 7.02414 8.75872 6.50344 8.94281C5.98274 9.1269 5.4114 8.85403 5.2273 8.33333C5.01393 7.72984 4.94851 7.08396 5.03654 6.44994C5.12456 5.81592 5.36346 5.21229 5.73316 4.68974C6.10285 4.1672 6.59256 3.74101 7.16113 3.44698C7.72955 3.15303 8.36047 2.99975 9.00039 3Z" fill="currentColor"></path><path d="M18 13H20C20.5523 13 21 12.5523 21 12C21 11.4477 20.5523 11 20 11H4C3.44772 11 3 11.4477 3 12C3 12.5523 3.44772 13 4 13H14C14.7956 13 15.5587 13.3161 16.1213 13.8787C16.6839 14.4413 17 15.2044 17 16C17 16.7956 16.6839 17.5587 16.1213 18.1213C15.5587 18.6839 14.7956 19 14 19H6C5.44772 19 5 19.4477 5 20C5 20.5523 5.44772 21 6 21H14C15.3261 21 16.5979 20.4732 17.5355 19.5355C18.4732 18.5979 19 17.3261 19 16C19 14.9119 18.6453 13.8604 18 13Z" fill="currentColor"></path></svg>
+        </button>
+  <button
+          className="tiptap-button"
+          aria-label="Highlight"
+          type="button"
+          onClick={() => editor.chain().focus().toggleHighlight().run()}
+          data-active-state={editor.isActive('highlight') ? 'on' : 'off'}
+        >
+          <svg width="24" height="24" className="tiptap-button-icon" viewBox="0 0 24 24" fill="currentColor"><path fillRule="evenodd" clipRule="evenodd" d="M14.7072 4.70711C15.0977 4.31658 15.0977 3.68342 14.7072 3.29289C14.3167 2.90237 13.6835 2.90237 13.293 3.29289L8.69294 7.89286L8.68594 7.9C8.13626 8.46079 7.82837 9.21474 7.82837 10C7.82837 10.2306 7.85491 10.4584 7.90631 10.6795L2.29289 16.2929C2.10536 16.4804 2 16.7348 2 17V20C2 20.5523 2.44772 21 3 21H12C12.2652 21 12.5196 20.8946 12.7071 20.7071L15.3205 18.0937C15.5416 18.1452 15.7695 18.1717 16.0001 18.1717C16.7853 18.1717 17.5393 17.8639 18.1001 17.3142L22.7072 12.7071C23.0977 12.3166 23.0977 11.6834 22.7072 11.2929C22.3167 10.9024 21.6835 10.9024 21.293 11.2929L16.6971 15.8887C16.5105 16.0702 16.2605 16.1717 16.0001 16.1717C15.7397 16.1717 15.4897 16.0702 15.303 15.8887L10.1113 10.697C9.92992 10.5104 9.82837 10.2604 9.82837 10C9.82837 9.73963 9.92992 9.48958 10.1113 9.30297L14.7072 4.70711ZM13.5858 17L9.00004 12.4142L4 17.4142V19H11.5858L13.5858 17Z" fill="currentColor"></path></svg>
+        </button>
+           <div className="tiptap-separator" data-orientation="vertical" role="none"></div>
+      <div role="group" className="tiptap-toolbar-group">
+          {editor && hasMarksInDocument(editor) && (
+          <>
+            <button
+              className="tiptap-button toolbar-action-btn toolbar-keep"
+              aria-label="Garder tout"
+              type="button"
+              title="Garder tout"
+              onClick={() => keepAllDocument(editor)}
+            >
+              ✓
+            </button>
+            <button
+              className="tiptap-button toolbar-action-btn toolbar-reject"
+              aria-label="Annuler tout"
+              type="button"
+              title="Annuler tout"
+              onClick={() => rejectAllDocument(editor)}
+            >
+              ✗
+            </button>
+            
+          </>
+        )}
+        </div>
+</div>
       <div style={{ flex: 1 }}></div>
     </div>
   );
@@ -420,30 +560,24 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       {editor && (
         <BubbleMenu editor={editor} tippyOptions={{ duration: 100 }}>
           <div className="bubble-menu">
-            <button
-              onClick={() => editor.chain().focus().toggleBold().run()}
-              className={editor.isActive('bold') ? 'is-active' : ''}
-            >
-              Gras
-            </button>
-            <button
-              onClick={() => editor.chain().focus().toggleItalic().run()}
-              className={editor.isActive('italic') ? 'is-active' : ''}
-            >
-              Italique
-            </button>
-            <button
-              onClick={() => editor.chain().focus().toggleUnderline().run()}
-              className={editor.isActive('underline') ? 'is-active' : ''}
-            >
-              Souligné
-            </button>
-            <button
-              onClick={() => editor.chain().focus().toggleStrike().run()}
-              className={editor.isActive('strike') ? 'is-active' : ''}
-            >
-              Barré
-            </button>
+            {(hasMarkInSelection(editor, 'highlight') || hasMarkInSelection(editor, 'strike')) && (
+              <>
+                <button
+                  onClick={() => keepSelection(editor)}
+                  className="bubble-menu-btn bubble-keep"
+                  title="Garder la sélection"
+                >
+                  ✓ Garder
+                </button>
+                <button
+                  onClick={() => rejectSelection(editor)}
+                  className="bubble-menu-btn bubble-reject"
+                  title="Annuler la sélection"
+                >
+                  ✗ Annuler
+                </button>
+              </>
+            )}
           </div>
         </BubbleMenu>
       )}

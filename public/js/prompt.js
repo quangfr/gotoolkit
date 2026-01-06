@@ -282,7 +282,7 @@
             id: "default",
             name: "🕊️ Générique",
             label: "Modèle générique pour structurer tes idées",
-            defaultTitle: "Générique",
+            defaultTitle: "🕊️ Générique",
             description:
                 "Modèle générique pour structurer tes idées.\n",
             columns: [
@@ -1482,17 +1482,18 @@ OBJECTIF
 
 RÈGLES D'ÉDITION (simplicité)
 - Préserve au maximum la structure/syntaxe Markdown existante (titres, listes, tableaux, code, liens).
-- Ajouts (ou texte entièrement réécrit) : entoure le bloc ajouté par ==...==.
-- Suppressions : entoure le bloc supprimé par ~~...~~.
+- Ajouts : applique d'abord le Markdown (##, -, etc.), puis ajoute le marqueur ==...== sur le texte : ex: ##==Titre ajouté==##, ==liste item==
+- Suppressions : applique d'abord le Markdown, puis barre avec ~~...~~ : ex: ##~~Titre supprimé~~##, ~~liste item~~
 - Modifications : ne remplace pas quelques caractères. Réécris en bloc :
     - une ligne (si 1 phrase),
     - un paragraphe (si plusieurs phrases),
     - un item de liste,
     - une ligne/section de tableau,
     - un bloc de code.
-    En pratique : barre l'ancien bloc avec ~~...~~ puis fait un saut de ligne, puis ajoute la nouvelle version avec ==...==.
-- Ne renvoie PAS d'"operations". Aucune instruction de patch/indices.
-- Ne pas ajouter toi spontanément des émojis s'il n'y en avait pas
+    En pratique : le Markdown du bloc (##, -, etc.) puis le marqueur (~~...~~ ou ==...==) sur le contenu.
+    Toujours faire un saut à la ligne entre le bloc à supprimer (~~...~~) puis le bloc à ajouter (==...==).
+- Ne pas ajouter toi spontanément des émojis si ce n'est pas demandé.
+- Si tu n'apportes aucune modification alors mettre "output":null
 
 RÈGLES DE SORTIE
 - Français, ≤150 mots, tutoiement.
@@ -1501,7 +1502,7 @@ RÈGLES DE SORTIE
 FORMAT DE SORTIE (JSON strict)
 {
     "answer": "Résumé clair des changements.",
-    "output": "DOCUMENT complet régénéré en Markdown avec ==ajouts== et ~~suppressions~~"
+    "output": "DOCUMENT complet régénéré en Markdown avec Markdown-style suivi par ==ajouts== ou ~~suppressions~~"
 }
 `
 
