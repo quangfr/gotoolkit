@@ -1349,6 +1349,10 @@ label {
   gap: 6px;
 }
 
+#shareBtn{
+  background:white;
+}
+
 .chat-message--user .chat-bubble {
   background: var(--surface-soft);
   border-color: var(--border-soft);

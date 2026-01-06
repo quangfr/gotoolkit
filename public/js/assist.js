@@ -2047,7 +2047,7 @@
         this.textarea = document.createElement("textarea");
         this.textarea.className = "chat-input";
         this.textarea.rows = 2;
-        this.textarea.placeholder = "Écrire un message...";
+        this.textarea.placeholder = "Que veux-tu faire ?";
         this.textarea.addEventListener("input", this.handleInputResize.bind(this));
         this.textarea.addEventListener("input", this.updateComposerState.bind(this));
         this.textarea.addEventListener("keydown", function (event) {

@@ -635,10 +635,20 @@
             const SHARE_QUERY_PARAM = "share";
             const EDIT_QUERY_PARAM = "edit";
             const FIRESTORE_COLLECTION = "memos";
-            const DEFAULT_TEMPLATE = "# Mémo\n\n";
-            const templates = [
-                { id: "generic", label: "🕊️ Générique", content: DEFAULT_TEMPLATE }
-            ];
+            function getMemoTemplates() {
+                const templates = window.GoPrompts?.memoTemplates;
+                if (Array.isArray(templates) && templates.length) return templates;
+                return [
+                    {
+                        id: "default",
+                        label: "🕊️ Générique",
+                        description: "Structure de base pour démarrer un mémo",
+                        markdown: "# Mémo\n\n"
+                    }
+                ];
+            }
+
+            const templates = getMemoTemplates();
 
             const tabsEl = document.getElementById("tabs");
             const addTabBtn = document.getElementById("addTabBtn");
@@ -699,60 +709,13 @@
                     tabs: [
                         {
                             id,
-                            title: "Mémo 1",
-                            content: `
-                                <h1>Bienvenue dans l'éditeur Mémo</h1>
-                                <p>Ceci est un éditeur riche basé sur <strong>Tiptap</strong> et <strong>React</strong>.</p>
-                                <p>Voici quelques fonctionnalités à essayer :</p>
-                                <ul>
-                                    <li>Utilisez la <strong>barre d'outils</strong> en haut pour formater votre texte, ajouter des images ou des liens.</li>
-                                    <li>Sélectionnez du texte pour faire apparaître le <strong>menu bulle</strong> et appliquer des styles rapides.</li>
-                                    <li>Support du <em>gras</em>, l'<em>italique</em>, le <u>souligné</u>, le <s>barré</s>, le <code>code</code>, les exposants<sup>2</sup> et indices<sub>2</sub>.</li>
-                                </ul>
-                                <h2>Exemple de citation</h2>
-                                <blockquote>
-                                    "La simplicité est la sophistication suprême." — Léonard de Vinci
-                                </blockquote>
-                                <h2>Suivi de projet</h2>
-                                <table>
-                                <tbody>
-                                    <tr>
-                                        <th>Tâche</th>
-                                        <th>Statut</th>
-                                        <th>Priorité</th>
-                                        </tr>
-                                        <tr>
-                                            <td>Rédaction du rapport</td>
-                                            <td>En cours</td>
-                                            <td>Haute</td>
-                                        </tr>
-                                        <tr>
-                                            <td>Réunion client</td>
-                                            <td>Terminé</td>
-                                            <td>Moyenne</td>
-                                        </tr>
-                                        <tr>
-                                            <td>Analyse des données</td>
-                                            <td>À faire</td>
-                                            <td>Basse</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                                <p>
-                                    Tapez <code>[ ]</code> au début d'une ligne pour créer une tâche vide ou <code>[x]</code> pour marquer une tâche comme terminée ; la ligne se transforme automatiquement en case à cocher.
-                                </p>
-                                <p>Tapez <code>/</code> pour commencer à explorer !</p>
-                                <h2>Suivi des tâches</h2>
-                                <ul data-type="taskList">
-                                    <li data-type="taskItem" data-checked="true">Préparer l'ordre du jour</li>
-                                    <li data-type="taskItem" data-checked="true">Valider la synthèse du rendez-vous</li>
-                                    <li data-type="taskItem" data-checked="false">Envoyer la rétroaction à l'équipe</li>
-                                    <li data-type="taskItem" data-checked="false">Planifier la prochaine réunion</li>
-                                </ul>
-                            `
+                            title: "Page 1",
+                            content: ""
                         }
                     ],
-                    activeTabId: id
+                    activeTabId: id,
+                    templateId: null,
+                    templateLabel: null
                 };
             }
 
@@ -764,14 +727,16 @@
                     const id = typeof tab.id === "string" && tab.id ? tab.id : createId();
                     const title = typeof tab.title === "string" && tab.title.trim()
                         ? tab.title.trim()
-                        : "Mémo " + (index + 1);
+                        : "Page " + (index + 1);
                     const content = typeof tab.content === "string" ? tab.content : "";
                     return { id, title, content };
                 });
                 const activeId = normalizedTabs.some(tab => tab.id === raw.activeTabId)
                     ? raw.activeTabId
                     : normalizedTabs[0].id;
-                return { tabs: normalizedTabs, activeTabId: activeId };
+                const templateId = typeof raw.templateId === "string" ? raw.templateId : null;
+                const templateLabel = typeof raw.templateLabel === "string" ? raw.templateLabel : null;
+                return { tabs: normalizedTabs, activeTabId: activeId, templateId, templateLabel };
             }
 
             function loadState() {
@@ -851,7 +816,7 @@
 
             function addTab() {
                 const id = createId();
-                const title = "Mémo " + (state.tabs.length + 1);
+                const title = "Page " + (state.tabs.length + 1);
                 state.tabs.push({ id, title, content: "" });
                 setActiveTab(id);
             }
@@ -877,7 +842,9 @@
             function buildSharePayload() {
                 return {
                     tabs: state.tabs,
-                    activeTabId: state.activeTabId
+                    activeTabId: state.activeTabId,
+                    templateId: state.templateId || null,
+                    templateLabel: state.templateLabel || null
                 };
             }
 
@@ -1072,11 +1039,213 @@
                 memoInfoPopup?.classList.remove("open");
             }
 
+            function escapeHtml(value) {
+                return String(value || "")
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#39;");
+            }
+
+            function formatInlineMarkdown(text) {
+                let out = escapeHtml(text);
+                out = out.replace(/`([^`]+)`/g, (_, code) => `<code>${escapeHtml(code)}</code>`);
+                out = out.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+                out = out.replace(/__([^_]+)__/g, "<strong>$1</strong>");
+                out = out.replace(/\*([^*]+)\*/g, "<em>$1</em>");
+                out = out.replace(/_([^_]+)_/g, "<em>$1</em>");
+                out = out.replace(/~~([^~]+)~~/g, "<s>$1</s>");
+                out = out.replace(/==([^=]+)==/g, "<mark>$1</mark>");
+                out = out.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, label, url) => {
+                    const safeLabel = escapeHtml(label);
+                    const safeUrl = String(url || "").trim();
+                    if (!/^https?:\/\//i.test(safeUrl)) return safeLabel;
+                    return `<a href="${escapeHtml(safeUrl)}" target="_blank" rel="noopener noreferrer">${safeLabel}</a>`;
+                });
+                return out;
+            }
+
+            function renderMemoTemplateMarkdown(markdown) {
+                const raw = String(markdown || "");
+                if (!raw.trim()) return "";
+
+                const lines = raw.replace(/\r\n/g, "\n").split("\n");
+                const html = [];
+
+                let inCodeBlock = false;
+                let codeLines = [];
+
+                let listItems = [];
+                let taskItems = [];
+                let quoteLines = [];
+
+                function flushList() {
+                    if (!listItems.length) return;
+                    html.push(`<ul>${listItems.map(item => `<li>${formatInlineMarkdown(item)}</li>`).join("")}</ul>`);
+                    listItems = [];
+                }
+
+                function flushTasks() {
+                    if (!taskItems.length) return;
+                    html.push(
+                        `<ul data-type="taskList">${taskItems.map(item =>
+                            `<li data-type="taskItem" data-checked="${item.checked ? "true" : "false"}">${formatInlineMarkdown(item.text)}</li>`
+                        ).join("")}</ul>`
+                    );
+                    taskItems = [];
+                }
+
+                function flushQuote() {
+                    if (!quoteLines.length) return;
+                    const content = quoteLines.map(line => `<p>${formatInlineMarkdown(line)}</p>`).join("");
+                    html.push(`<blockquote>${content}</blockquote>`);
+                    quoteLines = [];
+                }
+
+                function tryParseTable(startIndex) {
+                    const headerLine = lines[startIndex];
+                    const sepLine = lines[startIndex + 1];
+                    if (!headerLine || !sepLine) return null;
+                    if (!/\|/.test(headerLine)) return null;
+                    if (!/^\s*\|?\s*:?[-]{2,}.*\|.*$/.test(sepLine.trim())) return null;
+
+                    const readRow = (line) => {
+                        const trimmed = String(line || "").trim();
+                        if (!trimmed) return null;
+                        if (!/\|/.test(trimmed)) return null;
+                        const parts = trimmed
+                            .replace(/^\|/, "")
+                            .replace(/\|$/, "")
+                            .split("|")
+                            .map(cell => cell.trim());
+                        return parts;
+                    };
+
+                    const header = readRow(headerLine);
+                    if (!header || !header.length) return null;
+
+                    const rows = [];
+                    let i = startIndex + 2;
+                    for (; i < lines.length; i++) {
+                        const row = readRow(lines[i]);
+                        if (!row) break;
+                        rows.push(row);
+                    }
+
+                    const thead = `<tr>${header.map(cell => `<th>${formatInlineMarkdown(cell)}</th>`).join("")}</tr>`;
+                    const tbody = rows.map(r => `<tr>${r.map(cell => `<td>${formatInlineMarkdown(cell)}</td>`).join("")}</tr>`).join("");
+                    const tableHtml = `<table><tbody>${thead}${tbody}</tbody></table>`;
+                    return { html: tableHtml, nextIndex: i - 1 };
+                }
+
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i];
+                    const trimmed = String(line || "").trim();
+
+                    if (/^```/.test(trimmed)) {
+                        flushList();
+                        flushTasks();
+                        flushQuote();
+                        if (inCodeBlock) {
+                            html.push(`<pre><code>${escapeHtml(codeLines.join("\n"))}</code></pre>`);
+                            codeLines = [];
+                            inCodeBlock = false;
+                        } else {
+                            inCodeBlock = true;
+                        }
+                        continue;
+                    }
+
+                    if (inCodeBlock) {
+                        codeLines.push(line);
+                        continue;
+                    }
+
+                    const maybeTable = tryParseTable(i);
+                    if (maybeTable) {
+                        flushList();
+                        flushTasks();
+                        flushQuote();
+                        html.push(maybeTable.html);
+                        i = maybeTable.nextIndex;
+                        continue;
+                    }
+
+                    if (!trimmed) {
+                        flushList();
+                        flushTasks();
+                        flushQuote();
+                        continue;
+                    }
+
+                    const quoteMatch = trimmed.match(/^>\s?(.*)$/);
+                    if (quoteMatch) {
+                        flushList();
+                        flushTasks();
+                        quoteLines.push(quoteMatch[1] || "");
+                        continue;
+                    }
+
+                    const headingMatch = trimmed.match(/^(#{1,3})\s+(.*)$/);
+                    if (headingMatch) {
+                        flushList();
+                        flushTasks();
+                        flushQuote();
+                        const level = headingMatch[1].length;
+                        const tag = level === 1 ? "h1" : level === 2 ? "h2" : "h3";
+                        html.push(`<${tag}>${formatInlineMarkdown(headingMatch[2])}</${tag}>`);
+                        continue;
+                    }
+
+                    const taskMatch = trimmed.match(/^[-*+]\s+\[( |x|X)\]\s+(.*)$/);
+                    if (taskMatch) {
+                        flushList();
+                        flushQuote();
+                        taskItems.push({ checked: /x/i.test(taskMatch[1]), text: taskMatch[2] || "" });
+                        continue;
+                    }
+
+                    const listMatch = trimmed.match(/^[-*+]\s+(.*)$/);
+                    if (listMatch) {
+                        flushTasks();
+                        flushQuote();
+                        listItems.push(listMatch[1] || "");
+                        continue;
+                    }
+
+                    flushList();
+                    flushTasks();
+                    flushQuote();
+                    html.push(`<p>${formatInlineMarkdown(trimmed)}</p>`);
+                }
+
+                flushList();
+                flushTasks();
+                flushQuote();
+
+                if (inCodeBlock && codeLines.length) {
+                    html.push(`<pre><code>${escapeHtml(codeLines.join("\n"))}</code></pre>`);
+                }
+
+                return html.join("\n");
+            }
+
+            let templateInsertMode = "append";
+
             function applyTemplateContent(template) {
                 if (!template) return;
-                const content = template.content || "";
-                memoEditorApi?.setValue(content);
-                updateActiveTabContent(content);
+                const markdown = template.markdown || "";
+                const html = renderMemoTemplateMarkdown(markdown);
+                const current = getActiveTab()?.content || "";
+                const next = templateInsertMode === "append" && current.trim()
+                    ? `${current}\n<p></p>\n${html}`
+                    : html;
+                memoEditorApi?.setValue(next);
+                updateActiveTabContent(next);
+                state.templateId = template.id || null;
+                state.templateLabel = template.label || null;
+                persistState();
             }
 
             function renderTemplateList() {
@@ -1087,7 +1256,7 @@
                     btn.type = "button";
                     btn.className = "gt-template-card";
                     btn.dataset.templateId = template.id;
-                    btn.innerHTML = `<h4>${template.label}</h4><p>Structure de base pour démarrer un mémo.</p>`;
+                    btn.innerHTML = `<h4>${template.label}</h4><p>${template.description || ""}</p>`;
                     btn.addEventListener("click", () => {
                         templateModalList.querySelectorAll(".gt-template-card--selected")
                             .forEach(el => el.classList.remove("gt-template-card--selected"));
@@ -1106,7 +1275,8 @@
                 return templates.find(template => template.id === id) || templates[0];
             }
 
-            function openTemplateModal() {
+            function openTemplateModal(mode) {
+                templateInsertMode = mode || "append";
                 renderTemplateList();
                 templateModal?.classList.add("open");
                 templateModal?.setAttribute("aria-hidden", "false");
@@ -1274,7 +1444,9 @@
                 reader.readAsText(file);
             }
 
-            let state = loadState() || createDefaultState();
+            const initialState = loadState();
+            let state = initialState || createDefaultState();
+            const shouldOpenTemplateOnStart = !initialState;
 
             renderTabs();
             setupMemoPrompt();
@@ -1285,6 +1457,9 @@
                     if (!memoEditorApi) return;
                     memoEditorApi.onChange(value => updateActiveTabContent(value));
                     setActiveTab(state.activeTabId);
+                    if (shouldOpenTemplateOnStart) {
+                        openTemplateModal("replace");
+                    }
                 })
                 .catch(err => {
                     console.error("Initialisation de l'éditeur Mémo impossible", err);
@@ -1292,6 +1467,7 @@
 
             addTabBtn?.addEventListener("click", () => {
                 addTab();
+                openTemplateModal("replace");
             });
 
             deleteTabBtn?.addEventListener("click", () => {
@@ -1318,6 +1494,7 @@
                 renderTabs();
                 setActiveTab(state.activeTabId);
                 persistState();
+                openTemplateModal("replace");
             });
 
             saveDocumentBtn?.addEventListener("click", async () => {
@@ -1380,7 +1557,7 @@
                 handleShareUpdate();
             });
 
-            templateModalTrigger?.addEventListener("click", () => openTemplateModal());
+            templateModalTrigger?.addEventListener("click", () => openTemplateModal("append"));
             templateModalClose?.addEventListener("click", () => closeTemplateModal());
             templateModal?.addEventListener("click", event => {
                 if (event.target === templateModal) closeTemplateModal();

@@ -5,8 +5,12 @@
     "path": "content/guide_home.md",
     "updatedAt": "2025-12-29T00:00:00Z"
   },
-  {
-    "name": "Canvas",
+  {    "name": "Mémo",
+    "abstract": "Éditeur riche avec assistants IA, révision collaborative et exports multiformat.",
+    "path": "content/guide_memo.md",
+    "updatedAt": "2026-01-06T00:00:00Z"
+  },
+  {    "name": "Canvas",
     "abstract": "Comment structurer une présentation et lancer un template métier.",
     "path": "content/guide_canvas.md",
     "updatedAt": "2025-12-29T00:00:00Z"

@@ -1,4 +1,188 @@
 (function (global) {
+    const memoTemplates = [
+        {
+            id: "default",
+            label: "🕊️ Générique",
+            description: "Structure de base pour démarrer un mémo",
+            markdown:
+                "# Mémo — Guide rapide\n" +
+                "\n" +
+                "## Mise en forme\n" +
+                "- **Gras**, *italique*, ~~barré~~, `code` (tous les styles Markdown standard fonctionnent dans l’éditeur).\n" +
+                "- ==Surligné== : utilise-le pour marquer les ajouts IA, puis supprime ou garde selon la relecture.\n" +
+                "- Liens : [GoToolkit](https://gotoolkit.workers.dev) ou vers tout document de référence.\n" +
+                "\n" +
+                "### Listes\n" +
+                "- Utilise des puces (-) pour les idées, et complète chaque item par 1–2 phrases contextuelles.\n" +
+                "- Pour les workflows, préférer des listes numérotées (1., 2., 3.) avec action-clé associée.\n+                "\n" +
+                "### Tâches (cases à cocher)\n" +
+                "- [ ] Mentionne le responsable et l'échéance sur la même ligne pour garder la traçabilité.\n" +
+                "- [x] Ajoute un commentaire sur le résultat ou le suivi afin de capitaliser sur les actions closes.\n+                "\n" +
+                "## Tableaux\n" +
+                "| Sujet | Statut | Priorité | Détails |\n" +
+                "| --- | --- | --- | --- |\n" +
+                "| Rédaction | En cours | Haute | Définir le message clé proposé à l'équipe marketing. |\n" +
+                "| Relecture | À faire | Moyenne | Vérifier les références et les liens partagés. |\n" +
+                "- Ajoute une colonne « Détails » ou « Prochaines étapes » pour expliciter le suivi.\n" +
+                "- Tu peux imbriquer un mini-tableau ou une liste dans une cellule si ça apporte de la clarté.\n+                "\n" +
+                "## Citations\n" +
+                "> La simplicité est la sophistication suprême.\n" +
+                "> — Léonard de Vinci\n" +
+                "- Pour indiquer le contexte, ajoute un second paragraphe en italique (ex : *Retours de l’atelier du 05/01*).\n" +
+                "\n" +
+                "## Bloc de code\n" +
+                "```js\n" +
+                "const message = 'Hello';\n" +
+                "console.log(message);\n" +
+                "// Utilise des commentaires dans le bloc pour expliquer les choix techniques.\n" +
+                "```\n" +
+                "\n" +
+                "## IA — mode édition (sélection ou document)\n" +
+                "- **Sélection** : sélectionne du texte puis demande une modification (l'IA renvoie seulement la sélection).\n" +
+                "- **Document complet** : ne sélectionne rien si tu veux une réécriture globale.\n" +
+                "- L'IA marque les **ajouts** avec ==...== et les **suppressions** avec ~~...~~.\n" +
+                "- Tu peux **garder** le résultat ou **annuler** (notamment en sélection).\n" +
+                "- Ajoute des documents en **contexte** pour aider l'IA (brief, specs, notes...).\n"
+        }
+        ,
+        {
+            id: "vision",
+            label: "🎯 Vision Produit",
+            description: "Clarifie problème, cible, valeur et North Star",
+            markdown:
+                "# Vision Produit\n" +
+                "## Problème\n" +
+                "- Quelle situation frustrante voulons-nous changer ?\n" +
+                "- Indique le runtime actuel et les irritants.\n" +
+                "## Cible\n" +
+                "- Personas prioritaires, contexte d’usage, critères de succès initiaux.\n" +
+                "## Valeur\n" +
+                "- Quelles promesses métier et UX doit-on tenir ?\n" +
+                "- Mesure de la valeur (revenu, satisfaction, efficacité).\n" +
+                "## North Star\n" +
+                "- Indicateur unique qui pilote les efforts (ex : Cœur d’usage x fréquence).\n"
+        }
+        ,
+        {
+            id: "strategy",
+            label: "🧭 Product Strategy",
+            description: "Décompose axes, paris, risques et succès",
+            markdown:
+                "# Product Strategy\n" +
+                "## Axes stratégiques\n" +
+                "- Axe 1 : ... (contexte business).\n" +
+                "- Axe 2 : ... (croissance, adoption, fidélisation).\n" +
+                "## Paris\n" +
+                "- Paris 1 : hypothèse + gain anticipé.\n" +
+                "- Paris 2 : test rapide ou solution.\n" +
+                "## Risques\n" +
+                "- Risque produit, tech, ou marché.\n" +
+                "## Succès\n" +
+                "- Signaux qui indiquent que la stratégie fonctionne.\n"
+        }
+        ,
+        {
+            id: "roadmap",
+            label: "🗺️ Roadmap Produit",
+            description: "Outcome-driven : thèmes → outcomes → initiatives",
+            markdown:
+                "# Roadmap Produit\n" +
+                "## Thèmes\n" +
+                "- Thème A : objectif macro, contexte, parties prenantes.\n" +
+                "## Outcomes\n" +
+                "- Outcome 1 : métrique cible, délai, bénéficiaires.\n" +
+                "- Outcome 2 : impact utilisateur et résultats mesurables.\n" +
+                "## Initiatives\n" +
+                "- Initiative 1 : quoi, qui, dépendances, état current.\n" +
+                "- Initiative 2 : MVP + indicateurs de progression.\n"
+        }
+        ,
+        {
+            id: "prd",
+            label: "📦 PRD – Product Requirements",
+            description: "User stories, règles métier et contraintes",
+            markdown:
+                "# PRD — Product Requirements Document\n" +
+                "## User Stories\n" +
+                "- En tant que ..., je veux ..., afin de ... (critères d’acceptance).\n" +
+                "## Règles métier\n" +
+                "- Règle 1 : description + conséquence en cas de non respect.\n" +
+                "## Contraintes\n" +
+                "- Technique : etc.\n" +
+                "- Réglementaire/Data : etc.\n" +
+                "## Définitions de succès\n" +
+                "- Indicateurs de qualité, satisfaction, non-régression.\n"
+        }
+        ,
+        {
+            id: "metrics",
+            label: "📊 Product Metrics & KPI",
+            description: "Structure funnel + indicateurs clés et feedback",
+            markdown:
+                "# Product Metrics & KPI\n" +
+                "## Funnel\n" +
+                "- Acquisition : source, coût moyen, volume.\n" +
+                "- Activation : conversion, time-to-value, friction.\n" +
+                "- Retention : cohortes, churn, actions de relance.\n" +
+                "## Indicateurs clés\n" +
+                "- KPI 1 : définition, valeur cible, fréquence.\n" +
+                "- KPI 2 : ...\n" +
+                "## Feedback loop\n" +
+                "- Comment les retours clients influence l’itération produit ?\n"
+        }
+        ,
+        {
+            id: "discovery",
+            label: "🧪 Discovery / Experimentation Report",
+            description: "Documente hypothèses, tests, décisions",
+            markdown:
+                "# Discovery / Experimentation Report\n" +
+                "## Hypothèses\n" +
+                "- Hypothèse A : comportement attendu + données de référence.\n" +
+                "## Tests\n" +
+                "- Test 1 : méthode, métriques suivies, résultats.\n" +
+                "- Test 2 : enseignements et limites.\n" +
+                "## Décisions prises\n" +
+                "- Décision 1 : justification + prochain sprint.\n"
+        }
+        ,
+        {
+            id: "competences",
+            label: "🧠 Compétences PO / PM",
+            description: "Checklist produit, business, delivery, soft skills, tech",
+            markdown:
+                "# Compétences PO / PM\n" +
+                "## Produit\n" +
+                "- Connaissance du problème client, métriques.\n" +
+                "## Business\n" +
+                "- Modèle économique, ROI, stakeholders.\n" +
+                "## Delivery\n" +
+                "- Roadmap, backlog, QA, release.\n" +
+                "## Soft skills\n" +
+                "- Communication, leadership, facilitation.\n" +
+                "## Tech literacy\n" +
+                "- Architecture cible, dépendances critiques, dette technique.\n"
+        }
+        ,
+        {
+            id: "architecture",
+            label: "🧩 Architecture Data & Tech Produit",
+            description: "Sources → Mapping → Interface → Analytics → IA",
+            markdown:
+                "# Architecture Data & Tech Produit\n" +
+                "## Sources\n" +
+                "- Données captées : events, APIs, partenaires.\n" +
+                "## Mapping\n" +
+                "- Comment les données sont transformées, stockées.\n" +
+                "## Interface\n" +
+                "- Livrables pour les équipes (APIs, dashboards).\n" +
+                "## Analytics\n" +
+                "- Workspace, KPIs, SQL, fréquence des rapports.\n" +
+                "## IA / Automations\n" +
+                "- Cas d’usage IA, sources, contraintes éthiques.\n"
+        }
+    ];
+
     const canvasTemplates = [
         {
             id: "roadmap",
@@ -1373,6 +1557,7 @@ Contraintes de nommage et quantités :
 - Les mots sont en français et adaptés au contexte utilisateur.
 `;
     global.GoPrompts = {
+        memoTemplates,
         canvasTemplates,
         canvasExamples,
         drawPrompts,

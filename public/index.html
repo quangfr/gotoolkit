@@ -430,6 +430,19 @@
             right: 38px;
         }
 
+        .share-card-template {
+            display: inline-flex;
+            align-items: center;
+            font-size: 0.65rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            padding: 2px 8px;
+            border-radius: 999px;
+            border: 1px solid #9ca3af;
+            background: rgba(156, 163, 175, 0.18);
+            color: #6b7280;
+        }
+
         .share-helper {
             margin: 8px 0 0;
             color: var(--muted);
@@ -2358,6 +2371,7 @@
             const capsuleDrafts = window.goToolkitCapsuleDrafts;
 
             const APP_DEFINITIONS = {
+                memo: { emoji: "⊞", name: "Mémo", page: "memo.html?v=2026.01.06", collection: "memos" },
                 nuances: { emoji: "◍", name: "Canvas", page: "canvas.html?v=2026.01.06", collection: "slides" },
                 plan: { emoji: "⇥", name: "Timeline", page: "timeline.html?v=2026.01.06", collection: "timelines" },
                 draw: { emoji: "◇", name: "Draw", page: "draw.html?v=2026.01.06", collection: "diagrams" },
@@ -2442,7 +2456,7 @@
                 const clean = stripEmojiPrefix(label);
                 if (!clean) return "";
                 const safe = clean.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-                return `<span class="superpower-tag">${safe}</span>`;
+                return `<span class="share-card-template">${safe}</span>`;
             }
 
             function extractPreview(app, payload) {
@@ -2502,6 +2516,19 @@
                     const scenario = firstPage?.scenario || "";
                     const lines = normalizeLines(summary || scenario || transcript);
                     const templateLabel = firstPage?.templateName || firstPage?.templateId || "";
+                    return { tabName, lines, templateLabel };
+                }
+                if (app === "memo") {
+                    const firstTab = payload?.tabs?.[0];
+                    const tabName = firstTab?.title || "Mémo";
+                    const content = firstTab?.content || "";
+                    const plainText = content
+                        .replace(/<[^>]+>/g, " ")
+                        .replace(/[*_`~[\]()#+\-]/g, " ")
+                        .trim();
+                    const firstLine = plainText.split(/\r?\n/)[0]?.trim() || "";
+                    const lines = firstLine ? [firstLine] : [];
+                    const templateLabel = payload?.templateLabel || payload?.templateId || "";
                     return { tabName, lines, templateLabel };
                 }
                 return { tabName: "Sans titre", lines: [], templateLabel: "" };
