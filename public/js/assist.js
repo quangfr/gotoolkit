@@ -138,7 +138,7 @@
     }
 
     function getAllowedPromptPresetIds() {
-        if (CHAT_APP_ID === "memo") return ["edit"];
+        if (CHAT_APP_ID === "memo") return ["edit", "suggest"];
         if (CHAT_APP_ID === "index") return ["advice", "ask"];
         return ["advice", "ask"];
     }
@@ -636,7 +636,7 @@
 
     AssistSidebar.prototype.syncKnowledgeModalVisibility = function () {
         if (!this.isOpen) return;
-        if (this.promptPresetId === "ask" || this.promptPresetId === "edit") {
+        if (this.promptPresetId === "ask" || this.promptPresetId === "edit" || this.promptPresetId === "suggest") {
             this.closeKnowledgeModal(false);
         } else {
             // Mode "advice" (conseiller)
@@ -1063,6 +1063,12 @@
             || storePresets?.edit?.defaultPrompt
             || "";
 
+        var suggestPersisted = getPersistedPromptOrEmpty("goToolkit.chat.prompt.suggest");
+        var suggestPrompt = suggestPersisted
+            || storePresets?.suggest?.prompt
+            || storePresets?.suggest?.defaultPrompt
+            || "";
+
         var all = {
             advice: {
                 id: "advice",
@@ -1073,6 +1079,11 @@
                 id: "ask",
                 label: storePresets?.ask?.label || "⌕ Explorer",
                 prompt: askPrompt
+            },
+            suggest: {
+                id: "suggest",
+                label: storePresets?.suggest?.label || "✦ Suggérer",
+                prompt: suggestPrompt
             },
             edit: {
                 id: "edit",
@@ -1093,6 +1104,13 @@
         var next = allowed.includes(presetId) ? presetId : (allowed[0] || "advice");
         this.promptPresetId = next;
         persistPromptPreset(next);
+        try {
+            if (global.document && typeof global.CustomEvent === "function") {
+                global.document.dispatchEvent(new global.CustomEvent("goToolkitChatPromptPresetChanged", {
+                    detail: { presetId: next, appId: CHAT_APP_ID }
+                }));
+            }
+        } catch (err) { /* ignore */ }
         this.updatePromptDropdownLabel();
         this.updateHeaderDocumentCount();
         this.refreshDocumentStats();
@@ -1105,6 +1123,13 @@
             if (persisted) return persisted;
             return global.GoToolkitChatPrompt?.INFO_PROMPT
                 || global.GoToolkitChatPrompt?.DEFAULT_INFO_PROMPT
+                || "";
+        }
+        if (this.promptPresetId === "suggest") {
+            var persistedSuggest = getPersistedPromptOrEmpty("goToolkit.chat.prompt.suggest");
+            if (persistedSuggest) return persistedSuggest;
+            return global.GoToolkitChatPrompt?.PRESETS.suggest?.prompt
+                || global.GoToolkitChatPrompt?.PRESETS.suggest?.defaultPrompt
                 || "";
         }
         if (this.promptPresetId === "edit") {
@@ -1128,7 +1153,7 @@
         var messages = [{ role: "system", content: promptContent }];
         var userContent = (userMessage?.content || "").trim();
         if (userContent) {
-            if (this.promptPresetId === "edit") {
+            if (this.promptPresetId === "edit" || this.promptPresetId === "suggest") {
                 var docContent = window.getEditorMarkdown ? window.getEditorMarkdown() : (window.getEditorContent ? window.getEditorContent() : "");
                 userContent = "DOCUMENT\n" + docContent + "\n\nASK\n" + userContent;
             } else {
@@ -1653,7 +1678,7 @@
 
         var userMessage = createMessage("user", value);
         var systemPrompt = this.getActiveSystemPrompt();
-        var shouldFetchKnowledge = this.promptPresetId !== "ask" && this.promptPresetId !== "edit";
+        var shouldFetchKnowledge = this.promptPresetId !== "ask" && this.promptPresetId !== "edit" && this.promptPresetId !== "suggest";
         var docInfo = null;
         if (this.docManager) {
             var contextParams = this.getRetrievalParamsForQuestion(value);
@@ -1788,7 +1813,7 @@
             botMessage.content = parsed.content;
             botMessage.references = parsed.references;
             botMessage.suggestions = parsed.suggestions;
-            if (this.promptPresetId === "edit") {
+            if (this.promptPresetId === "edit" || this.promptPresetId === "suggest") {
                 var applied = false;
                 if (parsed.output && typeof window.setEditorMarkdown === "function") {
                     window.setEditorMarkdown(parsed.output);

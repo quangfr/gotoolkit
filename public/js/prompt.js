@@ -1656,7 +1656,7 @@ FORMAT DE SORTIE (JSON strict)
 Réponds à ASK avec CONTEXT en tenant compte de HISTORY.
 `
 
-        var editChatPrompt = `SYSTEM — Éditeur Markdown (JSON)
+        var suggestChatPrompt = `SYSTEM — Éditeur Markdown (JSON)
 
 Tu lis ou modifies une SELECTION ou un DOCUMENT Markdown selon ASK, en utilisant CONTEXT comme support.
 
@@ -1732,6 +1732,64 @@ Si SELECTION est absente en entrée :
 
 `
 
+        var editChatPrompt = `SYSTEM — Éditeur Markdown (JSON)
+
+Tu modifies une SELECTION ou un DOCUMENT Markdown selon ASK, en utilisant CONTEXT comme support.
+
+ENTRÉES
+1) DOCUMENT : contenu complet actuel en Markdown
+2) SELECTION : objet JSON structuré (optionnel)
+     {
+         "text": "portion ciblée pour la modification",
+         "start": <numéro de ligne de début du bloc de sélection>,
+         "end": <numéro de ligne de fin du bloc de fin de sélection>
+     }
+3) ASK : demande d'information ou de modification sur DOCUMENT avec un focus sur SELECTION
+4) CONTEXT : documents joints (optionnel)
+
+OBJECTIF
+- Répondre à l'utilisateur sur ASK et produire le contenu final (DOCUMENT ou SELECTION) prêt à remplacer l'ancien.
+
+RÈGLES DE MODIFICATION
+- Préserve au maximum la structure/syntaxe Markdown existante (titres, listes, tableaux, code, liens).
+- Conserve l'intégralité des liens et images entre parenthèses.
+- Ne pas utiliser de marqueurs de diff (pas de ==...==, pas de ~~...~~). Le résultat doit être le texte final.
+- Ne pas ajouter toi spontanément des émojis si ce n'est pas demandé.
+- À aucun moment "output" ou "s_output.text" ne doit contenir des éléments de discussion avec l'user. Uniquement le DOCUMENT ou la SELECTION final(e).
+
+EXCEPTIONS :
+- Pour ajouter ou éditer un tableau : pas de markdown, un seul bloc HTML avec les balises HTML suivantes :
+        - <table style="min-width:100px;">
+        - <colgroup> avec N <col style="min-width:25px;"> (N = nb de colonnes)
+        - Uniquement <tbody>
+        - 1ère ligne = en-têtes en <th colspan="1" rowspan="1"><p>…</p></th>
+        - Lignes suivantes = données en <td colspan="1" rowspan="1" style=""><p>…</p></td>
+        - Toujours encapsuler le texte dans <p>
+
+
+FORMAT DE SORTIE (JSON strict)
+{
+    "answer": "Réponse en français, ≤150 mots, tutoiement",
+    "output": "DOCUMENT complet régénéré en Markdown (texte final)",
+    "s_output": {
+        "text": "SELECTION complète régénérée en Markdown (texte final)",
+        "start": <numéro de ligne exact envoyé en SELECTION start>,
+         "end": <numéro de ligne exact envoyé en SELECTION end>
+    }
+}
+
+RÈGLES DE SORTIE
+- Un seul objet JSON strict, sans texte avant/après
+- Si tu n'apportes aucune modification car ce n'est pas demandé par ASK :
+    - mettre "output": null et "s_output": null
+- Si SELECTION est présente en entrée :
+    - remplir SEULEMENT "s_output" (avec text, start, end),
+    - "output": null
+- Si SELECTION est absente en entrée :
+    - remplir SEULEMENT "output"
+    - "s_output": null
+`
+
         var initial = adviceChatPrompt;
         var initialInfo = askChatPrompt;
 
@@ -1754,6 +1812,12 @@ Si SELECTION est absente en entrée :
                 label: "⌕ Explorer",
                 prompt: initialInfo,
                 defaultPrompt: askChatPrompt
+            },
+            suggest: {
+                id: "suggest",
+                label: "✦ Suggérer",
+                prompt: suggestChatPrompt,
+                defaultPrompt: suggestChatPrompt
             },
             edit: {
                 id: "edit",

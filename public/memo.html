@@ -714,7 +714,8 @@
                     ],
                     activeTabId: id,
                     templateId: null,
-                    templateLabel: null
+                    templateLabel: null,
+                    promptPresetId: "edit"
                 };
             }
 
@@ -735,7 +736,11 @@
                     : normalizedTabs[0].id;
                 const templateId = typeof raw.templateId === "string" ? raw.templateId : null;
                 const templateLabel = typeof raw.templateLabel === "string" ? raw.templateLabel : null;
-                return { tabs: normalizedTabs, activeTabId: activeId, templateId, templateLabel };
+                const allowedPresets = ["edit", "suggest"];
+                const promptPresetId = (typeof raw.promptPresetId === "string" && allowedPresets.includes(raw.promptPresetId))
+                    ? raw.promptPresetId
+                    : "edit";
+                return { tabs: normalizedTabs, activeTabId: activeId, templateId, templateLabel, promptPresetId };
             }
 
             function loadState() {
@@ -845,7 +850,8 @@
                     tabs: state.tabs,
                     activeTabId: state.activeTabId,
                     templateId: state.templateId || null,
-                    templateLabel: state.templateLabel || null
+                    templateLabel: state.templateLabel || null,
+                    promptPresetId: state.promptPresetId || "edit"
                 };
             }
 
@@ -992,6 +998,7 @@
                         currentShareToken = token;
                         renderTabs();
                         setActiveTab(state.activeTabId);
+                        syncAssistPresetFromState();
                         syncShareLink();
                         updateShareMenuStatus("Lien chargé.", "");
                         return true;
@@ -1289,53 +1296,61 @@
             }
 
             function openPromptModal() {
-                function readPresetId() {
-                    return "edit";
+                function getAllowedPresetIds() {
+                    const storePresets = window.GoToolkitChatPrompt?.PRESETS || {};
+                    const assistSidebar = window.GoToolkitAssistInstance;
+                    if (assistSidebar && typeof assistSidebar.getPromptPresets === "function") {
+                        const allowed = assistSidebar.getPromptPresets();
+                        return Object.keys(allowed || {}).filter(Boolean);
+                    }
+                    return ["edit", "suggest"].filter(id => Object.prototype.hasOwnProperty.call(storePresets, id));
                 }
 
-                function getPresetIds(presets) {
-                    const ids = Object.keys(presets || {}).filter(Boolean);
-                    const base = ["advice", "ask", "edit"].filter(id => ids.includes(id));
-                    const extra = ids.filter(id => !base.includes(id));
-                    return base.concat(extra);
+                function readPromptForPreset(presetId) {
+                    const store = window.GoToolkitChatPrompt || {};
+                    const presets = store.PRESETS || {};
+                    const key = presetId === "suggest"
+                        ? "goToolkit.chat.prompt.suggest"
+                        : "goToolkit.chat.prompt.edit";
+                    try {
+                        return (localStorage.getItem(key) || presets[presetId]?.prompt || presets[presetId]?.defaultPrompt || "").trim();
+                    } catch (err) {
+                        return (presets[presetId]?.prompt || presets[presetId]?.defaultPrompt || "").trim();
+                    }
                 }
 
-                function ensurePresetOptions() {
+                function ensurePresetOptions(allowedIds) {
                     if (!promptPresetSelect || !window.GoToolkitChatPrompt?.PRESETS) return;
                     const presets = window.GoToolkitChatPrompt.PRESETS;
-                    const ids = ["edit"].filter(id => Object.prototype.hasOwnProperty.call(presets, id));
                     promptPresetSelect.innerHTML = "";
-                    ids.forEach(id => {
+                    allowedIds.forEach(id => {
                         const preset = presets[id] || {};
                         const opt = document.createElement("option");
                         opt.value = id;
                         opt.textContent = preset.label || id;
                         promptPresetSelect.appendChild(opt);
                     });
-                    promptPresetSelect.disabled = true;
-                }
-
-                function readPromptForPreset(presetId) {
-                    const store = window.GoToolkitChatPrompt || {};
-                    const presets = store.PRESETS || {};
-                    if (presetId === "edit") {
-                        try {
-                            return (localStorage.getItem("goToolkit.chat.prompt.edit") || presets.edit?.prompt || presets.edit?.defaultPrompt || "").trim();
-                        } catch (err) {
-                            return (presets.edit?.prompt || presets.edit?.defaultPrompt || "").trim();
-                        }
-                    }
-                    return "";
+                    promptPresetSelect.disabled = allowedIds.length <= 1;
                 }
 
                 if (promptEditor && window.GoToolkitChatPrompt) {
-                    ensurePresetOptions();
-                    const activeId = readPresetId();
+                    const allowedIds = getAllowedPresetIds();
+                    ensurePresetOptions(allowedIds);
+
+                    const assistPreset = window.GoToolkitAssistInstance?.promptPresetId;
+                    const fallbackPreset = state?.promptPresetId;
+                    const activeId = (assistPreset && allowedIds.includes(assistPreset))
+                        ? assistPreset
+                        : (fallbackPreset && allowedIds.includes(fallbackPreset))
+                            ? fallbackPreset
+                            : (allowedIds.includes("edit") ? "edit" : (allowedIds[0] || "edit"));
+
                     if (promptPresetSelect) {
                         promptPresetSelect.value = activeId;
                     }
                     promptEditor.value = readPromptForPreset(activeId);
                 }
+
                 promptModal?.classList.add("open");
                 promptModal?.setAttribute("aria-hidden", "false");
             }
@@ -1349,6 +1364,7 @@
                 const promptStore = window.GoToolkitChatPrompt || {};
                 const defaultPrompt = promptStore.DEFAULT_SYSTEM_PROMPT || promptStore.SYSTEM_PROMPT || "";
                 const defaultInfoPrompt = promptStore.DEFAULT_INFO_PROMPT || promptStore.INFO_PROMPT || "";
+                const defaultSuggestPrompt = promptStore.PRESETS?.suggest?.defaultPrompt || promptStore.PRESETS?.suggest?.prompt || "";
                 const defaultEditPrompt = promptStore.PRESETS?.edit?.defaultPrompt || promptStore.PRESETS?.edit?.prompt || "";
                 promptStore.SYSTEM_PROMPT = promptStore.SYSTEM_PROMPT || defaultPrompt;
                 promptStore.DEFAULT_SYSTEM_PROMPT = defaultPrompt;
@@ -1369,6 +1385,12 @@
                             prompt: promptStore.INFO_PROMPT,
                             defaultPrompt: defaultInfoPrompt
                         },
+                        suggest: {
+                            id: "suggest",
+                            label: "✦ Suggérer",
+                            prompt: defaultSuggestPrompt,
+                            defaultPrompt: defaultSuggestPrompt
+                        },
                         edit: {
                             id: "edit",
                             label: "✂ Éditer",
@@ -1384,20 +1406,46 @@
                 if (!window.GoToolkitChatPrompt) return;
                 const trimmed = (value || "").trim();
 
-                if (presetId === "edit") {
-                    const fallback = window.GoToolkitChatPrompt.PRESETS?.edit?.defaultPrompt || "";
-                    const next = trimmed || fallback;
-                    if (window.GoToolkitChatPrompt.PRESETS?.edit) {
-                        window.GoToolkitChatPrompt.PRESETS.edit.prompt = next;
-                    }
-                    try {
-                        localStorage.setItem("goToolkit.chat.prompt.edit", next);
-                    } catch (err) {
-                        console.warn("Prompt save failed", err);
-                    }
-                    return;
+                if (presetId !== "edit" && presetId !== "suggest") return;
+
+                const preset = window.GoToolkitChatPrompt.PRESETS?.[presetId];
+                const fallback = preset?.defaultPrompt || "";
+                const next = trimmed || fallback;
+                if (preset) {
+                    preset.prompt = next;
+                }
+                const key = presetId === "suggest" ? "goToolkit.chat.prompt.suggest" : "goToolkit.chat.prompt.edit";
+                try {
+                    localStorage.setItem(key, next);
+                } catch (err) {
+                    console.warn("Prompt save failed", err);
                 }
             }
+
+            function normalizeMemoPromptPresetId(value) {
+                return value === "suggest" ? "suggest" : "edit";
+            }
+
+            function syncAssistPresetFromState() {
+                const presetId = normalizeMemoPromptPresetId(state?.promptPresetId);
+                const assist = window.GoToolkitAssistInstance;
+                if (assist && typeof assist.setPromptPreset === "function") {
+                    assist.setPromptPreset(presetId);
+                }
+            }
+
+            document.addEventListener("goToolkitChatPromptPresetChanged", (event) => {
+                const detail = event?.detail || {};
+                if (detail.appId && detail.appId !== "memo") return;
+                const next = normalizeMemoPromptPresetId(detail.presetId);
+                if (!state || state.promptPresetId === next) return;
+                state.promptPresetId = next;
+                persistState();
+            });
+
+            document.addEventListener("goToolkitAssistMounted", () => {
+                syncAssistPresetFromState();
+            });
 
             function exportJson() {
                 const payload = buildSharePayload();
@@ -1435,6 +1483,7 @@
                         state = loaded;
                         renderTabs();
                         setActiveTab(state.activeTabId);
+                        syncAssistPresetFromState();
                         persistState();
                         setStatus("Mémo importé");
                     } catch (err) {
@@ -1451,6 +1500,7 @@
 
             renderTabs();
             setupMemoPrompt();
+            syncAssistPresetFromState();
 
             memoEditorReady
                 .then(api => {
@@ -1494,6 +1544,7 @@
                 renderTabs();
                 setActiveTab(state.activeTabId);
                 persistState();
+                syncAssistPresetFromState();
                 // Open assist modal by default
                 window.GoToolkitAssistInstance?.open?.();
                 openTemplateModal("replace");
@@ -1577,27 +1628,24 @@
             });
             promptPresetSelect?.addEventListener("change", () => {
                 if (!promptEditor || !window.GoToolkitChatPrompt) return;
-                const presetId = "edit";
+                const presetId = (promptPresetSelect.value || "edit").trim();
                 const presets = window.GoToolkitChatPrompt.PRESETS || {};
-                if (presetId === "edit") {
-                    try {
-                        promptEditor.value = (localStorage.getItem("goToolkit.chat.prompt.edit") || presets.edit?.prompt || presets.edit?.defaultPrompt || "").trim();
-                    } catch (err) {
-                        promptEditor.value = (presets.edit?.prompt || presets.edit?.defaultPrompt || "").trim();
-                    }
-                    return;
+                if (presetId !== "edit" && presetId !== "suggest") return;
+                const key = presetId === "suggest" ? "goToolkit.chat.prompt.suggest" : "goToolkit.chat.prompt.edit";
+                try {
+                    promptEditor.value = (localStorage.getItem(key) || presets[presetId]?.prompt || presets[presetId]?.defaultPrompt || "").trim();
+                } catch (err) {
+                    promptEditor.value = (presets[presetId]?.prompt || presets[presetId]?.defaultPrompt || "").trim();
                 }
             });
             resetPromptBtn?.addEventListener("click", () => {
                 if (!window.GoToolkitChatPrompt) return;
-                const presetId = "edit";
-                if (presetId === "edit") {
-                    promptEditor.value = window.GoToolkitChatPrompt.PRESETS?.edit?.defaultPrompt || "";
-                    return;
-                }
+                const presetId = (promptPresetSelect?.value || "edit").trim();
+                if (presetId !== "edit" && presetId !== "suggest") return;
+                promptEditor.value = window.GoToolkitChatPrompt.PRESETS?.[presetId]?.defaultPrompt || "";
             });
             applyPromptBtn?.addEventListener("click", () => {
-                const presetId = "edit";
+                const presetId = (promptPresetSelect?.value || "edit").trim();
                 applyPromptChanges(presetId, promptEditor.value);
                 closePromptModal();
                 setStatus("Prompt mis à jour");
@@ -1686,6 +1734,9 @@
             if (!chatRoot || !window.GoToolkitAssist) return;
             const chatInstance = window.GoToolkitAssist.mount(chatRoot);
             window.GoToolkitAssistInstance = chatInstance;
+            try {
+                document.dispatchEvent(new CustomEvent("goToolkitAssistMounted", { detail: { appId: "memo" } }));
+            } catch (err) { /* ignore */ }
         })();
     </script>
 
@@ -1855,8 +1906,22 @@
                     }
 
                     // Construire le payload avec SELECTION structuré
+                    const activePresetId = (window.GoToolkitAssistInstance?.promptPresetId || "edit").trim();
+                    const presetId = (activePresetId === "suggest" ? "suggest" : "edit");
+                    const presetKey = presetId === "suggest" ? "goToolkit.chat.prompt.suggest" : "goToolkit.chat.prompt.edit";
+                    let systemPrompt = '';
+                    try {
+                        systemPrompt = (localStorage.getItem(presetKey) || '').trim();
+                    } catch (err) {
+                        systemPrompt = '';
+                    }
+                    if (!systemPrompt) {
+                        systemPrompt = (window.GoToolkitChatPrompt?.PRESETS?.[presetId]?.prompt
+                            || window.GoToolkitChatPrompt?.PRESETS?.[presetId]?.defaultPrompt
+                            || 'Éditer le texte fourni.');
+                    }
                     const payload = {
-                        system: window.GoToolkitChatPrompt?.PRESETS?.edit?.prompt || 'Éditer le texte fourni.',
+                        system: systemPrompt,
                         messages: [
                             {
                                 role: 'user',
