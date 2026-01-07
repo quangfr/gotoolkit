@@ -1599,7 +1599,7 @@
                         <button type="button" class="tab-btn active" data-tab="servicesTab">🧠 Services IA</button>
                         <button type="button" class="tab-btn" data-tab="promptTab">💬 Prompt Chat</button>
                     </div>
-                    <div class="settings-tab-panels-wrapper" style="max-height: 98vh; overflow-y: auto;">
+                    <div class="settings-tab-panels-wrapper" style="max-height: 60vh; overflow-y: auto;">
                         <div class="settings-tab-panel" data-panel="servicesTab">
                             <div class="field-row">
                                 <label style="width:100%">
@@ -1748,26 +1748,31 @@
                                 </div>
                             </div>
 
-                            <div class="settings-tab-panel" data-panel="promptTab" hidden>
-                                <div class="field-row">
-                                    <label>
-                                        <span class="label-title">Preset</span>
-                                        <select id="chatPromptPresetSelect">
-                                            <option value="advice">↬ Conseiller</option>
-                                            <option value="ask">⌕ Explorer</option>
-                                        </select>
-                                    </label>
-                                </div>
-                                <div class="field-row">
-
-                                    <textarea id="chatPromptTextarea" rows="15"></textarea>
-                                </div>
-                            </div>
-
                         </div>
-                        <div class="feedback-actions">
-                            <button id="resetChatPromptBtn" type="button" class="btn-secondary"
-                                hidden>Réinitialiser</button>
+                        <div class="settings-tab-panel" data-panel="promptTab" hidden>
+                            <div class="field-row">
+                                <label>
+                                    <span class="label-title">Preset</span>
+                                    <select id="chatPromptPresetSelect">
+                                        <option value="advice">↬ Conseiller</option>
+                                        <option value="ask">⌕ Explorer</option>
+                                        <option value="suggest">✦ Suggérer</option>
+                                        <option value="edit">✂ Éditer</option>
+                                    </select>
+                                </label>
+                            </div>
+                            <div class="field-row">
+                                <label>
+                                    <span class="label-title">Prompt</span>
+                                    <textarea id="chatPromptTextarea" rows="15"
+                                        placeholder="Entrez le prompt personnalisé..."></textarea>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="feedback-actions">
+                        <button id="resetChatPromptBtn" type="button" class="btn-secondary"
+                            hidden>Réinitialiser</button>
                             <button id="saveSettingsBtn" type="button" class="btn-primary">Sauvegarder</button>
                         </div>
                 </form>

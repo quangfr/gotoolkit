@@ -1,10 +1,14 @@
 (function () {
     const DB_NAME = "go-toolkit";
-    const DB_VERSION = 3;
+    const DB_VERSION = 6;
     const STORES = [
         "capsule-drafts",
         "share-history",
-        "documents-settings"
+        "documents-settings",
+        "memo-images",
+        "knowledge-manifest",
+        "knowledge-overrides",
+        "knowledge-selection"
     ];
 
     function isIndexedDbAvailable() {

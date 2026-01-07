@@ -1,5 +1,5 @@
 import React from 'react';
-import { useEditor, EditorContent, Editor } from '@tiptap/react';
+import { useEditor, EditorContent, Editor, ReactRenderer } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import Highlight from '@tiptap/extension-highlight';
@@ -7,6 +7,8 @@ import Superscript from '@tiptap/extension-superscript';
 import Subscript from '@tiptap/extension-subscript';
 import TextAlign from '@tiptap/extension-text-align';
 import Image from '@tiptap/extension-image';
+import Emoji, { gitHubEmojis } from '@tiptap/extension-emoji';
+import { computePosition } from '@floating-ui/dom';
 import { Table } from '@tiptap/extension-table';
 import TableRow from '@tiptap/extension-table-row';
 import TableHeader from '@tiptap/extension-table-header';
@@ -646,6 +648,165 @@ const Toolbar = ({ editor }: { editor: Editor }) => {
   );
 };
 
+// Emoji List Component
+const EmojiList = React.forwardRef((props: any, ref: any) => {
+  const [selectedIndex, setSelectedIndex] = React.useState(0);
+
+  const selectItem = (index: number) => {
+    const item = props.items[index];
+    if (item) {
+      props.command({ name: item.name });
+    }
+  };
+
+  const upHandler = () => {
+    setSelectedIndex((selectedIndex + props.items.length - 1) % props.items.length);
+  };
+
+  const downHandler = () => {
+    setSelectedIndex((selectedIndex + 1) % props.items.length);
+  };
+
+  const enterHandler = () => {
+    selectItem(selectedIndex);
+  };
+
+  React.useEffect(() => setSelectedIndex(0), [props.items]);
+
+  React.useImperativeHandle(ref, () => {
+    return {
+      onKeyDown: (x: any) => {
+        if (x.event.key === 'ArrowUp') {
+          upHandler();
+          return true;
+        }
+        if (x.event.key === 'ArrowDown') {
+          downHandler();
+          return true;
+        }
+        if (x.event.key === 'Enter') {
+          enterHandler();
+          return true;
+        }
+        return false;
+      },
+    };
+  }, [upHandler, downHandler, enterHandler]);
+
+  return (
+    <div
+      style={{
+        background: 'white',
+        border: '1px solid #ccc',
+        borderRadius: '8px',
+        boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+        padding: '4px',
+        maxHeight: '200px',
+        overflowY: 'auto',
+      }}
+    >
+      {props.items.map((item: any, index: number) => (
+        <button
+          key={index}
+          onClick={() => selectItem(index)}
+          style={{
+            display: 'block',
+            width: '100%',
+            textAlign: 'left',
+            padding: '6px',
+            background: index === selectedIndex ? '#f0f0f0' : 'white',
+            border: 'none',
+            cursor: 'pointer',
+            borderRadius: '4px',
+            fontSize: '14px',
+          }}
+        >
+          <span style={{ fontSize: '18px', marginRight: '8px' }}>
+            {item.fallbackImage ? <img src={item.fallbackImage} style={{ height: '18px', width: '18px' }} alt={item.name} /> : item.emoji}
+          </span>
+          :{item.name}:
+        </button>
+      ))}
+    </div>
+  );
+});
+
+// Emoji suggestion configuration
+const suggestion = {
+  items: ({ query }: { query: string }) => {
+    return gitHubEmojis
+      .filter(({ shortcodes, tags }: { shortcodes: string[]; tags: string[] }) => {
+        return (
+          shortcodes.find(shortcode => shortcode.startsWith(query.toLowerCase())) ||
+          tags.find(tag => tag.startsWith(query.toLowerCase()))
+        );
+      })
+      .slice(0, 10);
+  },
+
+  allowSpaces: false,
+
+  render: () => {
+    let component: any;
+
+    function repositionComponent(clientRect: DOMRect) {
+      if (!component?.element) return;
+
+      const virtualElement = {
+        getBoundingClientRect() {
+          return clientRect;
+        },
+      };
+
+      computePosition(virtualElement, component.element, {
+        placement: 'bottom-start',
+      }).then((pos: any) => {
+        Object.assign(component.element.style, {
+          left: `${pos.x}px`,
+          top: `${pos.y}px`,
+          position: pos.strategy === 'fixed' ? 'fixed' : 'absolute',
+        });
+      });
+    }
+
+    return {
+      onStart: (props: any) => {
+        component = new ReactRenderer(EmojiList, {
+          props,
+          editor: props.editor,
+        });
+
+        document.body.appendChild(component.element);
+        repositionComponent(props.clientRect());
+      },
+
+      onUpdate(props: any) {
+        component.updateProps(props);
+        repositionComponent(props.clientRect());
+      },
+
+      onKeyDown(props: any) {
+        if (props.event.key === 'Escape') {
+          if (document.body.contains(component.element)) {
+            document.body.removeChild(component.element);
+          }
+          component.destroy();
+          return true;
+        }
+
+        return component.ref?.onKeyDown(props);
+      },
+
+      onExit() {
+        if (component?.element && document.body.contains(component.element)) {
+          document.body.removeChild(component.element);
+        }
+        component?.destroy();
+      },
+    };
+  },
+};
+
 const SimpleEditor: React.FC<SimpleEditorProps> = ({ 
   content = '', 
   onChange, 
@@ -666,6 +827,11 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         types: ['heading', 'paragraph'],
       }),
       Image,
+      Emoji.configure({
+        emojis: gitHubEmojis,
+        enableEmoticons: true,
+        suggestion,
+      }),
       Table.configure({
         resizable: true,
       }),

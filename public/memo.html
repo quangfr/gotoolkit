@@ -803,6 +803,7 @@
             function setActiveTab(tabId) {
                 const target = state.tabs.find(tab => tab.id === tabId);
                 if (!target) return;
+                console.log('[setActiveTab] Switching to tab:', tabId, 'content length:', (target.content || '').length);
                 state.activeTabId = target.id;
                 if (memoEditorApi) {
                     memoEditorApi.setValue(target.content || "");
@@ -814,6 +815,7 @@
             function updateActiveTabContent(value) {
                 const tab = getActiveTab();
                 if (!tab) return;
+                console.log('[updateActiveTabContent] Saving content for tab:', tab.id, 'length:', value.length);
                 tab.content = typeof value === "string" ? value : "";
                 persistState();
             }
