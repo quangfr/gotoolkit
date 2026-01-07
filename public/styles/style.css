@@ -1274,7 +1274,7 @@ label {
   align-items: center;
 }
 
-.chat-corpus-modal-toggle {
+.chat-memoire-modal-toggle {
   font-size: 0.85rem;
   color: #475569;
   padding: 4px 9px;
@@ -1286,7 +1286,7 @@ label {
   transition: opacity 0.2s ease;
 }
 
-.chat-corpus-modal-toggle--refreshing {
+.chat-memoire-modal-toggle--refreshing {
   opacity: 0.5;
 }
 

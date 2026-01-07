@@ -3,7 +3,7 @@
 - Mode "Demander" `À planifier`
 
 ## Module Assist (Promptzilla)`T1 2026`
-- Affichage de la bibliothèque locale en corpus`À étudier`
+- Affichage de la bibliothèque locale en mémoire`À étudier`
 - Intégration pour Draw et Grid`À planifier`
 
 ## Module Voice (Tuto Tarantino)`T1 2026`

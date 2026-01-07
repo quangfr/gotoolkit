@@ -5,7 +5,7 @@
 
 ## 2026-01-04
 - Module [Assist](/#assist) : exploration de documents assistée IA
-- Prévisualisation, corpus et références 
+- Prévisualisation, mémoire et références 
 - Moteur IA `gpt-oss-20b` plus rapide et sans rétention de données
 
 ## 2025-12-29

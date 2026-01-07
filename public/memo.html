@@ -1801,6 +1801,7 @@
                 currentSelection = {
                     text: detail.selectionText,
                     blockText: detail.blockText || detail.selectionText,
+                    blockMarkdown: detail.blockMarkdown || detail.blockText || detail.selectionText,
                     excerpt: detail.selectionExcerpt,
                     from: detail.positionFrom,
                     to: detail.positionTo,
@@ -1889,35 +1890,54 @@
                     }
 
                     // Récupérer le contenu du document
-                    const documentContent = (window.getEditorMarkdown?.() ||
+                    const documentMarkdown = (
+                        window.getEditorMarkdown?.() ||
+                        window.getMemoEditorSource?.('markdown') ||
+                        ''
+                    );
+                    const documentContent = (documentMarkdown ||
                         editorInstance.getHTML?.() ||
                         '');
 
-                    // Calculer les numéros de ligne du bloc sélectionné
-                    const lines = documentContent.split('\n');
+                    // Calculer les numéros de ligne du bloc sélectionné (dans le Markdown)
                     let selectionStartLine = 0;
-                    let currentLineNum = 0;
-                    let charCount = 0;
+                    let selectionEndLine = 0;
+                    const selectionBlockMarkdown = (currentSelection.blockMarkdown || '').toString().trim();
 
-                    for (let i = 0; i < lines.length; i++) {
-                        const lineLength = lines[i].length + 1; // +1 pour le newline
-                        if (charCount + lineLength > currentSelection.from) {
-                            selectionStartLine = i;
-                            break;
+                    // 1) Méthode robuste: retrouver le bloc markdown dans le markdown du doc
+                    if (documentMarkdown && selectionBlockMarkdown) {
+                        const idx = documentMarkdown.indexOf(selectionBlockMarkdown);
+                        if (idx >= 0) {
+                            selectionStartLine = documentMarkdown.slice(0, idx).split('\n').length - 1;
+                            selectionEndLine = selectionStartLine + selectionBlockMarkdown.split('\n').length;
                         }
-                        charCount += lineLength;
                     }
 
-                    // Calculer la ligne de fin
-                    charCount = 0;
-                    let selectionEndLine = lines.length;
-                    for (let i = 0; i < lines.length; i++) {
-                        const lineLength = lines[i].length + 1;
-                        if (charCount + lineLength > currentSelection.to) {
-                            selectionEndLine = i + 1;
-                            break;
+                    // 2) Fallback historique: approximation via positions ProseMirror
+                    if (!Number.isFinite(selectionEndLine) || selectionEndLine <= selectionStartLine) {
+                        const lines = documentContent.split('\n');
+                        let charCount = 0;
+
+                        for (let i = 0; i < lines.length; i++) {
+                            const lineLength = lines[i].length + 1; // +1 pour le newline
+                            if (charCount + lineLength > currentSelection.from) {
+                                selectionStartLine = i;
+                                break;
+                            }
+                            charCount += lineLength;
                         }
-                        charCount += lineLength;
+
+                        // Calculer la ligne de fin
+                        charCount = 0;
+                        selectionEndLine = lines.length;
+                        for (let i = 0; i < lines.length; i++) {
+                            const lineLength = lines[i].length + 1;
+                            if (charCount + lineLength > currentSelection.to) {
+                                selectionEndLine = i + 1;
+                                break;
+                            }
+                            charCount += lineLength;
+                        }
                     }
 
                     // Construire le payload avec SELECTION structuré
@@ -1941,7 +1961,7 @@
                             {
                                 role: 'user',
                                 content: `DOCUMENT:\n${documentContent}\n\nSELECTION:\n${JSON.stringify({
-                                    text: currentSelection.blockText,
+                                    text: (currentSelection.blockMarkdown || currentSelection.blockText),
                                     start: selectionStartLine,
                                     end: selectionEndLine
                                 })}\n\nASK:\n${input.value}`,

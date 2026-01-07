@@ -159,6 +159,7 @@ const CustomTableCell = TableCell.extend({
 })
 
 import { NodeSelection } from 'prosemirror-state';
+import { DOMSerializer } from 'prosemirror-model';
 
 // Fonctions utilitaires pour les marks
 const hasMarkInSelection = (editor: Editor | null, markName: 'highlight' | 'strike'): boolean => {
@@ -653,18 +654,22 @@ const EmojiList = React.forwardRef((props: any, ref: any) => {
   const [selectedIndex, setSelectedIndex] = React.useState(0);
 
   const selectItem = (index: number) => {
-    const item = props.items[index];
+    const item = props.items?.[index];
     if (item) {
       props.command({ name: item.name });
     }
   };
 
   const upHandler = () => {
-    setSelectedIndex((selectedIndex + props.items.length - 1) % props.items.length);
+    const len = props.items?.length || 0;
+    if (!len) return;
+    setSelectedIndex((prev: number) => (prev + len - 1) % len);
   };
 
   const downHandler = () => {
-    setSelectedIndex((selectedIndex + 1) % props.items.length);
+    const len = props.items?.length || 0;
+    if (!len) return;
+    setSelectedIndex((prev: number) => (prev + 1) % len);
   };
 
   const enterHandler = () => {
@@ -691,7 +696,7 @@ const EmojiList = React.forwardRef((props: any, ref: any) => {
         return false;
       },
     };
-  }, [upHandler, downHandler, enterHandler]);
+  }, [selectedIndex, props.items]);
 
   return (
     <div
@@ -705,7 +710,7 @@ const EmojiList = React.forwardRef((props: any, ref: any) => {
         overflowY: 'auto',
       }}
     >
-      {props.items.map((item: any, index: number) => (
+      {(props.items || []).map((item: any, index: number) => (
         <button
           key={index}
           onClick={() => selectItem(index)}
@@ -812,6 +817,8 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   onChange, 
   placeholder = 'Commencez à écrire...' 
 }) => {
+  const turndownRef = React.useRef<any>(null);
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -855,21 +862,24 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     if (editor) {
       (window as any).MemoEditor = editor;
 
-      const turndown = new TurndownService({
-        headingStyle: 'atx',
-        codeBlockStyle: 'fenced',
-        bulletListMarker: '-',
-      });
-      try {
-        turndown.use(gfm);
-      } catch (err) {
-        // ignore plugin load failures
+      if (!turndownRef.current) {
+        const turndown = new TurndownService({
+          headingStyle: 'atx',
+          codeBlockStyle: 'fenced',
+          bulletListMarker: '-',
+        });
+        try {
+          turndown.use(gfm);
+        } catch (err) {
+          // ignore plugin load failures
+        }
+        turndownRef.current = turndown;
       }
 
       (window as any).getEditorMarkdown = () => {
         try {
           if (typeof editor.getHTML === 'function') {
-            return turndown.turndown(editor.getHTML());
+            return (turndownRef.current?.turndown(editor.getHTML()) || '').toString();
           }
           if (typeof editor.getText === 'function') {
             return editor.getText();
@@ -928,7 +938,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   React.useEffect(() => {
     if (!editor) return;
 
-    let selectionTimeout: NodeJS.Timeout;
+    let selectionTimeout: ReturnType<typeof setTimeout>;
 
     const handleSelectionChange = () => {
       const { from, to } = editor.state.selection;
@@ -953,6 +963,20 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           // Récupérer le texte sélectionné
           const selectedText = editor.state.doc.textBetween(from, to, ' ');
 
+          // Récupérer le markdown de la sélection (préserve la mise en forme)
+          let selectionMarkdown = '';
+          try {
+            const slice = editor.state.selection.content();
+            const serializer = DOMSerializer.fromSchema(editor.state.schema);
+            const fragment = serializer.serializeFragment(slice.content);
+            const tmp = document.createElement('div');
+            tmp.appendChild(fragment);
+            const html = tmp.innerHTML;
+            selectionMarkdown = (turndownRef.current?.turndown(html) || '').trim();
+          } catch (err) {
+            selectionMarkdown = '';
+          }
+
           // Étendre la sélection au bloc complet (paragraphe, tableau, liste, code block)
           let blockFrom = from;
           let blockTo = to;
@@ -976,6 +1000,20 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           // Extraire le texte du bloc complet
           blockText = editor.state.doc.textBetween(blockFrom, blockTo, '\n').trim();
 
+          // Extraire le markdown du bloc complet (préserve listes, gras, titres, etc.)
+          let blockMarkdown = '';
+          try {
+            const blockSlice = editor.state.doc.slice(blockFrom, blockTo);
+            const serializer = DOMSerializer.fromSchema(editor.state.schema);
+            const fragment = serializer.serializeFragment(blockSlice.content);
+            const tmp = document.createElement('div');
+            tmp.appendChild(fragment);
+            const html = tmp.innerHTML;
+            blockMarkdown = (turndownRef.current?.turndown(html) || '').trim();
+          } catch (err) {
+            blockMarkdown = '';
+          }
+
           // Calculer la position (en bas de la sélection, à gauche du début)
           try {
             const coordsStart = editor.view.coordsAtPos(blockFrom);
@@ -986,7 +1024,9 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
               detail: {
                 isSelected: true,
                 selectionText: selectedText,
+                selectionMarkdown: selectionMarkdown,
                 blockText: blockText,
+                blockMarkdown: blockMarkdown,
                 selectionExcerpt: blockText.substring(0, 100) + (blockText.length > 100 ? '…' : ''),
                 positionFrom: blockFrom,
                 positionTo: blockTo,
@@ -1021,11 +1061,6 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   if (!editor) {
     return null;
   }
-
-  const { from, to } = editor.state.selection;
-  const hasSelection = from !== to && (
-    hasMarkInSelection(editor, 'highlight') || hasMarkInSelection(editor, 'strike')
-  );
 
   return (
     <div className="simple-editor">

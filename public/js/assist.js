@@ -1228,8 +1228,8 @@
             if (this.promptPresetId === "edit" || this.promptPresetId === "suggest") {
                 // Priority: getMemoActiveTabContent (memo app with tabs) > getEditorMarkdown (generic editor) > getEditorContent (fallback)
                 var docContent = (typeof window.getMemoActiveTabContent === "function" ? window.getMemoActiveTabContent() : "") ||
-                                 (window.getEditorMarkdown ? window.getEditorMarkdown() : "") ||
-                                 (window.getEditorContent ? window.getEditorContent() : "");
+                    (window.getEditorMarkdown ? window.getEditorMarkdown() : "") ||
+                    (window.getEditorContent ? window.getEditorContent() : "");
                 userContent = "DOCUMENT\n" + docContent + "\n\nASK\n" + userContent;
             } else {
                 userContent = "ASK\n" + userContent;
@@ -2125,8 +2125,8 @@
 
         this.headerDocCountEl = document.createElement("button");
         this.headerDocCountEl.type = "button";
-        this.headerDocCountEl.className = "chat-corpus-modal-toggle";
-        this.headerDocCountEl.textContent = "🗎 Corpus";
+        this.headerDocCountEl.className = "chat-memoire-modal-toggle";
+        this.headerDocCountEl.textContent = "🗎 Mémoire";
         this.headerDocCountEl.setAttribute("title", this.headerDocCountTooltipDefault);
         this.headerDocCountEl.addEventListener("click", this.handleHeaderDocCountClick.bind(this));
         this.headerDocCountEl.addEventListener("keydown", function (event) {
@@ -2445,7 +2445,7 @@
         return counts;
     };
 
-    AssistSidebar.prototype.getCorpusDocumentCount = function () {
+    AssistSidebar.prototype.getMemoireDocumentCount = function () {
         var entries = Array.isArray(this.knowledgeManifestEntries) ? this.knowledgeManifestEntries : [];
         var seen = new Set();
         var count = 0;
@@ -2473,11 +2473,11 @@
 
     AssistSidebar.prototype.updateHeaderDocumentCount = function () {
         if (!this.headerDocCountEl) return;
-        var showCorpusButton = this.promptPresetId !== "ask";
-        this.headerDocCountEl.style.display = showCorpusButton ? "" : "none";
-        var count = this.getCorpusDocumentCount();
+        var showMemoireButton = this.promptPresetId !== "ask";
+        this.headerDocCountEl.style.display = showMemoireButton ? "" : "none";
+        var count = this.getMemoireDocumentCount();
         this.headerDocCountEl.dataset.count = count;
-        this.headerDocCountEl.textContent = "🗎 Corpus";
+        this.headerDocCountEl.textContent = "🗎 Mémoire";
     };
 
     AssistSidebar.prototype.getVersionParam = function () {
@@ -2747,7 +2747,7 @@
         left.className = "chat-knowledge-modal__header-left";
         var title = document.createElement("div");
         title.className = "chat-knowledge-modal__title";
-        title.textContent = "🗎 Corpus | 0 documents";
+        title.textContent = "🗎 Mémoire | 0 documents";
         left.appendChild(title);
         var actions = document.createElement("div");
         actions.className = "chat-knowledge-modal__header-actions";
@@ -2804,9 +2804,9 @@
             this.knowledgeModalTitleEl.textContent = this.knowledgeModalStatusMessage;
             return;
         }
-        var count = this.getCorpusDocumentCount();
+        var count = this.getMemoireDocumentCount();
         var suffix = count === 1 ? "document" : "documents";
-        this.knowledgeModalTitleEl.textContent = "🗎 Corpus | " + count + " " + suffix;
+        this.knowledgeModalTitleEl.textContent = "🗎 Mémoire | " + count + " " + suffix;
     };
 
     AssistSidebar.prototype.setKnowledgeModalStatus = function (message, isError, autoClearMs) {
@@ -4549,17 +4549,17 @@
 
     AssistSidebar.prototype.updateTabIndicator = function () {
         if (!this.tabIndicator) return;
-        
+
         // Check if we're in memo app context with multiple tabs
         var memoTabs = window.__memoState?.tabs;
         var activeTabId = window.__memoState?.activeTabId;
-        
+
         if (Array.isArray(memoTabs) && memoTabs.length > 1 && activeTabId) {
             // Find the active tab
             var activeTab = memoTabs.find(function (tab) {
                 return tab.id === activeTabId;
             });
-            
+
             if (activeTab) {
                 var tabLabel = activeTab.title || ("Page " + (memoTabs.indexOf(activeTab) + 1));
                 this.tabIndicator.textContent = tabLabel;
