@@ -4613,6 +4613,16 @@
 
         let botMessage = null;
 
+        // Capturer la position du scroll avant la requête IA
+        let scrollPosition = 0;
+        try {
+            if (editor && editor.view && editor.view.dom && editor.view.dom.parentElement) {
+                scrollPosition = editor.view.dom.parentElement.scrollTop || 0;
+            }
+        } catch (err) {
+            scrollPosition = 0;
+        }
+
         try {
             // 1. Normaliser le payload (memo.html fournit souvent `payload.system`, mais
             //    le client Responses attend un message `role: system` / instructions).
@@ -4796,6 +4806,19 @@
 
             // 10. Mettre à jour l'éditeur selon le type de remplacement (continue dans le pipe)
             if (editor && editMetadata) {
+                // Restaurer la position du scroll après les modifications
+                const restoreScroll = () => {
+                    try {
+                        if (editor && editor.view && editor.view.dom && editor.view.dom.parentElement) {
+                            setTimeout(() => {
+                                editor.view.dom.parentElement.scrollTop = scrollPosition;
+                            }, 0);
+                        }
+                    } catch (err) {
+                        // noop
+                    }
+                };
+
                 if (editMetadata.sOutput && typeof editMetadata.sOutput.text === 'string') {
                     // Cas SELECTION : remplacer les lignes [start, end[
                     const startLine = Number(editMetadata.sOutput.start);
@@ -4812,6 +4835,7 @@
 
                         if (typeof window.setEditorMarkdown === 'function') {
                             window.setEditorMarkdown(newMarkdown);
+                            restoreScroll();
                         } else {
                             editor
                                 .chain()
@@ -4820,12 +4844,14 @@
                                 .deleteSelection()
                                 .insertContent(newMarkdown)
                                 .run();
+                            restoreScroll();
                         }
                     }
                 } else if (typeof editMetadata.output === 'string' && editMetadata.output.trim()) {
                     // Cas DOCUMENT entier
                     if (typeof window.setEditorMarkdown === 'function') {
                         window.setEditorMarkdown(editMetadata.output);
+                        restoreScroll();
                     } else {
                         editor
                             .chain()
@@ -4834,6 +4860,7 @@
                             .deleteSelection()
                             .insertContent(editMetadata.output)
                             .run();
+                        restoreScroll();
                     }
                 }
             }
