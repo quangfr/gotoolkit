@@ -1,0 +1,1209 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>SVG Drag + Edit (HTML-aware) — White</title>
+    <style>
+        :root {
+            --bg: #ffffff;
+            --panel: #ffffff;
+            --muted: #f6f7f9;
+            --line: #e7e9ee;
+            --text: #111827;
+            --sub: #6b7280;
+            --accent: #2563eb;
+            --shadow: 0 8px 24px rgba(0, 0, 0, .06);
+            --radius: 14px;
+            --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        html,
+        body {
+            height: 100%
+        }
+
+        body {
+            margin: 0;
+            font-family: var(--sans);
+            color: var(--text);
+            background: var(--bg);
+            overflow: hidden;
+        }
+
+        .app {
+            height: 100vh;
+            display: grid;
+            grid-template-columns: 1fr 420px;
+            gap: 10px;
+            padding: 10px;
+        }
+
+        .left,
+        .right {
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: var(--panel);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .bar {
+            height: 44px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            border-bottom: 1px solid var(--line);
+            background: linear-gradient(#fff, #fbfbfd);
+        }
+
+        .title {
+            font-weight: 600;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        .hint {
+            font-size: 12px;
+            color: var(--sub);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .spacer {
+            flex: 1
+        }
+
+        .btn {
+            border: 1px solid var(--line);
+            background: #fff;
+            border-radius: 10px;
+            padding: 7px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            user-select: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            border-color: #d6dae3
+        }
+
+        .btn.primary {
+            border-color: rgba(37, 99, 235, .28);
+            background: rgba(37, 99, 235, .06);
+            color: var(--accent);
+        }
+
+        .btn.danger {
+            border-color: rgba(220, 38, 38, .25);
+            background: rgba(220, 38, 38, .06);
+            color: #dc2626;
+        }
+
+        .chip {
+            font-size: 12px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            border: 1px solid var(--line);
+            background: var(--muted);
+            color: var(--sub);
+            white-space: nowrap;
+        }
+
+        .ico {
+            font-family: var(--mono);
+            font-size: 12px;
+            opacity: .9
+        }
+
+        .canvasWrap {
+            flex: 1;
+            background: var(--muted);
+            padding: 10px;
+            overflow: auto;
+        }
+
+        .canvasCard {
+            border: 1px dashed #cfd5e1;
+            border-radius: 16px;
+            background: #fff;
+            padding: 10px;
+            width: 100%;
+            height: 100%;
+            min-height: 240px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: auto;
+        }
+
+        .split {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+            width: 100%;
+            height: 100%;
+            min-width: 0;
+            min-height: 0;
+        }
+
+        .stage {
+            position: relative;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            overflow: hidden;
+            background: #fff;
+            min-height: 260px;
+            min-width: 0;
+        }
+
+
+
+        .svgHost {
+            width: 100%;
+            height: 100%;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 30px 12px 12px;
+            min-height: 0;
+        }
+
+        .svgHost svg {
+            width: 100%;
+            height: auto;
+            max-height: 100%;
+            display: block;
+            background: #fff;
+            user-select: none;
+            touch-action: none;
+        }
+
+        .inspector {
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            background: #fff;
+            overflow: hidden;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .inspector .head {
+            padding: 10px;
+            border-bottom: 1px solid var(--line);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .inspector .head b {
+            font-size: 13px
+        }
+
+        .inspector .body {
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow: auto;
+        }
+
+        .muted {
+            color: var(--sub);
+            font-size: 12px;
+            line-height: 1.35;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .field label {
+            font-size: 12px;
+            color: var(--sub);
+        }
+
+        .field input,
+        .field textarea {
+            width: 100%;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 8px 10px;
+            font-size: 12px;
+            outline: none;
+            background: #fff;
+            color: var(--text);
+            font-family: var(--mono);
+        }
+
+        .field textarea {
+            min-height: 84px;
+            resize: vertical;
+            line-height: 1.35;
+        }
+
+        .row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .right .editor {
+            flex: 1;
+            padding: 10px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background: var(--muted);
+            min-height: 0;
+        }
+
+        .right .editor textarea.code {
+            flex: 0 0 40%;
+        }
+
+        .right .editor .inspector {
+            flex: 1;
+            min-height: 0;
+        }
+
+        textarea.code {
+            flex: 1;
+            width: 100%;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 10px;
+            font-family: var(--mono);
+            font-size: 12px;
+            line-height: 1.4;
+            outline: none;
+            resize: none;
+            background: #fff;
+            color: var(--text);
+            box-shadow: var(--shadow);
+        }
+
+        .preview {
+            display: none;
+        }
+
+        /* selection overlay */
+        .sel-outline {
+            pointer-events: none;
+            stroke: var(--accent);
+            stroke-width: 1.5;
+            fill: none;
+            vector-effect: non-scaling-stroke;
+            stroke-dasharray: 4 3;
+        }
+
+        .handle {
+            pointer-events: auto;
+            cursor: nwse-resize;
+            fill: #fff;
+            stroke: var(--accent);
+            stroke-width: 1.5;
+            vector-effect: non-scaling-stroke;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app">
+        <section class="left">
+            <div class="bar">
+                <div class="title">🧲 SVG Editor</div>
+                <div class="hint">HTML-aware: supports &lt;style&gt; + var() • Click → drag • Shift+drag clone •
+                    Alt+click delete</div>
+                <div class="spacer"></div>
+                <button class="btn" id="btnFit"><span class="ico">⦿</span>Fit</button>
+                <button class="btn" id="btnCenter"><span class="ico">⊙</span>Center</button>
+                <button class="btn danger" id="btnClearSel"><span class="ico">◌</span>Unselect</button>
+            </div>
+
+            <div class="canvasWrap">
+                <div class="canvasCard">
+                    <div class="stage" id="stage">
+                        <div class="svgHost" id="svgHost"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="right">
+            <div class="bar">
+                <div class="title">🧾 SVG Code (paste full SVG)</div>
+                <div class="hint">We accept raw SVG or HTML that contains a single &lt;svg&gt;…</div>
+                <div class="spacer"></div>
+                <button class="btn" id="btnLoad"><span class="ico">▷</span>Load</button>
+                <button class="btn" id="btnFormat"><span class="ico">☰</span>Format</button>
+                <button class="btn danger" id="btnReset"><span class="ico">⏹</span>Set sample</button>
+            </div>
+            <div class="editor">
+                <textarea id="code" class="code" spellcheck="false"></textarea>
+                <aside class="inspector">
+                    <div class="head">
+                        <b>Inspector</b>
+                        <span class="chip" id="selChip">No selection</span>
+                    </div>
+                    <div class="body">
+                        <div class="muted">
+                            This SVG uses CSS variables inside &lt;style&gt;. We keep it intact and render via
+                            DOM (not &lt;img&gt;).
+                        </div>
+
+                        <div class="field">
+                            <label>id</label>
+                            <input id="f_id" placeholder="(optional)" />
+                        </div>
+                        <div class="field">
+                            <label>tag</label>
+                            <input id="f_tag" disabled />
+                        </div>
+
+                        <div class="row" style="gap:10px">
+                            <div class="field" style="flex:1">
+                                <label>translate x</label>
+                                <input id="f_tx" placeholder="e.g. 0" />
+                            </div>
+                            <div class="field" style="flex:1">
+                                <label>translate y</label>
+                                <input id="f_ty" placeholder="e.g. 0" />
+                            </div>
+                        </div>
+
+                        <div class="row" style="gap:10px">
+                            <div class="field" style="flex:1">
+                                <label>fill (attr)</label>
+                                <input id="f_fill" placeholder='e.g. "#fff" or "var(--bg)" or empty' />
+                            </div>
+                            <div class="field" style="flex:1">
+                                <label>stroke (attr)</label>
+                                <input id="f_stroke" placeholder='e.g. "none" or "var(--line)"' />
+                            </div>
+                        </div>
+
+                        <div class="row" style="gap:10px">
+                            <div class="field" style="flex:1">
+                                <label>stroke-width</label>
+                                <input id="f_sw" placeholder="e.g. 2" />
+                            </div>
+                            <div class="field" style="flex:1">
+                                <label>opacity</label>
+                                <input id="f_op" placeholder="0..1" />
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <label>text content (only for &lt;text&gt;)</label>
+                            <textarea id="f_text" placeholder="Edit text…"></textarea>
+                        </div>
+
+                        <div class="row">
+                            <button class="btn primary" id="btnApply">✓ Apply</button>
+                            <button class="btn" id="btnToCode">⇢ Sync → code</button>
+                        </div>
+
+                        <div class="muted">
+                            Notes:
+                            <br>• Drag = translate() added to element transform (keeps internal coords)
+                            <br>• Works with inline &lt;style&gt; and CSS vars like var(--bg)
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        const $ = (q, el = document) => el.querySelector(q);
+
+        const svgHost = $("#svgHost");
+        const codeTA = $("#code");
+
+        const ui = {
+            selChip: $("#selChip"),
+            f_id: $("#f_id"),
+            f_tag: $("#f_tag"),
+            f_tx: $("#f_tx"),
+            f_ty: $("#f_ty"),
+            f_fill: $("#f_fill"),
+            f_stroke: $("#f_stroke"),
+            f_sw: $("#f_sw"),
+            f_op: $("#f_op"),
+            f_text: $("#f_text"),
+        };
+
+        let svgEl = null;
+        let overlayG = null;
+        let outlineRect = null;
+        let handleBR = null;
+        let selectionRect = null;
+
+        let selection = null;
+        let multiSelection = new Set();
+        let isDragging = false;
+        let isSelectionRectMode = false;
+        let dragStart = { x: 0, y: 0 };
+        let startTranslate = { x: 0, y: 0 };
+
+        let panZoom = { scale: 1 };
+        let resizeMode = null;
+
+        // Your provided SVG (dark theme) works here because we mount real DOM <svg>.
+        // (Only change: keep as a template string.)
+        const PROVIDED_SVG = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="520" viewBox="0 0 1200 520" role="img" aria-label="12-month product roadmap timeline to the Moon">
+  <defs>
+    <style>
+      :root{
+        --bg:#0b1020;
+        --panel:#111a33;
+        --ink:#e9ecff;
+        --muted:#a8b1d6;
+        --line:#2a3a7a;
+        --accent:#8be9fd;
+        --ok:#50fa7b;
+        --warn:#ffb86c;
+        --risk:#ff5555;
+        --chip:#18234a;
+      }
+      text{font-family:Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; fill:var(--ink)}
+      .muted{fill:var(--muted)}
+      .panel{fill:var(--panel); stroke:rgba(255,255,255,.08); stroke-width:1}
+      .h1{font-size:20px; font-weight:700}
+      .h2{font-size:14px; font-weight:700}
+      .small{font-size:12px}
+      .tiny{font-size:11px}
+      .line{stroke:var(--line); stroke-width:3; stroke-linecap:round}
+      .tick{stroke:rgba(255,255,255,.25); stroke-width:2}
+      .dot{fill:var(--accent)}
+      .chip{fill:var(--chip); stroke:rgba(255,255,255,.10); stroke-width:1}
+      .bar{stroke-width:14; stroke-linecap:round}
+      .bartext{font-size:12px; font-weight:600}
+    </style>
+    <filter id="soft" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="6" result="blur"/>
+      <feColorMatrix in="blur" type="matrix"
+        values="0 0 0 0 0
+                0 0 0 0 0
+                0 0 0 0 0
+                0 0 0 .35 0" result="shadow"/>
+      <feMerge>
+        <feMergeNode in="shadow"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect x="0" y="0" width="1200" height="520" fill="var(--bg)"/>
+
+  <g transform="translate(40,34)">
+    <text class="h1">🚀 Product Roadmap — “Go to the Moon” (12 months)</text>
+    <text class="small muted" y="26">Timeline view • key phases + milestones • tweak labels as you like</text>
+  </g>
+
+  <g transform="translate(1010,30)" filter="url(#soft)">
+    <circle cx="40" cy="10" r="2" fill="rgba(255,255,255,.7)"/>
+    <circle cx="90" cy="24" r="2" fill="rgba(255,255,255,.6)"/>
+    <circle cx="18" cy="38" r="1.7" fill="rgba(255,255,255,.55)"/>
+    <circle cx="130" cy="42" r="28" fill="#cfd6ff" opacity=".95"/>
+    <circle cx="120" cy="35" r="6" fill="#b6bff2" opacity=".9"/>
+    <circle cx="142" cy="50" r="5" fill="#b6bff2" opacity=".9"/>
+    <circle cx="132" cy="58" r="3.5" fill="#b6bff2" opacity=".9"/>
+    <g transform="translate(54,56) rotate(-20)">
+      <path d="M0,30 C10,6 28,0 44,6 C42,20 38,36 22,50 C14,46 6,40 0,30 Z" fill="#8be9fd" opacity=".95"/>
+      <path d="M22,50 C24,58 20,66 14,72 C18,72 26,68 30,62 C34,56 34,52 34,52 Z" fill="#ffb86c"/>
+      <circle cx="26" cy="22" r="6" fill="#0b1020" opacity=".85"/>
+      <path d="M10,34 L-4,38 L6,48 Z" fill="#50fa7b" opacity=".9"/>
+      <path d="M36,38 L52,42 L40,54 Z" fill="#50fa7b" opacity=".9"/>
+      <path d="M18,60 C16,74 28,76 26,92 C40,80 36,70 32,60 Z" fill="#ff5555" opacity=".85"/>
+    </g>
+  </g>
+
+  <g transform="translate(40,90)" filter="url(#soft)">
+    <rect class="panel" x="0" y="0" width="1120" height="390" rx="18"/>
+
+    <g transform="translate(60,82)">
+      <line class="line" x1="0" y1="60" x2="1000" y2="60"/>
+
+      <g class="small">
+        <g transform="translate(0,0)">
+          <line class="tick" x1="0" y1="46" x2="0" y2="74"/><circle class="dot" cx="0" cy="60" r="5"/>
+          <text x="-10" y="95" class="tiny muted">M1</text>
+        </g>
+        <g transform="translate(91,0)">
+          <line class="tick" x1="0" y1="46" x2="0" y2="74"/><circle class="dot" cx="0" cy="60" r="5"/>
+          <text x="-10" y="95" class="tiny muted">M2</text>
+        </g>
+        <g transform="translate(182,0)">
+          <line class="tick" x1="0" y1="46" x2="0" y2="74"/><circle class="dot" cx="0" cy="60" r="5"/>
+          <text x="-10" y="95" class="tiny muted">M3</text>
+        </g>
+        <g transform="translate(273,0)">
+          <line class="tick" x1="0" y1="46" x2="0" y2="74"/><circle class="dot" cx="0" cy="60" r="5"/>
+          <text x="-10" y="95" class="tiny muted">M4</text>
+        </g>
+        <g transform="translate(364,0)">
+          <line class="tick" x1="0" y1="46" x2="0" y2="74"/><circle class="dot" cx="0" cy="60" r="5"/>
+          <text x="-10" y="95" class="tiny muted">M5</text>
+        </g>
+        <g transform="translate(455,0)">
+          <line class="tick" x1="0" y1="46" x2="0" y2="74"/><circle class="dot" cx="0" cy="60" r="5"/>
+          <text x="-10" y="95" class="tiny muted">M6</text>
+        </g>
+        <g transform="translate(546,0)">
+          <line class="tick" x1="0" y1="46" x2="0" y2="74"/><circle class="dot" cx="0" cy="60" r="5"/>
+          <text x="-10" y="95" class="tiny muted">M7</text>
+        </g>
+        <g transform="translate(637,0)">
+          <line class="tick" x1="0" y1="46" x2="0" y2="74"/><circle class="dot" cx="0" cy="60" r="5"/>
+          <text x="-10" y="95" class="tiny muted">M8</text>
+        </g>
+        <g transform="translate(728,0)">
+          <line class="tick" x1="0" y1="46" x2="0" y2="74"/><circle class="dot" cx="0" cy="60" r="5"/>
+          <text x="-10" y="95" class="tiny muted">M9</text>
+        </g>
+        <g transform="translate(819,0)">
+          <line class="tick" x1="0" y1="46" x2="0" y2="74"/><circle class="dot" cx="0" cy="60" r="5"/>
+          <text x="-14" y="95" class="tiny muted">M10</text>
+        </g>
+        <g transform="translate(910,0)">
+          <line class="tick" x1="0" y1="46" x2="0" y2="74"/><circle class="dot" cx="0" cy="60" r="5"/>
+          <text x="-14" y="95" class="tiny muted">M11</text>
+        </g>
+        <g transform="translate(1000,0)">
+          <line class="tick" x1="0" y1="46" x2="0" y2="74"/><circle class="dot" cx="0" cy="60" r="5"/>
+          <text x="-14" y="95" class="tiny muted">M12</text>
+        </g>
+      </g>
+
+      <g transform="translate(0,-6)">
+        <text class="h2" x="0" y="-18">Phases</text>
+
+        <line class="bar" x1="0" y1="0" x2="182" y2="0" stroke="var(--accent)"/>
+        <rect class="chip" x="0" y="-22" width="210" height="18" rx="9" opacity=".95"/>
+        <text class="bartext" x="10" y="-8">🔎 Discovery & Vision (M1–M3)</text>
+
+        <line class="bar" x1="182" y1="30" x2="455" y2="30" stroke="var(--ok)"/>
+        <rect class="chip" x="182" y="8" width="250" height="18" rx="9" opacity=".95"/>
+        <text class="bartext" x="192" y="22">🧩 Build Core Systems (M3–M6)</text>
+
+        <line class="bar" x1="455" y1="60" x2="728" y2="60" stroke="var(--warn)"/>
+        <rect class="chip" x="455" y="38" width="250" height="18" rx="9" opacity=".95"/>
+        <text class="bartext" x="465" y="52">🛰️ Integrate & Test (M6–M9)</text>
+
+        <line class="bar" x1="728" y1="90" x2="1000" y2="90" stroke="var(--risk)"/>
+        <rect class="chip" x="728" y="68" width="260" height="18" rx="9" opacity=".95"/>
+        <text class="bartext" x="738" y="82">🌕 Launch & Land (M9–M12)</text>
+      </g>
+
+      <g transform="translate(0,140)">
+        <text class="h2" x="0" y="-14">Milestones</text>
+
+        <g transform="translate(-10,0)">
+          <rect class="chip" x="0" y="0" width="220" height="70" rx="14"/>
+          <text class="small" x="14" y="22">M1 — 🎯 North Star</text>
+          <text class="tiny muted" x="14" y="42">Goals, constraints, success metrics</text>
+          <text class="tiny muted" x="14" y="58">“Why Moon? Why now?”</text>
+          <line x1="10" y1="-80" x2="10" y2="0" stroke="rgba(255,255,255,.14)"/>
+        </g>
+
+        <g transform="translate(165,86)">
+          <rect class="chip" x="0" y="0" width="230" height="70" rx="14"/>
+          <text class="small" x="14" y="22">M3 — 🧪 Prototype</text>
+          <text class="tiny muted" x="14" y="42">Demo mission simulator</text>
+          <text class="tiny muted" x="14" y="58">User feedback loop running</text>
+          <line x1="17" y1="-166" x2="17" y2="0" stroke="rgba(255,255,255,.14)"/>
+        </g>
+
+        <g transform="translate(402,0)">
+          <rect class="chip" x="0" y="0" width="240" height="70" rx="14"/>
+          <text class="small" x="14" y="22">M6 — 🧰 Core v1</text>
+          <text class="tiny muted" x="14" y="42">Flight computer + comms</text>
+          <text class="tiny muted" x="14" y="58">Telemetry + alerting ready</text>
+          <line x1="53" y1="-80" x2="53" y2="0" stroke="rgba(255,255,255,.14)"/>
+        </g>
+
+        <g transform="translate(630,86)">
+          <rect class="chip" x="0" y="0" width="250" height="70" rx="14"/>
+          <text class="small" x="14" y="22">M9 — ✅ Mission Ready</text>
+          <text class="tiny muted" x="14" y="42">Full-system test pass</text>
+          <text class="tiny muted" x="14" y="58">Launch checklist frozen</text>
+          <line x1="7" y1="-166" x2="7" y2="0" stroke="rgba(255,255,255,.14)"/>
+        </g>
+
+        <g transform="translate(910,0)">
+          <rect class="chip" x="0" y="0" width="180" height="70" rx="14"/>
+          <text class="small" x="14" y="22">M12 — 🌕 Landing</text>
+          <text class="tiny muted" x="14" y="42">Launch + land + learn</text>
+          <text class="tiny muted" x="14" y="58">Post-mission roadmap</text>
+          <line x1="90" y1="-80" x2="90" y2="0" stroke="rgba(255,255,255,.14)"/>
+        </g>
+      </g>
+    </g>
+
+    <g transform="translate(60,332)">
+      <text class="tiny muted">Legend:</text>
+      <text class="tiny" x="58" y="0">🔎 Discovery</text>
+      <text class="tiny" x="170" y="0">🧩 Build</text>
+      <text class="tiny" x="255" y="0">🛰️ Test</text>
+      <text class="tiny" x="330" y="0">🌕 Launch</text>
+      <text class="tiny muted" x="430" y="0">• Replace “M1..M12” with real months if needed</text>
+    </g>
+  </g>
+</svg>`;
+
+        // Buttons
+        $("#btnLoad").addEventListener("click", () => loadFromCode());
+        $("#btnReset").addEventListener("click", () => { codeTA.value = PROVIDED_SVG; loadFromCode(); });
+        $("#btnFormat").addEventListener("click", () => { codeTA.value = formatXML(codeTA.value); });
+        $("#btnToCode").addEventListener("click", () => syncToCode());
+        $("#btnApply").addEventListener("click", () => applyInspector());
+        $("#btnClearSel").addEventListener("click", () => setSelection(null));
+        $("#btnFit").addEventListener("click", () => fitToStage());
+        $("#btnCenter").addEventListener("click", () => setZoom(1));
+
+        function init() {
+            codeTA.value = PROVIDED_SVG;   // ✅ loads your SVG by default
+            loadFromCode();
+            setZoom(1);
+        }
+
+        // ✅ Accept: raw SVG OR HTML containing <svg> (e.g. copied from a page)
+        function extractSvgMarkup(text) {
+            const s = text.trim();
+            if (!s) return null;
+
+            // If it's already SVG
+            const svgStart = s.indexOf("<svg");
+            const svgEnd = s.lastIndexOf("</svg>");
+            if (svgStart !== -1 && svgEnd !== -1) {
+                return s.slice(svgStart, svgEnd + 6);
+            }
+            return null;
+        }
+
+        function parseSVG(svgMarkup) {
+            try {
+                const p = new DOMParser();
+                // First try image/svg+xml
+                let doc = p.parseFromString(svgMarkup, "image/svg+xml");
+                let svg = doc.documentElement;
+
+                // Check for parsererror (DOMParser returns HTML doc with parsererror on failure)
+                if (doc.body?.querySelector("parsererror")) {
+                    doc = p.parseFromString(svgMarkup, "text/xml");
+                    svg = doc.documentElement;
+                }
+
+                // If still not SVG, try to find SVG in children
+                if (svg?.tagName?.toLowerCase() !== "svg") {
+                    const found = doc.querySelector("svg");
+                    if (found) {
+                        svg = found;
+                    }
+                }
+
+                if (svg && svg.tagName?.toLowerCase() === "svg") {
+                    return document.importNode(svg, true);
+                }
+            } catch (e) {
+                console.error("[parseSVG] error:", e.message);
+            }
+            return null;
+        }
+
+        function mountSVG(newSvg) {
+            svgHost.innerHTML = "";
+            svgEl = newSvg;
+
+            // Ensure viewBox exists
+            if (!svgEl.getAttribute("viewBox")) {
+                const w = svgEl.getAttribute("width") || 800;
+                const h = svgEl.getAttribute("height") || 400;
+                svgEl.setAttribute("viewBox", `0 0 ${parseFloat(w)} ${parseFloat(h)}`);
+            }
+
+            // Overlay for selection outline/handle
+            overlayG = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            overlayG.setAttribute("id", "__overlay__");
+            svgEl.appendChild(overlayG);
+
+            outlineRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+            outlineRect.setAttribute("class", "sel-outline");
+            outlineRect.setAttribute("visibility", "hidden");
+            overlayG.appendChild(outlineRect);
+
+            handleBR = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+            handleBR.setAttribute("class", "handle");
+            handleBR.setAttribute("width", "10");
+            handleBR.setAttribute("height", "10");
+            handleBR.setAttribute("visibility", "hidden");
+            overlayG.appendChild(handleBR);
+
+            svgHost.appendChild(svgEl);
+
+            svgEl.addEventListener("pointerdown", onPointerDown);
+            svgEl.addEventListener("pointermove", onPointerMove);
+            window.addEventListener("pointerup", onPointerUp);
+            document.addEventListener("keydown", onKeyDown);
+
+            // ctrl/cmd+wheel zoom
+            svgHost.parentElement.addEventListener("wheel", onWheel, { passive: false });
+        }
+
+        function serializeSVG(svg) {
+            const clone = svg.cloneNode(true);
+            const ov = clone.querySelector("#__overlay__");
+            if (ov) ov.remove();
+            return new XMLSerializer().serializeToString(clone);
+        }
+
+        function loadFromCode() {
+            const raw = codeTA.value;
+            const svgMarkup = extractSvgMarkup(raw);
+            if (!svgMarkup) {
+                alert("No <svg>…</svg> found. Paste raw SVG or HTML containing a single SVG.");
+                return;
+            }
+            const parsed = parseSVG(svgMarkup);
+            if (!parsed) {
+                alert("Could not parse SVG. Check syntax (e.g. unclosed tags).");
+                return;
+            }
+            mountSVG(parsed);
+            setSelection(null);
+        }
+
+        function syncToCode() {
+            if (!svgEl) return;
+            codeTA.value = formatXML(serializeSVG(svgEl));
+        }
+
+        // Selection logic
+        function isSelectable(el) {
+            if (!el || el === svgEl) return false;
+            const tag = el.tagName?.toLowerCase();
+            if (!tag) return false;
+            if (el.closest && el.closest("#__overlay__")) return false;
+            // ignore defs internals by default
+            if (tag === "defs" || tag === "style" || tag === "filter" || tag.startsWith("fe")) return false;
+            return true;
+        }
+
+        function setSelection(el) {
+            // Clear previous selection border
+            if (selection) {
+                const prevStroke = selection.getAttribute("data-orig-stroke");
+                if (prevStroke !== null) {
+                    selection.setAttribute("stroke", prevStroke);
+                    selection.removeAttribute("data-orig-stroke");
+                } else {
+                    selection.removeAttribute("stroke");
+                }
+                const prevStrokeWidth = selection.getAttribute("data-orig-stroke-width");
+                if (prevStrokeWidth !== null) {
+                    selection.setAttribute("stroke-width", prevStrokeWidth);
+                    selection.removeAttribute("data-orig-stroke-width");
+                } else {
+                    selection.removeAttribute("stroke-width");
+                }
+                const prevStrokeDasharray = selection.getAttribute("data-orig-stroke-dasharray");
+                if (prevStrokeDasharray !== null) {
+                    selection.setAttribute("stroke-dasharray", prevStrokeDasharray);
+                    selection.removeAttribute("data-orig-stroke-dasharray");
+                } else {
+                    selection.removeAttribute("stroke-dasharray");
+                }
+            }
+
+            selection = el;
+
+            // Add dashed border to new selection
+            if (selection) {
+                // Save original attributes
+                const origStroke = selection.getAttribute("stroke");
+                if (origStroke !== null) {
+                    selection.setAttribute("data-orig-stroke", origStroke);
+                }
+                const origStrokeWidth = selection.getAttribute("stroke-width");
+                if (origStrokeWidth !== null) {
+                    selection.setAttribute("data-orig-stroke-width", origStrokeWidth);
+                }
+                const origStrokeDasharray = selection.getAttribute("stroke-dasharray");
+                if (origStrokeDasharray !== null) {
+                    selection.setAttribute("data-orig-stroke-dasharray", origStrokeDasharray);
+                }
+
+                // Apply selection border
+                selection.setAttribute("stroke", "#2563eb");
+                selection.setAttribute("stroke-width", "2");
+                selection.setAttribute("stroke-dasharray", "4 3");
+            }
+
+            updateOverlay();
+            updateInspector();
+        }
+
+        // Dragging (translate)
+        function onPointerDown(e) {
+            if (!svgEl) return;
+            const target = e.target;
+
+            // Alt+click delete
+            if (e.altKey && isSelectable(target)) {
+                target.remove();
+                setSelection(null);
+                syncToCode();
+                return;
+            }
+
+            // Click handle => (optional) resize mode (kept minimal; this SVG mostly uses <g> anyway)
+            if (target === handleBR && selection) {
+                resizeMode = "br";
+                isDragging = true;
+                svgEl.setPointerCapture(e.pointerId);
+                dragStart = clientToSvgPoint(e.clientX, e.clientY);
+                e.preventDefault();
+                return;
+            }
+
+            if (isSelectable(target)) {
+                // Shift+drag clone
+                let sel = target;
+                if (e.shiftKey) {
+                    const clone = target.cloneNode(true);
+                    const oldId = clone.getAttribute("id");
+                    if (oldId) clone.setAttribute("id", oldId + "_copy_" + Math.floor(Math.random() * 9999));
+                    target.parentNode.insertBefore(clone, target.nextSibling);
+                    sel = clone;
+                }
+                setSelection(sel);
+                isDragging = true;
+                svgEl.setPointerCapture(e.pointerId);
+                dragStart = clientToSvgPoint(e.clientX, e.clientY);
+                startTranslate = getTranslate(selection);
+                e.preventDefault();
+            } else {
+                // Click on empty space - start selection rectangle
+                setSelection(null);
+                isSelectionRectMode = true;
+                isDragging = true;
+                svgEl.setPointerCapture(e.pointerId);
+                dragStart = clientToSvgPoint(e.clientX, e.clientY);
+
+                // Create selection rectangle if not exists
+                if (!selectionRect) {
+                    selectionRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+                    selectionRect.setAttribute("class", "sel-outline");
+                    selectionRect.setAttribute("fill", "rgba(37, 99, 235, 0.1)");
+                    overlayG.appendChild(selectionRect);
+                }
+                selectionRect.setAttribute("visibility", "visible");
+                e.preventDefault();
+            }
+        }
+
+        function onPointerMove(e) {
+            if (!svgEl || !isDragging) return;
+
+            const pt = clientToSvgPoint(e.clientX, e.clientY);
+            const dx = pt.x - dragStart.x;
+            const dy = pt.y - dragStart.y;
+
+            // Selection rectangle mode
+            if (isSelectionRectMode && selectionRect) {
+                const x = Math.min(dragStart.x, pt.x);
+                const y = Math.min(dragStart.y, pt.y);
+                const width = Math.abs(dx);
+                const height = Math.abs(dy);
+
+                selectionRect.setAttribute("x", x);
+                selectionRect.setAttribute("y", y);
+                selectionRect.setAttribute("width", width);
+                selectionRect.setAttribute("height", height);
+                return;
+            }
+
+            if (!selection) return;
+
+            // Minimal resize: if element is rect, grow width/height; else fallback to move
+            if (resizeMode === "br") {
+                const tag = selection.tagName.toLowerCase();
+                if (tag === "rect") {
+                    const w0 = parseFloat(selection.getAttribute("width") || "10");
+                    const h0 = parseFloat(selection.getAttribute("height") || "10");
+                    selection.setAttribute("width", String(Math.max(1, w0 + dx)));
+                    selection.setAttribute("height", String(Math.max(1, h0 + dy)));
+                } else {
+                    setTranslate(selection, startTranslate.x + dx, startTranslate.y + dy);
+                }
+            } else {
+                setTranslate(selection, startTranslate.x + dx, startTranslate.y + dy);
+            }
+
+            updateOverlay();
+            updateInspector();
+        }
+
+        function onPointerUp() {
+            if (!svgEl) return;
+
+            if (isSelectionRectMode && selectionRect) {
+                // Select all elements within the rectangle
+                const x = parseFloat(selectionRect.getAttribute("x"));
+                const y = parseFloat(selectionRect.getAttribute("y"));
+                const width = parseFloat(selectionRect.getAttribute("width"));
+                const height = parseFloat(selectionRect.getAttribute("height"));
+
+                multiSelection.clear();
+
+                // Find all selectable elements within the rectangle
+                const allElements = svgEl.querySelectorAll("*");
+                allElements.forEach(el => {
+                    if (!isSelectable(el)) return;
+
+                    try {
+                        const bbox = el.getBBox();
+                        const tr = getTranslate(el);
+                        const elX = bbox.x + tr.x;
+                        const elY = bbox.y + tr.y;
+                        const elX2 = elX + bbox.width;
+                        const elY2 = elY + bbox.height;
+
+                        // Check if element is within selection rectangle
+                        if (elX >= x && elY >= y && elX2 <= x + width && elY2 <= y + height) {
+                            multiSelection.add(el);
+                        }
+                    } catch (e) {
+                        // Some elements might not have valid bbox
+                    }
+                });
+
+                // Select first element in multi-selection if any
+                if (multiSelection.size > 0) {
+                    setSelection(multiSelection.values().next().value);
+                } else {
+                    setSelection(null);
+                }
+
+                // Hide selection rectangle
+                if (selectionRect) {
+                    selectionRect.setAttribute("visibility", "hidden");
+                }
+                isSelectionRectMode = false;
+                syncToCode();
+            } else if (isDragging) {
+                isDragging = false;
+                resizeMode = null;
+                syncToCode();
+            }
+        }
+
+        function onKeyDown(e) {
+            if (!svgEl || !selection) return;
+            if (e.key === "Delete" || e.key === "Backspace") {
+                selection.remove();
+                setSelection(null);
+                syncToCode();
+                e.preventDefault();
+            }
+        }
+
+        function getTranslate(el) {
+            const tr = el.getAttribute("transform") || "";
+            const m = tr.match(/translate\(\s*([-\d.]+)(?:[\s,]+([-\d.]+))?\s*\)/);
+            if (m) return { x: parseFloat(m[1] || "0"), y: parseFloat(m[2] || "0") };
+            return { x: 0, y: 0 };
+        }
+        function setTranslate(el, x, y) {
+            const tr = el.getAttribute("transform") || "";
+            const stripped = tr.replace(/translate\(\s*([-\d.]+)(?:[\s,]+([-\d.]+))?\s*\)\s*/g, "").trim();
+            const next = `translate(${round(x)},${round(y)})` + (stripped ? ` ${stripped}` : "");
+            el.setAttribute("transform", next.trim());
+        }
+        function round(n) { return Math.round(n * 1000) / 1000; }
+
+        function updateOverlay() {
+            if (!overlayG || !outlineRect || !handleBR) return;
+
+            if (!selection) {
+                outlineRect.setAttribute("visibility", "hidden");
+                handleBR.setAttribute("visibility", "hidden");
+                ui.selChip.textContent = "No selection";
+                ui.selChip.style.borderColor = "var(--line)";
+                ui.selChip.style.background = "var(--muted)";
+                ui.selChip.style.color = "var(--sub)";
+                return;
+            }
+
+            const bb = selection.getBBox();
+            const tr = getTranslate(selection);
+            const x = bb.x + tr.x;
+            const y = bb.y + tr.y;
+
+            outlineRect.setAttribute("x", x);
+            outlineRect.setAttribute("y", y);
+            outlineRect.setAttribute("width", bb.width);
+            outlineRect.setAttribute("height", bb.height);
+            outlineRect.setAttribute("visibility", "visible");
+
+            const hs = 10;
+            handleBR.setAttribute("x", x + bb.width - hs / 2);
+            handleBR.setAttribute("y", y + bb.height - hs / 2);
+            handleBR.setAttribute("visibility", "visible");
+
+            const tag = selection.tagName.toLowerCase();
+            const id = selection.getAttribute("id") || "(no id)";
+            ui.selChip.textContent = `${tag} • ${id}`;
+            ui.selChip.style.background = "rgba(37,99,235,.06)";
+            ui.selChip.style.borderColor = "rgba(37,99,235,.28)";
+            ui.selChip.style.color = "var(--accent)";
+        }
+
+        function updateInspector() {
+            if (!selection) {
+                ui.f_id.value = "";
+                ui.f_tag.value = "";
+                ui.f_tx.value = "";
+                ui.f_ty.value = "";
+                ui.f_fill.value = "";
+                ui.f_stroke.value = "";
+                ui.f_sw.value = "";
+                ui.f_op.value = "";
+                ui.f_text.value = "";
+                return;
+            }
+
+            ui.f_tag.value = selection.tagName.toLowerCase();
+            ui.f_id.value = selection.getAttribute("id") || "";
+
+            const tr = getTranslate(selection);
+            ui.f_tx.value = String(tr.x ?? 0);
+            ui.f_ty.value = String(tr.y ?? 0);
+
+            ui.f_fill.value = selection.getAttribute("fill") ?? "";
+            ui.f_stroke.value = selection.getAttribute("stroke") ?? "";
+            ui.f_sw.value = selection.getAttribute("stroke-width") ?? "";
+            ui.f_op.value = selection.getAttribute("opacity") ?? "";
+
+            if (selection.tagName.toLowerCase() === "text") {
+                ui.f_text.value = selection.textContent ?? "";
+            } else {
+                ui.f_text.value = "";
+            }
+        }
+
+        function setOrRemove(el, attr, val) {
+            if (val === "") el.removeAttribute(attr);
+            else el.setAttribute(attr, val);
+        }
+
+        function applyInspector() {
+            if (!selection) return;
+
+            const id = ui.f_id.value.trim();
+            if (id) selection.setAttribute("id", id);
+
+            // translate
+            const tx = parseFloat(ui.f_tx.value || "0");
+            const ty = parseFloat(ui.f_ty.value || "0");
+            setTranslate(selection, tx, ty);
+
+            // attrs
+            setOrRemove(selection, "fill", ui.f_fill.value.trim());
+            setOrRemove(selection, "stroke", ui.f_stroke.value.trim());
+            setOrRemove(selection, "stroke-width", ui.f_sw.value.trim());
+            setOrRemove(selection, "opacity", ui.f_op.value.trim());
+
+            // text
+            if (selection.tagName.toLowerCase() === "text") {
+                const t = ui.f_text.value;
+                if (t !== "") selection.textContent = t;
+            }
+
+            updateOverlay();
+            syncToCode();
+        }
+
+        // Zoom helpers
+        function setZoom(scale) {
+            panZoom.scale = Math.min(4, Math.max(0.1, scale || 1));
+            svgEl.style.transformOrigin = "center center";
+            svgEl.style.transform = `scale(${panZoom.scale})`;
+            updateOverlay();
+        }
+        function onWheel(e) {
+            if (!svgEl) return;
+            if (!(e.ctrlKey || e.metaKey)) return;
+            e.preventDefault();
+            const factor = (e.deltaY < 0) ? 1.06 : 0.94;
+            setZoom(panZoom.scale * factor);
+        }
+        function fitToStage() {
+            if (!svgEl) return;
+            const vb = (svgEl.getAttribute("viewBox") || "0 0 100 100").split(/\s+/).map(parseFloat);
+            const vbW = vb[2], vbH = vb[3];
+            const stage = $("#stage").getBoundingClientRect();
+            const availW = stage.width - 24;
+            const availH = stage.height - 24;
+            const s = Math.min(availW / vbW, availH / vbH);
+            setZoom(s);
+        }
+
+        // Coordinate conversion (client -> SVG space)
+        function clientToSvgPoint(clientX, clientY) {
+            const pt = svgEl.createSVGPoint();
+            pt.x = clientX;
+            pt.y = clientY;
+            const ctm = svgEl.getScreenCTM();
+            if (!ctm) return { x: 0, y: 0 };
+            const inv = ctm.inverse();
+            const sp = pt.matrixTransform(inv);
+            return { x: sp.x / panZoom.scale, y: sp.y / panZoom.scale };
+        }
+
+        // Best-effort XML pretty printer
+        function formatXML(xml) {
+            const s = xml.trim().replace(/>\s+</g, "><");
+            const P = "  ";
+            let out = "";
+            let pad = 0;
+            s.split(/</).forEach((chunk, i) => {
+                if (i === 0) { out += chunk; return; }
+                const n = "<" + chunk;
+                const isClose = /^<\/.+>/.test(n);
+                const isSelf = /\/>$/.test(n) || /^<\?xml/.test(n) || /^<!/.test(n);
+                const isOpen = /^<[^!?\/][^>]*>$/.test(n) && !isSelf;
+                if (isClose) pad = Math.max(pad - 1, 0);
+                out += "\n" + P.repeat(pad) + n;
+                if (isOpen) pad += 1;
+            });
+            return out.trim() + "\n";
+        }
+
+        init();
+    </script>
+</body>
+
+</html>
