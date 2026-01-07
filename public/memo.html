@@ -762,6 +762,12 @@
                 } catch (err) {
                     console.warn("Memo save state failed", err);
                 }
+                // Sync global state reference for assist.js
+                window.__memoState = state;
+                // Notify assist.js to update tab indicator
+                if (window.GoToolkitAssistInstance?.updateTabIndicator) {
+                    window.GoToolkitAssistInstance.updateTabIndicator();
+                }
             }
 
             function setStatus(message, isError) {
@@ -1500,6 +1506,9 @@
             let state = initialState || createDefaultState();
             const shouldOpenTemplateOnStart = !initialState;
 
+            // Expose state globally for assist.js to access
+            window.__memoState = state;
+
             renderTabs();
             setupMemoPrompt();
             syncAssistPresetFromState();
@@ -1738,6 +1747,10 @@
             window.GoToolkitAssistInstance = chatInstance;
             try {
                 document.dispatchEvent(new CustomEvent("goToolkitAssistMounted", { detail: { appId: "memo" } }));
+                // Update tab indicator once assist is ready
+                if (chatInstance && typeof chatInstance.updateTabIndicator === "function") {
+                    setTimeout(() => chatInstance.updateTabIndicator(), 100);
+                }
             } catch (err) { /* ignore */ }
         })();
     </script>
@@ -2003,6 +2016,41 @@
                 currentSelection = null;
                 currentCoords = null;
             };
+        })();
+    </script>
+
+    <script>
+        // Expose the active tab content getter for the chat sidebar to use
+        (function () {
+            // Reference to the memo state (set in the main memo app script)
+            let memoStateRef = null;
+            let memoEditorApiRef = null;
+
+            // Wait for memo state to be initialized
+            const stateCheckInterval = setInterval(() => {
+                // Try to access the scope where state and memoEditorApi are defined
+                // We'll use a more direct approach: expose via document event listener
+                if (window.__memoStateInitialized) {
+                    clearInterval(stateCheckInterval);
+                }
+            }, 100);
+
+            // Expose function to get active tab content
+            // This will be called by assist.js to get the current memo document
+            window.getMemoActiveTabContent = function () {
+                // Try to get content from the currently displayed editor
+                if (typeof window.getEditorMarkdown === 'function') {
+                    return window.getEditorMarkdown();
+                }
+                // Fallback: empty string if not available
+                return '';
+            };
+
+            // Store reference when memo is initialized
+            document.addEventListener('memoStateReady', (e) => {
+                memoStateRef = e.detail?.state;
+                memoEditorApiRef = e.detail?.editorApi;
+            });
         })();
     </script>
 

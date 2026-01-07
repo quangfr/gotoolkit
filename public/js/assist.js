@@ -1226,7 +1226,10 @@
         var userContent = (userMessage?.content || "").trim();
         if (userContent) {
             if (this.promptPresetId === "edit" || this.promptPresetId === "suggest") {
-                var docContent = window.getEditorMarkdown ? window.getEditorMarkdown() : (window.getEditorContent ? window.getEditorContent() : "");
+                // Priority: getMemoActiveTabContent (memo app with tabs) > getEditorMarkdown (generic editor) > getEditorContent (fallback)
+                var docContent = (typeof window.getMemoActiveTabContent === "function" ? window.getMemoActiveTabContent() : "") ||
+                                 (window.getEditorMarkdown ? window.getEditorMarkdown() : "") ||
+                                 (window.getEditorContent ? window.getEditorContent() : "");
                 userContent = "DOCUMENT\n" + docContent + "\n\nASK\n" + userContent;
             } else {
                 userContent = "ASK\n" + userContent;
@@ -2147,6 +2150,16 @@
         this.messagesEl = document.createElement("div");
         this.messagesEl.className = "chat-messages";
         this.sidebar.appendChild(this.messagesEl);
+
+        // Create tab indicator element (shown above composer when multiple tabs exist)
+        this.tabIndicator = document.createElement("div");
+        this.tabIndicator.className = "chat-tab-indicator";
+        this.tabIndicator.style.display = "none";
+        this.tabIndicator.style.paddingLeft = "4px";
+        this.tabIndicator.style.fontSize = "0.7rem";
+        this.tabIndicator.style.color = "#999";
+        this.tabIndicator.style.userSelect = "none";
+        this.sidebar.appendChild(this.tabIndicator);
 
         var composer = document.createElement("div");
         composer.className = "chat-composer";
@@ -4531,6 +4544,31 @@
         }
         if (targetLine && typeof targetLine.scrollIntoView === "function") {
             targetLine.scrollIntoView({ block: "center" });
+        }
+    };
+
+    AssistSidebar.prototype.updateTabIndicator = function () {
+        if (!this.tabIndicator) return;
+        
+        // Check if we're in memo app context with multiple tabs
+        var memoTabs = window.__memoState?.tabs;
+        var activeTabId = window.__memoState?.activeTabId;
+        
+        if (Array.isArray(memoTabs) && memoTabs.length > 1 && activeTabId) {
+            // Find the active tab
+            var activeTab = memoTabs.find(function (tab) {
+                return tab.id === activeTabId;
+            });
+            
+            if (activeTab) {
+                var tabLabel = activeTab.title || ("Page " + (memoTabs.indexOf(activeTab) + 1));
+                this.tabIndicator.textContent = tabLabel;
+                this.tabIndicator.style.display = "block";
+            } else {
+                this.tabIndicator.style.display = "none";
+            }
+        } else {
+            this.tabIndicator.style.display = "none";
         }
     };
 
