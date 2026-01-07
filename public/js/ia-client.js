@@ -375,16 +375,16 @@
             const parts = buffer.split("\n");
             buffer = parts.pop() || "";
             for (const part of parts) {
-            var trimmed = part.trim();
-            if (!trimmed) {
-                continue;
-            }
-            var sanitized = trimmed.replace(/^data:\\s*/i, "").trim();
-            if (!sanitized || sanitized === "[DONE]") {
-                continue;
-            }
-            try {
-                const payload = JSON.parse(sanitized);
+                var trimmed = part.trim();
+                if (!trimmed) {
+                    continue;
+                }
+                var sanitized = trimmed.replace(/^data:\\s*/i, "").trim();
+                if (!sanitized || sanitized === "[DONE]") {
+                    continue;
+                }
+                try {
+                    const payload = JSON.parse(sanitized);
                     const shouldStop = await handlePayload(payload);
                     if (shouldStop) {
                         return aggregated.trim();
@@ -764,35 +764,11 @@
 
     function buildOpenRouterPayload(payload, backend) {
         const source = payload || {};
-        let modelCandidates = [];
-        if (Array.isArray(source?.models) && source.models.length) {
-            modelCandidates = source.models
-                .map(entry => (entry ? String(entry).trim() : ""))
-                .filter(Boolean);
-        }
-        const configuredModel = String(backend?.model || source?.model || "").trim();
-        if (configuredModel) {
-            if (!modelCandidates.includes(configuredModel)) {
-                modelCandidates.unshift(configuredModel);
-            }
-        }
-        if (!modelCandidates.length) {
-            let fallbackModel = "xiaomi/mimo-v2-flash:free";
-            try {
-                if (global.GoToolkitIAConfig && typeof global.GoToolkitIAConfig.getOpenRouterModel === "function") {
-                    fallbackModel = global.GoToolkitIAConfig.getOpenRouterModel() || fallbackModel;
-                }
-            } catch (err) { /* ignore */ }
-            modelCandidates = [fallbackModel];
-        }
-        modelCandidates = Array.from(new Set(modelCandidates)).filter(Boolean);
-        if (modelCandidates.length > 3) {
-            modelCandidates = modelCandidates.slice(0, 3);
-        }
 
         const isDirect = Boolean(backend?.hasOpenRouterKey);
         if (!isDirect) {
-            const proxyModel = configuredModel || modelCandidates[0] || "openai/gpt-oss-120b:free";
+            const configuredModel = String(backend?.model || source?.model || "").trim();
+            const proxyModel = configuredModel || "@preset/gotoolkit";
             const proxyPayload = {
                 model: proxyModel,
                 messages: buildOpenRouterMessages(source)
@@ -806,17 +782,9 @@
             return proxyPayload;
         }
 
-        const defaultModel = "openrouter/auto";
-        if (!modelCandidates.includes(defaultModel)) {
-            modelCandidates.unshift(defaultModel);
-        }
-        modelCandidates = Array.from(new Set(modelCandidates)).filter(Boolean);
-        if (modelCandidates.length > 3) {
-            modelCandidates = modelCandidates.slice(0, 3);
-        }
+        const defaultModel = "openai/gpt-oss-120b";
         const result = {
             model: defaultModel,
-            models: modelCandidates,
             messages: buildOpenRouterMessages(source)
         };
         [
@@ -852,29 +820,15 @@
             result.effort = "minimal";
         }
 
-        const parsePositive = value => {
-            const numeric = Number(value);
-            if (!Number.isFinite(numeric) || numeric < 0) {
-                return 0;
-            }
-            return numeric;
-        };
-        const maxPrompt = isDirect ? parsePositive(backend?.maxPrice?.prompt) : 0;
-        const maxCompletion = isDirect ? parsePositive(backend?.maxPrice?.completion) : 0;
         const sortBy = (typeof backend?.sort === "string" && backend.sort.trim()) ? backend.sort.trim() : "price";
-        const normalizedDataCollection = (isDirect ? backend?.dataCollection : "allow") || (isDirect ? "deny" : "allow");
         const provider = {
             allow_fallbacks: true,
             sort: {
                 by: sortBy,
                 partition: null
             },
-            data_collection: normalizedDataCollection,
-            zdr: isDirect && normalizedDataCollection.includes("zdr"),
-            max_price: {
-                prompt: maxPrompt,
-                completion: maxCompletion
-            }
+            data_collection: "deny",
+            zdr: true
         };
         result.provider = provider;
 

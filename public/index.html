@@ -1638,8 +1638,8 @@
                                 <label>
                                     <span class="label-title">Moteur IA</span>
                                     <select id="aiBackendSelect">
-                                        <option value="openrouter" selected>OpenRouter (partagé ou privé)</option>
-                                        <option value="openai">OpenAI (privé) </option>
+                                        <option value="openrouter" selected>OpenRouter (recommandé)</option>
+                                        <option value="openai">OpenAI</option>
                                     </select>
                                 </label>
                             </div>
@@ -1721,8 +1721,9 @@
                                 </div>
                                 <div class="field-row">
                                     <label style="width:100%">
-                                        <span class="label-title">Modèle OpenAI</span>
-                                        <select id="openrouterModelSelect"></select>
+                                        <span class="label-title">Modèle OpenRouter</span>
+                                        <input id="openrouterModelInput" type="text"
+                                            placeholder="@preset/gotoolkit ou openai/gpt-oss-120b" />
                                     </label>
                                 </div>
                                 <div id="openrouterExtras" style="display:none; margin-top:8px;">
@@ -1773,8 +1774,8 @@
                     <div class="feedback-actions">
                         <button id="resetChatPromptBtn" type="button" class="btn-secondary"
                             hidden>Réinitialiser</button>
-                            <button id="saveSettingsBtn" type="button" class="btn-primary">Sauvegarder</button>
-                        </div>
+                        <button id="saveSettingsBtn" type="button" class="btn-primary">Sauvegarder</button>
+                    </div>
                 </form>
             </div>
         </div>
@@ -3602,8 +3603,8 @@
         let currentOpenRouterModelOptions = {};
 
         function getSelectedOpenRouterModel() {
-            if (openrouterModelSelect && openrouterModelSelect.value) {
-                return openrouterModelSelect.value;
+            if (openrouterModelInput && openrouterModelInput.value) {
+                return openrouterModelInput.value;
             }
             return resolveOpenRouterModel();
         }
@@ -3642,7 +3643,7 @@
             if (accessType === "private") {
                 baseLabel = "Accès privé";
             } else if (accessType === "shared") {
-                baseLabel = "Clé invalide. Accès partagé";
+                baseLabel = "Clé invalide.";
             }
             if (!baseLabel) {
                 openrouterModelLabelEl.textContent = "";
@@ -3924,28 +3925,13 @@
             return window.GoToolkitIAConfig?.DEFAULTS?.WEBLLM_MODEL || "";
         }
 
-        function populateOpenrouterModelSelect() {
-            if (!openrouterModelSelect) return;
-            openrouterModelSelect.innerHTML = "";
-            const models = (window.GoToolkitIAConfig && window.GoToolkitIAConfig.OPENROUTER_MODELS) || [];
-            if (!models.length) {
-                const option = document.createElement("option");
-                option.textContent = "Modèles OpenRouter indisponibles";
-                option.disabled = true;
-                openrouterModelSelect.appendChild(option);
-                return;
-            }
-            models.forEach(entry => {
-                const option = document.createElement("option");
-                option.value = entry;
-                option.textContent = entry;
-                openrouterModelSelect.appendChild(option);
-            });
+        function populateOpenrouterModelInput() {
+            if (!openrouterModelInput) return;
             const stored = (window.GoToolkitIAConfig && typeof window.GoToolkitIAConfig.getOpenRouterModel === "function"
                 ? window.GoToolkitIAConfig.getOpenRouterModel()
                 : "") || (window.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_MODEL || "");
             if (stored) {
-                openrouterModelSelect.value = stored;
+                openrouterModelInput.value = stored;
             }
         }
 
@@ -4351,7 +4337,7 @@
                 if (!response.ok) {
                     throw new Error("HTTP " + response.status + " " + (response.statusText || ""));
                 }
-                setAssemblyAiStatusLabel("Clé invalide. Accès partagé", { state: "warning" });
+                setAssemblyAiStatusLabel("Clé invalide.", { state: "warning" });
                 return true;
             } catch (err) {
                 console.warn("AssemblyAI proxy test failed", err);
@@ -4520,7 +4506,7 @@
         const openrouterStatusEl = document.getElementById("openrouterStatus");
         const openrouterModelLabelEl = document.getElementById("openrouterModelLabel");
         const openrouterVerifyBtn = document.getElementById("openrouterVerifyBtn");
-        const openrouterModelSelect = document.getElementById("openrouterModelSelect");
+        const openrouterModelInput = document.getElementById("openrouterModelInput");
         const chatPromptTextarea = document.getElementById("chatPromptTextarea");
         const chatPromptPresetSelect = document.getElementById("chatPromptPresetSelect");
         const CHAT_PROMPT_STORAGE_KEY = "goToolkit.chat.prompt";
@@ -4529,7 +4515,7 @@
         const CHAT_PROMPT_PRESET_KEY_LEGACY = "goToolkit.chat.prompt.preset";
 
         const DEFAULT_AI_BACKEND = "openrouter";
-        populateOpenrouterModelSelect();
+        populateOpenrouterModelInput();
         const VERSION_QUERY_PARAM = "v";
         const DATE_VERSION_PATTERN = /^\d{4}\.\d{2}\.\d{2}(?:\.\d+)?$/;
         (function ensureDefaultAIBackend() {
@@ -4630,7 +4616,7 @@
             if (ollamaSettingsEl) ollamaSettingsEl.style.display = val === "ollama" ? "" : "none";
             if (webllmSettingsEl) webllmSettingsEl.style.display = val === "webllm" ? "" : "none";
             if (val === "openrouter") {
-                populateOpenrouterModelSelect();
+                populateOpenrouterModelInput();
             }
             window.GoToolkitSelectedAIBackend = val;
         }
@@ -4777,12 +4763,12 @@
                 if (openrouterApiKeyInput) {
                     openrouterApiKeyInput.value = storedOpenRouterKey;
                 }
-                populateOpenrouterModelSelect();
+                populateOpenrouterModelInput();
                 const storedOpenRouterModel =
                     (config && typeof config.getOpenRouterModel === "function" ? config.getOpenRouterModel() : "") ||
                     (window.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_MODEL || "");
-                if (openrouterModelSelect && storedOpenRouterModel) {
-                    openrouterModelSelect.value = storedOpenRouterModel;
+                if (openrouterModelInput && storedOpenRouterModel) {
+                    openrouterModelInput.value = storedOpenRouterModel;
                 }
                 const dataCollectionDefault = window.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_DATA_COLLECTION || "deny";
                 const storedOpenRouterDataCollection =
@@ -5052,7 +5038,7 @@
                     iaConfig.setOpenRouterDataCollection(openrouterDataCollectionValue);
                 }
                 const openrouterModelValue =
-                    (openrouterModelSelect?.value || "").trim() ||
+                    (openrouterModelInput?.value || "").trim() ||
                     (window.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_MODEL || "");
                 if (iaConfig && typeof iaConfig.setOpenRouterModel === "function") {
                     iaConfig.setOpenRouterModel(openrouterModelValue);
@@ -5218,7 +5204,7 @@
             openrouterHasValidPrivateKey = false;
             updateOpenRouterExtrasVisibility();
         });
-        openrouterModelSelect?.addEventListener("change", () => {
+        openrouterModelInput?.addEventListener("change", () => {
             refreshOpenRouterModelLabel();
         });
 

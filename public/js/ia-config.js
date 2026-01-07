@@ -12,7 +12,6 @@
     var STORAGE_KEYS_OPENROUTER = {
         API_KEY: "go-toolkit-openrouter-key",
         MODEL: "go-toolkit-openrouter-model",
-        DATA_COLLECTION: "go-toolkit-openrouter-data-collection",
         SORT: "go-toolkit-openrouter-sort"
     };
 
@@ -24,7 +23,6 @@
         WEBLLM_MODEL: "Llama-3.2-3B-Instruct-q4f16_1-MLC",
         CONTEXT_WINDOW: "0",
         OPENROUTER_MODEL: "openai/gpt-oss-120b",
-        OPENROUTER_DATA_COLLECTION: "deny",
         OPENROUTER_SORT: "price"
     };
 
@@ -218,32 +216,6 @@
             }
             safeStorageWrite(STORAGE_KEYS_OPENROUTER.MODEL, normalized);
         },
-        getOpenRouterDataCollectionOption: function () {
-            var stored = safeStorageRead(STORAGE_KEYS_OPENROUTER.DATA_COLLECTION);
-            return stored || DEFAULTS.OPENROUTER_DATA_COLLECTION;
-        },
-        getOpenRouterDataCollection: function () {
-            var stored = safeStorageRead(STORAGE_KEYS_OPENROUTER.DATA_COLLECTION);
-            if (!stored) {
-                stored = DEFAULTS.OPENROUTER_DATA_COLLECTION;
-            }
-            var parts = stored.split("-");
-            return (parts && parts[0]) || DEFAULTS.OPENROUTER_DATA_COLLECTION;
-        },
-        setOpenRouterDataCollection: function (value) {
-            var normalized = (value || "").trim();
-            if (!normalized) {
-                normalized = DEFAULTS.OPENROUTER_DATA_COLLECTION;
-            }
-            safeStorageWrite(STORAGE_KEYS_OPENROUTER.DATA_COLLECTION, normalized);
-        },
-        getOpenRouterZdr: function () {
-            var stored = safeStorageRead(STORAGE_KEYS_OPENROUTER.DATA_COLLECTION);
-            if (!stored) {
-                stored = DEFAULTS.OPENROUTER_DATA_COLLECTION;
-            }
-            return stored.includes("zdr");
-        },
         getOpenRouterSort: function () {
             var stored = safeStorageRead(STORAGE_KEYS_OPENROUTER.SORT);
             var trimmed = (stored || "").trim();
@@ -377,9 +349,7 @@
             if (selected === "openrouter") {
                 var openrouterKey = GoToolkitIAConfig.getOpenRouterApiKey();
                 var openrouterModel = GoToolkitIAConfig.getOpenRouterModel();
-                var dataCollection = GoToolkitIAConfig.getOpenRouterDataCollection();
                 var openrouterSort = GoToolkitIAConfig.getOpenRouterSort();
-                var openrouterZdr = GoToolkitIAConfig.getOpenRouterZdr();
                 var useProxy = forceOpenRouterProxy || !openrouterKey;
                 var targetEndpoint = useProxy ? OPENROUTER_PROXY_ENDPOINT : OPENROUTER_ENDPOINT;
                 var backendType = useProxy ? "openrouter-proxy" : "openrouter";
@@ -390,9 +360,9 @@
                     endpoint: targetEndpoint,
                     apiKey: apiKeyValue,
                     model: openrouterModel,
-                    dataCollection: dataCollection,
+                    dataCollection: "deny",
                     sort: openrouterSort,
-                    zdr: openrouterZdr,
+                    zdr: true,
                     edit: openrouterHasKey,
                     hasOpenRouterKey: openrouterHasKey
                 };
