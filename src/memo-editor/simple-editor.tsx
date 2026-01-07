@@ -1,22 +1,19 @@
 import React from 'react';
-import { useEditor, EditorContent, BubbleMenu, Editor } from '@tiptap/react';
+import { useEditor, EditorContent, Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import History from '@tiptap/extension-history';
-import Underline from '@tiptap/extension-underline';
 import Placeholder from '@tiptap/extension-placeholder';
 import Highlight from '@tiptap/extension-highlight';
-import Link from '@tiptap/extension-link';
 import Superscript from '@tiptap/extension-superscript';
 import Subscript from '@tiptap/extension-subscript';
 import TextAlign from '@tiptap/extension-text-align';
 import Image from '@tiptap/extension-image';
-import Table from '@tiptap/extension-table';
+import { Table } from '@tiptap/extension-table';
 import TableRow from '@tiptap/extension-table-row';
 import TableHeader from '@tiptap/extension-table-header';
 import TableCell from '@tiptap/extension-table-cell';
 import { CellSelection } from 'prosemirror-tables';
-import { TaskList } from '@tiptap/extension-task-list';
-import { TaskItem } from '@tiptap/extension-task-item';
+import TaskList from '@tiptap/extension-task-list';
+import TaskItem from '@tiptap/extension-task-item';
 import TurndownService from 'turndown';
 import { gfm } from 'turndown-plugin-gfm';
 import { marked } from 'marked';
@@ -27,6 +24,119 @@ interface SimpleEditorProps {
   onChange?: (content: string) => void;
   placeholder?: string;
 }
+
+// Custom BubbleMenu component for Tiptap v3
+const BubbleMenuComponent = ({ editor, visible, onKeep, onReject }: { 
+  editor: Editor | null, 
+  visible: boolean,
+  onKeep: () => void,
+  onReject: () => void,
+}) => {
+  const [position, setPosition] = React.useState({ top: 0, left: 0, opacity: 0 });
+  const [hasSelection, setHasSelection] = React.useState(false);
+  const menuRef = React.useRef<HTMLDivElement>(null);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  const updatePosition = React.useCallback(() => {
+    if (!editor || !visible) {
+      setPosition(prev => ({ ...prev, opacity: 0 }));
+      setHasSelection(false);
+      return;
+    }
+
+    // Update selection state
+    const { from, to } = editor.state.selection;
+    const hasMark = from !== to && (hasMarkInSelection(editor, 'highlight') || hasMarkInSelection(editor, 'strike'));
+    setHasSelection(hasMark);
+
+    if (!hasMark || from === to) {
+      setPosition(prev => ({ ...prev, opacity: 0 }));
+      return;
+    }
+
+    try {
+      const { view } = editor;
+      const start = view.coordsAtPos(from);
+      const end = view.coordsAtPos(to);
+      
+      if (!start || !end) {
+        setPosition(prev => ({ ...prev, opacity: 0 }));
+        return;
+      }
+
+      // Get container position for relative positioning
+      const container = containerRef.current;
+      const containerRect = container?.getBoundingClientRect();
+      
+      const menuWidth = menuRef.current?.offsetWidth || 100;
+      const bubbleTop = Math.min(start.top, end.top) - (containerRect?.top || 0) - 65;
+      const bubbleLeft = ((start.left + end.left) / 2) - (containerRect?.left || 0) - menuWidth / 2;
+
+      setPosition({
+        top: bubbleTop,
+        left: bubbleLeft,
+        opacity: 1,
+      });
+    } catch (err) {
+      console.warn('BubbleMenu positioning error:', err);
+      setPosition(prev => ({ ...prev, opacity: 0 }));
+    }
+  }, [editor, visible]);
+
+  React.useEffect(() => {
+    if (!editor) return;
+
+    // Update on selection changes
+    editor.on('selectionUpdate', updatePosition);
+    editor.on('update', updatePosition);
+
+    // Initial update
+    updatePosition();
+
+    return () => {
+      editor.off('selectionUpdate', updatePosition);
+      editor.off('update', updatePosition);
+    };
+  }, [editor, updatePosition]);
+
+  return (
+    <div ref={containerRef} style={{ position: 'relative', display: 'contents' }}>
+      <div
+        ref={menuRef}
+        className="bubble-menu"
+        style={{
+          position: 'absolute',
+          top: `${position.top}px`,
+          left: `${position.left}px`,
+          opacity: position.opacity,
+          pointerEvents: position.opacity === 0 ? 'none' : 'auto',
+          transition: 'opacity 0.15s ease-in-out',
+          zIndex: 1000,
+          willChange: 'opacity',
+        }}
+      >
+      {hasSelection && (
+        <>
+          <button
+            onClick={onKeep}
+            className="bubble-menu-btn bubble-keep"
+            title="Garder la sélection"
+          >
+            ✓ Garder
+          </button>
+          <button
+            onClick={onReject}
+            className="bubble-menu-btn bubble-reject"
+            title="Annuler la sélection"
+          >
+            ✗ Annuler
+          </button>
+        </>
+      )}
+      </div>
+    </div>
+  );
+};
 
 const CustomTableCell = TableCell.extend({
   addAttributes() {
@@ -214,6 +324,23 @@ const keepAllDocument = (editor: Editor | null) => {
 };
 
 const Toolbar = ({ editor }: { editor: Editor }) => {
+  // Force re-render when editor state changes
+  const [, forceUpdate] = React.useReducer((x) => x + 1, 0);
+
+  React.useEffect(() => {
+    if (!editor) return;
+
+    // Update component on any editor change
+    const updateHandler = () => forceUpdate();
+    editor.on('update', updateHandler);
+    editor.on('selectionUpdate', updateHandler);
+
+    return () => {
+      editor.off('update', updateHandler);
+      editor.off('selectionUpdate', updateHandler);
+    };
+  }, [editor]);
+
   if (!editor) return null;
 
   const setLink = () => {
@@ -527,18 +654,12 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
-        history: false,
-      }),
-      History.configure({
-        depth: 100,
+        // StarterKit includes: Document, Paragraph, Text, Bold, Italic, Strike, Code, CodeBlock, Heading, HorizontalRule, ListItem, BulletList, OrderedList, History, Dropcap
+        // We'll override History with our own config later if needed
       }),
       TaskList,
       TaskItem,
-      Underline,
       Highlight,
-      Link.configure({
-        openOnClick: false,
-      }),
       Superscript,
       Subscript,
       TextAlign.configure({
@@ -621,10 +742,10 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           
           const html = marked.parse(markdownWithHighlight, { gfm: true }) as string;
           if ((editor as any)?.commands?.clearContent) {
-            (editor as any).commands.clearContent(true);
+            (editor as any).commands.clearContent();
           }
           if ((editor as any)?.commands?.setContent) {
-            (editor as any).commands.setContent(html, true);
+            (editor as any).commands.setContent(html);
           }
         } catch (err) {
           console.warn('setEditorMarkdown failed', err);
@@ -735,50 +856,20 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     return null;
   }
 
+  const { from, to } = editor.state.selection;
+  const hasSelection = from !== to && (
+    hasMarkInSelection(editor, 'highlight') || hasMarkInSelection(editor, 'strike')
+  );
+
   return (
     <div className="simple-editor">
       <Toolbar editor={editor} />
-      {editor && (
-        <BubbleMenu 
-          editor={editor} 
-          tippyOptions={{ 
-            duration: 100,
-            onHidden: () => {
-              // Ne pas cacher si on clique sur le chat-inline-editor
-              const inlineEditor = document.querySelector('.chat-inline-editor');
-              if (inlineEditor?.contains(document.activeElement)) {
-                return false;
-              }
-            }
-          }}
-          shouldShow={({ editor: ed }) => {
-            // Garder le menu ouvert même si le focus est sur le chat-inline-editor
-            return ed.view.state.selection.from !== ed.view.state.selection.to;
-          }}
-        >
-          <div className="bubble-menu">
-            {(hasMarkInSelection(editor, 'highlight') || hasMarkInSelection(editor, 'strike')) && (
-              <>
-                <button
-                  onClick={() => keepSelection(editor)}
-                  className="bubble-menu-btn bubble-keep"
-                  title="Garder la sélection"
-                >
-                  ✓ Garder
-                </button>
-                <button
-                  onClick={() => rejectSelection(editor)}
-                  className="bubble-menu-btn bubble-reject"
-                  title="Annuler la sélection"
-                >
-                  ✗ Annuler
-                </button>
-              </>
-            )}
-          </div>
-        </BubbleMenu>
-      )}
-      
+      <BubbleMenuComponent 
+        editor={editor}
+        visible={true}
+        onKeep={() => keepSelection(editor)}
+        onReject={() => rejectSelection(editor)}
+      />
       <EditorContent editor={editor} />
     </div>
   );
