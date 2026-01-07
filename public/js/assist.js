@@ -36,7 +36,7 @@
     var MIN_WIDTH = 320;
     var MAX_WIDTH = 800;
     var MAX_WIDTH_RATIO = 0.6;
-    var PROMPT_PRESET_KEY = scopedKey("goToolkit.chat.prompt.preset");
+    var PROMPT_PRESET_KEY = "goToolkit.chat.prompt.preset";
     // Hybrid retrieval tuning knobs (kwCandidateLimit / topK_kw / contextLimit).
     // KEYWORD_CANDIDATE_LIMIT and KEYWORD_RETRY_LIMIT keep the keyword pre-filter bucket manageable,
     // getRetrievalParamsForQuestion controls the vector topK (topK_kw), and CONTEXT_LIMIT_MIN/MAX cap the merged hits.
@@ -162,6 +162,52 @@
         } catch (err) {
             console.warn("Chat prompt preset save failed", err);
         }
+    }
+
+    function storeLastAIResponse(payload) {
+        try {
+            global.localStorage.setItem("goToolkit.chat.lastAIResponse", JSON.stringify({
+                timestamp: new Date().toISOString(),
+                payload: payload
+            }));
+        } catch (err) {
+            console.warn("Chat AI response storage failed", err);
+        }
+    }
+
+    function getLastAIResponse() {
+        try {
+            var stored = global.localStorage.getItem("goToolkit.chat.lastAIResponse");
+            if (stored) {
+                return JSON.parse(stored);
+            }
+        } catch (err) {
+            console.warn("Chat AI response retrieval failed", err);
+        }
+        return null;
+    }
+
+    function storeLastAIRequest(payload) {
+        try {
+            global.localStorage.setItem("goToolkit.chat.lastAIRequest", JSON.stringify({
+                timestamp: new Date().toISOString(),
+                payload: payload
+            }));
+        } catch (err) {
+            console.warn("Chat AI request storage failed", err);
+        }
+    }
+
+    function getLastAIRequest() {
+        try {
+            var stored = global.localStorage.getItem("goToolkit.chat.lastAIRequest");
+            if (stored) {
+                return JSON.parse(stored);
+            }
+        } catch (err) {
+            console.warn("Chat AI request retrieval failed", err);
+        }
+        return null;
     }
 
     function safeReadLocalStorage(key) {
@@ -516,6 +562,31 @@
         });
     }
 
+    function createKnowledgeSelectionStore() {
+        var factory = global.goToolkitStorageService?.createStore;
+        if (typeof factory !== "function") {
+            return {
+                read: async function () { return []; },
+                write: async function (value) { return value || []; }
+            };
+        }
+        return factory({
+            storeName: "knowledge-selection",
+            localStorageKey: "goToolkit.knowledge.selection",
+            defaultValue: function () { return []; },
+            normalize: function (value) {
+                if (!Array.isArray(value)) return null;
+                return value
+                    .map(function (entry) {
+                        if (typeof entry === "string") return entry.trim();
+                        return "";
+                    })
+                    .filter(Boolean);
+            },
+            logPrefix: "goToolkit.knowledge.selection"
+        });
+    }
+
     function AssistSidebar(root) {
         this.root = root;
         this.sidebar = null;
@@ -562,6 +633,7 @@
         this.knowledgeDocumentCount = 0;
         this.knowledgeManifestStore = createKnowledgeManifestStore();
         this.knowledgeOverridesStore = createKnowledgeOverridesStore();
+        this.knowledgeSelectionStore = createKnowledgeSelectionStore();
         this.knowledgeModal = null;
         this.knowledgeModalHeader = null;
         this.knowledgeModalListEl = null;
@@ -1799,12 +1871,16 @@
         }
 
         try {
+            // Store the full AI request payload for debugging/visibility
+            storeLastAIRequest(payload);
             var result = await global.GoToolkitIA.chatCompletion({
                 payload: payload,
                 endpointType: "responses",
                 signal: controller.signal,
                 onChunk: payload.stream ? handleChunk : undefined
             });
+            // Store the full AI response payload for debugging/visibility
+            storeLastAIResponse(result);
             var parsed = this.parseAssistantResponse(result || "");
             if (parsed.content === "Réponse illisible." && botMessage.content) {
                 parsed.content = botMessage.content;
@@ -3036,7 +3112,17 @@
             localEntries = await this.applyKnowledgeOverrides(localEntries);
         }
         this.knowledgeManifestEntries = webEntries.concat(localEntries, chatEntries);
-        var selectionSet = new Set(indexedSet);
+
+        // Load user's persistent selection (independent of preset)
+        var persistedSelection = [];
+        if (this.knowledgeSelectionStore?.read) {
+            persistedSelection = await this.knowledgeSelectionStore.read();
+        }
+        var persistedSelectionSet = new Set((persistedSelection || []).map(this.normalizeKnowledgeKey.bind(this)));
+
+        // Use persisted selection if available, otherwise start with empty selection for new users
+        var selectionSet = persistedSelectionSet.size > 0 ? persistedSelectionSet : new Set();
+
         var newEntries = webEntries.filter(function (entry) {
             var key = this.normalizeKnowledgeKey(entry.fileName);
             return key && !storedSet.has(key);
@@ -3045,7 +3131,8 @@
         if (!hasStoredList && indexedSet.size) {
             newEntries = [];
         }
-        if (newEntries.length) {
+        // Only auto-add new entries if user has an existing selection (not a new user)
+        if (newEntries.length && persistedSelectionSet.size > 0) {
             newEntries.forEach(function (entry) {
                 var key = this.normalizeKnowledgeKey(entry.fileName);
                 if (key) selectionSet.add(key);
@@ -3193,6 +3280,23 @@
         }
         this.knowledgeModalSelectionSet = selection;
         this.updateKnowledgeHeaderCheckboxState();
+        this.persistKnowledgeSelection(selection);
+    };
+
+    AssistSidebar.prototype.persistKnowledgeSelection = function (selectionSet) {
+        var selection = [];
+        if (selectionSet instanceof Set) {
+            selectionSet.forEach(function (key) {
+                if (typeof key === "string" && key.trim()) {
+                    selection.push(key);
+                }
+            });
+        }
+        if (this.knowledgeSelectionStore?.write) {
+            this.knowledgeSelectionStore.write(selection).catch(function (err) {
+                console.warn("Failed to persist knowledge selection", err);
+            });
+        }
     };
 
     AssistSidebar.prototype.handleKnowledgeHeaderToggle = async function (event) {
@@ -3212,6 +3316,7 @@
         });
         var entries = Array.isArray(this.knowledgeManifestEntries) ? this.knowledgeManifestEntries : [];
         this.renderKnowledgeModalList(entries, selectionSet);
+        this.setKnowledgeModalSelection(selectionSet);
         try {
             var reindexOptions = checked ? undefined : { skipDocPurge: true };
             await this.reindexKnowledgeSelection(entries, selectionSet, reindexOptions);
@@ -4711,6 +4816,8 @@
 
     // Exposer la fonction globalement
     global.sendInlineEditToAssist = sendInlineEditToAssist;
+    global.getLastAIResponse = getLastAIResponse;
+    global.getLastAIRequest = getLastAIRequest;
 
     global.GoToolkitAssist = global.GoToolkitAssist || GoToolkitAssist;
 })(typeof window !== "undefined" ? window : this);

@@ -857,11 +857,11 @@
 
             function buildSharePreview() {
                 const tab = getActiveTab();
-                const title = tab?.title || "Mémo";
+                const title = tab?.title || "Page 1";
                 const description = (tab?.content || "").trim().slice(0, 140);
                 return {
-                    title: "Mémo — " + title,
-                    description: description || "Document Mémo"
+                    title: title,
+                    description: description || "Document"
                 };
             }
 
@@ -2078,6 +2078,13 @@
                 }
 
                 if (format === 'ai_in') {
+                    // Try to get the last AI request from assist.js storage
+                    const lastRequest = window.getLastAIRequest?.();
+                    if (lastRequest) {
+                        return safeStringify(lastRequest);
+                    }
+
+                    // Fallback to legacy variables
                     const at = window.__memoEditorLastAIInAt || null;
                     const doc = window.__memoEditorLastAIInDocumentMarkdown || window.getEditorMarkdown?.() || '';
                     const messages = window.__memoEditorLastAIInMessages || null;
@@ -2090,6 +2097,13 @@
                 }
 
                 if (format === 'ai_out') {
+                    // Try to get the last AI response from assist.js storage
+                    const lastResponse = window.getLastAIResponse?.();
+                    if (lastResponse) {
+                        return safeStringify(lastResponse);
+                    }
+
+                    // Fallback to legacy variables
                     const at = window.__memoEditorLastAIOutAt || null;
                     const out = window.__memoEditorLastAIOut || null;
                     const extractText = () => {
@@ -2144,7 +2158,17 @@
             function open() {
                 if (!overlay || !formatEl) return;
                 overlay.style.display = 'block';
-                formatEl.value = 'markdown';
+
+                // Auto-select AI IN if there's a recent request, otherwise AI OUT if there's a response, otherwise markdown
+                const lastRequest = window.getLastAIRequest?.();
+                const lastResponse = window.getLastAIResponse?.();
+                if (lastRequest && lastRequest.payload) {
+                    formatEl.value = 'ai_in';
+                } else if (lastResponse && lastResponse.payload) {
+                    formatEl.value = 'ai_out';
+                } else {
+                    formatEl.value = 'markdown';
+                }
                 refresh();
             }
 

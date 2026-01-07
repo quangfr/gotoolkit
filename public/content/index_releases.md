@@ -1,6 +1,7 @@
 ## 2026-01-06
 - Module [Memo](/memo) : création de notes assistée IA
-- Mode édition avec sélection et contexte
+- Mode "Éditer" en direct ou "Suggérer" annoté
+- Choix de la sélection de texte ou sur tout le document
 
 ## 2026-01-04
 - Module [Assist](/#assist) : exploration de documents assistée IA

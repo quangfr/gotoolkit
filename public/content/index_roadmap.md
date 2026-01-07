@@ -1,20 +1,23 @@
-## IA contextuel (Soulgorithm)`T1 2026`
-- Ajout de corpus en contexte dans les modules `À étudier`
+## Module Mémo `T1 2026`
+- Envoi à l'IA des autres pages du document `À étudier`
+- Mode "Demander" `À planifier`
+
+## Module Assist (Promptzilla)`T1 2026`
 - Affichage de la bibliothèque locale en corpus`À étudier`
-- Module Assist dans les autres modules (personnalisation templates, prompts...) `À planifier`
+- Intégration pour Draw et Grid`À planifier`
 
 ## Module Voice (Tuto Tarantino)`T1 2026`
 - Analyse des transcripts pour conseils IA `À planifier` 
 
-## Accès ressources tiers (Polène)`T1 2026`
-- Fichiers Sharepoint / Outlook / OneDrive `À étudier`
-- Fichiers Gmail / Google Drive `À étudier`
+## Accès ressources tiers (Polène)`À étudier`
+- Fichiers Sharepoint / Outlook / OneDrive 
+- Fichiers Gmail / Google Drive 
 
-## Confidentialité des données `T1 2026`
-- Pseudonymisation des données sensibles envoyées et hébergées en ligne `À étudier`
-- Connexion à un service IA cloud ou auto-hébergé `À étudier`
-- Reconstruction locale suite à pseudonomisation `À étudier` 
+## Confidentialité des données `A étudier`
+- Pseudonymisation des données sensibles envoyées et hébergées en ligne 
+- Connexion à un service IA cloud ou auto-hébergé 
+- Reconstruction locale suite à pseudonomisation 
 
-## Compte en ligne sécurisé `T1 2026` 
+## Compte en ligne sécurisé `À étudier` 
 - Accès à l'espace de partage en ligne sur d’autres appareils `À planifier` 
 - Quota par utilisateur pour les requêtes API `À planifier`
