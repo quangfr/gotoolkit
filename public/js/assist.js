@@ -445,6 +445,13 @@
         return escapeHtml(text).replace(/\n/g, "<br>");
     }
 
+    function renderDocumentMarkdown(text) {
+        if (global.GoToolkitMarkdown && typeof global.GoToolkitMarkdown.renderDocument === "function") {
+            return global.GoToolkitMarkdown.renderDocument(text);
+        }
+        return renderBotMarkdown(text);
+    }
+
     // Character counter toaster functions
     var aiCounterToasterState = {
         isRunning: false,
@@ -5101,7 +5108,7 @@
         var opts = options || {};
         var docMeta = opts.doc || null;
         if (isMarkdownDocument(docMeta, opts)) {
-            return renderBotMarkdown(String(text || ""));
+            return renderDocumentMarkdown(String(text || ""));
         }
         var lines = String(text || "").split(/\r?\n/);
         if (!lines.length) return "";
@@ -5209,6 +5216,38 @@
         var docMeta = opts.doc || null;
         var renderMarkdown = isMarkdownDocument(docMeta, opts);
 
+        // For Markdown documents:
+        // - when showChunksForMarkdown=false, render the full stored rawText (exact file content)
+        // - when true, render from (overlap-normalized) chunks
+        if (renderMarkdown) {
+            var showChunksForMarkdown = getConfig("memo.documentPreview.showChunksForMarkdown", false);
+            var markdownSource = "";
+
+            if (!showChunksForMarkdown && typeof docMeta?.rawText === "string" && docMeta.rawText.trim()) {
+                markdownSource = docMeta.rawText;
+            } else if (showChunksForMarkdown) {
+                var normalizedMarkdownChunks = normalizePreviewChunks(Array.isArray(chunks) ? chunks : []);
+                markdownSource = normalizedMarkdownChunks
+                    .map(function (entry) { return String(entry?.text || ""); })
+                    .filter(Boolean)
+                    .join("\n\n");
+            } else {
+                markdownSource = this.buildMarkdownContent(Array.isArray(chunks) ? chunks : []);
+            }
+
+            if (!markdownSource && snippet) {
+                markdownSource = snippet;
+            }
+            var markdownHtml = renderDocumentMarkdown(markdownSource);
+            this.previewBodyEl.innerHTML = markdownHtml || "<div style='color: #999; font-style: italic;'>(extrait indisponible)</div>";
+
+            // Highlight AI snippets in markdown content
+            if (aiSnippets.length > 0 && this.previewBodyEl.innerHTML) {
+                this.highlightSnippetsInMarkdown(aiSnippets);
+            }
+            return;
+        }
+
         // Check config for whether to show chunks for this document type
         var isPdfDoc = isPdfDocument(docMeta);
         var shouldShowChunks = true;
@@ -5240,20 +5279,6 @@
                 this.previewBodyEl.innerHTML = this.formatPreviewText(snippet, highlightLine, opts);
             } else {
                 this.previewBodyEl.innerHTML = "<div style='color: #999; font-style: italic;'>(extrait indisponible)</div>";
-            }
-            return;
-        }
-        if (renderMarkdown) {
-            var markdownSource = this.buildMarkdownContent(chunks);
-            if (!markdownSource && snippet) {
-                markdownSource = snippet;
-            }
-            var markdownHtml = renderBotMarkdown(markdownSource);
-            this.previewBodyEl.innerHTML = markdownHtml || "<div style='color: #999; font-style: italic;'>(extrait indisponible)</div>";
-
-            // Highlight AI snippets in markdown content
-            if (aiSnippets.length > 0 && this.previewBodyEl.innerHTML) {
-                this.highlightSnippetsInMarkdown(aiSnippets);
             }
             return;
         }

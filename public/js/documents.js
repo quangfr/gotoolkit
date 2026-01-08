@@ -69,10 +69,25 @@
     }
 
     const STORAGE_KEY = "goToolkit.documents.settings";
+    const DB_NAME = "gotoolkit-documents";
+    const DB_VERSION = 3;
+    const REQUIRED_STORES = ["documents", "chunks", "keyword_meta"];
     const PDFJS_URL = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.6.82/+esm";
     const PDFJS_WORKER = "js/pdf.worker.min.mjs";
     const TRANSFORMERS_URL = "https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2";
     const JSZIP_URL = "https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm";
+
+    function getMissingStores(db) {
+        if (!db || !db.objectStoreNames) return REQUIRED_STORES.slice();
+        return REQUIRED_STORES.filter((name) => !db.objectStoreNames.contains(name));
+    }
+
+    function isMissingStoreError(err) {
+        if (!err) return false;
+        if (err.name === "NotFoundError") return true;
+        const msg = String(err && (err.message || err)).toLowerCase();
+        return msg.includes("object store") && msg.includes("not found");
+    }
 
     const ACCEPTED_EXTENSIONS = new Set([
         "pdf",
@@ -339,7 +354,7 @@
                     reject(new Error("IndexedDB indisponible"));
                     return;
                 }
-                const request = indexedDB.open("gotoolkit-documents", 2);
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
                 request.onupgradeneeded = () => {
                     const db = request.result;
                     if (!db.objectStoreNames.contains("documents")) {
@@ -355,16 +370,85 @@
                         db.createObjectStore("keyword_meta", { keyPath: "id" });
                     }
                 };
-                request.onsuccess = () => resolve(request.result);
+                request.onsuccess = async () => {
+                    const db = request.result;
+                    const missing = getMissingStores(db);
+                    if (missing.length) {
+                        try {
+                            db.close();
+                        } catch (err) {
+                            // ignore
+                        }
+                        this.dbPromise = null;
+                        try {
+                            await this.repairIndexedDB({ reason: "missing-stores", missingStores: missing });
+                            const repairedDb = await this.ensureDb();
+                            resolve(repairedDb);
+                        } catch (err) {
+                            reject(err);
+                        }
+                        return;
+                    }
+                    resolve(db);
+                };
                 request.onerror = () => reject(request.error || new Error("IndexedDB ouverture échouée"));
             });
             return this.dbPromise;
         }
 
+        async repairIndexedDB(info = {}) {
+            if (typeof indexedDB === "undefined" || !indexedDB) {
+                throw new Error("IndexedDB indisponible");
+            }
+            let db = null;
+            try {
+                db = await this.dbPromise;
+            } catch (err) {
+                db = null;
+            }
+            try {
+                db?.close?.();
+            } catch (err) {
+                // ignore
+            }
+            this.dbPromise = null;
+
+            await new Promise((resolve, reject) => {
+                const request = indexedDB.deleteDatabase(DB_NAME);
+                request.onsuccess = () => resolve(true);
+                request.onerror = () => reject(request.error || new Error("IndexedDB suppression échouée"));
+                request.onblocked = () => {
+                    console.warn("IndexedDB delete blocked", { db: DB_NAME, info });
+                };
+            });
+
+            // Re-open so stores exist again.
+            await this.ensureDb();
+            // Keyword index is memory-based; it'll be rebuilt on-demand.
+            try {
+                if (this.keywordIndex) {
+                    await this.rebuildKeywordIndex();
+                }
+            } catch (err) {
+                console.warn("Keyword index rebuild after repair failed", err);
+            }
+            return true;
+        }
+
         async getStore(storeName, mode = "readonly") {
             const db = await this.ensureDb();
             if (!db) return null;
-            return db.transaction(storeName, mode).objectStore(storeName);
+            try {
+                return db.transaction(storeName, mode).objectStore(storeName);
+            } catch (err) {
+                if (isMissingStoreError(err)) {
+                    console.warn("IndexedDB store missing, repairing", { storeName, mode, err });
+                    await this.repairIndexedDB({ reason: "transaction-missing-store", storeName });
+                    const repaired = await this.ensureDb();
+                    return repaired.transaction(storeName, mode).objectStore(storeName);
+                }
+                throw err;
+            }
         }
 
         async ensureEmbedder() {
