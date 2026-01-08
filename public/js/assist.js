@@ -311,6 +311,79 @@
         return escapeHtml(text).replace(/\n/g, "<br>");
     }
 
+    // Character counter toaster functions
+    var aiCounterToasterState = {
+        isRunning: false,
+        timerId: null,
+        remaining: 0,
+        spinnerFrames: ["◴", "◷", "◶", "◵"],
+        frameIndex: 0
+    };
+
+    function startCharacterCounterToaster(characterCount) {
+        if (typeof characterCount !== 'number' || characterCount < 0) {
+            characterCount = 0;
+        }
+
+        var toasterEl = global.document?.getElementById("aiRequestCounterToaster");
+        if (!toasterEl) return;
+
+        // Stop any existing timer
+        stopCharacterCounterToaster();
+
+        // Calculate duration: 1000 chars = 4 seconds = 4000ms
+        var durationMs = Math.round((characterCount / 1000) * 4000);
+        durationMs = Math.max(durationMs, 1000); // Minimum 1 second
+
+        aiCounterToasterState.isRunning = true;
+        aiCounterToasterState.remaining = durationMs;
+        aiCounterToasterState.frameIndex = 0;
+
+        toasterEl.classList.add("visible");
+        toasterEl.style.display = "";
+
+        var updateCounter = function () {
+            if (!aiCounterToasterState.isRunning) return;
+
+            var secondsRemaining = Math.ceil(aiCounterToasterState.remaining / 1000);
+            var minutes = Math.floor(secondsRemaining / 60);
+            var seconds = secondsRemaining % 60;
+            var timeStr = (minutes < 10 ? "0" : "") + minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
+
+            var frame = aiCounterToasterState.spinnerFrames[aiCounterToasterState.frameIndex % 4];
+            aiCounterToasterState.frameIndex += 1;
+
+            var textEl = global.document?.getElementById("aiRequestCounterText");
+            if (textEl) {
+                textEl.textContent = frame + " " + timeStr;
+            }
+
+            aiCounterToasterState.remaining -= 1000;
+
+            if (aiCounterToasterState.remaining <= 0) {
+                stopCharacterCounterToaster();
+            } else {
+                aiCounterToasterState.timerId = setTimeout(updateCounter, 1000);
+            }
+        };
+
+        updateCounter();
+    }
+
+    function stopCharacterCounterToaster() {
+        var toasterEl = global.document?.getElementById("aiRequestCounterToaster");
+        if (toasterEl) {
+            toasterEl.classList.remove("visible");
+        }
+
+        if (aiCounterToasterState.timerId) {
+            clearTimeout(aiCounterToasterState.timerId);
+            aiCounterToasterState.timerId = null;
+        }
+        aiCounterToasterState.isRunning = false;
+        aiCounterToasterState.remaining = 0;
+    }
+
     function isMarkdownDocument(doc, options) {
         var config = options || {};
         if (config.forceMarkdown) return true;
@@ -663,9 +736,11 @@
         this.previewTitleEl = null;
         this.previewBodyEl = null;
         this.previewCloseBtn = null;
+        this.previewImportBtn = null;
         this.previewIframeEl = null;
         this.previewPdfUrl = null;
         this.pendingPdfHighlight = null;
+        this.currentPreviewDoc = null;
         this.promptPresetId = readPromptPreset();
         this.promptDropdown = null;
         this.promptDropdownButton = null;
@@ -1919,6 +1994,18 @@
         try {
             // Store the full AI request payload for debugging/visibility
             storeLastAIRequest(payload);
+
+            // Calculate total payload character count and start toaster
+            var totalPayloadChars = 0;
+            if (Array.isArray(payload.messages)) {
+                payload.messages.forEach(function (msg) {
+                    if (msg && typeof msg.content === "string") {
+                        totalPayloadChars += msg.content.length;
+                    }
+                });
+            }
+            startCharacterCounterToaster(totalPayloadChars);
+
             var result = await global.GoToolkitIA.chatCompletion({
                 payload: payload,
                 endpointType: "responses",
@@ -1994,6 +2081,7 @@
             this.updateBotMessage(botMessage);
             this.persist();
         } finally {
+            stopCharacterCounterToaster();
             this.isStreaming = false;
             this.controller = null;
             this.updateComposerState();
@@ -2104,6 +2192,22 @@
             }.bind(this));
             menu.appendChild(item);
         }, this);
+
+        // Add import button for memo.html only
+        if (CHAT_APP_ID === "memo") {
+
+
+            var importButton = document.createElement("button");
+            importButton.type = "button";
+            importButton.className = "chat-prompt-menu-item";
+            importButton.textContent = "⤷ Importer";
+            importButton.addEventListener("click", function (event) {
+                event.stopPropagation();
+                this.openImportFileSelector();
+                this.closePromptDropdown();
+            }.bind(this));
+            menu.appendChild(importButton);
+        }
 
         wrapper.appendChild(button);
         wrapper.appendChild(menu);
@@ -2304,6 +2408,162 @@
     AssistSidebar.prototype.openDocumentSelector = function () {
         if (this.documentsFileInput) {
             this.documentsFileInput.click();
+        }
+    };
+
+    AssistSidebar.prototype.createImportFileInput = function () {
+        if (this.importFileInput) return;
+        this.importFileInput = document.createElement("input");
+        this.importFileInput.type = "file";
+        this.importFileInput.multiple = true;
+        this.importFileInput.accept =
+            "application/pdf,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx,application/vnd.openxmlformats-officedocument.presentationml.presentation,.pptx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,.xlsx,text/plain,.txt,text/markdown,.md,application/rtf,.rtf,application/msword,.doc,application/vnd.oasis.opendocument.text,.odt,application/vnd.oasis.opendocument.spreadsheet,.ods";
+        this.importFileInput.style.display = "none";
+        this.importFileInput.addEventListener("change", this.handleImportFilesSelected.bind(this));
+        document.body.appendChild(this.importFileInput);
+    };
+
+    AssistSidebar.prototype.openImportFileSelector = function () {
+        this.createImportFileInput();
+        if (this.importFileInput) {
+            this.importFileInput.click();
+        }
+    };
+
+    AssistSidebar.prototype.handleImportFilesSelected = function (event) {
+        var files = event?.target?.files;
+        if (!files || !files.length) return;
+        this.sendImportedDocuments(Array.from(files));
+        event.target.value = "";
+    };
+
+    AssistSidebar.prototype.sendImportedDocuments = async function (files) {
+        if (!this.docManager) {
+            console.warn("Document manager not available");
+            return;
+        }
+
+        if (!files || !files.length) {
+            console.warn("No files to import");
+            return;
+        }
+
+        var self = this;
+        var fileArray = Array.from(files);
+
+        try {
+            // 1. Ingérer les fichiers (parsing, chunking) comme chatAttachFilesBtn
+            console.log("Starting document ingestion for import...");
+            var metadata = new Map();
+            fileArray.forEach(function (file) {
+                metadata.set(file.name, {
+                    scope: "attachments",
+                    name: file.name,
+                    abstract: "Importer"
+                });
+            });
+
+            var results = await this.docManager.ingestFiles(fileArray, this.conversation.id, {
+                onProgress: function (progress) {
+                    console.log("Import ingestion progress:", progress);
+                },
+                sourceType: "context",
+                metadata: metadata
+            });
+
+            var errors = results.filter(function (item) {
+                return !item.success;
+            });
+
+            if (errors.length) {
+                console.error("Import ingestion errors:", errors);
+                return;
+            }
+
+            // 2. Récupérer les documents depuis la DB
+            var readyDocNames = results
+                .filter(function (item) {
+                    return item.success;
+                })
+                .map(function (item) {
+                    return item.name;
+                });
+
+            console.log("Documents ready for import:", readyDocNames);
+
+            // 3. Récupérer le contenu de chaque document depuis IndexedDB
+            var parsedContents = [];
+            var documents = await this.docManager.getDocuments(this.conversation.id);
+
+            for (var i = 0; i < readyDocNames.length; i++) {
+                var docName = readyDocNames[i];
+                // Trouver le document dans la liste
+                var doc = documents.find(function (d) {
+                    return d && (d.name === docName || d.sourceFileName === docName);
+                });
+
+                if (doc && doc.id) {
+                    try {
+                        var fullDoc = await this.docManager.getDocumentById(doc.id);
+                        if (fullDoc && fullDoc.rawText) {
+                            parsedContents.push(fullDoc.rawText);
+                        }
+                    } catch (err) {
+                        console.warn("Failed to retrieve document content for:", docName, err);
+                    }
+                }
+            }
+
+            if (!parsedContents.length) {
+                console.warn("No document content available to import");
+                return;
+            }
+
+            // 4. Construire le payload avec format DOCUMENT\n{contenu1}\nDOCUMENT\n{contenu2}
+            var userPrompt = "DOCUMENT\n" + parsedContents.join("\nDOCUMENT\n");
+
+            // Get the import prompt
+            var systemPrompt = window.GoToolkitChatPrompt?.PRESETS?.import?.prompt ||
+                window.GoToolkitChatPrompt?.PRESETS?.import?.defaultPrompt ||
+                "Analyse le DOCUMENT fourni et produis une synthèse structurée.";
+
+            // Build payload
+            var payload = {
+                system: systemPrompt,
+                messages: [
+                    {
+                        role: "user",
+                        content: userPrompt
+                    }
+                ],
+                stream: false,
+                model: "gpt-oss-20gb"
+            };
+
+            // Create user message in chat
+            var userMessage = {
+                id: "msg-" + Date.now(),
+                role: "user",
+                content: "⤷ Importer " + (readyDocNames.length === 1 ? readyDocNames[0] : readyDocNames.length + " documents"),
+                attachments: readyDocNames
+            };
+            this.conversation.messages.push(userMessage);
+            this.appendMessage(userMessage);
+            this.persist();
+            this.scrollToBottom();
+
+            // Send to AI
+            this.sendAIRequest(payload);
+
+        } catch (err) {
+            console.error("Import documents error:", err);
+            var errorMessage = {
+                id: "msg-" + Date.now(),
+                role: "bot",
+                content: "❌ Erreur lors de l'importation. Vérifiez les fichiers."
+            };
+            this.appendMessage(errorMessage);
+            this.persist();
         }
     };
 
@@ -4089,6 +4349,14 @@
         }.bind(this));
         var title = document.createElement("div");
         title.className = "chat-doc-preview__title";
+        var importBtn = document.createElement("button");
+        importBtn.type = "button";
+        importBtn.className = "btn-secondary chat-doc-preview__import";
+        importBtn.textContent = "⤷ Importer";
+        importBtn.setAttribute("aria-label", "Importer le document");
+        importBtn.addEventListener("click", function () {
+            this.importDocument();
+        }.bind(this));
         var closeBtn = document.createElement("button");
         closeBtn.type = "button";
         closeBtn.className = "chat-doc-preview__close";
@@ -4096,6 +4364,7 @@
         closeBtn.addEventListener("click", this.closePreviewPanel.bind(this));
         header.appendChild(backBtn);
         header.appendChild(title);
+        header.appendChild(importBtn);
         header.appendChild(closeBtn);
 
         var body = document.createElement("div");
@@ -4109,6 +4378,7 @@
         this.previewTitleEl = title;
         this.previewBodyEl = body;
         this.previewCloseBtn = closeBtn;
+        this.previewImportBtn = importBtn;
     };
 
     AssistSidebar.prototype.clearPreviewIframe = function () {
@@ -4189,6 +4459,222 @@
         this.previewPanel.classList.remove("open");
         this.previewPanel.setAttribute("aria-hidden", "true");
         this.clearPreviewIframe();
+    };
+
+    AssistSidebar.prototype.importDocument = function () {
+        if (!this.currentPreviewDoc) {
+            console.warn("No document to import");
+            return;
+        }
+
+        var self = this;
+        var docId = this.currentPreviewDoc.id;
+
+        // Récupérer le contenu texte brut depuis IndexedDB
+        if (!this.docManager) {
+            console.warn("Document manager not available");
+            return;
+        }
+
+        this.docManager.getDocumentById(docId).then(function (doc) {
+            if (!doc || !doc.rawText) {
+                console.warn("Document raw text not available");
+                return;
+            }
+
+            var docContent = doc.rawText;
+
+            // Construire le message utilisateur
+            var userPrompt = "DOCUMENT\n" + docContent;
+
+            // Construire le payload avec le prompt system import
+            var systemPrompt = window.GoToolkitChatPrompt?.PRESETS?.import?.prompt ||
+                window.GoToolkitChatPrompt?.PRESETS?.import?.defaultPrompt ||
+                "Importer le DOCUMENT à l'identique avec Markdown adapté";
+
+            var payload = {
+                system: systemPrompt,
+                messages: [
+                    {
+                        role: "user",
+                        content: userPrompt
+                    }
+                ],
+                stream: false,
+                model: "gpt-oss-20gb"
+            };
+
+            // Log du payload avant envoi
+            console.log('%c📤 ImportDocument - AI Payload (Sent)', 'color: #FFF; background: #FF9800; padding: 8px 12px; border-radius: 4px; font-weight: bold;');
+            console.log(JSON.stringify(payload, null, 2));
+
+            // Fermer le panel
+            self.closePreviewPanel();
+
+            // Créer un message utilisateur dans le chat avec "Importer le document"
+            var userMessage = {
+                id: "msg-" + Date.now(),
+                role: "user",
+                content: "⤷ Importer le document",
+                attachments: [doc.name]
+            };
+            self.appendMessage(userMessage, {});
+
+            // Ajouter à la conversation
+            if (self.conversation) {
+                self.conversation.messages.push(userMessage);
+            }
+
+            // Envoyer la requête à l'IA
+            self.sendAIRequest(payload);
+        }).catch(function (err) {
+            console.error("Failed to retrieve document:", err);
+        });
+    };
+
+    AssistSidebar.prototype.sendAIRequest = function (payload) {
+        var self = this;
+
+        // Afficher le payload envoyé en console
+        console.log('%c📤 AI Payload Messages (Sent)', 'color: #FFF; background: #4CAF50; padding: 8px 12px; border-radius: 4px; font-weight: bold;');
+        console.log(JSON.stringify(payload, null, 2));
+
+        // Calculate total payload character count and start toaster
+        var totalPayloadChars = 0;
+        if (Array.isArray(payload.messages)) {
+            payload.messages.forEach(function (msg) {
+                if (msg && typeof msg.content === "string") {
+                    totalPayloadChars += msg.content.length;
+                }
+            });
+        }
+        startCharacterCounterToaster(totalPayloadChars);
+
+        // Créer un message bot provisoire pour la réponse
+        var botMessage = {
+            id: "msg-" + (Date.now() + 1),
+            role: "bot",
+            content: "..."
+        };
+        botMessage.references = [];
+        botMessage.suggestions = [];
+
+        this.appendMessage(botMessage, {});
+        if (this.conversation) {
+            this.conversation.messages.push(botMessage);
+        }
+        this.persist();
+        this.scrollToBottom();
+
+        // Normaliser le payload (helper from handleSend)
+        var requestPayload = Object.assign({}, payload || {});
+        var requestMessages = Array.isArray(requestPayload.messages)
+            ? requestPayload.messages.slice()
+            : [];
+
+        var systemPrompt = (typeof requestPayload.system === 'string')
+            ? requestPayload.system
+            : '';
+
+        var hasSystemMessage = requestMessages.some(function (m) {
+            return m && m.role === 'system';
+        });
+        if (!hasSystemMessage && systemPrompt && systemPrompt.trim()) {
+            requestMessages.unshift({ role: 'system', content: systemPrompt });
+        }
+        requestPayload.messages = requestMessages;
+        delete requestPayload.system;
+
+        // Appeler l'IA
+        if (!window.GoToolkitIA || !window.GoToolkitIA.chatCompletion) {
+            console.warn("AI Client not available");
+            botMessage.content = "❌ Service IA non disponible";
+            self.updateBotMessage(botMessage);
+            return;
+        }
+
+        window.GoToolkitIA.chatCompletion({
+            payload: requestPayload,
+            endpointType: 'responses'
+        }).then(function (rawResponse) {
+            console.log('%c📥 AI Response (Received)', 'color: #FFF; background: #2196F3; padding: 8px 12px; border-radius: 4px; font-weight: bold;');
+            console.log(typeof rawResponse === 'string' ? rawResponse : JSON.stringify(rawResponse, null, 2));
+
+            // Parser la réponse
+            var responseObj = null;
+            var rawTextFallback = '';
+
+            if (typeof rawResponse === 'string') {
+                try {
+                    responseObj = JSON.parse(rawResponse);
+                } catch (e) {
+                    rawTextFallback = rawResponse.trim();
+                }
+            } else if (rawResponse && typeof rawResponse === 'object') {
+                responseObj = rawResponse;
+            }
+
+            // Extraire l'output
+            var output = null;
+            if (responseObj && typeof responseObj === 'object') {
+                if (typeof responseObj.content === 'string') {
+                    try {
+                        var embedded = JSON.parse(responseObj.content.trim());
+                        if (embedded && typeof embedded === 'object') {
+                            responseObj = embedded;
+                        }
+                    } catch (e) {
+                        // noop
+                    }
+                } else if (responseObj.content && typeof responseObj.content === 'object') {
+                    responseObj = responseObj.content;
+                }
+                output = responseObj.output || responseObj.answer || null;
+            }
+
+            // Parser le contenu pour le chat
+            var parsedResponse = self.parseAssistantResponse(
+                JSON.stringify(responseObj || { answer: rawTextFallback })
+            );
+
+            // Mettre à jour le message bot
+            botMessage.content = parsedResponse.content || rawTextFallback || "Import effectué.";
+            botMessage.references = parsedResponse.references || [];
+            botMessage.suggestions = parsedResponse.suggestions || [];
+
+            // Mettre à jour l'affichage du message
+            var messageEntry = self.messageNodes[botMessage.id];
+            if (messageEntry && messageEntry.contentEl) {
+                messageEntry.contentEl.innerHTML = self.renderBotContent(botMessage);
+                self.syncBotExtras?.(messageEntry, botMessage);
+            }
+
+            // Insérer le contenu importé à la fin du document courant
+            if (output && typeof window.getMemoActiveTabContent === 'function') {
+                var currentContent = window.getMemoActiveTabContent() || '';
+                var newContent = currentContent + (currentContent ? '\n\n' : '') + output;
+
+                if (typeof window.setEditorMarkdown === 'function') {
+                    window.setEditorMarkdown(newContent);
+                }
+            }
+
+            self.scrollToBottom();
+            self.persist();
+            stopCharacterCounterToaster();
+
+        }).catch(function (err) {
+            console.error("AI Error:", err);
+            botMessage.content = "❌ Erreur lors de l'import du document. Veuillez réessayer.";
+            self.updateBotMessage(botMessage);
+
+            var messageEntry = self.messageNodes[botMessage.id];
+            if (messageEntry && messageEntry.contentEl) {
+                messageEntry.contentEl.innerHTML = self.renderBotContent(botMessage);
+            }
+            self.persist();
+            stopCharacterCounterToaster();
+        });
     };
 
     AssistSidebar.prototype.normalizeDocName = function (value) {
@@ -4303,7 +4789,8 @@
         var snippet = "";
         try {
             var doc = await this.findDocumentForPreview(name);
-            if (doc?.id) {
+            if (doc && doc.id) {
+                this.currentPreviewDoc = doc;
                 if (isPdfDocument(doc) && !getConfig("documentPreview.showChunksForPdf", false)) {
                     if (this.showPdfPreview(doc)) {
                         return;
@@ -4313,6 +4800,8 @@
                 snippet = docChunks.length ? (docChunks[0].text || "") : "";
                 this.renderDocumentText(docChunks, { snippet: snippet, doc: doc });
                 return;
+            } else {
+                console.warn("Document not found for preview:", name);
             }
         } catch (err) {
             console.warn("Attachment preview failed", err);
@@ -4865,6 +5354,17 @@
             assistInstance.appendMessage(botMessage);
             assistInstance.persist();
 
+            // Calculate total payload character count and start toaster
+            var totalPayloadChars = 0;
+            if (Array.isArray(requestMessages)) {
+                requestMessages.forEach(function (msg) {
+                    if (msg && typeof msg.content === "string") {
+                        totalPayloadChars += msg.content.length;
+                    }
+                });
+            }
+            startCharacterCounterToaster(totalPayloadChars);
+
             // 5. Appeler l'IA
             const rawResponse = await window.GoToolkitIA?.chatCompletion({
                 payload: requestPayload,
@@ -4872,6 +5372,7 @@
             });
 
             if (!rawResponse) {
+                stopCharacterCounterToaster();
                 return;
             }
 
@@ -5043,9 +5544,11 @@
 
             // 11. Persister la conversation
             assistInstance.persist?.();
+            stopCharacterCounterToaster();
 
         } catch (error) {
             // Mettre à jour le message bot avec l'erreur
+            stopCharacterCounterToaster();
             if (botMessage) {
                 botMessage.content = '⚠️ Une erreur s\'est produite.';
                 if (assistInstance.messageNodes[botMessage.id]?.contentEl) {

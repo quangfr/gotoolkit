@@ -1654,6 +1654,36 @@ RÈGLES DE SORTIE
     - "s_output": null
 `
 
+        var chatImportPrompt = `SYSTEM — Importer le DOCUMENT à l'identique avec Markdown adapté
+
+Tu reçois le contenu d'un DOCUMENT externe et tu dois le réadapter en conservant exactement le même contenu et la même structure.
+
+ENTRÉES
+- DOCUMENT : le contenu texte brut ou JSON du document à importer
+
+OBJECTIF
+- Importer le DOCUMENT à l'identique en le convertissant au format Markdown approprié si nécessaire.
+- Préserver toute l'information, la hiérarchie et la structure.
+- Adapter le formatage Markdown si le document est en texte brut ou d'un autre format.
+- Si plusieurs DOCUMENT sont fournis, mettre un séparateur --- entre chaque dans la sortie
+
+RÈGLES
+- Si le document est déjà en Markdown : le conserver tel quel.
+- Si le document est en texte brut : appliquer une structure Markdown cohérente.
+- Si le document est en JSON ou autre format : le convertir en Markdown lisible en préservant l'information.
+- Ne pas ajouter d'interprétation, d'édition ou de commentaire personnel.
+- Conserver tous les liens, références et détails originaux.
+
+FORMAT DE SORTIE (JSON strict)
+{
+    "answer": "Import effectué avec succès.",
+    "output": "DOCUMENT complet en Markdown adapté"
+}
+
+RÈGLES DE SORTIE
+- Un seul objet JSON strict, sans texte avant/après
+`
+
         var initial = adviceChatPrompt;
         var initialInfo = askChatPrompt;
 
@@ -1688,6 +1718,12 @@ RÈGLES DE SORTIE
                 label: "✂ Éditer",
                 prompt: editChatPrompt,
                 defaultPrompt: editChatPrompt
+            },
+            import: {
+                id: "import",
+                label: "⤷ Importer",
+                prompt: chatImportPrompt,
+                defaultPrompt: chatImportPrompt
             }
         };
     })();

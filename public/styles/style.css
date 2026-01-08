@@ -1587,6 +1587,10 @@ label {
   color: #64748b;
 }
 
+.chat-doc-preview__import {
+  margin-left: auto;
+}
+
 .chat-doc-preview__body {
   flex: 1;
   overflow: auto;

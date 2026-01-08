@@ -1245,9 +1245,7 @@
             <span class="hero-version label-link" id="releaseNotesTrigger" tabindex="0">v2026.01.07</span>
 
             <div class="hero-meta">
-                <button id="openFeedbackBtn" class="feedback-button" type="button">☄ Feedback</button>
                 <button id="openSettingsBtn" class="feedback-button" type="button">⌘ Paramètres</button>
-                <button id="heroAssistBtn" class="feedback-button chat-toggle-button" type="button">⌬ Assist</button>
             </div>
         </header>
 
@@ -1324,61 +1322,6 @@
 
         <button id="openRequestsBtn" class="requests-button" type="button">☄ Feedback (<span
                 id="requestsCount">0</span>)</button>
-
-        <div id="feedbackModal" class="feedback-modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
-            <div class="feedback-modal">
-                <header>
-                    <h3>☄ Feedback</h3>
-                    <button id="closeFeedbackBtn" class="btn-secondary" type="button" aria-label="Fermer">✕</button>
-                </header>
-                <form id="feedbackForm" class="feedback-form">
-                    <div class="field-row">
-                        <label>
-                            <span class="label-title">Nom<span class="required-asterisk"
-                                    aria-hidden="true">*</span></span>
-                            <input id="feedbackName" name="name" type="text" autocomplete="name"
-                                placeholder="Ton nom" />
-                        </label>
-                    </div>
-                    <label>
-                        <span class="label-title">Type <span class="required-asterisk"
-                                aria-hidden="true">*</span></span>
-                        <select id="feedbackType" name="type" required>
-                            <option value="bug-general" selected>☍ Go-Toolkit</option>
-                            <option value="bug-assist">⌬ Assist</option>
-                            <option value="bug-canvas">◍ Canvas</option>
-                            <option value="bug-draw">ʃ Draw</option>
-                            <option value="bug-grid">◇ Grid</option>
-                            <option value="bug-timeline">⇥ Timeline</option>
-                            <option value="bug-voice">▷ Voice</option>
-                            <option value="suggestion">☄ Suggestion</option>
-                        </select>
-                    </label>
-                    <input type="text" id="feedbackWebsite" name="website"
-                        style="position:absolute;left:-9999px;opacity:0;" tabindex="-1" aria-hidden="true"
-                        autocomplete="off">
-                    <label>
-                        <span class="label-title">Sujet<span class="required-asterisk"
-                                aria-hidden="true">*</span></span>
-                        <input id="feedbackSubject" name="subject" type="text" placeholder="Titre de la demande"
-                            required />
-                    </label>
-                    <label>
-                        <span class="label-title">Message<span class="required-asterisk"
-                                aria-hidden="true">*</span></span>
-                        <textarea id="feedbackMessage" name="message" rows="10" required
-                            placeholder="Décris ton retour"></textarea>
-                        <p class="feedback-helper">Pour toute demande de partenariat ou autre, veuillez envoyer un mail
-                            à <a href="mailto:oliver.tholance@savane-group.com">oliver.tholance@savane-group.com</a>.
-                        </p>
-                    </label>
-                    <div class="feedback-actions">
-                        <button type="button" id="cancelFeedbackBtn" class="btn-secondary">Annuler</button>
-                        <button type="submit" id="submitFeedbackBtn" class="btn-primary">Envoyer</button>
-                    </div>
-                </form>
-            </div>
-        </div>
 
         <div id="requestsModal" class="feedback-modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
             <div class="requests-modal">
@@ -1834,6 +1777,16 @@
     <script src="https://cdn.jsdelivr.net/npm/minisearch@7.2.0/dist/umd/index.min.js"></script>
     <script src="js/keywordIndex.js"></script>
     <script src="js/documents.js"></script>
+    <script>
+        // Initialize feedback configuration before loading feedback.js
+        window.GoToolkitAppFeedbackConfig = {
+            appId: "index",
+            appName: "Go-Toolkit",
+            defaultType: "bug-general",
+            primaryColor: "#2563eb"
+        };
+    </script>
+    <script src="js/feedback.js"></script>
     <script>
         (function () {
             const manager = window.GoToolkitDocumentManager;
@@ -3038,20 +2991,8 @@
         })();
     </script>
     <script type="module">
-        const feedbackModal = document.getElementById("feedbackModal");
         const openFeedbackBtn = document.getElementById("openFeedbackBtn");
-        const closeFeedbackBtn = document.getElementById("closeFeedbackBtn");
-        const cancelFeedbackBtn = document.getElementById("cancelFeedbackBtn");
-        const feedbackForm = document.getElementById("feedbackForm");
-        const feedbackType = document.getElementById("feedbackType");
-        const feedbackMessage = document.getElementById("feedbackMessage");
-        const feedbackSubject = document.getElementById("feedbackSubject");
-        const submitFeedbackBtn = document.getElementById("submitFeedbackBtn");
         const toastEl = document.getElementById("feedbackToast");
-        const messagePlaceholders = {
-            bug: "Décris le bug, les étapes pour reproduire, le résultat attendu et le résultat observé.",
-            suggestion: "Décris la suggestion, le contexte et l'impact attendu."
-        };
         const requestsBtn = document.getElementById("openRequestsBtn");
         const requestsModal = document.getElementById("requestsModal");
         const closeRequestsBtn = document.getElementById("closeRequestsBtn");
@@ -3129,12 +3070,6 @@
             }
             toastEl.classList.add("show");
             setTimeout(() => toastEl.classList.remove("show"), 3200);
-        }
-
-        function updateMessagePlaceholder(type) {
-            const normalized = type && String(type).toLowerCase().startsWith("bug") ? "bug" : type;
-            const placeholder = messagePlaceholders[normalized] || messagePlaceholders.bug;
-            feedbackMessage.placeholder = placeholder;
         }
 
         function renderRequestDetail(item) {
@@ -4394,13 +4329,6 @@
                 return verifyOpenRouterProxy({ showToasts });
             }
         }
-        function openModal() {
-            if (!feedbackModal) return;
-            feedbackModal.classList.add("open");
-            feedbackModal.setAttribute("aria-hidden", "false");
-            feedbackType?.focus();
-        }
-
         function openRequestsModal() {
             if (!requestsModal) return;
             requestsModal.classList.add("open");
@@ -4414,60 +4342,7 @@
             requestsModal.setAttribute("aria-hidden", "true");
         }
 
-        function closeModal() {
-            if (!feedbackModal) return;
-            feedbackModal.classList.remove("open");
-            feedbackModal.setAttribute("aria-hidden", "true");
-            feedbackForm?.reset();
-            updateMessagePlaceholder("bug");
-        }
 
-        async function handleSubmit(event) {
-            event.preventDefault();
-            if (!feedbackForm.checkValidity()) {
-                feedbackForm.reportValidity();
-                return;
-            }
-            if (feedbackWebsite && feedbackWebsite.value.trim()) {
-                showToast("Formulaire invalide.", true);
-                return;
-            }
-            const type = feedbackType.value || "bug";
-            const message = feedbackMessage.value.trim();
-            const name = (document.getElementById("feedbackName")?.value || "").trim();
-            const subject = (feedbackSubject?.value || "").trim();
-            submitFeedbackBtn.disabled = true;
-            submitFeedbackBtn.textContent = "Envoi...";
-            try {
-                const endpoint = window.GO_TOOLKIT_FEEDBACK_API_URL || "https://feedback.gotoolkit.workers.dev/v1/feedback";
-                const response = await fetch(endpoint, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        name: name || null,
-                        type,
-                        message,
-                        subject: subject || null,
-                        page: "index",
-                        userAgent: navigator.userAgent || ""
-                    })
-                });
-                if (!response.ok) {
-                    const body = await response.text().catch(() => "");
-                    throw new Error(body || "Envoi impossible");
-                }
-                showToast("Merci pour ton avis !");
-                closeModal();
-            } catch (err) {
-                console.error("Feedback non envoyé", err);
-                showToast("Impossible d'enregistrer le feedback (config ?)", true);
-            } finally {
-                submitFeedbackBtn.disabled = false;
-                submitFeedbackBtn.textContent = "Envoyer";
-            }
-        }
 
         // Settings modal (global Réglages)
         const openSettingsBtn = document.getElementById("openSettingsBtn");
@@ -5262,13 +5137,10 @@
             refreshOpenRouterModelLabel();
         });
 
-        openFeedbackBtn?.addEventListener("click", openModal);
-        closeFeedbackBtn?.addEventListener("click", closeModal);
-        cancelFeedbackBtn?.addEventListener("click", closeModal);
-        feedbackModal?.addEventListener("click", event => {
-            if (event.target === feedbackModal) {
-                closeModal();
-            }
+        openFeedbackBtn?.addEventListener("click", function () {
+            // Click the feedback.js launcher button to open the modal
+            const feedbackBtn = document.getElementById("feedback-app-index-openBtn");
+            feedbackBtn?.click();
         });
         document.addEventListener("keydown", event => {
             if (event.key !== "Escape" && event.key !== "Esc") return;
@@ -5280,15 +5152,9 @@
                 closeRequestsModal();
                 return;
             }
-            if (feedbackModal?.classList?.contains("open")) {
-                closeModal();
-            }
+
         });
-        feedbackType?.addEventListener("change", event => {
-            const value = event.target.value;
-            updateMessagePlaceholder(value);
-        });
-        feedbackForm?.addEventListener("submit", handleSubmit);
+
         requestsBtn?.addEventListener("click", openRequestsModal);
         closeRequestsBtn?.addEventListener("click", closeRequestsModal);
         requestsModal?.addEventListener("click", event => {
@@ -5314,7 +5180,6 @@
             }
         });
 
-        updateMessagePlaceholder("bug");
         if (updateRequestsButtonVisibility()) {
             fetchRequests().catch(() => { /* noop */ });
         }
@@ -5448,7 +5313,8 @@
                 if (!hash) return;
                 const h = String(hash).toLowerCase();
                 if (h === '#feedback') {
-                    showModalById('feedbackModal', '#feedbackType');
+                    const feedbackBtn = document.getElementById("feedback-app-index-openBtn");
+                    feedbackBtn?.click();
                 } else if (h === '#config' || h === '#parametres' || h === '#paramètres' || h === '#settings') {
                     if (typeof openSettings === 'function') {
                         try { openSettings(); } catch (e) { showModalById('settingsModal', '#saveSettingsBtn'); }

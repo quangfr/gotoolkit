@@ -7,7 +7,7 @@
 
     const APP_ID = String(config.appId || "app").replace(/[^a-z0-9_-]/gi, "-");
     const prefix = `feedback-app-${APP_ID}`;
-    const types = [
+    const types = config.types || [
         { value: "bug-general", label: "Bug Général" },
         { value: "bug-assist", label: "Bug Assist" },
         { value: "bug-canvas", label: "Bug Canvas" },

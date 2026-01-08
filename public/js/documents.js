@@ -810,6 +810,7 @@
                 baseEntry.chunkSizeCategory = chunkConfig.category;
                 baseEntry.chunkSize = chunkConfig.chunkSize;
                 baseEntry.chunkOverlap = chunkConfig.chunkOverlap;
+                baseEntry.rawText = extractedText;
                 await this.putDocument(baseEntry);
                 results.push({ docId, name: file.name, success: true, chunkTotal });
                 onProgress?.({ type: "file-done", file: file.name });
