@@ -1,5 +1,9 @@
 {
-  "enableTours": false,
+  "voice": {
+    "hideSummaryColumn": false
+  },
+  "memo": {
+  },
   "documentPreview": {
     "showChunksForMarkdown": true,
     "showChunksForPdf": true,

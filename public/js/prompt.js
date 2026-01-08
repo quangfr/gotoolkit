@@ -1394,6 +1394,9 @@ Le format du planning :
 - 2-4 groupes \`groups\`
 - 10-20 \`items\` d'une durée supérieure à 7 jours avec un \`kind\` de nature \`types\`
 - Entre 3-5 \`items\` d'une durée inférieure ou égale à 7 jours avec un \`kind\` avec un id \`markers\` et sans \`length\`
+- Pour une action \> 45 jours : la découper en items \`(P1, P2...Pn)\`.
+- Entre 1–3 \`markers\`, 2–6 \`types\`, 2–4 \`groups\`, et 10–20 \`items\`. 21 jours en ajoutant dans le nom (P1, P2...Pn)
+
 
 Réponds toujours uniquement avec un JSON contenant :
 - \`page\` : le titre de la page courante (utilisé pour le header).
@@ -1406,7 +1409,6 @@ Réponds toujours uniquement avec un JSON contenant :
 Contraintes de structure :
 - \`start\` au format ISO (YYYY-MM-DD).
 - \`length\` exprimé en jours.
-- Pour une action \> 45 jours : la découper en items \`(P1, P2...Pn)\`.
 
 Contraintes de planification :
 - Optimiser la durée totale : actions enchaînées sans pause.
@@ -1417,7 +1419,6 @@ Contraintes de planification :
 Contraintes de nommage et quantités :
 - Un seul mot pour les labels des \`types\` et \`markers\`.
 - 2 à 4 mots pour les labels des \`groups\`.
-- Entre 1–3 \`markers\`, 2–6 \`types\`, 2–4 \`groups\`, et 10–20 \`items\`. 21 jours en ajoutant dans le nom (P1, P2...Pn)
 - Un seul mot pour le label d'un \`markers\` ou un \`type\`.
 - Entre 2-4 mots pour le label d'un \`group\`
 - Les mots sont en français et adaptés au contexte utilisateur.
