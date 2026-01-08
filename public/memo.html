@@ -687,7 +687,7 @@
             }
         })();
     </script>
-    <script src="js/assist.js?v=2026.01.07"></script>
+    <script src="js/assist.js?v=2026.01.08"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             setTimeout(function () {
@@ -1639,9 +1639,6 @@
                     if (!memoEditorApi) return;
                     memoEditorApi.onChange(value => updateActiveTabContent(value));
                     setActiveTab(state.activeTabId);
-                    if (shouldOpenTemplateOnStart) {
-                        openTemplateModal("replace");
-                    }
                 })
                 .catch(err => {
                     console.error("Initialisation de l'éditeur Mémo impossible", err);

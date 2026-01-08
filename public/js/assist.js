@@ -17,6 +17,140 @@
     // Load config immediately
     loadGlobalConfig();
 
+    // IndexedDB verification and repair function
+    async function verifyAndRepairDocumentsDb() {
+        try {
+            if (typeof indexedDB === "undefined" || !indexedDB) {
+                console.warn("IndexedDB unavailable");
+                return false;
+            }
+
+            return new Promise((resolve) => {
+                try {
+                    const testReq = indexedDB.open("gotoolkit-documents", 2);
+                    let isHealthy = true;
+
+                    testReq.onerror = () => {
+                        console.warn("IndexedDB health check failed, attempting repair...");
+                        isHealthy = false;
+                    };
+
+                    testReq.onsuccess = () => {
+                        const db = testReq.result;
+                        try {
+                            // Verify that required stores exist
+                            const requiredStores = ["documents", "chunks", "keyword_meta"];
+                            const hasAllStores = requiredStores.every(store =>
+                                db.objectStoreNames.contains(store)
+                            );
+
+                            if (!hasAllStores) {
+                                console.warn("Missing required IndexedDB stores, attempting repair...");
+                                isHealthy = false;
+                            } else {
+                                // Try to read a small test value to ensure stores are accessible
+                                const tx = db.transaction("documents", "readonly");
+                                const docStore = tx.objectStore("documents");
+                                const countReq = docStore.count();
+
+                                countReq.onerror = () => {
+                                    console.warn("Cannot access document store, attempting repair...");
+                                    isHealthy = false;
+                                };
+
+                                countReq.onsuccess = () => {
+                                    console.log("IndexedDB health check passed, documents count:", countReq.result);
+                                };
+
+                                tx.onerror = () => {
+                                    isHealthy = false;
+                                };
+
+                                tx.oncomplete = () => {
+                                    if (isHealthy) {
+                                        resolve(true);
+                                    } else {
+                                        repairDocumentsDb().then(() => resolve(true));
+                                    }
+                                };
+                            }
+                        } catch (err) {
+                            console.warn("IndexedDB store check failed:", err);
+                            isHealthy = false;
+                            db.close();
+                            repairDocumentsDb().then(() => resolve(true));
+                        }
+                    };
+
+                    testReq.onupgradeneeded = () => {
+                        console.log("IndexedDB upgrade triggered during health check");
+                    };
+                } catch (err) {
+                    console.warn("IndexedDB health check error:", err);
+                    repairDocumentsDb().then(() => resolve(true));
+                }
+            });
+        } catch (err) {
+            console.warn("verifyAndRepairDocumentsDb error:", err);
+            return false;
+        }
+    }
+
+    function repairDocumentsDb() {
+        return new Promise((resolve) => {
+            try {
+                console.log("Repairing IndexedDB (gotoolkit-documents)...");
+                const deleteReq = indexedDB.deleteDatabase("gotoolkit-documents");
+
+                deleteReq.onsuccess = () => {
+                    console.log("IndexedDB deleted, will be recreated on next access");
+                    // Recreate the database with fresh stores
+                    const recreateReq = indexedDB.open("gotoolkit-documents", 2);
+
+                    recreateReq.onupgradeneeded = () => {
+                        const db = recreateReq.result;
+                        // Create required stores
+                        if (!db.objectStoreNames.contains("documents")) {
+                            const docs = db.createObjectStore("documents", { keyPath: "id" });
+                            docs.createIndex("conversationId", "conversationId", { unique: false });
+                        }
+                        if (!db.objectStoreNames.contains("chunks")) {
+                            const chunks = db.createObjectStore("chunks", { keyPath: "id" });
+                            chunks.createIndex("conversationId", "conversationId", { unique: false });
+                            chunks.createIndex("docId", "docId", { unique: false });
+                        }
+                        if (!db.objectStoreNames.contains("keyword_meta")) {
+                            db.createObjectStore("keyword_meta", { keyPath: "id" });
+                        }
+                    };
+
+                    recreateReq.onsuccess = () => {
+                        console.log("IndexedDB successfully recreated");
+                        resolve(true);
+                    };
+
+                    recreateReq.onerror = () => {
+                        console.warn("Failed to recreate IndexedDB:", recreateReq.error);
+                        resolve(false);
+                    };
+                };
+
+                deleteReq.onerror = () => {
+                    console.warn("Failed to delete corrupted IndexedDB:", deleteReq.error);
+                    resolve(false);
+                };
+            } catch (err) {
+                console.warn("repairDocumentsDb error:", err);
+                resolve(false);
+            }
+        });
+    }
+
+    // Run health check on script load
+    verifyAndRepairDocumentsDb().catch(err => {
+        console.warn("IndexedDB repair failed:", err);
+    });
+
     function getConfig(path, defaultValue) {
         var keys = path.split(".");
         var value = globalConfig;
