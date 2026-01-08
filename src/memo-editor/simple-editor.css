@@ -208,45 +208,4 @@
   margin: 1rem 0;
 }
 
-.simple-editor .ProseMirror ul[data-type="taskList"] {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
 
-.simple-editor .ProseMirror li[data-checked] {
-  display: flex;
-  align-items: center;
-  padding-left: 0;
-  margin-left: 0;
-}
-
-.simple-editor .ProseMirror li[data-checked] > div {
-  flex: 1;
-  display: inline-flex;
-  align-items: center;
-}
-
-.simple-editor .ProseMirror li[data-checked="true"] > div p {
-  text-decoration: line-through;
-  color: #718096;
-}
-
-.simple-editor .ProseMirror li[data-checked] > div p {
-  margin: 0;
-  display: inline;
-}
-
-.simple-editor .ProseMirror li[data-checked] > div .ProseMirror-trailingBreak {
-  display: none;
-}
-
-.simple-editor .ProseMirror li[data-checked] label {
-  margin-right: 0.5rem;
-  display: inline-flex;
-  align-items: center;
-}
-
-.simple-editor .ProseMirror li[data-checked] label + div {
-  margin-top: 0;
-}
