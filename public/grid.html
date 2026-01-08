@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
-    <link rel="stylesheet" href="styles/style.css?v=2026.01.07">
+    <link rel="stylesheet" href="styles/style.css?v=2026.01.08">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-grid.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-theme-quartz.css">
     <script
@@ -991,16 +991,6 @@
             z-index: 60;
         }
 
-        .info-popup button {
-            background: var(--app-primary, #2a7a57);
-            border-color: var(--app-primary, #2a7a57);
-            color: #fff;
-        }
-
-        .info-popup .info-actions button {
-            flex: 1;
-        }
-
         .display-panel {
             padding: 10px;
         }
@@ -1083,14 +1073,14 @@
 <body class="app-body">
     <div class="app">
         <header class="app-header">
-            <a class="app-home-link" href="/?v=2026.01.06" title="Revenir à l'accueil">☍</a>
+            <a class="app-home-link" href="/?v=2026.01.08" title="Revenir à l'accueil">☍</a>
             <div class="nav-switch">
                 <button id="navSwitcherBtn" class="nav-switch-btn" type="button">◇ Grid ▾</button>
                 <div id="navSwitcherMenu" class="nav-switch-menu">
-                    <a class="nav-switch-link" href="memo.html?v=2026.01.06">⊞ Mémo</a>
-                    <a class="nav-switch-link" href="draw.html?v=2026.01.06">ʃ Draw</a>
-                    <a class="nav-switch-link" href="timeline.html?v=2026.01.06">⇥ Timeline</a>
-                    <a class="nav-switch-link" href="voice.html?v=2026.01.06">▷ Voice</a>
+                    <a class="nav-switch-link" href="memo.html?v=2026.01.08">⊞ Mémo</a>
+                    <a class="nav-switch-link" href="draw.html?v=2026.01.08">ʃ Draw</a>
+                    <a class="nav-switch-link" href="timeline.html?v=2026.01.08">⇥ Timeline</a>
+                    <a class="nav-switch-link" href="voice.html?v=2026.01.08">▷ Voice</a>
                 </div>
             </div>
 
@@ -1128,6 +1118,15 @@
                                 Télécharger</button>
                             <button id="capsuleDownloadBtn" type="button" class="menu-panel-btn">🡇 CSV</button>
                             <button id="infoButton" type="button" class="menu-panel-btn">⎉ À propos</button>
+                        </div>
+                    </div>
+                    <div id="infoPopup" class="info-popup" role="dialog" aria-live="polite">
+                        <img src="img/logo.gif" alt="Logo Go-Toolkit">
+                        <strong>Module Grid (Le Cardinal)</strong>
+                        <span>Version 2026.01.08</span>
+                        <div class="info-actions">
+                            <button id="updateAppBtn" type="button" class="update-btn">Mettre à jour</button>
+                            <button type="button" class="secondary" data-open-nexus-modal>Mentions légales</button>
                         </div>
                     </div>
                 </div>
@@ -1215,16 +1214,6 @@
     </div>
 
     <div data-toast-slot="statusToast" data-toast-class="status-toast" data-toast-role="status"></div>
-    <div id="infoPopup" class="context-menu info-popup" role="dialog" aria-live="polite">
-        <img src="img/logo.gif" alt="Logo Go-Toolkit">
-        <strong>Module Grid (Le Cardinal)</strong>
-        <p>Les tableaux générés ici peuvent être partagés et exportés pour enrichir vos capsules métier.</p>
-        <span>Version 2026.01.06</span>
-        <div class="info-actions">
-            <button id="updateAppBtn" type="button" class="btn-primary">Mettre à jour</button>
-            <button type="button" data-open-nexus-modal>Mentions légales</button>
-        </div>
-    </div>
 
     <div class="modal-overlay gt-template-modal" id="gtTemplateModal" role="dialog" aria-modal="true"
         aria-labelledby="gtTemplateModalTitle">
@@ -1317,13 +1306,13 @@
         </div>
     </div>
 
-    <script src="js/prompt.js?v=2026.01.06.1"></script>
+    <script src="js/prompt.js?v=2026.01.08"></script>
     <script src="js/ia-config.js"></script>
     <script src="js/ia-client.js"></script>
     <script src="js/idb-doc-store.js"></script>
     <script src="js/storage-service.js"></script>
     <script src="js/shared-ui.js"></script>
-    <script src="js/cgu.js?v=2026.01.06.1"></script>
+    <script src="js/cgu.js?v=2026.01.08"></script>
     <script src="js/share-worker-client.js"></script>
     <script src="js/share-history.js"></script>
     <script src="js/capsule-drafts.js"></script>
@@ -1468,7 +1457,7 @@
                 const infoButton = document.getElementById("infoButton");
                 const infoPopup = document.getElementById("infoPopup");
                 const updateAppBtn = document.getElementById("updateAppBtn");
-                const APP_VERSION = "2026.01.06.1";
+                const APP_VERSION = "2026.01.08.1";
                 const VERSION_QUERY_PARAM = "v";
                 const gridRestoreTargets = new Map();
                 function getBrowserDateVersion() {
@@ -1578,6 +1567,8 @@
                     tooltipHideDelay: 200,
                     // allow single-click to start editing cells
                     singleClickEdit: true,
+                    // commit edits when the editor loses focus (e.g. clicking "Ajouter un enfant")
+                    stopEditingWhenCellsLoseFocus: true,
                     localeText: typeof AG_GRID_LOCALE_FR !== "undefined" ? AG_GRID_LOCALE_FR : undefined,
                     autoSizeStrategy: {
                         type: "fitGridWidth",
@@ -1608,6 +1599,35 @@
                         }
                     },
                     onCellValueChanged: syncScriptFromGrid,
+                    onCellEditingStopped: event => {
+                        // Ensure the "Identifiant" field persists immediately on blur.
+                        const field = event?.colDef?.field || event?.colDef?.colId || "";
+                        if (field !== "name" && field !== "targetField") return;
+
+                        // In tree structure mode, renaming a node should also rename its path segment
+                        // (and keep the subtree attached).
+                        try {
+                            if (isTreeTemplateActive() && !isDataMappingTemplateActive() && field === "name") {
+                                const node = event?.node;
+                                const data = node?.data;
+                                const oldPath = Array.isArray(event?.oldValue) ? event.oldValue : null;
+                                const priorPath = Array.isArray(data?.__path) ? data.__path : normalizeTreePath(data?.path || []);
+                                const nextLabel = typeof data?.name === "string" ? data.name.trim() : "";
+                                if (priorPath.length && nextLabel) {
+                                    const parentPath = priorPath.slice(0, -1);
+                                    const rows = collectAllRows();
+                                    const uniqueSegment = makeUniquePathSegment(rows, parentPath, nextLabel, data?.id);
+                                    const nextPrefix = [...parentPath, uniqueSegment];
+                                    const nextRows = updateSubtreePaths(rows, priorPath, nextPrefix);
+                                    setTreeRowData(nextRows);
+                                }
+                            }
+                        } catch (err) {
+                            // fall through to regular persist
+                        }
+
+                        syncScriptFromGrid();
+                    },
                     onColumnMoved: syncScriptFromGrid,
                     onColumnPinned: syncScriptFromGrid,
                     onColumnResized: syncScriptFromGrid
@@ -2358,9 +2378,17 @@
                     if (!row || typeof row !== "object") return null;
                     const rawPath = row.path ?? row.__path;
                     const fallbackName = row.name || row.id || "item";
+                    const isMapping = isDataMappingTemplateActive();
+
                     const normalizedTargetField =
                         typeof row.targetField === "string" ? row.targetField.trim() : "";
-                    const labelValue = normalizedTargetField || fallbackName;
+                    const normalizedName = typeof row.name === "string" ? row.name.trim() : "";
+
+                    // In structure mode, the label is the "name" field.
+                    // In mapping mode, the label is the "targetField" (fallback to name/id).
+                    const labelValue = isMapping
+                        ? (normalizedTargetField || normalizedName || fallbackName)
+                        : (normalizedName || fallbackName);
                     const fallbackPath = rawPath ? [] : [...parentPath, labelValue];
                     const path = normalizeTreePath(rawPath, fallbackPath);
                     const level = Math.max(0, path.length - 1);
@@ -2368,13 +2396,16 @@
                     const descriptionValue = typeof row.description === "string" ? row.description.trim() : "";
                     const statusValue = typeof row.status === "string" ? row.status.trim() : "";
                     const rulesValue = typeof row.rules === "string" ? row.rules : "";
-                    const isMapping = isDataMappingTemplateActive();
                     const effectiveStatus =
                         (isMapping && statusValue) ? statusValue : isMapping ? DEFAULT_MAPPING_STATUS : statusValue;
+                    const effectiveTargetField = isMapping
+                        ? (targetField || labelValue)
+                        : labelValue;
                     return {
+                        ...row,
                         id: row.id || path.join("::") || fallbackName,
                         name: labelValue,
-                        targetField: targetField || labelValue,
+                        targetField: effectiveTargetField,
                         sourceField: typeof row.sourceField === "string"
                             ? row.sourceField.trim()
                             : "",
@@ -2641,13 +2672,44 @@
                     return rows;
                 }
 
+                function makeUniquePathSegment(rows = [], parentPath = [], desiredSegment = "item", selfId = "") {
+                    const base = (desiredSegment || "item").trim() || "item";
+                    const siblings = new Set(
+                        rows
+                            .filter(r => {
+                                if (selfId && r?.id === selfId) return false;
+                                const p = Array.isArray(r?.__path) ? r.__path : normalizeTreePath(r?.path || []);
+                                if (p.length !== parentPath.length + 1) return false;
+                                return isPathPrefix(parentPath, p);
+                            })
+                            .map(r => {
+                                const p = Array.isArray(r?.__path) ? r.__path : normalizeTreePath(r?.path || []);
+                                return p[p.length - 1] || "";
+                            })
+                            .filter(Boolean)
+                    );
+                    if (!siblings.has(base)) return base;
+                    let counter = 2;
+                    while (counter < 1000) {
+                        const candidate = `${base}_${counter}`;
+                        if (!siblings.has(candidate)) return candidate;
+                        counter += 1;
+                    }
+                    return `${base}_${Date.now().toString().slice(-4)}`;
+                }
+
                 function addChildRow(parentNode) {
                     if (!parentNode) return;
+                    // Ensure any in-progress edit (e.g. Identifiant) is committed before snapshotting rows.
+                    try {
+                        gridApi?.stopEditing();
+                    } catch (err) { /* ignore */ }
                     const parentPath = Array.isArray(parentNode?.data?.__path) ? parentNode.data.__path : [];
-                    const newPath = [...parentPath, `New_${Date.now().toString().slice(-4)}`];
                     const rows = collectAllRows();
                     const isMapping = isDataMappingTemplateActive();
                     const targetLabel = "Nouveau";
+                    const newSegment = makeUniquePathSegment(rows, parentPath, targetLabel);
+                    const newPath = [...parentPath, newSegment];
                     const newRow = {
                         id: `new_${Date.now()}`,
                         __path: newPath,

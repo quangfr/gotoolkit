@@ -4791,7 +4791,7 @@
             var doc = await this.findDocumentForPreview(name);
             if (doc && doc.id) {
                 this.currentPreviewDoc = doc;
-                if (isPdfDocument(doc) && !getConfig("documentPreview.showChunksForPdf", false)) {
+                if (isPdfDocument(doc) && !getConfig("memo.documentPreview.showChunksForPdf", false)) {
                     if (this.showPdfPreview(doc)) {
                         return;
                     }
@@ -4846,7 +4846,7 @@
         try {
             var doc = await this.findKnowledgeDocumentForPreview(entry);
             if (doc?.id) {
-                if (isPdfDocument(doc) && !getConfig("documentPreview.showChunksForPdf", false)) {
+                if (isPdfDocument(doc) && !getConfig("memo.documentPreview.showChunksForPdf", false)) {
                     if (this.showPdfPreview(doc)) {
                         return;
                     }
@@ -4927,7 +4927,7 @@
                         })
                         .filter(Boolean)
                 );
-                if (isPdfDocument(doc) && !getConfig("documentPreview.showChunksForPdf", false)) {
+                if (isPdfDocument(doc) && !getConfig("memo.documentPreview.showChunksForPdf", false)) {
                     this.setPdfHighlight(highlightInfo);
                     if (this.showPdfPreview(doc)) {
                         return;
@@ -5079,11 +5079,11 @@
         var isPdfDoc = isPdfDocument(docMeta);
         var shouldShowChunks = true;
         if (isPdfDoc) {
-            shouldShowChunks = getConfig("documentPreview.showChunksForPdf", false);
+            shouldShowChunks = getConfig("memo.documentPreview.showChunksForPdf", false);
         } else if (renderMarkdown) {
-            shouldShowChunks = getConfig("documentPreview.showChunksForMarkdown", false);
+            shouldShowChunks = getConfig("memo.documentPreview.showChunksForMarkdown", false);
         } else {
-            shouldShowChunks = getConfig("documentPreview.showChunksForOtherFormats", true);
+            shouldShowChunks = getConfig("memo.documentPreview.showChunksForOtherFormats", true);
         }
 
         var normalized = shouldShowChunks ? normalizePreviewChunks(chunks) : [];

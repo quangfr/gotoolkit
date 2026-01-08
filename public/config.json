@@ -1,12 +1,12 @@
 {
   "voice": {
-    "hideSummaryColumn": false
+    "hideSummaryColumn": true
   },
   "memo": {
-  },
-  "documentPreview": {
-    "showChunksForMarkdown": true,
-    "showChunksForPdf": true,
-    "showChunksForOtherFormats": true
+    "documentPreview": {
+      "showChunksForMarkdown": true,
+      "showChunksForPdf": true,
+      "showChunksForOtherFormats": true
+    }
   }
 }

@@ -112,31 +112,36 @@ Ce guide décrit comment l'assistant transforme les documents en réponses : che
 
 # Module Mémo
 
-`memo.html` est l'éditeur de texte riche de GoToolkit, conçu pour la prise de notes structurée et l'édition collaborative avec assistance IA intégrée.
+`memo.html` est un éditeur de notes riche et structuré, conçu pour la capture, l'organisation et l'enrichissement de contenu avec assistance IA intégrée et persistance locale.
 
-## 1. Écriture et formatage
-- L'éditeur propose un ensemble complet de formatage : titres, listes, images, tableaux, liens, souligné, barré et surligné.
-- Chaque bloc de texte peut être annoté ou modifié rapidement ; le toolbar en haut reste accessible pour appliquer des styles sans lever les mains du clavier.
+## 1. Éditeur riche avec formatage complet
+- L'éditeur supporte les titres (H1–H6), listes ordonnées/non ordonnées, images, tableaux, liens, surligné, barré et gras/italique.
+- Le rendu s'appuie sur une architecture WYSIWYG : la structure est préservée en Markdown ou JSON, permettant une import/export transparente vers d'autres outils sans perte de formatage.
+- Les pages/onglets sont gérées via la même barre d'onglets que les autres modules, avec un système de tabs réactif et des noms éditables.
 
-## 2. Révision et validation avec l'IA
-- Sélectionner un bloc de texte ouvre un petit éditeur flottant qui permet de demander à l'IA de récrire, clarifier ou améliorer la passage.
-- La réponse de l'IA apparaît dans la sélection avec des suggestions en jaune (à garder) ou barré (à rejeter), facilitant la validation avant de valider les modifications.
+## 2. Assistance IA en contexte
+- Sélectionner du texte déclenche une palette flottante permettant de demander à l'IA de **récrire**, **clarifier**, **résumer** ou **approfondir** le passage en un seul clic.
+- Les suggestions de l'IA apparaissent en temps réel avec marquage visuel (jaune/barré) pour valider ou rejeter chaque bloc ; la validation s'applique immédiatement au texte.
+- Un panel **Assist** à droite offre accès à la base de documents (RAG) pour poser des questions ou lancer des générations de contenu qui s'insèrent dans le document actif.
 
-## 3. Chat & assistance contextuelle
-- Un sidebar chat à droite donne accès à la base de documents et aux assistants RAG pour poser des questions ou enrichir le contenu directement dans le mémo.
-- Depuis le chat, on peut aussi demander une génération de contenu qui s'insère dans le document actuel, permettant d'itérer rapidement sur la structure.
+## 3. Templates & structure
+- Des modèles (depuis `public/js/prompt.js`) proposent des structures préconçues (rapport, fiche, planification) avec descriptions et critères métier.
+- L'utilisateur peut charger un template qui pré-remplit la page actuelle ou créer une nouvelle page avec structure suggérée, accélérant la prise de notes.
 
-## 4. Multi-onglets & persistance
-- Plusieurs mémos peuvent rester ouverts en parallèle, chacun dans un onglet ; les contenus se sauvegardent automatiquement en local.
-- On peut à tout moment importer ou exporter le mémo en Markdown ou JSON, facilitant la collaboration ou l'intégration dans d'autres outils.
+## 4. Multi-pages & persistance locale
+- Plusieurs pages/onglets peuvent être ouverts en parallèle dans le même mémo ; chaque page conserve sa structure de formatage et ses métadonnées.
+- Tous les contenus se sauvegardent automatiquement en local (localStorage + IndexedDB) sans interaction utilisateur, garantissant aucune perte de données.
+- Les brouillons (drafts) dans IndexedDB permettent aussi une reprise rapide si le navigateur est fermé ou rechargé.
 
-## 5. Export & partage
-- Le mémo peut être exporté en PDF, Markdown ou JSON pour être diffusé, archivé ou intégré dans un rapport.
-- Un lien de partage peut être généré via `GoToolkitShareWorker`, mettant le document en lecture seule ou permettant une collaboration en temps quasi-réel.
+## 5. Import & export
+- **Markdown** : export complet en .md, compatible avec les éditeurs externes (Notion, Obsidian, etc.).
+- **JSON** : export/import plein historique avec styles, métadonnées et structure complète pour une réintégration exacte.
+- Les fichiers JSON importés restaurent entièrement le mémo (pages, textes, formatage) sans migration nécessaire.
 
-## 6. Marques de révision & collaboration
-- Le surlignage jaune et le barré permettent de tracer les suggestions d'amélioration sans les appliquer directement, créant une piste d'audit des modifications proposées.
-- Plusieurs utilisateurs peuvent contribuer à la même révision, chacun voyant les marques et pouvant valider ou refuser les changements progressivement.
+## 6. Partage & collaboration
+- Un lien de partage est généré via `GoToolkitShareWorker` (URL courte stockée sur Firestore/KV Cloudflare) pour diffuser le mémo en lecture seule ou en collaboration.
+- La collection `slides` du système de partage stocke les sessions et les historiques de partage, accessibles via la modal **Partage** commune à tous les modules.
+- Les mémos partagés conservent leur formatage et restent fidèles à la version au moment du partage.
 
 ---
 
