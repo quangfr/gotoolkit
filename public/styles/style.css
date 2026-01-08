@@ -34,6 +34,15 @@ body.app-body {
   font-family: var(--app-font);
 }
 
+.page {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.page::-webkit-scrollbar {
+  display: none;
+}
+
 .app {
   min-height: 100vh;
   display: flex;
@@ -2259,7 +2268,7 @@ label {
   padding: 0.25rem;
   border: 1px solid #ddd;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2), 4px 0 12px rgba(0, 0, 0, 0.1), -4px 0 12px rgba(0, 0, 0, 0.1);
   pointer-events: auto;
 }
 

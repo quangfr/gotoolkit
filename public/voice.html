@@ -2308,6 +2308,37 @@
             }
 
             let loadedFromStorage = false;
+            let loadedFromDraft = false;
+            const EDIT_QUERY_PARAM = "edit";
+
+            function getEditIdFromUrl() {
+                try {
+                    const params = new URLSearchParams(window.location.search);
+                    const value = params.get(EDIT_QUERY_PARAM);
+                    return value ? value.trim() : null;
+                } catch (err) {
+                    return null;
+                }
+            }
+
+            async function tryLoadFromDraft() {
+                if (!capsuleDrafts) return false;
+                const editId = getEditIdFromUrl();
+                if (!editId) return false;
+                try {
+                    const record = await capsuleDrafts.getRecord(editId);
+                    if (!record || !record.payload) return false;
+                    const loaded = normalizeState(record.payload);
+                    if (loaded && Array.isArray(loaded.pages) && loaded.pages.length) {
+                        loadedFromDraft = true;
+                        return loaded;
+                    }
+                } catch (err) {
+                    console.warn("Impossible de charger le brouillon Voice", err);
+                }
+                return false;
+            }
+
             let state = (() => {
                 try {
                     const stored = localStorage.getItem(STORAGE_KEY);
@@ -2323,6 +2354,22 @@
                 }
                 return { pages: [defaultPage()], activePageId: null };
             })();
+
+            // Try to load from draft if URL contains ?edit=xxxx (async operation)
+            if (!loadedFromStorage && capsuleDrafts) {
+                const editId = getEditIdFromUrl();
+                if (editId) {
+                    currentDraftId = editId;  // Preserve the edit ID for future saves
+                }
+                tryLoadFromDraft().then(loadedState => {
+                    if (loadedState) {
+                        state = loadedState;
+                        loadedFromDraft = true;
+                        renderPages();
+                        syncInitialPageDisplay();
+                    }
+                });
+            }
 
             if (!state.activePageId && state.pages[0]) {
                 state.activePageId = state.pages[0].id;
@@ -6587,11 +6634,17 @@
                 if (navSwitcherMenu && navSwitcherMenu !== except) navSwitcherMenu.classList.remove("open");
             }
 
+            let currentDraftId = null;
+
             function persistCapsuleDraft() {
                 if (!capsuleDrafts || typeof capsuleDrafts.upsertRecord !== "function") return;
                 const page = getActivePage();
                 const payload = { ...state };
-                const draftId = state.activePageId || (capsuleDrafts.generateId ? capsuleDrafts.generateId() : null);
+                // IMPORTANT: Preserve currentDraftId from URL if it exists, otherwise use generated ID
+                let draftId = currentDraftId || (capsuleDrafts.generateId ? capsuleDrafts.generateId() : null);
+                if (!draftId) {
+                    draftId = state.activePageId;
+                }
                 capsuleDrafts.upsertRecord({
                     id: draftId,
                     app: "voice",
@@ -6599,6 +6652,10 @@
                     title: page?.title || "Voice",
                     description: (page?.scenario || "").slice(0, 120)
                 });
+                // Update currentDraftId to remember this ID for future saves
+                if (draftId) {
+                    currentDraftId = draftId;
+                }
                 if (draftId && audioBlob) {
                     saveAudioToDb(audioBlob, draftId);
                 }
@@ -8076,9 +8133,47 @@
                 ev.stopPropagation();
                 toggleInfoPopup();
             });
-            updateAppBtn?.addEventListener("click", () => {
+            updateAppBtn?.addEventListener("click", async () => {
                 closeInfoPopup();
-                reloadAppWithVersion(getBrowserDateVersion());
+
+                const generateRandomString = () => {
+                    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+                    let result = '';
+                    for (let i = 0; i < 8; i++) {
+                        result += chars.charAt(Math.floor(Math.random() * chars.length));
+                    }
+                    return result;
+                };
+
+                // Vérifier s'il y a des données non enregistrées (voice-capsule)
+                const hasUnsavedChanges = !!localStorage.getItem("voice-capsule");
+
+                if (hasUnsavedChanges) {
+                    const shouldSave = confirm("Souhaitez-vous sauvegarder votre brouillon avant la mise à jour ?");
+                    if (shouldSave) {
+                        try {
+                            persistState();
+                        } catch (e) {
+                            console.error("Erreur lors de la sauvegarde:", e);
+                        }
+                    }
+                }
+
+                // Vider le localStorage et sessionStorage
+                localStorage.clear();
+                sessionStorage.clear();
+
+                // Vider les caches
+                if ('caches' in window) {
+                    try {
+                        const names = await caches.keys();
+                        await Promise.all(names.map(name => caches.delete(name)));
+                    } catch (e) { }
+                }
+
+                // Recharger avec cache-buster
+                const randomStr = generateRandomString();
+                window.location.href = `/?v=${randomStr}`;
             });
             addViewBtn?.addEventListener("click", addPage);
             deleteViewBtn?.addEventListener("click", () => {

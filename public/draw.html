@@ -2126,8 +2126,9 @@
                 const record = await capsuleDrafts.getRecord(editId);
                 if (!record || !record.payload) return false;
                 applyImportedCapsule(record.payload);
-                currentDraftId = record.id;
-                updateUrlWithEditId(record.id);
+                // IMPORTANT: Preserve the original editId, not the record.id
+                currentDraftId = editId;
+                updateUrlWithEditId(editId);
                 return true;
             }
 
@@ -2251,6 +2252,7 @@
                     saveState();
                     const payload = await buildCapsulePayload();
                     const preview = getDrawSharePreview();
+                    // IMPORTANT: Preserve existing currentDraftId if it exists
                     let id = currentDraftId || createDraftId();
                     if (!id) {
                         id = createShareToken();
@@ -2265,9 +2267,10 @@
                         updatedAt: now
                     });
                     if (record) {
-                        currentDraftId = record.id;
+                        // Always preserve the ID - don't let upsert change it
+                        currentDraftId = id;
                         if (options.updateUrl !== false) {
-                            updateUrlWithEditId(record.id);
+                            updateUrlWithEditId(id);
                         }
                         if (options.showToast) {
                             setStatus("Capsule enregistrée");
@@ -4588,10 +4591,48 @@
                     resetInfoLogo(infoPopup);
                     infoPopup?.classList.toggle("open");
                 });
-                updateAppBtn?.addEventListener("click", event => {
+                updateAppBtn?.addEventListener("click", async event => {
                     event.stopPropagation();
                     closeInfoPopup();
-                    reloadAppWithVersion(getBrowserDateVersion());
+
+                    const generateRandomString = () => {
+                        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+                        let result = '';
+                        for (let i = 0; i < 8; i++) {
+                            result += chars.charAt(Math.floor(Math.random() * chars.length));
+                        }
+                        return result;
+                    };
+
+                    // Vérifier s'il y a des données non enregistrées (connect-ai-state)
+                    const hasUnsavedChanges = !!localStorage.getItem("connect-ai-state");
+
+                    if (hasUnsavedChanges) {
+                        const shouldSave = confirm("Souhaitez-vous sauvegarder votre brouillon avant la mise à jour ?");
+                        if (shouldSave) {
+                            try {
+                                saveState();
+                            } catch (e) {
+                                console.error("Erreur lors de la sauvegarde:", e);
+                            }
+                        }
+                    }
+
+                    // Vider le localStorage et sessionStorage
+                    localStorage.clear();
+                    sessionStorage.clear();
+
+                    // Vider les caches
+                    if ('caches' in window) {
+                        try {
+                            const names = await caches.keys();
+                            await Promise.all(names.map(name => caches.delete(name)));
+                        } catch (e) { }
+                    }
+
+                    // Recharger avec cache-buster
+                    const randomStr = generateRandomString();
+                    window.location.href = `/?v=${randomStr}`;
                 });
                 document.addEventListener("click", event => {
                     if (!infoPopup?.contains(event.target) && event.target !== infoButton) {

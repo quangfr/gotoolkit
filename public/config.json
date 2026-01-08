@@ -1,3 +1,8 @@
 {
-  "enableTours": false
+  "enableTours": false,
+  "documentPreview": {
+    "showChunksForMarkdown": true,
+    "showChunksForPdf": true,
+    "showChunksForOtherFormats": true
+  }
 }

@@ -1023,6 +1023,7 @@
                 try {
                     const payload = buildSharePayload();
                     const preview = buildSharePreview();
+                    // IMPORTANT: Preserve existing currentDraftId if it exists
                     const id = currentDraftId || (capsuleDrafts.generateId && capsuleDrafts.generateId()) || createId();
                     const now = new Date().toISOString();
                     const record = await capsuleDrafts.upsertRecord({
@@ -1034,9 +1035,10 @@
                         updatedAt: now
                     });
                     if (record) {
-                        currentDraftId = record.id;
+                        // Always preserve the ID - don't let upsert change it
+                        currentDraftId = id;
                         if (options && options.updateUrl !== false) {
-                            updateUrlWithEditId(record.id);
+                            updateUrlWithEditId(id);
                         }
                         if (options && options.showToast) {
                             setStatus("Mémo enregistré");
@@ -1478,6 +1480,35 @@
                 URL.revokeObjectURL(link.href);
             }
 
+            function getEditIdFromUrl() {
+                try {
+                    const params = new URLSearchParams(window.location.search);
+                    const value = params.get(EDIT_QUERY_PARAM);
+                    return value ? value.trim() : null;
+                } catch (err) {
+                    return null;
+                }
+            }
+
+            async function tryLoadLocalDraftFromUrl() {
+                if (!capsuleDrafts) return false;
+                const editId = getEditIdFromUrl();
+                if (!editId) return false;
+                try {
+                    const record = await capsuleDrafts.getRecord(editId);
+                    if (!record || !record.payload) return false;
+                    const loaded = normalizeState(record.payload.tabs ? record.payload : { tabs: [{ id: createId(), title: "Page 1", content: record.payload }] });
+                    if (!loaded) return false;
+                    state = loaded;
+                    currentDraftId = record.id;
+                    console.log('[tryLoadLocalDraftFromUrl] Loaded draft:', currentDraftId);
+                    return true;
+                } catch (err) {
+                    console.warn("Failed to load draft from URL", err);
+                    return false;
+                }
+            }
+
             function handleJsonImport(file) {
                 const reader = new FileReader();
                 reader.onload = () => {
@@ -1506,6 +1537,17 @@
             let state = initialState || createDefaultState();
             const shouldOpenTemplateOnStart = !initialState;
 
+            // Create a promise that resolves when draft is loaded from URL (if exists)
+            const draftLoadedPromise = (async () => {
+                const loadedFromUrl = await tryLoadLocalDraftFromUrl();
+                if (loadedFromUrl) {
+                    console.log('[init] Loaded from URL, state updated');
+                    renderTabs();
+                    persistState();
+                }
+                return loadedFromUrl;
+            })();
+
             // Expose state globally for assist.js to access
             window.__memoState = state;
 
@@ -1513,8 +1555,9 @@
             setupMemoPrompt();
             syncAssistPresetFromState();
 
-            memoEditorReady
-                .then(api => {
+            // Wait for draft to be loaded BEFORE initializing editor
+            Promise.all([memoEditorReady, draftLoadedPromise])
+                .then(([api]) => {
                     memoEditorApi = api;
                     if (!memoEditorApi) return;
                     memoEditorApi.onChange(value => updateActiveTabContent(value));
@@ -1600,8 +1643,54 @@
                 memoInfoPopup?.classList.toggle("open");
             });
 
-            memoUpdateBtn?.addEventListener("click", () => {
-                window.location.reload();
+            memoUpdateBtn?.addEventListener("click", async () => {
+                const generateRandomString = () => {
+                    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+                    let result = '';
+                    for (let i = 0; i < 8; i++) {
+                        result += chars.charAt(Math.floor(Math.random() * chars.length));
+                    }
+                    return result;
+                };
+
+                // Vérifier s'il y a des données non enregistrées dans capsule-drafts
+                const hasUnsavedChanges = await (async () => {
+                    try {
+                        const store = goToolkitDocStore?.createStore('capsule-drafts');
+                        if (!store || !store.getAll) return false;
+                        const items = await store.getAll();
+                        return items && items.length > 0;
+                    } catch (e) {
+                        return false;
+                    }
+                })();
+
+                if (hasUnsavedChanges) {
+                    const shouldSave = confirm("Souhaitez-vous sauvegarder votre brouillon avant la mise à jour ?");
+                    if (shouldSave) {
+                        try {
+                            await saveDraft();
+                        } catch (e) {
+                            console.error("Erreur lors de la sauvegarde:", e);
+                        }
+                    }
+                }
+
+                // Vider le localStorage et sessionStorage
+                localStorage.clear();
+                sessionStorage.clear();
+
+                // Vider les caches
+                if ('caches' in window) {
+                    try {
+                        const names = await caches.keys();
+                        await Promise.all(names.map(name => caches.delete(name)));
+                    } catch (e) { }
+                }
+
+                // Recharger avec cache-buster
+                const randomStr = generateRandomString();
+                window.location.href = `/?v=${randomStr}`;
             });
 
             shareBtn?.addEventListener("click", event => {
@@ -1751,6 +1840,10 @@
                 if (chatInstance && typeof chatInstance.updateTabIndicator === "function") {
                     setTimeout(() => chatInstance.updateTabIndicator(), 100);
                 }
+                // Ouvrir la modal Assist par défaut
+                if (chatInstance && typeof chatInstance.open === "function") {
+                    setTimeout(() => chatInstance.open(), 150);
+                }
             } catch (err) { /* ignore */ }
         })();
     </script>
@@ -1855,7 +1948,22 @@
                 }
 
                 editor.style.position = 'fixed';
-                editor.style.top = (currentCoords.bottom + 10) + 'px';
+
+                // Calculer la hauteur du composant et limiter le bas à 40px du viewport
+                const editorHeight = editor.offsetHeight || 80; // hauteur approximative si pas encore rendu
+                let topPos = currentCoords.bottom + 10;
+                const maxTop = window.innerHeight - editorHeight - 40;
+
+                // Clamper si dépasse en bas (max 40px du bas)
+                if (topPos > maxTop) {
+                    topPos = maxTop;
+                }
+                // Assurer qu'il ne soit pas trop haut (au moins 10px de marge top)
+                if (topPos < 10) {
+                    topPos = 10;
+                }
+
+                editor.style.top = topPos + 'px';
                 editor.style.left = leftPos + 'px';
                 editor.style.zIndex = '1000';
             }

@@ -72,7 +72,7 @@
     const PDFJS_URL = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.6.82/+esm";
     const PDFJS_WORKER = "js/pdf.worker.min.mjs";
     const TRANSFORMERS_URL = "https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2";
-    const JSZIP_URL = "https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js";
+    const JSZIP_URL = "https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm";
 
     const ACCEPTED_EXTENSIONS = new Set([
         "pdf",
@@ -220,7 +220,12 @@
                 if (this.pdfjs?.GlobalWorkerOptions) {
                     this.pdfjs.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
                 }
-                this.jszip = jsZipModule?.default || jsZipModule;
+                // JSZip from ESM CDN should have loadAsync directly
+                this.jszip = jsZipModule;
+                console.log("JSZip loaded, type:", typeof this.jszip, "has loadAsync:", typeof this.jszip?.loadAsync);
+                if (!this.jszip?.loadAsync) {
+                    console.warn("JSZip.loadAsync not found, checking .default...", typeof this.jszip?.default?.loadAsync);
+                }
                 await this.loadSettings();
                 await this.ensureDb();
                 await this.ensureEmbedder();
@@ -738,13 +743,16 @@
                     errorMessage = err?.message || "Erreur d'extraction";
                     baseEntry.status = "error";
                     baseEntry.error = errorMessage;
+                    console.error(`Text extraction failed for ${file.name}:`, err);
                     await this.putDocument(baseEntry);
                 }
                 if (!success) {
+                    console.warn(`File ${file.name} marked as failed: ${errorMessage}`);
                     results.push({ docId, name: file.name, success: false, error: errorMessage });
                     continue;
                 }
                 const extractedText = typeof extractionResult?.text === "string" ? extractionResult.text : "";
+                console.log(`Successfully extracted ${extractedText.length} characters from ${file.name}`);
                 const normalized = normalizeText(extractedText);
                 const chunkConfig = this.getChunkConfigForText(extractedText || normalized);
                 const pageSegments = Array.isArray(extractionResult?.pdfPages) ? extractionResult.pdfPages : null;
@@ -812,10 +820,16 @@
 
         async extractText(file) {
             const ext = getExtension(file.name);
+            console.log("extractText called for:", file.name, "extension:", ext, "type:", file.type);
+            // Ensure jszip is loaded for format-specific operations
+            if ((ext === "docx" || ext === "pptx" || ext === "xlsx" || ext === "ods") && !this.jszip) {
+                throw new Error("Modules de traitement de fichiers non chargés - veuillez attendre et réessayer");
+            }
             if (file.type === "application/pdf" || ext === "pdf") {
                 return this.extractPdf(file);
             }
             if (ext === "docx") {
+                console.log("Processing DOCX file");
                 return { text: await this.extractDocx(file) };
             }
             if (ext === "pptx") {
@@ -859,20 +873,70 @@
         }
 
         async extractDocx(file) {
+            console.log("Extracting DOCX:", file.name, "jszip available:", !!this.jszip);
+            if (!this.jszip) {
+                throw new Error("JSZip n'est pas chargé - impossible d'extraire le DOCX");
+            }
             const buffer = await file.arrayBuffer();
-            const zip = await this.jszip.loadAsync(buffer);
+            console.log("Buffer loaded, size:", buffer.byteLength);
+
+            let zip;
+            try {
+                // Try direct loadAsync first
+                if (typeof this.jszip.loadAsync === "function") {
+                    console.log("Using JSZip.loadAsync API");
+                    zip = await this.jszip.loadAsync(buffer);
+                } else if (typeof this.jszip.default?.loadAsync === "function") {
+                    // Fallback for wrapped export
+                    console.log("Using JSZip.default.loadAsync API");
+                    zip = await this.jszip.default.loadAsync(buffer);
+                } else if (typeof this.jszip === "function") {
+                    // Constructor API
+                    console.log("Using JSZip constructor API");
+                    zip = new this.jszip();
+                    await zip.loadAsync(buffer);
+                } else {
+                    console.error("JSZip object:", this.jszip);
+                    throw new Error("JSZip n'a pas l'API attendue - type: " + typeof this.jszip);
+                }
+            } catch (err) {
+                console.error("JSZip loading error:", err);
+                throw err;
+            }
+
+            console.log("ZIP loaded, files:", Object.keys(zip.files).length);
             const entry = zip.file("word/document.xml");
-            if (!entry) return "";
+            if (!entry) {
+                console.error("word/document.xml not found in DOCX");
+                throw new Error("Fichier DOCX invalide: word/document.xml non trouvé");
+            }
             const raw = await entry.async("string");
-            return extractTextFromXml(raw);
+            console.log("XML loaded, size:", raw.length);
+            const text = extractTextFromXml(raw);
+            console.log("Text extracted, length:", text.length);
+            return text || "";
         }
 
         async extractPptx(file) {
+            if (!this.jszip) {
+                throw new Error("JSZip n'est pas chargé - impossible d'extraire le PPTX");
+            }
             const buffer = await file.arrayBuffer();
-            const zip = await this.jszip.loadAsync(buffer);
+            let zip;
+            if (typeof this.jszip.loadAsync === "function") {
+                zip = await this.jszip.loadAsync(buffer);
+            } else if (typeof this.jszip === "function") {
+                zip = new this.jszip();
+                await zip.loadAsync(buffer);
+            } else {
+                throw new Error("JSZip n'a pas l'API attendue");
+            }
             const slideNames = Object.keys(zip.files).filter((name) =>
                 name.startsWith("ppt/slides/slide") && name.endsWith(".xml")
             );
+            if (!slideNames.length) {
+                throw new Error("Fichier PPTX invalide: aucune diapositive trouvée");
+            }
             const texts = [];
             for (const name of slideNames) {
                 const entry = zip.file(name);
@@ -880,12 +944,20 @@
                 const raw = await entry.async("string");
                 texts.push(extractTextFromXml(raw));
             }
-            return texts.join("\n\n");
+            return texts.join("\n\n") || "";
         }
 
         async extractSpreadsheet(file) {
             const buffer = await file.arrayBuffer();
-            const zip = await this.jszip.loadAsync(buffer);
+            let zip;
+            if (typeof this.jszip.loadAsync === "function") {
+                zip = await this.jszip.loadAsync(buffer);
+            } else if (typeof this.jszip === "function") {
+                zip = new this.jszip();
+                await zip.loadAsync(buffer);
+            } else {
+                throw new Error("JSZip n'a pas l'API attendue");
+            }
             const pieces = [];
             const shared = zip.file("xl/sharedStrings.xml");
             if (shared) {
@@ -905,12 +977,25 @@
         }
 
         async extractOdf(file) {
+            if (!this.jszip) {
+                throw new Error("JSZip n'est pas chargé - impossible d'extraire le fichier ODF");
+            }
             const buffer = await file.arrayBuffer();
-            const zip = await this.jszip.loadAsync(buffer);
+            let zip;
+            if (typeof this.jszip.loadAsync === "function") {
+                zip = await this.jszip.loadAsync(buffer);
+            } else if (typeof this.jszip === "function") {
+                zip = new this.jszip();
+                await zip.loadAsync(buffer);
+            } else {
+                throw new Error("JSZip n'a pas l'API attendue");
+            }
             const entry = zip.file("content.xml");
-            if (!entry) return "";
+            if (!entry) {
+                throw new Error("Fichier ODF invalide: content.xml non trouvé");
+            }
             const raw = await entry.async("string");
-            return extractTextFromXml(raw);
+            return extractTextFromXml(raw) || "";
         }
 
         buildChunkResult(chunk, docMap, score) {

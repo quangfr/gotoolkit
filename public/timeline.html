@@ -2315,8 +2315,9 @@
                 var persistedState = savedDraftRecord ? savedDraftRecord.payload : loadPersistedTimelineState();
                 shouldOpenContextOnFirstLoad = !persistedState;
                 if (savedDraftRecord && persistedState) {
-                    currentDraftId = savedDraftRecord.id;
-                    updateUrlWithEditId(savedDraftRecord.id);
+                    // IMPORTANT: Preserve the original editDraftId, not the record.id
+                    currentDraftId = editDraftId;
+                    updateUrlWithEditId(editDraftId);
                 }
                 if (persistedState) {
                     if (Array.isArray(persistedState.views) && persistedState.views.length) {
@@ -3312,6 +3313,7 @@
                         persistCurrentPlanning();
                         var payload = buildTimelineStatePayload();
                         var preview = getRoadmapSharePreview();
+                        // IMPORTANT: Preserve existing currentDraftId if it exists
                         var id = currentDraftId || createDraftId();
                         if (!id) {
                             id = createShareToken();
@@ -3326,9 +3328,10 @@
                             updatedAt: now
                         });
                         if (record) {
-                            currentDraftId = record.id;
+                            // Always preserve the ID - don't let upsert change it
+                            currentDraftId = id;
                             if (options.updateUrl !== false) {
-                                updateUrlWithEditId(record.id);
+                                updateUrlWithEditId(id);
                             }
                             if (options.showToast) {
                                 showCopyToast("Capsule enregistrée");
@@ -4907,10 +4910,48 @@
                 }
 
                 if (timelineUpdateBtn) {
-                    timelineUpdateBtn.addEventListener("click", function (event) {
+                    timelineUpdateBtn.addEventListener("click", async function (event) {
                         event.stopPropagation();
                         closeTimelineInfoPopup();
-                        reloadAppWithVersion(getBrowserDateVersion());
+
+                        const generateRandomString = () => {
+                            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+                            let result = '';
+                            for (let i = 0; i < 8; i++) {
+                                result += chars.charAt(Math.floor(Math.random() * chars.length));
+                            }
+                            return result;
+                        };
+
+                        // Vérifier s'il y a des données non enregistrées (timeline-planning-state)
+                        const hasUnsavedChanges = !!localStorage.getItem("timeline-planning-state");
+
+                        if (hasUnsavedChanges) {
+                            const shouldSave = confirm("Souhaitez-vous sauvegarder votre brouillon avant la mise à jour ?");
+                            if (shouldSave) {
+                                try {
+                                    await saveCapsuleDraft();
+                                } catch (e) {
+                                    console.error("Erreur lors de la sauvegarde:", e);
+                                }
+                            }
+                        }
+
+                        // Vider le localStorage et sessionStorage
+                        localStorage.clear();
+                        sessionStorage.clear();
+
+                        // Vider les caches
+                        if ('caches' in window) {
+                            try {
+                                const names = await caches.keys();
+                                await Promise.all(names.map(name => caches.delete(name)));
+                            } catch (e) { }
+                        }
+
+                        // Recharger avec cache-buster
+                        const randomStr = generateRandomString();
+                        window.location.href = `/?v=${randomStr}`;
                     });
                 }
 

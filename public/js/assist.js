@@ -1,4 +1,35 @@
 (function (global) {
+    // Load configuration from config.json
+    var globalConfig = {};
+
+    async function loadGlobalConfig() {
+        try {
+            var response = await fetch("config.json");
+            if (response.ok) {
+                globalConfig = await response.json();
+                console.log("Global config loaded:", globalConfig);
+            }
+        } catch (err) {
+            console.warn("Failed to load config.json:", err);
+        }
+    }
+
+    // Load config immediately
+    loadGlobalConfig();
+
+    function getConfig(path, defaultValue) {
+        var keys = path.split(".");
+        var value = globalConfig;
+        for (var i = 0; i < keys.length; i++) {
+            if (value && typeof value === "object") {
+                value = value[keys[i]];
+            } else {
+                return defaultValue;
+            }
+        }
+        return value !== undefined ? value : defaultValue;
+    }
+
     function resolveChatAppId() {
         try {
             var explicit = (global.GoToolkitChatAppId || "").toString().trim();
@@ -269,6 +300,10 @@
             .replace(/'/g, "&#39;");
     }
 
+    function escapeRegex(value) {
+        return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    }
+
     function renderBotMarkdown(text) {
         if (global.GoToolkitMarkdown && typeof global.GoToolkitMarkdown.render === "function") {
             return global.GoToolkitMarkdown.render(text);
@@ -342,9 +377,17 @@
             || null;
         var abstractLabel = typeof payload.abstract === "string" ? payload.abstract.trim() : "";
         var line = typeof payload.line === "number" ? payload.line : null;
-        var snippetValue = typeof payload.snippet === "string"
-            ? payload.snippet.trim()
-            : (typeof payload.text === "string" ? payload.text.trim() : "");
+
+        // Support snippet as array (1-3 citations from AI) or string (backward compat)
+        var snippetValue = null;
+        if (Array.isArray(payload.snippet)) {
+            snippetValue = payload.snippet.filter(Boolean);
+        } else if (typeof payload.snippet === "string") {
+            snippetValue = payload.snippet.trim();
+        } else if (typeof payload.text === "string") {
+            snippetValue = payload.text.trim();
+        }
+
         return {
             documentId: documentId,
             chunkId: chunkId,
@@ -2378,10 +2421,12 @@
                 sourceType: "context",
                 metadata: metadata
             });
+            console.log("Document ingestion results:", results);
             var errors = results.filter(function (item) {
                 return !item.success;
             });
             if (errors.length) {
+                console.error("Document ingestion errors:", errors);
                 this.setDocumentUploadStatus("Erreur : " + (errors[0].error || "échec d'indexation"));
             } else {
                 this.setDocumentUploadStatus("Indexation terminée.");
@@ -2393,8 +2438,10 @@
                 .map(function (item) {
                     return item.name;
                 });
+            console.log("Ready docs to display:", readyDocs);
             this.setPendingDocumentAttachments(readyDocs);
         } catch (error) {
+            console.error("Document ingestion exception:", error);
             this.setDocumentUploadStatus("Erreur : " + ((error && error.message) || "échec"));
             this.setPendingDocumentAttachments([]);
         } finally {
@@ -4257,7 +4304,7 @@
         try {
             var doc = await this.findDocumentForPreview(name);
             if (doc?.id) {
-                if (isPdfDocument(doc)) {
+                if (isPdfDocument(doc) && !getConfig("documentPreview.showChunksForPdf", false)) {
                     if (this.showPdfPreview(doc)) {
                         return;
                     }
@@ -4310,7 +4357,7 @@
         try {
             var doc = await this.findKnowledgeDocumentForPreview(entry);
             if (doc?.id) {
-                if (isPdfDocument(doc)) {
+                if (isPdfDocument(doc) && !getConfig("documentPreview.showChunksForPdf", false)) {
                     if (this.showPdfPreview(doc)) {
                         return;
                     }
@@ -4391,7 +4438,7 @@
                         })
                         .filter(Boolean)
                 );
-                if (isPdfDocument(doc)) {
+                if (isPdfDocument(doc) && !getConfig("documentPreview.showChunksForPdf", false)) {
                     this.setPdfHighlight(highlightInfo);
                     if (this.showPdfPreview(doc)) {
                         return;
@@ -4401,10 +4448,13 @@
                 if (!isPdfDocument(doc)) {
                     this.setPdfHighlight(null);
                 }
+                // Pass aiSnippets if snippet is an array (from AI citations), otherwise empty
+                var aiSnippets = Array.isArray(reference.snippet) ? reference.snippet : [];
                 this.renderDocumentText(docChunks, {
                     highlightChunkIds: Array.from(relatedChunkIds),
                     snippet: previewSnippet,
                     highlightLine: typeof reference.line === "number" ? reference.line : undefined,
+                    aiSnippets: aiSnippets,
                     doc: doc
                 });
                 return;
@@ -4465,10 +4515,69 @@
         }
     };
 
+    AssistSidebar.prototype.highlightSnippetsInMarkdown = function (snippets) {
+        if (!this.previewBodyEl || !snippets.length) return;
+
+        var walker = document.createTreeWalker(
+            this.previewBodyEl,
+            NodeFilter.SHOW_TEXT,
+            null,
+            false
+        );
+
+        var nodesToReplace = [];
+        var textNode;
+        while (textNode = walker.nextNode()) {
+            // Skip script/style nodes
+            if (textNode.parentElement?.tagName === "SCRIPT" ||
+                textNode.parentElement?.tagName === "STYLE") continue;
+
+            var text = textNode.nodeValue;
+            var hasMatch = false;
+
+            for (var i = 0; i < snippets.length; i++) {
+                var snippet = snippets[i];
+                if (!snippet) continue;
+                var normalizedSnippet = normalizeSpaces(snippet);
+                if (text.toLowerCase().includes(normalizedSnippet.toLowerCase())) {
+                    hasMatch = true;
+                    break;
+                }
+            }
+
+            if (hasMatch) {
+                nodesToReplace.push(textNode);
+            }
+        }
+
+        // Replace text nodes with highlighted versions
+        nodesToReplace.forEach(function (textNode) {
+            var html = escapeHtml(textNode.nodeValue);
+
+            snippets.forEach(function (snippet) {
+                if (!snippet) return;
+                var normalizedSnippet = normalizeSpaces(snippet);
+                var regex = new RegExp(
+                    "(" + escapeRegex(normalizedSnippet) + ")",
+                    "gi"
+                );
+                html = html.replace(regex, "<span class=\"chat-doc-preview__text-match\">$1</span>");
+            });
+
+            var span = document.createElement("span");
+            span.innerHTML = html;
+            textNode.parentNode.replaceChild(span, textNode);
+        });
+    };
+
     AssistSidebar.prototype.renderDocumentText = function (chunks, options) {
         if (!this.previewBodyEl) return;
         var opts = options || {};
         var snippet = typeof opts.snippet === "string" ? opts.snippet.trim() : "";
+
+        // Support for AI snippets array from references
+        var aiSnippets = Array.isArray(opts.aiSnippets) ? opts.aiSnippets.filter(Boolean) : [];
+
         var highlightChunkIds = new Set(
             (Array.isArray(opts.highlightChunkIds) ? opts.highlightChunkIds : [])
                 .filter(Boolean)
@@ -4476,12 +4585,38 @@
         var highlightLine = Number.isFinite(opts.highlightLine) ? opts.highlightLine : null;
         var docMeta = opts.doc || null;
         var renderMarkdown = isMarkdownDocument(docMeta, opts);
-        var normalized = normalizePreviewChunks(chunks);
+
+        // Check config for whether to show chunks for this document type
+        var isPdfDoc = isPdfDocument(docMeta);
+        var shouldShowChunks = true;
+        if (isPdfDoc) {
+            shouldShowChunks = getConfig("documentPreview.showChunksForPdf", false);
+        } else if (renderMarkdown) {
+            shouldShowChunks = getConfig("documentPreview.showChunksForMarkdown", false);
+        } else {
+            shouldShowChunks = getConfig("documentPreview.showChunksForOtherFormats", true);
+        }
+
+        var normalized = shouldShowChunks ? normalizePreviewChunks(chunks) : [];
         if (!normalized.length) {
+            // Si pas de chunks normalisés, essayer d'afficher les chunks bruts s'ils ont du contenu
+            if (shouldShowChunks && chunks && chunks.length) {
+                console.log("Chunks available but normalized is empty, raw chunks:", chunks.slice(0, 3));
+                var rawContent = [];
+                chunks.forEach(function (chunk) {
+                    if (chunk && chunk.text) {
+                        rawContent.push(String(chunk.text));
+                    }
+                });
+                if (rawContent.length) {
+                    this.previewBodyEl.innerHTML = this.formatPreviewText(rawContent.join("\n\n"), highlightLine, opts);
+                    return;
+                }
+            }
             if (snippet) {
                 this.previewBodyEl.innerHTML = this.formatPreviewText(snippet, highlightLine, opts);
             } else {
-                this.previewBodyEl.innerHTML = "(extrait indisponible)";
+                this.previewBodyEl.innerHTML = "<div style='color: #999; font-style: italic;'>(extrait indisponible)</div>";
             }
             return;
         }
@@ -4491,20 +4626,52 @@
                 markdownSource = snippet;
             }
             var markdownHtml = renderBotMarkdown(markdownSource);
-            this.previewBodyEl.innerHTML = markdownHtml || "(extrait indisponible)";
+            this.previewBodyEl.innerHTML = markdownHtml || "<div style='color: #999; font-style: italic;'>(extrait indisponible)</div>";
+
+            // Highlight AI snippets in markdown content
+            if (aiSnippets.length > 0 && this.previewBodyEl.innerHTML) {
+                this.highlightSnippetsInMarkdown(aiSnippets);
+            }
             return;
         }
         var html = [];
-        var lineNo = 0;
-        var highlightLines = new Set();
-        var normalizedSnippet = normalizeSpaces(snippet);
+        var accumulatedText = "";
+        var accumulatedChunkKeys = [];
+        var segments = [];
+        var punctuationPattern = /[,.!?;:\-)\]»"'`]$/;
+
+        // Helper to flush accumulated content as a segment
+        var flushAccumulated = function () {
+            if (!accumulatedText.trim()) return;
+
+            var contentHtml = escapeHtml(accumulatedText);
+
+            // Highlight AI snippets in accumulated content
+            aiSnippets.forEach(function (aiSnippet) {
+                if (!aiSnippet) return;
+                var normalizedAiSnippet = normalizeSpaces(aiSnippet);
+                if (accumulatedText.toLowerCase().includes(normalizedAiSnippet.toLowerCase())) {
+                    var regex = new RegExp(
+                        "(" + escapeRegex(normalizedAiSnippet) + ")",
+                        "gi"
+                    );
+                    contentHtml = contentHtml.replace(regex, "<span class=\"chat-doc-preview__text-match\">$1</span>");
+                }
+            });
+
+            segments.push({
+                html: contentHtml,
+                chunkKeys: accumulatedChunkKeys.slice()
+            });
+
+            accumulatedText = "";
+            accumulatedChunkKeys = [];
+        };
+
         normalized.forEach(function (entry) {
             var chunkRaw = String(entry.text || "");
             var rawLines = chunkRaw.split(/\r?\n/);
             if (!rawLines.length) rawLines = [""];
-            var chunkLineStart = lineNo + 1;
-            var chunkLineEnd = chunkLineStart + rawLines.length - 1;
-            lineNo = chunkLineEnd;
             var chunkContent = rawLines
                 .map(function (line) {
                     return normalizeSpaces(line);
@@ -4512,39 +4679,48 @@
                 .filter(Boolean)
                 .join(" ");
             if (!chunkContent) return;
-            var matchesSnippet = normalizedSnippet
-                ? chunkContent.toLowerCase().includes(normalizedSnippet.toLowerCase())
-                : false;
-            var highlightChunk = entry.chunkKey && highlightChunkIds.has(entry.chunkKey);
-            var highlightLineActive = highlightLine && highlightLine >= chunkLineStart && highlightLine <= chunkLineEnd;
-            if (highlightChunk || highlightLineActive) {
-                highlightLines.add(chunkLineStart);
+
+            // Add chunk key to tracking
+            if (entry.chunkKey) {
+                accumulatedChunkKeys.push(entry.chunkKey);
             }
-            var cls = "chat-doc-preview__line";
-            if (highlightChunk || highlightLineActive) {
-                cls += " chat-doc-preview__line--highlight";
+
+            // Add content with space separator if already accumulated
+            if (accumulatedText) {
+                accumulatedText += " " + chunkContent;
+            } else {
+                accumulatedText = chunkContent;
             }
-            var snippetHtml = matchesSnippet
-                ? highlightSnippetText(chunkContent, normalizedSnippet)
-                : escapeHtml(chunkContent);
+
+            // Check if we should flush (ends with punctuation)
+            if (punctuationPattern.test(accumulatedText)) {
+                flushAccumulated();
+            }
+        });
+
+        // Flush any remaining accumulated text
+        if (accumulatedText.trim()) {
+            flushAccumulated();
+        }
+
+        // Render all segments in a single line with <br> between them
+        if (segments.length > 0) {
+            var segmentHtmls = segments.map(function (seg) { return seg.html; });
+            var allChunkKeys = [];
+            segments.forEach(function (seg) {
+                allChunkKeys = allChunkKeys.concat(seg.chunkKeys);
+            });
+
             html.push(
-                "<div class=\"" + cls + "\" data-line=\"" + chunkLineStart + "\" data-chunk=\"" + escapeHtml(entry.chunkKey || "") + "\">" +
-                "<span class=\"chat-doc-preview__line-number\">" + chunkLineStart + "</span>" +
-                "<div class=\"chat-doc-preview__line-text\">" + snippetHtml + "</div>" +
+                "<div class=\"chat-doc-preview__line\" data-chunk=\"" + escapeHtml(allChunkKeys.join(",")) + "\">" +
+                "<div class=\"chat-doc-preview__line-text\">" +
+                segmentHtmls.join("<br>") +
+                "</div>" +
                 "</div>"
             );
-        });
+        }
+
         this.previewBodyEl.innerHTML = html.join("");
-        var targetLine = null;
-        if (highlightLine && highlightLines.has(highlightLine)) {
-            targetLine = this.previewBodyEl.querySelector("[data-line=\"" + highlightLine + "\"]");
-        }
-        if (!targetLine && highlightLines.size) {
-            targetLine = this.previewBodyEl.querySelector(".chat-doc-preview__line--highlight");
-        }
-        if (targetLine && typeof targetLine.scrollIntoView === "function") {
-            targetLine.scrollIntoView({ block: "center" });
-        }
     };
 
     AssistSidebar.prototype.updateTabIndicator = function () {

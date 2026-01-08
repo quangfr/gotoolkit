@@ -1473,7 +1473,7 @@ FORMAT DE SORTIE (JSON strict)
     {
       "documentId": "reprendre le uuid exact du documentId en CONTEXT ou KNOWLEDGE",
       "abstract": "sujet du chunk en 3-5 mots",
-      "snippet": "extrait exact dans le chunk pertinent à la réponse 1-7 mots"
+      "snippet": ["citation exacte dans le chunk pertinent à la réponse 1-7 mots","autre citation exacte 1-7 mots optionnelle","autre citation exacte 1-7 mots optionnelle"],
       "chunkId": "reprendre le uuid exact du chunkId en CONTEXT ou KNOWLEDGE",
     }
   ],
@@ -1509,7 +1509,7 @@ FORMAT DE SORTIE (JSON strict)
     {
       "documentId": "reprendre le uuid exact du documentId en CONTEXT ou KNOWLEDGE",
       "abstract": "sujet du chunk en 3-5 mots",
-      "snippet": "extrait exact dans le chunk pertinent à la réponse 1-7 mots"
+      "snippet": ["citation exacte dans le chunk pertinent à la réponse 1-7 mots","autre citation exacte 1-7 mots optionnelle","autre citation exacte 1-7 mots optionnelle"],
       "chunkId": "reprendre le uuid exact du chunkId en CONTEXT ou KNOWLEDGE",
     }
   ],
