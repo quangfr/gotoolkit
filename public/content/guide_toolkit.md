@@ -1,11 +1,9 @@
-# Page d'accueil
+# Go-Toolkit
 
-C'est votre tableau de bord. Vous y découvrez tous les modules, gérez vos préférences IA, consultez votre historique de travail et restez en contact avec l'équipe GoToolkit.
+La page d'accueil est votre tableau de bord. Vous y découvrez tous les modules, gérez vos préférences IA, consultez votre bibiothèque locale et vos partages.
 
 ## 1. Vos modules en un coup d'œil
 - Accédez à **Mémo** (vos notes riche), **Draw** (vos diagrammes), **Grid** (vos données), **Timeline** (vos frises), et **Voice** (vos transcriptions).
-- Chaque module est cliquable : vous ouvrez directement l'outil, sans configuration supplémentaire.
-- Chaque module propose un court descriptif pour vous rappeler à quoi il sert : "Clarifie tes données", "Capte ta parole", etc.
 
 ## 2. Deux modes pour utiliser Assist : Explorer vs Conseiller
 - **Mode Explorer** : vous posez des questions à votre base de documents. L'Assist cherche dans vos fichiers importés et vous ramène des réponses documentées.

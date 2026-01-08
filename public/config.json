@@ -4,7 +4,7 @@
   },
   "memo": {
     "documentPreview": {
-      "showChunksForMarkdown": true,
+      "showChunksForMarkdown": false,
       "showChunksForPdf": true,
       "showChunksForOtherFormats": true
     }
