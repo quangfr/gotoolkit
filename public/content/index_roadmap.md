@@ -1,13 +1,14 @@
 ## Module Mémo `T1 2026`
-- Envoi à l'IA des autres pages du document `À étudier`
-- Mode "Demander" `À planifier`
+- Insertion et prévisualisation Draw dans l'éditeur `À étudier`
+- Mode "Analyser" sans édition dans la sidebar Assist `À planifier`
 
 ## Module Assist (Promptzilla)`T1 2026`
 - Affichage de la bibliothèque locale en mémoire`À étudier`
 - Intégration pour Draw et Grid`À planifier`
 
 ## Module Voice (Tuto Tarantino)`T1 2026`
-- Analyse des transcripts pour conseils IA `À planifier` 
+- Enregistrement depuis Mémo en sidebar
+
 
 ## Accès ressources tiers (Polène)`À étudier`
 - Fichiers Sharepoint / Outlook / OneDrive 
