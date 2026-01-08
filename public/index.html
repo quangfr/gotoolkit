@@ -1260,35 +1260,35 @@
                         <div class="launcher-desc">Accélère ta productivité</div>
                     </span>
                 </button>
-                <a class="launcher" href="memo.html?v=2026.01.08">
+                <a class="launcher" href="memo.html">
                     <span class="launcher-emoji">⊞</span>
                     <span class="launcher-name">
                         Mémo ⚡︎ Le Petit Robert
                         <div class="launcher-desc">Accélère ta rédaction</div>
                     </span>
                 </a>
-                <a class="launcher" href="timeline.html?v=2026.01.08">
+                <a class="launcher" href="timeline.html">
                     <span class="launcher-emoji">⇥</span>
                     <span class="launcher-name">
                         Timeline ⚡︎ Goal Digger
                         <div class="launcher-desc">Trace ton planning</div>
                     </span>
                 </a>
-                <a class="launcher" href="draw.html?v=2026.01.08">
+                <a class="launcher" href="draw.html">
                     <span class="launcher-emoji">ʃ</span>
                     <span class="launcher-name">
                         Draw ⚡︎ Indélébile
                         <div class="launcher-desc">Modélise tes idées</div>
                     </span>
                 </a>
-                <a class="launcher" href="voice.html?v=2026.01.08">
+                <a class="launcher" href="voice.html">
                     <span class="launcher-emoji">▷</span>
                     <span class="launcher-name">
                         Voice ⚡︎ Tuto Tarantino
                         <div class="launcher-desc">Pilote tes réunions</div>
                     </span>
                 </a>
-                <a class="launcher" href="grid.html?v=2026.01.08">
+                <a class="launcher" href="grid.html">
                     <span class="launcher-emoji">◇</span>
                     <span class="launcher-name">
                         Grid ⚡︎ Le Cardinal
@@ -1327,6 +1327,7 @@
             <div class="requests-modal">
                 <header style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
                     <h3 style="margin:0;font-size:1rem;">☄ Liste des feedback</h3>
+                    <button id="addFeedbackBtn" class="btn" type="button" style="margin-left:auto;">+ Ajouter</button>
                     <button id="closeRequestsBtn" class="btn-secondary" type="button" aria-label="Fermer">✕</button>
                 </header>
                 <div class="requests-body">
@@ -2995,6 +2996,7 @@
         const toastEl = document.getElementById("feedbackToast");
         const requestsBtn = document.getElementById("openRequestsBtn");
         const requestsModal = document.getElementById("requestsModal");
+        const addFeedbackBtn = document.getElementById("addFeedbackBtn");
         const closeRequestsBtn = document.getElementById("closeRequestsBtn");
         const requestsList = document.getElementById("requestsList");
         const requestsStatusFilter = document.getElementById("requestsStatusFilter");
@@ -3027,6 +3029,9 @@
             const token = (adminTokenInput?.value || localStorage.getItem("feedback-admin-token") || "").trim();
             const hasToken = Boolean(token);
             if (requestsBtn) requestsBtn.hidden = !hasToken;
+            // Hide feedback-app-index-openBtn when admin token is filled
+            const feedbackOpenBtn = document.getElementById("feedback-app-index-openBtn");
+            if (feedbackOpenBtn) feedbackOpenBtn.style.display = hasToken ? "none" : "";
             if (!hasToken) {
                 activeRequestId = null;
                 closeRequestsModal();
@@ -5157,6 +5162,14 @@
 
         requestsBtn?.addEventListener("click", openRequestsModal);
         closeRequestsBtn?.addEventListener("click", closeRequestsModal);
+        addFeedbackBtn?.addEventListener("click", () => {
+            // Close requests modal and open feedback modal
+            closeRequestsModal();
+            const feedbackBackdrop = document.getElementById("feedback-app-index-backdrop");
+            if (feedbackBackdrop) {
+                feedbackBackdrop.classList.add("open");
+            }
+        });
         requestsModal?.addEventListener("click", event => {
             if (event.target === requestsModal) closeRequestsModal();
         });
