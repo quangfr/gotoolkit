@@ -1604,7 +1604,7 @@
         <script src="js/cgu.js?v=2026.02.07"></script>
         <script src="js/share-worker-client.js"></script>
         <script src="js/share-history.js"></script>
-        <script src="js/capsule-drafts.js"></script>
+        <script src="js/document-api.js"></script>
         <script src="js/prompt.js?v=2026.02.07"></script>
         <script src="js/ia-client.js"></script>
         <script src="js/ia-config.js"></script>
@@ -2308,9 +2308,9 @@
                 }
                 var savedDraftRecord = null;
                 var editDraftId = getEditIdFromUrl();
-                if (editDraftId && capsuleDrafts) {
+                if (editDraftId && documentApi) {
                     try {
-                        savedDraftRecord = await capsuleDrafts.getRecord(editDraftId);
+                        savedDraftRecord = await documentApi.getRecord(editDraftId);
                     } catch (err) {
                         console.warn("Impossible de charger la capsule locale", err);
                     }
@@ -2319,7 +2319,7 @@
                 shouldOpenContextOnFirstLoad = !persistedState;
                 if (savedDraftRecord && persistedState) {
                     // IMPORTANT: Preserve the original editDraftId, not the record.id
-                    currentDraftId = editDraftId;
+                    activeDocumentId = editDraftId;
                     updateUrlWithEditId(editDraftId);
                 }
                 if (persistedState) {
@@ -3227,7 +3227,7 @@
                 var shareCreateBtn = document.getElementById("shareCreateBtn");
                 var shareUpdateBtn = document.getElementById("shareUpdateBtn");
                 var shareHistory = window.goToolkitShareHistory;
-                var capsuleDrafts = window.goToolkitCapsuleDrafts;
+                var documentApi = window.goToolkitDocumentApi;
                 var FIRESTORE_COLLECTION = "timelines";
                 var SHARE_QUERY_PARAM = "share";
                 var EDIT_QUERY_PARAM = "edit";
@@ -3241,7 +3241,7 @@
                 var shareStatusType = "";
                 var shareRequestInProgress = false;
                 var shareLastUpdatedAt = null;
-                var currentDraftId = null;
+                var activeDocumentId = null;
                 var draftSaveTimer = null;
                 var isDraftSaving = false;
 
@@ -3297,8 +3297,8 @@
                 }
 
                 function createDraftId() {
-                    if (capsuleDrafts && typeof capsuleDrafts.generateId === "function") {
-                        return capsuleDrafts.generateId();
+                    if (documentApi && typeof documentApi.generateId === "function") {
+                        return documentApi.generateId();
                     }
                     if (typeof createShareToken === "function") {
                         return createShareToken();
@@ -3308,7 +3308,7 @@
 
                 async function saveCapsuleDraft(options) {
                     options = options || {};
-                    if (!capsuleDrafts || isDraftSaving) {
+                    if (!documentApi || isDraftSaving) {
                         return null;
                     }
                     isDraftSaving = true;
@@ -3316,13 +3316,13 @@
                         persistCurrentPlanning();
                         var payload = buildTimelineStatePayload();
                         var preview = getRoadmapSharePreview();
-                        // IMPORTANT: Preserve existing currentDraftId if it exists
-                        var id = currentDraftId || createDraftId();
+                        // IMPORTANT: Preserve existing activeDocumentId if it exists
+                        var id = activeDocumentId || createDraftId();
                         if (!id) {
                             id = createShareToken();
                         }
                         var now = new Date().toISOString();
-                        var record = await capsuleDrafts.upsertRecord({
+                        var record = await documentApi.upsertRecord({
                             id: id,
                             app: "plan",
                             payload: payload,
@@ -3332,7 +3332,7 @@
                         });
                         if (record) {
                             // Always preserve the ID - don't let upsert change it
-                            currentDraftId = id;
+                            activeDocumentId = id;
                             if (options.updateUrl !== false) {
                                 updateUrlWithEditId(id);
                             }
@@ -3350,7 +3350,7 @@
                 }
 
                 function scheduleDraftSave() {
-                    if (!capsuleDrafts || !currentDraftId) {
+                    if (!documentApi || !activeDocumentId) {
                         return;
                     }
                     if (draftSaveTimer) {
@@ -3371,7 +3371,7 @@
 
                 async function handleSaveDocumentClick() {
                     closeContextMenus();
-                    if (!capsuleDrafts) {
+                    if (!documentApi) {
                         alert("Impossible de sauvegarder localement.");
                         return null;
                     }
@@ -3393,7 +3393,7 @@
 
                 async function handleNewDocumentClick() {
                     closeContextMenus();
-                    var needsPrompt = hasTimelineData() || Boolean(currentDraftId);
+                    var needsPrompt = hasTimelineData() || Boolean(activeDocumentId);
                     if (needsPrompt) {
                         var confirmSave = window.confirm(
                             "Sauvegarder le document existant avant d'ouvrir un nouveau ?"

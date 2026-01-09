@@ -2,7 +2,7 @@
     const DB_NAME = "go-toolkit";
     const DB_VERSION = 7;
     const STORES = [
-        "capsule-drafts",
+        "document-api",
         "share-history",
         "documents-settings",
         "memo-images",

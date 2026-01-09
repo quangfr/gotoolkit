@@ -1,6 +1,6 @@
 ## 2026-01-09
 - Intégration de Voice dans Mémo
-- 
+- Mémo : 
 
 
 ## 2026-01-08

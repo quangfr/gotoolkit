@@ -23,7 +23,7 @@ Boîte à outils 100 % navigateur pour produire vite des livrables partageables 
 - Excalidraw : `src/draw-editor/index.tsx` expose `window.GoToolkitExcalidraw` (`initialize`, `applyScene`, `convertMermaid`, `getApi`).
 
 ## Données, brouillons et partage
-- IndexedDB via `public/js/document-storage.js` pour les capsules locales (`public/js/capsule-drafts.js`) et l’historique des partages (`public/js/share-history.js`), avec fallback `localStorage`.
+- IndexedDB via `public/js/document-storage.js` pour les documents locaux (`public/js/document-api.js`) et l’historique des partages (`public/js/share-history.js`), avec fallback `localStorage`.
 - Les liens de partage passent par `public/js/share-worker-client.js` et `window.GO_TOOLKIT_SHARE_API_URL(S)` (inclut `https://share.gotoolkit.workers.dev` par défaut). L’API Firestore dans `workers/share-proxy` autorise `slides`, `timelines`, `diagrams`, `grids`, `voices`.
 - `public/config.json` porte les flags (seulement `enableTours` pour l’instant).
 

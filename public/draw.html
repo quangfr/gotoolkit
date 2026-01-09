@@ -781,7 +781,7 @@
     <script src="js/cgu.js?v=2026.02.07"></script>
     <script src="js/share-worker-client.js"></script>
     <script src="js/share-history.js"></script>
-    <script src="js/capsule-drafts.js"></script>
+    <script src="js/document-api.js"></script>
     <script src="js/prompt.js?v=2026.02.07"></script>
     <script src="js/ia-client.js"></script>
     <script src="js/ia-config.js"></script>
@@ -873,7 +873,7 @@
                         page.scene = scene;
                     }
                     try { saveState(); } catch (err) { /* noop */ }
-                    if (currentDraftId) {
+                    if (activeDocumentId) {
                         try { scheduleDraftSave(); } catch (err) { /* noop */ }
                     }
                 } catch (err) {
@@ -936,7 +936,7 @@
                 // Best-effort localStorage persist (scene should have been captured recently)
                 try { saveState(); } catch (err) { /* noop */ }
                 // Best-effort final IndexedDB save only if doc is saved
-                if (currentDraftId && capsuleDrafts && !isDraftSaving) {
+                if (activeDocumentId && documentApi && !isDraftSaving) {
                     saveCapsuleDraft({ updateUrl: false, showToast: false }).catch(err => {
                         console.warn("Final save before unload failed", err);
                     });
@@ -975,8 +975,8 @@
             let shareStatusType = "";
             let shareRequestInProgress = false;
             let shareLastUpdatedAt = null;
-            const capsuleDrafts = window.goToolkitCapsuleDrafts;
-            let currentDraftId = null;
+            const documentApi = window.goToolkitDocumentApi;
+            let activeDocumentId = null;
             let draftSaveTimer = null;
             let isDraftSaving = false;
 
@@ -2036,7 +2036,7 @@
             }
 
             function scheduleDraftSave() {
-                if (isDraftSaving || !capsuleDrafts || !currentDraftId) {
+                if (isDraftSaving || !documentApi || !activeDocumentId) {
                     return;
                 }
                 if (draftSaveTimer) {
@@ -2216,15 +2216,15 @@
                 return true;
             }
 
-            async function tryLoadLocalDraftFromUrl() {
-                if (!capsuleDrafts) return false;
+            async function loadDocumentFromUrl() {
+                if (!documentApi) return false;
                 const editId = getEditIdFromUrl();
                 if (!editId) return false;
-                const record = await capsuleDrafts.getRecord(editId);
+                const record = await documentApi.getRecord(editId);
                 if (!record || !record.payload) return false;
                 applyImportedCapsule(record.payload);
                 // IMPORTANT: Preserve the original editId, not the record.id
-                currentDraftId = editId;
+                activeDocumentId = editId;
                 updateUrlWithEditId(editId);
                 return true;
             }
@@ -2334,14 +2334,14 @@
             }
 
             function createDraftId() {
-                if (capsuleDrafts && typeof capsuleDrafts.generateId === "function") {
-                    return capsuleDrafts.generateId();
+                if (documentApi && typeof documentApi.generateId === "function") {
+                    return documentApi.generateId();
                 }
                 return createShareToken();
             }
 
             async function saveCapsuleDraft(options = {}) {
-                if (!capsuleDrafts || isDraftSaving) {
+                if (!documentApi || isDraftSaving) {
                     return null;
                 }
                 isDraftSaving = true;
@@ -2349,13 +2349,13 @@
                     saveState();
                     const payload = await buildCapsulePayload();
                     const preview = getDrawSharePreview();
-                    // IMPORTANT: Preserve existing currentDraftId if it exists
-                    let id = currentDraftId || createDraftId();
+                    // IMPORTANT: Preserve existing activeDocumentId if it exists
+                    let id = activeDocumentId || createDraftId();
                     if (!id) {
                         id = createShareToken();
                     }
                     const now = new Date().toISOString();
-                    const record = await capsuleDrafts.upsertRecord({
+                    const record = await documentApi.upsertRecord({
                         id,
                         app: "draw",
                         payload,
@@ -2365,7 +2365,7 @@
                     });
                     if (record) {
                         // Always preserve the ID - don't let upsert change it
-                        currentDraftId = id;
+                        activeDocumentId = id;
                         if (options.updateUrl !== false) {
                             updateUrlWithEditId(id);
                         }
@@ -2384,7 +2384,7 @@
 
             async function handleSaveDocumentClick() {
                 closeCapsuleMenu();
-                if (!capsuleDrafts) {
+                if (!documentApi) {
                     alert("Impossible de sauvegarder localement.");
                     return null;
                 }
@@ -2406,7 +2406,7 @@
 
             async function handleNewDocumentClick() {
                 closeCapsuleMenu();
-                const hasPages = state.pages.length > 0 || Boolean(currentDraftId);
+                const hasPages = state.pages.length > 0 || Boolean(activeDocumentId);
                 if (hasPages) {
                     const confirmSave = window.confirm(
                         "Sauvegarder le document existant avant d'ouvrir un nouveau ?"
@@ -4899,7 +4899,7 @@
             async function initializeAppState() {
                 initShareWorkerService();
                 const sharedLoaded = await tryLoadSharedStateFromUrl();
-                const localLoaded = !sharedLoaded && await tryLoadLocalDraftFromUrl();
+                const localLoaded = !sharedLoaded && await loadDocumentFromUrl();
                 if (!sharedLoaded && !localLoaded) {
                     loadState();
                 }

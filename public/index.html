@@ -1766,7 +1766,7 @@
     <script src="js/cgu.js?v=2026.02.07"></script>
     <script src="js/share-worker-client.js"></script>
     <script src="js/share-history.js"></script>
-    <script src="js/capsule-drafts.js"></script>
+    <script src="js/document-api.js"></script>
     <script src="js/ia-config.js"></script>
     <script src="js/prompt.js?v=2026.02.07"></script>
     <script src="js/ia-client.js"></script>
@@ -2327,7 +2327,7 @@
             const shareService = window.goToolkitShareWorker;
             const savedGallery = document.getElementById("savedGallery");
             const savedEmpty = document.getElementById("savedEmpty");
-            const capsuleDrafts = window.goToolkitCapsuleDrafts;
+            const documentApi = window.goToolkitDocumentApi;
 
             const APP_DEFINITIONS = {
                 memo: { emoji: "⊞", name: "Mémo", page: "memo.html", collection: "memos" },
@@ -2587,7 +2587,7 @@
             }
 
             function buildSavedCard(record) {
-                if (!record || !capsuleDrafts) {
+                if (!record || !documentApi) {
                     return null;
                 }
                 const definition = APP_DEFINITIONS[record.app];
@@ -2621,7 +2621,7 @@
                     event.preventDefault();
                     event.stopPropagation();
                     const nextPinned = !isPinned;
-                    await capsuleDrafts.setPinned?.(record.id, nextPinned);
+                    await documentApi.setPinned?.(record.id, nextPinned);
                     refreshSavedGallery().catch(() => { /* noop */ });
                 });
                 const deleteBtn = document.createElement("button");
@@ -2637,7 +2637,7 @@
                     if (record.app === "voice") {
                         await deleteVoiceAudio(record.id);
                     }
-                    await capsuleDrafts.removeRecord?.(record.id);
+                    await documentApi.removeRecord?.(record.id);
                     refreshSavedGallery().catch(() => { /* noop */ });
                 });
                 card.appendChild(pinBtn);
@@ -2756,8 +2756,8 @@
                     await manager.deleteDocumentsBySourceTypes?.(conversationId, ["gallery"]);
                     const files = [];
 
-                    if (capsuleDrafts?.getAllRecords) {
-                        const records = await capsuleDrafts.getAllRecords();
+                    if (documentApi?.getAllRecords) {
+                        const records = await documentApi.getAllRecords();
                         records.forEach(record => {
                             if (!record?.payload) return;
                             const text = buildGalleryText(record.app, record.payload, "saved");
@@ -2806,11 +2806,11 @@
                         return;
                     }
                     savedGallery.innerHTML = "";
-                    if (!capsuleDrafts || typeof capsuleDrafts.getAllRecords !== "function") {
+                    if (!documentApi || typeof documentApi.getAllRecords !== "function") {
                         if (savedEmpty) savedEmpty.hidden = false;
                         return;
                     }
-                    const records = await capsuleDrafts.getAllRecords();
+                    const records = await documentApi.getAllRecords();
                     const seenIds = new Set();
                     const entries = records.filter(record => {
                         const definition = APP_DEFINITIONS[record.app];
@@ -2829,7 +2829,7 @@
                         return hasPayload;
                     });
                     if (staleIds.length) {
-                        await Promise.all(staleIds.map(id => capsuleDrafts.removeRecord?.(id)));
+                        await Promise.all(staleIds.map(id => documentApi.removeRecord?.(id)));
                     }
                     if (!filtered.length) {
                         if (savedEmpty) savedEmpty.hidden = false;
@@ -2976,7 +2976,7 @@
                 refreshSavedGallery().catch(() => { /* noop */ });
             });
             const galleryStorageKeys = new Set([
-                capsuleDrafts?.STORAGE_KEY,
+                documentApi?.STORAGE_KEY,
                 shareHistory?.STORAGE_KEY
             ].filter(Boolean));
             window.addEventListener("storage", event => {

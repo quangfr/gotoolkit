@@ -1318,7 +1318,7 @@
     <script src="js/cgu.js?v=2026.02.07"></script>
     <script src="js/share-worker-client.js"></script>
     <script src="js/share-history.js"></script>
-    <script src="js/capsule-drafts.js"></script>
+    <script src="js/document-api.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/dist/ag-grid-community.min.noStyle.js"></script>
     <script>
             (() => {
@@ -1472,7 +1472,7 @@
                 const templateMeta = document.getElementById("templateMeta");
                 const shareHistory = window.goToolkitShareHistory;
                 const shareService = window.goToolkitShareWorker;
-                const capsuleDrafts = window.goToolkitCapsuleDrafts;
+                const documentApi = window.goToolkitDocumentApi;
                 const generateDefaultLabel = generateBtn?.textContent || "⌘ Envoyer";
                 const drawerDefaultLabel = drawerBtn?.textContent || "⌘ Commande";
                 const hasSeenTemplateModal =
@@ -1509,7 +1509,7 @@
                 let shareStatusMessage = "";
                 let shareStatusType = "";
                 let currentShareToken = null;
-                let currentDraftId = null;
+                let activeDocumentId = null;
                 let isDraftSaving = false;
                 const DISPLAY_PREFERENCE_DEFAULTS = {
                     fontSize: 12,
@@ -4714,7 +4714,7 @@
                             }))
                         };
                     }
-                    currentDraftId = null;
+                    activeDocumentId = null;
                     updateUrlWithEditId(null);
                     applyGridDisplayPreferences({ persist: false });
                     renderTabs();
@@ -4749,26 +4749,26 @@
                 }
 
                 function createDraftId() {
-                    if (capsuleDrafts && typeof capsuleDrafts.generateId === "function") {
-                        return capsuleDrafts.generateId();
+                    if (documentApi && typeof documentApi.generateId === "function") {
+                        return documentApi.generateId();
                     }
                     return createShareToken();
                 }
 
                 async function saveGridDraft(options = {}) {
-                    if (!capsuleDrafts || isDraftSaving) return null;
+                    if (!documentApi || isDraftSaving) return null;
                     isDraftSaving = true;
                     try {
                         persistState();
                         const payload = buildGridSharePayload();
                         const preview = buildGridSharePreview();
-                        // IMPORTANT: Preserve existing currentDraftId if it exists
-                        let id = currentDraftId || createDraftId();
+                        // IMPORTANT: Preserve existing activeDocumentId if it exists
+                        let id = activeDocumentId || createDraftId();
                         if (!id) {
                             id = createShareToken();
                         }
                         const now = new Date().toISOString();
-                        const record = await capsuleDrafts.upsertRecord({
+                        const record = await documentApi.upsertRecord({
                             id,
                             app: "grid",
                             payload,
@@ -4778,7 +4778,7 @@
                         });
                         if (record) {
                             // Always preserve the ID - don't let upsert change it
-                            currentDraftId = id;
+                            activeDocumentId = id;
                             if (options.updateUrl !== false) {
                                 updateUrlWithEditId(id);
                             }
@@ -4798,7 +4798,7 @@
 
                 async function handleSaveDocumentClick() {
                     closeGridMenus();
-                    if (!capsuleDrafts) {
+                    if (!documentApi) {
                         showStatus("Service indisponible.", true);
                         return null;
                     }
@@ -4814,8 +4814,8 @@
                     }
                 }
 
-                async function tryLoadLocalDraftFromUrl() {
-                    if (!capsuleDrafts || typeof capsuleDrafts.getRecord !== "function") {
+                async function loadDocumentFromUrl() {
+                    if (!documentApi || typeof documentApi.getRecord !== "function") {
                         return false;
                     }
                     const editId = getEditIdFromUrl();
@@ -4823,13 +4823,13 @@
                         return false;
                     }
                     try {
-                        const record = await capsuleDrafts.getRecord(editId);
+                        const record = await documentApi.getRecord(editId);
                         if (!record || !record.payload) {
                             return false;
                         }
                         applySharedPayload(record.payload);
                         // IMPORTANT: Preserve the original editId, not the record.id
-                        currentDraftId = editId;
+                        activeDocumentId = editId;
                         updateUrlWithEditId(editId);
                         return true;
                     } catch (err) {
@@ -4850,7 +4850,7 @@
                         updateUrlWithShareToken(null);
                         currentShareToken = null;
                     }
-                    currentDraftId = null;
+                    activeDocumentId = null;
                     updateUrlWithEditId(null);
                     const url = new URL(window.location.href);
                     url.searchParams.delete(SHARE_QUERY_PARAM);
@@ -4891,7 +4891,7 @@
                     const scriptHasContent = Boolean(gridScript?.value?.trim());
                     const dataHasContent =
                         Array.isArray(page?.data?.rowData) && page.data.rowData.length > 0;
-                    if (scriptHasContent || dataHasContent || currentDraftId) {
+                    if (scriptHasContent || dataHasContent || activeDocumentId) {
                         const confirmSave = window.confirm(
                             "Sauvegarder le document existant avant d'ouvrir un nouveau ?"
                         );
@@ -9288,7 +9288,7 @@
                         return false;
                     });
                     if (!sharedLoaded) {
-                        await tryLoadLocalDraftFromUrl().catch(err => {
+                        await loadDocumentFromUrl().catch(err => {
                             console.warn("Impossible de charger la capsule locale", err);
                             return false;
                         });

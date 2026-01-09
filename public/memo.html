@@ -643,7 +643,7 @@
     <script src="js/cgu.js?v=2026.02.07"></script>
     <script src="js/share-worker-client.js"></script>
     <script src="js/share-history.js"></script>
-    <script src="js/capsule-drafts.js"></script>
+    <script src="js/document-api.js"></script>
     <script src="js/ia-config.js"></script>
     <script src="js/prompt.js?v=2026.02.07"></script>
     <script src="js/ia-client.js"></script>
@@ -953,13 +953,13 @@
             const copyToast = document.getElementById("copyToast");
             const shareWorker = window.goToolkitShareWorker;
             const shareHistory = window.goToolkitShareHistory;
-            const capsuleDrafts = window.goToolkitCapsuleDrafts;
+            const documentApi = window.goToolkitDocumentApi;
 
             let currentShareToken = null;
-            let currentDraftId = null;
-            let shareStatusMessage = "";
+                        let shareStatusMessage = "";
             let shareStatusType = "";
-            let isDraftSaving = false;
+            let isDocumentSaving = false;
+            let autoSaveTimer = null;
 
             function createId() {
                 if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -1053,7 +1053,7 @@
                     close.tabIndex = 0;
                     const handleTabClose = async (event) => {
                         event.stopPropagation();
-                        await saveDraft({ showToast: false });
+                        await saveDocument({ showToast: false });
                         closeDocumentTab(doc.id);
                     };
                     close.addEventListener("click", handleTabClose);
@@ -1077,7 +1077,7 @@
             function ensureActiveDocument() {
                 if (activeDocumentId) return;
                 const payload = buildSharePayload();
-                const fallbackId = currentDraftId || createId();
+                const fallbackId = activeDocumentId || createId();
                 activeDocumentId = fallbackId;
                 upsertOpenDocument({
                     id: fallbackId,
@@ -1108,7 +1108,6 @@
                 if (!loaded) return;
                 state = loaded;
                 activeDocumentId = target.id;
-                currentDraftId = target.id;
                 renderTabs();
                 setActiveTab(state.activeTabId);
                 syncAssistPresetFromState();
@@ -1128,7 +1127,6 @@
                     } else {
                         state = createDefaultState();
                         activeDocumentId = null;
-                        currentDraftId = null;
                         renderTabs();
                         setActiveTab(state.activeTabId);
                         renderDocumentTabs();
@@ -1150,6 +1148,24 @@
                 }
             }
 
+            function isDevEnvironment() {
+                const host = (window.location.hostname || "").toLowerCase();
+                return host === "localhost" || host === "127.0.0.1" || host.endsWith(".local");
+            }
+
+            function resetDevState() {
+                if (!isDevEnvironment()) return;
+                try {
+                    localStorage.removeItem(STORAGE_KEY);
+                    localStorage.removeItem(CONTEXT_EMBEDDINGS_MIGRATION_KEY);
+                } catch (err) {
+                    console.warn("Failed to reset memo localStorage", err);
+                }
+                if (typeof indexedDB !== "undefined") {
+                    indexedDB.deleteDatabase("go-toolkit");
+                }
+            }
+
             function persistState() {
                 if (typeof localStorage === "undefined") return;
                 try {
@@ -1164,6 +1180,18 @@
                 if (window.GoToolkitAssistInstance?.updateTabIndicator) {
                     window.GoToolkitAssistInstance.updateTabIndicator();
                 }
+            }
+
+            function debounce(fn, wait) {
+                let timer = null;
+                return function (...args) {
+                    if (timer) {
+                        clearTimeout(timer);
+                    }
+                    timer = setTimeout(() => {
+                        fn.apply(this, args);
+                    }, wait);
+                };
             }
 
             async function hydrateMemoContextEmbeddings() {
@@ -1546,7 +1574,6 @@
                 if (!loaded) return;
                 syncActiveDocumentPayload();
                 state = loaded;
-                currentDraftId = record.id;
                 activeDocumentId = record.id;
                 renderTabs();
                 setActiveTab(state.activeTabId);
@@ -1562,9 +1589,9 @@
             }
 
             async function openDocumentById(docId) {
-                if (!docId || !capsuleDrafts) return;
+                if (!docId || !documentApi) return;
                 try {
-                    const record = await capsuleDrafts.getRecord(docId);
+                    const record = await documentApi.getRecord(docId);
                     await openDocumentFromRecord(record);
                 } catch (err) {
                     console.warn("Failed to open memo document", err);
@@ -1585,9 +1612,9 @@
                     state.tabs[0].title = nextName;
                     persistState();
                 }
-                if (capsuleDrafts) {
+                if (documentApi) {
                     const payload = docId === activeDocumentId ? buildSharePayload() : doc?.payload;
-                    await capsuleDrafts.upsertRecord({
+                    await documentApi.upsertRecord({
                         id: docId,
                         app: "memo",
                         payload,
@@ -1637,8 +1664,8 @@
                         }
                     }
                 }
-                if (capsuleDrafts) {
-                    await capsuleDrafts.removeRecord(docId);
+                if (documentApi) {
+                    await documentApi.removeRecord(docId);
                 }
                 closeDocumentTab(docId);
                 getExplorer()?.refresh?.();
@@ -1656,12 +1683,11 @@
                     nextState.tabs[0].title = name;
                 }
                 state = nextState;
-                currentDraftId = (capsuleDrafts?.generateId && capsuleDrafts.generateId()) || createId();
-                activeDocumentId = currentDraftId;
+                activeDocumentId = (documentApi?.generateId && documentApi.generateId()) || createId();
                 renderTabs();
                 setActiveTab(state.activeTabId);
                 syncAssistPresetFromState();
-                await saveDraft({ showToast: true });
+                await saveDocument({ showToast: true });
                 getExplorer()?.refresh?.();
                 window.GoToolkitAssistInstance?.open?.();
             }
@@ -1673,8 +1699,8 @@
                 toggleButton: "#documentExplorerToggle",
                 title: "⬠ Bibliothèque",
                 getItems: async () => {
-                    const drafts = await window.goToolkitCapsuleDrafts?.getAllRecords?.();
-                    return (drafts || []).filter(item => item && item.app === "memo");
+                    const documents = await window.goToolkitDocumentApi?.getAllRecords?.();
+                    return (documents || []).filter(item => item && item.app === "memo");
                 },
                 onCreate: name => {
                     if (!name) return;
@@ -1700,16 +1726,16 @@
                 openDocumentById(docId);
             });
 
-            async function saveDraft(options) {
-                if (!capsuleDrafts || isDraftSaving) return null;
-                isDraftSaving = true;
+            async function saveDocument(options) {
+                if (!documentApi || isDocumentSaving) return null;
+                isDocumentSaving = true;
                 try {
                     const payload = buildSharePayload();
                     const preview = buildSharePreview();
-                    // IMPORTANT: Preserve existing currentDraftId if it exists
-                    const id = currentDraftId || (capsuleDrafts.generateId && capsuleDrafts.generateId()) || createId();
+                    // IMPORTANT: Preserve existing activeDocumentId if it exists
+                    const id = activeDocumentId || (documentApi.generateId && documentApi.generateId()) || createId();
                     const now = new Date().toISOString();
-                    const record = await capsuleDrafts.upsertRecord({
+                    const record = await documentApi.upsertRecord({
                         id,
                         app: "memo",
                         payload,
@@ -1719,7 +1745,6 @@
                     });
                     if (record) {
                         // Always preserve the ID - don't let upsert change it
-                        currentDraftId = id;
                         activeDocumentId = id;
                         upsertOpenDocument({
                             id,
@@ -1737,10 +1762,10 @@
                     }
                     return record;
                 } catch (err) {
-                    console.error("Draft save failed", err);
+                    console.error("Document save failed", err);
                     return null;
                 } finally {
-                    isDraftSaving = false;
+                    isDocumentSaving = false;
                 }
             }
 
@@ -2193,19 +2218,18 @@
                 }
             }
 
-            async function tryLoadLocalDraftFromUrl() {
-                if (!capsuleDrafts) return false;
+            async function loadDocumentFromUrl() {
+                if (!documentApi) return false;
                 const editId = getEditIdFromUrl();
                 if (!editId) return false;
                 try {
-                    const record = await capsuleDrafts.getRecord(editId);
+                    const record = await documentApi.getRecord(editId);
                     if (!record || !record.payload) return false;
                     const loaded = normalizeState(record.payload.tabs ? record.payload : { tabs: [{ id: createId(), title: "Doc 1", content: record.payload }] });
                     if (!loaded) return false;
                     state = loaded;
-                    currentDraftId = record.id;
-                    console.log('[tryLoadLocalDraftFromUrl] Loaded draft:', currentDraftId);
                     activeDocumentId = record.id;
+                    console.log('[loadDocumentFromUrl] Loaded document:', activeDocumentId);
                     upsertOpenDocument({
                         id: record.id,
                         title: record.title || getDocumentTitleFromState(state),
@@ -2214,7 +2238,7 @@
                     });
                     return true;
                 } catch (err) {
-                    console.warn("Failed to load draft from URL", err);
+                    console.warn("Failed to load document from URL", err);
                     return false;
                 }
             }
@@ -2235,7 +2259,7 @@
                         syncAssistPresetFromState();
                         persistState();
                         if (!activeDocumentId) {
-                            activeDocumentId = currentDraftId || createId();
+                            activeDocumentId = createId();
                         }
                         upsertOpenDocument({
                             id: activeDocumentId,
@@ -2253,13 +2277,14 @@
                 reader.readAsText(file);
             }
 
+            resetDevState();
             const initialState = loadState();
             let state = initialState || createDefaultState();
             const shouldOpenTemplateOnStart = !initialState;
 
-            // Create a promise that resolves when draft is loaded from URL (if exists)
-            const draftLoadedPromise = (async () => {
-                const loadedFromUrl = await tryLoadLocalDraftFromUrl();
+            // Create a promise that resolves when document is loaded from URL (if exists)
+            const documentLoadedPromise = (async () => {
+                const loadedFromUrl = await loadDocumentFromUrl();
                 if (loadedFromUrl) {
                     console.log('[init] Loaded from URL, state updated');
                     renderTabs();
@@ -2279,17 +2304,33 @@
             hydrateMemoContextEmbeddings();
             migrateLegacyContextEmbeddings();
 
-            // Wait for draft to be loaded BEFORE initializing editor
-            Promise.all([memoEditorReady, draftLoadedPromise])
+            // Wait for document to be loaded BEFORE initializing editor
+            Promise.all([memoEditorReady, documentLoadedPromise])
                 .then(([api]) => {
                     memoEditorApi = api;
                     if (!memoEditorApi) return;
-                    memoEditorApi.onChange(value => updateActiveTabContent(value));
+                    const debouncedChange = debounce(value => updateActiveTabContent(value), 500);
+                    memoEditorApi.onChange(value => debouncedChange(value));
                     setActiveTab(state.activeTabId);
+                    if (autoSaveTimer) {
+                        clearInterval(autoSaveTimer);
+                    }
+                    autoSaveTimer = setInterval(() => {
+                        saveDocument({ showToast: false, updateUrl: false });
+                    }, 10000);
                 })
                 .catch(err => {
                     console.error("Initialisation de l'éditeur Mémo impossible", err);
                 });
+
+            window.addEventListener("beforeunload", () => {
+                try {
+                    persistState();
+                    saveDocument({ showToast: false, updateUrl: false });
+                } catch (err) {
+                    // ignore
+                }
+            });
 
             fileMenuBtn?.addEventListener("click", event => {
                 event.stopPropagation();
@@ -2301,7 +2342,7 @@
 
             saveDocumentBtn?.addEventListener("click", async () => {
                 closeMenus();
-                const saved = await saveDraft({ showToast: true, updateUrl: false });
+                const saved = await saveDocument({ showToast: true, updateUrl: false });
                 if (!saved) {
                     persistState();
                     setStatus("Mémo enregistré localement");
@@ -2353,10 +2394,10 @@
                     return result;
                 };
 
-                // Vérifier s'il y a des données non enregistrées dans capsule-drafts
+                // Vérifier s'il y a des données non enregistrées dans document-api
                 const hasUnsavedChanges = await (async () => {
                     try {
-                        const store = goToolkitDocStore?.createStore('capsule-drafts');
+                        const store = goToolkitDocStore?.createStore('document-api');
                         if (!store || !store.getAll) return false;
                         const items = await store.getAll();
                         return items && items.length > 0;
@@ -2369,7 +2410,7 @@
                     const shouldSave = confirm("Souhaitez-vous sauvegarder votre brouillon avant la mise à jour ?");
                     if (shouldSave) {
                         try {
-                            await saveDraft();
+                            await saveDocument();
                         } catch (e) {
                             console.error("Erreur lors de la sauvegarde:", e);
                         }

@@ -1850,7 +1850,7 @@
     <script src="js/cgu.js?v=2026.02.07"></script>
     <script src="js/share-worker-client.js"></script>
     <script src="js/share-history.js"></script>
-    <script src="js/capsule-drafts.js"></script>
+    <script src="js/document-api.js"></script>
     <script src="js/ia-config.js"></script>
     <script src="js/prompt.js?v=2026.02.07"></script>
     <script src="js/ia-client.js"></script>
@@ -2075,7 +2075,7 @@
             const copyToast = document.getElementById("copyToast");
             const shareHistory = window.goToolkitShareHistory;
             const shareWorkerService = window.goToolkitShareWorker;
-            const capsuleDrafts = window.goToolkitCapsuleDrafts;
+            const documentApi = window.goToolkitDocumentApi;
             const subjectModalOverlay = subjectModal;
 
             if (screenCaptureToggleBtn) {
@@ -2325,11 +2325,11 @@
             }
 
             async function tryLoadFromDraft() {
-                if (!capsuleDrafts) return false;
+                if (!documentApi) return false;
                 const editId = getEditIdFromUrl();
                 if (!editId) return false;
                 try {
-                    const record = await capsuleDrafts.getRecord(editId);
+                    const record = await documentApi.getRecord(editId);
                     if (!record || !record.payload) return false;
                     const loaded = normalizeState(record.payload);
                     if (loaded && Array.isArray(loaded.pages) && loaded.pages.length) {
@@ -2359,10 +2359,10 @@
             })();
 
             // Try to load from draft if URL contains ?edit=xxxx (async operation)
-            if (!loadedFromStorage && capsuleDrafts) {
+            if (!loadedFromStorage && documentApi) {
                 const editId = getEditIdFromUrl();
                 if (editId) {
-                    currentDraftId = editId;  // Preserve the edit ID for future saves
+                    activeDocumentId = editId;  // Preserve the edit ID for future saves
                 }
                 tryLoadFromDraft().then(loadedState => {
                     if (loadedState) {
@@ -6637,27 +6637,27 @@
                 if (navSwitcherMenu && navSwitcherMenu !== except) navSwitcherMenu.classList.remove("open");
             }
 
-            let currentDraftId = null;
+            let activeDocumentId = null;
 
             function persistCapsuleDraft() {
-                if (!capsuleDrafts || typeof capsuleDrafts.upsertRecord !== "function") return;
+                if (!documentApi || typeof documentApi.upsertRecord !== "function") return;
                 const page = getActivePage();
                 const payload = { ...state };
-                // IMPORTANT: Preserve currentDraftId from URL if it exists, otherwise use generated ID
-                let draftId = currentDraftId || (capsuleDrafts.generateId ? capsuleDrafts.generateId() : null);
+                // IMPORTANT: Preserve activeDocumentId from URL if it exists, otherwise use generated ID
+                let draftId = activeDocumentId || (documentApi.generateId ? documentApi.generateId() : null);
                 if (!draftId) {
                     draftId = state.activePageId;
                 }
-                capsuleDrafts.upsertRecord({
+                documentApi.upsertRecord({
                     id: draftId,
                     app: "voice",
                     payload,
                     title: page?.title || "Voice",
                     description: (page?.scenario || "").slice(0, 120)
                 });
-                // Update currentDraftId to remember this ID for future saves
+                // Update activeDocumentId to remember this ID for future saves
                 if (draftId) {
-                    currentDraftId = draftId;
+                    activeDocumentId = draftId;
                 }
                 if (draftId && audioBlob) {
                     saveAudioToDb(audioBlob, draftId);

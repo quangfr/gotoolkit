@@ -3530,10 +3530,10 @@
     AssistSidebar.prototype.loadMemoLibraryEntries = async function () {
         var records = [];
         try {
-            if (global.goToolkitCapsuleDrafts?.getAllRecords) {
-                records = await global.goToolkitCapsuleDrafts.getAllRecords();
+            if (global.goToolkitDocumentApi?.getAllRecords) {
+                records = await global.goToolkitDocumentApi.getAllRecords();
             } else if (global.goToolkitDocStore?.createStore) {
-                var store = global.goToolkitDocStore.createStore("capsule-drafts");
+                var store = global.goToolkitDocStore.createStore("document-api");
                 var entries = await store.getAll();
                 if (Array.isArray(entries)) {
                     records = entries;

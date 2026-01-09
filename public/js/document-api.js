@@ -1,5 +1,5 @@
 (() => {
-    const STORAGE_KEY = "go-toolkit-capsule-drafts";
+    const STORAGE_KEY = "go-toolkit-document-api";
     const storageService = window.goToolkitStorageService;
 
     const fallbackStore = (() => {
@@ -23,7 +23,7 @@
                     }
                 }
             } catch (err) {
-                console.warn("goToolkitCapsuleDrafts: fallback read failed", err);
+                console.warn("goToolkitDocumentApi: fallback read failed", err);
             }
             cached = {};
             return cached;
@@ -38,7 +38,7 @@
             try {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
             } catch (err) {
-                console.warn("goToolkitCapsuleDrafts: fallback write failed", err);
+                console.warn("goToolkitDocumentApi: fallback write failed", err);
             }
             return next;
         }
@@ -58,11 +58,11 @@
 
     const store =
         storageService?.createStore({
-            storeName: "capsule-drafts",
+            storeName: "document-api",
             localStorageKey: STORAGE_KEY,
             defaultValue: () => ({}),
             normalize: value => (value && typeof value === "object" ? value : null),
-            logPrefix: "goToolkitCapsuleDrafts"
+            logPrefix: "goToolkitDocumentApi"
         }) || fallbackStore;
 
     function normalizeRecord(value) {
@@ -177,7 +177,7 @@
             .join("");
     }
 
-    window.goToolkitCapsuleDrafts = window.goToolkitCapsuleDrafts || {
+    window.goToolkitDocumentApi = window.goToolkitDocumentApi || {
         STORAGE_KEY,
         getAllRecords,
         getRecord,
