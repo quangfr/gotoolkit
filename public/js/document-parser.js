@@ -70,8 +70,8 @@
 
     const STORAGE_KEY = "goToolkit.documents.settings";
     const DB_NAME = "gotoolkit-documents";
-    const DB_VERSION = 3;
-    const REQUIRED_STORES = ["documents", "chunks", "keyword_meta"];
+    const DB_VERSION = 4;
+    const REQUIRED_STORES = ["documents", "chunks", "keyword_meta", "memo_context_embeddings"];
     const PDFJS_URL = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.6.82/+esm";
     const PDFJS_WORKER = "js/pdf.worker.min.mjs";
     const TRANSFORMERS_URL = "https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2";
@@ -683,6 +683,15 @@
         return match ? match[1].toLowerCase() : "";
     }
 
+    function bufferToHex(buffer) {
+        const bytes = new Uint8Array(buffer || []);
+        let out = "";
+        for (let i = 0; i < bytes.length; i++) {
+            out += bytes[i].toString(16).padStart(2, "0");
+        }
+        return out;
+    }
+
     function extractTextFromXml(xmlContent) {
         try {
             const parser = new DOMParser();
@@ -752,6 +761,7 @@
                 await this.loadSettings();
                 await this.ensureDb();
                 await this.ensureEmbedder();
+                await this.cleanupExpiredEmbeddings();
                 if (this.keywordIndex) {
                     await this.rebuildKeywordIndex();
                 }
@@ -790,6 +800,11 @@
             }
             this.emitSettings();
             return this.settings;
+        }
+
+        getMemoEmbeddingRetentionMs() {
+            const days = Number(global?.GoToolkitSiteConfig?.get?.("memo.contextEmbeddings.retentionDays", 7)) || 7;
+            return Math.max(1, days) * 24 * 60 * 60 * 1000;
         }
 
         onStatsChange(callback) {
@@ -865,9 +880,18 @@
                 const request = indexedDB.open(DB_NAME, DB_VERSION);
                 request.onupgradeneeded = () => {
                     const db = request.result;
+                    let docs = null;
                     if (!db.objectStoreNames.contains("documents")) {
-                        const docs = db.createObjectStore("documents", { keyPath: "id" });
+                        docs = db.createObjectStore("documents", { keyPath: "id" });
                         docs.createIndex("conversationId", "conversationId", { unique: false });
+                    } else {
+                        docs = request.transaction?.objectStore("documents") || null;
+                    }
+                    if (docs && !docs.indexNames.contains("fileHash")) {
+                        docs.createIndex("fileHash", "fileHash", { unique: false });
+                    }
+                    if (docs && !docs.indexNames.contains("memoId")) {
+                        docs.createIndex("memoId", "memoId", { unique: false });
                     }
                     if (!db.objectStoreNames.contains("chunks")) {
                         const chunks = db.createObjectStore("chunks", { keyPath: "id" });
@@ -876,6 +900,12 @@
                     }
                     if (!db.objectStoreNames.contains("keyword_meta")) {
                         db.createObjectStore("keyword_meta", { keyPath: "id" });
+                    }
+                    if (!db.objectStoreNames.contains("memo_context_embeddings")) {
+                        const memoStore = db.createObjectStore("memo_context_embeddings", { keyPath: "id" });
+                        memoStore.createIndex("memoId", "memoId", { unique: false });
+                        memoStore.createIndex("docId", "docId", { unique: false });
+                        memoStore.createIndex("fileHash", "fileHash", { unique: false });
                     }
                 };
                 request.onsuccess = async () => {
@@ -965,6 +995,16 @@
             if (!this.pipelineFactory) return;
             this.embedder = await this.pipelineFactory("feature-extraction", modelId, { quantized: true });
             this.embedModelId = modelId;
+        }
+
+        async computeFileHash(file) {
+            if (!file) return { hash: "", buffer: null };
+            const buffer = await file.arrayBuffer();
+            if (typeof crypto === "undefined" || !crypto.subtle?.digest) {
+                return { hash: "", buffer };
+            }
+            const digest = await crypto.subtle.digest("SHA-256", buffer);
+            return { hash: bufferToHex(digest), buffer };
         }
 
         async embed(text) {
@@ -1243,6 +1283,159 @@
             await this.emitStats(convId);
         }
 
+        async getDocumentsByMemoId(memoId) {
+            if (!memoId) return [];
+            const store = await this.getStore("documents");
+            if (!store) return [];
+            try {
+                const index = store.index("memoId");
+                return new Promise((resolve, reject) => {
+                    const request = index.getAll(memoId);
+                    request.onsuccess = () => resolve(request.result || []);
+                    request.onerror = () => reject(request.error);
+                });
+            } catch (err) {
+                const all = await this.getAllDocuments();
+                return all.filter((doc) => doc?.memoId === memoId);
+            }
+        }
+
+        async deleteDocumentsByMemoId(memoId) {
+            if (!memoId) return;
+            const docs = await this.getDocumentsByMemoId(memoId);
+            if (!docs.length) return;
+            await this.removeDocsFromKeywordIndex(docs.map((doc) => doc.id));
+            await Promise.all(docs.map(async (doc) => {
+                await this.deleteChunksByDocId(doc.id);
+                await this.deleteDocumentById(doc.id);
+            }));
+        }
+
+        async upsertMemoEmbedding(entry) {
+            if (!entry) return;
+            if (entry.memoId && entry.docId && !entry.id) {
+                entry.id = `${entry.memoId}:${entry.docId}`;
+            }
+            if (!entry.id) return;
+            const store = await this.getStore("memo_context_embeddings", "readwrite");
+            if (!store) return;
+            await new Promise((resolve, reject) => {
+                const request = store.put(entry);
+                request.onsuccess = () => resolve(true);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        async deleteMemoEmbeddingLink(memoId, docId) {
+            if (!memoId || !docId) return;
+            const store = await this.getStore("memo_context_embeddings", "readwrite");
+            if (!store) return;
+            const entries = await this.getMemoEmbeddings(memoId);
+            const targets = entries.filter((entry) => entry?.docId === docId);
+            await Promise.all(targets.map((entry) => {
+                return new Promise((resolve, reject) => {
+                    const request = store.delete(entry.id);
+                    request.onsuccess = () => resolve(true);
+                    request.onerror = () => reject(request.error);
+                });
+            }));
+            const remaining = await this.getMemoEmbeddingsByDocId(docId);
+            if (!remaining.length) {
+                const doc = await this.getDocumentById(docId);
+                if (doc) {
+                    doc.deletedAt = Date.now();
+                    await this.putDocument(doc);
+                }
+                await this.cleanupExpiredEmbeddings();
+            }
+        }
+
+        async getMemoEmbeddings(memoId) {
+            if (!memoId) return [];
+            const store = await this.getStore("memo_context_embeddings");
+            if (!store) return [];
+            try {
+                const index = store.index("memoId");
+                return await new Promise((resolve, reject) => {
+                    const request = index.getAll(memoId);
+                    request.onsuccess = () => resolve(request.result || []);
+                    request.onerror = () => reject(request.error);
+                });
+            } catch (err) {
+                const all = await new Promise((resolve, reject) => {
+                    const request = store.getAll();
+                    request.onsuccess = () => resolve(request.result || []);
+                    request.onerror = () => reject(request.error);
+                });
+                return all.filter((entry) => entry?.memoId === memoId);
+            }
+        }
+
+        async deleteMemoEmbeddingsByDocId(docId) {
+            if (!docId) return;
+            await this.deleteByIndex("memo_context_embeddings", "docId", docId);
+        }
+
+        async deleteMemoEmbeddingsByMemoId(memoId) {
+            if (!memoId) return;
+            await this.deleteByIndex("memo_context_embeddings", "memoId", memoId);
+        }
+
+        async deleteMemoEmbeddings(memoId) {
+            if (!memoId) return;
+            const entries = await this.getMemoEmbeddings(memoId);
+            const docIds = Array.from(new Set(entries.map((entry) => entry?.docId).filter(Boolean)));
+            await this.deleteMemoEmbeddingsByMemoId(memoId);
+            for (const docId of docIds) {
+                const remaining = await this.getMemoEmbeddingsByDocId(docId);
+                if (remaining.length) continue;
+                const doc = await this.getDocumentById(docId);
+                if (!doc) continue;
+                doc.deletedAt = Date.now();
+                await this.putDocument(doc);
+            }
+            await this.cleanupExpiredEmbeddings();
+        }
+
+        async getMemoEmbeddingsByDocId(docId) {
+            if (!docId) return [];
+            const store = await this.getStore("memo_context_embeddings");
+            if (!store) return [];
+            try {
+                const index = store.index("docId");
+                return await new Promise((resolve, reject) => {
+                    const request = index.getAll(docId);
+                    request.onsuccess = () => resolve(request.result || []);
+                    request.onerror = () => reject(request.error);
+                });
+            } catch (err) {
+                const all = await new Promise((resolve, reject) => {
+                    const request = store.getAll();
+                    request.onsuccess = () => resolve(request.result || []);
+                    request.onerror = () => reject(request.error);
+                });
+                return all.filter((entry) => entry?.docId === docId);
+            }
+        }
+
+        async cleanupExpiredEmbeddings() {
+            const retentionMs = this.getMemoEmbeddingRetentionMs();
+            const cutoff = Date.now() - retentionMs;
+            const docs = await this.getAllDocuments();
+            const expired = (docs || []).filter((doc) => doc?.deletedAt && doc.deletedAt <= cutoff);
+            if (!expired.length) return;
+            for (const doc of expired) {
+                const refs = await this.getMemoEmbeddingsByDocId(doc.id);
+                if (refs.length) {
+                    doc.deletedAt = null;
+                    await this.putDocument(doc);
+                    continue;
+                }
+                await this.deleteChunksByDocId(doc.id);
+                await this.deleteDocumentById(doc.id);
+            }
+        }
+
         async deleteByIndex(storeName, indexName, value) {
             const db = await this.ensureDb();
             if (!db) return;
@@ -1291,8 +1484,29 @@
             const sourceType = typeof options.sourceType === "string" && options.sourceType
                 ? options.sourceType
                 : "context";
+            const memoId = typeof options.memoId === "string" && options.memoId.trim()
+                ? options.memoId.trim()
+                : null;
+            const tabId = typeof options.tabId === "string" && options.tabId.trim()
+                ? options.tabId.trim()
+                : null;
             const results = [];
             const queue = Array.from(files);
+            const existingDocs = await this.getDocuments(convId);
+            const existingHashes = new Map();
+            (existingDocs || []).forEach((doc) => {
+                const hash = (doc?.fileHash || "").toString();
+                if (hash) {
+                    existingHashes.set(hash, doc);
+                }
+            });
+            const memoEmbeddings = memoId ? await this.getMemoEmbeddings(memoId) : [];
+            const memoHashSet = new Set(
+                (memoEmbeddings || [])
+                    .map((entry) => (entry?.fileHash || "").toString())
+                    .filter(Boolean)
+            );
+            const batchHashes = new Set();
             const metadataEntries = new Map();
             const rawMetadata = options.metadata;
             if (rawMetadata instanceof Map) {
@@ -1306,6 +1520,77 @@
                 const file = queue[i];
                 const docId = crypto.randomUUID();
                 const meta = metadataEntries.get(file.name) || {};
+                let hashInfo = null;
+                try {
+                    hashInfo = await this.computeFileHash(file);
+                } catch (err) {
+                    console.warn("Failed to hash file", file?.name, err);
+                }
+                const fileHash = hashInfo?.hash || "";
+                const existingDoc = fileHash ? existingHashes.get(fileHash) : null;
+                if (fileHash && existingDoc) {
+                    if (memoId && memoHashSet.has(fileHash)) {
+                        results.push({
+                            docId: existingDoc?.id || null,
+                            name: file.name,
+                            success: false,
+                            duplicate: true,
+                            error: "duplicate"
+                        });
+                        onProgress?.({ type: "file-skip", file: file.name, reason: "duplicate" });
+                        continue;
+                    }
+                    if (memoId) {
+                        await this.upsertMemoEmbedding({
+                            id: `${memoId}:${existingDoc.id}`,
+                            memoId,
+                            tabId: tabId || undefined,
+                            docId: existingDoc.id,
+                            fileHash: fileHash || "",
+                            fileName: existingDoc.name || existingDoc.sourceFileName || file.name,
+                            size: existingDoc.size,
+                            importedAt: existingDoc.uploadedAt || Date.now(),
+                            chunkCount: existingDoc.chunkCount || 0
+                        });
+                        memoHashSet.add(fileHash);
+                        if (existingDoc.deletedAt) {
+                            existingDoc.deletedAt = null;
+                            await this.putDocument(existingDoc);
+                        }
+                        results.push({
+                            docId: existingDoc.id,
+                            name: file.name,
+                            success: true,
+                            reused: true,
+                            chunkTotal: existingDoc.chunkCount || 0
+                        });
+                        onProgress?.({ type: "file-skip", file: file.name, reason: "reused" });
+                        continue;
+                    }
+                    results.push({
+                        docId: existingDoc.id,
+                        name: file.name,
+                        success: false,
+                        duplicate: true,
+                        error: "duplicate"
+                    });
+                    onProgress?.({ type: "file-skip", file: file.name, reason: "duplicate" });
+                    continue;
+                }
+                if (fileHash && batchHashes.has(fileHash)) {
+                    results.push({
+                        docId: null,
+                        name: file.name,
+                        success: false,
+                        duplicate: true,
+                        error: "duplicate"
+                    });
+                    onProgress?.({ type: "file-skip", file: file.name, reason: "duplicate" });
+                    continue;
+                }
+                if (fileHash) {
+                    batchHashes.add(fileHash);
+                }
                 const friendlyName =
                     typeof meta.name === "string" && meta.name.trim()
                         ? meta.name.trim()
@@ -1322,7 +1607,7 @@
                 let attachmentBuffer = null;
                 if (shouldStoreBuffer) {
                     try {
-                        attachmentBuffer = await file.arrayBuffer();
+                        attachmentBuffer = hashInfo?.buffer || await file.arrayBuffer();
                     } catch (err) {
                         attachmentBuffer = null;
                         console.warn("Failed to read attachment data for storage", err);
@@ -1342,7 +1627,11 @@
                     updatedAt: docUpdatedAt,
                     scope: docScopes,
                     fileBuffer: attachmentBuffer,
-                    sourceFileName
+                    sourceFileName,
+                    fileHash,
+                    memoId: memoId || undefined,
+                    tabId: tabId || undefined,
+                    deletedAt: null
                 };
                 await this.putDocument(baseEntry);
                 onProgress?.({ type: "file-start", index: i + 1, total: queue.length, file: file.name });
@@ -1540,6 +1829,19 @@
                 baseEntry.chunkOverlap = chunkConfig.chunkOverlap;
                 baseEntry.rawText = extractedText;
                 await this.putDocument(baseEntry);
+                if (memoId) {
+                    await this.upsertMemoEmbedding({
+                        id: `${memoId}:${docId}`,
+                        memoId,
+                        tabId: tabId || undefined,
+                        docId,
+                        fileHash: fileHash || "",
+                        fileName: friendlyName,
+                        size: file.size,
+                        importedAt: Date.now(),
+                        chunkCount: chunkTotal
+                    });
+                }
                 results.push({ docId, name: file.name, success: true, chunkTotal });
                 onProgress?.({ type: "file-done", file: file.name });
             }

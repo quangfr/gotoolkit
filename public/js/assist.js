@@ -47,7 +47,7 @@
 
             return new Promise((resolve) => {
                 try {
-                    const testReq = indexedDB.open("gotoolkit-documents", 2);
+                    const testReq = indexedDB.open("gotoolkit-documents", 4);
                     let isHealthy = true;
 
                     testReq.onerror = () => {
@@ -59,7 +59,7 @@
                         const db = testReq.result;
                         try {
                             // Verify that required stores exist
-                            const requiredStores = ["documents", "chunks", "keyword_meta"];
+                            const requiredStores = ["documents", "chunks", "keyword_meta", "memo_context_embeddings"];
                             const hasAllStores = requiredStores.every(store =>
                                 db.objectStoreNames.contains(store)
                             );
@@ -125,7 +125,7 @@
                 deleteReq.onsuccess = () => {
                     console.log("IndexedDB deleted, will be recreated on next access");
                     // Recreate the database with fresh stores
-                    const recreateReq = indexedDB.open("gotoolkit-documents", 2);
+                    const recreateReq = indexedDB.open("gotoolkit-documents", 4);
 
                     recreateReq.onupgradeneeded = () => {
                         const db = recreateReq.result;
@@ -133,6 +133,8 @@
                         if (!db.objectStoreNames.contains("documents")) {
                             const docs = db.createObjectStore("documents", { keyPath: "id" });
                             docs.createIndex("conversationId", "conversationId", { unique: false });
+                            docs.createIndex("fileHash", "fileHash", { unique: false });
+                            docs.createIndex("memoId", "memoId", { unique: false });
                         }
                         if (!db.objectStoreNames.contains("chunks")) {
                             const chunks = db.createObjectStore("chunks", { keyPath: "id" });
@@ -141,6 +143,12 @@
                         }
                         if (!db.objectStoreNames.contains("keyword_meta")) {
                             db.createObjectStore("keyword_meta", { keyPath: "id" });
+                        }
+                        if (!db.objectStoreNames.contains("memo_context_embeddings")) {
+                            const memoStore = db.createObjectStore("memo_context_embeddings", { keyPath: "id" });
+                            memoStore.createIndex("memoId", "memoId", { unique: false });
+                            memoStore.createIndex("docId", "docId", { unique: false });
+                            memoStore.createIndex("fileHash", "fileHash", { unique: false });
                         }
                     };
 
@@ -164,6 +172,31 @@
                 resolve(false);
             }
         });
+    }
+
+    function formatFileSize(bytes) {
+        var value = Number(bytes) || 0;
+        if (value < 1024) return value + " o";
+        var kb = value / 1024;
+        if (kb < 1024) return kb.toFixed(1) + " Ko";
+        var mb = kb / 1024;
+        if (mb < 1024) return mb.toFixed(1) + " Mo";
+        return (mb / 1024).toFixed(1) + " Go";
+    }
+
+    function truncateFilename(name) {
+        var raw = (name || "").toString().trim();
+        if (!raw) return "Document";
+        var dotIndex = raw.lastIndexOf(".");
+        if (dotIndex <= 0 || dotIndex === raw.length - 1) {
+            return raw.length > 12 ? raw.slice(0, 12) + "..." : raw;
+        }
+        var base = raw.slice(0, dotIndex);
+        var ext = raw.slice(dotIndex + 1);
+        if (base.length <= 12) {
+            return raw;
+        }
+        return base.slice(0, 12) + "..." + ext;
     }
 
     // Run health check on script load
@@ -930,6 +963,11 @@
         this.documentChunkCount = 0;
         this.documentUploadStatus = "";
         this.pendingDocumentAttachments = [];
+        this.memoContextAttachments = [];
+        this.memoContextAttachmentRow = null;
+        this.memoContextAttachmentList = null;
+        this.memoPendingAttachmentMemos = new Set();
+        this.memoConfirmedAttachmentMemos = new Set();
         this.headerDocCountEl = null;
         this.knowledgeDocumentNames = [];
         this.headerDocCountTooltipDefault = "Base de connaissance";
@@ -1138,11 +1176,16 @@
         var names = (this.pendingDocumentAttachments || []).slice();
         if (!names.length) return;
         this.clearAttachments();
+        var memoId = this.getActiveMemoId();
+        if (memoId) {
+            this.memoPendingAttachmentMemos.delete(memoId);
+        }
         if (!this.docManager) return;
         var self = this;
         this.docManager.deleteDocumentsByNames(this.conversation.id, names)
             .then(function () {
                 self.refreshDocumentStats();
+                self.refreshMemoContextAttachments();
             })
             .catch(function (err) {
                 console.warn("Suppression des documents attachés échouée", err);
@@ -1844,10 +1887,21 @@
     AssistSidebar.prototype.buildRetrievalContext = async function (conversationId) {
         if (!this.docManager) return { chunks: [], docs: [], chunkMap: new Map(), docMap: new Map() };
         await this.docManager.waitReady?.();
-        const [chunks, docs] = await Promise.all([
+        let [chunks, docs] = await Promise.all([
             this.docManager.getChunks(conversationId),
             this.docManager.getDocuments(conversationId)
         ]);
+        var memoId = this.getActiveMemoId();
+        var memoDocIds = null;
+        if (memoId && CHAT_APP_ID === "memo" && conversationId === this.conversation.id) {
+            var memoEntries = await this.docManager.getMemoEmbeddings(memoId);
+            memoDocIds = new Set((memoEntries || []).map(function (entry) {
+                return entry?.docId;
+            }).filter(Boolean));
+            docs = (docs || []).filter(function (doc) {
+                return memoDocIds.has(doc?.id);
+            });
+        }
         const docMap = new Map();
         (docs || []).forEach(function (doc) {
             if (doc && doc.id) {
@@ -1855,8 +1909,11 @@
             }
         });
         const chunkMap = new Map();
+        const filteredChunks = [];
         (chunks || []).forEach(function (chunk) {
             const docMeta = docMap.get(chunk.docId);
+            if (!docMeta) return;
+            filteredChunks.push(chunk);
             chunkMap.set(chunk.id, Object.assign({}, chunk, {
                 docName: docMeta?.name || "Document",
                 sourceType: docMeta?.sourceType || "context",
@@ -1865,7 +1922,7 @@
             }));
         });
         this.cacheDocuments(docs);
-        return { chunks, docs, chunkMap, docMap };
+        return { chunks: filteredChunks, docs, chunkMap, docMap };
     };
 
     AssistSidebar.prototype.cacheDocuments = function (docs) {
@@ -2110,6 +2167,7 @@
             }
         }
         var attachments = this.pendingDocumentAttachments;
+        var memoId = this.getActiveMemoId();
         if (attachments && attachments.length) {
             userMessage.attachments = attachments.slice();
             this.clearAttachments();
@@ -2117,6 +2175,11 @@
         this.conversation.messages.push(userMessage);
         this.appendMessage(userMessage);
         this.persist();
+        if (memoId && attachments && attachments.length) {
+            this.confirmMemoAttachments(memoId);
+            await this.refreshMemoContextAttachments();
+            window.GoToolkitMemoSyncContextEmbeddings?.(memoId);
+        }
         this.textarea.value = "";
         this.textarea.style.height = "auto";
 
@@ -2522,6 +2585,14 @@
         var composer = document.createElement("div");
         composer.className = "chat-composer";
         this.composer = composer;
+        var memoAttachmentRow = document.createElement("div");
+        memoAttachmentRow.className = "chat-composer-attachments";
+        memoAttachmentRow.style.display = "none";
+        this.memoContextAttachmentRow = memoAttachmentRow;
+        this.memoContextAttachmentList = document.createElement("div");
+        this.memoContextAttachmentList.className = "chat-composer-attachments__list";
+        memoAttachmentRow.appendChild(this.memoContextAttachmentList);
+        this.sidebar.appendChild(memoAttachmentRow);
         this.textarea = document.createElement("textarea");
         this.textarea.className = "chat-input";
         this.textarea.rows = 2;
@@ -2674,21 +2745,32 @@
                 });
             });
 
+            var memoId = this.getActiveMemoId();
+            var tabId = memoId || null;
             var results = await this.docManager.ingestFiles(fileArray, this.conversation.id, {
                 onProgress: function (progress) {
                     console.log("Import ingestion progress:", progress);
                 },
                 sourceType: "context",
-                metadata: metadata
+                metadata: metadata,
+                memoId: memoId,
+                tabId: tabId
             });
 
             var errors = results.filter(function (item) {
-                return !item.success;
+                return !item.success && !item.duplicate;
+            });
+            var duplicates = results.filter(function (item) {
+                return item.duplicate;
             });
 
             if (errors.length) {
                 console.error("Import ingestion errors:", errors);
                 return;
+            }
+            if (duplicates.length) {
+                var dupNames = duplicates.map(function (item) { return item.name; }).filter(Boolean);
+                this.setDocumentUploadStatus("Doublon ignoré : " + (dupNames.join(", ") || "fichier"));
             }
 
             // 2. Récupérer les documents depuis la DB
@@ -2701,6 +2783,13 @@
                 });
 
             console.log("Documents ready for import:", readyDocNames);
+            if (memoId) {
+                if (readyDocNames.length) {
+                    this.markMemoAttachmentsPending(memoId);
+                }
+                await this.refreshMemoContextAttachments();
+                window.GoToolkitMemoSyncContextEmbeddings?.(memoId);
+            }
 
             // 3. Récupérer le contenu de chaque document depuis IndexedDB
             var parsedContents = [];
@@ -2762,6 +2851,11 @@
             this.appendMessage(userMessage);
             this.persist();
             this.scrollToBottom();
+            if (memoId && readyDocNames.length) {
+                this.confirmMemoAttachments(memoId);
+                await this.refreshMemoContextAttachments();
+                window.GoToolkitMemoSyncContextEmbeddings?.(memoId);
+            }
 
             // Send to AI
             this.sendAIRequest(payload);
@@ -2813,6 +2907,118 @@
         this.attachmentsCharsProcessedByFile = {};
         this.updateAttachmentIndicator();
         this.syncDocumentIndicatorTitle(this.documentChunkCount);
+    };
+
+    AssistSidebar.prototype.getActiveMemoId = function () {
+        if (CHAT_APP_ID !== "memo") return null;
+        return window.__memoState?.activeTabId || null;
+    };
+
+    AssistSidebar.prototype.formatMemoAttachmentTooltip = function (entry) {
+        if (!entry) return "";
+        var parts = [];
+        if (entry.importedAt) {
+            var date = new Date(entry.importedAt);
+            if (!isNaN(date.getTime())) {
+                parts.push("Importe le " + date.toLocaleString("fr-FR"));
+            }
+        }
+        if (entry.size) {
+            parts.push("Taille " + formatFileSize(entry.size));
+        }
+        if (entry.chunkCount) {
+            parts.push(entry.chunkCount + " extraits");
+        }
+        return parts.join(" · ");
+    };
+
+    AssistSidebar.prototype.markMemoAttachmentsPending = function (memoId) {
+        if (!memoId) return;
+        this.memoPendingAttachmentMemos.add(memoId);
+    };
+
+    AssistSidebar.prototype.confirmMemoAttachments = function (memoId) {
+        if (!memoId) return;
+        this.memoConfirmedAttachmentMemos.add(memoId);
+        this.memoPendingAttachmentMemos.delete(memoId);
+    };
+
+    AssistSidebar.prototype.renderMemoContextAttachments = function () {
+        if (!this.memoContextAttachmentRow || !this.memoContextAttachmentList) return;
+        var entries = Array.isArray(this.memoContextAttachments) ? this.memoContextAttachments : [];
+        if (CHAT_APP_ID !== "memo" || !entries.length) {
+            this.memoContextAttachmentRow.style.display = "none";
+            this.memoContextAttachmentList.innerHTML = "";
+            return;
+        }
+        this.memoContextAttachmentRow.style.display = "flex";
+        this.memoContextAttachmentList.innerHTML = "";
+        entries.forEach(function (entry) {
+            var item = document.createElement("span");
+            item.className = "chat-composer-attachment";
+            item.title = this.formatMemoAttachmentTooltip(entry);
+
+            var name = document.createElement("span");
+            name.className = "chat-composer-attachment__name";
+            name.textContent = truncateFilename(entry.fileName || "Document");
+            item.appendChild(name);
+
+            var removeBtn = document.createElement("button");
+            removeBtn.type = "button";
+            removeBtn.className = "chat-composer-attachment__remove";
+            removeBtn.textContent = "⊗";
+            removeBtn.setAttribute("aria-label", "Supprimer l'embedding");
+            removeBtn.addEventListener("click", function (event) {
+                event.stopPropagation();
+                this.handleRemoveMemoContextAttachment(entry);
+            }.bind(this));
+            item.appendChild(removeBtn);
+
+            this.memoContextAttachmentList.appendChild(item);
+        }.bind(this));
+    };
+
+    AssistSidebar.prototype.refreshMemoContextAttachments = async function () {
+        if (!this.memoContextAttachmentRow || !this.docManager) return;
+        var memoId = this.getActiveMemoId();
+        if (!memoId) {
+            this.memoContextAttachments = [];
+            this.renderMemoContextAttachments();
+            return;
+        }
+        try {
+            var entries = await this.docManager.getMemoEmbeddings(memoId);
+            this.memoContextAttachments = entries || [];
+            if (this.memoPendingAttachmentMemos.has(memoId) && !this.memoConfirmedAttachmentMemos.has(memoId)) {
+                this.memoContextAttachmentRow.style.display = "none";
+                this.memoContextAttachmentList.innerHTML = "";
+                return;
+            }
+            if (this.memoContextAttachments.length && !this.memoConfirmedAttachmentMemos.has(memoId)) {
+                this.memoConfirmedAttachmentMemos.add(memoId);
+            }
+            this.renderMemoContextAttachments();
+        } catch (err) {
+            console.warn("Failed to load memo context attachments", err);
+        }
+    };
+
+    AssistSidebar.prototype.handleRemoveMemoContextAttachment = async function (entry) {
+        if (!entry || !this.docManager) return;
+        var docId = entry.docId || entry.id;
+        try {
+            var memoId = this.getActiveMemoId();
+            if (memoId) {
+                await this.docManager.deleteMemoEmbeddingLink(memoId, docId);
+            }
+            await this.refreshMemoContextAttachments();
+            await this.refreshDocumentStats();
+            if (memoId) {
+                window.GoToolkitMemoSyncContextEmbeddings?.(memoId);
+            }
+        } catch (err) {
+            console.warn("Failed to delete memo embedding", err);
+        }
     };
 
     AssistSidebar.prototype.updateAttachmentIndicator = function () {
@@ -2904,18 +3110,28 @@
                     abstract: "Pièce jointe"
                 });
             });
+            var memoId = this.getActiveMemoId();
+            var tabId = memoId || null;
             var results = await this.docManager.ingestFiles(fileArray, this.conversation.id, {
                 onProgress: this.handleDocumentProgress.bind(this),
                 sourceType: "context",
-                metadata: metadata
+                metadata: metadata,
+                memoId: memoId,
+                tabId: tabId
             });
             console.log("Document ingestion results:", results);
             var errors = results.filter(function (item) {
-                return !item.success;
+                return !item.success && !item.duplicate;
+            });
+            var duplicates = results.filter(function (item) {
+                return item.duplicate;
             });
             if (errors.length) {
                 console.error("Document ingestion errors:", errors);
                 this.setDocumentUploadStatus("Erreur : " + (errors[0].error || "échec d'indexation"));
+            } else if (duplicates.length) {
+                var dupNames = duplicates.map(function (item) { return item.name; }).filter(Boolean);
+                this.setDocumentUploadStatus("Doublon ignoré : " + (dupNames.join(", ") || "fichier"));
             } else {
                 this.setDocumentUploadStatus("Indexation terminée.");
             }
@@ -2928,6 +3144,13 @@
                 });
             console.log("Ready docs to display:", readyDocs);
             this.setPendingDocumentAttachments(readyDocs);
+            if (memoId) {
+                if (readyDocs.length) {
+                    this.markMemoAttachmentsPending(memoId);
+                }
+                await this.refreshMemoContextAttachments();
+                window.GoToolkitMemoSyncContextEmbeddings?.(memoId);
+            }
         } catch (error) {
             console.error("Document ingestion exception:", error);
             this.setDocumentUploadStatus("Erreur : " + ((error && error.message) || "échec"));
@@ -5940,6 +6163,7 @@
         this.buildUI();
         this.renderInitialMessages();
         this.updateComposerState();
+        this.refreshMemoContextAttachments();
         if (this.docManager) {
             this.documentStatsWatcher = this.docManager.onStatsChange(this.refreshDocumentStats.bind(this));
             this.refreshDocumentStats();

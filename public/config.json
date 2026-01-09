@@ -4,6 +4,9 @@
     "disableCamera": true
   },
   "memo": {
+    "contextEmbeddings": {
+      "retentionDays": 7
+    },
     "documentPreview": {
       "showChunksForMarkdown": false,
       "showChunksForPdf": true,

@@ -1,4 +1,4 @@
-;(function (global) {
+; (function (global) {
     const doc = global.document;
     if (!doc) return;
 

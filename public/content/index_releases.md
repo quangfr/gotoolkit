@@ -1,5 +1,10 @@
+## 2026-01-09
+- Intégration de Voice dans Mémo
+- 
+
+
 ## 2026-01-08
-- Mémo : Mode "Importer" pour un fichier
+- Mémo : Mode "Importer" pour les fichiers
 - Mémo : Sélection du texte à gérer par l'IA
 
 ## 2026-01-06
@@ -15,7 +20,7 @@
 - Accueil : Ajout des notes de version et de la feuille de route
 
 ## 2025-12-28
-- Nouveau module [Voice](/voice?v=v) : audio, webcam et partage d’écran
+- Module [Voice](/voice?v=v) : audio, webcam et partage d’écran
 - Voice : Transcription vocale AssemblyAI
 
 ## 2025-12-27
@@ -30,7 +35,7 @@
 - Grid : Nouveaux modèles pour le mapping et la structure des données
 
 ## 2025-12-17
-- Nouveau module [Grid](/grid?v=v) avec génération de données
+- Module [Grid](/grid?v=v) avec génération de données
 
 ## 2025-12-16
 - Brouillon, stockage local et bibliothèque en local
@@ -43,7 +48,7 @@
 - Nouveau module [Draw](/draw?v=v) : diagrammes de classe, de flux et séquentiel
 
 ## 2025-11-30
-- Nouveau module [Timeline] (/timeline?v=v) : planning temporel de projet ou de produit 
+- Module Timeline (déprécié): planning temporel de projet ou de produit 
 
 ## 2025-11-24
 - Accueil : Partage des liens de document et espace en ligne
