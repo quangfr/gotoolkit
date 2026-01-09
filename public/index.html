@@ -32,7 +32,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Sora:wght@400;500;600&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles/style.css?v=2026.02.07">
+    <link rel="stylesheet" href="styles/style.css?v=2026.01.10">
     <style>
         :root {
             --bg: #f5f2eb;
@@ -1534,7 +1534,6 @@
                 <form class="feedback-form" onsubmit="return false;" style="flex: 1; overflow-y: auto;">
                     <div class="settings-tabs tabs">
                         <button type="button" class="tab-btn active" data-tab="servicesTab">⌘ Services IA</button>
-                        <button type="button" class="tab-btn" data-tab="promptTab">⌬ Assistant</button>
                     </div>
                     <div class="settings-tab-panels-wrapper" style="flex: 1; overflow-y: auto;">
                         <div class="settings-tab-panel" data-panel="servicesTab">
@@ -1692,7 +1691,7 @@
                                 <label>
                                     <span class="label-title">Preset</span>
                                     <select id="chatPromptPresetSelect">
-                                        <option value="advice">↬ Conseiller</option>
+                                        <option value="advice">↬ Demander</option>
                                         <option value="ask">⌕ Explorer</option>
                                         <option value="suggest">✦ Suggérer</option>
                                         <option value="edit">✂ Éditer</option>
@@ -1763,17 +1762,17 @@
     <script src="js/document-storage.js"></script>
     <script src="js/storage-service.js"></script>
     <script src="js/shared-ui.js"></script>
-    <script src="js/cgu.js?v=2026.02.07"></script>
+    <script src="js/cgu.js?v=2026.01.10"></script>
     <script src="js/share-worker-client.js"></script>
     <script src="js/share-history.js"></script>
     <script src="js/document-api.js"></script>
     <script src="js/ia-config.js"></script>
-    <script src="js/prompt.js?v=2026.02.07"></script>
+    <script src="js/prompt.js?v=2026.01.10"></script>
     <script src="js/ia-client.js"></script>
     <script src="js/document-markdown.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/minisearch@7.2.0/dist/umd/index.min.js"></script>
     <script src="js/keywordIndex.js"></script>
-    <script src="js/document-parser.js?v=2026.02.07"></script>
+    <script src="js/document-parser.js?v=2026.01.10"></script>
     <script>
         // Initialize feedback configuration before loading feedback.js
         window.GoToolkitAppFeedbackConfig = {
@@ -1994,7 +1993,7 @@
             }
         })();
     </script>
-    
+
     <script>
         (function () {
             const modal = document.getElementById("superpowerModal");
@@ -5425,7 +5424,7 @@
             });
         })();
     </script>
-    
+
 </body>
 
 </html>

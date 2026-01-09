@@ -1697,7 +1697,7 @@ RÈGLES DE SORTIE
         global.GoToolkitChatPrompt.PRESETS = {
             advice: {
                 id: "advice",
-                label: "↬ Conseiller",
+                label: "↬ Demander",
                 prompt: initial,
                 defaultPrompt: adviceChatPrompt
             },

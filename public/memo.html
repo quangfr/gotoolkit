@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <title>Mémo | Go-Toolkit</title>
-    <link rel="stylesheet" href="styles/style.css?v=2026.02.07">
+    <link rel="stylesheet" href="styles/style.css?v=2026.01.10">
     <style>
         :root {
             --app-bg: #f3f4f6;
@@ -499,17 +499,21 @@
                     <button id="documentExplorerToggle" class="app-home-link" type="button"
                         title="Afficher la bibliothèque" aria-expanded="false"
                         aria-controls="documentExplorer">⬠</button>
-                        <div class="nav-switch">
-                            <button id="navSwitcherBtn" class="nav-switch-btn" type="button" aria-haspopup="true"
-                                aria-expanded="false">⊞ Mémo ▾</button>
-                            <div id="navSwitcherMenu" class="nav-switch-menu" role="menu">
-                                <a class="nav-switch-link" href="/?v=2026.02.07" role="menuitem">☍ Go-Toolkit</a>
-                                <a class="nav-switch-link" href="grid.html?v=2026.02.07" role="menuitem" data-app="grid">◇ Grid</a>
-                                <a class="nav-switch-link" href="timeline.html?v=2026.02.07" role="menuitem" data-app="timeline">⇥ Timeline</a>
-                                <a class="nav-switch-link" href="draw.html?v=2026.02.07" role="menuitem" data-app="draw">ʃ Draw</a>
-                                <a class="nav-switch-link" href="voice.html?v=2026.02.07" role="menuitem" data-app="voice">▷ Voice</a>
-                            </div>
+                    <div class="nav-switch">
+                        <button id="navSwitcherBtn" class="nav-switch-btn" type="button" aria-haspopup="true"
+                            aria-expanded="false">⊞ Mémo ▾</button>
+                        <div id="navSwitcherMenu" class="nav-switch-menu" role="menu">
+                            <a class="nav-switch-link" href="/?v=2026.01.10" role="menuitem">☍ Go-Toolkit</a>
+                            <a class="nav-switch-link" href="grid.html?v=2026.01.10" role="menuitem" data-app="grid">◇
+                                Grid</a>
+                            <a class="nav-switch-link" href="timeline.html?v=2026.01.10" role="menuitem"
+                                data-app="timeline">⇥ Timeline</a>
+                            <a class="nav-switch-link" href="draw.html?v=2026.01.10" role="menuitem" data-app="draw">ʃ
+                                Draw</a>
+                            <a class="nav-switch-link" href="voice.html?v=2026.01.10" role="menuitem" data-app="voice">▷
+                                Voice</a>
                         </div>
+                    </div>
 
                     <div id="tabs" class="tabs">
                         <div id="document-tabs" class="tabs"></div>
@@ -517,12 +521,8 @@
                     </div>
                 </div>
                 <div class="global-actions">
-                    <button id="assistLauncherBtn" class="btn btn-secondary" type="button" title="⌬ Assist" data-app="assist">⌬
-                        Assist</button>
                     <button id="gtTemplateModalTrigger" class="btn" type="button" aria-label="Choisir un modèle"
                         title="⊞ Modèles">⊞ Modèles</button>
-                    <button id="gtPromptModalTrigger" class="btn" type="button" aria-label="Prompt" title="⌬ Prompt">⌬
-                        Prompt</button>
                     <div class="menu-trigger" id="fileMenuTrigger">
                         <button id="fileMenuBtn" class="btn" type="button" aria-label="Document">🗋 Document</button>
                         <div class="context-menu" id="fileMenu">
@@ -542,6 +542,9 @@
                             title="Lien de partage">☍ Partage</button>
                         <div data-share-menu-slot></div>
                     </div>
+                    <button id="assistLauncherBtn" class="btn btn-secondary" type="button" title="⌬ Assist"
+                        data-app="assist">
+                        ⌬ Assist</button>
                 </div>
             </div>
 
@@ -575,7 +578,7 @@
         aria-labelledby="gtPromptModalTitle">
         <div class="modal">
             <div class="modal-header">
-                <h3 id="gtPromptModalTitle" title="⌬ Prompt">⌬ Prompt</h3>
+                <h3 id="gtPromptModalTitle" title="Prompt">Prompt</h3>
                 <button class="modal-close" id="gtPromptModalClose" type="button" aria-label="Fermer">×</button>
             </div>
             <div class="ia-actions">
@@ -614,8 +617,23 @@
         <span id="aiRequestCounterText">◴ 00:00</span>
     </div>
 
-    <input type="file" id="importJsonInput" accept="application/json" style="display:none">
+    <input type="file" id="importJsonInput" style="display:none">
     <div id="chat-root"></div>
+    <script>
+        // Load file import accept string from config
+        (function () {
+            window.GoToolkitSiteConfigPromise?.then(() => {
+                var config = window.GoToolkitSiteConfig?.get("fileImport.supportedExtensions");
+                if (config && Array.isArray(config.mimeTypes) && Array.isArray(config.extensions)) {
+                    var acceptStr = config.mimeTypes.concat(config.extensions).join(",");
+                    document.getElementById("importJsonInput")?.setAttribute("accept", acceptStr);
+                }
+            }).catch(() => {
+                // Fallback accept if config fails
+                document.getElementById("importJsonInput")?.setAttribute("accept", "application/json,.hag");
+            });
+        })();
+    </script>
 
     <!-- Floating Chat Inline Editor Component -->
     <div id="chat-inline-editor-container" style="display: none;">
@@ -640,17 +658,17 @@
     <script src="js/document-storage.js"></script>
     <script src="js/storage-service.js"></script>
     <script src="js/shared-ui.js"></script>
-    <script src="js/cgu.js?v=2026.02.07"></script>
+    <script src="js/cgu.js?v=2026.01.10"></script>
     <script src="js/share-worker-client.js"></script>
     <script src="js/share-history.js"></script>
     <script src="js/document-api.js"></script>
     <script src="js/ia-config.js"></script>
-    <script src="js/prompt.js?v=2026.02.07"></script>
+    <script src="js/prompt.js?v=2026.01.10"></script>
     <script src="js/ia-client.js"></script>
-    <script src="js/document-markdown.js?v=2026.02.07"></script>
+    <script src="js/document-markdown.js?v=2026.01.10"></script>
     <script src="https://cdn.jsdelivr.net/npm/minisearch@7.2.0/dist/umd/index.min.js"></script>
     <script src="js/keywordIndex.js"></script>
-    <script src="js/document-parser.js?v=2026.02.07"></script>
+    <script src="js/document-parser.js?v=2026.01.10"></script>
     <script>
         // Initialize feedback configuration for Memo before loading feedback.js
         window.GoToolkitAppFeedbackConfig = {
@@ -673,7 +691,7 @@
     <script src="js/voice-video-player.js"></script>
     <script src="js/voice-audio-player.js"></script>
     <script src="js/voice.js"></script>
-    <script src="js/memo.bundle.js?v=2026.02.07"></script>
+    <script src="js/memo.bundle.js?v=2026.01.10"></script>
     <script>
         (function () {
             const manager = window.GoToolkitDocumentManager;
@@ -881,8 +899,8 @@
             }
         })();
     </script>
-    <script src="js/assist.js?v=2026.02.07"></script>
-    <script src="js/document-library.js?v=2026.02.07"></script>
+    <script src="js/assist.js?v=2026.01.10"></script>
+    <script src="js/document-library.js?v=2026.01.10"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             setTimeout(function () {
@@ -896,9 +914,32 @@
         (function () {
             const STORAGE_KEY = "goToolkit.memo.state";
             const CONTEXT_EMBEDDINGS_MIGRATION_KEY = "goToolkit.memo.contextEmbeddings.migrated";
+            const PROMPT_PRESET_STORAGE_KEY = "goToolkit.memo.promptPreset";
             const SHARE_QUERY_PARAM = "share";
             const EDIT_QUERY_PARAM = "edit";
             const FIRESTORE_COLLECTION = "memos";
+
+            function saveLastPromptPreset(presetId) {
+                try {
+                    localStorage.setItem(PROMPT_PRESET_STORAGE_KEY, presetId);
+                } catch (err) {
+                    console.warn("Failed to save prompt preset", err);
+                }
+            }
+
+            function getLastSavedPromptPreset() {
+                try {
+                    const saved = localStorage.getItem(PROMPT_PRESET_STORAGE_KEY);
+                    const allowedPresets = ["edit", "suggest", "advice"];
+                    if (saved && allowedPresets.includes(saved)) {
+                        return saved;
+                    }
+                } catch (err) {
+                    console.warn("Failed to load prompt preset", err);
+                }
+                return "advice";
+            }
+
             function getMemoTemplates() {
                 const templates = window.GoPrompts?.memoTemplates;
                 if (Array.isArray(templates) && templates.length) return templates;
@@ -956,7 +997,7 @@
             const documentApi = window.goToolkitDocumentApi;
 
             let currentShareToken = null;
-                        let shareStatusMessage = "";
+            let shareStatusMessage = "";
             let shareStatusType = "";
             let isDocumentSaving = false;
             let autoSaveTimer = null;
@@ -970,6 +1011,7 @@
 
             function createDefaultState() {
                 const id = createId();
+                const lastPromptPreset = getLastSavedPromptPreset();
                 return {
                     tabs: [
                         {
@@ -982,7 +1024,7 @@
                     activeTabId: id,
                     templateId: null,
                     templateLabel: null,
-                    promptPresetId: "edit"
+                    promptPresetId: lastPromptPreset
                 };
             }
 
@@ -2105,7 +2147,7 @@
                     promptStore.PRESETS = {
                         advice: {
                             id: "advice",
-                            label: "↬ Conseiller",
+                            label: "↬ Demander",
                             prompt: promptStore.SYSTEM_PROMPT,
                             defaultPrompt: defaultPrompt
                         },
@@ -2178,6 +2220,7 @@
                 const next = normalizeMemoPromptPresetId(detail.presetId);
                 if (!state || state.promptPresetId === next) return;
                 state.promptPresetId = next;
+                saveLastPromptPreset(next);
                 persistState();
             });
 
@@ -2462,7 +2505,12 @@
                 closeTemplateModal();
             });
 
-            promptModalTrigger?.addEventListener("click", () => openPromptModal());
+            document.addEventListener("click", event => {
+                const trigger = event.target.closest("#gtPromptModalTrigger");
+                if (!trigger) return;
+                event.preventDefault();
+                openPromptModal();
+            });
             promptModalClose?.addEventListener("click", () => closePromptModal());
             promptModal?.addEventListener("click", event => {
                 if (event.target === promptModal) closePromptModal();

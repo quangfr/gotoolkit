@@ -1509,7 +1509,7 @@
         var all = {
             advice: {
                 id: "advice",
-                label: storePresets?.advice?.label || "↬ Conseiller",
+                label: storePresets?.advice?.label || "↬ Demander",
                 prompt: advicePrompt
             },
             ask: {
@@ -2501,20 +2501,15 @@
     };
 
     AssistSidebar.prototype.buildUI = function () {
-        if (!this.root) return;
+        if (!this.root) return false;
         this.page = document.getElementById("page");
         var staticLauncher = document.getElementById("assistLauncherBtn");
-        if (staticLauncher) {
-            this.toggleButton = staticLauncher;
-            this.toggleButton.classList.add("chat-toggle-button");
-        } else {
-            this.toggleButton = document.createElement("button");
-            this.toggleButton.id = "chatToggleBtn";
-            this.toggleButton.type = "button";
-            this.toggleButton.className = "feedback-button chat-toggle-button";
-            this.toggleButton.textContent = "⌬ Assist";
-            document.body.appendChild(this.toggleButton);
+        if (!staticLauncher) {
+            console.error("GoToolkitAssist requires #assistLauncherBtn to be present");
+            return false;
         }
+        this.toggleButton = staticLauncher;
+        this.toggleButton.classList.add("chat-toggle-button");
 
         this.toggleButton.addEventListener("click", this.toggle.bind(this));
 
@@ -2557,6 +2552,14 @@
             }
         }.bind(this));
         headerActions.appendChild(this.headerDocCountEl);
+        this.promptButton = document.createElement("button");
+        this.promptButton.id = "gtPromptModalTrigger";
+        this.promptButton.type = "button";
+        this.promptButton.className = "btn-secondary chat-header-btn";
+        this.promptButton.textContent = "⚙";
+        this.promptButton.setAttribute("aria-label", "Prompt");
+        this.promptButton.setAttribute("title", "Prompt");
+        headerActions.appendChild(this.promptButton);
         this.clearButton = document.createElement("button");
         this.clearButton.id = "chatClearBtn";
         this.clearButton.type = "button";
@@ -2672,6 +2675,16 @@
         this.mountResizer(resizer);
         this.createDocumentPickers();
         this.buildPreviewPanel();
+        return true;
+    };
+
+    AssistSidebar.prototype.getFileImportAcceptString = function () {
+        var config = window.GoToolkitSiteConfig?.get("fileImport.supportedExtensions");
+        if (config && Array.isArray(config.mimeTypes) && Array.isArray(config.extensions)) {
+            return config.mimeTypes.concat(config.extensions).join(",");
+        }
+        // Fallback to default if config not available
+        return "application/pdf,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx,application/vnd.openxmlformats-officedocument.presentationml.presentation,.pptx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,.xlsx,text/plain,.txt,text/markdown,.md,application/json,.json,.hag,application/rtf,.rtf,application/msword,.doc,application/vnd.oasis.opendocument.text,.odt,application/vnd.oasis.opendocument.spreadsheet,.ods";
     };
 
     AssistSidebar.prototype.createDocumentPickers = function () {
@@ -2679,8 +2692,7 @@
         this.documentsFileInput = document.createElement("input");
         this.documentsFileInput.type = "file";
         this.documentsFileInput.multiple = true;
-        this.documentsFileInput.accept =
-            "application/pdf,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx,application/vnd.openxmlformats-officedocument.presentationml.presentation,.pptx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,.xlsx,text/plain,.txt,text/markdown,.md,application/json,.json,application/rtf,.rtf,application/msword,.doc,application/vnd.oasis.opendocument.text,.odt,application/vnd.oasis.opendocument.spreadsheet,.ods";
+        this.documentsFileInput.accept = this.getFileImportAcceptString();
         this.documentsFileInput.style.display = "none";
         this.documentsFileInput.addEventListener("change", this.handleDocumentFilesSelected.bind(this));
 
@@ -2698,8 +2710,7 @@
         this.importFileInput = document.createElement("input");
         this.importFileInput.type = "file";
         this.importFileInput.multiple = true;
-        this.importFileInput.accept =
-            "application/pdf,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx,application/vnd.openxmlformats-officedocument.presentationml.presentation,.pptx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,.xlsx,text/plain,.txt,text/markdown,.md,application/json,.json,application/rtf,.rtf,application/msword,.doc,application/vnd.oasis.opendocument.text,.odt,application/vnd.oasis.opendocument.spreadsheet,.ods";
+        this.importFileInput.accept = this.getFileImportAcceptString();
         this.importFileInput.style.display = "none";
         this.importFileInput.addEventListener("change", this.handleImportFilesSelected.bind(this));
         document.body.appendChild(this.importFileInput);
@@ -3260,7 +3271,7 @@
         this.headerDocCountEl.style.display = showMemoireButton ? "" : "none";
         var count = this.getMemoireDocumentCount();
         this.headerDocCountEl.dataset.count = count;
-        this.headerDocCountEl.textContent = "🗍 Mémoire";
+        this.headerDocCountEl.textContent = "🗍 Mémoire (" + count + ")";
     };
 
     AssistSidebar.prototype.getVersionParam = function () {
@@ -3833,8 +3844,7 @@
         var input = document.createElement("input");
         input.type = "file";
         input.multiple = true;
-        input.accept =
-            "application/pdf,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx,application/vnd.openxmlformats-officedocument.presentationml.presentation,.pptx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,.xlsx,text/plain,.txt,text/markdown,.md,application/json,.json,application/rtf,.rtf,application/msword,.doc,application/vnd.oasis.opendocument.text,.odt,application/vnd.oasis.opendocument.spreadsheetml.sheet,.ods";
+        input.accept = this.getFileImportAcceptString();
         input.style.display = "none";
         input.addEventListener("change", this.handleKnowledgeFilesSelected.bind(this));
         document.body.appendChild(input);
@@ -6160,7 +6170,7 @@
             console.error("GoToolkitIA indisponible pour le chat.");
             return;
         }
-        this.buildUI();
+        if (!this.buildUI()) return;
         this.renderInitialMessages();
         this.updateComposerState();
         this.refreshMemoContextAttachments();
