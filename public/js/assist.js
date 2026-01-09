@@ -1,21 +1,25 @@
 (function (global) {
     // Load configuration from config.json
     var globalConfig = {};
+    global.GoToolkitAssistConfig = globalConfig;
 
     async function loadGlobalConfig() {
         try {
             var response = await fetch("config.json");
             if (response.ok) {
                 globalConfig = await response.json();
+                global.GoToolkitAssistConfig = globalConfig;
                 console.log("Global config loaded:", globalConfig);
             }
         } catch (err) {
             console.warn("Failed to load config.json:", err);
         }
+        return globalConfig;
     }
 
     // Load config immediately
-    loadGlobalConfig();
+    var globalConfigPromise = loadGlobalConfig();
+    global.GoToolkitAssistConfigPromise = globalConfigPromise;
 
     // IndexedDB verification and repair function
     async function verifyAndRepairDocumentsDb() {

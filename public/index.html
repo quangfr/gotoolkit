@@ -5430,21 +5430,50 @@
         })();
     </script>
     <script>
-        (function () {
+        (async function () {
+            let config = window.GoToolkitAssistConfig || {};
+            if (window.GoToolkitAssistConfigPromise) {
+                try {
+                    const resolved = await window.GoToolkitAssistConfigPromise;
+                    if (resolved && typeof resolved === "object") {
+                        config = resolved;
+                    }
+                } catch (err) {
+                    // ignore
+                }
+            }
+            const assistEnabled = config?.assist?.index?.enabled !== false;
+            window.GoToolkitAssistEnabled = assistEnabled;
+            if (!assistEnabled) {
+                document.getElementById("assistLauncherBtn")?.setAttribute("hidden", "true");
+                document.getElementById("heroAssistBtn")?.setAttribute("hidden", "true");
+                document.getElementById("chat-root")?.setAttribute("hidden", "true");
+                return;
+            }
+
             const chatRoot = document.getElementById("chat-root");
             if (!chatRoot || !window.GoToolkitAssist) return;
             const chatInstance = window.GoToolkitAssist.mount(chatRoot);
             window.GoToolkitAssistInstance = chatInstance;
+
             function openChatForHash() {
                 if (!chatInstance || window.location.hash !== "#assist") return;
                 chatInstance.open?.();
             }
+
             openChatForHash();
             window.addEventListener("hashchange", openChatForHash);
         })();
     </script>
     <script>
-        (function () {
+        (async function () {
+            if (window.GoToolkitAssistConfigPromise) {
+                await window.GoToolkitAssistConfigPromise.catch(() => null);
+            }
+            const config = window.GoToolkitAssistConfig || {};
+            const assistEnabled = config?.assist?.index?.enabled !== false;
+            if (!assistEnabled) return;
+
             const heroAssistBtn = document.getElementById("heroAssistBtn");
             const assistLauncher = document.getElementById("assistLauncherBtn");
             if (!heroAssistBtn || !assistLauncher) return;

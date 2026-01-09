@@ -8,5 +8,10 @@
       "showChunksForPdf": true,
       "showChunksForOtherFormats": true
     }
+  },
+  "assist": {
+    "index": {
+      "enabled": true
+    }
   }
 }
