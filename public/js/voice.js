@@ -157,6 +157,27 @@
                 opacity: 0.85;
                 margin-bottom: -8px;
             }
+            .voice-overlay__close {
+                position: absolute;
+                top: 32px;
+                right: 32px;
+                background: none;
+                border: none;
+                color: #fff;
+                font-size: 28px;
+                cursor: pointer;
+                padding: 8px;
+                line-height: 1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: color 0.2s ease, transform 0.2s ease;
+                z-index: 10;
+            }
+            .voice-overlay__close:hover {
+                color: #facc15;
+                transform: scale(1.1);
+            }
             .go-toolkit-voice-toast {
                 position: fixed;
                 left: 16px;
@@ -477,12 +498,19 @@
         updateButton();
     }
 
+    function closeOverlay() {
+        if (state.overlay) {
+            state.overlay.classList.remove("visible");
+        }
+    }
+
     function ensureOverlay() {
         if (state.overlay) return;
         state.overlay = document.createElement("div");
         state.overlay.className = "voice-overlay voice-overlay--prep";
         state.overlay.innerHTML = `
-            <div class="voice-overlay__caption">Prépare les sources avant de lancer l'enregistrement.</div>
+            <button class="voice-overlay__close" type="button" aria-label="Fermer">×</button>
+            <div class="voice-overlay__caption">Demander l'autorisation à vos interlocuteurs pour enregistrer la conversation.</div>
             <div class="voice-overlay__ready">Prêt</div>
             <div class="voice-overlay__tiles">
                 <div class="voice-overlay__tile" data-kind="mic">
@@ -501,6 +529,8 @@
         document.body.appendChild(state.overlay);
         state.overlayTiles = Array.from(state.overlay.querySelectorAll(".voice-overlay__tile"));
         state.overlayReady = state.overlay.querySelector(".voice-overlay__ready");
+        const closeBtn = state.overlay.querySelector(".voice-overlay__close");
+        closeBtn?.addEventListener("click", closeOverlay);
         state.overlayTiles.forEach(tile => {
             tile.addEventListener("click", () => {
                 const kind = tile.dataset.kind;
@@ -546,6 +576,14 @@
         ensureOverlay();
         attachOverlayStreams();
         state.overlay?.classList.add("visible");
+        // Add ESC key listener
+        const handleEsc = (e) => {
+            if (e.key === "Escape") {
+                closeOverlay();
+                document.removeEventListener("keydown", handleEsc);
+            }
+        };
+        document.addEventListener("keydown", handleEsc);
     }
 
     async function getRecordingForMemo(memoId) {

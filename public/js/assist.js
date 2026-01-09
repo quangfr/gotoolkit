@@ -2822,9 +2822,9 @@
         }
         if (total) {
             if (parsed === total) {
-                return "🗎 " + total + " documents";
+                return "🗎 " + total + " fichiers";
             }
-            return "🗎 " + parsed + " / " + total + " documents";
+            return "🗎 " + parsed + " / " + total + " fichiers";
         }
         if (parsed) {
             return "🗎 " + parsed;
@@ -3041,18 +3041,18 @@
         if (!ts) return "—";
         var deltaSeconds = Math.max(0, Math.floor((Date.now() - ts) / 1000));
         if (deltaSeconds < 60) {
-            return "Il y a moins d'une minute";
+            return "à l'instant";
         }
         var deltaMinutes = Math.floor(deltaSeconds / 60);
         if (deltaMinutes < 60) {
-            return "Il y a " + deltaMinutes + " minute" + (deltaMinutes > 1 ? "s" : "");
+            return deltaMinutes + " mn";
         }
         var deltaHours = Math.floor(deltaMinutes / 60);
         if (deltaHours < 24) {
-            return "Il y a " + deltaHours + " heure" + (deltaHours > 1 ? "s" : "");
+            return deltaHours + " h";
         }
         var deltaDays = Math.floor(deltaHours / 24);
-        return "Il y a " + deltaDays + " jour" + (deltaDays > 1 ? "s" : "");
+        return deltaDays + " j";
     };
 
     AssistSidebar.prototype.truncateKnowledgeName = function (name) {
@@ -3282,7 +3282,7 @@
                 abstract: abstract,
                 updatedAt: this.parseUpdatedAt(record.updatedAt),
                 fileName: fileName,
-                source: "Bibliothèque",
+                source: "Mémo",
                 memoHtml: rawHtml,
                 memoText: plainText
             });
@@ -4196,7 +4196,7 @@
         }
         var entryName = entry?.name || entry?.fileName || "Document";
         var removalMessage = entryName + " retiré.";
-        if (!checked && entry.source === "Bibliothèque") {
+        if (!checked && entry.source === "Mémo") {
             await this.deleteKnowledgeEntryDocument(entry);
             this.collectKnowledgeSelection();
             this.refreshDocumentStats();
@@ -4235,7 +4235,7 @@
         if (!targetId) return false;
         var ref = entry.source === "Chat"
             ? this.knowledgeChatDocRefs.get(key)
-            : (entry.source === "Bibliothèque"
+            : (entry.source === "Mémo"
                 ? this.knowledgeMemoDocRefs.get(key)
                 : this.knowledgeLocalDocRefs.get(key));
         var names = (ref?.name ? [ref.name] : []);
@@ -4244,7 +4244,7 @@
             await this.docManager.deleteDocumentsByNames(targetId, names);
             if (entry.source === "Chat") {
                 this.knowledgeChatDocRefs.delete(key);
-            } else if (entry.source === "Bibliothèque") {
+            } else if (entry.source === "Mémo") {
                 this.knowledgeMemoDocRefs.delete(key);
             } else {
                 this.knowledgeLocalDocRefs.delete(key);
@@ -4565,7 +4565,7 @@
                             buffer: buffer
                         };
                     }
-                } else if (source === "Bibliothèque") {
+                } else if (source === "Mémo") {
                     var memoText = typeof entry.memoText === "string" ? entry.memoText : "";
                     if (!memoText && typeof entry.memoHtml === "string") {
                         memoText = this.stripHtmlText(entry.memoHtml);
@@ -5135,7 +5135,8 @@
             console.error("Payload size exceeds limit:", payloadBytes, "bytes");
             var errorMessage = "Document trop volumineux pour Mémo\n\n" +
                 "Le document dépasse la limite de " + Math.floor(maxPayloadBytes / 1_000_000) + " Mo.\n\n" +
-                "Suggestion : Ajoutez-le à la Mémoire ou avec +\n"            alert(errorMessage);
+                "Suggestion : Ajoutez-le à la Mémoire ou avec +";
+            alert(errorMessage);
             return;
         }
 
@@ -5450,7 +5451,7 @@
                 this.currentPreviewDoc = doc;
             }
             var memoHtml = typeof entry.memoHtml === "string" ? entry.memoHtml : "";
-            if (entry.source === "Bibliothèque" && memoHtml.trim()) {
+            if (entry.source === "Mémo" && memoHtml.trim()) {
                 if (this.showHtmlPreview(memoHtml)) {
                     return;
                 }
