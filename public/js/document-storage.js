@@ -8,7 +8,9 @@
         "memo-images",
         "knowledge-manifest",
         "knowledge-overrides",
-        "knowledge-selection"
+        "knowledge-selection",
+        "knowledge-descriptions-overrides",
+        "knowledge-local-docs"
     ];
 
     function isIndexedDbAvailable() {

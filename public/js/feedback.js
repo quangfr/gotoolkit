@@ -21,7 +21,7 @@
     const container = document.createElement("div");
     container.innerHTML = `
         <div class="feedback-app-launcher-row">
-            <button id="${prefix}-openBtn" class="${prefix}-open-btn feedback-app-button" type="button">☄ Feedback</button>
+            <button id="${prefix}-openBtn" class="${prefix}-open-btn feedback-app-button" type="button" title="Envoyer un feedback">☄</button>
         </div>
         <div id="${prefix}-backdrop" class="${prefix}-backdrop feedback-app-backdrop" aria-hidden="true" role="dialog">
             <div class="${prefix}-dialog feedback-app-dialog">
