@@ -41,6 +41,25 @@
                 gap: 18px;
                 overflow: hidden;
             }
+            .voice-video-player-header {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding-right: 40px;
+            }
+            .voice-video-player-title {
+                font-weight: 600;
+                font-size: 15px;
+                color: #0f172a;
+            }
+            .voice-video-player-delete {
+                margin-left: auto;
+                border: none;
+                background: transparent;
+                font-size: 13px;
+                color: #b42318;
+                cursor: pointer;
+            }
             .voice-video-player-close {
                 position: absolute;
                 top: 16px;
@@ -150,6 +169,11 @@
                 color: #0f172a;
                 font-size: 14px;
                 letter-spacing: 0.02em;
+            }
+            .voice-video-player-transcript-subtitle {
+                font-size: 12px;
+                color: #475467;
+                margin-top: -4px;
             }
             .voice-video-player-transcript-list {
                 flex: 1;
@@ -310,6 +334,10 @@
                 <div class="voice-video-player-backdrop"></div>
                 <div class="voice-video-player-dialog" role="dialog" aria-modal="true" aria-label="Lecteur vidéo">
                     <button type="button" class="voice-video-player-close" aria-label="Fermer">×</button>
+                    <div class="voice-video-player-header">
+                        <div class="voice-video-player-title">Lecteur vidéo</div>
+                        <button type="button" class="voice-video-player-delete btn btn-secondary">⊗ Supprimer</button>
+                    </div>
                     <div class="voice-video-player-body">
                         <div class="voice-video-player-video-panel">
                             <div class="voice-video-player-video-frame">
@@ -324,6 +352,7 @@
                         </div>
                     <div class="voice-video-player-transcript-panel">
                         <div class="voice-video-player-transcript-header">Transcription vidéo</div>
+                        <div class="voice-video-player-transcript-subtitle"></div>
                         <div class="voice-video-player-transcript-list"></div>
                         <button type="button" class="voice-video-player-transcript-save btn-primary">Sauvegarder</button>
                     </div>
@@ -333,12 +362,14 @@
             (document.body || document.documentElement).appendChild(this.overlay);
             this.dialog = this.overlay.querySelector(".voice-video-player-dialog");
             this.closeButton = this.overlay.querySelector(".voice-video-player-close");
+            this.deleteButton = this.overlay.querySelector(".voice-video-player-delete");
             this.videoEl = this.overlay.querySelector("video");
             this.playToggle = this.overlay.querySelector(".voice-video-player-play-toggle");
             this.speedSelect = this.overlay.querySelector(".voice-video-player-speed");
             this.progress = this.overlay.querySelector(".voice-video-player-progress");
             this.timeLabel = this.overlay.querySelector(".voice-video-player-time");
             this.transcriptList = this.overlay.querySelector(".voice-video-player-transcript-list");
+            this.transcriptSubtitle = this.overlay.querySelector(".voice-video-player-transcript-subtitle");
             this.saveButton = this.overlay.querySelector(".voice-video-player-transcript-save");
             if (this.videoEl) {
                 this.textTrackEl = document.createElement("track");
@@ -361,6 +392,10 @@
                 }
             });
             this.closeButton?.addEventListener("click", () => this.close());
+            this.deleteButton?.addEventListener("click", () => {
+                if (!this.onDelete) return;
+                this.onDelete();
+            });
             this.playToggle?.addEventListener("click", () => {
                 this._togglePlayback();
             });
@@ -674,13 +709,17 @@
         }
 
         open(options = {}) {
-            const { videoBlob, sentences = [], onTranscriptChange, onTranscriptSaved } = options;
+            const { videoBlob, sentences = [], onTranscriptChange, onTranscriptSaved, memoName = "", onDelete } = options;
             if (!videoBlob) return;
             this.onTranscriptChange = typeof onTranscriptChange === "function" ? onTranscriptChange : null;
             this.onTranscriptSaved = typeof onTranscriptSaved === "function" ? onTranscriptSaved : null;
+            this.onDelete = typeof onDelete === "function" ? onDelete : null;
             this._normalizeSentences(sentences);
             this._renderSentences();
             this._applyVideoBlob(videoBlob);
+            if (this.transcriptSubtitle) {
+                this.transcriptSubtitle.textContent = memoName ? `Mémo: ${memoName}` : "";
+            }
             this.overlay.classList.add("voice-video-player-modal--open");
             this.overlay.setAttribute("aria-hidden", "false");
             document.body?.classList.add("voice-video-player-modal-open");

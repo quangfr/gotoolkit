@@ -1,11 +1,12 @@
 (function () {
     const DB_NAME = "go-toolkit";
-    const DB_VERSION = 6;
+    const DB_VERSION = 7;
     const STORES = [
         "capsule-drafts",
         "share-history",
         "documents-settings",
         "memo-images",
+        "voice-recordings",
         "knowledge-manifest",
         "knowledge-overrides",
         "knowledge-selection",

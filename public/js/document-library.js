@@ -1,6 +1,6 @@
 (() => {
     const DEFAULT_WIDTH = 350;
-    const MIN_WIDTH = 240;
+    const MIN_WIDTH = 150;
     const MAX_WIDTH = 520;
     const DEFAULT_TITLE = "Documents";
 

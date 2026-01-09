@@ -158,9 +158,6 @@
             position: relative;
         }
 
-        .document-explorer-resizer:hover {
-            background: rgba(0, 0, 0, 0.05);
-        }
 
         .document-explorer-resizer.is-hidden {
             display: none;
@@ -670,6 +667,9 @@
         };
     </script>
     <script src="js/feedback.js"></script>
+    <script src="js/voice-video-player.js"></script>
+    <script src="js/voice-audio-player.js"></script>
+    <script src="js/voice.js"></script>
     <script src="js/memo.bundle.js?v=2026.01.07"></script>
     <script>
         (function () {
@@ -1158,6 +1158,31 @@
                 }
             }
 
+            function getMemoById(memoId) {
+                if (!memoId) return null;
+                return state.tabs.find(tab => tab.id === memoId) || null;
+            }
+
+            function getVoiceRecordingId(memoId) {
+                const memo = getMemoById(memoId);
+                return memo?.voiceRecordingId || null;
+            }
+
+            function setVoiceRecordingId(memoId, recordingId) {
+                const memo = getMemoById(memoId);
+                if (!memo) return false;
+                memo.voiceRecordingId = recordingId || null;
+                persistState();
+                return true;
+            }
+
+            window.GoToolkitMemoVoice = {
+                getActiveMemo: () => getActiveTab(),
+                getMemoById,
+                getVoiceRecordingId,
+                setVoiceRecordingId
+            };
+
             function setStatus(message, isError) {
                 if (!copyToast) return;
                 copyToast.textContent = message;
@@ -1204,6 +1229,9 @@
                 }
                 renderTabs();
                 persistState();
+                if (window.GoToolkitVoice?.setCurrentMemo) {
+                    window.GoToolkitVoice.setCurrentMemo(target.title || "", target.id);
+                }
             }
 
             function updateActiveTabContent(value) {
