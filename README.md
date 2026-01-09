@@ -4,7 +4,7 @@ Boîte à outils 100 % navigateur pour produire vite des livrables partageables 
 
 ## Ce qui compose le projet
 - Site statique dans `public/` : modules HTML/JS/CSS écrits à la main + assets vendoriés. Ouvrable directement ou via un serveur local.
-- Pont React/Excalidraw dans `src/connect/index.tsx`, bundlé en `public/js/connect.bundle.js` avec `npm run build`.
+- Pont React/Excalidraw dans `src/draw-editor/index.tsx`, bundlé en `public/js/draw.bundle.js` avec `npm run build`.
 - Workers Cloudflare dans `workers/` : proxy OpenAI, service de partage, collecte de feedback.
 - Test de fumée Playwright dans `tests/` (`grid-mock.spec.ts`).
 
@@ -20,16 +20,16 @@ Boîte à outils 100 % navigateur pour produire vite des livrables partageables 
 - Config dans `public/js/ia-config.js` : OpenAI (direct ou proxy `https://openai.gotoolkit.workers.dev`), Ollama (URL/API key), WebLLM (liste de modèles) et fenêtre de contexte, stockés en `localStorage`.
 - `public/js/ia-client.js` expose `GoToolkitIAClient.chatCompletion(payload)` et `GoToolkitIA.chatCompletion(payload)` ; normalise les flux SSE/NDJSON, streame les réponses et route vers le backend choisi (`GoToolkitAIBackend` gère la sélection + fallback proxy).
 - WebLLM : service worker/worker dans `public/js/webllm-sw.js` et `public/js/webllm-worker.js`.
-- Excalidraw : `src/connect/index.tsx` expose `window.GoToolkitExcalidraw` (`initialize`, `applyScene`, `convertMermaid`, `getApi`).
+- Excalidraw : `src/draw-editor/index.tsx` expose `window.GoToolkitExcalidraw` (`initialize`, `applyScene`, `convertMermaid`, `getApi`).
 
 ## Données, brouillons et partage
-- IndexedDB via `public/js/idb-doc-store.js` pour les capsules locales (`public/js/capsule-drafts.js`) et l’historique des partages (`public/js/share-history.js`), avec fallback `localStorage`.
+- IndexedDB via `public/js/document-storage.js` pour les capsules locales (`public/js/capsule-drafts.js`) et l’historique des partages (`public/js/share-history.js`), avec fallback `localStorage`.
 - Les liens de partage passent par `public/js/share-worker-client.js` et `window.GO_TOOLKIT_SHARE_API_URL(S)` (inclut `https://share.gotoolkit.workers.dev` par défaut). L’API Firestore dans `workers/share-proxy` autorise `slides`, `timelines`, `diagrams`, `grids`, `voices`.
 - `public/config.json` porte les flags (seulement `enableTours` pour l’instant).
 
 ## Build, run, test
 - Dépendances : `npm install`.
-- Build du pont Excalidraw : `npm run build` (ou `npm run build:connect`) → écrit `public/js/connect.bundle.js` + assets.
+- Build du pont Excalidraw : `npm run build` (ou `npm run build:connect`) → écrit `public/js/draw.bundle.js` + assets.
 - Serveur local : `npm start` (`npx serve public -l 5000`) ou ouverture directe des HTML de `public/`.
 - Tests : `npm run test:playwright` exécute `tests/grid-mock.spec.ts` sur `public/grid.html`.
 

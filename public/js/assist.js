@@ -2417,8 +2417,8 @@
 
         this.headerDocCountEl = document.createElement("button");
         this.headerDocCountEl.type = "button";
-        this.headerDocCountEl.className = "chat-memoire-modal-toggle";
-        this.headerDocCountEl.textContent = "🗎 Mémoire";
+        this.headerDocCountEl.className = "btn-secondary chat-header-btn";
+        this.headerDocCountEl.textContent = "⌗ Mémoire";
         this.headerDocCountEl.setAttribute("title", this.headerDocCountTooltipDefault);
         this.headerDocCountEl.addEventListener("click", this.handleHeaderDocCountClick.bind(this));
         this.headerDocCountEl.addEventListener("keydown", function (event) {
@@ -3199,7 +3199,7 @@
         left.className = "chat-knowledge-modal__header-left";
         var title = document.createElement("div");
         title.className = "chat-knowledge-modal__title";
-        title.textContent = "🗎 Mémoire | 0 documents";
+        title.textContent = "🗎 Mémoire | 0 fichiers";
         left.appendChild(title);
         var actions = document.createElement("div");
         actions.className = "chat-knowledge-modal__header-actions";
@@ -3257,7 +3257,7 @@
             return;
         }
         var count = this.getMemoireDocumentCount();
-        var suffix = count === 1 ? "document" : "documents";
+        var suffix = count === 1 ? "fichier" : "fichiers";
         this.knowledgeModalTitleEl.textContent = "🗎 Mémoire | " + count + " " + suffix;
     };
 

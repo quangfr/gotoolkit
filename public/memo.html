@@ -29,9 +29,141 @@
             color: var(--app-text);
         }
 
+        .memo-shell {
+            display: flex;
+            width: 100%;
+            height: 100vh;
+        }
+
         #page {
-            width: calc(100% - var(--chat-sidebar-width, 0px));
-            transition: width 0.2s ease;
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+
+        .document-explorer {
+            width: var(--doc-sidebar-width, 350px);
+            flex: 0 0 var(--doc-sidebar-width, 350px);
+            background: #ffffff;
+            border-right: 1px solid var(--app-border, #dfe3f5);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 12px;
+            color: var(--app-text);
+            overflow: hidden;
+        }
+
+        .document-explorer.document-explorer--collapsed {
+            width: 0;
+            flex: 0 0 0;
+            padding: 0;
+            border-right: none;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .document-explorer__header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 700;
+            font-size: 14px;
+            letter-spacing: 0.02em;
+            padding-bottom: 6px;
+            border-bottom: 1px solid var(--app-border, #dfe3f5);
+        }
+
+        .document-explorer__list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            overflow-y: auto;
+            padding: 4px 2px 8px;
+        }
+
+        .document-explorer__item {
+            border: 1px solid var(--app-border, #dfe3f5);
+            background: #fff;
+            color: var(--app-text);
+            border-radius: 10px;
+            padding: 8px 10px;
+            font-size: 13px;
+            text-align: left;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .document-explorer__item>span:first-child {
+            flex: 1 1 auto;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .document-explorer__item-actions {
+            margin-left: auto;
+            display: inline-flex;
+            gap: 4px;
+        }
+
+        .document-explorer__item-action {
+            border: none;
+            background: transparent;
+            padding: 0 2px;
+            font-size: 13px;
+            line-height: 1;
+            color: #111827;
+            cursor: pointer;
+        }
+
+        .document-explorer__item-action:hover,
+        .document-explorer__item-action:focus-visible {
+            color: #0f172a;
+            outline: none;
+        }
+
+        .document-explorer__item-action.document-explorer__delete {
+            font-size: 12px;
+        }
+
+        .document-explorer .chat-knowledge-modal__add {
+            width: auto;
+            display: inline-flex;
+            align-self: flex-end;
+            margin-left: auto;
+            padding: 6px 12px;
+        }
+
+        .document-explorer__item:hover,
+        .document-explorer__item:focus-visible {
+            border-color: var(--app-primary);
+            outline: none;
+        }
+
+        .document-explorer__empty {
+            font-size: 12px;
+            color: #6b7280;
+            padding: 8px 10px;
+        }
+
+        .document-explorer-resizer {
+            width: 6px;
+            cursor: col-resize;
+            background: transparent;
+            position: relative;
+        }
+
+        .document-explorer-resizer:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        .document-explorer-resizer.is-hidden {
+            display: none;
         }
 
         .app {
@@ -60,6 +192,53 @@
             gap: 4px;
             flex-wrap: wrap;
             margin-left: auto;
+        }
+
+        #tabs {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        #document-tabs {
+            width: 100%;
+        }
+
+        #memo-tabs {
+            display: none;
+        }
+
+        .document-tab {
+            background: transparent;
+            border: 1px solid var(--app-border-strong);
+            color: var(--app-primary-strong);
+            padding: 4px 10px;
+            border-radius: 8px;
+            transition: background 0.2s ease, color 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .document-tab.active {
+            background: var(--app-primary);
+            border-color: var(--app-primary);
+            color: #ffffff;
+        }
+
+        .document-tab__close {
+            border: none;
+            background: transparent;
+            color: inherit;
+            font-size: 14px;
+            line-height: 1;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .document-tab__close:hover,
+        .document-tab__close:focus-visible {
+            color: var(--app-primary-strong);
+            outline: none;
         }
 
         .app-main {
@@ -310,62 +489,74 @@
 </head>
 
 <body class="app-body">
-    <div id="page" class="app">
-        <div class="app-header">
-            <div class="tabs-actions">
-                <a class="app-home-link" href="/?v=2026.01.07" title="Revenir à l'accueil">☍</a>
-                <div class="nav-switch">
-                    <button id="navSwitcherBtn" class="nav-switch-btn" type="button" aria-haspopup="true"
-                        aria-expanded="false">⊞ Mémo ▾</button>
-                    <div id="navSwitcherMenu" class="nav-switch-menu" role="menu">
-                        <a class="nav-switch-link" href="grid.html?v=2026.01.07" role="menuitem">◇ Grid</a>
-                        <a class="nav-switch-link" href="timeline.html?v=2026.01.07" role="menuitem">⇥ Timeline</a>
-                        <a class="nav-switch-link" href="draw.html?v=2026.01.07" role="menuitem">ʃ Draw</a>
-                        <a class="nav-switch-link" href="voice.html?v=2026.01.07" role="menuitem">▷ Voice</a>
-                    </div>
-                </div>
-
-                <div id="tabs" class="tabs"></div>
-                <button class="tab-action" id="addTabBtn" type="button" aria-label="Ajouter un onglet">+</button>
-                <button class="tab-action" id="deleteTabBtn" type="button" aria-label="Supprimer l'onglet">×</button>
-            </div>
-            <div class="global-actions">
-                <button id="assistLauncherBtn" class="btn btn-secondary" type="button" title="⌬ Assist">⌬
-                    Assist</button>
-                <button id="gtTemplateModalTrigger" class="btn" type="button" aria-label="Choisir un modèle"
-                    title="⊞ Modèles">⊞ Modèles</button>
-                <button id="gtPromptModalTrigger" class="btn" type="button" aria-label="Prompt" title="⌬ Prompt">⌬
-                    Prompt</button>
-                <div class="menu-trigger" id="fileMenuTrigger">
-                    <button id="fileMenuBtn" class="btn" type="button" aria-label="Document">⬠ Document</button>
-                    <div class="context-menu" id="fileMenu">
-                        <div class="menu-panel">
-                            <button id="newDocumentBtn" type="button" class="menu-panel-btn">🗋 Nouveau</button>
-                            <button id="saveDocumentBtn" type="button" class="menu-panel-btn">🖫 Enregistrer</button>
-                            <button id="importJsonBtn" type="button" class="menu-panel-btn">⤷ Ouvrir</button>
-                            <button id="exportJsonBtn" type="button" class="menu-panel-btn">🡇 Télécharger</button>
-                            <button id="exportMarkdownBtn" type="button" class="menu-panel-btn">¶ Markdown</button>
-                            <button id="infoButton" type="button" class="menu-panel-btn">⎉ À propos</button>
+    <div class="memo-shell">
+        <aside id="documentExplorer" class="document-explorer document-explorer--collapsed" aria-label="Bibliothèque">
+            <div class="document-explorer__header">⬠ Bibliothèque</div>
+            <div class="document-explorer__list" data-document-explorer-list></div>
+        </aside>
+        <div id="documentExplorerResizer" class="document-explorer-resizer is-hidden" role="separator"
+            aria-label="Ajuster la largeur des documents" aria-orientation="vertical"></div>
+        <div id="page" class="app">
+            <div class="app-header">
+                <div class="tabs-actions">
+                    <button id="documentExplorerToggle" class="app-home-link" type="button"
+                        title="Afficher la bibliothèque" aria-expanded="false"
+                        aria-controls="documentExplorer">⬠</button>
+                    <div class="nav-switch">
+                        <button id="navSwitcherBtn" class="nav-switch-btn" type="button" aria-haspopup="true"
+                            aria-expanded="false">⊞ Mémo ▾</button>
+                        <div id="navSwitcherMenu" class="nav-switch-menu" role="menu">
+                            <a class="nav-switch-link" href="grid.html?v=2026.01.07" role="menuitem">◇ Grid</a>
+                            <a class="nav-switch-link" href="timeline.html?v=2026.01.07" role="menuitem">⇥ Timeline</a>
+                            <a class="nav-switch-link" href="draw.html?v=2026.01.07" role="menuitem">ʃ Draw</a>
+                            <a class="nav-switch-link" href="voice.html?v=2026.01.07" role="menuitem">▷ Voice</a>
                         </div>
                     </div>
+
+                    <div id="tabs" class="tabs">
+                        <div id="document-tabs" class="tabs"></div>
+                        <div id="memo-tabs" class="tabs"></div>
+                    </div>
                 </div>
-                <div class="menu-trigger" id="shareMenuTrigger">
-                    <button id="shareBtn" class="btn btn-secondary" type="button" aria-label="Partager"
-                        title="Lien de partage">☍ Partage</button>
-                    <div data-share-menu-slot></div>
+                <div class="global-actions">
+                    <button id="assistLauncherBtn" class="btn btn-secondary" type="button" title="⌬ Assist">⌬
+                        Assist</button>
+                    <button id="gtTemplateModalTrigger" class="btn" type="button" aria-label="Choisir un modèle"
+                        title="⊞ Modèles">⊞ Modèles</button>
+                    <button id="gtPromptModalTrigger" class="btn" type="button" aria-label="Prompt" title="⌬ Prompt">⌬
+                        Prompt</button>
+                    <div class="menu-trigger" id="fileMenuTrigger">
+                        <button id="fileMenuBtn" class="btn" type="button" aria-label="Document">🗎 Document</button>
+                        <div class="context-menu" id="fileMenu">
+                            <div class="menu-panel">
+                                <button id="saveDocumentBtn" type="button" class="menu-panel-btn">🖫
+                                    Enregistrer</button>
+                                <button id="renameDocumentBtn" type="button" class="menu-panel-btn">✎ Renommer</button>
+                                <button id="deleteDocumentBtn" type="button" class="menu-panel-btn">⊗ Supprimer</button>
+                                <button id="exportJsonBtn" type="button" class="menu-panel-btn">🡇 Télécharger</button>
+                                <button id="exportMarkdownBtn" type="button" class="menu-panel-btn">¶ Markdown</button>
+                                <button id="infoButton" type="button" class="menu-panel-btn">⎉ À propos</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="menu-trigger" id="shareMenuTrigger">
+                        <button id="shareBtn" class="btn btn-secondary" type="button" aria-label="Partager"
+                            title="Lien de partage">☍ Partage</button>
+                        <div data-share-menu-slot></div>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div id="app" class="app-main">
-            <section class="memo-card">
-                <div class="editor-wrap">
-                    <div id="editor" class="editor"></div>
-                </div>
-            </section>
-        </div>
+            <div id="app" class="app-main">
+                <section class="memo-card">
+                    <div class="editor-wrap">
+                        <div id="editor" class="editor"></div>
+                    </div>
+                </section>
+            </div>
 
-        <div id="slash" class="slash" role="menu" aria-hidden="true"></div>
+            <div id="slash" class="slash" role="menu" aria-hidden="true"></div>
+        </div>
     </div>
 
     <div class="modal-overlay gt-template-modal" id="gtTemplateModal" role="dialog" aria-modal="true"
@@ -446,7 +637,7 @@
         window.GO_TOOLKIT_SHARE_API_URL =
             window.GO_TOOLKIT_SHARE_API_URL || "https://share.gotoolkit.workers.dev/";
     </script>
-    <script src="js/idb-doc-store.js"></script>
+    <script src="js/document-storage.js"></script>
     <script src="js/storage-service.js"></script>
     <script src="js/shared-ui.js"></script>
     <script src="js/cgu.js?v=2026.01.07"></script>
@@ -456,10 +647,10 @@
     <script src="js/ia-config.js"></script>
     <script src="js/prompt.js?v=2026.01.07"></script>
     <script src="js/ia-client.js"></script>
-    <script src="js/markdown.js?v=2026.01.07"></script>
+    <script src="js/document-markdown.js?v=2026.01.07"></script>
     <script src="https://cdn.jsdelivr.net/npm/minisearch@7.2.0/dist/umd/index.min.js"></script>
     <script src="js/keywordIndex.js"></script>
-    <script src="js/documents.js?v=2026.01.10"></script>
+    <script src="js/document-parser.js?v=2026.01.10"></script>
     <script>
         // Initialize feedback configuration for Memo before loading feedback.js
         window.GoToolkitAppFeedbackConfig = {
@@ -688,6 +879,7 @@
         })();
     </script>
     <script src="js/assist.js?v=2026.01.10"></script>
+    <script src="js/document-library.js?v=2026.01.10"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             setTimeout(function () {
@@ -718,14 +910,13 @@
 
             const templates = getMemoTemplates();
 
-            const tabsEl = document.getElementById("tabs");
-            const addTabBtn = document.getElementById("addTabBtn");
-            const deleteTabBtn = document.getElementById("deleteTabBtn");
+            const tabsEl = document.getElementById("memo-tabs");
+            const documentTabsEl = document.getElementById("document-tabs");
             const fileMenuBtn = document.getElementById("fileMenuBtn");
             const fileMenu = document.getElementById("fileMenu");
-            const newDocumentBtn = document.getElementById("newDocumentBtn");
             const saveDocumentBtn = document.getElementById("saveDocumentBtn");
-            const importJsonBtn = document.getElementById("importJsonBtn");
+            const renameDocumentBtn = document.getElementById("renameDocumentBtn");
+            const deleteDocumentBtn = document.getElementById("deleteDocumentBtn");
             const exportJsonBtn = document.getElementById("exportJsonBtn");
             const exportMarkdownBtn = document.getElementById("exportMarkdownBtn");
             const importJsonInput = document.getElementById("importJsonInput");
@@ -752,6 +943,8 @@
             const applyPromptBtn = document.getElementById("applyPromptBtn");
             const memoEditorReady = window.GoToolkitMemoEditorReady || Promise.resolve(null);
             let memoEditorApi = null;
+            let activeDocumentId = null;
+            let openDocuments = [];
 
             const copyToast = document.getElementById("copyToast");
             const shareWorker = window.goToolkitShareWorker;
@@ -777,7 +970,7 @@
                     tabs: [
                         {
                             id,
-                            title: "Page 1",
+                            title: "Doc 1",
                             content: ""
                         }
                     ],
@@ -796,7 +989,7 @@
                     const id = typeof tab.id === "string" && tab.id ? tab.id : createId();
                     const title = typeof tab.title === "string" && tab.title.trim()
                         ? tab.title.trim()
-                        : "Page " + (index + 1);
+                        : "Doc " + (index + 1);
                     const content = typeof tab.content === "string" ? tab.content : "";
                     return { id, title, content };
                 });
@@ -810,6 +1003,131 @@
                     ? raw.promptPresetId
                     : "edit";
                 return { tabs: normalizedTabs, activeTabId: activeId, templateId, templateLabel, promptPresetId };
+            }
+
+            function getDocumentTitleFromState(docState) {
+                if (!docState || !Array.isArray(docState.tabs)) return "Mémo";
+                const tab = docState.tabs[0];
+                return (tab && tab.title) || "Mémo";
+            }
+
+            function upsertOpenDocument(doc) {
+                if (!doc || !doc.id) return;
+                const existingIndex = openDocuments.findIndex(item => item.id === doc.id);
+                if (existingIndex >= 0) {
+                    openDocuments[existingIndex] = {
+                        ...openDocuments[existingIndex],
+                        ...doc
+                    };
+                    return;
+                }
+                openDocuments.unshift(doc);
+            }
+
+            function renderDocumentTabs() {
+                if (!documentTabsEl) return;
+                documentTabsEl.innerHTML = "";
+                openDocuments.forEach(doc => {
+                    const btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.className = "tab document-tab" + (doc.id === activeDocumentId ? " active" : "");
+                    btn.dataset.documentId = doc.id;
+
+                    const label = document.createElement("span");
+                    label.textContent = doc.title || "Mémo";
+                    btn.appendChild(label);
+
+                    const close = document.createElement("span");
+                    close.className = "document-tab__close";
+                    close.textContent = "×";
+                    close.setAttribute("role", "button");
+                    close.setAttribute("aria-label", "Fermer le document");
+                    close.tabIndex = 0;
+                    const handleTabClose = async (event) => {
+                        event.stopPropagation();
+                        await saveDraft({ showToast: false });
+                        closeDocumentTab(doc.id);
+                    };
+                    close.addEventListener("click", handleTabClose);
+                    close.addEventListener("keydown", event => {
+                        if (event.key !== "Enter" && event.key !== " ") return;
+                        event.preventDefault();
+                        handleTabClose(event);
+                    });
+                    btn.appendChild(close);
+
+                    btn.addEventListener("click", () => {
+                        setActiveDocument(doc.id);
+                    });
+                    btn.addEventListener("dblclick", () => {
+                        renameDocument(doc.id, doc.title || "");
+                    });
+                    documentTabsEl.appendChild(btn);
+                });
+            }
+
+            function ensureActiveDocument() {
+                if (activeDocumentId) return;
+                const payload = buildSharePayload();
+                const fallbackId = currentDraftId || createId();
+                activeDocumentId = fallbackId;
+                upsertOpenDocument({
+                    id: fallbackId,
+                    title: getDocumentTitleFromState(state),
+                    payload
+                });
+                renderDocumentTabs();
+            }
+
+            function syncActiveDocumentPayload() {
+                if (!activeDocumentId) return;
+                const payload = buildSharePayload();
+                upsertOpenDocument({
+                    id: activeDocumentId,
+                    title: getDocumentTitleFromState(state),
+                    payload,
+                    updatedAt: new Date().toISOString()
+                });
+                renderDocumentTabs();
+            }
+
+            function setActiveDocument(docId) {
+                if (!docId || docId === activeDocumentId) return;
+                const target = openDocuments.find(item => item.id === docId);
+                if (!target) return;
+                syncActiveDocumentPayload();
+                const loaded = normalizeState(target.payload);
+                if (!loaded) return;
+                state = loaded;
+                activeDocumentId = target.id;
+                currentDraftId = target.id;
+                renderTabs();
+                setActiveTab(state.activeTabId);
+                syncAssistPresetFromState();
+                renderDocumentTabs();
+            }
+
+            function closeDocumentTab(docId) {
+                const index = openDocuments.findIndex(item => item.id === docId);
+                if (index < 0) return;
+                const wasActive = openDocuments[index].id === activeDocumentId;
+                openDocuments.splice(index, 1);
+                if (wasActive) {
+                    const next = openDocuments[0];
+                    if (next) {
+                        activeDocumentId = null;
+                        setActiveDocument(next.id);
+                    } else {
+                        state = createDefaultState();
+                        activeDocumentId = null;
+                        currentDraftId = null;
+                        renderTabs();
+                        setActiveTab(state.activeTabId);
+                        renderDocumentTabs();
+                    }
+                } else {
+                    renderDocumentTabs();
+                }
             }
 
             function loadState() {
@@ -831,6 +1149,7 @@
                 } catch (err) {
                     console.warn("Memo save state failed", err);
                 }
+                syncActiveDocumentPayload();
                 // Sync global state reference for assist.js
                 window.__memoState = state;
                 // Notify assist.js to update tab indicator
@@ -934,7 +1253,7 @@
 
             function buildSharePreview() {
                 const tab = getActiveTab();
-                const title = tab?.title || "Page 1";
+                const title = tab?.title || "Doc";
                 const description = (tab?.content || "").trim().slice(0, 140);
                 return {
                     title: title,
@@ -1075,6 +1394,14 @@
                         currentShareToken = token;
                         renderTabs();
                         setActiveTab(state.activeTabId);
+                        activeDocumentId = token;
+                        upsertOpenDocument({
+                            id: token,
+                            title: getDocumentTitleFromState(state),
+                            payload: buildSharePayload(),
+                            updatedAt: new Date().toISOString()
+                        });
+                        renderDocumentTabs();
                         syncAssistPresetFromState();
                         syncShareLink();
                         updateShareMenuStatus("Lien chargé.", "");
@@ -1085,6 +1412,157 @@
                 }
                 return false;
             }
+
+            async function openDocumentFromRecord(record) {
+                if (!record || !record.payload) return;
+                const loaded = normalizeState(
+                    record.payload.tabs
+                        ? record.payload
+                        : { tabs: [{ id: createId(), title: "Doc 1", content: record.payload }] }
+                );
+                if (!loaded) return;
+                syncActiveDocumentPayload();
+                state = loaded;
+                currentDraftId = record.id;
+                activeDocumentId = record.id;
+                renderTabs();
+                setActiveTab(state.activeTabId);
+                syncAssistPresetFromState();
+                upsertOpenDocument({
+                    id: record.id,
+                    title: record.title || getDocumentTitleFromState(state),
+                    payload: buildSharePayload(),
+                    updatedAt: record.updatedAt || new Date().toISOString()
+                });
+                renderDocumentTabs();
+            }
+
+            async function openDocumentById(docId) {
+                if (!docId || !capsuleDrafts) return;
+                try {
+                    const record = await capsuleDrafts.getRecord(docId);
+                    await openDocumentFromRecord(record);
+                } catch (err) {
+                    console.warn("Failed to open memo document", err);
+                }
+            }
+
+            function getExplorer() {
+                return window.GoToolkitMemoDocumentExplorer || null;
+            }
+
+            async function applyDocumentRename(docId, nextName) {
+                if (!docId || !nextName) return;
+                const doc = openDocuments.find(item => item.id === docId);
+                if (doc && doc.payload && Array.isArray(doc.payload.tabs) && doc.payload.tabs[0]) {
+                    doc.payload.tabs[0].title = nextName;
+                }
+                if (docId === activeDocumentId && state.tabs[0]) {
+                    state.tabs[0].title = nextName;
+                    persistState();
+                }
+                if (capsuleDrafts) {
+                    const payload = docId === activeDocumentId ? buildSharePayload() : doc?.payload;
+                    await capsuleDrafts.upsertRecord({
+                        id: docId,
+                        app: "memo",
+                        payload,
+                        title: nextName,
+                        description: doc?.description || "",
+                        updatedAt: new Date().toISOString()
+                    });
+                }
+                upsertOpenDocument({
+                    id: docId,
+                    title: nextName,
+                    payload: doc?.payload || buildSharePayload(),
+                    updatedAt: new Date().toISOString()
+                });
+                renderDocumentTabs();
+                getExplorer()?.refresh?.();
+            }
+
+            async function renameDocument(docId, currentTitle) {
+                const explorer = getExplorer();
+                const desired = await explorer?.openRenameModal?.(currentTitle || "");
+                if (!desired) return;
+                const finalName = explorer?.uniqueName?.(desired) || desired;
+                await applyDocumentRename(docId, finalName);
+            }
+
+            async function renameActiveDocument() {
+                if (!activeDocumentId) return;
+                await renameDocument(activeDocumentId, getDocumentTitleFromState(state));
+            }
+
+            async function deleteDocument(docId) {
+                if (!docId) return;
+                const target = openDocuments.find(item => item.id === docId);
+                const name = target?.title || "ce document";
+                const confirmed = window.confirm(`Supprimer "${name}" ?`);
+                if (!confirmed) return;
+                if (capsuleDrafts) {
+                    await capsuleDrafts.removeRecord(docId);
+                }
+                closeDocumentTab(docId);
+                getExplorer()?.refresh?.();
+            }
+
+            async function deleteActiveDocument() {
+                if (!activeDocumentId) return;
+                await deleteDocument(activeDocumentId);
+            }
+
+            async function createNewDocument(name) {
+                syncActiveDocumentPayload();
+                const nextState = createDefaultState();
+                if (nextState.tabs[0]) {
+                    nextState.tabs[0].title = name;
+                }
+                state = nextState;
+                currentDraftId = (capsuleDrafts?.generateId && capsuleDrafts.generateId()) || createId();
+                activeDocumentId = currentDraftId;
+                renderTabs();
+                setActiveTab(state.activeTabId);
+                syncAssistPresetFromState();
+                await saveDraft({ showToast: true });
+                getExplorer()?.refresh?.();
+                window.GoToolkitAssistInstance?.open?.();
+            }
+
+            const memoExplorer = window.GoToolkitDocumentExplorer?.create({
+                appId: "memo",
+                sidebar: "#documentExplorer",
+                resizer: "#documentExplorerResizer",
+                toggleButton: "#documentExplorerToggle",
+                title: "⬠ Bibliothèque",
+                getItems: async () => {
+                    const drafts = await window.goToolkitCapsuleDrafts?.getAllRecords?.();
+                    return (drafts || []).filter(item => item && item.app === "memo");
+                },
+                onCreate: name => {
+                    if (!name) return;
+                    createNewDocument(name);
+                },
+                onRename: (item, nextName) => {
+                    if (!item || !nextName) return;
+                    applyDocumentRename(item.id, nextName);
+                },
+                onDelete: item => {
+                    if (!item) return;
+                    deleteDocument(item.id);
+                }
+            });
+            memoExplorer?.refresh();
+            window.GoToolkitMemoDocumentExplorer = memoExplorer;
+
+            const documentExplorerList = document.querySelector("[data-document-explorer-list]");
+            documentExplorerList?.addEventListener("click", event => {
+                const button = event.target.closest(".document-explorer__item");
+                if (!button) return;
+                const docId = button.dataset.documentId;
+                openDocumentById(docId);
+            });
 
             async function saveDraft(options) {
                 if (!capsuleDrafts || isDraftSaving) return null;
@@ -1106,6 +1584,14 @@
                     if (record) {
                         // Always preserve the ID - don't let upsert change it
                         currentDraftId = id;
+                        activeDocumentId = id;
+                        upsertOpenDocument({
+                            id,
+                            title: preview.title || getDocumentTitleFromState(state),
+                            payload,
+                            updatedAt: now
+                        });
+                        renderDocumentTabs();
                         if (options && options.updateUrl !== false) {
                             updateUrlWithEditId(id);
                         }
@@ -1574,11 +2060,18 @@
                 try {
                     const record = await capsuleDrafts.getRecord(editId);
                     if (!record || !record.payload) return false;
-                    const loaded = normalizeState(record.payload.tabs ? record.payload : { tabs: [{ id: createId(), title: "Page 1", content: record.payload }] });
+                    const loaded = normalizeState(record.payload.tabs ? record.payload : { tabs: [{ id: createId(), title: "Doc 1", content: record.payload }] });
                     if (!loaded) return false;
                     state = loaded;
                     currentDraftId = record.id;
                     console.log('[tryLoadLocalDraftFromUrl] Loaded draft:', currentDraftId);
+                    activeDocumentId = record.id;
+                    upsertOpenDocument({
+                        id: record.id,
+                        title: record.title || getDocumentTitleFromState(state),
+                        payload: buildSharePayload(),
+                        updatedAt: record.updatedAt || new Date().toISOString()
+                    });
                     return true;
                 } catch (err) {
                     console.warn("Failed to load draft from URL", err);
@@ -1601,6 +2094,16 @@
                         setActiveTab(state.activeTabId);
                         syncAssistPresetFromState();
                         persistState();
+                        if (!activeDocumentId) {
+                            activeDocumentId = currentDraftId || createId();
+                        }
+                        upsertOpenDocument({
+                            id: activeDocumentId,
+                            title: getDocumentTitleFromState(state),
+                            payload: buildSharePayload(),
+                            updatedAt: new Date().toISOString()
+                        });
+                        renderDocumentTabs();
                         setStatus("Mémo importé");
                     } catch (err) {
                         console.error("Import failed", err);
@@ -1621,6 +2124,7 @@
                     console.log('[init] Loaded from URL, state updated');
                     renderTabs();
                     persistState();
+                    renderDocumentTabs();
                 }
                 return loadedFromUrl;
             })();
@@ -1629,6 +2133,7 @@
             window.__memoState = state;
 
             renderTabs();
+            ensureActiveDocument();
             setupMemoPrompt();
             syncAssistPresetFromState();
 
@@ -1644,14 +2149,6 @@
                     console.error("Initialisation de l'éditeur Mémo impossible", err);
                 });
 
-            addTabBtn?.addEventListener("click", () => {
-                addTab();
-            });
-
-            deleteTabBtn?.addEventListener("click", () => {
-                deleteTab();
-            });
-
             fileMenuBtn?.addEventListener("click", event => {
                 event.stopPropagation();
                 closeMenus(fileMenu);
@@ -1660,35 +2157,23 @@
 
             fileMenu?.addEventListener("click", event => event.stopPropagation());
 
-            newDocumentBtn?.addEventListener("click", async () => {
-                closeMenus();
-                if (state.tabs.some(tab => tab.content.trim())) {
-                    const shouldSave = window.confirm("Sauvegarder le document avant d'en créer un nouveau ?");
-                    if (shouldSave) {
-                        await saveDraft({ showToast: true });
-                    }
-                }
-                state = createDefaultState();
-                renderTabs();
-                setActiveTab(state.activeTabId);
-                persistState();
-                syncAssistPresetFromState();
-                // Open assist modal by default
-                window.GoToolkitAssistInstance?.open?.();
-            });
-
             saveDocumentBtn?.addEventListener("click", async () => {
                 closeMenus();
-                const saved = await saveDraft({ showToast: true });
+                const saved = await saveDraft({ showToast: true, updateUrl: false });
                 if (!saved) {
                     persistState();
                     setStatus("Mémo enregistré localement");
                 }
             });
 
-            importJsonBtn?.addEventListener("click", () => {
+            renameDocumentBtn?.addEventListener("click", async () => {
                 closeMenus();
-                importJsonInput?.click();
+                await renameActiveDocument();
+            });
+
+            deleteDocumentBtn?.addEventListener("click", async () => {
+                closeMenus();
+                await deleteActiveDocument();
             });
 
             exportJsonBtn?.addEventListener("click", () => {

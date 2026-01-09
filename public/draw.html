@@ -772,7 +772,7 @@
         window.GO_TOOLKIT_SHARE_API_URL =
             window.GO_TOOLKIT_SHARE_API_URL || "https://share.gotoolkit.workers.dev/";
     </script>
-    <script src="js/idb-doc-store.js"></script>
+    <script src="js/document-storage.js"></script>
     <script src="js/storage-service.js"></script>
     <script src="js/shared-ui.js"></script>
     <script src="js/cgu.js?v=2026.1.3"></script>
@@ -794,7 +794,7 @@
             window.process = process;
         })();
     </script>
-    <script src="js/connect.bundle.js" data-excalidraw-bundle="true"></script>
+    <script src="js/draw.bundle.js" data-excalidraw-bundle="true"></script>
     <script>
         (() => {
             const DEFAULT_PROMPT_TEMPLATE =
@@ -949,7 +949,7 @@
             const SHARE_WORKER_UNAVAILABLE_MESSAGE =
                 "Le partage privé nécessite le worker Cloudflare lié à Go-Toolkit.";
             const shareWorkerService = window.goToolkitShareWorker;
-            const EXCALIDRAW_BUNDLE_SRC = "js/connect.bundle.js";
+            const EXCALIDRAW_BUNDLE_SRC = "js/draw.bundle.js";
             const EXCALIDRAW_BRIDGE_MAX_WAIT_MS = 8000;
             const EXCALIDRAW_BRIDGE_POLL_INTERVAL_MS = 50;
 
