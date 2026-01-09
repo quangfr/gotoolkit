@@ -2586,7 +2586,7 @@
         this.documentsFileInput.type = "file";
         this.documentsFileInput.multiple = true;
         this.documentsFileInput.accept =
-            "application/pdf,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx,application/vnd.openxmlformats-officedocument.presentationml.presentation,.pptx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,.xlsx,text/plain,.txt,text/markdown,.md,application/rtf,.rtf,application/msword,.doc,application/vnd.oasis.opendocument.text,.odt,application/vnd.oasis.opendocument.spreadsheet,.ods";
+            "application/pdf,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx,application/vnd.openxmlformats-officedocument.presentationml.presentation,.pptx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,.xlsx,text/plain,.txt,text/markdown,.md,application/json,.json,application/rtf,.rtf,application/msword,.doc,application/vnd.oasis.opendocument.text,.odt,application/vnd.oasis.opendocument.spreadsheet,.ods";
         this.documentsFileInput.style.display = "none";
         this.documentsFileInput.addEventListener("change", this.handleDocumentFilesSelected.bind(this));
 
@@ -2605,7 +2605,7 @@
         this.importFileInput.type = "file";
         this.importFileInput.multiple = true;
         this.importFileInput.accept =
-            "application/pdf,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx,application/vnd.openxmlformats-officedocument.presentationml.presentation,.pptx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,.xlsx,text/plain,.txt,text/markdown,.md,application/rtf,.rtf,application/msword,.doc,application/vnd.oasis.opendocument.text,.odt,application/vnd.oasis.opendocument.spreadsheet,.ods";
+            "application/pdf,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx,application/vnd.openxmlformats-officedocument.presentationml.presentation,.pptx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,.xlsx,text/plain,.txt,text/markdown,.md,application/json,.json,application/rtf,.rtf,application/msword,.doc,application/vnd.oasis.opendocument.text,.odt,application/vnd.oasis.opendocument.spreadsheet,.ods";
         this.importFileInput.style.display = "none";
         this.importFileInput.addEventListener("change", this.handleImportFilesSelected.bind(this));
         document.body.appendChild(this.importFileInput);
@@ -3546,7 +3546,7 @@
         input.type = "file";
         input.multiple = true;
         input.accept =
-            "application/pdf,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx,application/vnd.openxmlformats-officedocument.presentationml.presentation,.pptx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,.xlsx,text/plain,.txt,text/markdown,.md,application/rtf,.rtf,application/msword,.doc,application/vnd.oasis.opendocument.text,.odt,application/vnd.oasis.opendocument.spreadsheetml.sheet,.ods";
+            "application/pdf,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx,application/vnd.openxmlformats-officedocument.presentationml.presentation,.pptx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,.xlsx,text/plain,.txt,text/markdown,.md,application/json,.json,application/rtf,.rtf,application/msword,.doc,application/vnd.oasis.opendocument.text,.odt,application/vnd.oasis.opendocument.spreadsheetml.sheet,.ods";
         input.style.display = "none";
         input.addEventListener("change", this.handleKnowledgeFilesSelected.bind(this));
         document.body.appendChild(input);
@@ -5125,6 +5125,19 @@
         // Afficher le payload envoyé en console
         console.log('%c📤 AI Payload Messages (Sent)', 'color: #FFF; background: #4CAF50; padding: 8px 12px; border-radius: 4px; font-weight: bold;');
         console.log(JSON.stringify(payload, null, 2));
+
+        // Calculate total payload byte count and check size limit
+        var payloadJson = JSON.stringify(payload);
+        var payloadBytes = new Blob([payloadJson]).size;
+        var maxPayloadBytes = 2_000_000;
+
+        if (payloadBytes > maxPayloadBytes) {
+            console.error("Payload size exceeds limit:", payloadBytes, "bytes");
+            var errorMessage = "Document trop volumineux pour Mémo\n\n" +
+                "Le document dépasse la limite de " + Math.floor(maxPayloadBytes / 1_000_000) + " Mo.\n\n" +
+                "Suggestion : Ajoutez-le à la Mémoire ou avec +\n"            alert(errorMessage);
+            return;
+        }
 
         // Calculate total payload character count and start toaster
         var totalPayloadChars = 0;

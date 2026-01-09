@@ -91,7 +91,7 @@ export default {
 
 async function forwardToOpenRouter(request, env, corsOrigin) {
   const raw = await request.text();
-  const maxBytes = 200_000;
+  const maxBytes = 2_500_000;
 
   if (raw.length > maxBytes) {
     return jsonError(corsOrigin, 413, "PAYLOAD_TOO_LARGE", "Payload too large.");
