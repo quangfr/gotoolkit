@@ -170,11 +170,25 @@
         constructor() {
             this.onTranscriptChange = null;
             this.onPlaybackRateChange = null;
-            this.audioBlobUrl = "";
-            ensureStyles();
-            this._buildDom();
-            this._bindEvents();
+        this.audioBlobUrl = "";
+        ensureStyles();
+        this._buildDom();
+        this._bindEvents();
+    }
+
+    function showToast(message, isError) {
+        let toast = document.querySelector(".go-toolkit-voice-toast");
+        if (!toast) {
+            toast = document.createElement("div");
+            toast.className = "go-toolkit-voice-toast";
+            document.body.appendChild(toast);
         }
+        toast.textContent = message;
+        toast.style.background = isError ? "rgba(176, 0, 32, 0.95)" : "rgba(15, 23, 42, 0.95)";
+        toast.classList.add("visible");
+        clearTimeout(toast._timer);
+        toast._timer = setTimeout(() => toast.classList.remove("visible"), 2400);
+    }
 
         _buildDom() {
             this.overlay = document.createElement("div");
@@ -241,6 +255,14 @@
             this.textarea?.addEventListener("input", () => {
                 if (!this.onTranscriptChange) return;
                 this.onTranscriptChange(this.textarea.value || "");
+            });
+            this.textarea?.addEventListener("focus", async () => {
+                try {
+                    await navigator.clipboard.writeText(this.textarea.value || "");
+                    showToast("Transcript copié");
+                } catch (err) {
+                    showToast("Erreur lors de la copie", true);
+                }
             });
             this.deleteButton?.addEventListener("click", () => {
                 if (!this.onDelete) return;

@@ -715,6 +715,7 @@
         await stopRecorder(state.videoRecorder);
         stopTracks(state.audioRecorder);
         stopTracks(state.videoRecorder);
+        stopOverlayStreams();
         state.audioBlob = state.audioChunks.length
             ? new Blob(state.audioChunks, { type: state.audioChunks[0]?.type || "audio/webm" })
             : null;
@@ -849,6 +850,14 @@
             state.recordingMemoName = "";
             updateButton();
         };
+        const copyToClipboard = async text => {
+            try {
+                await navigator.clipboard.writeText(text || "");
+                showToast("Transcript copié");
+            } catch (err) {
+                showToast("Erreur lors de la copie", true);
+            }
+        };
         if (recording.videoBlob && window.VoiceVideoPlayerModal) {
             if (!state.videoModal) {
                 state.videoModal = new window.VoiceVideoPlayerModal();
@@ -867,6 +876,8 @@
                 sentences: recording.videoTranscriptSentences || [],
                 memoName,
                 onTranscriptChange: state.videoModal.onTranscriptChange,
+                onCopyAudio: () => copyToClipboard(recording.audioTranscript || ""),
+                onCopyVideo: text => copyToClipboard(text || ""),
                 onDelete: async () => {
                     await handleDelete();
                     state.videoModal?.close();
@@ -934,17 +945,11 @@
             return;
         }
         try {
-            const audioPromise = navigator.mediaDevices.getUserMedia({ audio: true });
-            const webcamPromise = navigator.mediaDevices.getUserMedia({ video: true });
-            const screenPromise = navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
-            const results = await Promise.allSettled([audioPromise, webcamPromise, screenPromise]);
-            const [audioResult, webcamResult, screenResult] = results;
-            state.overlayStreams.audio = audioResult.status === "fulfilled" ? audioResult.value : null;
-            state.overlayStreams.webcam = webcamResult.status === "fulfilled" ? webcamResult.value : null;
-            state.overlayStreams.screen = screenResult.status === "fulfilled" ? screenResult.value : null;
-            state.permissionsGranted.audio = audioResult.status === "fulfilled";
-            state.permissionsGranted.webcam = webcamResult.status === "fulfilled";
-            state.permissionsGranted.screen = screenResult.status === "fulfilled";
+            const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            state.overlayStreams.audio = audioStream || null;
+            state.overlayStreams.webcam = state.overlayStreams.webcam || null;
+            state.overlayStreams.screen = state.overlayStreams.screen || null;
+            state.permissionsGranted.audio = Boolean(audioStream);
             state.overlayMic = Boolean(state.overlayStreams.audio);
             state.overlayWebcam = Boolean(state.overlayStreams.webcam);
             state.overlayScreen = Boolean(state.overlayStreams.screen);

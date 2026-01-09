@@ -52,8 +52,20 @@
                 font-size: 15px;
                 color: #0f172a;
             }
-            .voice-video-player-delete {
+            .voice-video-player-header-actions {
                 margin-left: auto;
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+            }
+            .voice-video-player-copy {
+                border: none;
+                background: transparent;
+                font-size: 13px;
+                color: #1d4ed8;
+                cursor: pointer;
+            }
+            .voice-video-player-delete {
                 border: none;
                 background: transparent;
                 font-size: 13px;
@@ -336,7 +348,11 @@
                     <button type="button" class="voice-video-player-close" aria-label="Fermer">×</button>
                     <div class="voice-video-player-header">
                         <div class="voice-video-player-title">Lecteur vidéo</div>
-                        <button type="button" class="voice-video-player-delete btn btn-secondary">⊗ Supprimer</button>
+                        <div class="voice-video-player-header-actions">
+                            <button type="button" class="voice-video-player-copy">Transcript Audio</button>
+                            <button type="button" class="voice-video-player-copy">Transcript Vidéo</button>
+                            <button type="button" class="voice-video-player-delete btn btn-secondary">⊗ Supprimer</button>
+                        </div>
                     </div>
                     <div class="voice-video-player-body">
                         <div class="voice-video-player-video-panel">
@@ -362,6 +378,7 @@
             (document.body || document.documentElement).appendChild(this.overlay);
             this.dialog = this.overlay.querySelector(".voice-video-player-dialog");
             this.closeButton = this.overlay.querySelector(".voice-video-player-close");
+            this.copyButtons = Array.from(this.overlay.querySelectorAll(".voice-video-player-copy"));
             this.deleteButton = this.overlay.querySelector(".voice-video-player-delete");
             this.videoEl = this.overlay.querySelector("video");
             this.playToggle = this.overlay.querySelector(".voice-video-player-play-toggle");
@@ -392,6 +409,15 @@
                 }
             });
             this.closeButton?.addEventListener("click", () => this.close());
+            this.copyButtons?.[0]?.addEventListener("click", () => {
+                if (!this.onCopyAudio) return;
+                this.onCopyAudio();
+            });
+            this.copyButtons?.[1]?.addEventListener("click", () => {
+                if (!this.onCopyVideo) return;
+                const text = this.sentences.map(sentence => (sentence.text || "").trim()).filter(Boolean).join(" ").trim();
+                this.onCopyVideo(text);
+            });
             this.deleteButton?.addEventListener("click", () => {
                 if (!this.onDelete) return;
                 this.onDelete();
@@ -709,11 +735,13 @@
         }
 
         open(options = {}) {
-            const { videoBlob, sentences = [], onTranscriptChange, onTranscriptSaved, memoName = "", onDelete } = options;
+            const { videoBlob, sentences = [], onTranscriptChange, onTranscriptSaved, memoName = "", onDelete, onCopyAudio, onCopyVideo } = options;
             if (!videoBlob) return;
             this.onTranscriptChange = typeof onTranscriptChange === "function" ? onTranscriptChange : null;
             this.onTranscriptSaved = typeof onTranscriptSaved === "function" ? onTranscriptSaved : null;
             this.onDelete = typeof onDelete === "function" ? onDelete : null;
+            this.onCopyAudio = typeof onCopyAudio === "function" ? onCopyAudio : null;
+            this.onCopyVideo = typeof onCopyVideo === "function" ? onCopyVideo : null;
             this._normalizeSentences(sentences);
             this._renderSentences();
             this._applyVideoBlob(videoBlob);
