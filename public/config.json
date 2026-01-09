@@ -10,14 +10,8 @@
       "showChunksForOtherFormats": true
     }
   },
-  "assist": {
-    "index": {
-      "enabled": true
-    }
-  },
   "features": {
     "hideTimeline": true,
-    "hideVoice": true,
-    "hideAssist": true
+    "hideVoice": true
   }
 }

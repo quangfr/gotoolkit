@@ -28,33 +28,58 @@
         return fallback;
     }
 
+    function hideElements(root, selector) {
+        if (!root) return;
+        if (root.matches && root.matches(selector)) {
+            root.style.display = "none";
+        }
+        if (root.querySelectorAll) {
+            root.querySelectorAll(selector).forEach(el => {
+                el.style.display = "none";
+            });
+        }
+    }
+
     function applyVisibility() {
         const hideTimeline = getFlag("features.hideTimeline", false);
         const hideVoice = getFlag("features.hideVoice", false);
         const hideAssist = getFlag("features.hideAssist", false);
 
         if (hideTimeline) {
-            doc.querySelectorAll('[data-app="timeline"]').forEach(el => {
-                el.hidden = true;
-            });
+            hideElements(doc, '[data-app="timeline"]');
         }
         if (hideVoice) {
-            doc.querySelectorAll('[data-app="voice"]').forEach(el => {
-                el.hidden = true;
-            });
+            hideElements(doc, '[data-app="voice"]');
         }
         if (hideAssist) {
-            doc.querySelectorAll('[data-app="assist"]').forEach(el => {
-                el.hidden = true;
+            hideElements(doc, '[data-app="assist"]');
+        }
+
+        if (hideTimeline || hideVoice || hideAssist) {
+            const observer = new MutationObserver(mutations => {
+                mutations.forEach(mutation => {
+                    mutation.addedNodes.forEach(node => {
+                        if (!(node instanceof Element)) return;
+                        if (hideTimeline) hideElements(node, '[data-app="timeline"]');
+                        if (hideVoice) hideElements(node, '[data-app="voice"]');
+                        if (hideAssist) hideElements(node, '[data-app="assist"]');
+                    });
+                });
             });
+            observer.observe(doc.body || doc.documentElement, { childList: true, subtree: true });
         }
     }
 
     function run() {
-        applyVisibility();
         const promise = global.GoToolkitSiteConfigPromise;
         if (promise && typeof promise.then === "function") {
-            promise.then(() => applyVisibility()).catch(() => {});
+            promise.then(() => {
+                applyVisibility();
+            }).catch(() => {
+                applyVisibility();
+            });
+        } else {
+            applyVisibility();
         }
     }
 

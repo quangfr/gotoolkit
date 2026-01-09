@@ -564,11 +564,12 @@
         state.overlayTiles.forEach(tile => {
             const kind = tile.dataset.kind;
             const webcamDisabled = kind === "webcam" && voiceConfigState.disableCamera;
-            tile.hidden = webcamDisabled;
             if (webcamDisabled) {
+                tile.style.display = "none";
                 tile.classList.remove("voice-overlay__tile--active");
                 return;
             }
+            tile.style.display = "";
             const active = (kind === "mic" && state.overlayMic)
                 || (kind === "webcam" && state.overlayWebcam)
                 || (kind === "screen" && state.overlayScreen);
