@@ -499,16 +499,17 @@
                     <button id="documentExplorerToggle" class="app-home-link" type="button"
                         title="Afficher la bibliothèque" aria-expanded="false"
                         aria-controls="documentExplorer">⬠</button>
-                    <div class="nav-switch">
-                        <button id="navSwitcherBtn" class="nav-switch-btn" type="button" aria-haspopup="true"
-                            aria-expanded="false">⊞ Mémo ▾</button>
-                        <div id="navSwitcherMenu" class="nav-switch-menu" role="menu">
-                            <a class="nav-switch-link" href="grid.html?v=2026.01.07" role="menuitem">◇ Grid</a>
-                            <a class="nav-switch-link" href="timeline.html?v=2026.01.07" role="menuitem">⇥ Timeline</a>
-                            <a class="nav-switch-link" href="draw.html?v=2026.01.07" role="menuitem">ʃ Draw</a>
-                            <a class="nav-switch-link" href="voice.html?v=2026.01.07" role="menuitem">▷ Voice</a>
+                        <div class="nav-switch">
+                            <button id="navSwitcherBtn" class="nav-switch-btn" type="button" aria-haspopup="true"
+                                aria-expanded="false">⊞ Mémo ▾</button>
+                            <div id="navSwitcherMenu" class="nav-switch-menu" role="menu">
+                                <a class="nav-switch-link" href="/?v=2026.01.07" role="menuitem">☍ Go-Toolkit</a>
+                                <a class="nav-switch-link" href="grid.html?v=2026.01.07" role="menuitem" data-app="grid">◇ Grid</a>
+                                <a class="nav-switch-link" href="timeline.html?v=2026.01.07" role="menuitem" data-app="timeline">⇥ Timeline</a>
+                                <a class="nav-switch-link" href="draw.html?v=2026.01.07" role="menuitem" data-app="draw">ʃ Draw</a>
+                                <a class="nav-switch-link" href="voice.html?v=2026.01.07" role="menuitem" data-app="voice">▷ Voice</a>
+                            </div>
                         </div>
-                    </div>
 
                     <div id="tabs" class="tabs">
                         <div id="document-tabs" class="tabs"></div>
@@ -516,7 +517,7 @@
                     </div>
                 </div>
                 <div class="global-actions">
-                    <button id="assistLauncherBtn" class="btn btn-secondary" type="button" title="⌬ Assist">⌬
+                    <button id="assistLauncherBtn" class="btn btn-secondary" type="button" title="⌬ Assist" data-app="assist">⌬
                         Assist</button>
                     <button id="gtTemplateModalTrigger" class="btn" type="button" aria-label="Choisir un modèle"
                         title="⊞ Modèles">⊞ Modèles</button>
@@ -634,6 +635,8 @@
         window.GO_TOOLKIT_SHARE_API_URL =
             window.GO_TOOLKIT_SHARE_API_URL || "https://share.gotoolkit.workers.dev/";
     </script>
+    <script src="js/config.js"></script>
+    <script src="js/feature-visibility.js"></script>
     <script src="js/document-storage.js"></script>
     <script src="js/storage-service.js"></script>
     <script src="js/shared-ui.js"></script>
@@ -998,7 +1001,7 @@
                     : normalizedTabs[0].id;
                 const templateId = typeof raw.templateId === "string" ? raw.templateId : null;
                 const templateLabel = typeof raw.templateLabel === "string" ? raw.templateLabel : null;
-                const allowedPresets = ["edit", "suggest"];
+                const allowedPresets = ["edit", "suggest", "advice"];
                 const promptPresetId = (typeof raw.promptPresetId === "string" && allowedPresets.includes(raw.promptPresetId))
                     ? raw.promptPresetId
                     : "edit";
@@ -1222,7 +1225,6 @@
             function setActiveTab(tabId) {
                 const target = state.tabs.find(tab => tab.id === tabId);
                 if (!target) return;
-                console.log('[setActiveTab] Switching to tab:', tabId, 'content length:', (target.content || '').length);
                 state.activeTabId = target.id;
                 if (memoEditorApi) {
                     memoEditorApi.setValue(target.content || "");
@@ -1896,13 +1898,14 @@
                         const allowed = assistSidebar.getPromptPresets();
                         return Object.keys(allowed || {}).filter(Boolean);
                     }
-                    return ["edit", "suggest"].filter(id => Object.prototype.hasOwnProperty.call(storePresets, id));
+                    return ["edit", "suggest", "advice"].filter(id => Object.prototype.hasOwnProperty.call(storePresets, id));
                 }
 
                 function readPromptForPreset(presetId) {
                     const store = window.GoToolkitChatPrompt || {};
                     const presets = store.PRESETS || {};
                     const keyMap = {
+                        "advice": "goToolkit.chat.prompt",
                         "suggest": "goToolkit.chat.prompt.suggest",
                         "edit": "goToolkit.chat.prompt.edit",
                         "import": "goToolkit.chat.prompt.import"
@@ -2002,7 +2005,7 @@
                 if (!window.GoToolkitChatPrompt) return;
                 const trimmed = (value || "").trim();
 
-                if (presetId !== "edit" && presetId !== "suggest") return;
+                if (presetId !== "edit" && presetId !== "suggest" && presetId !== "advice") return;
 
                 const preset = window.GoToolkitChatPrompt.PRESETS?.[presetId];
                 const fallback = preset?.defaultPrompt || "";
@@ -2011,6 +2014,7 @@
                     preset.prompt = next;
                 }
                 const keyMap = {
+                    "advice": "goToolkit.chat.prompt",
                     "suggest": "goToolkit.chat.prompt.suggest",
                     "edit": "goToolkit.chat.prompt.edit",
                     "import": "goToolkit.chat.prompt.import"
@@ -2024,7 +2028,9 @@
             }
 
             function normalizeMemoPromptPresetId(value) {
-                return value === "suggest" ? "suggest" : "edit";
+                if (value === "advice") return "advice";
+                if (value === "suggest") return "suggest";
+                return "edit";
             }
 
             function syncAssistPresetFromState() {
@@ -2316,8 +2322,9 @@
                 if (!promptEditor || !window.GoToolkitChatPrompt) return;
                 const presetId = (promptPresetSelect.value || "edit").trim();
                 const presets = window.GoToolkitChatPrompt.PRESETS || {};
-                if (presetId !== "edit" && presetId !== "suggest" && presetId !== "import") return;
+                if (presetId !== "edit" && presetId !== "suggest" && presetId !== "import" && presetId !== "advice") return;
                 const keyMap = {
+                    "advice": "goToolkit.chat.prompt",
                     "suggest": "goToolkit.chat.prompt.suggest",
                     "edit": "goToolkit.chat.prompt.edit",
                     "import": "goToolkit.chat.prompt.import"
@@ -2332,7 +2339,7 @@
             resetPromptBtn?.addEventListener("click", () => {
                 if (!window.GoToolkitChatPrompt) return;
                 const presetId = (promptPresetSelect?.value || "edit").trim();
-                if (presetId !== "edit" && presetId !== "suggest" && presetId !== "import") return;
+                if (presetId !== "edit" && presetId !== "suggest" && presetId !== "import" && presetId !== "advice") return;
                 promptEditor.value = window.GoToolkitChatPrompt.PRESETS?.[presetId]?.defaultPrompt || "";
             });
             applyPromptBtn?.addEventListener("click", () => {

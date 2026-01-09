@@ -49,6 +49,14 @@
         sessionInitialized: false
     };
 
+    const voiceConfigState = {
+        disableCamera: false
+    };
+
+    function isCameraAllowed() {
+        return !voiceConfigState.disableCamera;
+    }
+
     function ensureStyles() {
         if (document.getElementById("go-toolkit-voice-styles")) return;
         const style = document.createElement("style");
@@ -534,6 +542,10 @@
         state.overlayTiles.forEach(tile => {
             tile.addEventListener("click", () => {
                 const kind = tile.dataset.kind;
+                if (kind === "webcam" && voiceConfigState.disableCamera) {
+                    showToast("Caméra désactivée dans la configuration.", true);
+                    return;
+                }
                 if (kind === "mic") state.overlayMic = !state.overlayMic;
                 if (kind === "webcam") state.overlayWebcam = !state.overlayWebcam;
                 if (kind === "screen") state.overlayScreen = !state.overlayScreen;
@@ -551,6 +563,12 @@
         if (!state.overlayTiles) return;
         state.overlayTiles.forEach(tile => {
             const kind = tile.dataset.kind;
+            const webcamDisabled = kind === "webcam" && voiceConfigState.disableCamera;
+            tile.hidden = webcamDisabled;
+            if (webcamDisabled) {
+                tile.classList.remove("voice-overlay__tile--active");
+                return;
+            }
             const active = (kind === "mic" && state.overlayMic)
                 || (kind === "webcam" && state.overlayWebcam)
                 || (kind === "screen" && state.overlayScreen);
@@ -647,7 +665,7 @@
                         showToast("Capture d'écran indisponible.", true);
                     }
                 }
-            } else if (state.overlayWebcam) {
+            } else if (isCameraAllowed() && state.overlayWebcam) {
                 if (webcamStream) {
                     videoStream = webcamStream;
                 } else {
@@ -715,6 +733,14 @@
         });
     }
 
+    function clearVideoTile(kind) {
+        if (!state.overlay) return;
+        const tile = state.overlay.querySelector(`.voice-overlay__tile[data-kind="${kind}"] video`);
+        if (tile) {
+            tile.srcObject = null;
+        }
+    }
+
     function stopOverlayStreams() {
         ["audio", "webcam", "screen"].forEach(key => {
             const stream = state.overlayStreams[key];
@@ -724,15 +750,42 @@
             });
             state.overlayStreams[key] = null;
         });
-        if (!state.overlay) return;
-        const webcamTile = state.overlay.querySelector('.voice-overlay__tile[data-kind="webcam"] video');
-        if (webcamTile) {
-            webcamTile.srcObject = null;
+        clearVideoTile("webcam");
+        clearVideoTile("screen");
+    }
+
+    function stopWebcamPreviewStream() {
+        const stream = state.overlayStreams.webcam;
+        if (!stream) return;
+        stream.getTracks().forEach(track => {
+            try { track.stop(); } catch (err) { /* noop */ }
+        });
+        state.overlayStreams.webcam = null;
+        clearVideoTile("webcam");
+    }
+
+    function enforceWebcamLock() {
+        if (!voiceConfigState.disableCamera) return false;
+        let changed = false;
+        if (state.overlayWebcam) {
+            state.overlayWebcam = false;
+            changed = true;
         }
-        const screenTile = state.overlay.querySelector('.voice-overlay__tile[data-kind="screen"] video');
-        if (screenTile) {
-            screenTile.srcObject = null;
+        if (state.overlayStreams.webcam) {
+            stopWebcamPreviewStream();
+            changed = true;
         }
+        return changed;
+    }
+
+    function applyVoiceConfig(config) {
+        const voiceSettings = config && typeof config === "object" ? config.voice : null;
+        const disableCamera = Boolean(voiceSettings && voiceSettings.disableCamera);
+        voiceConfigState.disableCamera = disableCamera;
+        if (disableCamera) {
+            enforceWebcamLock();
+        }
+        syncOverlayTiles();
     }
 
     async function stopRecording() {
@@ -995,6 +1048,9 @@
                 showToast("Microphone indisponible.", true);
                 return;
             }
+            if (voiceConfigState.disableCamera && enforceWebcamLock()) {
+                syncOverlayTiles();
+            }
             openOverlay();
         } catch (err) {
             console.error("Permissions failed", err);
@@ -1059,6 +1115,19 @@
         state.voiceButton?.remove();
         state.voiceButton = null;
     }
+
+    (function initializeVoiceConfig() {
+        const siteConfig = window.GoToolkitSiteConfig;
+        if (siteConfig && typeof siteConfig.getData === "function") {
+            applyVoiceConfig(siteConfig.getData());
+        }
+        const promise = window.GoToolkitSiteConfigPromise;
+        if (promise && typeof promise.then === "function") {
+            promise.then(config => applyVoiceConfig(config || {})).catch(() => {
+                applyVoiceConfig(siteConfig?.getData?.());
+            });
+        }
+    })();
 
     window.GoToolkitVoice = {
         open: openOverlay,

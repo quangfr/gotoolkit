@@ -1,6 +1,7 @@
 {
   "voice": {
-    "hideSummaryColumn": true
+    "hideSummaryColumn": true,
+    "disableCamera": true
   },
   "memo": {
     "documentPreview": {
@@ -13,5 +14,10 @@
     "index": {
       "enabled": true
     }
+  },
+  "features": {
+    "hideTimeline": true,
+    "hideVoice": true,
+    "hideAssist": true
   }
 }

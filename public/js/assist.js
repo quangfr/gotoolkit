@@ -3,12 +3,18 @@
     var globalConfig = {};
     global.GoToolkitAssistConfig = globalConfig;
 
+    function storeGlobalConfig(value) {
+        globalConfig = value && typeof value === "object" && !Array.isArray(value) ? value : {};
+        global.GoToolkitAssistConfig = globalConfig;
+        return globalConfig;
+    }
+
     async function loadGlobalConfig() {
         try {
             var response = await fetch("config.json");
             if (response.ok) {
-                globalConfig = await response.json();
-                global.GoToolkitAssistConfig = globalConfig;
+                var json = await response.json();
+                storeGlobalConfig(json);
                 console.log("Global config loaded:", globalConfig);
             }
         } catch (err) {
@@ -17,8 +23,18 @@
         return globalConfig;
     }
 
-    // Load config immediately
-    var globalConfigPromise = loadGlobalConfig();
+    var globalConfigPromise;
+    var siteConfigPromise = global.GoToolkitSiteConfigPromise;
+    if (siteConfigPromise && typeof siteConfigPromise.then === "function") {
+        globalConfigPromise = siteConfigPromise.then(function (config) {
+            return storeGlobalConfig(config);
+        }).catch(function () {
+            var fallback = global.GoToolkitSiteConfig?.getData?.();
+            return storeGlobalConfig(fallback);
+        });
+    } else {
+        globalConfigPromise = loadGlobalConfig();
+    }
     global.GoToolkitAssistConfigPromise = globalConfigPromise;
 
     // IndexedDB verification and repair function
@@ -307,7 +323,7 @@
     }
 
     function getAllowedPromptPresetIds() {
-        if (CHAT_APP_ID === "memo") return ["edit", "suggest"];
+        if (CHAT_APP_ID === "memo") return ["advice", "edit", "suggest"];
         if (CHAT_APP_ID === "index") return ["advice", "ask"];
         return ["advice", "ask"];
     }
@@ -1637,9 +1653,13 @@
         if (!entries || !entries.length) return [];
         var formatted = [];
         entries.forEach(function (entry) {
+            var resolvedDocName = (entry.docName || "").toString().trim()
+                ? entry.docName
+                : entry.fileName;
             var record = {
                 chunkId: entry.chunkId,
                 documentId: entry.documentId,
+                documentName: resolvedDocName || entry.documentName,
                 docName: entry.docName,
                 category: entry.category || "",
                 text: entry.text || "",
@@ -1690,6 +1710,7 @@
                         return JSON.stringify({
                             chunkId: entry.chunkId,
                             documentId: entry.documentId,
+                            documentName: entry.documentName || entry.docName || entry.fileName || "Document",
                             content: entry.text || ""
                         });
                     })
@@ -1722,6 +1743,8 @@
         return {
             chunkId: hit.id,
             documentId: hit.docId,
+            documentName: stripped ? stripped.toString() : "",
+            fileName: (hit.fileName || hit.sourceFileName || rawName).toString(),
             docName: stripped,
             keyName: stripped.toLowerCase(),
             text: hit.text || "",
@@ -2783,9 +2806,11 @@
     AssistSidebar.prototype.setPendingDocumentAttachments = function (names) {
         this.pendingDocumentAttachments = (names || []).filter(Boolean);
         this.attachmentsParsedCount = this.pendingDocumentAttachments.length;
-        if (!this.pendingDocumentAttachments.length) {
-            this.attachmentsTotalCount = 0;
-        }
+        this.attachmentsTotalCount = 0;
+        this.attachmentsCharsTotal = 0;
+        this.attachmentsCharsProcessed = 0;
+        this.attachmentsCharsByFile = {};
+        this.attachmentsCharsProcessedByFile = {};
         this.updateAttachmentIndicator();
         this.syncDocumentIndicatorTitle(this.documentChunkCount);
     };
@@ -2817,18 +2842,29 @@
     AssistSidebar.prototype.computeDocsIndicatorLabel = function () {
         var parsed = Number(this.attachmentsParsedCount) || 0;
         var total = Number(this.attachmentsTotalCount) || 0;
-        if (this.pendingDocumentAttachments.length === 1) {
+        var pendingCount = Array.isArray(this.pendingDocumentAttachments) ? this.pendingDocumentAttachments.length : 0;
+        var totalChars = Number(this.attachmentsCharsTotal) || 0;
+        var processedChars = Number(this.attachmentsCharsProcessed) || 0;
+
+        // During import: show percent based on total char count
+        if (total > 0) {
+            var percent = 0;
+            if (totalChars > 0) {
+                percent = Math.round(Math.min(100, Math.max(0, (processedChars / totalChars) * 100)));
+            }
+            return "🗎 " + percent + " %";
+        }
+
+        // After import complete (total === 0, but pendingCount > 0)
+        if (pendingCount === 1) {
+            // Single file: show filename
             return this.pendingDocumentAttachments[0];
         }
-        if (total) {
-            if (parsed === total) {
-                return "🗎 " + total + " fichiers";
-            }
-            return "🗎 " + parsed + " / " + total + " fichiers";
+        if (pendingCount > 1) {
+            // Multiple files: show count
+            return "🗎 " + pendingCount + " fichiers";
         }
-        if (parsed) {
-            return "🗎 " + parsed;
-        }
+
         return "";
     };
 
@@ -2849,6 +2885,10 @@
         if (this.documentsFileInput) this.documentsFileInput.disabled = true;
         this.attachmentsTotalCount = fileArray.length;
         this.attachmentsParsedCount = 0;
+        this.attachmentsCharsTotal = 0;
+        this.attachmentsCharsProcessed = 0;
+        this.attachmentsCharsByFile = {};
+        this.attachmentsCharsProcessedByFile = {};
         this.pendingDocumentAttachments = fileArray.map(function (file) {
             return file.name;
         });
@@ -2901,9 +2941,34 @@
         if (!progress) return;
         if (progress.type === "chunk") {
             this.setDocumentUploadStatus("Indexation " + progress.progress + "% → " + (progress.file || ""));
+        } else if (progress.type === "chars") {
+            var totalChars = Number(progress.totalChars) || 0;
+            var processedChars = Number(progress.processedChars) || 0;
+            var fileName = progress.file || "";
+            if (totalChars > 0 && fileName) {
+                if (!this.attachmentsCharsByFile) this.attachmentsCharsByFile = {};
+                if (!this.attachmentsCharsProcessedByFile) this.attachmentsCharsProcessedByFile = {};
+                this.attachmentsCharsByFile[fileName] = totalChars;
+                this.attachmentsCharsProcessedByFile[fileName] = processedChars;
+                var totals = Object.values(this.attachmentsCharsByFile).reduce(function (acc, val) {
+                    return acc + (Number(val) || 0);
+                }, 0);
+                var processed = Object.values(this.attachmentsCharsProcessedByFile).reduce(function (acc, val) {
+                    return acc + (Number(val) || 0);
+                }, 0);
+                this.attachmentsCharsTotal = totals;
+                this.attachmentsCharsProcessed = processed;
+                this.updateAttachmentIndicator();
+            }
         } else if (progress.type === "file-start") {
             this.setDocumentUploadStatus("Ouverture de " + progress.file + " (" + progress.index + "/" + progress.total + ")");
         } else if (progress.type === "file-done") {
+            // Increment parsed count when a file is done
+            this.attachmentsParsedCount = Math.min(
+                Number(this.attachmentsParsedCount) + 1 || 1,
+                Number(this.attachmentsTotalCount) || 1
+            );
+            this.updateAttachmentIndicator();
             this.setDocumentUploadStatus("Fichier traité : " + (progress.file || ""));
         }
     };

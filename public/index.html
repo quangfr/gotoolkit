@@ -1254,41 +1254,41 @@
                 <p class="section-label superpower-label label-link" id="superpowerToggle">⚡︎ Super-pouvoirs</p>
             </div>
             <div class="launcher-grid">
-                <button id="assistLauncherBtn" class="launcher chat-toggle-button" type="button">
+                <button id="assistLauncherBtn" class="launcher chat-toggle-button" type="button" data-app="assist">
                     <span class="launcher-emoji">⌬</span>
                     <span class="launcher-name">Assist ⚡︎ Promptzilla
                         <div class="launcher-desc">Accélère ta productivité</div>
                     </span>
                 </button>
-                <a class="launcher" href="memo.html">
+                <a class="launcher" href="memo.html" data-app="memo">
                     <span class="launcher-emoji">⊞</span>
                     <span class="launcher-name">
                         Mémo ⚡︎ Le Petit Robert
                         <div class="launcher-desc">Accélère ta rédaction</div>
                     </span>
                 </a>
-                <a class="launcher" href="timeline.html">
+                <a class="launcher" href="timeline.html" data-app="timeline">
                     <span class="launcher-emoji">⇥</span>
                     <span class="launcher-name">
                         Timeline ⚡︎ Goal Digger
                         <div class="launcher-desc">Trace ton planning</div>
                     </span>
                 </a>
-                <a class="launcher" href="draw.html">
+                <a class="launcher" href="draw.html" data-app="draw">
                     <span class="launcher-emoji">ʃ</span>
                     <span class="launcher-name">
                         Draw ⚡︎ Indélébile
                         <div class="launcher-desc">Modélise tes idées</div>
                     </span>
                 </a>
-                <a class="launcher" href="voice.html">
+                <a class="launcher" href="voice.html" data-app="voice">
                     <span class="launcher-emoji">▷</span>
                     <span class="launcher-name">
                         Voice ⚡︎ Tuto Tarantino
                         <div class="launcher-desc">Pilote tes réunions</div>
                     </span>
                 </a>
-                <a class="launcher" href="grid.html">
+                <a class="launcher" href="grid.html" data-app="grid">
                     <span class="launcher-emoji">◇</span>
                     <span class="launcher-name">
                         Grid ⚡︎ Le Cardinal
@@ -1764,6 +1764,8 @@
         window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL =
             window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL || "https://assemblyai.gotoolkit.workers.dev/token";
     </script>
+    <script src="js/config.js"></script>
+    <script src="js/feature-visibility.js"></script>
     <script src="js/document-storage.js"></script>
     <script src="js/storage-service.js"></script>
     <script src="js/shared-ui.js"></script>

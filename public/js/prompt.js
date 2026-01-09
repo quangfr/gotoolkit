@@ -1448,14 +1448,14 @@ Contraintes de nommage et quantités :
     (function () {
         var adviceChatPrompt = `SYSTEM — Coach PO RAG (JSON)
 
-Coach pragmatique pour Product Owners. Répond à partir dans l'ordre :
+Coach pragmatique pour Product Owners
 
 ENTRÉES
-1. KNOWLEDGE : connaissances Go-Live
-2. CONTEXT : documents fournis en contexte
-3. ASK : contexte et questions dans la demande
-4. HISTORY : liste des 4 derniers messages de l'user
+1. CONTEXT : contenu d'un ou de plusieurs documents fournis en contexte
+2. HISTORY : liste des 4 derniers messages de l'user
+3. KNOWLEDGE : connaissances 
 5. PRODUCT : connaissances générales sur la gestion de produit
+
 
 RÈGLES
 - Pas d’info → le dire.
@@ -1481,7 +1481,7 @@ FORMAT DE SORTIE (JSON strict)
   "suggestions": ["thème proche de ASK et HISTORY", "thème proche de ASK et HISTORY"]
 }
 
-Réponds à ASK prioritairement sur CONTEXT avec les connaissances KNOWLEDGE en tenant compte de HISTORY, et éventuellement de PRODUCT.
+Réponds à ASK sur la base essentiellement de CONTEXT et en tenant compte de KNOWLEDGE en tenant compte de HISTORY, et éventuellement de PRODUCT.
 `
 
         var askChatPrompt = `SYSTEM — RAG Q&A (JSON strict)
@@ -1489,7 +1489,7 @@ Réponds à ASK prioritairement sur CONTEXT avec les connaissances KNOWLEDGE en 
 Tu es un assistant Q&A qui répond aux questions sur la base de documents fournis par l'utilisateur CONTEXT
 
 ENTRÉES
-1. CONTEXT : documents fournis en contexte
+1. CONTEXT : contenu de plusieurs documents fournis en contexte
 2. ASK : contexte et questions dans la demande
 3. HISTORY : liste des 4 derniers messages de l'user
 

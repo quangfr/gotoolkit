@@ -1,23 +1,54 @@
-# GoToolkit — Notes for Contributors
+# GoToolkit contributor cheat sheet (concise)
 
-Quick reference for contributors and copilots.
+## Structure
+- Static HTML modules in `public/`; only `src/draw-editor` is bundled (esbuild → `public/js/draw.bundle.js`).
+- Workers live in `workers/` (OpenAI proxy, sharing, feedback, AssemblyAI).
 
-+ **Structure.** Static HTML modules live in `public/`; `src/draw-editor/index.tsx` bundles the Excalidraw bridge into `public/js/draw.bundle.js`. Cloudflare workers are in `workers/` (OpenAI proxy, sharing, feedback). Everything outside `src/draw-editor` is hand-written HTML/JS/CSS.
-- **Navigation.** `public/index.html` links to `canvas.html`, `grid.html`, `draw.html`, `timeline.html`, and `voice.html` with the cache-buster `?v=2025.12.29`. Each page can be opened directly. Pages set `window.GO_TOOLKIT_SHARE_API_URL` (launcher → `https://gotoolkit.workers.dev`, modules → `https://share.gotoolkit.workers.dev/`).
-- **Modules.**
-	- Canvas (`slides`): exports PPTX/PNG/JSON and uses templates in `public/js/prompt.js`.
-	- Grid (`grids`): multi-page AG Grid with CSV/JSON export, template/criteria modal (`public/js/template-criteria.js`), covered by Playwright tests.
-	- Draw (`diagrams`): hosts Excalidraw via `GoToolkitExcalidraw` (Mermaid → Excalidraw conversion).
-	- Timeline (`timelines`): vis-timeline with XLSX/PNG/JSON exports.
-	- Voice (`voices`): recording + STT, transcript/subjects/participants per page; shareable via the `voices` collection. AssemblyAI diarization runs after each recording and uses the participant list so the transcript shows speaker IDs.
-- **Globals / Contracts.** Only scripts in `public/js` touch `window`: `GoToolkitIAConfig`, `GoToolkitAIBackend`, `GoToolkitIAClient.chatCompletion`, `GoToolkitIA.chatCompletion`, `GoToolkitOpenAI`, `GoToolkitWebLLM`, `GoToolkitExcalidraw`, `goToolkitNexusModal`, `goToolkitDocStore`, `goToolkitCapsuleDrafts`, `goToolkitShareHistory`, and `goToolkitShareWorker`. Keep these stable.
-- **AI / Backends.** `public/js/ia-config.js` stores OpenAI/Ollama/WebLLM config in `localStorage` and exposes endpoints (direct + `https://openai.gotoolkit.workers.dev`). `public/js/ia-client.js` normalizes SSE/NDJSON chunks (`normalizeChunk`), streams (`consumeStream/consumeNdjsonStream`), and routes through `GoToolkitAIBackend.getBackend`. WebLLM runs in `public/js/webllm-worker.js` and `public/js/webllm-sw.js`.
-+ **Sharing.** `public/js/share-worker-client.js` builds share URLs from `GO_TOOLKIT_SHARE_API_URL(S)` (includes `https://share.gotoolkit.workers.dev`). The `workers/share-proxy` worker writes to Firestore and rate-limits via KV `RATE_LIMIT`; allowed collections: `slides`, `timelines`, `diagrams`, `grids`, `voices`. Local history: `public/js/share-history.js`. Capsules/drafts: `public/js/document-storage.js` + `public/js/capsule-drafts.js` (IndexedDB with `localStorage` fallback).
-+ **Storage / IndexedDB.** `public/js/document-storage.js` opens the shared `go-toolkit` database (stores: `capsule-drafts`, `share-history`, `documents-settings`) and exposes `goToolkitDocStore.createStore(name)` wrappers so every module reuses the same IndexedDB schema with fallback behavior. `public/js/document-parser.js` builds the `gotoolkit-documents` database (stores: `documents`, `chunks`, `keyword_meta`) for the knowledge/embeddings pipeline; work with `GoToolkitDocumentManager` when you need document persistence or keyword indexes.
-- **Excalidraw Bridge.** `src/draw-editor/index.tsx` renders Excalidraw, forces a light theme, reuses current state to apply a scene, and normalizes Mermaid elements (stroke/rounding). Exposed as `window.GoToolkitExcalidraw` for Draw.
-- **Cache / Version.** Update `?v=2025.12.29` everywhere (launcher links, `prompt.js` includes, navigation) when assets change.
-+ **Build.** `npm install` → `npm run build` (esbuild bundles `src/draw-editor/index.tsx` into `public/js/draw.bundle.js`). `npm start` serves `public/` on port 5000; skip the explicit test mention here to keep AGENTS concise.
-- **Workers.** `workers/openai-proxy` requires `OPENAI_API_KEY` + KV `RATE_LIMIT`; handles CORS, payload size, and IP quotas. `workers/share-proxy` requires `FIREBASE_SERVICE_ACCOUNT` JSON, optional `FIREBASE_PROJECT_ID`, `SHARE_ALLOWED_ORIGINS`, and KV `RATE_LIMIT`. `workers/feedback-proxy` shares these secrets and KV. `workers/assemblyai-proxy` proxies the AssemblyAI streaming token endpoint; the browser calls it with `X-AssemblyAI-Key` (no secret stored in the worker) so `voice.html` can establish the WebSocket despite CORS. Code targets the Cloudflare runtime.
-- **Debug.** Inspect `window.GoToolkit*` in the console for the AI backend, Excalidraw API, share worker state, or drafts. Local state lives mainly in `localStorage` (`go-toolkit-*`) and IndexedDB (`capsule-drafts` / `share-history`).
-- **Contributing guide.** For step-by-step instructions on creating a new module (header, tabs, sharing, IndexedDB drafts, context sidebar, IA wiring, prompt templates, and checklist), see `CONTRIBUTE.md`.
-- **Documentation policy.** `public/releases.md` and `public/roadmap.md` are maintained outside this workflow—do not modify them unless explicitly asked, so AGENTS-driven changes stay limited to other files.
+## Navigation + cache
+- `public/index.html` links: `canvas.html`, `grid.html`, `draw.html`, `timeline.html`, `voice.html`.
+- All module links include `?v=2025.12.29`; bump everywhere when assets change.
+- Each page sets `window.GO_TOOLKIT_SHARE_API_URL`: launcher `https://gotoolkit.workers.dev`, modules `https://share.gotoolkit.workers.dev/`.
+
+## Modules
+- Canvas (`slides`): PPTX/PNG/JSON export; templates in `public/js/prompt.js`. Deprecated.
+- Grid (`grids`): AG Grid, CSV/JSON export, template/criteria modal `public/js/template-criteria.js`, covered by Playwright.
+- Draw (`diagrams`): Excalidraw via `window.GoToolkitExcalidraw` (Mermaid → Excalidraw).
+- Timeline (`timelines`): vis-timeline, XLSX/PNG/JSON export. Deprecated.
+- Voice (`voices`): recording + STT; diarization uses participant list; shareable via `voices` collection. Deprecated.
+
+## Globals (keep stable)
+Only `public/js` may touch `window`:
+`GoToolkitIAConfig`, `GoToolkitAIBackend`, `GoToolkitIAClient.chatCompletion`, `GoToolkitIA.chatCompletion`, `GoToolkitOpenAI`, `GoToolkitWebLLM`, `GoToolkitExcalidraw`, `goToolkitNexusModal`, `goToolkitDocStore`, `goToolkitCapsuleDrafts`, `goToolkitShareHistory`, `goToolkitShareWorker`.
+
+## AI + storage
+- `public/js/ia-config.js`: OpenAI/Ollama/WebLLM config + endpoints (direct + `https://openai.gotoolkit.workers.dev`). Ollama and WebLLM deprecated.
+- `public/js/ia-client.js`: stream normalization + backend routing; WebLLM workers in `public/js/webllm-worker.js` / `public/js/webllm-sw.js`.
+- `public/js/document-storage.js`: IndexedDB `go-toolkit` (stores `capsule-drafts`, `share-history`, `documents-settings`) + shared store wrappers.
+- `public/js/document-parser.js`: `gotoolkit-documents` DB (stores `documents`, `chunks`, `keyword_meta`) via `GoToolkitDocumentManager`.
+
+## Sharing
+- `public/js/share-worker-client.js` builds URLs from `GO_TOOLKIT_SHARE_API_URL(S)`.
+- `workers/share-proxy`: Firestore + KV `RATE_LIMIT`; allowed collections `slides`, `timelines`, `diagrams`, `grids`, `voices`.
+- Local history: `public/js/share-history.js`; drafts: `public/js/capsule-drafts.js`.
+
+## Build + runtime
+- Build: `npm install` → `npm run build` (bundles draw editor).
+- Dev: `npm start` serves `public/` on port 5000.
+- Excalidraw bridge: `src/draw-editor/index.tsx` forces light theme, normalizes Mermaid, exposes `window.GoToolkitExcalidraw`.
+
+## Workers env
+- `workers/openai-proxy`: `OPENAI_API_KEY` + KV `RATE_LIMIT`.
+- `workers/share-proxy`: `FIREBASE_SERVICE_ACCOUNT`, optional `FIREBASE_PROJECT_ID`, `SHARE_ALLOWED_ORIGINS`, KV `RATE_LIMIT`.
+- `workers/feedback-proxy`: same secrets as share.
+- `workers/assemblyai-proxy`: forwards streaming token; browser sends `X-AssemblyAI-Key` (no secret stored).
+
+## Specs & Optimization
+See [specs/README.md](specs/README.md) for performance optimization guides:
+- [JSON Import Optimization](specs/JSON_IMPORT_OPTIMIZATION.md) - 8-15x speedup strategies
+- [JSON Import Implementation](specs/JSON_IMPORT_OPTIMIZATION_IMPL.md) - Ready-to-apply code patches
+- [RAG Indexing Strategy](specs/RAG_INDEXING_STRATEGY.md) - Hybrid vector + keyword indexing
+
+## Debug + docs
+- Inspect `window.GoToolkit*`; local state in `localStorage` (`go-toolkit-*`) and IndexedDB (`capsule-drafts`, `share-history`).
+- New module steps: `CONTRIBUTE.md`.
+- Do not edit `public/releases.md` or `public/roadmap.md` unless explicitly asked.

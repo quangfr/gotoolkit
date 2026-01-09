@@ -94,6 +94,12 @@
         "docx",
         "pptx",
         "xlsx",
+        "json",
+        "csv",
+        "tsv",
+        "log",
+        "jsonl",
+        "ndjson",
         "txt",
         "md",
         "rtf",
@@ -121,6 +127,508 @@
             if (end === text.length) break;
             i = Math.max(0, end - overlap);
         }
+        return chunks;
+    }
+
+    function splitLines(text) {
+        return (text || "").split(/\r?\n/);
+    }
+
+    function detectDelimiter(line) {
+        if (line.includes("\t")) return "\t";
+        if (line.includes(";")) return ";";
+        return ",";
+    }
+
+    function chunkRows(text, options = {}) {
+        const lines = splitLines(text).filter((line) => line.trim().length);
+        if (!lines.length) return [];
+        const header = lines[0];
+        const delimiter = detectDelimiter(header);
+        const minRows = options.minRows ?? 20;
+        const maxRows = options.maxRows ?? 200;
+        const chunks = [];
+        let start = 1;
+        while (start < lines.length) {
+            const end = Math.min(lines.length, start + maxRows);
+            const rows = lines.slice(start, end);
+            const payload = [header, ...rows].join("\n");
+            chunks.push({
+                text: payload,
+                metadata: {
+                    delimiter,
+                    header,
+                    startRow: start,
+                    endRow: end - 1
+                }
+            });
+            start = end;
+        }
+        if (!chunks.length && lines.length === 1) {
+            chunks.push({
+                text: header,
+                metadata: { delimiter, header, startRow: 0, endRow: 0 }
+            });
+        }
+        return chunks;
+    }
+
+    function countTokens(text) {
+        if (!text) return 0;
+        const tokens = text.trim().split(/\s+/);
+        return tokens.filter(Boolean).length;
+    }
+
+    function chunkByTokens(text, options = {}) {
+        const target = options.targetTokens ?? 600;
+        const minTokens = options.minTokens ?? 300;
+        const maxTokens = options.maxTokens ?? 800;
+        const words = (text || "").trim().split(/\s+/).filter(Boolean);
+        if (!words.length) return [];
+        const chunks = [];
+        let start = 0;
+        while (start < words.length) {
+            const end = Math.min(words.length, start + target);
+            const slice = words.slice(start, end);
+            if (slice.length < minTokens && end < words.length) {
+                const extra = Math.min(words.length, start + maxTokens);
+                chunks.push(slice.concat(words.slice(end, extra)).join(" "));
+                start = extra;
+            } else {
+                chunks.push(slice.join(" "));
+                start = end;
+            }
+        }
+        return chunks;
+    }
+
+    function chunkMarkdownSections(text) {
+        const lines = splitLines(text);
+        const sections = [];
+        let current = { headingPath: [], lines: [] };
+        const flush = () => {
+            const body = current.lines.join("\n").trim();
+            if (!body) return;
+            sections.push({
+                headingPath: current.headingPath.slice(),
+                text: body
+            });
+            current.lines = [];
+        };
+        for (const line of lines) {
+            const headingMatch = /^(#{1,6})\s+(.*)$/.exec(line.trim());
+            if (headingMatch) {
+                flush();
+                const level = headingMatch[1].length;
+                const title = headingMatch[2].trim();
+                current.headingPath = current.headingPath.slice(0, level - 1);
+                current.headingPath[level - 1] = title;
+                current.lines.push(line);
+                continue;
+            }
+            current.lines.push(line);
+        }
+        flush();
+        return sections;
+    }
+
+    function chunkParagraphs(text, options = {}) {
+        const paragraphs = text.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+        if (!paragraphs.length) return [];
+        const merged = [];
+        for (const para of paragraphs) {
+            if (!merged.length) {
+                merged.push(para);
+                continue;
+            }
+            if (para.length < 200) {
+                merged[merged.length - 1] += "\n" + para;
+            } else {
+                merged.push(para);
+            }
+        }
+        const chunks = [];
+        const maxChars = options.maxChars ?? 2400;
+        for (const para of merged) {
+            if (para.length <= maxChars) {
+                chunks.push(para);
+                continue;
+            }
+            const sentences = para.split(/(?<=[.!?])\s+/);
+            let current = "";
+            for (const sentence of sentences) {
+                if (!current.length) {
+                    current = sentence;
+                    continue;
+                }
+                if (current.length + sentence.length + 1 > maxChars) {
+                    chunks.push(current);
+                    current = sentence;
+                } else {
+                    current += " " + sentence;
+                }
+            }
+            if (current) chunks.push(current);
+        }
+        return chunks;
+    }
+
+    function looksLikeLog(text) {
+        const lines = splitLines(text).slice(0, 40);
+        const timestampRegex = /^\[?\d{4}-\d{2}-\d{2}[T\s]/;
+        let hits = 0;
+        for (const line of lines) {
+            if (timestampRegex.test(line.trim())) hits += 1;
+        }
+        return hits >= 6;
+    }
+
+    function parseLogMetadata(lines) {
+        const timestampRegex = /^\[?(\d{4}-\d{2}-\d{2}[T\s][\d:.+-]+)\]?/;
+        const levelRegex = /\b(INFO|WARN|WARNING|ERROR|DEBUG|TRACE|FATAL)\b/;
+        const serviceRegex = /\bservice=([A-Za-z0-9_.-]+)\b|\[([A-Za-z0-9_.-]+)\]/;
+        let firstTimestamp = null;
+        let lastTimestamp = null;
+        const levels = new Map();
+        const services = new Map();
+        lines.forEach((line) => {
+            const ts = timestampRegex.exec(line);
+            if (ts && ts[1]) {
+                if (!firstTimestamp) firstTimestamp = ts[1];
+                lastTimestamp = ts[1];
+            }
+            const level = levelRegex.exec(line);
+            if (level && level[1]) {
+                const key = level[1].toLowerCase();
+                levels.set(key, (levels.get(key) || 0) + 1);
+            }
+            const service = serviceRegex.exec(line);
+            const serviceValue = service && (service[1] || service[2]);
+            if (serviceValue) {
+                services.set(serviceValue, (services.get(serviceValue) || 0) + 1);
+            }
+        });
+        return {
+            firstTimestamp,
+            lastTimestamp,
+            levels: Array.from(levels.entries()),
+            services: Array.from(services.entries())
+        };
+    }
+
+    function chunkLogEvents(text, options = {}) {
+        const lines = splitLines(text).filter((line) => line.trim().length);
+        const batchSize = options.batchSize ?? 80;
+        const chunks = [];
+        let batch = [];
+        for (const line of lines) {
+            batch.push(line);
+            if (batch.length >= batchSize) {
+                const metadata = parseLogMetadata(batch);
+                chunks.push({ text: batch.join("\n"), metadata });
+                batch = [];
+            }
+        }
+        if (batch.length) {
+            const metadata = parseLogMetadata(batch);
+            chunks.push({ text: batch.join("\n"), metadata });
+        }
+        return chunks;
+    }
+
+    function isPlainObject(value) {
+        if (!value || typeof value !== "object") return false;
+        const proto = Object.getPrototypeOf(value);
+        return proto === Object.prototype || proto === null;
+    }
+
+    function isPrimitive(value) {
+        return value === null || (typeof value !== "object" && typeof value !== "function");
+    }
+
+    function isSafePathKey(key) {
+        return /^[A-Za-z_][A-Za-z0-9_]*$/.test(key);
+    }
+
+    function joinJsonPath(parentPath, key) {
+        if (parentPath === "$" || !parentPath) {
+            return isSafePathKey(key) ? `$.${key}` : `$[\"${key.replace(/\"/g, "\\\"")}\"]`;
+        }
+        return isSafePathKey(key)
+            ? `${parentPath}.${key}`
+            : `${parentPath}[\"${key.replace(/\"/g, "\\\"")}\"]`;
+    }
+
+    function estimateJsonSize(node, limit = Infinity) {
+        let total = 0;
+        const stack = [{ value: node, state: "enter" }];
+        while (stack.length) {
+            const frame = stack.pop();
+            const value = frame.value;
+            if (frame.state === "exit") {
+                total += 1;
+                if (total > limit) return total;
+                continue;
+            }
+            if (value === null) {
+                total += 4;
+                if (total > limit) return total;
+                continue;
+            }
+            const type = typeof value;
+            if (type === "string") {
+                total += value.length + 2;
+                if (total > limit) return total;
+                continue;
+            }
+            if (type === "number" || type === "boolean") {
+                total += String(value).length;
+                if (total > limit) return total;
+                continue;
+            }
+            if (Array.isArray(value)) {
+                total += 1;
+                if (total > limit) return total;
+                stack.push({ value, state: "exit" });
+                for (let i = value.length - 1; i >= 0; i--) {
+                    if (i < value.length - 1) total += 1;
+                    stack.push({ value: value[i], state: "enter" });
+                    if (total > limit) return total;
+                }
+                continue;
+            }
+            if (isPlainObject(value)) {
+                const keys = Object.keys(value);
+                total += 1;
+                if (total > limit) return total;
+                stack.push({ value, state: "exit" });
+                for (let i = keys.length - 1; i >= 0; i--) {
+                    const key = keys[i];
+                    if (i < keys.length - 1) total += 1;
+                    total += key.length + 2 + 1;
+                    stack.push({ value: value[key], state: "enter" });
+                    if (total > limit) return total;
+                }
+                continue;
+            }
+            total += String(value).length;
+            if (total > limit) return total;
+        }
+        return total;
+    }
+
+    function truncateString(value, maxChars) {
+        if (typeof value !== "string") return value;
+        if (value.length <= maxChars) return value;
+        return value.slice(0, maxChars).trimEnd() + "...";
+    }
+
+    function renderJsonForEmbedding(node, path, options = {}) {
+        const maxTotal = options.maxTotalChars || 1400;
+        const maxString = options.maxStringChars || 600;
+        const parts = [`path: ${path || "$"}`];
+        let budget = maxTotal - parts[0].length;
+        const pushLine = (line) => {
+            if (budget <= 0) return;
+            const clipped = line.length > budget ? line.slice(0, budget) : line;
+            parts.push(clipped);
+            budget -= clipped.length;
+        };
+        if (isPrimitive(node)) {
+            if (typeof node === "string") {
+                pushLine(`value: \"${truncateString(node, maxString)}\"`);
+            } else {
+                pushLine(`value: ${String(node)}`);
+            }
+            return parts.join("\n");
+        }
+        if (Array.isArray(node)) {
+            pushLine(`type: array (${node.length})`);
+            const preview = [];
+            for (let i = 0; i < node.length && preview.length < 6; i++) {
+                const value = node[i];
+                if (isPrimitive(value)) {
+                    preview.push(typeof value === "string"
+                        ? `\"${truncateString(value, Math.min(maxString, 120))}\"`
+                        : String(value));
+                }
+            }
+            if (preview.length) {
+                pushLine(`items: ${preview.join(" | ")}`);
+            }
+            return parts.join("\n");
+        }
+        if (isPlainObject(node)) {
+            const keys = Object.keys(node);
+            pushLine(`type: object (${keys.length})`);
+            for (let i = 0; i < keys.length; i++) {
+                const key = keys[i];
+                const value = node[key];
+                if (isPrimitive(value)) {
+                    const rendered = typeof value === "string"
+                        ? `\"${truncateString(value, Math.min(maxString, 220))}\"`
+                        : String(value);
+                    pushLine(`${key}: ${rendered}`);
+                } else if (Array.isArray(value)) {
+                    pushLine(`${key}: [array ${value.length}]`);
+                } else if (isPlainObject(value)) {
+                    pushLine(`${key}: {object}`);
+                } else {
+                    pushLine(`${key}: ${String(value)}`);
+                }
+                if (budget <= 0) break;
+            }
+            return parts.join("\n");
+        }
+        pushLine(`value: ${String(node)}`);
+        return parts.join("\n");
+    }
+
+    function chunkLongString(value, path, options) {
+        const chunks = [];
+        const maxChunkChars = options.maxStringChunkChars || 5000;
+        const totalParts = Math.ceil(value.length / maxChunkChars);
+        for (let i = 0; i < value.length; i += maxChunkChars) {
+            const part = value.slice(i, i + maxChunkChars);
+            const partIndex = Math.floor(i / maxChunkChars);
+            const partPath = `${path}#part${partIndex + 1}`;
+            chunks.push({
+                path: partPath,
+                parentPath: path,
+                rawChunk: part,
+                textForEmbedding: renderJsonForEmbedding(part, partPath, options),
+                metadata: {
+                    nodeType: "string",
+                    partIndex: partIndex + 1,
+                    partCount: totalParts,
+                    totalLength: value.length
+                }
+            });
+        }
+        return chunks;
+    }
+
+    function chunkJsonNode(node, path, parentPath, options, chunks) {
+        const maxChunkChars = options.maxChunkChars || 6500;
+        const sizeEstimate = estimateJsonSize(node, maxChunkChars + 1);
+        const nodeType = Array.isArray(node) ? "array" : isPlainObject(node) ? "object" : typeof node;
+        if (sizeEstimate <= maxChunkChars) {
+            chunks.push({
+                path,
+                parentPath,
+                rawChunk: node,
+                textForEmbedding: renderJsonForEmbedding(node, path, options),
+                metadata: {
+                    nodeType,
+                    sizeEstimate
+                }
+            });
+            return;
+        }
+        if (typeof node === "string") {
+            chunks.push(...chunkLongString(node, path, options));
+            return;
+        }
+        if (Array.isArray(node)) {
+            const items = node;
+            let batch = [];
+            let batchStart = 0;
+            let batchSize = 2;
+            const flushBatch = (endIndex) => {
+                if (!batch.length) return;
+                const batchPath = `${path}[${batchStart}:${endIndex}]`;
+                chunks.push({
+                    path: batchPath,
+                    parentPath: path,
+                    rawChunk: batch.slice(),
+                    textForEmbedding: renderJsonForEmbedding(batch, batchPath, options),
+                    metadata: {
+                        nodeType: "array",
+                        startIndex: batchStart,
+                        endIndex: endIndex - 1,
+                        itemCount: batch.length
+                    }
+                });
+                batch = [];
+                batchStart = endIndex;
+                batchSize = 2;
+            };
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+                const itemSize = estimateJsonSize(item, maxChunkChars + 1);
+                if (itemSize > maxChunkChars) {
+                    flushBatch(i);
+                    const itemPath = `${path}[${i}]`;
+                    chunkJsonNode(item, itemPath, path, options, chunks);
+                    continue;
+                }
+                if (batchSize + itemSize > maxChunkChars) {
+                    flushBatch(i);
+                }
+                batch.push(item);
+                batchSize += itemSize + 1;
+            }
+            flushBatch(items.length);
+            return;
+        }
+        if (isPlainObject(node)) {
+            const keys = Object.keys(node);
+            let batch = {};
+            let batchKeys = [];
+            let batchSize = 2;
+            const flushBatch = () => {
+                if (!batchKeys.length) return;
+                const batchPath = batchKeys.length === 1
+                    ? joinJsonPath(path, batchKeys[0])
+                    : `${path}{${batchKeys.join(",")}}`;
+                chunks.push({
+                    path: batchPath,
+                    parentPath: path,
+                    rawChunk: { ...batch },
+                    textForEmbedding: renderJsonForEmbedding(batch, batchPath, options),
+                    metadata: {
+                        nodeType: "object",
+                        keys: batchKeys.slice()
+                    }
+                });
+                batch = {};
+                batchKeys = [];
+                batchSize = 2;
+            };
+            for (const key of keys) {
+                const value = node[key];
+                const entrySize = estimateJsonSize(value, maxChunkChars + 1) + key.length + 4;
+                if (entrySize > maxChunkChars) {
+                    flushBatch();
+                    const childPath = joinJsonPath(path, key);
+                    chunkJsonNode(value, childPath, path, options, chunks);
+                    continue;
+                }
+                if (batchSize + entrySize > maxChunkChars) {
+                    flushBatch();
+                }
+                batch[key] = value;
+                batchKeys.push(key);
+                batchSize += entrySize + 1;
+            }
+            flushBatch();
+            return;
+        }
+        chunks.push({
+            path,
+            parentPath,
+            rawChunk: node,
+            textForEmbedding: renderJsonForEmbedding(node, path, options),
+            metadata: {
+                nodeType,
+                sizeEstimate
+            }
+        });
+    }
+
+    function buildJsonChunks(data, options = {}) {
+        const chunks = [];
+        chunkJsonNode(data, "$", null, options, chunks);
         return chunks;
     }
 
@@ -465,6 +973,27 @@
             if (!this.embedder) throw new Error("Embedder indisponible");
             const output = await this.embedder(text, { pooling: "mean", normalize: true });
             return output.data;
+        }
+
+        async embedBatch(texts) {
+            if (!texts || !texts.length) return [];
+            await this.waitReady();
+            await this.ensureEmbedder();
+            if (!this.embedder) throw new Error("Embedder indisponible");
+            try {
+                const outputs = await this.embedder(texts, { pooling: "mean", normalize: true });
+                if (Array.isArray(outputs)) {
+                    return outputs.map((out) => out.data || out);
+                }
+                if (outputs && outputs.data) {
+                    return [outputs.data];
+                }
+                console.warn("Unexpected embedder output format");
+                return Promise.all(texts.map((text) => this.embed(text)));
+            } catch (err) {
+                console.warn("Batch embedding failed, falling back to sequential", err);
+                return Promise.all(texts.map((text) => this.embed(text)));
+            }
         }
 
         async persistKeywordMeta() {
@@ -837,42 +1366,152 @@
                 }
                 const extractedText = typeof extractionResult?.text === "string" ? extractionResult.text : "";
                 console.log(`Successfully extracted ${extractedText.length} characters from ${file.name}`);
+                const jsonChunks = Array.isArray(extractionResult?.jsonChunks) ? extractionResult.jsonChunks : null;
                 const normalized = normalizeText(extractedText);
-                const chunkConfig = this.getChunkConfigForText(extractedText || normalized);
-                const pageSegments = Array.isArray(extractionResult?.pdfPages) ? extractionResult.pdfPages : null;
-                const segments = [];
-                if (pageSegments && pageSegments.length) {
-                    pageSegments.forEach((pageEntry, pageIndex) => {
-                        const pageText = normalizeText(pageEntry?.text || "");
-                        if (!pageText) return;
-                        const pageNumber = Number.isFinite(pageEntry.pageNumber)
-                            ? pageEntry.pageNumber
-                            : (pageIndex + 1);
-                        segments.push({ text: pageText, pageNumber });
+                let chunkConfig = this.getChunkConfigForText(extractedText || normalized);
+                let chunkList = [];
+                let totalChars = 0;
+                const ext = getExtension(file.name);
+                const isLogFile = ext === "log" || ext === "jsonl" || ext === "ndjson" || looksLikeLog(normalized);
+                if (jsonChunks && jsonChunks.length) {
+                    chunkList = jsonChunks.map((chunk) => ({
+                        text: chunk?.textForEmbedding || "",
+                        rawChunk: chunk?.rawChunk,
+                        path: chunk?.path || "$",
+                        parentPath: chunk?.parentPath || null,
+                        metadata: chunk?.metadata || null
+                    }));
+                    totalChars = chunkList.reduce((acc, chunk) => acc + (chunk.text || "").length, 0);
+                    chunkConfig = this.getChunkConfigForText(chunkList.map((chunk) => chunk.text).join("\n"));
+                } else if (ext === "csv" || ext === "tsv" || ext === "xlsx" || ext === "ods") {
+                    const rowChunks = chunkRows(normalized, { minRows: 20, maxRows: 200 });
+                    chunkList = rowChunks.map((chunk) => ({
+                        text: chunk.text,
+                        metadata: { ...(chunk.metadata || {}), chunkType: "table-rows" }
+                    }));
+                    totalChars = chunkList.reduce((acc, chunk) => acc + (chunk.text || "").length, 0);
+                    chunkConfig = this.getChunkConfigForText(chunkList.map((chunk) => chunk.text).join("\n"));
+                } else if (ext === "md" || ext === "docx" || ext === "pptx" || ext === "odt" || ext === "rtf" || ext === "doc") {
+                    const sections = chunkMarkdownSections(normalized);
+                    if (sections.length) {
+                        sections.forEach((section) => {
+                            const textBlocks = chunkByTokens(section.text, {
+                                targetTokens: 600,
+                                minTokens: 300,
+                                maxTokens: 800
+                            });
+                            if (textBlocks.length) {
+                                textBlocks.forEach((block) => {
+                                    chunkList.push({
+                                        text: block,
+                                        metadata: {
+                                            chunkType: "section",
+                                            headingPath: section.headingPath
+                                        }
+                                    });
+                                });
+                            } else {
+                                chunkList.push({
+                                    text: section.text,
+                                    metadata: {
+                                        chunkType: "section",
+                                        headingPath: section.headingPath
+                                    }
+                                });
+                            }
+                        });
+                    } else {
+                        const fallback = chunkByTokens(normalized, { targetTokens: 600, minTokens: 300, maxTokens: 800 });
+                        chunkList = fallback.map((block) => ({ text: block, metadata: { chunkType: "section" } }));
+                    }
+                    totalChars = chunkList.reduce((acc, chunk) => acc + (chunk.text || "").length, 0);
+                    chunkConfig = this.getChunkConfigForText(chunkList.map((chunk) => chunk.text).join("\n"));
+                } else if (isLogFile) {
+                    const eventChunks = chunkLogEvents(normalized, { batchSize: 80 });
+                    chunkList = eventChunks.map((block) => ({
+                        text: block.text,
+                        metadata: { chunkType: "events", ...(block.metadata || {}) }
+                    }));
+                    totalChars = chunkList.reduce((acc, chunk) => acc + (chunk.text || "").length, 0);
+                    chunkConfig = this.getChunkConfigForText(chunkList.map((chunk) => chunk.text).join("\n"));
+                } else {
+                    const pageSegments = Array.isArray(extractionResult?.pdfPages) ? extractionResult.pdfPages : null;
+                    const segments = [];
+                    if (pageSegments && pageSegments.length) {
+                        pageSegments.forEach((pageEntry, pageIndex) => {
+                            const pageText = normalizeText(pageEntry?.text || "");
+                            if (!pageText) return;
+                            const pageNumber = Number.isFinite(pageEntry.pageNumber)
+                                ? pageEntry.pageNumber
+                                : (pageIndex + 1);
+                            segments.push({ text: pageText, pageNumber });
+                        });
+                    }
+                    if (!segments.length) {
+                        segments.push({ text: normalized, pageNumber: null });
+                    }
+                    totalChars = segments.reduce((acc, segment) => acc + (segment.text || "").length, 0);
+                    segments.forEach((segment) => {
+                        const paragraphChunks = chunkParagraphs(segment.text, { maxChars: 2400 });
+                        if (paragraphChunks.length) {
+                            paragraphChunks.forEach((chunkText) => {
+                                chunkList.push({
+                                    text: chunkText,
+                                    pageNumber: segment.pageNumber,
+                                    metadata: { chunkType: "pdf-paragraph" }
+                                });
+                            });
+                            return;
+                        }
+                        const segmentChunks = chunkText(segment.text, chunkConfig.chunkSize, chunkConfig.chunkOverlap);
+                        const sourceChunks = segmentChunks.length ? segmentChunks : [""];
+                        sourceChunks.forEach((chunkText) => {
+                            chunkList.push({ text: chunkText, pageNumber: segment.pageNumber });
+                        });
                     });
                 }
-                if (!segments.length) {
-                    segments.push({ text: normalized, pageNumber: null });
-                }
-                const chunkList = [];
-                segments.forEach((segment) => {
-                    const segmentChunks = chunkText(segment.text, chunkConfig.chunkSize, chunkConfig.chunkOverlap);
-                    const sourceChunks = segmentChunks.length ? segmentChunks : [""];
-                    sourceChunks.forEach((chunkText) => {
-                        chunkList.push({ text: chunkText, pageNumber: segment.pageNumber });
-                    });
+                onProgress?.({
+                    type: "chars",
+                    file: file.name,
+                    processedChars: 0,
+                    totalChars
                 });
                 const chunkTotal = chunkList.length;
-                let lastProgress = 0;
+                const allTexts = chunkList.map((meta) => meta?.text || "");
+                onProgress?.({ type: "chunk", file: file.name, progress: 5 });
+                console.log(`Batch embedding ${chunkTotal} chunks for ${file.name}...`);
+                const startEmbedTime = performance.now();
+                const allEmbeddings = await this.embedBatch(allTexts);
+                const embedDuration = performance.now() - startEmbedTime;
+                console.log(`Batch embedding took ${(embedDuration / 1000).toFixed(2)}s for ${chunkTotal} chunks`);
+                onProgress?.({ type: "chunk", file: file.name, progress: 50 });
+                const zeroEmb = new Float32Array(384);
+                let processedChars = 0;
                 for (let c = 0; c < chunkTotal; c++) {
                     const chunkMeta = chunkList[c];
-                    const percent = Math.round(((c + 1) / chunkTotal) * 100);
-                    if (percent !== lastProgress) {
+                    if (c % Math.ceil(chunkTotal / 20) === 0) {
+                        const percent = Math.round((50 + (c / chunkTotal) * 50));
                         onProgress?.({ type: "chunk", file: file.name, progress: percent });
-                        lastProgress = percent;
                     }
                     const chunkText = chunkMeta?.text || "";
-                    const emb = await this.embed(chunkText);
+                    processedChars += chunkText.length;
+                    if (totalChars > 0 && (c % Math.ceil(chunkTotal / 20) === 0 || c === chunkTotal - 1)) {
+                        onProgress?.({
+                            type: "chars",
+                            file: file.name,
+                            processedChars,
+                            totalChars
+                        });
+                    }
+                    let emb;
+                    if (chunkText.trim().length < 20) {
+                        emb = zeroEmb;
+                    } else {
+                        emb = allEmbeddings[c];
+                        if (!emb || !emb.length) {
+                            emb = await this.embed(chunkText);
+                        }
+                    }
                     const chunkEntry = {
                         id: crypto.randomUUID(),
                         conversationId: convId,
@@ -880,6 +1519,10 @@
                         idx: c,
                         text: chunkText,
                         page: Number.isFinite(chunkMeta?.pageNumber) ? chunkMeta.pageNumber : undefined,
+                        path: chunkMeta?.path,
+                        parentPath: chunkMeta?.parentPath,
+                        rawChunk: chunkMeta?.rawChunk,
+                        metadata: chunkMeta?.metadata,
                         emb: Array.from(emb),
                         createdAt: Date.now(),
                         size: chunkConfig.category,
@@ -888,6 +1531,7 @@
                     await this.putChunk(chunkEntry);
                     await this.addChunkToKeywordIndex(chunkEntry, baseEntry);
                 }
+                onProgress?.({ type: "chunk", file: file.name, progress: 100 });
                 baseEntry.status = "ready";
                 baseEntry.parsedAt = Date.now();
                 baseEntry.chunkCount = chunkTotal;
@@ -926,6 +1570,12 @@
             if (ext === "odt" || ext === "odf") {
                 return { text: await this.extractOdf(file) };
             }
+            if (ext === "json") {
+                return this.extractJson(file);
+            }
+            if (ext === "csv" || ext === "tsv" || ext === "log" || ext === "jsonl" || ext === "ndjson") {
+                return { text: await file.text() };
+            }
             if (ext === "rtf" || ext === "doc") {
                 return { text: await file.text() };
             }
@@ -936,6 +1586,26 @@
                 return { text: await file.text() };
             }
             return { text: await file.text() };
+        }
+
+        async extractJson(file) {
+            const raw = await file.text();
+            if (!raw || !raw.trim()) {
+                return { text: "" };
+            }
+            try {
+                const data = JSON.parse(raw);
+                const jsonChunks = buildJsonChunks(data, {
+                    maxChunkChars: 6500,
+                    maxStringChunkChars: 5000,
+                    maxTotalChars: 1400,
+                    maxStringChars: 600
+                });
+                return { text: "", jsonChunks };
+            } catch (err) {
+                console.warn("JSON parse failed, falling back to raw text", err);
+                return { text: raw };
+            }
         }
 
         async extractPdf(file) {
@@ -1089,6 +1759,7 @@
                 ...chunk,
                 score,
                 docName: docMeta?.name || "Document",
+                fileName: docMeta?.sourceFileName || docMeta?.name || "Document",
                 sourceType: docMeta?.sourceType || "context",
                 docScopes: Array.isArray(docMeta?.scope) ? docMeta.scope : [],
                 docAbstract: docMeta?.abstract || "",
