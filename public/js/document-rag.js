@@ -71,12 +71,13 @@
     const STORAGE_KEY = "goToolkit.documents.settings";
     const MEMO_EMBEDDINGS_ENABLED_MIGRATION_KEY = "goToolkit.memoEmbeddings.enabledMigrated";
     const DB_NAME = "gotoolkit-documents";
-    const DB_VERSION = 4;
+    const DB_VERSION = 5;
     const REQUIRED_STORES = ["documents", "chunks", "keyword_meta", "memo_context_embeddings"];
     const PDFJS_URL = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.6.82/+esm";
     const PDFJS_WORKER = "js/pdf.worker.min.mjs";
     const TRANSFORMERS_URL = "https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2";
     const JSZIP_URL = "https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm";
+    const EMBED_BATCH_MAX = 64;
 
     function getMissingStores(db) {
         if (!db || !db.objectStoreNames) return REQUIRED_STORES.slice();
@@ -88,6 +89,15 @@
         if (err.name === "NotFoundError") return true;
         const msg = String(err && (err.message || err)).toLowerCase();
         return msg.includes("object store") && msg.includes("not found");
+    }
+
+    function isDbClosingError(err) {
+        if (!err) return false;
+        if (err.name === "InvalidStateError") {
+            const msg = String(err && (err.message || err)).toLowerCase();
+            return msg.includes("database connection is closing");
+        }
+        return false;
     }
 
     const ACCEPTED_EXTENSIONS = new Set([
@@ -633,6 +643,13 @@
         return chunks;
     }
 
+    // Export helper functions for testing/benchmarking
+    if (typeof global !== "undefined") {
+        global.GoToolkitBuildJsonChunks = buildJsonChunks;
+        global.GoToolkitChunkJsonNode = chunkJsonNode;
+        global.GoToolkitRenderJsonForEmbedding = renderJsonForEmbedding;
+    }
+
     function parseTimestamp(value) {
         if (typeof value === "number" && Number.isFinite(value)) {
             return value;
@@ -646,11 +663,44 @@
         return 0;
     }
 
-    function cosineSim(a, b) {
+    function isInt8Embedding(value) {
+        return value instanceof Int8Array;
+    }
+
+    function quantizeEmbedding(values) {
+        if (!values || !values.length) return new Int8Array(0);
+        if (isInt8Embedding(values)) return values;
+        const length = values.length;
+        let maxAbs = 0;
+        for (let i = 0; i < length; i++) {
+            const val = values[i];
+            if (!Number.isFinite(val)) continue;
+            const abs = Math.abs(val);
+            if (abs > maxAbs) maxAbs = abs;
+        }
+        if (!maxAbs) return new Int8Array(length);
+        const scale = 127 / maxAbs;
+        const out = new Int8Array(length);
+        for (let i = 0; i < length; i++) {
+            const val = values[i];
+            const scaled = Math.round(val * scale);
+            if (scaled > 127) {
+                out[i] = 127;
+            } else if (scaled < -128) {
+                out[i] = -128;
+            } else {
+                out[i] = scaled;
+            }
+        }
+        return out;
+    }
+
+    function cosineSimInt8(a, b) {
         let dot = 0;
         let na = 0;
         let nb = 0;
-        for (let i = 0; i < a.length; i++) {
+        const len = Math.min(a.length, b.length);
+        for (let i = 0; i < len; i++) {
             const x = a[i];
             const y = b[i];
             dot += x * y;
@@ -733,6 +783,9 @@
             this.pdfjs = null;
             this.jszip = null;
             this.keywordIndex = global.GoToolkitKeywordIndex || null;
+            if (!this.keywordIndex) {
+                console.warn("Keyword index unavailable: GoToolkitKeywordIndex not found.");
+            }
             this.readyPromise = this.initialize();
         }
 
@@ -762,11 +815,7 @@
                 await this.loadSettings();
                 await this.ensureDb();
                 await this.migrateMemoEmbeddingsEnabled();
-                await this.ensureEmbedder();
                 await this.cleanupExpiredEmbeddings();
-                if (this.keywordIndex) {
-                    await this.rebuildKeywordIndex();
-                }
                 this.emitSettings();
             } catch (err) {
                 console.error("Documents manager initialisation failed", err);
@@ -880,8 +929,9 @@
                     return;
                 }
                 const request = indexedDB.open(DB_NAME, DB_VERSION);
-                request.onupgradeneeded = () => {
+                request.onupgradeneeded = (event) => {
                     const db = request.result;
+                    const oldVersion = event?.oldVersion || 0;
                     let docs = null;
                     if (!db.objectStoreNames.contains("documents")) {
                         docs = db.createObjectStore("documents", { keyPath: "id" });
@@ -908,6 +958,21 @@
                         memoStore.createIndex("memoId", "memoId", { unique: false });
                         memoStore.createIndex("docId", "docId", { unique: false });
                         memoStore.createIndex("fileHash", "fileHash", { unique: false });
+                    }
+                    if (oldVersion && oldVersion < 5 && db.objectStoreNames.contains("chunks")) {
+                        const store = request.transaction?.objectStore("chunks");
+                        if (store) {
+                            store.openCursor().onsuccess = (cursorEvent) => {
+                                const cursor = cursorEvent.target.result;
+                                if (!cursor) return;
+                                const value = cursor.value;
+                                if (value?.emb && !isInt8Embedding(value.emb)) {
+                                    value.emb = quantizeEmbedding(value.emb);
+                                    cursor.update(value);
+                                }
+                                cursor.continue();
+                            };
+                        }
                     }
                 };
                 request.onsuccess = async () => {
@@ -979,14 +1044,6 @@
 
             // Re-open so stores exist again.
             await this.ensureDb();
-            // Keyword index is memory-based; it'll be rebuilt on-demand.
-            try {
-                if (this.keywordIndex) {
-                    await this.rebuildKeywordIndex();
-                }
-            } catch (err) {
-                console.warn("Keyword index rebuild after repair failed", err);
-            }
             return true;
         }
 
@@ -1002,15 +1059,36 @@
                     const repaired = await this.ensureDb();
                     return repaired.transaction(storeName, mode).objectStore(storeName);
                 }
+                if (isDbClosingError(err)) {
+                    console.warn("IndexedDB connection closing, reopening", { storeName, mode, err });
+                    this.dbPromise = null;
+                    const reopened = await this.ensureDb();
+                    return reopened.transaction(storeName, mode).objectStore(storeName);
+                }
                 throw err;
             }
         }
 
         async ensureEmbedder() {
             const modelId = this.settings.embedModelId || DEFAULT_SETTINGS.embedModelId;
+            const sharedCache = global.GoToolkitEmbedderCache || (global.GoToolkitEmbedderCache = {});
             if (this.embedder && this.embedModelId === modelId) return;
             if (!this.pipelineFactory) return;
-            this.embedder = await this.pipelineFactory("feature-extraction", modelId, { quantized: true });
+            if (sharedCache.modelId === modelId && sharedCache.embedder) {
+                this.embedder = sharedCache.embedder;
+                this.embedModelId = modelId;
+                return;
+            }
+            if (sharedCache.modelId === modelId && sharedCache.promise) {
+                this.embedder = await sharedCache.promise;
+                this.embedModelId = modelId;
+                return;
+            }
+            sharedCache.modelId = modelId;
+            sharedCache.promise = this.pipelineFactory("feature-extraction", modelId, { quantized: true });
+            this.embedder = await sharedCache.promise;
+            sharedCache.embedder = this.embedder;
+            sharedCache.promise = null;
             this.embedModelId = modelId;
         }
 
@@ -1037,20 +1115,56 @@
             await this.waitReady();
             await this.ensureEmbedder();
             if (!this.embedder) throw new Error("Embedder indisponible");
-            try {
-                const outputs = await this.embedder(texts, { pooling: "mean", normalize: true });
+            const results = new Array(texts.length);
+            const max = Math.max(1, Math.min(EMBED_BATCH_MAX, texts.length));
+            for (let i = 0; i < texts.length; i += max) {
+                const slice = texts.slice(i, i + max);
+                const outputs = await this.embedder(slice, { pooling: "mean", normalize: true });
                 if (Array.isArray(outputs)) {
-                    return outputs.map((out) => out.data || out);
+                    outputs.forEach((out, idx) => {
+                        results[i + idx] = out?.data || out;
+                    });
+                    continue;
                 }
-                if (outputs && outputs.data) {
-                    return [outputs.data];
+                if (outputs && outputs.data && Array.isArray(outputs.dims) && outputs.dims.length === 2) {
+                    const batchSize = Number(outputs.dims[0]) || 0;
+                    const dimSize = Number(outputs.dims[1]) || 0;
+                    if (batchSize !== slice.length || !dimSize) {
+                        throw new Error("Unexpected embedder output format");
+                    }
+                    const flat = outputs.data;
+                    for (let j = 0; j < batchSize; j++) {
+                        const start = j * dimSize;
+                        const end = start + dimSize;
+                        results[i + j] = flat.slice(start, end);
+                    }
+                    continue;
                 }
-                console.warn("Unexpected embedder output format");
-                return Promise.all(texts.map((text) => this.embed(text)));
-            } catch (err) {
-                console.warn("Batch embedding failed, falling back to sequential", err);
-                return Promise.all(texts.map((text) => this.embed(text)));
+                if (outputs && Array.isArray(outputs.data)) {
+                    if (outputs.data.length !== slice.length) {
+                        throw new Error("Unexpected embedder output format");
+                    }
+                    outputs.data.forEach((out, idx) => {
+                        results[i + idx] = out;
+                    });
+                    continue;
+                }
+                if (outputs && outputs.data && slice.length === 1) {
+                    results[i] = outputs.data;
+                    continue;
+                }
+                throw new Error("Unexpected embedder output format");
             }
+            return results;
+        }
+
+        async ensureKeywordIndexReady() {
+            if (!this.keywordIndex) return false;
+            if (this.keywordIndex.index) return true;
+            const size = await this.getKeywordIndexSize();
+            if (!size) return false;
+            await this.rebuildKeywordIndex();
+            return !!this.keywordIndex.index;
         }
 
         async persistKeywordMeta() {
@@ -1697,7 +1811,9 @@
                 let success = true;
                 let errorMessage = "";
                 try {
+                    onProgress?.({ type: "extract", file: file.name, progress: 0 });
                     extractionResult = await this.extractText(file);
+                    onProgress?.({ type: "extract", file: file.name, progress: 100 });
                 } catch (err) {
                     success = false;
                     errorMessage = err?.message || "Erreur d'extraction";
@@ -1711,112 +1827,14 @@
                     results.push({ docId, name: file.name, success: false, error: errorMessage });
                     continue;
                 }
-                const extractedText = typeof extractionResult?.text === "string" ? extractionResult.text : "";
-                console.log(`Successfully extracted ${extractedText.length} characters from ${file.name}`);
-                const jsonChunks = Array.isArray(extractionResult?.jsonChunks) ? extractionResult.jsonChunks : null;
-                const normalized = normalizeText(extractedText);
-                let chunkConfig = this.getChunkConfigForText(extractedText || normalized);
-                let chunkList = [];
-                let totalChars = 0;
-                const ext = getExtension(file.name);
-                const isLogFile = ext === "log" || ext === "jsonl" || ext === "ndjson" || looksLikeLog(normalized);
-                if (jsonChunks && jsonChunks.length) {
-                    chunkList = jsonChunks.map((chunk) => ({
-                        text: chunk?.textForEmbedding || "",
-                        rawChunk: chunk?.rawChunk,
-                        path: chunk?.path || "$",
-                        parentPath: chunk?.parentPath || null,
-                        metadata: chunk?.metadata || null
-                    }));
-                    totalChars = chunkList.reduce((acc, chunk) => acc + (chunk.text || "").length, 0);
-                    chunkConfig = this.getChunkConfigForText(chunkList.map((chunk) => chunk.text).join("\n"));
-                } else if (ext === "csv" || ext === "tsv" || ext === "xlsx" || ext === "ods") {
-                    const rowChunks = chunkRows(normalized, { minRows: 20, maxRows: 200 });
-                    chunkList = rowChunks.map((chunk) => ({
-                        text: chunk.text,
-                        metadata: { ...(chunk.metadata || {}), chunkType: "table-rows" }
-                    }));
-                    totalChars = chunkList.reduce((acc, chunk) => acc + (chunk.text || "").length, 0);
-                    chunkConfig = this.getChunkConfigForText(chunkList.map((chunk) => chunk.text).join("\n"));
-                } else if (ext === "md" || ext === "docx" || ext === "pptx" || ext === "odt" || ext === "rtf" || ext === "doc") {
-                    const sections = chunkMarkdownSections(normalized);
-                    if (sections.length) {
-                        sections.forEach((section) => {
-                            const textBlocks = chunkByTokens(section.text, {
-                                targetTokens: 600,
-                                minTokens: 300,
-                                maxTokens: 800
-                            });
-                            if (textBlocks.length) {
-                                textBlocks.forEach((block) => {
-                                    chunkList.push({
-                                        text: block,
-                                        metadata: {
-                                            chunkType: "section",
-                                            headingPath: section.headingPath
-                                        }
-                                    });
-                                });
-                            } else {
-                                chunkList.push({
-                                    text: section.text,
-                                    metadata: {
-                                        chunkType: "section",
-                                        headingPath: section.headingPath
-                                    }
-                                });
-                            }
-                        });
-                    } else {
-                        const fallback = chunkByTokens(normalized, { targetTokens: 600, minTokens: 300, maxTokens: 800 });
-                        chunkList = fallback.map((block) => ({ text: block, metadata: { chunkType: "section" } }));
-                    }
-                    totalChars = chunkList.reduce((acc, chunk) => acc + (chunk.text || "").length, 0);
-                    chunkConfig = this.getChunkConfigForText(chunkList.map((chunk) => chunk.text).join("\n"));
-                } else if (isLogFile) {
-                    const eventChunks = chunkLogEvents(normalized, { batchSize: 80 });
-                    chunkList = eventChunks.map((block) => ({
-                        text: block.text,
-                        metadata: { chunkType: "events", ...(block.metadata || {}) }
-                    }));
-                    totalChars = chunkList.reduce((acc, chunk) => acc + (chunk.text || "").length, 0);
-                    chunkConfig = this.getChunkConfigForText(chunkList.map((chunk) => chunk.text).join("\n"));
-                } else {
-                    const pageSegments = Array.isArray(extractionResult?.pdfPages) ? extractionResult.pdfPages : null;
-                    const segments = [];
-                    if (pageSegments && pageSegments.length) {
-                        pageSegments.forEach((pageEntry, pageIndex) => {
-                            const pageText = normalizeText(pageEntry?.text || "");
-                            if (!pageText) return;
-                            const pageNumber = Number.isFinite(pageEntry.pageNumber)
-                                ? pageEntry.pageNumber
-                                : (pageIndex + 1);
-                            segments.push({ text: pageText, pageNumber });
-                        });
-                    }
-                    if (!segments.length) {
-                        segments.push({ text: normalized, pageNumber: null });
-                    }
-                    totalChars = segments.reduce((acc, segment) => acc + (segment.text || "").length, 0);
-                    segments.forEach((segment) => {
-                        const paragraphChunks = chunkParagraphs(segment.text, { maxChars: 2400 });
-                        if (paragraphChunks.length) {
-                            paragraphChunks.forEach((chunkText) => {
-                                chunkList.push({
-                                    text: chunkText,
-                                    pageNumber: segment.pageNumber,
-                                    metadata: { chunkType: "pdf-paragraph" }
-                                });
-                            });
-                            return;
-                        }
-                        const segmentChunks = chunkText(segment.text, chunkConfig.chunkSize, chunkConfig.chunkOverlap);
-                        const sourceChunks = segmentChunks.length ? segmentChunks : [""];
-                        sourceChunks.forEach((chunkText) => {
-                            chunkList.push({ text: chunkText, pageNumber: segment.pageNumber });
-                        });
-                    });
-                }
+                const {
+                    chunkList,
+                    chunkConfig,
+                    totalChars,
+                    extractedText
+                } = this.buildChunkList(file, extractionResult);
+                const extractedCount = extractedText.length || totalChars;
+                console.log(`Successfully extracted ${extractedCount} characters from ${file.name}`);
                 onProgress?.({
                     type: "chars",
                     file: file.name,
@@ -1832,7 +1850,7 @@
                 const embedDuration = performance.now() - startEmbedTime;
                 console.log(`Batch embedding took ${(embedDuration / 1000).toFixed(2)}s for ${chunkTotal} chunks`);
                 onProgress?.({ type: "chunk", file: file.name, progress: 50 });
-                const zeroEmb = new Float32Array(384);
+                const zeroEmb = new Int8Array(384);
                 let processedChars = 0;
                 for (let c = 0; c < chunkTotal; c++) {
                     const chunkMeta = chunkList[c];
@@ -1856,7 +1874,7 @@
                     } else {
                         emb = allEmbeddings[c];
                         if (!emb || !emb.length) {
-                            emb = await this.embed(chunkText);
+                            throw new Error(`Embedding failed for chunk ${c} (${file.name})`);
                         }
                     }
                     const chunkEntry = {
@@ -1870,7 +1888,7 @@
                         parentPath: chunkMeta?.parentPath,
                         rawChunk: chunkMeta?.rawChunk,
                         metadata: chunkMeta?.metadata,
-                        emb: Array.from(emb),
+                        emb: quantizeEmbedding(emb),
                         createdAt: Date.now(),
                         size: chunkConfig.category,
                         sourceType
@@ -1946,6 +1964,127 @@
                 return { text: await file.text() };
             }
             return { text: await file.text() };
+        }
+
+        buildChunkList(file, extractionResult) {
+            const extractedText = typeof extractionResult?.text === "string" ? extractionResult.text : "";
+            const jsonChunks = Array.isArray(extractionResult?.jsonChunks) ? extractionResult.jsonChunks : null;
+            const normalized = normalizeText(extractedText);
+            let chunkConfig = this.getChunkConfigForText(extractedText || normalized);
+            let chunkList = [];
+            let totalChars = 0;
+            const ext = getExtension(file.name);
+            const isLogFile = ext === "log" || ext === "jsonl" || ext === "ndjson" || looksLikeLog(normalized);
+
+            if (jsonChunks && jsonChunks.length) {
+                chunkList = jsonChunks.map((chunk) => ({
+                    text: chunk?.textForEmbedding || "",
+                    rawChunk: chunk?.rawChunk,
+                    path: chunk?.path || "$",
+                    parentPath: chunk?.parentPath || null,
+                    metadata: chunk?.metadata || null
+                }));
+                totalChars = chunkList.reduce((acc, chunk) => acc + (chunk.text || "").length, 0);
+                chunkConfig = this.getChunkConfigForText(chunkList.map((chunk) => chunk.text).join("\n"));
+                return { chunkList, chunkConfig, totalChars, extractedText, normalized };
+            }
+
+            if (ext === "csv" || ext === "tsv" || ext === "xlsx" || ext === "ods") {
+                const rowChunks = chunkRows(normalized, { minRows: 20, maxRows: 200 });
+                chunkList = rowChunks.map((chunk) => ({
+                    text: chunk.text,
+                    metadata: { ...(chunk.metadata || {}), chunkType: "table-rows" }
+                }));
+                totalChars = chunkList.reduce((acc, chunk) => acc + (chunk.text || "").length, 0);
+                chunkConfig = this.getChunkConfigForText(chunkList.map((chunk) => chunk.text).join("\n"));
+                return { chunkList, chunkConfig, totalChars, extractedText, normalized };
+            }
+
+            if (ext === "md" || ext === "docx" || ext === "pptx" || ext === "odt" || ext === "rtf" || ext === "doc") {
+                const sections = chunkMarkdownSections(normalized);
+                if (sections.length) {
+                    sections.forEach((section) => {
+                        const textBlocks = chunkByTokens(section.text, {
+                            targetTokens: 600,
+                            minTokens: 300,
+                            maxTokens: 800
+                        });
+                        if (textBlocks.length) {
+                            textBlocks.forEach((block) => {
+                                chunkList.push({
+                                    text: block,
+                                    metadata: {
+                                        chunkType: "section",
+                                        headingPath: section.headingPath
+                                    }
+                                });
+                            });
+                        } else {
+                            chunkList.push({
+                                text: section.text,
+                                metadata: {
+                                    chunkType: "section",
+                                    headingPath: section.headingPath
+                                }
+                            });
+                        }
+                    });
+                } else {
+                    const fallback = chunkByTokens(normalized, { targetTokens: 600, minTokens: 300, maxTokens: 800 });
+                    chunkList = fallback.map((block) => ({ text: block, metadata: { chunkType: "section" } }));
+                }
+                totalChars = chunkList.reduce((acc, chunk) => acc + (chunk.text || "").length, 0);
+                chunkConfig = this.getChunkConfigForText(chunkList.map((chunk) => chunk.text).join("\n"));
+                return { chunkList, chunkConfig, totalChars, extractedText, normalized };
+            }
+
+            if (isLogFile) {
+                const eventChunks = chunkLogEvents(normalized, { batchSize: 80 });
+                chunkList = eventChunks.map((block) => ({
+                    text: block.text,
+                    metadata: { chunkType: "events", ...(block.metadata || {}) }
+                }));
+                totalChars = chunkList.reduce((acc, chunk) => acc + (chunk.text || "").length, 0);
+                chunkConfig = this.getChunkConfigForText(chunkList.map((chunk) => chunk.text).join("\n"));
+                return { chunkList, chunkConfig, totalChars, extractedText, normalized };
+            }
+
+            const pageSegments = Array.isArray(extractionResult?.pdfPages) ? extractionResult.pdfPages : null;
+            const segments = [];
+            if (pageSegments && pageSegments.length) {
+                pageSegments.forEach((pageEntry, pageIndex) => {
+                    const pageText = normalizeText(pageEntry?.text || "");
+                    if (!pageText) return;
+                    const pageNumber = Number.isFinite(pageEntry.pageNumber)
+                        ? pageEntry.pageNumber
+                        : (pageIndex + 1);
+                    segments.push({ text: pageText, pageNumber });
+                });
+            }
+            if (!segments.length) {
+                segments.push({ text: normalized, pageNumber: null });
+            }
+            totalChars = segments.reduce((acc, segment) => acc + (segment.text || "").length, 0);
+            segments.forEach((segment) => {
+                const paragraphChunks = chunkParagraphs(segment.text, { maxChars: 2400 });
+                if (paragraphChunks.length) {
+                    paragraphChunks.forEach((chunkText) => {
+                        chunkList.push({
+                            text: chunkText,
+                            pageNumber: segment.pageNumber,
+                            metadata: { chunkType: "pdf-paragraph" }
+                        });
+                    });
+                    return;
+                }
+                const segmentChunks = chunkText(segment.text, chunkConfig.chunkSize, chunkConfig.chunkOverlap);
+                const sourceChunks = segmentChunks.length ? segmentChunks : [""];
+                sourceChunks.forEach((chunkText) => {
+                    chunkList.push({ text: chunkText, pageNumber: segment.pageNumber });
+                });
+            });
+
+            return { chunkList, chunkConfig, totalChars, extractedText, normalized };
         }
 
         async extractJson(file) {
@@ -2132,6 +2271,7 @@
             const convId = normalizeConversationId(conversationId);
             await this.waitReady();
             const vector = options.vector || await this.embed(query);
+            const queryVector = quantizeEmbedding(vector);
             const candidateIds = Array.isArray(options.candidateIds)
                 ? new Set(options.candidateIds.filter(Boolean))
                 : null;
@@ -2144,8 +2284,8 @@
             const scored = [];
             for (const chunk of chunks) {
                 if (candidateIds && !candidateIds.has(chunk.id)) continue;
-                const target = new Float32Array(chunk.emb);
-                const similarity = cosineSim(vector, target);
+                const target = quantizeEmbedding(chunk.emb);
+                const similarity = cosineSimInt8(queryVector, target);
                 if (similarity < minScore) continue;
                 scored.push(this.buildChunkResult(chunk, docMap, similarity));
             }
@@ -2158,6 +2298,7 @@
             const cappedLimit = typeof limit === "number" ? limit : 200;
             try {
                 await this.waitReady();
+                await this.ensureKeywordIndexReady();
                 return this.keywordIndex.search(query, normalizeConversationId(conversationId), cappedLimit);
             } catch (err) {
                 console.warn("Keyword search failed", err);

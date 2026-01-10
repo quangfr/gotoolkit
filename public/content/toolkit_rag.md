@@ -14,14 +14,14 @@ The RAG (Retrieval-Augmented Generation) system in Go-Toolkit enables semantic s
 
 ## Storage Architecture
 
-### IndexedDB Database: `gotoolkit-documents` (v4)
+### IndexedDB Database: `gotoolkit-documents` (v5)
 
 #### Stores
 
 | Store | Purpose | Indexes |
 |-------|---------|---------|
 | `documents` | File metadata + chunking config | `conversationId`, `fileHash` |
-| `chunks` | Text chunks + embeddings | `conversationId` |
+| `chunks` | Text chunks + embeddings (int8 quantized) | `conversationId` |
 | `keyword_meta` | Keyword search index | `conversationId` |
 | `memo_context_embeddings` | Memo-scoped document links | `memoId`, `docId` |
 
@@ -59,7 +59,7 @@ The RAG (Retrieval-Augmented Generation) system in Go-Toolkit enables semantic s
   docId: UUID,                    // Parent document (sharding)
   idx: number,                    // Sequence index in document
   text: string,                   // Chunk content
-  emb: Float32Array,              // 384-dim embedding (MiniLM-L6)
+  emb: Int8Array,                 // 384-dim embedding (MiniLM-L6, int8 quantized)
   page: number,                   // PDF page number (optional)
   path: string,                   // JSON path (for structured data)
   parentPath: string,             // Parent JSON path
@@ -156,8 +156,9 @@ const CHUNK_HEURISTICS = {
 - Downloaded on-demand via Transformers.js
 - Cached in `window.GoToolkitWebLLM`
 - Embedded chunks: All chunks from all docs → batch embed via transformer
+- **Quantization:** Float32 → Int8Array for storage (4x reduction)
 
-**Skip Condition:** Chunks < 20 chars → zero embedding `Float32Array(384)`
+**Skip Condition:** Chunks < 20 chars → zero embedding `Int8Array(384)`
 
 ---
 
@@ -168,10 +169,11 @@ const CHUNK_HEURISTICS = {
 **Flow:**
 1. **Embed Query** → 384-dim vector via MiniLM-L6
 2. **Load Candidates** → Fetch chunks from conversation
-3. **Score** → Cosine similarity: `score = dot(query_emb, chunk_emb) / (||query|| * ||chunk||)`
-4. **Filter** → Min score threshold (default: 0.1)
-5. **Rank** → Sort by descending similarity
-6. **Truncate** → Return top-K (default: 10)
+3. **Dequantize** → Convert Int8Array → Float32Array for similarity
+4. **Score** → Cosine similarity: `score = dot(query_emb, chunk_emb) / (||query|| * ||chunk||)`
+5. **Filter** → Min score threshold (default: 0.1)
+6. **Rank** → Sort by descending similarity
+7. **Truncate** → Return top-K (default: 10)
 
 **Options:**
 ```javascript
@@ -204,9 +206,10 @@ const CHUNK_HEURISTICS = {
 3. **Extraction** → Call format-specific `extract*()` method
 4. **Chunking** → Apply heuristic-based strategy
 5. **Embedding** → Batch embed all chunks via transformer
-6. **Storage** → Insert document + chunks into IndexedDB
-7. **Keyword Index** → Add to hybrid search index
-8. **Memo Link** → If `memoId` provided, link in `memo_context_embeddings`
+6. **Quantization** → Convert Float32Array → Int8Array (4x storage savings)
+7. **Storage** → Insert document + chunks into IndexedDB
+8. **Keyword Index** → Add to hybrid search index
+9. **Memo Link** → If `memoId` provided, link in `memo_context_embeddings`
 
 **Options:**
 ```javascript
@@ -293,61 +296,74 @@ DEFAULT_RETRIEVAL_MIN_SCORE = 0.1;
 - Calls `docManager.ingestFiles()` on document import
 - Filters retrieval by `enabled` flag (memo attachments)
 - Displays chunk count in UI
+- Manages document lifecycle: upload → indexing → activation
 
 ### Memo Module (`memo.html` + `memo.bundle.js`)
 - Links documents to memos via `memoEmbeddings`
 - Toggle `enabled` state for RAG activation
 - Displays active documents in composer
+- Shows context attachment status
 
 ### Chat System
 - User message → Query embedding → `vectorSearch()` → Top-K chunks
+- Chunks dequantized on retrieval for similarity computation
 - Context injected into LLM prompt with chunk `docName`, `fileName`, `score`
 
 ---
 
 ## Performance Considerations
 
+### Optimizations (Implemented)
+1. **Quantized Storage** (Int8Array): 4x storage reduction vs Float32
+2. **Keyword Pre-filtering**: Reduce vector comparisons via candidate pre-selection
+3. **Chunked Indexing**: IndexedDB caching prevents re-embedding across sessions
+4. **In-Memory Similarity**: Fast cosine computation with float arrays
+
 ### Bottlenecks
 1. **First embedding:** Transformer.js download (~50MB) on first use
 2. **Batch embedding:** Large document sets (100+ chunks) → noticeable compute
-3. **Vector storage:** 384-dim × chunk count → IndexedDB size
-
-### Optimizations
-- Chunks cached in IndexedDB → reuse without re-embedding
-- Keyword pre-filtering → reduce vector comparisons
-- Cosine similarity computed in-memory (float arrays) → fast
+3. **Dequantization:** Int8 → Float32 on each retrieval (negligible overhead)
 
 ### Future Scaling
-- Quantized embeddings (int8) → reduce storage 4x
-- Web Worker embedding → prevent UI blocking
-- Chunked vector search (GPU via TensorFlow.js) → for large corpora
+- Web Worker embedding → prevent UI blocking on large batches
+- GPU-accelerated search (TensorFlow.js) → for 10k+ chunk corpora
+- Progressive quantization schemes → fine-tuned trade-offs
 
 ---
 
 ## Troubleshooting
 
 ### Embeddings not indexing
-- Check IndexedDB `gotoolkit-documents` exists (v4+)
+- Check IndexedDB `gotoolkit-documents` exists (v5+)
 - Verify Transformers.js loaded: `window.GoToolkitWebLLM`
 - Check browser console for extraction errors
+- Verify `indexedDB.open()` succeeds with sufficient quota
 
 ### Retrieval returns no results
 - Verify document status: `ready` (not `pending` or `error`)
 - Check similarity threshold: min score 0.1
 - Try keyword search: `searchKeywordCandidates()`
+- Confirm `enabled` flag is true for memo documents
 
 ### Slow ingestion
 - Large files (>100MB) → browser memory limit
 - Many small files → embedding batching overhead
-- Disable on-device embedding, use API-based model
+- Monitor IndexedDB quota: `navigator.storage.estimate()`
+- Consider API-based embedding for very large corpora
+
+### Storage concerns
+- Quantized embeddings use ~400 bytes per chunk (384 dims × 1 byte)
+- Large libraries: 10k chunks ≈ 4MB storage
+- Clean up old documents via `deleteDocumentChunks(docId)`
 
 ---
 
 ## Related Files
 
-- `document-rag.js` — Core RAG engine (2176 lines)
+- `document-rag.js` — Core RAG engine (2176+ lines)
 - `document-parser.js` — File parsing + chunking (referenced, separate module)
 - `keywordIndex.js` — Hybrid search index
 - `document-storage.js` — IndexedDB wrapper
-- `assist.js` — Integration with chat/memo UI
+- `assist.js` — Integration with chat/memo UI (6636+ lines)
 - `memo.bundle.js` — Memo-specific RAG features
+- `config.json` — Feature flags & file size limits

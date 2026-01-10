@@ -1382,9 +1382,24 @@ label {
   line-height: 1.45;
 }
 
-.chat-content h2 {
+.chat-content h1,
+.chat-content h2,
+.chat-content h3 {
   margin: 0 0 6px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.chat-content h1 {
+  font-size: 1.05rem;
+}
+
+.chat-content h2 {
   font-size: 1rem;
+}
+
+.chat-content h3 {
+  font-size: 0.95rem;
 }
 
 .chat-content p {
@@ -1394,6 +1409,18 @@ label {
 .chat-content ul {
   margin: 0 0 6px 18px;
   padding: 0;
+}
+
+.chat-content ol {
+  margin: 0 0 6px 20px;
+  padding: 0;
+}
+
+.chat-content blockquote {
+  margin: 0 0 6px;
+  padding-left: 10px;
+  border-left: 3px solid #cbd5f5;
+  color: #475569;
 }
 
 .chat-content code {

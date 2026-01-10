@@ -65,6 +65,13 @@
                         console.warn("IndexedDB health check failed, attempting repair...");
                         isHealthy = false;
                         emitDocumentsDbStatus("repairing");
+                        repairDocumentsDb().then(function (ok) {
+                            if (ok) {
+                                console.log("IndexedDB repair complete");
+                            }
+                            emitDocumentsDbStatus(ok ? "ready" : "failed");
+                            resolve(true);
+                        });
                     };
 
                     testReq.onsuccess = () => {
@@ -80,6 +87,18 @@
                                 console.warn("Missing required IndexedDB stores, attempting repair...");
                                 isHealthy = false;
                                 emitDocumentsDbStatus("repairing");
+                                try {
+                                    db.close();
+                                } catch (err) {
+                                    // ignore
+                                }
+                                repairDocumentsDb().then(function (ok) {
+                                    if (ok) {
+                                        console.log("IndexedDB repair complete");
+                                    }
+                                    emitDocumentsDbStatus(ok ? "ready" : "failed");
+                                    resolve(true);
+                                });
                             } else {
                                 // Try to read a small test value to ensure stores are accessible
                                 const tx = db.transaction("documents", "readonly");
@@ -119,6 +138,9 @@
                             db.close();
                             emitDocumentsDbStatus("repairing");
                             repairDocumentsDb().then(function (ok) {
+                                if (ok) {
+                                    console.log("IndexedDB repair complete");
+                                }
                                 emitDocumentsDbStatus(ok ? "ready" : "failed");
                                 resolve(true);
                             });
@@ -132,6 +154,9 @@
                     console.warn("IndexedDB health check error:", err);
                     emitDocumentsDbStatus("repairing");
                     repairDocumentsDb().then(function (ok) {
+                        if (ok) {
+                            console.log("IndexedDB repair complete");
+                        }
                         emitDocumentsDbStatus(ok ? "ready" : "failed");
                         resolve(true);
                     });
@@ -154,7 +179,7 @@
                 deleteReq.onsuccess = () => {
                     console.log("IndexedDB deleted, will be recreated on next access");
                     // Recreate the database with fresh stores
-                    const recreateReq = indexedDB.open("gotoolkit-documents", 4);
+                    const recreateReq = indexedDB.open("gotoolkit-documents", 5);
 
                     recreateReq.onupgradeneeded = () => {
                         const db = recreateReq.result;
@@ -525,8 +550,13 @@
     }
 
     function renderBotMarkdown(text) {
-        if (global.GoToolkitMarkdown && typeof global.GoToolkitMarkdown.render === "function") {
-            return global.GoToolkitMarkdown.render(text);
+        if (global.GoToolkitMarkdown) {
+            if (typeof global.GoToolkitMarkdown.renderDocument === "function") {
+                return global.GoToolkitMarkdown.renderDocument(text);
+            }
+            if (typeof global.GoToolkitMarkdown.render === "function") {
+                return global.GoToolkitMarkdown.render(text);
+            }
         }
         return escapeHtml(text).replace(/\n/g, "<br>");
     }
@@ -2980,6 +3010,8 @@
         this.attachmentsCharsProcessed = 0;
         this.attachmentsCharsByFile = {};
         this.attachmentsCharsProcessedByFile = {};
+        this.attachmentsExtractProgressByFile = {};
+        this.attachmentsEmbedProgressByFile = {};
         this.updateAttachmentIndicator();
         this.syncDocumentIndicatorTitle(this.documentChunkCount);
     };
@@ -3003,6 +3035,13 @@
         }
         if (entry.chunkCount) {
             parts.push(entry.chunkCount + " extraits");
+        }
+        parts.push("Keyword index: " + (this.docManager?.keywordIndex ? "oui" : "non"));
+        if (entry.docId || entry.id) {
+            parts.push("Doc ID: " + (entry.docId || entry.id));
+        }
+        if (entry.fileHash) {
+            parts.push("Hash: " + entry.fileHash);
         }
         return parts.join(" · ");
     };
@@ -3154,16 +3193,25 @@
         var parsed = Number(this.attachmentsParsedCount) || 0;
         var total = Number(this.attachmentsTotalCount) || 0;
         var pendingCount = Array.isArray(this.pendingDocumentAttachments) ? this.pendingDocumentAttachments.length : 0;
-        var totalChars = Number(this.attachmentsCharsTotal) || 0;
-        var processedChars = Number(this.attachmentsCharsProcessed) || 0;
 
-        // During import: show percent based on total char count
+        // During import: show overall percent only
         if (total > 0) {
-            var percent = 0;
-            if (totalChars > 0) {
-                percent = Math.round(Math.min(100, Math.max(0, (processedChars / totalChars) * 100)));
+            var extractPercent = 0;
+            var embedPercent = 0;
+            if (this.attachmentsExtractProgressByFile) {
+                var extractSum = Object.values(this.attachmentsExtractProgressByFile).reduce(function (acc, val) {
+                    return acc + (Number(val) || 0);
+                }, 0);
+                extractPercent = Math.round(extractSum / total);
             }
-            return "🗎 " + percent + " %";
+            if (this.attachmentsEmbedProgressByFile) {
+                var embedSum = Object.values(this.attachmentsEmbedProgressByFile).reduce(function (acc, val) {
+                    return acc + (Number(val) || 0);
+                }, 0);
+                embedPercent = Math.round(embedSum / total);
+            }
+            var percent = Math.round((extractPercent + embedPercent) / 2);
+            return percent + " %";
         }
 
         // After import complete (total === 0, but pendingCount > 0)
@@ -3200,6 +3248,8 @@
         this.attachmentsCharsProcessed = 0;
         this.attachmentsCharsByFile = {};
         this.attachmentsCharsProcessedByFile = {};
+        this.attachmentsExtractProgressByFile = {};
+        this.attachmentsEmbedProgressByFile = {};
         this.pendingDocumentAttachments = fileArray.map(function (file) {
             return file.name;
         });
@@ -3276,6 +3326,11 @@
         if (!progress) return;
         if (progress.type === "chunk") {
             this.setDocumentUploadStatus("Indexation " + progress.progress + "% → " + (progress.file || ""));
+            if (progress.file) {
+                if (!this.attachmentsEmbedProgressByFile) this.attachmentsEmbedProgressByFile = {};
+                this.attachmentsEmbedProgressByFile[progress.file] = Number(progress.progress) || 0;
+                this.updateAttachmentIndicator();
+            }
         } else if (progress.type === "chars") {
             var totalChars = Number(progress.totalChars) || 0;
             var processedChars = Number(progress.processedChars) || 0;
@@ -3295,6 +3350,13 @@
                 this.attachmentsCharsProcessed = processed;
                 this.updateAttachmentIndicator();
             }
+        } else if (progress.type === "extract") {
+            var extractFileName = progress.file || "";
+            if (extractFileName) {
+                if (!this.attachmentsExtractProgressByFile) this.attachmentsExtractProgressByFile = {};
+                this.attachmentsExtractProgressByFile[extractFileName] = Number(progress.progress) || 0;
+                this.updateAttachmentIndicator();
+            }
         } else if (progress.type === "file-start") {
             this.setDocumentUploadStatus("Ouverture de " + progress.file + " (" + progress.index + "/" + progress.total + ")");
         } else if (progress.type === "file-done") {
@@ -3303,6 +3365,12 @@
                 Number(this.attachmentsParsedCount) + 1 || 1,
                 Number(this.attachmentsTotalCount) || 1
             );
+            if (progress.file) {
+                if (!this.attachmentsExtractProgressByFile) this.attachmentsExtractProgressByFile = {};
+                if (!this.attachmentsEmbedProgressByFile) this.attachmentsEmbedProgressByFile = {};
+                this.attachmentsExtractProgressByFile[progress.file] = 100;
+                this.attachmentsEmbedProgressByFile[progress.file] = 100;
+            }
             this.updateAttachmentIndicator();
             this.setDocumentUploadStatus("Fichier traité : " + (progress.file || ""));
         }

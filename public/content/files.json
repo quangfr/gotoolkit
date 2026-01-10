@@ -7,8 +7,14 @@
   {
     "name": "Modules Toolkit",
     "abstract": "Documentation complète de tous les modules : Assist, Canvas, Draw, Grid, Page d'accueil, Mémo, Timeline et Voice.",
-    "path": "content/guide_toolkit.md",
-    "updatedAt": "2026-01-07T00:00:00Z"
+    "path": "content/toolkit_guide.md",
+    "updatedAt": "2026-01-10T00:00:00Z"
+  },
+  {
+    "name": "RAG Architecture",
+    "abstract": "Architecture du système RAG : stockage IndexedDB, extraction de documents, chunking, embeddings quantifiés, recherche sémantique et récupération.",
+    "path": "content/toolkit_rag.md",
+    "updatedAt": "2026-01-10T00:00:00Z"
   },
   {
     "name": "Go-Live 101",
