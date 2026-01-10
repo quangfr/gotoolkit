@@ -214,12 +214,18 @@
             display: inline-flex;
             align-items: center;
             gap: 6px;
+            cursor: grab;
         }
 
         .document-tab.active {
             background: var(--app-primary);
             border-color: var(--app-primary);
             color: #ffffff;
+        }
+
+        .document-tab.is-dragging {
+            opacity: 0.6;
+            cursor: grabbing;
         }
 
         .document-tab__close {
@@ -913,10 +919,10 @@
     <script type="module">
         (function () {
             const STORAGE_KEY = "goToolkit.memo.state";
+            const OPEN_DOCS_STORAGE_KEY = "goToolkit.memo.openDocuments";
             const CONTEXT_EMBEDDINGS_MIGRATION_KEY = "goToolkit.memo.contextEmbeddings.migrated";
             const PROMPT_PRESET_STORAGE_KEY = "goToolkit.memo.promptPreset";
             const SHARE_QUERY_PARAM = "share";
-            const EDIT_QUERY_PARAM = "edit";
             const FIRESTORE_COLLECTION = "memos";
 
             function saveLastPromptPreset(presetId) {
@@ -1082,6 +1088,7 @@
                     btn.type = "button";
                     btn.className = "tab document-tab" + (doc.id === activeDocumentId ? " active" : "");
                     btn.dataset.documentId = doc.id;
+                    btn.draggable = true;
 
                     const label = document.createElement("span");
                     label.textContent = doc.title || "Mémo";
@@ -1114,6 +1121,7 @@
                     });
                     documentTabsEl.appendChild(btn);
                 });
+                persistOpenDocumentState();
             }
 
             function ensureActiveDocument() {
@@ -1190,6 +1198,40 @@
                 }
             }
 
+            function loadOpenDocumentState() {
+                if (typeof localStorage === "undefined") return null;
+                try {
+                    const raw = localStorage.getItem(OPEN_DOCS_STORAGE_KEY);
+                    if (!raw) return null;
+                    const parsed = JSON.parse(raw);
+                    if (!parsed || typeof parsed !== "object") return null;
+                    const openDocumentIds = Array.isArray(parsed.openDocumentIds)
+                        ? parsed.openDocumentIds.filter(Boolean)
+                        : [];
+                    const activeId = typeof parsed.activeDocumentId === "string" ? parsed.activeDocumentId : null;
+                    return {
+                        openDocumentIds,
+                        activeDocumentId: activeId
+                    };
+                } catch (err) {
+                    console.warn("Memo load open documents failed", err);
+                    return null;
+                }
+            }
+
+            function persistOpenDocumentState() {
+                if (typeof localStorage === "undefined") return;
+                try {
+                    const payload = {
+                        openDocumentIds: openDocuments.map(doc => doc.id),
+                        activeDocumentId: activeDocumentId
+                    };
+                    localStorage.setItem(OPEN_DOCS_STORAGE_KEY, JSON.stringify(payload));
+                } catch (err) {
+                    console.warn("Memo save open documents failed", err);
+                }
+            }
+
             function isDevEnvironment() {
                 const host = (window.location.hostname || "").toLowerCase();
                 return host === "localhost" || host === "127.0.0.1" || host.endsWith(".local");
@@ -1216,6 +1258,7 @@
                     console.warn("Memo save state failed", err);
                 }
                 syncActiveDocumentPayload();
+                persistOpenDocumentState();
                 // Sync global state reference for assist.js
                 window.__memoState = state;
                 // Notify assist.js to update tab indicator
@@ -1474,16 +1517,6 @@
                 history.replaceState(null, "", url.toString());
             }
 
-            function updateUrlWithEditId(id) {
-                const url = new URL(window.location.href);
-                if (id) {
-                    url.searchParams.set(EDIT_QUERY_PARAM, id);
-                } else {
-                    url.searchParams.delete(EDIT_QUERY_PARAM);
-                }
-                history.replaceState(null, "", url.toString());
-            }
-
             function createShareToken() {
                 if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
                     return crypto.randomUUID();
@@ -1690,6 +1723,17 @@
 
             async function deleteDocument(docId) {
                 if (!docId) return;
+                if (documentApi) {
+                    const allDocs = await documentApi.getAllRecords();
+                    const memoDocs = (allDocs || []).filter(item => item && item.app === "memo");
+                    if (memoDocs.length <= 1) {
+                        setStatus("Impossible de supprimer le dernier document", true);
+                        return;
+                    }
+                } else if (openDocuments.length <= 1) {
+                    setStatus("Impossible de supprimer le dernier document", true);
+                    return;
+                }
                 const target = openDocuments.find(item => item.id === docId);
                 const name = target?.title || "ce document";
                 const confirmed = window.confirm(`Supprimer "${name}" ?`);
@@ -1795,9 +1839,6 @@
                             updatedAt: now
                         });
                         renderDocumentTabs();
-                        if (options && options.updateUrl !== false) {
-                            updateUrlWithEditId(id);
-                        }
                         if (options && options.showToast) {
                             setStatus("Mémo enregistré");
                         }
@@ -2251,41 +2292,6 @@
                 URL.revokeObjectURL(link.href);
             }
 
-            function getEditIdFromUrl() {
-                try {
-                    const params = new URLSearchParams(window.location.search);
-                    const value = params.get(EDIT_QUERY_PARAM);
-                    return value ? value.trim() : null;
-                } catch (err) {
-                    return null;
-                }
-            }
-
-            async function loadDocumentFromUrl() {
-                if (!documentApi) return false;
-                const editId = getEditIdFromUrl();
-                if (!editId) return false;
-                try {
-                    const record = await documentApi.getRecord(editId);
-                    if (!record || !record.payload) return false;
-                    const loaded = normalizeState(record.payload.tabs ? record.payload : { tabs: [{ id: createId(), title: "Doc 1", content: record.payload }] });
-                    if (!loaded) return false;
-                    state = loaded;
-                    activeDocumentId = record.id;
-                    console.log('[loadDocumentFromUrl] Loaded document:', activeDocumentId);
-                    upsertOpenDocument({
-                        id: record.id,
-                        title: record.title || getDocumentTitleFromState(state),
-                        payload: buildSharePayload(),
-                        updatedAt: record.updatedAt || new Date().toISOString()
-                    });
-                    return true;
-                } catch (err) {
-                    console.warn("Failed to load document from URL", err);
-                    return false;
-                }
-            }
-
             function handleJsonImport(file) {
                 const reader = new FileReader();
                 reader.onload = () => {
@@ -2320,34 +2326,112 @@
                 reader.readAsText(file);
             }
 
+            async function ensureDefaultDocumentRecord() {
+                if (!documentApi) return [];
+                const all = await documentApi.getAllRecords();
+                const memoDocs = (all || []).filter(item => item && item.app === "memo");
+                if (memoDocs.length) return memoDocs;
+                const nextState = createDefaultState();
+                const payload = nextState;
+                const now = new Date().toISOString();
+                const id = (documentApi.generateId && documentApi.generateId()) || createId();
+                const record = await documentApi.upsertRecord({
+                    id,
+                    app: "memo",
+                    payload,
+                    title: nextState.tabs?.[0]?.title || "Doc 1",
+                    description: "",
+                    updatedAt: now
+                });
+                return record ? [record] : [];
+            }
+
+            async function restoreOpenDocumentsFromStorage() {
+                if (!documentApi) return false;
+                const stored = loadOpenDocumentState();
+                if (!stored || !stored.openDocumentIds.length) return false;
+                const restoredDocs = [];
+                for (const id of stored.openDocumentIds) {
+                    if (!id) continue;
+                    try {
+                        const record = await documentApi.getRecord(id);
+                        if (!record || !record.payload) continue;
+                        restoredDocs.push({
+                            id: record.id,
+                            title: record.title || "Mémo",
+                            payload: record.payload,
+                            updatedAt: record.updatedAt || new Date().toISOString()
+                        });
+                    } catch (err) {
+                        console.warn("Failed to restore memo document", err);
+                    }
+                }
+                if (!restoredDocs.length) return false;
+                openDocuments = restoredDocs;
+                const preferred = stored.activeDocumentId;
+                const active = restoredDocs.find(doc => doc.id === preferred) || restoredDocs[0];
+                const loaded = normalizeState(active.payload);
+                if (loaded) {
+                    state = loaded;
+                    activeDocumentId = active.id;
+                }
+                return true;
+            }
+
+            async function openMostRecentDocumentFromStore() {
+                if (!documentApi) return false;
+                try {
+                    const all = await documentApi.getAllRecords();
+                    const memoDocs = (all || []).filter(item => item && item.app === "memo");
+                    if (!memoDocs.length) return false;
+                    memoDocs.sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
+                    const record = memoDocs[0];
+                    if (!record || !record.payload) return false;
+                    const loaded = normalizeState(record.payload);
+                    if (!loaded) return false;
+                    state = loaded;
+                    activeDocumentId = record.id;
+                    upsertOpenDocument({
+                        id: record.id,
+                        title: record.title || getDocumentTitleFromState(state),
+                        payload: record.payload,
+                        updatedAt: record.updatedAt || new Date().toISOString()
+                    });
+                    return true;
+                } catch (err) {
+                    console.warn("Failed to open stored memo document", err);
+                    return false;
+                }
+            }
+
             resetDevState();
             const initialState = loadState();
             let state = initialState || createDefaultState();
             const shouldOpenTemplateOnStart = !initialState;
 
-            // Create a promise that resolves when document is loaded from URL (if exists)
             const documentLoadedPromise = (async () => {
-                const loadedFromUrl = await loadDocumentFromUrl();
-                if (loadedFromUrl) {
-                    console.log('[init] Loaded from URL, state updated');
-                    renderTabs();
-                    persistState();
-                    renderDocumentTabs();
+                await ensureDefaultDocumentRecord();
+                const restored = await restoreOpenDocumentsFromStorage();
+                if (!restored) {
+                    const opened = await openMostRecentDocumentFromStore();
+                    if (!opened) {
+                        ensureActiveDocument();
+                    }
                 }
-                return loadedFromUrl;
+                return restored;
             })();
 
-            // Expose state globally for assist.js to access
-            window.__memoState = state;
+            documentLoadedPromise.then(() => {
+                window.__memoState = state;
+                renderTabs();
+                renderDocumentTabs();
+                ensureActiveDocument();
+                setupMemoPrompt();
+                syncAssistPresetFromState();
+                hydrateMemoContextEmbeddings();
+                migrateLegacyContextEmbeddings();
+            });
 
-            renderTabs();
-            ensureActiveDocument();
-            setupMemoPrompt();
-            syncAssistPresetFromState();
-            hydrateMemoContextEmbeddings();
-            migrateLegacyContextEmbeddings();
-
-            // Wait for document to be loaded BEFORE initializing editor
             Promise.all([memoEditorReady, documentLoadedPromise])
                 .then(([api]) => {
                     memoEditorApi = api;
@@ -2359,7 +2443,7 @@
                         clearInterval(autoSaveTimer);
                     }
                     autoSaveTimer = setInterval(() => {
-                        saveDocument({ showToast: false, updateUrl: false });
+                        saveDocument({ showToast: false });
                     }, 10000);
                 })
                 .catch(err => {
@@ -2369,7 +2453,7 @@
             window.addEventListener("beforeunload", () => {
                 try {
                     persistState();
-                    saveDocument({ showToast: false, updateUrl: false });
+                    saveDocument({ showToast: false });
                 } catch (err) {
                     // ignore
                 }
@@ -2385,7 +2469,7 @@
 
             saveDocumentBtn?.addEventListener("click", async () => {
                 closeMenus();
-                const saved = await saveDocument({ showToast: true, updateUrl: false });
+                const saved = await saveDocument({ showToast: true });
                 if (!saved) {
                     persistState();
                     setStatus("Mémo enregistré localement");
@@ -2564,6 +2648,50 @@
             });
 
             loadShareFromUrl();
+
+            let draggedDocumentId = null;
+            documentTabsEl?.addEventListener("dragstart", event => {
+                const tab = event.target.closest(".document-tab");
+                if (!tab || !tab.dataset.documentId) return;
+                draggedDocumentId = tab.dataset.documentId;
+                tab.classList.add("is-dragging");
+                event.dataTransfer.effectAllowed = "move";
+                event.dataTransfer.setData("text/plain", draggedDocumentId);
+            });
+            documentTabsEl?.addEventListener("dragend", event => {
+                const tab = event.target.closest(".document-tab");
+                tab?.classList.remove("is-dragging");
+                draggedDocumentId = null;
+            });
+            documentTabsEl?.addEventListener("dragover", event => {
+                if (!draggedDocumentId) return;
+                const target = event.target.closest(".document-tab");
+                if (!target || target.dataset.documentId === draggedDocumentId) return;
+                event.preventDefault();
+            });
+            documentTabsEl?.addEventListener("drop", event => {
+                const target = event.target.closest(".document-tab");
+                if (!target || !draggedDocumentId) return;
+                event.preventDefault();
+                const targetId = target.dataset.documentId;
+                if (!targetId || targetId === draggedDocumentId) return;
+                const fromIndex = openDocuments.findIndex(doc => doc.id === draggedDocumentId);
+                const toIndex = openDocuments.findIndex(doc => doc.id === targetId);
+                if (fromIndex < 0 || toIndex < 0) return;
+                const [moved] = openDocuments.splice(fromIndex, 1);
+                const rect = target.getBoundingClientRect();
+                const insertAfter = event.clientX > rect.left + rect.width / 2;
+                let nextIndex = toIndex;
+                if (insertAfter) {
+                    nextIndex = toIndex + (fromIndex < toIndex ? 0 : 1);
+                } else {
+                    nextIndex = toIndex + (fromIndex < toIndex ? -1 : 0);
+                }
+                if (nextIndex < 0) nextIndex = 0;
+                if (nextIndex > openDocuments.length) nextIndex = openDocuments.length;
+                openDocuments.splice(nextIndex, 0, moved);
+                renderDocumentTabs();
+            });
 
             const navSwitcherBtn = document.getElementById("navSwitcherBtn");
             const navSwitcherMenu = document.getElementById("navSwitcherMenu");
