@@ -2668,7 +2668,16 @@
         this.mountResizer(resizer);
         this.createDocumentPickers();
         this.buildPreviewPanel();
+        this.prefetchKnowledgeModalList();
         return true;
+    };
+
+    AssistSidebar.prototype.prefetchKnowledgeModalList = function () {
+        if (this.knowledgeIndexing || this.knowledgeModal) return;
+        this.buildKnowledgeModal();
+        this.refreshKnowledgeModal({ skipAutoReindex: true }).catch(function (err) {
+            console.warn("Knowledge prefetch failed", err);
+        });
     };
 
     AssistSidebar.prototype.getFileImportAcceptString = function () {
