@@ -7,9 +7,9 @@
 Faisabilité : OUI, facilement implémentable ✓
 
 État actuel du code
-- Structure des chunks (document-parser.js:1805) : docId, id unique, conversationId, metadata, path, rawChunk, pageNumber.
-- Flux d'ingestion (document-parser.js:1479) : boucle par fichier, extraction individuelle, création des chunks, embedding batch, chunkCount.
-- Stockage IndexedDB (document-parser.js:1158) : chunks indexés par conversationId, documents indexés par conversationId + fileHash, keyword_meta existant.
+- Structure des chunks (document-rag.js:1805) : docId, id unique, conversationId, metadata, path, rawChunk, pageNumber.
+- Flux d'ingestion (document-rag.js:1479) : boucle par fichier, extraction individuelle, création des chunks, embedding batch, chunkCount.
+- Stockage IndexedDB (document-rag.js:1158) : chunks indexés par conversationId, documents indexés par conversationId + fileHash, keyword_meta existant.
 
 Implémentation proposée
 - Ajouter un index docId au store chunks pour retrouver rapidement les chunks d'un fichier.
