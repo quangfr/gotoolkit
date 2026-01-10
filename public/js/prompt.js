@@ -1495,7 +1495,7 @@ ENTRÉES
 
 RÈGLES
 - Pas d’info → le dire.
-- Français, ≤150 mots, tutoiement.
+- Français, ≤400 mots, tutoiement.
 - Sortie : UN SEUL JSON strict.
 - Références : 0-4 documents cités.
 - Pas d'émojis, pas de tableau en markdown.

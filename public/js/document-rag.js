@@ -1220,12 +1220,19 @@
         }
 
         async addChunkToKeywordIndex(chunk, docMeta) {
-            if (!this.keywordIndex || !chunk) return;
+            if (!this.keywordIndex || !chunk) {
+                if (!this.warnedMissingKeywordIndex) {
+                    this.warnedMissingKeywordIndex = true;
+                    console.warn("Keyword index skipped: GoToolkitKeywordIndex unavailable.");
+                }
+                return;
+            }
             const doc = this.createKeywordDoc(chunk, docMeta);
             if (!doc) return;
             try {
                 await this.keywordIndex.addDocs([doc]);
                 await this.persistKeywordMeta();
+                console.log("Keyword index updated", { chunkId: doc.chunkId, docId: doc.docId });
             } catch (err) {
                 console.warn("Keyword index add failed", err);
             }
@@ -1842,6 +1849,12 @@
                     totalChars
                 });
                 const chunkTotal = chunkList.length;
+                onProgress?.({
+                    type: "chunk-total",
+                    file: file.name,
+                    totalChunks: chunkTotal,
+                    fileExt: getExtension(file.name)
+                });
                 const allTexts = chunkList.map((meta) => meta?.text || "");
                 onProgress?.({ type: "chunk", file: file.name, progress: 5 });
                 console.log(`Batch embedding ${chunkTotal} chunks for ${file.name}...`);

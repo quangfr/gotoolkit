@@ -568,6 +568,39 @@
         return renderBotMarkdown(text);
     }
 
+    function formatDuration(seconds) {
+        var total = Math.max(0, Math.round(Number(seconds) || 0));
+        var mins = Math.floor(total / 60);
+        var secs = total % 60;
+        return String(mins).padStart(2, "0") + ":" + String(secs).padStart(2, "0");
+    }
+
+    function estimateTokenCount(text) {
+        var raw = (text || "").toString();
+        if (!raw) return 0;
+        return Math.max(1, Math.ceil(raw.length / 4));
+    }
+
+    function estimatePayloadTokens(payload) {
+        if (!payload || !Array.isArray(payload.messages)) return 0;
+        var total = 0;
+        payload.messages.forEach(function (msg) {
+            if (!msg) return;
+            if (typeof msg.content === "string") {
+                total += estimateTokenCount(msg.content);
+            } else if (Array.isArray(msg.content)) {
+                msg.content.forEach(function (part) {
+                    if (typeof part === "string") {
+                        total += estimateTokenCount(part);
+                    } else if (part && typeof part.text === "string") {
+                        total += estimateTokenCount(part.text);
+                    }
+                });
+            }
+        });
+        return total;
+    }
+
     // Character counter toaster functions
     var aiCounterToasterState = {
         isRunning: false,
@@ -1339,8 +1372,36 @@
         } else {
             entry.contentEl.innerHTML = this.renderBotContent(message);
         }
+        this.applyTechnicalHover(entry, message);
         this.syncBotExtras(entry, message);
         this.scrollToBottom();
+    };
+
+    AssistSidebar.prototype.buildTechnicalHover = function (message) {
+        if (!message || message.role !== "bot") return "";
+        var stats = message.techStats;
+        if (!stats) return "";
+        var parts = [];
+        if (Number.isFinite(stats.responseMs)) {
+            parts.push("Temps réponse: " + stats.responseMs + " ms");
+        }
+        if (Number.isFinite(stats.requestTokens)) {
+            parts.push("Tokens requête (est.): " + stats.requestTokens);
+        }
+        if (Number.isFinite(stats.responseTokens)) {
+            parts.push("Tokens réponse (est.): " + stats.responseTokens);
+        }
+        return parts.join(" · ");
+    };
+
+    AssistSidebar.prototype.applyTechnicalHover = function (entry, message) {
+        if (!entry || !entry.contentEl) return;
+        var title = this.buildTechnicalHover(message);
+        if (title) {
+            entry.contentEl.title = title;
+        } else {
+            entry.contentEl.removeAttribute("title");
+        }
     };
 
     AssistSidebar.prototype.updateUserMessage = function (message) {
@@ -1387,6 +1448,7 @@
         } else {
             content.innerHTML = escapeHtml(message.content || "").replace(/\n/g, "<br>");
         }
+        this.applyTechnicalHover({ contentEl: content }, message);
 
         if (message.role === "user" && Array.isArray(message.attachments) && message.attachments.length) {
             var attachmentList = document.createElement("div");
@@ -2081,7 +2143,16 @@
     };
 
     AssistSidebar.prototype.logHybridRetrieval = function () {
-        // Intentionally no-op to avoid verbose logging in production.
+        var info = arguments.length > 0 ? arguments[0] : null;
+        if (!info) return;
+        console.log("Hybrid retrieval", {
+            label: info.label,
+            keywordCount: info.keywordCount,
+            keywordFailed: info.keywordFailed,
+            vectorScope: info.vectorScope,
+            contextLimit: info.contextLimit,
+            finalCount: info.finalCount
+        });
     };
 
     AssistSidebar.prototype.hybridRetrieveOnce = async function (query, conversationId, params, options) {
@@ -2261,6 +2332,12 @@
         this.controller = controller;
 
         var payload = this.buildPayload(systemPrompt, userMessage, docInfo);
+        var requestTokenEstimate = estimatePayloadTokens(payload);
+        console.log("Hybrid retrieval summary", {
+            keywordIndex: !!this.docManager?.keywordIndex,
+            contextChunks: docInfo?.context?.context?.length || 0,
+            knowledgeChunks: docInfo?.knowledge?.context?.length || 0
+        });
         console.log("AI payload messages", payload.messages.map(function (msg) {
             return { role: msg.role, content: msg.content };
         }));
@@ -2330,6 +2407,7 @@
             self.throttledPersist();
         }
 
+        var requestStart = 0;
         try {
             // Store the full AI request payload for debugging/visibility
             storeLastAIRequest(payload);
@@ -2345,6 +2423,7 @@
             }
             startCharacterCounterToaster(totalPayloadChars);
 
+            requestStart = performance.now();
             var result = await global.GoToolkitIA.chatCompletion({
                 payload: payload,
                 endpointType: "responses",
@@ -2367,6 +2446,11 @@
             botMessage.content = parsed.content;
             botMessage.references = parsed.references;
             botMessage.suggestions = parsed.suggestions;
+            botMessage.techStats = {
+                responseMs: Math.round(performance.now() - requestStart),
+                requestTokens: requestTokenEstimate,
+                responseTokens: estimateTokenCount(parsed.content || botMessage.content || "")
+            };
             if (this.promptPresetId === "edit" || this.promptPresetId === "suggest") {
                 var applied = false;
                 if (parsed.output && typeof window.setEditorMarkdown === "function") {
@@ -2405,6 +2489,7 @@
             this.persist();
         } catch (err) {
             var isAbort = err?.name === "AbortError";
+            var responseMs = Math.round(performance.now() - (requestStart || performance.now()));
             if (isAbort) {
                 botMessage.content = botMessage.content || "Requête interrompue.";
             } else {
@@ -2416,6 +2501,11 @@
             }
             botMessage.references = [];
             botMessage.suggestions = [];
+            botMessage.techStats = {
+                responseMs: responseMs,
+                requestTokens: requestTokenEstimate,
+                responseTokens: estimateTokenCount(botMessage.content || "")
+            };
             appendBotMessageIfNeeded();
             this.updateBotMessage(botMessage);
             this.persist();
@@ -2985,6 +3075,14 @@
     AssistSidebar.prototype.syncDocumentIndicatorTitle = function (chunkCount) {
         if (!this.docsIndicatorButton) return;
         var parts = [];
+        if (this.attachmentsIngestionStart && this.attachmentsIngestionEnd) {
+            var durationMs = Math.max(0, this.attachmentsIngestionEnd - this.attachmentsIngestionStart);
+            var durationSec = (durationMs / 1000).toFixed(1);
+            parts.push("Temps total: " + durationSec + " s");
+        }
+        if (this.attachmentsTotalSize) {
+            parts.push("Taille totale: " + formatFileSize(this.attachmentsTotalSize));
+        }
         if (typeof chunkCount === "number" && !isNaN(chunkCount)) {
             parts.push(chunkCount + " extraits indexés");
         }
@@ -3012,6 +3110,8 @@
         this.attachmentsCharsProcessedByFile = {};
         this.attachmentsExtractProgressByFile = {};
         this.attachmentsEmbedProgressByFile = {};
+        this.attachmentsChunkTotalsByFile = {};
+        this.attachmentsChunkExtByFile = {};
         this.updateAttachmentIndicator();
         this.syncDocumentIndicatorTitle(this.documentChunkCount);
     };
@@ -3211,7 +3311,50 @@
                 embedPercent = Math.round(embedSum / total);
             }
             var percent = Math.round((extractPercent + embedPercent) / 2);
-            return percent + " %";
+            var etaLabel = "";
+            if (this.attachmentsChunkTotals && this.attachmentsChunkTotalsByFile) {
+                var weights = {
+                    pdf: 0.9,
+                    docx: 0.8,
+                    pptx: 0.75,
+                    xlsx: 0.6,
+                    ods: 0.6,
+                    odt: 0.6,
+                    odf: 0.6,
+                    csv: 0.5,
+                    tsv: 0.5,
+                    json: 0.45,
+                    jsonl: 0.45,
+                    ndjson: 0.45,
+                    log: 0.5,
+                    md: 0.55,
+                    txt: 0.5,
+                    rtf: 0.6,
+                    doc: 0.6
+                };
+                var totalWeighted = 0;
+                var doneWeighted = 0;
+                Object.keys(this.attachmentsChunkTotalsByFile).forEach(function (file) {
+                    var totalChunks = Number(this.attachmentsChunkTotalsByFile[file]) || 0;
+                    if (!totalChunks) return;
+                    var ext = (this.attachmentsChunkExtByFile?.[file] || "").toLowerCase();
+                    var weight = weights[ext] || 0.55;
+                    totalWeighted += totalChunks * weight;
+                    var progress = Number(this.attachmentsEmbedProgressByFile?.[file]) || 0;
+                    var doneChunks = Math.round((progress / 100) * totalChunks);
+                    doneWeighted += doneChunks * weight;
+                }, this);
+                if (totalWeighted > 0) {
+                    var elapsedMs = this.attachmentsIngestionStart ? (Date.now() - this.attachmentsIngestionStart) : 0;
+                    var elapsedSec = Math.max(0.1, elapsedMs / 1000);
+                    var rate = doneWeighted > 0 ? doneWeighted / elapsedSec : 0;
+                    var remainingSec = rate > 0 ? (totalWeighted - doneWeighted) / rate : 0;
+                    if (remainingSec > 0) {
+                        etaLabel = " · " + formatDuration(remainingSec);
+                    }
+                }
+            }
+            return percent + " %" + etaLabel;
         }
 
         // After import complete (total === 0, but pendingCount > 0)
@@ -3241,6 +3384,11 @@
         }
         var fileArray = Array.from(files);
         if (!fileArray.length) return;
+        this.attachmentsIngestionStart = Date.now();
+        this.attachmentsIngestionEnd = 0;
+        this.attachmentsTotalSize = fileArray.reduce(function (acc, file) {
+            return acc + (Number(file?.size) || 0);
+        }, 0);
         if (this.documentsFileInput) this.documentsFileInput.disabled = true;
         this.attachmentsTotalCount = fileArray.length;
         this.attachmentsParsedCount = 0;
@@ -3250,6 +3398,8 @@
         this.attachmentsCharsProcessedByFile = {};
         this.attachmentsExtractProgressByFile = {};
         this.attachmentsEmbedProgressByFile = {};
+        this.attachmentsChunkTotalsByFile = {};
+        this.attachmentsChunkExtByFile = {};
         this.pendingDocumentAttachments = fileArray.map(function (file) {
             return file.name;
         });
@@ -3283,11 +3433,14 @@
             });
             if (errors.length) {
                 console.error("Document ingestion errors:", errors);
+                this.attachmentsIngestionEnd = Date.now();
                 this.setDocumentUploadStatus("Erreur : " + (errors[0].error || "échec d'indexation"));
             } else if (duplicates.length) {
                 var dupNames = duplicates.map(function (item) { return item.name; }).filter(Boolean);
+                this.attachmentsIngestionEnd = Date.now();
                 this.setDocumentUploadStatus("Doublon ignoré : " + (dupNames.join(", ") || "fichier"));
             } else {
+                this.attachmentsIngestionEnd = Date.now();
                 this.setDocumentUploadStatus("Indexation terminée.");
             }
             var readyDocs = results
@@ -3315,6 +3468,7 @@
             }
         } catch (error) {
             console.error("Document ingestion exception:", error);
+            this.attachmentsIngestionEnd = Date.now();
             this.setDocumentUploadStatus("Erreur : " + ((error && error.message) || "échec"));
             this.setPendingDocumentAttachments([]);
         } finally {
@@ -3355,6 +3509,15 @@
             if (extractFileName) {
                 if (!this.attachmentsExtractProgressByFile) this.attachmentsExtractProgressByFile = {};
                 this.attachmentsExtractProgressByFile[extractFileName] = Number(progress.progress) || 0;
+                this.updateAttachmentIndicator();
+            }
+        } else if (progress.type === "chunk-total") {
+            var chunkFileName = progress.file || "";
+            if (chunkFileName) {
+                if (!this.attachmentsChunkTotalsByFile) this.attachmentsChunkTotalsByFile = {};
+                if (!this.attachmentsChunkExtByFile) this.attachmentsChunkExtByFile = {};
+                this.attachmentsChunkTotalsByFile[chunkFileName] = Number(progress.totalChunks) || 0;
+                this.attachmentsChunkExtByFile[chunkFileName] = progress.fileExt || "";
                 this.updateAttachmentIndicator();
             }
         } else if (progress.type === "file-start") {
