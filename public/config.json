@@ -46,6 +46,28 @@
         ".odt",
         ".ods"
       ]
+    },
+    "fileSizeLimits": {
+      "text": {
+        "maxMB": 5,
+        "extensions": [".txt", ".md"]
+      },
+      "structuredData": {
+        "maxMB": 2,
+        "extensions": [".json", ".csv", ".hag"]
+      },
+      "document": {
+        "maxMB": 5,
+        "extensions": [".pdf", ".docx", ".doc", ".odt", ".rtf"]
+      },
+      "presentation": {
+        "maxMB": 5,
+        "extensions": [".pptx"]
+      },
+      "spreadsheet": {
+        "maxMB": 5,
+        "extensions": [".xlsx", ".ods"]
+      }
     }
   }
 }

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <title>Mémo | Go-Toolkit</title>
-    <link rel="stylesheet" href="styles/style.css?v=2026.1.10.1">
+    <link rel="stylesheet" href="styles/style.css?v=2026.1.10.2">
     <style>
         :root {
             --app-bg: #f3f4f6;
@@ -231,7 +231,7 @@
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            cursor: grab;
+            cursor: move;
         }
 
         .document-tab.active {
@@ -242,7 +242,18 @@
 
         .document-tab.is-dragging {
             opacity: 0.6;
-            cursor: grabbing;
+            cursor: move;
+        }
+
+        .document-tab.document-tab--create {
+            background: #ffffff;
+            cursor: pointer;
+        }
+
+        .document-tab.document-tab--create:hover,
+        .document-tab.document-tab--create:focus-visible {
+            border-color: var(--app-primary);
+            outline: none;
         }
 
         .document-tab__close {
@@ -536,14 +547,15 @@
                         <button id="navSwitcherBtn" class="nav-switch-btn" type="button" aria-haspopup="true"
                             aria-expanded="false">⊞ Mémo ▾</button>
                         <div id="navSwitcherMenu" class="nav-switch-menu" role="menu">
-                            <a class="nav-switch-link" href="/?v=2026.1.10.1" role="menuitem">☍ Go-Toolkit</a>
-                            <a class="nav-switch-link" href="grid.html?v=2026.1.10.1" role="menuitem" data-app="grid">◇
+                            <a class="nav-switch-link" href="/?v=2026.1.10.2" role="menuitem">☍ Accueil</a>
+                            <a class="nav-switch-link" href="grid.html?v=2026.1.10.2" role="menuitem" data-app="grid">◇
                                 Grid</a>
-                            <a class="nav-switch-link" href="timeline.html?v=2026.1.10.1" role="menuitem"
+                            <a class="nav-switch-link" href="timeline.html?v=2026.1.10.2" role="menuitem"
                                 data-app="timeline">⇥ Timeline</a>
-                            <a class="nav-switch-link" href="draw.html?v=2026.1.10.1" role="menuitem" data-app="draw">ʃ
+                            <a class="nav-switch-link" href="draw.html?v=2026.1.10.2" role="menuitem" data-app="draw">ʃ
                                 Draw</a>
-                            <a class="nav-switch-link" href="voice.html?v=2026.1.10.1" role="menuitem" data-app="voice">▷
+                            <a class="nav-switch-link" href="voice.html?v=2026.1.10.2" role="menuitem"
+                                data-app="voice">▷
                                 Voice</a>
                         </div>
                     </div>
@@ -582,7 +594,7 @@
             </div>
 
             <div id="app" class="app-main">
-                <div id="memoEmptyState" class="memo-empty-state">Aucun document ouvert</div>
+                <div id="memoEmptyState" class="memo-empty-state">← Ouvrir un document ou créer un nouveau depuis la ⬠ Bibliothèque.</div>
                 <section class="memo-card">
                     <div class="editor-wrap">
                         <div id="editor" class="editor"></div>
@@ -645,6 +657,7 @@
 
     <div data-toast-slot="copyToast" data-toast-class="toast" data-toast-aria-live="polite"
         data-toast-aria-atomic="true"></div>
+    <div id="dbStatusToast" class="toast" aria-live="polite" aria-atomic="true" style="display:none;"></div>
 
     <div id="aiRequestCounterToaster" class="ai-request-counter-toaster" style="display:none;"
         data-toast-aria-live="polite" data-toast-aria-atomic="true">
@@ -687,17 +700,18 @@
         window.GO_TOOLKIT_SHARE_API_URL =
             window.GO_TOOLKIT_SHARE_API_URL || "https://share.gotoolkit.workers.dev/";
     </script>
-    <script src="js/config.js"></script>
+    <script src="js/config.js?v=2026.01.10"></script>
     <script src="js/feature-visibility.js"></script>
     <script src="js/document-storage.js"></script>
     <script src="js/storage-service.js"></script>
     <script src="js/shared-ui.js"></script>
-    <script src="js/cgu.js?v=2026.1.10.1"></script>
+    <script src="js/cgu.js?v=2026.1.10.2"></script>
     <script src="js/share-worker-client.js"></script>
     <script src="js/share-history.js"></script>
     <script src="js/document-api.js"></script>
+    <script src="js/document-parser.js?v=2026.1.10.2"></script>
     <script src="js/ia-config.js"></script>
-    <script src="js/prompt.js?v=2026.1.10.1"></script>
+    <script src="js/prompt.js?v=2026.1.10.2"></script>
     <script src="js/ia-client.js"></script>
     <script>
         // Initialize feedback configuration for Memo before loading feedback.js
@@ -721,9 +735,9 @@
     <script src="js/voice-video-player.js"></script>
     <script src="js/voice-audio-player.js"></script>
     <script src="js/voice.js"></script>
-    <script src="js/memo.bundle.js?v=2026.1.10.1"></script>
-    <script src="js/assist.js?v=2026.1.10.1"></script>
-    <script src="js/document-library.js?v=2026.1.10.1"></script>
+    <script src="js/memo.bundle.js?v=2026.1.10.2"></script>
+    <script src="js/assist.js?v=2026.1.10.2"></script>
+    <script src="js/document-library.js?v=2026.1.10.2"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             setTimeout(function () {
@@ -954,6 +968,17 @@
                     });
                     documentTabsEl.appendChild(btn);
                 });
+                const createBtn = document.createElement("button");
+                createBtn.type = "button";
+                createBtn.className = "tab document-tab document-tab--create";
+                createBtn.textContent = "+";
+                createBtn.title = "Nouveau document";
+                createBtn.setAttribute("aria-label", "Créer un document");
+                createBtn.draggable = false;
+                createBtn.addEventListener("click", () => {
+                    createAutoDocument();
+                });
+                documentTabsEl.appendChild(createBtn);
                 persistOpenDocumentState();
                 updateEmptyState();
                 memoExplorer?.refreshIndicators?.();
@@ -1227,6 +1252,19 @@
                         copyToast.classList.remove("visible");
                     }, 2400);
                 }
+            }
+
+            function setDbStatus(message) {
+                const toast = document.getElementById("dbStatusToast");
+                if (!toast) return;
+                if (!message) {
+                    toast.style.display = "none";
+                    toast.textContent = "";
+                    return;
+                }
+                toast.textContent = message;
+                toast.style.display = "block";
+                toast.classList.add("visible");
             }
 
             function closeMenus(except) {
@@ -1613,13 +1651,64 @@
                     renderTabs();
                     setActiveTab(state.activeTabId);
                     syncAssistPresetFromState();
-                    await saveDocument({ showToast: true });
+                    await saveDocument({ showToast: true, created: true });
                     getExplorer()?.refresh?.();
                     window.GoToolkitAssistInstance?.open?.();
                 } finally {
                     isCreatingNewDocument = false;
                 }
             }
+
+            async function getAutoDocumentName() {
+                const explorer = getExplorer();
+                const records = await window.goToolkitDocumentApi?.getAllRecords?.();
+                const names = new Set();
+                (records || []).forEach(item => {
+                    if (!item || item.app !== "memo") return;
+                    if (typeof item.title === "string" && item.title.trim()) {
+                        names.add(item.title.trim());
+                        return;
+                    }
+                    const firstTab = item.payload?.tabs?.[0];
+                    const tabTitle = typeof firstTab?.title === "string" ? firstTab.title.trim() : "";
+                    if (tabTitle) {
+                        names.add(tabTitle);
+                    }
+                });
+                openDocuments.forEach(doc => {
+                    const title = typeof doc?.title === "string" ? doc.title.trim() : "";
+                    if (title) {
+                        names.add(title);
+                    }
+                });
+                let maxIndex = 0;
+                names.forEach(name => {
+                    const match = name.match(/^Doc\s+(\d+)$/i);
+                    if (match) {
+                        const num = Number(match[1]);
+                        if (Number.isFinite(num)) {
+                            maxIndex = Math.max(maxIndex, num);
+                        }
+                    }
+                });
+                let candidateIndex = maxIndex + 1;
+                let candidateName = `Doc ${candidateIndex}`;
+                while (names.has(candidateName)) {
+                    candidateIndex += 1;
+                    candidateName = `Doc ${candidateIndex}`;
+                }
+                return explorer?.uniqueName?.(candidateName) || candidateName;
+            }
+
+            async function createAutoDocument() {
+                const name = await getAutoDocumentName();
+                await createNewDocument(name);
+            }
+
+            window.GoToolkitMemoCreateAutoDocument = createAutoDocument;
+            window.GoToolkitMemoGetActiveDocumentId = function () {
+                return activeDocumentId || null;
+            };
 
             memoExplorer = window.GoToolkitDocumentExplorer?.create({
                 appId: "memo",
@@ -1688,7 +1777,8 @@
                         });
                         renderDocumentTabs();
                         if (options && options.showToast) {
-                            setStatus("Mémo enregistré");
+                            const message = options.created ? "Mémo créé" : "Mémo enregistré";
+                            setStatus(message);
                         }
                     }
                     return record;
@@ -2115,6 +2205,27 @@
 
             document.addEventListener("goToolkitAssistMounted", () => {
                 syncAssistPresetFromState();
+            });
+
+            document.addEventListener("goToolkitMemoImportStatus", event => {
+                const detail = event?.detail || {};
+                if (!detail.message) return;
+                setStatus(detail.message, Boolean(detail.isError));
+            });
+
+            document.addEventListener("goToolkitDocumentsDbStatus", event => {
+                const status = event?.detail?.status || "";
+                if (status === "repairing" || status === "unavailable") {
+                    setDbStatus("Réparation de la base locale en cours...");
+                    return;
+                }
+                if (status === "failed") {
+                    setDbStatus("Erreur : base locale indisponible.");
+                    return;
+                }
+                if (status === "ready") {
+                    setDbStatus("");
+                }
             });
 
             function exportJson() {

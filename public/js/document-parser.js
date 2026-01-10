@@ -69,6 +69,7 @@
     }
 
     const STORAGE_KEY = "goToolkit.documents.settings";
+    const MEMO_EMBEDDINGS_ENABLED_MIGRATION_KEY = "goToolkit.memoEmbeddings.enabledMigrated";
     const DB_NAME = "gotoolkit-documents";
     const DB_VERSION = 4;
     const REQUIRED_STORES = ["documents", "chunks", "keyword_meta", "memo_context_embeddings"];
@@ -760,6 +761,7 @@
                 }
                 await this.loadSettings();
                 await this.ensureDb();
+                await this.migrateMemoEmbeddingsEnabled();
                 await this.ensureEmbedder();
                 await this.cleanupExpiredEmbeddings();
                 if (this.keywordIndex) {
@@ -910,6 +912,13 @@
                 };
                 request.onsuccess = async () => {
                     const db = request.result;
+                    db.onversionchange = () => {
+                        try {
+                            db.close();
+                        } catch (err) {
+                            // ignore
+                        }
+                    };
                     const missing = getMissingStores(db);
                     if (missing.length) {
                         try {
@@ -957,6 +966,14 @@
                 request.onerror = () => reject(request.error || new Error("IndexedDB suppression échouée"));
                 request.onblocked = () => {
                     console.warn("IndexedDB delete blocked", { db: DB_NAME, info });
+                    try {
+                        document.dispatchEvent(new CustomEvent("goToolkitDocumentsDbStatus", {
+                            detail: { status: "blocked", info }
+                        }));
+                    } catch (err) {
+                        // ignore
+                    }
+                    reject(new Error("IndexedDB suppression bloquée"));
                 };
             });
 
@@ -1317,6 +1334,9 @@
                 entry.id = `${entry.memoId}:${entry.docId}`;
             }
             if (!entry.id) return;
+            if (typeof entry.enabled !== "boolean") {
+                entry.enabled = true;
+            }
             const store = await this.getStore("memo_context_embeddings", "readwrite");
             if (!store) return;
             await new Promise((resolve, reject) => {
@@ -1369,6 +1389,44 @@
                 });
                 return all.filter((entry) => entry?.memoId === memoId);
             }
+        }
+
+        async migrateMemoEmbeddingsEnabled() {
+            if (typeof localStorage === "undefined") return false;
+            try {
+                if (localStorage.getItem(MEMO_EMBEDDINGS_ENABLED_MIGRATION_KEY) === "1") {
+                    return false;
+                }
+            } catch (err) {
+                // ignore
+            }
+            const db = await this.ensureDb();
+            if (!db) return false;
+            return new Promise((resolve) => {
+                const tx = db.transaction("memo_context_embeddings", "readwrite");
+                const store = tx.objectStore("memo_context_embeddings");
+                let updated = false;
+                const request = store.getAll();
+                request.onsuccess = () => {
+                    const entries = request.result || [];
+                    entries.forEach((entry) => {
+                        if (entry && typeof entry.enabled !== "boolean") {
+                            entry.enabled = true;
+                            store.put(entry);
+                            updated = true;
+                        }
+                    });
+                };
+                tx.oncomplete = () => {
+                    try {
+                        localStorage.setItem(MEMO_EMBEDDINGS_ENABLED_MIGRATION_KEY, "1");
+                    } catch (err) {
+                        // ignore
+                    }
+                    resolve(updated);
+                };
+                tx.onerror = () => resolve(false);
+            });
         }
 
         async deleteMemoEmbeddingsByDocId(docId) {

@@ -37,11 +37,22 @@
     }
     global.GoToolkitAssistConfigPromise = globalConfigPromise;
 
+    function emitDocumentsDbStatus(status, detail) {
+        try {
+            document.dispatchEvent(new CustomEvent("goToolkitDocumentsDbStatus", {
+                detail: Object.assign({ status: status }, detail || {})
+            }));
+        } catch (err) {
+            // ignore
+        }
+    }
+
     // IndexedDB verification and repair function
     async function verifyAndRepairDocumentsDb() {
         try {
             if (typeof indexedDB === "undefined" || !indexedDB) {
                 console.warn("IndexedDB unavailable");
+                emitDocumentsDbStatus("unavailable");
                 return false;
             }
 
@@ -53,6 +64,7 @@
                     testReq.onerror = () => {
                         console.warn("IndexedDB health check failed, attempting repair...");
                         isHealthy = false;
+                        emitDocumentsDbStatus("repairing");
                     };
 
                     testReq.onsuccess = () => {
@@ -67,6 +79,7 @@
                             if (!hasAllStores) {
                                 console.warn("Missing required IndexedDB stores, attempting repair...");
                                 isHealthy = false;
+                                emitDocumentsDbStatus("repairing");
                             } else {
                                 // Try to read a small test value to ensure stores are accessible
                                 const tx = db.transaction("documents", "readonly");
@@ -76,6 +89,7 @@
                                 countReq.onerror = () => {
                                     console.warn("Cannot access document store, attempting repair...");
                                     isHealthy = false;
+                                    emitDocumentsDbStatus("repairing");
                                 };
 
                                 countReq.onsuccess = () => {
@@ -88,9 +102,14 @@
 
                                 tx.oncomplete = () => {
                                     if (isHealthy) {
+                                        emitDocumentsDbStatus("ready");
                                         resolve(true);
                                     } else {
-                                        repairDocumentsDb().then(() => resolve(true));
+                                        emitDocumentsDbStatus("repairing");
+                                        repairDocumentsDb().then(function (ok) {
+                                            emitDocumentsDbStatus(ok ? "ready" : "failed");
+                                            resolve(true);
+                                        });
                                     }
                                 };
                             }
@@ -98,7 +117,11 @@
                             console.warn("IndexedDB store check failed:", err);
                             isHealthy = false;
                             db.close();
-                            repairDocumentsDb().then(() => resolve(true));
+                            emitDocumentsDbStatus("repairing");
+                            repairDocumentsDb().then(function (ok) {
+                                emitDocumentsDbStatus(ok ? "ready" : "failed");
+                                resolve(true);
+                            });
                         }
                     };
 
@@ -107,11 +130,16 @@
                     };
                 } catch (err) {
                     console.warn("IndexedDB health check error:", err);
-                    repairDocumentsDb().then(() => resolve(true));
+                    emitDocumentsDbStatus("repairing");
+                    repairDocumentsDb().then(function (ok) {
+                        emitDocumentsDbStatus(ok ? "ready" : "failed");
+                        resolve(true);
+                    });
                 }
             });
         } catch (err) {
             console.warn("verifyAndRepairDocumentsDb error:", err);
+            emitDocumentsDbStatus("failed");
             return false;
         }
     }
@@ -120,6 +148,7 @@
         return new Promise((resolve) => {
             try {
                 console.log("Repairing IndexedDB (gotoolkit-documents)...");
+                emitDocumentsDbStatus("repairing");
                 const deleteReq = indexedDB.deleteDatabase("gotoolkit-documents");
 
                 deleteReq.onsuccess = () => {
@@ -154,21 +183,25 @@
 
                     recreateReq.onsuccess = () => {
                         console.log("IndexedDB successfully recreated");
+                        emitDocumentsDbStatus("ready");
                         resolve(true);
                     };
 
                     recreateReq.onerror = () => {
                         console.warn("Failed to recreate IndexedDB:", recreateReq.error);
+                        emitDocumentsDbStatus("failed");
                         resolve(false);
                     };
                 };
 
                 deleteReq.onerror = () => {
                     console.warn("Failed to delete corrupted IndexedDB:", deleteReq.error);
+                    emitDocumentsDbStatus("failed");
                     resolve(false);
                 };
             } catch (err) {
                 console.warn("repairDocumentsDb error:", err);
+                emitDocumentsDbStatus("failed");
                 resolve(false);
             }
         });
@@ -1889,6 +1922,7 @@
         if (memoId && CHAT_APP_ID === "memo" && conversationId === this.conversation.id) {
             var memoEntries = await this.docManager.getMemoEmbeddings(memoId);
             memoDocIds = new Set((memoEntries || []).map(function (entry) {
+                if (entry?.enabled === false) return null;
                 return entry?.docId;
             }).filter(Boolean));
             docs = (docs || []).filter(function (doc) {
@@ -2128,6 +2162,14 @@
         var value = this.textarea.value.trim();
         var hasAttachment = this.pendingDocumentAttachments.length > 0;
         if (!value && !hasAttachment) return;
+        if (CHAT_APP_ID === "memo") {
+            var activeMemoDocId = typeof global.GoToolkitMemoGetActiveDocumentId === "function"
+                ? global.GoToolkitMemoGetActiveDocumentId()
+                : null;
+            if (!activeMemoDocId && typeof global.GoToolkitMemoCreateAutoDocument === "function") {
+                await global.GoToolkitMemoCreateAutoDocument();
+            }
+        }
         // log the outgoing user content once the payload is ready
 
         var userMessage = createMessage("user", value);
@@ -2701,7 +2743,15 @@
         document.body.appendChild(this.documentsFileInput);
     };
 
-    AssistSidebar.prototype.openDocumentSelector = function () {
+    AssistSidebar.prototype.openDocumentSelector = async function () {
+        if (CHAT_APP_ID === "memo") {
+            var activeMemoDocId = typeof global.GoToolkitMemoGetActiveDocumentId === "function"
+                ? global.GoToolkitMemoGetActiveDocumentId()
+                : null;
+            if (!activeMemoDocId && typeof global.GoToolkitMemoCreateAutoDocument === "function") {
+                await global.GoToolkitMemoCreateAutoDocument();
+            }
+        }
         if (this.documentsFileInput) {
             this.documentsFileInput.click();
         }
@@ -2888,6 +2938,18 @@
     AssistSidebar.prototype.setDocumentUploadStatus = function (message) {
         this.documentUploadStatus = message || "";
         this.syncDocumentIndicatorTitle(this.documentChunkCount);
+        if (CHAT_APP_ID === "memo" && message) {
+            var isError = /Erreur|indisponible|échec/i.test(message);
+            if (isError) {
+                try {
+                    document.dispatchEvent(new CustomEvent("goToolkitMemoImportStatus", {
+                        detail: { message: message, isError: true }
+                    }));
+                } catch (err) {
+                    // ignore
+                }
+            }
+        }
     };
 
     AssistSidebar.prototype.syncDocumentIndicatorTitle = function (chunkCount) {
@@ -2967,13 +3029,27 @@
         this.memoContextAttachmentRow.style.display = "flex";
         this.memoContextAttachmentList.innerHTML = "";
         entries.forEach(function (entry) {
+            var isEnabled = entry?.enabled !== false;
             var item = document.createElement("span");
             item.className = "chat-composer-attachment";
+            item.dataset.enabled = isEnabled ? "true" : "false";
             item.title = this.formatMemoAttachmentTooltip(entry);
 
             var name = document.createElement("span");
             name.className = "chat-composer-attachment__name";
             name.textContent = truncateFilename(entry.fileName || "Document");
+            name.setAttribute("role", "button");
+            name.setAttribute("tabindex", "0");
+            name.setAttribute("aria-pressed", isEnabled ? "true" : "false");
+            name.addEventListener("click", function (event) {
+                event.stopPropagation();
+                this.toggleMemoContextAttachment(entry);
+            }.bind(this));
+            name.addEventListener("keydown", function (event) {
+                if (event.key !== "Enter" && event.key !== " ") return;
+                event.preventDefault();
+                this.toggleMemoContextAttachment(entry);
+            }.bind(this));
             item.appendChild(name);
 
             var removeBtn = document.createElement("button");
@@ -3013,6 +3089,22 @@
             this.renderMemoContextAttachments();
         } catch (err) {
             console.warn("Failed to load memo context attachments", err);
+        }
+    };
+
+    AssistSidebar.prototype.toggleMemoContextAttachment = async function (entry) {
+        if (!entry || !this.docManager) return;
+        var memoId = this.getActiveMemoId();
+        if (!memoId) return;
+        var nextEnabled = entry.enabled === false ? true : false;
+        entry.enabled = nextEnabled;
+        try {
+            await this.docManager.upsertMemoEmbedding(entry);
+            await this.refreshMemoContextAttachments();
+            await this.refreshDocumentStats();
+            window.GoToolkitMemoSyncContextEmbeddings?.(memoId);
+        } catch (err) {
+            console.warn("Failed to toggle memo attachment", err);
         }
     };
 
@@ -3156,6 +3248,13 @@
                     return item.name;
                 });
             console.log("Ready docs to display:", readyDocs);
+            try {
+                document.dispatchEvent(new CustomEvent("goToolkitDocumentsDbStatus", {
+                    detail: { status: "ready" }
+                }));
+            } catch (err) {
+                // ignore
+            }
             this.setPendingDocumentAttachments(readyDocs);
             if (memoId) {
                 if (readyDocs.length) {
@@ -3860,9 +3959,55 @@
         event.target.value = "";
     };
 
+    AssistSidebar.prototype.getFileSizeLimit = function (fileName) {
+        try {
+            var config = globalConfig || {};
+            var fileSizeLimits = config.fileImport?.fileSizeLimits || {};
+            var fileExt = (fileName || "").toLowerCase();
+            var lastDotIndex = fileExt.lastIndexOf(".");
+            if (lastDotIndex < 0) {
+                return null;
+            }
+            var ext = fileExt.substring(lastDotIndex);
+            for (var typeKey in fileSizeLimits) {
+                var typeLimit = fileSizeLimits[typeKey];
+                if (!typeLimit || !Array.isArray(typeLimit.extensions)) continue;
+                if (typeLimit.extensions.includes(ext)) {
+                    return typeLimit;
+                }
+            }
+        } catch (err) {
+            console.warn("Error getting file size limit:", err);
+        }
+        return null;
+    };
+
+    AssistSidebar.prototype.validateFileSizes = function (files) {
+        var fileArray = Array.from(files);
+        var errors = [];
+        for (var i = 0; i < fileArray.length; i++) {
+            var file = fileArray[i];
+            var limit = this.getFileSizeLimit(file.name);
+            if (limit && limit.maxMB) {
+                var maxBytes = limit.maxMB * 1048576;
+                if (file.size > maxBytes) {
+                    var sizeMB = (file.size / 1048576).toFixed(2);
+                    errors.push(file.name + " (" + sizeMB + " MB) dépasse la limite de " + limit.maxMB + " MB.");
+                }
+            }
+        }
+        return errors;
+    };
+
     AssistSidebar.prototype.ingestKnowledgeFiles = async function (files) {
         if (!this.docManager) return;
         var fileArray = Array.from(files);
+        var sizeErrors = this.validateFileSizes(files);
+        if (sizeErrors.length > 0) {
+            var errorMsg = "Fichier(s) trop volumineux :\n" + sizeErrors.join("\n");
+            this.setKnowledgeModalStatus(errorMsg, true);
+            return;
+        }
         if (!fileArray.length) return;
         this.setKnowledgeModalStatus("Importation en cours…");
         try {
@@ -6173,7 +6318,6 @@
         if (this.docManager) {
             this.documentStatsWatcher = this.docManager.onStatsChange(this.refreshDocumentStats.bind(this));
             this.refreshDocumentStats();
-            this.ensureInitialKnowledgeIndex();
         }
         this.syncKnowledgeModalVisibility();
         if (this.isOpen) {

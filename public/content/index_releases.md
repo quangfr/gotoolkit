@@ -1,26 +1,25 @@
 ## 2026-01-09
 - Intégration de Voice dans Mémo
-- Mémo : 
-
+- Mémo : Bibliothèque en barre latérale
+- Mode "Assist : Mémoire, références et citations 
 
 ## 2026-01-08
 - Mémo : Mode "Importer" pour les fichiers
 - Mémo : Sélection du texte à gérer par l'IA
 
 ## 2026-01-06
-- Nouveau module [Memo](/memo) pour la création de notes assistée IA
+- Module [Memo](/memo) pour la création de notes assistée IA
 - Mémo : Mode "Éditer" en direct ou "Suggérer" annoté
 
 ## 2026-01-04
-- Nouveau module [Assist](/#assist) pour analyser les documents avec l'IA
-- Assist : Mémoire, références et citations 
+- Module Assist pour analyser les documents avec l'IA
 - IA : Moteur `gpt-oss-120b` plus rapide et sans rétention de données
 
 ## 2025-12-29
 - Accueil : Ajout des notes de version et de la feuille de route
 
 ## 2025-12-28
-- Module [Voice](/voice?v=v) : audio, webcam et partage d’écran
+- Module Voice : audio, webcam et partage d’écran
 - Voice : Transcription vocale AssemblyAI
 
 ## 2025-12-27
@@ -45,7 +44,7 @@
 - Accueil : Possibilité de donner du [Feedback](/#feedback?v=v)
 
 ## 2025-12-04
-- Nouveau module [Draw](/draw?v=v) : diagrammes de classe, de flux et séquentiel
+- Module [Draw](/draw?v=v) : diagrammes de classe, de flux et séquentiel
 
 ## 2025-11-30
 - Module Timeline (déprécié): planning temporel de projet ou de produit 
