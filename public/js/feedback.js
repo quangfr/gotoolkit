@@ -104,7 +104,9 @@
         toast.textContent = text;
         toast.style.background = error ? "rgba(176, 0, 32, 0.95)" : "rgba(15, 23, 42, 0.95)";
         toast.classList.add("show");
-        setTimeout(() => toast.classList.remove("show"), 3200);
+        setTimeout(() => {
+            toast.classList.remove("show");
+        }, 3200);
     }
 
     function updatePlaceholder(type) {
