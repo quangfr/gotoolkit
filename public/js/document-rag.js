@@ -808,7 +808,6 @@
                 }
                 // JSZip from ESM CDN should have loadAsync directly
                 this.jszip = jsZipModule;
-                console.log("JSZip loaded, type:", typeof this.jszip, "has loadAsync:", typeof this.jszip?.loadAsync);
                 if (!this.jszip?.loadAsync) {
                     console.warn("JSZip.loadAsync not found, checking .default...", typeof this.jszip?.default?.loadAsync);
                 }
@@ -1232,7 +1231,6 @@
             try {
                 await this.keywordIndex.addDocs([doc]);
                 await this.persistKeywordMeta();
-                console.log("Keyword index updated", { chunkId: doc.chunkId, docId: doc.docId });
             } catch (err) {
                 console.warn("Keyword index add failed", err);
             }
@@ -1841,7 +1839,6 @@
                     extractedText
                 } = this.buildChunkList(file, extractionResult);
                 const extractedCount = extractedText.length || totalChars;
-                console.log(`Successfully extracted ${extractedCount} characters from ${file.name}`);
                 onProgress?.({
                     type: "chars",
                     file: file.name,
@@ -1849,19 +1846,11 @@
                     totalChars
                 });
                 const chunkTotal = chunkList.length;
-                onProgress?.({
-                    type: "chunk-total",
-                    file: file.name,
-                    totalChunks: chunkTotal,
-                    fileExt: getExtension(file.name)
-                });
                 const allTexts = chunkList.map((meta) => meta?.text || "");
                 onProgress?.({ type: "chunk", file: file.name, progress: 5 });
-                console.log(`Batch embedding ${chunkTotal} chunks for ${file.name}...`);
                 const startEmbedTime = performance.now();
                 const allEmbeddings = await this.embedBatch(allTexts);
                 const embedDuration = performance.now() - startEmbedTime;
-                console.log(`Batch embedding took ${(embedDuration / 1000).toFixed(2)}s for ${chunkTotal} chunks`);
                 onProgress?.({ type: "chunk", file: file.name, progress: 50 });
                 const zeroEmb = new Int8Array(384);
                 let processedChars = 0;
@@ -1940,7 +1929,6 @@
 
         async extractText(file) {
             const ext = getExtension(file.name);
-            console.log("extractText called for:", file.name, "extension:", ext, "type:", file.type);
             // Ensure jszip is loaded for format-specific operations
             if ((ext === "docx" || ext === "pptx" || ext === "xlsx" || ext === "ods") && !this.jszip) {
                 throw new Error("Modules de traitement de fichiers non chargés - veuillez attendre et réessayer");
@@ -1949,7 +1937,6 @@
                 return this.extractPdf(file);
             }
             if (ext === "docx") {
-                console.log("Processing DOCX file");
                 return { text: await this.extractDocx(file) };
             }
             if (ext === "pptx") {
@@ -2140,26 +2127,21 @@
         }
 
         async extractDocx(file) {
-            console.log("Extracting DOCX:", file.name, "jszip available:", !!this.jszip);
             if (!this.jszip) {
                 throw new Error("JSZip n'est pas chargé - impossible d'extraire le DOCX");
             }
             const buffer = await file.arrayBuffer();
-            console.log("Buffer loaded, size:", buffer.byteLength);
 
             let zip;
             try {
                 // Try direct loadAsync first
                 if (typeof this.jszip.loadAsync === "function") {
-                    console.log("Using JSZip.loadAsync API");
                     zip = await this.jszip.loadAsync(buffer);
                 } else if (typeof this.jszip.default?.loadAsync === "function") {
                     // Fallback for wrapped export
-                    console.log("Using JSZip.default.loadAsync API");
                     zip = await this.jszip.default.loadAsync(buffer);
                 } else if (typeof this.jszip === "function") {
                     // Constructor API
-                    console.log("Using JSZip constructor API");
                     zip = new this.jszip();
                     await zip.loadAsync(buffer);
                 } else {
@@ -2171,16 +2153,13 @@
                 throw err;
             }
 
-            console.log("ZIP loaded, files:", Object.keys(zip.files).length);
             const entry = zip.file("word/document.xml");
             if (!entry) {
                 console.error("word/document.xml not found in DOCX");
                 throw new Error("Fichier DOCX invalide: word/document.xml non trouvé");
             }
             const raw = await entry.async("string");
-            console.log("XML loaded, size:", raw.length);
             const text = extractTextFromXml(raw);
-            console.log("Text extracted, length:", text.length);
             return text || "";
         }
 

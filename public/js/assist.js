@@ -568,11 +568,10 @@
         return renderBotMarkdown(text);
     }
 
-    function formatDuration(seconds) {
-        var total = Math.max(0, Math.round(Number(seconds) || 0));
-        var mins = Math.floor(total / 60);
-        var secs = total % 60;
-        return String(mins).padStart(2, "0") + ":" + String(secs).padStart(2, "0");
+    function getFileExtension(fileName) {
+        var parts = String(fileName || "").split(".");
+        if (parts.length < 2) return "";
+        return parts.pop().toLowerCase();
     }
 
     function estimateTokenCount(text) {
@@ -3250,6 +3249,9 @@
     AssistSidebar.prototype.handleRemoveMemoContextAttachment = async function (entry) {
         if (!entry || !this.docManager) return;
         var docId = entry.docId || entry.id;
+        if (docId && typeof docId === "string" && docId.indexOf(":") !== -1) {
+            docId = docId.split(":").pop();
+        }
         try {
             var memoId = this.getActiveMemoId();
             if (memoId) {
@@ -3311,50 +3313,7 @@
                 embedPercent = Math.round(embedSum / total);
             }
             var percent = Math.round((extractPercent + embedPercent) / 2);
-            var etaLabel = "";
-            if (this.attachmentsChunkTotals && this.attachmentsChunkTotalsByFile) {
-                var weights = {
-                    pdf: 0.9,
-                    docx: 0.8,
-                    pptx: 0.75,
-                    xlsx: 0.6,
-                    ods: 0.6,
-                    odt: 0.6,
-                    odf: 0.6,
-                    csv: 0.5,
-                    tsv: 0.5,
-                    json: 0.45,
-                    jsonl: 0.45,
-                    ndjson: 0.45,
-                    log: 0.5,
-                    md: 0.55,
-                    txt: 0.5,
-                    rtf: 0.6,
-                    doc: 0.6
-                };
-                var totalWeighted = 0;
-                var doneWeighted = 0;
-                Object.keys(this.attachmentsChunkTotalsByFile).forEach(function (file) {
-                    var totalChunks = Number(this.attachmentsChunkTotalsByFile[file]) || 0;
-                    if (!totalChunks) return;
-                    var ext = (this.attachmentsChunkExtByFile?.[file] || "").toLowerCase();
-                    var weight = weights[ext] || 0.55;
-                    totalWeighted += totalChunks * weight;
-                    var progress = Number(this.attachmentsEmbedProgressByFile?.[file]) || 0;
-                    var doneChunks = Math.round((progress / 100) * totalChunks);
-                    doneWeighted += doneChunks * weight;
-                }, this);
-                if (totalWeighted > 0) {
-                    var elapsedMs = this.attachmentsIngestionStart ? (Date.now() - this.attachmentsIngestionStart) : 0;
-                    var elapsedSec = Math.max(0.1, elapsedMs / 1000);
-                    var rate = doneWeighted > 0 ? doneWeighted / elapsedSec : 0;
-                    var remainingSec = rate > 0 ? (totalWeighted - doneWeighted) / rate : 0;
-                    if (remainingSec > 0) {
-                        etaLabel = " · " + formatDuration(remainingSec);
-                    }
-                }
-            }
-            return percent + " %" + etaLabel;
+            return percent + " %";
         }
 
         // After import complete (total === 0, but pendingCount > 0)
@@ -3403,6 +3362,11 @@
         this.pendingDocumentAttachments = fileArray.map(function (file) {
             return file.name;
         });
+        fileArray.forEach(function (file) {
+            var name = file?.name || "";
+            if (!name) return;
+            this.attachmentsChunkExtByFile[name] = getFileExtension(name);
+        }, this);
         this.updateAttachmentIndicator();
         this.updateComposerState();
         this.setDocumentUploadStatus("Indexation en cours…");
@@ -3509,15 +3473,6 @@
             if (extractFileName) {
                 if (!this.attachmentsExtractProgressByFile) this.attachmentsExtractProgressByFile = {};
                 this.attachmentsExtractProgressByFile[extractFileName] = Number(progress.progress) || 0;
-                this.updateAttachmentIndicator();
-            }
-        } else if (progress.type === "chunk-total") {
-            var chunkFileName = progress.file || "";
-            if (chunkFileName) {
-                if (!this.attachmentsChunkTotalsByFile) this.attachmentsChunkTotalsByFile = {};
-                if (!this.attachmentsChunkExtByFile) this.attachmentsChunkExtByFile = {};
-                this.attachmentsChunkTotalsByFile[chunkFileName] = Number(progress.totalChunks) || 0;
-                this.attachmentsChunkExtByFile[chunkFileName] = progress.fileExt || "";
                 this.updateAttachmentIndicator();
             }
         } else if (progress.type === "file-start") {

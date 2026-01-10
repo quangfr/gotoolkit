@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="UTF-8">
     <title>JSON Import Benchmark</title>
@@ -9,22 +10,26 @@
             padding: 20px;
             background: #f5f5f5;
         }
+
         .container {
             max-width: 1000px;
             margin: 0 auto;
             background: white;
             padding: 30px;
             border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
+
         h1 {
             color: #333;
             border-bottom: 2px solid #007acc;
             padding-bottom: 10px;
         }
+
         .test-controls {
             margin: 20px 0;
         }
+
         button {
             padding: 10px 20px;
             margin-right: 10px;
@@ -35,52 +40,64 @@
             cursor: pointer;
             font-size: 14px;
         }
+
         button:hover {
             background: #005a9c;
         }
+
         button:disabled {
             background: #ccc;
             cursor: not-allowed;
         }
+
         .results {
             margin: 30px 0;
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 15px;
         }
+
         .metric {
             background: #f9f9f9;
             padding: 15px;
             border-left: 4px solid #007acc;
             border-radius: 4px;
         }
+
         .metric-label {
             font-size: 12px;
             color: #666;
             text-transform: uppercase;
             margin-bottom: 5px;
         }
+
         .metric-value {
             font-size: 24px;
             font-weight: bold;
             color: #007acc;
         }
+
         .metric.success {
             border-left-color: #28a745;
         }
+
         .metric.success .metric-value {
             color: #28a745;
         }
+
         .metric.error {
             border-left-color: #dc3545;
         }
+
         .metric.error .metric-value {
             color: #dc3545;
         }
+
         .progress-container {
             margin: 20px 0;
             display: none;
         }
+
         .progress-bar {
             width: 100%;
             height: 30px;
@@ -89,6 +106,7 @@
             overflow: hidden;
             position: relative;
         }
+
         .progress-fill {
             height: 100%;
             background: linear-gradient(90deg, #007acc, #005a9c);
@@ -101,6 +119,7 @@
             font-weight: bold;
             font-size: 12px;
         }
+
         .log {
             background: #f9f9f9;
             border: 1px solid #e9ecef;
@@ -112,28 +131,35 @@
             font-size: 12px;
             line-height: 1.5;
         }
+
         .log-entry {
             margin: 5px 0;
             padding: 3px 0;
         }
+
         .log-entry.info {
             color: #0066cc;
         }
+
         .log-entry.success {
             color: #28a745;
         }
+
         .log-entry.error {
             color: #dc3545;
         }
+
         .log-entry.timing {
             color: #ff6600;
             font-weight: bold;
         }
+
         .comparison-table {
             width: 100%;
             border-collapse: collapse;
             margin: 20px 0;
         }
+
         .comparison-table th {
             background: #007acc;
             color: white;
@@ -141,26 +167,31 @@
             text-align: left;
             font-weight: 600;
         }
+
         .comparison-table td {
             padding: 12px;
             border-bottom: 1px solid #e9ecef;
         }
+
         .comparison-table tr:hover {
             background: #f5f5f5;
         }
+
         .comparison-table .improvement {
             color: #28a745;
             font-weight: bold;
         }
+
         .comparison-table .warning {
             color: #ff6600;
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <h1>📊 JSON Import Benchmark</h1>
-        
+
         <div class="test-controls">
             <button id="testButton">Test Single File</button>
             <button id="testAllButton">Test All Contracts</button>
@@ -203,16 +234,16 @@
 
         async function runTest(filePath, fileName) {
             addLog(`Starting test for: ${fileName}`, 'info');
-            
+
             const startTime = performance.now();
             const fileSize = 0; // Sera mesuré côté client
-            
+
             try {
                 // Récupérer le fichier
                 const response = await fetch(filePath);
                 const fileBlob = await response.blob();
                 const file = new File([fileBlob], fileName, { type: 'application/json' });
-                
+
                 const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
                 addLog(`File loaded: ${fileSizeMB}MB`, 'success');
 
@@ -222,7 +253,7 @@
                 const data = JSON.parse(raw);
                 const parseTime = performance.now() - parseStart;
                 addLog(`✓ Parse JSON: ${parseTime.toFixed(2)}ms`, 'timing');
-                
+
                 // Mesurer chunking
                 const chunkStart = performance.now();
                 const chunks = window.GoToolkitBuildJsonChunks?.(data, {
@@ -243,24 +274,24 @@
                 // Mesurer embedding
                 setProgress(0);
                 progressContainer.style.display = 'block';
-                
+
                 const embedStart = performance.now();
                 const manager = window.GoToolkitDocumentManager;
-                
+
                 if (!manager) {
                     addLog('Error: DocumentManager not available', 'error');
                     return null;
                 }
 
                 await manager.waitReady?.();
-                
+
                 const embedTexts = chunks?.map(c => c?.textForEmbedding || '') || [];
-                
+
                 // Nouveau: utiliser embedBatchAdaptive
                 const embeddings = await manager.embedBatchAdaptive(embedTexts, (progress) => {
                     setProgress(progress * 100);
                 });
-                
+
                 const embedTime = performance.now() - embedStart;
                 addLog(`✓ Embedding (adaptive batch): ${embedTime.toFixed(2)}ms`, 'timing');
 
@@ -281,10 +312,10 @@
                     }
                 };
 
-                addLog(`✓ TOTAL: ${totalTime.toFixed(2)}ms (${(totalTime/1000).toFixed(2)}s)`, 'success');
-                
+                addLog(`✓ TOTAL: ${totalTime.toFixed(2)}ms (${(totalTime / 1000).toFixed(2)}s)`, 'success');
+
                 displayResult(result);
-                
+
                 // Sauvegarder le résultat
                 const results = JSON.parse(localStorage.getItem('benchmarkResults') || '[]');
                 results.push({
@@ -292,7 +323,7 @@
                     timestamp: new Date().toISOString()
                 });
                 localStorage.setItem('benchmarkResults', JSON.stringify(results));
-                
+
                 return result;
 
             } catch (err) {
@@ -374,4 +405,5 @@
         addLog('Benchmark ready. Choose a test to run.', 'info');
     </script>
 </body>
+
 </html>
