@@ -1769,10 +1769,6 @@
     <script src="js/ia-config.js"></script>
     <script src="js/prompt.js?v=2026.01.10"></script>
     <script src="js/ia-client.js"></script>
-    <script src="js/document-markdown.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/minisearch@7.2.0/dist/umd/index.min.js"></script>
-    <script src="js/keywordIndex.js"></script>
-    <script src="js/document-parser.js?v=2026.01.10"></script>
     <script>
         // Initialize feedback configuration before loading feedback.js
         window.GoToolkitAppFeedbackConfig = {
@@ -1783,216 +1779,6 @@
         };
     </script>
     <script src="js/feedback.js"></script>
-    <script>
-        (function () {
-            const manager = window.GoToolkitDocumentManager;
-            if (!manager || typeof manager.ingestFiles !== "function") return;
-
-            const KNOWLEDGE_CONVERSATION_ID = window.GoToolkitKnowledgeConversationId || "knowledge";
-            window.GoToolkitKnowledgeConversationId = KNOWLEDGE_CONVERSATION_ID;
-
-            function getVersionParam() {
-                try {
-                    const params = new URLSearchParams(window.location.search || "");
-                    return params.get("v") || "v";
-                } catch (err) {
-                    return "v";
-                }
-            }
-
-            function createFileLike(data, fileName, type) {
-                const normalizedType = (type || "").trim();
-                const parts = [];
-                if (data instanceof Blob) {
-                    parts.push(data);
-                } else if (ArrayBuffer.isView(data) || data instanceof ArrayBuffer) {
-                    parts.push(data);
-                } else {
-                    parts.push(typeof data === "string" ? data : (data != null ? String(data) : ""));
-                }
-                const blobType = normalizedType || (data instanceof Blob ? data.type : "");
-                if (typeof File !== "undefined") {
-                    try {
-                        return new File(parts, fileName, { type: blobType });
-                    } catch (err) {
-                        // fallback to Blob
-                    }
-                }
-                const fallback = new Blob(parts, { type: blobType });
-                fallback.name = fileName;
-                return fallback;
-            }
-
-            function getFileNameFromPath(path) {
-                if (!path) return "";
-                const parts = path.split("/");
-                return parts[parts.length - 1] || path;
-            }
-
-            function parseUpdatedAt(value) {
-                if (typeof value === "number" && Number.isFinite(value)) {
-                    return value;
-                }
-                if (typeof value === "string" && value.trim()) {
-                    const parsed = Number(value);
-                    if (Number.isFinite(parsed)) return parsed;
-                    const date = Date.parse(value);
-                    if (Number.isFinite(date)) return date;
-                }
-                return 0;
-            }
-
-            async function loadManifest() {
-                try {
-                    const url = new URL("content/files.json", window.location.href);
-                    url.searchParams.set("v", getVersionParam());
-                    const response = await fetch(url.toString(), { cache: "no-cache" });
-                    if (!response.ok) {
-                        console.warn("Index manifest fetch failed", response.status);
-                        return [];
-                    }
-                    const items = await response.json();
-                    if (!Array.isArray(items)) return [];
-                    return items
-                        .map((entry) => {
-                            const fileName = (entry.fileName || getFileNameFromPath(entry.path || "")).trim();
-                            return {
-                                path: entry.path,
-                                name: (entry.name || fileName).trim(),
-                                abstract: entry.abstract || "",
-                                updatedAt: parseUpdatedAt(entry.updatedAt),
-                                fileName: fileName
-                            };
-                        })
-                        .filter(entry => entry.path && entry.fileName && entry.name);
-                } catch (err) {
-                    console.error("Index manifest load failed", err);
-                    return [];
-                }
-            }
-
-            function detectFileTypeFromPath(path) {
-                if (!path) return "";
-                const lower = path.toLowerCase();
-                if (lower.endsWith(".pdf")) return "pdf";
-                if (lower.endsWith(".md")) return "markdown";
-                if (lower.endsWith(".txt")) return "txt";
-                return "";
-            }
-
-            async function fetchDocument(doc) {
-                try {
-                    const url = new URL(doc.path, window.location.href);
-                    url.searchParams.set("v", getVersionParam());
-                    const response = await fetch(url.toString(), { cache: "no-cache" });
-                    if (!response.ok) {
-                        console.warn("Index doc fetch failed", doc.path, response.status);
-                        return null;
-                    }
-                    const fileName = doc.fileName || getFileNameFromPath(doc.path);
-                    const contentTypeHeader = (response.headers.get("content-type") || "").toLowerCase();
-                    const extensionHint = detectFileTypeFromPath(doc.path);
-                    const isPdf = contentTypeHeader.includes("pdf") || extensionHint === "pdf";
-                    if (isPdf) {
-                        const buffer = await response.arrayBuffer();
-                        const mime = contentTypeHeader.includes("/") ? contentTypeHeader : "application/pdf";
-                        const blob = new Blob([buffer], { type: mime });
-                        return createFileLike(blob, fileName, mime);
-                    }
-                    const text = await response.text();
-                    const textMime = contentTypeHeader.includes("markdown") || extensionHint === "markdown"
-                        ? "text/markdown"
-                        : contentTypeHeader.includes("html")
-                            ? "text/html"
-                            : "text/plain";
-                    return createFileLike(text, fileName, textMime);
-                } catch (err) {
-                    console.error("Index doc fetch error", doc.path, err);
-                    return null;
-                }
-            }
-
-            async function syncIndexDocs() {
-                try {
-                    await manager.waitReady();
-                    const manifest = await loadManifest();
-                    console.log("embeddings knowledge retrieval", {
-                        manifestCount: manifest.length
-                    });
-                    if (!manifest.length) return;
-
-                    const existingDocs = await manager.getDocuments(KNOWLEDGE_CONVERSATION_ID);
-                    const existingMap = new Map();
-                    existingDocs.forEach((doc) => {
-                        if (!doc || doc.sourceType !== "embedded") return;
-                        const key = doc.sourceFileName || doc.name;
-                        existingMap.set(key, doc);
-                    });
-
-                    const staleNames = [];
-                    manifest.forEach((entry) => {
-                        const stored = existingMap.get(entry.fileName);
-                        if (!stored) return;
-                        const storedUpdated = Number(stored.updatedAt) || 0;
-                        if (!storedUpdated || entry.updatedAt > storedUpdated) {
-                            staleNames.push(stored.name);
-                            existingMap.delete(entry.fileName);
-                        }
-                    });
-                    if (staleNames.length) {
-                        await manager.deleteDocumentsByNames(KNOWLEDGE_CONVERSATION_ID, staleNames);
-                    }
-
-                    const toIngest = manifest.filter(entry => !existingMap.has(entry.fileName));
-                    if (!toIngest.length) return;
-
-                    const files = (await Promise.all(toIngest.map(fetchDocument))).filter(Boolean);
-                    if (!files.length) return;
-
-                    const metadata = new Map();
-                    toIngest.forEach((entry) => {
-                        metadata.set(entry.fileName, {
-                            name: entry.name,
-                            abstract: entry.abstract,
-                            updatedAt: entry.updatedAt,
-                            fileName: entry.fileName
-                        });
-                    });
-                    await manager.ingestFiles(files, KNOWLEDGE_CONVERSATION_ID, {
-                        sourceType: "embedded",
-                        metadata
-                    });
-                } catch (err) {
-                    console.error("Index document sync failed", err);
-                }
-            }
-
-            async function refreshIndexDocs() {
-                try {
-                    await manager.waitReady();
-                    const manifest = await loadManifest();
-                    const fileNames = manifest.map(entry => entry.fileName);
-                    if (fileNames.length) {
-                        await manager.deleteDocumentsByNames(KNOWLEDGE_CONVERSATION_ID, fileNames);
-                    }
-                } catch (err) {
-                    console.error("Index document cleanup failed", err);
-                }
-                return syncIndexDocs();
-            }
-
-            function runSync() {
-                syncIndexDocs();
-            }
-
-            window.GoToolkitIndexDocSync = refreshIndexDocs;
-            if (document.readyState === "loading") {
-                window.addEventListener("DOMContentLoaded", runSync, { once: true });
-            } else {
-                runSync();
-            }
-        })();
-    </script>
 
     <script>
         (function () {
@@ -2732,70 +2518,6 @@
                 return blob;
             }
 
-            let gallerySyncTimer = null;
-            let gallerySyncPromise = null;
-
-            function scheduleGallerySync() {
-                if (!window.GoToolkitDocumentManager) return;
-                if (gallerySyncTimer) {
-                    clearTimeout(gallerySyncTimer);
-                }
-                gallerySyncTimer = setTimeout(() => {
-                    syncGalleryDocuments().catch(() => { /* noop */ });
-                }, 400);
-            }
-
-            async function syncGalleryDocuments() {
-                if (gallerySyncPromise) return gallerySyncPromise;
-                gallerySyncPromise = (async () => {
-                    const manager = window.GoToolkitDocumentManager;
-                    if (!manager || typeof manager.ingestFiles !== "function") return;
-                    const conversationId = "default";
-                    await manager.waitReady?.();
-                    await manager.deleteDocumentsBySourceTypes?.(conversationId, ["gallery"]);
-                    const files = [];
-
-                    if (documentApi?.getAllRecords) {
-                        const records = await documentApi.getAllRecords();
-                        records.forEach(record => {
-                            if (!record?.payload) return;
-                            const text = buildGalleryText(record.app, record.payload, "saved");
-                            if (!text) return;
-                            const name = `gallery_saved_${record.app}_${record.id}.txt`;
-                            files.push(createGalleryFile(text, name));
-                        });
-                    }
-
-                    if (shareHistory?.getRecords && shareService?.isReady) {
-                        const records = await shareHistory.getRecords();
-                        const entries = Object.entries(records || {})
-                            .filter(([app, record]) => APP_DEFINITIONS[app] && record?.token);
-                        const sharedDocs = await Promise.all(entries.map(async ([app, record]) => {
-                            const definition = APP_DEFINITIONS[app];
-                            try {
-                                const result = await shareService.fetchSharePayload(definition.collection, record.token);
-                                if (!result?.payload) return null;
-                                const text = buildGalleryText(app, result.payload, "shared");
-                                if (!text) return null;
-                                const name = `gallery_shared_${app}_${record.token}.txt`;
-                                return createGalleryFile(text, name);
-                            } catch (err) {
-                                console.warn("Gallery shared fetch failed", app, err);
-                                return null;
-                            }
-                        }));
-                        sharedDocs.filter(Boolean).forEach(file => files.push(file));
-                    }
-
-                    if (files.length) {
-                        await manager.ingestFiles(files, conversationId, { sourceType: "gallery" });
-                    }
-                })().finally(() => {
-                    gallerySyncPromise = null;
-                });
-                return gallerySyncPromise;
-            }
-
             async function refreshSavedGallery() {
                 if (refreshSavedPromise) {
                     return refreshSavedPromise;
@@ -2879,7 +2601,6 @@
                     if (savedEmpty) savedEmpty.hidden = pinned.length + regular.length > 0;
                 })().finally(() => {
                     refreshSavedPromise = null;
-                    scheduleGallerySync();
                 });
                 return refreshSavedPromise;
             }
@@ -2944,7 +2665,6 @@
                     setState({ loading: false, hasData: hasPinned || hasRegular, hasPinned, hasRegular, error: "" });
                 })().finally(() => {
                     refreshGalleryPromise = null;
-                    scheduleGallerySync();
                 });
                 return refreshGalleryPromise;
             }
@@ -2982,7 +2702,6 @@
                 if (!event.key || !galleryStorageKeys.has(event.key)) return;
                 refreshGallery().catch(() => { /* noop */ });
                 refreshSavedGallery().catch(() => { /* noop */ });
-                scheduleGallerySync();
             });
         })();
     </script>
