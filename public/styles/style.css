@@ -1376,7 +1376,7 @@ label {
 }
 
 .chat-content {
-  font-size: 0.82rem;
+  font-size: 14px;
   color: #0f172a;
   line-height: 1.45;
 }
@@ -1474,7 +1474,7 @@ label {
   border-radius: 8px;
   width: 100%;
   padding: 4px 10px;
-  font-size: 0.75rem;
+  font-size: 14px;
   cursor: pointer;
   transition: background 0.15s ease, border-color 0.15s ease;
 }
@@ -1619,6 +1619,7 @@ label {
   padding: 16px;
   gap: 10px;
   overflow: hidden;
+  font-size: 14px;
 }
 
 .chat-knowledge-modal.open {
@@ -1646,7 +1647,7 @@ label {
 
 .chat-knowledge-modal__title {
   font-weight: 500;
-  font-size: 1rem;
+  font-size: 14px;
   color: #0f172a;
 }
 
@@ -1657,7 +1658,7 @@ label {
 .chat-knowledge-modal__close {
   border: none;
   background: transparent;
-  font-size: 1rem;
+  font-size: 14px;
   cursor: pointer;
   color: #64748b;
 }
@@ -1667,7 +1668,7 @@ label {
   background: #ffffff;
   border-radius: 8px;
   padding: 6px 10px;
-  font-size: 0.75rem;
+  font-size: 14px;
   cursor: pointer;
   color: #1f2937;
 }
@@ -1680,7 +1681,7 @@ label {
   border-radius: 10px;
   padding: 10px;
   background: #f8fafc;
-  font-size: 0.78rem;
+  font-size: 14px;
 }
 
 .chat-knowledge-modal__row {
@@ -1753,13 +1754,13 @@ label {
   background: transparent;
   cursor: pointer;
   color: #64748b;
-  font-size: 0.8rem;
+  font-size: 14px;
   padding: 0;
 }
 
 .chat-knowledge-modal__source {
   color: #475569;
-  font-size: 0.75rem;
+  font-size: 14px;
 }
 
 .chat-knowledge-modal__name:hover {
@@ -1781,7 +1782,7 @@ label {
 
 .chat-knowledge-modal__empty {
   color: #64748b;
-  font-size: 0.85rem;
+  font-size: 14px;
   padding: 12px;
 }
 
@@ -1987,7 +1988,7 @@ label {
   padding: 8px 10px;
   resize: none;
   font-family: var(--app-font, "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif);
-  font-size: 0.84rem;
+  font-size: 14px;
   min-height: 56px;
   max-height: 140px;
 }

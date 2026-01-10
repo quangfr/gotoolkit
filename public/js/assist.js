@@ -250,7 +250,7 @@
     var WIDTH_KEY = "goToolkit.chat.sidebarWidth";
     var OPEN_KEY = scopedKey("goToolkit.chat.sidebarOpen");
     var KNOWLEDGE_MODAL_OPEN_KEY = scopedKey("goToolkit.chat.knowledgeModalOpen");
-    var DEFAULT_WIDTH = 450;
+    var DEFAULT_WIDTH = 400;
     var MIN_WIDTH = 320;
     var MAX_WIDTH = 800;
     var MAX_WIDTH_RATIO = 0.6;
@@ -1073,14 +1073,7 @@
         } else {
             // Mode "advice" (conseiller)
             var preference = loadKnowledgeModalOpenState();
-            if (preference === null) {
-                // No preference yet, auto-open only if conversation is empty
-                if (!this.conversation || !this.conversation.messages || this.conversation.messages.length === 0) {
-                    this.openKnowledgeModal();
-                } else {
-                    this.closeKnowledgeModal(false);
-                }
-            } else if (preference === true) {
+            if (preference === true) {
                 this.openKnowledgeModal();
             } else {
                 this.closeKnowledgeModal(false);
@@ -3819,13 +3812,7 @@
         try {
             await this.refreshKnowledgeModal({ skipAutoReindex: true });
             var entries = Array.isArray(this.knowledgeManifestEntries) ? this.knowledgeManifestEntries : [];
-            var selectionSet = new Set();
-            entries.forEach(function (entry) {
-                var key = this.normalizeKnowledgeKey(entry.fileName);
-                if (key) {
-                    selectionSet.add(key);
-                }
-            }.bind(this));
+            var selectionSet = new Set(this.knowledgeModalSelectionSet || []);
             if (!selectionSet.size) {
                 this.setKnowledgeModalStatus("");
                 return;

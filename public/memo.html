@@ -41,10 +41,9 @@
         }
 
         .document-explorer {
-            width: var(--doc-sidebar-width, 350px);
-            flex: 0 0 var(--doc-sidebar-width, 350px);
+            width: var(--doc-sidebar-width, 300px);
+            flex: 0 0 var(--doc-sidebar-width, 300px);
             background: #ffffff;
-            border-right: 1px solid var(--app-border, #dfe3f5);
             display: flex;
             flex-direction: column;
             gap: 10px;
@@ -96,6 +95,14 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+        }
+
+        .document-explorer__item--open {
+            border: 2px solid var(--border-strong, var(--app-border-strong, #cdd4ed));
+        }
+
+        .document-explorer__item--active {
+            border: 2px solid var(--primary, var(--app-primary, #2a7a57));
         }
 
         .document-explorer__item>span:first-child {
@@ -172,7 +179,7 @@
             gap: 0;
             min-height: 100vh;
             height: 100vh;
-            padding: 12px;
+            padding: 6px;
             overflow: hidden;
         }
 
@@ -181,6 +188,10 @@
             align-items: center;
             gap: 8px;
             flex-wrap: wrap;
+        }
+
+        .app-header {
+            gap: 0;
         }
 
         .global-actions {
@@ -192,11 +203,17 @@
         }
 
         #tabs {
+            display: flex;
+            flex: 1;
+            min-width: 0;
             flex-direction: column;
             align-items: flex-start;
         }
 
         #document-tabs {
+            flex: 1;
+            min-width: 0;
+            padding-right: 100px;
             width: 100%;
         }
 
@@ -263,6 +280,16 @@
             gap: 0;
             min-height: 0;
             overflow: hidden;
+        }
+
+        .memo-empty-state {
+            flex: 1;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            color: #64748b;
+            font-size: 16px;
+            text-align: center;
         }
 
         .editor-wrap {
@@ -555,6 +582,7 @@
             </div>
 
             <div id="app" class="app-main">
+                <div id="memoEmptyState" class="memo-empty-state">Aucun document ouvert</div>
                 <section class="memo-card">
                     <div class="editor-wrap">
                         <div id="editor" class="editor"></div>
@@ -769,6 +797,8 @@
             const shareCreateBtn = document.getElementById("shareCreateBtn");
             const shareUpdateBtn = document.getElementById("shareUpdateBtn");
             const shareMenuStatus = document.getElementById("shareMenuStatus");
+            const memoCardEl = document.querySelector(".memo-card");
+            const memoEmptyStateEl = document.getElementById("memoEmptyState");
             const templateModal = document.getElementById("gtTemplateModal");
             const templateModalTrigger = document.getElementById("gtTemplateModalTrigger");
             const templateModalClose = document.getElementById("gtTemplateModalClose");
@@ -796,6 +826,20 @@
             let shareStatusType = "";
             let isDocumentSaving = false;
             let autoSaveTimer = null;
+            let memoExplorer = null;
+
+            function updateEmptyState() {
+                const hasOpenDoc = openDocuments.length > 0 && Boolean(activeDocumentId);
+                if (memoCardEl) {
+                    memoCardEl.style.display = hasOpenDoc ? "" : "none";
+                }
+                if (memoEmptyStateEl) {
+                    memoEmptyStateEl.style.display = hasOpenDoc ? "none" : "flex";
+                }
+                if (!hasOpenDoc) {
+                    memoExplorer?.open?.();
+                }
+            }
 
             function createId() {
                 if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -866,7 +910,7 @@
                     };
                     return;
                 }
-                openDocuments.unshift(doc);
+                openDocuments.push(doc);
             }
 
             function renderDocumentTabs() {
@@ -911,6 +955,8 @@
                     documentTabsEl.appendChild(btn);
                 });
                 persistOpenDocumentState();
+                updateEmptyState();
+                memoExplorer?.refreshIndicators?.();
             }
 
             function ensureActiveDocument() {
@@ -1551,23 +1597,31 @@
                 await deleteDocument(activeDocumentId);
             }
 
+            let isCreatingNewDocument = false;
+
             async function createNewDocument(name) {
-                syncActiveDocumentPayload();
-                const nextState = createDefaultState();
-                if (nextState.tabs[0]) {
-                    nextState.tabs[0].title = name;
+                if (isCreatingNewDocument) return;
+                isCreatingNewDocument = true;
+                try {
+                    syncActiveDocumentPayload();
+                    const nextState = createDefaultState();
+                    if (nextState.tabs[0]) {
+                        nextState.tabs[0].title = name;
+                    }
+                    state = nextState;
+                    activeDocumentId = (documentApi?.generateId && documentApi.generateId()) || createId();
+                    renderTabs();
+                    setActiveTab(state.activeTabId);
+                    syncAssistPresetFromState();
+                    await saveDocument({ showToast: true });
+                    getExplorer()?.refresh?.();
+                    window.GoToolkitAssistInstance?.open?.();
+                } finally {
+                    isCreatingNewDocument = false;
                 }
-                state = nextState;
-                activeDocumentId = (documentApi?.generateId && documentApi.generateId()) || createId();
-                renderTabs();
-                setActiveTab(state.activeTabId);
-                syncAssistPresetFromState();
-                await saveDocument({ showToast: true });
-                getExplorer()?.refresh?.();
-                window.GoToolkitAssistInstance?.open?.();
             }
 
-            const memoExplorer = window.GoToolkitDocumentExplorer?.create({
+            memoExplorer = window.GoToolkitDocumentExplorer?.create({
                 appId: "memo",
                 sidebar: "#documentExplorer",
                 resizer: "#documentExplorerResizer",
@@ -1577,6 +1631,8 @@
                     const documents = await window.goToolkitDocumentApi?.getAllRecords?.();
                     return (documents || []).filter(item => item && item.app === "memo");
                 },
+                getOpenIds: () => openDocuments.map(doc => doc.id).filter(Boolean),
+                getActiveId: () => activeDocumentId || "",
                 onCreate: name => {
                     if (!name) return;
                     createNewDocument(name);
@@ -1602,13 +1658,14 @@
             });
 
             async function saveDocument(options) {
-                if (!documentApi || isDocumentSaving) return null;
+                if (!documentApi || isDocumentSaving || !activeDocumentId) return null;
                 isDocumentSaving = true;
                 try {
                     const payload = buildSharePayload();
                     const preview = buildSharePreview();
                     // IMPORTANT: Preserve existing activeDocumentId if it exists
-                    const id = activeDocumentId || (documentApi.generateId && documentApi.generateId()) || createId();
+                    const startedWithId = activeDocumentId;
+                    const id = startedWithId || (documentApi.generateId && documentApi.generateId()) || createId();
                     const now = new Date().toISOString();
                     const record = await documentApi.upsertRecord({
                         id,
@@ -1619,8 +1676,10 @@
                         updatedAt: now
                     });
                     if (record) {
-                        // Always preserve the ID - don't let upsert change it
-                        activeDocumentId = id;
+                        // Avoid overriding a newer active document selected mid-save.
+                        if (!activeDocumentId || activeDocumentId === startedWithId) {
+                            activeDocumentId = id;
+                        }
                         upsertOpenDocument({
                             id,
                             title: preview.title || getDocumentTitleFromState(state),
@@ -2199,14 +2258,7 @@
             const shouldOpenTemplateOnStart = !initialState;
 
             const documentLoadedPromise = (async () => {
-                await ensureDefaultDocumentRecord();
                 const restored = await restoreOpenDocumentsFromStorage();
-                if (!restored) {
-                    const opened = await openMostRecentDocumentFromStore();
-                    if (!opened) {
-                        ensureActiveDocument();
-                    }
-                }
                 return restored;
             })();
 
@@ -2214,7 +2266,9 @@
                 window.__memoState = state;
                 renderTabs();
                 renderDocumentTabs();
-                ensureActiveDocument();
+                if (openDocuments.length) {
+                    ensureActiveDocument();
+                }
                 setupMemoPrompt();
                 syncAssistPresetFromState();
                 hydrateMemoContextEmbeddings();
@@ -2232,7 +2286,9 @@
                         clearInterval(autoSaveTimer);
                     }
                     autoSaveTimer = setInterval(() => {
-                        saveDocument({ showToast: false });
+                        if (activeDocumentId) {
+                            saveDocument({ showToast: false });
+                        }
                     }, 10000);
                 })
                 .catch(err => {
@@ -2438,6 +2494,7 @@
 
             loadShareFromUrl();
 
+            const EDGE_DROP_BUFFER = 50;
             let draggedDocumentId = null;
             documentTabsEl?.addEventListener("dragstart", event => {
                 const tab = event.target.closest(".document-tab");
@@ -2455,19 +2512,36 @@
             documentTabsEl?.addEventListener("dragover", event => {
                 if (!draggedDocumentId) return;
                 const target = event.target.closest(".document-tab");
-                if (!target || target.dataset.documentId === draggedDocumentId) return;
-                event.preventDefault();
+                if (target) {
+                    if (target.dataset.documentId === draggedDocumentId) return;
+                    event.preventDefault();
+                    return;
+                }
+                const containerRect = documentTabsEl.getBoundingClientRect();
+                if (event.clientX <= containerRect.right + EDGE_DROP_BUFFER && event.clientX >= containerRect.left) {
+                    event.preventDefault();
+                }
             });
             documentTabsEl?.addEventListener("drop", event => {
                 const target = event.target.closest(".document-tab");
-                if (!target || !draggedDocumentId) return;
+                if (!draggedDocumentId) return;
                 event.preventDefault();
+                const fromIndex = openDocuments.findIndex(doc => doc.id === draggedDocumentId);
+                const [moved] = openDocuments.splice(fromIndex, 1);
+                if (!target) {
+                    const containerRect = documentTabsEl.getBoundingClientRect();
+                    if (event.clientX <= containerRect.right + EDGE_DROP_BUFFER) {
+                        openDocuments.push(moved);
+                        renderDocumentTabs();
+                    } else {
+                        openDocuments.splice(fromIndex, 0, moved);
+                    }
+                    return;
+                }
                 const targetId = target.dataset.documentId;
                 if (!targetId || targetId === draggedDocumentId) return;
-                const fromIndex = openDocuments.findIndex(doc => doc.id === draggedDocumentId);
                 const toIndex = openDocuments.findIndex(doc => doc.id === targetId);
                 if (fromIndex < 0 || toIndex < 0) return;
-                const [moved] = openDocuments.splice(fromIndex, 1);
                 const rect = target.getBoundingClientRect();
                 const insertAfter = event.clientX > rect.left + rect.width / 2;
                 let nextIndex = toIndex;

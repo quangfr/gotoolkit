@@ -84,6 +84,8 @@
         const onRename = typeof opts.onRename === "function" ? opts.onRename : null;
         const onDelete = typeof opts.onDelete === "function" ? opts.onDelete : null;
         const getItems = typeof opts.getItems === "function" ? opts.getItems : null;
+        const getOpenIds = typeof opts.getOpenIds === "function" ? opts.getOpenIds : null;
+        const getActiveId = typeof opts.getActiveId === "function" ? opts.getActiveId : null;
         let cachedItems = [];
 
         if (headerEl) {
@@ -186,13 +188,15 @@
             return name || "Doc";
         }
 
-        function uniqueName(name, list) {
+        function uniqueName(name, list, extraNames) {
             const base = normalizeName(name);
             const names = (list || []).map(item => String(item.title || "").trim()).filter(Boolean);
-            if (!names.includes(base)) return base;
+            const extras = Array.isArray(extraNames) ? extraNames.map(value => String(value || "").trim()).filter(Boolean) : [];
+            const allNames = names.concat(extras);
+            if (!allNames.includes(base)) return base;
             let index = 1;
             let candidate = `${base} (${index})`;
-            while (names.includes(candidate)) {
+            while (allNames.includes(candidate)) {
                 index += 1;
                 candidate = `${base} (${index})`;
             }
@@ -237,12 +241,21 @@
                 renderEmpty();
                 return;
             }
+            const openIds = Array.isArray(getOpenIds?.()) ? getOpenIds() : [];
+            const activeId = typeof getActiveId?.() === "string" ? getActiveId() : "";
+            const openSet = new Set(openIds.filter(Boolean));
             items.forEach(item => {
                 const button = document.createElement("button");
                 button.type = "button";
                 button.className = "document-explorer__item";
                 if (item.id) {
                     button.dataset.documentId = item.id;
+                    if (openSet.has(item.id)) {
+                        button.classList.add("document-explorer__item--open");
+                    }
+                    if (activeId && activeId === item.id) {
+                        button.classList.add("document-explorer__item--active");
+                    }
                 }
                 const label = document.createElement("span");
                 label.textContent = item.title || "Mémo sans titre";
@@ -304,13 +317,26 @@
             });
         }
 
+        let isCreating = false;
+        const pendingNames = new Set();
+
         createBtn.addEventListener("click", async () => {
             if (!onCreate) return;
-            const baseName = uniqueName(`Doc ${cachedItems.length + 1}`, cachedItems);
-            const result = await openNameModal(baseName);
-            if (!result) return;
-            const name = uniqueName(result, cachedItems);
-            onCreate(name);
+            if (isCreating) return;
+            isCreating = true;
+            createBtn.disabled = true;
+            try {
+                const baseName = uniqueName(`Doc ${cachedItems.length + 1}`, cachedItems, Array.from(pendingNames));
+                const result = await openNameModal(baseName);
+                if (!result) return;
+                const name = uniqueName(result, cachedItems, Array.from(pendingNames));
+                pendingNames.add(name);
+                await Promise.resolve(onCreate(name));
+            } finally {
+                isCreating = false;
+                createBtn.disabled = false;
+                pendingNames.clear();
+            }
         });
 
         if (resizer) {
@@ -349,6 +375,9 @@
 
         return {
             refresh,
+            refreshIndicators() {
+                renderList(cachedItems);
+            },
             open() {
                 applyOpen(true);
             },
