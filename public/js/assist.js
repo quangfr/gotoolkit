@@ -574,6 +574,72 @@
         return parts.pop().toLowerCase();
     }
 
+    var MEDIA_AUDIO_EXTENSIONS = new Set(["mp3", "wav", "m4a", "aac", "ogg", "webm", "flac", "mp4"]);
+    var MEDIA_VIDEO_EXTENSIONS = new Set(["mp4", "webm", "mov", "avi"]);
+    var MEDIA_MAX_BYTES = 5 * 1024 * 1024 * 1024;
+    var MEDIA_MAX_DURATION = 2 * 60 * 60;
+
+    function isMediaFile(file) {
+        if (!file) return false;
+        var ext = getFileExtension(file.name || "");
+        var mime = (file.type || "").toLowerCase();
+        if (mime.startsWith("audio/") || mime.startsWith("video/")) return true;
+        return MEDIA_AUDIO_EXTENSIONS.has(ext) || MEDIA_VIDEO_EXTENSIONS.has(ext);
+    }
+
+    function buildTranscriptFileName(fileName) {
+        var base = String(fileName || "").replace(/\.[^/.]+$/, "");
+        return (base || "transcription") + ".txt";
+    }
+
+    function getMediaDuration(file) {
+        return new Promise(function (resolve, reject) {
+            var mime = (file?.type || "").toLowerCase();
+            var isVideo = mime.startsWith("video/") || MEDIA_VIDEO_EXTENSIONS.has(getFileExtension(file?.name || ""));
+            var el = document.createElement(isVideo ? "video" : "audio");
+            var url = URL.createObjectURL(file);
+            var settled = false;
+            var cleanup = function () {
+                if (settled) return;
+                settled = true;
+                URL.revokeObjectURL(url);
+                el.removeAttribute("src");
+                el.load();
+            };
+            el.preload = "metadata";
+            el.onloadedmetadata = function () {
+                var duration = Number(el.duration);
+                cleanup();
+                if (!Number.isFinite(duration)) {
+                    reject(new Error("Durée inconnue"));
+                    return;
+                }
+                resolve(duration);
+            };
+            el.onerror = function () {
+                cleanup();
+                reject(new Error("Impossible de lire le fichier"));
+            };
+            el.src = url;
+        });
+    }
+
+    async function validateMediaFile(file) {
+        if (!file) return { ok: false, error: "Fichier manquant" };
+        if (file.size > MEDIA_MAX_BYTES) {
+            return { ok: false, error: "Fichier trop volumineux (max 5 Go)" };
+        }
+        try {
+            var duration = await getMediaDuration(file);
+            if (duration > MEDIA_MAX_DURATION) {
+                return { ok: false, error: "Durée > 2h" };
+            }
+            return { ok: true, duration: duration };
+        } catch (err) {
+            return { ok: false, error: "Durée inconnue" };
+        }
+    }
+
     function estimateTokenCount(text) {
         var raw = (text || "").toString();
         if (!raw) return 0;
@@ -1058,6 +1124,14 @@
         this.documentChunkCount = 0;
         this.documentUploadStatus = "";
         this.pendingDocumentAttachments = [];
+        this.attachmentsCompletedCount = 0;
+        this.attachmentsCompletedSize = 0;
+        this.attachmentsTotalSize = 0;
+        this.attachmentsTotalCount = 0;
+        this.attachmentsCompletedFiles = new Set();
+        this.attachmentsFailedFiles = new Set();
+        this.attachmentsFileSizes = new Map();
+        this.mediaTranscriptFileSizes = new Map();
         this.memoContextAttachments = [];
         this.memoContextAttachmentRow = null;
         this.memoContextAttachmentList = null;
@@ -1113,6 +1187,13 @@
         this.knowledgeLocalDocRefs = new Map();
         this.knowledgeChatDocRefs = new Map();
         this.knowledgeMemoDocRefs = new Map();
+        this.mediaTranscriptionActive = false;
+        this.deferSendButtonRestoreUntilAI = false;
+        this.sendButtonSpinnerTimer = null;
+        this.sendButtonBaseLabel = "↩︎";
+        this.mediaUploadCount = 0;
+        this.mediaTranscribedCount = 0;
+        this.mediaTotalCount = 0;
     }
 
     AssistSidebar.prototype.persist = function () {
@@ -1256,6 +1337,13 @@
         this.pendingDocumentAttachments = [];
         this.attachmentsTotalCount = 0;
         this.attachmentsParsedCount = 0;
+        this.attachmentsCompletedCount = 0;
+        this.attachmentsCompletedSize = 0;
+        this.attachmentsTotalSize = 0;
+        this.attachmentsCompletedFiles = new Set();
+        this.attachmentsFailedFiles = new Set();
+        this.attachmentsFileSizes = new Map();
+        this.mediaTranscriptFileSizes = new Map();
         this.updateAttachmentIndicator();
         this.updateComposerState();
     };
@@ -2844,10 +2932,30 @@
     AssistSidebar.prototype.getFileImportAcceptString = function () {
         var config = window.GoToolkitSiteConfig?.get("fileImport.supportedExtensions");
         if (config && Array.isArray(config.mimeTypes) && Array.isArray(config.extensions)) {
-            return config.mimeTypes.concat(config.extensions).join(",");
+            var base = config.mimeTypes.concat(config.extensions);
+            var media = [
+                "audio/mpeg", ".mp3",
+                "audio/wav", ".wav",
+                "audio/mp4", ".mp4", ".m4a",
+                "audio/aac", ".aac",
+                "audio/ogg", ".ogg",
+                "audio/webm", ".webm",
+                "audio/flac", ".flac",
+                "video/mp4",
+                "video/webm",
+                "video/quicktime", ".mov",
+                "video/x-msvideo", ".avi",
+                "image/png", ".png",
+                "image/jpeg", ".jpg", ".jpeg",
+                "image/webp", ".webp",
+                "image/gif", ".gif",
+                "image/bmp", ".bmp",
+                "image/tiff", ".tif", ".tiff"
+            ];
+            return base.concat(media).join(",");
         }
         // Fallback to default if config not available
-        return "application/pdf,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx,application/vnd.openxmlformats-officedocument.presentationml.presentation,.pptx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,.xlsx,text/plain,.txt,text/markdown,.md,application/json,.json,.hag,application/rtf,.rtf,application/msword,.doc,application/vnd.oasis.opendocument.text,.odt,application/vnd.oasis.opendocument.spreadsheet,.ods";
+        return "application/pdf,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx,application/vnd.openxmlformats-officedocument.presentationml.presentation,.pptx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,.xlsx,text/plain,.txt,text/markdown,.md,text/vtt,.vtt,application/json,.json,.hag,application/rtf,.rtf,application/msword,.doc,application/vnd.oasis.opendocument.text,.odt,application/vnd.oasis.opendocument.spreadsheet,.ods,audio/mpeg,.mp3,audio/wav,.wav,audio/mp4,.mp4,.m4a,audio/aac,.aac,audio/ogg,.ogg,audio/webm,.webm,audio/flac,.flac,video/mp4,video/webm,video/quicktime,.mov,video/x-msvideo,.avi";
     };
 
     AssistSidebar.prototype.createDocumentPickers = function () {
@@ -2894,6 +3002,72 @@
         }
     };
 
+    AssistSidebar.prototype.prepareMediaTranscripts = async function (files, options) {
+        var transcriptApi = global.GoToolkitVoiceTranscript;
+        if (!transcriptApi) {
+            throw new Error("Transcription indisponible");
+        }
+        var key = transcriptApi.getAssemblyApiKey?.() || "";
+        var results = [];
+        var errors = [];
+        var onTranscript = typeof options?.onTranscript === "function" ? options.onTranscript : null;
+        var concurrency = Number.isFinite(options?.concurrency) ? Math.max(1, options.concurrency) : 1;
+        this.mediaTotalCount = files.length;
+        this.mediaUploadCount = 0;
+        this.mediaTranscribedCount = 0;
+        this.updateAttachmentIndicator();
+        var index = 0;
+        var runWorker = async function () {
+            while (index < files.length) {
+                var currentIndex = index;
+                index += 1;
+                var file = files[currentIndex];
+                var validation = await validateMediaFile(file);
+                if (!validation.ok) {
+                    errors.push({ name: file?.name || "", error: validation.error || "Fichier invalide" });
+                    continue;
+                }
+                this.setDocumentUploadStatus("Upload audio/vidéo → " + (file?.name || ""));
+                var uploadUrl = await transcriptApi.uploadAudioToAssembly(file, key);
+                this.mediaUploadCount += 1;
+                this.updateAttachmentIndicator();
+                var payload = transcriptApi.buildAssemblyTranscriptPayload(uploadUrl, 0);
+                var transcriptId = await transcriptApi.requestAssemblyTranscript(payload, key);
+                this.setDocumentUploadStatus("Transcription → " + (file?.name || ""));
+                var result = await transcriptApi.pollAssemblyTranscript(transcriptId, key);
+                this.mediaTranscribedCount += 1;
+                this.updateAttachmentIndicator();
+                try {
+                    console.log("AssemblyAI transcript response:", result);
+                } catch (err) {
+                    // ignore
+                }
+                var transcriptText = transcriptApi.buildTranscriptFromUtterances
+                    ? transcriptApi.buildTranscriptFromUtterances(result)
+                    : (result?.text || "").trim();
+                if (!transcriptText) {
+                    errors.push({ name: file?.name || "", error: "Transcription vide" });
+                    continue;
+                }
+                var vttFileName = buildTranscriptFileName(file?.name || "");
+                var txtFile = new File([transcriptText], vttFileName, { type: "text/plain" });
+                this.mediaTranscriptFileSizes?.set(txtFile.name, Number(file?.size) || 0);
+                var entry = { file: txtFile, sourceFile: file, transcriptText: transcriptText };
+                if (onTranscript) {
+                    await onTranscript(entry);
+                }
+                results.push(entry);
+            }
+        }.bind(this);
+        var workers = [];
+        var workerCount = Math.min(concurrency, files.length);
+        for (var w = 0; w < workerCount; w++) {
+            workers.push(runWorker());
+        }
+        await Promise.all(workers);
+        return { files: results, errors: errors };
+    };
+
     AssistSidebar.prototype.handleImportFilesSelected = function (event) {
         var files = event?.target?.files;
         if (!files || !files.length) return;
@@ -2914,30 +3088,144 @@
 
         var self = this;
         var fileArray = Array.from(files);
+        var memoId = this.getActiveMemoId();
+        var tabId = memoId || null;
+        var createdImportBubble = false;
+        var hadMediaTranscription = false;
+        var didSendAI = false;
+        this.attachmentsTotalCount = fileArray.length;
+        this.attachmentsTotalSize = fileArray.reduce(function (acc, file) {
+            return acc + (Number(file?.size) || 0);
+        }, 0);
+        this.attachmentsCompletedCount = 0;
+        this.attachmentsCompletedSize = 0;
+        this.attachmentsCompletedFiles = new Set();
+        this.attachmentsFailedFiles = new Set();
+        this.attachmentsFileSizes = new Map();
+        this.mediaTranscriptFileSizes = new Map();
+        fileArray.forEach(function (file) {
+            if (file?.name) {
+                this.attachmentsFileSizes.set(file.name, Number(file.size) || 0);
+            }
+        }, this);
+        this.updateAttachmentIndicator();
 
         try {
             // 1. Ingérer les fichiers (parsing, chunking) comme chatAttachFilesBtn
             console.log("Starting document ingestion for import...");
-            var metadata = new Map();
-            fileArray.forEach(function (file) {
-                metadata.set(file.name, {
-                    scope: "attachments",
-                    name: file.name,
-                    abstract: "Importer"
-                });
+            var mediaTranscriptMap = new Map();
+            var mediaTranscriptTextMap = new Map();
+            var mediaIngestResults = [];
+            var mediaFiles = fileArray.filter(function (file) {
+                return isMediaFile(file);
             });
+            var docFiles = fileArray.filter(function (file) {
+                return !isMediaFile(file);
+            });
+            if (mediaFiles.length) {
+                hadMediaTranscription = true;
+                this.deferSendButtonRestoreUntilAI = true;
+                this.setTranscriptionUiState(true);
+                var mediaNames = mediaFiles.map(function (file) { return file?.name || ""; }).filter(Boolean);
+                var importLabel = "⤷ Importer " + (mediaNames.length === 1 ? mediaNames[0] : mediaNames.length + " fichiers");
+                var userMessage = {
+                    id: "msg-" + Date.now(),
+                    role: "user",
+                    content: importLabel,
+                    attachments: mediaNames
+                };
+                this.conversation.messages.push(userMessage);
+                this.appendMessage(userMessage);
+                this.persist();
+                this.scrollToBottom();
+                createdImportBubble = true;
 
-            var memoId = this.getActiveMemoId();
-            var tabId = memoId || null;
-            var results = await this.docManager.ingestFiles(fileArray, this.conversation.id, {
-                onProgress: function (progress) {
-                    console.log("Import ingestion progress:", progress);
-                },
-                sourceType: "context",
-                metadata: metadata,
-                memoId: memoId,
-                tabId: tabId
-            });
+                var statusMessage = {
+                    id: "msg-" + (Date.now() + 1),
+                    role: "bot",
+                    content: "..."
+                };
+                this.conversation.messages.push(statusMessage);
+                this.appendMessage(statusMessage);
+                this.persist();
+                this.scrollToBottom();
+
+                this.setDocumentUploadStatus("Transcription audio/vidéo en cours…");
+                var transcriptResult = await this.prepareMediaTranscripts(mediaFiles, {
+                    concurrency: 2,
+                    onTranscript: async function (entry) {
+                        if (entry?.file?.name && entry?.sourceFile) {
+                            mediaTranscriptMap.set(entry.file.name, entry.sourceFile);
+                        }
+                        if (entry?.file?.name && entry?.transcriptText) {
+                            mediaTranscriptTextMap.set(entry.file.name, entry.transcriptText);
+                        }
+                        var metadata = new Map();
+                        var displayName = String(entry?.sourceFile?.name || "").replace(/\.[^/.]+$/, "") + " (transcription)";
+                        metadata.set(entry.file.name, {
+                            scope: "attachments",
+                            name: displayName || entry.file.name,
+                            abstract: "Transcription importée"
+                        });
+                        var memoId = this.getActiveMemoId();
+                        var tabId = memoId || null;
+                        var results = await this.docManager.ingestFiles([entry.file], this.conversation.id, {
+                            onProgress: this.handleDocumentProgress.bind(this),
+                            sourceType: "context",
+                            metadata: metadata,
+                            memoId: memoId,
+                            tabId: tabId
+                        });
+                        mediaIngestResults.push.apply(mediaIngestResults, results);
+                    }.bind(this)
+                });
+                if (transcriptResult.errors && transcriptResult.errors.length) {
+                    var firstError = transcriptResult.errors[0];
+                    this.setDocumentUploadStatus("Erreur : " + (firstError.error || "transcription échouée"));
+                    transcriptResult.errors.forEach(function (entry) {
+                        if (entry?.name) {
+                            this.markAttachmentFailed(entry.name);
+                            if (window.GoToolkitMemoToast) {
+                                window.GoToolkitMemoToast("Transcription échouée : " + entry.name, true);
+                            }
+                        }
+                    }, this);
+                }
+                fileArray = docFiles;
+            }
+            if (!fileArray.length && !mediaIngestResults.length) {
+                this.setDocumentUploadStatus("Erreur : aucun fichier valide");
+                return;
+            }
+            var results = [];
+            if (fileArray.length) {
+                var metadata = new Map();
+                fileArray.forEach(function (file) {
+                    var sourceFile = mediaTranscriptMap.get(file.name);
+                    var displayName = file.name;
+                    var abstract = "Importer";
+                    if (sourceFile) {
+                        displayName = String(sourceFile.name || "").replace(/\.[^/.]+$/, "") + " (transcription)";
+                        abstract = "Transcription importée";
+                    }
+                    metadata.set(file.name, {
+                        scope: "attachments",
+                        name: displayName || file.name,
+                        abstract: abstract
+                    });
+                });
+
+                results = await this.docManager.ingestFiles(fileArray, this.conversation.id, {
+                    onProgress: this.handleDocumentProgress.bind(this),
+                    sourceType: "context",
+                    metadata: metadata,
+                    memoId: memoId,
+                    tabId: tabId
+                });
+            }
+            if (mediaIngestResults.length) {
+                results = mediaIngestResults.concat(results);
+            }
 
             var errors = results.filter(function (item) {
                 return !item.success && !item.duplicate;
@@ -2948,6 +3236,14 @@
 
             if (errors.length) {
                 console.error("Import ingestion errors:", errors);
+                errors.forEach(function (entry) {
+                    if (entry?.name) {
+                        this.markAttachmentFailed(entry.name);
+                        if (window.GoToolkitMemoToast) {
+                            window.GoToolkitMemoToast("Import échoué : " + entry.name, true);
+                        }
+                    }
+                }, this);
                 return;
             }
             if (duplicates.length) {
@@ -2971,6 +3267,20 @@
                 }
                 await this.refreshMemoContextAttachments();
                 window.GoToolkitMemoSyncContextEmbeddings?.(memoId);
+            }
+
+            if (memoId && mediaTranscriptTextMap.size) {
+                var transcriptParts = [];
+                readyDocNames.forEach(function (name) {
+                    var text = mediaTranscriptTextMap.get(name);
+                    if (text) {
+                        transcriptParts.push(text);
+                    }
+                });
+                if (transcriptParts.length) {
+                    window.GoToolkitMemoAppendText?.(transcriptParts.join("\n\n"));
+                    window.GoToolkitMemoToast?.("Transcription importée.");
+                }
             }
 
             // 3. Récupérer le contenu de chaque document depuis IndexedDB
@@ -3023,16 +3333,18 @@
             };
 
             // Create user message in chat
-            var userMessage = {
-                id: "msg-" + Date.now(),
-                role: "user",
-                content: "⤷ Importer " + (readyDocNames.length === 1 ? readyDocNames[0] : readyDocNames.length + " documents"),
-                attachments: readyDocNames
-            };
-            this.conversation.messages.push(userMessage);
-            this.appendMessage(userMessage);
-            this.persist();
-            this.scrollToBottom();
+            if (!createdImportBubble) {
+                var userMessage = {
+                    id: "msg-" + Date.now(),
+                    role: "user",
+                    content: "⤷ Importer " + (readyDocNames.length === 1 ? readyDocNames[0] : readyDocNames.length + " documents"),
+                    attachments: readyDocNames
+                };
+                this.conversation.messages.push(userMessage);
+                this.appendMessage(userMessage);
+                this.persist();
+                this.scrollToBottom();
+            }
             if (memoId && readyDocNames.length) {
                 this.confirmMemoAttachments(memoId);
                 await this.refreshMemoContextAttachments();
@@ -3040,6 +3352,7 @@
             }
 
             // Send to AI
+            didSendAI = true;
             this.sendAIRequest(payload);
 
         } catch (err) {
@@ -3051,6 +3364,11 @@
             };
             this.appendMessage(errorMessage);
             this.persist();
+        } finally {
+            if (hadMediaTranscription && !didSendAI) {
+                this.deferSendButtonRestoreUntilAI = false;
+                this.setTranscriptionUiState(false);
+            }
         }
     };
 
@@ -3269,6 +3587,18 @@
 
     AssistSidebar.prototype.updateAttachmentIndicator = function () {
         if (!this.docsIndicatorButton) return;
+        if (this.mediaTranscriptionActive && this.mediaTotalCount > 0) {
+            this.docsIndicatorButton.hidden = false;
+            this.docsIndicatorButton.style.display = "";
+            if (this.docsIndicatorLabelEl) {
+                var uploadedTotal = this.mediaUploadCount || 0;
+                this.docsIndicatorLabelEl.textContent = "♫ " + this.mediaTranscribedCount + "/" + uploadedTotal + " fichiers";
+            }
+            if (this.docsIndicatorDeleteEl) {
+                this.docsIndicatorDeleteEl.style.display = "none";
+            }
+            return;
+        }
         var label = this.computeDocsIndicatorLabel();
         if (!label) {
             this.docsIndicatorButton.hidden = true;
@@ -3291,29 +3621,57 @@
         }
     };
 
+    AssistSidebar.prototype.getAttachmentSize = function (fileName) {
+        if (!fileName) return 0;
+        if (this.attachmentsFileSizes?.has(fileName)) {
+            return Number(this.attachmentsFileSizes.get(fileName)) || 0;
+        }
+        if (this.mediaTranscriptFileSizes?.has(fileName)) {
+            return Number(this.mediaTranscriptFileSizes.get(fileName)) || 0;
+        }
+        return 0;
+    };
+
+    AssistSidebar.prototype.markAttachmentCompleted = function (fileName) {
+        if (!fileName) return;
+        if (this.attachmentsCompletedFiles?.has(fileName)) return;
+        this.attachmentsCompletedFiles.add(fileName);
+        this.attachmentsCompletedCount += 1;
+        this.attachmentsCompletedSize += this.getAttachmentSize(fileName);
+        this.updateAttachmentIndicator();
+    };
+
+    AssistSidebar.prototype.markAttachmentFailed = function (fileName) {
+        if (!fileName) return;
+        if (this.attachmentsFailedFiles?.has(fileName)) return;
+        this.attachmentsFailedFiles.add(fileName);
+        var size = this.getAttachmentSize(fileName);
+        if (size > 0) {
+            this.attachmentsTotalSize = Math.max(0, (this.attachmentsTotalSize || 0) - size);
+        }
+        if (this.attachmentsTotalCount > 0) {
+            this.attachmentsTotalCount = Math.max(0, this.attachmentsTotalCount - 1);
+        }
+        this.updateAttachmentIndicator();
+    };
+
     AssistSidebar.prototype.computeDocsIndicatorLabel = function () {
-        var parsed = Number(this.attachmentsParsedCount) || 0;
+        var completed = Number(this.attachmentsCompletedCount) || 0;
         var total = Number(this.attachmentsTotalCount) || 0;
+        var completedSize = Number(this.attachmentsCompletedSize) || 0;
+        var totalSize = Number(this.attachmentsTotalSize) || 0;
         var pendingCount = Array.isArray(this.pendingDocumentAttachments) ? this.pendingDocumentAttachments.length : 0;
 
         // During import: show overall percent only
         if (total > 0) {
-            var extractPercent = 0;
-            var embedPercent = 0;
-            if (this.attachmentsExtractProgressByFile) {
-                var extractSum = Object.values(this.attachmentsExtractProgressByFile).reduce(function (acc, val) {
-                    return acc + (Number(val) || 0);
-                }, 0);
-                extractPercent = Math.round(extractSum / total);
+            var percent = 0;
+            if (totalSize > 0) {
+                percent = Math.round((completedSize / totalSize) * 100);
+            } else if (completed >= total) {
+                percent = 100;
             }
-            if (this.attachmentsEmbedProgressByFile) {
-                var embedSum = Object.values(this.attachmentsEmbedProgressByFile).reduce(function (acc, val) {
-                    return acc + (Number(val) || 0);
-                }, 0);
-                embedPercent = Math.round(embedSum / total);
-            }
-            var percent = Math.round((extractPercent + embedPercent) / 2);
-            return percent + " %";
+            var ingested = Math.min(completed, total);
+            return "🗎 " + ingested + "/" + total + " fichiers | " + percent + " %";
         }
 
         // After import complete (total === 0, but pendingCount > 0)
@@ -3327,6 +3685,43 @@
         }
 
         return "";
+    };
+
+    AssistSidebar.prototype.setSendButtonBusy = function (isBusy) {
+        if (!this.sendButton) return;
+        if (isBusy) {
+            if (!this.sendButtonBaseLabel) {
+                this.sendButtonBaseLabel = this.sendButton.textContent || "↩︎";
+            }
+            this.sendButton.disabled = true;
+            if (this.sendButtonSpinnerTimer) return;
+            var frames = ["◴", "◷", "◶", "◵"];
+            var idx = 0;
+            this.sendButton.textContent = frames[idx];
+            this.sendButtonSpinnerTimer = setInterval(function () {
+                idx = (idx + 1) % frames.length;
+                if (this.sendButton) {
+                    this.sendButton.textContent = frames[idx];
+                }
+            }.bind(this), 300);
+            return;
+        }
+        this.sendButton.disabled = false;
+        if (this.sendButtonSpinnerTimer) {
+            clearInterval(this.sendButtonSpinnerTimer);
+            this.sendButtonSpinnerTimer = null;
+        }
+        this.sendButton.textContent = this.sendButtonBaseLabel || "↩︎";
+    };
+
+    AssistSidebar.prototype.setTranscriptionUiState = function (active) {
+        this.mediaTranscriptionActive = Boolean(active);
+        if (!active) {
+            this.mediaUploadCount = 0;
+            this.mediaTranscribedCount = 0;
+            this.mediaTotalCount = 0;
+        }
+        this.setSendButtonBusy(Boolean(active));
     };
 
     AssistSidebar.prototype.handleDocumentFilesSelected = function (event) {
@@ -3343,13 +3738,79 @@
         }
         var fileArray = Array.from(files);
         if (!fileArray.length) return;
+        var originalFiles = fileArray.slice();
         this.attachmentsIngestionStart = Date.now();
         this.attachmentsIngestionEnd = 0;
-        this.attachmentsTotalSize = fileArray.reduce(function (acc, file) {
+        this.attachmentsTotalSize = originalFiles.reduce(function (acc, file) {
             return acc + (Number(file?.size) || 0);
         }, 0);
         if (this.documentsFileInput) this.documentsFileInput.disabled = true;
-        this.attachmentsTotalCount = fileArray.length;
+        this.attachmentsTotalCount = originalFiles.length;
+        this.attachmentsCompletedCount = 0;
+        this.attachmentsCompletedSize = 0;
+        this.attachmentsCompletedFiles = new Set();
+        this.attachmentsFailedFiles = new Set();
+        this.attachmentsFileSizes = new Map();
+        this.mediaTranscriptFileSizes = new Map();
+        originalFiles.forEach(function (file) {
+            if (file?.name) {
+                this.attachmentsFileSizes.set(file.name, Number(file.size) || 0);
+            }
+        }, this);
+        var mediaTranscriptMap = new Map();
+        var mediaIngestResults = [];
+        var hadMediaTranscription = false;
+        var mediaFiles = fileArray.filter(function (file) {
+            return isMediaFile(file);
+        });
+        var docFiles = fileArray.filter(function (file) {
+            return !isMediaFile(file);
+        });
+        if (mediaFiles.length) {
+            hadMediaTranscription = true;
+            this.setTranscriptionUiState(true);
+            this.setDocumentUploadStatus("Transcription audio/vidéo en cours…");
+            try {
+                var transcriptResult = await this.prepareMediaTranscripts(mediaFiles, {
+                    concurrency: 2,
+                    onTranscript: async function (entry) {
+                        if (entry?.file?.name && entry?.sourceFile) {
+                            mediaTranscriptMap.set(entry.file.name, entry.sourceFile);
+                        }
+                        var metadata = new Map();
+                        var displayName = String(entry?.sourceFile?.name || "").replace(/\.[^/.]+$/, "") + " (transcription)";
+                        metadata.set(entry.file.name, {
+                            scope: "attachments",
+                            name: displayName || entry.file.name,
+                            abstract: "Transcription importée"
+                        });
+                        var memoId = this.getActiveMemoId();
+                        var tabId = memoId || null;
+                        var results = await this.docManager.ingestFiles([entry.file], this.conversation.id, {
+                            onProgress: this.handleDocumentProgress.bind(this),
+                            sourceType: "context",
+                            metadata: metadata,
+                            memoId: memoId,
+                            tabId: tabId
+                        });
+                        mediaIngestResults.push.apply(mediaIngestResults, results);
+                    }.bind(this)
+                });
+                if (transcriptResult.errors && transcriptResult.errors.length) {
+                    var firstError = transcriptResult.errors[0];
+                    this.setDocumentUploadStatus("Erreur : " + (firstError.error || "transcription échouée"));
+                }
+                fileArray = docFiles;
+            } catch (err) {
+                this.setDocumentUploadStatus("Erreur : " + ((err && err.message) || "transcription échouée"));
+            }
+        }
+        if (!fileArray.length && !mediaIngestResults.length) {
+            this.attachmentsIngestionEnd = Date.now();
+            this.setPendingDocumentAttachments([]);
+            if (this.documentsFileInput) this.documentsFileInput.disabled = false;
+            return;
+        }
         this.attachmentsParsedCount = 0;
         this.attachmentsCharsTotal = 0;
         this.attachmentsCharsProcessed = 0;
@@ -3370,24 +3831,37 @@
         this.updateAttachmentIndicator();
         this.updateComposerState();
         this.setDocumentUploadStatus("Indexation en cours…");
+        var memoId = this.getActiveMemoId();
+        var tabId = memoId || null;
         try {
-            var metadata = new Map();
-            fileArray.forEach(function (file) {
-                metadata.set(file.name, {
-                    scope: "attachments",
-                    name: file.name,
-                    abstract: "Pièce jointe"
+            var results = [];
+            if (fileArray.length) {
+                var metadata = new Map();
+                fileArray.forEach(function (file) {
+                    var sourceFile = mediaTranscriptMap.get(file.name);
+                    var displayName = file.name;
+                    var abstract = "Pièce jointe";
+                    if (sourceFile) {
+                        displayName = String(sourceFile.name || "").replace(/\.[^/.]+$/, "") + " (transcription)";
+                        abstract = "Transcription importée";
+                    }
+                    metadata.set(file.name, {
+                        scope: "attachments",
+                        name: displayName || file.name,
+                        abstract: abstract
+                    });
                 });
-            });
-            var memoId = this.getActiveMemoId();
-            var tabId = memoId || null;
-            var results = await this.docManager.ingestFiles(fileArray, this.conversation.id, {
-                onProgress: this.handleDocumentProgress.bind(this),
-                sourceType: "context",
-                metadata: metadata,
-                memoId: memoId,
-                tabId: tabId
-            });
+                results = await this.docManager.ingestFiles(fileArray, this.conversation.id, {
+                    onProgress: this.handleDocumentProgress.bind(this),
+                    sourceType: "context",
+                    metadata: metadata,
+                    memoId: memoId,
+                    tabId: tabId
+                });
+            }
+            if (mediaIngestResults.length) {
+                results = mediaIngestResults.concat(results);
+            }
             console.log("Document ingestion results:", results);
             var errors = results.filter(function (item) {
                 return !item.success && !item.duplicate;
@@ -3397,6 +3871,14 @@
             });
             if (errors.length) {
                 console.error("Document ingestion errors:", errors);
+                errors.forEach(function (entry) {
+                    if (entry?.name) {
+                        this.markAttachmentFailed(entry.name);
+                        if (window.GoToolkitMemoToast) {
+                            window.GoToolkitMemoToast("Import échoué : " + entry.name, true);
+                        }
+                    }
+                }, this);
                 this.attachmentsIngestionEnd = Date.now();
                 this.setDocumentUploadStatus("Erreur : " + (errors[0].error || "échec d'indexation"));
             } else if (duplicates.length) {
@@ -3436,47 +3918,19 @@
             this.setDocumentUploadStatus("Erreur : " + ((error && error.message) || "échec"));
             this.setPendingDocumentAttachments([]);
         } finally {
+            if (hadMediaTranscription) {
+                this.setTranscriptionUiState(false);
+            }
             if (this.documentsFileInput) this.documentsFileInput.disabled = false;
         }
     };
 
     AssistSidebar.prototype.handleDocumentProgress = function (progress) {
         if (!progress) return;
-        if (progress.type === "chunk") {
-            this.setDocumentUploadStatus("Indexation " + progress.progress + "% → " + (progress.file || ""));
+        if (progress.type === "file-skip") {
             if (progress.file) {
-                if (!this.attachmentsEmbedProgressByFile) this.attachmentsEmbedProgressByFile = {};
-                this.attachmentsEmbedProgressByFile[progress.file] = Number(progress.progress) || 0;
-                this.updateAttachmentIndicator();
+                this.markAttachmentCompleted(progress.file);
             }
-        } else if (progress.type === "chars") {
-            var totalChars = Number(progress.totalChars) || 0;
-            var processedChars = Number(progress.processedChars) || 0;
-            var fileName = progress.file || "";
-            if (totalChars > 0 && fileName) {
-                if (!this.attachmentsCharsByFile) this.attachmentsCharsByFile = {};
-                if (!this.attachmentsCharsProcessedByFile) this.attachmentsCharsProcessedByFile = {};
-                this.attachmentsCharsByFile[fileName] = totalChars;
-                this.attachmentsCharsProcessedByFile[fileName] = processedChars;
-                var totals = Object.values(this.attachmentsCharsByFile).reduce(function (acc, val) {
-                    return acc + (Number(val) || 0);
-                }, 0);
-                var processed = Object.values(this.attachmentsCharsProcessedByFile).reduce(function (acc, val) {
-                    return acc + (Number(val) || 0);
-                }, 0);
-                this.attachmentsCharsTotal = totals;
-                this.attachmentsCharsProcessed = processed;
-                this.updateAttachmentIndicator();
-            }
-        } else if (progress.type === "extract") {
-            var extractFileName = progress.file || "";
-            if (extractFileName) {
-                if (!this.attachmentsExtractProgressByFile) this.attachmentsExtractProgressByFile = {};
-                this.attachmentsExtractProgressByFile[extractFileName] = Number(progress.progress) || 0;
-                this.updateAttachmentIndicator();
-            }
-        } else if (progress.type === "file-start") {
-            this.setDocumentUploadStatus("Ouverture de " + progress.file + " (" + progress.index + "/" + progress.total + ")");
         } else if (progress.type === "file-done") {
             // Increment parsed count when a file is done
             this.attachmentsParsedCount = Math.min(
@@ -3488,9 +3942,8 @@
                 if (!this.attachmentsEmbedProgressByFile) this.attachmentsEmbedProgressByFile = {};
                 this.attachmentsExtractProgressByFile[progress.file] = 100;
                 this.attachmentsEmbedProgressByFile[progress.file] = 100;
+                this.markAttachmentCompleted(progress.file);
             }
-            this.updateAttachmentIndicator();
-            this.setDocumentUploadStatus("Fichier traité : " + (progress.file || ""));
         }
     };
     AssistSidebar.prototype.updateDocumentIndicator = function (stats, docs, keywordSizes) {
@@ -5888,6 +6341,10 @@
             self.scrollToBottom();
             self.persist();
             stopCharacterCounterToaster();
+            if (self.deferSendButtonRestoreUntilAI) {
+                self.deferSendButtonRestoreUntilAI = false;
+                self.setTranscriptionUiState(false);
+            }
 
         }).catch(function (err) {
             console.error("AI Error:", err);
@@ -5900,6 +6357,10 @@
             }
             self.persist();
             stopCharacterCounterToaster();
+            if (self.deferSendButtonRestoreUntilAI) {
+                self.deferSendButtonRestoreUntilAI = false;
+                self.setTranscriptionUiState(false);
+            }
         });
     };
 

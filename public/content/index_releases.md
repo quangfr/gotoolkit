@@ -1,7 +1,12 @@
-## 2026-01-09
-- Intégration de Voice dans Mémo
+## 2026-01-11
+- Mémo : Import des fichiers médias (transcriptions)
 - Mémo : Bibliothèque en barre latérale
-- Mode "Assist : Mémoire, références et citations 
+- Mémo : Import des fichiers JSON
+
+## 2026-01-09
+- Mémo : Retranscription vocale avec AssemblyAI
+- Mémo : Bibliothèque en barre latérale
+- Assist : Mémoire, références et citations 
 
 ## 2026-01-08
 - Mémo : Mode "Importer" pour les fichiers

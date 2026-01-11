@@ -30,7 +30,13 @@
         "application/rtf",
         "application/msword",
         "application/vnd.oasis.opendocument.text",
-        "application/vnd.oasis.opendocument.spreadsheet"
+        "application/vnd.oasis.opendocument.spreadsheet",
+        "image/png",
+        "image/jpeg",
+        "image/webp",
+        "image/gif",
+        "image/bmp",
+        "image/tiff"
       ],
       "extensions": [
         ".pdf",
@@ -44,7 +50,15 @@
         ".rtf",
         ".doc",
         ".odt",
-        ".ods"
+        ".ods",
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".webp",
+        ".gif",
+        ".bmp",
+        ".tif",
+        ".tiff"
       ]
     },
     "fileSizeLimits": {
@@ -67,6 +81,10 @@
       "spreadsheet": {
         "maxMB": 5,
         "extensions": [".xlsx", ".ods"]
+      },
+      "image": {
+        "maxMB": 20,
+        "extensions": [".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp", ".tif", ".tiff"]
       }
     }
   }

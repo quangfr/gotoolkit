@@ -576,6 +576,7 @@
                                     Enregistrer</button>
                                 <button id="renameDocumentBtn" type="button" class="menu-panel-btn">✎ Renommer</button>
                                 <button id="deleteDocumentBtn" type="button" class="menu-panel-btn">⊗ Supprimer</button>
+                                <button id="memoAddAttachmentBtn" type="button" class="menu-panel-btn">+ Ajouter</button>
                                 <button id="exportJsonBtn" type="button" class="menu-panel-btn">🡇 Télécharger</button>
                                 <button id="exportMarkdownBtn" type="button" class="menu-panel-btn">¶ Markdown</button>
                                 <button id="infoButton" type="button" class="menu-panel-btn">⎉ À propos</button>
@@ -737,6 +738,7 @@
     <script src="js/voice-video-player.js"></script>
     <script src="js/voice-audio-player.js"></script>
     <script src="js/voice.js"></script>
+    <script src="js/voice-transcript.js?v=2026.01.10.4"></script>
     <script src="js/memo.bundle.js?v=2026.01.10.4"></script>
     <script src="js/assist.js?v=2026.01.10.4"></script>
     <script src="js/document-panel.js?v=2026.01.10.4"></script>
@@ -801,6 +803,7 @@
             const saveDocumentBtn = document.getElementById("saveDocumentBtn");
             const renameDocumentBtn = document.getElementById("renameDocumentBtn");
             const deleteDocumentBtn = document.getElementById("deleteDocumentBtn");
+            const memoAddAttachmentBtn = document.getElementById("memoAddAttachmentBtn");
             const exportJsonBtn = document.getElementById("exportJsonBtn");
             const exportMarkdownBtn = document.getElementById("exportMarkdownBtn");
             const importJsonInput = document.getElementById("importJsonInput");
@@ -1256,6 +1259,8 @@
                 }
             }
 
+            window.GoToolkitMemoToast = setStatus;
+
             function setDbStatus(message) {
                 const toast = document.getElementById("dbStatusToast");
                 if (!toast) return;
@@ -1316,6 +1321,16 @@
                 tab.content = typeof value === "string" ? value : "";
                 persistState();
             }
+
+            function appendToActiveTab(nextContent) {
+                if (!memoEditorApi || typeof memoEditorApi.getValue !== "function") return;
+                const current = memoEditorApi.getValue() || "";
+                const combined = current ? `${current}\n\n${nextContent}` : nextContent;
+                memoEditorApi.setValue(combined);
+                updateActiveTabContent(combined);
+            }
+
+            window.GoToolkitMemoAppendText = appendToActiveTab;
 
             function addTab() {
                 const id = createId();
@@ -2442,6 +2457,11 @@
             deleteDocumentBtn?.addEventListener("click", async () => {
                 closeMenus();
                 await deleteActiveDocument();
+            });
+
+            memoAddAttachmentBtn?.addEventListener("click", () => {
+                closeMenus();
+                document.getElementById("chatAttachFilesBtn")?.click();
             });
 
             exportJsonBtn?.addEventListener("click", () => {

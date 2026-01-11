@@ -71,7 +71,7 @@
     const STORAGE_KEY = "goToolkit.documents.settings";
     const MEMO_EMBEDDINGS_ENABLED_MIGRATION_KEY = "goToolkit.memoEmbeddings.enabledMigrated";
     const DB_NAME = "gotoolkit-documents";
-    const DB_VERSION = 5;
+    const DB_VERSION = 6;
     const REQUIRED_STORES = ["documents", "chunks", "keyword_meta", "memo_context_embeddings"];
     const PDFJS_URL = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.6.82/+esm";
     const PDFJS_WORKER = "js/pdf.worker.min.mjs";
@@ -117,7 +117,8 @@
         "doc",
         "odf",
         "odt",
-        "ods"
+        "ods",
+        "vtt"
     ]);
 
     function normalizeText(value) {
@@ -241,6 +242,124 @@
         }
         flush();
         return sections;
+    }
+
+    function parseVttSegments(raw) {
+        if (!raw) return [];
+        const lines = splitLines(raw);
+        const segments = [];
+        let cueLines = [];
+        let start = null;
+        let end = null;
+
+        const flush = () => {
+            if (!cueLines.length) return;
+            const combined = cueLines.join(" ").trim();
+            cueLines = [];
+            if (!combined) return;
+            let speaker = null;
+            let text = combined;
+            const bracketMatch = combined.match(/^\s*\[Speaker\s+(\d+)\]\s*/i);
+            const colonMatch = combined.match(/^\s*Speaker\s+(\d+)\s*:\s*/i);
+            if (bracketMatch) {
+                speaker = `Speaker ${bracketMatch[1]}`;
+                text = combined.slice(bracketMatch[0].length).trim();
+            } else if (colonMatch) {
+                speaker = `Speaker ${colonMatch[1]}`;
+                text = combined.slice(colonMatch[0].length).trim();
+            }
+            segments.push({
+                speaker,
+                text,
+                start,
+                end
+            });
+        };
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = (lines[i] || "").trim();
+            if (!line) {
+                flush();
+                continue;
+            }
+            if (/^WEBVTT/i.test(line)) {
+                continue;
+            }
+            if (/^NOTE/i.test(line)) {
+                continue;
+            }
+            if (line.includes("-->")) {
+                flush();
+                const parts = line.split("-->");
+                start = parts[0].trim();
+                const endPart = (parts[1] || "").trim();
+                end = endPart.split(/\s+/)[0] || null;
+                continue;
+            }
+            cueLines.push(line);
+        }
+        flush();
+        return segments;
+    }
+
+    function chunkVttSegments(segments) {
+        if (!segments.length) return [];
+        const chunks = [];
+        const maxChars = 1200;
+        let currentSpeaker = null;
+        let buffer = [];
+        let bufferLen = 0;
+        let startTime = null;
+        let endTime = null;
+
+        const flush = () => {
+            if (!buffer.length) return;
+            const text = buffer.join(" ").trim();
+            if (!text) {
+                buffer = [];
+                bufferLen = 0;
+                return;
+            }
+            chunks.push({
+                text,
+                metadata: {
+                    chunkType: "vtt",
+                    speaker: currentSpeaker || "Speaker",
+                    start: startTime,
+                    end: endTime,
+                    segmentCount: buffer.length
+                }
+            });
+            buffer = [];
+            bufferLen = 0;
+        };
+
+        segments.forEach((segment) => {
+            const speaker = segment.speaker || "Speaker";
+            const line = (segment.text ? `[${speaker}] ${segment.text}` : "").trim();
+            if (!line) return;
+            if (!currentSpeaker) {
+                currentSpeaker = speaker;
+                startTime = segment.start || null;
+            }
+            if (currentSpeaker !== speaker && buffer.length) {
+                flush();
+                currentSpeaker = speaker;
+                startTime = segment.start || null;
+                endTime = null;
+            }
+            if (bufferLen + line.length > maxChars && buffer.length) {
+                flush();
+                currentSpeaker = speaker;
+                startTime = segment.start || null;
+                endTime = null;
+            }
+            buffer.push(line);
+            bufferLen += line.length;
+            endTime = segment.end || endTime;
+        });
+        flush();
+        return chunks;
     }
 
     function chunkParagraphs(text, options = {}) {
@@ -948,6 +1067,12 @@
                         const chunks = db.createObjectStore("chunks", { keyPath: "id" });
                         chunks.createIndex("conversationId", "conversationId", { unique: false });
                         chunks.createIndex("docId", "docId", { unique: false });
+                        chunks.createIndex("sourceDocId", "sourceDocId", { unique: false });
+                    } else {
+                        const chunks = request.transaction?.objectStore("chunks");
+                        if (chunks && !chunks.indexNames.contains("sourceDocId")) {
+                            chunks.createIndex("sourceDocId", "sourceDocId", { unique: false });
+                        }
                     }
                     if (!db.objectStoreNames.contains("keyword_meta")) {
                         db.createObjectStore("keyword_meta", { keyPath: "id" });
@@ -1366,6 +1491,18 @@
             });
         }
 
+        async getChunksByDocId(docId) {
+            if (!docId) return [];
+            const store = await this.getStore("chunks");
+            if (!store) return [];
+            return new Promise((resolve, reject) => {
+                const index = store.index("docId");
+                const request = index.getAll(docId);
+                request.onsuccess = () => resolve(request.result || []);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
         async deleteDocumentById(docId) {
             if (!docId) return;
             const store = await this.getStore("documents", "readwrite");
@@ -1669,11 +1806,21 @@
                 : null;
             const results = [];
             const queue = Array.from(files);
-            const existingDocs = await this.getDocuments(convId);
+            const allDocs = await this.getAllDocuments();
             const existingHashes = new Map();
-            (existingDocs || []).forEach((doc) => {
+            (allDocs || []).forEach((doc) => {
                 const hash = (doc?.fileHash || "").toString();
-                if (hash) {
+                if (!hash) return;
+                if (doc?.status !== "ready") return;
+                if (doc?.deletedAt) return;
+                if (!existingHashes.has(hash)) {
+                    existingHashes.set(hash, doc);
+                    return;
+                }
+                const current = existingHashes.get(hash);
+                const currentTime = parseTimestamp(current?.updatedAt) || 0;
+                const nextTime = parseTimestamp(doc?.updatedAt) || 0;
+                if (nextTime > currentTime) {
                     existingHashes.set(hash, doc);
                 }
             });
@@ -1717,41 +1864,115 @@
                         onProgress?.({ type: "file-skip", file: file.name, reason: "duplicate" });
                         continue;
                     }
-                    if (memoId) {
-                        await this.upsertMemoEmbedding({
-                            id: `${memoId}:${existingDoc.id}`,
-                            memoId,
-                            tabId: tabId || undefined,
-                            docId: existingDoc.id,
-                            fileHash: fileHash || "",
-                            fileName: existingDoc.name || existingDoc.sourceFileName || file.name,
-                            size: existingDoc.size,
-                            importedAt: existingDoc.uploadedAt || Date.now(),
-                            chunkCount: existingDoc.chunkCount || 0
-                        });
-                        memoHashSet.add(fileHash);
-                        if (existingDoc.deletedAt) {
-                            existingDoc.deletedAt = null;
-                            await this.putDocument(existingDoc);
+                    if (existingDoc.conversationId === convId) {
+                        if (memoId) {
+                            await this.upsertMemoEmbedding({
+                                id: `${memoId}:${existingDoc.id}`,
+                                memoId,
+                                tabId: tabId || undefined,
+                                docId: existingDoc.id,
+                                fileHash: fileHash || "",
+                                fileName: existingDoc.name || existingDoc.sourceFileName || file.name,
+                                size: existingDoc.size,
+                                importedAt: existingDoc.uploadedAt || Date.now(),
+                                chunkCount: existingDoc.chunkCount || 0
+                            });
+                            memoHashSet.add(fileHash);
+                            results.push({
+                                docId: existingDoc.id,
+                                name: file.name,
+                                success: true,
+                                reused: true,
+                                duplicate: true,
+                                chunkTotal: existingDoc.chunkCount || 0
+                            });
+                            onProgress?.({ type: "file-skip", file: file.name, reason: "reused" });
+                            continue;
                         }
                         results.push({
                             docId: existingDoc.id,
                             name: file.name,
-                            success: true,
-                            reused: true,
-                            chunkTotal: existingDoc.chunkCount || 0
+                            success: false,
+                            duplicate: true,
+                            error: "duplicate"
                         });
-                        onProgress?.({ type: "file-skip", file: file.name, reason: "reused" });
+                        onProgress?.({ type: "file-skip", file: file.name, reason: "duplicate" });
                         continue;
                     }
+                    onProgress?.({ type: "file-start", index: i + 1, total: queue.length, file: file.name });
+                    const docId = crypto.randomUUID();
+                    const baseEntry = {
+                        id: docId,
+                        conversationId: convId,
+                        name: existingDoc.name || existingDoc.sourceFileName || file.name,
+                        size: file.size,
+                        mime: file.type || existingDoc.mime || "",
+                        uploadedAt: Date.now(),
+                        status: "ready",
+                        chunkCount: existingDoc.chunkCount || 0,
+                        sourceType,
+                        abstract: existingDoc.abstract || "",
+                        updatedAt: Date.now(),
+                        scope: Array.isArray(existingDoc.scope) ? existingDoc.scope : [],
+                        fileBuffer: existingDoc.fileBuffer || null,
+                        sourceFileName: existingDoc.sourceFileName || file.name,
+                        fileHash,
+                        memoId: memoId || undefined,
+                        tabId: tabId || undefined,
+                        deletedAt: null,
+                        parsedAt: Date.now(),
+                        chunkSizeCategory: existingDoc.chunkSizeCategory,
+                        chunkSize: existingDoc.chunkSize,
+                        chunkOverlap: existingDoc.chunkOverlap,
+                        rawText: existingDoc.rawText || "",
+                        sourceDocId: existingDoc.id
+                    };
+                    await this.putDocument(baseEntry);
+                    const existingChunks = await this.getChunksByDocId(existingDoc.id);
+                    for (const existingChunk of existingChunks) {
+                        const chunkEntry = {
+                            id: crypto.randomUUID(),
+                            conversationId: convId,
+                            docId,
+                            sourceDocId: existingDoc.id,
+                            idx: existingChunk.idx,
+                            text: existingChunk.text,
+                            page: existingChunk.page,
+                            path: existingChunk.path,
+                            parentPath: existingChunk.parentPath,
+                            rawChunk: existingChunk.rawChunk,
+                            metadata: existingChunk.metadata,
+                            emb: existingChunk.emb,
+                            createdAt: Date.now(),
+                            size: existingChunk.size,
+                            sourceType
+                        };
+                        await this.putChunk(chunkEntry);
+                        await this.addChunkToKeywordIndex(chunkEntry, baseEntry);
+                    }
+                    if (memoId) {
+                        await this.upsertMemoEmbedding({
+                            id: `${memoId}:${docId}`,
+                            memoId,
+                            tabId: tabId || undefined,
+                            docId,
+                            fileHash: fileHash || "",
+                            fileName: baseEntry.name || baseEntry.sourceFileName || file.name,
+                            size: file.size,
+                            importedAt: Date.now(),
+                            chunkCount: baseEntry.chunkCount || 0
+                        });
+                        memoHashSet.add(fileHash);
+                    }
                     results.push({
-                        docId: existingDoc.id,
+                        docId,
                         name: file.name,
-                        success: false,
+                        success: true,
+                        reused: true,
                         duplicate: true,
-                        error: "duplicate"
+                        chunkTotal: baseEntry.chunkCount || 0
                     });
-                    onProgress?.({ type: "file-skip", file: file.name, reason: "duplicate" });
+                    onProgress?.({ type: "file-done", file: file.name });
                     continue;
                 }
                 if (fileHash && batchHashes.has(fileHash)) {
@@ -1951,6 +2172,9 @@
             if (ext === "json") {
                 return this.extractJson(file);
             }
+            if (ext === "vtt") {
+                return { text: await file.text() };
+            }
             if (ext === "csv" || ext === "tsv" || ext === "log" || ext === "jsonl" || ext === "ndjson") {
                 return { text: await file.text() };
             }
@@ -2033,6 +2257,21 @@
                     const fallback = chunkByTokens(normalized, { targetTokens: 600, minTokens: 300, maxTokens: 800 });
                     chunkList = fallback.map((block) => ({ text: block, metadata: { chunkType: "section" } }));
                 }
+                totalChars = chunkList.reduce((acc, chunk) => acc + (chunk.text || "").length, 0);
+                chunkConfig = this.getChunkConfigForText(chunkList.map((chunk) => chunk.text).join("\n"));
+                return { chunkList, chunkConfig, totalChars, extractedText, normalized };
+            }
+
+            if (ext === "vtt") {
+                const segments = parseVttSegments(extractedText);
+                if (segments.length) {
+                    chunkList = chunkVttSegments(segments);
+                    totalChars = chunkList.reduce((acc, chunk) => acc + (chunk.text || "").length, 0);
+                    chunkConfig = this.getChunkConfigForText(chunkList.map((chunk) => chunk.text).join("\n"));
+                    return { chunkList, chunkConfig, totalChars, extractedText, normalized };
+                }
+                const fallback = chunkByTokens(normalized, { targetTokens: 600, minTokens: 300, maxTokens: 800 });
+                chunkList = fallback.map((block) => ({ text: block, metadata: { chunkType: "vtt" } }));
                 totalChars = chunkList.reduce((acc, chunk) => acc + (chunk.text || "").length, 0);
                 chunkConfig = this.getChunkConfigForText(chunkList.map((chunk) => chunk.text).join("\n"));
                 return { chunkList, chunkConfig, totalChars, extractedText, normalized };
