@@ -3013,7 +3013,6 @@
                 var selectionSet = this.knowledgeModalSelectionSet instanceof Set
                     ? this.knowledgeModalSelectionSet
                     : new Set();
-                if (!selectionSet.size) return;
                 var docs = await this.docManager.getDocuments(this.knowledgeConversationId);
                 var knowledgeDocs = Array.isArray(docs) ? docs.filter(function (doc) {
                     return doc && doc.conversationId === this.knowledgeConversationId;
@@ -3022,6 +3021,15 @@
                 if (typeof this.docManager.getKeywordIndexSize === "function") {
                     keywordSize = await this.docManager.getKeywordIndexSize(this.knowledgeConversationId);
                 }
+                if (!selectionSet.size && entries.length && !knowledgeDocs.length) {
+                    selectionSet = new Set();
+                    entries.forEach(function (entry) {
+                        var key = this.normalizeKnowledgeKey(entry.fileName);
+                        if (key) selectionSet.add(key);
+                    }.bind(this));
+                    this.setKnowledgeModalSelection(selectionSet);
+                }
+                if (!selectionSet.size) return;
                 var needsReindex = !knowledgeDocs.length || keywordSize === 0;
                 if (!needsReindex) return;
                 this.reindexKnowledgeSelection(entries, selectionSet).catch(function (err) {
