@@ -6684,7 +6684,28 @@
                 if (fetchedType.includes("pdf")) {
                     try {
                         if (this.previewBodyEl) {
-                            this.previewBodyEl.innerHTML = "<div class=\"chat-doc-preview__loading\">Extraction OCR…</div>";
+                            this.previewBodyEl.innerHTML = "<div class=\"chat-doc-preview__loading\">Extraction PDF…</div>";
+                        }
+                        await this.docManager.waitReady?.();
+                        var useCloudOnly = getConfig("memo.ocr.disableOffline", false);
+                        if (useCloudOnly && typeof this.docManager.extractPdfCloudTextWithProgress === "function") {
+                            var accumulated = "";
+                            var virtualDocCloud = {
+                                name: fetched.name || entry.name || "Document",
+                                sourceFileName: fetched.name || entry.name || "Document",
+                                mime: fetchedType || "application/pdf",
+                                rawText: ""
+                            };
+                            await this.docManager.extractPdfCloudTextWithProgress(fetched, function (pageNumber, text) {
+                                if (!text) return;
+                                accumulated = accumulated ? (accumulated + "\n\n" + text) : text;
+                                virtualDocCloud.rawText = accumulated;
+                                this.previewBodyEl.innerHTML = this.formatPreviewText(accumulated);
+                            }.bind(this));
+                            if (!accumulated) {
+                                this.previewBodyEl.innerHTML = "<div style='color: #999; font-style: italic;'>(extrait indisponible)</div>";
+                            }
+                            return;
                         }
                         var extractionResult = await this.docManager.extractText(fetched);
                         var chunkInfo = this.docManager.buildChunkList(fetched, extractionResult);

@@ -422,6 +422,12 @@
         return enRatio >= 0.04 || frRatio >= 0.04;
     }
 
+    function isReadableOcrText(text) {
+        const cleaned = (text || "").trim();
+        if (cleaned.length < 20) return false;
+        return isLikelyEnFrText(cleaned);
+    }
+
     async function preprocessCanvasWithOpenCv(canvas) {
         const cv = await loadOpenCv();
         if (!cv || typeof cv.imread !== "function") {
@@ -513,13 +519,13 @@
     async function extractWithVisionModel(images) {
         if (!images || !images.length) return [];
         if (!global.GoToolkitIAClient?.chatCompletion) {
-            throw new Error("OpenRouter indisponible");
+            throw new Error("OpenRouter : Service OCR indisponible");
         }
         await getQwenVisionWorker();
         const presetPrompt = global.GoToolkitChatPrompt?.PRESETS?.extract?.prompt
             || global.GoToolkitChatPrompt?.PRESETS?.extract?.defaultPrompt
             || "Extrayez tout le texte de cette image. Soyez précis. Retournez uniquement le texte brut.";
-        const prompt = presetPrompt + " Séparez chaque image par une ligne contenant uniquement ---.";
+        const prompt = presetPrompt + " Langues possibles : français, anglais, vietnamien. Séparez chaque image par une ligne contenant uniquement ---.";
         const content = [{ type: "text", text: prompt }];
         for (const img of images) {
             const dataUrl = await encodeImageAsBase64(img);
@@ -527,7 +533,7 @@
             content.push({ type: "image_url", image_url: { url: dataUrl } });
         }
         if (content.length <= 1) {
-            throw new Error("OpenRouter indisponible");
+            throw new Error("OpenRouter : Service OCR indisponible");
         }
         const payload = {
             model: QWEN_VISION_MODEL,
@@ -536,7 +542,7 @@
         };
         const responseText = await global.GoToolkitIAClient.chatCompletion({ payload });
         if (!responseText || typeof responseText !== "string") {
-            throw new Error("OpenRouter indisponible");
+            throw new Error("OpenRouter : Réponse OCR invalide");
         }
         const raw = responseText.trim();
         const parts = raw.split(/\n\s*-{3,}\s*\n/);
@@ -2461,7 +2467,8 @@
                     baseEntry.error = errorMessage;
                     console.error(`Text extraction failed for ${file.name}:`, err);
                     await this.putDocument(baseEntry);
-                    if (errorMessage === "OpenRouter : Traitement d'image impossible") {
+                    if (errorMessage === "OpenRouter : Réponse OCR invalide"
+                        || errorMessage === "OpenRouter : Service OCR indisponible") {
                         emitDocumentsImportMessage(errorMessage, true);
                     }
                 }
@@ -2845,11 +2852,14 @@
                 try {
                     const results = await extractWithVisionModel([canvas || file]);
                     const visionText = (results && results[0] ? results[0] : "").trim();
-                    if (visionText) {
+                    if (visionText && isReadableOcrText(visionText)) {
                         return {
                             text: visionText,
                             qualityMetrics: { type: "image", ...(quality || {}) }
                         };
+                    }
+                    if (visionText && !isReadableOcrText(visionText)) {
+                        emitDocumentsImportMessage("OCR : texte illisible", true);
                     }
                 } catch (err) {
                     // fall through
@@ -2863,7 +2873,8 @@
                 };
             }
 
-            throw new Error("OpenRouter : Traitement d'image impossible");
+            emitDocumentsImportMessage("OpenRouter : Service OCR indisponible", true);
+            throw new Error("OpenRouter : Service OCR indisponible");
         }
 
         async extractPdfOcrText(pdfResult, fileName = "") {
@@ -2947,8 +2958,11 @@
                             const fallbackIndex = i + idx;
                             const outputIndex = fallbackIndexMap.get(fallbackIndex);
                             if (typeof outputIndex !== "number") return;
-                            if (text && text.trim()) {
-                                output[outputIndex] = text.trim();
+                            const cleaned = (text || "").trim();
+                            if (cleaned && isReadableOcrText(cleaned)) {
+                                output[outputIndex] = cleaned;
+                            } else if (cleaned) {
+                                output[outputIndex] = "";
                             }
                         });
                     } catch (err) {
@@ -2961,13 +2975,64 @@
                     return !value || !value.trim();
                 });
                 if (hasEmpty) {
-                    throw new Error("OpenRouter : Traitement d'image impossible");
+                    emitDocumentsImportMessage("OCR : texte illisible", true);
+                    throw new Error("OpenRouter : Réponse OCR invalide");
                 }
             }
+            const combined = output.filter(Boolean).join("\n\n");
+            if (combined && !isReadableOcrText(combined)) {
+                emitDocumentsImportMessage("OCR : texte illisible", true);
+                throw new Error("OpenRouter : Réponse OCR invalide");
+            }
             return {
-                text: output.filter(Boolean).join("\n\n"),
+                text: combined,
                 qualityMetrics: { type: "pdf", pages: metrics }
             };
+        }
+
+        async extractPdfCloudTextWithProgress(file, onPageText) {
+            if (!file || !this.pdfjs) {
+                throw new Error("PDF indisponible");
+            }
+            if (!canUseQwenFallback()) {
+                emitDocumentsImportMessage("OpenRouter : Service OCR indisponible", true);
+                throw new Error("OpenRouter : Service OCR indisponible");
+            }
+            const buffer = await file.arrayBuffer();
+            const pdf = await this.pdfjs.getDocument({ data: buffer }).promise;
+            const results = [];
+            const batch = [];
+            const batchPages = [];
+            const flushBatch = async () => {
+                if (!batch.length) return;
+                const texts = await extractWithVisionModel(batch);
+                texts.forEach((text, idx) => {
+                    const pageNumber = batchPages[idx];
+                    const clean = (text || "").trim();
+                    results[pageNumber - 1] = clean;
+                    if (typeof onPageText === "function") {
+                        onPageText(pageNumber, clean);
+                    }
+                });
+                batch.length = 0;
+                batchPages.length = 0;
+            };
+            for (let pageIndex = 1; pageIndex <= pdf.numPages; pageIndex++) {
+                const page = await pdf.getPage(pageIndex);
+                const viewport = page.getViewport({ scale: 2 });
+                const canvas = document.createElement("canvas");
+                const context = canvas.getContext("2d", { willReadFrequently: true });
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+                await page.render({ canvasContext: context, viewport }).promise;
+                batch.push(canvas);
+                batchPages.push(pageIndex);
+                if (batch.length >= 5) {
+                    await flushBatch();
+                }
+            }
+            await flushBatch();
+            return results.filter(Boolean).join("\n\n");
         }
 
         async extractDocx(file) {
