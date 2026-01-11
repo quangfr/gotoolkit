@@ -53,11 +53,15 @@ test.describe("Assist audio import (AssemblyAI)", () => {
           const start = performance.now();
           const result = await origPoll.call(this, id, key);
           const end = performance.now();
+          const transcriptText = api.buildTranscriptFromUtterances
+            ? api.buildTranscriptFromUtterances(result)
+            : (result?.text || "").trim();
           metrics.polls.push({
             id,
             ms: end - start,
             durationSeconds:
               (result && (result.audio_duration || result.audio_duration_seconds || result.duration)) || 0,
+            transcriptText,
           });
           return result;
         };
