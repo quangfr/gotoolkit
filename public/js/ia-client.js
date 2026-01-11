@@ -739,18 +739,49 @@
         }
     }
 
+    function normalizeOpenRouterContent(content) {
+        if (Array.isArray(content)) {
+            var hasImage = content.some(function (part) {
+                return part && typeof part === "object" && (part.image_url || part.type === "image_url");
+            });
+            if (hasImage) {
+                return content.map(function (part) {
+                    if (typeof part === "string") {
+                        return { type: "text", text: part };
+                    }
+                    if (part && typeof part === "object") {
+                        if (part.type === "image_url" && part.image_url) {
+                            return part;
+                        }
+                        if (part.image_url) {
+                            return { type: "image_url", image_url: part.image_url };
+                        }
+                        if (part.type === "text" && typeof part.text === "string") {
+                            return part;
+                        }
+                        if (typeof part.text === "string") {
+                            return { type: "text", text: part.text };
+                        }
+                    }
+                    return { type: "text", text: "" };
+                });
+            }
+        }
+        return stringifyContent(content);
+    }
+
     function buildOpenRouterMessages(payload) {
         const source = payload || {};
         if (Array.isArray(source?.messages) && source.messages.length) {
             return source.messages.map(message => ({
                 role: (message?.role || "user").toString(),
-                content: stringifyContent(message?.content ?? message)
+                content: normalizeOpenRouterContent(message?.content ?? message)
             }));
         }
         if (Array.isArray(source?.input) && source.input.length) {
             return source.input.map(item => ({
                 role: (item?.role || "user").toString(),
-                content: stringifyContent(item?.content ?? item)
+                content: normalizeOpenRouterContent(item?.content ?? item)
             }));
         }
         if (typeof source?.prompt === "string") {
@@ -766,9 +797,10 @@
         const source = payload || {};
 
         const isDirect = Boolean(backend?.hasOpenRouterKey);
+        const requestedModel = String(source?.model || "").trim();
         if (!isDirect) {
-            const configuredModel = String(backend?.model || source?.model || "").trim();
-            const proxyModel = configuredModel || "@preset/gotoolkit";
+            const configuredModel = String(backend?.model || "").trim();
+            const proxyModel = requestedModel || configuredModel || "@preset/gotoolkit";
             const proxyPayload = {
                 model: proxyModel,
                 messages: buildOpenRouterMessages(source)
@@ -784,7 +816,7 @@
 
         const defaultModel = "openai/gpt-oss-120b";
         const result = {
-            model: defaultModel,
+            model: requestedModel || defaultModel,
             messages: buildOpenRouterMessages(source)
         };
         [

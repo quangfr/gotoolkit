@@ -1684,6 +1684,8 @@ RÈGLES DE SORTIE
 - Un seul objet JSON strict, sans texte avant/après
 `
 
+        var imageOcrPrompt = `Extrayez tout le texte de cette image. Soyez précis. Retournez uniquement le texte brut.`
+
         var initial = adviceChatPrompt;
         var initialInfo = askChatPrompt;
 
@@ -1724,6 +1726,12 @@ RÈGLES DE SORTIE
                 label: "⤷ Importer",
                 prompt: chatImportPrompt,
                 defaultPrompt: chatImportPrompt
+            },
+            extract: {
+                id: "extract",
+                label: "⊜ Extraire",
+                prompt: imageOcrPrompt,
+                defaultPrompt: imageOcrPrompt
             }
         };
     })();

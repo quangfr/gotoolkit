@@ -2195,12 +2195,12 @@ label {
 }
 
 .chat-docs-indicator__label {
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 0;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
   font-size: 12px;
-  max-width: 12ch;
 }
 
 .modal select {

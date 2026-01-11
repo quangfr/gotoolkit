@@ -1,5 +1,7 @@
 ## 2026-01-11
-- Mémo : Import des fichiers médias (transcriptions)
+- IA : Moteur OCR avancé `qwen-2.5-vl-7b-instruct` 
+- Assist : Import des fichiers PDF
+- Assist : Import des médias avec transcriptions
 - Mémo : Bibliothèque en barre latérale
 - Mémo : Import des fichiers JSON
 
@@ -58,5 +60,4 @@
 - Accueil : Partage des liens de document et espace en ligne
 
 ## 2025-11-22
-- Nouveau module Canvas (déprécié) : tableaux structurés
-- Intégration moteur IA OpenAI
+- Module Canvas (déprécié) : champs de saisie structuré

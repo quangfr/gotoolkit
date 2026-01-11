@@ -58,7 +58,7 @@
 
             return new Promise((resolve) => {
                 try {
-                    const testReq = indexedDB.open("gotoolkit-documents", 4);
+                    const testReq = indexedDB.open("gotoolkit-documents", 6);
                     let isHealthy = true;
 
                     testReq.onerror = () => {
@@ -179,7 +179,7 @@
                 deleteReq.onsuccess = () => {
                     console.log("IndexedDB deleted, will be recreated on next access");
                     // Recreate the database with fresh stores
-                    const recreateReq = indexedDB.open("gotoolkit-documents", 5);
+                    const recreateReq = indexedDB.open("gotoolkit-documents", 6);
 
                     recreateReq.onupgradeneeded = () => {
                         const db = recreateReq.result;
@@ -255,6 +255,21 @@
             return raw;
         }
         return base.slice(0, 12) + "..." + ext;
+    }
+
+    function truncateIndicatorFilename(name) {
+        var raw = (name || "").toString().trim();
+        if (!raw) return "Document";
+        var dotIndex = raw.lastIndexOf(".");
+        if (dotIndex <= 0 || dotIndex === raw.length - 1) {
+            return raw.length > 8 ? raw.slice(0, 8) + "..." : raw;
+        }
+        var base = raw.slice(0, dotIndex);
+        var ext = raw.slice(dotIndex + 1);
+        if (base.length <= 8) {
+            return raw;
+        }
+        return base.slice(0, 8) + "..." + ext;
     }
 
     // Run health check on script load
@@ -414,7 +429,7 @@
     }
 
     function getAllowedPromptPresetIds() {
-        if (CHAT_APP_ID === "memo") return ["advice", "edit", "suggest"];
+        if (CHAT_APP_ID === "memo") return ["advice", "edit", "suggest", "import"];
         if (CHAT_APP_ID === "index") return ["advice", "ask"];
         return ["advice", "ask"];
     }
@@ -1711,6 +1726,18 @@
             || storePresets?.suggest?.defaultPrompt
             || "";
 
+        var importPersisted = getPersistedPromptOrEmpty("goToolkit.chat.prompt.import");
+        var importPrompt = importPersisted
+            || storePresets?.import?.prompt
+            || storePresets?.import?.defaultPrompt
+            || "";
+
+        var extractPersisted = getPersistedPromptOrEmpty("goToolkit.chat.prompt.extract");
+        var extractPrompt = extractPersisted
+            || storePresets?.extract?.prompt
+            || storePresets?.extract?.defaultPrompt
+            || "";
+
         var all = {
             advice: {
                 id: "advice",
@@ -1731,6 +1758,16 @@
                 id: "edit",
                 label: storePresets?.edit?.label || "✂ Éditer",
                 prompt: editPrompt
+            },
+            import: {
+                id: "import",
+                label: storePresets?.import?.label || "⤷ Importer",
+                prompt: importPrompt
+            },
+            extract: {
+                id: "extract",
+                label: storePresets?.extract?.label || "⊜ Extraire",
+                prompt: extractPrompt
             }
         };
 
@@ -1779,6 +1816,20 @@
             if (persistedEdit) return persistedEdit;
             return global.GoToolkitChatPrompt?.PRESETS.edit.prompt
                 || global.GoToolkitChatPrompt?.PRESETS.edit.defaultPrompt
+                || "";
+        }
+        if (this.promptPresetId === "import") {
+            var persistedImport = getPersistedPromptOrEmpty("goToolkit.chat.prompt.import");
+            if (persistedImport) return persistedImport;
+            return global.GoToolkitChatPrompt?.PRESETS.import?.prompt
+                || global.GoToolkitChatPrompt?.PRESETS.import?.defaultPrompt
+                || "";
+        }
+        if (this.promptPresetId === "extract") {
+            var persistedExtract = getPersistedPromptOrEmpty("goToolkit.chat.prompt.extract");
+            if (persistedExtract) return persistedExtract;
+            return global.GoToolkitChatPrompt?.PRESETS.extract?.prompt
+                || global.GoToolkitChatPrompt?.PRESETS.extract?.defaultPrompt
                 || "";
         }
         return getSystemPrompt();
@@ -3573,7 +3624,7 @@
         try {
             var memoId = this.getActiveMemoId();
             if (memoId) {
-                await this.docManager.deleteMemoEmbeddingLink(memoId, docId);
+                await this.docManager.deleteMemoEmbeddingLinkAndCleanup(memoId, docId);
             }
             await this.refreshMemoContextAttachments();
             await this.refreshDocumentStats();
@@ -3677,7 +3728,7 @@
         // After import complete (total === 0, but pendingCount > 0)
         if (pendingCount === 1) {
             // Single file: show filename
-            return this.pendingDocumentAttachments[0];
+            return truncateIndicatorFilename(this.pendingDocumentAttachments[0]);
         }
         if (pendingCount > 1) {
             // Multiple files: show count

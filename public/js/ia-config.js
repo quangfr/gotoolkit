@@ -228,6 +228,9 @@
             }
             safeStorageWrite(STORAGE_KEYS_OPENROUTER.SORT, normalized);
         },
+        isOpenRouterAvailable: function () {
+            return Boolean(GoToolkitIAConfig.getOpenRouterApiKey() || OPENROUTER_PROXY_ENDPOINT);
+        },
         getBackend: function () {
             return safeStorageRead(STORAGE_KEYS_BACKEND) || "openrouter";
         },

@@ -74,6 +74,8 @@
     const DB_VERSION = 6;
     const REQUIRED_STORES = ["documents", "chunks", "keyword_meta", "memo_context_embeddings"];
     const PDFJS_URL = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.6.82/+esm";
+    const TESSERACT_URL = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.0/dist/tesseract.esm.min.js";
+    const OPENCV_URL = "https://cdn.jsdelivr.net/npm/opencv.js@1.2.1/opencv.js";
     const PDFJS_WORKER = "js/pdf.worker.min.mjs";
     const TRANSFORMERS_URL = "https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2";
     const JSZIP_URL = "https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm";
@@ -118,8 +120,44 @@
         "odf",
         "odt",
         "ods",
-        "vtt"
+        "vtt",
+        "png",
+        "jpg",
+        "jpeg",
+        "webp",
+        "gif",
+        "bmp",
+        "tif",
+        "tiff"
     ]);
+    const IMAGE_EXTENSIONS = new Set(["png", "jpg", "jpeg", "webp", "gif", "bmp", "tif", "tiff"]);
+    const OCR_TEXT_MIN_LENGTH = 40;
+    const OCR_QUALITY_CONTRAST_THRESHOLD = 30;
+    const OCR_QUALITY_BLUR_THRESHOLD = 0.8;
+    const OCR_LAPLACIAN_NORM = 1000;
+    const QWEN_VISION_MODEL = "qwen/qwen-2.5-vl-7b-instruct";
+
+    function emitDocumentsImportMessage(message, isError) {
+        if (typeof document === "undefined") return;
+        document.dispatchEvent(new CustomEvent("goToolkitDocumentsImportMessage", {
+            detail: { message, isError: Boolean(isError) }
+        }));
+    }
+
+    function canUseQwenFallback() {
+        try {
+            var backend = (localStorage.getItem("go-toolkit-ai-backend") || "").trim().toLowerCase();
+            if (backend === "openai") return false;
+        } catch (err) {
+            // ignore
+        }
+        if (global.GoToolkitIAConfig?.isOpenRouterAvailable) {
+            return global.GoToolkitIAConfig.isOpenRouterAvailable();
+        }
+        const hasKey = Boolean(global.GoToolkitIAConfig?.getOpenRouterApiKey?.());
+        const hasProxy = Boolean(global.GoToolkitIAConfig?.OPENROUTER_PROXY_ENDPOINT);
+        return hasKey || hasProxy;
+    }
 
     function normalizeText(value) {
         return (value || "")
@@ -242,6 +280,252 @@
         }
         flush();
         return sections;
+    }
+
+    let tesseractPromise = null;
+    let ocrWorkerPromise = null;
+    let openCvPromise = null;
+
+    async function loadTesseract() {
+        if (tesseractPromise) return tesseractPromise;
+        tesseractPromise = import(TESSERACT_URL).then((mod) => mod?.default || mod);
+        return tesseractPromise;
+    }
+
+    async function loadOpenCv() {
+        if (openCvPromise) return openCvPromise;
+        openCvPromise = new Promise((resolve, reject) => {
+            if (typeof window === "undefined" || typeof document === "undefined") {
+                reject(new Error("OpenCV indisponible"));
+                return;
+            }
+            if (window.cv && typeof window.cv.Mat === "function") {
+                resolve(window.cv);
+                return;
+            }
+            const script = document.createElement("script");
+            script.src = OPENCV_URL;
+            script.async = true;
+            script.onload = () => {
+                if (window.cv) {
+                    if (window.cv.Mat) {
+                        resolve(window.cv);
+                        return;
+                    }
+                    window.cv.onRuntimeInitialized = () => resolve(window.cv);
+                    return;
+                }
+                reject(new Error("OpenCV introuvable"));
+            };
+            script.onerror = () => reject(new Error("Chargement OpenCV échoué"));
+            document.head.appendChild(script);
+        });
+        return openCvPromise;
+    }
+
+    function analyzeCanvasQuality(canvas) {
+        if (!canvas) {
+            return { contrastVariance: 0, laplacianVariance: 0, blurScore: 1, needsPreprocess: true };
+        }
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+        if (!ctx) {
+            return { contrastVariance: 0, laplacianVariance: 0, blurScore: 1, needsPreprocess: true };
+        }
+        const width = canvas.width || 0;
+        const height = canvas.height || 0;
+        if (!width || !height) {
+            return { contrastVariance: 0, laplacianVariance: 0, blurScore: 1, needsPreprocess: true };
+        }
+        const imageData = ctx.getImageData(0, 0, width, height);
+        const data = imageData.data;
+        const count = width * height;
+        let sum = 0;
+        let sumSq = 0;
+        const gray = new Uint8Array(count);
+        for (let i = 0, p = 0; i < data.length; i += 4, p += 1) {
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
+            const value = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
+            gray[p] = value;
+            sum += value;
+            sumSq += value * value;
+        }
+        const mean = sum / count;
+        const variance = Math.max(0, (sumSq / count) - (mean * mean));
+        let laplacianSum = 0;
+        let laplacianCount = 0;
+        for (let y = 1; y < height - 1; y++) {
+            const row = y * width;
+            for (let x = 1; x < width - 1; x++) {
+                const idx = row + x;
+                const lap = (-4 * gray[idx])
+                    + gray[idx - 1]
+                    + gray[idx + 1]
+                    + gray[idx - width]
+                    + gray[idx + width];
+                laplacianSum += lap * lap;
+                laplacianCount += 1;
+            }
+        }
+        const laplacianVariance = laplacianCount ? (laplacianSum / laplacianCount) : 0;
+        const blurScore = 1 - clampNumber(laplacianVariance / OCR_LAPLACIAN_NORM, 0, 1, 0);
+        const needsPreprocess = variance < OCR_QUALITY_CONTRAST_THRESHOLD
+            || blurScore > OCR_QUALITY_BLUR_THRESHOLD;
+        return {
+            contrastVariance: Math.round(variance * 100) / 100,
+            laplacianVariance: Math.round(laplacianVariance * 100) / 100,
+            blurScore: Math.round(blurScore * 100) / 100,
+            needsPreprocess
+        };
+    }
+
+    async function preprocessCanvasWithOpenCv(canvas) {
+        const cv = await loadOpenCv();
+        if (!cv || typeof cv.imread !== "function") {
+            throw new Error("OpenCV indisponible");
+        }
+        const src = cv.imread(canvas);
+        const gray = new cv.Mat();
+        const dst = new cv.Mat();
+        try {
+            cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
+            cv.equalizeHist(gray, gray);
+            cv.adaptiveThreshold(gray, dst, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 31, 2);
+            cv.imshow(canvas, dst);
+        } finally {
+            src.delete();
+            gray.delete();
+            dst.delete();
+        }
+    }
+
+    async function fileToCanvas(file) {
+        if (!file) return null;
+        try {
+            if (typeof createImageBitmap === "function") {
+                const bitmap = await createImageBitmap(file);
+                const canvas = document.createElement("canvas");
+                canvas.width = bitmap.width;
+                canvas.height = bitmap.height;
+                const ctx = canvas.getContext("2d", { willReadFrequently: true });
+                if (ctx) {
+                    ctx.drawImage(bitmap, 0, 0);
+                }
+                if (typeof bitmap.close === "function") {
+                    bitmap.close();
+                }
+                return canvas;
+            }
+        } catch (err) {
+            // fallback below
+        }
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onerror = () => reject(reader.error || new Error("Lecture image échouée"));
+            reader.onload = () => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement("canvas");
+                    canvas.width = img.naturalWidth || img.width;
+                    canvas.height = img.naturalHeight || img.height;
+                    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+                    if (ctx) {
+                        ctx.drawImage(img, 0, 0);
+                    }
+                    resolve(canvas);
+                };
+                img.onerror = () => reject(new Error("Chargement image échoué"));
+                img.src = reader.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    async function encodeImageAsBase64(imageOrCanvas) {
+        if (!imageOrCanvas) return "";
+        if (typeof HTMLCanvasElement !== "undefined" && imageOrCanvas instanceof HTMLCanvasElement) {
+            return imageOrCanvas.toDataURL("image/jpeg", 0.92);
+        }
+        if (imageOrCanvas instanceof Blob) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onerror = () => reject(reader.error || new Error("Lecture image échouée"));
+                reader.onload = () => resolve(reader.result || "");
+                reader.readAsDataURL(imageOrCanvas);
+            });
+        }
+        return "";
+    }
+
+    let qwenVisionWorkerPromise = null;
+
+    async function getQwenVisionWorker() {
+        if (qwenVisionWorkerPromise) return qwenVisionWorkerPromise;
+        qwenVisionWorkerPromise = Promise.resolve({
+            model: QWEN_VISION_MODEL
+        });
+        return qwenVisionWorkerPromise;
+    }
+
+    async function extractWithVisionModel(images) {
+        if (!images || !images.length) return [];
+        if (!global.GoToolkitIAClient?.chatCompletion) {
+            throw new Error("OpenRouter indisponible");
+        }
+        await getQwenVisionWorker();
+        const presetPrompt = global.GoToolkitChatPrompt?.PRESETS?.extract?.prompt
+            || global.GoToolkitChatPrompt?.PRESETS?.extract?.defaultPrompt
+            || "Extrayez tout le texte de cette image. Soyez précis. Retournez uniquement le texte brut.";
+        const prompt = presetPrompt + " Séparez chaque image par une ligne contenant uniquement ---.";
+        const content = [{ type: "text", text: prompt }];
+        for (const img of images) {
+            const dataUrl = await encodeImageAsBase64(img);
+            if (!dataUrl) continue;
+            content.push({ type: "image_url", image_url: { url: dataUrl } });
+        }
+        if (content.length <= 1) {
+            throw new Error("OpenRouter indisponible");
+        }
+        const payload = {
+            model: QWEN_VISION_MODEL,
+            stream: false,
+            messages: [{ role: "user", content }]
+        };
+        const responseText = await global.GoToolkitIAClient.chatCompletion({ payload });
+        if (!responseText || typeof responseText !== "string") {
+            throw new Error("OpenRouter indisponible");
+        }
+        const raw = responseText.trim();
+        const parts = raw.split(/\n\s*-{3,}\s*\n/);
+        if (!parts.length) return [];
+        if (parts.length < images.length) {
+            const fallback = raw.split(/\n-{3,}\n/);
+            if (fallback.length >= parts.length) {
+                return fallback.map(item => item.trim());
+            }
+        }
+        return parts.map(item => item.trim());
+    }
+
+    async function getOcrWorker() {
+        if (ocrWorkerPromise) return ocrWorkerPromise;
+        ocrWorkerPromise = (async () => {
+            const Tesseract = await loadTesseract();
+            if (!Tesseract || typeof Tesseract.createWorker !== "function") {
+                throw new Error("OCR worker indisponible");
+            }
+            const worker = await Tesseract.createWorker("fra+eng");
+            if (typeof worker.load === "function") await worker.load();
+            if (typeof worker.loadLanguage === "function") await worker.loadLanguage("fra+eng");
+            if (typeof worker.initialize === "function") await worker.initialize("fra+eng");
+            return worker;
+        })();
+        return ocrWorkerPromise;
+    }
+
+    function shouldOcrText(text) {
+        return (text || "").trim().length < OCR_TEXT_MIN_LENGTH;
     }
 
     function parseVttSegments(raw) {
@@ -927,9 +1211,6 @@
                 }
                 // JSZip from ESM CDN should have loadAsync directly
                 this.jszip = jsZipModule;
-                if (!this.jszip?.loadAsync) {
-                    console.warn("JSZip.loadAsync not found, checking .default...", typeof this.jszip?.default?.loadAsync);
-                }
                 await this.loadSettings();
                 await this.ensureDb();
                 await this.migrateMemoEmbeddingsEnabled();
@@ -1607,7 +1888,12 @@
             const store = await this.getStore("memo_context_embeddings", "readwrite");
             if (!store) return;
             const entries = await this.getMemoEmbeddings(memoId);
-            const targets = entries.filter((entry) => entry?.docId === docId);
+            const idMatch = `${memoId}:${docId}`;
+            const targets = entries.filter((entry) => {
+                if (entry?.docId === docId) return true;
+                if (entry?.id === idMatch) return true;
+                return typeof entry?.id === "string" && entry.id.endsWith(":" + docId);
+            });
             await Promise.all(targets.map((entry) => {
                 return new Promise((resolve, reject) => {
                     const request = store.delete(entry.id);
@@ -1624,6 +1910,92 @@
                 }
                 await this.cleanupExpiredEmbeddings();
             }
+        }
+
+        async deleteMemoEmbeddingLinkAndCleanup(memoId, docId) {
+            if (!memoId || !docId) return;
+            const db = await this.ensureDb();
+            if (!db) return;
+            const idMatch = `${memoId}:${docId}`;
+            await new Promise((resolve, reject) => {
+                const tx = db.transaction(["memo_context_embeddings", "documents", "chunks"], "readwrite");
+                const memoStore = tx.objectStore("memo_context_embeddings");
+                const docStore = tx.objectStore("documents");
+                const chunkStore = tx.objectStore("chunks");
+                const memoIndex = memoStore.index("memoId");
+                const docIndex = memoStore.index("docId");
+                const chunkIndex = chunkStore.index("docId");
+
+                const deleteMemoLinks = () => {
+                    return new Promise((res, rej) => {
+                        const request = memoIndex.openCursor(IDBKeyRange.only(memoId));
+                        request.onsuccess = (event) => {
+                            const cursor = event.target.result;
+                            if (!cursor) {
+                                res(true);
+                                return;
+                            }
+                            const value = cursor.value;
+                            const entryId = value?.id;
+                            const matches = value?.docId === docId
+                                || entryId === idMatch
+                                || (typeof entryId === "string" && entryId.endsWith(":" + docId));
+                            if (matches) {
+                                cursor.delete();
+                            }
+                            cursor.continue();
+                        };
+                        request.onerror = () => rej(request.error);
+                    });
+                };
+
+                const countRemaining = () => {
+                    return new Promise((res, rej) => {
+                        const request = docIndex.count(IDBKeyRange.only(docId));
+                        request.onsuccess = () => res(request.result || 0);
+                        request.onerror = () => rej(request.error);
+                    });
+                };
+
+                const deleteChunks = () => {
+                    return new Promise((res, rej) => {
+                        const request = chunkIndex.openCursor(IDBKeyRange.only(docId));
+                        request.onsuccess = (event) => {
+                            const cursor = event.target.result;
+                            if (!cursor) {
+                                res(true);
+                                return;
+                            }
+                            cursor.delete();
+                            cursor.continue();
+                        };
+                        request.onerror = () => rej(request.error);
+                    });
+                };
+
+                const run = async () => {
+                    try {
+                        await deleteMemoLinks();
+                        const remaining = await countRemaining();
+                        if (!remaining) {
+                            docStore.delete(docId);
+                            await deleteChunks();
+                        }
+                    } catch (err) {
+                        try {
+                            tx.abort();
+                        } catch (abortErr) {
+                            // ignore
+                        }
+                        reject(err);
+                    }
+                };
+
+                run();
+                tx.oncomplete = () => resolve(true);
+                tx.onerror = () => reject(tx.error);
+                tx.onabort = () => reject(tx.error || new Error("Transaction aborted"));
+            });
         }
 
         async getMemoEmbeddings(memoId) {
@@ -2047,11 +2419,17 @@
                     baseEntry.error = errorMessage;
                     console.error(`Text extraction failed for ${file.name}:`, err);
                     await this.putDocument(baseEntry);
+                    if (errorMessage === "OpenRouter : Traitement d'image impossible") {
+                        emitDocumentsImportMessage(errorMessage, true);
+                    }
                 }
                 if (!success) {
                     console.warn(`File ${file.name} marked as failed: ${errorMessage}`);
                     results.push({ docId, name: file.name, success: false, error: errorMessage });
                     continue;
+                }
+                if (extractionResult?.qualityMetrics) {
+                    baseEntry.qualityMetrics = extractionResult.qualityMetrics;
                 }
                 const {
                     chunkList,
@@ -2154,8 +2532,24 @@
             if ((ext === "docx" || ext === "pptx" || ext === "xlsx" || ext === "ods") && !this.jszip) {
                 throw new Error("Modules de traitement de fichiers non chargés - veuillez attendre et réessayer");
             }
+            const mime = (file.type || "").toLowerCase();
+            if (mime.startsWith("image/") || IMAGE_EXTENSIONS.has(ext)) {
+                return await this.extractImageWithOcr(file, file.name);
+            }
             if (file.type === "application/pdf" || ext === "pdf") {
-                return this.extractPdf(file);
+                const pdfResult = await this.extractPdf(file);
+                const pagesNeedingOcr = pdfResult?.pdfPages?.some((page) => shouldOcrText(page?.text || ""));
+                if (pdfResult?.pdfPages && pdfResult.pdfPages.length && pagesNeedingOcr) {
+                    const ocrResult = await this.extractPdfOcrText(pdfResult, file.name);
+                    if (ocrResult?.text) {
+                        return {
+                            text: ocrResult.text,
+                            pdfPages: pdfResult.pdfPages,
+                            qualityMetrics: ocrResult.qualityMetrics
+                        };
+                    }
+                }
+                return pdfResult;
             }
             if (ext === "docx") {
                 return { text: await this.extractDocx(file) };
@@ -2349,6 +2743,8 @@
         async extractPdf(file) {
             if (!this.pdfjs) return { text: "" };
             const buffer = await file.arrayBuffer();
+            // Keep a copy for OCR; pdfjs may transfer/detach the original buffer.
+            const pdfBuffer = buffer.slice(0);
             const pdf = await this.pdfjs.getDocument({ data: buffer }).promise;
             let full = "";
             const pages = [];
@@ -2362,7 +2758,164 @@
                 pages.push({ pageNumber: pageIndex, text: pageText });
                 full += pageText;
             }
-            return { text: full, pdfPages: pages };
+            return { text: full, pdfPages: pages, pdfBuffer };
+        }
+
+        async extractImageWithOcr(file, fileName = "") {
+            if (!file) return { text: "" };
+            let canvas = null;
+            let quality = null;
+            let tesseractText = "";
+            try {
+                canvas = await fileToCanvas(file);
+                quality = analyzeCanvasQuality(canvas);
+                if (quality.needsPreprocess) {
+                    try {
+                        await preprocessCanvasWithOpenCv(canvas);
+                        quality.preprocessApplied = true;
+                    } catch (err) {
+                        quality.preprocessFailed = true;
+                        emitDocumentsImportMessage(
+                            `${fileName || "Image"} : Le traitement d'image a échoué`,
+                            true
+                        );
+                    }
+                }
+                const worker = await getOcrWorker();
+                const target = canvas || file;
+                const result = await worker.recognize(target);
+                tesseractText = (result?.data?.text || "").trim();
+            } catch (err) {
+                tesseractText = "";
+            }
+
+            if (tesseractText.length >= 20) {
+                return {
+                    text: tesseractText,
+                    qualityMetrics: { type: "image", ...(quality || {}) }
+                };
+            }
+
+            if (canUseQwenFallback()) {
+                try {
+                    const results = await extractWithVisionModel([canvas || file]);
+                    const visionText = (results && results[0] ? results[0] : "").trim();
+                    if (visionText) {
+                        return {
+                            text: visionText,
+                            qualityMetrics: { type: "image", ...(quality || {}) }
+                        };
+                    }
+                } catch (err) {
+                    // fall through
+                }
+            }
+
+            if (tesseractText) {
+                return {
+                    text: tesseractText,
+                    qualityMetrics: { type: "image", ...(quality || {}) }
+                };
+            }
+
+            throw new Error("OpenRouter : Traitement d'image impossible");
+        }
+
+        async extractPdfOcrText(pdfResult, fileName = "") {
+            if (!this.pdfjs || !pdfResult?.pdfBuffer) return "";
+            const pdf = await this.pdfjs.getDocument({ data: pdfResult.pdfBuffer }).promise;
+            let worker = null;
+            try {
+                worker = await getOcrWorker();
+            } catch (err) {
+                const label = fileName ? ` (${fileName})` : "";
+                throw new Error(`OCR échoué${label}`);
+            }
+            const pages = pdfResult.pdfPages || [];
+            const output = [];
+            const metrics = [];
+            const fallbackImages = [];
+            const fallbackIndexMap = new Map();
+            for (let pageIndex = 1; pageIndex <= pdf.numPages; pageIndex++) {
+                const page = await pdf.getPage(pageIndex);
+                const pageInfo = pages[pageIndex - 1];
+                const pageText = pageInfo?.text || "";
+                if (!shouldOcrText(pageText)) {
+                    output.push(pageText.trim());
+                    continue;
+                }
+                const viewport = page.getViewport({ scale: 2 });
+                const canvas = document.createElement("canvas");
+                const context = canvas.getContext("2d", { willReadFrequently: true });
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+                try {
+                    await page.render({ canvasContext: context, viewport }).promise;
+                    let quality = analyzeCanvasQuality(canvas);
+                    if (quality.needsPreprocess) {
+                        try {
+                            await preprocessCanvasWithOpenCv(canvas);
+                            quality.preprocessApplied = true;
+                        } catch (err) {
+                            quality.preprocessFailed = true;
+                            emitDocumentsImportMessage(
+                                `${fileName || "Document"} : Le traitement d'image a échoué`,
+                                true
+                            );
+                        }
+                    }
+                    metrics.push({
+                        pageNumber: pageIndex,
+                        ...(quality || {})
+                    });
+                    let ocrText = "";
+                    try {
+                        const ocr = await worker.recognize(canvas);
+                        ocrText = (ocr?.data?.text || "").trim();
+                    } catch (err) {
+                        ocrText = "";
+                    }
+                    output.push(ocrText);
+                    if (ocrText.length < 20) {
+                        fallbackIndexMap.set(fallbackImages.length, pageIndex - 1);
+                        fallbackImages.push(canvas);
+                    }
+                } catch (err) {
+                    const label = fileName ? ` (${fileName})` : "";
+                    throw new Error(`OCR échoué${label}`);
+                }
+            }
+            if (fallbackImages.length && canUseQwenFallback()) {
+                const batchSize = 5;
+                for (let i = 0; i < fallbackImages.length; i += batchSize) {
+                    const batch = fallbackImages.slice(i, i + batchSize);
+                    try {
+                        const results = await extractWithVisionModel(batch);
+                        results.forEach(function (text, idx) {
+                            const fallbackIndex = i + idx;
+                            const outputIndex = fallbackIndexMap.get(fallbackIndex);
+                            if (typeof outputIndex !== "number") return;
+                            if (text && text.trim()) {
+                                output[outputIndex] = text.trim();
+                            }
+                        });
+                    } catch (err) {
+                        // ignore, use Tesseract output if any
+                    }
+                }
+            }
+            if (fallbackImages.length) {
+                const hasEmpty = output.some(function (value) {
+                    return !value || !value.trim();
+                });
+                if (hasEmpty) {
+                    throw new Error("OpenRouter : Traitement d'image impossible");
+                }
+            }
+            return {
+                text: output.filter(Boolean).join("\n\n"),
+                qualityMetrics: { type: "pdf", pages: metrics }
+            };
         }
 
         async extractDocx(file) {
