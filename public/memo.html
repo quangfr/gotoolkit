@@ -532,7 +532,7 @@
 <body class="app-body">
     <div class="memo-shell">
         <aside id="documentExplorer" class="document-explorer document-explorer--collapsed" aria-label="Bibliothèque">
-            <div class="document-explorer__header">⬠ Bibliothèque</div>
+            <div class="document-explorer__header">⤷ Ouvrir Bibliothèque</div>
             <div class="document-explorer__list" data-document-explorer-list></div>
         </aside>
         <div id="documentExplorerResizer" class="document-explorer-resizer is-hidden" role="separator"
@@ -541,8 +541,8 @@
             <div class="app-header">
                 <div class="tabs-actions">
                     <button id="documentExplorerToggle" class="app-home-link" type="button"
-                        title="Afficher la bibliothèque" aria-expanded="false"
-                        aria-controls="documentExplorer">⬠</button>
+                        title="Afficher la bibliothèque" aria-expanded="false" aria-controls="documentExplorer">⤷
+                        Ouvrir</button>
                     <div class="nav-switch">
                         <button id="navSwitcherBtn" class="nav-switch-btn" type="button" aria-haspopup="true"
                             aria-expanded="false">⊞ Mémo ▾</button>
@@ -572,7 +572,7 @@
                         <button id="fileMenuBtn" class="btn" type="button" aria-label="Document">🗋 Document</button>
                         <div class="context-menu" id="fileMenu">
                             <div class="menu-panel">
-                                <button id="memoOpenImportBtn" type="button" class="menu-panel-btn">⤷ Ouvrir</button>
+                                <button id="memoOpenImportBtn" type="button" class="menu-panel-btn">⤷ Importer</button>
                                 <button id="saveDocumentBtn" type="button" class="menu-panel-btn">🖫
                                     Enregistrer</button>
                                 <button id="renameDocumentBtn" type="button" class="menu-panel-btn">✎ Renommer</button>
@@ -593,7 +593,9 @@
             </div>
 
             <div id="app" class="app-main">
-                <div id="memoEmptyState" class="memo-empty-state">← Ouvrir un document ou créer un nouveau depuis la ⬠ Bibliothèque.</div>
+                <div id="memoEmptyState" class="memo-empty-state">← Ouvrir un document ou créer un nouveau depuis la ⤷
+                    Ouvrir
+                    Bibliothèque.</div>
                 <section class="memo-card">
                     <div class="editor-wrap">
                         <div id="editor" class="editor"></div>

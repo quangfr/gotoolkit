@@ -7,10 +7,10 @@ test.describe("Memo import + AI performance", () => {
     const baseUrl = "http://127.0.0.1:5000";
     const dataDir = path.resolve(process.cwd(), "test-data");
     const filePaths = [
-      path.join(dataDir, "CFM-MA-2021-00064_12-12-2025.json"),
-      path.join(dataDir, "CFM-MA-2023-00048_12-12-2025.json"),
-      path.join(dataDir, "CFM-MA-2023-00184_12-12-2025.json"),
-      path.join(dataDir, "SAE-MA-2017-00180_12-12-2025.json"),
+      path.join(dataDir, "json_one.json"),
+      path.join(dataDir, "json_two.json"),
+      path.join(dataDir, "json_three.json"),
+      path.join(dataDir, "json_four.json"),
     ];
 
     await page.goto(`${baseUrl}/memo.html`, { waitUntil: "load" });

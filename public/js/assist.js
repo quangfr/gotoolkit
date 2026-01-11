@@ -2767,7 +2767,7 @@
             var importButton = document.createElement("button");
             importButton.type = "button";
             importButton.className = "chat-prompt-menu-item";
-            importButton.textContent = "⤷ Importer";
+            importButton.textContent = "";
             importButton.addEventListener("click", function (event) {
                 event.stopPropagation();
                 this.openImportFileSelector();

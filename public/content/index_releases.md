@@ -1,12 +1,12 @@
 ## 2026-01-11
 - IA : Moteur OCR avancé `qwen-2.5-vl-7b-instruct` 
 - Assist : Import des fichiers PDF
-- Assist : Import des médias avec transcriptions
+- Assist : Import des médias avec transcription
 - Mémo : Bibliothèque en barre latérale
 - Mémo : Import des fichiers JSON
 
 ## 2026-01-09
-- Mémo : Retranscription vocale avec AssemblyAI
+- Mémo : Enregistrement vocale et partage d'écran avec transcription
 - Mémo : Bibliothèque en barre latérale
 - Assist : Mémoire, références et citations 
 
