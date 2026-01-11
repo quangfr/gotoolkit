@@ -159,6 +159,10 @@
         return hasKey || hasProxy;
     }
 
+    function isOfflineOcrDisabled() {
+        return Boolean(global?.GoToolkitSiteConfig?.get?.("memo.ocr.disableOffline", false));
+    }
+
     function normalizeText(value) {
         return (value || "")
             .replace(/\s+\n/g, "\n")
@@ -378,6 +382,44 @@
             blurScore: Math.round(blurScore * 100) / 100,
             needsPreprocess
         };
+    }
+
+    function isLikelyEnFrText(text) {
+        const sample = (text || "").toLowerCase();
+        if (!sample.trim()) return false;
+        const words = sample.match(/[a-zàâçéèêëîïôûùüÿœ]+/gi) || [];
+        if (words.length < 6) return false;
+        const alphaMatches = sample.match(/[a-zàâçéèêëîïôûùüÿœ]/gi) || [];
+        const nonSpaceChars = sample.replace(/\s+/g, "");
+        if (nonSpaceChars.length) {
+            const alphaRatio = alphaMatches.length / nonSpaceChars.length;
+            if (alphaRatio < 0.55) return false;
+            const noiseMatches = sample.match(/[^\p{L}\p{N}\s.,;:!?'"()\-]/giu) || [];
+            const noiseRatio = noiseMatches.length / nonSpaceChars.length;
+            if (noiseRatio > 0.2) return false;
+        }
+        const hits = {
+            en: 0,
+            fr: 0
+        };
+        const enCommon = new Set([
+            "the", "and", "of", "to", "in", "is", "for", "that", "with", "on",
+            "this", "it", "as", "are", "was", "be", "by", "from", "or", "at",
+            "not", "your", "we", "you", "i", "they", "their", "have", "has", "can"
+        ]);
+        const frCommon = new Set([
+            "le", "la", "les", "et", "de", "des", "un", "une", "du", "pour", "dans",
+            "ce", "ces", "sur", "par", "avec", "pas", "que", "qui", "est", "sont",
+            "au", "aux", "en", "il", "elle", "nous", "vous", "ils", "elles", "mais"
+        ]);
+        words.forEach((word) => {
+            if (enCommon.has(word)) hits.en += 1;
+            if (frCommon.has(word)) hits.fr += 1;
+        });
+        const total = words.length;
+        const enRatio = hits.en / total;
+        const frRatio = hits.fr / total;
+        return enRatio >= 0.04 || frRatio >= 0.04;
     }
 
     async function preprocessCanvasWithOpenCv(canvas) {
@@ -2766,30 +2808,33 @@
             let canvas = null;
             let quality = null;
             let tesseractText = "";
+            const offlineDisabled = isOfflineOcrDisabled();
             try {
                 canvas = await fileToCanvas(file);
                 quality = analyzeCanvasQuality(canvas);
-                if (quality.needsPreprocess) {
-                    try {
-                        await preprocessCanvasWithOpenCv(canvas);
-                        quality.preprocessApplied = true;
-                    } catch (err) {
-                        quality.preprocessFailed = true;
-                        emitDocumentsImportMessage(
-                            `${fileName || "Image"} : Le traitement d'image a échoué`,
-                            true
-                        );
+                if (!offlineDisabled) {
+                    if (quality.needsPreprocess) {
+                        try {
+                            await preprocessCanvasWithOpenCv(canvas);
+                            quality.preprocessApplied = true;
+                        } catch (err) {
+                            quality.preprocessFailed = true;
+                            emitDocumentsImportMessage(
+                                `${fileName || "Image"} : Le traitement d'image a échoué`,
+                                true
+                            );
+                        }
                     }
+                    const worker = await getOcrWorker();
+                    const target = canvas || file;
+                    const result = await worker.recognize(target);
+                    tesseractText = (result?.data?.text || "").trim();
                 }
-                const worker = await getOcrWorker();
-                const target = canvas || file;
-                const result = await worker.recognize(target);
-                tesseractText = (result?.data?.text || "").trim();
             } catch (err) {
                 tesseractText = "";
             }
 
-            if (tesseractText.length >= 20) {
+            if (!offlineDisabled && tesseractText.length >= 20 && isLikelyEnFrText(tesseractText)) {
                 return {
                     text: tesseractText,
                     qualityMetrics: { type: "image", ...(quality || {}) }
@@ -2811,7 +2856,7 @@
                 }
             }
 
-            if (tesseractText) {
+            if (!offlineDisabled && tesseractText) {
                 return {
                     text: tesseractText,
                     qualityMetrics: { type: "image", ...(quality || {}) }
@@ -2824,12 +2869,15 @@
         async extractPdfOcrText(pdfResult, fileName = "") {
             if (!this.pdfjs || !pdfResult?.pdfBuffer) return "";
             const pdf = await this.pdfjs.getDocument({ data: pdfResult.pdfBuffer }).promise;
+            const offlineDisabled = isOfflineOcrDisabled();
             let worker = null;
-            try {
-                worker = await getOcrWorker();
-            } catch (err) {
-                const label = fileName ? ` (${fileName})` : "";
-                throw new Error(`OCR échoué${label}`);
+            if (!offlineDisabled) {
+                try {
+                    worker = await getOcrWorker();
+                } catch (err) {
+                    const label = fileName ? ` (${fileName})` : "";
+                    throw new Error(`OCR échoué${label}`);
+                }
             }
             const pages = pdfResult.pdfPages || [];
             const output = [];
@@ -2840,7 +2888,7 @@
                 const page = await pdf.getPage(pageIndex);
                 const pageInfo = pages[pageIndex - 1];
                 const pageText = pageInfo?.text || "";
-                if (!shouldOcrText(pageText)) {
+                if (!offlineDisabled && !shouldOcrText(pageText)) {
                     output.push(pageText.trim());
                     continue;
                 }
@@ -2852,16 +2900,18 @@
                 try {
                     await page.render({ canvasContext: context, viewport }).promise;
                     let quality = analyzeCanvasQuality(canvas);
-                    if (quality.needsPreprocess) {
-                        try {
-                            await preprocessCanvasWithOpenCv(canvas);
-                            quality.preprocessApplied = true;
-                        } catch (err) {
-                            quality.preprocessFailed = true;
-                            emitDocumentsImportMessage(
-                                `${fileName || "Document"} : Le traitement d'image a échoué`,
-                                true
-                            );
+                    if (!offlineDisabled) {
+                        if (quality.needsPreprocess) {
+                            try {
+                                await preprocessCanvasWithOpenCv(canvas);
+                                quality.preprocessApplied = true;
+                            } catch (err) {
+                                quality.preprocessFailed = true;
+                                emitDocumentsImportMessage(
+                                    `${fileName || "Document"} : Le traitement d'image a échoué`,
+                                    true
+                                );
+                            }
                         }
                     }
                     metrics.push({
@@ -2869,14 +2919,16 @@
                         ...(quality || {})
                     });
                     let ocrText = "";
-                    try {
-                        const ocr = await worker.recognize(canvas);
-                        ocrText = (ocr?.data?.text || "").trim();
-                    } catch (err) {
-                        ocrText = "";
+                    if (!offlineDisabled && worker) {
+                        try {
+                            const ocr = await worker.recognize(canvas);
+                            ocrText = (ocr?.data?.text || "").trim();
+                        } catch (err) {
+                            ocrText = "";
+                        }
                     }
                     output.push(ocrText);
-                    if (ocrText.length < 20) {
+                    if (offlineDisabled || ocrText.length < 20 || !isLikelyEnFrText(ocrText)) {
                         fallbackIndexMap.set(fallbackImages.length, pageIndex - 1);
                         fallbackImages.push(canvas);
                     }

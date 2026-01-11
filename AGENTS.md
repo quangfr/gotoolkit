@@ -1,7 +1,7 @@
 # GoToolkit contributor cheat sheet (concise)
 
 ## Structure
-- Static HTML modules in `public/`; only `src/draw-editor` is bundled (esbuild → `public/js/draw.bundle.js`).
+- Static HTML modules in `public/`;
 - Workers live in `workers/` (OpenAI proxy, sharing, feedback, AssemblyAI).
 
 ## Navigation + cache
@@ -34,6 +34,8 @@ Only `public/js` may touch `window`:
   - Formats: 12 supported (PDF, DOCX, PPTX, XLSX, JSON, CSV, TSV, TXT, MD, ODF, RTF, logs). Format-specific extraction + chunking strategies.
   - Ingestion: File deduplication (fileHash), heuristic chunking (small/medium based on format), batch embedding, sharding by docId for per-file stats + deletion.
   - Retrieval: `vectorSearch()` embeds query → cosine similarity scoring → min-score filtering (0.1) → top-K (10). Fallback: `searchKeywordCandidates()` for pre-filtering.
+  - Text recognition: Tesseract.js OCR with optional OpenCV preprocessing; Qwen vision fallback via OpenRouter when configured.
+  - Voice recognition: AssemblyAI proxy for media transcription; imported media stores transcript text only.
 
 ## Sharing
 - `public/js/share-worker-client.js` builds URLs from `GO_TOOLKIT_SHARE_API_URL(S)`.

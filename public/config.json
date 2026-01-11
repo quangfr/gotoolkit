@@ -11,6 +11,9 @@
       "showChunksForMarkdown": false,
       "showChunksForPdf": true,
       "showChunksForOtherFormats": true
+    },
+    "ocr": {
+      "disableOffline": false
     }
   },
   "features": {
