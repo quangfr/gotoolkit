@@ -1,63 +1,62 @@
 ## 2026-01-11
-- IA : Moteur OCR avancé `qwen-2.5-vl-7b-instruct` 
+- IA : Reconnaissance texte OCR avec `qwen-2.5-vl-7b-instruct` 
 - Assist : Import des fichiers PDF
 - Assist : Import des médias avec transcription
-- Mémo : Bibliothèque en barre latérale
-- Mémo : Import des fichiers JSON
+- Assist : Support des fichiers JSON
+- Mémo : Ouverture de documents en barre latérale
 
 ## 2026-01-09
 - Mémo : Enregistrement vocale et partage d'écran avec transcription
 - Mémo : Bibliothèque en barre latérale
-- Assist : Mémoire, références et citations 
+- Assist : Mode `↬ Demander` en discussion avec références et citations 
 
 ## 2026-01-08
-- Mémo : Mode "Importer" pour les fichiers
-- Mémo : Sélection du texte à gérer par l'IA
+- Mémo : Mode `⤷ Importer` pour les fichiers
+- Mémo : Édition avec sélection du texte
 
 ## 2026-01-06
-- Module [Memo](/memo) pour la création de notes assistée IA
-- Mémo : Mode "Éditer" en direct ou "Suggérer" annoté
+- Module `Memo` pour la création de notes assistée IA
+- Mémo : Mode `✂ Éditer` en direct ou `✦ Suggérer` avec annotation
 
 ## 2026-01-04
-- Module Assist pour analyser les documents avec l'IA
+- Module `Assist` pour discuter avec l'IA
 - IA : Moteur `gpt-oss-120b` plus rapide et sans rétention de données
 
 ## 2025-12-29
-- Accueil : Ajout des notes de version et de la feuille de route
+- Accueil : Ajout des `Notes de version` et de la `Feuille de route`
 
 ## 2025-12-28
-- Module Voice : audio, webcam et partage d’écran
-- Voice : Transcription vocale AssemblyAI
+- Module `Voice` pour enregistrer audio et partage d’écran
+- IA : Transcription vocale avec `AssemblyAI`
 
 ## 2025-12-27
-- IA : Choix du fournisseur IA OpenRouter
-- Accueil : Clarification des [CGU](/#legal)
+- IA : Choix du fournisseur IA `OpenRouter`
+- Accueil : Clarification des `CGU`
 
 ## 2025-12-24
-- Ajout du Feedback dans tous les modules
-- Liste des demandes de feedback (admin)
+- Feedback : Généralisation dans tous les modules
+- Feedback : Liste des demandes de feedback (admin)
 
 ## 2025-12-20
 - Grid : Nouveaux modèles pour le mapping et la structure des données
 
 ## 2025-12-17
-- Module [Grid](/grid?v=v) avec génération de données
+- Module `Grid` pour génération de données
 
 ## 2025-12-16
 - Brouillon, stockage local et bibliothèque en local
 
 ## 2025-12-08
-- Enrichissement des templates
-- Accueil : Possibilité de donner du [Feedback](/#feedback?v=v)
+- Module `Feedback` pour reccueillir les bugs et suggestions
 
 ## 2025-12-04
-- Module [Draw](/draw?v=v) : diagrammes de classe, de flux et séquentiel
+- Module `Draw` : diagrammes de classe, de flux et séquentiel
 
 ## 2025-11-30
-- Module Timeline (déprécié): planning temporel de projet ou de produit 
+- Module `Timeline` (déprécié): planning temporel de projet ou de produit 
 
 ## 2025-11-24
-- Accueil : Partage des liens de document et espace en ligne
+- Module `Accueil` avec partage des liens de document et espace en ligne
 
 ## 2025-11-22
-- Module Canvas (déprécié) : champs de saisie structuré
+- Module `Canvas` (déprécié) : champs de saisie structuré

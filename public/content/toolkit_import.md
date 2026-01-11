@@ -54,23 +54,11 @@ This document summarizes the document ingestion pipeline, OCR/voice recognition 
 
 ## OCR Strategy (Text Recognition)
 
-### Primary OCR
-- Tesseract.js (fra+eng) via lazy-loaded worker.
-
-### Quality Detection + Preprocessing
-- Canvas quality heuristics (contrast variance + Laplacian blur detection).
-- If low quality: optional OpenCV.js preprocessing (adaptive threshold + equalize).
-- On preprocessing failure: emits `goToolkitDocumentsImportMessage` for toast.
-
-### Language Heuristic
-- If OCR output is not likely French/English (common-word heuristic), trigger Qwen fallback when available.
-- If fallback fails, the Tesseract output is kept unless empty.
-
-### Vision Model Fallback (Qwen)
-- If Tesseract result is short (< 20 chars) or fails, and OpenRouter is available:
-  - Uses Qwen 2.5 VL (`qwen/qwen-2.5-vl-7b-instruct`), batched up to 5 images per call.
-  - Uses prompt from `GoToolkitChatPrompt.PRESETS.extract`.
-  - Errors emit `OpenRouter : Traitement d'image impossible`.
+### Cloud OCR (Qwen only)
+- Uses Qwen 2.5 VL via OpenRouter: `qwen/qwen-2.5-vl-7b-instruct`.
+- Images are batched up to 5 per request.
+- Prompt comes from `GoToolkitChatPrompt.PRESETS.extract`.
+- Errors emit: `OpenRouter : Traitement d'image impossible`.
 
 ---
 

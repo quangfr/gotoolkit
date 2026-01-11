@@ -1028,6 +1028,40 @@
         });
     }
 
+    function createKnowledgeManifestCacheStore() {
+        var factory = global.goToolkitStorageService?.createStore;
+        if (typeof factory !== "function") {
+            return {
+                read: async function () { return []; },
+                write: async function (value) { return value || []; }
+            };
+        }
+        return factory({
+            storeName: "knowledge-manifest-cache",
+            localStorageKey: "goToolkit.knowledge.manifest.cache",
+            defaultValue: function () { return []; },
+            normalize: function (value) {
+                if (!Array.isArray(value)) return null;
+                return value
+                    .map(function (entry) {
+                        if (!entry || typeof entry !== "object") return null;
+                        return {
+                            path: entry.path || "",
+                            name: entry.name || "",
+                            abstract: entry.abstract || "",
+                            updatedAt: entry.updatedAt || "",
+                            fileName: entry.fileName || "",
+                            source: entry.source || "Web"
+                        };
+                    })
+                    .filter(function (entry) {
+                        return entry.path && entry.fileName;
+                    });
+            },
+            logPrefix: "goToolkit.knowledge.manifest.cache"
+        });
+    }
+
     function createKnowledgeOverridesStore() {
         var factory = global.goToolkitStorageService?.createStore;
         if (typeof factory !== "function") {
@@ -1173,6 +1207,7 @@
         this.knowledgeDocumentNames = [];
         this.knowledgeDocumentCount = 0;
         this.knowledgeManifestStore = createKnowledgeManifestStore();
+        this.knowledgeManifestCacheStore = createKnowledgeManifestCacheStore();
         this.knowledgeOverridesStore = createKnowledgeOverridesStore();
         this.knowledgeDescriptionOverridesStore = createKnowledgeDescriptionOverridesStore();
         this.knowledgeLocalDocsStore = createKnowledgeLocalDocsStore();
@@ -1255,6 +1290,7 @@
             this.textarea.focus();
         }
         this.syncKnowledgeModalVisibility();
+        this.ensureKnowledgeIndexWarm();
     };
 
     AssistSidebar.prototype.syncKnowledgeModalVisibility = function () {
@@ -2760,22 +2796,6 @@
             menu.appendChild(item);
         }, this);
 
-        // Add import button for memo.html only
-        if (CHAT_APP_ID === "memo") {
-
-
-            var importButton = document.createElement("button");
-            importButton.type = "button";
-            importButton.className = "chat-prompt-menu-item";
-            importButton.textContent = "";
-            importButton.addEventListener("click", function (event) {
-                event.stopPropagation();
-                this.openImportFileSelector();
-                this.closePromptDropdown();
-            }.bind(this));
-            menu.appendChild(importButton);
-        }
-
         wrapper.appendChild(button);
         wrapper.appendChild(menu);
 
@@ -2978,6 +2998,39 @@
         this.refreshKnowledgeModal({ skipAutoReindex: true }).catch(function (err) {
             console.warn("Knowledge prefetch failed", err);
         });
+        this.ensureKnowledgeIndexWarm();
+    };
+
+    AssistSidebar.prototype.ensureKnowledgeIndexWarm = function () {
+        if (this.knowledgeIndexing || !this.docManager) return;
+        this.docManager.waitReady?.()
+            .then(function () {
+                return this.refreshKnowledgeModal({ skipAutoReindex: true });
+            }.bind(this))
+            .then(async function () {
+                var entries = Array.isArray(this.knowledgeManifestEntries) ? this.knowledgeManifestEntries : [];
+                if (!entries.length) return;
+                var selectionSet = this.knowledgeModalSelectionSet instanceof Set
+                    ? this.knowledgeModalSelectionSet
+                    : new Set();
+                if (!selectionSet.size) return;
+                var docs = await this.docManager.getDocuments(this.knowledgeConversationId);
+                var knowledgeDocs = Array.isArray(docs) ? docs.filter(function (doc) {
+                    return doc && doc.conversationId === this.knowledgeConversationId;
+                }.bind(this)) : [];
+                var keywordSize = 0;
+                if (typeof this.docManager.getKeywordIndexSize === "function") {
+                    keywordSize = await this.docManager.getKeywordIndexSize(this.knowledgeConversationId);
+                }
+                var needsReindex = !knowledgeDocs.length || keywordSize === 0;
+                if (!needsReindex) return;
+                this.reindexKnowledgeSelection(entries, selectionSet).catch(function (err) {
+                    console.warn("Background knowledge reindex failed", err);
+                });
+            }.bind(this))
+            .catch(function (err) {
+                console.warn("Knowledge warmup failed", err);
+            });
     };
 
     AssistSidebar.prototype.getFileImportAcceptString = function () {
@@ -4404,10 +4457,21 @@
 
     AssistSidebar.prototype.loadKnowledgeManifest = async function () {
         var manifest = await this.fetchContentManifest();
-        if (!Array.isArray(manifest)) {
+        var entries = Array.isArray(manifest) ? manifest : [];
+        if (!entries.length && this.knowledgeManifestCacheStore?.read) {
+            try {
+                var cached = await this.knowledgeManifestCacheStore.read();
+                if (Array.isArray(cached) && cached.length) {
+                    return this.applyKnowledgeOverrides(this.deduplicateKnowledgeWebEntries(cached));
+                }
+            } catch (err) {
+                console.warn("Knowledge manifest cache read failed", err);
+            }
+        }
+        if (!entries.length) {
             return [];
         }
-        var entries = manifest
+        var normalized = entries
             .map(function (entry) {
                 var path = entry?.path || "";
                 var fileName = (entry?.fileName || this.getFileNameFromPath(path)).trim();
@@ -4423,7 +4487,15 @@
             .filter(function (entry) {
                 return entry.path && entry.fileName && entry.name;
             });
-        return this.applyKnowledgeOverrides(this.deduplicateKnowledgeWebEntries(entries));
+        var deduped = this.deduplicateKnowledgeWebEntries(normalized);
+        if (this.knowledgeManifestCacheStore?.write) {
+            try {
+                await this.knowledgeManifestCacheStore.write(deduped);
+            } catch (err) {
+                console.warn("Knowledge manifest cache write failed", err);
+            }
+        }
+        return this.applyKnowledgeOverrides(deduped);
     };
 
     AssistSidebar.prototype.fetchCurrentManifest = async function () {
@@ -6594,13 +6666,44 @@
                 }
             }
             if (doc?.id) {
-                if (isPdfDocument(doc) && !getConfig("memo.documentPreview.showChunksForPdf", false)) {
-                    if (this.showPdfPreview(doc)) {
+                var docChunks = await this.getDocumentChunks(doc.id, doc.conversationId);
+                this.renderDocumentText(docChunks, { doc: doc });
+                return;
+            }
+            var fetched = await this.fetchKnowledgeDocument(entry);
+            if (fetched) {
+                var fetchedType = (fetched.type || "").toLowerCase();
+                if (fetchedType.includes("pdf")) {
+                    try {
+                        if (this.previewBodyEl) {
+                            this.previewBodyEl.innerHTML = "<div class=\"chat-doc-preview__loading\">Extraction OCR…</div>";
+                        }
+                        var extractionResult = await this.docManager.extractText(fetched);
+                        var chunkInfo = this.docManager.buildChunkList(fetched, extractionResult);
+                        var virtualDoc = {
+                            name: fetched.name || entry.name || "Document",
+                            sourceFileName: fetched.name || entry.name || "Document",
+                            mime: fetchedType || "application/pdf",
+                            rawText: extractionResult?.text || ""
+                        };
+                        this.renderDocumentTextProgressive(chunkInfo.chunkList || [], { doc: virtualDoc });
+                        return;
+                    } catch (err) {
+                        console.warn("PDF preview extraction failed", err);
+                    }
+                }
+                var rawText = await fetched.text();
+                if (fetchedType.includes("markdown") || this.detectFileTypeFromPath(entry.path) === "markdown") {
+                    var html = renderDocumentMarkdown(rawText);
+                    this.previewBodyEl.innerHTML = html || "<div style='color: #999; font-style: italic;'>(extrait indisponible)</div>";
+                    return;
+                }
+                if (fetchedType.includes("html")) {
+                    if (this.showHtmlPreview(rawText)) {
                         return;
                     }
                 }
-                var docChunks = await this.getDocumentChunks(doc.id, doc.conversationId);
-                this.renderDocumentText(docChunks, { doc: doc });
+                this.previewBodyEl.innerHTML = this.formatPreviewText(rawText);
                 return;
             }
         } catch (err) {
@@ -6978,6 +7081,37 @@
         this.previewBodyEl.innerHTML = html.join("");
     };
 
+    AssistSidebar.prototype.renderDocumentTextProgressive = function (chunks, options) {
+        if (!this.previewBodyEl) return;
+        var opts = options || {};
+        var items = Array.isArray(chunks) ? chunks.slice() : [];
+        if (!items.length) {
+            this.renderDocumentText(items, opts);
+            return;
+        }
+        var batchSize = 10;
+        var index = 0;
+        this.previewBodyEl.innerHTML = "";
+        var appendBatch = function () {
+            var slice = items.slice(index, index + batchSize);
+            index += batchSize;
+            var html = this.formatPreviewText(
+                slice.map(function (entry) { return String(entry?.text || ""); }).filter(Boolean).join("\n\n"),
+                null,
+                opts
+            );
+            var container = document.createElement("div");
+            container.innerHTML = html;
+            while (container.firstChild) {
+                this.previewBodyEl.appendChild(container.firstChild);
+            }
+            if (index < items.length) {
+                requestAnimationFrame(appendBatch);
+            }
+        }.bind(this);
+        requestAnimationFrame(appendBatch);
+    };
+
     AssistSidebar.prototype.updateTabIndicator = function () {
         if (!this.tabIndicator) return;
 
@@ -7021,6 +7155,7 @@
         if (this.isOpen) {
             this.open();
         }
+        this.ensureKnowledgeIndexWarm();
     };
 
     var GoToolkitAssist = {

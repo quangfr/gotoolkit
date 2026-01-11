@@ -1844,12 +1844,13 @@ label {
 
 .chat-doc-preview__body pre,
 .chat-doc-preview__body code {
-  background: #0f172a;
-  color: #f8fafc;
+  background-color: #f5f2eb;
+  color: black;
+  border-radius: 4px;
   padding: 0.2rem 0.4rem;
   border-radius: 4px;
   font-family: "JetBrains Mono", "Fira Code", "SFMono-Regular", monospace;
-  font-size: 0.7rem;
+  font-size: 12px;
 }
 
 .chat-doc-preview__body pre {

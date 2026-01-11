@@ -11,10 +11,10 @@
     "updatedAt": "2026-01-10T00:00:00Z"
   },
   {
-    "name": "RAG Architecture",
-    "abstract": "Architecture du système RAG : stockage IndexedDB, extraction de documents, chunking, embeddings quantifiés, recherche sémantique et récupération.",
-    "path": "content/toolkit_rag.md",
-    "updatedAt": "2026-01-10T00:00:00Z"
+    "name": "Toolkit Import",
+    "abstract": "Import & OCR/Transcription : formats supportés, stockage IndexedDB, chunking, embeddings, OCR et stratégie voix.",
+    "path": "content/toolkit_import.md",
+    "updatedAt": "2026-01-11T00:00:00Z"
   },
   {
     "name": "Go-Live 101",

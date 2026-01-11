@@ -1,7 +1,3 @@
-## Module Assist `T1 2026`
-- Reconnaissance texte des scans PDF `À étudier`
-- Transcription des fichiers audios `À planifier`
-
 ## Module Mémo `T1 2026`
 - Intégration Draw dans un document `À étudier`
 
