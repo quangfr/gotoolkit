@@ -683,9 +683,9 @@
         frameIndex: 0
     };
 
-    function startCharacterCounterToaster(characterCount) {
-        if (typeof characterCount !== 'number' || characterCount < 0) {
-            characterCount = 0;
+    function startCharacterCounterToaster(tokenCount) {
+        if (typeof tokenCount !== 'number' || tokenCount < 0) {
+            tokenCount = 0;
         }
 
         var toasterEl = global.document?.getElementById("aiRequestCounterToaster");
@@ -694,9 +694,11 @@
         // Stop any existing timer
         stopCharacterCounterToaster();
 
-        // Calculate duration: 1000 chars = 4 seconds = 4000ms
-        var durationMs = Math.round((characterCount / 1000) * 4000);
-        durationMs = Math.max(durationMs, 1000); // Minimum 1 second
+        // Calculate duration: 40000 chars = 10000 tokens = 20 seconds
+        // 4 chars = 1 token, so: durationMs = (tokenCount * 4) / 2 = tokenCount * 2
+        // Simplified: durationMs = tokenCount * 2
+        var durationMs = Math.round(tokenCount * 2);
+        durationMs = Math.max(durationMs, 5000); // Minimum 5 seconds (2500 tokens)
 
         aiCounterToasterState.isRunning = true;
         aiCounterToasterState.remaining = durationMs;
@@ -2580,16 +2582,9 @@
             // Store the full AI request payload for debugging/visibility
             storeLastAIRequest(payload);
 
-            // Calculate total payload character count and start toaster
-            var totalPayloadChars = 0;
-            if (Array.isArray(payload.messages)) {
-                payload.messages.forEach(function (msg) {
-                    if (msg && typeof msg.content === "string") {
-                        totalPayloadChars += msg.content.length;
-                    }
-                });
-            }
-            startCharacterCounterToaster(totalPayloadChars);
+            // Calculate total payload token count and start toaster
+            var totalPayloadTokens = estimatePayloadTokens(payload);
+            startCharacterCounterToaster(totalPayloadTokens);
 
             requestStart = performance.now();
             var result = await global.GoToolkitIA.chatCompletion({

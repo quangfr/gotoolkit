@@ -304,7 +304,7 @@
         }
 
         .editor-wrap {
-            padding: 18px;
+            padding: 0px 10px 10px 10px;
             flex: 1;
             overflow-y: auto;
             background: #fff;
@@ -541,8 +541,8 @@
             <div class="app-header">
                 <div class="tabs-actions">
                     <button id="documentExplorerToggle" class="app-home-link" type="button"
-                        title="Afficher la bibliothèque" aria-expanded="false" aria-controls="documentExplorer">⤷
-                        Ouvrir</button>
+                        title="Afficher la bibliothèque" aria-expanded="false"
+                        aria-controls="documentExplorer">⤷</button>
                     <div class="nav-switch">
                         <button id="navSwitcherBtn" class="nav-switch-btn" type="button" aria-haspopup="true"
                             aria-expanded="false">⊞ Mémo ▾</button>
@@ -566,8 +566,6 @@
                     </div>
                 </div>
                 <div class="global-actions">
-                    <button id="gtTemplateModalTrigger" class="btn" type="button" aria-label="Choisir un modèle"
-                        title="⊞ Modèles">⊞ Modèles</button>
                     <div class="menu-trigger" id="fileMenuTrigger">
                         <button id="fileMenuBtn" class="btn" type="button" aria-label="Document">🗋 Document</button>
                         <div class="context-menu" id="fileMenu">
@@ -575,16 +573,16 @@
                                 <button id="memoOpenImportBtn" type="button" class="menu-panel-btn">⤷ Importer</button>
                                 <button id="saveDocumentBtn" type="button" class="menu-panel-btn">🖫
                                     Enregistrer</button>
+                                <button id="shareBtn" type="button" class="menu-panel-btn">☍ Partager</button>
                                 <button id="renameDocumentBtn" type="button" class="menu-panel-btn">✎ Renommer</button>
                                 <button id="deleteDocumentBtn" type="button" class="menu-panel-btn">⊗ Supprimer</button>
+                                <div class="menu-separator"></div>
+                                <button id="gtTemplateModalTrigger" type="button" class="menu-panel-btn">⊞
+                                    Modèles</button>
+                                <div class="menu-separator"></div>
                                 <button id="infoButton" type="button" class="menu-panel-btn">⎉ À propos</button>
                             </div>
                         </div>
-                    </div>
-                    <div class="menu-trigger" id="shareMenuTrigger">
-                        <button id="shareBtn" class="btn btn-secondary" type="button" aria-label="Partager"
-                            title="Lien de partage">☍ Partage</button>
-                        <div data-share-menu-slot></div>
                     </div>
                     <button id="assistLauncherBtn" class="btn btn-secondary" type="button" title="⌬ Assist"
                         data-app="assist">

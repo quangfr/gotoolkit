@@ -171,8 +171,8 @@ body.app-body {
   border: 1px solid var(--app-border, #dfe3f5);
   background: var(--app-surface, #ffffff);
   color: var(--app-primary-strong, #1f2a56);
-  padding: 6px 10px;
-  border-radius: 10px;
+  padding: 6px 6px;
+  border-radius: 8px;
   font-size: 12px;
   cursor: pointer;
   transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
