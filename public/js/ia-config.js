@@ -12,6 +12,7 @@
     var STORAGE_KEYS_OPENROUTER = {
         API_KEY: "go-toolkit-openrouter-key",
         MODEL: "go-toolkit-openrouter-model",
+        OCR_MODEL: "go-toolkit-openrouter-ocr-model",
         SORT: "go-toolkit-openrouter-sort"
     };
 
@@ -23,6 +24,7 @@
         WEBLLM_MODEL: "Llama-3.2-3B-Instruct-q4f16_1-MLC",
         CONTEXT_WINDOW: "0",
         OPENROUTER_MODEL: "openai/gpt-oss-120b",
+        OPENROUTER_OCR_MODEL: "qwen/qwen-2.5-vl-7b-instruct",
         OPENROUTER_SORT: "price"
     };
 
@@ -215,6 +217,20 @@
                 normalized = DEFAULTS.OPENROUTER_MODEL;
             }
             safeStorageWrite(STORAGE_KEYS_OPENROUTER.MODEL, normalized);
+        },
+        getOpenRouterOcrModel: function () {
+            var model = safeStorageRead(STORAGE_KEYS_OPENROUTER.OCR_MODEL);
+            if (!model) {
+                model = DEFAULTS.OPENROUTER_OCR_MODEL;
+            }
+            return model;
+        },
+        setOpenRouterOcrModel: function (value) {
+            var normalized = (value || "").trim();
+            if (!normalized) {
+                normalized = DEFAULTS.OPENROUTER_OCR_MODEL;
+            }
+            safeStorageWrite(STORAGE_KEYS_OPENROUTER.OCR_MODEL, normalized);
         },
         getOpenRouterSort: function () {
             var stored = safeStorageRead(STORAGE_KEYS_OPENROUTER.SORT);

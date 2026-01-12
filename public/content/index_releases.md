@@ -1,5 +1,5 @@
-## 2026-01-11
-- IA : Reconnaissance texte OCR avec `qwen-2.5-vl-7b-instruct` 
+## 2026-01-12
+- IA : Reconnaissance texte OCR avec `qwen-2.5-vl-7b-instruct` sur les images, PDF et DOCX et PPTX mixtes
 - Assist : Import des fichiers PDF
 - Assist : Import des médias avec transcription
 - Assist : Support des fichiers JSON

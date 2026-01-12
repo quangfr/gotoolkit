@@ -714,7 +714,7 @@
 
         .feedback-form .field-row {
             display: flex;
-            gap: 10px;
+            gap: 0px;
             flex-wrap: wrap;
         }
 
@@ -723,7 +723,7 @@
         }
 
         .feedback-modal.settings-modal .feedback-form .field-row {
-            gap: 6px;
+            gap: 0px;
         }
 
         .feedback-helper {
@@ -1657,9 +1657,16 @@
                                 </div>
                                 <div class="field-row">
                                     <label style="width:100%">
-                                        <span class="label-title">Modèle OpenRouter</span>
+                                        <span class="label-title">Modèle IA</span>
                                         <input id="openrouterModelInput" type="text"
                                             placeholder="@preset/gotoolkit ou openai/gpt-oss-120b" />
+                                    </label>
+                                </div>
+                                <div class="field-row" id="openrouterOcrModelRow">
+                                    <label style="width:100%">
+                                        <span class="label-title">Modèle OCR</span>
+                                        <input id="openrouterOcrModelInput" type="text"
+                                            placeholder="qwen/qwen-2.5-vl-7b-instruct" />
                                     </label>
                                 </div>
                                 <div id="openrouterExtras" style="display:none; margin-top:8px;">
@@ -3591,6 +3598,16 @@
             }
         }
 
+        function populateOpenrouterOcrModelInput() {
+            if (!openrouterOcrModelInput) return;
+            const stored = (window.GoToolkitIAConfig && typeof window.GoToolkitIAConfig.getOpenRouterOcrModel === "function"
+                ? window.GoToolkitIAConfig.getOpenRouterOcrModel()
+                : "") || (window.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_OCR_MODEL || "");
+            if (stored) {
+                openrouterOcrModelInput.value = stored;
+            }
+        }
+
         async function installWebllmModel() {
             if (!window.GoToolkitWebLLM) {
                 showToast("WebLLM indisponible dans ce navigateur.", true);
@@ -4103,6 +4120,8 @@
         const openrouterModelLabelEl = document.getElementById("openrouterModelLabel");
         const openrouterVerifyBtn = document.getElementById("openrouterVerifyBtn");
         const openrouterModelInput = document.getElementById("openrouterModelInput");
+        const openrouterOcrModelInput = document.getElementById("openrouterOcrModelInput");
+        const openrouterOcrModelRow = document.getElementById("openrouterOcrModelRow");
         const chatPromptTextarea = document.getElementById("chatPromptTextarea");
         const chatPromptPresetSelect = document.getElementById("chatPromptPresetSelect");
         const CHAT_PROMPT_STORAGE_KEY = "goToolkit.chat.prompt";
@@ -4112,6 +4131,7 @@
 
         const DEFAULT_AI_BACKEND = "openrouter";
         populateOpenrouterModelInput();
+        populateOpenrouterOcrModelInput();
         const VERSION_QUERY_PARAM = "v";
         const DATE_VERSION_PATTERN = /^\d{4}\.\d{2}\.\d{2}(?:\.\d+)?$/;
         (function ensureDefaultAIBackend() {
@@ -4213,6 +4233,7 @@
             if (webllmSettingsEl) webllmSettingsEl.style.display = val === "webllm" ? "" : "none";
             if (val === "openrouter") {
                 populateOpenrouterModelInput();
+                populateOpenrouterOcrModelInput();
             }
             window.GoToolkitSelectedAIBackend = val;
         }
@@ -4222,6 +4243,9 @@
             const hasKey = Boolean((openrouterApiKeyInput.value || "").trim());
             const showExtras = hasKey && openrouterHasValidPrivateKey;
             openrouterExtras.style.display = showExtras ? "" : "none";
+            if (openrouterOcrModelRow) {
+                openrouterOcrModelRow.style.display = hasKey ? "" : "none";
+            }
         }
 
         function updateOllamaAddressUI() {
@@ -4365,6 +4389,12 @@
                     (window.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_MODEL || "");
                 if (openrouterModelInput && storedOpenRouterModel) {
                     openrouterModelInput.value = storedOpenRouterModel;
+                }
+                const storedOpenRouterOcrModel =
+                    (config && typeof config.getOpenRouterOcrModel === "function" ? config.getOpenRouterOcrModel() : "") ||
+                    (window.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_OCR_MODEL || "");
+                if (openrouterOcrModelInput && storedOpenRouterOcrModel) {
+                    openrouterOcrModelInput.value = storedOpenRouterOcrModel;
                 }
                 const dataCollectionDefault = window.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_DATA_COLLECTION || "deny";
                 const storedOpenRouterDataCollection =
@@ -4638,6 +4668,12 @@
                     (window.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_MODEL || "");
                 if (iaConfig && typeof iaConfig.setOpenRouterModel === "function") {
                     iaConfig.setOpenRouterModel(openrouterModelValue);
+                }
+                const openrouterOcrModelValue =
+                    (openrouterOcrModelInput?.value || "").trim() ||
+                    (window.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_OCR_MODEL || "");
+                if (iaConfig && typeof iaConfig.setOpenRouterOcrModel === "function") {
+                    iaConfig.setOpenRouterOcrModel(openrouterOcrModelValue);
                 }
                 const requiresOpenAi = Boolean(apiKey && apiKey.length);
                 if (requiresOpenAi && aiBackendSelect) {

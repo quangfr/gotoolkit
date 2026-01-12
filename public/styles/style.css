@@ -146,7 +146,7 @@ body.app-body {
 .settings-tab-panel {
   display: none;
   flex-direction: column;
-  gap: 10px;
+  gap: 4px;
 }
 
 .settings-tab-panel:not([hidden]) {

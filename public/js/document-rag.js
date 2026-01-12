@@ -135,7 +135,7 @@
     const OCR_QUALITY_CONTRAST_THRESHOLD = 30;
     const OCR_QUALITY_BLUR_THRESHOLD = 0.8;
     const OCR_LAPLACIAN_NORM = 1000;
-    const QWEN_VISION_MODEL = "qwen/qwen-2.5-vl-7b-instruct";
+    const DEFAULT_QWEN_VISION_MODEL = "qwen/qwen-2.5-vl-7b-instruct";
 
     function emitDocumentsImportMessage(message, isError) {
         if (typeof document === "undefined") return;
@@ -157,6 +157,16 @@
         const hasKey = Boolean(global.GoToolkitIAConfig?.getOpenRouterApiKey?.());
         const hasProxy = Boolean(global.GoToolkitIAConfig?.OPENROUTER_PROXY_ENDPOINT);
         return hasKey || hasProxy;
+    }
+
+    function resolveOpenRouterOcrModel() {
+        const hasKey = Boolean(global.GoToolkitIAConfig?.getOpenRouterApiKey?.());
+        const forceProxy = Boolean(global.GoToolkitForceOpenRouterProxy);
+        if (!hasKey || forceProxy) {
+            return DEFAULT_QWEN_VISION_MODEL;
+        }
+        const configured = global.GoToolkitIAConfig?.getOpenRouterOcrModel?.();
+        return (configured && configured.trim()) ? configured.trim() : DEFAULT_QWEN_VISION_MODEL;
     }
 
     function isOfflineOcrDisabled() {
@@ -511,7 +521,7 @@
     async function getQwenVisionWorker() {
         if (qwenVisionWorkerPromise) return qwenVisionWorkerPromise;
         qwenVisionWorkerPromise = Promise.resolve({
-            model: QWEN_VISION_MODEL
+            model: DEFAULT_QWEN_VISION_MODEL
         });
         return qwenVisionWorkerPromise;
     }
@@ -536,7 +546,7 @@
             throw new Error("OpenRouter : Service OCR indisponible");
         }
         const payload = {
-            model: QWEN_VISION_MODEL,
+            model: resolveOpenRouterOcrModel(),
             stream: false,
             messages: [{ role: "user", content }]
         };
@@ -1202,6 +1212,37 @@
         } catch (err) {
             return xmlContent.replace(/<[^>]+>/g, " ");
         }
+    }
+
+    function parseRelationships(xmlContent) {
+        if (!xmlContent) return {};
+        try {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(xmlContent, "application/xml");
+            const rels = {};
+            const nodes = doc.getElementsByTagName("Relationship");
+            for (let i = 0; i < nodes.length; i++) {
+                const rel = nodes[i];
+                const id = rel.getAttribute("Id");
+                const target = rel.getAttribute("Target");
+                const type = rel.getAttribute("Type") || "";
+                if (id && target && /\/image$/i.test(type)) {
+                    rels[id] = target;
+                }
+            }
+            return rels;
+        } catch (err) {
+            return {};
+        }
+    }
+
+    function resolveZipTarget(basePath, target) {
+        if (!target) return "";
+        let normalized = target.replace(/^\/+/, "");
+        while (normalized.startsWith("../")) {
+            normalized = normalized.slice(3);
+        }
+        return basePath + normalized;
     }
 
     function createSettingsStore() {
@@ -3068,8 +3109,67 @@
                 throw new Error("Fichier DOCX invalide: word/document.xml non trouvé");
             }
             const raw = await entry.async("string");
-            const text = extractTextFromXml(raw);
-            return text || "";
+            const relsEntry = zip.file("word/_rels/document.xml.rels");
+            const relsRaw = relsEntry ? await relsEntry.async("string") : "";
+            const relsMap = parseRelationships(relsRaw);
+            try {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(raw, "application/xml");
+                const body = doc.getElementsByTagName("w:body")[0] || doc.documentElement;
+                const pieces = [];
+                const appendText = (value) => {
+                    if (!value) return;
+                    pieces.push(value);
+                };
+                const handleImage = async (embedId) => {
+                    if (!embedId || !relsMap[embedId]) return;
+                    const target = resolveZipTarget("word/", relsMap[embedId]);
+                    const imageEntry = zip.file(target);
+                    if (!imageEntry) return;
+                    try {
+                        const blob = await imageEntry.async("blob");
+                        const ocr = await this.extractImageWithOcr(blob, target);
+                        appendText(ocr?.text || "");
+                    } catch (err) {
+                        // ignore OCR failures here; ingest flow handles toasts
+                    }
+                };
+                const walk = async (node) => {
+                    if (!node) return;
+                    if (node.nodeType === 1) {
+                        const local = node.localName || "";
+                        const ns = node.namespaceURI || "";
+                        if (local === "p") {
+                            for (const child of Array.from(node.childNodes || [])) {
+                                await walk(child);
+                            }
+                            appendText("\n\n");
+                            return;
+                        }
+                        if (local === "t" && /wordprocessingml/i.test(ns)) {
+                            appendText(node.textContent || "");
+                        } else if ((local === "tab" || local === "br" || local === "cr") && /wordprocessingml/i.test(ns)) {
+                            appendText("\n");
+                        } else if (local === "blip") {
+                            const embedId =
+                                node.getAttribute("r:embed") ||
+                                node.getAttribute("embed") ||
+                                node.getAttributeNS("http://schemas.openxmlformats.org/officeDocument/2006/relationships", "embed");
+                            if (embedId) {
+                                await handleImage(embedId);
+                            }
+                        }
+                    }
+                    for (const child of Array.from(node.childNodes || [])) {
+                        await walk(child);
+                    }
+                };
+                await walk(body);
+                return pieces.join("") || "";
+            } catch (err) {
+                const text = extractTextFromXml(raw);
+                return text || "";
+            }
         }
 
         async extractPptx(file) {
@@ -3092,12 +3192,77 @@
             if (!slideNames.length) {
                 throw new Error("Fichier PPTX invalide: aucune diapositive trouvée");
             }
+            slideNames.sort((a, b) => {
+                const aNum = parseInt((a.match(/slide(\d+)\.xml$/) || [])[1] || "0", 10);
+                const bNum = parseInt((b.match(/slide(\d+)\.xml$/) || [])[1] || "0", 10);
+                return aNum - bNum;
+            });
             const texts = [];
             for (const name of slideNames) {
                 const entry = zip.file(name);
                 if (!entry) continue;
                 const raw = await entry.async("string");
-                texts.push(extractTextFromXml(raw));
+                const relsName = "ppt/slides/_rels/" + name.split("/").pop() + ".rels";
+                const relsEntry = zip.file(relsName);
+                const relsRaw = relsEntry ? await relsEntry.async("string") : "";
+                const relsMap = parseRelationships(relsRaw);
+                try {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(raw, "application/xml");
+                    const root = doc.documentElement;
+                    const pieces = [];
+                    const appendText = (value) => {
+                        if (!value) return;
+                        pieces.push(value);
+                    };
+                    const handleImage = async (embedId) => {
+                        if (!embedId || !relsMap[embedId]) return;
+                        const target = resolveZipTarget("ppt/", relsMap[embedId]);
+                        const imageEntry = zip.file(target);
+                        if (!imageEntry) return;
+                        try {
+                            const blob = await imageEntry.async("blob");
+                            const ocr = await this.extractImageWithOcr(blob, target);
+                            appendText(ocr?.text || "");
+                        } catch (err) {
+                            // ignore OCR failures here; ingest flow handles toasts
+                        }
+                    };
+                    const walk = async (node) => {
+                        if (!node) return;
+                        if (node.nodeType === 1) {
+                            const local = node.localName || "";
+                            const ns = node.namespaceURI || "";
+                            if (local === "p" && /drawingml/i.test(ns)) {
+                                for (const child of Array.from(node.childNodes || [])) {
+                                    await walk(child);
+                                }
+                                appendText("\n");
+                                return;
+                            }
+                            if (local === "t" && /drawingml/i.test(ns)) {
+                                appendText(node.textContent || "");
+                            } else if (local === "br" && /drawingml/i.test(ns)) {
+                                appendText("\n");
+                            } else if (local === "blip") {
+                                const embedId =
+                                    node.getAttribute("r:embed") ||
+                                    node.getAttribute("embed") ||
+                                    node.getAttributeNS("http://schemas.openxmlformats.org/officeDocument/2006/relationships", "embed");
+                                if (embedId) {
+                                    await handleImage(embedId);
+                                }
+                            }
+                        }
+                        for (const child of Array.from(node.childNodes || [])) {
+                            await walk(child);
+                        }
+                    };
+                    await walk(root);
+                    texts.push(pieces.join(""));
+                } catch (err) {
+                    texts.push(extractTextFromXml(raw));
+                }
             }
             return texts.join("\n\n") || "";
         }
