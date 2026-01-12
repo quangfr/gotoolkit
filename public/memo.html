@@ -809,6 +809,7 @@
             const documentTabsEl = document.getElementById("document-tabs");
             const fileMenuBtn = document.getElementById("fileMenuBtn");
             const fileMenu = document.getElementById("fileMenu");
+            const fileMenuTrigger = document.getElementById("fileMenuTrigger");
             const memoOpenImportBtn = document.getElementById("memoOpenImportBtn");
             const saveDocumentBtn = document.getElementById("saveDocumentBtn");
             const renameDocumentBtn = document.getElementById("renameDocumentBtn");
@@ -856,6 +857,12 @@
 
             function updateEmptyState() {
                 const hasOpenDoc = openDocuments.length > 0 && Boolean(activeDocumentId);
+                if (templateModalTrigger) {
+                    templateModalTrigger.style.display = hasOpenDoc ? "" : "none";
+                }
+                if (fileMenuTrigger) {
+                    fileMenuTrigger.style.display = hasOpenDoc ? "" : "none";
+                }
                 if (memoCardEl) {
                     memoCardEl.style.display = hasOpenDoc ? "" : "none";
                 }

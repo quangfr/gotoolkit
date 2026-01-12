@@ -1,5 +1,5 @@
 (() => {
-    const DEFAULT_WIDTH = 350;
+    const DEFAULT_WIDTH = 300;
     const MIN_WIDTH = 150;
     const MAX_WIDTH = 520;
     const DEFAULT_TITLE = "Documents";
@@ -104,11 +104,24 @@
             headerEl.appendChild(closeBtn);
         }
 
+        const actionRow = document.createElement("div");
+        actionRow.className = "document-explorer__actions";
+        if (appId === "memo") {
+            const importBtn = document.createElement("button");
+            importBtn.type = "button";
+            importBtn.className = "chat-knowledge-modal__add btn btn-secondary";
+            importBtn.textContent = "⤷ Importer";
+            importBtn.addEventListener("click", () => {
+                window.GoToolkitAssistInstance?.openImportFileSelector?.();
+            });
+            actionRow.appendChild(importBtn);
+        }
         const createBtn = document.createElement("button");
         createBtn.type = "button";
         createBtn.className = "chat-knowledge-modal__add btn btn-secondary";
         createBtn.textContent = "+ Nouveau";
-        sidebar.insertBefore(createBtn, listEl);
+        actionRow.appendChild(createBtn);
+        sidebar.insertBefore(actionRow, listEl);
 
         const modalOverlay = document.createElement("div");
         modalOverlay.className = "modal-overlay";

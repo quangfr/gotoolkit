@@ -405,15 +405,6 @@
         }
     }
 
-    function loadKnowledgeModalOpenState() {
-        try {
-            var stored = global.localStorage.getItem(KNOWLEDGE_MODAL_OPEN_KEY);
-            if (stored === "1") return true;
-            if (stored === "0") return false;
-        } catch (err) { /* ignore */ }
-        return null;
-    }
-
     function persistKnowledgeModalOpenState(isOpen) {
         try {
             global.localStorage.setItem(KNOWLEDGE_MODAL_OPEN_KEY, isOpen ? "1" : "0");
@@ -1295,17 +1286,11 @@
 
     AssistSidebar.prototype.syncKnowledgeModalVisibility = function () {
         if (!this.isOpen) return;
-        if (this.promptPresetId === "ask" || this.promptPresetId === "edit" || this.promptPresetId === "suggest") {
-            this.closeKnowledgeModal(false);
-        } else {
-            // Mode "advice" (conseiller)
-            var preference = loadKnowledgeModalOpenState();
-            if (preference === true) {
-                this.openKnowledgeModal();
-            } else {
-                this.closeKnowledgeModal(false);
-            }
+        if (this.promptPresetId === "advice") {
+            // Keep knowledge modal as-is; avoid auto-opening.
+            return;
         }
+        this.closeKnowledgeModal(false);
     };
 
     AssistSidebar.prototype.closeActiveModals = function () {
@@ -1814,8 +1799,10 @@
         return filtered;
     };
 
-    AssistSidebar.prototype.setPromptPreset = function (presetId) {
+    AssistSidebar.prototype.setPromptPreset = function (presetId, options) {
         var allowed = getAllowedPromptPresetIds();
+        options = options || {};
+        var prevPreset = this.promptPresetId;
         var next = allowed.includes(presetId) ? presetId : (allowed[0] || "advice");
         this.promptPresetId = next;
         persistPromptPreset(next);
@@ -1826,6 +1813,11 @@
                 }));
             }
         } catch (err) { /* ignore */ }
+        if (next !== "advice") {
+            this.closeKnowledgeModal(false);
+        } else if (options.source === "dropdown" && prevPreset !== "advice") {
+            this.openKnowledgeModal();
+        }
         this.updatePromptDropdownLabel();
         this.updateHeaderDocumentCount();
         this.refreshDocumentStats();
@@ -2790,6 +2782,9 @@
         var presets = this.getPromptPresets();
         Object.keys(presets).forEach(function (key) {
             var preset = presets[key];
+            if (preset?.id === "import") {
+                return;
+            }
             var item = document.createElement("button");
             item.type = "button";
             item.className = "chat-prompt-menu-item";
@@ -2797,7 +2792,7 @@
             item.textContent = preset.label || ("/" + preset.id);
             item.addEventListener("click", function (event) {
                 event.stopPropagation();
-                this.setPromptPreset(preset.id);
+                this.setPromptPreset(preset.id, { source: "dropdown" });
                 this.closePromptDropdown();
             }.bind(this));
             menu.appendChild(item);
@@ -5195,7 +5190,7 @@
             }.bind(this));
         }
         this.renderKnowledgeModalList(this.knowledgeManifestEntries, selectionSet);
-        if (newEntries.length && options.autoReindex === true) {
+        if (newEntries.length && options.autoReindex === true && selectionSet.size > 0) {
             await this.reindexKnowledgeSelection(this.knowledgeManifestEntries, selectionSet);
         }
         if (this.knowledgeManifestStore?.write) {
@@ -5442,7 +5437,8 @@
         var removalMessage = entryName + " retiré.";
         if (!checked && entry.source === "Mémo") {
             await this.deleteKnowledgeEntryDocument(entry);
-            this.collectKnowledgeSelection();
+            var memoSelection = this.collectKnowledgeSelection();
+            await this.reindexKnowledgeSelection(this.knowledgeManifestEntries, memoSelection);
             this.refreshDocumentStats();
             this.setKnowledgeModalStatus(removalMessage, false, 4000);
             return;
