@@ -8,6 +8,7 @@
 - `public/index.html` links: `canvas.html`, `grid.html`, `draw.html`, `timeline.html`, `voice.html`, `memo.html`.
 - All module links include `?v=2026.01.10`; bump everywhere when assets change.
 - All info panel versions should be updated to match the asset version whenever cache-busters are bumped.
+- Always update the `hero-version` label in `public/index.html` to match the cache-buster version.
 - Keep the IndexedDB version in `public/js/assist.js` health-check/repair (`indexedDB.open`) aligned with `DB_VERSION` in `public/js/document-rag.js`.
 - When editing UI, reuse existing styles from the current page and `public/styles/style.css` as much as possible before adding new CSS.
 - Each page sets `window.GO_TOOLKIT_SHARE_API_URL`: launcher `https://gotoolkit.workers.dev`, modules `https://share.gotoolkit.workers.dev/`.
@@ -28,7 +29,7 @@ Only `public/js` may touch `window`:
 - `public/js/ia-config.js`: OpenAI/Ollama/WebLLM config + endpoints (direct + `https://openai.gotoolkit.workers.dev`). Ollama and WebLLM deprecated.
 - `public/js/ia-client.js`: stream normalization + backend routing; WebLLM workers in `public/js/webllm-worker.js` / `public/js/webllm-sw.js`.
 - `public/js/document-storage.js`: IndexedDB `go-toolkit` (stores `document-api`, `share-history`, `documents-settings`) + shared store wrappers.
-- **RAG System** (`public/js/document-rag.js`): Vector search + semantic retrieval via `GoToolkitDocumentManager` (see [docs/RAG_ARCHITECTURE.md](docs/RAG_ARCHITECTURE.md)).
+- **RAG System** (`public/js/document-rag.js`): Vector search + semantic retrieval via `GoToolkitDocumentManager`. See **[RAG Architecture](public/content/toolkit_import.md)** - for more info on design, chunking strategies, retrieval flow. 
   - IndexedDB stores: `documents` (file metadata + chunking config), `chunks` (384-dim embeddings), `keyword_meta` (hybrid search), `memo_context_embeddings` (memo-scoped links + enabled flag).
   - Model: Transformers.js on-device embedding (Xenova/all-MiniLM-L6-v2, 384 dims), cached via IndexedDB to avoid re-compute.
   - Formats: 12 supported (PDF, DOCX, PPTX, XLSX, JSON, CSV, TSV, TXT, MD, ODF, RTF, logs). Format-specific extraction + chunking strategies.
@@ -54,13 +55,6 @@ Only `public/js` may touch `window`:
 - `workers/feedback-proxy`: same secrets as share.
 - `workers/assemblyai-proxy`: forwards streaming token; browser sends `X-AssemblyAI-Key` (no secret stored).
 - `workers/openrouter-proxy`: `OPENROUTER_API_KEY` for fallback LLM routing.
-
-## Specs & Optimization
-See [specs/README.md](specs/README.md) for performance optimization guides:
-- [JSON Import Optimization](specs/JSON_IMPORT_OPTIMIZATION.md) - 8-15x speedup strategies
-- [JSON Import Implementation](specs/JSON_IMPORT_OPTIMIZATION_IMPL.md) - Ready-to-apply code patches
-- [RAG Indexing Strategy](specs/RAG_INDEXING_STRATEGY.md) - Hybrid vector + keyword indexing
-- **[RAG Architecture](docs/RAG_ARCHITECTURE.md)** - Complete document-rag.js design, chunking strategies, retrieval flow
 
 ## Debug + docs
 - Inspect `window.GoToolkit*`; local state in `localStorage` (`go-toolkit-*`) and IndexedDB (`go-toolkit`, `gotoolkit-documents`).
