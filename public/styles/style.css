@@ -1785,6 +1785,15 @@ label {
   padding: 0;
 }
 
+.chat-knowledge-modal__reindex {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: #64748b;
+  font-size: 14px;
+  padding: 0;
+}
+
 .chat-knowledge-modal__source {
   color: #475569;
   font-size: 14px;

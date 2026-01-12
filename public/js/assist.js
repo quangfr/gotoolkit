@@ -3017,10 +3017,6 @@
                 var knowledgeDocs = Array.isArray(docs) ? docs.filter(function (doc) {
                     return doc && doc.conversationId === this.knowledgeConversationId;
                 }.bind(this)) : [];
-                var keywordSize = 0;
-                if (typeof this.docManager.getKeywordIndexSize === "function") {
-                    keywordSize = await this.docManager.getKeywordIndexSize(this.knowledgeConversationId);
-                }
                 if (!selectionSet.size && entries.length && !knowledgeDocs.length) {
                     selectionSet = new Set();
                     entries.forEach(function (entry) {
@@ -3030,7 +3026,7 @@
                     this.setKnowledgeModalSelection(selectionSet);
                 }
                 if (!selectionSet.size) return;
-                var needsReindex = !knowledgeDocs.length || keywordSize === 0;
+                var needsReindex = !knowledgeDocs.length || knowledgeDocs.length < selectionSet.size;
                 if (!needsReindex) return;
                 this.reindexKnowledgeSelection(entries, selectionSet).catch(function (err) {
                     console.warn("Background knowledge reindex failed", err);
@@ -5007,7 +5003,11 @@
                     if (!key) return;
                     indexedSet.add(key);
                     if (this.isMemoDocument(doc)) {
-                        this.knowledgeMemoDocRefs.set(key, { id: doc.id, name: doc.name || doc.sourceFileName || "" });
+                        this.knowledgeMemoDocRefs.set(key, {
+                            id: doc.id,
+                            name: doc.name || doc.sourceFileName || "",
+                            updatedAt: Number(doc.updatedAt) || 0
+                        });
                         return;
                     }
                     var isLocal = Array.isArray(doc.scope) && doc.scope.includes("local");
@@ -5107,6 +5107,11 @@
         memoEntries = await this.loadMemoLibraryEntries();
         if (memoEntries.length) {
             memoEntries = await this.applyKnowledgeOverrides(memoEntries);
+            memoEntries.forEach(function (entry) {
+                var key = this.normalizeKnowledgeKey(entry.fileName);
+                var indexed = key ? this.knowledgeMemoDocRefs.get(key) : null;
+                entry.indexedUpdatedAt = indexed?.updatedAt || 0;
+            }.bind(this));
         }
         this.knowledgeManifestEntries = webEntries.concat(memoEntries, localEntries, chatEntries);
 
@@ -5170,7 +5175,7 @@
             }.bind(this));
         }
         this.renderKnowledgeModalList(this.knowledgeManifestEntries, selectionSet);
-        if (newEntries.length && !options.skipAutoReindex) {
+        if (newEntries.length && options.autoReindex === true) {
             await this.reindexKnowledgeSelection(this.knowledgeManifestEntries, selectionSet);
         }
         if (this.knowledgeManifestStore?.write) {
@@ -5218,11 +5223,17 @@
             var truncatedName = this.truncateKnowledgeName(fullName);
             var abstractText = entry.abstract || "";
             var truncatedAbstract = this.truncateKnowledgeAbstract(abstractText);
+            var indexedUpdatedAt = Number(entry.indexedUpdatedAt) || 0;
+            var entryUpdatedAt = Number(entry.updatedAt) || 0;
+            var needsReindex = entry.source === "Mémo" && indexedUpdatedAt && entryUpdatedAt > indexedUpdatedAt;
             html.push(
                 "<div class=\"chat-knowledge-modal__row\" data-key=\"" + escapeHtml(key) + "\">" +
                 "<div><input type=\"checkbox\" class=\"chat-knowledge-modal__checkbox\" data-key=\"" + escapeHtml(key) + "\" " + (checked ? "checked" : "") + " " + (disableCheckboxes ? "disabled" : "") + "></div>" +
                 "<div class=\"chat-knowledge-modal__name-cell\">" +
                 "<button type=\"button\" class=\"chat-knowledge-modal__edit\" data-key=\"" + escapeHtml(key) + "\" aria-label=\"Modifier\">✐</button>" +
+                (needsReindex
+                    ? "<button type=\"button\" class=\"chat-knowledge-modal__reindex\" data-key=\"" + escapeHtml(key) + "\" aria-label=\"Réindexer\">↺</button>"
+                    : "") +
                 "<button type=\"button\" class=\"chat-knowledge-modal__name\" data-key=\"" + escapeHtml(key) + "\" title=\"" + escapeHtml(fullName) + "\">" + escapeHtml(truncatedName) + "</button>" +
                 "</div>" +
                 "<div class=\"chat-knowledge-modal__source\">" + escapeHtml(entry.source || "") + "</div>" +
@@ -5258,6 +5269,10 @@
         var editButtons = list.querySelectorAll(".chat-knowledge-modal__edit");
         editButtons.forEach(function (btn) {
             btn.addEventListener("click", this.handleKnowledgeEditClick.bind(this));
+        }.bind(this));
+        var reindexButtons = list.querySelectorAll(".chat-knowledge-modal__reindex");
+        reindexButtons.forEach(function (btn) {
+            btn.addEventListener("click", this.handleKnowledgeReindexClick.bind(this));
         }.bind(this));
     };
 
@@ -5493,6 +5508,63 @@
         }.bind(this));
         if (!entry) return;
         this.openKnowledgeEditModal(entry);
+    };
+
+    AssistSidebar.prototype.handleKnowledgeReindexClick = function (event) {
+        event?.stopPropagation?.();
+        if (this.knowledgeIndexing) return;
+        var target = event?.currentTarget;
+        var key = this.normalizeKnowledgeKey(target?.dataset?.key || "");
+        if (!key) return;
+        var entry = (this.knowledgeManifestEntries || []).find(function (item) {
+            return this.normalizeKnowledgeKey(item.fileName) === key;
+        }.bind(this));
+        if (!entry || entry.source !== "Mémo") return;
+        this.reindexMemoKnowledgeEntry(entry);
+    };
+
+    AssistSidebar.prototype.reindexMemoKnowledgeEntry = async function (entry) {
+        if (!this.docManager || this.knowledgeIndexing || !entry) return;
+        this.knowledgeIndexing = true;
+        this.setKnowledgeModalStatus("Réindexation en cours…");
+        try {
+            await this.docManager.waitReady?.();
+            var memoText = typeof entry.memoText === "string" ? entry.memoText : "";
+            if (!memoText && typeof entry.memoHtml === "string") {
+                memoText = this.stripHtmlText(entry.memoHtml);
+            }
+            if (!memoText && entry.memoHtml) {
+                memoText = String(entry.memoHtml);
+            }
+            var file = this.createKnowledgeFile(memoText, entry.fileName, "text/plain");
+            if (!file) {
+                this.setKnowledgeModalStatus("Réindexation échouée.", true);
+                return;
+            }
+            await this.docManager.deleteDocumentsByNames(this.knowledgeConversationId, [entry.fileName]);
+            var derivedAbstract = entry.abstract || this.extractFirstChunkLine(memoText);
+            var metadata = new Map();
+            metadata.set(entry.fileName, {
+                name: entry.name,
+                abstract: derivedAbstract || "",
+                updatedAt: entry.updatedAt,
+                fileName: entry.fileName,
+                scope: ["memo"]
+            });
+            await this.docManager.ingestFiles([file], this.knowledgeConversationId, {
+                sourceType: "embedded",
+                metadata: metadata
+            });
+            await this.refreshKnowledgeModal({ skipAutoReindex: true });
+            this.refreshDocumentStats();
+            this.setKnowledgeModalStatus("");
+        } catch (err) {
+            console.warn("Memo knowledge reindex failed", err);
+            this.setKnowledgeModalStatus("Réindexation échouée.", true);
+        } finally {
+            this.knowledgeIndexing = false;
+            this.renderKnowledgeModalTitle();
+        }
     };
 
     AssistSidebar.prototype.detectFileTypeFromPath = function (path) {

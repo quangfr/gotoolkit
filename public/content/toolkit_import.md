@@ -84,6 +84,12 @@ This document summarizes the document ingestion pipeline, OCR/voice recognition 
 4. Store document metadata + chunks + keyword metadata.
 5. For memo context: link via `memo_context_embeddings`.
 
+### Indexing Behavior
+- Keyword index is scoped per `conversationId` (knowledge vs chat are separate).
+- Chat file attachments are indexed in the chat conversation, not in the knowledge conversation.
+- Index rebuild happens only when `ingestFiles()` runs (imports, manual reindex, checkbox selection changes).
+- Sending a prompt to IA never rebuilds the index; it only queries existing chunks/keywords.
+
 ### Dedup & Reuse
 - If `fileHash` exists and status is `ready`, reuse chunks by copying with `sourceDocId`.
 - Avoids re-embedding; only metadata duplicated.
