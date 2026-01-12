@@ -1117,9 +1117,6 @@
                 } catch (err) {
                     console.warn("Failed to reset memo localStorage", err);
                 }
-                if (typeof indexedDB !== "undefined") {
-                    indexedDB.deleteDatabase("go-toolkit");
-                }
             }
 
             function persistState() {

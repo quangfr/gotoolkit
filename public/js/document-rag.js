@@ -136,6 +136,8 @@
     const OCR_QUALITY_BLUR_THRESHOLD = 0.8;
     const OCR_LAPLACIAN_NORM = 1000;
     const DEFAULT_QWEN_VISION_MODEL = "qwen/qwen-2.5-vl-7b-instruct";
+    const QWEN_OCR_TOAST_MESSAGE = "Service OCR : Reconnaissance en cours";
+    let qwenOcrToastCount = 0;
 
     function emitDocumentsImportMessage(message, isError) {
         if (typeof document === "undefined") return;
@@ -167,6 +169,40 @@
         }
         const configured = global.GoToolkitIAConfig?.getOpenRouterOcrModel?.();
         return (configured && configured.trim()) ? configured.trim() : DEFAULT_QWEN_VISION_MODEL;
+    }
+
+    function ensureQwenOcrToast() {
+        if (typeof document === "undefined") return null;
+        const existing = document.getElementById("qwenOcrToast");
+        if (existing) return existing;
+        const toast = document.createElement("div");
+        toast.id = "qwenOcrToast";
+        toast.className = "toast";
+        toast.setAttribute("role", "status");
+        toast.setAttribute("aria-live", "polite");
+        toast.setAttribute("aria-atomic", "true");
+        toast.style.display = "none";
+        document.body.appendChild(toast);
+        return toast;
+    }
+
+    function setQwenOcrToastVisible(isVisible) {
+        if (typeof document === "undefined") return;
+        const toast = ensureQwenOcrToast();
+        if (!toast) return;
+        if (isVisible) {
+            qwenOcrToastCount += 1;
+            toast.textContent = QWEN_OCR_TOAST_MESSAGE;
+            toast.style.display = "block";
+            toast.classList.add("visible");
+            return;
+        }
+        qwenOcrToastCount = Math.max(0, qwenOcrToastCount - 1);
+        if (qwenOcrToastCount === 0) {
+            toast.classList.remove("visible");
+            toast.style.display = "none";
+            toast.textContent = "";
+        }
     }
 
     function isOfflineOcrDisabled() {
@@ -550,20 +586,25 @@
             stream: false,
             messages: [{ role: "user", content }]
         };
-        const responseText = await global.GoToolkitIAClient.chatCompletion({ payload });
-        if (!responseText || typeof responseText !== "string") {
-            throw new Error("OpenRouter : Réponse OCR invalide");
-        }
-        const raw = responseText.trim();
-        const parts = raw.split(/\n\s*-{3,}\s*\n/);
-        if (!parts.length) return [];
-        if (parts.length < images.length) {
-            const fallback = raw.split(/\n-{3,}\n/);
-            if (fallback.length >= parts.length) {
-                return fallback.map(item => item.trim());
+        setQwenOcrToastVisible(true);
+        try {
+            const responseText = await global.GoToolkitIAClient.chatCompletion({ payload });
+            if (!responseText || typeof responseText !== "string") {
+                throw new Error("OpenRouter : Réponse OCR invalide");
             }
+            const raw = responseText.trim();
+            const parts = raw.split(/\n\s*-{3,}\s*\n/);
+            if (!parts.length) return [];
+            if (parts.length < images.length) {
+                const fallback = raw.split(/\n-{3,}\n/);
+                if (fallback.length >= parts.length) {
+                    return fallback.map(item => item.trim());
+                }
+            }
+            return parts.map(item => item.trim());
+        } finally {
+            setQwenOcrToastVisible(false);
         }
-        return parts.map(item => item.trim());
     }
 
     async function getOcrWorker() {

@@ -2688,6 +2688,13 @@
             this.isStreaming = false;
             this.controller = null;
             this.updateComposerState();
+            if (this.importInProgress) {
+                this.importInProgress = false;
+                this.setSendButtonBusy(false);
+                if (CHAT_APP_ID === "memo") {
+                    window.GoToolkitMemoToast?.("");
+                }
+            }
             if (botMessage) {
                 this.updateBotMessage(botMessage);
             }
@@ -3219,6 +3226,11 @@
         this.updateAttachmentIndicator();
 
         try {
+            this.importInProgress = true;
+            this.setSendButtonBusy(true);
+            if (CHAT_APP_ID === "memo") {
+                window.GoToolkitMemoToast?.("Import en cours");
+            }
             // 1. Ingérer les fichiers (parsing, chunking) comme chatAttachFilesBtn
             console.log("Starting document ingestion for import...");
             var mediaTranscriptMap = new Map();
@@ -3418,6 +3430,7 @@
                 console.warn("No document content available to import");
                 return;
             }
+            this.clearAttachments();
 
             // 4. Construire le payload avec format DOCUMENT\n{contenu1}\nDOCUMENT\n{contenu2}
             var userPrompt = "DOCUMENT\n" + parsedContents.join("\nDOCUMENT\n");
@@ -3437,7 +3450,7 @@
                     }
                 ],
                 stream: false,
-                model: "gpt-oss-20gb"
+                model: global.GoToolkitIAConfig?.getOpenRouterModel?.() || "openai/gpt-oss-120b"
             };
 
             // Create user message in chat
@@ -3476,6 +3489,13 @@
             if (hadMediaTranscription && !didSendAI) {
                 this.deferSendButtonRestoreUntilAI = false;
                 this.setTranscriptionUiState(false);
+            }
+            if (this.importInProgress && !didSendAI) {
+                this.importInProgress = false;
+                this.setSendButtonBusy(false);
+                if (CHAT_APP_ID === "memo") {
+                    window.GoToolkitMemoToast?.("");
+                }
             }
         }
     };
@@ -5168,7 +5188,7 @@
             newEntries = [];
         }
         // Only auto-add new entries if user has an existing selection (not a new user)
-        if (newEntries.length && persistedSelectionSet.size > 0) {
+        if (false) {
             newEntries.forEach(function (entry) {
                 var key = this.normalizeKnowledgeKey(entry.fileName);
                 if (key) selectionSet.add(key);
@@ -6369,7 +6389,7 @@
                     }
                 ],
                 stream: false,
-                model: "gpt-oss-20gb"
+                model: global.GoToolkitIAConfig?.getOpenRouterModel?.() || "openai/gpt-oss-120b"
             };
 
             // Log du payload avant envoi
@@ -6760,6 +6780,9 @@
                         }
                         await this.docManager.waitReady?.();
                         var useCloudOnly = getConfig("memo.ocr.disableOffline", false);
+                        if (useCloudOnly) {
+                            console.info("[Memo OCR] memo.ocr.disableOffline is enabled; using cloud-only extraction.");
+                        }
                         if (useCloudOnly && typeof this.docManager.extractPdfCloudTextWithProgress === "function") {
                             var accumulated = "";
                             var virtualDocCloud = {

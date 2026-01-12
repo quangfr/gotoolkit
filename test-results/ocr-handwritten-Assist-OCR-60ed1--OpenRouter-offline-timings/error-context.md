@@ -1,0 +1,98 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - complementary "Bibliothèque" [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]: ⬠ Bibliothèque
+        - button "✕" [ref=e6] [cursor=pointer]
+      - button "+ Nouveau" [ref=e7] [cursor=pointer]
+      - generic [ref=e9]: Aucun document
+    - separator "Ajuster la largeur des documents" [ref=e10]
+    - generic [ref=e11]:
+      - generic [ref=e12]:
+        - generic [ref=e13]:
+          - button "⤷ Ouvrir" [expanded] [ref=e14] [cursor=pointer]
+          - button "⊞ Mémo ▾" [ref=e16] [cursor=pointer]
+          - button "Créer un document" [ref=e19] [cursor=pointer]: +
+        - generic [ref=e20]:
+          - button "Choisir un modèle" [ref=e21] [cursor=pointer]: ⊞ Modèles
+          - button "Document" [ref=e23] [cursor=pointer]: 🗋 Document
+          - button "Partager" [ref=e25] [cursor=pointer]: ☍ Partage
+          - button "⌬ Assist" [ref=e26] [cursor=pointer]
+      - generic [ref=e27]: Commencez à écrire...
+  - status [ref=e28]: "OpenRouter : Service OCR indisponible"
+  - generic [ref=e29]:
+    - generic [ref=e31]:
+      - button "<" [ref=e32] [cursor=pointer]
+      - generic [ref=e33]: ⌬ Assist
+      - generic [ref=e34]:
+        - button "🗍 Mémoire (4)" [ref=e35] [cursor=pointer]
+        - button "Prompt" [ref=e36] [cursor=pointer]: ⚙
+        - button "⊘" [ref=e37] [cursor=pointer]
+    - generic [ref=e39]:
+      - generic [ref=e40]:
+        - textbox "Que veux-tu demander ?" [active] [ref=e41]
+        - button "◉" [ref=e42] [cursor=pointer]
+      - generic [ref=e43]:
+        - generic [ref=e44]:
+          - button "↬ Demander ▾" [ref=e46] [cursor=pointer]
+          - button "+" [ref=e47] [cursor=pointer]
+        - button "↩︎" [disabled] [ref=e48] [cursor=pointer]
+  - generic:
+    - generic [ref=e49]:
+      - button "☄" [ref=e50] [cursor=pointer]
+      - button "◉" [ref=e51] [cursor=pointer]
+    - status [ref=e52]
+  - generic [ref=e54]:
+    - button [ref=e55] [cursor=pointer]: ←
+    - button [ref=e56] [cursor=pointer]: ⤷ Importer
+    - button [ref=e57] [cursor=pointer]: ✕
+  - generic [ref=e59]:
+    - generic [ref=e60]:
+      - generic [ref=e62]: 🗎 Indexation en cours 4 / 4
+      - generic [ref=e63]:
+        - button [ref=e64] [cursor=pointer]: + Ajouter
+        - button [ref=e65] [cursor=pointer]: ↺ Réinitialiser
+        - button [ref=e66] [cursor=pointer]: ✕
+    - generic [ref=e67]:
+      - generic [ref=e68]:
+        - checkbox [checked] [ref=e70]
+        - button [ref=e72] [cursor=pointer]: Nom
+        - button [ref=e74] [cursor=pointer]: Source
+        - generic [ref=e75]: Description
+        - button [ref=e77] [cursor=pointer]: MàJ▼
+      - generic [ref=e78]:
+        - checkbox [ref=e80]
+        - generic [ref=e81]:
+          - button [ref=e82] [cursor=pointer]: ✐
+          - button [ref=e83] [cursor=pointer]: Toolkit Import
+        - generic [ref=e84]: Web
+        - generic [ref=e85]: "Import & OCR/Transcription : formats supportés, stockage IndexedDB, chunking, embeddings, OCR et stratégie voix."
+        - generic [ref=e86]: 1 j
+      - generic [ref=e87]:
+        - checkbox [ref=e89]
+        - generic [ref=e90]:
+          - button [ref=e91] [cursor=pointer]: ✐
+          - button [ref=e92] [cursor=pointer]: Modules Toolkit
+        - generic [ref=e93]: Web
+        - generic [ref=e94]: "Documentation complète de tous les modules : Assist, Canvas, Draw, Grid, Page d'accueil, Mémo, Timeline et Voice."
+        - generic [ref=e95]: 2 j
+      - generic [ref=e96]:
+        - checkbox [ref=e98]
+        - generic [ref=e99]:
+          - button [ref=e100] [cursor=pointer]: ✐
+          - button [ref=e101] [cursor=pointer]: Contexte Safran
+        - generic [ref=e102]: Web
+        - generic [ref=e103]: Brief de missions et de projets IT chez Safran
+        - generic [ref=e104]: 5 j
+      - generic [ref=e105]:
+        - checkbox [ref=e107]
+        - generic [ref=e108]:
+          - button [ref=e109] [cursor=pointer]: ✐
+          - button [ref=e110] [cursor=pointer]: Go-Live 101
+        - generic [ref=e111]: Web
+        - generic [ref=e112]: Guide des compétences essentiels du consultant
+        - generic [ref=e113]: 8 j
+```
