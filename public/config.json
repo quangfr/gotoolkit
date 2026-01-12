@@ -88,6 +88,14 @@
       "image": {
         "maxMB": 20,
         "extensions": [".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp", ".tif", ".tiff"]
+      },
+      "audio": {
+        "maxMB": 20,
+        "extensions": [".mp3", ".wav", ".mp4", ".m4a", ".aac", ".ogg", ".webm", ".flac"]
+      },
+      "media": {
+        "maxMB": 100,
+        "extensions": [".mp4", ".webm", ".mov", ".avi"]
       }
     }
   }

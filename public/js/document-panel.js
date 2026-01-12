@@ -111,7 +111,10 @@
             importBtn.type = "button";
             importBtn.className = "chat-knowledge-modal__add btn btn-secondary";
             importBtn.textContent = "⤷ Importer";
-            importBtn.addEventListener("click", () => {
+            importBtn.addEventListener("click", async () => {
+                if (typeof window.GoToolkitMemoCreateAutoDocument === "function") {
+                    await window.GoToolkitMemoCreateAutoDocument();
+                }
                 window.GoToolkitAssistInstance?.openImportFileSelector?.();
             });
             actionRow.appendChild(importBtn);

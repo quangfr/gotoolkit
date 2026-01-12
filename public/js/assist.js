@@ -4010,6 +4010,9 @@
                 await this.refreshMemoContextAttachments();
                 window.GoToolkitMemoSyncContextEmbeddings?.(memoId);
             }
+            if (!errors.length) {
+                this.clearAttachments();
+            }
         } catch (error) {
             console.error("Document ingestion exception:", error);
             this.attachmentsIngestionEnd = Date.now();
