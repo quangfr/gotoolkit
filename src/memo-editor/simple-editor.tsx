@@ -361,9 +361,7 @@ const Toolbar = ({ editor }: { editor: Editor }) => {
   const isColSelection = isCellSelection && selection.isColSelection();
   const isNodeSelection = selection instanceof NodeSelection;
   const deleteButtonDisabled =
-    isCellSelection && !isRowSelection && !isColSelection
-      ? true
-      : isNodeSelection && selection.node.type.name !== 'table';
+    isNodeSelection && selection.node.type.name !== 'table';
 
   return (
     <div role="toolbar" aria-label="toolbar" data-variant="fixed" className="tiptap-toolbar">
@@ -541,6 +539,8 @@ const Toolbar = ({ editor }: { editor: Editor }) => {
                   editor.chain().focus().deleteColumn().run();
                   return;
                 }
+                // Handle full table selection (CellSelection covering all cells)
+                // Try deleteTable directly - it should work even with CellSelection
                 editor.chain().focus().deleteTable().run();
               }}
               disabled={deleteButtonDisabled}

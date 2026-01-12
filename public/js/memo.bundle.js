@@ -75109,7 +75109,7 @@ ${e}</tr>
     const s = i && o.isRowSelection();
     const l = i && o.isColSelection();
     const u = o instanceof be;
-    const p = i && !s && !l ? true : u && o.node.type.name !== "table";
+    const p = u && o.node.type.name !== "table";
     return /* @__PURE__ */ (0, G.jsxs)("div", { role: "toolbar", "aria-label": "toolbar", "data-variant": "fixed", className: "tiptap-toolbar", children: [
       /* @__PURE__ */ (0, G.jsx)("div", { style: { flex: 1 } }),
       /* @__PURE__ */ (0, G.jsxs)("div", { role: "group", className: "tiptap-toolbar-group", children: [
