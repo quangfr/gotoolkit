@@ -3009,31 +3009,6 @@
             .then(function () {
                 return this.refreshKnowledgeModal({ skipAutoReindex: true });
             }.bind(this))
-            .then(async function () {
-                var entries = Array.isArray(this.knowledgeManifestEntries) ? this.knowledgeManifestEntries : [];
-                if (!entries.length) return;
-                var selectionSet = this.knowledgeModalSelectionSet instanceof Set
-                    ? this.knowledgeModalSelectionSet
-                    : new Set();
-                var docs = await this.docManager.getDocuments(this.knowledgeConversationId);
-                var knowledgeDocs = Array.isArray(docs) ? docs.filter(function (doc) {
-                    return doc && doc.conversationId === this.knowledgeConversationId;
-                }.bind(this)) : [];
-                if (!selectionSet.size && entries.length && !knowledgeDocs.length) {
-                    selectionSet = new Set();
-                    entries.forEach(function (entry) {
-                        var key = this.normalizeKnowledgeKey(entry.fileName);
-                        if (key) selectionSet.add(key);
-                    }.bind(this));
-                    this.setKnowledgeModalSelection(selectionSet);
-                }
-                if (!selectionSet.size) return;
-                var needsReindex = !knowledgeDocs.length || knowledgeDocs.length < selectionSet.size;
-                if (!needsReindex) return;
-                this.reindexKnowledgeSelection(entries, selectionSet).catch(function (err) {
-                    console.warn("Background knowledge reindex failed", err);
-                });
-            }.bind(this))
             .catch(function (err) {
                 console.warn("Knowledge warmup failed", err);
             });
@@ -5998,10 +5973,6 @@
                 }
                 var manifest = await this.loadKnowledgeManifest();
                 if (!manifest.length) return;
-                var selection = new Set(manifest.map(function (entry) {
-                    return this.normalizeKnowledgeKey(entry.fileName);
-                }.bind(this)));
-                await this.reindexKnowledgeSelection(manifest, selection);
                 if (this.knowledgeManifestStore?.write) {
                     await this.knowledgeManifestStore.write(
                         manifest.map(function (entry) { return entry.fileName; })
