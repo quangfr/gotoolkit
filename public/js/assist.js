@@ -23,6 +23,8 @@
         return globalConfig;
     }
 
+    var GLOBAL_BUILD_VERSION = "2026.01.12.2";
+    global.GoToolkitAssistVersion = GLOBAL_BUILD_VERSION;
     var globalConfigPromise;
     var siteConfigPromise = global.GoToolkitSiteConfigPromise;
     if (siteConfigPromise && typeof siteConfigPromise.then === "function") {
@@ -1874,12 +1876,12 @@
         var messages = [{ role: "system", content: promptContent }];
         var userContent = (userMessage?.content || "").trim();
         if (userContent) {
-            if (this.promptPresetId === "edit" || this.promptPresetId === "suggest") {
-                // Priority: getMemoActiveTabContent (memo app with tabs) > getEditorMarkdown (generic editor) > getEditorContent (fallback)
-                var docContent = (typeof window.getMemoActiveTabContent === "function" ? window.getMemoActiveTabContent() : "") ||
-                    (window.getEditorMarkdown ? window.getEditorMarkdown() : "") ||
-                    (window.getEditorContent ? window.getEditorContent() : "");
-                userContent = "DOCUMENT\n" + docContent + "\n\nASK\n" + userContent;
+            // Priority: getMemoActiveTabContent (memo app with tabs) > getEditorMarkdown (generic editor) > getEditorContent (fallback)
+            var docContent = (typeof window.getMemoActiveTabContent === "function" ? window.getMemoActiveTabContent() : "") ||
+                (window.getEditorMarkdown ? window.getEditorMarkdown() : "") ||
+                (window.getEditorContent ? window.getEditorContent() : "");
+            if (docContent && docContent.trim()) {
+                userContent = "DOCUMENT\n" + docContent.trim() + "\n\nASK\n" + userContent;
             } else {
                 userContent = "ASK\n" + userContent;
             }
@@ -3080,8 +3082,9 @@
         document.body.appendChild(this.importFileInput);
     };
 
-    AssistSidebar.prototype.openImportFileSelector = function () {
+    AssistSidebar.prototype.openImportFileSelector = function (options) {
         this.createImportFileInput();
+        this.importFileOptions = options || null;
         if (this.importFileInput) {
             this.importFileInput.click();
         }
@@ -3156,11 +3159,13 @@
     AssistSidebar.prototype.handleImportFilesSelected = function (event) {
         var files = event?.target?.files;
         if (!files || !files.length) return;
-        this.sendImportedDocuments(Array.from(files));
+        var options = this.importFileOptions || {};
+        this.importFileOptions = null;
+        this.sendImportedDocuments(Array.from(files), options);
         event.target.value = "";
     };
 
-    AssistSidebar.prototype.sendImportedDocuments = async function (files) {
+    AssistSidebar.prototype.sendImportedDocuments = async function (files, options = {}) {
         if (!this.docManager) {
             console.warn("Document manager not available");
             return;
@@ -3178,6 +3183,10 @@
         var createdImportBubble = false;
         var hadMediaTranscription = false;
         var didSendAI = false;
+        // Options for import behavior
+        var skipEmbeddings = Boolean(options.skipEmbeddings);
+        var directPasteMode = Boolean(options.directPasteMode) ||
+            Boolean(global.GoToolkitSiteConfig?.get?.("memo.import.directPasteEnabled", false));
         this.attachmentsTotalCount = fileArray.length;
         this.attachmentsTotalSize = fileArray.reduce(function (acc, file) {
             return acc + (Number(file?.size) || 0);
@@ -3259,14 +3268,36 @@
                         });
                         var memoId = this.getActiveMemoId();
                         var tabId = memoId || null;
+
+                        // Ingest with skipEmbeddings=true - send AI request immediately without waiting for embeddings
                         var results = await this.docManager.ingestFiles([entry.file], this.conversation.id, {
                             onProgress: this.handleDocumentProgress.bind(this),
                             sourceType: "context",
                             metadata: metadata,
                             memoId: memoId,
-                            tabId: tabId
+                            tabId: tabId,
+                            skipEmbeddings: true
                         });
                         mediaIngestResults.push.apply(mediaIngestResults, results);
+
+                        // Send AI request immediately with chatImportPrompt when transcript is ready
+                        var systemPrompt = window.GoToolkitChatPrompt?.PRESETS?.import?.prompt ||
+                            window.GoToolkitChatPrompt?.PRESETS?.import?.defaultPrompt ||
+                            "Analyse le DOCUMENT fourni et produis une synthèse structurée.";
+                        var payload = {
+                            system: systemPrompt,
+                            messages: [
+                                {
+                                    role: "user",
+                                    content: "DOCUMENT\n" + entry.transcriptText
+                                }
+                            ],
+                            stream: false,
+                            model: global.GoToolkitIAConfig?.getOpenRouterModel?.() || "openai/gpt-oss-120b"
+                        };
+
+                        // Send AI request immediately
+                        this.sendAIRequest(payload);
                     }.bind(this)
                 });
                 if (transcriptResult.errors && transcriptResult.errors.length) {
@@ -3310,7 +3341,8 @@
                     sourceType: "context",
                     metadata: metadata,
                     memoId: memoId,
-                    tabId: tabId
+                    tabId: tabId,
+                    skipEmbeddings: skipEmbeddings
                 });
             }
             if (mediaIngestResults.length) {
@@ -3359,6 +3391,54 @@
                 window.GoToolkitMemoSyncContextEmbeddings?.(memoId);
             }
 
+            // Check for direct paste mode with media transcripts - paste directly and skip AI
+            if (directPasteMode && memoId && mediaTranscriptTextMap.size) {
+                var transcriptParts = [];
+                readyDocNames.forEach(function (name) {
+                    var text = mediaTranscriptTextMap.get(name);
+                    if (text) {
+                        transcriptParts.push(text);
+                    }
+                });
+                if (transcriptParts.length) {
+                    window.GoToolkitMemoAppendText?.(transcriptParts.join("\n\n"));
+                    var toastMsg = readyDocNames.length === 1
+                        ? "⤷ " + readyDocNames[0] + " importé"
+                        : readyDocNames.length + " documents importés";
+                    window.GoToolkitMemoToast?.(toastMsg);
+                }
+
+                // Create a user message indicating direct paste
+                var userMessage = {
+                    id: "msg-" + Date.now(),
+                    role: "user",
+                    content: "⤷ Importer " + (readyDocNames.length === 1 ? readyDocNames[0] : readyDocNames.length + " documents"),
+                    attachments: readyDocNames
+                };
+                this.conversation.messages.push(userMessage);
+                this.appendMessage(userMessage);
+                this.persist();
+
+                // Create a bot confirmation message
+                var botMessage = {
+                    id: "msg-" + (Date.now() + 1),
+                    role: "bot",
+                    content: "✓ " + (readyDocNames.length === 1 ? "Document" : readyDocNames.length + " documents") + " importé(s) directement dans le mémo."
+                };
+                this.conversation.messages.push(botMessage);
+                this.appendMessage(botMessage);
+                this.persist();
+
+                if (readyDocNames.length) {
+                    this.confirmMemoAttachments(memoId);
+                    await this.refreshMemoContextAttachments();
+                    window.GoToolkitMemoSyncContextEmbeddings?.(memoId);
+                }
+                didSendAI = true;
+                return;
+            }
+
+            // Standard media transcript paste (when not in directPasteMode)
             if (memoId && mediaTranscriptTextMap.size) {
                 var transcriptParts = [];
                 readyDocNames.forEach(function (name) {
@@ -3402,7 +3482,46 @@
             }
             this.clearAttachments();
 
-            // 4. Construire le payload avec format DOCUMENT\n{contenu1}\nDOCUMENT\n{contenu2}
+            // 4. Check for direct paste mode (OCR/transcription files get pasted directly to memo)
+            if (directPasteMode && memoId && parsedContents.length) {
+                var fullText = parsedContents.join("\n\n");
+                window.GoToolkitMemoAppendText?.(fullText);
+                var toastMsg = readyDocNames.length === 1
+                    ? "⤷ " + readyDocNames[0] + " importé"
+                    : readyDocNames.length + " documents importés";
+                window.GoToolkitMemoToast?.(toastMsg);
+
+                // Create a user message indicating direct paste
+                var userMessage = {
+                    id: "msg-" + Date.now(),
+                    role: "user",
+                    content: "⤷ Importer " + (readyDocNames.length === 1 ? readyDocNames[0] : readyDocNames.length + " documents"),
+                    attachments: readyDocNames
+                };
+                this.conversation.messages.push(userMessage);
+                this.appendMessage(userMessage);
+                this.persist();
+
+                // Create a bot confirmation message
+                var botMessage = {
+                    id: "msg-" + (Date.now() + 1),
+                    role: "bot",
+                    content: "✓ " + (readyDocNames.length === 1 ? "Document" : readyDocNames.length + " documents") + " importé(s) directement dans le mémo."
+                };
+                this.conversation.messages.push(botMessage);
+                this.appendMessage(botMessage);
+                this.persist();
+
+                if (readyDocNames.length) {
+                    this.confirmMemoAttachments(memoId);
+                    await this.refreshMemoContextAttachments();
+                    window.GoToolkitMemoSyncContextEmbeddings?.(memoId);
+                }
+                didSendAI = true;
+                return;
+            }
+
+            // 5. Construire le payload avec format DOCUMENT\n{contenu1}\nDOCUMENT\n{contenu2}
             var userPrompt = "DOCUMENT\n" + parsedContents.join("\nDOCUMENT\n");
 
             // Get the import prompt
@@ -4006,6 +4125,7 @@
             if (memoId) {
                 if (readyDocs.length) {
                     this.markMemoAttachmentsPending(memoId);
+                    this.confirmMemoAttachments(memoId);
                 }
                 await this.refreshMemoContextAttachments();
                 window.GoToolkitMemoSyncContextEmbeddings?.(memoId);

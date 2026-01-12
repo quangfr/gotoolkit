@@ -1,5 +1,5 @@
 (() => {
-    const DEFAULT_WIDTH = 300;
+    const DEFAULT_WIDTH = 250;
     const MIN_WIDTH = 150;
     const MAX_WIDTH = 520;
     const DEFAULT_TITLE = "Documents";
@@ -115,7 +115,9 @@
                 if (typeof window.GoToolkitMemoCreateAutoDocument === "function") {
                     await window.GoToolkitMemoCreateAutoDocument();
                 }
-                window.GoToolkitAssistInstance?.openImportFileSelector?.();
+                window.GoToolkitAssistInstance?.openImportFileSelector?.({
+                    skipEmbeddings: true
+                });
             });
             actionRow.appendChild(importBtn);
         }

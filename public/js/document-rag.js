@@ -79,6 +79,28 @@
     const PDFJS_WORKER = "js/pdf.worker.min.mjs";
     const TRANSFORMERS_URL = "https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2";
     const JSZIP_URL = "https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm";
+
+    function normalizeJsZipModule(module) {
+        if (!module) return null;
+        // Already a function/constructor (direct export or CommonJS style)
+        if (typeof module === "function") {
+            return module;
+        }
+        // Wrapped in .default (common with some bundlers/transpilers)
+        if (module.default && typeof module.default === "function") {
+            return module.default;
+        }
+        // Has loadAsync as named export (modern ESM pattern)
+        if (typeof module.loadAsync === "function") {
+            return module;
+        }
+        // Named export pattern - try to find the constructor
+        if (module.JSZip && typeof module.JSZip === "function") {
+            return module.JSZip;
+        }
+        // Fallback: return as-is, methods will check for loadAsync
+        return module;
+    }
     const EMBED_BATCH_MAX = 64;
 
     function getMissingStores(db) {
@@ -1339,8 +1361,8 @@
                 if (this.pdfjs?.GlobalWorkerOptions) {
                     this.pdfjs.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
                 }
-                // JSZip from ESM CDN should have loadAsync directly
-                this.jszip = jsZipModule;
+                // Normalize JSZip module to handle different export patterns
+                this.jszip = normalizeJsZipModule(jsZipModule);
                 await this.loadSettings();
                 await this.ensureDb();
                 await this.migrateMemoEmbeddingsEnabled();
@@ -2306,6 +2328,7 @@
             const tabId = typeof options.tabId === "string" && options.tabId.trim()
                 ? options.tabId.trim()
                 : null;
+            const skipEmbeddings = Boolean(options.skipEmbeddings);
             const results = [];
             const queue = Array.from(files);
             const allDocs = await this.getAllDocuments();
@@ -2577,58 +2600,102 @@
                 });
                 const chunkTotal = chunkList.length;
                 const allTexts = chunkList.map((meta) => meta?.text || "");
-                onProgress?.({ type: "chunk", file: file.name, progress: 5 });
-                const startEmbedTime = performance.now();
-                const allEmbeddings = await this.embedBatch(allTexts);
-                const embedDuration = performance.now() - startEmbedTime;
-                onProgress?.({ type: "chunk", file: file.name, progress: 50 });
-                const zeroEmb = new Int8Array(384);
-                let processedChars = 0;
-                for (let c = 0; c < chunkTotal; c++) {
-                    const chunkMeta = chunkList[c];
-                    if (c % Math.ceil(chunkTotal / 20) === 0) {
-                        const percent = Math.round((50 + (c / chunkTotal) * 50));
-                        onProgress?.({ type: "chunk", file: file.name, progress: percent });
-                    }
-                    const chunkText = chunkMeta?.text || "";
-                    processedChars += chunkText.length;
-                    if (totalChars > 0 && (c % Math.ceil(chunkTotal / 20) === 0 || c === chunkTotal - 1)) {
-                        onProgress?.({
-                            type: "chars",
-                            file: file.name,
-                            processedChars,
-                            totalChars
-                        });
-                    }
-                    let emb;
-                    if (chunkText.trim().length < 20) {
-                        emb = zeroEmb;
-                    } else {
-                        emb = allEmbeddings[c];
-                        if (!emb || !emb.length) {
-                            throw new Error(`Embedding failed for chunk ${c} (${file.name})`);
+                if (skipEmbeddings) {
+                    // Skip embeddings - store chunks without vector embeddings
+                    onProgress?.({ type: "chunk", file: file.name, progress: 5 });
+                    let processedChars = 0;
+                    const zeroEmb = new Int8Array(384);
+                    for (let c = 0; c < chunkTotal; c++) {
+                        const chunkMeta = chunkList[c];
+                        if (c % Math.ceil(chunkTotal / 20) === 0) {
+                            const percent = Math.round((5 + (c / chunkTotal) * 95));
+                            onProgress?.({ type: "chunk", file: file.name, progress: percent });
                         }
+                        const chunkText = chunkMeta?.text || "";
+                        processedChars += chunkText.length;
+                        if (totalChars > 0 && (c % Math.ceil(chunkTotal / 20) === 0 || c === chunkTotal - 1)) {
+                            onProgress?.({
+                                type: "chars",
+                                file: file.name,
+                                processedChars,
+                                totalChars
+                            });
+                        }
+                        const chunkEntry = {
+                            id: crypto.randomUUID(),
+                            conversationId: convId,
+                            docId,
+                            idx: c,
+                            text: chunkText,
+                            page: Number.isFinite(chunkMeta?.pageNumber) ? chunkMeta.pageNumber : undefined,
+                            path: chunkMeta?.path,
+                            parentPath: chunkMeta?.parentPath,
+                            rawChunk: chunkMeta?.rawChunk,
+                            metadata: chunkMeta?.metadata,
+                            emb: zeroEmb,
+                            createdAt: Date.now(),
+                            size: chunkConfig.category,
+                            sourceType
+                        };
+                        await this.putChunk(chunkEntry);
+                        await this.addChunkToKeywordIndex(chunkEntry, baseEntry);
                     }
-                    const chunkEntry = {
-                        id: crypto.randomUUID(),
-                        conversationId: convId,
-                        docId,
-                        idx: c,
-                        text: chunkText,
-                        page: Number.isFinite(chunkMeta?.pageNumber) ? chunkMeta.pageNumber : undefined,
-                        path: chunkMeta?.path,
-                        parentPath: chunkMeta?.parentPath,
-                        rawChunk: chunkMeta?.rawChunk,
-                        metadata: chunkMeta?.metadata,
-                        emb: quantizeEmbedding(emb),
-                        createdAt: Date.now(),
-                        size: chunkConfig.category,
-                        sourceType
-                    };
-                    await this.putChunk(chunkEntry);
-                    await this.addChunkToKeywordIndex(chunkEntry, baseEntry);
+                    onProgress?.({ type: "chunk", file: file.name, progress: 100 });
+                } else {
+                    // Normal embedding flow
+                    onProgress?.({ type: "chunk", file: file.name, progress: 5 });
+                    const startEmbedTime = performance.now();
+                    const allEmbeddings = await this.embedBatch(allTexts);
+                    const embedDuration = performance.now() - startEmbedTime;
+                    onProgress?.({ type: "chunk", file: file.name, progress: 50 });
+                    const zeroEmb = new Int8Array(384);
+                    let processedChars = 0;
+                    for (let c = 0; c < chunkTotal; c++) {
+                        const chunkMeta = chunkList[c];
+                        if (c % Math.ceil(chunkTotal / 20) === 0) {
+                            const percent = Math.round((50 + (c / chunkTotal) * 50));
+                            onProgress?.({ type: "chunk", file: file.name, progress: percent });
+                        }
+                        const chunkText = chunkMeta?.text || "";
+                        processedChars += chunkText.length;
+                        if (totalChars > 0 && (c % Math.ceil(chunkTotal / 20) === 0 || c === chunkTotal - 1)) {
+                            onProgress?.({
+                                type: "chars",
+                                file: file.name,
+                                processedChars,
+                                totalChars
+                            });
+                        }
+                        let emb;
+                        if (chunkText.trim().length < 20) {
+                            emb = zeroEmb;
+                        } else {
+                            emb = allEmbeddings[c];
+                            if (!emb || !emb.length) {
+                                throw new Error(`Embedding failed for chunk ${c} (${file.name})`);
+                            }
+                        }
+                        const chunkEntry = {
+                            id: crypto.randomUUID(),
+                            conversationId: convId,
+                            docId,
+                            idx: c,
+                            text: chunkText,
+                            page: Number.isFinite(chunkMeta?.pageNumber) ? chunkMeta.pageNumber : undefined,
+                            path: chunkMeta?.path,
+                            parentPath: chunkMeta?.parentPath,
+                            rawChunk: chunkMeta?.rawChunk,
+                            metadata: chunkMeta?.metadata,
+                            emb: quantizeEmbedding(emb),
+                            createdAt: Date.now(),
+                            size: chunkConfig.category,
+                            sourceType
+                        };
+                        await this.putChunk(chunkEntry);
+                        await this.addChunkToKeywordIndex(chunkEntry, baseEntry);
+                    }
+                    onProgress?.({ type: "chunk", file: file.name, progress: 100 });
                 }
-                onProgress?.({ type: "chunk", file: file.name, progress: 100 });
                 baseEntry.status = "ready";
                 baseEntry.parsedAt = Date.now();
                 baseEntry.chunkCount = chunkTotal;
@@ -2637,7 +2704,8 @@
                 baseEntry.chunkOverlap = chunkConfig.chunkOverlap;
                 baseEntry.rawText = extractedText;
                 await this.putDocument(baseEntry);
-                if (memoId) {
+                // Only add to memo context embeddings if embeddings were generated (not skipped)
+                if (memoId && !skipEmbeddings) {
                     await this.upsertMemoEmbedding({
                         id: `${memoId}:${docId}`,
                         memoId,
@@ -3221,6 +3289,8 @@
             let zip;
             if (typeof this.jszip.loadAsync === "function") {
                 zip = await this.jszip.loadAsync(buffer);
+            } else if (typeof this.jszip.default?.loadAsync === "function") {
+                zip = await this.jszip.default.loadAsync(buffer);
             } else if (typeof this.jszip === "function") {
                 zip = new this.jszip();
                 await zip.loadAsync(buffer);
@@ -3313,6 +3383,8 @@
             let zip;
             if (typeof this.jszip.loadAsync === "function") {
                 zip = await this.jszip.loadAsync(buffer);
+            } else if (typeof this.jszip.default?.loadAsync === "function") {
+                zip = await this.jszip.default.loadAsync(buffer);
             } else if (typeof this.jszip === "function") {
                 zip = new this.jszip();
                 await zip.loadAsync(buffer);
@@ -3345,6 +3417,8 @@
             let zip;
             if (typeof this.jszip.loadAsync === "function") {
                 zip = await this.jszip.loadAsync(buffer);
+            } else if (typeof this.jszip.default?.loadAsync === "function") {
+                zip = await this.jszip.default.loadAsync(buffer);
             } else if (typeof this.jszip === "function") {
                 zip = new this.jszip();
                 await zip.loadAsync(buffer);

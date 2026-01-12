@@ -220,6 +220,70 @@
         state.toast._timer = setTimeout(() => state.toast.classList.remove("visible"), 2400);
     }
 
+    // Spinner frames for transcription toaster (same as chat send-btn)
+    const transcriptionSpinnerFrames = ["◴", "◷", "◶", "◵"];
+    let transcriptionToastTimer = null;
+
+    function showTranscriptionToast(durationSeconds, remainingSeconds) {
+        if (!state.toast) {
+            state.toast = document.createElement("div");
+            state.toast.className = "go-toolkit-voice-toast";
+            document.body.appendChild(state.toast);
+        }
+
+        // Clear any existing timer
+        if (transcriptionToastTimer) {
+            clearInterval(transcriptionToastTimer);
+            transcriptionToastTimer = null;
+        }
+
+        let frameIndex = 0;
+        const updateToast = () => {
+            const frame = transcriptionSpinnerFrames[frameIndex % 4];
+            frameIndex++;
+
+            const mins = Math.floor(remainingSeconds / 60);
+            const secs = remainingSeconds % 60;
+            const timeStr = (mins < 10 ? "0" : "") + mins + ":" + (secs < 10 ? "0" : "") + secs;
+
+            state.toast.innerHTML = frame + " Transcription en cours (" + timeStr + ")";
+            state.toast.style.background = "rgba(15, 23, 42, 0.95)";
+            state.toast.classList.add("visible");
+        };
+
+        updateToast();
+
+        transcriptionToastTimer = setInterval(() => {
+            remainingSeconds--;
+            if (remainingSeconds <= 0) {
+                // Reset countdown when it reaches 0
+                remainingSeconds = Math.max(15, Math.round(durationSeconds / 12));
+            }
+            updateToast();
+        }, 1000);
+
+        // Auto-hide after a reasonable time (5 minutes max)
+        setTimeout(() => {
+            if (transcriptionToastTimer) {
+                clearInterval(transcriptionToastTimer);
+                transcriptionToastTimer = null;
+                if (state.toast) {
+                    state.toast.classList.remove("visible");
+                }
+            }
+        }, 300000);
+    }
+
+    function hideTranscriptionToast() {
+        if (transcriptionToastTimer) {
+            clearInterval(transcriptionToastTimer);
+            transcriptionToastTimer = null;
+        }
+        if (state.toast) {
+            state.toast.classList.remove("visible");
+        }
+    }
+
     function formatDuration(seconds) {
         const total = Math.max(0, Math.floor(seconds || 0));
         const hours = Math.floor(total / 3600);
@@ -857,8 +921,16 @@
             const assemblyKey = getAssemblyApiKey();
             const uploadUrl = await uploadAudioToAssembly(state.audioBlob, assemblyKey);
             const payload = buildAssemblyTranscriptPayload(uploadUrl, 0);
+
+            // Show transcription toast immediately when sending request
+            const countdownSeconds = Math.max(15, Math.round(durationSeconds / 12));
+            showTranscriptionToast(durationSeconds, countdownSeconds);
+
             const transcriptId = await requestAssemblyTranscript(payload, assemblyKey);
             await pollAssemblyTranscript(transcriptId, assemblyKey);
+
+            // Hide transcription toast when done
+            hideTranscriptionToast();
             const audioVtt = await fetchAssemblyTranscriptVtt(transcriptId, assemblyKey);
             const audioSentences = audioVtt ? parseVttTranscript(audioVtt) : [];
             const audioText = getTranscriptText(audioSentences);

@@ -1489,9 +1489,10 @@ Réponds à ASK sur la base essentiellement de CONTEXT et en tenant compte de KN
 Tu es un assistant Q&A qui répond aux questions sur la base de documents fournis par l'utilisateur CONTEXT
 
 ENTRÉES
-1. CONTEXT : contenu de plusieurs documents fournis en contexte
-2. ASK : contexte et questions dans la demande
-3. HISTORY : liste des 4 derniers messages de l'user
+1. DOCUMENT : contenu complet du document courant en Markdown
+2. CONTEXT : contenu de plusieurs documents fournis en contexte
+3. ASK : contexte et questions dans la demande
+4. HISTORY : liste des 4 derniers messages de l'user
 
 RÈGLES
 - Pas d’info → le dire.
@@ -1517,7 +1518,7 @@ FORMAT DE SORTIE (JSON strict)
   "suggestions": ["thème proche de ASK et HISTORY", "thème proche de ASK et HISTORY"]
 }
 
-Réponds à ASK avec CONTEXT en tenant compte de HISTORY.
+Réponds à ASK sur CONTEXT prioritairement en tenant compte de DOCUMENT et HISTORY.
 `
 
         var suggestChatPrompt = `SYSTEM — Éditeur Markdown (JSON)

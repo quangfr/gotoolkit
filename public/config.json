@@ -7,6 +7,9 @@
     "contextEmbeddings": {
       "retentionDays": 7
     },
+    "import": {
+      "directPasteEnabled": false
+    },
     "documentPreview": {
       "showChunksForMarkdown": false,
       "showChunksForPdf": true,
