@@ -445,7 +445,7 @@ const Toolbar = ({ editor }: { editor: Editor }) => {
         </button>
         <button
           className="tiptap-button"
-          aria-label="Insert Mermaid Diagram"
+          aria-label="Mermaid"
           type="button"
           onClick={() => {
             insertMermaidDiagram(editor);
@@ -453,9 +453,7 @@ const Toolbar = ({ editor }: { editor: Editor }) => {
           data-active-state={editor.isActive('mermaidDiagram') ? 'on' : 'off'}
           title="Insérer un diagramme Mermaid"
         >
-          <svg width="24" height="24" className="tiptap-button-icon" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M4 4h16v16H4V4zm2 2v12h12V6H6zm2 2h8v2H8V8zm0 4h8v2H8v-2z"/>
-          </svg>
+          ⇄
         </button>
       </div>
       <div className="tiptap-separator" data-orientation="vertical" role="none"></div>
@@ -873,14 +871,14 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         // Add custom rule for mermaid diagrams
         turndown.addRule('mermaidDiagram', {
           filter: (node) => {
-            return node.nodeName === 'MERMAID-DIAGRAM' || 
+            return node.nodeName === 'MERMAID-DIAGRAM' ||
                    node.nodeName === 'MERMAID_DIAGRAM' ||
                    (node.nodeName === 'DIV' && node.classList?.contains('mermaid-diagram-wrapper'));
           },
           replacement: (content, node) => {
             // Try to get the code from the node
             let mermaidCode = '';
-            
+
             // Check for mermaid-diagram wrapper div
             if (node.nodeName === 'DIV') {
               const codeAttr = node.getAttribute('data-code');
@@ -894,12 +892,12 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
                 }
               }
             }
-            
+
             // If not found, try the original mermaid-diagram element
             if (!mermaidCode && node.nodeName !== 'DIV') {
               mermaidCode = node.getAttribute?.('code') || '';
             }
-            
+
             // If still not found, try to extract from the node's text content
             if (!mermaidCode) {
               const preElement = node.querySelector('pre');
@@ -907,21 +905,19 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
                 mermaidCode = preElement.textContent || '';
               }
             }
-            
-            // Clean up the code (unescape HTML entities)
-            mermaidCode = mermaidCode
-              .replace(/>/g, '>')
-              .replace(/</g, '<')
-              .replace(/&/g, '&')
-              .trim();
-            
+
+            // Clean up the code (decode HTML entities)
+            const textarea = document.createElement('textarea');
+            textarea.innerHTML = mermaidCode;
+            mermaidCode = textarea.value.trim();
+
             if (mermaidCode) {
               return `\n\`\`\`mermaid\n${mermaidCode}\n\`\`\`\n`;
             }
             return '';
           },
         });
-        
+
         turndownRef.current = turndown;
       }
 

@@ -12,8 +12,11 @@ const MermaidDiagramComponent = ({ node, updateAttributes, extension }: any) => 
 
   const code = node.attrs.code || '';
 
+  // Clean the code to remove any markdown formatting
+  const cleanCode = code.replace(/^```mermaid\s*/, '').replace(/\s*```$/, '').trim();
+
   const renderDiagram = React.useCallback(async () => {
-    if (!code.trim()) {
+    if (!cleanCode.trim()) {
       setSvg('');
       setError(null);
       return;
@@ -30,7 +33,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes, extension }: any) => 
         securityLevel: 'loose',
       });
 
-      const { svg } = await mermaid.render(id, code);
+      const { svg } = await mermaid.render(id, cleanCode);
       setSvg(svg);
       setError(null);
     } catch (err: any) {
@@ -38,7 +41,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes, extension }: any) => 
       setError(err.message || 'Invalid mermaid syntax');
       setSvg('');
     }
-  }, [code]);
+  }, [cleanCode]);
 
   React.useEffect(() => {
     renderDiagram();
@@ -59,9 +62,10 @@ const MermaidDiagramComponent = ({ node, updateAttributes, extension }: any) => 
   return (
     <>
       <NodeViewWrapper 
+        tag="mermaid-diagram"
         className="mermaid-diagram-wrapper"
-        data-mermaid-code={encodeURIComponent(code)}
-        data-code={encodeURIComponent(code)}
+        data-mermaid-code={encodeURIComponent(cleanCode)}
+        data-code={encodeURIComponent(cleanCode)}
       >
         <div 
           ref={containerRef}
@@ -83,7 +87,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes, extension }: any) => 
             />
           ) : (
             <div className="mermaid-placeholder">
-              <div className="mermaid-placeholder-icon">📊</div>
+              <div className="mermaid-placeholder-icon">⇄</div>
               <div className="mermaid-placeholder-text">Diagramme Mermaid</div>
               <div className="mermaid-placeholder-hint">Double-cliquez pour ajouter du code</div>
             </div>
@@ -149,11 +153,43 @@ export const MermaidNode = Node.create({
       {
         tag: 'mermaid-diagram',
       },
+      {
+        tag: 'pre',
+        getAttrs: (node) => {
+          if (typeof node === 'string') return false;
+          const codeElement = node.querySelector('code');
+          if (codeElement && codeElement.classList.contains('language-mermaid')) {
+            const rawCode = codeElement.textContent || '';
+            // Decode HTML entities
+            const textarea = document.createElement('textarea');
+            textarea.innerHTML = rawCode;
+            const decodedCode = textarea.value;
+            // Remove any markdown formatting
+            const cleanCode = decodedCode.replace(/^```mermaid\s*/, '').replace(/\s*```$/, '').trim();
+            return {
+              code: cleanCode,
+            };
+          }
+          return false;
+        },
+      },
     ];
   },
 
   renderHTML({ HTMLAttributes }) {
-    return ['mermaid-diagram', mergeAttributes(HTMLAttributes)];
+    const cleanCode = (HTMLAttributes.code || '').replace(/^```mermaid\s*/, '').replace(/\s*```$/, '').trim();
+    return ['mermaid-diagram', mergeAttributes(HTMLAttributes, {
+      'code': cleanCode,
+      'data-code': encodeURIComponent(cleanCode),
+    })];
+  },
+
+  toHTML(node) {
+    const cleanCode = (node.attrs.code || '').replace(/^```mermaid\s*/, '').replace(/\s*```$/, '').trim();
+    return ['mermaid-diagram', {
+      'code': cleanCode,
+      'data-code': encodeURIComponent(cleanCode),
+    }];
   },
 
   addNodeView() {
