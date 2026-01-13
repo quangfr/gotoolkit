@@ -1513,10 +1513,13 @@
             parts.push("Temps réponse: " + stats.responseMs + " ms");
         }
         if (Number.isFinite(stats.requestTokens)) {
-            parts.push("Tokens requête (est.): " + stats.requestTokens);
+            parts.push("Tokens requête : " + stats.requestTokens);
         }
         if (Number.isFinite(stats.responseTokens)) {
-            parts.push("Tokens réponse (est.): " + stats.responseTokens);
+            parts.push("Tokens réponse : " + stats.responseTokens);
+        }
+        if (typeof stats.cost === "number" && stats.cost > 0) {
+            parts.push("Coût : $" + stats.cost.toFixed(6));
         }
         return parts.join(" · ");
     };
@@ -1819,8 +1822,6 @@
         } catch (err) { /* ignore */ }
         if (next !== "advice") {
             this.closeKnowledgeModal(false);
-        } else if (options.source === "dropdown" && prevPreset !== "advice") {
-            this.openKnowledgeModal();
         }
         this.updatePromptDropdownLabel();
         this.updateHeaderDocumentCount();
@@ -2579,8 +2580,11 @@
 
         var requestStart = 0;
         try {
+            // Show spinner on send button
+            this.setSendButtonBusy(true);
             // Store the full AI request payload for debugging/visibility
             storeLastAIRequest(payload);
+            console.log("AI request payload:", payload);
 
             // Calculate total payload token count and start toaster
             var totalPayloadTokens = estimatePayloadTokens(payload);
@@ -2595,7 +2599,11 @@
             });
             // Store the full AI response payload for debugging/visibility
             storeLastAIResponse(result);
-            var parsed = this.parseAssistantResponse(result || "");
+            console.log("AI raw response payload:", result);
+            // Handle new return format: { text: ..., usage: ... }
+            var resultText = (result && typeof result === "object") ? result.text : result;
+            var resultUsage = (result && typeof result === "object") ? result.usage : null;
+            var parsed = this.parseAssistantResponse(resultText || "");
             if (parsed.content === "Réponse illisible." && botMessage.content) {
                 parsed.content = botMessage.content;
             }
@@ -2611,8 +2619,9 @@
             botMessage.suggestions = parsed.suggestions;
             botMessage.techStats = {
                 responseMs: Math.round(performance.now() - requestStart),
-                requestTokens: requestTokenEstimate,
-                responseTokens: estimateTokenCount(parsed.content || botMessage.content || "")
+                requestTokens: resultUsage?.prompt_tokens || requestTokenEstimate,
+                responseTokens: resultUsage?.completion_tokens || estimateTokenCount(parsed.content || botMessage.content || ""),
+                cost: resultUsage?.cost
             };
             if (this.promptPresetId === "edit" || this.promptPresetId === "suggest") {
                 var applied = false;
@@ -2677,9 +2686,10 @@
             this.isStreaming = false;
             this.controller = null;
             this.updateComposerState();
+            // Always restore send button after AI response
+            this.setSendButtonBusy(false);
             if (this.importInProgress) {
                 this.importInProgress = false;
-                this.setSendButtonBusy(false);
                 if (CHAT_APP_ID === "memo") {
                     window.GoToolkitMemoToast?.("");
                 }
@@ -3907,7 +3917,7 @@
             }
             this.sendButton.disabled = true;
             if (this.sendButtonSpinnerTimer) return;
-            var frames = ["◴", "◷", "◶", "◵"];
+            var frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
             var idx = 0;
             this.sendButton.textContent = frames[idx];
             this.sendButtonSpinnerTimer = setInterval(function () {
@@ -3915,7 +3925,7 @@
                 if (this.sendButton) {
                     this.sendButton.textContent = frames[idx];
                 }
-            }.bind(this), 300);
+            }.bind(this), 100);
             return;
         }
         this.sendButton.disabled = false;
@@ -7486,24 +7496,28 @@
                 return;
             }
 
+            // Handle new return format: { text, usage }
+            const responseText = (rawResponse && typeof rawResponse === "object") ? rawResponse.text : rawResponse;
+            const responseUsage = (rawResponse && typeof rawResponse === "object") ? rawResponse.usage : null;
+
             // 📥 Log the received payload with structured formatting
             console.log('%c📥 AI Payload Messages (Received)', 'color: #FFF; background: #2196F3; padding: 8px 12px; border-radius: 4px; font-weight: bold;');
-            console.log(typeof rawResponse === 'string' ? rawResponse : JSON.stringify(rawResponse, null, 2));
+            console.log(typeof responseText === 'string' ? responseText : JSON.stringify(responseText, null, 2));
 
             // 6. Normaliser la réponse et extraire les métadonnées d'édition
             let editMetadata = null;
             let responseObj = null;
             let rawTextFallback = '';
 
-            if (typeof rawResponse === 'string') {
+            if (typeof responseText === 'string') {
                 try {
-                    responseObj = JSON.parse(rawResponse);
+                    responseObj = JSON.parse(responseText);
                 } catch (e) {
                     // Réponse texte brute (pas de JSON)
-                    rawTextFallback = rawResponse.trim();
+                    rawTextFallback = responseText.trim();
                 }
-            } else if (rawResponse && typeof rawResponse === 'object') {
-                responseObj = rawResponse;
+            } else if (responseText && typeof responseText === 'object') {
+                responseObj = responseText;
             }
 
             // Certaines intégrations enveloppent le JSON dans `.content` (string ou objet).

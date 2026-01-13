@@ -12,8 +12,7 @@
     var STORAGE_KEYS_OPENROUTER = {
         API_KEY: "go-toolkit-openrouter-key",
         MODEL: "go-toolkit-openrouter-model",
-        OCR_MODEL: "go-toolkit-openrouter-ocr-model",
-        SORT: "go-toolkit-openrouter-sort"
+        OCR_MODEL: "go-toolkit-openrouter-ocr-model"
     };
 
     var DEFAULTS = {
@@ -24,14 +23,12 @@
         WEBLLM_MODEL: "Llama-3.2-3B-Instruct-q4f16_1-MLC",
         CONTEXT_WINDOW: "0",
         OPENROUTER_MODEL: "openai/gpt-oss-120b",
-        OPENROUTER_OCR_MODEL: "qwen/qwen-2.5-vl-7b-instruct",
-        OPENROUTER_SORT: "price"
+        OPENROUTER_OCR_MODEL: "qwen/qwen-2.5-vl-7b-instruct"
     };
 
     var OPENAI_MODELS = ["gpt-5-nano", "gpt-5-mini"];
     var OLLAMA_MODELS = ["gpt-oss:latest", "gemma3", "ministral-3:latest", "deepseek-r1"];
     var OPENROUTER_MODELS = [
-        "openai/gpt-oss-20b",
         "openai/gpt-oss-120b",
     ];
     function isAllowedWebllmModelId(id) {
@@ -232,18 +229,6 @@
             }
             safeStorageWrite(STORAGE_KEYS_OPENROUTER.OCR_MODEL, normalized);
         },
-        getOpenRouterSort: function () {
-            var stored = safeStorageRead(STORAGE_KEYS_OPENROUTER.SORT);
-            var trimmed = (stored || "").trim();
-            return trimmed || DEFAULTS.OPENROUTER_SORT;
-        },
-        setOpenRouterSort: function (value) {
-            var normalized = (value || "").trim();
-            if (!normalized) {
-                normalized = DEFAULTS.OPENROUTER_SORT;
-            }
-            safeStorageWrite(STORAGE_KEYS_OPENROUTER.SORT, normalized);
-        },
         isOpenRouterAvailable: function () {
             return Boolean(GoToolkitIAConfig.getOpenRouterApiKey() || OPENROUTER_PROXY_ENDPOINT);
         },
@@ -368,7 +353,6 @@
             if (selected === "openrouter") {
                 var openrouterKey = GoToolkitIAConfig.getOpenRouterApiKey();
                 var openrouterModel = GoToolkitIAConfig.getOpenRouterModel();
-                var openrouterSort = GoToolkitIAConfig.getOpenRouterSort();
                 var useProxy = forceOpenRouterProxy || !openrouterKey;
                 var targetEndpoint = useProxy ? OPENROUTER_PROXY_ENDPOINT : OPENROUTER_ENDPOINT;
                 var backendType = useProxy ? "openrouter-proxy" : "openrouter";
@@ -380,7 +364,6 @@
                     apiKey: apiKeyValue,
                     model: openrouterModel,
                     dataCollection: "deny",
-                    sort: openrouterSort,
                     zdr: true,
                     edit: openrouterHasKey,
                     hasOpenRouterKey: openrouterHasKey

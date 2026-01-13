@@ -116,6 +116,13 @@
             margin-left: auto;
             display: inline-flex;
             gap: 4px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .document-explorer__item:hover .document-explorer__item-actions,
+        .document-explorer__item:focus-within .document-explorer__item-actions {
+            opacity: 1;
         }
 
         .document-explorer__item-action {
@@ -238,6 +245,13 @@
             background: var(--app-primary);
             border-color: var(--app-primary);
             color: #ffffff;
+        }
+
+        .document-tab:not(.active) span {
+            max-width: 10ch;
+            overflow: hidden;
+            text-overflow: "…";
+            white-space: nowrap;
         }
 
         .document-tab.is-dragging {
@@ -500,19 +514,37 @@
         /* Spinner animation for counter */
         @keyframes spinnerRotate {
             0% {
-                content: "◴";
+                content: "⠋";
             }
-
-            25% {
-                content: "◷";
+            10% {
+                content: "⠙";
             }
-
+            20% {
+                content: "⠹";
+            }
+            30% {
+                content: "⠸";
+            }
+            40% {
+                content: "⠼";
+            }
             50% {
-                content: "◶";
+                content: "⠴";
             }
-
-            75% {
-                content: "◵";
+            60% {
+                content: "⠦";
+            }
+            70% {
+                content: "⠧";
+            }
+            80% {
+                content: "⠇";
+            }
+            90% {
+                content: "⠏";
+            }
+            100% {
+                content: "⠋";
             }
         }
 
@@ -542,7 +574,7 @@
                 <div class="tabs-actions">
                     <button id="documentExplorerToggle" class="app-home-link" type="button"
                         title="Afficher la bibliothèque" aria-expanded="false"
-                        aria-controls="documentExplorer">⤷</button>
+                        aria-controls="documentExplorer">⬠</button>
                     <div class="nav-switch">
                         <button id="navSwitcherBtn" class="nav-switch-btn" type="button" aria-haspopup="true"
                             aria-expanded="false">⊞ Mémo ▾</button>
@@ -660,7 +692,7 @@
 
     <div id="aiRequestCounterToaster" class="ai-request-counter-toaster" style="display:none;"
         data-toast-aria-live="polite" data-toast-aria-atomic="true">
-        <span id="aiRequestCounterText">◴ 00:00</span>
+        <span id="aiRequestCounterText">⠋ 00:00</span>
     </div>
 
     <input type="file" id="importJsonInput" style="display:none">

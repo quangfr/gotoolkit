@@ -606,7 +606,8 @@
         const payload = {
             model: resolveOpenRouterOcrModel(),
             stream: false,
-            messages: [{ role: "user", content }]
+            messages: [{ role: "user", content }],
+            usage: { include: true }
         };
         setQwenOcrToastVisible(true);
         try {

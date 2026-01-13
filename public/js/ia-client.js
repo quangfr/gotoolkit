@@ -153,12 +153,12 @@
         const payload = await response.json();
         const normalized = normalizeChunk(payload);
         if (normalized && typeof normalized === "string") {
-            return normalized.trim();
+            return { text: normalized.trim(), usage: payload?.usage };
         }
         if (typeof payload === "string") {
-            return payload.trim();
+            return { text: payload.trim(), usage: payload?.usage };
         }
-        return "";
+        return { text: "", usage: payload?.usage };
     }
 
     function buildHeaders(apiKey, headers) {
@@ -181,6 +181,7 @@
         let buffer = "";
         let aggregated = "";
         let eventData = [];
+        let capturedUsage = null;
 
         const releaseReader = () => {
             try {
@@ -228,6 +229,10 @@
                     payload?.type === "response.completed" ||
                     payload?.type === "response.output_text.done"
                 ) {
+                    // Capture usage from final payload
+                    if (payload?.usage) {
+                        capturedUsage = payload.usage;
+                    }
                     if (!aggregated && chunk) {
                         return "done-with-chunk";
                     }
@@ -254,9 +259,9 @@
                 const tailStatus = flushEventData();
                 releaseReader();
                 if (tailStatus === "done-with-chunk") {
-                    return aggregated.trim();
+                    return { text: aggregated.trim(), usage: capturedUsage };
                 }
-                return aggregated.trim();
+                return { text: aggregated.trim(), usage: capturedUsage };
             }
             buffer += decoder.decode(value, { stream: true });
             const lines = buffer.split(/\r?\n/);
@@ -267,17 +272,17 @@
                     if (status === "done") {
                         await cancelStream();
                         releaseReader();
-                        return aggregated.trim();
+                        return { text: aggregated.trim(), usage: capturedUsage };
                     }
                     if (status === "done-with-chunk") {
                         await cancelStream();
                         releaseReader();
-                        return aggregated.trim();
+                        return { text: aggregated.trim(), usage: capturedUsage };
                     }
                     if (status === "stop") {
                         await cancelStream();
                         releaseReader();
-                        return aggregated.trim();
+                        return { text: aggregated.trim(), usage: capturedUsage };
                     }
                     continue;
                 }
@@ -295,17 +300,17 @@
                     if (status === "done") {
                         await cancelStream();
                         releaseReader();
-                        return aggregated.trim();
+                        return { text: aggregated.trim(), usage: capturedUsage };
                     }
                     if (status === "done-with-chunk") {
                         await cancelStream();
                         releaseReader();
-                        return aggregated.trim();
+                        return { text: aggregated.trim(), usage: capturedUsage };
                     }
                     if (status === "stop") {
                         await cancelStream();
                         releaseReader();
-                        return aggregated.trim();
+                        return { text: aggregated.trim(), usage: capturedUsage };
                     }
                 }
             }
@@ -320,6 +325,7 @@
         const decoder = new TextDecoder();
         let buffer = "";
         let aggregated = "";
+        let capturedUsage = null;
 
         const releaseReader = () => {
             try {
@@ -356,6 +362,9 @@
                     }
                 }
                 if (payload?.done || payload?.done_reason) {
+                    if (payload?.usage) {
+                        capturedUsage = payload.usage;
+                    }
                     await cancelStream();
                     releaseReader();
                     return true;
@@ -387,7 +396,7 @@
                     const payload = JSON.parse(sanitized);
                     const shouldStop = await handlePayload(payload);
                     if (shouldStop) {
-                        return aggregated.trim();
+                        return { text: aggregated.trim(), usage: capturedUsage };
                     }
                 } catch (error) {
                     console.warn("NDJSON chunk JSON parse failed", error);
@@ -409,7 +418,7 @@
         }
 
         releaseReader();
-        return aggregated.trim();
+        return { text: aggregated.trim(), usage: capturedUsage };
     }
 
     function toResponsesPayload(payload) {
@@ -859,10 +868,14 @@
                 by: sortBy,
                 partition: null
             },
+            preferredMinThroughput: {
+                p90: 100
+            },
             data_collection: "deny",
             zdr: true
         };
         result.provider = provider;
+        result.usage = { include: true };
 
         return result;
     }
