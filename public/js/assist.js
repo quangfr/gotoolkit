@@ -2584,7 +2584,6 @@
             this.setSendButtonBusy(true);
             // Store the full AI request payload for debugging/visibility
             storeLastAIRequest(payload);
-            console.log("AI request payload:", payload);
 
             // Calculate total payload token count and start toaster
             var totalPayloadTokens = estimatePayloadTokens(payload);
@@ -2599,7 +2598,6 @@
             });
             // Store the full AI response payload for debugging/visibility
             storeLastAIResponse(result);
-            console.log("AI raw response payload:", result);
             // Handle new return format: { text: ..., usage: ... }
             var resultText = (result && typeof result === "object") ? result.text : result;
             var resultUsage = (result && typeof result === "object") ? result.usage : null;
