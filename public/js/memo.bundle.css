@@ -122,21 +122,30 @@
   background-color: #edf2f7;
   color: #3182ce;
 }
+.tableWrapper {
+  overflow-x: auto;
+  max-width: 100%;
+  margin: 1rem 0;
+  scrollbar-width: thin;
+  padding: 24px;
+}
 .ProseMirror table {
   border-collapse: collapse;
   table-layout: fixed;
   width: 100%;
-  margin: 1rem 0;
+  margin: 0;
   overflow: hidden;
 }
 .ProseMirror td,
 .ProseMirror th {
-  min-width: 1em;
+  min-width: 40px;
   border: 1px solid #e2e8f0;
   padding: 8px 12px;
   vertical-align: top;
   box-sizing: border-box;
   position: relative;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 .ProseMirror td > *,
 .ProseMirror th > * {
@@ -167,15 +176,83 @@
   background-color: #3182ce;
   pointer-events: none;
 }
+.table-handle {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 20px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  cursor: grab;
+  z-index: 50;
+  color: #718096;
+  font-size: 12px;
+  user-select: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: background-color 0.2s, color 0.2s;
+}
+.table-handle:hover {
+  background-color: #f7fafc;
+  color: #2d3748;
+}
+.table-handle:active {
+  cursor: grabbing;
+}
+.table-handle-row {
+  transform: translateY(-50%);
+}
+.table-handle-col {
+  transform: translateX(-50%) rotate(90deg);
+}
+.table-drop-indicator {
+  position: absolute;
+  background-color: #3182ce;
+  z-index: 100;
+  pointer-events: none;
+}
+.table-drop-indicator-row {
+  height: 2px;
+  left: 0;
+  right: 0;
+}
+.table-drop-indicator-col {
+  width: 2px;
+  top: 0;
+  bottom: 0;
+}
+.table-context-menu {
+  position: fixed;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  z-index: 1000;
+  padding: 4px;
+  min-width: 120px;
+}
+.table-context-menu-item {
+  display: flex;
+  align-items: center;
+  padding: 6px 12px;
+  font-size: 13px;
+  color: #4a5568;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+.table-context-menu-item:hover {
+  background-color: #f7fafc;
+  color: #2d3748;
+}
 .ProseMirror.resize-cursor {
   cursor: ew-resize;
   cursor: col-resize;
 }
-.tableWrapper {
-  overflow-x: auto;
-}
 .mermaid-diagram-wrapper {
-  margin: 1rem 0;
+  margin: 0;
 }
 .mermaid-diagram-container {
   background-color: #f8fafc;

@@ -158,7 +158,98 @@ const CustomTableCell = TableCell.extend({
 })
 
 import { NodeSelection } from 'prosemirror-state';
-import { DOMSerializer } from 'prosemirror-model';
+import { DOMSerializer, Node as PMNode } from 'prosemirror-model';
+
+const getTableCellInfo = (view: any, event: MouseEvent) => {
+  const pos = view.posAtCoords({ left: event.clientX, top: event.clientY });
+  if (!pos) return null;
+
+  const $pos = view.state.doc.resolve(pos.pos);
+  let table = null;
+  let row = null;
+  let cell = null;
+  let tablePos = -1;
+  let rowPos = -1;
+  let cellPos = -1;
+
+  for (let d = $pos.depth; d > 0; d--) {
+    const node = $pos.node(d);
+    if (node.type.name === 'tableCell' || node.type.name === 'tableHeader') {
+      cell = node;
+      cellPos = $pos.before(d);
+    } else if (node.type.name === 'tableRow') {
+      row = node;
+      rowPos = $pos.before(d);
+    } else if (node.type.name === 'table') {
+      table = node;
+      tablePos = $pos.before(d);
+    }
+  }
+
+  if (!table || !row || !cell) return null;
+
+  // Find row and col index
+  let rowIndex = -1;
+  let colIndex = -1;
+
+  table.forEach((_r: PMNode, offset: number, index: number) => {
+    if (offset === rowPos - tablePos - 1) {
+      rowIndex = index;
+      _r.forEach((_c: PMNode, offsetInRow: number, ci: number) => {
+        if (offsetInRow + offset + tablePos + 2 === cellPos) {
+          colIndex = ci;
+        }
+      });
+    }
+  });
+
+  return { table, tablePos, row, rowPos, cell, cellPos, rowIndex, colIndex };
+};
+
+const moveRow = (editor: Editor, tablePos: number, fromRowIndex: number, toRowIndex: number) => {
+  const { tr } = editor.state;
+  const table = editor.state.doc.nodeAt(tablePos);
+  if (!table || table.type.name !== 'table') return false;
+
+  const rows: PMNode[] = [];
+  table.forEach((node: PMNode) => {
+    if (node.type.name === 'tableRow') {
+      rows.push(node);
+    }
+  });
+
+  if (fromRowIndex < 0 || fromRowIndex >= rows.length || toRowIndex < 0 || toRowIndex >= rows.length) return false;
+
+  const newRows = [...rows];
+  const [rowToMove] = newRows.splice(fromRowIndex, 1);
+  newRows.splice(toRowIndex, 0, rowToMove);
+
+  const newTable = table.type.create(table.attrs, newRows);
+  editor.view.dispatch(tr.replaceWith(tablePos, tablePos + table.nodeSize, newTable));
+  return true;
+};
+
+const moveColumn = (editor: Editor, tablePos: number, fromColIndex: number, toColIndex: number) => {
+  const { tr } = editor.state;
+  const table = editor.state.doc.nodeAt(tablePos);
+  if (!table || table.type.name !== 'table') return false;
+
+  const newRows: PMNode[] = [];
+  table.forEach((row: PMNode) => {
+    const cells: PMNode[] = [];
+    row.forEach((cell: PMNode) => cells.push(cell));
+    
+    if (fromColIndex >= 0 && fromColIndex < cells.length && toColIndex >= 0 && toColIndex < cells.length) {
+      const [cellToMove] = cells.splice(fromColIndex, 1);
+      cells.splice(toColIndex, 0, cellToMove);
+    }
+    newRows.push(row.type.create(row.attrs, cells));
+  });
+
+  const newTable = table.type.create(table.attrs, newRows);
+  editor.view.dispatch(tr.replaceWith(tablePos, tablePos + table.nodeSize, newTable));
+  return true;
+};
 
 // Fonctions utilitaires pour les marks
 const hasMarkInSelection = (editor: Editor | null, markName: 'highlight' | 'strike'): boolean => {
@@ -813,6 +904,14 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   placeholder = 'Commencez à écrire...' 
 }) => {
   const turndownRef = React.useRef<any>(null);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  
+  const [rowHandle, setRowHandle] = React.useState<{ top: number, left: number, rowIndex: number, tablePos: number } | null>(null);
+  const [colHandle, setColHandle] = React.useState<{ top: number, left: number, colIndex: number, tablePos: number } | null>(null);
+  const [tableContextMenu, setTableContextMenu] = React.useState<{ top: number, left: number, type: 'row' | 'col', index: number, tablePos: number } | null>(null);
+  const [mouseDownPoints, setMouseDownPoints] = React.useState<{ type: 'row' | 'col', index: number, tablePos: number, x: number, y: number } | null>(null);
+  const [dragState, setDragState] = React.useState<{ type: 'row' | 'col', index: number, tablePos: number, x: number, y: number } | null>(null);
+  const [dropIndicator, setDropIndicator] = React.useState<{ top: number, left: number, width?: number, height?: number, type: 'row' | 'col' } | null>(null);
 
   const editor = useEditor({
     extensions: [
@@ -852,6 +951,191 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   });
 
   // Expose editor to window for the bridge
+  React.useEffect(() => {
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      if (!dragState && !mouseDownPoints) return;
+      if (!containerRef.current || !editor) return;
+
+      const x = e.clientX;
+      const y = e.clientY;
+
+      if (!dragState && mouseDownPoints) {
+        const dist = Math.sqrt(Math.pow(x - mouseDownPoints.x, 2) + Math.pow(y - mouseDownPoints.y, 2));
+        if (dist > 5) {
+          setDragState({ ...mouseDownPoints, x, y });
+        }
+        return;
+      }
+
+      const containerRect = containerRef.current.getBoundingClientRect();
+      setDragState(prev => prev ? { ...prev, x, y } : null);
+
+      // Update drop indicator
+      if (dragState) {
+        const info = getTableCellInfo(editor.view, e);
+        if (info && info.tablePos === dragState.tablePos) {
+          const cellDOM = editor.view.nodeDOM(info.cellPos) as HTMLElement;
+          const rect = cellDOM.getBoundingClientRect();
+          const tableDOM = editor.view.nodeDOM(info.tablePos) as HTMLElement;
+          const tableRect = tableDOM.getBoundingClientRect();
+
+          if (dragState.type === 'row') {
+            const isAfter = y > rect.top + rect.height / 2;
+            setDropIndicator({
+              top: (isAfter ? rect.bottom : rect.top) - containerRect.top,
+              left: tableRect.left - containerRect.left,
+              width: tableRect.width,
+              type: 'row'
+            });
+          } else {
+            const isAfter = x > rect.left + rect.width / 2;
+            setDropIndicator({
+              top: tableRect.top - containerRect.top,
+              left: (isAfter ? rect.right : rect.left) - containerRect.left,
+              height: tableRect.height,
+              type: 'col'
+            });
+          }
+        }
+      }
+    };
+
+    const handleGlobalMouseUp = (e: MouseEvent) => {
+      if (dragState && editor) {
+        const info = getTableCellInfo(editor.view, e);
+        if (info && info.tablePos === dragState.tablePos) {
+          const cellDOM = editor.view.nodeDOM(info.cellPos) as HTMLElement;
+          const rect = cellDOM.getBoundingClientRect();
+          
+          if (dragState.type === 'row') {
+            const isAfter = e.clientY > rect.top + rect.height / 2;
+            let targetIndex = isAfter ? info.rowIndex + 1 : info.rowIndex;
+            // Adjustment if target is after the dragged row
+            if (targetIndex > dragState.index) targetIndex--;
+            if (targetIndex !== dragState.index) {
+              moveRow(editor, dragState.tablePos, dragState.index, targetIndex);
+            }
+          } else {
+            const isAfter = e.clientX > rect.left + rect.width / 2;
+            let targetIndex = isAfter ? info.colIndex + 1 : info.colIndex;
+            if (targetIndex > dragState.index) targetIndex--;
+            if (targetIndex !== dragState.index) {
+              moveColumn(editor, dragState.tablePos, dragState.index, targetIndex);
+            }
+          }
+        }
+      } else if (mouseDownPoints) {
+        setTableContextMenu({ 
+          top: e.clientY, 
+          left: e.clientX, 
+          type: mouseDownPoints.type, 
+          index: mouseDownPoints.index, 
+          tablePos: mouseDownPoints.tablePos 
+        });
+      }
+
+      setDragState(null);
+      setMouseDownPoints(null);
+      setDropIndicator(null);
+    };
+
+    if (dragState || mouseDownPoints) {
+      window.addEventListener('mousemove', handleGlobalMouseMove);
+      window.addEventListener('mouseup', handleGlobalMouseUp);
+    }
+
+    return () => {
+      window.removeEventListener('mousemove', handleGlobalMouseMove);
+      window.removeEventListener('mouseup', handleGlobalMouseUp);
+    };
+  }, [dragState, mouseDownPoints, editor]);
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!editor || dragState) return;
+    
+    // Don't hide handles if mouse is over them
+    if ((e.target as HTMLElement).closest('.table-handle')) return;
+
+    let info = getTableCellInfo(editor.view, e.nativeEvent);
+    
+    // If not directly over a cell, check if we are near a table within the wrapper
+    if (!info) {
+      const target = e.target as HTMLElement;
+      const wrapper = target.closest('.tableWrapper');
+      if (wrapper) {
+        const table = wrapper.querySelector('table');
+        if (table) {
+          const rect = table.getBoundingClientRect();
+          const margin = 20;
+          
+          if (
+            e.clientX >= rect.left - margin &&
+            e.clientX <= rect.right + margin &&
+            e.clientY >= rect.top - margin &&
+            e.clientY <= rect.bottom + margin
+          ) {
+            // Clamp coordinates to be inside the table so getTableCellInfo can find the cell
+            const clampedX = Math.max(rect.left + 5, Math.min(rect.right - 5, e.clientX));
+            const clampedY = Math.max(rect.top + 5, Math.min(rect.bottom - 5, e.clientY));
+            
+            // Temporary event-like object for getTableCellInfo
+            const mockEvent = { clientX: clampedX, clientY: clampedY } as MouseEvent;
+            info = getTableCellInfo(editor.view, mockEvent);
+          }
+        }
+      }
+    }
+
+    if (info) {
+      const { tablePos, rowIndex, colIndex } = info;
+      const cellDOM = editor.view.nodeDOM(info.cellPos) as HTMLElement;
+      const tableDOM = editor.view.nodeDOM(tablePos) as HTMLElement;
+      if (cellDOM && tableDOM) {
+        const rect = cellDOM.getBoundingClientRect();
+        const tableRect = tableDOM.getBoundingClientRect();
+        const containerRect = containerRef.current?.getBoundingClientRect();
+        if (containerRect) {
+          setRowHandle({
+            top: rect.top - containerRect.top + rect.height / 2,
+            left: tableRect.left - containerRect.left - 8, // Centered (width 16px)
+            rowIndex,
+            tablePos
+          });
+          setColHandle({
+            top: tableRect.top - containerRect.top - 10, // Centered (height 20px)
+            left: rect.left - containerRect.left + rect.width / 2,
+            colIndex,
+            tablePos
+          });
+          return;
+        }
+      }
+    }
+
+    // Check if we are near existing handles to prevent flickering when moving mouse to them
+    const mouseX = e.clientX;
+    const mouseY = e.clientY;
+    const containerRect = containerRef.current?.getBoundingClientRect();
+    
+    if (containerRect) {
+      if (rowHandle) {
+        const handleX = containerRect.left + rowHandle.left;
+        const handleY = containerRect.top + rowHandle.top;
+        const dist = Math.sqrt(Math.pow(mouseX - handleX, 2) + Math.pow(mouseY - handleY, 2));
+        if (dist < 30) return; // Keep row handle if near
+      }
+      if (colHandle) {
+        const handleX = containerRect.left + colHandle.left;
+        const handleY = containerRect.top + colHandle.top;
+        const dist = Math.sqrt(Math.pow(mouseX - handleX, 2) + Math.pow(mouseY - handleY, 2));
+        if (dist < 30) return; // Keep col handle if near
+      }
+    }
+
+    setRowHandle(null);
+    setColHandle(null);
+  };
+
   React.useEffect(() => {
     if (editor) {
       (window as any).MemoEditor = editor;
@@ -930,7 +1214,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           
           // Pre-process mermaid code blocks to mermaid-diagram tags
           const mermaidRegex = /```mermaid\n([\s\S]*?)\n```/g;
-          const processedMarkdown = markdownWithHighlight.replace(mermaidRegex, (match, code) => {
+          const processedMarkdown = markdownWithHighlight.replace(mermaidRegex, (_match, code) => {
             const escapedCode = code.trim()
               .replace(/&/g, '&amp;')
               .replace(/</g, '&lt;')
@@ -1089,13 +1373,12 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     };
   }, [editor]);
 
-  // Fonction pour envoyer à l'IA
   if (!editor) {
     return null;
   }
 
   return (
-    <div className="simple-editor">
+    <div className="simple-editor" ref={containerRef} onMouseMove={handleMouseMove} onMouseLeave={() => { setRowHandle(null); setColHandle(null); }}>
       <Toolbar editor={editor} />
       <BubbleMenuComponent 
         editor={editor}
@@ -1104,6 +1387,124 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         onReject={() => rejectSelection(editor)}
       />
       <EditorContent editor={editor} />
+
+      {rowHandle && !dragState && (
+        <div 
+          className="table-handle table-handle-row"
+          style={{ top: rowHandle.top, left: rowHandle.left }}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            setMouseDownPoints({ type: 'row', index: rowHandle.rowIndex, tablePos: rowHandle.tablePos, x: e.clientX, y: e.clientY });
+          }}
+        >
+          ⠿
+        </div>
+      )}
+
+      {colHandle && !dragState && (
+        <div 
+          className="table-handle table-handle-col"
+          style={{ top: colHandle.top, left: colHandle.left }}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            setMouseDownPoints({ type: 'col', index: colHandle.colIndex, tablePos: colHandle.tablePos, x: e.clientX, y: e.clientY });
+          }}
+        >
+          ⠿
+        </div>
+      )}
+
+      {dropIndicator && (
+        <div 
+          className={`table-drop-indicator table-drop-indicator-${dropIndicator.type}`}
+          style={{ 
+            top: dropIndicator.top, 
+            left: dropIndicator.left, 
+            width: dropIndicator.width, 
+            height: dropIndicator.height 
+          }}
+        />
+      )}
+
+      {dragState && (
+        <div 
+          className={`table-handle ${dragState.type === 'col' ? 'table-handle-col' : 'table-handle-row'}`}
+          style={{ 
+            position: 'fixed',
+            top: dragState.y,
+            left: dragState.x,
+            opacity: 0.8,
+            pointerEvents: 'none',
+            zIndex: 2000,
+            boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+            transform: `translate(-50%, -50%) ${dragState.type === 'col' ? 'rotate(90deg)' : ''}`
+          }}
+        >
+          ⠿
+        </div>
+      )}
+
+      {tableContextMenu && (
+        <>
+          <div style={{ position: 'fixed', inset: 0, zIndex: 999 }} onClick={() => setTableContextMenu(null)} />
+          <div 
+            className="table-context-menu"
+            style={{ top: tableContextMenu.top, left: tableContextMenu.left }}
+          >
+            <div 
+              className="table-context-menu-item"
+              onClick={() => {
+                const { type, index, tablePos } = tableContextMenu;
+                // Move selection to target
+                const table = editor.state.doc.nodeAt(tablePos);
+                if (table) {
+                  let cellPos = -1;
+                  if (type === 'row') {
+                    cellPos = tablePos + 1;
+                    for (let i = 0; i < index; i++) cellPos += table.child(i).nodeSize;
+                    cellPos += 1; // into row
+                  } else {
+                    const row = table.child(0);
+                    cellPos = tablePos + 1 + 1; // into row, into first cell
+                    for (let i = 0; i < index; i++) cellPos += row.child(i).nodeSize;
+                  }
+                  editor.chain().focus().setNodeSelection(cellPos).run();
+                  if (type === 'row') editor.chain().addRowBefore().run();
+                  else editor.chain().addColumnBefore().run();
+                }
+                setTableContextMenu(null);
+              }}
+            >
+              Ajouter
+            </div>
+            <div 
+              className="table-context-menu-item"
+              onClick={() => {
+                const { type, index, tablePos } = tableContextMenu;
+                const table = editor.state.doc.nodeAt(tablePos);
+                if (table) {
+                  let cellPos = -1;
+                  if (type === 'row') {
+                    cellPos = tablePos + 1;
+                    for (let i = 0; i < index; i++) cellPos += table.child(i).nodeSize;
+                    cellPos += 1;
+                  } else {
+                    const row = table.child(0);
+                    cellPos = tablePos + 1 + 1;
+                    for (let i = 0; i < index; i++) cellPos += row.child(i).nodeSize;
+                  }
+                  editor.chain().focus().setNodeSelection(cellPos).run();
+                  if (type === 'row') editor.chain().deleteRow().run();
+                  else editor.chain().deleteColumn().run();
+                }
+                setTableContextMenu(null);
+              }}
+            >
+              Supprimer
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
