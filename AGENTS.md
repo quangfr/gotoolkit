@@ -5,7 +5,7 @@
 - Workers live in `workers/` (OpenAI proxy, sharing, feedback, AssemblyAI).
 
 ## Navigation + cache
-- `public/index.html` links: `canvas.html`, `grid.html`, `draw.html`, `timeline.html`, `voice.html`, `memo.html`.
+- `public/index.html` links: `grid.html` and `memo.html`.
 - All module links include `?v=2026.01.13.2`; bump everywhere when assets change.
 - `public/prompt.js` is the root for all AI system prompts and templates.
 - All info panel versions should be updated to match the asset version whenever cache-busters are bumped.
@@ -15,12 +15,13 @@
 - Each page sets `window.GO_TOOLKIT_SHARE_API_URL`: launcher `https://gotoolkit.workers.dev`, modules `https://share.gotoolkit.workers.dev/`.
 
 ## Modules
-- Canvas (`slides`): PPTX/PNG/JSON export; templates in `public/js/prompt.js`. Deprecated.
-- Grid (`grids`): AG Grid, CSV/JSON export, template/criteria modal `public/js/template-criteria.js`, covered by Playwright.
-- Draw (`diagrams`): Excalidraw via `window.GoToolkitExcalidraw` (Mermaid → Excalidraw).
-- Timeline (`timelines`): vis-timeline, XLSX/PNG/JSON export. Deprecated.
-- Voice (`voices`): recording + STT; diarization uses participant list; shareable via `voices` collection. Deprecated.
 - **Memo** (`memos`): Rich-text editor + RAG-powered chat (assist.js); document management, context embeddings per memo.
+- Grid (`grids`): AG Grid, CSV/JSON export, template/criteria modal `public/js/template-criteria.js`, covered by Playwright.
+- Canvas (`slides`). Deprecated.
+- Draw (`diagrams`): Deprecated.
+- Timeline (`timelines`). Deprecated.
+- Voice (`voices`). Deprecated.
+
 
 ## Globals (keep stable)
 Only `public/js` may touch `window`:
@@ -36,7 +37,7 @@ Only `public/js` may touch `window`:
   - Formats: 12 supported (PDF, DOCX, PPTX, XLSX, JSON, CSV, TSV, TXT, MD, ODF, RTF, logs). Format-specific extraction + chunking strategies.
   - Ingestion: File deduplication (fileHash), heuristic chunking (small/medium based on format), batch embedding, sharding by docId for per-file stats + deletion.
   - Retrieval: `vectorSearch()` embeds query → cosine similarity scoring → min-score filtering (0.1) → top-K (10). Fallback: `searchKeywordCandidates()` for pre-filtering.
-  - Text recognition: Tesseract.js OCR with optional OpenCV preprocessing; Qwen vision fallback via OpenRouter when configured.
+  - Text recognition: Optional OpenCV preprocessing; Qwen vision via OpenRouter.
   - Voice recognition: AssemblyAI proxy for media transcription; imported media stores transcript text only.
 
 ## Sharing

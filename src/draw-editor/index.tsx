@@ -63,11 +63,30 @@ const EDGE_STYLE_CONTENT = `.${EDGE_HOST_CLASS} .excalidraw .App-bottom-bar {
 .${EDGE_HOST_CLASS} .excalidraw .help-Icon,
 .${EDGE_HOST_CLASS} .excalidraw .help-icon {
     background-color: #ffffff !important;
+    padding: 4px !important;
 }
 
 /* Make Excalidraw UI more compact */
+.${EDGE_HOST_CLASS} .excalidraw {
+    --default-button-size: 1.5rem !important;
+    --default-icon-size: 1.5rem !important;
+    --lg-button-size :1.3rem !important;
+}
+
 .${EDGE_HOST_CLASS} .excalidraw .Island {
     --island-padding: 4px !important;
+}
+
+.${EDGE_HOST_CLASS} .excalidraw .App-menu__left {
+     top: 55px!important;
+    max-width: 140px !important;
+    padding: 4px !important;
+    min-height: 570px !important;
+}
+
+.${EDGE_HOST_CLASS} .excalidraw .App-menu_bottom {
+    align-items:bottom !important;
+    bottom: 5px;
 }
 
 .${EDGE_HOST_CLASS} .excalidraw .Stack {
@@ -132,9 +151,93 @@ const EDGE_STYLE_CONTENT = `.${EDGE_HOST_CLASS} .excalidraw .App-bottom-bar {
     zoom: 0.8;
 }
 
-/* Higher z-index for help modal */
+/* Compact Properties Panel (Right/Left side) */
+.${EDGE_HOST_CLASS} .excalidraw .panel-column {
+    gap: 4px !important;
+    padding: 4px !important;
+    width: auto !important;
+    min-width: 160px !important;
+}
+
+.${EDGE_HOST_CLASS} .excalidraw .fieldset {
+    margin-bottom: 4px !important;
+}
+
+.${EDGE_HOST_CLASS} .excalidraw .fieldset .legend {
+    font-size: 10px !important;
+    margin-bottom: 2px !important;
+}
+
+.${EDGE_HOST_CLASS} .excalidraw .buttonList label {
+    padding: 2px !important;
+    font-size: 10px !important;
+    min-height: 24px !important;
+}
+
+/* Hide color presets (swatches) and keep only custom picker */
+.${EDGE_HOST_CLASS} .excalidraw .color-picker__swatches,
+.${EDGE_HOST_CLASS} .excalidraw .color-picker__top-picks,
+.${EDGE_HOST_CLASS} .excalidraw .color-picker__top-picks + .color-picker__separator {
+    display: none !important;
+}
+
+.${EDGE_HOST_CLASS} .excalidraw .color-picker-container {
+    padding: 4px !important;
+    grid-template-columns: 0px 20px 1.625rem!important;
+}
+
+/* Compact Top-Left File Menu */
+.${EDGE_HOST_CLASS} .excalidraw .dropdown-menu {
+    padding: 0px !important;
+    min-width: 160px !important;
+}
+
+.${EDGE_HOST_CLASS} .excalidraw .dropdown-menu-item {
+    padding: 4px 8px !important;
+    font-size: 12px !important;
+    min-height: 24px !important;
+}
+
+.${EDGE_HOST_CLASS} .excalidraw .dropdown-menu-separator {
+    margin: 2px 0 !important;
+}
+
+/* Hide Social Links and Excalidraw branding in Menu */
+.${EDGE_HOST_CLASS} .excalidraw .dropdown-menu-item[aria-label*="GitHub"],
+.${EDGE_HOST_CLASS} .excalidraw .dropdown-menu-item[aria-label*="GitHub"],
+.${EDGE_HOST_CLASS} .excalidraw .dropdown-menu-item[aria-label*="Discord"],
+.${EDGE_HOST_CLASS} .excalidraw .dropdown-menu-item[aria-label*="Twitter"],
+.${EDGE_HOST_CLASS} .excalidraw .dropdown-menu-item-base__socials,
+.${EDGE_HOST_CLASS} .excalidraw .dropdown-menu footer {
+    display: none !important;
+}
+
+/* Higher z-index and compact Help Dialog */
 .excalidraw-modal-container {
     z-index: 100000 !important;
+}
+
+.excalidraw-modal-container .HelpDialog {
+    max-width: 900px !important;
+}
+
+.excalidraw-modal-container .HelpDialog__content {
+    margin : 4px !important;
+    padding: 4px !important;
+    font-size: 11px !important;
+}
+
+.excalidraw-modal-container .HelpDialog button {
+    padding: 4px 8px !important;
+    font-size: 10px !important;
+}
+
+.excalidraw-modal-container .HelpDialog__shortcut-list {
+    gap: 4px !important;
+}
+
+.excalidraw-modal-container .HelpDialog__shortcut {
+    margin-bottom: 2px !important;
 }
 `;
 

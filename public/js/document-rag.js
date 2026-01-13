@@ -2738,7 +2738,9 @@
             }
             if (file.type === "application/pdf" || ext === "pdf") {
                 const pdfResult = await this.extractPdf(file);
-                const pagesNeedingOcr = pdfResult?.pdfPages?.some((page) => shouldOcrText(page?.text || ""));
+                const pagesNeedingOcr = pdfResult?.pdfPages?.some((page) => {
+                    return shouldOcrText(page?.text || "") || page?.hasImages;
+                });
                 if (pdfResult?.pdfPages && pdfResult.pdfPages.length && pagesNeedingOcr) {
                     const ocrResult = await this.extractPdfOcrText(pdfResult, file.name);
                     if (ocrResult?.text) {
@@ -2955,7 +2957,24 @@
                     .map((item) => (item.str || ""))
                     .filter(Boolean);
                 const pageText = tokens.join(" ") + "\n\n";
-                pages.push({ pageNumber: pageIndex, text: pageText });
+
+                let hasImages = false;
+                try {
+                    const ops = await page.getOperatorList();
+                    for (let i = 0; i < ops.fnArray.length; i++) {
+                        const fn = ops.fnArray[i];
+                        if (fn === global.pdfjsLib?.OPS?.paintImageXObject ||
+                            fn === global.pdfjsLib?.OPS?.paintInlineImage ||
+                            fn === 85 || fn === 82) {
+                            hasImages = true;
+                            break;
+                        }
+                    }
+                } catch (e) {
+                    // ignore
+                }
+
+                pages.push({ pageNumber: pageIndex, text: pageText, hasImages });
                 full += pageText;
             }
             return { text: full, pdfPages: pages, pdfBuffer };
@@ -3001,6 +3020,14 @@
 
             if (canUseQwenFallback()) {
                 try {
+                    if (canvas && quality && quality.needsPreprocess && !quality.preprocessApplied) {
+                        try {
+                            await preprocessCanvasWithOpenCv(canvas);
+                            quality.preprocessApplied = true;
+                        } catch (err) {
+                            quality.preprocessFailed = true;
+                        }
+                    }
                     const results = await extractWithVisionModel([canvas || file]);
                     const visionText = (results && results[0] ? results[0] : "").trim();
                     if (visionText && isReadableOcrText(visionText)) {
@@ -3050,7 +3077,9 @@
                 const page = await pdf.getPage(pageIndex);
                 const pageInfo = pages[pageIndex - 1];
                 const pageText = pageInfo?.text || "";
-                if (!offlineDisabled && !shouldOcrText(pageText)) {
+                const needsOcr = shouldOcrText(pageText) || pageInfo?.hasImages;
+
+                if (!offlineDisabled && !needsOcr) {
                     output.push(pageText.trim());
                     continue;
                 }
@@ -3089,8 +3118,13 @@
                             ocrText = "";
                         }
                     }
-                    output.push(ocrText);
-                    if (offlineDisabled || ocrText.length < 20 || !isLikelyEnFrText(ocrText)) {
+                    if (ocrText && pageText.trim() && !shouldOcrText(pageText)) {
+                        output.push(pageText.trim() + "\n\n" + ocrText);
+                    } else {
+                        output.push(ocrText || pageText.trim());
+                    }
+
+                    if (offlineDisabled || (ocrText.length < 20 && shouldOcrText(pageText)) || (ocrText.length < 5 && pageInfo?.hasImages)) {
                         fallbackIndexMap.set(fallbackImages.length, pageIndex - 1);
                         fallbackImages.push(canvas);
                     }
@@ -3103,6 +3137,18 @@
                 const batchSize = 5;
                 for (let i = 0; i < fallbackImages.length; i += batchSize) {
                     const batch = fallbackImages.slice(i, i + batchSize);
+                    for (const img of batch) {
+                        if (img instanceof HTMLCanvasElement) {
+                            const q = analyzeCanvasQuality(img);
+                            if (q.needsPreprocess) {
+                                try {
+                                    await preprocessCanvasWithOpenCv(img);
+                                } catch (e) {
+                                    // ignore
+                                }
+                            }
+                        }
+                    }
                     try {
                         const results = await extractWithVisionModel(batch);
                         results.forEach(function (text, idx) {
@@ -3156,6 +3202,18 @@
             const batchPages = [];
             const flushBatch = async () => {
                 if (!batch.length) return;
+                for (const img of batch) {
+                    if (img instanceof HTMLCanvasElement) {
+                        const q = analyzeCanvasQuality(img);
+                        if (q.needsPreprocess) {
+                            try {
+                                await preprocessCanvasWithOpenCv(img);
+                            } catch (e) {
+                                // ignore
+                            }
+                        }
+                    }
+                }
                 const texts = await extractWithVisionModel(batch);
                 texts.forEach((text, idx) => {
                     const pageNumber = batchPages[idx];

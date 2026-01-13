@@ -58,7 +58,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes, extension }: any) => 
       }
     }
 
-    if (!code.trim()) {
+    if (!code.trim() && !excalidrawJSON) {
       setSvg('');
       setError(null);
       return;
@@ -119,15 +119,14 @@ const MermaidDiagramComponent = ({ node, updateAttributes, extension }: any) => 
       // Use 60% zoom for the document preview
       const svgHtml = await (window as any).GoToolkitDrawMemo.getSVG(0.6);
       
-      // If code is empty, we should probably clear the excalidrawJSON too
-      // to ensure the placeholder shows up correctly.
-      const finalExcalidrawJSON = code.trim() ? json : '';
+      // If both code and excalidraw are empty, we clear everything
+      const isExcalidrawEmpty = !json || json === '{"elements":[],"appState":{}}' || json.includes('"elements":[]');
+      const finalExcalidrawJSON = (code.trim() || !isExcalidrawEmpty) ? json : '';
       
       updateAttributes({ 
         excalidrawJSON: finalExcalidrawJSON,
-        // We keep the code as is, unless we want to try to sync back to mermaid
       });
-      if (svgHtml && code.trim()) {
+      if (svgHtml && (code.trim() || !isExcalidrawEmpty)) {
         setSvg(svgHtml);
       } else {
         setSvg('');
@@ -189,9 +188,9 @@ const MermaidDiagramComponent = ({ node, updateAttributes, extension }: any) => 
             />
           ) : (
             <div className="mermaid-placeholder">
-              <div className="mermaid-placeholder-icon">⇄</div>
-              <div className="mermaid-placeholder-text">Diagramme Mermaid</div>
-              <div className="mermaid-placeholder-hint">Double-cliquez pour ajouter du code</div>
+              <div className="mermaid-placeholder-icon">◇</div>
+              <div className="mermaid-placeholder-text">Diagramme vide</div>
+              <div className="mermaid-placeholder-hint">Double-cliquez pour éditer</div>
             </div>
           )}
         </div>

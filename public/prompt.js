@@ -1769,7 +1769,7 @@ RÈGLES DE SORTIE
             },
             draw: {
                 id: "draw",
-                label: "ʃ Draw",
+                label: "◇ Dessiner",
                 prompt: drawChatPrompt,
                 defaultPrompt: drawChatPrompt
             },

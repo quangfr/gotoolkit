@@ -82,6 +82,11 @@
   font-family: inherit;
   line-height: 1.5;
   flex: 1;
+  border: 2px solid transparent;
+  transition: border-color 0.2s;
+}
+.mermaid-diagram-container:focus {
+  border: 2px solid var(--app-primary);
 }
 .simple-editor .ProseMirror p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);

@@ -453,7 +453,7 @@ const Toolbar = ({ editor }: { editor: Editor }) => {
           data-active-state={editor.isActive('mermaidDiagram') ? 'on' : 'off'}
           title="Insérer un diagramme Mermaid"
         >
-          <span className="tiptap-button-icon" style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>⇄</span>
+          <span className="tiptap-button-icon" style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>◇</span>
         </button>
       </div>
       <div className="tiptap-separator" data-orientation="vertical" role="none"></div>

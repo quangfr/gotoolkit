@@ -1,5 +1,5 @@
 ## 2026-01-13
-- Mémo : Éditer un diagramme Mermaid dans un document ou avec l'IA
+- Mémo : Éditer un diagramme `Draw` avec Assist
 
 ## 2026-01-12
 - IA : Reconnaissance texte OCR avec `qwen-2.5-vl-7b-instruct` 
@@ -18,7 +18,7 @@
 - Mémo : Édition avec sélection du texte
 
 ## 2026-01-06
-- Module `Memo` pour la création de notes assistée IA
+- Module `Mémo` pour la création de notes assistée IA
 - Mémo : Mode `✂ Éditer` en direct ou `✦ Suggérer` avec annotation
 
 ## 2026-01-04

@@ -206167,7 +206167,7 @@ ${t.themeCSS}`;
           console.warn("Excalidraw render error, falling back to mermaid:", C);
         }
       }
-      if (!g.trim()) {
+      if (!g.trim() && !y) {
         s("");
         l(null);
         return;
@@ -206216,12 +206216,12 @@ ${t.themeCSS}`;
       if (window.GoToolkitDrawMemo) {
         const C = window.GoToolkitDrawMemo.getSceneJSON();
         const _ = await window.GoToolkitDrawMemo.getSVG(0.6);
-        const A = g.trim() ? C : "";
+        const A = !C || C === '{"elements":[],"appState":{}}' || C.includes('"elements":[]');
+        const D = g.trim() || !A ? C : "";
         e({
-          excalidrawJSON: A
-          // We keep the code as is, unless we want to try to sync back to mermaid
+          excalidrawJSON: D
         });
-        if (_ && g.trim()) {
+        if (_ && (g.trim() || !A)) {
           s(_);
         } else {
           s("");
@@ -206274,9 +206274,9 @@ ${t.themeCSS}`;
               dangerouslySetInnerHTML: { __html: i }
             }
           ) : /* @__PURE__ */ (0, Wn.jsxs)("div", { className: "mermaid-placeholder", children: [
-            /* @__PURE__ */ (0, Wn.jsx)("div", { className: "mermaid-placeholder-icon", children: "\u21C4" }),
-            /* @__PURE__ */ (0, Wn.jsx)("div", { className: "mermaid-placeholder-text", children: "Diagramme Mermaid" }),
-            /* @__PURE__ */ (0, Wn.jsx)("div", { className: "mermaid-placeholder-hint", children: "Double-cliquez pour ajouter du code" })
+            /* @__PURE__ */ (0, Wn.jsx)("div", { className: "mermaid-placeholder-icon", children: "\u25C7" }),
+            /* @__PURE__ */ (0, Wn.jsx)("div", { className: "mermaid-placeholder-text", children: "Diagramme vide" }),
+            /* @__PURE__ */ (0, Wn.jsx)("div", { className: "mermaid-placeholder-hint", children: "Double-cliquez pour \xE9diter" })
           ] })
         }
       ) }),
@@ -206740,7 +206740,7 @@ ${t.themeCSS}`;
             },
             "data-active-state": t.isActive("mermaidDiagram") ? "on" : "off",
             title: "Ins\xE9rer un diagramme Mermaid",
-            children: /* @__PURE__ */ (0, et.jsx)("span", { className: "tiptap-button-icon", style: { fontSize: "18px", fontWeight: "bold", display: "flex", alignItems: "center", justifyContent: "center" }, children: "\u21C4" })
+            children: /* @__PURE__ */ (0, et.jsx)("span", { className: "tiptap-button-icon", style: { fontSize: "18px", fontWeight: "bold", display: "flex", alignItems: "center", justifyContent: "center" }, children: "\u25C7" })
           }
         )
       ] }),

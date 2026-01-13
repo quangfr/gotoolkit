@@ -3,7 +3,7 @@
 La page d'accueil est votre tableau de bord. Vous y découvrez tous les modules, gérez vos préférences IA, consultez votre bibiothèque locale et vos partages.
 
 ## 1. Vos modules en un coup d'œil
-- Accédez à **Mémo** (vos notes riche), **Draw** (vos diagrammes), **Grid** (vos données), **Timeline** (vos frises), et **Voice** (vos transcriptions).
+- Accédez à **Mémo** (votre carnet de notes intelligent avec voix et schémas) et **Grid** (vos données structurées).
 
 ## 2. Deux modes pour utiliser Assist : Explorer vs Conseiller
 - **Mode Explorer** : vous posez des questions à votre base de documents. L'Assist cherche dans vos fichiers importés et vous ramène des réponses documentées.
@@ -18,17 +18,17 @@ La page d'accueil est votre tableau de bord. Vous y découvrez tous les modules,
 - **Tous vos paramètres sont sauvegardés** : fermer et rouvrir le navigateur, tout reste.
 
 ## 4. Vos favoris épinglés
-- Vous pouvez épingler vos mémos, grilles ou diagrammes préférés pour les retrouver en haut de la page.
+- Vous pouvez épingler vos mémos ou grilles préférés pour les retrouver en haut de la page.
 - Un petit cœur vous permet de gérer vos favoris directement depuis la page d'accueil.
 
 ## 5. Espace en ligne : vos partages
 - Tous les documents que vous avez partagés apparaissent dans **"☍ Espace en ligne"**.
-- Ce sont vos mémos, grilles, diagrammes, frises ou enregistrements que vous avez diffusés via un lien court.
+- Ce sont vos mémos ou grilles que vous avez diffusés via un lien court.
 - Cliquez sur l'un d'eux pour le rouvrir, le modifier ou renvoyer le lien de partage.
 - Vous pouvez aussi voir combien de fois il a été consulté et quand il a été créé.
 
 ## 6. Bibliothèque locale : vos brouillons
-- **"⬠ Bibliothèque locale"** contient tous vos travaux en cours : les mémos, grilles, diagrammes non (encore) partagés.
+- **"⬠ Bibliothèque locale"** contient tous vos travaux en cours : les mémos et grilles non (encore) partagés.
 - C'est votre zone de travail privée : rien ne sort d'ici tant que vous ne décidez pas de partager.
 - Vous y retrouvez aussi vos brouillons (drafts) sauvegardés automatiquement, même si vous n'avez pas explicitement enregistré.
 - Vous pouvez renommer, archiver ou supprimer vos documents depuis cette galerie.
@@ -110,65 +110,25 @@ Mémo est votre carnet de notes riche, où vous écrivez, structurez et enrichis
 - Vous pouvez cliquer sur chaque référence pour voir l'extrait complet du document.
 - Posez autant de questions que vous le souhaitez : tout est sauvegardé dans votre historique local.
 
-## 6. Exporter votre mémo
+## 6. Enregistrement vocal et transcription
+- Transformez vos réunions ou vos pensées en texte sans quitter votre note.
+- Cliquez sur l'icône **Micro** pour démarrer un enregistrement. La transcription s'affiche en temps réel ou après l'envoi (via AssemblyAI).
+- Le texte transcrit peut être inséré directement dans votre mémo, résumé par l'IA, ou utilisé comme base pour de nouvelles idées.
+
+## 7. Intégration de schémas (Draw)
+- Un dessin vaut mille mots : insérez des diagrammes directement dans vos mémos.
+- Utilisez l'outil de dessin intégré (basé sur Excalidraw) pour créer des flux, des architectures ou des croquis rapides.
+- L'IA peut vous aider à générer des structures de diagrammes (Mermaid) que vous pouvez ensuite éditer visuellement.
+
+## 8. Exporter votre mémo
 - **Markdown** : exportez votre mémo en fichier .md pour l'utiliser dans Notion, Obsidian ou tout autre outil.
 - **JSON** : exportez/importez le mémo complet avec tous vos onglets, formatages et métadonnées pour une sauvegarde totale.
-- Vous pouvez aussi partager votre mémo via un lien court : les destinataires le voient en lecture seule, mais conservent accès à votre formatage et vos images.
+- Vous pouvez aussi partager votre mémo via un lien court : les destinataires le voient en lecture seule, mais conservent accès à votre formatage, vos images et vos schémas.
 
----
-
-# Module Voice
-
-La page `voice.html` transforme chaque conversation vocale en un canevas complet : enregistrement, transcription, speakers, résumé.
-
-## 1. Enregistrement & streaming
-- L'utilisateur déclenche l'enregistrement puis l'interface collecte le flux audio tout en affichant l'état d'écoute. L'idée est d'écrire facilement un sujet, une réunion ou un brainstorming sans toucher le clavier.
-- Chaque enregistrement est envoyé à un service STT (AssemblyAI) via un proxy (workers/assemblyai-proxy) qui gère l'authentification et contourne les limites CORS.
-
-## 2. Transcription & diarisation
-- Dès la fin de l'enregistrement, une transcription s'affiche dans `voice.html`; elle est segmentée par locuteur grâce à la diarisation d'AssemblyAI et associe chaque segment à un identifiant de participant.
-- La page garde un suivi par sujet/participant et permet de corriger les noms avant de générer le verbatim final.
-
-## 3. Résumés & partage
-- Le module propose des exports (texte, PDF, share) et un panneau "subjects / participants" pour structurer les résumés par thème.
-- Chaque session est historisée dans la collection `voices` du système de partage et peut être réouverte ou partagée via les URL construites avec `GoToolkitShareWorker`. L'historique local conserve aussi les drafts dans IndexedDB.
-
-## 4. Sécurité & expérience
-- L'utilisateur contrôle ses données : les clés AssemblyAI sont fournies côté client, le worker ne contient aucun secret, et les quotas/RATE_LIMIT sont gérés sur la plateforme Cloudflare.
-- Si l'enregistrement est interrompu ou que la transcription échoue, des messages explicites guident la reprise.
-
----
-
-# Module Draw
-
-Draw est votre espace de diagrammes : transformez vos idées en schémas visuels clairs. Excalidraw fait le travail de dessin, l'IA vous propose les formes et la structure.
-
-## 1. Trois modes de diagrammes pour penser différemment
-- **Mode Flux (◇ Processus)** : cartographiez un flux de travail, un parcours client, ou une prise de décision. Chaque boîte est une étape, chaque flèche une transition. Idéal pour visualiser qui fait quoi et quand.
-- **Mode Séquentiel (⇄ Échange)** : décrivez une conversation, une interaction entre acteurs ou systèmes. Qui parle à qui, dans quel ordre. Parfait pour les scénarios de réunion ou d'API.
-- **Mode Structure (⁂ Structure)** : modélisez des relations entre entités : classes, rôles, concepts. Qui dépend de qui, quels sont les liens. Utile pour la conception ou la documentation technique.
-
-## 2. Créer un diagramme avec l'IA
-- Sélectionnez votre mode (Flux, Échange ou Structure).
-- Décrivez votre besoin en langage naturel : *"Flux d'onboarding : signup → vérif email → complète profil → prêt à utiliser"*.
-- L'IA génère un diagramme Mermaid que vous voyez immédiatement.
-- Ajustez, dessinez manuellement par-dessus, ou regénérez avec une description différente.
-
-## 3. Editer et affiner votre diagramme
-- Excalidraw embarqué vous permet de dessiner librement : ajouter des formes, des annotations, des couleurs.
-- Vous pouvez modifier le code Mermaid directement si vous préférez (onglet script), puis l'IA ou Excalidraw applique les changements.
-- Tout est sauvegardé automatiquement en brouillon.
-
-## 4. Exporter et partager
-- Exportez votre diagramme en **PNG** (image), **SVG** (vecteur), ou **JSON** (éditable).
-- Partagez via un lien court si vous voulez que d'autres le consultent ou le modifient.
-
-## 5. Cas d'usage pour consultants et Product Owners
-- **Cartographie de processus** : documenter un workflow métier, identifier les goulets d'étranglement.
-- **Flux de décision** : visualiser les choix (A/B testing, priorités), aider à la communication avec les stakeholders.
-- **Diagramme de séquence** : montrer l'ordre d'une intégration, d'une API, ou d'une conversation entre équipes.
-- **Modèles de domaine** : clarifier les relations entre concepts clés d'un projet.
-- **Onboarding visuel** : créer une fiche « comment ça marche » pour faciliter la montée en charge.
+## 9. Cas d'usage pour consultants et Product Owners
+- **Prise de notes de réunion** : enregistrez la voix, obtenez la transcription, et structurez le compte-rendu avec l'Assist.
+- **Spécifications techniques** : combinez texte descriptif, schémas d'architecture (Draw) et données de référence (Grid).
+- **Brainstorming** : jetez vos idées à la voix, laissez l'IA les organiser, et illustrez-les avec des diagrammes.
 
 ---
 
@@ -205,60 +165,3 @@ Grid est votre tableau intelligent : explorez des données, générez des exempl
 - **Répertoire** : créer rapidement une liste (ressources, stakeholders, dépendances) avec descriptions.
 - **Spécification** : documenter un mapping d'intégration ou un format de données pour les développeurs.
 
----
-
-# Module Voice
-
-Voice transforme votre voix en contenu : parlez, écoutez votre transcription, structurez et organisez automatiquement. Idéal pour les réunions, les entretiens ou les brainstormings où vous ne voulez pas taper.
-
-## 1. Enregistrer sans les mains
-- Cliquez sur **◉ Enregistrer** pour démarrer. L'interface affiche le chrono en temps réel.
-- Parlez naturellement. Voice capture votre audio sans interruption.
-- Vous pouvez aussi **importer un fichier audio** (MP3, WAV, WebM) si vous l'avez déjà enregistré ailleurs.
-- Optionnel : **Capturez votre écran** (⧉) en même temps pour garder une trace visuelle de votre session (utile pour les démos ou tutoriels).
-
-## 2. Transcription automatique
-- Dès que vous arrêtez l'enregistrement, Voice envoie l'audio à un service de reconnaissance vocale (AssemblyAI).
-- La transcription apparaît automatiquement, mot par mot, dans le panneau de gauche.
-- Vous pouvez éditer la transcription directement si quelques mots ne sont pas passés correctement.
-
-## 3. Sujets et diarisation : qui a parlé
-- Voice détecte automatiquement les **locuteurs** (Speaker 1, Speaker 2, etc.) grâce à l'analyse de la voix.
-- Dans le panneau **Sujets**, vous pouvez :
-  - Renommer les participants (ex: "Alice" au lieu de "Speaker 1")
-  - Ajouter des sujets (cliquez sur **+**) : marquez chaque thème abordé, avec son timing
-  - Voir la durée prévue et ajuster si nécessaire
-
-## 4. Résumé IA automatique
-- Cliquez sur **⌘ Résumer** pour que l'IA synthétise votre transcription.
-- Un résumé s'affiche à droite : les points clés, sans la verbosité.
-- Vous pouvez éditer le résumé manuellement, ou le régénérer si le résultat ne convient pas.
-
-## 5. Pages multiples pour organiser
-- Créez plusieurs onglets pour différentes réunions, entretiens ou sessions.
-- Chaque page a sa propre transcription, sujets et résumé.
-- Renommez chaque page avec un titre clair (ex: "Réunion Prod 08/01", "Entretien Client ABC").
-
-## 6. Écrire des notes et scénarios
-- Le panneau **Commande** permet de définir un contexte : "Réunion sprint avec l'équipe frontend, objectif: définir les priorités".
-- Voice utilise ce contexte pour mieux organiser les sujets et générer des résumés plus pertinents.
-- Vous pouvez aussi activer la **dictée vocale** (◉) pour parler au lieu de taper.
-
-## 7. Exporter vos données
-- **Fichier audio** : téléchargez l'enregistrement original (.webm).
-- **Fichier vidéo** : si vous avez capturé l'écran, téléchargez vidéo + audio.
-- **JSON** : export complet (transcription, sujets, résumé, participants) pour archiver ou réutiliser.
-
-## 8. Partager votre session
-- Cliquez sur **☍ Partage** pour générer un lien court.
-- Envoyez le lien à vos collègues : ils voient la transcription, le résumé et les participants en lecture seule.
-- Ou conservez la session privée chez vous en local.
-
-## 9. Cas d'usage pour consultants et Product Owners
-- **Réunions sprint** : enregistrez, obtenez la transcription et le résumé automatiquement, archivez.
-- **Entretiens utilisateurs** : captez les retours verbatims sans notes, retrouvez les citations exactes.
-- **Brainstormings** : gardez la trace sans transcripteur humain, structurez les idées par sujet.
-- **Onboarding** : créez des tutoriels vidéo (avec écran) commentés, transcrivez-les automatiquement.
-- **Documentation** : parlez vos specs, Voice les transcrit et l'IA en fait un résumé pour les développeurs.
-
----
