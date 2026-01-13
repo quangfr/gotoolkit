@@ -6,9 +6,10 @@
 
 ## Navigation + cache
 - `public/index.html` links: `canvas.html`, `grid.html`, `draw.html`, `timeline.html`, `voice.html`, `memo.html`.
-- All module links include `?v=2026.01.10`; bump everywhere when assets change.
+- All module links include `?v=2026.01.13.2`; bump everywhere when assets change.
 - All info panel versions should be updated to match the asset version whenever cache-busters are bumped.
 - Always update the `hero-version` label in `public/index.html` to match the cache-buster version.
+- When bumping versions, ensure all assets in `memo.html` are updated.
 - Keep the IndexedDB version in `public/js/assist.js` health-check/repair (`indexedDB.open`) aligned with `DB_VERSION` in `public/js/document-rag.js`.
 - When editing UI, reuse existing styles from the current page and `public/styles/style.css` as much as possible before adding new CSS.
 - Each page sets `window.GO_TOOLKIT_SHARE_API_URL`: launcher `https://gotoolkit.workers.dev`, modules `https://share.gotoolkit.workers.dev/`.

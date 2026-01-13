@@ -24,7 +24,7 @@ window.GoToolkitDrawMemo = (function () {
         return new Promise((resolve, reject) => {
             const script = document.createElement('script');
             // Use the version from the page if available, otherwise fallback
-            const version = window.GO_TOOLKIT_VERSION || '2026.01.13.1';
+            const version = window.GO_TOOLKIT_VERSION || '2026.01.13.2';
             script.src = `js/draw.bundle.js?v=${version}`;
             script.onload = () => {
                 isLoaded = true;
@@ -41,6 +41,10 @@ window.GoToolkitDrawMemo = (function () {
 
             if (!excalidrawInstance) {
                 excalidrawInstance = window.GoToolkitExcalidraw;
+            }
+
+            if (!excalidrawInstance) {
+                throw new Error("GoToolkitExcalidraw not found on window");
             }
 
             await excalidrawInstance.initialize(container);
