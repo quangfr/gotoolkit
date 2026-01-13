@@ -206283,7 +206283,7 @@ ${t.themeCSS}`;
       n && /* @__PURE__ */ (0, Wn.jsx)("div", { className: "mermaid-modal-overlay", onClick: x, children: /* @__PURE__ */ (0, Wn.jsxs)("div", { className: "mermaid-modal", onClick: (C) => C.stopPropagation(), children: [
         /* @__PURE__ */ (0, Wn.jsx)("div", { className: "mermaid-modal-header", children: /* @__PURE__ */ (0, Wn.jsxs)("div", { className: "mermaid-modal-header-actions", children: [
           u && /* @__PURE__ */ (0, Wn.jsx)("span", { className: "mermaid-loading-spinner" }),
-          /* @__PURE__ */ (0, Wn.jsx)("button", { className: "mermaid-modal-close", onClick: x })
+          /* @__PURE__ */ (0, Wn.jsx)("button", { className: "mermaid-modal-close btn-primary", onClick: x })
         ] }) }),
         /* @__PURE__ */ (0, Wn.jsxs)("div", { className: "mermaid-modal-body", children: [
           /* @__PURE__ */ (0, Wn.jsx)("div", { className: "mermaid-modal-draw-container", children: /* @__PURE__ */ (0, Wn.jsx)(

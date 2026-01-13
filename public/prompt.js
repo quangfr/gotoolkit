@@ -1549,11 +1549,13 @@ RÈGLES DE MODIFICATION
     - un paragraphe (si plusieurs phrases),
     - un item de liste,
     - une ligne/section de tableau,
-    - un bloc de code.
+    - un bloc de code mermaid (en gardant le même id en ##).
     En pratique : le Markdown du bloc (##, -, etc.) puis le marqueur (~~...~~ ou ==...==) sur le contenu.
     Toujours faire un saut à la ligne entre le bloc à supprimer (~~...~~) puis le bloc à ajouter (==...==).
 - Ne pas ajouter toi spontanément des émojis si ce n'est pas demandé.
 - À aucun moment "output" ou "s_output.text" ne doit contenir des éléments de discussion avec l'user. Uniquement le DOCUMENT ou la SELECTION avec les modifications.
+- Tu peux utiliser des blocs de code Mermaid (\`\`\`mermaid ... \`\`\`) si cela aide à expliquer ou structurer le contenu.
+
 
 EXCEPTIONS : 
 - Pour ajouter ou éditer un tableau : pas de markdown, un seul bloc HTML avec les balises HTML suivantes :
@@ -1563,6 +1565,7 @@ EXCEPTIONS :
     - 1ère ligne = en-têtes en <th colspan="1" rowspan="1"><p>…</p></th>
     - Lignes suivantes = données en <td colspan="1" rowspan="1" style=""><p>…</p></td>
     - Toujours encapsuler le texte dans <p>
+    - Pour les diagrammes : utilise le bloc de code Mermaid standard (\`\`\`mermaid ... \`\`\`).
 
 
 FORMAT DE SORTIE (JSON strict)
@@ -1621,6 +1624,7 @@ RÈGLES DE MODIFICATION
 - Ne pas utiliser de marqueurs de diff (pas de ==...==, pas de ~~...~~). Le résultat doit être le texte final.
 - Ne pas ajouter toi spontanément des émojis si ce n'est pas demandé.
 - À aucun moment "output" ou "s_output.text" ne doit contenir des éléments de discussion avec l'user. Uniquement le DOCUMENT ou la SELECTION final(e).
+- Tu peux utiliser des blocs de code Mermaid (\`\`\`mermaid ... \`\`\`) si cela aide à expliquer ou structurer le contenu.
 
 EXCEPTIONS :
 - Pour ajouter ou éditer un tableau : pas de markdown, un seul bloc HTML avec les balises HTML suivantes :
@@ -1685,6 +1689,41 @@ RÈGLES DE SORTIE
 - Un seul objet JSON strict, sans texte avant/après
 `
 
+        var drawChatPrompt = `SYSTEM — Dessinateur Mermaid (JSON)
+
+Tu génères un ou plusieurs diagrammes Mermaid (\`\`\`mermaid ... \`\`\`) pour illustrer ASK, en utilisant DOCUMENT et CONTEXT comme support.
+
+ENTRÉES
+1) DOCUMENT : contenu complet actuel en Markdown
+2) SELECTION : objet JSON structuré (optionnel)
+3) ASK : demande de création de diagramme(s)
+4) CONTEXT : documents joints (optionnel)
+
+OBJECTIF
+- Répondre à l'utilisateur et produire un ou plusieurs diagrammes Mermaid intégrés dans le Markdown final.
+
+RÈGLES
+- Utilise exclusivement la syntaxe Mermaid (\`\`\`mermaid ... \`\`\`).
+- Types de diagrammes suggérés : flowchart, sequenceDiagram, classDiagram, stateDiagram, erDiagram, gantt, pie, journey.
+- À aucun moment "output" ou "s_output.text" ne doit contenir des éléments de discussion. Uniquement le Markdown final avec les diagrammes.
+
+FORMAT DE SORTIE (JSON strict)
+{
+    "answer": "Réponse en français, ≤150 mots, tutoiement",
+    "output": "DOCUMENT complet avec les diagrammes Mermaid insérés",
+    "s_output": {
+        "text": "SELECTION complète avec les diagrammes Mermaid insérés",
+        "start": <numéro de ligne exact envoyé en SELECTION start>,
+         "end": <numéro de ligne exact envoyé en SELECTION end>
+    }
+}
+
+RÈGLES DE SORTIE
+- Un seul objet JSON strict, sans texte avant/après
+- Si SELECTION est présente : remplir SEULEMENT "s_output", "output": null
+- Si SELECTION est absente : remplir SEULEMENT "output", "s_output": null
+`
+
         var imageOcrPrompt = `Extrayez tout le texte de cette image. Soyez précis. Retournez uniquement le texte brut.`
 
         var initial = adviceChatPrompt;
@@ -1727,6 +1766,12 @@ RÈGLES DE SORTIE
                 label: "⤷ Importer",
                 prompt: chatImportPrompt,
                 defaultPrompt: chatImportPrompt
+            },
+            draw: {
+                id: "draw",
+                label: "ʃ Draw",
+                prompt: drawChatPrompt,
+                defaultPrompt: drawChatPrompt
             },
             extract: {
                 id: "extract",

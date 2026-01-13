@@ -7,10 +7,10 @@
 ## Navigation + cache
 - `public/index.html` links: `canvas.html`, `grid.html`, `draw.html`, `timeline.html`, `voice.html`, `memo.html`.
 - All module links include `?v=2026.01.13.2`; bump everywhere when assets change.
+- `public/prompt.js` is the root for all AI system prompts and templates.
 - All info panel versions should be updated to match the asset version whenever cache-busters are bumped.
 - Always update the `hero-version` label in `public/index.html` to match the cache-buster version.
-- When bumping versions, ensure all js and css assets in `memo.html` are updated.
-- Keep the IndexedDB version in `public/js/assist.js` health-check/repair (`indexedDB.open`) aligned with `DB_VERSION` in `public/js/document-rag.js`.
+- When bumping versions, ensure all js and css assets in `memo.html` are updated.- **Deprecated modules in `public/old/` should not be updated (no version bumps, no UI changes).**- Keep the IndexedDB version in `public/js/assist.js` health-check/repair (`indexedDB.open`) aligned with `DB_VERSION` in `public/js/document-rag.js`.
 - When editing UI, reuse existing styles from the current page and `public/styles/style.css` as much as possible before adding new CSS.
 - Each page sets `window.GO_TOOLKIT_SHARE_API_URL`: launcher `https://gotoolkit.workers.dev`, modules `https://share.gotoolkit.workers.dev/`.
 
@@ -63,3 +63,4 @@ Only `public/js` may touch `window`:
 - Assist state: `window.GoToolkitAssistInstance` exposes sidebar + chat API.
 - New module steps: `CONTRIBUTE.md`.
 - Do not edit `public/releases.md` or `public/roadmap.md` unless explicitly asked.
+- Always use Context7 MCP when I need library/API documentation, code generation, setup or configuration steps without me having to explicitly ask.

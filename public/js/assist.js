@@ -422,7 +422,7 @@
     }
 
     function getAllowedPromptPresetIds() {
-        if (CHAT_APP_ID === "memo") return ["advice", "edit", "suggest", "import"];
+        if (CHAT_APP_ID === "memo") return ["advice", "edit", "suggest", "import", "draw"];
         if (CHAT_APP_ID === "index") return ["advice", "ask"];
         return ["advice", "ask"];
     }
@@ -1766,6 +1766,12 @@
             || storePresets?.extract?.defaultPrompt
             || "";
 
+        var drawPersisted = getPersistedPromptOrEmpty("goToolkit.chat.prompt.draw");
+        var drawPrompt = drawPersisted
+            || storePresets?.draw?.prompt
+            || storePresets?.draw?.defaultPrompt
+            || "";
+
         var all = {
             advice: {
                 id: "advice",
@@ -1791,6 +1797,11 @@
                 id: "import",
                 label: storePresets?.import?.label || "⤷ Importer",
                 prompt: importPrompt
+            },
+            draw: {
+                id: "draw",
+                label: storePresets?.draw?.label || "ʃ Draw",
+                prompt: drawPrompt
             },
             extract: {
                 id: "extract",
@@ -1856,6 +1867,13 @@
             if (persistedImport) return persistedImport;
             return global.GoToolkitChatPrompt?.PRESETS.import?.prompt
                 || global.GoToolkitChatPrompt?.PRESETS.import?.defaultPrompt
+                || "";
+        }
+        if (this.promptPresetId === "draw") {
+            var persistedDraw = getPersistedPromptOrEmpty("goToolkit.chat.prompt.draw");
+            if (persistedDraw) return persistedDraw;
+            return global.GoToolkitChatPrompt?.PRESETS.draw?.prompt
+                || global.GoToolkitChatPrompt?.PRESETS.draw?.defaultPrompt
                 || "";
         }
         if (this.promptPresetId === "extract") {
@@ -2785,9 +2803,12 @@
         menu.hidden = true;
 
         var presets = this.getPromptPresets();
-        Object.keys(presets).forEach(function (key) {
+        console.log("Assist: buildPromptDropdown presets keys:", Object.keys(presets));
+        var presetKeys = ["advice", "ask", "suggest", "edit", "draw"];
+        presetKeys.forEach(function (key) {
             var preset = presets[key];
-            if (preset?.id === "import") {
+            if (!preset) {
+                console.log("Assist: preset not found for key:", key);
                 return;
             }
             var item = document.createElement("button");

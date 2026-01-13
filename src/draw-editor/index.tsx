@@ -60,7 +60,8 @@ const EDGE_STYLE_CONTENT = `.${EDGE_HOST_CLASS} .excalidraw .App-bottom-bar {
     left: 0 !important;
 }
 
-.${EDGE_HOST_CLASS} .excalidraw .help-Icon {
+.${EDGE_HOST_CLASS} .excalidraw .help-Icon,
+.${EDGE_HOST_CLASS} .excalidraw .help-icon {
     background-color: #ffffff !important;
 }
 
@@ -102,10 +103,17 @@ const EDGE_STYLE_CONTENT = `.${EDGE_HOST_CLASS} .excalidraw .App-bottom-bar {
     padding: 4px !important;
 }
 
-/* Hide Library button */
+/* Hide Library, Lock and Embeddable buttons */
 .${EDGE_HOST_CLASS} .excalidraw .mobile-misc-tools-container,
-.${EDGE_HOST_CLASS} .excalidraw .sidebar-trigger {
+.${EDGE_HOST_CLASS} .excalidraw .sidebar-trigger,
+.${EDGE_HOST_CLASS} .excalidraw .ToolIcon__lock,
+.${EDGE_HOST_CLASS} .excalidraw [data-testid="toolbar-embeddable"] {
     display: none !important;
+}
+
+.${EDGE_HOST_CLASS} .excalidraw .ToolIcon .ToolIcon__keybinding {
+    bottom: 4px !important;
+    right: 0px !important;
 }
 
 /* Change background color of buttons to white */
@@ -213,6 +221,9 @@ class ExcalidrawBridge {
                             gridModeEnabled={false}
                             zenModeEnabled={false}
                             initialData={createInitialData()}
+                            generateIdForFile={(file: File) => {
+                                return Math.random().toString(36).substring(2, 15);
+                            }}
                         />
                     );
                 };

@@ -47,3 +47,4 @@ Boîte à outils 100 % navigateur pour produire vite des livrables partageables 
 - CGU (modal) : `public/js/cgu.js`, shared styles in `public/styles/style.css`.
 - Shell visuel commun : `public/styles/style.css`.
 - Attendus Playwright : `tests/grid-mock.spec.ts`.
+

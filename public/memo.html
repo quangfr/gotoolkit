@@ -750,7 +750,7 @@
     <script src="js/keywordIndex.js?v=2026.01.13.2"></script>
     <script src="js/document-rag.js?v=2026.01.13.2"></script>
     <script src="js/ia-config.js?v=2026.01.13.2"></script>
-    <script src="js/prompt.js?v=2026.01.13.2"></script>
+    <script src="prompt.js?v=2026.01.13.2"></script>
     <script src="js/ia-client.js?v=2026.01.13.2"></script>
     <script src="js/document-markdown.js?v=2026.01.13.2"></script>
     <script>
@@ -2111,7 +2111,7 @@
             function openPromptModal() {
                 function getAllowedPresetIds() {
                     const storePresets = window.GoToolkitChatPrompt?.PRESETS || {};
-                    const base = ["edit", "suggest", "advice", "import", "extract"];
+                    const base = ["edit", "suggest", "advice", "import", "draw", "extract"];
                     const allowed = base.filter(id => Object.prototype.hasOwnProperty.call(storePresets, id));
                     return allowed.length ? allowed : ["edit", "suggest", "advice"];
                 }
@@ -2124,6 +2124,7 @@
                         "suggest": "goToolkit.chat.prompt.suggest",
                         "edit": "goToolkit.chat.prompt.edit",
                         "import": "goToolkit.chat.prompt.import",
+                        "draw": "goToolkit.chat.prompt.draw",
                         "extract": "goToolkit.chat.prompt.extract"
                     };
                     const key = keyMap[presetId] || "goToolkit.chat.prompt.edit";
@@ -2221,7 +2222,7 @@
                 if (!window.GoToolkitChatPrompt) return;
                 const trimmed = (value || "").trim();
 
-                if (presetId !== "edit" && presetId !== "suggest" && presetId !== "advice" && presetId !== "import" && presetId !== "extract") return;
+                if (presetId !== "edit" && presetId !== "suggest" && presetId !== "advice" && presetId !== "import" && presetId !== "draw" && presetId !== "extract") return;
 
                 const preset = window.GoToolkitChatPrompt.PRESETS?.[presetId];
                 const fallback = preset?.defaultPrompt || "";
@@ -2234,6 +2235,7 @@
                     "suggest": "goToolkit.chat.prompt.suggest",
                     "edit": "goToolkit.chat.prompt.edit",
                     "import": "goToolkit.chat.prompt.import",
+                    "draw": "goToolkit.chat.prompt.draw",
                     "extract": "goToolkit.chat.prompt.extract"
                 };
                 const key = keyMap[presetId] || "goToolkit.chat.prompt.edit";

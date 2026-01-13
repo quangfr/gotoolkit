@@ -1,5 +1,5 @@
 ## 2026-01-13
-- Mémo : Intégration Draw dans un document
+- Mémo : Éditer un diagramme Mermaid dans un document ou avec l'IA
 
 ## 2026-01-12
 - IA : Reconnaissance texte OCR avec `qwen-2.5-vl-7b-instruct` 

@@ -1,4 +1,4 @@
-## Module Grid (Le Cardinal)`T1 2026`
+## Module Mémo `T1 2026`
 - Intégration de Bibliothèque et d'Assist `À planifier`
 
 ## Accès ressources tiers (Polène)`À étudier`

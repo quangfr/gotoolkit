@@ -204,7 +204,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes, extension }: any) => 
             <div className="mermaid-modal-header">
               <div className="mermaid-modal-header-actions">
                 {isLoading && <span className="mermaid-loading-spinner"></span>}
-                <button className="mermaid-modal-close" onClick={handleCloseModal}></button>
+                <button className="mermaid-modal-close btn-primary" onClick={handleCloseModal}></button>
               </div>
             </div>
             <div className="mermaid-modal-body">
