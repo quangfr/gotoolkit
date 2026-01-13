@@ -1,0 +1,94 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - complementary "Bibliothèque" [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]: ⬠ Bibliothèque
+        - button "✕" [ref=e6] [cursor=pointer]
+      - generic [ref=e7]:
+        - button "⤷ Importer" [ref=e8] [cursor=pointer]
+        - button "+ Nouveau" [ref=e9] [cursor=pointer]
+      - generic [ref=e11]: Aucun document
+    - separator "Ajuster la largeur des documents" [ref=e12]
+    - generic [ref=e14]:
+      - generic [ref=e15]:
+        - button "⬠" [expanded] [ref=e16] [cursor=pointer]
+        - button "⊞ Mémo ▾" [ref=e18] [cursor=pointer]
+        - button "Créer un document" [ref=e21] [cursor=pointer]: +
+      - button "⌬ Assist" [ref=e23] [cursor=pointer]
+  - status
+  - generic [ref=e25]:
+    - generic [ref=e27]:
+      - button "<" [ref=e28] [cursor=pointer]
+      - generic [ref=e29]: ⌬ Assist
+      - generic [ref=e30]:
+        - button "🗍 Mémoire (0)" [ref=e31] [cursor=pointer]
+        - button "Prompt" [ref=e32] [cursor=pointer]: ⚙
+        - button "⊘" [ref=e33] [cursor=pointer]
+    - generic [ref=e35]:
+      - generic [ref=e36]:
+        - textbox "Que veux-tu demander ?" [active] [ref=e37]
+        - button "◉" [ref=e38] [cursor=pointer]
+      - generic [ref=e39]:
+        - generic [ref=e40]:
+          - button "↬ Demander ▾" [ref=e42] [cursor=pointer]
+          - button "+" [ref=e43] [cursor=pointer]
+        - button "↩︎" [disabled] [ref=e44] [cursor=pointer]
+  - generic:
+    - generic [ref=e45]:
+      - button "☄" [ref=e46] [cursor=pointer]
+      - button "◉" [ref=e47] [cursor=pointer]
+    - status [ref=e48]
+  - generic [ref=e50]:
+    - button [ref=e51] [cursor=pointer]: ←
+    - button [ref=e52] [cursor=pointer]: ⤷ Importer
+    - button [ref=e53] [cursor=pointer]: ✕
+  - generic [ref=e55]:
+    - generic [ref=e56]:
+      - generic [ref=e58]: 🗍 Mémoire | 0 fichiers
+      - generic [ref=e59]:
+        - button [ref=e60] [cursor=pointer]: + Ajouter
+        - button [ref=e61] [cursor=pointer]: ↺ Réinitialiser
+        - button [ref=e62] [cursor=pointer]: ✕
+    - generic [ref=e63]:
+      - generic [ref=e64]:
+        - checkbox [ref=e66]
+        - button [ref=e68] [cursor=pointer]: Nom
+        - button [ref=e70] [cursor=pointer]: Source
+        - generic [ref=e71]: Description
+        - button [ref=e73] [cursor=pointer]: MàJ▼
+      - generic [ref=e74]:
+        - checkbox [ref=e76]
+        - generic [ref=e77]:
+          - button [ref=e78] [cursor=pointer]: ✐
+          - button [ref=e79] [cursor=pointer]: Toolkit Import
+        - generic [ref=e80]: Web
+        - generic [ref=e81]: "Import & OCR/Transcription : formats supportés, stockage IndexedDB, chunking, embeddings, OCR et stratégie voix."
+        - generic [ref=e82]: 2 j
+      - generic [ref=e83]:
+        - checkbox [ref=e85]
+        - generic [ref=e86]:
+          - button [ref=e87] [cursor=pointer]: ✐
+          - button [ref=e88] [cursor=pointer]: Modules Toolkit
+        - generic [ref=e89]: Web
+        - generic [ref=e90]: "Documentation complète de tous les modules : Assist, Canvas, Draw, Grid, Page d'accueil, Mémo, Timeline et Voice."
+        - generic [ref=e91]: 3 j
+      - generic [ref=e92]:
+        - checkbox [ref=e94]
+        - generic [ref=e95]:
+          - button [ref=e96] [cursor=pointer]: ✐
+          - button [ref=e97] [cursor=pointer]: Contexte Safran
+        - generic [ref=e98]: Web
+        - generic [ref=e99]: Brief de missions et de projets IT chez Safran
+        - generic [ref=e100]: 6 j
+      - generic [ref=e101]:
+        - checkbox [ref=e103]
+        - generic [ref=e104]:
+          - button [ref=e105] [cursor=pointer]: ✐
+          - button [ref=e106] [cursor=pointer]: Go-Live 101
+        - generic [ref=e107]: Web
+        - generic [ref=e108]: Guide des compétences essentiels du consultant
+        - generic [ref=e109]: 9 j
+```

@@ -445,7 +445,7 @@ const Toolbar = ({ editor }: { editor: Editor }) => {
         </button>
         <button
           className="tiptap-button"
-          aria-label="Mermaid"
+          aria-label="Insert Mermaid Diagram"
           type="button"
           onClick={() => {
             insertMermaidDiagram(editor);
@@ -453,7 +453,7 @@ const Toolbar = ({ editor }: { editor: Editor }) => {
           data-active-state={editor.isActive('mermaidDiagram') ? 'on' : 'off'}
           title="Insérer un diagramme Mermaid"
         >
-          ⇄
+          <span className="tiptap-button-icon" style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>⇄</span>
         </button>
       </div>
       <div className="tiptap-separator" data-orientation="vertical" role="none"></div>
@@ -867,64 +867,31 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         } catch (err) {
           // ignore plugin load failures
         }
-        
-        // Add custom rule for mermaid diagrams
-        turndown.addRule('mermaidDiagram', {
-          filter: (node) => {
-            return node.nodeName === 'MERMAID-DIAGRAM' ||
-                   node.nodeName === 'MERMAID_DIAGRAM' ||
-                   (node.nodeName === 'DIV' && node.classList?.contains('mermaid-diagram-wrapper'));
-          },
-          replacement: (content, node) => {
-            // Try to get the code from the node
-            let mermaidCode = '';
-
-            // Check for mermaid-diagram wrapper div
-            if (node.nodeName === 'DIV') {
-              const codeAttr = node.getAttribute('data-code');
-              if (codeAttr) {
-                mermaidCode = decodeURIComponent(codeAttr);
-              } else {
-                // Try to find the code in a child element
-                const codeElement = node.querySelector('[data-mermaid-code]');
-                if (codeElement) {
-                  mermaidCode = codeElement.getAttribute('data-mermaid-code') || '';
-                }
-              }
-            }
-
-            // If not found, try the original mermaid-diagram element
-            if (!mermaidCode && node.nodeName !== 'DIV') {
-              mermaidCode = node.getAttribute?.('code') || '';
-            }
-
-            // If still not found, try to extract from the node's text content
-            if (!mermaidCode) {
-              const preElement = node.querySelector('pre');
-              if (preElement) {
-                mermaidCode = preElement.textContent || '';
-              }
-            }
-
-            // Clean up the code (decode HTML entities)
-            const textarea = document.createElement('textarea');
-            textarea.innerHTML = mermaidCode;
-            mermaidCode = textarea.value.trim();
-
-            if (mermaidCode) {
-              return `\n\`\`\`mermaid\n${mermaidCode}\n\`\`\`\n`;
-            }
-            return '';
-          },
-        });
-
         turndownRef.current = turndown;
       }
 
       (window as any).getEditorMarkdown = () => {
         try {
           if (typeof editor.getHTML === 'function') {
-            return (turndownRef.current?.turndown(editor.getHTML()) || '').toString();
+            const html = editor.getHTML();
+            
+            // Manual conversion for Mermaid diagrams before Turndown
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const diagrams = doc.querySelectorAll('mermaid-diagram');
+            
+            diagrams.forEach(diag => {
+              const code = diag.getAttribute('code') || '';
+              const pre = doc.createElement('pre');
+              const codeElement = doc.createElement('code');
+              codeElement.className = 'language-mermaid';
+              codeElement.textContent = code.trim();
+              pre.appendChild(codeElement);
+              diag.replaceWith(pre);
+            });
+
+            const processedHtml = doc.body.innerHTML;
+            return (turndownRef.current?.turndown(processedHtml) || '').toString();
           }
           if (typeof editor.getText === 'function') {
             return editor.getText();
@@ -961,7 +928,19 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
             '<mark>$1</mark>'
           );
           
-          const html = marked.parse(markdownWithHighlight, { gfm: true }) as string;
+          // Pre-process mermaid code blocks to mermaid-diagram tags
+          const mermaidRegex = /```mermaid\n([\s\S]*?)\n```/g;
+          const processedMarkdown = markdownWithHighlight.replace(mermaidRegex, (match, code) => {
+            const escapedCode = code.trim()
+              .replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;')
+              .replace(/'/g, '&#039;');
+            return `<mermaid-diagram code="${escapedCode}"></mermaid-diagram>`;
+          });
+
+          const html = marked.parse(processedMarkdown, { gfm: true }) as string;
           if ((editor as any)?.commands?.clearContent) {
             (editor as any).commands.clearContent();
           }

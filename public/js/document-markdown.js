@@ -237,7 +237,17 @@
             if (headingMatch) {
                 flushAll();
                 var tag = clampHeadingTag(headingMatch[1].length);
-                out.push("<" + tag + ">" + formatInline(headingMatch[2].trim()) + "</" + tag + ">");
+                var content = headingMatch[2].trim();
+
+                // Support for {#id} syntax
+                var idMatch = content.match(/(.*)\s+\{#([a-zA-Z0-9_-]+)\}$/);
+                var idAttr = "";
+                if (idMatch) {
+                    content = idMatch[1].trim();
+                    idAttr = ' id="' + escapeAttribute(idMatch[2]) + '"';
+                }
+
+                out.push("<" + tag + idAttr + ">" + formatInline(content) + "</" + tag + ">");
                 continue;
             }
 
