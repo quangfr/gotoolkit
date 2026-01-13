@@ -1014,7 +1014,8 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
               node.type.name === 'codeBlock' ||
               node.type.name === 'table' ||
               node.type.name === 'listItem' ||
-              node.type.name === 'blockquote'
+              node.type.name === 'blockquote' ||
+              node.type.name === 'mermaidDiagram'
             ) {
               blockFrom = Math.min(blockFrom, pos);
               blockTo = Math.max(blockTo, pos + node.nodeSize);
@@ -1023,6 +1024,12 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
 
           // Extraire le texte du bloc complet
           blockText = editor.state.doc.textBetween(blockFrom, blockTo, '\n').trim();
+
+          // Déterminer le type de nœud principal
+          let nodeType = '';
+          editor.state.doc.nodesBetween(from, to, (node) => {
+            if (node.type.name === 'mermaidDiagram') nodeType = 'mermaidDiagram';
+          });
 
           // Extraire le markdown du bloc complet (préserve listes, gras, titres, etc.)
           let blockMarkdown = '';
@@ -1047,6 +1054,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
             const event = new CustomEvent('memoEditorSelectionChanged', {
               detail: {
                 isSelected: true,
+                nodeType: nodeType,
                 selectionText: selectedText,
                 selectionMarkdown: selectionMarkdown,
                 blockText: blockText,

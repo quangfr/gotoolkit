@@ -1,3 +1,6 @@
+## 2026-01-13
+- Mémo : Intégration Draw dans un document
+
 ## 2026-01-12
 - IA : Reconnaissance texte OCR avec `qwen-2.5-vl-7b-instruct` 
 - Assist : Extraction du texte des images, PDF et DOCX et PPTX mixtes

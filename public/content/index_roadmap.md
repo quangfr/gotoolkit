@@ -1,10 +1,4 @@
-## Module Mémo `T1 2026`
-- Intégration Draw dans un document `À étudier`
-
 ## Module Grid (Le Cardinal)`T1 2026`
-- Intégration de Bibliothèque et d'Assist `À planifier`
-
-## Module Draw (Indélibile)`T1 2026`
 - Intégration de Bibliothèque et d'Assist `À planifier`
 
 ## Accès ressources tiers (Polène)`À étudier`

@@ -192,10 +192,12 @@
   display: flex;
   justify-content: center;
   overflow-x: auto;
+  max-height: 400px;
 }
 .mermaid-svg-container svg {
   max-width: 100%;
   height: auto;
+  max-height: 400px;
 }
 .mermaid-placeholder,
 .mermaid-error {
@@ -240,6 +242,7 @@
   justify-content: center;
   z-index: 9999;
   animation: mermaid-fade-in 0.2s ease-out;
+  margin-top: 0;
 }
 @keyframes mermaid-fade-in {
   from {
@@ -253,13 +256,14 @@
   background-color: white;
   border-radius: 12px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  width: 95%;
-  height: 95%;
+  width: 98%;
+  height: 98%;
   max-width: none;
   max-height: none;
   display: flex;
   flex-direction: column;
   animation: mermaid-slide-up 0.3s ease-out;
+  margin-top: 0;
 }
 .mermaid-modal-header-actions {
   display: flex;
@@ -295,30 +299,47 @@
 .mermaid-modal-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
+  justify-content: flex-end;
+  padding: 4px 8px;
   border-bottom: 1px solid #e2e8f0;
 }
 .mermaid-modal-header h3 {
   margin: 0;
-  font-size: 1.125rem;
+  padding: 0;
+  font-size: 11px;
   font-weight: 600;
   color: #1a202c;
 }
 .mermaid-modal-close {
-  background: none;
+  background-color: #3182ce;
   border: none;
-  font-size: 1.5rem;
-  color: #718096;
+  font-size: 13px;
+  color: white;
   cursor: pointer;
-  padding: 4px 8px;
+  padding: 4px 12px;
   border-radius: 4px;
   transition: background-color 0.2s;
   line-height: 1;
+  font-weight: 500;
 }
 .mermaid-modal-close:hover {
-  background-color: #f7fafc;
-  color: #1a202c;
+  background-color: #2c5282;
+  color: white;
+}
+.mermaid-modal-close::before {
+  content: "Enregistrer";
+}
+.mermaid-toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #2d3748;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 12px;
+  z-index: 100001;
+  animation: mermaid-fade-in 0.2s ease-out;
 }
 .mermaid-modal-body {
   display: flex;
@@ -378,16 +399,16 @@
   color: #64748b;
 }
 .mermaid-modal-footer {
-  padding: 12px 20px;
+  padding: 8px 12px;
   border-top: 1px solid #e2e8f0;
   display: flex;
   justify-content: flex-end;
   gap: 8px;
 }
 .mermaid-modal-btn {
-  padding: 8px 16px;
+  padding: 6px 12px;
   border-radius: 6px;
-  font-size: 0.875rem;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;

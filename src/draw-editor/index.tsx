@@ -2,7 +2,8 @@ import React, { useCallback } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import {
     Excalidraw,
-    convertToExcalidrawElements
+    convertToExcalidrawElements,
+    exportToSvg
 } from "@excalidraw/excalidraw";
 import type {
     BinaryFiles,
@@ -51,7 +52,83 @@ const EDGE_STYLE_CONTENT = `.${EDGE_HOST_CLASS} .excalidraw .App-bottom-bar {
 
 .${EDGE_HOST_CLASS} .excalidraw .layer-ui__wrapper:is(.layer-ui__wrapper__top-left, .layer-ui__wrapper__top-right, .layer-ui__wrapper__bottom-left, .layer-ui__wrapper__bottom-right) {
     padding: 4px !important;
-}`;
+}
+
+/* Move help button to bottom left and make it white */
+.${EDGE_HOST_CLASS} .excalidraw .layer-ui__wrapper__bottom-right:has(.help-Icon) {
+    right: auto !important;
+    left: 0 !important;
+}
+
+.${EDGE_HOST_CLASS} .excalidraw .help-Icon {
+    background-color: #ffffff !important;
+}
+
+/* Make Excalidraw UI more compact */
+.${EDGE_HOST_CLASS} .excalidraw .Island {
+    --island-padding: 4px !important;
+}
+
+.${EDGE_HOST_CLASS} .excalidraw .Stack {
+    gap: 4px !important;
+}
+
+.${EDGE_HOST_CLASS} .excalidraw .ToolIcon__icon,
+.${EDGE_HOST_CLASS} .excalidraw .ToolIcon__icon svg {
+    width: 20px !important;
+    height: 20px !important;
+}
+
+.${EDGE_HOST_CLASS} .excalidraw .ToolIcon {
+    width: 28px !important;
+    height: 28px !important;
+}
+
+.${EDGE_HOST_CLASS} .excalidraw .App-toolbar {
+    padding: 4px !important;
+}
+
+.${EDGE_HOST_CLASS} .excalidraw .App-toolbar-content {
+    gap: 4px !important;
+}
+
+.${EDGE_HOST_CLASS} .excalidraw .buttonList {
+    gap: 4px !important;
+}
+
+.${EDGE_HOST_CLASS} .excalidraw .dropdown-menu-button {
+    width: 28px !important;
+    height: 28px !important;
+    padding: 4px !important;
+}
+
+/* Hide Library button */
+.${EDGE_HOST_CLASS} .excalidraw .mobile-misc-tools-container,
+.${EDGE_HOST_CLASS} .excalidraw .sidebar-trigger {
+    display: none !important;
+}
+
+/* Change background color of buttons to white */
+.${EDGE_HOST_CLASS} .excalidraw .Island,
+.${EDGE_HOST_CLASS} .excalidraw .ToolIcon,
+.${EDGE_HOST_CLASS} .excalidraw .dropdown-menu-button,
+.${EDGE_HOST_CLASS} .excalidraw .App-toolbar,
+.${EDGE_HOST_CLASS} .excalidraw .hint,
+.${EDGE_HOST_CLASS} .excalidraw .help-Icon {
+    background-color: #ffffff !important;
+}
+
+/* Smaller zoom and undo/redo buttons */
+.${EDGE_HOST_CLASS} .excalidraw .zoom-actions,
+.${EDGE_HOST_CLASS} .excalidraw .undo-redo-buttons {
+    zoom: 0.8;
+}
+
+/* Higher z-index for help modal */
+.excalidraw-modal-container {
+    z-index: 100000 !important;
+}
+`;
 
 type SceneData = {
     elements: readonly ExcalidrawElement[];
@@ -64,7 +141,8 @@ const createInitialData = () => ({
         viewBackgroundColor: "#fdfdfd",
         gridModeEnabled: false,
         isLoading: false,
-        currentItemRoundness: "sharp" as const
+        currentItemRoundness: "sharp" as const,
+        zoom: { value: 0.9 as any }
     }
 });
 
@@ -184,7 +262,8 @@ class ExcalidrawBridge {
                 viewBackgroundColor: "#fdfdfd",
                 gridModeEnabled: false,
                 isLoading: false,
-                currentItemRoundness: "sharp"
+                currentItemRoundness: "sharp",
+                zoom: { value: 0.9 }
             }
         };
         if (scene.files) {
@@ -229,6 +308,8 @@ export type GoToolkitExcalidrawAPI = {
     convertMermaid: (code: string) => Promise<SceneData | null>;
     applyScene: (scene: SceneData) => void;
     getApi: () => ExcalidrawImperativeAPI | null;
+    exportToSvg: (elements: any, appState: any, files: any) => Promise<SVGSVGElement>;
+    exportToSvgWithZoom: (elements: any, appState: any, files: any, zoom: number) => Promise<SVGSVGElement>;
 };
 
 declare global {
@@ -241,5 +322,12 @@ window.GoToolkitExcalidraw = {
     initialize: container => bridge.initialize(container),
     convertMermaid: code => bridge.convertMermaid(code),
     applyScene: scene => bridge.applyScene(scene),
-    getApi: () => bridge.getApi()
+    getApi: () => bridge.getApi(),
+    exportToSvg: (elements, appState, files) => exportToSvg({ elements, appState, files }),
+    exportToSvgWithZoom: (elements, appState, files, zoom) => 
+        exportToSvg({ 
+            elements, 
+            appState: { ...appState, zoom: { value: zoom } }, 
+            files 
+        })
 };

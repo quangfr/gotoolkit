@@ -9,11 +9,34 @@ const MermaidDiagramComponent = ({ node, updateAttributes, extension }: any) => 
   const [svg, setSvg] = React.useState('');
   const [error, setError] = React.useState<string | null>(null);
   const [isLoading, setIsLoading] = React.useState(false);
+  const [showToast, setShowToast] = React.useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
   const excalidrawHostRef = React.useRef<HTMLDivElement>(null);
 
   const code = node.attrs.code || '';
   const excalidrawJSON = node.attrs.excalidrawJSON || '';
+
+  // Immediate preview on paste/init if excalidrawJSON is missing but code exists
+  React.useEffect(() => {
+    if (code && !excalidrawJSON && (window as any).GoToolkitDrawMemo) {
+      const syncPreview = async () => {
+        try {
+          const tempDiv = document.createElement('div');
+          tempDiv.style.display = 'none';
+          document.body.appendChild(tempDiv);
+          await (window as any).GoToolkitDrawMemo.init(tempDiv, code);
+          const json = (window as any).GoToolkitDrawMemo.getSceneJSON();
+          const svgHtml = await (window as any).GoToolkitDrawMemo.getSVG(0.6);
+          updateAttributes({ excalidrawJSON: json });
+          setSvg(svgHtml);
+          document.body.removeChild(tempDiv);
+        } catch (e) {
+          console.warn("Immediate preview failed", e);
+        }
+      };
+      syncPreview();
+    }
+  }, [code, excalidrawJSON, updateAttributes]);
 
   const renderDiagram = React.useCallback(async () => {
     if (excalidrawJSON) {
@@ -24,7 +47,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes, extension }: any) => 
           tempDiv.style.display = 'none';
           document.body.appendChild(tempDiv);
           const instance = await (window as any).GoToolkitDrawMemo.init(tempDiv, excalidrawJSON);
-          const svgHtml = await (window as any).GoToolkitDrawMemo.getSVG();
+          const svgHtml = await (window as any).GoToolkitDrawMemo.getSVG(0.6);
           setSvg(svgHtml);
           document.body.removeChild(tempDiv);
           setError(null);
@@ -93,15 +116,35 @@ const MermaidDiagramComponent = ({ node, updateAttributes, extension }: any) => 
   const handleCloseModal = async () => {
     if ((window as any).GoToolkitDrawMemo) {
       const json = (window as any).GoToolkitDrawMemo.getSceneJSON();
-      const svgHtml = await (window as any).GoToolkitDrawMemo.getSVG();
+      // Use 60% zoom for the document preview
+      const svgHtml = await (window as any).GoToolkitDrawMemo.getSVG(0.6);
+      
+      // If code is empty, we should probably clear the excalidrawJSON too
+      // to ensure the placeholder shows up correctly.
+      const finalExcalidrawJSON = code.trim() ? json : '';
+      
       updateAttributes({ 
-        excalidrawJSON: json,
+        excalidrawJSON: finalExcalidrawJSON,
         // We keep the code as is, unless we want to try to sync back to mermaid
       });
-      if (svgHtml) setSvg(svgHtml);
+      if (svgHtml && code.trim()) {
+        setSvg(svgHtml);
+      } else {
+        setSvg('');
+      }
     }
     setIsEditing(false);
   };
+
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isEditing) {
+        handleCloseModal();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isEditing]);
 
   const handleCodeChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newCode = e.target.value;
@@ -113,6 +156,15 @@ const MermaidDiagramComponent = ({ node, updateAttributes, extension }: any) => 
     }
   };
 
+  const handleTextareaFocus = () => {
+    if (code) {
+      navigator.clipboard.writeText(code).then(() => {
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 2000);
+      });
+    }
+  };
+
   return (
     <>
       <NodeViewWrapper className="mermaid-diagram-wrapper">
@@ -120,8 +172,9 @@ const MermaidDiagramComponent = ({ node, updateAttributes, extension }: any) => 
           ref={containerRef}
           className="mermaid-diagram-container"
           onDoubleClick={handleDoubleClick}
+          onClick={(e) => e.stopPropagation()}
           title="Double-cliquer pour modifier le diagramme"
-          style={{ cursor: 'pointer', minHeight: '100px', display: 'block', width: '100%', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', visibility: 'visible', opacity: 1, position: 'relative', zIndex: 1, overflow: 'visible', pointerEvents: 'auto', userSelect: 'none', contentVisibility: 'visible', transform: 'none', minWidth: '100px', height: 'auto' }}
+          style={{ cursor: 'pointer', minHeight: '100px', display: 'block', width: '100%', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', visibility: 'visible', opacity: 1, position: 'relative', zIndex: 1, overflow: 'visible', pointerEvents: 'auto', userSelect: 'none', contentVisibility: 'visible', transform: 'none', minWidth: '100px', height: 'auto' }}
         >
           {error ? (
             <div className="mermaid-error">
@@ -149,39 +202,33 @@ const MermaidDiagramComponent = ({ node, updateAttributes, extension }: any) => 
         <div className="mermaid-modal-overlay" onClick={handleCloseModal}>
           <div className="mermaid-modal" onClick={(e) => e.stopPropagation()}>
             <div className="mermaid-modal-header">
-              <h3>Modifier le diagramme</h3>
               <div className="mermaid-modal-header-actions">
                 {isLoading && <span className="mermaid-loading-spinner"></span>}
-                <button className="mermaid-modal-close" onClick={handleCloseModal}>×</button>
+                <button className="mermaid-modal-close" onClick={handleCloseModal}></button>
               </div>
             </div>
             <div className="mermaid-modal-body">
               <div className="mermaid-modal-draw-container">
-                <div className="mermaid-modal-preview-label">Éditeur Visuel (Excalidraw)</div>
                 <div 
                   ref={excalidrawHostRef}
                   className="mermaid-modal-excalidraw-host"
                 />
               </div>
               <div className="mermaid-modal-editor">
-                <div className="mermaid-modal-editor-label">Code (Mermaid)</div>
                 <textarea
                   className="mermaid-modal-textarea"
                   value={code}
                   onChange={handleCodeChange}
+                  onFocus={handleTextareaFocus}
                   placeholder="Entrez votre code Mermaid ici..."
                   spellCheck={false}
                 />
               </div>
             </div>
-            <div className="mermaid-modal-footer">
-              <button className="mermaid-modal-btn mermaid-modal-btn-primary" onClick={handleCloseModal}>
-                Enregistrer et Fermer
-              </button>
-            </div>
           </div>
         </div>
       )}
+      {showToast && <div className="mermaid-toast">Code copié !</div>}
     </>
   );
 };

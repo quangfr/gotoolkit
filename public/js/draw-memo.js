@@ -40,21 +40,23 @@ window.GoToolkitDrawMemo = (function () {
             await loadExcalidraw();
 
             if (!excalidrawInstance) {
-                excalidrawInstance = new window.GoToolkitExcalidraw();
+                excalidrawInstance = window.GoToolkitExcalidraw;
             }
 
-            excalidrawInstance.mount(container);
+            await excalidrawInstance.initialize(container);
 
             if (initialData) {
                 if (typeof initialData === 'object' || (typeof initialData === 'string' && initialData.trim().startsWith('{'))) {
                     // It's JSON
                     const scene = typeof initialData === 'string' ? JSON.parse(initialData) : initialData;
-                    excalidrawInstance.updateScene(scene);
+                    excalidrawInstance.applyScene(scene);
                 } else if (typeof initialData === 'string' && initialData.trim().length > 0) {
                     // It's Mermaid
                     try {
-                        const elements = await excalidrawInstance.convertMermaid(initialData);
-                        excalidrawInstance.updateScene({ elements });
+                        const scene = await excalidrawInstance.convertMermaid(initialData);
+                        if (scene) {
+                            excalidrawInstance.applyScene(scene);
+                        }
                     } catch (e) {
                         console.error("Failed to convert mermaid", e);
                     }
@@ -66,8 +68,10 @@ window.GoToolkitDrawMemo = (function () {
         async updateFromMermaid(code) {
             if (!excalidrawInstance) return;
             try {
-                const elements = await excalidrawInstance.convertMermaid(code);
-                excalidrawInstance.updateScene({ elements });
+                const scene = await excalidrawInstance.convertMermaid(code);
+                if (scene) {
+                    excalidrawInstance.applyScene(scene);
+                }
             } catch (e) {
                 console.error("Failed to update from mermaid", e);
             }
@@ -75,13 +79,25 @@ window.GoToolkitDrawMemo = (function () {
 
         getSceneJSON() {
             if (!excalidrawInstance) return null;
-            // The bridge should expose the current scene
-            return excalidrawInstance.getSceneData ? JSON.stringify(excalidrawInstance.getSceneData()) : null;
+            const api = excalidrawInstance.getApi();
+            if (!api) return null;
+            return JSON.stringify({
+                elements: api.getSceneElements(),
+                appState: api.getAppState(),
+                files: api.getFiles()
+            });
         },
 
         async getSVG() {
-            if (!excalidrawInstance || !excalidrawInstance.exportToSvg) return null;
-            const svg = await excalidrawInstance.exportToSvg();
+            if (!excalidrawInstance) return null;
+            const api = excalidrawInstance.getApi();
+            if (!api) return null;
+
+            const svg = await excalidrawInstance.exportToSvg(
+                api.getSceneElements(),
+                api.getAppState(),
+                api.getFiles()
+            );
             return svg.outerHTML;
         },
 
