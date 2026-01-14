@@ -114,7 +114,7 @@
                                 };
 
                                 countReq.onsuccess = () => {
-                                    console.log("IndexedDB health check passed, documents count:", countReq.result);
+                                    // Health check ok
                                 };
 
                                 tx.onerror = () => {
@@ -2821,12 +2821,10 @@
         menu.hidden = true;
 
         var presets = this.getPromptPresets();
-        console.log("Assist: buildPromptDropdown presets keys:", Object.keys(presets));
         var presetKeys = ["advice", "ask", "suggest", "edit", "draw"];
         presetKeys.forEach(function (key) {
             var preset = presets[key];
             if (!preset) {
-                console.log("Assist: preset not found for key:", key);
                 return;
             }
             var item = document.createElement("button");
@@ -3020,7 +3018,7 @@
         this.sendButton = document.createElement("button");
         this.sendButton.type = "button";
         this.sendButton.className = "btn-primary chat-send-btn";
-        this.sendButton.textContent = "↩︎";
+        this.sendButton.innerHTML = '<i data-lucide="send"></i>';
         this.sendButton.addEventListener("click", this.handleSend.bind(this));
         composerActions.appendChild(this.sendButton);
 
@@ -3033,6 +3031,7 @@
         this.speechButton.addEventListener("click", this.handleSpeechToggle.bind(this));
         textareaWrapper.appendChild(this.speechButton);
         this.sidebar.appendChild(composer);
+        if (window.lucide) window.lucide.createIcons();
 
         this.root.appendChild(this.sidebar);
         this.mountResizer(resizer);

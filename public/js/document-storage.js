@@ -1,6 +1,6 @@
 (function () {
     const DB_NAME = "go-toolkit";
-    const DB_VERSION = 7;
+    const DB_VERSION = 8;
     const STORES = [
         "document-api",
         "share-history",
@@ -8,6 +8,7 @@
         "memo-images",
         "voice-recordings",
         "knowledge-manifest",
+        "knowledge-manifest-cache",
         "knowledge-overrides",
         "knowledge-selection",
         "knowledge-descriptions-overrides",

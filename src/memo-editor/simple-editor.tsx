@@ -1,5 +1,7 @@
 import React from 'react';
 import { useEditor, EditorContent, Editor, ReactRenderer } from '@tiptap/react';
+import { Extension } from '@tiptap/core';
+import Suggestion from '@tiptap/suggestion';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import Highlight from '@tiptap/extension-highlight';
@@ -16,6 +18,7 @@ import TableRow from '@tiptap/extension-table-row';
 import TableHeader from '@tiptap/extension-table-header';
 import TableCell from '@tiptap/extension-table-cell';
 import { DOMSerializer, Node as PMNode } from '@tiptap/pm/model';
+import { PluginKey } from '@tiptap/pm/state';
 import { 
   Undo2, Redo2, Heading1, Heading2, Heading3, List, Quote, SquareCode, 
   Bold, Italic, Underline, Link as LinkIcon, Strikethrough, 
@@ -115,16 +118,16 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist }: {
       let bubbleTop = Math.min(start.top, end.top) - parentRect.top - menuHeight - verticalOffset;
       let bubbleLeft = ((start.left + end.left) / 2) - parentRect.left - menuWidth / 2;
 
-      // Check screen bounds (viewport)
+      // Check bounds
       const padding = 10;
+      const parentWidth = relativeParent?.clientWidth || window.innerWidth;
       const viewportTop = bubbleTop + parentRect.top;
-      const viewportLeft = bubbleLeft + parentRect.left;
 
-      // 1. Clamp Horizontal (Stay within screen bounds)
-      if (viewportLeft < padding) {
-        bubbleLeft = padding - parentRect.left;
-      } else if (viewportLeft + menuWidth > window.innerWidth - padding) {
-        bubbleLeft = window.innerWidth - padding - menuWidth - parentRect.left;
+      // 1. Clamp Horizontal (Stay within parent bounds)
+      if (bubbleLeft < padding) {
+        bubbleLeft = padding;
+      } else if (bubbleLeft + menuWidth > parentWidth - padding) {
+        bubbleLeft = parentWidth - menuWidth - padding;
       }
 
       // 2. Clamp Vertical (Stay within screen bounds)
@@ -223,24 +226,6 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist }: {
           >
             <Underline size={14} />
           </button>
-          <button
-            className="tiptap-button"
-            type="button"
-            onClick={() => editor.chain().focus().toggleStrike().run()}
-            data-active-state={editor.isActive('strike') ? 'on' : 'off'}
-            title="Barré"
-          >
-            <Strikethrough size={14} />
-          </button>
-          <button
-            className="tiptap-button"
-            type="button"
-            onClick={() => editor.chain().focus().toggleHighlight().run()}
-            data-active-state={editor.isActive('highlight') ? 'on' : 'off'}
-            title="Surligné"
-          >
-            <Highlighter size={14} />
-          </button>
 
           <div style={{ position: 'relative' }}>
             <button
@@ -318,6 +303,36 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist }: {
               </div>
             )}
           </div>
+
+          <div className="tiptap-separator-inline" style={{ width: '1px', height: '18px', backgroundColor: '#e2e8f0', margin: '0 6px' }}></div>
+
+          <button
+            className="tiptap-button"
+            type="button"
+            onClick={() => editor.chain().focus().toggleCode().run()}
+            data-active-state={editor.isActive('code') ? 'on' : 'off'}
+            title="Libellé"
+          >
+            <Tag size={14} />
+          </button>
+          <button
+            className="tiptap-button"
+            type="button"
+            onClick={() => editor.chain().focus().toggleStrike().run()}
+            data-active-state={editor.isActive('strike') ? 'on' : 'off'}
+            title="Barré"
+          >
+            <Strikethrough size={14} />
+          </button>
+          <button
+            className="tiptap-button"
+            type="button"
+            onClick={() => editor.chain().focus().toggleHighlight().run()}
+            data-active-state={editor.isActive('highlight') ? 'on' : 'off'}
+            title="Surligné"
+          >
+            <Highlighter size={14} />
+          </button>
           
           {(editor.isActive('tableCell') || editor.isActive('tableHeader')) && (
             <div style={{ position: 'relative' }}>
@@ -691,7 +706,6 @@ const BlockTypeDropdown = ({ editor }: { editor: Editor }) => {
     { label: 'Titre 2', value: 'h2', icon: Heading2, active: editor.isActive('heading', { level: 2 }) },
     { label: 'Titre 3', value: 'h3', icon: Heading3, active: editor.isActive('heading', { level: 3 }) },
     { label: 'Liste à puces', value: 'bulletList', icon: List, active: editor.isActive('bulletList') },
-    { label: 'Libellé', value: 'code', icon: Tag, active: editor.isActive('code') },
     { label: 'Bloc de code', value: 'codeBlock', icon: SquareCode, active: editor.isActive('codeBlock') },
     { label: 'Citation', value: 'blockquote', icon: Quote, active: editor.isActive('blockquote') },
     { label: 'Lien', value: 'link', icon: LinkIcon, active: editor.isActive('link') },
@@ -854,24 +868,6 @@ const Toolbar = ({ editor }: { editor: Editor }) => {
         >
           <Underline size={16} />
         </button>
-        <button
-          className="tiptap-button"
-          aria-label="Strike"
-          type="button"
-          onClick={() => editor.chain().focus().toggleStrike().run()}
-          data-active-state={editor.isActive('strike') ? 'on' : 'off'}
-        >
-          <Strikethrough size={16} />
-        </button>
-        <button
-          className="tiptap-button"
-          aria-label="Highlight"
-          type="button"
-          onClick={() => editor.chain().focus().toggleHighlight().run()}
-          data-active-state={editor.isActive('highlight') ? 'on' : 'off'}
-        >
-          <Highlighter size={16} />
-        </button>
 
         <div style={{ position: 'relative' }}>
           <button
@@ -947,6 +943,38 @@ const Toolbar = ({ editor }: { editor: Editor }) => {
             </div>
           )}
         </div>
+
+        <div className="tiptap-separator" data-orientation="vertical" role="none"></div>
+
+        <button
+          className="tiptap-button"
+          aria-label="Code"
+          type="button"
+          onClick={() => editor.chain().focus().toggleCode().run()}
+          data-active-state={editor.isActive('code') ? 'on' : 'off'}
+          title="Libellé"
+        >
+          <Tag size={16} />
+        </button>
+        <button
+          className="tiptap-button"
+          aria-label="Strike"
+          type="button"
+          onClick={() => editor.chain().focus().toggleStrike().run()}
+          data-active-state={editor.isActive('strike') ? 'on' : 'off'}
+        >
+          <Strikethrough size={16} />
+        </button>
+        <button
+          className="tiptap-button"
+          aria-label="Highlight"
+          type="button"
+          onClick={() => editor.chain().focus().toggleHighlight().run()}
+          data-active-state={editor.isActive('highlight') ? 'on' : 'off'}
+          title="Surligner"
+        >
+          <Highlighter size={16} />
+        </button>
       </div>
 
       <div className="tiptap-separator" data-orientation="vertical" role="none"></div>
@@ -1004,6 +1032,230 @@ const Toolbar = ({ editor }: { editor: Editor }) => {
     </div>
   );
 };
+
+// Code Suggestion List Component
+const CodeList = React.forwardRef((props: any, ref: any) => {
+  const [selectedIndex, setSelectedIndex] = React.useState(0);
+
+  const selectItem = (index: number) => {
+    const item = props.items?.[index];
+    if (item) {
+      props.command({ text: item });
+    }
+  };
+
+  const upHandler = () => {
+    const len = props.items?.length || 0;
+    if (!len) return;
+    setSelectedIndex((prev: number) => (prev + len - 1) % len);
+  };
+
+  const downHandler = () => {
+    const len = props.items?.length || 0;
+    if (!len) return;
+    setSelectedIndex((prev: number) => (prev + 1) % len);
+  };
+
+  const enterHandler = () => {
+    selectItem(selectedIndex);
+  };
+
+  React.useEffect(() => setSelectedIndex(0), [props.items]);
+
+  React.useImperativeHandle(ref, () => {
+    return {
+      onKeyDown: (x: any) => {
+        if (x.event.key === 'ArrowUp') {
+          upHandler();
+          return true;
+        }
+        if (x.event.key === 'ArrowDown') {
+          downHandler();
+          return true;
+        }
+        if (x.event.key === 'Enter') {
+          enterHandler();
+          return true;
+        }
+        if (x.event.key === 'Tab') {
+          if (props.items?.length > 0) {
+            selectItem(0);
+            return true;
+          }
+        }
+        return false;
+      },
+    };
+  }, [selectedIndex, props.items]);
+
+  if (!props.items?.length) return null;
+
+  return (
+    <div
+      style={{
+        background: 'white',
+        border: '1px solid #e2e8f0',
+        borderRadius: '8px',
+        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+        padding: '4px',
+        maxHeight: '200px',
+        overflowY: 'auto',
+        minWidth: '150px',
+        zIndex: 9999,
+      }}
+    >
+      {props.items.map((item: string, index: number) => (
+        <button
+          key={index}
+          onClick={() => selectItem(index)}
+          style={{
+            display: 'block',
+            width: '100%',
+            textAlign: 'left',
+            padding: '6px 8px',
+            background: index === selectedIndex ? '#f1f5f9' : 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            borderRadius: '4px',
+            fontSize: '13px',
+            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+            color: '#1e293b',
+          }}
+        >
+          {item}
+        </button>
+      ))}
+    </div>
+  );
+});
+
+// Code suggestion configuration
+const codeSuggestion = {
+  items: ({ editor, query }: { editor: Editor, query: string }) => {
+    const snippets = new Set<string>();
+    
+    editor.state.doc.descendants((node) => {
+      if (node.isText) {
+        const codeMark = node.marks.find(m => m.type.name === 'code');
+        if (codeMark && node.text) {
+          snippets.add(node.text.trim());
+        }
+      }
+      return true;
+    });
+
+    return Array.from(snippets)
+      .filter(item => item.toLowerCase().includes(query.toLowerCase()))
+      .slice(0, 10);
+  },
+
+  render: () => {
+    let component: any;
+
+    function repositionComponent(clientRect: any) {
+      if (!component?.element) return;
+
+      const rect = typeof clientRect === 'function' ? clientRect() : clientRect;
+      if (!rect) return;
+
+      const virtualElement = {
+        getBoundingClientRect() {
+          return rect;
+        },
+      };
+
+      computePosition(virtualElement, component.element, {
+        placement: 'bottom-start',
+      }).then((pos: any) => {
+        Object.assign(component.element.style, {
+          left: `${pos.x}px`,
+          top: `${pos.y}px`,
+          position: pos.strategy === 'fixed' ? 'fixed' : 'absolute',
+        });
+      });
+    }
+
+    return {
+      onStart: (props: any) => {
+        component = new ReactRenderer(CodeList, {
+          props,
+          editor: props.editor,
+        });
+
+        document.body.appendChild(component.element);
+        repositionComponent(props.clientRect);
+      },
+
+      onUpdate(props: any) {
+        component.updateProps(props);
+        repositionComponent(props.clientRect);
+      },
+
+      onKeyDown(props: any) {
+        if (props.event.key === 'Escape' || props.event.key === '`') {
+          if (document.body.contains(component.element)) {
+            document.body.removeChild(component.element);
+          }
+          component.destroy();
+          return props.event.key === 'Escape';
+        }
+
+        return component.ref?.onKeyDown(props);
+      },
+
+      onExit() {
+        if (component?.element && document.body.contains(component.element)) {
+          document.body.removeChild(component.element);
+        }
+        component?.destroy();
+      },
+    };
+  },
+};
+
+const CodeSuggestion = Extension.create({
+  name: 'codeSuggestion',
+
+  addOptions() {
+    return {
+      suggestion: {
+        char: '`',
+        pluginKey: new PluginKey('codeSuggestion'),
+        allow: ({ editor, range }: any) => {
+          return !editor.isActive('codeBlock');
+        },
+        command: ({ editor, range, props }: any) => {
+          editor
+            .chain()
+            .focus()
+            .insertContentAt(range, [
+              {
+                type: 'text',
+                text: props.text,
+                marks: [{ type: 'code' }],
+              },
+              {
+                type: 'text',
+                text: ' ',
+              },
+            ])
+            .run();
+        },
+      },
+    }
+  },
+
+  addProseMirrorPlugins() {
+    return [
+      Suggestion({
+        editor: this.editor,
+        ...this.options.suggestion,
+        items: codeSuggestion.items,
+        render: codeSuggestion.render,
+      }),
+    ]
+  },
+});
 
 // Emoji List Component
 const EmojiList = React.forwardRef((props: any, ref: any) => {
@@ -1211,6 +1463,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       TableHeader,
       CustomTableCell,
       MermaidNode,
+      CodeSuggestion,
       Placeholder.configure({
         placeholder,
       }),

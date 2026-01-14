@@ -93,6 +93,8 @@
   padding: 0 8px;
   height: 32px;
   border-radius: 6px;
+  border: none;
+  background-color: #fff;
   cursor: pointer;
   transition: all 0.2s;
 }
