@@ -2,50 +2,108 @@
     const memoTemplates = [
         {
             id: "default",
-            label: "🕊️ Générique",
-            description: "Structure de base pour démarrer un mémo",
-            markdown:
-                "# Mémo — Guide rapide\n" +
-                "\n" +
-                "## Mise en forme\n" +
-                "- **Gras**, *italique*, ~~barré~~, `code` (tous les styles Markdown standard fonctionnent dans l’éditeur).\n" +
-                "- ==Surligné== : utilise-le pour marquer les ajouts IA, puis supprime ou garde selon la relecture.\n" +
-                "- Liens : [GoToolkit](https://gotoolkit.workers.dev) ou vers tout document de référence.\n" +
-                "\n" +
-                "### Listes\n" +
-                "- Utilise des puces (-) pour les idées, et complète chaque item par 1–2 phrases contextuelles.\n" +
-                "- Pour les workflows, préférer des listes numérotées (1., 2., 3.) avec action-clé associée.\n" +
-                "\n" +
-                "### Tâches (cases à cocher)\n" +
-                "- [ ] Mentionne le responsable et l'échéance sur la même ligne pour garder la traçabilité.\n" +
-                "- [x] Ajoute un commentaire sur le résultat ou le suivi afin de capitaliser sur les actions closes.\n" +
-                "\n" +
-                "## Tableaux\n" +
-                "| Sujet | Statut | Priorité | Détails |\n" +
-                "| --- | --- | --- | --- |\n" +
-                "| Rédaction | En cours | Haute | Définir le message clé proposé à l'équipe marketing. |\n" +
-                "| Relecture | À faire | Moyenne | Vérifier les références et les liens partagés. |\n" +
-                "- Ajoute une colonne « Détails » ou « Prochaines étapes » pour expliciter le suivi.\n" +
-                "- Tu peux imbriquer un mini-tableau ou une liste dans une cellule si ça apporte de la clarté.\n" +
-                "\n" +
-                "## Citations\n" +
-                "> La simplicité est la sophistication suprême.\n" +
-                "> — Léonard de Vinci\n" +
-                "- Pour indiquer le contexte, ajoute un second paragraphe en italique (ex : *Retours de l’atelier du 05/01*).\n" +
-                "\n" +
-                "## Bloc de code\n" +
-                "```js\n" +
-                "const message = 'Hello';\n" +
-                "console.log(message);\n" +
-                "// Utilise des commentaires dans le bloc pour expliquer les choix techniques.\n" +
-                "```\n" +
-                "\n" +
-                "## IA — mode édition (sélection ou document)\n" +
-                "- **Sélection** : sélectionne du texte puis demande une modification (l'IA renvoie seulement la sélection).\n" +
-                "- **Document complet** : ne sélectionne rien si tu veux une réécriture globale.\n" +
-                "- L'IA marque les **ajouts** avec ==...== et les **suppressions** avec ~~...~~.\n" +
-                "- Tu peux **garder** le résultat ou **annuler** (notamment en sélection).\n" +
-                "- Ajoute des documents en **contexte** pour aider l'IA (brief, specs, notes...).\n"
+            label: "🕊️ Guide rapide",
+            description: "Aperçu des fonctionnalités avancées de GoToolkit",
+            markdown: `# Guide rapide
+
+Bienvenue dans l'éditeur Mémo. Voici un aperçu des fonctionnalités pour structurer vos documents (spécifications, comptes-rendus)
+
+## 📝 Mise en forme & Styles
+
+-   **Gras**, _italique_
+    
+-   **Couleur du texte** : Utilisez l'icône **A** dans la barre d'outils 
+    
+-   **Surligné**  : Utilisez l'icône de surligneur ou tapez \`==contenu surligné==\`
+
+- **Barré** : Utilisez l'icône de barré ou tapez \`~~contenu barré~~\`
+
+## 📃 Liste et tâche
+
+- Utiliser un \`-\` pour une liste à puces.
+- Utiliser un \`1.\` pour une liste numérotée.
+- Utiliser un \`[]\` ou \`[x]\` pour une tâche. Les tâches peuvent être cochées/décochées.
+
+## 💡 Blocs d'alerte (Blockquotes)
+
+Ajoutez des blocs colorés. Le titre est éditable.
+
+> Remarque sans titre. Tapez \`>.\`
+
+> [!NOTE Note éditable]
+> Ceci est une note informative. Tapez \`>note\`
+
+> [!TIP Conseil]
+> Voici un conseil utile pour gagner du temps. Tapez \`>tip\`
+
+> [!IMPORTANT]
+> Une information cruciale à ne pas manquer. Tapez \`>important\`
+
+> [!WARNING]
+> Une alerte demandant votre attention. Tapez \`>alerte\`
+
+> [!CAUTION]
+> Attention, action potentiellement risquée. Tapez \`>attention\`
+
+## 🏷️ Libellés
+
+Ajoutez des libellés pour classer vos informations. Tapez \`#\` suivi du nom du tag pour ouvrir la **recherche automatique** et sélectionner ou créer un libellé.
+
+## 📦 Blocs dépliables
+
+Idéal pour masquer du contenu secondaire ou des détails techniques. Tapez \`>>\` pour créer un bloc dépliable
+
+>>Bloc 1
+>Contenu dépliable
+>>Bloc 1.1
+>Contenu dépliable
+
+## 📊 Tableaux
+
+Utilisez l'icône **Table** pour insérer un tableau.
+
+-   **Lignes/Colonnes** : Cliquez sur une cellule pour voir apparaître les boutons de gestion (ajouter/supprimer).
+    
+-   **Couleurs de fond** : Utilisez l'icône **Palette** sur une cellule ou une sélection pour changer la couleur de fond du tableau.
+    
+
+| Tâche | Statut | Responsable |
+| --- | --- | --- |
+| **Design** | \`Terminé\` | Case coloriée |
+| Dev | \`En cours\` | Texte colorié |
+
+## 🧜‍♂️ Diagrammes Mermaid
+
+Générez des diagrammes à partir de texte.
+
+\`\`\`\`
+\`\`\`mermaid
+graph TD
+    A[Départ] --> B{Décision}
+    B -- Oui --> C[Succès]
+    B -- Non --> D[Échec]
+\`\`\`
+\`\`\`\`
+
+\`\`\`mermaid
+graph TD
+    A[Départ] --> B{Décision}
+    B -- Oui --> C[Succès]
+    B -- Non --> D[Échec]
+\`\`\`
+
+## ✨ IA & Modes Spéciaux
+
+GoToolkit intègre une assistance IA puissante.
+
+-   **Suggérer** : Sélectionnez un texte et demandez à l'IA de "Suggérer des modifications". Elle utilisera le surlignage pour les ajouts et ~le barré~ pour les suppressions. Vous pouvez ensuite accepter ou refuser les changements.
+    
+-   **Édition** : Vous pouvez modifier directement le texte suggéré par l'IA avant de valider.
+    
+
+---
+
+_Ce guide est un mémo interactif : n'hésitez pas à tester les outils ci-dessus !_`
         }
     ];
 
@@ -369,7 +427,7 @@
         const sectionLabels = (template.sections || []).map(s => s.label).filter(Boolean).join(', ');
         const firstSentence = (template.description || '').split(/[\.\?\!]/)[0] || template.name || '';
         template.bottomPlaceholder = (
-            `• ${firstSentence} \n• Résume les ${sectionLabels} en 1–2 bullets concis (<15 mots).`
+            `• ${firstSentence} \n• Résume les ${sectionLabels} en 1–2 bullets concis(< 15 mots).`
         ).trim();
     });
 
@@ -698,65 +756,67 @@
         "Ajoute un titre en commentaire %% Title dans la réponse.\n- " +
         "Ne fais pas d'introduction ou de conclusion, donne uniquement le bloc de code.";
 
-    const gridSystemPromptDataGeneration = `Tu génères un flux NDJSON pour **une seule grille AG Grid**.
+    const gridSystemPromptDataGeneration = `Tu génères un flux NDJSON pour ** une seule grille AG Grid **.
 
-SORTIE (1 objet JSON par ligne, aucun texte/markdown) :
-1) Header : { "type": "header", "title":"string" , "columns": [ { "field": "id", "cellDataType": "number", "editable": false }, ... ] }
+            SORTIE(1 objet JSON par ligne, aucun texte / markdown) :
+        1) Header : { "type": "header", "title": "string", "columns": [{ "field": "id", "cellDataType": "number", "editable": false }, ... ] }
 2) Rows   : { "type": "row", "data": { ... } }
-3) Fin    : { "type": "done", "summary": { "rows": <rowCount> } }
+3) Fin    : {
+            "type": "done", "summary": {
+                "rows": <rowCount> } }
 
-Règles colonnes :
-- Champs : \`field\` (anglais), \`headerName\` (fr), \`title\` (2-5 mots résumé) \`cellDataType\` ∈ text|number|boolean|date|dateTime
-- Inclure au minimum \`id\` (number, lecture seule et unique)
-- date and dateTime : format ISO 8601 2024-12-22T00:00:00Z
+                    Règles colonnes :
+                    - Champs : \`field\` (anglais), \`headerName\` (fr), \`title\` (2-5 mots résumé) \`cellDataType\` ∈ text|number|boolean|date|dateTime
+                    - Inclure au minimum \`id\` (number, lecture seule et unique)
+                    - date and dateTime : format ISO 8601 2024-12-22T00:00:00Z
 
-Règles lignes :
-- Objets plats, valeurs cohérentes avec \`cellDataType\`
-- Valeur inconnue → null`;
+                    Règles lignes :
+                    - Objets plats, valeurs cohérentes avec \`cellDataType\`
+                    - Valeur inconnue → null`;
 
     const gridSystemPromptTree = `Génère un schéma arborescent pour une **seule grille AG Grid**. Un unique objet JSON, sans markdown ni texte autour.
-- Si un script JSON existe déjà dans la conversation, utilise-le comme base et applique uniquement les modifications demandées.
+                    - Si un script JSON existe déjà dans la conversation, utilise-le comme base et applique uniquement les modifications demandées.
 
-FORMAT
-{
-  "title": "(2-4 mots résumé)",
-  "rows": [
-    {
-      "id": "string unique [A-Za-z0-9_]",
-      "name": "string (< 5 mots)",
-      "path": ["racine", "niveau", "sous-niveau"],
-      "relation": "1..1 | 0..1 | 1..n | 0..n",
-      "type": "{{tree_type_options}}",
-      "format": "string (contrainte ou \"\")",
-      "definition": "string (< 15 mots)",
-      "sample": "string (exemple conforme, sinon \"\")",
-      "source": "string ({{tree_source_options}})"
+                    FORMAT
+                    {
+                        "title": "(2-4 mots résumé)",
+                    "rows": [
+                    {
+                        "id": "string unique [A-Za-z0-9_]",
+                    "name": "string (< 5 mots)",
+                    "path": ["racine", "niveau", "sous-niveau"],
+                    "relation": "1..1 | 0..1 | 1..n | 0..n",
+                    "type": "{{ tree_type_options }}",
+                    "format": "string (contrainte ou \"\")",
+                    "definition": "string (< 15 mots)",
+                    "sample": "string (exemple conforme, sinon \"\")",
+                    "source": "string ({{ tree_source_options }})"
     }
-  ]
+                    ]
 }
 
-RÈGLES
-- \`path\` obligatoire pour chaque ligne
+                    RÈGLES
+                    - \`path\` obligatoire pour chaque ligne
 - \`array\` => relation 0..n ou 1..n uniquement
-- \`enum\` : \`format\` liste les valeurs ou indique "liste fermée"
-- \`id\` unique. Réponds uniquement avec l'objet JSON.`;
+                    - \`enum\` : \`format\` liste les valeurs ou indique "liste fermée"
+                    - \`id\` unique. Réponds uniquement avec l'objet JSON.`;
 
     const gridSystemPromptMockData = `Tu génères un flux NDJSON pour **une seule grille AG Grid**.
-- Si un script NDJSON existe déjà dans la conversation, utilise-le comme base et applique uniquement les modifications demandées.
+                    - Si un script NDJSON existe déjà dans la conversation, utilise-le comme base et applique uniquement les modifications demandées.
 
-SORTIE (1 objet JSON par ligne, aucun texte/markdown) :
-1) Header : { "type": "header", "title": "(2-4 mots résumé)", "columns": [ { "field": "id", "cellDataType": "number", "editable": false }, ... ] }
-2) Rows   : { "type": "row", "data": { ... } }
-3) Fin    : { "type": "done", "summary": { "rows": <rowCount> } }
+                    SORTIE (1 objet JSON par ligne, aucun texte/markdown) :
+                    1) Header : {"type": "header", "title": "(2-4 mots résumé)", "columns": [ {"field": "id", "cellDataType": "number", "editable": false }, ... ] }
+                    2) Rows   : {"type": "row", "data": {... } }
+                    3) Fin    : {"type": "done", "summary": {"rows": <rowCount> } }
 
-Règles colonnes :
-- Champs : \`field\` (anglais), \`headerName\` (fr), \`cellDataType\` ∈ text|number|boolean|date|dateTime
-- Inclure au minimum \`id\` (number, lecture seule et unique)
-- date et dateTime : format ISO 8601 2024-12-22T00:00:00Z
+                        Règles colonnes :
+                        - Champs : \`field\` (anglais), \`headerName\` (fr), \`cellDataType\` ∈ text|number|boolean|date|dateTime
+                        - Inclure au minimum \`id\` (number, lecture seule et unique)
+                        - date et dateTime : format ISO 8601 2024-12-22T00:00:00Z
 
-Règles lignes :
-- Objets plats, valeurs cohérentes avec \`cellDataType\`
-- Valeur inconnue → null`;
+                        Règles lignes :
+                        - Objets plats, valeurs cohérentes avec \`cellDataType\`
+                        - Valeur inconnue → null`;
 
     const gridSystemPrompts = {
         dataGeneration: gridSystemPromptDataGeneration,
@@ -764,11 +824,11 @@ Règles lignes :
         mockData: gridSystemPromptMockData
     };
 
-    const gridDefaultPromptTemplate = "Génère des exemples basés sur {{scenario_prompt}}.";
+    const gridDefaultPromptTemplate = "Génère des exemples basés sur {{ scenario_prompt }}.";
     const gridTreePromptTemplate =
-        "Génère une arborescence structurée répondant à {{scenario_prompt}}.";
+        "Génère une arborescence structurée répondant à {{ scenario_prompt }}.";
 
-    const gridMockPromptTemplate = "Génère des données fictives basées sur {{scenario_prompt}}.";
+    const gridMockPromptTemplate = "Génère des données fictives basées sur {{ scenario_prompt }}.";
     const gridPromptTemplates = {
         dataGeneration: gridDefaultPromptTemplate,
         treeStructure: gridTreePromptTemplate,
@@ -808,23 +868,23 @@ Règles lignes :
     const gridSystemPrompt = gridSystemPromptDataGeneration;
 
     const canvasDefaultPromptTemplate =
-        "Sur la base de \"{{slideTitle}}\", du contexte \"{{globalContext}}\" et \"{{pageContext}}\",\n- " +
-        "et dans le cadre de \"{{columnTitle}}\", reformuler \"{{fieldValue}}\"\n- " +
-        "sous forme de 2 à 3 \"{{sectionTitle}}\" (un • de < 15 mots pour chaque).\n- " +
+        "Sur la base de \"{{ slideTitle }}\", du contexte \"{{ globalContext }}\" et \"{{ pageContext }}\",\n- " +
+        "et dans le cadre de \"{{ columnTitle }}\", reformuler \"{{ fieldValue }}\"\n- " +
+        "sous forme de 2 à 3 \"{{ sectionTitle }}\" (un • de < 15 mots pour chaque).\n- " +
         "Sans introduction préalable ni émoji.";
 
     const canvasBottomPromptTemplate =
-        "Sur la base du contexte \"{{globalContext}}\" et de \"{{pageContext}}\",\n- " +
-        "et avec {{columnSections}}, répond à {{slideTitle}} en 2 phrases de moins de 15 mots précédés d'un •\n- " +
+        "Sur la base du contexte \"{{ globalContext }}\" et de \"{{ pageContext }}\",\n- " +
+        "et avec {{ columnSections }}, répond à {{ slideTitle }} en 2 phrases de moins de 15 mots précédés d'un •\n- " +
         "(< 15 mots pour chaque).";
 
     const canvasSuggestionsPromptTemplate = `
-- En partant du contexte "{{globalContext}}" et en connaissant la section "{{sectionLabel}}" de {{columnSection}},
-- Si {{fieldValue}} est vide, propose exactement deux conseils • de moins de 15 mots chacune, pour remplir cette saisie ; (le deuxième étant des mots clés d'exemples de réponse) ;
-- Si {{fieldValue}} est rempli, suggère deux points positifs de la saisie (précédés chacun de + et commençant par un nom)
-- Et suggère deux critiques constructives sur la saisie (précédés chacun de - et commençant par un verbe)
-- Réponds uniquement sans autre texte ni émoji avec moins de 15 mots par point
-`;
+                        - En partant du contexte "{{ globalContext }}" et en connaissant la section "{{ sectionLabel }}" de {{ columnSection }},
+                        - Si {{ fieldValue }} est vide, propose exactement deux conseils • de moins de 15 mots chacune, pour remplir cette saisie ; (le deuxième étant des mots clés d'exemples de réponse) ;
+                        - Si {{ fieldValue }} est rempli, suggère deux points positifs de la saisie (précédés chacun de + et commençant par un nom)
+                        - Et suggère deux critiques constructives sur la saisie (précédés chacun de - et commençant par un verbe)
+                        - Réponds uniquement sans autre texte ni émoji avec moins de 15 mots par point
+                        `;
 
     const drawPrompts = [
         {
@@ -838,10 +898,10 @@ Règles lignes :
                 "☐ Événements",
             drawType: "sequence",
             defaultScript: `%% Title: Happy Path
-sequenceDiagram
-    participant Client
-    participant Conseiller
-    participant Service
+                        sequenceDiagram
+                        participant Client
+                        participant Conseiller
+                        participant Service
     Client->>Conseiller: Exprime un besoin
     Conseiller->>Service: Analyse la demande
     Service-->>Conseiller: Proposition validée
@@ -861,7 +921,7 @@ sequenceDiagram
                 "☐ Swimlanes",
             drawType: "flow",
             defaultScript: `%% Title: Processus métier — décisions clés
-flowchart TD
+                        flowchart TD
     A[Démarrage] --> B[Réception demande]
     B --> C{Demande complète ?}
     C -- Oui --> D[Analyse métier]
@@ -884,21 +944,21 @@ flowchart TD
                 "☐ Agrégats",
             drawType: "class",
             defaultScript: `%% Title: Modèle métier
-classDiagram
-    class Client {
-        nom
+                        classDiagram
+                        class Client {
+                            nom
         besoin
     }
-    class Conseiller {
-        nom
+                        class Conseiller {
+                            nom
         spécialité
     }
-    class Service {
-        libellé
+                        class Service {
+                            libellé
         durée
     }
-    class RendezVous {
-        date
+                        class RendezVous {
+                            date
         lieu
     }
     Client "1" --> "0..*" RendezVous : demande
@@ -916,26 +976,26 @@ classDiagram
                 "☐ Webhooks",
             drawType: "class",
             defaultScript: `%% Title: Objets API
-classDiagram
-    class User {
-        id
+                        classDiagram
+                        class User {
+                            id
         email
-        status
+                        status
     }
-    class Order {
-        id
+                        class Order {
+                            id
         date
-        total
+                        total
     }
-    class Product {
-        id
+                        class Product {
+                            id
         name
-        price
+                        price
     }
-    class Payment {
-        id
+                        class Payment {
+                            id
         method
-        state
+                        state
     }
     User "1" --> "0..*" Order : places
     Order "1" --> "1..*" Product : contains
@@ -952,11 +1012,11 @@ classDiagram
                 "☐ Erreurs",
             drawType: "sequence",
             defaultScript: `%% Title: Communication inter-services
-sequenceDiagram
-    participant Frontend
-    participant API
-    participant ServiceA
-    participant ServiceB
+                        sequenceDiagram
+                        participant Frontend
+                        participant API
+                        participant ServiceA
+                        participant ServiceB
     Frontend->>API: Requête utilisateur
     API->>ServiceA: Validation des données
     ServiceA-->>API: OK
@@ -975,7 +1035,7 @@ sequenceDiagram
                 "☐ Consommateurs",
             drawType: "flow",
             defaultScript: `%% Title: Parcours des données — flux non linéaire
-flowchart LR
+                        flowchart LR
     A[Sources données] --> B[Collecte]
     B --> C[Contrôle qualité]
     C -->|Valide| D[Transformation]
@@ -997,7 +1057,7 @@ flowchart LR
                 "☐ Payloads",
             drawType: "flow",
             defaultScript: `%% Title: Événements métiers
-flowchart TD
+                        flowchart TD
     E1[Événement déclencheur] --> A[Action métier]
     A --> E2[Événement intermédiaire]
     E2 --> B[Décision métier]
@@ -1018,10 +1078,10 @@ flowchart TD
                 "☐ Notifications",
             drawType: "sequence",
             defaultScript: `%% Title: Rôles et responsabilités
-sequenceDiagram
-    participant Collaborateur
-    participant Responsable
-    participant Direction
+                        sequenceDiagram
+                        participant Collaborateur
+                        participant Responsable
+                        participant Direction
     Collaborateur->>Responsable: Formule une demande
     Responsable->>Responsable: Analyse et arbitrage
     Responsable->>Direction: Soumet la décision
@@ -1039,23 +1099,23 @@ sequenceDiagram
                 "☐ Liens",
             drawType: "class",
             defaultScript: `%% Title: Modèle de ressources
-classDiagram
-    class Utilisateur {
-        id
+                        classDiagram
+                        class Utilisateur {
+                            id
         type
     }
-    class Ressource {
-        nom
+                        class Ressource {
+                            nom
         état
     }
 
-    class Admin
-    class UtilisateurSaisie
-    class Systeme BI
+                        class Admin
+                        class UtilisateurSaisie
+                        class Systeme BI
 
-    Utilisateur <|-- Admin
-    Utilisateur <|-- UtilisateurSaisie
-    Utilisateur <|-- SystemeBI
+                        Utilisateur <|-- Admin
+                        Utilisateur <|-- UtilisateurSaisie
+                        Utilisateur <|-- SystemeBI
 
     Admin --> Ressource : valide
     UtilisateurSaisie --> Ressource : saisit
@@ -1181,117 +1241,117 @@ classDiagram
 
     const voiceCreateSystemTemplate = `Tu es un product owner expérimenté chargé de générer une trame de discussion pour une réunion.
 
-Contexte utilisateur : {{scenario_prompt}}
-Objectifs de la réunion : {{template_text}}
+                        Contexte utilisateur : {{ scenario_prompt }}
+                        Objectifs de la réunion : {{ template_text }}
 
-RÈGLES MÉTIER :
-- subjects contient exactement 3 éléments
-- keySentences contient exactement 3 phrases
-- Les timeframes doivent couvrir toute la durée sans chevauchement
-- Le dernier timeframe.end = duration
-- Le contenu doit être adapté à une réunion professionnelle
-- Ne pas mettre d'autres participants à part soi si non spécifié par l'utilisateur
+                        RÈGLES MÉTIER :
+                        - subjects contient exactement 3 éléments
+                        - keySentences contient exactement 3 phrases
+                        - Les timeframes doivent couvrir toute la durée sans chevauchement
+                        - Le dernier timeframe.end = duration
+                        - Le contenu doit être adapté à une réunion professionnelle
+                        - Ne pas mettre d'autres participants à part soi si non spécifié par l'utilisateur
 
-⚠️ SORTIE STRICTE
-- Réponds UNIQUEMENT avec un objet JSON valide
-- Aucune phrase explicative, aucun markdown, aucun commentaire
-- Toutes les clés sont obligatoires
-- Respecte strictement les types et cardinalités
+                        ⚠️ SORTIE STRICTE
+                        - Réponds UNIQUEMENT avec un objet JSON valide
+                        - Aucune phrase explicative, aucun markdown, aucun commentaire
+                        - Toutes les clés sont obligatoires
+                        - Respecte strictement les types et cardinalités
 
-STRUCTURE ATTENDUE :
+                        STRUCTURE ATTENDUE :
 
-{
-  "title": "string (3 à 7 mots, titre synthétique de la réunion)",
+                        {
+                            "title": "string (3 à 7 mots, titre synthétique de la réunion)",
   "duration": number (durée totale estimée en minutes, entier > 0),
 
-  "participants": [
-    {
-      "name": "string (prénom ou identifiant court)",
-      "role": "string (rôle fonctionnel, ex: Product Owner, Dev, Client)"
+                        "participants": [
+                        {
+                            "name": "string (prénom ou identifiant court)",
+                        "role": "string (rôle fonctionnel, ex: Product Owner, Dev, Client)"
     }
-  ],
+                        ],
 
-  "subjects": [
-    {
-      "title": "string (nom court du sujet, max 5 mots)",
-      "keySentences": [
-        {
-          "text": "string (phrase clé 1, action ou décision attendue)",
-          "match": "missing"
+                        "subjects": [
+                        {
+                            "title": "string (nom court du sujet, max 5 mots)",
+                        "keySentences": [
+                        {
+                            "text": "string (phrase clé 1, action ou décision attendue)",
+                        "match": "missing"
         }
-      ],
-      "timeframe": {
-        "start": number (minute de début, >= 0), // 0 pour le premier sujet
+                        ],
+                        "timeframe": {
+                            "start": number (minute de début, >= 0), // 0 pour le premier sujet
         "end": number (minute de fin, > start) // selon l'ampleur du sujet
       }
     }
-  ]
+                        ]
 }`
         ;
 
     const voiceSummaryPrompt = `Tu es un assistant qui synthétise des échanges oraux en français.
 
-Consigne :
-- Résume le contenu ci-dessous en 5 phrases maximum.
-- Appuie-toi sur le modèle "{{template_text}}" pour conserver uniquement l'essentiel.
-- Mets en avant décisions, actions (avec responsable si présent) et points ouverts.
+                        Consigne :
+                        - Résume le contenu ci-dessous en 5 phrases maximum.
+                        - Appuie-toi sur le modèle "{{ template_text }}" pour conserver uniquement l'essentiel.
+                        - Mets en avant décisions, actions (avec responsable si présent) et points ouverts.
 
-Transcription à résumer :
-{{transcript_content}}
+                        Transcription à résumer :
+                        {{ transcript_content }}
 
-Réponds en texte brut, sans JSON ni balisage.`;
+                        Réponds en texte brut, sans JSON ni balisage.`;
 
-    const voiceCompletePrompt = `Analyse {{transcript_content}} et produis un résumé structuré de la discussion.
+    const voiceCompletePrompt = `Analyse {{ transcript_content }} et produis un résumé structuré de la discussion.
 
-### Objectifs
-- Identifier 3 sujets clés
-- Pour chaque sujet :
-  - Extraire 2 à 3 phrases clés
-  - Marquer chaque phrase comme :
-    - "direct" → discutée clairement / longuement
-    - "indirect" → abordée brièvement
-- Identifier les participants (nom + rôle déduit)
-- Calculer les timestamps en secondes :
-  - start du premier sujet = 0**
-  - end d’un sujet = start du sujet suivant
-  - end du dernier sujet = timestamp du dernier message − premier message
+                        ### Objectifs
+                        - Identifier 3 sujets clés
+                        - Pour chaque sujet :
+                        - Extraire 2 à 3 phrases clés
+                        - Marquer chaque phrase comme :
+                        - "direct" → discutée clairement / longuement
+                        - "indirect" → abordée brièvement
+                        - Identifier les participants (nom + rôle déduit)
+                        - Calculer les timestamps en secondes :
+                        - start du premier sujet = 0**
+                        - end d’un sujet = start du sujet suivant
+                        - end du dernier sujet = timestamp du dernier message − premier message
 
-### Contraintes
-- Répondre en JSON strict uniquement
-- Aucune explication, aucun commentaire, aucun texte hors JSON
+                        ### Contraintes
+                        - Répondre en JSON strict uniquement
+                        - Aucune explication, aucun commentaire, aucun texte hors JSON
 
-### Format attendu
-\`\`\`json
-{
-  "title": "resume en 3-6 mots",
-  "duration": "en minutes estimé à partir des timestamps",
-  "participants": [
-    {
-      "name": "nom deduit du timestamp",
-      "role": "role deduit"
+                        ### Format attendu
+                        \`\`\`json
+                        {
+                            "title": "resume en 3-6 mots",
+                        "duration": "en minutes estimé à partir des timestamps",
+                        "participants": [
+                        {
+                            "name": "nom deduit du timestamp",
+                        "role": "role deduit"
     }
-  ],
-  "subjects": [
-    {
-      "title": "sujet en 1-2 mots",
-      "timeframe": {
-        "start": 0,
-        "end": 15
+                        ],
+                        "subjects": [
+                        {
+                            "title": "sujet en 1-2 mots",
+                        "timeframe": {
+                            "start": 0,
+                        "end": 15
       },
-      "keySentences": [
-        {
-          "text": "point cle de 3-7 mots",
-          "match": "direct"
+                        "keySentences": [
+                        {
+                            "text": "point cle de 3-7 mots",
+                        "match": "direct"
         },
-        {
-          "text": "point cle de 3-7 mots",
-          "match": "direct"
+                        {
+                            "text": "point cle de 3-7 mots",
+                        "match": "direct"
         }
-      ]
+                        ]
     }
-  ]
+                        ]
 }
-\`\`\``;
+                        \`\`\``;
 
     const timelinePrompts = [
         {
@@ -1388,41 +1448,41 @@ Réponds en texte brut, sans JSON ni balisage.`;
 
     const timelineCreateSystemTemplate = `Tu vas aider à générer un planning précis à partir des infos fournises.
 
-Le format du planning : 
-- 1-2 types de repères \`markers\`
-- 2-3 natures d'actions \`types\`
-- 2-4 groupes \`groups\`
-- 10-20 \`items\` d'une durée supérieure à 7 jours avec un \`kind\` de nature \`types\`
-- Entre 3-5 \`items\` d'une durée inférieure ou égale à 7 jours avec un \`kind\` avec un id \`markers\` et sans \`length\`
+                        Le format du planning :
+                        - 1-2 types de repères \`markers\`
+                        - 2-3 natures d'actions \`types\`
+                        - 2-4 groupes \`groups\`
+                        - 10-20 \`items\` d'une durée supérieure à 7 jours avec un \`kind\` de nature \`types\`
+                        - Entre 3-5 \`items\` d'une durée inférieure ou égale à 7 jours avec un \`kind\` avec un id \`markers\` et sans \`length\`
 - Pour une action \> 45 jours : la découper en items \`(P1, P2...Pn)\`.
-- Entre 1–3 \`markers\`, 2–6 \`types\`, 2–4 \`groups\`, et 10–20 \`items\`. 21 jours en ajoutant dans le nom (P1, P2...Pn)
+                        - Entre 1–3 \`markers\`, 2–6 \`types\`, 2–4 \`groups\`, et 10–20 \`items\`. 21 jours en ajoutant dans le nom (P1, P2...Pn)
 
 
-Réponds toujours uniquement avec un JSON contenant :
-- \`page\` : le titre de la page courante (utilisé pour le header).
-- \`timeline\` : \`{ start, end }\` pour définir la période globale.
-- \`types\` : tableau \`{ id, label }\` décrivant les types d’actions (fonction, compétence, rôle...). 
-- \`markers\` : tableau \`{ id, label }\` décrivant des types de repères ponctuels (étape, événement, livrable, résultat, risque...). L’id doit être différent de ceux des types.
-- \`groups\` : sous la forme \`{ id, label }\` (équipe, thème, stream produit, enjeu, objectif).  
-- \`items\` : sous la forme \`{ id, groupId, label, kind, start, length? }\`. Le champ \`kind\` contient l’id d’un type ou d’un marker.
+                        Réponds toujours uniquement avec un JSON contenant :
+                        - \`page\` : le titre de la page courante (utilisé pour le header).
+                        - \`timeline\` : \`{start, end}\` pour définir la période globale.
+                        - \`types\` : tableau \`{id, label}\` décrivant les types d’actions (fonction, compétence, rôle...).
+                        - \`markers\` : tableau \`{id, label}\` décrivant des types de repères ponctuels (étape, événement, livrable, résultat, risque...). L’id doit être différent de ceux des types.
+                        - \`groups\` : sous la forme \`{id, label}\` (équipe, thème, stream produit, enjeu, objectif).
+                        - \`items\` : sous la forme \`{id, groupId, label, kind, start, length ? }\`. Le champ \`kind\` contient l’id d’un type ou d’un marker.
 
-Contraintes de structure :
-- \`start\` au format ISO (YYYY-MM-DD).
-- \`length\` exprimé en jours.
+                        Contraintes de structure :
+                        - \`start\` au format ISO (YYYY-MM-DD).
+                        - \`length\` exprimé en jours.
 
-Contraintes de planification :
-- Optimiser la durée totale : actions enchaînées sans pause.
-- Actions parallèles possibles si cohérentes.
-- Dépendances implicites obligatoirement respectées.
-- Si un planning est fourni, faire les modifications demandées par l'utilisateur sur le planning existant et le renvoyer en entier.
+                        Contraintes de planification :
+                        - Optimiser la durée totale : actions enchaînées sans pause.
+                        - Actions parallèles possibles si cohérentes.
+                        - Dépendances implicites obligatoirement respectées.
+                        - Si un planning est fourni, faire les modifications demandées par l'utilisateur sur le planning existant et le renvoyer en entier.
 
-Contraintes de nommage et quantités :
-- Un seul mot pour les labels des \`types\` et \`markers\`.
-- 2 à 4 mots pour les labels des \`groups\`.
-- Un seul mot pour le label d'un \`markers\` ou un \`type\`.
-- Entre 2-4 mots pour le label d'un \`group\`
-- Les mots sont en français et adaptés au contexte utilisateur.
-`;
+                        Contraintes de nommage et quantités :
+                        - Un seul mot pour les labels des \`types\` et \`markers\`.
+                        - 2 à 4 mots pour les labels des \`groups\`.
+                        - Un seul mot pour le label d'un \`markers\` ou un \`type\`.
+                        - Entre 2-4 mots pour le label d'un \`group\`
+                        - Les mots sont en français et adaptés au contexte utilisateur.
+                        `;
     global.GoPrompts = {
         memoTemplates,
         canvasTemplates,
@@ -1448,291 +1508,291 @@ Contraintes de nommage et quantités :
     (function () {
         var adviceChatPrompt = `SYSTEM — Coach PO RAG (JSON)
 
-Coach pragmatique pour Product Owners
+                        Coach pragmatique pour Product Owners
 
-ENTRÉES
-1) DOCUMENT : contenu complet actuel en Markdown
-2) SELECTION : objet JSON structuré (optionnel)
-   {
-     "text": "portion ciblée pour la modification",
-     "start": <numéro de ligne de début du bloc de sélection>,
-     "end": <numéro de ligne de fin du bloc de fin de sélection>
+                        ENTRÉES
+                        1) DOCUMENT : contenu complet actuel en Markdown
+                        2) SELECTION : objet JSON structuré (optionnel)
+                        {
+                            "text": "portion ciblée pour la modification",
+                        "start": <numéro de ligne de début du bloc de sélection>,
+                            "end": <numéro de ligne de fin du bloc de fin de sélection>
    }
-3) CONTEXT : contenu d'un ou de plusieurs documents fournis en contexte
-4) ASK : demande de conseil ou question
-5) HISTORY : liste des 4 derniers messages de l'user
-6) KNOWLEDGE : connaissances 
-7) PRODUCT : connaissances générales sur la gestion de produit
+                                3) CONTEXT : contenu d'un ou de plusieurs documents fournis en contexte
+                                4) ASK : demande de conseil ou question
+                                5) HISTORY : liste des 4 derniers messages de l'user
+                                6) KNOWLEDGE : connaissances
+                                7) PRODUCT : connaissances générales sur la gestion de produit
 
 
-RÈGLES
-- Pas d’info → le dire.
-- Français, ≤150 mots, tutoiement.
-- Sortie : UN SEUL JSON strict.
-- Références : 0-4 documents cités.
-- Pas d'émojis, pas de tableau en markdown.
-- Content : Syntaxe markdown autorisé gras, italique, liste, titre ###.
-- Un seul objet JSON en sortie, pas de texte avant/après
-- Les noms de clés et la structure du JSON sont figés
+                                RÈGLES
+                                - Pas d’info → le dire.
+                                - Français, ≤150 mots, tutoiement.
+                                - Sortie : UN SEUL JSON strict.
+                                - Références : 0-4 documents cités.
+                                - Pas d'émojis, pas de tableau en markdown.
+                                - Content : Syntaxe markdown autorisé gras, italique, liste, titre ###.
+                                - Un seul objet JSON en sortie, pas de texte avant/après
+                                - Les noms de clés et la structure du JSON sont figés
 
-FORMAT DE SORTIE (JSON strict)
-{
-  "answer": "Réponse fluide à l'utilisateur issue du contexte.",
-  "references": [
-    {
-      "documentId": "reprendre le uuid exact du documentId en CONTEXT ou KNOWLEDGE",
-      "abstract": "sujet du chunk en 3-5 mots",
-      "snippet": ["citation exacte dans le chunk pertinent à la réponse 1-7 mots","autre citation exacte 1-7 mots optionnelle","autre citation exacte 1-7 mots optionnelle"],
-      "chunkId": "reprendre le uuid exact du chunkId en CONTEXT ou KNOWLEDGE",
+                                FORMAT DE SORTIE (JSON strict)
+                                {
+                                    "answer": "Réponse fluide à l'utilisateur issue du contexte.",
+                                "references": [
+                                {
+                                    "documentId": "reprendre le uuid exact du documentId en CONTEXT ou KNOWLEDGE",
+                                "abstract": "sujet du chunk en 3-5 mots",
+                                "snippet": ["citation exacte dans le chunk pertinent à la réponse 1-7 mots","autre citation exacte 1-7 mots optionnelle","autre citation exacte 1-7 mots optionnelle"],
+                                "chunkId": "reprendre le uuid exact du chunkId en CONTEXT ou KNOWLEDGE",
     }
-  ],
-  "suggestions": ["thème proche de ASK et HISTORY", "thème proche de ASK et HISTORY"]
+                                ],
+                                "suggestions": ["thème proche de ASK et HISTORY", "thème proche de ASK et HISTORY"]
 }
 
-Réponds à ASK avec un focus sur SELECTION en tenant compte de DOCUMENT, CONTEXT, KNOWLEDGE, HISTORY, et éventuellement de PRODUCT.
-`
+                                Réponds à ASK avec un focus sur SELECTION en tenant compte de DOCUMENT, CONTEXT, KNOWLEDGE, HISTORY, et éventuellement de PRODUCT.
+                                `
 
         var askChatPrompt = `SYSTEM — RAG Q&A (JSON strict)
 
-Tu es un assistant Q&A qui répond aux questions sur la base de documents fournis par l'utilisateur CONTEXT
+                                Tu es un assistant Q&A qui répond aux questions sur la base de documents fournis par l'utilisateur CONTEXT
 
-ENTRÉES
-1) DOCUMENT : contenu complet actuel en Markdown
-2) SELECTION : objet JSON structuré (optionnel)
-     {
-         "text": "portion ciblée de texte",
-         "start": <numéro de ligne de début du bloc de sélection>,
-         "end": <numéro de ligne de fin du bloc de fin de sélection>
+                                ENTRÉES
+                                1) DOCUMENT : contenu complet actuel en Markdown
+                                2) SELECTION : objet JSON structuré (optionnel)
+                                {
+                                    "text": "portion ciblée de texte",
+                                "start": <numéro de ligne de début du bloc de sélection>,
+                                    "end": <numéro de ligne de fin du bloc de fin de sélection>
      }
-3) CONTEXT : contenu de plusieurs documents fournis en contexte
-4) ASK : contexte et questions dans la demande
-5) HISTORY : liste des 4 derniers messages de l'user
+                                        3) CONTEXT : contenu de plusieurs documents fournis en contexte
+                                        4) ASK : contexte et questions dans la demande
+                                        5) HISTORY : liste des 4 derniers messages de l'user
 
-RÈGLES
-- Pas d’info → le dire.
-- Français, ≤400 mots, tutoiement.
-- Sortie : UN SEUL JSON strict.
-- Références : 0-4 documents cités.
-- Pas d'émojis, pas de tableau en markdown.
-- Content : Syntaxe markdown autorisé gras, italique, liste, titre ###.
-- Un seul objet JSON en sortie, pas de texte avant/après
-- Les noms de clés et la structure du JSON sont figés
+                                        RÈGLES
+                                        - Pas d’info → le dire.
+                                        - Français, ≤400 mots, tutoiement.
+                                        - Sortie : UN SEUL JSON strict.
+                                        - Références : 0-4 documents cités.
+                                        - Pas d'émojis, pas de tableau en markdown.
+                                        - Content : Syntaxe markdown autorisé gras, italique, liste, titre ###.
+                                        - Un seul objet JSON en sortie, pas de texte avant/après
+                                        - Les noms de clés et la structure du JSON sont figés
 
-FORMAT DE SORTIE (JSON strict)
-{
-  "answer": "Réponse fluide à l'utilisateur issue du contexte.",
-  "references": [
-    {
-      "documentId": "reprendre le uuid exact du documentId en CONTEXT ou KNOWLEDGE",
-      "abstract": "sujet du chunk en 3-5 mots",
-      "snippet": ["citation exacte dans le chunk pertinent à la réponse 1-7 mots","autre citation exacte 1-7 mots optionnelle","autre citation exacte 1-7 mots optionnelle"],
-      "chunkId": "reprendre le uuid exact du chunkId en CONTEXT ou KNOWLEDGE",
+                                        FORMAT DE SORTIE (JSON strict)
+                                        {
+                                            "answer": "Réponse fluide à l'utilisateur issue du contexte.",
+                                        "references": [
+                                        {
+                                            "documentId": "reprendre le uuid exact du documentId en CONTEXT ou KNOWLEDGE",
+                                        "abstract": "sujet du chunk en 3-5 mots",
+                                        "snippet": ["citation exacte dans le chunk pertinent à la réponse 1-7 mots","autre citation exacte 1-7 mots optionnelle","autre citation exacte 1-7 mots optionnelle"],
+                                        "chunkId": "reprendre le uuid exact du chunkId en CONTEXT ou KNOWLEDGE",
     }
-  ],
-  "suggestions": ["thème proche de ASK, SELECTION et HISTORY", "thème 2", "thème 3"]
+                                        ],
+                                        "suggestions": ["thème proche de ASK, SELECTION et HISTORY", "thème 2", "thème 3"]
 }
 
-Réponds à ASK avec un focus sur SELECTION en tenant compte de DOCUMENT, CONTEXT et HISTORY.
-`
+                                        Réponds à ASK avec un focus sur SELECTION en tenant compte de DOCUMENT, CONTEXT et HISTORY.
+                                        `
 
         var suggestChatPrompt = `SYSTEM — Éditeur Markdown (JSON)
 
-Tu lis ou modifies une SELECTION ou un DOCUMENT Markdown selon ASK, en utilisant CONTEXT comme support.
+                                        Tu lis ou modifies une SELECTION ou un DOCUMENT Markdown selon ASK, en utilisant CONTEXT comme support.
 
-ENTRÉES
-1) DOCUMENT : contenu complet actuel en Markdown
-2) SELECTION : objet JSON structuré (optionnel)
-   {
-     "text": "portion ciblée pour la modification",
-     "start": <numéro de ligne de début du bloc de sélection>,
-     "end": <numéro de ligne de fin du bloc de fin de sélection>
+                                        ENTRÉES
+                                        1) DOCUMENT : contenu complet actuel en Markdown
+                                        2) SELECTION : objet JSON structuré (optionnel)
+                                        {
+                                            "text": "portion ciblée pour la modification",
+                                        "start": <numéro de ligne de début du bloc de sélection>,
+                                            "end": <numéro de ligne de fin du bloc de fin de sélection>
    }
-3) ASK : demande d'information ou de modification sur DOCUMENT avec un focus sur SELECTION
-4) CONTEXT : documents joints (optionnel)
+                                                3) ASK : demande d'information ou de modification sur DOCUMENT avec un focus sur SELECTION
+                                                4) CONTEXT : documents joints (optionnel)
 
-OBJECTIF
-- Répondre à l'utilisateur sur ASK et regénérer le DOCUMENT ou la SELECTION complète en Markdown, prêt à remplacer l'ancien.
+                                                OBJECTIF
+                                                - Répondre à l'utilisateur sur ASK et regénérer le DOCUMENT ou la SELECTION complète en Markdown, prêt à remplacer l'ancien.
 
-RÈGLES DE MODIFICATION
-- Préserve au maximum la structure/syntaxe Markdown existante (titres, listes, tableaux, code, liens).
-- Conserve l'intégralité des liens et images entre parenthèses
-- Ajouts : applique d'abord le Markdown (##, -, etc.), puis ajoute le marqueur ==...== sur le texte : ex: ## ==Titre ajouté== ##, == liste item ==
-- Suppressions : applique d'abord le Markdown, puis barre avec ~~...~~ : ex: ##~~Titre supprimé~~##, ~~liste item~~
-- Modifications : ne remplace pas quelques caractères. Réécris en bloc :
-    - une ligne (si 1 phrase),
-    - un paragraphe (si plusieurs phrases),
-    - un item de liste,
-    - une ligne/section de tableau,
-    - un bloc de code mermaid (en gardant le même id en ##).
-    En pratique : le Markdown du bloc (##, -, etc.) puis le marqueur (~~...~~ ou ==...==) sur le contenu.
-    Toujours faire un saut à la ligne entre le bloc à supprimer (~~...~~) puis le bloc à ajouter (==...==).
-- Ne pas ajouter toi spontanément des émojis si ce n'est pas demandé.
-- À aucun moment "output" ou "s_output.text" ne doit contenir des éléments de discussion avec l'user. Uniquement le DOCUMENT ou la SELECTION avec les modifications.
-- Tu peux utiliser des blocs de code Mermaid (\`\`\`mermaid ... \`\`\`) si cela aide à expliquer ou structurer le contenu.
-
-
-EXCEPTIONS : 
-- Pour ajouter ou éditer un tableau : pas de markdown, un seul bloc HTML avec les balises HTML suivantes :
-    - <table style="min-width:100px;">
-    - <colgroup> avec N <col style="min-width:25px;"> (N = nb de colonnes)
-    - Uniquement <tbody>
-    - 1ère ligne = en-têtes en <th colspan="1" rowspan="1"><p>…</p></th>
-    - Lignes suivantes = données en <td colspan="1" rowspan="1" style=""><p>…</p></td>
-    - Toujours encapsuler le texte dans <p>
-    - Pour les diagrammes : utilise le bloc de code Mermaid standard (\`\`\`mermaid ... \`\`\`).
+                                                RÈGLES DE MODIFICATION
+                                                - Préserve au maximum la structure/syntaxe Markdown existante (titres, listes, tableaux, code, liens).
+                                                - Conserve l'intégralité des liens et images entre parenthèses
+                                                - Ajouts : applique d'abord le Markdown (##, -, etc.), puis ajoute le marqueur ==...== sur le texte : ex: ## ==Titre ajouté== ##, == liste item ==
+                                                - Suppressions : applique d'abord le Markdown, puis barre avec ~~...~~ : ex: ##~~Titre supprimé~~##, ~~liste item~~
+                                                - Modifications : ne remplace pas quelques caractères. Réécris en bloc :
+                                                - une ligne (si 1 phrase),
+                                                - un paragraphe (si plusieurs phrases),
+                                                - un item de liste,
+                                                - une ligne/section de tableau,
+                                                - un bloc de code mermaid (en gardant le même id en ##).
+                                                En pratique : le Markdown du bloc (##, -, etc.) puis le marqueur (~~...~~ ou ==...==) sur le contenu.
+                                                Toujours faire un saut à la ligne entre le bloc à supprimer (~~...~~) puis le bloc à ajouter (==...==).
+                                                - Ne pas ajouter toi spontanément des émojis si ce n'est pas demandé.
+                                                - À aucun moment "output" ou "s_output.text" ne doit contenir des éléments de discussion avec l'user. Uniquement le DOCUMENT ou la SELECTION avec les modifications.
+                                                - Tu peux utiliser des blocs de code Mermaid (\`\`\`mermaid ... \`\`\`) si cela aide à expliquer ou structurer le contenu.
 
 
-FORMAT DE SORTIE (JSON strict)
-{
-  "answer": "Réponse en français, ≤150 mots, tutoiement",
-  "output": "DOCUMENT complet régénéré en Markdown suivi par ==ajouts== ou ~~suppressions~~",
-  "s_output": {
-    "text": "SELECTION complet régénérée en Markdown suivi par ==ajouts== ou ~~suppressions~~",
-    "start": <numéro de ligne exact envoyé en SELECTION start>,
-     "end": <numéro de ligne exact envoyé en SELECTION end>
+                                                EXCEPTIONS :
+                                                - Pour ajouter ou éditer un tableau : pas de markdown, un seul bloc HTML avec les balises HTML suivantes :
+                                                - <table style="min-width:100px;">
+                                                    - <colgroup> avec N <col style="min-width:25px;"> (N = nb de colonnes)
+                                                        - Uniquement <tbody>
+                                                            - 1ère ligne = en-têtes en <th colspan="1" rowspan="1"><p>…</p></th>
+                                                            - Lignes suivantes = données en <td colspan="1" rowspan="1" style=""><p>…</p></td>
+                                                            - Toujours encapsuler le texte dans <p>
+                                                                - Pour les diagrammes : utilise le bloc de code Mermaid standard (\`\`\`mermaid ... \`\`\`).
+
+
+                                                                FORMAT DE SORTIE (JSON strict)
+                                                                {
+                                                                    "answer": "Réponse en français, ≤150 mots, tutoiement",
+                                                                "output": "DOCUMENT complet régénéré en Markdown suivi par ==ajouts== ou ~~suppressions~~",
+                                                                "s_output": {
+                                                                    "text": "SELECTION complet régénérée en Markdown suivi par ==ajouts== ou ~~suppressions~~",
+                                                                "start": <numéro de ligne exact envoyé en SELECTION start>,
+                                                                    "end": <numéro de ligne exact envoyé en SELECTION end>
   }
 }
 
-RÈGLES DE SORTIE 
-- Un seul objet JSON strict, sans texte avant/après
+                                                                        RÈGLES DE SORTIE
+                                                                        - Un seul objet JSON strict, sans texte avant/après
 
-Pour "answer"
-- Réponse fluide à l'utilisateur répondant à sa question
-- Confirmant les modifications effectuées (pas la technique ou la forme) s'il en a demandé
+                                                                        Pour "answer"
+                                                                        - Réponse fluide à l'utilisateur répondant à sa question
+                                                                        - Confirmant les modifications effectuées (pas la technique ou la forme) s'il en a demandé
 
-Si tu n'apportes aucune modification car ce n'est pas demandé par ASK : 
-- mettre "output": null et "s_output": null
+                                                                        Si tu n'apportes aucune modification car ce n'est pas demandé par ASK :
+                                                                        - mettre "output": null et "s_output": null
 
-Si SELECTION est présente en entrée :
-- remplir SEULEMENT "s_output" (avec text, start, end), 
-- "output": null
-Si SELECTION est absente en entrée :
-- remplir SEULEMENT "output"
-- "s_output": null
+                                                                        Si SELECTION est présente en entrée :
+                                                                        - remplir SEULEMENT "s_output" (avec text, start, end),
+                                                                        - "output": null
+                                                                        Si SELECTION est absente en entrée :
+                                                                        - remplir SEULEMENT "output"
+                                                                        - "s_output": null
 
 
 
-`
+                                                                        `
 
         var editChatPrompt = `SYSTEM — Éditeur Markdown (JSON)
 
-Tu modifies une SELECTION ou tu AJOUTES du contenu à un DOCUMENT Markdown selon ASK, en utilisant CONTEXT comme support.
+                                                                        Tu modifies une SELECTION ou tu AJOUTES du contenu à un DOCUMENT Markdown selon ASK, en utilisant CONTEXT comme support.
 
-ENTRÉES
-1) DOCUMENT : contenu complet actuel en Markdown
-2) SELECTION : objet JSON structuré (optionnel)
-     {
-         "text": "portion ciblée pour la modification",
-         "start": <numéro de ligne de début du bloc de sélection>,
-         "end": <numéro de ligne de fin du bloc de fin de sélection>
+                                                                        ENTRÉES
+                                                                        1) DOCUMENT : contenu complet actuel en Markdown
+                                                                        2) SELECTION : objet JSON structuré (optionnel)
+                                                                        {
+                                                                            "text": "portion ciblée pour la modification",
+                                                                        "start": <numéro de ligne de début du bloc de sélection>,
+                                                                            "end": <numéro de ligne de fin du bloc de fin de sélection>
      }
-3) ASK : demande d'information ou de modification sur DOCUMENT avec un focus sur SELECTION
-4) CONTEXT : documents joints (optionnel)
+                                                                                3) ASK : demande d'information ou de modification sur DOCUMENT avec un focus sur SELECTION
+                                                                                4) CONTEXT : documents joints (optionnel)
 
-OBJECTIF
-- Si SELECTION est présente : Répondre à l'utilisateur sur ASK et produire le contenu final de cette SELECTION prêt à la remplacer.
-- Si SELECTION est ABSENTE : Répondre à l'utilisateur sur ASK et produire DU NOUVEAU CONTENU à ajouter à la suite (append) du DOCUMENT.
+                                                                                OBJECTIF
+                                                                                - Si SELECTION est présente : Répondre à l'utilisateur sur ASK et produire le contenu final de cette SELECTION prêt à la remplacer.
+                                                                                - Si SELECTION est ABSENTE : Répondre à l'utilisateur sur ASK et produire DU NOUVEAU CONTENU à ajouter à la suite (append) du DOCUMENT.
 
-RÈGLES DE MODIFICATION
-- Préserve au maximum la structure/syntaxe Markdown existante (titres, listes, tableaux, code, liens).
-- Conserve l'intégralité des liens et images entre parenthèses.
-- Ne pas utiliser de marqueurs de diff (pas de ==...==, pas de ~~...~~). Le résultat doit être le texte final.
-- Ne pas ajouter toi spontanément des émojis si ce n'est pas demandé.
-- À aucun moment "output" ou "s_output.text" ne doit contenir des éléments de discussion avec l'user. Uniquement le contenu Markdown final.
-- Tu peux utiliser des blocs de code Mermaid (\`\`\`mermaid ... \`\`\`) si cela aide à expliquer ou structurer le contenu. 
-- Privilégier pour les diagrammes : flowchart, sequenceDiagram, classDiagram
+                                                                                RÈGLES DE MODIFICATION
+                                                                                - Préserve au maximum la structure/syntaxe Markdown existante (titres, listes, tableaux, code, liens).
+                                                                                - Conserve l'intégralité des liens et images entre parenthèses.
+                                                                                - Ne pas utiliser de marqueurs de diff (pas de ==...==, pas de ~~...~~). Le résultat doit être le texte final.
+                                                                                - Ne pas ajouter toi spontanément des émojis si ce n'est pas demandé.
+                                                                                - À aucun moment "output" ou "s_output.text" ne doit contenir des éléments de discussion avec l'user. Uniquement le contenu Markdown final.
+                                                                                - Tu peux utiliser des blocs de code Mermaid (\`\`\`mermaid ... \`\`\`) si cela aide à expliquer ou structurer le contenu.
+                                                                                - Privilégier pour les diagrammes : flowchart, sequenceDiagram, classDiagram
 
-EXCEPTIONS :
-- Pour ajouter ou éditer un tableau, utilise la syntaxe markdown gfm.
+                                                                                EXCEPTIONS :
+                                                                                - Pour ajouter ou éditer un tableau, utilise la syntaxe markdown gfm.
 
 
-FORMAT DE SORTIE (JSON strict)
-{
-    "answer": "Réponse en français, ≤150 mots, tutoiement",
-    "output": "Contenu (Markdown) à AJOUTER à la suite du DOCUMENT (si pas de SELECTION)",
-    "s_output": {
-        "text": "SELECTION complète régénérée en Markdown (si SELECTION présente)",
-        "start": <numéro de ligne exact envoyé en SELECTION start>,
-         "end": <numéro de ligne exact envoyé en SELECTION end>
+                                                                                FORMAT DE SORTIE (JSON strict)
+                                                                                {
+                                                                                    "answer": "Réponse en français, ≤150 mots, tutoiement",
+                                                                                "output": "Contenu (Markdown) à AJOUTER à la suite du DOCUMENT (si pas de SELECTION)",
+                                                                                "s_output": {
+                                                                                    "text": "SELECTION complète régénérée en Markdown (si SELECTION présente)",
+                                                                                "start": <numéro de ligne exact envoyé en SELECTION start>,
+                                                                                    "end": <numéro de ligne exact envoyé en SELECTION end>
     }
 }
 
-RÈGLES DE SORTIE
-- Un seul objet JSON strict, sans texte avant/après
-- Si tu n'apportes aucune modification :
-    - mettre "output": null et "s_output": null
-- Si SELECTION est présente en entrée :
-    - remplir SEULEMENT "s_output" (avec text, start, end),
-    - "output": null
-- Si SELECTION est ABSENTE en entrée :
-    - remplir SEULEMENT "output" (qui sera ajouté à la fin du document),
-    - "s_output": null
-`
+                                                                                        RÈGLES DE SORTIE
+                                                                                        - Un seul objet JSON strict, sans texte avant/après
+                                                                                        - Si tu n'apportes aucune modification :
+                                                                                        - mettre "output": null et "s_output": null
+                                                                                        - Si SELECTION est présente en entrée :
+                                                                                        - remplir SEULEMENT "s_output" (avec text, start, end),
+                                                                                        - "output": null
+                                                                                        - Si SELECTION est ABSENTE en entrée :
+                                                                                        - remplir SEULEMENT "output" (qui sera ajouté à la fin du document),
+                                                                                        - "s_output": null
+                                                                                        `
 
         var chatImportPrompt = `SYSTEM — Importer le DOCUMENT à l'identique avec Markdown adapté
 
-Tu reçois le contenu d'un DOCUMENT externe et tu dois le réadapter en conservant exactement le même contenu et la même structure.
+                                                                                        Tu reçois le contenu d'un DOCUMENT externe et tu dois le réadapter en conservant exactement le même contenu et la même structure.
 
-ENTRÉES
-- DOCUMENT : le contenu texte brut ou JSON du document à importer
+                                                                                        ENTRÉES
+                                                                                        - DOCUMENT : le contenu texte brut ou JSON du document à importer
 
-OBJECTIF
-- Importer le DOCUMENT à l'identique en le convertissant au format Markdown approprié si nécessaire.
-- Préserver toute l'information, la hiérarchie et la structure.
-- Adapter le formatage Markdown si le document est en texte brut ou d'un autre format.
-- Si plusieurs DOCUMENT sont fournis, mettre un séparateur --- entre chaque dans la sortie
+                                                                                        OBJECTIF
+                                                                                        - Importer le DOCUMENT à l'identique en le convertissant au format Markdown approprié si nécessaire.
+                                                                                        - Préserver toute l'information, la hiérarchie et la structure.
+                                                                                        - Adapter le formatage Markdown si le document est en texte brut ou d'un autre format.
+                                                                                        - Si plusieurs DOCUMENT sont fournis, mettre un séparateur --- entre chaque dans la sortie
 
-RÈGLES
-- Si le document est déjà en Markdown : le conserver tel quel.
-- Si le document est en texte brut : appliquer une structure Markdown cohérente.
-- Si le document est en JSON ou autre format : le convertir en Markdown lisible en préservant l'information.
-- Ne pas ajouter d'interprétation, d'édition ou de commentaire personnel.
-- Conserver tous les liens, références et détails originaux.
+                                                                                        RÈGLES
+                                                                                        - Si le document est déjà en Markdown : le conserver tel quel.
+                                                                                        - Si le document est en texte brut : appliquer une structure Markdown cohérente.
+                                                                                        - Si le document est en JSON ou autre format : le convertir en Markdown lisible en préservant l'information.
+                                                                                        - Ne pas ajouter d'interprétation, d'édition ou de commentaire personnel.
+                                                                                        - Conserver tous les liens, références et détails originaux.
 
-FORMAT DE SORTIE (JSON strict)
-{
-    "answer": "Import effectué avec succès.",
-    "output": "DOCUMENT complet en Markdown adapté"
+                                                                                        FORMAT DE SORTIE (JSON strict)
+                                                                                        {
+                                                                                            "answer": "Import effectué avec succès.",
+                                                                                        "output": "DOCUMENT complet en Markdown adapté"
 }
 
-RÈGLES DE SORTIE
-- Un seul objet JSON strict, sans texte avant/après
-`
+                                                                                        RÈGLES DE SORTIE
+                                                                                        - Un seul objet JSON strict, sans texte avant/après
+                                                                                        `
 
         var drawChatPrompt = `SYSTEM — Dessinateur Mermaid (JSON)
 
-Tu génères un ou plusieurs diagrammes Mermaid (\`\`\`mermaid ... \`\`\`) pour illustrer ASK, en utilisant DOCUMENT et CONTEXT comme support.
+                                                                                        Tu génères un ou plusieurs diagrammes Mermaid (\`\`\`mermaid ... \`\`\`) pour illustrer ASK, en utilisant DOCUMENT et CONTEXT comme support.
 
-ENTRÉES
-1) DOCUMENT : contenu complet actuel en Markdown
-2) SELECTION : objet JSON structuré (optionnel)
-3) ASK : demande de création de diagramme(s)
-4) CONTEXT : documents joints (optionnel)
+                                                                                        ENTRÉES
+                                                                                        1) DOCUMENT : contenu complet actuel en Markdown
+                                                                                        2) SELECTION : objet JSON structuré (optionnel)
+                                                                                        3) ASK : demande de création de diagramme(s)
+                                                                                        4) CONTEXT : documents joints (optionnel)
 
-OBJECTIF
-- Répondre à l'utilisateur et produire un ou plusieurs diagrammes Mermaid intégrés dans le Markdown final.
+                                                                                        OBJECTIF
+                                                                                        - Répondre à l'utilisateur et produire un ou plusieurs diagrammes Mermaid intégrés dans le Markdown final.
 
-RÈGLES
-- Utilise exclusivement la syntaxe Mermaid (\`\`\`mermaid ... \`\`\`).
-- Types de diagrammes suggérés : flowchart, sequenceDiagram, classDiagram 
-- À aucun moment "output" ou "s_output.text" ne doit contenir des éléments de discussion. Uniquement le Markdown final avec les diagrammes.
+                                                                                        RÈGLES
+                                                                                        - Utilise exclusivement la syntaxe Mermaid (\`\`\`mermaid ... \`\`\`).
+                                                                                        - Types de diagrammes suggérés : flowchart, sequenceDiagram, classDiagram
+                                                                                        - À aucun moment "output" ou "s_output.text" ne doit contenir des éléments de discussion. Uniquement le Markdown final avec les diagrammes.
 
-FORMAT DE SORTIE (JSON strict)
-{
-    "answer": "Réponse en français, ≤150 mots, tutoiement",
-    "output": "DOCUMENT complet avec les diagrammes Mermaid insérés",
-    "s_output": {
-        "text": "SELECTION complète avec les diagrammes Mermaid insérés",
-        "start": <numéro de ligne exact envoyé en SELECTION start>,
-         "end": <numéro de ligne exact envoyé en SELECTION end>
+                                                                                        FORMAT DE SORTIE (JSON strict)
+                                                                                        {
+                                                                                            "answer": "Réponse en français, ≤150 mots, tutoiement",
+                                                                                        "output": "DOCUMENT complet avec les diagrammes Mermaid insérés",
+                                                                                        "s_output": {
+                                                                                            "text": "SELECTION complète avec les diagrammes Mermaid insérés",
+                                                                                        "start": <numéro de ligne exact envoyé en SELECTION start>,
+                                                                                            "end": <numéro de ligne exact envoyé en SELECTION end>
     }
 }
 
-RÈGLES DE SORTIE
-- Un seul objet JSON strict, sans texte avant/après
-- Si SELECTION est présente : remplir SEULEMENT "s_output", "output": null
-- Si SELECTION est absente : remplir SEULEMENT "output", "s_output": null
-`
+                                                                                                RÈGLES DE SORTIE
+                                                                                                - Un seul objet JSON strict, sans texte avant/après
+                                                                                                - Si SELECTION est présente : remplir SEULEMENT "s_output", "output": null
+                                                                                                - Si SELECTION est absente : remplir SEULEMENT "output", "s_output": null
+                                                                                                `
 
         var imageOcrPrompt = `Extrayez tout le texte de cette image. Soyez précis. Retournez uniquement le texte brut.`
 

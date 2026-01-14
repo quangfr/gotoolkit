@@ -315,7 +315,7 @@
   });
 
   // node_modules/react/index.js
-  var Kg = To((uxt, WQ) => {
+  var Kg = To((cxt, WQ) => {
     "use strict";
     ce();
     if (true) {
@@ -578,7 +578,7 @@
   });
 
   // node_modules/scheduler/index.js
-  var tJ = To((pxt, eJ) => {
+  var tJ = To((fxt, eJ) => {
     "use strict";
     ce();
     if (true) {
@@ -7193,7 +7193,7 @@
   });
 
   // node_modules/react-dom/index.js
-  var Mx = To((yxt, sre) => {
+  var Mx = To((vxt, sre) => {
     "use strict";
     ce();
     function ore() {
@@ -7226,25 +7226,25 @@
       LB.createRoot = lre.createRoot;
       LB.hydrateRoot = lre.hydrateRoot;
     } else {
-      xxt = lre.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+      bxt = lre.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
       LB.createRoot = function(t, e) {
-        xxt.usingClientEntryPoint = true;
+        bxt.usingClientEntryPoint = true;
         try {
           return lre.createRoot(t, e);
         } finally {
-          xxt.usingClientEntryPoint = false;
+          bxt.usingClientEntryPoint = false;
         }
       };
       LB.hydrateRoot = function(t, e, r) {
-        xxt.usingClientEntryPoint = true;
+        bxt.usingClientEntryPoint = true;
         try {
           return lre.hydrateRoot(t, e, r);
         } finally {
-          xxt.usingClientEntryPoint = false;
+          bxt.usingClientEntryPoint = false;
         }
       };
     }
-    var xxt;
+    var bxt;
   });
 
   // node_modules/react/cjs/react-jsx-runtime.production.min.js
@@ -7272,7 +7272,7 @@
   });
 
   // node_modules/react/jsx-runtime.js
-  var Ck = To((Txt, hre) => {
+  var Ck = To((Sxt, hre) => {
     "use strict";
     ce();
     if (true) {
@@ -56871,7 +56871,7 @@
   });
 
   // node_modules/@excalidraw/excalidraw/main.js
-  var mre = To((Mxt, RB) => {
+  var mre = To((Ixt, RB) => {
     ce();
     if (Ue.IS_PREACT === "true") {
       if (true) {
@@ -80196,15 +80196,15 @@
   function JF(t) {
     return { type: t };
   }
-  var KTt, QTt, JTt, eCt, tCt, rCt;
+  var XTt, KTt, QTt, JTt, eCt, tCt;
   var tce = qe(() => {
     ce();
     H_();
     Kle();
     Qle();
     Jle();
-    ({ abs: KTt, max: QTt, min: JTt } = Math);
-    eCt = {
+    ({ abs: XTt, max: KTt, min: QTt } = Math);
+    JTt = {
       name: "x",
       handles: ["w", "e"].map(JF),
       input: function(t, e) {
@@ -80214,7 +80214,7 @@
         return t && [t[0][0], t[1][0]];
       }
     };
-    tCt = {
+    eCt = {
       name: "y",
       handles: ["n", "s"].map(JF),
       input: function(t, e) {
@@ -80224,7 +80224,7 @@
         return t && [t[0][1], t[1][1]];
       }
     };
-    rCt = {
+    tCt = {
       name: "xy",
       handles: ["n", "w", "e", "s", "nw", "ne", "sw", "se"].map(JF),
       input: function(t) {
@@ -82773,10 +82773,10 @@
   function cA(t) {
     return typeof t === "object" && "length" in t ? t : Array.from(t);
   }
-  var xIt;
+  var bIt;
   var Uz = qe(() => {
     ce();
-    xIt = Array.prototype.slice;
+    bIt = Array.prototype.slice;
   });
 
   // node_modules/d3-shape/src/curve/linear.js
@@ -86255,7 +86255,7 @@
       throw new Error("Function yaml." + t + " is removed in js-yaml 4. Use yaml." + e + " instead, which is now safe by default.");
     };
   }
-  var oze, sze, lze, cze, uze, dze, Ol, gd, hze, fze, pze, Wc, mze, gze, vze, yze, bze, xze, wze, kze, Eze, Sze, Tze, Che, Cze, _he, Ahe, _ze, Aze, CZ, Oze, Ize, Mze, Lze, Dze, Pze, Rze, Nze, Whe, H1, xA, $he, Uhe, wA, lZ, Bze, Jde, jze, Fze, zze, Ghe, Vhe, Qhe, Jhe, m2, ehe, Zze, Hze, ffe, pfe, mfe, OZ, Wze, YE, $ze, Uze, Gze, Vze, pZ, Yze, qze, Xze, Kze, gfe, Qze, kA, Jze, eZe, tZe, rZe, vfe, yfe, nZe, bfe, iZe, xfe, $c, aZe, oZe, sZe, qE, _fe, yZ, Afe, Ofe, mw, lZe, cZe, W1, $1, fDt, pDt, mDt, gDt, vDt;
+  var oze, sze, lze, cze, uze, dze, Ol, gd, hze, fze, pze, Wc, mze, gze, vze, yze, bze, xze, wze, kze, Eze, Sze, Tze, Che, Cze, _he, Ahe, _ze, Aze, CZ, Oze, Ize, Mze, Lze, Dze, Pze, Rze, Nze, Whe, H1, xA, $he, Uhe, wA, lZ, Bze, Jde, jze, Fze, zze, Ghe, Vhe, Qhe, Jhe, m2, ehe, Zze, Hze, ffe, pfe, mfe, OZ, Wze, YE, $ze, Uze, Gze, Vze, pZ, Yze, qze, Xze, Kze, gfe, Qze, kA, Jze, eZe, tZe, rZe, vfe, yfe, nZe, bfe, iZe, xfe, $c, aZe, oZe, sZe, qE, _fe, yZ, Afe, Ofe, mw, lZe, cZe, W1, $1, hDt, fDt, pDt, mDt, gDt;
   var QE = qe(() => {
     ce();
     Ji();
@@ -86770,11 +86770,11 @@
     oe(_A, "renamed");
     W1 = Che;
     $1 = ffe.load;
-    fDt = ffe.loadAll;
-    pDt = cZe.dump;
-    mDt = _A("safeLoad", "load");
-    gDt = _A("safeLoadAll", "loadAll");
-    vDt = _A("safeDump", "dump");
+    hDt = ffe.loadAll;
+    fDt = cZe.dump;
+    pDt = _A("safeLoad", "load");
+    mDt = _A("safeLoadAll", "loadAll");
+    gDt = _A("safeDump", "dump");
   });
 
   // node_modules/mermaid/dist/chunks/mermaid.core/chunk-HN2XXSSU.mjs
@@ -89735,7 +89735,7 @@
   function wo(t, e) {
     return _2.parse(t, e);
   }
-  var A2, y7, U$e, _u, G$e, V$e, Y$e, b7, q$e, bH, yme, bme, X$e, xH, K$e, wH, Q$e, J$e, aO, kH, eUe, xme, tUe, EH, dme, rUe, nUe, iUe, aUe, wme, oUe, oO, SH, kme, sUe, Eme, lUe, cUe, uUe, Sme, dUe, hUe, Tme, fUe, pUe, mUe, gUe, vUe, yUe, bUe, rO, xUe, Cme, _me, wUe, hme, TH, kUe, mH, EUe, eO, m7, SUe, fme, nO, o0, iO, CH, s0, tO, v7, _Ue, _2, Qzt, Jzt, eZt, tZt, rZt, nZt, iZt;
+  var A2, y7, U$e, _u, G$e, V$e, Y$e, b7, q$e, bH, yme, bme, X$e, xH, K$e, wH, Q$e, J$e, aO, kH, eUe, xme, tUe, EH, dme, rUe, nUe, iUe, aUe, wme, oUe, oO, SH, kme, sUe, Eme, lUe, cUe, uUe, Sme, dUe, hUe, Tme, fUe, pUe, mUe, gUe, vUe, yUe, bUe, rO, xUe, Cme, _me, wUe, hme, TH, kUe, mH, EUe, eO, m7, SUe, fme, nO, o0, iO, CH, s0, tO, v7, _Ue, _2, Kzt, Qzt, Jzt, eZt, tZt, rZt, nZt;
   var Ame = qe(() => {
     ce();
     A2 = yH();
@@ -90813,13 +90813,13 @@ Please report this to https://github.com/markedjs/marked.`, t) {
     wo.Tokenizer = nO;
     wo.Hooks = v7;
     wo.parse = wo;
-    Qzt = wo.options;
-    Jzt = wo.setOptions;
-    eZt = wo.use;
-    tZt = wo.walkTokens;
-    rZt = wo.parseInline;
-    nZt = s0.parse;
-    iZt = o0.lex;
+    Kzt = wo.options;
+    Qzt = wo.setOptions;
+    Jzt = wo.use;
+    eZt = wo.walkTokens;
+    tZt = wo.parseInline;
+    rZt = s0.parse;
+    nZt = o0.lex;
   });
 
   // node_modules/ts-dedent/esm/index.js
@@ -102761,12 +102761,12 @@ Please report this to https://github.com/markedjs/marked.`, t) {
   });
 
   // node_modules/dagre-d3-es/src/graphlib/alg/dijkstra.js
-  var Xnr;
+  var qnr;
   var n$ = qe(() => {
     ce();
     Ti();
     r$();
-    Xnr = bd(1);
+    qnr = bd(1);
   });
 
   // node_modules/dagre-d3-es/src/graphlib/alg/dijkstra-all.js
@@ -102787,11 +102787,11 @@ Please report this to https://github.com/markedjs/marked.`, t) {
   });
 
   // node_modules/dagre-d3-es/src/graphlib/alg/floyd-warshall.js
-  var sir;
+  var oir;
   var ixe = qe(() => {
     ce();
     Ti();
-    sir = bd(1);
+    oir = bd(1);
   });
 
   // node_modules/dagre-d3-es/src/graphlib/alg/topsort.js
@@ -154282,7 +154282,7 @@ see: https://en.wikipedia.org/wiki/LL_parser#Left_factoring.`;
   function UL(t, e, r) {
     return r | e | t;
   }
-  var XEe, Gp, pct, WL, $L, dS, hS, fS, K4, idr;
+  var XEe, Gp, pct, WL, $L, dS, hS, fS, K4, ndr;
   var GL = qe(() => {
     ce();
     XEe = 4;
@@ -154294,7 +154294,7 @@ see: https://en.wikipedia.org/wiki/LL_parser#Left_factoring.`;
     hS = 4 << Gp;
     fS = 5 << Gp;
     K4 = 6 << Gp;
-    idr = 32 - pct;
+    ndr = 32 - pct;
   });
 
   // node_modules/chevrotain/lib/src/parse/grammar/llk_lookahead.js
@@ -206942,16 +206942,18 @@ ${t.themeCSS}`;
   // src/draw-editor/index.tsx
   var IQ = zs(Ck());
   var txt = { fontSize: 20 };
+  if (typeof window !== "undefined" && !window.EXCALIDRAW_ASSET_PATH) {
+    window.EXCALIDRAW_ASSET_PATH = "https://unpkg.com/@excalidraw/excalidraw@0.17.6/dist/";
+  }
   var lR = {
     strokeWidth: 2,
     strokeStyle: "solid",
     roughness: 0,
     roundness: null
   };
-  var rxt = 150;
   var Fi = "go-excalidraw-edge";
   var tIe = "go-excalidraw-edge-style";
-  var nxt = `.${Fi} .excalidraw .App-bottom-bar {
+  var rxt = `.${Fi} .excalidraw .App-bottom-bar {
     margin: 0 !important;
     --bar-padding: 0 !important;
     padding-top: var(--sat, 0);
@@ -206961,10 +206963,10 @@ ${t.themeCSS}`;
 }
 
 .${Fi} .excalidraw .App-bottom-bar > .Island {
-    margin: 0 !important;
-    padding: 0 !important;
-    border-radius: 0 !important;
-    max-width: 100% !important;
+    margin: 0;
+    padding: 0;
+    border-radius: 0;
+    max-width: 100%;
 }
 
 .${Fi} .excalidraw .layer-ui__wrapper__top-left,
@@ -206980,7 +206982,7 @@ ${t.themeCSS}`;
 }
 
 .${Fi} .excalidraw .layer-ui__wrapper:is(.layer-ui__wrapper__top-left, .layer-ui__wrapper__top-right, .layer-ui__wrapper__bottom-left, .layer-ui__wrapper__bottom-right) {
-    padding: 4px !important;
+    padding: 4px;
 }
 
 /* Move help button to bottom left and make it white */
@@ -207000,6 +207002,11 @@ ${t.themeCSS}`;
     --default-button-size: 1.5rem !important;
     --default-icon-size: 1.5rem !important;
     --lg-button-size :1.3rem !important;
+    touch-action: none !important;
+}
+
+.${Fi} .excalidraw .excalidraw__canvas {
+    touch-action: none !important;
 }
 
 .${Fi} .excalidraw .Island {
@@ -207010,7 +207017,6 @@ ${t.themeCSS}`;
      top: 55px!important;
     max-width: 140px !important;
     padding: 4px !important;
-    min-height: 570px !important;
 }
 
 .${Fi} .excalidraw .App-menu_bottom {
@@ -207054,7 +207060,6 @@ ${t.themeCSS}`;
 /* Hide Library, Lock and Embeddable buttons */
 .${Fi} .excalidraw .mobile-misc-tools-container,
 .${Fi} .excalidraw .sidebar-trigger,
-.${Fi} .excalidraw .ToolIcon__lock,
 .${Fi} .excalidraw [data-testid="toolbar-embeddable"] {
     display: none !important;
 }
@@ -207077,7 +207082,8 @@ ${t.themeCSS}`;
 /* Smaller zoom and undo/redo buttons */
 .${Fi} .excalidraw .zoom-actions,
 .${Fi} .excalidraw .undo-redo-buttons {
-    zoom: 0.8;
+    transform: scale(0.85);
+    transform-origin: left bottom;
 }
 
 /* Compact Properties Panel (Right/Left side) */
@@ -207169,9 +207175,10 @@ ${t.themeCSS}`;
     margin-bottom: 2px !important;
 }
 `;
-  var ixt = () => ({
+  var nxt = () => ({
     elements: [],
     appState: {
+      viewModeEnabled: false,
       viewBackgroundColor: "#fdfdfd",
       gridModeEnabled: false,
       isLoading: false,
@@ -207179,11 +207186,12 @@ ${t.themeCSS}`;
       zoom: { value: 0.9 }
     }
   });
-  var axt = (t) => t.map((e) => {
+  var ixt = (t) => t.map((e) => {
     var n, i;
     const r = e.type === "arrow";
     return {
       ...e,
+      locked: false,
       strokeWidth: (n = e.strokeWidth) != null ? n : lR.strokeWidth,
       strokeStyle: r ? "solid" : (i = e.strokeStyle) != null ? i : lR.strokeStyle,
       roughness: lR.roughness,
@@ -207222,6 +207230,9 @@ ${t.themeCSS}`;
           let o = false;
           const s = (h) => {
             this.api = h;
+            h.updateScene({
+              appState: { viewModeEnabled: false }
+            });
             if (!o) {
               o = true;
               i(h);
@@ -207245,8 +207256,8 @@ ${t.themeCSS}`;
                 viewModeEnabled: false,
                 gridModeEnabled: false,
                 zenModeEnabled: false,
-                initialData: ixt(),
-                generateIdForFile: (l) => {
+                initialData: nxt(),
+                generateIdForFile: () => {
                   return Math.random().toString(36).substring(2, 15);
                 }
               }
@@ -207273,35 +207284,44 @@ ${t.themeCSS}`;
         return null;
       }
       const s = !Array.isArray(a) && (a == null ? void 0 : a.files) || (n == null ? void 0 : n.files) || null;
-      const d = axt(o);
+      const d = ixt(o);
       return {
         elements: d,
         files: s || void 0
       };
     }
-    applyScene(e) {
-      var i, a;
-      const r = this.ensureApi();
-      const n = {
-        elements: e.elements.slice(),
+    applyScene(e, r = true) {
+      var o, s;
+      const n = this.ensureApi();
+      const i = n.getAppState();
+      const a = {
+        elements: e.elements.map((d) => ({ ...d, locked: false })),
         appState: {
-          ...r.getAppState(),
-          scrollX: typeof ((i = e == null ? void 0 : e.appState) == null ? void 0 : i.scrollX) === "number" ? e.appState.scrollX : rxt,
+          ...i,
+          viewModeEnabled: false,
+          activeTool: { type: "selection" },
           viewBackgroundColor: "#fdfdfd",
           gridModeEnabled: false,
           isLoading: false,
           currentItemRoundness: "sharp",
-          zoom: { value: 0.9 }
+          zoom: ((o = i == null ? void 0 : i.zoom) == null ? void 0 : o.value) ? i.zoom : { value: 0.9 }
         }
       };
       if (e.files) {
-        n.files = e.files;
+        a.files = e.files;
       }
-      r.updateScene(n);
+      n.updateScene(a);
+      if (r && e.elements.length > 0) {
+        setTimeout(() => {
+          n.scrollToContent(e.elements, {
+            fitToViewport: true
+          });
+        }, 50);
+      }
       if (e.files) {
-        const o = Object.values(e.files);
-        if (o.length) {
-          (a = r.addFiles) == null ? void 0 : a.call(r, o);
+        const d = Object.values(e.files);
+        if (d.length) {
+          (s = n.addFiles) == null ? void 0 : s.call(n, d);
         }
       }
     }
@@ -207321,7 +207341,7 @@ ${t.themeCSS}`;
       }
       const r = document.createElement("style");
       r.id = tIe;
-      r.textContent = nxt;
+      r.textContent = rxt;
       document.head.appendChild(r);
     }
   };
@@ -207329,7 +207349,7 @@ ${t.themeCSS}`;
   window.GoToolkitExcalidraw = {
     initialize: (t) => cR.initialize(t),
     convertMermaid: (t) => cR.convertMermaid(t),
-    applyScene: (t) => cR.applyScene(t),
+    applyScene: (t, e) => cR.applyScene(t, e),
     getApi: () => cR.getApi(),
     exportToSvg: (t, e, r) => (0, Yb.exportToSvg)({ elements: t, appState: e, files: r }),
     exportToSvgWithZoom: (t, e, r, n) => (0, Yb.exportToSvg)({

@@ -1,5 +1,6 @@
-## 2026-01-13
+## 2026-01-14
 - Mémo : Éditer un diagramme `Draw` avec Assist
+- Mémo : Saisie riche (couleurs, bloc dépliable, citation, tableau, libellé déroulante...)
 
 ## 2026-01-12
 - IA : Reconnaissance texte OCR avec `qwen-2.5-vl-7b-instruct` 

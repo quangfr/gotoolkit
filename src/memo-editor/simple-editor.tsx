@@ -1,6 +1,6 @@
 import React from 'react';
 import { useEditor, EditorContent, Editor, ReactRenderer } from '@tiptap/react';
-import { Extension } from '@tiptap/core';
+import { Extension, InputRule } from '@tiptap/core';
 import Suggestion from '@tiptap/suggestion';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -9,54 +9,64 @@ import Superscript from '@tiptap/extension-superscript';
 import Subscript from '@tiptap/extension-subscript';
 import TextAlign from '@tiptap/extension-text-align';
 import Image from '@tiptap/extension-image';
-import Emoji, { gitHubEmojis } from '@tiptap/extension-emoji';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import { computePosition } from '@floating-ui/dom';
-import { Table } from '@tiptap/extension-table';
-import TableRow from '@tiptap/extension-table-row';
-import TableHeader from '@tiptap/extension-table-header';
-import TableCell from '@tiptap/extension-table-cell';
 import { DOMSerializer, Node as PMNode } from '@tiptap/pm/model';
 import { PluginKey } from '@tiptap/pm/state';
+import Details from '@tiptap/extension-details';
+import DetailsSummary from '@tiptap/extension-details-summary';
+import DetailsContent from '@tiptap/extension-details-content';
+
+import { TableNode, TableRow, TableHeader, CustomTableCell, TABLE_COLORS } from './table-node';
+import { TaskListNode, TaskItemNode } from './task-node';
+
+const CustomDetails = Details.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      open: {
+        default: true,
+        parseHTML: element => element.hasAttribute('open') || element.getAttribute('data-open') === 'true',
+        renderHTML: attributes => {
+          return {
+            open: attributes.open ? '' : null,
+          }
+        },
+      },
+    }
+  },
+});
 import { 
-  Undo2, Redo2, Heading1, Heading2, Heading3, List, Quote, SquareCode, 
+  Undo2, Redo2, Heading1, Heading2, Heading3, List, SquareCode, 
   Bold, Italic, Underline, Link as LinkIcon, Strikethrough, 
   Highlighter, Table as TableIcon, Trash2, CodeXml,
   ChevronDown, Check, CheckCheck, Type,
   Bot, X, Palette, Plus, Baseline, Tag, Shapes,
-  Info, Lightbulb, AlertTriangle, AlertCircle, MessageSquare
+  MessageSquare,
+  CheckSquare, ChevronRight
 } from 'lucide-react';
 
-const ALERT_TYPES = [
-  { type: 'NOTE', label: 'Note', icon: Info, color: '#3b82f6' },
-  { type: 'TIP', label: 'Conseil', icon: Lightbulb, color: '#22c55e' },
-  { type: 'IMPORTANT', label: 'Important', icon: MessageSquare, color: '#a855f7' },
-  { type: 'WARNING', label: 'Alerte', icon: AlertTriangle, color: '#eab308' },
-  { type: 'CAUTION', label: 'Attention', icon: AlertCircle, color: '#ef4444' },
-];
 
-const Alert = Extension.create({
-  name: 'alert',
-  addOptions() {
-    return {
-      HTMLAttributes: {},
-    }
-  },
-  addGlobalAttributes() {
+
+const DetailsInputRule = Extension.create({
+  name: 'detailsInputRule',
+  addInputRules() {
     return [
-      {
-        types: ['blockquote'],
-        attributes: {
-          type: {
-            default: 'NOTE',
-            parseHTML: element => element.getAttribute('data-type') || 'NOTE',
-            renderHTML: attributes => {
-              return { 'data-type': attributes.type || 'NOTE' }
-            },
-          },
+      new InputRule({
+        find: /^>>\s$/,
+        handler: ({ state, range, chain }) => {
+          const $from = state.doc.resolve(range.from);
+          if ($from.parent.type.name !== 'paragraph') {
+            return null;
+          }
+          
+          chain()
+            .deleteRange(range)
+            .setDetails()
+            .run();
         },
-      },
+      }),
     ]
   },
 });
@@ -72,19 +82,11 @@ const TEXT_COLORS = [
   { name: 'Violet', value: '#a855f7' },
 ];
 
-const COLORS = [
-  { name: 'Défaut', value: 'transparent' },
-  { name: 'Bleu', value: '#e0f2fe' },
-  { name: 'Vert', value: '#dcfce7' },
-  { name: 'Jaune', value: '#fef9c3' },
-  { name: 'Rouge', value: '#fee2e2' },
-  { name: 'Violet', value: '#f3e8ff' },
-  { name: 'Gris', value: '#f3f4f6' },
-];
 import TurndownService from 'turndown';
 import { gfm } from 'turndown-plugin-gfm';
 import { marked } from 'marked';
 import { MermaidNode, insertMermaidDiagram } from './mermaid-node';
+import { Alert, ALERT_TYPES } from './blockquote-node';
 import './simple-editor.css';
 
 interface SimpleEditorProps {
@@ -116,7 +118,7 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist }: {
     }
 
     const { from, to } = editor.state.selection;
-    if (from === to) {
+    if (from === to || editor.isActive('mermaidDiagram')) {
       setPosition(prev => ({ ...prev, opacity: 0 }));
       setShowColors(false);
       return;
@@ -401,7 +403,7 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist }: {
                     gap: '4px',
                   }}
                 >
-                  {COLORS.map(color => (
+                  {TABLE_COLORS.map(color => (
                     <div 
                       key={color.value}
                       className="table-color-option"
@@ -455,24 +457,6 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist }: {
     </div>
   );
 };
-
-const CustomTableCell = TableCell.extend({
-  addAttributes() {
-    return {
-      ...this.parent?.(),
-      backgroundColor: {
-        default: null,
-        parseHTML: element => element.getAttribute('data-background-color'),
-        renderHTML: attributes => {
-          return {
-            'data-background-color': attributes.backgroundColor,
-            style: `background-color: ${attributes.backgroundColor}`,
-          }
-        },
-      },
-    }
-  },
-})
 
 const getTableCellInfo = (view: any, event: MouseEvent) => {
   const pos = view.posAtCoords({ left: event.clientX, top: event.clientY });
@@ -730,9 +714,13 @@ const keepAllDocument = (editor: Editor | null) => {
     .run();
 };
 
-const BlockTypeDropdown = ({ editor }: { editor: Editor }) => {
+const BlockTypeDropdown = ({ editor, onOpenChange }: { editor: Editor, onOpenChange?: (isOpen: boolean) => void }) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    onOpenChange?.(isOpen);
+  }, [isOpen, onOpenChange]);
 
   const options = [
     { label: 'Texte', value: 'paragraph', icon: Type, active: editor.isActive('paragraph') },
@@ -740,6 +728,7 @@ const BlockTypeDropdown = ({ editor }: { editor: Editor }) => {
     { label: 'Titre 2', value: 'h2', icon: Heading2, active: editor.isActive('heading', { level: 2 }) },
     { label: 'Titre 3', value: 'h3', icon: Heading3, active: editor.isActive('heading', { level: 3 }) },
     { label: 'Liste à puces', value: 'bulletList', icon: List, active: editor.isActive('bulletList') },
+    { label: 'Tâche', value: 'taskList', icon: CheckSquare, active: editor.isActive('taskList') },
     { label: 'Bloc de code', value: 'codeBlock', icon: SquareCode, active: editor.isActive('codeBlock') },
     { label: 'Lien', value: 'link', icon: LinkIcon, active: editor.isActive('link') },
   ];
@@ -763,9 +752,9 @@ const BlockTypeDropdown = ({ editor }: { editor: Editor }) => {
     else if (value === 'h2') chain.toggleHeading({ level: 2 }).run();
     else if (value === 'h3') chain.toggleHeading({ level: 3 }).run();
     else if (value === 'bulletList') chain.toggleBulletList().run();
+    else if (value === 'taskList') chain.toggleTaskList().run();
     else if (value === 'code') chain.toggleCode().run();
     else if (value === 'codeBlock') chain.toggleCodeBlock().run();
-    else if (value === 'blockquote') chain.toggleBlockquote().updateAttributes('blockquote', { type: 'NOTE' }).run();
     else if (value === 'link') {
       const previousUrl = editor.getAttributes('link').href;
       const url = window.prompt('URL', previousUrl);
@@ -812,11 +801,15 @@ const BlockTypeDropdown = ({ editor }: { editor: Editor }) => {
   );
 };
 
-const Toolbar = ({ editor }: { editor: Editor }) => {
+const Toolbar = ({ editor, onDropdownToggle }: { editor: Editor, onDropdownToggle?: (isOpen: boolean) => void }) => {
   // Force re-render when editor state changes
   const [, forceUpdate] = React.useReducer((x) => x + 1, 0);
   const [showTextColors, setShowTextColors] = React.useState(false);
   const toolbarRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    onDropdownToggle?.(showTextColors);
+  }, [showTextColors, onDropdownToggle]);
 
   React.useEffect(() => {
     if (!editor) return;
@@ -868,7 +861,7 @@ const Toolbar = ({ editor }: { editor: Editor }) => {
       <div className="tiptap-separator" data-orientation="vertical" role="none"></div>
 
       <div role="group" className="tiptap-toolbar-group">
-        <BlockTypeDropdown editor={editor} />
+        <BlockTypeDropdown editor={editor} onOpenChange={onDropdownToggle} />
       </div>
 
       <div className="tiptap-separator" data-orientation="vertical" role="none"></div>
@@ -981,13 +974,49 @@ const Toolbar = ({ editor }: { editor: Editor }) => {
 
         <button
           className="tiptap-button"
+          aria-label="Bloc dépliable"
+          type="button"
+          onClick={() => {
+            editor.chain().focus().setDetails().run();
+            // Focus the summary line
+            setTimeout(() => {
+              const { state } = editor;
+              const { selection } = state;
+              const pos = selection.from;
+              
+              const searchFrom = Math.max(0, pos - 20);
+              const searchTo = Math.min(state.doc.content.size, pos + 20);
+              
+              // Find the detailsSummary node and focus it
+              state.doc.nodesBetween(searchFrom, searchTo, (node, nodePos) => {
+                if (node.type.name === 'detailsSummary') {
+                  editor.chain().focus(nodePos + 1).run();
+                  return false;
+                }
+              });
+            }, 10);
+          }}
+          data-active-state={editor.isActive('details') ? 'on' : 'off'}
+          title="Bloc dépliable"
+        >
+          <ChevronRight size={16} />
+        </button>
+
+        <button
+          className="tiptap-button"
           aria-label="Note"
           type="button"
-          onClick={() => editor.chain().focus().toggleBlockquote().updateAttributes('blockquote', { type: 'NOTE' }).run()}
-          data-active-state={editor.isActive('blockquote') ? 'on' : 'off'}
-          title="Note"
+          onClick={() => {
+            if (editor.isActive('blockquote', { type: 'default' })) {
+              editor.chain().focus().unsetBlockquote().run();
+            } else {
+              editor.chain().focus().setBlockquote().updateAttributes('blockquote', { type: 'default' }).run();
+            }
+          }}
+          data-active-state={editor.isActive('blockquote', { type: 'default' }) ? 'on' : 'off'}
+          title="Remarque"
         >
-          <Info size={16} />
+          <MessageSquare size={16} />
         </button>
         <button
           className="tiptap-button"
@@ -1264,7 +1293,7 @@ const CodeSuggestion = Extension.create({
       suggestion: {
         char: '`',
         pluginKey: new PluginKey('codeSuggestion'),
-        allow: ({ editor, range }: any) => {
+        allow: ({ editor }: any) => {
           return !editor.isActive('codeBlock');
         },
         command: ({ editor, range, props }: any) => {
@@ -1300,169 +1329,6 @@ const CodeSuggestion = Extension.create({
   },
 });
 
-// Emoji List Component
-const EmojiList = React.forwardRef((props: any, ref: any) => {
-  const [selectedIndex, setSelectedIndex] = React.useState(0);
-
-  const selectItem = (index: number) => {
-    const item = props.items?.[index];
-    if (item) {
-      props.command({ name: item.name });
-    }
-  };
-
-  const upHandler = () => {
-    const len = props.items?.length || 0;
-    if (!len) return;
-    setSelectedIndex((prev: number) => (prev + len - 1) % len);
-  };
-
-  const downHandler = () => {
-    const len = props.items?.length || 0;
-    if (!len) return;
-    setSelectedIndex((prev: number) => (prev + 1) % len);
-  };
-
-  const enterHandler = () => {
-    selectItem(selectedIndex);
-  };
-
-  React.useEffect(() => setSelectedIndex(0), [props.items]);
-
-  React.useImperativeHandle(ref, () => {
-    return {
-      onKeyDown: (x: any) => {
-        if (x.event.key === 'ArrowUp') {
-          upHandler();
-          return true;
-        }
-        if (x.event.key === 'ArrowDown') {
-          downHandler();
-          return true;
-        }
-        if (x.event.key === 'Enter') {
-          enterHandler();
-          return true;
-        }
-        return false;
-      },
-    };
-  }, [selectedIndex, props.items]);
-
-  return (
-    <div
-      style={{
-        background: 'white',
-        border: '1px solid #ccc',
-        borderRadius: '8px',
-        boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-        padding: '4px',
-        maxHeight: '200px',
-        overflowY: 'auto',
-      }}
-    >
-      {(props.items || []).map((item: any, index: number) => (
-        <button
-          key={index}
-          onClick={() => selectItem(index)}
-          style={{
-            display: 'block',
-            width: '100%',
-            textAlign: 'left',
-            padding: '6px',
-            background: index === selectedIndex ? '#f0f0f0' : 'white',
-            border: 'none',
-            cursor: 'pointer',
-            borderRadius: '4px',
-            fontSize: '14px',
-          }}
-        >
-          <span style={{ fontSize: '18px', marginRight: '8px' }}>
-            {item.fallbackImage ? <img src={item.fallbackImage} style={{ height: '18px', width: '18px' }} alt={item.name} /> : item.emoji}
-          </span>
-          :{item.name}:
-        </button>
-      ))}
-    </div>
-  );
-});
-
-// Emoji suggestion configuration
-const suggestion = {
-  items: ({ query }: { query: string }) => {
-    return gitHubEmojis
-      .filter(({ shortcodes, tags }: { shortcodes: string[]; tags: string[] }) => {
-        return (
-          shortcodes.find(shortcode => shortcode.startsWith(query.toLowerCase())) ||
-          tags.find(tag => tag.startsWith(query.toLowerCase()))
-        );
-      })
-      .slice(0, 10);
-  },
-
-  allowSpaces: false,
-
-  render: () => {
-    let component: any;
-
-    function repositionComponent(clientRect: DOMRect) {
-      if (!component?.element) return;
-
-      const virtualElement = {
-        getBoundingClientRect() {
-          return clientRect;
-        },
-      };
-
-      computePosition(virtualElement, component.element, {
-        placement: 'bottom-start',
-      }).then((pos: any) => {
-        Object.assign(component.element.style, {
-          left: `${pos.x}px`,
-          top: `${pos.y}px`,
-          position: pos.strategy === 'fixed' ? 'fixed' : 'absolute',
-        });
-      });
-    }
-
-    return {
-      onStart: (props: any) => {
-        component = new ReactRenderer(EmojiList, {
-          props,
-          editor: props.editor,
-        });
-
-        document.body.appendChild(component.element);
-        repositionComponent(props.clientRect());
-      },
-
-      onUpdate(props: any) {
-        component.updateProps(props);
-        repositionComponent(props.clientRect());
-      },
-
-      onKeyDown(props: any) {
-        if (props.event.key === 'Escape') {
-          if (document.body.contains(component.element)) {
-            document.body.removeChild(component.element);
-          }
-          component.destroy();
-          return true;
-        }
-
-        return component.ref?.onKeyDown(props);
-      },
-
-      onExit() {
-        if (component?.element && document.body.contains(component.element)) {
-          document.body.removeChild(component.element);
-        }
-        component?.destroy();
-      },
-    };
-  },
-};
-
 const SimpleEditor: React.FC<SimpleEditorProps> = ({ 
   content = '', 
   onChange, 
@@ -1473,8 +1339,10 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   
   const [rowHandle, setRowHandle] = React.useState<{ top: number, left: number, rowIndex: number, tablePos: number } | null>(null);
   const [colHandle, setColHandle] = React.useState<{ top: number, left: number, colIndex: number, tablePos: number } | null>(null);
+  const [blockDeleteHandle, setBlockDeleteHandle] = React.useState<{ top: number, left: number, pos: number, label: string } | null>(null);
   const [quoteHandle, setQuoteHandle] = React.useState<{ top: number, left: number, pos: number, type: string } | null>(null);
   const [quoteMenu, setQuoteMenu] = React.useState<{ top: number, left: number, pos: number } | null>(null);
+  const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
   const [selectionData, setSelectionData] = React.useState<any>(null);
   const [tableContextMenu, setTableContextMenu] = React.useState<{ top: number, left: number, type: 'row' | 'col', index: number, tablePos: number } | null>(null);
   const [mouseDownPoints, setMouseDownPoints] = React.useState<{ type: 'row' | 'col', index: number, tablePos: number, x: number, y: number } | null>(null);
@@ -1483,10 +1351,17 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
 
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({
-        // StarterKit includes: Document, Paragraph, Text, Bold, Italic, Strike, Code, CodeBlock, Heading, HorizontalRule, ListItem, BulletList, OrderedList, History, Dropcap
-        // We'll override History with our own config later if needed
+      CustomDetails.configure({
+        HTMLAttributes: {
+          class: 'details',
+        },
       }),
+      DetailsSummary,
+      DetailsContent,
+      StarterKit.configure({
+        blockquote: false,
+      }),
+      Alert,
       TextStyle,
       Color,
       Highlight,
@@ -1496,20 +1371,15 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         types: ['heading', 'paragraph'],
       }),
       Image,
-      Emoji.configure({
-        emojis: gitHubEmojis,
-        enableEmoticons: true,
-        suggestion,
-      }),
-      Table.configure({
-        resizable: true,
-      }),
+      TableNode,
       TableRow,
       TableHeader,
       CustomTableCell,
+      TaskListNode,
+      TaskItemNode,
       MermaidNode,
       CodeSuggestion,
-      Alert,
+      DetailsInputRule,
       Placeholder.configure({
         placeholder,
       }),
@@ -1517,6 +1387,21 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     content,
     onUpdate: ({ editor }) => {
       if (onChange) {
+        // Debounce the onChange call to avoid excessive saves
+        if ((window as any)._memoSaveTimeout) {
+          clearTimeout((window as any)._memoSaveTimeout);
+        }
+        (window as any)._memoSaveTimeout = setTimeout(() => {
+          onChange(editor.getHTML());
+        }, 500);
+      }
+    },
+    onBlur: ({ editor }) => {
+      if (onChange) {
+        // Save immediately on blur
+        if ((window as any)._memoSaveTimeout) {
+          clearTimeout((window as any)._memoSaveTimeout);
+        }
         onChange(editor.getHTML());
       }
     },
@@ -1626,17 +1511,93 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     if (!editor || dragState || !containerRef.current) return;
     
     // Don't hide handles if mouse is over them
-    if ((e.target as HTMLElement).closest('.table-handle, .quote-handle')) return;
+    if ((e.target as HTMLElement).closest('.table-handle, .quote-handle, .block-delete-button')) return;
 
-    // Blockquote handle logic
     const element = document.elementFromPoint(e.clientX, e.clientY);
-    const blockquote = element?.closest('blockquote');
-    
-    if (blockquote && containerRef.current.contains(blockquote)) {
-      const rect = blockquote.getBoundingClientRect();
-      const containerRect = containerRef.current.getBoundingClientRect();
+    const containerRect = containerRef.current.getBoundingClientRect();
+
+    // 1. Generic Block Delete Handle (Top-Right)
+    const tableEl = element?.closest('table');
+    const blockquoteEl = element?.closest('blockquote');
+    const detailsEl = element?.closest('.details');
+    const mermaidEl = element?.closest('.mermaid-diagram-container');
+    const codeEl = element?.closest('pre');
+    const targetBlock = tableEl || detailsEl || blockquoteEl || mermaidEl || codeEl;
+
+    if (targetBlock && containerRef.current.contains(targetBlock)) {
+      let rect = targetBlock.getBoundingClientRect();
       
-      // Use view.posAtCoords for more reliable position detection
+      // For tables and other potentially scrollable blocks, use their wrapper's rect
+      // to keep the delete button fixed at the visible right edge.
+      const wrapper = (targetBlock as HTMLElement).closest('.tableWrapper, .mermaid-diagram-wrapper');
+      if (wrapper) {
+        rect = wrapper.getBoundingClientRect();
+      }
+
+      const pos = editor.view.posAtCoords({ left: e.clientX, top: e.clientY })?.pos;
+      if (pos !== undefined) {
+        const $pos = editor.state.doc.resolve(pos);
+        let blockPos = -1;
+        let label = "le bloc";
+
+        if (tableEl) {
+          for (let d = $pos.depth; d > 0; d--) {
+            if ($pos.node(d).type.name === 'table') {
+              blockPos = $pos.before(d);
+              label = "le tableau";
+              break;
+            }
+          }
+        } else if (detailsEl) {
+          for (let d = $pos.depth; d > 0; d--) {
+            if ($pos.node(d).type.name === 'details') {
+              blockPos = $pos.before(d);
+              label = "le bloc dépliable";
+              break;
+            }
+          }
+        } else if (blockquoteEl) {
+          for (let d = $pos.depth; d > 0; d--) {
+            if ($pos.node(d).type.name === 'blockquote') {
+              blockPos = $pos.before(d);
+              label = "la remarque";
+              break;
+            }
+          }
+        } else if (mermaidEl) {
+          for (let d = $pos.depth; d > 0; d--) {
+            if ($pos.node(d).type.name === 'mermaidDiagram') {
+              blockPos = $pos.before(d);
+              label = "le diagramme";
+              break;
+            }
+          }
+        } else if (codeEl) {
+          for (let d = $pos.depth; d > 0; d--) {
+            if ($pos.node(d).type.name === 'codeBlock') {
+              blockPos = $pos.before(d);
+              label = "le bloc de code";
+              break;
+            }
+          }
+        }
+
+        if (blockPos !== -1) {
+          setBlockDeleteHandle({
+            top: rect.top - containerRect.top + 8,
+            left: rect.right - containerRect.left - 36,
+            pos: blockPos,
+            label
+          });
+        }
+      }
+    } else if (!(e.target as HTMLElement).closest('.block-delete-button')) {
+      setBlockDeleteHandle(null);
+    }
+
+    // 2. Blockquote Menu Handle (Left)
+    if (blockquoteEl && containerRef.current.contains(blockquoteEl)) {
+      const rect = blockquoteEl.getBoundingClientRect();
       const pos = editor.view.posAtCoords({ left: e.clientX, top: e.clientY })?.pos;
       if (pos !== undefined) {
         const $pos = editor.state.doc.resolve(pos);
@@ -1659,36 +1620,29 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           setQuoteHandle(null);
         }
       }
-    } else {
-      // Check if we are hovering the handle itself
-      if (!(e.target as HTMLElement).closest('.quote-handle')) {
-        setQuoteHandle(null);
-      }
+    } else if (!(e.target as HTMLElement).closest('.quote-handle')) {
+      setQuoteHandle(null);
     }
 
+    // 3. Table Cell Handles (Row/Col)
     let info = getTableCellInfo(editor.view, e.nativeEvent);
     
     // If not directly over a cell, check if we are near a table within the wrapper
     if (!info) {
-      const target = e.target as HTMLElement;
-      const wrapper = target.closest('.tableWrapper');
+      const wrapper = element?.closest('.tableWrapper');
       if (wrapper) {
         const table = wrapper.querySelector('table');
         if (table) {
           const rect = table.getBoundingClientRect();
           const margin = 20;
-          
           if (
             e.clientX >= rect.left - margin &&
             e.clientX <= rect.right + margin &&
             e.clientY >= rect.top - margin &&
             e.clientY <= rect.bottom + margin
           ) {
-            // Clamp coordinates to be inside the table so getTableCellInfo can find the cell
             const clampedX = Math.max(rect.left + 5, Math.min(rect.right - 5, e.clientX));
             const clampedY = Math.max(rect.top + 5, Math.min(rect.bottom - 5, e.clientY));
-            
-            // Temporary event-like object for getTableCellInfo
             const mockEvent = { clientX: clampedX, clientY: clampedY } as MouseEvent;
             info = getTableCellInfo(editor.view, mockEvent);
           }
@@ -1697,48 +1651,42 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     }
 
     if (info) {
-      const { tablePos, rowIndex, colIndex } = info;
+      const { rowIndex, colIndex, tablePos } = info;
       const cellDOM = editor.view.nodeDOM(info.cellPos) as HTMLElement;
       const tableDOM = editor.view.nodeDOM(tablePos) as HTMLElement;
       if (cellDOM && tableDOM) {
         const rect = cellDOM.getBoundingClientRect();
         const tableRect = tableDOM.getBoundingClientRect();
-        const containerRect = containerRef.current?.getBoundingClientRect();
-        if (containerRect) {
-          setRowHandle({
-            top: rect.top - containerRect.top + rect.height / 2,
-            left: tableRect.left - containerRect.left - 8, // Centered (width 16px)
-            rowIndex,
-            tablePos
-          });
-          setColHandle({
-            top: tableRect.top - containerRect.top - 10, // Centered (height 20px)
-            left: rect.left - containerRect.left + rect.width / 2,
-            colIndex,
-            tablePos
-          });
-
-          return;
-        }
+        
+        setRowHandle({
+          top: rect.top - containerRect.top + rect.height / 2,
+          left: tableRect.left - containerRect.left - 8,
+          rowIndex,
+          tablePos
+        });
+        setColHandle({
+          top: tableRect.top - containerRect.top - 10,
+          left: rect.left - containerRect.left + rect.width / 2,
+          colIndex,
+          tablePos
+        });
+        return;
       }
     }
 
-    // Check if we are near existing handles to prevent flickering
+    // Check near existing handles to prevent flickering
     const mouseX = e.clientX;
     const mouseY = e.clientY;
-    const containerRect = containerRef.current?.getBoundingClientRect();
     
-    if (containerRect) {
-      if (rowHandle) {
-        const handleX = containerRect.left + rowHandle.left;
-        const handleY = containerRect.top + rowHandle.top;
-        if (Math.sqrt(Math.pow(mouseX - handleX, 2) + Math.pow(mouseY - handleY, 2)) < 30) return;
-      }
-      if (colHandle) {
-        const handleX = containerRect.left + colHandle.left;
-        const handleY = containerRect.top + colHandle.top;
-        if (Math.sqrt(Math.pow(mouseX - handleX, 2) + Math.pow(mouseY - handleY, 2)) < 30) return;
-      }
+    if (rowHandle) {
+      const handleX = containerRect.left + rowHandle.left;
+      const handleY = containerRect.top + rowHandle.top;
+      if (Math.sqrt(Math.pow(mouseX - handleX, 2) + Math.pow(mouseY - handleY, 2)) < 30) return;
+    }
+    if (colHandle) {
+      const handleX = containerRect.left + colHandle.left;
+      const handleY = containerRect.top + colHandle.top;
+      if (Math.sqrt(Math.pow(mouseX - handleX, 2) + Math.pow(mouseY - handleY, 2)) < 30) return;
     }
 
     setRowHandle(null);
@@ -1764,7 +1712,21 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           replacement: function (content: string, node: any) {
             const type = node.getAttribute('data-type');
             if (!type || type === 'default') return '\n\n> ' + content.trim().replace(/\n/g, '\n> ') + '\n\n';
-            return '\n\n> [!' + type + ']\n> ' + content.trim().replace(/\n/g, '\n> ') + '\n\n';
+            const title = node.getAttribute('data-title');
+            const alertTag = title ? `[!${type} ${title}]` : `[!${type}]`;
+            return '\n\n> ' + alertTag + '\n> ' + content.trim().replace(/\n/g, '\n> ') + '\n\n';
+          }
+        });
+
+        // Custom rule for Task Lists
+        turndown.addRule('taskList', {
+          filter: function (node: any) {
+            return node.nodeName === 'LI' && node.parentNode.nodeName === 'UL' && node.classList.contains('task-list-item');
+          },
+          replacement: function (content: string, node: any) {
+            const checkbox = node.querySelector('input[type="checkbox"]');
+            const checked = checkbox && checkbox.checked ? 'x' : ' ';
+            return '- [' + checked + '] ' + content.trim() + '\n';
           }
         });
 
@@ -1796,6 +1758,14 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
             // Strip colgroup and col which confuse some Turndown GFM implementations
             const colgroups = doc.querySelectorAll('colgroup');
             colgroups.forEach(cg => cg.remove());
+
+            // 3. Handle Task Lists for Turndown
+            const taskLists = doc.querySelectorAll('ul[data-type="taskList"]');
+            taskLists.forEach(ul => {
+              ul.querySelectorAll('li').forEach(li => {
+                li.classList.add('task-list-item');
+              });
+            });
             
             // Remove Tiptap-specific classes and styles from table elements
             const tables = doc.querySelectorAll('table');
@@ -1855,11 +1825,25 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       (window as any).setEditorMarkdown = (markdown: string) => {
         if (typeof markdown !== 'string') return;
         try {
-          // Pre-process alerts: > [!NOTE] -> <blockquote data-type="NOTE">
-          const alertRegex = /^> \[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\n((?:>.*\n?)*)/gm;
-          const markdownWithAlerts = markdown.replace(alertRegex, (match, type, content) => {
+          // Pre-process newer alert format: >note, >alerte, etc. (case insensitive)
+          const shortAlertRegex = /^>(note|alerte|important|conseil|remarque)\s(.*)$/gmi;
+          const markdownWithShortAlerts = markdown.replace(shortAlertRegex, (_match, type, content) => {
+            const typeMap: any = {
+              'note': 'NOTE',
+              'alerte': 'WARNING',
+              'important': 'IMPORTANT',
+              'conseil': 'TIP',
+              'remarque': 'default'
+            };
+            return `<blockquote data-type="${typeMap[type.toLowerCase()]}">${content}</blockquote>`;
+          });
+
+          // Pre-process alerts: > [!NOTE Custom Title] -> <blockquote data-type="NOTE" data-title="Custom Title">
+          const alertRegex = /^> \[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)(?:\s+(.*))?\]\n((?:>.*\n?)*)/gm;
+          const markdownWithAlerts = markdownWithShortAlerts.replace(alertRegex, (_match, type, title, content) => {
             const cleanContent = content.replace(/^> ?/gm, '').trim();
-            return `<blockquote data-type="${type}">${cleanContent}</blockquote>`;
+            const titleAttr = title ? ` data-title="${title}"` : '';
+            return `<blockquote data-type="${type}"${titleAttr}>${cleanContent}</blockquote>`;
           });
 
           // Convert == markers to <mark> HTML before parsing
@@ -1895,8 +1879,29 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       (window as any).insertEditorMarkdownAtEnd = (markdown: string) => {
         if (typeof markdown !== 'string') return;
         try {
+          // Pre-process newer alert format: >note, >alerte, etc. (case insensitive)
+          const shortAlertRegex = /^>(note|alerte|important|conseil|remarque)\s(.*)$/gmi;
+          const markdownWithShortAlerts = markdown.replace(shortAlertRegex, (_match, type, content) => {
+            const typeMap: any = {
+              'note': 'NOTE',
+              'alerte': 'WARNING',
+              'important': 'IMPORTANT',
+              'conseil': 'TIP',
+              'remarque': 'default'
+            };
+            return `<blockquote data-type="${typeMap[type.toLowerCase()]}">${content}</blockquote>`;
+          });
+
+          // Pre-process alerts: > [!NOTE Custom Title] -> <blockquote data-type="NOTE" data-title="Custom Title">
+          const alertRegex = /^> \[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)(?:\s+(.*))?\]\n((?:>.*\n?)*)/gm;
+          const markdownWithAlerts = markdownWithShortAlerts.replace(alertRegex, (_match, type, title, content) => {
+            const cleanContent = content.replace(/^> ?/gm, '').trim();
+            const titleAttr = title ? ` data-title="${title}"` : '';
+            return `<blockquote data-type="${type}"${titleAttr}>${cleanContent}</blockquote>`;
+          });
+
           // Convert == markers to <mark> HTML before parsing
-          const markdownWithHighlight = markdown.replace(
+          const markdownWithHighlight = markdownWithAlerts.replace(
             /==(.*?)==/g,
             '<mark>$1</mark>'
           );
@@ -2070,10 +2075,10 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
 
   return (
     <div className="simple-editor" ref={containerRef} onMouseMove={handleMouseMove} onMouseLeave={() => { setRowHandle(null); setColHandle(null); }}>
-      <Toolbar editor={editor} />
+      <Toolbar editor={editor} onDropdownToggle={setIsDropdownOpen} />
       <BubbleMenuComponent 
         editor={editor}
-        visible={true}
+        visible={!isDropdownOpen}
         onKeep={() => keepSelection(editor)}
         onReject={() => rejectSelection(editor)}
         onAssist={handleAssist}
@@ -2104,6 +2109,27 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         >
           ⠿
         </div>
+      )}
+
+      {blockDeleteHandle && !dragState && (
+        <button
+          className="block-delete-button"
+          style={{ 
+            position: 'absolute',
+            top: blockDeleteHandle.top, 
+            left: blockDeleteHandle.left,
+            opacity: 1,
+            zIndex: 10
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            editor.chain().focus().setNodeSelection(blockDeleteHandle.pos).deleteSelection().run();
+            setBlockDeleteHandle(null);
+          }}
+          title={`Supprimer ${blockDeleteHandle.label}`}
+        >
+          <Trash2 size={16} />
+        </button>
       )}
 
       {dropIndicator && (
@@ -2230,7 +2256,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
                 setTableContextMenu(null);
               }}
             >
-              <Trash2 size={14} style={{ marginRight: 8 }} />
+              <X size={14} style={{ marginRight: 8 }} />
               Supprimer
             </div>
           </div>

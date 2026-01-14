@@ -6,6 +6,36 @@
 window.GoToolkitDrawMemo = (function () {
     let excalidrawInstance = null;
     let isLoaded = false;
+    let previewChain = Promise.resolve();
+
+    function enqueuePreview(fn) {
+        const next = previewChain.then(fn, fn);
+        // Keep the chain alive even if a preview fails
+        previewChain = next.catch(() => undefined);
+        return next;
+    }
+
+    function createOffscreenHost() {
+        const host = document.createElement('div');
+        host.style.position = 'fixed';
+        host.style.left = '-10000px';
+        host.style.top = '0';
+        host.style.width = '1200px';
+        host.style.height = '800px';
+        host.style.opacity = '0';
+        host.style.pointerEvents = 'none';
+        return host;
+    }
+
+    function waitFrames(count = 2) {
+        return new Promise(resolve => {
+            const step = (remaining) => {
+                if (remaining <= 0) return resolve();
+                requestAnimationFrame(() => step(remaining - 1));
+            };
+            step(count);
+        });
+    }
 
     async function loadExcalidraw() {
         if (window.GoToolkitExcalidraw) return true;
@@ -49,6 +79,19 @@ window.GoToolkitDrawMemo = (function () {
 
             await excalidrawInstance.initialize(container);
 
+            // Ensure we're in interactive edit mode and selection tool is active.
+            try {
+                const api = excalidrawInstance.getApi?.();
+                api?.setActiveTool?.({ type: "selection" });
+                api?.refresh?.();
+                if (!initialData || (typeof initialData === 'string' && initialData.trim().length === 0)) {
+                    api?.resetScene?.();
+                    api?.refresh?.();
+                }
+            } catch (e) {
+                // no-op
+            }
+
             if (initialData) {
                 if (typeof initialData === 'object' || (typeof initialData === 'string' && initialData.trim().startsWith('{'))) {
                     // It's JSON
@@ -66,19 +109,46 @@ window.GoToolkitDrawMemo = (function () {
                     }
                 }
             }
+
+            // Final refresh after scene apply (handles/render)
+            try {
+                const api = excalidrawInstance.getApi?.();
+                api?.setActiveTool?.({ type: "selection" });
+                api?.refresh?.();
+            } catch (e) {
+                // no-op
+            }
             return excalidrawInstance;
         },
 
         async updateFromMermaid(code) {
             if (!excalidrawInstance) return;
             try {
+                const api = excalidrawInstance.getApi?.();
+                if (!code || !code.trim()) {
+                    api?.resetScene?.();
+                    api?.setActiveTool?.({ type: "selection" });
+                    api?.refresh?.();
+                    return;
+                }
+                const wasEmpty = !!api && Array.isArray(api.getSceneElements?.()) && api.getSceneElements().length === 0;
                 const scene = await excalidrawInstance.convertMermaid(code);
                 if (scene) {
-                    excalidrawInstance.applyScene(scene);
+                    // Center on first generation so the user sees the result immediately.
+                    excalidrawInstance.applyScene(scene, wasEmpty);
                 }
+
+                api?.setActiveTool?.({ type: "selection" });
+                api?.refresh?.();
             } catch (e) {
                 console.error("Failed to update from mermaid", e);
+                throw e;
             }
+        },
+
+        getApi() {
+            if (!excalidrawInstance) return null;
+            return excalidrawInstance.getApi?.() || null;
         },
 
         getSceneJSON() {
@@ -92,10 +162,20 @@ window.GoToolkitDrawMemo = (function () {
             });
         },
 
-        async getSVG() {
+        async getSVG(zoom) {
             if (!excalidrawInstance) return null;
             const api = excalidrawInstance.getApi();
             if (!api) return null;
+
+            if (typeof zoom === 'number' && excalidrawInstance.exportToSvgWithZoom) {
+                const svg = await excalidrawInstance.exportToSvgWithZoom(
+                    api.getSceneElements(),
+                    api.getAppState(),
+                    api.getFiles(),
+                    zoom
+                );
+                return svg.outerHTML;
+            }
 
             const svg = await excalidrawInstance.exportToSvg(
                 api.getSceneElements(),
@@ -103,6 +183,23 @@ window.GoToolkitDrawMemo = (function () {
                 api.getFiles()
             );
             return svg.outerHTML;
+        },
+
+        async renderPreview(initialData, zoom) {
+            // Serialize preview rendering to avoid clobbering due to singleton host swaps.
+            return enqueuePreview(async () => {
+                const host = createOffscreenHost();
+                document.body.appendChild(host);
+                try {
+                    await this.init(host, initialData);
+                    await waitFrames(2);
+                    const json = this.getSceneJSON();
+                    const svg = await this.getSVG(typeof zoom === 'number' ? zoom : 0.6);
+                    return { json, svg };
+                } finally {
+                    host.remove();
+                }
+            });
         },
 
         destroy() {

@@ -2,10 +2,23 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Build",
+      "label": "Dev",
       "type": "shell",
-      "command": "npm run build:memo",
-      "problemMatcher": [],
+      "command": "npm run dev",
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": {
+          "regexp": "^.*$",
+          "file": 1,
+          "location": 2,
+          "message": 3
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "esbuild",
+          "endsPattern": "watch"
+        }
+      },
       "presentation": {
         "echo": true,
         "reveal": "always",
@@ -17,7 +30,19 @@
       "type": "shell",
       "command": "npm start",
       "isBackground": true,
-      "problemMatcher": [],
+      "problemMatcher": {
+        "pattern": {
+          "regexp": "^.*$",
+          "file": 1,
+          "location": 2,
+          "message": 3
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "serving",
+          "endsPattern": "http"
+        }
+      },
       "presentation": {
         "echo": true,
         "reveal": "always",
@@ -25,9 +50,8 @@
       }
     },
     {
-      "label": "Build + Serve public",
-      "dependsOn": ["Build", "Serve public"],
-      "dependsOrder": "sequence",
+      "label": "Dev + Serve public",
+      "dependsOn": ["Dev", "Serve public"],
       "problemMatcher": []
     }
   ]

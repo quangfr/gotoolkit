@@ -13,13 +13,16 @@ import type { ExcalidrawElement } from "@excalidraw/excalidraw/types/element/typ
 import { parseMermaidToExcalidraw } from "@excalidraw/mermaid-to-excalidraw";
 
 const MERMAID_OPTIONS = { fontSize: 20 };
+// Fix for Excalidraw assets version being undefined
+if (typeof window !== "undefined" && !(window as any).EXCALIDRAW_ASSET_PATH) {
+    (window as any).EXCALIDRAW_ASSET_PATH = "https://unpkg.com/@excalidraw/excalidraw@0.17.6/dist/";
+}
 const MERMAID_ELEMENT_STYLE_DEFAULTS = {
     strokeWidth: 2,
     strokeStyle: "solid" as const,
     roughness: 0,
-    roundness: null as const
+    roundness: null
 };
-const EXCALIDRAW_DEFAULT_SCROLL_X = 150;
 const EDGE_HOST_CLASS = "go-excalidraw-edge";
 const EDGE_STYLE_ID = "go-excalidraw-edge-style";
 const EDGE_STYLE_CONTENT = `.${EDGE_HOST_CLASS} .excalidraw .App-bottom-bar {
@@ -32,10 +35,10 @@ const EDGE_STYLE_CONTENT = `.${EDGE_HOST_CLASS} .excalidraw .App-bottom-bar {
 }
 
 .${EDGE_HOST_CLASS} .excalidraw .App-bottom-bar > .Island {
-    margin: 0 !important;
-    padding: 0 !important;
-    border-radius: 0 !important;
-    max-width: 100% !important;
+    margin: 0;
+    padding: 0;
+    border-radius: 0;
+    max-width: 100%;
 }
 
 .${EDGE_HOST_CLASS} .excalidraw .layer-ui__wrapper__top-left,
@@ -51,7 +54,7 @@ const EDGE_STYLE_CONTENT = `.${EDGE_HOST_CLASS} .excalidraw .App-bottom-bar {
 }
 
 .${EDGE_HOST_CLASS} .excalidraw .layer-ui__wrapper:is(.layer-ui__wrapper__top-left, .layer-ui__wrapper__top-right, .layer-ui__wrapper__bottom-left, .layer-ui__wrapper__bottom-right) {
-    padding: 4px !important;
+    padding: 4px;
 }
 
 /* Move help button to bottom left and make it white */
@@ -71,6 +74,11 @@ const EDGE_STYLE_CONTENT = `.${EDGE_HOST_CLASS} .excalidraw .App-bottom-bar {
     --default-button-size: 1.5rem !important;
     --default-icon-size: 1.5rem !important;
     --lg-button-size :1.3rem !important;
+    touch-action: none !important;
+}
+
+.${EDGE_HOST_CLASS} .excalidraw .excalidraw__canvas {
+    touch-action: none !important;
 }
 
 .${EDGE_HOST_CLASS} .excalidraw .Island {
@@ -81,7 +89,6 @@ const EDGE_STYLE_CONTENT = `.${EDGE_HOST_CLASS} .excalidraw .App-bottom-bar {
      top: 55px!important;
     max-width: 140px !important;
     padding: 4px !important;
-    min-height: 570px !important;
 }
 
 .${EDGE_HOST_CLASS} .excalidraw .App-menu_bottom {
@@ -125,7 +132,6 @@ const EDGE_STYLE_CONTENT = `.${EDGE_HOST_CLASS} .excalidraw .App-bottom-bar {
 /* Hide Library, Lock and Embeddable buttons */
 .${EDGE_HOST_CLASS} .excalidraw .mobile-misc-tools-container,
 .${EDGE_HOST_CLASS} .excalidraw .sidebar-trigger,
-.${EDGE_HOST_CLASS} .excalidraw .ToolIcon__lock,
 .${EDGE_HOST_CLASS} .excalidraw [data-testid="toolbar-embeddable"] {
     display: none !important;
 }
@@ -148,7 +154,8 @@ const EDGE_STYLE_CONTENT = `.${EDGE_HOST_CLASS} .excalidraw .App-bottom-bar {
 /* Smaller zoom and undo/redo buttons */
 .${EDGE_HOST_CLASS} .excalidraw .zoom-actions,
 .${EDGE_HOST_CLASS} .excalidraw .undo-redo-buttons {
-    zoom: 0.8;
+    transform: scale(0.85);
+    transform-origin: left bottom;
 }
 
 /* Compact Properties Panel (Right/Left side) */
@@ -249,6 +256,7 @@ type SceneData = {
 const createInitialData = () => ({
     elements: [] as ExcalidrawElement[],
     appState: {
+        viewModeEnabled: false,
         viewBackgroundColor: "#fdfdfd",
         gridModeEnabled: false,
         isLoading: false,
@@ -262,6 +270,7 @@ const applyMermaidDefaults = (elements: readonly ExcalidrawElement[]): Excalidra
         const mustForceSolidStroke = element.type === "arrow";
         return {
             ...element,
+            locked: false,
             strokeWidth: element.strokeWidth ?? MERMAID_ELEMENT_STYLE_DEFAULTS.strokeWidth,
             strokeStyle: mustForceSolidStroke
                 ? "solid"
@@ -301,6 +310,16 @@ class ExcalidrawBridge {
                 let resolved = false;
                 const handleReady = (instance: ExcalidrawImperativeAPI) => {
                     this.api = instance;
+                    // Force edit mode on ready
+                    instance.updateScene({
+                        appState: { viewModeEnabled: false }
+                    });
+                    try {
+                        instance.setActiveTool?.({ type: "selection" } as any);
+                        instance.refresh?.();
+                    } catch {
+                        // no-op
+                    }
                     if (!resolved) {
                         resolved = true;
                         resolve(instance);
@@ -324,7 +343,7 @@ class ExcalidrawBridge {
                             gridModeEnabled={false}
                             zenModeEnabled={false}
                             initialData={createInitialData()}
-                            generateIdForFile={(file: File) => {
+                            generateIdForFile={() => {
                                 return Math.random().toString(36).substring(2, 15);
                             }}
                         />
@@ -363,27 +382,47 @@ class ExcalidrawBridge {
         };
     }
 
-    applyScene(scene: SceneData): void {
+    applyScene(scene: SceneData, shouldCenter: boolean = true): void {
         const api = this.ensureApi();
+        const appState = api.getAppState();
+        
         const payload: any = {
-            elements: scene.elements.slice(),
+            elements: scene.elements.map(el => ({ ...el, locked: false })),
             appState: {
-                ...(api.getAppState() as any),
-                scrollX:
-                    typeof scene?.appState?.scrollX === "number"
-                        ? scene.appState.scrollX
-                        : EXCALIDRAW_DEFAULT_SCROLL_X,
+                ...appState,
+                viewModeEnabled: false,
+                activeTool: { type: "selection" },
                 viewBackgroundColor: "#fdfdfd",
                 gridModeEnabled: false,
                 isLoading: false,
                 currentItemRoundness: "sharp",
-                zoom: { value: 0.9 }
+                zoom: appState?.zoom?.value ? appState.zoom : { value: 0.9 }
             }
         };
+
         if (scene.files) {
             payload.files = scene.files;
         }
+
         api.updateScene(payload);
+
+        try {
+            api.setActiveTool?.({ type: "selection" } as any);
+            api.refresh?.();
+        } catch {
+            // no-op
+        }
+
+        // Center the content automatically for Mermaid diagrams
+        if (shouldCenter && scene.elements.length > 0) {
+            // Use setTimeout to ensure the scene has been updated before scrolling
+            setTimeout(() => {
+                api.scrollToContent(scene.elements, { 
+                    fitToViewport: true
+                });
+            }, 50);
+        }
+
         if (scene.files) {
             const fileList = Object.values(scene.files);
             if (fileList.length) {
@@ -420,7 +459,7 @@ const bridge = new ExcalidrawBridge();
 export type GoToolkitExcalidrawAPI = {
     initialize: (container: HTMLElement | string) => Promise<void>;
     convertMermaid: (code: string) => Promise<SceneData | null>;
-    applyScene: (scene: SceneData) => void;
+    applyScene: (scene: SceneData, shouldCenter?: boolean) => void;
     getApi: () => ExcalidrawImperativeAPI | null;
     exportToSvg: (elements: any, appState: any, files: any) => Promise<SVGSVGElement>;
     exportToSvgWithZoom: (elements: any, appState: any, files: any, zoom: number) => Promise<SVGSVGElement>;
@@ -435,7 +474,7 @@ declare global {
 window.GoToolkitExcalidraw = {
     initialize: container => bridge.initialize(container),
     convertMermaid: code => bridge.convertMermaid(code),
-    applyScene: scene => bridge.applyScene(scene),
+    applyScene: (scene, shouldCenter) => bridge.applyScene(scene, shouldCenter),
     getApi: () => bridge.getApi(),
     exportToSvg: (elements, appState, files) => exportToSvg({ elements, appState, files }),
     exportToSvgWithZoom: (elements, appState, files, zoom) => 

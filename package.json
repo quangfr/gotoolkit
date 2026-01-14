@@ -1,13 +1,16 @@
 {
   "name": "gotoolkit",
-  "version": "2026.01.14.2",
+  "version": "2026.01.14.4",
   "description": "Go-Toolkit combine deux expériences pensées pour les consultants : **Go-Slides** (pour créer des planches claires et structurées) et **Go-Timeline** (pour visualiser et ajuster un planning). Chaque outil s’utilise en ouvrant directement son fichier dans un navigateur, avec des assistants IA, des exports réactifs et des modèles prêts à l’emploi.",
   "main": "index.js",
   "scripts": {
     "start": "npx serve public -l 5000",
+    "dev": "npm run dev:connect & npm run dev:memo",
+    "dev:connect": "esbuild src/draw-editor/index.tsx --bundle --format=iife --platform=browser --target=es2018 --sourcemap --define:process.env.NODE_ENV=\"'development'\" --define:process.env=\"{}\" --outdir=public/js --entry-names=draw.bundle --asset-names=assets/[name]-[hash] --loader:.css=text --loader:.woff=file --loader:.woff2=file --loader:.ttf=file --loader:.svg=file --loader:.png=file --watch",
+    "dev:memo": "esbuild src/memo-bridge/index.tsx --bundle --format=iife --platform=browser --target=es2018 --sourcemap --define:process.env.NODE_ENV=\"'development'\" --define:process.env=\"{}\" --outdir=public/js --entry-names=memo.bundle --asset-names=assets/[name]-[hash] --alias:@=./src --watch",
     "build": "npm run build:connect && npm run build:memo",
     "build:connect": "esbuild src/draw-editor/index.tsx --bundle --format=iife --platform=browser --target=es2018 --sourcemap --minify-identifiers --define:process.env.NODE_ENV=\"'production'\" --define:process.env=\"{}\" --outdir=public/js --entry-names=draw.bundle --asset-names=assets/[name]-[hash] --loader:.css=text --loader:.woff=file --loader:.woff2=file --loader:.ttf=file --loader:.svg=file --loader:.png=file",
-    "build:memo": "esbuild src/memo-bridge/index.tsx --bundle --format=iife --platform=browser --target=es2018 --sourcemap --minify-identifiers --define:process.env.NODE_ENV=\"'production'\" --define:process.env=\"{}\" --outdir=public/js --entry-names=memo.bundle --asset-names=assets/[name]-[hash] --alias:@=./src",
+    "build:memo": "esbuild src/memo-bridge/index.tsx --bundle --format=iife --platform=browser --target=es2018 --sourcemap --minify --define:process.env.NODE_ENV=\"'production'\" --define:process.env=\"{}\" --outdir=public/js --entry-names=memo.bundle --asset-names=assets/[name]-[hash] --alias:@=./src",
     "test:playwright": "npx playwright test"
   },
   "repository": {
@@ -28,6 +31,9 @@
     "@tiptap/core": "^3.15.3",
     "@tiptap/extension-bubble-menu": "^3.15.3",
     "@tiptap/extension-color": "^3.15.3",
+    "@tiptap/extension-details": "^3.15.3",
+    "@tiptap/extension-details-content": "^3.15.3",
+    "@tiptap/extension-details-summary": "^3.15.3",
     "@tiptap/extension-emoji": "^3.15.3",
     "@tiptap/extension-highlight": "^3.15.3",
     "@tiptap/extension-history": "^3.15.3",

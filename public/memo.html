@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <title>Mémo | Go-Toolkit</title>
-    <link rel="stylesheet" href="styles/style.css?v=2026.01.14.2">
+    <link rel="stylesheet" href="styles/style.css?v=2026.01.14.8">
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
@@ -176,6 +176,7 @@
             cursor: col-resize;
             background: transparent;
             position: relative;
+            touch-action: none;
         }
 
 
@@ -393,7 +394,7 @@
         }
 
         .ProseMirror li {
-            margin: 4px 0;
+            margin: 0px 0;
         }
 
         .ProseMirror blockquote {
@@ -621,7 +622,7 @@
             }
         }
     </style>
-    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.01.14.2">
+    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.01.14.8">
 </head>
 
 <body class="app-body">
@@ -643,14 +644,14 @@
                             aria-expanded="false"><i data-lucide="command"></i> Memo <i
                                 data-lucide="chevron-down"></i></button>
                         <div id="navSwitcherMenu" class="nav-switch-menu" role="menu">
-                            <a class="nav-switch-link" href="/?v=2026.01.14.2" role="menuitem"><i
+                            <a class="nav-switch-link" href="/?v=2026.01.14.8" role="menuitem"><i
                                     data-lucide="home"></i> Accueil</a>
-                            <a class="nav-switch-link" href="grid.html?v=2026.01.14.2" role="menuitem"
+                            <a class="nav-switch-link" href="grid.html?v=2026.01.14.8" role="menuitem"
                                 data-app="grid"><i data-lucide="grid-3x3"></i>
                                 Grid</a>
-                            <a class="nav-switch-link" href="timeline.html?v=2026.01.14.2" role="menuitem"
+                            <a class="nav-switch-link" href="timeline.html?v=2026.01.14.8" role="menuitem"
                                 data-app="timeline"><i data-lucide="layout-list"></i> Timeline</a>
-                            <a class="nav-switch-link" href="voice.html?v=2026.01.14.2" role="menuitem"
+                            <a class="nav-switch-link" href="voice.html?v=2026.01.14.8" role="menuitem"
                                 data-app="voice"><i data-lucide="mic"></i>
                                 Voice</a>
                         </div>
@@ -751,7 +752,7 @@
     <div id="memoInfoPopup" class="info-popup" role="dialog" aria-live="polite">
         <img src="img/logo.gif" alt="Logo Go-Toolkit">
         <strong>Module Mémo</strong>
-        <span>Version 2026.01.14.2</span>
+        <span>Version 2026.01.14.8</span>
         <span>Usage réservé à Savane Consulting.</span>
         <div class="info-actions">
             <button id="memoUpdateBtn" type="button" class="update-btn">Mettre à jour</button>
@@ -805,21 +806,21 @@
         window.GO_TOOLKIT_SHARE_API_URL =
             window.GO_TOOLKIT_SHARE_API_URL || "https://share.gotoolkit.workers.dev/";
     </script>
-    <script src="js/config.js?v=2026.01.14.2"></script>
-    <script src="js/feature-visibility.js?v=2026.01.14.2"></script>
-    <script src="js/document-storage.js?v=2026.01.14.2"></script>
-    <script src="js/storage-service.js?v=2026.01.14.2"></script>
-    <script src="js/shared-ui.js?v=2026.01.14.2"></script>
-    <script src="js/cgu.js?v=2026.01.14.2"></script>
-    <script src="js/share-worker-client.js?v=2026.01.14.2"></script>
-    <script src="js/share-history.js?v=2026.01.14.2"></script>
-    <script src="js/document-api.js?v=2026.01.14.2"></script>
-    <script src="js/keywordIndex.js?v=2026.01.14.2"></script>
-    <script src="js/document-rag.js?v=2026.01.14.2"></script>
-    <script src="js/ia-config.js?v=2026.01.14.2"></script>
-    <script src="prompt.js?v=2026.01.14.2"></script>
-    <script src="js/ia-client.js?v=2026.01.14.2"></script>
-    <script src="js/document-markdown.js?v=2026.01.14.2"></script>
+    <script src="js/config.js?v=2026.01.14.8"></script>
+    <script src="js/feature-visibility.js?v=2026.01.14.8"></script>
+    <script src="js/document-storage.js?v=2026.01.14.8"></script>
+    <script src="js/storage-service.js?v=2026.01.14.8"></script>
+    <script src="js/shared-ui.js?v=2026.01.14.8"></script>
+    <script src="js/cgu.js?v=2026.01.14.8"></script>
+    <script src="js/share-worker-client.js?v=2026.01.14.8"></script>
+    <script src="js/share-history.js?v=2026.01.14.8"></script>
+    <script src="js/document-api.js?v=2026.01.14.8"></script>
+    <script src="js/keywordIndex.js?v=2026.01.14.8"></script>
+    <script src="js/document-rag.js?v=2026.01.14.8"></script>
+    <script src="js/ia-config.js?v=2026.01.14.8"></script>
+    <script src="prompt.js?v=2026.01.14.8"></script>
+    <script src="js/ia-client.js?v=2026.01.14.8"></script>
+    <script src="js/document-markdown.js?v=2026.01.14.8"></script>
     <script>
         // Initialize feedback configuration for Memo before loading feedback.js
         window.GoToolkitAppFeedbackConfig = {
@@ -838,12 +839,12 @@
             ]
         };
     </script>
-    <script src="js/feedback.js?v=2026.01.14.2"></script>
-    <script src="js/voice-video-player.js?v=2026.01.14.2"></script>
-    <script src="js/voice-audio-player.js?v=2026.01.14.2"></script>
-    <script src="js/voice.js?v=2026.01.14.2"></script>
-    <script src="js/voice-transcript.js?v=2026.01.14.2"></script>
-    <script src="js/draw-memo.js?v=2026.01.14.2"></script>
+    <script src="js/feedback.js?v=2026.01.14.8"></script>
+    <script src="js/voice-video-player.js?v=2026.01.14.8"></script>
+    <script src="js/voice-audio-player.js?v=2026.01.14.8"></script>
+    <script src="js/voice.js?v=2026.01.14.8"></script>
+    <script src="js/voice-transcript.js?v=2026.01.14.8"></script>
+    <script src="js/draw-memo.js?v=2026.01.14.8"></script>
     <script>
         // Suppress React DevTools prompt in dev builds.
         window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = window.__REACT_DEVTOOLS_GLOBAL_HOOK__ || {
@@ -853,9 +854,9 @@
             onCommitFiberUnmount: function () { }
         };
     </script>
-    <script src="js/memo.bundle.js?v=2026.01.14.2"></script>
-    <script src="js/assist.js?v=2026.01.14.2"></script>
-    <script src="js/document-panel.js?v=2026.01.14.2"></script>
+    <script src="js/memo.bundle.js?v=2026.01.14.8"></script>
+    <script src="js/assist.js?v=2026.01.14.8"></script>
+    <script src="js/document-panel.js?v=2026.01.14.8"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             setTimeout(function () {
@@ -901,9 +902,9 @@
                 return [
                     {
                         id: "default",
-                        label: "🕊️ Générique",
-                        description: "Structure de base pour démarrer un mémo",
-                        markdown: "# Mémo\n\n"
+                        label: "🕊️ Guide rapide",
+                        description: "Aperçu des fonctionnalités avancées de GoToolkit",
+                        markdown: "# Guide rapide — GoToolkit\n\nBienvenue dans l'éditeur Mémo.\n"
                     }
                 ];
             }
@@ -986,21 +987,25 @@
                 return "memo-" + Math.random().toString(16).slice(2);
             }
 
-            function createDefaultState() {
+            function createDefaultState(useTemplate = false) {
                 const id = createId();
                 const lastPromptPreset = getLastSavedPromptPreset();
+                const defaultMarkdown = (useTemplate && templates[0]) ? templates[0].markdown : "";
+                const defaultHtml = (useTemplate && templates[0]) ? renderMemoTemplateMarkdown(defaultMarkdown) : "";
+                const defaultTitle = (useTemplate && templates[0]) ? (templates[0].label.replace(/^[^\s]+\s+/, "") || "Doc 1") : "Doc 1";
+
                 return {
                     tabs: [
                         {
                             id,
-                            title: "Doc 1",
-                            content: "",
+                            title: defaultTitle,
+                            content: defaultHtml,
                             contextEmbeddings: []
                         }
                     ],
                     activeTabId: id,
-                    templateId: null,
-                    templateLabel: null,
+                    templateId: (useTemplate && templates[0]) ? templates[0].id : null,
+                    templateLabel: (useTemplate && templates[0]) ? templates[0].label : null,
                     promptPresetId: lastPromptPreset
                 };
             }
@@ -1937,18 +1942,24 @@
 
             function formatInlineMarkdown(text) {
                 let out = escapeHtml(text);
-                out = out.replace(/`([^`]+)`/g, (_, code) => `<code>${escapeHtml(code)}</code>`);
+                // After escapeHtml, special chars like > are &gt;
+                // We should NOT call escapeHtml again inside the replacements
+                out = out.replace(/`([^`]+)`/g, (_, code) => `<code>${code}</code>`);
                 out = out.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
                 out = out.replace(/__([^_]+)__/g, "<strong>$1</strong>");
                 out = out.replace(/\*([^*]+)\*/g, "<em>$1</em>");
                 out = out.replace(/_([^_]+)_/g, "<em>$1</em>");
                 out = out.replace(/~~([^~]+)~~/g, "<s>$1</s>");
+                out = out.replace(/~([^~]+)~/g, "<s>$1</s>"); // Handle single ~ as well
                 out = out.replace(/==([^=]+)==/g, "<mark>$1</mark>");
                 out = out.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, label, url) => {
-                    const safeLabel = escapeHtml(label);
-                    const safeUrl = String(url || "").trim();
+                    const safeLabel = label; // already escaped via escapeHtml(text)
+                    const safeUrl = String(url || "").trim()
+                        .replace(/&amp;/g, "&") // unescape common entities in URL if they were double escaped
+                        .replace(/&/g, "&amp;")
+                        .replace(/"/g, "&quot;");
                     if (!/^https?:\/\//i.test(safeUrl)) return safeLabel;
-                    return `<a href="${escapeHtml(safeUrl)}" target="_blank" rel="noopener noreferrer">${safeLabel}</a>`;
+                    return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer">${safeLabel}</a>`;
                 });
                 return out;
             }
@@ -1961,6 +1972,8 @@
                 const html = [];
 
                 let inCodeBlock = false;
+                let codeBlockDelim = "";
+                let codeLanguage = "";
                 let codeLines = [];
 
                 let listItems = [];
@@ -1985,8 +1998,29 @@
 
                 function flushQuote() {
                     if (!quoteLines.length) return;
-                    const content = quoteLines.map(line => `<p>${formatInlineMarkdown(line)}</p>`).join("");
-                    html.push(`<blockquote>${content}</blockquote>`);
+
+                    let type = "default";
+                    let title = null;
+                    let contentLines = [...quoteLines];
+
+                    // Check for [!TYPE title] on the first line
+                    if (contentLines.length > 0) {
+                        const firstLine = contentLines[0].trim();
+                        const alertMatch = firstLine.match(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)(?:\s+(.*))?\]$/i);
+                        if (alertMatch) {
+                            type = alertMatch[1].toUpperCase();
+                            if (alertMatch[2]) title = alertMatch[2].trim();
+                            contentLines.shift(); // Remove the header line
+                        }
+                    }
+
+                    const attrs = [];
+                    if (type !== "default") attrs.push(`data-type="${type}"`);
+                    if (title) attrs.push(`data-title="${escapeHtml(title)}"`);
+
+                    const attrStr = attrs.length ? " " + attrs.join(" ") : "";
+                    const content = contentLines.map(line => `<p>${formatInlineMarkdown(line)}</p>`).join("");
+                    html.push(`<blockquote${attrStr}>${content}</blockquote>`);
                     quoteLines = [];
                 }
 
@@ -2030,22 +2064,31 @@
                     const line = lines[i];
                     const trimmed = String(line || "").trim();
 
-                    if (/^```/.test(trimmed)) {
+                    if (!inCodeBlock && /^```+/.test(trimmed)) {
                         flushList();
                         flushTasks();
                         flushQuote();
-                        if (inCodeBlock) {
-                            html.push(`<pre><code>${escapeHtml(codeLines.join("\n"))}</code></pre>`);
-                            codeLines = [];
-                            inCodeBlock = false;
-                        } else {
-                            inCodeBlock = true;
-                        }
+                        inCodeBlock = true;
+                        codeBlockDelim = trimmed.match(/^```+/)[0];
+                        codeLanguage = trimmed.slice(codeBlockDelim.length).trim().toLowerCase();
                         continue;
                     }
 
                     if (inCodeBlock) {
-                        codeLines.push(line);
+                        if (trimmed === codeBlockDelim) {
+                            if (codeLanguage === "mermaid") {
+                                const code = codeLines.join("\n");
+                                html.push(`<mermaid-diagram code="${escapeHtml(code)}"></mermaid-diagram>`);
+                            } else {
+                                html.push(`<pre><code>${escapeHtml(codeLines.join("\n"))}</code></pre>`);
+                            }
+                            codeLines = [];
+                            codeLanguage = "";
+                            codeBlockDelim = "";
+                            inCodeBlock = false;
+                        } else {
+                            codeLines.push(line);
+                        }
                         continue;
                     }
 
@@ -2445,7 +2488,7 @@
                 const all = await documentApi.getAllRecords();
                 const memoDocs = (all || []).filter(item => item && item.app === "memo");
                 if (memoDocs.length) return memoDocs;
-                const nextState = createDefaultState();
+                const nextState = createDefaultState(true);
                 const payload = nextState;
                 const now = new Date().toISOString();
                 const id = (documentApi.generateId && documentApi.generateId()) || createId();
@@ -2520,7 +2563,7 @@
 
             resetDevState();
             const initialState = loadState();
-            let state = initialState || createDefaultState();
+            let state = initialState || createDefaultState(true);
             const shouldOpenTemplateOnStart = !initialState;
 
             const documentLoadedPromise = (async () => {
