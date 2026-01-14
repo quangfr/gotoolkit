@@ -20,7 +20,7 @@
   position: sticky;
   top: 10px;
   margin: 0 auto 10px auto;
-  z-index: 20;
+  z-index: 15;
   width: fit-content;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }

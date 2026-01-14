@@ -42,8 +42,8 @@
         }
 
         .document-explorer {
-            width: var(--doc-sidebar-width, 230px);
-            flex: 0 0 var(--doc-sidebar-width, 230px);
+            width: var(--doc-sidebar-width, 220px);
+            flex: 0 0 var(--doc-sidebar-width, 220px);
             background: #ffffff;
             display: flex;
             flex-direction: column;
@@ -151,7 +151,12 @@
             display: inline-flex;
             align-self: flex-end;
             margin-left: auto;
-            padding: 6px 12px;
+            padding: 6px 8px;
+        }
+
+        .document-explorer__actions {
+            display: flex;
+            gap: 4px;
         }
 
         .document-explorer__item:hover,
