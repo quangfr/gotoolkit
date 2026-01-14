@@ -208709,7 +208709,7 @@ ${config5.themeCSS}`;
       };
     }, [dragState, mouseDownPoints, editor]);
     const handleMouseMove2 = (e3) => {
-      var _a58, _b2, _c2;
+      var _a58, _b2, _c2, _d, _e2, _f, _g, _h, _i;
       if (!editor || dragState || !containerRef.current) return;
       if (e3.target.closest(".table-handle, .quote-handle, .block-delete-button")) return;
       const element3 = document.elementFromPoint(e3.clientX, e3.clientY);
@@ -208726,67 +208726,88 @@ ${config5.themeCSS}`;
         if (wrapper) {
           rect3 = wrapper.getBoundingClientRect();
         }
-        const pos = (_a58 = editor.view.posAtCoords({ left: e3.clientX, top: e3.clientY })) == null ? void 0 : _a58.pos;
-        if (pos !== void 0) {
+        let blockPos = -1;
+        let label = "le bloc";
+        try {
+          const pos = editor.view.posAtDOM(targetBlock, 0);
           const $pos = editor.state.doc.resolve(pos);
-          let blockPos = -1;
-          let label = "le bloc";
           if (tableEl) {
-            for (let d3 = $pos.depth; d3 > 0; d3--) {
-              if ($pos.node(d3).type.name === "table") {
+            for (let d3 = $pos.depth; d3 >= 0; d3--) {
+              if (((_a58 = $pos.node(d3)) == null ? void 0 : _a58.type.name) === "table") {
                 blockPos = $pos.before(d3);
                 label = "le tableau";
                 break;
               }
             }
           } else if (detailsEl) {
-            for (let d3 = $pos.depth; d3 > 0; d3--) {
-              if ($pos.node(d3).type.name === "details") {
+            for (let d3 = $pos.depth; d3 >= 0; d3--) {
+              if (((_b2 = $pos.node(d3)) == null ? void 0 : _b2.type.name) === "details") {
                 blockPos = $pos.before(d3);
                 label = "le bloc d\xE9pliable";
                 break;
               }
             }
           } else if (blockquoteEl) {
-            for (let d3 = $pos.depth; d3 > 0; d3--) {
-              if ($pos.node(d3).type.name === "blockquote") {
+            for (let d3 = $pos.depth; d3 >= 0; d3--) {
+              if (((_c2 = $pos.node(d3)) == null ? void 0 : _c2.type.name) === "blockquote") {
                 blockPos = $pos.before(d3);
                 label = "la remarque";
                 break;
               }
             }
           } else if (mermaidEl) {
-            for (let d3 = $pos.depth; d3 > 0; d3--) {
-              if ($pos.node(d3).type.name === "mermaidDiagram") {
+            for (let d3 = $pos.depth; d3 >= 0; d3--) {
+              if (((_d = $pos.node(d3)) == null ? void 0 : _d.type.name) === "mermaidDiagram") {
                 blockPos = $pos.before(d3);
                 label = "le diagramme";
                 break;
               }
             }
+            if (blockPos === -1) {
+              const node2 = editor.state.doc.nodeAt(pos);
+              if ((node2 == null ? void 0 : node2.type.name) === "mermaidDiagram") {
+                blockPos = pos;
+                label = "le diagramme";
+              }
+            }
           } else if (codeEl) {
-            for (let d3 = $pos.depth; d3 > 0; d3--) {
-              if ($pos.node(d3).type.name === "codeBlock") {
+            for (let d3 = $pos.depth; d3 >= 0; d3--) {
+              if (((_e2 = $pos.node(d3)) == null ? void 0 : _e2.type.name) === "codeBlock") {
                 blockPos = $pos.before(d3);
                 label = "le bloc de code";
                 break;
               }
             }
           }
-          if (blockPos !== -1) {
-            setBlockDeleteHandle({
-              top: rect3.top - containerRect.top + 8,
-              left: rect3.right - containerRect.left - 36,
-              pos: blockPos,
-              label
-            });
+        } catch (err) {
+          const coordsPos = (_f = editor.view.posAtCoords({ left: e3.clientX, top: e3.clientY })) == null ? void 0 : _f.pos;
+          if (coordsPos !== void 0) {
+            const $cPos = editor.state.doc.resolve(coordsPos);
+            if (mermaidEl) {
+              for (let d3 = $cPos.depth; d3 >= 0; d3--) {
+                if (((_g = $cPos.node(d3)) == null ? void 0 : _g.type.name) === "mermaidDiagram") {
+                  blockPos = $cPos.before(d3);
+                  label = "le diagramme";
+                  break;
+                }
+              }
+            }
           }
+        }
+        if (blockPos !== -1) {
+          setBlockDeleteHandle({
+            top: rect3.top - containerRect.top + 8,
+            left: rect3.right - containerRect.left - 36,
+            pos: blockPos,
+            label
+          });
         }
       } else if (!e3.target.closest(".block-delete-button")) {
         setBlockDeleteHandle(null);
       }
       if (blockquoteEl && containerRef.current.contains(blockquoteEl)) {
         const rect3 = blockquoteEl.getBoundingClientRect();
-        const pos = (_b2 = editor.view.posAtCoords({ left: e3.clientX, top: e3.clientY })) == null ? void 0 : _b2.pos;
+        const pos = (_h = editor.view.posAtCoords({ left: e3.clientX, top: e3.clientY })) == null ? void 0 : _h.pos;
         if (pos !== void 0) {
           const $pos = editor.state.doc.resolve(pos);
           let quotePos = -1;
@@ -208801,7 +208822,7 @@ ${config5.themeCSS}`;
               top: rect3.top - containerRect.top + 10,
               left: rect3.left - containerRect.left - 12,
               pos: quotePos,
-              type: ((_c2 = editor.state.doc.nodeAt(quotePos)) == null ? void 0 : _c2.attrs.type) || "default"
+              type: ((_i = editor.state.doc.nodeAt(quotePos)) == null ? void 0 : _i.attrs.type) || "default"
             });
           } else {
             setQuoteHandle(null);

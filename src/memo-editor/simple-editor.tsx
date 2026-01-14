@@ -1534,62 +1534,88 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         rect = wrapper.getBoundingClientRect();
       }
 
-      const pos = editor.view.posAtCoords({ left: e.clientX, top: e.clientY })?.pos;
-      if (pos !== undefined) {
+      // More reliable way to get the node position from the DOM element
+      let blockPos = -1;
+      let label = "le bloc";
+
+      try {
+        // Try to get position directly from the DOM element
+        const pos = editor.view.posAtDOM(targetBlock, 0);
         const $pos = editor.state.doc.resolve(pos);
-        let blockPos = -1;
-        let label = "le bloc";
 
         if (tableEl) {
-          for (let d = $pos.depth; d > 0; d--) {
-            if ($pos.node(d).type.name === 'table') {
+          for (let d = $pos.depth; d >= 0; d--) {
+            if ($pos.node(d)?.type.name === 'table') {
               blockPos = $pos.before(d);
               label = "le tableau";
               break;
             }
           }
         } else if (detailsEl) {
-          for (let d = $pos.depth; d > 0; d--) {
-            if ($pos.node(d).type.name === 'details') {
+          for (let d = $pos.depth; d >= 0; d--) {
+            if ($pos.node(d)?.type.name === 'details') {
               blockPos = $pos.before(d);
               label = "le bloc dépliable";
               break;
             }
           }
         } else if (blockquoteEl) {
-          for (let d = $pos.depth; d > 0; d--) {
-            if ($pos.node(d).type.name === 'blockquote') {
+          for (let d = $pos.depth; d >= 0; d--) {
+            if ($pos.node(d)?.type.name === 'blockquote') {
               blockPos = $pos.before(d);
               label = "la remarque";
               break;
             }
           }
         } else if (mermaidEl) {
-          for (let d = $pos.depth; d > 0; d--) {
-            if ($pos.node(d).type.name === 'mermaidDiagram') {
+          for (let d = $pos.depth; d >= 0; d--) {
+            if ($pos.node(d)?.type.name === 'mermaidDiagram') {
               blockPos = $pos.before(d);
               label = "le diagramme";
               break;
             }
           }
+          // Fallback if the resolved position is just before the atom
+          if (blockPos === -1) {
+            const node = editor.state.doc.nodeAt(pos);
+            if (node?.type.name === 'mermaidDiagram') {
+              blockPos = pos;
+              label = "le diagramme";
+            }
+          }
         } else if (codeEl) {
-          for (let d = $pos.depth; d > 0; d--) {
-            if ($pos.node(d).type.name === 'codeBlock') {
+          for (let d = $pos.depth; d >= 0; d--) {
+            if ($pos.node(d)?.type.name === 'codeBlock') {
               blockPos = $pos.before(d);
               label = "le bloc de code";
               break;
             }
           }
         }
-
-        if (blockPos !== -1) {
-          setBlockDeleteHandle({
-            top: rect.top - containerRect.top + 8,
-            left: rect.right - containerRect.left - 36,
-            pos: blockPos,
-            label
-          });
+      } catch (err) {
+        // Fallback to posAtCoords if posAtDOM fails
+        const coordsPos = editor.view.posAtCoords({ left: e.clientX, top: e.clientY })?.pos;
+        if (coordsPos !== undefined) {
+          const $cPos = editor.state.doc.resolve(coordsPos);
+          if (mermaidEl) {
+            for (let d = $cPos.depth; d >= 0; d--) {
+              if ($cPos.node(d)?.type.name === 'mermaidDiagram') {
+                blockPos = $cPos.before(d);
+                label = "le diagramme";
+                break;
+              }
+            }
+          }
         }
+      }
+
+      if (blockPos !== -1) {
+        setBlockDeleteHandle({
+          top: rect.top - containerRect.top + 8,
+          left: rect.right - containerRect.left - 36,
+          pos: blockPos,
+          label
+        });
       }
     } else if (!(e.target as HTMLElement).closest('.block-delete-button')) {
       setBlockDeleteHandle(null);
