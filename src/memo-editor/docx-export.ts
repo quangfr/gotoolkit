@@ -19,10 +19,13 @@ import {
 } from "docx";
 import { saveAs } from "file-saver"; // I'll need to install file-saver or use Blob
 
+const DEFAULT_FONT = "Tahoma";
+const DEFAULT_LINE_SPACING = 360; // 1.5 line height (240 * 1.5)
+
 /**
  * Exports Tiptap Editor content to DOCX
  */
-export async function exportEditorToDocx(editor: any, title: string = "Memo") {
+export async function exportEditorToDocx(editor: any, _title: string = "Memo") {
   const json = editor.getJSON();
   const content = json.content || [];
 
@@ -40,6 +43,69 @@ export async function exportEditorToDocx(editor: any, title: string = "Memo") {
   }
 
   const doc = new Document({
+    styles: {
+      default: {
+        document: {
+          run: {
+            font: DEFAULT_FONT,
+            size: 22, // 11pt
+          },
+          paragraph: {
+            spacing: { line: DEFAULT_LINE_SPACING, after: 120 },
+          },
+        },
+      },
+      paragraphStyles: [
+        {
+          id: "Heading1",
+          name: "Heading 1",
+          basedOn: "Normal",
+          next: "Normal",
+          quickFormat: true,
+          run: {
+            size: 36, // 18pt
+            bold: true,
+            color: "000000",
+            font: DEFAULT_FONT,
+          },
+          paragraph: {
+            spacing: { before: 240, after: 120, line: DEFAULT_LINE_SPACING },
+          },
+        },
+        {
+          id: "Heading2",
+          name: "Heading 2",
+          basedOn: "Normal",
+          next: "Normal",
+          quickFormat: true,
+          run: {
+            size: 30, // 15pt
+            bold: true,
+            color: "000000",
+            font: DEFAULT_FONT,
+          },
+          paragraph: {
+            spacing: { before: 240, after: 120, line: DEFAULT_LINE_SPACING },
+          },
+        },
+        {
+          id: "Heading3",
+          name: "Heading 3",
+          basedOn: "Normal",
+          next: "Normal",
+          quickFormat: true,
+          run: {
+            size: 24, // 12pt
+            bold: true,
+            color: "000000",
+            font: DEFAULT_FONT,
+          },
+          paragraph: {
+            spacing: { before: 240, after: 120, line: DEFAULT_LINE_SPACING },
+          },
+        },
+      ],
+    },
     sections: [
       {
         properties: {},
@@ -54,34 +120,57 @@ export async function exportEditorToDocx(editor: any, title: string = "Memo") {
 
 async function transformNode(node: any, editor: any): Promise<any> {
   switch (node.type) {
-    case 'heading':
+    case 'heading': {
+      const level = node.attrs?.level || 1;
+      const runs = await transformInlineContent(node.content || [], { font: DEFAULT_FONT, color: "000000" });
+      
       return new Paragraph({
-        text: node.content?.map((n: any) => n.text).join('') || '',
-        heading: node.attrs.level === 1 ? HeadingLevel.HEADING_1 : 
-                 node.attrs.level === 2 ? HeadingLevel.HEADING_2 : 
-                 HeadingLevel.HEADING_3,
+        children: runs,
+        heading: level === 1 ? HeadingLevel.HEADING_1 : 
+                 level === 2 ? HeadingLevel.HEADING_2 : 
+                 level === 3 ? HeadingLevel.HEADING_3 : 
+                 level === 4 ? HeadingLevel.HEADING_4 : HeadingLevel.HEADING_5,
         spacing: { before: 240, after: 120 }
       });
+    }
 
     case 'paragraph': {
       const runs = await transformInlineContent(node.content || []);
       return new Paragraph({
         children: runs,
-        spacing: { after: 120 }
+        spacing: { after: 120, line: DEFAULT_LINE_SPACING }
       });
     }
 
     case 'blockquote': {
       // Handle Alerts and standard blockquotes
       const type = node.attrs?.type || 'default';
-      const bgColor = getAlertColor(type);
+      const colors = getAlertColors(type);
       const isAlert = type !== 'default';
       
       const tableChildren: any[] = [];
+      
+      // Add Title for Alerts
+      if (isAlert) {
+        const title = node.attrs.title || type;
+        tableChildren.push(new Paragraph({
+          children: [new TextRun({ 
+            text: title.toUpperCase(), 
+            bold: true, 
+            color: colors.border.replace('#', ''),
+            font: DEFAULT_FONT 
+          })],
+          spacing: { before: 100, after: 100 }
+        }));
+      }
+
       if (node.content) {
         for (const child of node.content) {
           const transformed = await transformNode(child, editor);
-          if (transformed) tableChildren.push(transformed);
+          if (transformed) {
+            if (Array.isArray(transformed)) tableChildren.push(...transformed);
+            else tableChildren.push(transformed);
+          }
         }
       }
 
@@ -91,20 +180,19 @@ async function transformNode(node: any, editor: any): Promise<any> {
           new TableRow({
             children: [
               new TableCell({
-                shading: isAlert ? { fill: bgColor.replace('#', ''), type: ShadingType.CLEAR } : undefined,
+                shading: isAlert ? { fill: colors.bg.replace('#', ''), type: ShadingType.CLEAR } : undefined,
                 borders: {
-                  left: { style: BorderStyle.SINGLE, size: 24, color: isAlert ? bgColor.replace('#', '') : "E2E8F0" },
+                  left: { style: BorderStyle.SINGLE, size: 24, color: isAlert ? colors.border.replace('#', '') : "E2E8F0" },
                   top: { style: BorderStyle.NIL },
                   right: { style: BorderStyle.NIL },
                   bottom: { style: BorderStyle.NIL },
                 },
                 children: tableChildren,
-                padding: { top: 100, bottom: 100, left: 200, right: 100 }
+                margins: { top: 120, bottom: 120, left: 240, right: 120 }
               })
             ]
           })
         ],
-        spacing: { after: 240 }
       });
     }
 
@@ -140,17 +228,20 @@ async function transformNode(node: any, editor: any): Promise<any> {
           if (cellNode.content) {
             for (const child of cellNode.content) {
               const transformed = await transformNode(child, editor);
-              if (transformed) cellChildren.push(transformed);
+              if (transformed) {
+                if (Array.isArray(transformed)) cellChildren.push(...transformed);
+                else cellChildren.push(transformed);
+              }
             }
           }
           
           const cellBg = cellNode.attrs?.backgroundColor;
           
           cells.push(new TableCell({
-            children: cellChildren.length > 0 ? cellChildren : [new Paragraph("")],
+            children: cellChildren.length > 0 ? cellChildren : [new Paragraph({ children: [], spacing: { line: DEFAULT_LINE_SPACING } })],
             shading: cellBg ? { fill: cellBg.replace('#', ''), type: ShadingType.CLEAR } : undefined,
             verticalAlign: VerticalAlign.CENTER,
-            padding: { top: 100, bottom: 100, left: 100, right: 100 }
+            margins: { top: 120, bottom: 120, left: 120, right: 120 }
           }));
         }
         rows.push(new TableRow({ children: cells }));
@@ -159,12 +250,11 @@ async function transformNode(node: any, editor: any): Promise<any> {
       return new Table({
         width: { size: 100, type: WidthType.PERCENTAGE },
         rows: rows,
-        spacing: { after: 240 }
       });
     }
 
     case 'codeBlock': {
-      const text = node.content?.map((n: any) => n.text).join('') || '';
+      const lines = node.content?.map((n: any) => n.text).join('') || '';
       return new Table({
         width: { size: 100, type: WidthType.PERCENTAGE },
         rows: [
@@ -172,23 +262,20 @@ async function transformNode(node: any, editor: any): Promise<any> {
             children: [
               new TableCell({
                 shading: { fill: "1E293B", type: ShadingType.CLEAR },
-                children: [
-                  new Paragraph({
-                    children: [new TextRun({ text, color: "E2E8F0", font: "Courier New", size: 18 })]
-                  })
-                ]
+                children: lines.split('\n').map((line: string) => new Paragraph({
+                  children: [new TextRun({ text: line, color: "E2E8F0", font: "Courier New", size: 18 })],
+                  spacing: { line: 240, after: 0 } 
+                })),
+                margins: { top: 120, bottom: 120, left: 120, right: 120 }
               })
             ]
           })
         ],
-        spacing: { after: 240 }
       });
     }
 
     case 'mermaidDiagram': {
       // Find the SVG in the DOM
-      // mermaidDiagram node usually has a unique ID or can be found by its code
-      const code = node.attrs.code;
       const svgElements = document.querySelectorAll(".mermaid-svg-container svg");
       let targetSvg: SVGSVGElement | null = null;
       
@@ -246,7 +333,7 @@ async function transformListItem(node: any, listType: string, _index: number, ed
   if (node.content) {
     for (const child of node.content) {
       if (child.type === 'paragraph') {
-        const runs = await transformInlineContent(child.content || []);
+        const runs = await transformInlineContent(child.content || [], { font: DEFAULT_FONT });
         if (isTask) {
           runs.unshift(new TextRun({ text: checked ? "☑ " : "☐ ", font: "MS Gothic" }));
         }
@@ -254,6 +341,7 @@ async function transformListItem(node: any, listType: string, _index: number, ed
           children: runs,
           numbering: listType === 'orderedList' ? { reference: 'main-numbering', level: 0 } : undefined,
           bullet: listType === 'bulletList' ? { level: 0 } : undefined,
+          spacing: { line: DEFAULT_LINE_SPACING }
         }));
       } else {
         const transformed = await transformNode(child, editor);
@@ -267,7 +355,7 @@ async function transformListItem(node: any, listType: string, _index: number, ed
   return children;
 }
 
-async function transformInlineContent(nodes: any[]): Promise<TextRun[]> {
+async function transformInlineContent(nodes: any[], defaults: { font?: string, color?: string } = {}): Promise<TextRun[]> {
   const runs: TextRun[] = [];
   for (const node of nodes) {
     if (node.type === 'text') {
@@ -286,9 +374,9 @@ async function transformInlineContent(nodes: any[]): Promise<TextRun[]> {
         italics: isItalic,
         underline: isUnderline ? { type: UnderlineType.SINGLE } : undefined,
         strike: isStrike,
-        color: color ? color.replace('#', '') : undefined,
+        color: color ? color.replace('#', '') : (defaults.color ? defaults.color.replace('#', '') : undefined),
         highlight: highlight ? highlight.replace('#', '') : undefined,
-        font: isCode ? "Courier New" : undefined,
+        font: isCode ? "Courier New" : (defaults.font || DEFAULT_FONT),
         size: isCode ? 18 : undefined,
         shading: isCode ? { fill: "F1F5F9", type: ShadingType.CLEAR } : undefined
       }));
@@ -299,14 +387,14 @@ async function transformInlineContent(nodes: any[]): Promise<TextRun[]> {
   return runs;
 }
 
-function getAlertColor(type: string): string {
+function getAlertColors(type: string): { border: string, bg: string } {
   switch (type) {
-    case 'NOTE': return '#3b82f6';
-    case 'TIP': return '#22c55e';
-    case 'IMPORTANT': return '#a855f7';
-    case 'WARNING': return '#eab308';
-    case 'CAUTION': return '#ef4444';
-    default: return '#e2e8f0';
+    case 'NOTE': return { border: '#3b82f6', bg: '#eff6ff' };
+    case 'TIP': return { border: '#22c55e', bg: '#f0fdf4' };
+    case 'IMPORTANT': return { border: '#a855f7', bg: '#faf5ff' };
+    case 'WARNING': return { border: '#eab308', bg: '#fefce8' };
+    case 'CAUTION': return { border: '#ef4444', bg: '#fef2f2' };
+    default: return { border: '#e2e8f0', bg: '#f8fafc' };
   }
 }
 

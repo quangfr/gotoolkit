@@ -225307,7 +225307,9 @@ ${config5.themeCSS}`;
   var UTF16BE = new Uint8Array([254, 255]);
 
   // src/memo-editor/docx-export.ts
-  async function exportEditorToDocx(editor, title2 = "Memo") {
+  var DEFAULT_FONT = "Tahoma";
+  var DEFAULT_LINE_SPACING = 360;
+  async function exportEditorToDocx(editor, _title = "Memo") {
     const json3 = editor.getJSON();
     const content = json3.content || [];
     const children2 = [];
@@ -225322,6 +225324,73 @@ ${config5.themeCSS}`;
       }
     }
     const doc3 = new File({
+      styles: {
+        default: {
+          document: {
+            run: {
+              font: DEFAULT_FONT,
+              size: 22
+              // 11pt
+            },
+            paragraph: {
+              spacing: { line: DEFAULT_LINE_SPACING, after: 120 }
+            }
+          }
+        },
+        paragraphStyles: [
+          {
+            id: "Heading1",
+            name: "Heading 1",
+            basedOn: "Normal",
+            next: "Normal",
+            quickFormat: true,
+            run: {
+              size: 36,
+              // 18pt
+              bold: true,
+              color: "000000",
+              font: DEFAULT_FONT
+            },
+            paragraph: {
+              spacing: { before: 240, after: 120, line: DEFAULT_LINE_SPACING }
+            }
+          },
+          {
+            id: "Heading2",
+            name: "Heading 2",
+            basedOn: "Normal",
+            next: "Normal",
+            quickFormat: true,
+            run: {
+              size: 30,
+              // 15pt
+              bold: true,
+              color: "000000",
+              font: DEFAULT_FONT
+            },
+            paragraph: {
+              spacing: { before: 240, after: 120, line: DEFAULT_LINE_SPACING }
+            }
+          },
+          {
+            id: "Heading3",
+            name: "Heading 3",
+            basedOn: "Normal",
+            next: "Normal",
+            quickFormat: true,
+            run: {
+              size: 24,
+              // 12pt
+              bold: true,
+              color: "000000",
+              font: DEFAULT_FONT
+            },
+            paragraph: {
+              spacing: { before: 240, after: 120, line: DEFAULT_LINE_SPACING }
+            }
+          }
+        ]
+      },
       sections: [
         {
           properties: {},
@@ -225335,28 +225404,46 @@ ${config5.themeCSS}`;
   async function transformNode(node2, editor) {
     var _a58, _b2, _c2, _d;
     switch (node2.type) {
-      case "heading":
+      case "heading": {
+        const level = ((_a58 = node2.attrs) == null ? void 0 : _a58.level) || 1;
+        const runs = await transformInlineContent(node2.content || [], { font: DEFAULT_FONT, color: "000000" });
         return new Paragraph2({
-          text: ((_a58 = node2.content) == null ? void 0 : _a58.map((n2) => n2.text).join("")) || "",
-          heading: node2.attrs.level === 1 ? HeadingLevel.HEADING_1 : node2.attrs.level === 2 ? HeadingLevel.HEADING_2 : HeadingLevel.HEADING_3,
+          children: runs,
+          heading: level === 1 ? HeadingLevel.HEADING_1 : level === 2 ? HeadingLevel.HEADING_2 : level === 3 ? HeadingLevel.HEADING_3 : level === 4 ? HeadingLevel.HEADING_4 : HeadingLevel.HEADING_5,
           spacing: { before: 240, after: 120 }
         });
+      }
       case "paragraph": {
         const runs = await transformInlineContent(node2.content || []);
         return new Paragraph2({
           children: runs,
-          spacing: { after: 120 }
+          spacing: { after: 120, line: DEFAULT_LINE_SPACING }
         });
       }
       case "blockquote": {
         const type4 = ((_b2 = node2.attrs) == null ? void 0 : _b2.type) || "default";
-        const bgColor = getAlertColor(type4);
+        const colors2 = getAlertColors(type4);
         const isAlert = type4 !== "default";
         const tableChildren = [];
+        if (isAlert) {
+          const title2 = node2.attrs.title || type4;
+          tableChildren.push(new Paragraph2({
+            children: [new TextRun({
+              text: title2.toUpperCase(),
+              bold: true,
+              color: colors2.border.replace("#", ""),
+              font: DEFAULT_FONT
+            })],
+            spacing: { before: 100, after: 100 }
+          }));
+        }
         if (node2.content) {
           for (const child of node2.content) {
             const transformed = await transformNode(child, editor);
-            if (transformed) tableChildren.push(transformed);
+            if (transformed) {
+              if (Array.isArray(transformed)) tableChildren.push(...transformed);
+              else tableChildren.push(transformed);
+            }
           }
         }
         return new Table3({
@@ -225365,20 +225452,19 @@ ${config5.themeCSS}`;
             new TableRow2({
               children: [
                 new TableCell2({
-                  shading: isAlert ? { fill: bgColor.replace("#", ""), type: ShadingType.CLEAR } : void 0,
+                  shading: isAlert ? { fill: colors2.bg.replace("#", ""), type: ShadingType.CLEAR } : void 0,
                   borders: {
-                    left: { style: BorderStyle.SINGLE, size: 24, color: isAlert ? bgColor.replace("#", "") : "E2E8F0" },
+                    left: { style: BorderStyle.SINGLE, size: 24, color: isAlert ? colors2.border.replace("#", "") : "E2E8F0" },
                     top: { style: BorderStyle.NIL },
                     right: { style: BorderStyle.NIL },
                     bottom: { style: BorderStyle.NIL }
                   },
                   children: tableChildren,
-                  padding: { top: 100, bottom: 100, left: 200, right: 100 }
+                  margins: { top: 120, bottom: 120, left: 240, right: 120 }
                 })
               ]
             })
-          ],
-          spacing: { after: 240 }
+          ]
         });
       }
       case "bulletList":
@@ -225409,27 +225495,29 @@ ${config5.themeCSS}`;
             if (cellNode.content) {
               for (const child of cellNode.content) {
                 const transformed = await transformNode(child, editor);
-                if (transformed) cellChildren.push(transformed);
+                if (transformed) {
+                  if (Array.isArray(transformed)) cellChildren.push(...transformed);
+                  else cellChildren.push(transformed);
+                }
               }
             }
             const cellBg = (_c2 = cellNode.attrs) == null ? void 0 : _c2.backgroundColor;
             cells.push(new TableCell2({
-              children: cellChildren.length > 0 ? cellChildren : [new Paragraph2("")],
+              children: cellChildren.length > 0 ? cellChildren : [new Paragraph2({ children: [], spacing: { line: DEFAULT_LINE_SPACING } })],
               shading: cellBg ? { fill: cellBg.replace("#", ""), type: ShadingType.CLEAR } : void 0,
               verticalAlign: VerticalAlign2.CENTER,
-              padding: { top: 100, bottom: 100, left: 100, right: 100 }
+              margins: { top: 120, bottom: 120, left: 120, right: 120 }
             }));
           }
           rows.push(new TableRow2({ children: cells }));
         }
         return new Table3({
           width: { size: 100, type: WidthType.PERCENTAGE },
-          rows,
-          spacing: { after: 240 }
+          rows
         });
       }
       case "codeBlock": {
-        const text4 = ((_d = node2.content) == null ? void 0 : _d.map((n2) => n2.text).join("")) || "";
+        const lines = ((_d = node2.content) == null ? void 0 : _d.map((n2) => n2.text).join("")) || "";
         return new Table3({
           width: { size: 100, type: WidthType.PERCENTAGE },
           rows: [
@@ -225437,20 +225525,18 @@ ${config5.themeCSS}`;
               children: [
                 new TableCell2({
                   shading: { fill: "1E293B", type: ShadingType.CLEAR },
-                  children: [
-                    new Paragraph2({
-                      children: [new TextRun({ text: text4, color: "E2E8F0", font: "Courier New", size: 18 })]
-                    })
-                  ]
+                  children: lines.split("\n").map((line2) => new Paragraph2({
+                    children: [new TextRun({ text: line2, color: "E2E8F0", font: "Courier New", size: 18 })],
+                    spacing: { line: 240, after: 0 }
+                  })),
+                  margins: { top: 120, bottom: 120, left: 120, right: 120 }
                 })
               ]
             })
-          ],
-          spacing: { after: 240 }
+          ]
         });
       }
       case "mermaidDiagram": {
-        const code = node2.attrs.code;
         const svgElements = document.querySelectorAll(".mermaid-svg-container svg");
         let targetSvg = null;
         for (const svg2 of Array.from(svgElements)) {
@@ -225496,14 +225582,15 @@ ${config5.themeCSS}`;
     if (node2.content) {
       for (const child of node2.content) {
         if (child.type === "paragraph") {
-          const runs = await transformInlineContent(child.content || []);
+          const runs = await transformInlineContent(child.content || [], { font: DEFAULT_FONT });
           if (isTask) {
             runs.unshift(new TextRun({ text: checked ? "\u2611 " : "\u2610 ", font: "MS Gothic" }));
           }
           children2.push(new Paragraph2({
             children: runs,
             numbering: listType === "orderedList" ? { reference: "main-numbering", level: 0 } : void 0,
-            bullet: listType === "bulletList" ? { level: 0 } : void 0
+            bullet: listType === "bulletList" ? { level: 0 } : void 0,
+            spacing: { line: DEFAULT_LINE_SPACING }
           }));
         } else {
           const transformed = await transformNode(child, editor);
@@ -225516,7 +225603,7 @@ ${config5.themeCSS}`;
     }
     return children2;
   }
-  async function transformInlineContent(nodes5) {
+  async function transformInlineContent(nodes5, defaults4 = {}) {
     var _a58, _b2, _c2, _d;
     const runs = [];
     for (const node2 of nodes5) {
@@ -225535,9 +225622,9 @@ ${config5.themeCSS}`;
           italics: isItalic,
           underline: isUnderline ? { type: UnderlineType.SINGLE } : void 0,
           strike: isStrike,
-          color: color2 ? color2.replace("#", "") : void 0,
+          color: color2 ? color2.replace("#", "") : defaults4.color ? defaults4.color.replace("#", "") : void 0,
           highlight: highlight ? highlight.replace("#", "") : void 0,
-          font: isCode ? "Courier New" : void 0,
+          font: isCode ? "Courier New" : defaults4.font || DEFAULT_FONT,
           size: isCode ? 18 : void 0,
           shading: isCode ? { fill: "F1F5F9", type: ShadingType.CLEAR } : void 0
         }));
@@ -225547,20 +225634,20 @@ ${config5.themeCSS}`;
     }
     return runs;
   }
-  function getAlertColor(type4) {
+  function getAlertColors(type4) {
     switch (type4) {
       case "NOTE":
-        return "#3b82f6";
+        return { border: "#3b82f6", bg: "#eff6ff" };
       case "TIP":
-        return "#22c55e";
+        return { border: "#22c55e", bg: "#f0fdf4" };
       case "IMPORTANT":
-        return "#a855f7";
+        return { border: "#a855f7", bg: "#faf5ff" };
       case "WARNING":
-        return "#eab308";
+        return { border: "#eab308", bg: "#fefce8" };
       case "CAUTION":
-        return "#ef4444";
+        return { border: "#ef4444", bg: "#fef2f2" };
       default:
-        return "#e2e8f0";
+        return { border: "#e2e8f0", bg: "#f8fafc" };
     }
   }
   async function svgToPng(svgElement) {

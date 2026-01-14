@@ -241,7 +241,7 @@ button.btn,
   background: var(--app-surface, #ffffff);
   color: var(--app-primary-strong, #1f2a56);
   padding: 6px 10px;
-  min-height: 30px;
+  min-height: 24px;
   border-radius: 10px;
   font-size: 12px;
   cursor: pointer;
@@ -801,10 +801,10 @@ button.btn-secondary {
   border: 1px solid var(--border-soft, #dfd5c7);
   background: transparent;
   color: var(--text, #2f2922);
-  border-radius: 10px;
-  padding: 6px 10px;
+  border-radius: 6px;
+  padding: 4px 6px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .btn-ghost,
@@ -1248,7 +1248,7 @@ label {
   background: transparent;
   touch-action: none;
 }
-#assistLauncherBtn{
+#fileMenuBtn,#assistLauncherBtn{
   background: white;
   border:1px solid var(--app-border, #dfe3f5);
   margin-right:0px;

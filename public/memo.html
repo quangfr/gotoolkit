@@ -42,13 +42,13 @@
         }
 
         .document-explorer {
-            width: var(--doc-sidebar-width, 220px);
-            flex: 0 0 var(--doc-sidebar-width, 220px);
+            width: var(--doc-sidebar-width, 180px);
+            flex: 0 0 var(--doc-sidebar-width, 180px);
             background: #ffffff;
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            padding: 12px;
+            gap: 4px;
+            padding: 8px;
             color: var(--app-text);
             overflow: hidden;
         }
@@ -76,23 +76,23 @@
         .document-explorer__list {
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 4px;
             overflow-y: auto;
-            padding: 4px 2px 8px;
+            padding: 2px 2px 4px;
         }
 
         .document-explorer__item {
             border: 1px solid var(--app-border, #dfe3f5);
             background: #fff;
             color: var(--app-text);
-            border-radius: 10px;
-            padding: 8px 10px;
-            font-size: 13px;
+            border-radius: 6px;
+            padding: 4px 5px;
+            font-size: 11px;
             text-align: left;
             cursor: pointer;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 4px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -150,8 +150,7 @@
             width: auto;
             display: inline-flex;
             align-self: flex-end;
-            margin-left: auto;
-            padding: 6px 8px;
+            padding: 2px 4px;
         }
 
         .document-explorer__actions {
@@ -664,8 +663,8 @@
                 </div>
                 <div class="global-actions">
                     <div class="menu-trigger" id="fileMenuTrigger">
-                        <button id="fileMenuBtn" class="btn" type="button" aria-label="Document"><i
-                                data-lucide="file-text"></i></button>
+                        <button id="fileMenuBtn" class="btn btn-secondary app-header-btn" type="button"
+                            aria-label="Document"><i data-lucide="file-text"></i></button>
                         <div class="context-menu" id="fileMenu">
                             <div class="menu-panel">
                                 <button id="memoOpenImportBtn" type="button" class="menu-panel-btn"><i
@@ -687,7 +686,7 @@
                             </div>
                         </div>
                     </div>
-                    <button id="assistLauncherBtn" class="btn btn-secondary" type="button" title="Assist"
+                    <button id="assistLauncherBtn" class="btn btn-secondary app-header-btn" type="button" title="Assist"
                         data-app="assist">
                         <i data-lucide="bot"></i></button>
                 </div>
