@@ -23,7 +23,7 @@
         return globalConfig;
     }
 
-    var GLOBAL_BUILD_VERSION = "2026.01.14.1";
+    var GLOBAL_BUILD_VERSION = "2026.01.14.2";
     global.GoToolkitAssistVersion = GLOBAL_BUILD_VERSION;
     var globalConfigPromise;
     var siteConfigPromise = global.GoToolkitSiteConfigPromise;
