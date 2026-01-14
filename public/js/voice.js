@@ -538,13 +538,14 @@
             }
             return "▶";
         }
-        return "◉";
+        return '<i data-lucide="mic"></i>';
     }
 
     function updateButton() {
         if (!state.voiceButton) return;
-        state.voiceButton.textContent = buildButtonLabel();
+        state.voiceButton.innerHTML = buildButtonLabel();
         state.voiceButton.classList.toggle("is-recording", state.isRecording);
+        if (window.lucide) lucide.createIcons();
     }
 
     function updateTimer() {

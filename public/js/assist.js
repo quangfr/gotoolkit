@@ -1835,9 +1835,24 @@
             this.closeKnowledgeModal(false);
         }
         this.updatePromptDropdownLabel();
+        this.updateInputPlaceholder();
         this.updateHeaderDocumentCount();
         this.refreshDocumentStats();
         this.syncKnowledgeModalVisibility();
+    };
+
+    AssistSidebar.prototype.updateInputPlaceholder = function () {
+        if (!this.textarea) return;
+        var placeholders = {
+            'edit': 'Que veux-tu modifier ?',
+            'advice': 'Que veux-tu demander ?',
+            'draw': 'Que veux-tu dessiner ?',
+            'suggest': 'Que veux-tu corriger ?',
+            'ask': 'Que veux-tu explorer ?',
+            'import': 'Que veux-tu importer ?',
+            'extract': 'Que veux-tu extraire ?'
+        };
+        this.textarea.placeholder = placeholders[this.promptPresetId] || 'Que veux-tu faire ?';
     };
 
     AssistSidebar.prototype.getActiveSystemPrompt = function () {
@@ -2641,13 +2656,17 @@
             };
             if (this.promptPresetId === "edit" || this.promptPresetId === "suggest") {
                 var applied = false;
-                if (parsed.output && typeof window.setEditorMarkdown === "function") {
-                    window.setEditorMarkdown(parsed.output);
-                    applied = true;
-                } else if (parsed.output && typeof window.setEditorContent === "function") {
-                    // Fallback: treat output as raw content if the host editor doesn't support markdown.
-                    window.setEditorContent(parsed.output);
-                    applied = true;
+                if (parsed.output) {
+                    if (this.promptPresetId === "edit" && typeof window.insertEditorMarkdownAtEnd === "function") {
+                        window.insertEditorMarkdownAtEnd(parsed.output);
+                        applied = true;
+                    } else if (typeof window.setEditorMarkdown === "function") {
+                        window.setEditorMarkdown(parsed.output);
+                        applied = true;
+                    } else if (typeof window.setEditorContent === "function") {
+                        window.setEditorContent(parsed.output);
+                        applied = true;
+                    }
                 } else if (parsed.operations && parsed.operations.length && typeof window.setEditorContent === "function") {
                     // Backward compatibility: apply legacy character-index operations.
                     var currentContent = window.getEditorContent();
@@ -2755,10 +2774,11 @@
         if (this.promptDropdownButton) {
             var presets = this.getPromptPresets();
             var activePreset = presets && presets[this.promptPresetId];
+            var iconName = activePreset?.icon || "terminal";
             var label = activePreset?.label || ("/" + this.promptPresetId);
-            var displayLabel = label + " ▾";
-            this.promptDropdownButton.textContent = displayLabel;
+            this.promptDropdownButton.innerHTML = label + ' <i data-lucide="chevron-down" style="width:12px;height:12px;margin-left:2px"></i>';
             this.promptDropdownButton.title = "Mode: " + label;
+            if (global.lucide) global.lucide.createIcons();
         }
         if (this.promptDropdownMenu) {
             var buttons = this.promptDropdownMenu.querySelectorAll("[data-preset]");
@@ -2792,7 +2812,7 @@
         var button = document.createElement("button");
         button.type = "button";
         button.className = "btn-secondary chat-prompt-btn";
-        button.textContent = "/ ▾";
+        // innerHTML is set by updatePromptDropdownLabel()
         button.addEventListener("click", function (event) {
             event.stopPropagation();
             this.togglePromptDropdown();
@@ -2815,7 +2835,10 @@
             item.type = "button";
             item.className = "chat-prompt-menu-item";
             item.dataset.preset = preset.id;
-            item.textContent = preset.label || ("/" + preset.id);
+
+            var label = preset.label || ("/" + preset.id);
+            item.innerHTML = label;
+
             item.addEventListener("click", function (event) {
                 event.stopPropagation();
                 this.setPromptPreset(preset.id, { source: "dropdown" });
@@ -2868,7 +2891,7 @@
         header.className = "chat-header";
         var title = document.createElement("span");
         title.className = "chat-header-title";
-        title.textContent = "⌬ Assist";
+        title.innerHTML = '<i data-lucide="bot"></i> Assist';
         header.appendChild(title);
 
         var headerActions = document.createElement("div");
@@ -2876,14 +2899,14 @@
         var closeBtn = document.createElement("button");
         closeBtn.type = "button";
         closeBtn.className = "btn-secondary chat-header-btn";
-        closeBtn.textContent = "<";
+        closeBtn.innerHTML = '<i data-lucide="arrow-left"></i>';
         closeBtn.addEventListener("click", this.close.bind(this));
         header.insertBefore(closeBtn, title);
 
         this.headerDocCountEl = document.createElement("button");
         this.headerDocCountEl.type = "button";
         this.headerDocCountEl.className = "btn-secondary chat-header-btn";
-        this.headerDocCountEl.textContent = "⌗ Mémoire";
+        this.headerDocCountEl.innerHTML = '<i data-lucide="brain"></i>';
         this.headerDocCountEl.setAttribute("title", this.headerDocCountTooltipDefault);
         this.headerDocCountEl.addEventListener("click", this.handleHeaderDocCountClick.bind(this));
         this.headerDocCountEl.addEventListener("keydown", function (event) {
@@ -2897,7 +2920,7 @@
         this.promptButton.id = "gtPromptModalTrigger";
         this.promptButton.type = "button";
         this.promptButton.className = "btn-secondary chat-header-btn";
-        this.promptButton.textContent = "⚙";
+        this.promptButton.innerHTML = '<i data-lucide="square-chevron-right"></i>';
         this.promptButton.setAttribute("aria-label", "Prompt");
         this.promptButton.setAttribute("title", "Prompt");
         headerActions.appendChild(this.promptButton);
@@ -2905,12 +2928,13 @@
         this.clearButton.id = "chatClearBtn";
         this.clearButton.type = "button";
         this.clearButton.className = "btn-secondary chat-header-btn";
-        this.clearButton.textContent = "⊘";
+        this.clearButton.innerHTML = '<i data-lucide="message-circle-x"></i>';
         this.clearButton.addEventListener("click", this.clearConversation.bind(this));
         headerActions.appendChild(this.clearButton);
 
         header.appendChild(headerActions);
         this.sidebar.appendChild(header);
+        if (window.lucide) window.lucide.createIcons();
 
         this.messagesEl = document.createElement("div");
         this.messagesEl.className = "chat-messages";
@@ -2940,7 +2964,7 @@
         this.textarea = document.createElement("textarea");
         this.textarea.className = "chat-input";
         this.textarea.rows = 2;
-        this.textarea.placeholder = "Que veux-tu demander ?";
+        this.updateInputPlaceholder();
         this.textarea.addEventListener("input", this.handleInputResize.bind(this));
         this.textarea.addEventListener("input", this.updateComposerState.bind(this));
         this.textarea.addEventListener("keydown", function (event) {
@@ -3007,7 +3031,7 @@
         this.speechButton = document.createElement("button");
         this.speechButton.type = "button";
         this.speechButton.className = "speech-button";
-        this.speechButton.textContent = "◉";
+        this.speechButton.innerHTML = '<i data-lucide="mic"></i>';
         this.speechButton.addEventListener("click", this.handleSpeechToggle.bind(this));
         textareaWrapper.appendChild(this.speechButton);
         this.sidebar.appendChild(composer);
@@ -4256,7 +4280,8 @@
         this.headerDocCountEl.style.display = showMemoireButton ? "" : "none";
         var count = this.getMemoireDocumentCount();
         this.headerDocCountEl.dataset.count = count;
-        this.headerDocCountEl.textContent = "🗍 Mémoire (" + count + ")";
+        this.headerDocCountEl.innerHTML = '<i data-lucide="brain"></i> ' + count;
+        if (window.lucide) window.lucide.createIcons();
     };
 
     AssistSidebar.prototype.getVersionParam = function () {
@@ -4733,7 +4758,7 @@
         left.className = "chat-knowledge-modal__header-left";
         var title = document.createElement("div");
         title.className = "chat-knowledge-modal__title";
-        title.textContent = "🗍 Mémoire | 0 fichiers";
+        title.innerHTML = '<i data-lucide="brain"></i> | 0 fichiers';
         left.appendChild(title);
         var actions = document.createElement("div");
         actions.className = "chat-knowledge-modal__header-actions";
@@ -4792,7 +4817,8 @@
         }
         var count = this.getMemoireDocumentCount();
         var suffix = count === 1 ? "fichier" : "fichiers";
-        this.knowledgeModalTitleEl.textContent = "🗍 Mémoire | " + count + " " + suffix;
+        this.knowledgeModalTitleEl.innerHTML = '<i data-lucide="brain"></i> | ' + count + " " + suffix;
+        if (window.lucide) window.lucide.createIcons();
     };
 
     AssistSidebar.prototype.setKnowledgeModalStatus = function (message, isError, autoClearMs) {
@@ -7668,17 +7694,20 @@
                         }
                     }
                 } else if (typeof editMetadata.output === 'string' && editMetadata.output.trim()) {
-                    // Cas DOCUMENT entier
-                    if (typeof window.setEditorMarkdown === 'function') {
-                        window.setEditorMarkdown(editMetadata.output);
+                    // Cas DOCUMENT entier (Maintenant APPEND par défaut dans le mode "edit" sans sélection)
+                    if (typeof window.insertEditorMarkdownAtEnd === 'function') {
+                        window.insertEditorMarkdownAtEnd(editMetadata.output);
+                        restoreScroll();
+                    } else if (typeof window.setEditorMarkdown === 'function') {
+                        // Fallback si insertEditorMarkdownAtEnd n'est pas dispo
+                        const current = window.getEditorMarkdown?.() || '';
+                        window.setEditorMarkdown(current + (current ? '\n\n' : '') + editMetadata.output);
                         restoreScroll();
                     } else {
                         editor
                             .chain()
                             .focus()
-                            .selectAll()
-                            .deleteSelection()
-                            .insertContent(editMetadata.output)
+                            .insertContentAt(editor.state.doc.content.size, editMetadata.output)
                             .run();
                         restoreScroll();
                     }

@@ -21,12 +21,12 @@
     const container = document.createElement("div");
     container.innerHTML = `
         <div class="feedback-app-launcher-row">
-            <button id="${prefix}-openBtn" class="${prefix}-open-btn feedback-app-button" type="button" title="Envoyer un feedback">☄</button>
+            <button id="${prefix}-openBtn" class="${prefix}-open-btn feedback-app-button" type="button" title="Envoyer un feedback"><i data-lucide="message-square-plus"></i></button>
         </div>
         <div id="${prefix}-backdrop" class="${prefix}-backdrop feedback-app-backdrop" aria-hidden="true" role="dialog">
             <div class="${prefix}-dialog feedback-app-dialog">
                 <header>
-                    <h3>☄ Feedback · ${config.appName || "Go-Toolkit"}</h3>
+                    <h3><i data-lucide="message-square-plus"></i> Feedback · ${config.appName || "Go-Toolkit"}</h3>
                     <button id="${prefix}-closeBtn" class="btn-secondary feedback-app-close-btn" type="button" aria-label="Fermer">✕</button>
                 </header>
                 <form id="${prefix}-form" class="${prefix}-form feedback-app-form">
@@ -127,6 +127,7 @@
         backdrop?.classList.add("open");
         backdrop?.setAttribute("aria-hidden", "false");
         messageField?.focus();
+        if (window.lucide) lucide.createIcons();
     }
 
     function closeModal() {

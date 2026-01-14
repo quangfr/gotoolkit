@@ -2,6 +2,7 @@ import { Node, mergeAttributes, InputRule } from '@tiptap/core';
 import { ReactNodeViewRenderer, NodeViewWrapper, NodeViewContent } from '@tiptap/react';
 import React from 'react';
 import mermaid from 'mermaid';
+import { Shapes } from 'lucide-react';
 
 // Mermaid Diagram Component that shows only the diagram
 const MermaidDiagramComponent = ({ node, updateAttributes, extension }: any) => {
@@ -188,7 +189,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes, extension }: any) => 
             />
           ) : (
             <div className="mermaid-placeholder">
-              <div className="mermaid-placeholder-icon">◇</div>
+              <div className="mermaid-placeholder-icon"><Shapes size={32} /></div>
               <div className="mermaid-placeholder-text">Diagramme vide</div>
               <div className="mermaid-placeholder-hint">Double-cliquez pour éditer</div>
             </div>

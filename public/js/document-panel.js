@@ -89,15 +89,15 @@
         let cachedItems = [];
 
         if (headerEl) {
-            headerEl.textContent = "";
+            headerEl.innerHTML = "";
             const title = document.createElement("span");
-            title.textContent = opts.title || headerEl.textContent || DEFAULT_TITLE;
+            title.innerHTML = opts.title || headerEl.innerHTML || DEFAULT_TITLE;
             headerEl.appendChild(title);
             const closeBtn = document.createElement("button");
             closeBtn.type = "button";
             closeBtn.className = "chat-knowledge-modal__close";
             closeBtn.style.marginLeft = "auto";
-            closeBtn.textContent = "✕";
+            closeBtn.innerHTML = '<i data-lucide="x"></i>';
             closeBtn.addEventListener("click", () => {
                 applyOpen(false);
             });
@@ -110,7 +110,7 @@
             const importBtn = document.createElement("button");
             importBtn.type = "button";
             importBtn.className = "chat-knowledge-modal__add btn btn-secondary";
-            importBtn.textContent = "⤷ Importer";
+            importBtn.innerHTML = '<i data-lucide="import"></i> Importer';
             importBtn.addEventListener("click", async () => {
                 if (typeof window.GoToolkitMemoCreateAutoDocument === "function") {
                     await window.GoToolkitMemoCreateAutoDocument();
@@ -124,9 +124,11 @@
         const createBtn = document.createElement("button");
         createBtn.type = "button";
         createBtn.className = "chat-knowledge-modal__add btn btn-secondary";
-        createBtn.textContent = "+ Nouveau";
+        createBtn.innerHTML = '<i data-lucide="plus"></i> Nouveau';
         actionRow.appendChild(createBtn);
         sidebar.insertBefore(actionRow, listEl);
+
+        if (window.lucide) window.lucide.createIcons();
 
         const modalOverlay = document.createElement("div");
         modalOverlay.className = "modal-overlay";
@@ -137,7 +139,7 @@
             <div class="modal">
                 <div class="modal-header">
                     <h3>Nom du document</h3>
-                    <button class="modal-close" type="button" aria-label="Fermer">×</button>
+                    <button class="modal-close" type="button" aria-label="Fermer"><i data-lucide="x"></i></button>
                 </div>
                 <div class="ia-actions">
                     <div class="header-row ia-header-actions">
@@ -168,6 +170,7 @@
             if (!modalInput) return Promise.resolve(null);
             modalOverlay.style.display = "flex";
             modalOverlay.classList.add("open");
+            if (window.lucide) window.lucide.createIcons();
             modalInput.value = defaultValue || "";
             requestAnimationFrame(() => {
                 modalInput.focus();
@@ -285,7 +288,7 @@
                 const renameBtn = document.createElement("button");
                 renameBtn.type = "button";
                 renameBtn.className = "document-explorer__item-action document-explorer__rename";
-                renameBtn.textContent = "✎";
+                renameBtn.innerHTML = '<i data-lucide="pencil"></i>';
                 renameBtn.title = "Renommer";
                 renameBtn.addEventListener("click", event => {
                     event.stopPropagation();
@@ -300,7 +303,7 @@
                 const deleteBtn = document.createElement("button");
                 deleteBtn.type = "button";
                 deleteBtn.className = "document-explorer__item-action document-explorer__delete";
-                deleteBtn.textContent = "⊗";
+                deleteBtn.innerHTML = '<i data-lucide="trash-2"></i>';
                 deleteBtn.title = "Supprimer";
                 deleteBtn.addEventListener("click", event => {
                     event.stopPropagation();
@@ -312,6 +315,8 @@
                 button.appendChild(actions);
                 listEl.appendChild(button);
             });
+
+            if (window.lucide) window.lucide.createIcons();
         }
 
         async function refresh() {

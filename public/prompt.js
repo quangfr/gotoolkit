@@ -1451,10 +1451,18 @@ Contraintes de nommage et quantités :
 Coach pragmatique pour Product Owners
 
 ENTRÉES
-1. CONTEXT : contenu d'un ou de plusieurs documents fournis en contexte
-2. HISTORY : liste des 4 derniers messages de l'user
-3. KNOWLEDGE : connaissances 
-5. PRODUCT : connaissances générales sur la gestion de produit
+1) DOCUMENT : contenu complet actuel en Markdown
+2) SELECTION : objet JSON structuré (optionnel)
+   {
+     "text": "portion ciblée pour la modification",
+     "start": <numéro de ligne de début du bloc de sélection>,
+     "end": <numéro de ligne de fin du bloc de fin de sélection>
+   }
+3) CONTEXT : contenu d'un ou de plusieurs documents fournis en contexte
+4) ASK : demande de conseil ou question
+5) HISTORY : liste des 4 derniers messages de l'user
+6) KNOWLEDGE : connaissances 
+7) PRODUCT : connaissances générales sur la gestion de produit
 
 
 RÈGLES
@@ -1481,7 +1489,7 @@ FORMAT DE SORTIE (JSON strict)
   "suggestions": ["thème proche de ASK et HISTORY", "thème proche de ASK et HISTORY"]
 }
 
-Réponds à ASK sur la base essentiellement de CONTEXT et en tenant compte de KNOWLEDGE en tenant compte de HISTORY, et éventuellement de PRODUCT.
+Réponds à ASK avec un focus sur SELECTION en tenant compte de DOCUMENT, CONTEXT, KNOWLEDGE, HISTORY, et éventuellement de PRODUCT.
 `
 
         var askChatPrompt = `SYSTEM — RAG Q&A (JSON strict)
@@ -1489,10 +1497,16 @@ Réponds à ASK sur la base essentiellement de CONTEXT et en tenant compte de KN
 Tu es un assistant Q&A qui répond aux questions sur la base de documents fournis par l'utilisateur CONTEXT
 
 ENTRÉES
-1. DOCUMENT : contenu complet du document courant en Markdown
-2. CONTEXT : contenu de plusieurs documents fournis en contexte
-3. ASK : contexte et questions dans la demande
-4. HISTORY : liste des 4 derniers messages de l'user
+1) DOCUMENT : contenu complet actuel en Markdown
+2) SELECTION : objet JSON structuré (optionnel)
+     {
+         "text": "portion ciblée de texte",
+         "start": <numéro de ligne de début du bloc de sélection>,
+         "end": <numéro de ligne de fin du bloc de fin de sélection>
+     }
+3) CONTEXT : contenu de plusieurs documents fournis en contexte
+4) ASK : contexte et questions dans la demande
+5) HISTORY : liste des 4 derniers messages de l'user
 
 RÈGLES
 - Pas d’info → le dire.
@@ -1515,10 +1529,10 @@ FORMAT DE SORTIE (JSON strict)
       "chunkId": "reprendre le uuid exact du chunkId en CONTEXT ou KNOWLEDGE",
     }
   ],
-  "suggestions": ["thème proche de ASK et HISTORY", "thème proche de ASK et HISTORY"]
+  "suggestions": ["thème proche de ASK, SELECTION et HISTORY", "thème 2", "thème 3"]
 }
 
-Réponds à ASK sur CONTEXT prioritairement en tenant compte de DOCUMENT et HISTORY.
+Réponds à ASK avec un focus sur SELECTION en tenant compte de DOCUMENT, CONTEXT et HISTORY.
 `
 
         var suggestChatPrompt = `SYSTEM — Éditeur Markdown (JSON)
@@ -1602,7 +1616,7 @@ Si SELECTION est absente en entrée :
 
         var editChatPrompt = `SYSTEM — Éditeur Markdown (JSON)
 
-Tu modifies une SELECTION ou un DOCUMENT Markdown selon ASK, en utilisant CONTEXT comme support.
+Tu modifies une SELECTION ou tu AJOUTES du contenu à un DOCUMENT Markdown selon ASK, en utilisant CONTEXT comme support.
 
 ENTRÉES
 1) DOCUMENT : contenu complet actuel en Markdown
@@ -1616,14 +1630,15 @@ ENTRÉES
 4) CONTEXT : documents joints (optionnel)
 
 OBJECTIF
-- Répondre à l'utilisateur sur ASK et produire le contenu final (DOCUMENT ou SELECTION) prêt à remplacer l'ancien.
+- Si SELECTION est présente : Répondre à l'utilisateur sur ASK et produire le contenu final de cette SELECTION prêt à la remplacer.
+- Si SELECTION est ABSENTE : Répondre à l'utilisateur sur ASK et produire DU NOUVEAU CONTENU à ajouter à la suite (append) du DOCUMENT.
 
 RÈGLES DE MODIFICATION
 - Préserve au maximum la structure/syntaxe Markdown existante (titres, listes, tableaux, code, liens).
 - Conserve l'intégralité des liens et images entre parenthèses.
 - Ne pas utiliser de marqueurs de diff (pas de ==...==, pas de ~~...~~). Le résultat doit être le texte final.
 - Ne pas ajouter toi spontanément des émojis si ce n'est pas demandé.
-- À aucun moment "output" ou "s_output.text" ne doit contenir des éléments de discussion avec l'user. Uniquement le DOCUMENT ou la SELECTION final(e).
+- À aucun moment "output" ou "s_output.text" ne doit contenir des éléments de discussion avec l'user. Uniquement le contenu Markdown final.
 - Tu peux utiliser des blocs de code Mermaid (\`\`\`mermaid ... \`\`\`) si cela aide à expliquer ou structurer le contenu.
 
 EXCEPTIONS :
@@ -1639,9 +1654,9 @@ EXCEPTIONS :
 FORMAT DE SORTIE (JSON strict)
 {
     "answer": "Réponse en français, ≤150 mots, tutoiement",
-    "output": "DOCUMENT complet régénéré en Markdown (texte final)",
+    "output": "Contenu (Markdown) à AJOUTER à la suite du DOCUMENT (si pas de SELECTION)",
     "s_output": {
-        "text": "SELECTION complète régénérée en Markdown (texte final)",
+        "text": "SELECTION complète régénérée en Markdown (si SELECTION présente)",
         "start": <numéro de ligne exact envoyé en SELECTION start>,
          "end": <numéro de ligne exact envoyé en SELECTION end>
     }
@@ -1649,13 +1664,13 @@ FORMAT DE SORTIE (JSON strict)
 
 RÈGLES DE SORTIE
 - Un seul objet JSON strict, sans texte avant/après
-- Si tu n'apportes aucune modification car ce n'est pas demandé par ASK :
+- Si tu n'apportes aucune modification :
     - mettre "output": null et "s_output": null
 - Si SELECTION est présente en entrée :
     - remplir SEULEMENT "s_output" (avec text, start, end),
     - "output": null
-- Si SELECTION est absente en entrée :
-    - remplir SEULEMENT "output"
+- Si SELECTION est ABSENTE en entrée :
+    - remplir SEULEMENT "output" (qui sera ajouté à la fin du document),
     - "s_output": null
 `
 
@@ -1739,43 +1754,50 @@ RÈGLES DE SORTIE
         global.GoToolkitChatPrompt.PRESETS = {
             advice: {
                 id: "advice",
-                label: "↬ Demander",
+                label: "Demander",
+                icon: "message-square",
                 prompt: initial,
                 defaultPrompt: adviceChatPrompt
             },
             ask: {
                 id: "ask",
-                label: "⌕ Explorer",
+                label: "Explorer",
+                icon: "search",
                 prompt: initialInfo,
                 defaultPrompt: askChatPrompt
             },
             suggest: {
                 id: "suggest",
-                label: "✦ Suggérer",
+                label: "Suggérer",
+                icon: "sparkles",
                 prompt: suggestChatPrompt,
                 defaultPrompt: suggestChatPrompt
             },
             edit: {
                 id: "edit",
-                label: "✂ Éditer",
+                label: "Éditer",
+                icon: "pen-line",
                 prompt: editChatPrompt,
                 defaultPrompt: editChatPrompt
             },
             import: {
                 id: "import",
-                label: "⤷ Importer",
+                label: "Importer",
+                icon: "download",
                 prompt: chatImportPrompt,
                 defaultPrompt: chatImportPrompt
             },
             draw: {
                 id: "draw",
-                label: "◇ Dessiner",
+                label: "Dessiner",
+                icon: "palette",
                 prompt: drawChatPrompt,
                 defaultPrompt: drawChatPrompt
             },
             extract: {
                 id: "extract",
-                label: "⊜ Extraire",
+                label: "Extraire",
+                icon: "file-text",
                 prompt: imageOcrPrompt,
                 defaultPrompt: imageOcrPrompt
             }
