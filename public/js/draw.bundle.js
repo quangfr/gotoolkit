@@ -207229,10 +207229,16 @@ ${t.themeCSS}`;
           }
           let o = false;
           const s = (h) => {
+            var p, f;
             this.api = h;
             h.updateScene({
               appState: { viewModeEnabled: false }
             });
+            try {
+              (p = h.setActiveTool) == null ? void 0 : p.call(h, { type: "selection" });
+              (f = h.refresh) == null ? void 0 : f.call(h);
+            } catch (l) {
+            }
             if (!o) {
               o = true;
               i(h);
@@ -207291,11 +207297,11 @@ ${t.themeCSS}`;
       };
     }
     applyScene(e, r = true) {
-      var o, s;
+      var o, s, d, h;
       const n = this.ensureApi();
       const i = n.getAppState();
       const a = {
-        elements: e.elements.map((d) => ({ ...d, locked: false })),
+        elements: e.elements.map((p) => ({ ...p, locked: false })),
         appState: {
           ...i,
           viewModeEnabled: false,
@@ -207311,6 +207317,11 @@ ${t.themeCSS}`;
         a.files = e.files;
       }
       n.updateScene(a);
+      try {
+        (s = n.setActiveTool) == null ? void 0 : s.call(n, { type: "selection" });
+        (d = n.refresh) == null ? void 0 : d.call(n);
+      } catch (p) {
+      }
       if (r && e.elements.length > 0) {
         setTimeout(() => {
           n.scrollToContent(e.elements, {
@@ -207319,9 +207330,9 @@ ${t.themeCSS}`;
         }, 50);
       }
       if (e.files) {
-        const d = Object.values(e.files);
-        if (d.length) {
-          (s = n.addFiles) == null ? void 0 : s.call(n, d);
+        const p = Object.values(e.files);
+        if (p.length) {
+          (h = n.addFiles) == null ? void 0 : h.call(n, p);
         }
       }
     }

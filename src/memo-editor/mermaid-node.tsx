@@ -369,7 +369,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
                 <button 
                   className="mermaid-modal-sync btn-secondary" 
                   onClick={handleSyncFromMermaid}
-                  style={{ marginRight: '8px' }}
+                  style={{ marginRight: '2px' }}
                 >
                   Générer
                 </button>

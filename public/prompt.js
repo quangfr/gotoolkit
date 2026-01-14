@@ -28,26 +28,26 @@ Bienvenue dans l'éditeur Mémo. Voici un aperçu des fonctionnalités pour stru
 
 Ajoutez des blocs colorés. Le titre est éditable.
 
-> Remarque sans titre. Tapez \`>.\`
+> Citation sans titre. Tapez \`> \`
 
-> [!NOTE Note éditable]
-> Ceci est une note informative. Tapez \`>note\`
+> [!NOTE] Titre
+> Ceci est une note informative. Tapez \`>note\` ou \`>[!note]\`
 
-> [!TIP Conseil]
-> Voici un conseil utile pour gagner du temps. Tapez \`>tip\`
+> [!TIP] Titre
+> Voici un conseil utile pour gagner du temps. Tapez \`>tip\`, \`>conseil\` ou \`>[!tip]\`
 
-> [!IMPORTANT]
-> Une information cruciale à ne pas manquer. Tapez \`>important\`
+> [!IMPORTANT] Titre
+> Une information cruciale à ne pas manquer. Tapez \`>important\` ou \`>[!important]\`
 
-> [!WARNING]
-> Une alerte demandant votre attention. Tapez \`>alerte\`
+> [!WARNING] Titre
+> Une alerte demandant votre attention. Tapez \`>alerte\` ou \`>[!warning]\`
 
-> [!CAUTION]
-> Attention, action potentiellement risquée. Tapez \`>attention\`
+> [!CAUTION] Titre
+> Attention, action potentiellement risquée. Tapez \`>attention\` ou \`>[!caution]\`
 
 ## 🏷️ Libellés
 
-Ajoutez des libellés pour classer vos informations. Tapez \`#\` suivi du nom du tag pour ouvrir la **recherche automatique** et sélectionner ou créer un libellé.
+Ajoutez des libellés pour classer vos informations. Tapez \`\`\` suivi du nom du tag pour ouvrir la **recherche automatique** et sélectionner ou créer un libellé en fermant la \`\`\`.
 
 ## 📦 Blocs dépliables
 
@@ -94,16 +94,14 @@ graph TD
 
 ## ✨ IA & Modes Spéciaux
 
-GoToolkit intègre une assistance IA puissante.
+L'assistance IA puissante.
 
--   **Suggérer** : Sélectionnez un texte et demandez à l'IA de "Suggérer des modifications". Elle utilisera le surlignage pour les ajouts et ~le barré~ pour les suppressions. Vous pouvez ensuite accepter ou refuser les changements.
-    
--   **Édition** : Vous pouvez modifier directement le texte suggéré par l'IA avant de valider.
+-   **Suggérer** : L'IA utilise le ==surlignage== pour les ajouts et ~~le barré~~ pour les suppressions. Vous pouvez ensuite accepter ou refuser les modifications.
     
 
 ---
 
-_Ce guide est un mémo interactif : n'hésitez pas à tester les outils ci-dessus !_`
+_Ce guide est un mémo interactif : n'hésitez pas à tester !_`
         }
     ];
 

@@ -174,7 +174,28 @@
 
         function flushQuote() {
             if (!currentQuote.length) return;
-            out.push("<blockquote>" + formatInline(currentQuote.join("<br>")) + "</blockquote>");
+            var fullContent = currentQuote.join("\n");
+            var alertMatch = fullContent.match(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION|ALERTE|ATTENTION)\](?:\s+(.*))?(?:\n|$)/i);
+
+            if (alertMatch) {
+                var typeMap = {
+                    'NOTE': 'NOTE',
+                    'TIP': 'TIP',
+                    'IMPORTANT': 'IMPORTANT',
+                    'WARNING': 'WARNING',
+                    'ALERTE': 'WARNING',
+                    'CAUTION': 'CAUTION',
+                    'ATTENTION': 'CAUTION'
+                };
+                var type = typeMap[alertMatch[1].toUpperCase()] || 'NOTE';
+                var title = alertMatch[2] ? alertMatch[2].trim() : "";
+                var contentLines = fullContent.slice(alertMatch[0].length).split("\n");
+
+                var titleAttr = title ? ' data-title="' + escapeAttribute(title) + '"' : '';
+                out.push('<blockquote data-type="' + type + '"' + titleAttr + '>' + formatInline(contentLines.join("<br>")) + '</blockquote>');
+            } else {
+                out.push("<blockquote>" + formatInline(currentQuote.join("<br>")) + "</blockquote>");
+            }
             currentQuote = [];
         }
 
@@ -252,7 +273,7 @@
             }
 
             // Blockquote
-            var quoteMatch = trimmed.match(/^>\s+(.*)$/);
+            var quoteMatch = trimmed.match(/^>(?:\s+)?(.*)$/);
             if (quoteMatch) {
                 flushParagraph();
                 flushUl();

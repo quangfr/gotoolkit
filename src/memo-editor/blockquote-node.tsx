@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 
 export const ALERT_TYPES = [
-  { type: 'default', label: 'Remarque', icon: MessageSquare, color: '#4a5568' },
+  { type: 'default', label: 'Citation', icon: MessageSquare, color: '#4a5568' },
   { type: 'NOTE', label: 'Note', icon: Info, color: '#1d4ed8' },
   { type: 'TIP', label: 'Conseil', icon: Lightbulb, color: '#15803d' },
   { type: 'IMPORTANT', label: 'Important', icon: Star, color: '#7e22ce' },
@@ -121,6 +121,26 @@ export const Alert = Node.create({
 
   addInputRules() {
     return [
+      // GitHub-style alerts: >[!NOTE] Title
+      wrappingInputRule({
+        find: /^> ?\[!(note|tip|important|warning|caution|alerte|attention)\](?:\s+(.*))?\s$/,
+        type: this.type,
+        getAttributes: match => {
+          const typeMap: any = {
+            'note': 'NOTE',
+            'tip': 'TIP',
+            'important': 'IMPORTANT',
+            'warning': 'WARNING',
+            'alerte': 'WARNING',
+            'caution': 'CAUTION',
+            'attention': 'CAUTION',
+          };
+          const rawType = match[1].toLowerCase();
+          const type = typeMap[rawType] || 'NOTE';
+          const title = match[2] || null;
+          return { type, title };
+        },
+      }),
       wrappingInputRule({
         find: /^>note\s$/,
         type: this.type,
@@ -147,7 +167,7 @@ export const Alert = Node.create({
         getAttributes: () => ({ type: 'CAUTION' }),
       }),
       wrappingInputRule({
-        find: /^>\.\s$/,
+        find: /^>\s$/,
         type: this.type,
         getAttributes: () => ({ type: 'default' }),
       }),

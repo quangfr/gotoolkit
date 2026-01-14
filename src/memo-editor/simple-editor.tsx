@@ -1014,7 +1014,7 @@ const Toolbar = ({ editor, onDropdownToggle }: { editor: Editor, onDropdownToggl
             }
           }}
           data-active-state={editor.isActive('blockquote', { type: 'default' }) ? 'on' : 'off'}
-          title="Remarque"
+          title="Citation"
         >
           <MessageSquare size={16} />
         </button>
@@ -1563,7 +1563,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           for (let d = $pos.depth; d >= 0; d--) {
             if ($pos.node(d)?.type.name === 'blockquote') {
               blockPos = $pos.before(d);
-              label = "la remarque";
+              label = "la citation";
               break;
             }
           }
@@ -1739,7 +1739,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
             const type = node.getAttribute('data-type');
             if (!type || type === 'default') return '\n\n> ' + content.trim().replace(/\n/g, '\n> ') + '\n\n';
             const title = node.getAttribute('data-title');
-            const alertTag = title ? `[!${type} ${title}]` : `[!${type}]`;
+            const alertTag = title ? `[!${type}] ${title}` : `[!${type}]`;
             return '\n\n> ' + alertTag + '\n> ' + content.trim().replace(/\n/g, '\n> ') + '\n\n';
           }
         });
@@ -1852,24 +1852,38 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         if (typeof markdown !== 'string') return;
         try {
           // Pre-process newer alert format: >note, >alerte, etc. (case insensitive)
-          const shortAlertRegex = /^>(note|alerte|important|conseil|remarque)\s(.*)$/gmi;
+          const shortAlertRegex = /^>(note|alerte|warning|important|conseil|tip|attention|caution|remarque)\s(.*)$/gmi;
           const markdownWithShortAlerts = markdown.replace(shortAlertRegex, (_match, type, content) => {
             const typeMap: any = {
               'note': 'NOTE',
               'alerte': 'WARNING',
+              'warning': 'WARNING',
               'important': 'IMPORTANT',
               'conseil': 'TIP',
+              'tip': 'TIP',
+              'attention': 'CAUTION',
+              'caution': 'CAUTION',
               'remarque': 'default'
             };
-            return `<blockquote data-type="${typeMap[type.toLowerCase()]}">${content}</blockquote>`;
+            return `<blockquote data-type="${typeMap[type.toLowerCase()] || 'NOTE'}">${content}</blockquote>`;
           });
 
-          // Pre-process alerts: > [!NOTE Custom Title] -> <blockquote data-type="NOTE" data-title="Custom Title">
-          const alertRegex = /^> \[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)(?:\s+(.*))?\]\n((?:>.*\n?)*)/gm;
+          // Pre-process GitHub style alerts: > [!NOTE] Custom Title -> <blockquote data-type="NOTE" data-title="Custom Title">
+          const alertRegex = /^> ?\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION|ALERTE|ATTENTION)(?:\s+(.*))?\]\s*\n((?:>.*\n?)*)/gmi;
           const markdownWithAlerts = markdownWithShortAlerts.replace(alertRegex, (_match, type, title, content) => {
+            const typeMap: any = {
+              'NOTE': 'NOTE',
+              'TIP': 'TIP',
+              'IMPORTANT': 'IMPORTANT',
+              'WARNING': 'WARNING',
+              'ALERTE': 'WARNING',
+              'CAUTION': 'CAUTION',
+              'ATTENTION': 'CAUTION',
+            };
+            const normalizedType = typeMap[type.toUpperCase()] || 'NOTE';
             const cleanContent = content.replace(/^> ?/gm, '').trim();
-            const titleAttr = title ? ` data-title="${title}"` : '';
-            return `<blockquote data-type="${type}"${titleAttr}>${cleanContent}</blockquote>`;
+            const titleAttr = title ? ` data-title="${title.trim()}"` : '';
+            return `<blockquote data-type="${normalizedType}"${titleAttr}>${cleanContent}</blockquote>`;
           });
 
           // Convert == markers to <mark> HTML before parsing
@@ -1906,24 +1920,38 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         if (typeof markdown !== 'string') return;
         try {
           // Pre-process newer alert format: >note, >alerte, etc. (case insensitive)
-          const shortAlertRegex = /^>(note|alerte|important|conseil|remarque)\s(.*)$/gmi;
+          const shortAlertRegex = /^>(note|alerte|warning|important|conseil|tip|attention|caution|remarque)\s(.*)$/gmi;
           const markdownWithShortAlerts = markdown.replace(shortAlertRegex, (_match, type, content) => {
             const typeMap: any = {
               'note': 'NOTE',
               'alerte': 'WARNING',
+              'warning': 'WARNING',
               'important': 'IMPORTANT',
               'conseil': 'TIP',
+              'tip': 'TIP',
+              'attention': 'CAUTION',
+              'caution': 'CAUTION',
               'remarque': 'default'
             };
-            return `<blockquote data-type="${typeMap[type.toLowerCase()]}">${content}</blockquote>`;
+            return `<blockquote data-type="${typeMap[type.toLowerCase()] || 'NOTE'}">${content}</blockquote>`;
           });
 
-          // Pre-process alerts: > [!NOTE Custom Title] -> <blockquote data-type="NOTE" data-title="Custom Title">
-          const alertRegex = /^> \[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)(?:\s+(.*))?\]\n((?:>.*\n?)*)/gm;
+          // Pre-process GitHub style alerts: > [!NOTE] Custom Title -> <blockquote data-type="NOTE" data-title="Custom Title">
+          const alertRegex = /^> ?\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION|ALERTE|ATTENTION)(?:\s+(.*))?\]\s*\n((?:>.*\n?)*)/gmi;
           const markdownWithAlerts = markdownWithShortAlerts.replace(alertRegex, (_match, type, title, content) => {
+            const typeMap: any = {
+              'NOTE': 'NOTE',
+              'TIP': 'TIP',
+              'IMPORTANT': 'IMPORTANT',
+              'WARNING': 'WARNING',
+              'ALERTE': 'WARNING',
+              'CAUTION': 'CAUTION',
+              'ATTENTION': 'CAUTION',
+            };
+            const normalizedType = typeMap[type.toUpperCase()] || 'NOTE';
             const cleanContent = content.replace(/^> ?/gm, '').trim();
-            const titleAttr = title ? ` data-title="${title}"` : '';
-            return `<blockquote data-type="${type}"${titleAttr}>${cleanContent}</blockquote>`;
+            const titleAttr = title ? ` data-title="${title.trim()}"` : '';
+            return `<blockquote data-type="${normalizedType}"${titleAttr}>${cleanContent}</blockquote>`;
           });
 
           // Convert == markers to <mark> HTML before parsing
