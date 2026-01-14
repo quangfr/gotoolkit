@@ -59,10 +59,118 @@
   background-color: #f1f5f9;
   color: #2563eb;
 }
-.ProseMirror mark {
-  background-color: #fef9c3 !important;
-  padding: 0 2px;
-  border: none;
+.ProseMirror blockquote {
+  border-left: 3px solid #e2e8f0;
+  padding-left: 1rem;
+  margin: 1rem 0;
+  border-radius: 4px;
+  position: relative;
+  transition: all 0.2s;
+}
+.ProseMirror blockquote[data-type=NOTE] {
+  border-left-color: #3b82f6;
+  background-color: #eff6ff;
+}
+.ProseMirror blockquote[data-type=TIP] {
+  border-left-color: #22c55e;
+  background-color: #f0fdf4;
+}
+.ProseMirror blockquote[data-type=IMPORTANT] {
+  border-left-color: #a855f7;
+  background-color: #faf5ff;
+}
+.ProseMirror blockquote[data-type=WARNING] {
+  border-left-color: #eab308;
+  background-color: #fefce8;
+}
+.ProseMirror blockquote[data-type=CAUTION] {
+  border-left-color: #ef4444;
+  background-color: #fef2f2;
+}
+.ProseMirror blockquote::before {
+  display: none;
+  font-weight: 600;
+  font-size: 0.875rem;
+  margin-bottom: 4px;
+  text-transform: capitalize;
+  align-items: center;
+  gap: 6px;
+}
+.ProseMirror blockquote[data-type=NOTE]::before {
+  content: "\24d8  Note";
+  display: flex;
+  color: #1d4ed8;
+}
+.ProseMirror blockquote[data-type=TIP]::before {
+  content: "\1f4a1  Conseil";
+  display: flex;
+  color: #15803d;
+}
+.ProseMirror blockquote[data-type=IMPORTANT]::before {
+  content: "\1f4ac  Important";
+  display: flex;
+  color: #7e22ce;
+}
+.ProseMirror blockquote[data-type=WARNING]::before {
+  content: "\26a0\fe0f  Alerte";
+  display: flex;
+  color: #a16207;
+}
+.ProseMirror blockquote[data-type=CAUTION]::before {
+  content: "\1f6ab  Attention";
+  display: flex;
+  color: #b91c1c;
+}
+.quote-handle {
+  position: absolute;
+  width: 16px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  cursor: pointer;
+  z-index: 5000;
+  color: #94a3b8;
+  font-size: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s;
+  pointer-events: auto;
+}
+.quote-handle:hover {
+  background-color: #f1f5f9;
+  color: #2563eb;
+  border-color: #cbd5e1;
+}
+.quote-context-menu {
+  position: absolute;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  padding: 4px;
+  min-width: 140px;
+}
+.quote-context-menu-item {
+  display: flex;
+  align-items: center;
+  padding: 6px 8px;
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: 4px;
+  gap: 8px;
+  color: #475569;
+}
+.quote-context-menu-item:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+.quote-context-menu-item[data-active=true] {
+  background: #eff6ff;
+  color: #2563eb;
 }
 .tiptap-button-icon {
   width: 16px;
@@ -199,7 +307,7 @@
   max-width: 100%;
   margin: 1rem 0;
   scrollbar-width: thin;
-  padding: 24px;
+  padding: 0px;
 }
 .ProseMirror table {
   border-collapse: collapse;
@@ -622,9 +730,91 @@
 .simple-editor .ProseMirror blockquote {
   border-left: 3px solid #e2e8f0;
   padding-left: 1rem;
-  font-style: italic;
-  color: #718096;
+  font-style: normal;
+  color: #1e293b;
   margin: 1rem 0;
+  border-radius: 4px;
+  position: relative;
+  transition: all 0.2s;
+}
+.ProseMirror blockquote[data-type=NOTE] {
+  border-left-color: #3b82f6;
+  border-left-width: 4px;
+  background-color: #eff6ff;
+}
+.ProseMirror blockquote[data-type=TIP] {
+  border-left-color: #22c55e;
+  border-left-width: 4px;
+  background-color: #f0fdf4;
+}
+.ProseMirror blockquote[data-type=IMPORTANT] {
+  border-left-color: #a855f7;
+  border-left-width: 4px;
+  background-color: #faf5ff;
+}
+.ProseMirror blockquote[data-type=WARNING] {
+  border-left-color: #eab308;
+  border-left-width: 4px;
+  background-color: #fefce8;
+}
+.ProseMirror blockquote[data-type=CAUTION] {
+  border-left-color: #ef4444;
+  border-left-width: 4px;
+  background-color: #fef2f2;
+}
+.ProseMirror blockquote::before {
+  display: none;
+  font-weight: 600;
+  font-size: 0.875rem;
+  margin-bottom: 4px;
+  text-transform: capitalize;
+  align-items: center;
+  gap: 8px;
+}
+.ProseMirror blockquote[data-type=NOTE]::before {
+  content: "Note";
+  display: flex;
+  color: #1d4ed8;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%231d4ed8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'%3E%3C/circle%3E%3Cline x1='12' y1='16' x2='12' y2='12'%3E%3C/line%3E%3Cline x1='12' y1='8' x2='12.01' y2='8'%3E%3C/line%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: left center;
+  padding-left: 22px;
+}
+.ProseMirror blockquote[data-type=TIP]::before {
+  content: "Conseil";
+  display: flex;
+  color: #15803d;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2315803d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5'%3E%3C/path%3E%3Cpath d='M9 18h6'%3E%3C/path%3E%3Cpath d='M10 22h4'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: left center;
+  padding-left: 22px;
+}
+.ProseMirror blockquote[data-type=IMPORTANT]::before {
+  content: "Important";
+  display: flex;
+  color: #7e22ce;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%237e22ce' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: left center;
+  padding-left: 22px;
+}
+.ProseMirror blockquote[data-type=WARNING]::before {
+  content: "Alerte";
+  display: flex;
+  color: #a16207;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23a16207' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z'%3E%3C/path%3E%3Cline x1='12' y1='9' x2='12' y2='13'%3E%3C/line%3E%3Cline x1='12' y1='17' x2='12.01' y2='17'%3E%3C/line%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: left center;
+  padding-left: 22px;
+}
+.ProseMirror blockquote[data-type=CAUTION]::before {
+  content: "Attention";
+  display: flex;
+  color: #b91c1c;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23b91c1c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'%3E%3C/circle%3E%3Cline x1='12' y1='8' x2='12' y2='12'%3E%3C/line%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'%3E%3C/line%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: left center;
+  padding-left: 22px;
 }
 .bubble-menu {
   display: flex;

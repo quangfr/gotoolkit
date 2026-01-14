@@ -24,8 +24,42 @@ import {
   Bold, Italic, Underline, Link as LinkIcon, Strikethrough, 
   Highlighter, Table as TableIcon, Trash2, CodeXml,
   ChevronDown, Check, CheckCheck, Type,
-  Bot, X, Palette, Plus, Baseline, Tag, Shapes
+  Bot, X, Palette, Plus, Baseline, Tag, Shapes,
+  Info, Lightbulb, AlertTriangle, AlertCircle, MessageSquare
 } from 'lucide-react';
+
+const ALERT_TYPES = [
+  { type: 'NOTE', label: 'Note', icon: Info, color: '#3b82f6' },
+  { type: 'TIP', label: 'Conseil', icon: Lightbulb, color: '#22c55e' },
+  { type: 'IMPORTANT', label: 'Important', icon: MessageSquare, color: '#a855f7' },
+  { type: 'WARNING', label: 'Alerte', icon: AlertTriangle, color: '#eab308' },
+  { type: 'CAUTION', label: 'Attention', icon: AlertCircle, color: '#ef4444' },
+];
+
+const Alert = Extension.create({
+  name: 'alert',
+  addOptions() {
+    return {
+      HTMLAttributes: {},
+    }
+  },
+  addGlobalAttributes() {
+    return [
+      {
+        types: ['blockquote'],
+        attributes: {
+          type: {
+            default: 'NOTE',
+            parseHTML: element => element.getAttribute('data-type') || 'NOTE',
+            renderHTML: attributes => {
+              return { 'data-type': attributes.type || 'NOTE' }
+            },
+          },
+        },
+      },
+    ]
+  },
+});
 
 const TEXT_COLORS = [
   { name: 'Noir', value: '#1e293b' },
@@ -707,7 +741,6 @@ const BlockTypeDropdown = ({ editor }: { editor: Editor }) => {
     { label: 'Titre 3', value: 'h3', icon: Heading3, active: editor.isActive('heading', { level: 3 }) },
     { label: 'Liste à puces', value: 'bulletList', icon: List, active: editor.isActive('bulletList') },
     { label: 'Bloc de code', value: 'codeBlock', icon: SquareCode, active: editor.isActive('codeBlock') },
-    { label: 'Citation', value: 'blockquote', icon: Quote, active: editor.isActive('blockquote') },
     { label: 'Lien', value: 'link', icon: LinkIcon, active: editor.isActive('link') },
   ];
 
@@ -732,7 +765,7 @@ const BlockTypeDropdown = ({ editor }: { editor: Editor }) => {
     else if (value === 'bulletList') chain.toggleBulletList().run();
     else if (value === 'code') chain.toggleCode().run();
     else if (value === 'codeBlock') chain.toggleCodeBlock().run();
-    else if (value === 'blockquote') chain.toggleBlockquote().run();
+    else if (value === 'blockquote') chain.toggleBlockquote().updateAttributes('blockquote', { type: 'NOTE' }).run();
     else if (value === 'link') {
       const previousUrl = editor.getAttributes('link').href;
       const url = window.prompt('URL', previousUrl);
@@ -946,6 +979,16 @@ const Toolbar = ({ editor }: { editor: Editor }) => {
 
         <div className="tiptap-separator" data-orientation="vertical" role="none"></div>
 
+        <button
+          className="tiptap-button"
+          aria-label="Note"
+          type="button"
+          onClick={() => editor.chain().focus().toggleBlockquote().updateAttributes('blockquote', { type: 'NOTE' }).run()}
+          data-active-state={editor.isActive('blockquote') ? 'on' : 'off'}
+          title="Note"
+        >
+          <Info size={16} />
+        </button>
         <button
           className="tiptap-button"
           aria-label="Code"
@@ -1430,6 +1473,8 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   
   const [rowHandle, setRowHandle] = React.useState<{ top: number, left: number, rowIndex: number, tablePos: number } | null>(null);
   const [colHandle, setColHandle] = React.useState<{ top: number, left: number, colIndex: number, tablePos: number } | null>(null);
+  const [quoteHandle, setQuoteHandle] = React.useState<{ top: number, left: number, pos: number, type: string } | null>(null);
+  const [quoteMenu, setQuoteMenu] = React.useState<{ top: number, left: number, pos: number } | null>(null);
   const [selectionData, setSelectionData] = React.useState<any>(null);
   const [tableContextMenu, setTableContextMenu] = React.useState<{ top: number, left: number, type: 'row' | 'col', index: number, tablePos: number } | null>(null);
   const [mouseDownPoints, setMouseDownPoints] = React.useState<{ type: 'row' | 'col', index: number, tablePos: number, x: number, y: number } | null>(null);
@@ -1464,6 +1509,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       CustomTableCell,
       MermaidNode,
       CodeSuggestion,
+      Alert,
       Placeholder.configure({
         placeholder,
       }),
@@ -1577,10 +1623,48 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   }, [dragState, mouseDownPoints, editor]);
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!editor || dragState) return;
+    if (!editor || dragState || !containerRef.current) return;
     
     // Don't hide handles if mouse is over them
-    if ((e.target as HTMLElement).closest('.table-handle')) return;
+    if ((e.target as HTMLElement).closest('.table-handle, .quote-handle')) return;
+
+    // Blockquote handle logic
+    const element = document.elementFromPoint(e.clientX, e.clientY);
+    const blockquote = element?.closest('blockquote');
+    
+    if (blockquote && containerRef.current.contains(blockquote)) {
+      const rect = blockquote.getBoundingClientRect();
+      const containerRect = containerRef.current.getBoundingClientRect();
+      
+      // Use view.posAtCoords for more reliable position detection
+      const pos = editor.view.posAtCoords({ left: e.clientX, top: e.clientY })?.pos;
+      if (pos !== undefined) {
+        const $pos = editor.state.doc.resolve(pos);
+        let quotePos = -1;
+        for (let d = $pos.depth; d > 0; d--) {
+          if ($pos.node(d).type.name === 'blockquote') {
+            quotePos = $pos.before(d);
+            break;
+          }
+        }
+
+        if (quotePos !== -1) {
+          setQuoteHandle({
+            top: rect.top - containerRect.top + 10,
+            left: rect.left - containerRect.left - 12,
+            pos: quotePos,
+            type: editor.state.doc.nodeAt(quotePos)?.attrs.type || 'default'
+          });
+        } else {
+          setQuoteHandle(null);
+        }
+      }
+    } else {
+      // Check if we are hovering the handle itself
+      if (!(e.target as HTMLElement).closest('.quote-handle')) {
+        setQuoteHandle(null);
+      }
+    }
 
     let info = getTableCellInfo(editor.view, e.nativeEvent);
     
@@ -1671,11 +1755,19 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           codeBlockStyle: 'fenced',
           bulletListMarker: '-',
         });
-        try {
-          turndown.use(gfm);
-        } catch (err) {
-          // ignore plugin load failures
-        }
+        // Always use GFM for tables and other GitHub-flavored features
+        turndown.use(gfm);
+
+        // Custom rule for GitHub-style alerts
+        turndown.addRule('blockquote-alerts', {
+          filter: 'blockquote',
+          replacement: function (content: string, node: any) {
+            const type = node.getAttribute('data-type');
+            if (!type || type === 'default') return '\n\n> ' + content.trim().replace(/\n/g, '\n> ') + '\n\n';
+            return '\n\n> [!' + type + ']\n> ' + content.trim().replace(/\n/g, '\n> ') + '\n\n';
+          }
+        });
+
         turndownRef.current = turndown;
       }
 
@@ -1687,8 +1779,9 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
             // Manual conversion for Mermaid diagrams before Turndown
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
+
+            // 1. Handle Mermaid diagrams
             const diagrams = doc.querySelectorAll('mermaid-diagram');
-            
             diagrams.forEach(diag => {
               const code = diag.getAttribute('code') || '';
               const pre = doc.createElement('pre');
@@ -1699,8 +1792,39 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
               diag.replaceWith(pre);
             });
 
+            // 2. Clean up Tiptap tables for Turndown GFM
+            // Strip colgroup and col which confuse some Turndown GFM implementations
+            const colgroups = doc.querySelectorAll('colgroup');
+            colgroups.forEach(cg => cg.remove());
+            
+            // Remove Tiptap-specific classes and styles from table elements
+            const tables = doc.querySelectorAll('table');
+            tables.forEach(table => {
+              table.removeAttribute('class');
+              table.removeAttribute('style');
+              table.querySelectorAll('td, th, tr').forEach(el => {
+                el.removeAttribute('class');
+                el.removeAttribute('style');
+                // Clean up cell content to prevent Turndown from adding extra newlines
+                if (el.tagName === 'TD' || el.tagName === 'TH') {
+                  // Tiptap often wraps cell content in <p> tags, which Turndown converts to newlines.
+                  // We strip these <p> tags and keep only the text/inline content.
+                  const paragraphs = el.querySelectorAll('p');
+                  paragraphs.forEach(p => {
+                    const span = doc.createElement('span');
+                    span.innerHTML = p.innerHTML;
+                    p.replaceWith(span);
+                  });
+                  el.innerHTML = el.innerHTML.replace(/\n/g, ' ').trim();
+                }
+              });
+            });
+
             const processedHtml = doc.body.innerHTML;
-            return (turndownRef.current?.turndown(processedHtml) || '').toString();
+            console.log('[getEditorMarkdown] Processed HTML for Turndown:', processedHtml);
+            
+            const markdown = (turndownRef.current?.turndown(processedHtml) || '').toString();
+            return markdown;
           }
           if (typeof editor.getText === 'function') {
             return editor.getText();
@@ -1731,8 +1855,15 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       (window as any).setEditorMarkdown = (markdown: string) => {
         if (typeof markdown !== 'string') return;
         try {
+          // Pre-process alerts: > [!NOTE] -> <blockquote data-type="NOTE">
+          const alertRegex = /^> \[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\n((?:>.*\n?)*)/gm;
+          const markdownWithAlerts = markdown.replace(alertRegex, (match, type, content) => {
+            const cleanContent = content.replace(/^> ?/gm, '').trim();
+            return `<blockquote data-type="${type}">${cleanContent}</blockquote>`;
+          });
+
           // Convert == markers to <mark> HTML before parsing
-          const markdownWithHighlight = markdown.replace(
+          const markdownWithHighlight = markdownWithAlerts.replace(
             /==(.*?)==/g,
             '<mark>$1</mark>'
           );
@@ -2003,6 +2134,44 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         >
           ⠿
         </div>
+      )}
+
+      {quoteHandle && (
+        <div 
+          className="table-handle quote-handle"
+          style={{ top: quoteHandle.top, left: quoteHandle.left }}
+          onClick={(e) => {
+            e.stopPropagation();
+            setQuoteMenu({ top: quoteHandle.top, left: quoteHandle.left + 30, pos: quoteHandle.pos });
+          }}
+        >
+          ⠿
+        </div>
+      )}
+
+      {quoteMenu && (
+        <>
+          <div style={{ position: 'fixed', inset: 0, zIndex: 999 }} onClick={() => setQuoteMenu(null)} />
+          <div 
+            className="quote-context-menu"
+            style={{ top: quoteMenu.top, left: quoteMenu.left }}
+          >
+            {ALERT_TYPES.map((alert) => (
+              <div 
+                key={alert.type}
+                className="quote-context-menu-item"
+                data-active={editor.state.doc.nodeAt(quoteMenu.pos)?.attrs.type === alert.type}
+                onClick={() => {
+                  editor.chain().focus().setNodeSelection(quoteMenu.pos).updateAttributes('blockquote', { type: alert.type }).run();
+                  setQuoteMenu(null);
+                }}
+              >
+                <alert.icon size={14} style={{ color: alert.color }} />
+                {alert.label}
+              </div>
+            ))}
+          </div>
+        </>
       )}
 
       {tableContextMenu && (
