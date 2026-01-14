@@ -1742,11 +1742,11 @@ label {
 }
 
 .chat-knowledge-modal__header-sort[data-direction="asc"]::after {
-  content: "▲";
+  content: "\25B2";
 }
 
 .chat-knowledge-modal__header-sort[data-direction="desc"]::after {
-  content: "▼";
+  content: "\25BC";
 }
 
 .chat-knowledge-modal__checkbox {

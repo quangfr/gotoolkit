@@ -23,7 +23,7 @@
         return globalConfig;
     }
 
-    var GLOBAL_BUILD_VERSION = "2026.01.13.3";
+    var GLOBAL_BUILD_VERSION = "2026.01.14.1";
     global.GoToolkitAssistVersion = GLOBAL_BUILD_VERSION;
     var globalConfigPromise;
     var siteConfigPromise = global.GoToolkitSiteConfigPromise;
@@ -678,9 +678,7 @@
     var aiCounterToasterState = {
         isRunning: false,
         timerId: null,
-        remaining: 0,
-        spinnerFrames: ["◴", "◷", "◶", "◵"],
-        frameIndex: 0
+        remaining: 0
     };
 
     function startCharacterCounterToaster(tokenCount) {
@@ -702,7 +700,6 @@
 
         aiCounterToasterState.isRunning = true;
         aiCounterToasterState.remaining = durationMs;
-        aiCounterToasterState.frameIndex = 0;
 
         toasterEl.classList.add("visible");
         toasterEl.style.display = "";
@@ -715,12 +712,11 @@
             var seconds = secondsRemaining % 60;
             var timeStr = (minutes < 10 ? "0" : "") + minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
 
-            var frame = aiCounterToasterState.spinnerFrames[aiCounterToasterState.frameIndex % 4];
-            aiCounterToasterState.frameIndex += 1;
-
+            var iconHtml = `<i data-lucide="loader-2" class="lucide-spin" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i>`;
             var textEl = global.document?.getElementById("aiRequestCounterText");
             if (textEl) {
-                textEl.textContent = frame + " " + timeStr;
+                textEl.innerHTML = iconHtml + timeStr;
+                if (window.lucide) window.lucide.createIcons();
             }
 
             aiCounterToasterState.remaining -= 1000;
@@ -1235,7 +1231,7 @@
         this.mediaTranscriptionActive = false;
         this.deferSendButtonRestoreUntilAI = false;
         this.sendButtonSpinnerTimer = null;
-        this.sendButtonBaseLabel = "↩︎";
+        this.sendButtonBaseLabel = `<i data-lucide="send" style="width:16px;height:16px;"></i>`;
         this.mediaUploadCount = 0;
         this.mediaTranscribedCount = 0;
         this.mediaTotalCount = 0;
@@ -1560,8 +1556,9 @@
         if (message.role === "user" && (options.selectionExcerpt || message.selectionExcerpt)) {
             var prepend = document.createElement("div");
             prepend.className = "chat-prepend";
-            prepend.textContent = "↪︎ " + (options.selectionExcerpt || message.selectionExcerpt);
+            prepend.innerHTML = `<i data-lucide="corner-down-right" style="width:12px;height:12px;vertical-align:middle;margin-right:4px;"></i>` + escapeHtml(options.selectionExcerpt || message.selectionExcerpt);
             contentWrapper.appendChild(prepend);
+            if (window.lucide) window.lucide.createIcons({ props: { size: 12 } });
         }
 
         var bubble = document.createElement("div");
@@ -1618,7 +1615,7 @@
                 var keepAllBtn = document.createElement("button");
                 keepAllBtn.type = "button";
                 keepAllBtn.className = "chat-bubble-action-btn chat-bubble-action-keep";
-                keepAllBtn.textContent = "✓ Garder tout";
+                keepAllBtn.innerHTML = `<i data-lucide="check" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i> Garder tout`;
                 keepAllBtn.addEventListener("click", function () {
                     if (typeof window.setEditorMarkdown === 'function') {
                         window.setEditorMarkdown(message.data.output);
@@ -1629,7 +1626,7 @@
                 var rejectAllBtn = document.createElement("button");
                 rejectAllBtn.type = "button";
                 rejectAllBtn.className = "chat-bubble-action-btn chat-bubble-action-reject";
-                rejectAllBtn.textContent = "✗ Refuser tout";
+                rejectAllBtn.innerHTML = `<i data-lucide="x" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i> Refuser tout`;
                 rejectAllBtn.addEventListener("click", function () {
                     actionsEl.remove();
                 });
@@ -1637,6 +1634,7 @@
                 actionsEl.appendChild(keepAllBtn);
                 actionsEl.appendChild(rejectAllBtn);
                 bubble.appendChild(actionsEl);
+                if (window.lucide) window.lucide.createIcons({ props: { size: 14 } });
             }
 
             this.syncBotExtras(entry, message);
@@ -1775,37 +1773,37 @@
         var all = {
             advice: {
                 id: "advice",
-                label: storePresets?.advice?.label || "↬ Demander",
+                label: storePresets?.advice?.label || "Demander",
                 prompt: advicePrompt
             },
             ask: {
                 id: "ask",
-                label: storePresets?.ask?.label || "⌕ Explorer",
+                label: storePresets?.ask?.label || "Explorer",
                 prompt: askPrompt
             },
             suggest: {
                 id: "suggest",
-                label: storePresets?.suggest?.label || "✦ Suggérer",
+                label: storePresets?.suggest?.label || "Suggérer",
                 prompt: suggestPrompt
             },
             edit: {
                 id: "edit",
-                label: storePresets?.edit?.label || "✂ Éditer",
+                label: storePresets?.edit?.label || "Éditer",
                 prompt: editPrompt
             },
             import: {
                 id: "import",
-                label: storePresets?.import?.label || "⤷ Importer",
+                label: storePresets?.import?.label || "Importer",
                 prompt: importPrompt
             },
             draw: {
                 id: "draw",
-                label: storePresets?.draw?.label || "ʃ Draw",
+                label: storePresets?.draw?.label || "Draw",
                 prompt: drawPrompt
             },
             extract: {
                 id: "extract",
-                label: storePresets?.extract?.label || "⊜ Extraire",
+                label: storePresets?.extract?.label || "Extraire",
                 prompt: extractPrompt
             }
         };
@@ -3955,28 +3953,14 @@
     AssistSidebar.prototype.setSendButtonBusy = function (isBusy) {
         if (!this.sendButton) return;
         if (isBusy) {
-            if (!this.sendButtonBaseLabel) {
-                this.sendButtonBaseLabel = this.sendButton.textContent || "↩︎";
-            }
             this.sendButton.disabled = true;
-            if (this.sendButtonSpinnerTimer) return;
-            var frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
-            var idx = 0;
-            this.sendButton.textContent = frames[idx];
-            this.sendButtonSpinnerTimer = setInterval(function () {
-                idx = (idx + 1) % frames.length;
-                if (this.sendButton) {
-                    this.sendButton.textContent = frames[idx];
-                }
-            }.bind(this), 100);
+            this.sendButton.innerHTML = `<i data-lucide="loader-2" class="lucide-spin" style="width:16px;height:16px;"></i>`;
+            if (window.lucide) window.lucide.createIcons();
             return;
         }
         this.sendButton.disabled = false;
-        if (this.sendButtonSpinnerTimer) {
-            clearInterval(this.sendButtonSpinnerTimer);
-            this.sendButtonSpinnerTimer = null;
-        }
-        this.sendButton.textContent = this.sendButtonBaseLabel || "↩︎";
+        this.sendButton.innerHTML = this.sendButtonBaseLabel || `<i data-lucide="send" style="width:16px;height:16px;"></i>`;
+        if (window.lucide) window.lucide.createIcons();
     };
 
     AssistSidebar.prototype.setTranscriptionUiState = function (active) {

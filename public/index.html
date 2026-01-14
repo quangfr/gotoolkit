@@ -27,12 +27,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Go-Toolkit</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
         href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Sora:wght@400;500;600&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles/style.css?v=2026.01.14.0">
+    <link rel="stylesheet" href="styles/style.css?v=2026.01.14.1">
     <style>
         :root {
             --bg: #f5f2eb;
@@ -44,6 +45,20 @@
             --muted: #8b8173;
             --primary: #2a7a57;
             --shadow-soft: 0 18px 40px rgba(47, 41, 34, 0.08);
+        }
+
+        .lucide-spin {
+            animation: lucide-spin 1.4s linear infinite;
+        }
+
+        @keyframes lucide-spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         * {
@@ -1242,43 +1257,47 @@
             </div>
             <h1>Go-Toolkit <span class="hero-beta">beta</span></h1>
             <p>La boîte à outils IA des Product Owners</p>
-            <span class="hero-version label-link" id="releaseNotesTrigger" tabindex="0">v2026.01.14.0</span>
+            <span class="hero-version label-link" id="releaseNotesTrigger" tabindex="0">v2026.01.14.1</span>
 
             <div class="hero-meta">
-                <button id="openSettingsBtn" class="feedback-button" type="button">⌘ Paramètres</button>
+                <button id="openSettingsBtn" class="feedback-button" type="button"><i data-lucide="settings"
+                        style="width:16px;height:16px;vertical-align:middle;margin-right:4px;"></i>Paramètres</button>
             </div>
         </header>
 
         <section class="section">
             <div class="section-title-row">
-                <p class="section-label superpower-label label-link" id="superpowerToggle">⚡︎ Super-pouvoirs</p>
+                <p class="section-label superpower-label label-link" id="superpowerToggle"><i data-lucide="zap"
+                        style="width:14px;height:14px;vertical-align:middle;margin-right:2px;"></i>Super-pouvoirs</p>
             </div>
             <div class="launcher-grid">
                 <a class="launcher" href="memo.html" data-app="memo">
-                    <span class="launcher-emoji">⌘</span>
+                    <span class="launcher-emoji"><i data-lucide="command"></i></span>
                     <span class="launcher-name">
-                        Mémo ⚡︎ Le Petit Robert
+                        Mémo
                         <div class="launcher-desc">Accélère ta rédaction</div>
                     </span>
                 </a>
                 <a class="launcher" href="old/timeline.html" data-app="timeline">
-                    <span class="launcher-emoji">⇥</span>
+                    <span class="launcher-emoji"><i data-lucide="layout-list"></i></span>
                     <span class="launcher-name">
-                        Timeline ⚡︎ Goal Digger
+                        Timeline <i data-lucide="zap"
+                            style="width:12px;height:12px;vertical-align:middle;margin:0 2px;"></i> Goal Digger
                         <div class="launcher-desc">Trace ton planning</div>
                     </span>
                 </a>
                 <a class="launcher" href="old/voice.html" data-app="voice">
-                    <span class="launcher-emoji">▷</span>
+                    <span class="launcher-emoji"><i data-lucide="mic"></i></span>
                     <span class="launcher-name">
-                        Voice ⚡︎ Tuto Tarantino
+                        Voice <i data-lucide="zap"
+                            style="width:12px;height:12px;vertical-align:middle;margin:0 2px;"></i> Tuto Tarantino
                         <div class="launcher-desc">Pilote tes réunions</div>
                     </span>
                 </a>
                 <a class="launcher" href="grid.html" data-app="grid">
-                    <span class="launcher-emoji">⊞</span>
+                    <span class="launcher-emoji"><i data-lucide="grid-3x3"></i></span>
                     <span class="launcher-name">
-                        Grid ⚡︎ Le Cardinal
+                        Grid
                         <div class="launcher-desc">Clarifie tes données</div>
                     </span>
                 </a>
@@ -1288,12 +1307,14 @@
         <section class="section">
             <div id="pinnedBlock" hidden>
                 <div class="section-title-row" style="margin-top: 4px;">
-                    <p class="section-label">⚲ Mes favoris</p>
+                    <p class="section-label"><i data-lucide="pin"
+                            style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i>Mes favoris</p>
                 </div>
                 <div id="pinnedGallery" class="share-gallery" aria-live="polite"></div>
             </div>
             <div class="section-title-row">
-                <p class="section-label nexus-label label-link" data-open-nexus-modal>☍ Espace en ligne</p>
+                <p class="section-label nexus-label label-link" data-open-nexus-modal><i data-lucide="cloud"
+                        style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i>Espace en ligne</p>
             </div>
 
             <div id="shareGallery" class="share-gallery" aria-live="polite"></div>
@@ -1301,21 +1322,27 @@
             <p id="shareEmpty" class="share-helper" hidden>Aucun document enregistré en ligne.</p>
             <p id="shareError" class="share-helper share-helper-error" hidden></p>
             <div class="section-title-row" style="margin-top: 12px;">
-                <p class="section-label nexus-label label-link" data-open-nexus-modal>⬠ Bibliothèque locale</p>
+                <p class="section-label nexus-label label-link" data-open-nexus-modal><i data-lucide="database"
+                        style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i>Bibliothèque locale
+                </p>
             </div>
             <div id="savedGallery" class="share-gallery" aria-live="polite"></div>
             <p id="savedEmpty" class="share-helper" hidden>Aucun document enregistré localement.</p>
         </section>
 
-        <button id="openRequestsBtn" class="requests-button" type="button">☄ Feedback (<span
+        <button id="openRequestsBtn" class="requests-button" type="button"><i data-lucide="message-square-plus"
+                style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Feedback (<span
                 id="requestsCount">0</span>)</button>
 
         <div id="requestsModal" class="feedback-modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
             <div class="requests-modal">
                 <header style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-                    <h3 style="margin:0;font-size:1rem;">☄ Liste des feedback</h3>
+                    <h3 style="margin:0;font-size:1rem;"><i data-lucide="message-square"
+                            style="width:18px;height:18px;vertical-align:middle;margin-right:6px;"></i>Liste des
+                        feedback </h3>
                     <button id="addFeedbackBtn" class="btn" type="button" style="margin-left:auto;">+ Ajouter</button>
-                    <button id="closeRequestsBtn" class="btn-secondary" type="button" aria-label="Fermer">✕</button>
+                    <button id="closeRequestsBtn" class="btn-secondary" type="button" aria-label="Fermer"><i
+                            data-lucide="x" style="width:16px;height:16px;"></i></button>
                 </header>
                 <div class="requests-body">
                     <aside class="requests-list-panel">
@@ -1398,8 +1425,11 @@
         <div id="superpowerModal" class="feedback-modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
             <div class="superpower-modal">
                 <header>
-                    <h3>⚡︎ Super-pouvoirs Go-Live</h3>
-                    <button id="closeSuperpowerBtn" class="btn-secondary" type="button" aria-label="Fermer">✕</button>
+                    <h3><i data-lucide="zap"
+                            style="width:20px;height:20px;vertical-align:middle;margin-right:8px;"></i>Super-pouvoirs
+                        Go-Live</h3>
+                    <button id="closeSuperpowerBtn" class="btn-secondary" type="button" aria-label="Fermer"><i
+                            data-lucide="x" style="width:16px;height:16px;"></i></button>
                 </header>
                 <div class="superpower-list">
                     <p class="superpower-subtitle">
@@ -1407,7 +1437,9 @@
                     </p>
                     <section>
                         <div class="superpower-head">
-                            <h4>◇ Le Cardinal</h4>
+                            <h4><i data-lucide="grid-3x3"
+                                    style="width:18px;height:18px;vertical-align:middle;margin-right:8px;"></i>Le
+                                Cardinal</h4>
                             <div class="superpower-tag-row">
                                 <span class="superpower-tag">Module Grid</span>
                             </div>
@@ -1419,7 +1451,9 @@
                     <section>
 
                         <div class="superpower-head">
-                            <h4>◍ 50 nuances de vrai</h4>
+                            <h4><i data-lucide="palette"
+                                    style="width:18px;height:18px;vertical-align:middle;margin-right:8px;"></i>50
+                                nuances de vrai</h4>
                             <div class="superpower-tag-row">
                                 <span class="superpower-tag">Module Canvas</span>
                             </div>
@@ -1431,7 +1465,9 @@
                     <section>
 
                         <div class="superpower-head">
-                            <h4>⊞ Le Petit Robert Downey Jr</h4>
+                            <h4><i data-lucide="languages"
+                                    style="width:18px;height:18px;vertical-align:middle;margin-right:8px;"></i>Le Petit
+                                Robert Downey Jr</h4>
                             <div class="superpower-tag-row">
                                 <span class="superpower-tag superpower-tag--soon">À venir</span>
                             </div>
@@ -1441,7 +1477,9 @@
                     </section>
                     <section>
                         <div class="superpower-head">
-                            <h4>ʃ Indélébile</h4>
+                            <h4><i data-lucide="pen-tool"
+                                    style="width:18px;height:18px;vertical-align:middle;margin-right:8px;"></i>Indélébile
+                            </h4>
                             <div class="superpower-tag-row">
                                 <span class="superpower-tag superpower-tag">Module Draw</span>
                             </div>
@@ -1451,7 +1489,9 @@
                     </section>
                     <section>
                         <div class="superpower-head">
-                            <h4>Ϟ Protocop</h4>
+                            <h4><i data-lucide="rocket"
+                                    style="width:18px;height:18px;vertical-align:middle;margin-right:8px;"></i>Protocop
+                            </h4>
                             <div class="superpower-tag-row">
                                 <span class="superpower-tag superpower-tag--soon">À venir</span>
                             </div>
@@ -1461,7 +1501,9 @@
                     </section>
                     <section>
                         <div class="superpower-head">
-                            <h4>▷ Tuto Tarantino</h4>
+                            <h4><i data-lucide="mic"
+                                    style="width:18px;height:18px;vertical-align:middle;margin-right:8px;"></i>Tuto
+                                Tarantino</h4>
                             <div class="superpower-tag-row">
                                 <span class="superpower-tag superpower-tag">Module Voice</span>
                             </div>
@@ -1471,7 +1513,9 @@
                     </section>
                     <section>
                         <div class="superpower-head">
-                            <h4>⇥ Goal Digger</h4>
+                            <h4><i data-lucide="layout-list"
+                                    style="width:18px;height:18px;vertical-align:middle;margin-right:8px;"></i>Goal
+                                Digger</h4>
                             <div class="superpower-tag-row">
                                 <span class="superpower-tag">Module Timeline</span>
                             </div>
@@ -1481,10 +1525,11 @@
                     </section>
                     <section>
                         <div class="superpower-head">
-                            <h4>⌬ Promptzilla</h4>
+                            <h4><i data-lucide="bot"
+                                    style="width:18px;height:18px;vertical-align:middle;margin-right:8px;"></i>Promptzilla
+                            </h4>
                             <div class="superpower-tag-row">
                                 <span class="superpower-tag superpower-tag">Module Assist</span>
-                                </span>
                             </div>
                         </div>
                         <div class="superpower-subtitle">Le pouvoir d'invoquer l'IA avec précision et créativité.
@@ -1493,7 +1538,9 @@
                     </section>
                     <section>
                         <div class="superpower-head">
-                            <h4>⌘ Soulgorithm</h4>
+                            <h4><i data-lucide="command"
+                                    style="width:18px;height:18px;vertical-align:middle;margin-right:8px;"></i>Soulgorithm
+                            </h4>
                             <div class="superpower-tag-row">
                                 <span class="superpower-tag superpower-tag--soon">À venir</span>
                             </div>
@@ -1503,7 +1550,9 @@
                     </section>
                     <section>
                         <div class="superpower-head">
-                            <h4>⛶ Pôlène</h4>
+                            <h4><i data-lucide="network"
+                                    style="width:18px;height:18px;vertical-align:middle;margin-right:8px;"></i>Pôlène
+                            </h4>
                             <div class="superpower-tag-row">
                                 <span class="superpower-tag superpower-tag--soon">À venir</span>
                             </div>
@@ -1521,12 +1570,16 @@
             <div class="feedback-modal settings-modal"
                 style="max-height: 98vh; overflow-y: auto; display: flex; flex-direction: column;">
                 <header style="flex-shrink: 0;">
-                    <h3>⌘ Paramètres</h3>
-                    <button id="closeSettingsBtn" class="btn-secondary" type="button" aria-label="Fermer">✕</button>
+                    <h3><i data-lucide="settings"
+                            style="width:20px;height:20px;vertical-align:middle;margin-right:8px;"></i>Paramètres</h3>
+                    <button id="closeSettingsBtn" class="btn-secondary" type="button" aria-label="Fermer"><i
+                            data-lucide="x" style="width:16px;height:16px;"></i></button>
                 </header>
                 <form class="feedback-form" onsubmit="return false;" style="flex: 1; overflow-y: auto;">
                     <div class="settings-tabs tabs">
-                        <button type="button" class="tab-btn active" data-tab="servicesTab">⌘ Services IA</button>
+                        <button type="button" class="tab-btn active" data-tab="servicesTab"><i data-lucide="cpu"
+                                style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Services
+                            IA</button>
                     </div>
                     <div class="settings-tab-panels-wrapper" style="flex: 1; overflow-y: auto;">
                         <div class="settings-tab-panel" data-panel="servicesTab">
@@ -1682,10 +1735,10 @@
                                 <label>
                                     <span class="label-title">Preset</span>
                                     <select id="chatPromptPresetSelect">
-                                        <option value="advice">↬ Demander</option>
-                                        <option value="ask">⌕ Explorer</option>
-                                        <option value="suggest">✦ Suggérer</option>
-                                        <option value="edit">✂ Éditer</option>
+                                        <option value="advice">Conseiller</option>
+                                        <option value="ask">Explorer</option>
+                                        <option value="suggest">Suggérer</option>
+                                        <option value="edit">Éditer</option>
                                     </select>
                                 </label>
                             </div>
@@ -1726,7 +1779,8 @@
                     <h2 id="releaseNotesTitle">Actualités Go-Toolkit</h2>
                 </div>
                 <button type="button" class="release-notes-close" id="releaseNotesClose"
-                    aria-label="Fermer les notes de version">×</button>
+                    aria-label="Fermer les notes de version"><i data-lucide="x"
+                        style="width:20px;height:20px;"></i></button>
             </div>
             <div class="release-notes-tabs">
                 <button class="release-tab release-tab--active" data-target="releaseNotesContent">Notes de
@@ -1748,18 +1802,18 @@
         window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL =
             window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL || "https://assemblyai.gotoolkit.workers.dev/token";
     </script>
-    <script src="js/config.js?v=2026.01.14.0"></script>
-    <script src="js/feature-visibility.js?v=2026.01.14.0"></script>
-    <script src="js/document-storage.js?v=2026.01.14.0"></script>
-    <script src="js/storage-service.js?v=2026.01.14.0"></script>
-    <script src="js/shared-ui.js?v=2026.01.14.0"></script>
-    <script src="js/cgu.js?v=2026.01.14.0"></script>
-    <script src="js/share-worker-client.js?v=2026.01.14.0"></script>
-    <script src="js/share-history.js?v=2026.01.14.0"></script>
-    <script src="js/document-api.js?v=2026.01.14.0"></script>
-    <script src="js/ia-config.js?v=2026.01.14.0"></script>
-    <script src="prompt.js?v=2026.01.14.0"></script>
-    <script src="js/ia-client.js?v=2026.01.14.0"></script>
+    <script src="js/config.js?v=2026.01.14.1"></script>
+    <script src="js/feature-visibility.js?v=2026.01.14.1"></script>
+    <script src="js/document-storage.js?v=2026.01.14.1"></script>
+    <script src="js/storage-service.js?v=2026.01.14.1"></script>
+    <script src="js/shared-ui.js?v=2026.01.14.1"></script>
+    <script src="js/cgu.js?v=2026.01.14.1"></script>
+    <script src="js/share-worker-client.js?v=2026.01.14.1"></script>
+    <script src="js/share-history.js?v=2026.01.14.1"></script>
+    <script src="js/document-api.js?v=2026.01.14.1"></script>
+    <script src="js/ia-config.js?v=2026.01.14.1"></script>
+    <script src="prompt.js?v=2026.01.14.1"></script>
+    <script src="js/ia-client.js?v=2026.01.14.1"></script>
     <script>
         // Initialize feedback configuration before loading feedback.js
         window.GoToolkitAppFeedbackConfig = {
@@ -1769,7 +1823,7 @@
             primaryColor: "#2563eb"
         };
     </script>
-    <script src="js/feedback.js?v=2026.01.14.0"></script>
+    <script src="js/feedback.js?v=2026.01.14.1"></script>
 
     <script>
         (function () {
@@ -2106,12 +2160,12 @@
             const documentApi = window.goToolkitDocumentApi;
 
             const APP_DEFINITIONS = {
-                memo: { emoji: "⌘", name: "Memo", page: "memo.html", collection: "memos" },
-                nuances: { emoji: "◍", name: "Canvas", page: "old/canvas.html", collection: "slides" },
-                plan: { emoji: "⇥", name: "Timeline", page: "old/timeline.html", collection: "timelines" },
-                draw: { emoji: "◇", name: "Draw", page: "old/draw.html", collection: "diagrams" },
-                grid: { emoji: "⊞", name: "Grid", page: "grid.html", collection: "grids" },
-                voice: { emoji: "▷", name: "Voice", page: "old/voice.html", collection: "voices" }
+                memo: { icon: "zap", name: "Memo", page: "memo.html", collection: "memos" },
+                nuances: { icon: "palette", name: "Canvas", page: "old/canvas.html", collection: "slides" },
+                plan: { icon: "layout-list", name: "Timeline", page: "old/timeline.html", collection: "timelines" },
+                draw: { icon: "pen-tool", name: "Draw", page: "old/draw.html", collection: "diagrams" },
+                grid: { icon: "grid-3x3", name: "Grid", page: "grid.html", collection: "grids" },
+                voice: { icon: "mic", name: "Voice", page: "old/voice.html", collection: "voices" }
             };
             const GRID_TEMPLATE_LABELS = {
                 "tree-structure": "Structure de données",
@@ -2295,7 +2349,7 @@
                 card.setAttribute("data-app", app);
                 const metaHtml = buildMetaBadge(preview.templateLabel || preview.drawTypeLabel);
                 card.innerHTML = `
-                    <p class="share-card-title">${definition.emoji} ${preview.tabName}</p>
+                    <p class="share-card-title"><i data-lucide="${definition.icon}" style="width:14px;height:14px;vertical-align:middle;margin-right:6px;"></i>${preview.tabName}</p>
                     ${metaHtml}
                     <p class="share-card-desc">${preview.lines.join(" · ") || "(sans contexte)"}</p>
                     <p class="share-card-date">${formattedDate}</p>
@@ -2305,7 +2359,8 @@
                 pinBtn.className = "share-card-action share-card-pin";
                 const isPinned = Boolean(record.pinned);
                 pinBtn.title = isPinned ? "Retirer des favoris" : "Ajouter aux favoris";
-                pinBtn.textContent = isPinned ? "⚲" : "⚲";
+                if (isPinned) pinBtn.classList.add("pinned");
+                pinBtn.innerHTML = `<i data-lucide="pin" style="width:14px;height:14px;"></i>`;
                 pinBtn.addEventListener("click", async event => {
                     event.preventDefault();
                     event.stopPropagation();
@@ -2317,7 +2372,7 @@
                 deleteBtn.type = "button";
                 deleteBtn.className = "share-card-action share-card-delete";
                 deleteBtn.title = "Supprimer cette capsule";
-                deleteBtn.textContent = "×";
+                deleteBtn.innerHTML = `<i data-lucide="x" style="width:14px;height:14px;"></i>`;
                 deleteBtn.addEventListener("click", async event => {
                     event.preventDefault();
                     event.stopPropagation();
@@ -2382,7 +2437,7 @@
                 card.setAttribute("data-app", record.app);
                 const metaHtml = buildMetaBadge(preview.templateLabel || preview.drawTypeLabel);
                 card.innerHTML = `
-                    <p class="share-card-title">${definition.emoji} ${preview.tabName}</p>
+                    <p class="share-card-title"><i data-lucide="${definition.icon}" style="width:14px;height:14px;vertical-align:middle;margin-right:6px;"></i>${preview.tabName}</p>
                     ${metaHtml}
                     <p class="share-card-desc">${preview.lines.join(" · ") || "Complète le contexte pour l'afficher ici."}</p>
                     <p class="share-card-date">${formattedDate}</p>
@@ -2392,7 +2447,8 @@
                 pinBtn.className = "share-card-action share-card-pin";
                 const isPinned = Boolean(record.pinned);
                 pinBtn.title = isPinned ? "Retirer des favoris" : "Ajouter aux favoris";
-                pinBtn.textContent = "⚲";
+                if (isPinned) pinBtn.classList.add("pinned");
+                pinBtn.innerHTML = `<i data-lucide="pin" style="width:14px;height:14px;"></i>`;
                 pinBtn.addEventListener("click", async event => {
                     event.preventDefault();
                     event.stopPropagation();
@@ -2404,7 +2460,7 @@
                 deleteBtn.type = "button";
                 deleteBtn.className = "share-card-action share-card-delete";
                 deleteBtn.title = "Supprimer cette capsule";
-                deleteBtn.textContent = "×";
+                deleteBtn.innerHTML = `<i data-lucide="x" style="width:14px;height:14px;"></i>`;
                 deleteBtn.addEventListener("click", async event => {
                     event.preventDefault();
                     event.stopPropagation();
@@ -2590,6 +2646,7 @@
                     pinned.forEach(item => savedGallery.appendChild(item.card));
                     regular.forEach(item => savedGallery.appendChild(item.card));
                     if (savedEmpty) savedEmpty.hidden = pinned.length + regular.length > 0;
+                    if (window.lucide) window.lucide.createIcons();
                 })().finally(() => {
                     refreshSavedPromise = null;
                 });
@@ -2654,6 +2711,7 @@
                     const hasPinned = pinned.length > 0;
                     const hasRegular = regular.length > 0;
                     setState({ loading: false, hasData: hasPinned || hasRegular, hasPinned, hasRegular, error: "" });
+                    if (window.lucide) window.lucide.createIcons();
                 })().finally(() => {
                     refreshGalleryPromise = null;
                 });
@@ -3025,42 +3083,24 @@
             }
         }
         const IA_STATUS_ICONS = {
-            ready: "🗹",
-            verifying: "",
-            error: "✕",
-            warning: "⚠"
+            ready: "check-circle",
+            verifying: "loader-2",
+            error: "circle-x",
+            warning: "triangle-alert"
         };
-        const STATUS_SPINNER_FRAMES = ["◴", "◷", "◶", "◵"];
         const statusSpinnerTimers = new WeakMap();
 
         function startStatusSpinner(el, label = "") {
             if (!el) return;
-            const existing = statusSpinnerTimers.get(el);
-            if (existing) {
-                existing.label = label || "";
-                existing.tick();
-                return;
-            }
-            const state = {
-                frameIndex: 0,
-                label: label || ""
-            };
-            state.tick = () => {
-                const frame = STATUS_SPINNER_FRAMES[state.frameIndex % STATUS_SPINNER_FRAMES.length];
-                el.textContent = state.label ? `${frame} ${state.label}` : frame;
-                state.frameIndex += 1;
-            };
-            state.tick();
-            state.timerId = setInterval(state.tick, 1000);
-            statusSpinnerTimers.set(el, state);
+            stopStatusSpinner(el);
+            el.innerHTML = `<i data-lucide="loader-2" class="lucide-spin" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i> ${label}`;
+            if (window.lucide) window.lucide.createIcons({ props: { size: 14 } });
+            statusSpinnerTimers.set(el, { isSpinner: true });
         }
 
         function stopStatusSpinner(el) {
             const state = statusSpinnerTimers.get(el);
             if (!state) return;
-            if (state.timerId) {
-                clearInterval(state.timerId);
-            }
             statusSpinnerTimers.delete(el);
         }
 
@@ -3070,7 +3110,7 @@
             }
             if (!state) {
                 stopStatusSpinner(el);
-                el.textContent = "";
+                el.innerHTML = "";
                 el.classList.remove("ia-status--error");
                 return;
             }
@@ -3080,7 +3120,13 @@
                 return;
             }
             stopStatusSpinner(el);
-            el.textContent = IA_STATUS_ICONS[state] || "";
+            const iconName = IA_STATUS_ICONS[state];
+            if (iconName) {
+                el.innerHTML = `<i data-lucide="${iconName}" style="width:14px;height:14px;vertical-align:middle;"></i>`;
+                if (window.lucide) window.lucide.createIcons({ props: { size: 14 } });
+            } else {
+                el.innerHTML = "";
+            }
             if (state === "error") {
                 el.classList.add("ia-status--error");
             } else {
@@ -3090,23 +3136,25 @@
 
         function setAssemblyAiStatusLabel(label = "", options = {}) {
             if (!assemblyAiStatusEl) return;
-            stopStatusSpinner(assemblyAiStatusEl);
             const iconState = options.state;
-            const icon = iconState && IA_STATUS_ICONS[iconState] ? IA_STATUS_ICONS[iconState] : "";
+            if (iconState === "verifying") {
+                startStatusSpinner(assemblyAiStatusEl, label);
+                return;
+            }
+            stopStatusSpinner(assemblyAiStatusEl);
+            const iconName = iconState && IA_STATUS_ICONS[iconState];
+            const iconHtml = iconName ? `<i data-lucide="${iconName}" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i>` : "";
             const trimmedLabel = (label || "").trim();
-            const combined =
-                icon && trimmedLabel
-                    ? `${icon} ${trimmedLabel}`
-                    : icon
-                        ? icon
-                        : trimmedLabel;
+
+            assemblyAiStatusEl.innerHTML = iconHtml + trimmedLabel;
+            if (iconName && window.lucide) window.lucide.createIcons({ props: { size: 14 } });
+
             if (iconState === "error") {
                 assemblyAiStatusEl.classList.add("ia-status--error");
             } else {
                 assemblyAiStatusEl.classList.remove("ia-status--error");
             }
-            assemblyAiStatusEl.textContent = combined;
-            assemblyAiStatusEl.setAttribute("aria-hidden", combined ? "false" : "true");
+            assemblyAiStatusEl.setAttribute("aria-hidden", (iconHtml || trimmedLabel) ? "false" : "true");
         }
 
         function resolveAssemblyAiProxyBase() {
@@ -3192,14 +3240,10 @@
                 startStatusSpinner(openaiStatusEl, labelWithAvailability);
             } else {
                 stopStatusSpinner(openaiStatusEl);
-                const parts = [];
-                if (iconState && IA_STATUS_ICONS[iconState]) {
-                    parts.push(IA_STATUS_ICONS[iconState]);
-                }
-                if (labelWithAvailability) {
-                    parts.push(labelWithAvailability);
-                }
-                openaiStatusEl.textContent = parts.join(" ").trim();
+                const iconName = iconState && IA_STATUS_ICONS[iconState];
+                const iconHtml = iconName ? `<i data-lucide="${iconName}" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i>` : "";
+                openaiStatusEl.innerHTML = iconHtml + (labelWithAvailability || "");
+                if (iconName && window.lucide) window.lucide.createIcons({ props: { size: 14 } });
             }
             if (iconState === "error") {
                 openaiStatusEl.classList.add("ia-status--error");
@@ -4482,13 +4526,13 @@
             return {
                 advice: {
                     id: "advice",
-                    label: "⟡ Conseil",
+                    label: "Conseil",
                     prompt: (window.GoToolkitChatPrompt?.SYSTEM_PROMPT || "").trim(),
                     defaultPrompt: (window.GoToolkitChatPrompt?.DEFAULT_SYSTEM_PROMPT || "").trim()
                 },
                 ask: {
                     id: "ask",
-                    label: "? Demande",
+                    label: "Demande",
                     prompt: (window.GoToolkitChatPrompt?.INFO_PROMPT || "").trim(),
                     defaultPrompt: (window.GoToolkitChatPrompt?.DEFAULT_INFO_PROMPT || "").trim()
                 }
@@ -5162,6 +5206,11 @@
                 }
             });
         })();
+
+        // Process Lucide icons
+        if (window.lucide) {
+            window.lucide.createIcons();
+        }
     </script>
 
 </body>

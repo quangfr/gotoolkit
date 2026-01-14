@@ -6,10 +6,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Grid | Go-Toolkit</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
-    <link rel="stylesheet" href="styles/style.css?v=2026.01.14.0">
+    <link rel="stylesheet" href="styles/style.css?v=2026.01.14.1">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-grid.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-theme-quartz.css">
     <script
@@ -1073,31 +1074,47 @@
 <body class="app-body">
     <div class="app">
         <header class="app-header">
-            <a class="app-home-link" href="/?v=2026.01.14.0" title="Revenir à l'accueil">☍</a>
+            <a class="app-home-link" href="/?v=2026.01.14.1" title="Revenir à l'accueil"><i data-lucide="home"
+                    style="width:16px;height:16px;"></i></a>
             <div class="nav-switch">
-                <button id="navSwitcherBtn" class="nav-switch-btn" type="button">⊞ Grid ▾</button>
+                <button id="navSwitcherBtn" class="nav-switch-btn" type="button"><i data-lucide="grid-3x3"
+                        style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i>Grid <i
+                        data-lucide="chevron-down" style="width:12px;height:12px;vertical-align:middle;"></i></button>
                 <div id="navSwitcherMenu" class="nav-switch-menu">
-                    <a class="nav-switch-link" href="/?v=2026.01.14.0">☍ Accueil</a>
-                    <a class="nav-switch-link" href="memo.html?v=2026.01.14.0" data-app="memo">⌘ Memo</a>
-                    <a class="nav-switch-link" href="timeline.html?v=2026.01.14.0" data-app="timeline">⇥ Timeline</a>
-                    <a class="nav-switch-link" href="voice.html?v=2026.01.14.0" data-app="voice">▷ Voice</a>
+                    <a class="nav-switch-link" href="/?v=2026.01.14.1"><i data-lucide="home"
+                            style="width:14px;height:14px;vertical-align:middle;margin-right:6px;"></i>Accueil</a>
+                    <a class="nav-switch-link" href="memo.html?v=2026.01.14.1" data-app="memo"><i data-lucide="zap"
+                            style="width:14px;height:14px;vertical-align:middle;margin-right:6px;"></i>Mémo</a>
+                    <a class="nav-switch-link" href="old/timeline.html?v=2026.01.14.1" data-app="timeline"><i
+                            data-lucide="layout-list"
+                            style="width:14px;height:14px;vertical-align:middle;margin-right:6px;"></i>Timeline</a>
+                    <a class="nav-switch-link" href="old/voice.html?v=2026.01.14.1" data-app="voice"><i
+                            data-lucide="mic"
+                            style="width:14px;height:14px;vertical-align:middle;margin-right:6px;"></i>Voice</a>
                 </div>
             </div>
 
             <div class="tabs-actions">
                 <div id="pageTabs" class="tabs"></div>
-                <button id="addPageBtn" class="tab-action" title="Ajouter une page">+</button>
-                <button id="deletePageBtn" class="tab-action" title="Supprimer la page">×</button>
+                <button id="addPageBtn" class="tab-action" title="Ajouter une page"><i data-lucide="plus"
+                        style="width:14px;height:14px;"></i></button>
+                <button id="deletePageBtn" class="tab-action" title="Supprimer la page"><i data-lucide="trash-2"
+                        style="width:14px;height:14px;"></i></button>
             </div>
             <div class="global-actions">
-                <button id="gtContextModalTrigger" class="btn drawer-toggle-btn" type="button" title="⌘ Commande">⌘
-                    Commande</button>
-                <button id="gtPromptModalTrigger" class="btn ai-button" type="button" title="⌬ Prompt">⌬ Prompt</button>
-                <button id="gtTemplateModalTrigger" class="btn" type="button" title="⊞ Modèles" style="display: none;">⊞
-                    Modèles</button>
+                <button id="gtContextModalTrigger" class="btn drawer-toggle-btn" type="button" title="Commande"><i
+                        data-lucide="command"
+                        style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i>Commande</button>
+                <button id="gtPromptModalTrigger" class="btn ai-button" type="button" title="Prompt"><i
+                        data-lucide="bot"
+                        style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i>Prompt</button>
+                <button id="gtTemplateModalTrigger" class="btn" type="button" title="Modèles" style="display: none;"><i
+                        data-lucide="grid"
+                        style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i>Modèles</button>
                 <div class="menu-trigger">
-                    <button id="affichageBtn" class="btn" type="button" aria-label="Affichage" title="Affichage">◯
-                        Affichage</button>
+                    <button id="affichageBtn" class="btn" type="button" aria-label="Affichage" title="Affichage"><i
+                            data-lucide="eye"
+                            style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i>Affichage</button>
                     <div class="context-menu" id="affichageMenu">
                         <div class="menu-panel display-panel">
                             <label>
@@ -1123,7 +1140,7 @@
                     <div id="infoPopup" class="info-popup" role="dialog" aria-live="polite">
                         <img src="img/logo.gif" alt="Logo Go-Toolkit">
                         <strong>Module Grid (Le Cardinal)</strong>
-                        <span>Version 2026.01.14.0</span>
+                        <span>Version 2026.01.14.1</span>
                         <div class="info-actions">
                             <button id="updateAppBtn" type="button" class="update-btn">Mettre à jour</button>
                             <button type="button" class="secondary" data-open-nexus-modal>Mentions légales</button>
@@ -1168,8 +1185,11 @@
                             <label class="gt-context-label">
                                 Commande
                             </label>
-                            <button id="clearGridBtn" class="btn" type="button">⊘</button>
-                            <button id="generateBtn" class="btn-primary generate-btn" type="button">⌘ Envoyer</button>
+                            <button id="clearGridBtn" class="btn" type="button"><i data-lucide="trash-2"
+                                    style="width:14px;height:14px;"></i></button>
+                            <button id="generateBtn" class="btn-primary generate-btn" type="button"><i
+                                    data-lucide="send"
+                                    style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i>Envoyer</button>
                         </div>
                         <div id="templateMeta" class="template-meta"></div>
                         <div class="prompt-input-wrapper">
@@ -1181,14 +1201,16 @@
                                 <textarea id="promptInput" rows="5"
                                     placeholder="Décris le contexte des données attendues (acteur, périmètre, règles)..."></textarea>
                                 <button class="speech-button" type="button" data-speech-target="promptInput"
-                                    title="Dictée vocale" aria-label="Activer la dictée vocale">◉</button>
+                                    title="Dictée vocale" aria-label="Activer la dictée vocale"><i
+                                        data-lucide="mic"></i></button>
                                 <div id="promptFileRow" class="prompt-file-row" aria-hidden="true">
                                     <div id="promptFileList" class="prompt-file-list"></div>
                                     <div class="prompt-file-actions">
                                         <input id="promptFileInput" type="file" multiple style="display: none;"
                                             aria-hidden="true">
                                         <button id="promptFileBtn" class="prompt-file-btn" type="button"
-                                            title="Ajouter des fichiers" aria-label="Ajouter des fichiers">🗁</button>
+                                            title="Ajouter des fichiers" aria-label="Ajouter des fichiers"><i
+                                                data-lucide="folder-plus"></i></button>
                                     </div>
                                 </div>
                             </div>
@@ -1203,7 +1225,8 @@
                                 Script
                             </label>
                             <div class="card-actions">
-                                <button id="applyScriptBtn" class="btn" type="button">↺</button>
+                                <button id="applyScriptBtn" class="btn" type="button"><i
+                                        data-lucide="refresh-cw"></i></button>
                             </div>
                         </div>
                         <textarea id="gridScript" spellcheck="false"></textarea>
@@ -1219,9 +1242,10 @@
         aria-labelledby="gtTemplateModalTitle">
         <div class="modal gt-template-modal__dialog">
             <header class="modal-header">
-                <h3 id="gtTemplateModalTitle" title="⊞ Modèles">⊞ Modèles</h3>
-                <button class="modal-close btn-secondary" id="gtTemplateModalClose" type="button"
-                    aria-label="Fermer">✕</button>
+                <h3 id="gtTemplateModalTitle" title="Modèles"><i data-lucide="grid"
+                        style="width:20px;height:20px;vertical-align:middle;margin-right:8px;"></i>Modèles</h3>
+                <button class="modal-close btn-secondary" id="gtTemplateModalClose" type="button" aria-label="Fermer"><i
+                        data-lucide="x" style="width:16px;height:16px;"></i></button>
             </header>
             <div class="gt-template-modal__list" id="gtTemplateModalList"></div>
             <div class="modal-actions template-actions">
@@ -1234,8 +1258,10 @@
         aria-labelledby="gtPromptModalTitle">
         <div class="modal">
             <header class="modal-header">
-                <h3 id="gtPromptModalTitle" title="⌬ Prompt">⌬ Prompt</h3>
-                <button id="gtPromptModalClose" class="btn-secondary" type="button">✕</button>
+                <h3 id="gtPromptModalTitle" title="Prompt"><i data-lucide="bot"
+                        style="width:20px;height:20px;vertical-align:middle;margin-right:8px;"></i>Prompt</h3>
+                <button id="gtPromptModalClose" class="btn-secondary" type="button"><i data-lucide="x"
+                        style="width:16px;height:16px;"></i></button>
             </header>
             <div class="template-modal-label" aria-live="polite">
                 <span>Modèle</span>
@@ -1261,7 +1287,8 @@
         <div class="modal tree-source-modal">
             <header class="modal-header">
                 <h3>Sources</h3>
-                <button id="closeTreeSourceModal" class="btn-secondary" type="button">✕</button>
+                <button id="closeTreeSourceModal" class="btn-secondary" type="button"><i data-lucide="x"
+                        style="width:16px;height:16px;"></i></button>
             </header>
             <label>
                 <span>Liste des sources (une par ligne)</span>
@@ -1277,7 +1304,8 @@
         <div class="modal tree-source-modal">
             <header class="modal-header">
                 <h3>Statuts</h3>
-                <button id="closeTreeStatusModal" class="btn-secondary" type="button">✕</button>
+                <button id="closeTreeStatusModal" class="btn-secondary" type="button"><i data-lucide="x"
+                        style="width:16px;height:16px;"></i></button>
             </header>
             <label>
                 <span>Liste des statuts (un par ligne)</span>
@@ -1293,7 +1321,8 @@
         <div class="modal tree-source-modal">
             <header class="modal-header">
                 <h3>Types</h3>
-                <button id="closeTreeTypeModal" class="btn-secondary" type="button">✕</button>
+                <button id="closeTreeTypeModal" class="btn-secondary" type="button"><i data-lucide="x"
+                        style="width:16px;height:16px;"></i></button>
             </header>
             <label>
                 <span>Liste des types (un par ligne)</span>
@@ -1306,18 +1335,18 @@
         </div>
     </div>
 
-    <script src="prompt.js?v=2026.01.14.0"></script>
-    <script src="js/ia-config.js?v=2026.01.14.0"></script>
-    <script src="js/ia-client.js?v=2026.01.14.0"></script>
-    <script src="js/config.js?v=2026.01.14.0"></script>
-    <script src="js/feature-visibility.js?v=2026.01.14.0"></script>
-    <script src="js/document-storage.js?v=2026.01.14.0"></script>
-    <script src="js/storage-service.js?v=2026.01.14.0"></script>
-    <script src="js/shared-ui.js?v=2026.01.14.0"></script>
-    <script src="js/cgu.js?v=2026.01.14.0"></script>
-    <script src="js/share-worker-client.js?v=2026.01.14.0"></script>
-    <script src="js/share-history.js?v=2026.01.14.0"></script>
-    <script src="js/document-api.js?v=2026.01.14.0"></script>
+    <script src="prompt.js?v=2026.01.14.1"></script>
+    <script src="js/ia-config.js?v=2026.01.14.1"></script>
+    <script src="js/ia-client.js?v=2026.01.14.1"></script>
+    <script src="js/config.js?v=2026.01.14.1"></script>
+    <script src="js/feature-visibility.js?v=2026.01.14.1"></script>
+    <script src="js/document-storage.js?v=2026.01.14.1"></script>
+    <script src="js/storage-service.js?v=2026.01.14.1"></script>
+    <script src="js/shared-ui.js?v=2026.01.14.1"></script>
+    <script src="js/cgu.js?v=2026.01.14.1"></script>
+    <script src="js/share-worker-client.js?v=2026.01.14.1"></script>
+    <script src="js/share-history.js?v=2026.01.14.1"></script>
+    <script src="js/document-api.js?v=2026.01.14.1"></script>
     <script src="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/dist/ag-grid-community.min.noStyle.js"></script>
     <script>
             (() => {
@@ -1472,8 +1501,8 @@
                 const shareHistory = window.goToolkitShareHistory;
                 const shareService = window.goToolkitShareWorker;
                 const documentApi = window.goToolkitDocumentApi;
-                const generateDefaultLabel = generateBtn?.textContent || "⌘ Envoyer";
-                const drawerDefaultLabel = drawerBtn?.textContent || "⌘ Commande";
+                const generateDefaultLabel = generateBtn?.textContent || "Envoyer";
+                const drawerDefaultLabel = drawerBtn?.textContent || "Commande";
                 const hasSeenTemplateModal =
                     typeof localStorage !== "undefined" &&
                     localStorage.getItem(TEMPLATE_MODAL_SEEN_KEY) === "1";
@@ -9325,7 +9354,7 @@
             })
         };
     </script>
-    <script src="js/feedback.js?v=2026.01.14.0"></script>
+    <script src="js/feedback.js?v=2026.01.14.1"></script>
     <script>
         (function () {
             const templateTrigger = document.getElementById("gtTemplateModalTrigger");
@@ -9414,6 +9443,9 @@
             window.addEventListener("hashchange", () => handleFragment(window.location.hash));
             window.addEventListener("DOMContentLoaded", () => handleFragment(window.location.hash));
             handleFragment(window.location.hash);
+            if (window.lucide) {
+                window.lucide.createIcons();
+            }
         })();
     </script>
 </body>

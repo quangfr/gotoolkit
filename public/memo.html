@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <title>Mémo | Go-Toolkit</title>
-    <link rel="stylesheet" href="styles/style.css?v=2026.01.14.0">
+    <link rel="stylesheet" href="styles/style.css?v=2026.01.14.1">
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
@@ -600,8 +600,22 @@
                 padding: 4px;
             }
         }
+
+        .lucide-spin {
+            animation: lucide-spin 1s linear infinite;
+        }
+
+        @keyframes lucide-spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
     </style>
-    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.01.14.0">
+    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.01.14.1">
 </head>
 
 <body class="app-body">
@@ -623,14 +637,14 @@
                             aria-expanded="false"><i data-lucide="command"></i> Memo <i
                                 data-lucide="chevron-down"></i></button>
                         <div id="navSwitcherMenu" class="nav-switch-menu" role="menu">
-                            <a class="nav-switch-link" href="/?v=2026.01.14.0" role="menuitem"><i
+                            <a class="nav-switch-link" href="/?v=2026.01.14.1" role="menuitem"><i
                                     data-lucide="home"></i> Accueil</a>
-                            <a class="nav-switch-link" href="grid.html?v=2026.01.14.0" role="menuitem"
+                            <a class="nav-switch-link" href="grid.html?v=2026.01.14.1" role="menuitem"
                                 data-app="grid"><i data-lucide="grid-3x3"></i>
                                 Grid</a>
-                            <a class="nav-switch-link" href="timeline.html?v=2026.01.14.0" role="menuitem"
+                            <a class="nav-switch-link" href="timeline.html?v=2026.01.14.1" role="menuitem"
                                 data-app="timeline"><i data-lucide="layout-list"></i> Timeline</a>
-                            <a class="nav-switch-link" href="voice.html?v=2026.01.14.0" role="menuitem"
+                            <a class="nav-switch-link" href="voice.html?v=2026.01.14.1" role="menuitem"
                                 data-app="voice"><i data-lucide="mic"></i>
                                 Voice</a>
                         </div>
@@ -690,8 +704,9 @@
         aria-labelledby="gtTemplateModalTitle">
         <div class="modal">
             <div class="modal-header">
-                <h3 id="gtTemplateModalTitle" title="⊞ Modèles">⊞ Modèles</h3>
-                <button class="modal-close" id="gtTemplateModalClose" type="button" aria-label="Fermer">×</button>
+                <h3 id="gtTemplateModalTitle" title="Modèles">Modèles</h3>
+                <button class="modal-close" id="gtTemplateModalClose" type="button" aria-label="Fermer"><i
+                        data-lucide="x"></i></button>
             </div>
             <div class="gt-template-modal__list" id="gtTemplateModalList" role="radiogroup"></div>
             <div class="gt-template-modal__actions">
@@ -705,7 +720,8 @@
         <div class="modal">
             <div class="modal-header">
                 <h3 id="gtPromptModalTitle" title="Prompt">Prompt</h3>
-                <button class="modal-close" id="gtPromptModalClose" type="button" aria-label="Fermer">×</button>
+                <button class="modal-close" id="gtPromptModalClose" type="button" aria-label="Fermer"><i
+                        data-lucide="x"></i></button>
             </div>
             <div class="ia-actions">
                 <div class="header-row ia-header-actions">
@@ -716,7 +732,9 @@
                 </div>
                 <div class="ia-actions-footer ia-template-footer">
                     <div class="modal-actions" style="width:100%; justify-content:flex-end;">
-                        <button class="btn btn-secondary" type="button" id="resetPromptBtn">↺ Réinitialiser</button>
+                        <button class="btn btn-secondary" type="button" id="resetPromptBtn"><i data-lucide="rotate-ccw"
+                                style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i>
+                            Réinitialiser</button>
                         <button class="btn-primary" type="button" id="applyPromptBtn">Appliquer</button>
                     </div>
                 </div>
@@ -727,7 +745,7 @@
     <div id="memoInfoPopup" class="info-popup" role="dialog" aria-live="polite">
         <img src="img/logo.gif" alt="Logo Go-Toolkit">
         <strong>Module Mémo</strong>
-        <span>Version 2026.01.14.0</span>
+        <span>Version 2026.01.14.1</span>
         <span>Usage réservé à Savane Consulting.</span>
         <div class="info-actions">
             <button id="memoUpdateBtn" type="button" class="update-btn">Mettre à jour</button>
@@ -741,7 +759,8 @@
 
     <div id="aiRequestCounterToaster" class="ai-request-counter-toaster" style="display:none;"
         data-toast-aria-live="polite" data-toast-aria-atomic="true">
-        <span id="aiRequestCounterText">⠋ 00:00</span>
+        <span id="aiRequestCounterText"><i data-lucide="loader-2" class="lucide-spin"
+                style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i> 00:00</span>
     </div>
 
     <input type="file" id="importJsonInput" style="display:none">
@@ -770,7 +789,7 @@
                     placeholder="Que veux-tu modifier ?"></textarea>
                 <button id="chat-inline-editor-btn" class="chat-inline-editor__btn" type="button"
                     title="Envoyer à l'IA">
-                    ↩︎
+                    <i data-lucide="send" style="width:16px;height:16px;"></i>
                 </button>
             </div>
         </div>
@@ -780,21 +799,21 @@
         window.GO_TOOLKIT_SHARE_API_URL =
             window.GO_TOOLKIT_SHARE_API_URL || "https://share.gotoolkit.workers.dev/";
     </script>
-    <script src="js/config.js?v=2026.01.14.0"></script>
-    <script src="js/feature-visibility.js?v=2026.01.14.0"></script>
-    <script src="js/document-storage.js?v=2026.01.14.0"></script>
-    <script src="js/storage-service.js?v=2026.01.14.0"></script>
-    <script src="js/shared-ui.js?v=2026.01.14.0"></script>
-    <script src="js/cgu.js?v=2026.01.14.0"></script>
-    <script src="js/share-worker-client.js?v=2026.01.14.0"></script>
-    <script src="js/share-history.js?v=2026.01.14.0"></script>
-    <script src="js/document-api.js?v=2026.01.14.0"></script>
-    <script src="js/keywordIndex.js?v=2026.01.14.0"></script>
-    <script src="js/document-rag.js?v=2026.01.14.0"></script>
-    <script src="js/ia-config.js?v=2026.01.14.0"></script>
-    <script src="prompt.js?v=2026.01.14.0"></script>
-    <script src="js/ia-client.js?v=2026.01.14.0"></script>
-    <script src="js/document-markdown.js?v=2026.01.14.0"></script>
+    <script src="js/config.js?v=2026.01.14.1"></script>
+    <script src="js/feature-visibility.js?v=2026.01.14.1"></script>
+    <script src="js/document-storage.js?v=2026.01.14.1"></script>
+    <script src="js/storage-service.js?v=2026.01.14.1"></script>
+    <script src="js/shared-ui.js?v=2026.01.14.1"></script>
+    <script src="js/cgu.js?v=2026.01.14.1"></script>
+    <script src="js/share-worker-client.js?v=2026.01.14.1"></script>
+    <script src="js/share-history.js?v=2026.01.14.1"></script>
+    <script src="js/document-api.js?v=2026.01.14.1"></script>
+    <script src="js/keywordIndex.js?v=2026.01.14.1"></script>
+    <script src="js/document-rag.js?v=2026.01.14.1"></script>
+    <script src="js/ia-config.js?v=2026.01.14.1"></script>
+    <script src="prompt.js?v=2026.01.14.1"></script>
+    <script src="js/ia-client.js?v=2026.01.14.1"></script>
+    <script src="js/document-markdown.js?v=2026.01.14.1"></script>
     <script>
         // Initialize feedback configuration for Memo before loading feedback.js
         window.GoToolkitAppFeedbackConfig = {
@@ -803,22 +822,22 @@
             defaultType: "bug-memo",
             primaryColor: "#2563eb",
             types: [
-                { value: "bug-memo", label: "⊞ Bug Mémo" },
+                { value: "bug-memo", label: "Bug Mémo" },
                 { value: "bug-assist", label: "Bug Assist" },
-                { value: "bug-draw", label: "ʃ Bug Draw" },
-                { value: "bug-grid", label: "◇ Bug Grid" },
-                { value: "bug-timeline", label: "⇥ Bug Timeline" },
-                { value: "bug-voice", label: "▷ Bug Voice" },
-                { value: "suggestion", label: "☄ Suggestion" }
+                { value: "bug-draw", label: "Bug Draw" },
+                { value: "bug-grid", label: "Bug Grid" },
+                { value: "bug-timeline", label: "Bug Timeline" },
+                { value: "bug-voice", label: "Bug Voice" },
+                { value: "suggestion", label: "Suggestion" }
             ]
         };
     </script>
-    <script src="js/feedback.js?v=2026.01.14.0"></script>
-    <script src="js/voice-video-player.js?v=2026.01.14.0"></script>
-    <script src="js/voice-audio-player.js?v=2026.01.14.0"></script>
-    <script src="js/voice.js?v=2026.01.14.0"></script>
-    <script src="js/voice-transcript.js?v=2026.01.14.0"></script>
-    <script src="js/draw-memo.js?v=2026.01.14.0"></script>
+    <script src="js/feedback.js?v=2026.01.14.1"></script>
+    <script src="js/voice-video-player.js?v=2026.01.14.1"></script>
+    <script src="js/voice-audio-player.js?v=2026.01.14.1"></script>
+    <script src="js/voice.js?v=2026.01.14.1"></script>
+    <script src="js/voice-transcript.js?v=2026.01.14.1"></script>
+    <script src="js/draw-memo.js?v=2026.01.14.1"></script>
     <script>
         // Suppress React DevTools prompt in dev builds.
         window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = window.__REACT_DEVTOOLS_GLOBAL_HOOK__ || {
@@ -828,9 +847,9 @@
             onCommitFiberUnmount: function () { }
         };
     </script>
-    <script src="js/memo.bundle.js?v=2026.01.14.0"></script>
-    <script src="js/assist.js?v=2026.01.14.0"></script>
-    <script src="js/document-panel.js?v=2026.01.14.0"></script>
+    <script src="js/memo.bundle.js?v=2026.01.14.1"></script>
+    <script src="js/assist.js?v=2026.01.14.1"></script>
+    <script src="js/document-panel.js?v=2026.01.14.1"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             setTimeout(function () {
@@ -2249,25 +2268,25 @@
                     promptStore.PRESETS = {
                         advice: {
                             id: "advice",
-                            label: "↬ Demander",
+                            label: "Demander",
                             prompt: promptStore.SYSTEM_PROMPT,
                             defaultPrompt: defaultPrompt
                         },
                         ask: {
                             id: "ask",
-                            label: "⌕ Explorer",
+                            label: "Explorer",
                             prompt: promptStore.INFO_PROMPT,
                             defaultPrompt: defaultInfoPrompt
                         },
                         suggest: {
                             id: "suggest",
-                            label: "✦ Suggérer",
+                            label: "Suggérer",
                             prompt: defaultSuggestPrompt,
                             defaultPrompt: defaultSuggestPrompt
                         },
                         edit: {
                             id: "edit",
-                            label: "✂ Éditer",
+                            label: "Éditer",
                             prompt: defaultEditPrompt,
                             defaultPrompt: defaultEditPrompt
                         }
