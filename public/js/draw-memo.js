@@ -25,7 +25,7 @@ window.GoToolkitDrawMemo = (function () {
             fontSize: 12,
             strokeWidth: 1.2,
             roughness: 0,
-            flowchart: { padding: 6, nodeSpacing: 50, rankSpacing: 50 }
+            flowchart: { padding: 0, nodeSpacing: 20, rankSpacing: 20 }
         }
     };
 

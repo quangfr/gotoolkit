@@ -50,8 +50,24 @@
       }
     },
     {
+      "label": "Build",
+      "type": "shell",
+      "command": "npm run build",
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
       "label": "Dev + Serve public",
-      "dependsOn": ["Dev", "Serve public"],
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "Build",
+        "Dev",
+        "Serve public"
+      ],
       "problemMatcher": []
     }
   ]

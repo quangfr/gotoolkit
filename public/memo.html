@@ -32,7 +32,7 @@
         })();
     </script>
     <title>Mémo | Go-Toolkit</title>
-    <link rel="stylesheet" href="styles/style.css?v=2026.01.15.10">
+    <link rel="stylesheet" href="styles/style.css?v=2026.01.15.11">
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
@@ -441,7 +441,7 @@
         .memo-card {
             background: var(--memo-card-bg);
             border: 1px solid #ebe0d1;
-            border-radius: 12px;
+            border-radius: 8px;
             box-shadow: var(--app-shadow);
             padding: 0;
             flex: 1;
@@ -524,7 +524,7 @@
             border-left: 3px solid #e5e7eb;
             color: #111827;
             background: #fafafa;
-            border-radius: 10px;
+            border-radius: 8px;
         }
 
         .ProseMirror code {
@@ -541,7 +541,7 @@
             padding: 8px;
             background: #fff;
             border: 1px solid #e5e7eb;
-            border-radius: 14px;
+            border-radius: 8px;
             box-shadow: 0 10px 25px rgba(15, 23, 42, .05);
             z-index: 10000;
         }
@@ -572,7 +572,7 @@
             width: 240px;
             background: #fff;
             border: 1px solid #e5e7eb;
-            border-radius: 14px;
+            border-radius: 8px;
             box-shadow: 0 14px 30px rgba(15, 23, 42, .14);
             padding: 6px;
             display: none;
@@ -583,7 +583,7 @@
             gap: 10px;
             align-items: center;
             padding: 10px 10px;
-            border-radius: 12px;
+            border-radius: 8px;
             cursor: pointer;
             font-size: 13px;
         }
@@ -598,7 +598,7 @@
             display: grid;
             place-items: center;
             border: 1px solid #e5e7eb;
-            border-radius: 10px;
+            border-radius: 8px;
             font-size: 12px;
             color: #64748b;
             background: #fff;
@@ -743,7 +743,7 @@
             }
         }
     </style>
-    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.01.15.10">
+    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.01.15.11">
 </head>
 
 <body class="app-body">
@@ -782,14 +782,14 @@
                             aria-expanded="false"><i data-lucide="command"></i> Memo <i
                                 data-lucide="chevron-down"></i></button>
                         <div id="navSwitcherMenu" class="nav-switch-menu" role="menu">
-                            <a class="nav-switch-link" href="/?v=2026.01.15.10" role="menuitem"><i
+                            <a class="nav-switch-link" href="/?v=2026.01.15.11" role="menuitem"><i
                                     data-lucide="home"></i> Accueil</a>
-                            <a class="nav-switch-link" href="grid.html?v=2026.01.15.10" role="menuitem"
+                            <a class="nav-switch-link" href="grid.html?v=2026.01.15.11" role="menuitem"
                                 data-app="grid"><i data-lucide="grid-3x3"></i>
                                 Grid</a>
-                            <a class="nav-switch-link" href="timeline.html?v=2026.01.15.10" role="menuitem"
+                            <a class="nav-switch-link" href="timeline.html?v=2026.01.15.11" role="menuitem"
                                 data-app="timeline"><i data-lucide="layout-list"></i> Timeline</a>
-                            <a class="nav-switch-link" href="voice.html?v=2026.01.15.10" role="menuitem"
+                            <a class="nav-switch-link" href="voice.html?v=2026.01.15.11" role="menuitem"
                                 data-app="voice"><i data-lucide="mic"></i>
                                 Voice</a>
                         </div>
@@ -890,10 +890,10 @@
     <div id="memoInfoPopup" class="info-popup" role="dialog" aria-live="polite">
         <img src="img/logo.gif" alt="Logo Go-Toolkit">
         <strong>Module Mémo</strong>
-        <span>Version 2026.01.15.10</span>
+        <span>Version 2026.01.15.11</span>
         <span>Usage réservé à Savane Consulting.</span>
         <div class="info-actions">
-            <button id="memoUpdateBtn" type="button" class="update-btn">Mettre à jour</button>
+            <button id="memoUpdateBtn" type="button" class="update-btn">Réinitialiser</button>
             <button type="button" class="secondary" data-open-nexus-modal>Mentions légales</button>
         </div>
     </div>
@@ -944,21 +944,21 @@
         window.GO_TOOLKIT_SHARE_API_URL =
             window.GO_TOOLKIT_SHARE_API_URL || "https://share.gotoolkit.workers.dev/";
     </script>
-    <script src="js/config.js?v=2026.01.15.10"></script>
-    <script src="js/feature-visibility.js?v=2026.01.15.10"></script>
-    <script src="js/document-storage.js?v=2026.01.15.10"></script>
-    <script src="js/storage-service.js?v=2026.01.15.10"></script>
-    <script src="js/shared-ui.js?v=2026.01.15.10"></script>
-    <script src="js/cgu.js?v=2026.01.15.10"></script>
-    <script src="js/share-worker-client.js?v=2026.01.15.10"></script>
-    <script src="js/share-history.js?v=2026.01.15.10"></script>
-    <script src="js/document-api.js?v=2026.01.15.10"></script>
-    <script src="js/keywordIndex.js?v=2026.01.15.10"></script>
-    <script src="js/document-rag.js?v=2026.01.15.10"></script>
-    <script src="js/ia-config.js?v=2026.01.15.10"></script>
-    <script src="prompt.js?v=2026.01.15.10"></script>
-    <script src="js/ia-client.js?v=2026.01.15.10"></script>
-    <script src="js/document-markdown.js?v=2026.01.15.10"></script>
+    <script src="js/config.js?v=2026.01.15.11"></script>
+    <script src="js/feature-visibility.js?v=2026.01.15.11"></script>
+    <script src="js/document-storage.js?v=2026.01.15.11"></script>
+    <script src="js/storage-service.js?v=2026.01.15.11"></script>
+    <script src="js/shared-ui.js?v=2026.01.15.11"></script>
+    <script src="js/cgu.js?v=2026.01.15.11"></script>
+    <script src="js/share-worker-client.js?v=2026.01.15.11"></script>
+    <script src="js/share-history.js?v=2026.01.15.11"></script>
+    <script src="js/document-api.js?v=2026.01.15.11"></script>
+    <script src="js/keywordIndex.js?v=2026.01.15.11"></script>
+    <script src="js/document-rag.js?v=2026.01.15.11"></script>
+    <script src="js/ia-config.js?v=2026.01.15.11"></script>
+    <script src="prompt.js?v=2026.01.15.11"></script>
+    <script src="js/ia-client.js?v=2026.01.15.11"></script>
+    <script src="js/document-markdown.js?v=2026.01.15.11"></script>
     <script>
         // Initialize feedback configuration for Memo before loading feedback.js
         window.GoToolkitAppFeedbackConfig = {
@@ -977,12 +977,12 @@
             ]
         };
     </script>
-    <script src="js/feedback.js?v=2026.01.15.10"></script>
-    <script src="js/voice-video-player.js?v=2026.01.15.10"></script>
-    <script src="js/voice-audio-player.js?v=2026.01.15.10"></script>
-    <script src="js/voice.js?v=2026.01.15.10"></script>
-    <script src="js/voice-transcript.js?v=2026.01.15.10"></script>
-    <script src="js/draw-memo.js?v=2026.01.15.10"></script>
+    <script src="js/feedback.js?v=2026.01.15.11"></script>
+    <script src="js/voice-video-player.js?v=2026.01.15.11"></script>
+    <script src="js/voice-audio-player.js?v=2026.01.15.11"></script>
+    <script src="js/voice.js?v=2026.01.15.11"></script>
+    <script src="js/voice-transcript.js?v=2026.01.15.11"></script>
+    <script src="js/draw-memo.js?v=2026.01.15.11"></script>
     <script>
         // Suppress React DevTools prompt in dev builds.
         window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = window.__REACT_DEVTOOLS_GLOBAL_HOOK__ || {
@@ -992,9 +992,9 @@
             onCommitFiberUnmount: function () { }
         };
     </script>
-    <script src="js/memo.bundle.js?v=2026.01.15.10"></script>
-    <script src="js/assist.js?v=2026.01.15.10"></script>
-    <script src="js/document-panel.js?v=2026.01.15.10"></script>
+    <script src="js/memo.bundle.js?v=2026.01.15.11"></script>
+    <script src="js/assist.js?v=2026.01.15.11"></script>
+    <script src="js/document-panel.js?v=2026.01.15.11"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             setTimeout(function () {
@@ -1210,7 +1210,7 @@
 
                     const close = document.createElement("span");
                     close.className = "document-tab__close";
-                    close.textContent = "×";
+                    close.innerHTML = '<i data-lucide="x"></i>';
                     close.setAttribute("role", "button");
                     close.setAttribute("aria-label", "Fermer le document");
                     close.tabIndex = 0;
@@ -1238,7 +1238,7 @@
                 const createBtn = document.createElement("button");
                 createBtn.type = "button";
                 createBtn.className = "tab document-tab document-tab--create";
-                createBtn.textContent = "+";
+                createBtn.innerHTML = '<i data-lucide="plus"></i>';
                 createBtn.title = "Nouveau document";
                 createBtn.setAttribute("aria-label", "Créer un document");
                 createBtn.draggable = false;
@@ -1249,6 +1249,7 @@
                 persistOpenDocumentState();
                 updateEmptyState();
                 memoExplorer?.refreshIndicators?.();
+                if (window.lucide) window.lucide.createIcons();
             }
 
             function ensureActiveDocument() {
@@ -2820,43 +2821,18 @@
             });
 
             memoUpdateBtn?.addEventListener("click", async () => {
-                const generateRandomString = () => {
-                    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-                    let result = '';
-                    for (let i = 0; i < 8; i++) {
-                        result += chars.charAt(Math.floor(Math.random() * chars.length));
-                    }
-                    return result;
-                };
-
-                // Vérifier s'il y a des données non enregistrées dans document-api
-                const hasUnsavedChanges = await (async () => {
-                    try {
-                        const store = goToolkitDocStore?.createStore('document-api');
-                        if (!store || !store.getAll) return false;
-                        const items = await store.getAll();
-                        return items && items.length > 0;
-                    } catch (e) {
-                        return false;
-                    }
-                })();
-
-                if (hasUnsavedChanges) {
-                    const shouldSave = confirm("Souhaitez-vous sauvegarder votre brouillon avant la mise à jour ?");
-                    if (shouldSave) {
-                        try {
-                            await saveDocument();
-                        } catch (e) {
-                            console.error("Erreur lors de la sauvegarde:", e);
-                        }
-                    }
+                if (!confirm("Les documents seront effacés. Continuer ?")) {
+                    return;
                 }
 
-                // Vider le localStorage et sessionStorage
+                try {
+                    indexedDB.deleteDatabase('go-toolkit');
+                    indexedDB.deleteDatabase('gotoolkit-documents');
+                } catch (e) { }
+
                 localStorage.clear();
                 sessionStorage.clear();
 
-                // Vider les caches
                 if ('caches' in window) {
                     try {
                         const names = await caches.keys();
@@ -2864,9 +2840,7 @@
                     } catch (e) { }
                 }
 
-                // Recharger avec cache-buster
-                const randomStr = generateRandomString();
-                window.location.href = `/?v=${randomStr}`;
+                window.location.reload();
             });
 
             shareBtn?.addEventListener("click", event => {
@@ -3493,7 +3467,7 @@
     <div id="memo-source-overlay"
         style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:100000;">
         <div id="memo-source-modal" role="dialog" aria-modal="true" aria-label="Document source"
-            style="position:absolute; top:1vh; left:50%; transform:translateX(-50%); width:1100px; max-width:calc(100vw - 24px); height:98vh; background:#111; color:#eee; border:1px solid rgba(255,255,255,.12); border-radius:12px; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,.6); font-size:13px;">
+            style="position:absolute; top:1vh; left:50%; transform:translateX(-50%); width:1100px; max-width:calc(100vw - 24px); height:98vh; background:#111; color:#eee; border:1px solid rgba(255,255,255,.12); border-radius:8px; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,.6); font-size:13px;">
             <div
                 style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-bottom:1px solid rgba(255,255,255,.12); font-size:13px;">
                 <div style="font-weight:600; font-size:13px;">Source</div>
@@ -3519,7 +3493,7 @@
                 style="width:100%; height:calc(98vh - 52px); padding:12px; border:0; outline:none; resize:none; background:#0b0b0b; color:#eaeaea; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; font-size:13px; line-height:1.45;"></textarea>
 
             <div id="memo-source-toast" role="status" aria-live="polite"
-                style="position:absolute; left:50%; bottom:14px; transform:translateX(-50%); background:rgba(20,20,20,.95); color:#fff; border:1px solid rgba(255,255,255,.12); padding:8px 10px; border-radius:10px; font-size:13px; display:none; pointer-events:none; max-width:calc(100% - 24px); text-align:center;">
+                style="position:absolute; left:50%; bottom:14px; transform:translateX(-50%); background:rgba(20,20,20,.95); color:#fff; border:1px solid rgba(255,255,255,.12); padding:8px 10px; border-radius:8px; font-size:13px; display:none; pointer-events:none; max-width:calc(100% - 24px); text-align:center;">
             </div>
         </div>
     </div>

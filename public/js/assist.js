@@ -2987,7 +2987,7 @@
         this.scrollButton.type = "button";
         this.scrollButton.id = "chatAttachFilesBtn";
         this.scrollButton.className = "btn-secondary chat-attach-files-btn chat-scroll-btn";
-        this.scrollButton.textContent = "+";
+        this.scrollButton.innerHTML = '<i data-lucide="paperclip"></i>';
         this.scrollButton.addEventListener("click", this.openDocumentSelector.bind(this));
         composerLeftActions.appendChild(this.scrollButton);
 

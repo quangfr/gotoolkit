@@ -152,15 +152,25 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
   const code = node.attrs.code || '';
   const excalidrawJSON = node.attrs.excalidrawJSON || '';
   
-  // Dynamic default size: flowchart TD -> large, others -> small
+  // Dynamic default size
   const getAutoDetectedSize = (c: string) => {
-    const lower = c.toLowerCase();
+    const lower = (c || '').toLowerCase().trim();
+    if (lower.startsWith('classdiagram')) return 'large';
+    if (lower.startsWith('sequencediagram')) return 'small';
     if (lower.includes('flowchart td') || lower.includes('graph td')) return 'large';
     return 'small';
   };
 
+  const isSizeSelectorVisible = (c: string) => {
+    const lower = (c || '').trim().toLowerCase();
+    if (lower.startsWith('sequencediagram') || lower.startsWith('classdiagram')) return false;
+    return true;
+  };
+
   let size = node.attrs.size || getAutoDetectedSize(code);
   if (size === 'medium') size = 'small'; 
+
+  const showSizeSelector = isSizeSelectorVisible(isEditing ? draftCode : code);
 
   // Immediate preview on paste/init if excalidrawJSON is missing but code exists
   React.useEffect(() => {
@@ -443,9 +453,12 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
     if (!(window as any).GoToolkitDrawMemo) return;
     setIsLoading(true);
     try {
+      // Use forced size for sequence/class diagrams
+      const targetSize = !isSizeSelectorVisible(draftCode) ? getAutoDetectedSize(draftCode) : size;
+
       // Do not update node attrs here: TipTap attribute updates can remount the node view
       // and steal the Excalidraw singleton away from the modal.
-      await (window as any).GoToolkitDrawMemo.updateFromMermaid(draftCode, size);
+      await (window as any).GoToolkitDrawMemo.updateFromMermaid(draftCode, targetSize);
 
       // Now that Excalidraw has applied the scene, persist the results.
       const json = (window as any).GoToolkitDrawMemo.getSceneJSON();
@@ -453,6 +466,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
       updateAttributes({
         code: draftCode,
         excalidrawJSON: json || '',
+        size: targetSize // Persist the forced size too
       });
       if (svgHtml) {
         setSvg(svgHtml);
@@ -485,12 +499,45 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
     
     setIsLoading(true);
     try {
+      let updatedCode = draftCode;
+
+      // Flowchart orientation logic
+      const isFlowchart = draftCode.trim().toLowerCase().startsWith('flowchart') || draftCode.trim().toLowerCase().startsWith('graph');
+      if (isFlowchart) {
+        const lines = draftCode.split('\n');
+        let orientationChanged = false;
+        
+        // Find the line that defines the flowchart type and orientation
+        for (let i = 0; i < Math.min(lines.length, 3); i++) {
+          const line = lines[i].trim().toLowerCase();
+          if (line.startsWith('flowchart') || line.startsWith('graph')) {
+            const direction = newSize === 'large' ? 'TD' : 'LR';
+            
+            // Check if it already has a direction
+            const directionMatch = lines[i].match(/(flowchart|graph)\s+(LR|TD|TB|BT|RL)/i);
+            if (directionMatch) {
+              lines[i] = lines[i].replace(/(flowchart|graph)\s+(LR|TD|TB|BT|RL)/i, `$1 ${direction}`);
+            } else {
+              // Otherwise append the direction
+              lines[i] = lines[i].replace(/(flowchart|graph)/i, `$1 ${direction}`);
+            }
+            orientationChanged = true;
+            break;
+          }
+        }
+        
+        if (orientationChanged) {
+          updatedCode = lines.join('\n');
+          setDraftCode(updatedCode);
+        }
+      }
+
       // Update attributes (might trigger some re-renders but we stay in modal)
-      updateAttributes({ size: newSize });
+      updateAttributes({ size: newSize, code: updatedCode });
       
       if ((window as any).GoToolkitDrawMemo) {
         // Re-generate the diagram with the new size/font settings
-        await (window as any).GoToolkitDrawMemo.updateFromMermaid(draftCode, newSize);
+        await (window as any).GoToolkitDrawMemo.updateFromMermaid(updatedCode, newSize);
         
         // Sync the preview immediately
         const json = (window as any).GoToolkitDrawMemo.getSceneJSON();
@@ -516,8 +563,9 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
           title="Double-cliquer pour modifier le diagramme"
           style={{ 
             cursor: 'pointer', 
-            minHeight: size === 'small' ? '400px' : '600px', 
-            display: 'block', 
+            maxHeight: '650px', 
+            display: 'flex', 
+            flexDirection: 'column',
             width: '100%', 
             background: '#ffffff', 
             border: '1px solid #e2e8f0', 
@@ -526,28 +574,30 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
             opacity: 1, 
             position: 'relative', 
             zIndex: 1, 
-            overflow: 'visible', 
+            overflow: 'hidden', 
             contentVisibility: 'visible', 
             transform: 'none', 
             minWidth: '100px', 
             height: 'auto' 
           }}
         >
-          <div className="mermaid-controls" onClick={e => e.stopPropagation()}>
-            {[
-              { id: 'small', label: 'S', Icon: RectangleHorizontal },
-              { id: 'large', label: 'L', Icon: Square }
-            ].map(s => (
-              <button 
-                key={s.id}
-                className={`size-btn ${size === s.id ? 'active' : ''}`}
-                onClick={() => handleSizeChange(s.id)}
-                title={s.label}
-              >
-                <s.Icon size={14} />
-              </button>
-            ))}
-          </div>
+          {showSizeSelector && (
+            <div className="mermaid-controls" onClick={e => e.stopPropagation()}>
+              {[
+                { id: 'small', label: 'Rectangle', Icon: RectangleHorizontal },
+                { id: 'large', label: 'Carré', Icon: Square }
+              ].map(s => (
+                <button 
+                  key={s.id}
+                  className={`size-btn ${size === s.id ? 'active' : ''}`}
+                  onClick={() => handleSizeChange(s.id)}
+                  title={s.label}
+                >
+                  <s.Icon size={14} />
+                </button>
+              ))}
+            </div>
+          )}
 
           {error ? (
             <div className="mermaid-error">
@@ -577,21 +627,23 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
             <div className="mermaid-modal-header">
               <div className="mermaid-modal-header-actions" style={{ justifyContent: 'space-between', width: '100%' }}>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <div className="mermaid-modal-size-selector">
-                    {[
-                      { id: 'small', label: 'Petit', Icon: RectangleHorizontal },
-                      { id: 'large', label: 'Grand', Icon: Square }
-                    ].map((s) => (
-                      <button
-                        key={s.id}
-                        className={`mermaid-modal-size-btn ${size === s.id ? 'active' : ''}`}
-                        onClick={() => handleSizeChange(s.id)}
-                        title={`Taille ${s.label}`}
-                      >
-                        <s.Icon size={14} />
-                      </button>
-                    ))}
-                  </div>
+                  {showSizeSelector && (
+                    <div className="mermaid-modal-size-selector">
+                      {[
+                        { id: 'small', label: 'Rectangle', Icon: RectangleHorizontal },
+                        { id: 'large', label: 'Carré', Icon: Square }
+                      ].map((s) => (
+                        <button
+                          key={s.id}
+                          className={`mermaid-modal-size-btn ${size === s.id ? 'active' : ''}`}
+                          onClick={() => handleSizeChange(s.id)}
+                          title={s.label}
+                        >
+                          <s.Icon size={14} />
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                   {isLoading && <span className="mermaid-loading-spinner"></span>}
