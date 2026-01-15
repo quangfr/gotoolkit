@@ -55,16 +55,23 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
       const selectedType = diagramTypes.find(t => t.id === diagramType);
       const drawTypeValue = selectedType?.promptValue || 'flowchart';
 
-      const finalPrompt = template
-        .replace('{{field_input}}', promptInput.trim())
-        .replace('{{draw_type}}', drawTypeValue);
+      // Get full document markdown for context
+      const documentMarkdown = (window as any).getEditorMarkdown?.() || "Contenu du document non disponible.";
+
+      const userContent = [
+        `DOCUMENT\n${documentMarkdown}`,
+        `CURRENT_CODE\n${draftCode.trim() || 'Aucun diagramme actuel'}`,
+        `DRAW_TYPE\n${drawTypeValue}`,
+        `ASK\n${promptInput.trim()}`
+      ].join('\n\n');
 
       const payload = {
-        model: (window as any).GoToolkitIAConfig.getOpenAiModel(),
+        model: "openai/gpt-oss-120b",
         messages: [
-          { role: "user", content: finalPrompt }
+          { role: "system", content: template },
+          { role: "user", content: userContent }
         ],
-        temperature: 0.7
+        temperature: 0.3
       };
 
       console.log("[DrawComposer] Sending payload:", payload);
@@ -78,46 +85,60 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
       const responseText = typeof response === 'string' ? response : (response?.text || "");
 
       if (responseText) {
-        // Handle common AI prefixes/suffixes or markdown blocks
-        let cleanCode = responseText.trim();
-        if (cleanCode.includes('```')) {
-          const match = cleanCode.match(/```(?:mermaid)?\n?([\s\S]*?)```/);
-          if (match) cleanCode = match[1].trim();
-        }
+        let cleanCode = "";
         
-        // Auto-detect size
-        const lowerCode = cleanCode.toLowerCase();
-        let newSize = 'small';
-        if (lowerCode.includes('flowchart td') || lowerCode.includes('graph td')) {
-          newSize = 'large';
+        try {
+          // Attempt JSON parse as per new prompt definition
+          const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+          const jsonStr = jsonMatch ? jsonMatch[0] : responseText;
+          const parsed = JSON.parse(jsonStr);
+          cleanCode = parsed.mermaid || "";
+          
+          if (!cleanCode && parsed.code) cleanCode = parsed.code; // Fallback
+        } catch (e) {
+          // Fallback to extraction if not JSON
+          cleanCode = responseText.trim();
+          if (cleanCode.includes('```')) {
+            const match = cleanCode.match(/```(?:mermaid)?\n?([\s\S]*?)```/);
+            if (match) cleanCode = match[1].trim();
+          }
         }
 
-        setDraftCode(cleanCode);
-        setPromptInput('');
-        if (composerTextareaRef.current) {
-          composerTextareaRef.current.style.height = 'auto';
-        }
+        if (cleanCode) {
+          // Auto-detect size
+          const lowerCode = cleanCode.toLowerCase();
+          let newSize = 'small';
+          if (lowerCode.includes('flowchart td') || lowerCode.includes('graph td')) {
+            newSize = 'large';
+          }
 
-        // Sync to Excalidraw immediately (simulate click on "Générer")
-        if ((window as any).GoToolkitDrawMemo) {
-          setIsLoading(true);
-          try {
-            await (window as any).GoToolkitDrawMemo.updateFromMermaid(cleanCode, newSize);
-            const json = (window as any).GoToolkitDrawMemo.getSceneJSON();
-            const svgHtml = await (window as any).GoToolkitDrawMemo.getSVG(0.6);
-            
-            updateAttributes({ 
-              code: cleanCode, 
-              size: newSize,
-              excalidrawJSON: json || ''
-            });
-            if (svgHtml) setSvg(svgHtml);
-            setLastValidCode(cleanCode);
-            setModalError(null);
-          } catch (syncErr: any) {
-            setModalError(syncErr.message || "Erreur de synchronisation Excalidraw");
-          } finally {
-            setIsLoading(false);
+          setDraftCode(cleanCode);
+          setPromptInput('');
+          if (composerTextareaRef.current) {
+            composerTextareaRef.current.style.height = 'auto';
+          }
+
+          // Sync to Excalidraw immediately
+          if ((window as any).GoToolkitDrawMemo) {
+            setIsLoading(true);
+            try {
+              await (window as any).GoToolkitDrawMemo.updateFromMermaid(cleanCode, newSize);
+              const json = (window as any).GoToolkitDrawMemo.getSceneJSON();
+              const svgHtml = await (window as any).GoToolkitDrawMemo.getSVG(0.6);
+              
+              updateAttributes({ 
+                code: cleanCode, 
+                size: newSize,
+                excalidrawJSON: json || ''
+              });
+              if (svgHtml) setSvg(svgHtml);
+              setLastValidCode(cleanCode);
+              setModalError(null);
+            } catch (syncErr: any) {
+              setModalError(syncErr.message || "Erreur de synchronisation Excalidraw");
+            } finally {
+              setIsLoading(false);
+            }
           }
         }
       }
@@ -610,7 +631,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
                 </div>
 
                 {/* AI Composer */}
-                <div id="draw-composer" className="draw-composer chat-composer" style={{ borderTop: '1px solid #e2e8f0', background: '#fff' }}>
+                <div id="draw-composer" className="draw-composer chat-composer" style={{ border: 'none', background: '#fff' }}>
                   <div className="chat-input-wrapper">
                     <textarea
                       ref={composerTextareaRef}

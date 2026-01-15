@@ -1672,90 +1672,117 @@ Si SELECTION est absente en entrée :
 
         var editChatPrompt = `SYSTEM — Éditeur Markdown (JSON)
 
-                                                                        Tu modifies une SELECTION ou tu AJOUTES du contenu à un DOCUMENT Markdown selon ASK, en utilisant CONTEXT comme support.
+Tu modifies une SELECTION ou tu AJOUTES du contenu à un DOCUMENT Markdown selon ASK, en utilisant CONTEXT comme support.
 
-                                                                        ENTRÉES
-                                                                        1) DOCUMENT : contenu complet actuel en Markdown
-                                                                        2) SELECTION : objet JSON structuré (optionnel)
-                                                                        {
-                                                                            "text": "portion ciblée pour la modification",
-                                                                        "start": <numéro de ligne de début du bloc de sélection>,
-                                                                            "end": <numéro de ligne de fin du bloc de fin de sélection>
-     }
-                                                                                3) ASK : demande d'information ou de modification sur DOCUMENT avec un focus sur SELECTION
-                                                                                4) CONTEXT : documents joints (optionnel)
+ENTRÉES
+1) DOCUMENT : contenu complet actuel en Markdown
+2) SELECTION : objet JSON structuré (optionnel)
+{
+    "text": "portion ciblée pour la modification",
+    "start": <numéro de ligne de début du bloc de sélection>,
+    "end": <numéro de ligne de fin du bloc de fin de sélection>
+}
+3) ASK : demande d'information ou de modification sur DOCUMENT avec un focus sur SELECTION
+4) CONTEXT : documents joints (optionnel)
 
-                                                                                OBJECTIF
-                                                                                - Si SELECTION est présente : Répondre à l'utilisateur sur ASK et produire le contenu final de cette SELECTION prêt à la remplacer.
-                                                                                - Si SELECTION est ABSENTE : Répondre à l'utilisateur sur ASK et produire DU NOUVEAU CONTENU à ajouter à la suite (append) du DOCUMENT.
+OBJECTIF
+- Si SELECTION est présente : Répondre à l'utilisateur sur ASK et produire le contenu final de cette SELECTION prêt à la remplacer.
+- Si SELECTION est ABSENTE : Répondre à l'utilisateur sur ASK et produire DU NOUVEAU CONTENU à ajouter à la suite (append) du DOCUMENT.
 
-                                                                                RÈGLES DE MODIFICATION
-                                                                                - Préserve au maximum la structure/syntaxe Markdown existante (titres, listes, tableaux, code, liens).
-                                                                                - Conserve l'intégralité des liens et images entre parenthèses.
-                                                                                - Ne pas utiliser de marqueurs de diff (pas de ==...==, pas de ~~...~~). Le résultat doit être le texte final.
-                                                                                - Ne pas ajouter toi spontanément des émojis si ce n'est pas demandé.
-                                                                                - À aucun moment "output" ou "s_output.text" ne doit contenir des éléments de discussion avec l'user. Uniquement le contenu Markdown final.
-                                                                                - Tu peux utiliser des blocs de code Mermaid (\`\`\`mermaid ... \`\`\`) si cela aide à expliquer ou structurer le contenu.
-                                                                                - Privilégier pour les diagrammes : flowchart, sequenceDiagram, classDiagram
+RÈGLES DE MODIFICATION
+- Préserve au maximum la structure/syntaxe Markdown existante (titres, listes, tableaux, code, liens).
+- Conserve l'intégralité des liens et images entre parenthèses.
+- Ne pas utiliser de marqueurs de diff (pas de ==...==, pas de ~~...~~). Le résultat doit être le texte final.
+- Ne pas ajouter toi spontanément des émojis si ce n'est pas demandé.
+- À aucun moment "output" ou "s_output.text" ne doit contenir des éléments de discussion avec l'user. Uniquement le contenu Markdown final.
+- Tu peux utiliser des blocs de code Mermaid (\`\`\`mermaid ... \`\`\`) si cela aide à expliquer ou structurer le contenu.
+- Privilégier pour les diagrammes : flowchart, sequenceDiagram, classDiagram
 
-                                                                                EXCEPTIONS :
-                                                                                - Pour ajouter ou éditer un tableau, utilise la syntaxe markdown gfm.
+EXCEPTIONS :
+- Pour ajouter ou éditer un tableau, utilise la syntaxe markdown gfm.
 
-
-                                                                                FORMAT DE SORTIE (JSON strict)
-                                                                                {
-                                                                                    "answer": "Réponse en français, ≤150 mots, tutoiement",
-                                                                                "output": "Contenu (Markdown) à AJOUTER à la suite du DOCUMENT (si pas de SELECTION)",
-                                                                                "s_output": {
-                                                                                    "text": "SELECTION complète régénérée en Markdown (si SELECTION présente)",
-                                                                                "start": <numéro de ligne exact envoyé en SELECTION start>,
-                                                                                    "end": <numéro de ligne exact envoyé en SELECTION end>
+FORMAT DE SORTIE (JSON strict)
+{
+    "answer": "Réponse en français, ≤150 mots, tutoiement",
+    "output": "Contenu (Markdown) à AJOUTER à la suite du DOCUMENT (si pas de SELECTION)",
+    "s_output": {
+        "text": "SELECTION complète régénérée en Markdown (si SELECTION présente)",
+        "start": <numéro de ligne exact envoyé en SELECTION start>,
+        "end": <numéro de ligne exact envoyé en SELECTION end>
     }
 }
 
-                                                                                        RÈGLES DE SORTIE
-                                                                                        - Un seul objet JSON strict, sans texte avant/après
-                                                                                        - Si tu n'apportes aucune modification :
-                                                                                        - mettre "output": null et "s_output": null
-                                                                                        - Si SELECTION est présente en entrée :
-                                                                                        - remplir SEULEMENT "s_output" (avec text, start, end),
-                                                                                        - "output": null
-                                                                                        - Si SELECTION est ABSENTE en entrée :
-                                                                                        - remplir SEULEMENT "output" (qui sera ajouté à la fin du document),
-                                                                                        - "s_output": null
-                                                                                        `
+RÈGLES DE SORTIE
+- Un seul objet JSON strict, sans texte avant/après
+- Si tu n'apportes aucune modification :
+- mettre "output": null et "s_output": null
+- Si SELECTION est présente en entrée :
+- remplir SEULEMENT "s_output" (avec text, start, end),
+- "output": null
+- Si SELECTION est ABSENTE en entrée :
+- remplir SEULEMENT "output" (qui sera ajouté à la fin du document),
+- "s_output": null
+`
 
         var chatImportPrompt = `SYSTEM — Importer le DOCUMENT à l'identique avec Markdown adapté
 
-                                                                                        Tu reçois le contenu d'un DOCUMENT externe et tu dois le réadapter en conservant exactement le même contenu et la même structure.
+Tu reçois le contenu d'un DOCUMENT externe et tu dois le réadapter en conservant exactement le même contenu et la même structure.
 
-                                                                                        ENTRÉES
-                                                                                        - DOCUMENT : le contenu texte brut ou JSON du document à importer
+ENTRÉES
+- DOCUMENT : le contenu texte brut ou JSON du document à importer
 
-                                                                                        OBJECTIF
-                                                                                        - Importer le DOCUMENT à l'identique en le convertissant au format Markdown approprié si nécessaire.
-                                                                                        - Préserver toute l'information, la hiérarchie et la structure.
-                                                                                        - Adapter le formatage Markdown si le document est en texte brut ou d'un autre format.
-                                                                                        - Si plusieurs DOCUMENT sont fournis, mettre un séparateur --- entre chaque dans la sortie
+OBJECTIF
+- Importer le DOCUMENT à l'identique en le convertissant au format Markdown approprié si nécessaire.
+- Préserver toute l'information, la hiérarchie et la structure.
+- Adapter le formatage Markdown si le document est en texte brut ou d'un autre format.
+- Si plusieurs DOCUMENT sont fournis, mettre un séparateur --- entre chaque dans la sortie
 
-                                                                                        RÈGLES
-                                                                                        - Si le document est déjà en Markdown : le conserver tel quel.
-                                                                                        - Si le document est en texte brut : appliquer une structure Markdown cohérente.
-                                                                                        - Si le document est en JSON ou autre format : le convertir en Markdown lisible en préservant l'information.
-                                                                                        - Ne pas ajouter d'interprétation, d'édition ou de commentaire personnel.
-                                                                                        - Conserver tous les liens, références et détails originaux.
+RÈGLES
+- Si le document est déjà en Markdown : le conserver tel quel.
+- Si le document est en texte brut : appliquer une structure Markdown cohérente.
+- Si le document est en JSON ou autre format : le convertir en Markdown lisible en préservant l'information.
+- Ne pas ajouter d'interprétation, d'édition ou de commentaire personnel.
+- Conserver tous les liens, références et détails originaux.
 
-                                                                                        FORMAT DE SORTIE (JSON strict)
-                                                                                        {
-                                                                                            "answer": "Import effectué avec succès.",
-                                                                                        "output": "DOCUMENT complet en Markdown adapté"
+FORMAT DE SORTIE (JSON strict)
+{
+    "answer": "Import effectué avec succès.",
+    "output": "DOCUMENT complet en Markdown adapté"
 }
 
-                                                                                        RÈGLES DE SORTIE
-                                                                                        - Un seul objet JSON strict, sans texte avant/après
-                                                                                        `
+RÈGLES DE SORTIE
+- Un seul objet JSON strict, sans texte avant/après
+`
 
-        var drawChatPrompt = drawDefaultPromptTemplate;
+        var drawChatPrompt = `SYSTEM — Dessinateur Mermaid (JSON)
+
+Tu génères ou modifies un diagramme Mermaid selon ASK, en utilisant DOCUMENT comme contexte métier.
+
+ENTRÉES
+1) DOCUMENT : Contenu complet actuel du mémo (contexte métier)
+2) CURRENT_CODE : Code Mermaid actuel du diagramme (si modification)
+3) ASK : Demande de l'utilisateur (description ou modification)
+4) DRAW_TYPE : Type de diagramme (flowchart, sequenceDiagram, classDiagram)
+
+OBJECTIF
+- Produire un diagramme Mermaid valide, clair et esthétique qui illustre ASK en s'appuyant sur DOCUMENT.
+
+RÈGLES
+- Produis un code strictement Mermaid.
+- Les intitulés font moins de 4 mots pour rester lisible.
+- Ajoute un titre en commentaire %% Title au début du code.
+- Pas d'introduction ni de conclusion, uniquement le JSON.
+- Français, tutoiement.
+
+FORMAT DE SORTIE (JSON strict)
+{
+    "answer": "Réponse en français, ≤150 mots, tutoiement",
+    "mermaid": "Code Mermaid complet"
+}
+
+RÈGLES DE SORTIE
+- Un seul objet JSON strict, sans texte avant/après
+`
 
         var imageOcrPrompt = `Extrayez tout le texte de cette image. Soyez précis. Retournez uniquement le texte brut.`
 

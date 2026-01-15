@@ -42,6 +42,7 @@ Only `public/js` may touch `window`:
   - Retrieval: `vectorSearch()` embeds query → cosine similarity scoring → min-score filtering (0.1) → top-K (10). Fallback: `searchKeywordCandidates()` for pre-filtering.
   - Text recognition: Optional OpenCV preprocessing; Qwen vision via OpenRouter.
   - Voice recognition: AssemblyAI proxy for media transcription; imported media stores transcript text only.
+- **AI Defaults**: By default, use `openai/gpt-oss-120b` and temperature `0.3` for any new AI prompt unless specified otherwise.
 
 ## Sharing
 - `public/js/share-worker-client.js` builds URLs from `GO_TOOLKIT_SHARE_API_URL(S)`.

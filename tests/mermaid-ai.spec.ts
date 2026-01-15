@@ -6,18 +6,34 @@ test.describe("Mermaid Diagram AI Composer", () => {
     
     await page.goto(`${baseUrl}/memo.html`);
 
-    // Wait for the editor to be ready
-    await page.waitForFunction(() => Boolean((window as any).MemoEditor));
+    // Create a document to ensure the editor is visible
+    await page.evaluate(async () => {
+      // Wait for the function to be available
+      let attempts = 0;
+      while (!(window as any).GoToolkitMemoCreateAutoDocument && attempts < 50) {
+        await new Promise(r => setTimeout(r, 100));
+        attempts++;
+      }
+      if ((window as any).GoToolkitMemoCreateAutoDocument) {
+        await (window as any).GoToolkitMemoCreateAutoDocument();
+      }
+    });
+
+    // Wait for the editor to be ready and visible
+    await page.waitForFunction(() => {
+      const editor = (window as any).MemoEditor;
+      const card = document.querySelector('.memo-card') as HTMLElement;
+      return Boolean(editor) && card && card.style.display !== 'none';
+    });
 
     // Inject mock AI after page load to ensure GoToolkitIA is ready to be swapped
     await page.evaluate(() => {
       (window as any).GoToolkitIA = {
         chatCompletion: async () => {
-          console.log("Mock AI called");
-          return {
-            text: "```mermaid\ngraph TD;\n  A[Process 1] --> B[Process 2];\n```",
-            usage: { total_tokens: 10 }
-          };
+          return JSON.stringify({
+            answer: "Voici ton diagramme.",
+            mermaid: "graph TD;\n  A[Process 1] --> B[Process 2];"
+          });
         }
       };
       
@@ -64,11 +80,10 @@ test.describe("Mermaid Diagram AI Composer", () => {
     await expect(diagram).toBeAttached();
 
     const container = diagram.locator('.mermaid-diagram-container');
-    await expect(container).toBeAttached();
+    await container.waitFor({ state: 'visible', timeout: 10000 });
     
     // Check bounding box to see if it has size
     const box = await container.boundingBox();
-    console.log('Container bounding box:', box);
 
     // If it has size, try to dblclick at its center
     if (box) {
@@ -84,15 +99,13 @@ test.describe("Mermaid Diagram AI Composer", () => {
     // sometimesvisibility check on large fixed overlays is tricky
     const modalTextArea = page.locator('.mermaid-modal-textarea');
     await modalTextArea.waitFor({ state: 'visible', timeout: 10000 });
-    
-    console.log('Modal is open');
 
     // Enter prompt in composer
     const composerInput = page.locator('#draw-composer-input');
     await composerInput.fill("Create a simple process flow");
 
     // Click send
-    const sendBtn = page.locator('.chat-send-btn');
+    const sendBtn = page.locator('#draw-composer .chat-send-btn');
     await sendBtn.click();
 
     // Verify textarea update
