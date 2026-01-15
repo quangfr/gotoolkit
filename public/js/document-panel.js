@@ -263,6 +263,12 @@
             if (toggleBtn) {
                 toggleBtn.setAttribute("aria-expanded", isOpen ? "true" : "false");
                 toggleBtn.title = isOpen ? "Masquer les documents" : "Afficher les documents";
+
+                const icon = toggleBtn.querySelector("[data-lucide]");
+                if (icon) {
+                    icon.setAttribute("data-lucide", isOpen ? "panel-left-close" : "panel-left-open");
+                    if (window.lucide) window.lucide.createIcons();
+                }
             }
             writeBool(openKey, isOpen);
         }

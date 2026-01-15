@@ -2053,8 +2053,6 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
             });
 
             const processedHtml = doc.body.innerHTML;
-            console.log('[getEditorMarkdown] Processed HTML for Turndown:', processedHtml);
-            
             const markdown = (turndownRef.current?.turndown(processedHtml) || '').toString();
             return markdown;
           }

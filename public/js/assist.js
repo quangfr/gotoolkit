@@ -2347,14 +2347,6 @@
     AssistSidebar.prototype.logHybridRetrieval = function () {
         var info = arguments.length > 0 ? arguments[0] : null;
         if (!info) return;
-        console.log("Hybrid retrieval", {
-            label: info.label,
-            keywordCount: info.keywordCount,
-            keywordFailed: info.keywordFailed,
-            vectorScope: info.vectorScope,
-            contextLimit: info.contextLimit,
-            finalCount: info.finalCount
-        });
     };
 
     AssistSidebar.prototype.hybridRetrieveOnce = async function (query, conversationId, params, options) {
@@ -2535,14 +2527,6 @@
 
         var payload = this.buildPayload(systemPrompt, userMessage, docInfo);
         var requestTokenEstimate = estimatePayloadTokens(payload);
-        console.log("Hybrid retrieval summary", {
-            keywordIndex: !!this.docManager?.keywordIndex,
-            contextChunks: docInfo?.context?.context?.length || 0,
-            knowledgeChunks: docInfo?.knowledge?.context?.length || 0
-        });
-        console.log("AI payload messages", payload.messages.map(function (msg) {
-            return { role: msg.role, content: msg.content };
-        }));
         var self = this;
         var appendBotMessageIfNeeded = function () {
             if (botMessageAppended) return;
@@ -2636,13 +2620,6 @@
             if (parsed.content === "Réponse illisible." && botMessage.content) {
                 parsed.content = botMessage.content;
             }
-            console.log("AI response", {
-                content: parsed.content,
-                references: parsed.references,
-                suggestions: parsed.suggestions,
-                operations: parsed.operations,
-                output: parsed.output
-            });
             botMessage.content = parsed.content;
             botMessage.references = parsed.references;
             botMessage.suggestions = parsed.suggestions;
@@ -6622,9 +6599,6 @@
             payload: requestPayload,
             endpointType: 'responses'
         }).then(function (rawResponse) {
-            console.log('%c📥 AI Response (Received)', 'color: #FFF; background: #2196F3; padding: 8px 12px; border-radius: 4px; font-weight: bold;');
-            console.log(typeof rawResponse === 'string' ? rawResponse : JSON.stringify(rawResponse, null, 2));
-
             // Parser la réponse
             var responseObj = null;
             var rawTextFallback = '';
