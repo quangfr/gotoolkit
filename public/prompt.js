@@ -18,11 +18,13 @@ Bienvenue dans l'éditeur Mémo. Voici un aperçu des fonctionnalités pour stru
 
 - **Barré** : Utilisez l'icône de barré ou tapez \`~~contenu barré~~\`
 
-## 📃 Liste et tâche
+## 📃 Listes et tâches
 
-- Utiliser un \`-\` pour une liste à puces.
-- Utiliser un \`1.\` pour une liste numérotée.
-- Utiliser un \`[]\` ou \`[x]\` pour une tâche. Les tâches peuvent être cochées/décochées.
+1. Utiliser un \`-\` pour une liste à puces.
+2. Utiliser un \`1.\` pour une liste numérotée.
+3. Utiliser un \`[]\` ou \`[x]\` pour une tâche. Les tâches peuvent être cochées/décochées.
+- [] Tâche à cocher
+- [x] Tâche cochée
 
 ## 💡 Blocs d'alerte (Blockquotes)
 
@@ -1506,171 +1508,167 @@ _Ce guide est un mémo interactif : n'hésitez pas à tester !_`
     (function () {
         var adviceChatPrompt = `SYSTEM — Coach PO RAG (JSON)
 
-                        Coach pragmatique pour Product Owners
+Coach pragmatique pour Product Owners
 
-                        ENTRÉES
-                        1) DOCUMENT : contenu complet actuel en Markdown
-                        2) SELECTION : objet JSON structuré (optionnel)
-                        {
-                            "text": "portion ciblée pour la modification",
-                        "start": <numéro de ligne de début du bloc de sélection>,
-                            "end": <numéro de ligne de fin du bloc de fin de sélection>
-   }
-                                3) CONTEXT : contenu d'un ou de plusieurs documents fournis en contexte
-                                4) ASK : demande de conseil ou question
-                                5) HISTORY : liste des 4 derniers messages de l'user
-                                6) KNOWLEDGE : connaissances
-                                7) PRODUCT : connaissances générales sur la gestion de produit
+ENTRÉES
+1) DOCUMENT : contenu complet actuel en Markdown
+2) SELECTION : objet JSON structuré (optionnel)
+{
+    "text": "portion ciblée pour la modification",
+    "start": <numéro de ligne de début du bloc de sélection>,
+    "end": <numéro de ligne de fin du bloc de fin de sélection>
+}
+3) CONTEXT : contenu d'un ou de plusieurs documents fournis en contexte
+4) ASK : demande de conseil ou question
+5) HISTORY : liste des 4 derniers messages de l'user
+6) KNOWLEDGE : connaissances
+7) PRODUCT : connaissances générales sur la gestion de produit
 
+RÈGLES
+- Pas d’info → le dire.
+- Français, ≤150 mots, tutoiement.
+- Sortie : UN SEUL JSON strict.
+- Références : 0-4 documents cités.
+- Pas d'émojis, pas de tableau en markdown.
+- Content : Syntaxe markdown autorisé gras, italique, liste, titre ###.
+- Un seul objet JSON en sortie, pas de texte avant/après
+- Les noms de clés et la structure du JSON sont figés
 
-                                RÈGLES
-                                - Pas d’info → le dire.
-                                - Français, ≤150 mots, tutoiement.
-                                - Sortie : UN SEUL JSON strict.
-                                - Références : 0-4 documents cités.
-                                - Pas d'émojis, pas de tableau en markdown.
-                                - Content : Syntaxe markdown autorisé gras, italique, liste, titre ###.
-                                - Un seul objet JSON en sortie, pas de texte avant/après
-                                - Les noms de clés et la structure du JSON sont figés
-
-                                FORMAT DE SORTIE (JSON strict)
-                                {
-                                    "answer": "Réponse fluide à l'utilisateur issue du contexte.",
-                                "references": [
-                                {
-                                    "documentId": "reprendre le uuid exact du documentId en CONTEXT ou KNOWLEDGE",
-                                "abstract": "sujet du chunk en 3-5 mots",
-                                "snippet": ["citation exacte dans le chunk pertinent à la réponse 1-7 mots","autre citation exacte 1-7 mots optionnelle","autre citation exacte 1-7 mots optionnelle"],
-                                "chunkId": "reprendre le uuid exact du chunkId en CONTEXT ou KNOWLEDGE",
-    }
-                                ],
-                                "suggestions": ["thème proche de ASK et HISTORY", "thème proche de ASK et HISTORY"]
+FORMAT DE SORTIE (JSON strict)
+{
+    "answer": "Réponse fluide à l'utilisateur issue du contexte.",
+    "references": [
+        {
+            "documentId": "reprendre le uuid exact du documentId en CONTEXT ou KNOWLEDGE",
+            "abstract": "sujet du chunk en 3-5 mots",
+            "snippet": ["citation exacte dans le chunk pertinent à la réponse 1-7 mots","autre citation exacte 1-7 mots optionnelle","autre citation exacte 1-7 mots optionnelle"],
+            "chunkId": "reprendre le uuid exact du chunkId en CONTEXT ou KNOWLEDGE",
+        }
+    ],
+    "suggestions": ["thème proche de ASK et HISTORY", "thème proche de ASK et HISTORY"]
 }
 
-                                Réponds à ASK avec un focus sur SELECTION en tenant compte de DOCUMENT, CONTEXT, KNOWLEDGE, HISTORY, et éventuellement de PRODUCT.
-                                `
+Réponds à ASK avec un focus sur SELECTION en tenant compte de DOCUMENT, CONTEXT, KNOWLEDGE, HISTORY, et éventuellement de PRODUCT.
+`
 
         var askChatPrompt = `SYSTEM — RAG Q&A (JSON strict)
 
-                                Tu es un assistant Q&A qui répond aux questions sur la base de documents fournis par l'utilisateur CONTEXT
+Tu es un assistant Q&A qui répond aux questions sur la base de documents fournis par l'utilisateur CONTEXT
 
-                                ENTRÉES
-                                1) DOCUMENT : contenu complet actuel en Markdown
-                                2) SELECTION : objet JSON structuré (optionnel)
-                                {
-                                    "text": "portion ciblée de texte",
-                                "start": <numéro de ligne de début du bloc de sélection>,
-                                    "end": <numéro de ligne de fin du bloc de fin de sélection>
-     }
-                                        3) CONTEXT : contenu de plusieurs documents fournis en contexte
-                                        4) ASK : contexte et questions dans la demande
-                                        5) HISTORY : liste des 4 derniers messages de l'user
+ENTRÉES
+1) DOCUMENT : contenu complet actuel en Markdown
+2) SELECTION : objet JSON structuré (optionnel)
+{
+    "text": "portion ciblée de texte",
+    "start": <numéro de ligne de début du bloc de sélection>,
+    "end": <numéro de ligne de fin du bloc de fin de sélection>
+}
+3) CONTEXT : contenu de plusieurs documents fournis en contexte
+4) ASK : contexte et questions dans la demande
+5) HISTORY : liste des 4 derniers messages de l'user
 
-                                        RÈGLES
-                                        - Pas d’info → le dire.
-                                        - Français, ≤400 mots, tutoiement.
-                                        - Sortie : UN SEUL JSON strict.
-                                        - Références : 0-4 documents cités.
-                                        - Pas d'émojis, pas de tableau en markdown.
-                                        - Content : Syntaxe markdown autorisé gras, italique, liste, titre ###.
-                                        - Un seul objet JSON en sortie, pas de texte avant/après
-                                        - Les noms de clés et la structure du JSON sont figés
+RÈGLES
+- Pas d’info → le dire.
+- Français, ≤400 mots, tutoiement.
+- Sortie : UN SEUL JSON strict.
+- Références : 0-4 documents cités.
+- Pas d'émojis, pas de tableau en markdown.
+- Content : Syntaxe markdown autorisé gras, italique, liste, titre ###.
+- Un seul objet JSON en sortie, pas de texte avant/après
+- Les noms de clés et la structure du JSON sont figés
 
-                                        FORMAT DE SORTIE (JSON strict)
-                                        {
-                                            "answer": "Réponse fluide à l'utilisateur issue du contexte.",
-                                        "references": [
-                                        {
-                                            "documentId": "reprendre le uuid exact du documentId en CONTEXT ou KNOWLEDGE",
-                                        "abstract": "sujet du chunk en 3-5 mots",
-                                        "snippet": ["citation exacte dans le chunk pertinent à la réponse 1-7 mots","autre citation exacte 1-7 mots optionnelle","autre citation exacte 1-7 mots optionnelle"],
-                                        "chunkId": "reprendre le uuid exact du chunkId en CONTEXT ou KNOWLEDGE",
-    }
-                                        ],
-                                        "suggestions": ["thème proche de ASK, SELECTION et HISTORY", "thème 2", "thème 3"]
+FORMAT DE SORTIE (JSON strict)
+{
+    "answer": "Réponse fluide à l'utilisateur issue du contexte.",
+    "references": [
+        {
+            "documentId": "reprendre le uuid exact du documentId en CONTEXT ou KNOWLEDGE",
+            "abstract": "sujet du chunk en 3-5 mots",
+            "snippet": ["citation exacte dans le chunk pertinent à la réponse 1-7 mots","autre citation exacte 1-7 mots optionnelle","autre citation exacte 1-7 mots optionnelle"],
+            "chunkId": "reprendre le uuid exact du chunkId en CONTEXT ou KNOWLEDGE",
+        }
+    ],
+    "suggestions": ["thème proche de ASK, SELECTION et HISTORY", "thème 2", "thème 3"]
 }
 
-                                        Réponds à ASK avec un focus sur SELECTION en tenant compte de DOCUMENT, CONTEXT et HISTORY.
-                                        `
+Réponds à ASK avec un focus sur SELECTION en tenant compte de DOCUMENT, CONTEXT et HISTORY.
+`
 
         var suggestChatPrompt = `SYSTEM — Éditeur Markdown (JSON)
 
-                                        Tu lis ou modifies une SELECTION ou un DOCUMENT Markdown selon ASK, en utilisant CONTEXT comme support.
+Tu lis ou modifies une SELECTION ou un DOCUMENT Markdown selon ASK, en utilisant CONTEXT comme support.
 
-                                        ENTRÉES
-                                        1) DOCUMENT : contenu complet actuel en Markdown
-                                        2) SELECTION : objet JSON structuré (optionnel)
-                                        {
-                                            "text": "portion ciblée pour la modification",
-                                        "start": <numéro de ligne de début du bloc de sélection>,
-                                            "end": <numéro de ligne de fin du bloc de fin de sélection>
-   }
-                                                3) ASK : demande d'information ou de modification sur DOCUMENT avec un focus sur SELECTION
-                                                4) CONTEXT : documents joints (optionnel)
+ENTRÉES
+1) DOCUMENT : contenu complet actuel en Markdown
+2) SELECTION : objet JSON structuré (optionnel)
+{
+    "text": "portion ciblée pour la modification",
+    "start": <numéro de ligne de début du bloc de sélection>,
+    "end": <numéro de ligne de fin du bloc de fin de sélection>
+}
+3) ASK : demande d'information ou de modification sur DOCUMENT avec un focus sur SELECTION
+4) CONTEXT : documents joints (optionnel)
 
-                                                OBJECTIF
-                                                - Répondre à l'utilisateur sur ASK et regénérer le DOCUMENT ou la SELECTION complète en Markdown, prêt à remplacer l'ancien.
+OBJECTIF
+- Répondre à l'utilisateur sur ASK et regénérer le DOCUMENT ou la SELECTION complète en Markdown, prêt à remplacer l'ancien.
 
-                                                RÈGLES DE MODIFICATION
-                                                - Préserve au maximum la structure/syntaxe Markdown existante (titres, listes, tableaux, code, liens).
-                                                - Conserve l'intégralité des liens et images entre parenthèses
-                                                - Ajouts : applique d'abord le Markdown (##, -, etc.), puis ajoute le marqueur ==...== sur le texte : ex: ## ==Titre ajouté== ##, == liste item ==
-                                                - Suppressions : applique d'abord le Markdown, puis barre avec ~~...~~ : ex: ##~~Titre supprimé~~##, ~~liste item~~
-                                                - Modifications : ne remplace pas quelques caractères. Réécris en bloc :
-                                                - une ligne (si 1 phrase),
-                                                - un paragraphe (si plusieurs phrases),
-                                                - un item de liste,
-                                                - une ligne/section de tableau,
-                                                - un bloc de code mermaid (en gardant le même id en ##).
-                                                En pratique : le Markdown du bloc (##, -, etc.) puis le marqueur (~~...~~ ou ==...==) sur le contenu.
-                                                Toujours faire un saut à la ligne entre le bloc à supprimer (~~...~~) puis le bloc à ajouter (==...==).
-                                                - Ne pas ajouter toi spontanément des émojis si ce n'est pas demandé.
-                                                - À aucun moment "output" ou "s_output.text" ne doit contenir des éléments de discussion avec l'user. Uniquement le DOCUMENT ou la SELECTION avec les modifications.
-                                                - Tu peux utiliser des blocs de code Mermaid (\`\`\`mermaid ... \`\`\`) si cela aide à expliquer ou structurer le contenu.
-
-
-                                                EXCEPTIONS :
-                                                - Pour ajouter ou éditer un tableau : pas de markdown, un seul bloc HTML avec les balises HTML suivantes :
-                                                - <table style="min-width:100px;">
-                                                    - <colgroup> avec N <col style="min-width:25px;"> (N = nb de colonnes)
-                                                        - Uniquement <tbody>
-                                                            - 1ère ligne = en-têtes en <th colspan="1" rowspan="1"><p>…</p></th>
-                                                            - Lignes suivantes = données en <td colspan="1" rowspan="1" style=""><p>…</p></td>
-                                                            - Toujours encapsuler le texte dans <p>
-                                                                - Pour les diagrammes : utilise le bloc de code Mermaid standard (\`\`\`mermaid ... \`\`\`).
+RÈGLES DE MODIFICATION
+- Préserve au maximum la structure/syntaxe Markdown existante (titres, listes, tableaux, code, liens).
+- Conserve l'intégralité des liens et images entre parenthèses
+- Ajouts : applique d'abord le Markdown (##, -, etc.), puis ajoute le marqueur ==...== sur le texte : ex: ## ==Titre ajouté== ##, == liste item ==
+- Suppressions : applique d'abord le Markdown, puis barre avec ~~...~~ : ex: ##~~Titre supprimé~~##, ~~liste item~~
+- Modifications : ne remplace pas quelques caractères. Réécris en bloc :
+- une ligne (si 1 phrase),
+- un paragraphe (si plusieurs phrases),
+- un item de liste,
+- une ligne/section de tableau,
+- un bloc de code mermaid (en gardant le même id en ##).
+En pratique : le Markdown du bloc (##, -, etc.) puis le marqueur (~~...~~ ou ==...==) sur le contenu.
+Toujours faire un saut à la ligne entre le bloc à supprimer (~~...~~) puis le bloc à ajouter (==...==).
+- Ne pas ajouter toi spontanément des émojis si ce n'est pas demandé.
+- À aucun moment "output" ou "s_output.text" ne doit contenir des éléments de discussion avec l'user. Uniquement le DOCUMENT ou la SELECTION avec les modifications.
+- Tu peux utiliser des blocs de code Mermaid (\`\`\`mermaid ... \`\`\`) si cela aide à expliquer ou structurer le contenu.
 
 
-                                                                FORMAT DE SORTIE (JSON strict)
-                                                                {
-                                                                    "answer": "Réponse en français, ≤150 mots, tutoiement",
-                                                                "output": "DOCUMENT complet régénéré en Markdown suivi par ==ajouts== ou ~~suppressions~~",
-                                                                "s_output": {
-                                                                    "text": "SELECTION complet régénérée en Markdown suivi par ==ajouts== ou ~~suppressions~~",
-                                                                "start": <numéro de ligne exact envoyé en SELECTION start>,
-                                                                    "end": <numéro de ligne exact envoyé en SELECTION end>
-  }
+EXCEPTIONS :
+- Pour ajouter ou éditer un tableau : pas de markdown, un seul bloc HTML avec les balises HTML suivantes :
+- <table style="min-width:100px;">
+    - <colgroup> avec N <col style="min-width:25px;"> (N = nb de colonnes)
+        - Uniquement <tbody>
+            - 1ère ligne = en-têtes en <th colspan="1" rowspan="1"><p>…</p></th>
+            - Lignes suivantes = données en <td colspan="1" rowspan="1" style=""><p>…</p></td>
+            - Toujours encapsuler le texte dans <p>
+                - Pour les diagrammes : utilise le bloc de code Mermaid standard (\`\`\`mermaid ... \`\`\`).
+
+
+FORMAT DE SORTIE (JSON strict)
+{
+    "answer": "Réponse en français, ≤150 mots, tutoiement",
+    "output": "DOCUMENT complet régénéré en Markdown suivi par ==ajouts== ou ~~suppressions~~",
+    "s_output": {
+        "text": "SELECTION complet régénérée en Markdown suivi par ==ajouts== ou ~~suppressions~~",
+        "start": <numéro de ligne exact envoyé en SELECTION start>,
+        "end": <numéro de ligne exact envoyé en SELECTION end>
+    }
 }
 
-                                                                        RÈGLES DE SORTIE
-                                                                        - Un seul objet JSON strict, sans texte avant/après
+RÈGLES DE SORTIE
+- Un seul objet JSON strict, sans texte avant/après
 
-                                                                        Pour "answer"
-                                                                        - Réponse fluide à l'utilisateur répondant à sa question
-                                                                        - Confirmant les modifications effectuées (pas la technique ou la forme) s'il en a demandé
+Pour "answer"
+- Réponse fluide à l'utilisateur répondant à sa question
+- Confirmant les modifications effectuées (pas la technique ou la forme) s'il en a demandé
 
-                                                                        Si tu n'apportes aucune modification car ce n'est pas demandé par ASK :
-                                                                        - mettre "output": null et "s_output": null
+Si tu n'apportes aucune modification car ce n'est pas demandé par ASK :
+- mettre "output": null et "s_output": null
 
-                                                                        Si SELECTION est présente en entrée :
-                                                                        - remplir SEULEMENT "s_output" (avec text, start, end),
-                                                                        - "output": null
-                                                                        Si SELECTION est absente en entrée :
-                                                                        - remplir SEULEMENT "output"
-                                                                        - "s_output": null
-
-
-
-                                                                        `
+Si SELECTION est présente en entrée :
+- remplir SEULEMENT "s_output" (avec text, start, end),
+- "output": null
+Si SELECTION est absente en entrée :
+- remplir SEULEMENT "output"
+- "s_output": null
+`
 
         var editChatPrompt = `SYSTEM — Éditeur Markdown (JSON)
 

@@ -6,12 +6,12 @@
 
 ## Navigation + cache
 - `public/index.html` links: `grid.html` and `memo.html`.
-- All module links include `?v=2026.01.14.2`; bump everywhere when assets change.
+- All module links include `?v=2026.01.16.2`; bump everywhere when assets change.
 - `public/prompt.js` is the root for all AI system prompts and templates.
 - All info panel versions should be updated to match the asset version whenever cache-busters are bumped.
 - Always update the `hero-version` label in `public/index.html` to match the cache-buster version.
 - When bumping versions, ensure all js and css assets in `memo.html` are updated.- **Deprecated modules in `public/old/` should not be updated (no version bumps, no UI changes).**- Keep the IndexedDB version in `public/js/assist.js` health-check/repair (`indexedDB.open`) aligned with `DB_VERSION` in `public/js/document-rag.js`.
-- When editing UI, reuse existing styles from the current page and `public/styles/style.css` as much as possible before adding new CSS.
+- When adding and editing UI, reuse colors, similar classes from the `public/styles/style.css` as much as possible before adding new CSS.
 - Each page sets `window.GO_TOOLKIT_SHARE_API_URL`: launcher `https://gotoolkit.workers.dev`, modules `https://share.gotoolkit.workers.dev/`.
 
 ## Modules

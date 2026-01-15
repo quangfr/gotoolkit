@@ -19,6 +19,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
 
   const code = node.attrs.code || '';
   const excalidrawJSON = node.attrs.excalidrawJSON || '';
+  const size = node.attrs.size || 'medium';
 
   // Immediate preview on paste/init if excalidrawJSON is missing but code exists
   React.useEffect(() => {
@@ -28,7 +29,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
         try {
           // Prefer the bridge preview helper if available (serialized & sized host)
           if ((window as any).GoToolkitDrawMemo.renderPreview) {
-            const result = await (window as any).GoToolkitDrawMemo.renderPreview(code, 0.6);
+            const result = await (window as any).GoToolkitDrawMemo.renderPreview(code, 0.6, size);
             const json = result?.json;
             const svgHtml = result?.svg;
             if (json) {
@@ -51,7 +52,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
           tempDiv.style.opacity = '0';
           tempDiv.style.pointerEvents = 'none';
           document.body.appendChild(tempDiv);
-          await (window as any).GoToolkitDrawMemo.init(tempDiv, code);
+          await (window as any).GoToolkitDrawMemo.init(tempDiv, code, size);
           await new Promise<void>(resolve => window.requestAnimationFrame(() => resolve()));
           await new Promise<void>(resolve => window.requestAnimationFrame(() => resolve()));
           const json = (window as any).GoToolkitDrawMemo.getSceneJSON();
@@ -66,7 +67,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
       };
       syncPreview();
     }
-  }, [code, excalidrawJSON, isEditing, updateAttributes]);
+  }, [code, excalidrawJSON, isEditing, updateAttributes, size]);
 
   const renderDiagram = React.useCallback(async () => {
     // Skip preview rendering while editing to avoid competing with the modal view
@@ -78,7 +79,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
         // If we have Excalidraw JSON, use it to generate SVG
         if ((window as any).GoToolkitDrawMemo) {
           if ((window as any).GoToolkitDrawMemo.renderPreview) {
-            const result = await (window as any).GoToolkitDrawMemo.renderPreview(excalidrawJSON, 0.6);
+            const result = await (window as any).GoToolkitDrawMemo.renderPreview(excalidrawJSON, 0.6, size);
             if (result?.svg) {
               setSvg(result.svg);
               setError(null);
@@ -95,7 +96,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
           tempDiv.style.opacity = '0';
           tempDiv.style.pointerEvents = 'none';
           document.body.appendChild(tempDiv);
-          await (window as any).GoToolkitDrawMemo.init(tempDiv, excalidrawJSON);
+          await (window as any).GoToolkitDrawMemo.init(tempDiv, excalidrawJSON, size);
           await new Promise<void>(resolve => window.requestAnimationFrame(() => resolve()));
           await new Promise<void>(resolve => window.requestAnimationFrame(() => resolve()));
           const svgHtml = await (window as any).GoToolkitDrawMemo.getSVG(0.6);
@@ -155,7 +156,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
           if ((window as any).GoToolkitDrawMemo) {
             // Use excalidrawJSON if available, otherwise fallback to code (mermaid)
             const initialData = excalidrawJSON || code;
-            await (window as any).GoToolkitDrawMemo.init(excalidrawHostRef.current, initialData);
+            await (window as any).GoToolkitDrawMemo.init(excalidrawHostRef.current, initialData, size);
 
             // Excalidraw sometimes needs a layout nudge when mounted in a modal.
             // Without it, interactions like resize handles may not work reliably.
@@ -292,7 +293,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
     try {
       // Do not update node attrs here: TipTap attribute updates can remount the node view
       // and steal the Excalidraw singleton away from the modal.
-      await (window as any).GoToolkitDrawMemo.updateFromMermaid(draftCode);
+      await (window as any).GoToolkitDrawMemo.updateFromMermaid(draftCode, size);
 
       // Now that Excalidraw has applied the scene, persist the results.
       const json = (window as any).GoToolkitDrawMemo.getSceneJSON();
@@ -327,6 +328,31 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
     }
   };
 
+  const handleSizeChange = async (newSize: string) => {
+    if (newSize === size) return;
+    
+    setIsLoading(true);
+    try {
+      // Update attributes (might trigger some re-renders but we stay in modal)
+      updateAttributes({ size: newSize });
+      
+      if ((window as any).GoToolkitDrawMemo) {
+        // Re-generate the diagram with the new size/font settings
+        await (window as any).GoToolkitDrawMemo.updateFromMermaid(draftCode, newSize);
+        
+        // Sync the preview immediately
+        const json = (window as any).GoToolkitDrawMemo.getSceneJSON();
+        const svgHtml = await (window as any).GoToolkitDrawMemo.getSVG(0.6);
+        updateAttributes({ excalidrawJSON: json });
+        if (svgHtml) setSvg(svgHtml);
+      }
+    } catch (err) {
+      console.error("Failed to update size", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <>
       <NodeViewWrapper className="mermaid-diagram-wrapper">
@@ -336,8 +362,42 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
           onDoubleClick={handleDoubleClick}
           onClick={(e) => e.stopPropagation()}
           title="Double-cliquer pour modifier le diagramme"
-          style={{ cursor: 'pointer', minHeight: '100px', display: 'block', width: '100%', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', visibility: 'visible', opacity: 1, position: 'relative', zIndex: 1, overflow: 'visible', contentVisibility: 'visible', transform: 'none', minWidth: '100px', height: 'auto' }}
+          style={{ 
+            cursor: 'pointer', 
+            minHeight: size === 'small' ? '400px' : size === 'medium' ? '500px' : '600px', 
+            display: 'block', 
+            width: '100%', 
+            background: '#ffffff', 
+            border: '1px solid #e2e8f0', 
+            borderRadius: '8px', 
+            visibility: 'visible', 
+            opacity: 1, 
+            position: 'relative', 
+            zIndex: 1, 
+            overflow: 'visible', 
+            contentVisibility: 'visible', 
+            transform: 'none', 
+            minWidth: '100px', 
+            height: 'auto' 
+          }}
         >
+          <div className="mermaid-controls" onClick={e => e.stopPropagation()}>
+            {[
+              { id: 'small', label: 'S' },
+              { id: 'medium', label: 'M' },
+              { id: 'large', label: 'L' }
+            ].map(s => (
+              <button 
+                key={s.id}
+                className={`size-btn ${size === s.id ? 'active' : ''}`}
+                onClick={() => handleSizeChange(s.id)}
+                title={s.label}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+
           {error ? (
             <div className="mermaid-error">
               <div className="mermaid-error-icon">⚠︎</div>
@@ -364,16 +424,35 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
         <div className="mermaid-modal-overlay" onClick={handleCloseModal}>
           <div className="mermaid-modal" onClick={(e) => e.stopPropagation()}>
             <div className="mermaid-modal-header">
-              <div className="mermaid-modal-header-actions">
-                {isLoading && <span className="mermaid-loading-spinner"></span>}
-                <button 
-                  className="mermaid-modal-sync btn-secondary" 
-                  onClick={handleSyncFromMermaid}
-                  style={{ marginRight: '2px' }}
-                >
-                  Générer
-                </button>
-                <button className="mermaid-modal-close btn-primary" onClick={handleCloseModal}></button>
+              <div className="mermaid-modal-header-actions" style={{ justifyContent: 'space-between', width: '100%' }}>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <div className="mermaid-modal-size-selector">
+                    {[
+                      { id: 'small', label: 'S' },
+                      { id: 'medium', label: 'M' },
+                      { id: 'large', label: 'L' }
+                    ].map((s) => (
+                      <button
+                        key={s.id}
+                        className={`mermaid-modal-size-btn ${size === s.id ? 'active' : ''}`}
+                        onClick={() => handleSizeChange(s.id)}
+                        title={`Taille ${s.label}`}
+                      >
+                        {s.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                  {isLoading && <span className="mermaid-loading-spinner"></span>}
+                  <button 
+                    className="mermaid-modal-sync btn-secondary" 
+                    onClick={handleSyncFromMermaid}
+                  >
+                    Générer
+                  </button>
+                  <button className="mermaid-modal-close btn-primary" onClick={handleCloseModal}></button>
+                </div>
               </div>
             </div>
             <div className="mermaid-modal-body">
@@ -421,6 +500,9 @@ export const MermaidNode = Node.create({
       },
       excalidrawJSON: {
         default: '',
+      },
+      size: {
+        default: 'medium',
       },
     };
   },

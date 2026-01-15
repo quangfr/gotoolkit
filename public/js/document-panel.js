@@ -79,7 +79,12 @@
         const resizer = resolveElement(opts.resizer);
         const toggleBtn = resolveElement(opts.toggleButton);
         const listEl = sidebar.querySelector("[data-document-explorer-list]");
+        const tocEl = sidebar.querySelector("[data-document-toc]");
         const headerEl = sidebar.querySelector(".document-explorer__header");
+        const libraryPanel = sidebar.querySelector('[data-panel="library"]');
+        const tocPanel = sidebar.querySelector('[data-panel="toc"]');
+        const tabBtns = sidebar.querySelectorAll(".document-explorer__tab-btn[data-tab]");
+
         const onCreate = typeof opts.onCreate === "function" ? opts.onCreate : null;
         const onRename = typeof opts.onRename === "function" ? opts.onRename : null;
         const onDelete = typeof opts.onDelete === "function" ? opts.onDelete : null;
@@ -88,20 +93,30 @@
         const getActiveId = typeof opts.getActiveId === "function" ? opts.getActiveId : null;
         let cachedItems = [];
 
-        if (headerEl) {
-            headerEl.innerHTML = "";
-            const title = document.createElement("span");
-            title.innerHTML = opts.title || headerEl.innerHTML || DEFAULT_TITLE;
-            headerEl.appendChild(title);
-            const closeBtn = document.createElement("button");
-            closeBtn.type = "button";
-            closeBtn.className = "chat-knowledge-modal__close";
-            closeBtn.style.marginLeft = "auto";
-            closeBtn.innerHTML = '<i data-lucide="x"></i>';
+        // Tab Switching Logic
+        tabBtns.forEach(btn => {
+            btn.addEventListener("click", () => {
+                const target = btn.dataset.tab;
+
+                tabBtns.forEach(b => b.classList.toggle("active", b === btn));
+                libraryPanel?.classList.toggle("active", target === "library");
+                tocPanel?.classList.toggle("active", target === "toc");
+
+                if (actionRow) {
+                    actionRow.style.display = target === "library" ? "flex" : "none";
+                }
+
+                if (target === "toc") {
+                    renderTOC();
+                }
+            });
+        });
+
+        const closeBtn = headerEl?.querySelector(".chat-knowledge-modal__close");
+        if (closeBtn) {
             closeBtn.addEventListener("click", () => {
                 applyOpen(false);
             });
-            headerEl.appendChild(closeBtn);
         }
 
         const actionRow = document.createElement("div");
@@ -126,7 +141,13 @@
         createBtn.className = "chat-knowledge-modal__add btn btn-secondary";
         createBtn.innerHTML = '<i data-lucide="plus"></i> Nouveau';
         actionRow.appendChild(createBtn);
-        sidebar.insertBefore(actionRow, listEl);
+
+        // Insert actionRow into the library panel instead of sidebar
+        if (libraryPanel) {
+            libraryPanel.insertBefore(actionRow, listEl);
+        } else {
+            sidebar.insertBefore(actionRow, listEl);
+        }
 
         if (window.lucide) window.lucide.createIcons();
 
@@ -245,6 +266,119 @@
             }
             writeBool(openKey, isOpen);
         }
+
+        function renderTOC() {
+            if (!tocEl) return;
+            const headings = (window.MemoHeadings || []).filter(h => h.level >= 1 && h.level <= 4);
+
+            if (!headings.length) {
+                tocEl.innerHTML = '<div class="document-explorer__empty">Aucun titre</div>';
+                return;
+            }
+
+            tocEl.innerHTML = "";
+            headings.forEach(heading => {
+                const item = document.createElement("div");
+                item.className = `toc-item toc-item--h${heading.level}`;
+                item.textContent = heading.textContent;
+                item.dataset.id = heading.id;
+
+                item.addEventListener("click", () => {
+                    const editor = window.MemoEditor || window.memoEditor;
+                    if (editor) {
+                        try {
+                            const element = editor.view.dom.querySelector(`[id="${heading.id}"]`);
+                            if (element) {
+                                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                // Highlight active immediately
+                                tocEl.querySelectorAll(".toc-item").forEach(el => el.classList.remove("toc-item--active"));
+                                item.classList.add("toc-item--active");
+                            } else {
+                                // Fallback to editor command if available or search by text/pos
+                                editor.commands.focus();
+                                const pos = heading.pos;
+                                if (pos !== undefined) {
+                                    editor.commands.setTextSelection(pos);
+                                    editor.commands.scrollIntoView();
+                                }
+                            }
+                        } catch (e) {
+                            console.error("ToC scroll error:", e);
+                        }
+                    }
+                });
+
+                tocEl.appendChild(item);
+            });
+
+            updateActiveHeading();
+        }
+
+        function updateActiveHeading() {
+            if (!tocEl || !tocPanel?.classList.contains("active")) return;
+
+            const editor = window.MemoEditor || window.memoEditor;
+            if (!editor) return;
+
+            const headings = (window.MemoHeadings || []).filter(h => h.level >= 1 && h.level <= 4);
+            if (!headings.length) return;
+
+            const scrollArea = document.querySelector(".editor-wrap");
+            if (!scrollArea) return;
+
+            // Find the heading that is most "active" (closest to the top of the viewport but not passed)
+            let activeHeadingId = null;
+            const scrollRect = scrollArea.getBoundingClientRect();
+
+            // Collect all heading elements and their positions relative to the scroll area top
+            const headingElements = headings.map(h => {
+                const el = editor.view.dom.querySelector(`[id="${h.id}"]`);
+                if (!el) return null;
+                const rect = el.getBoundingClientRect();
+                return { id: h.id, top: rect.top - scrollRect.top };
+            }).filter(Boolean);
+
+            // The active heading is the last one whose top is <= some threshold (e.g. 50px)
+            // We use a smaller threshold (80px) to better match visual "top"
+            const threshold = 80;
+            for (let i = 0; i < headingElements.length; i++) {
+                if (headingElements[i].top <= threshold) {
+                    activeHeadingId = headingElements[i].id;
+                } else {
+                    break;
+                }
+            }
+
+            // Fallback to first if none reached threshold but we are at top
+            if (!activeHeadingId && headingElements.length > 0) {
+                activeHeadingId = headingElements[0].id;
+            }
+
+            tocEl.querySelectorAll(".toc-item").forEach(item => {
+                item.classList.toggle("toc-item--active", item.dataset.id === activeHeadingId);
+            });
+        }
+
+        window.addEventListener('memo:headings-updated', () => {
+            if (tocPanel?.classList.contains("active")) {
+                renderTOC();
+            }
+        });
+
+        // Robust scroll listener for active heading using capture phase 
+        // because scroll events do not bubble and .editor-wrap might be replaced by React
+        let scrollTimeout;
+        window.addEventListener('scroll', (event) => {
+            const target = event.target;
+            if (target && target instanceof HTMLElement && target.classList.contains('editor-wrap')) {
+                if (!scrollTimeout) {
+                    scrollTimeout = setTimeout(() => {
+                        updateActiveHeading();
+                        scrollTimeout = null;
+                    }, 150);
+                }
+            }
+        }, { passive: true, capture: true });
 
         function renderEmpty() {
             if (!listEl) return;

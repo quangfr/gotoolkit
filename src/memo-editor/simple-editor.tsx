@@ -5,18 +5,22 @@ import Suggestion from '@tiptap/suggestion';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import Highlight from '@tiptap/extension-highlight';
+import TiptapUnderline from '@tiptap/extension-underline';
 import Superscript from '@tiptap/extension-superscript';
 import Subscript from '@tiptap/extension-subscript';
 import TextAlign from '@tiptap/extension-text-align';
 import Image from '@tiptap/extension-image';
+import TiptapLink from '@tiptap/extension-link';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
-import { computePosition } from '@floating-ui/dom';
+import { computePosition, offset, shift } from '@floating-ui/dom';
 import { DOMSerializer, Node as PMNode } from '@tiptap/pm/model';
-import { PluginKey } from '@tiptap/pm/state';
+import { Plugin, PluginKey } from '@tiptap/pm/state';
 import Details from '@tiptap/extension-details';
 import DetailsSummary from '@tiptap/extension-details-summary';
 import DetailsContent from '@tiptap/extension-details-content';
+import { TableOfContents } from '@tiptap/extension-table-of-contents';
+import Heading from '@tiptap/extension-heading';
 
 import { TableNode, TableRow, TableHeader, CustomTableCell, TABLE_COLORS } from './table-node';
 import { TaskListNode, TaskItemNode } from './task-node';
@@ -38,16 +42,235 @@ const CustomDetails = Details.extend({
   },
 });
 import { 
-  Undo2, Redo2, Heading1, Heading2, Heading3, List, SquareCode, 
-  Bold, Italic, Underline, Link as LinkIcon, Strikethrough, 
+  Undo2, Redo2, Heading1, Heading2, Heading3, Heading4, List, SquareCode, 
+  Bold, Italic, Underline, Link, Strikethrough, 
   Highlighter, Table as TableIcon, Trash2, CodeXml,
   ChevronDown, Check, CheckCheck, Type,
-  Bot, X, Palette, Plus, Baseline, Tag, Shapes,
+  Bot, X, Palette, Plus, Baseline, Shapes,
   MessageSquare,
   CheckSquare, ChevronRight
 } from 'lucide-react';
 
 
+
+const CustomHeading = Heading.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      id: {
+        default: null,
+        parseHTML: element => element.getAttribute('id'),
+        renderHTML: attributes => ({
+          id: attributes.id,
+        }),
+      },
+    }
+  },
+
+  addProseMirrorPlugins() {
+    return [
+      new Plugin({
+        appendTransaction: (transactions, _oldState, newState) => {
+          const { tr } = newState;
+          let modified = false;
+
+          if (transactions.some(transaction => transaction.docChanged)) {
+            newState.doc.descendants((node, pos) => {
+              if (node.type.name === 'heading' && !node.attrs.id) {
+                const id = `h-${Math.random().toString(36).substr(2, 6)}`;
+                tr.setNodeMarkup(pos, undefined, {
+                  ...node.attrs,
+                  id,
+                });
+                modified = true;
+              }
+            });
+          }
+
+          return modified ? tr : null;
+        },
+      }),
+    ];
+  },
+});
+
+const LinkSearchModal = ({ editor, onClose }: { editor: Editor, onClose: () => void }) => {
+  const [query, setQuery] = React.useState('');
+  const [selectedIndex, setSelectedIndex] = React.useState(0);
+  const modalRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const { view } = editor;
+    const { selection } = editor.state;
+    const { from } = selection;
+    
+    // Fallback if coordsAtPos fails (e.g. selection at very end)
+    let coords;
+    try {
+      coords = view.coordsAtPos(from);
+    } catch (e) {
+      coords = { left: window.innerWidth / 2, top: window.innerHeight / 2 };
+    }
+    
+    if (modalRef.current) {
+      const virtualElement = {
+        getBoundingClientRect() {
+          return new DOMRect(coords.left, coords.top, 0, 0);
+        },
+      };
+
+      computePosition(virtualElement, modalRef.current, {
+        placement: 'bottom-start',
+        middleware: [
+          offset(10),
+          shift({ padding: 10 })
+        ]
+      }).then(({ x, y, strategy }: { x: number, y: number, strategy: string }) => {
+        if (modalRef.current) {
+          Object.assign(modalRef.current.style, {
+            left: `${x}px`,
+            top: `${y}px`,
+            position: strategy,
+            display: 'block',
+          });
+        }
+      });
+    }
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
+        onClose();
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [editor, onClose]);
+
+  const headings = (window as any).MemoHeadings || [];
+  
+  // Calculate hierarchy for each heading
+  const getHierarchy = (index: number) => {
+    const current = headings[index];
+    if (!current || current.level === 1) return '';
+    
+    let path = [];
+    let lastLevel = current.level;
+    for (let i = index - 1; i >= 0; i--) {
+      if (headings[i].level < lastLevel) {
+        path.unshift(headings[i].textContent);
+        lastLevel = headings[i].level;
+        if (lastLevel === 1) break;
+      }
+    }
+    return path.length > 0 ? path.join(' / ') : '';
+  };
+
+  const isUrl = (str: string) => {
+    const pattern = /^([\da-z.-]+)\.([a-z.]{2,6})([\/\w .-]*)*\/?$/;
+    return pattern.test(str) || str.startsWith('http');
+  };
+
+  const filteredHeadings = headings
+    .map((h: any, i: number) => ({ ...h, originalIndex: i }))
+    .filter((h: any) => h.textContent.toLowerCase().includes(query.toLowerCase()))
+    .slice(0, 3);
+
+  const items = [
+    ...filteredHeadings.map((h: any) => ({
+      type: 'heading',
+      title: h.textContent,
+      id: h.id,
+      path: getHierarchy(h.originalIndex)
+    })),
+    ...(query ? [{
+      type: 'url',
+      title: query,
+      isValid: isUrl(query)
+    }] : [])
+  ];
+
+  const handleSelect = (item: any) => {
+    let url = item.type === 'heading' ? `#${item.id}` : item.title;
+    if (item.type === 'url' && !url.startsWith('http') && !url.startsWith('#')) {
+      url = 'https://' + url;
+    }
+
+    const { from, to } = editor.state.selection;
+    if (from !== to) {
+      editor.chain().focus().setLink({ href: url }).run();
+    } else {
+      editor.chain().focus().insertContent([
+        {
+          type: 'text',
+          text: item.title,
+          marks: [{ type: 'link', attrs: { href: url } }]
+        },
+        { type: 'text', text: ' ' }
+      ]).run();
+    }
+    onClose();
+  };
+
+  return (
+    <div 
+      ref={modalRef} 
+      className="link-search-modal"
+      style={{ position: 'fixed', zIndex: 2000, display: 'none' }}
+    >
+      <input
+        autoFocus
+        placeholder="Rechercher un titre ou coller un lien..."
+        value={query}
+        onChange={(e) => {
+          setQuery(e.target.value);
+          setSelectedIndex(0);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && items[selectedIndex]) {
+            handleSelect(items[selectedIndex]);
+          } else if (e.key === 'ArrowDown') {
+            setSelectedIndex((selectedIndex + 1) % items.length);
+            e.preventDefault();
+          } else if (e.key === 'ArrowUp') {
+            setSelectedIndex((selectedIndex - 1 + items.length) % items.length);
+            e.preventDefault();
+          } else if (e.key === 'Escape') {
+            onClose();
+          }
+        }}
+      />
+      <div className="link-search-results">
+        {items.map((item, i) => (
+          <div 
+            key={i}
+            className={`link-search-item ${i === selectedIndex ? 'selected' : ''}`}
+            onMouseEnter={() => setSelectedIndex(i)}
+            onClick={() => handleSelect(item)}
+          >
+            <div className="link-search-item-info">
+              <div className="link-search-item-title">
+                {item.type === 'url' ? <Link size={12} style={{ marginRight: 8, opacity: 0.6 }} /> : null}
+                {item.title}
+              </div>
+              {item.path && <div className="link-search-item-path">{item.path}</div>}
+              {item.type === 'url' && !item.isValid && (
+                <div className="link-search-item-invalid">URL incomplète?</div>
+              )}
+            </div>
+            <div className="link-search-item-action">
+              <Check size={14} />
+            </div>
+          </div>
+        ))}
+        {items.length === 0 && (
+          <div className="link-search-no-results">
+            Aucun titre trouvé
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 
 const DetailsInputRule = Extension.create({
   name: 'detailsInputRule',
@@ -96,12 +319,13 @@ interface SimpleEditorProps {
 }
 
 // Custom BubbleMenu component for Tiptap v3
-const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist }: { 
+const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLink }: { 
   editor: Editor | null, 
   visible: boolean,
   onKeep: () => void,
   onReject: () => void,
   onAssist: () => void,
+  onLink: () => void,
 }) => {
   const [position, setPosition] = React.useState({ top: 0, left: 0, opacity: 0 });
   const [hasMarks, setHasMarks] = React.useState(false);
@@ -345,15 +569,6 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist }: {
           <button
             className="tiptap-button"
             type="button"
-            onClick={() => editor.chain().focus().toggleCode().run()}
-            data-active-state={editor.isActive('code') ? 'on' : 'off'}
-            title="Libellé"
-          >
-            <Tag size={14} />
-          </button>
-          <button
-            className="tiptap-button"
-            type="button"
             onClick={() => editor.chain().focus().toggleStrike().run()}
             data-active-state={editor.isActive('strike') ? 'on' : 'off'}
             title="Barré"
@@ -368,6 +583,15 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist }: {
             title="Surligné"
           >
             <Highlighter size={14} />
+          </button>
+          <button
+            className="tiptap-button"
+            type="button"
+            onClick={onLink}
+            data-active-state={editor.isActive('link') ? 'on' : 'off'}
+            title="Lien"
+          >
+            <Link size={14} />
           </button>
           
           {(editor.isActive('tableCell') || editor.isActive('tableHeader')) && (
@@ -727,10 +951,10 @@ const BlockTypeDropdown = ({ editor, onOpenChange }: { editor: Editor, onOpenCha
     { label: 'Titre 1', value: 'h1', icon: Heading1, active: editor.isActive('heading', { level: 1 }) },
     { label: 'Titre 2', value: 'h2', icon: Heading2, active: editor.isActive('heading', { level: 2 }) },
     { label: 'Titre 3', value: 'h3', icon: Heading3, active: editor.isActive('heading', { level: 3 }) },
+    { label: 'Titre 4', value: 'h4', icon: Heading4, active: editor.isActive('heading', { level: 4 }) },
     { label: 'Liste à puces', value: 'bulletList', icon: List, active: editor.isActive('bulletList') },
     { label: 'Tâche', value: 'taskList', icon: CheckSquare, active: editor.isActive('taskList') },
     { label: 'Bloc de code', value: 'codeBlock', icon: SquareCode, active: editor.isActive('codeBlock') },
-    { label: 'Lien', value: 'link', icon: LinkIcon, active: editor.isActive('link') },
   ];
 
   const currentOption = options.find(o => o.active) || options[0];
@@ -751,22 +975,11 @@ const BlockTypeDropdown = ({ editor, onOpenChange }: { editor: Editor, onOpenCha
     else if (value === 'h1') chain.toggleHeading({ level: 1 }).run();
     else if (value === 'h2') chain.toggleHeading({ level: 2 }).run();
     else if (value === 'h3') chain.toggleHeading({ level: 3 }).run();
+    else if (value === 'h4') chain.toggleHeading({ level: 4 }).run();
     else if (value === 'bulletList') chain.toggleBulletList().run();
     else if (value === 'taskList') chain.toggleTaskList().run();
     else if (value === 'code') chain.toggleCode().run();
     else if (value === 'codeBlock') chain.toggleCodeBlock().run();
-    else if (value === 'link') {
-      const previousUrl = editor.getAttributes('link').href;
-      const url = window.prompt('URL', previousUrl);
-
-      if (url === null) {
-        // cancelled
-      } else if (url === '') {
-        editor.chain().focus().extendMarkRange('link').unsetLink().run();
-      } else {
-        editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
-      }
-    }
     setIsOpen(false);
   };
 
@@ -801,7 +1014,11 @@ const BlockTypeDropdown = ({ editor, onOpenChange }: { editor: Editor, onOpenCha
   );
 };
 
-const Toolbar = ({ editor, onDropdownToggle }: { editor: Editor, onDropdownToggle?: (isOpen: boolean) => void }) => {
+const Toolbar = ({ editor, onDropdownToggle, onLink }: { 
+  editor: Editor, 
+  onDropdownToggle?: (isOpen: boolean) => void,
+  onLink: () => void 
+}) => {
   // Force re-render when editor state changes
   const [, forceUpdate] = React.useReducer((x) => x + 1, 0);
   const [showTextColors, setShowTextColors] = React.useState(false);
@@ -1020,16 +1237,6 @@ const Toolbar = ({ editor, onDropdownToggle }: { editor: Editor, onDropdownToggl
         </button>
         <button
           className="tiptap-button"
-          aria-label="Code"
-          type="button"
-          onClick={() => editor.chain().focus().toggleCode().run()}
-          data-active-state={editor.isActive('code') ? 'on' : 'off'}
-          title="Libellé"
-        >
-          <Tag size={16} />
-        </button>
-        <button
-          className="tiptap-button"
           aria-label="Strike"
           type="button"
           onClick={() => editor.chain().focus().toggleStrike().run()}
@@ -1046,6 +1253,16 @@ const Toolbar = ({ editor, onDropdownToggle }: { editor: Editor, onDropdownToggl
           title="Surligner"
         >
           <Highlighter size={16} />
+        </button>
+        <button
+          className="tiptap-button"
+          aria-label="Link"
+          type="button"
+          onClick={onLink}
+          data-active-state={editor.isActive('link') ? 'on' : 'off'}
+          title="Lien"
+        >
+          <Link size={16} />
         </button>
       </div>
 
@@ -1348,6 +1565,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   const [mouseDownPoints, setMouseDownPoints] = React.useState<{ type: 'row' | 'col', index: number, tablePos: number, x: number, y: number } | null>(null);
   const [dragState, setDragState] = React.useState<{ type: 'row' | 'col', index: number, tablePos: number, x: number, y: number } | null>(null);
   const [dropIndicator, setDropIndicator] = React.useState<{ top: number, left: number, width?: number, height?: number, type: 'row' | 'col' } | null>(null);
+  const [showLinkModal, setShowLinkModal] = React.useState(false);
 
   const editor = useEditor({
     extensions: [
@@ -1360,15 +1578,26 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       DetailsContent,
       StarterKit.configure({
         blockquote: false,
+        heading: false, // Use our custom Heading instead to get IDs
+      }),
+      CustomHeading.configure({
+        levels: [1, 2, 3, 4],
       }),
       Alert,
       TextStyle,
       Color,
       Highlight,
+      TiptapUnderline,
       Superscript,
       Subscript,
       TextAlign.configure({
         types: ['heading', 'paragraph'],
+      }),
+      TiptapLink.configure({
+        openOnClick: false,
+        HTMLAttributes: {
+          class: 'memo-link',
+        },
       }),
       Image,
       TableNode,
@@ -1380,6 +1609,13 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       MermaidNode,
       CodeSuggestion,
       DetailsInputRule,
+      TableOfContents.configure({
+        onUpdate(content: any[]) {
+          (window as any).MemoHeadings = content;
+          // Dispatch a custom event to notify vanilla JS code
+          window.dispatchEvent(new CustomEvent('memo:headings-updated', { detail: content }));
+        },
+      }),
       Placeholder.configure({
         placeholder,
       }),
@@ -2129,15 +2365,23 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
 
   return (
     <div className="simple-editor" ref={containerRef} onMouseMove={handleMouseMove} onMouseLeave={() => { setRowHandle(null); setColHandle(null); }}>
-      <Toolbar editor={editor} onDropdownToggle={setIsDropdownOpen} />
+      <Toolbar editor={editor} onDropdownToggle={setIsDropdownOpen} onLink={() => setShowLinkModal(true)} />
       <BubbleMenuComponent 
         editor={editor}
         visible={!isDropdownOpen}
         onKeep={() => keepSelection(editor)}
         onReject={() => rejectSelection(editor)}
         onAssist={handleAssist}
+        onLink={() => setShowLinkModal(true)}
       />
       <EditorContent editor={editor} />
+
+      {showLinkModal && (
+        <LinkSearchModal 
+          editor={editor} 
+          onClose={() => setShowLinkModal(false)} 
+        />
+      )}
 
       {rowHandle && !dragState && (
         <div 
@@ -2250,6 +2494,17 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
                 {alert.label}
               </div>
             ))}
+            <div className="tiptap-separator" style={{ height: '1px', width: '100%', margin: '4px 0', backgroundColor: '#e2e8f0' }} />
+            <div 
+              className="quote-context-menu-item"
+              onClick={() => {
+                editor.chain().focus().setNodeSelection(quoteMenu.pos).unsetBlockquote().run();
+                setQuoteMenu(null);
+              }}
+            >
+              <Type size={14} />
+              Texte
+            </div>
           </div>
         </>
       )}

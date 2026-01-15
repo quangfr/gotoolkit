@@ -8,6 +8,31 @@ window.GoToolkitDrawMemo = (function () {
     let isLoaded = false;
     let previewChain = Promise.resolve();
 
+    const PRESETS = {
+        small: {
+            fontSize: 12,
+            strokeWidth: 1.2,
+            roughness: 1,
+            flowchart: { padding: 0, nodeSpacing: 20, rankSpacing: 20 }
+        },
+        medium: {
+            fontSize: 12,
+            strokeWidth: 1.2,
+            roughness: 1,
+            flowchart: { padding: 3, nodeSpacing: 35, rankSpacing: 35 }
+        },
+        large: {
+            fontSize: 12,
+            strokeWidth: 1.2,
+            roughness: 1,
+            flowchart: { padding: 6, nodeSpacing: 50, rankSpacing: 50 }
+        }
+    };
+
+    function getOptionsForSize(size) {
+        return PRESETS[size?.toLowerCase()] || PRESETS.medium;
+    }
+
     function enqueuePreview(fn) {
         const next = previewChain.then(fn, fn);
         // Keep the chain alive even if a preview fails
@@ -54,7 +79,7 @@ window.GoToolkitDrawMemo = (function () {
         return new Promise((resolve, reject) => {
             const script = document.createElement('script');
             // Use the version from the page if available, otherwise fallback
-            const version = window.GO_TOOLKIT_VERSION || '2026.01.14.2';
+            const version = window.GO_TOOLKIT_VERSION || '2026.01.16.2';
             script.src = `js/draw.bundle.js?v=${version}`;
             script.onload = () => {
                 isLoaded = true;
@@ -66,7 +91,7 @@ window.GoToolkitDrawMemo = (function () {
     }
 
     return {
-        async init(container, initialData = null) {
+        async init(container, initialData = null, size = 'medium') {
             await loadExcalidraw();
 
             if (!excalidrawInstance) {
@@ -75,6 +100,14 @@ window.GoToolkitDrawMemo = (function () {
 
             if (!excalidrawInstance) {
                 throw new Error("GoToolkitExcalidraw not found on window");
+            }
+
+            // Set size attribute for CSS targeting (Internal Excalidraw UI)
+            if (typeof container === 'string') {
+                const el = document.getElementById(container);
+                if (el) el.setAttribute('data-size', size);
+            } else if (container instanceof HTMLElement) {
+                container.setAttribute('data-size', size);
             }
 
             await excalidrawInstance.initialize(container);
@@ -100,7 +133,7 @@ window.GoToolkitDrawMemo = (function () {
                 } else if (typeof initialData === 'string' && initialData.trim().length > 0) {
                     // It's Mermaid
                     try {
-                        const scene = await excalidrawInstance.convertMermaid(initialData);
+                        const scene = await excalidrawInstance.convertMermaid(initialData, getOptionsForSize(size));
                         if (scene) {
                             excalidrawInstance.applyScene(scene);
                         }
@@ -121,9 +154,14 @@ window.GoToolkitDrawMemo = (function () {
             return excalidrawInstance;
         },
 
-        async updateFromMermaid(code) {
+        async updateFromMermaid(code, size = 'medium') {
             if (!excalidrawInstance) return;
             try {
+                // Update size attribute for CSS targeting (Internal Excalidraw UI)
+                if (excalidrawInstance.updateSize) {
+                    excalidrawInstance.updateSize(size);
+                }
+
                 const api = excalidrawInstance.getApi?.();
                 if (!code || !code.trim()) {
                     api?.resetScene?.();
@@ -132,7 +170,7 @@ window.GoToolkitDrawMemo = (function () {
                     return;
                 }
                 const wasEmpty = !!api && Array.isArray(api.getSceneElements?.()) && api.getSceneElements().length === 0;
-                const scene = await excalidrawInstance.convertMermaid(code);
+                const scene = await excalidrawInstance.convertMermaid(code, getOptionsForSize(size));
                 if (scene) {
                     // Center on first generation so the user sees the result immediately.
                     excalidrawInstance.applyScene(scene, wasEmpty);
@@ -185,13 +223,13 @@ window.GoToolkitDrawMemo = (function () {
             return svg.outerHTML;
         },
 
-        async renderPreview(initialData, zoom) {
+        async renderPreview(initialData, zoom, size = 'medium') {
             // Serialize preview rendering to avoid clobbering due to singleton host swaps.
             return enqueuePreview(async () => {
                 const host = createOffscreenHost();
                 document.body.appendChild(host);
                 try {
-                    await this.init(host, initialData);
+                    await this.init(host, initialData, size);
                     await waitFrames(2);
                     const json = this.getSceneJSON();
                     const svg = await this.getSVG(typeof zoom === 'number' ? zoom : 0.6);

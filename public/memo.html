@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <title>Mémo | Go-Toolkit</title>
-    <link rel="stylesheet" href="styles/style.css?v=2026.01.14.11">
+    <link rel="stylesheet" href="styles/style.css?v=2026.01.16.2">
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
@@ -65,12 +65,106 @@
         .document-explorer__header {
             display: flex;
             align-items: center;
-            gap: 8px;
-            font-weight: 700;
-            font-size: 14px;
-            letter-spacing: 0.02em;
+            gap: 4px;
             padding-bottom: 6px;
             border-bottom: 1px solid var(--app-border, #dfe3f5);
+        }
+
+        .document-explorer__tab-btn {
+            border: none;
+            background: transparent;
+            color: var(--app-text-muted, #64748b);
+            padding: 4px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .document-explorer__tab-btn:hover {
+            background-color: #f1f5f9;
+            color: var(--app-text);
+        }
+
+        .document-explorer__tab-btn.active {
+            color: var(--app-primary, #2a7a57);
+            background-color: #eff6ff;
+        }
+
+        .document-explorer__body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+
+        .document-explorer__tab-panel {
+            display: none;
+            flex-direction: column;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .document-explorer__tab-panel.active {
+            display: flex;
+        }
+
+        .document-explorer__toc {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            overflow-y: auto;
+            padding: 2px;
+        }
+
+        .toc-item {
+            font-size: 12px;
+            padding: 2px 4px;
+            cursor: pointer;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            border-radius: 4px;
+            color: #0f172a;
+            transition: all 0.1s ease;
+            line-height: 1.2;
+        }
+
+        .toc-item:hover {
+            background-color: #f1f5f9;
+            color: var(--app-text);
+        }
+
+        .toc-item--active {
+            color: var(--app-primary, #2a7a57);
+            font-weight: 600;
+            background-color: #eff6ff;
+        }
+
+        .toc-item--h1 {
+            font-weight: 600;
+            padding-left: 6px;
+        }
+
+        .toc-item--h2 {
+            padding-left: 10px;
+            font-size: 13px;
+        }
+
+        .toc-item--h3 {
+            padding-left: 18px;
+            font-size: 13px;
+            color: #94a3b8;
+        }
+
+        .toc-item--h4 {
+            padding-left: 26px;
+            font-size: 13px;
+            color: #94a3b8;
+            font-style: italic;
         }
 
         .document-explorer__list {
@@ -621,14 +715,31 @@
             }
         }
     </style>
-    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.01.14.11">
+    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.01.16.2">
 </head>
 
 <body class="app-body">
     <div class="memo-shell">
-        <aside id="documentExplorer" class="document-explorer document-explorer--collapsed" aria-label="Bibliothèque">
-            <div class="document-explorer__header"><i data-lucide="library"></i> Bibliothèque</div>
-            <div class="document-explorer__list" data-document-explorer-list></div>
+        <aside id="documentExplorer" class="document-explorer document-explorer--collapsed" aria-label="Exploration">
+            <div class="document-explorer__header">
+                <button type="button" class="document-explorer__tab-btn active" data-tab="library" title="Bibliothèque">
+                    <i data-lucide="library"></i>
+                </button>
+                <button type="button" class="document-explorer__tab-btn" data-tab="toc" title="Table des matières">
+                    <i data-lucide="table-of-contents"></i>
+                </button>
+                <button type="button" class="chat-knowledge-modal__close" style="margin-left: auto;" title="Fermer">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="document-explorer__body">
+                <div class="document-explorer__tab-panel active" data-panel="library">
+                    <div class="document-explorer__list" data-document-explorer-list></div>
+                </div>
+                <div class="document-explorer__tab-panel" data-panel="toc">
+                    <div class="document-explorer__toc" data-document-toc></div>
+                </div>
+            </div>
         </aside>
         <div id="documentExplorerResizer" class="document-explorer-resizer is-hidden" role="separator"
             aria-label="Ajuster la largeur des documents" aria-orientation="vertical"></div>
@@ -643,14 +754,14 @@
                             aria-expanded="false"><i data-lucide="command"></i> Memo <i
                                 data-lucide="chevron-down"></i></button>
                         <div id="navSwitcherMenu" class="nav-switch-menu" role="menu">
-                            <a class="nav-switch-link" href="/?v=2026.01.14.11" role="menuitem"><i
+                            <a class="nav-switch-link" href="/?v=2026.01.16.2" role="menuitem"><i
                                     data-lucide="home"></i> Accueil</a>
-                            <a class="nav-switch-link" href="grid.html?v=2026.01.14.11" role="menuitem"
+                            <a class="nav-switch-link" href="grid.html?v=2026.01.16.2" role="menuitem"
                                 data-app="grid"><i data-lucide="grid-3x3"></i>
                                 Grid</a>
-                            <a class="nav-switch-link" href="timeline.html?v=2026.01.14.11" role="menuitem"
+                            <a class="nav-switch-link" href="timeline.html?v=2026.01.16.2" role="menuitem"
                                 data-app="timeline"><i data-lucide="layout-list"></i> Timeline</a>
-                            <a class="nav-switch-link" href="voice.html?v=2026.01.14.11" role="menuitem"
+                            <a class="nav-switch-link" href="voice.html?v=2026.01.16.2" role="menuitem"
                                 data-app="voice"><i data-lucide="mic"></i>
                                 Voice</a>
                         </div>
@@ -751,7 +862,7 @@
     <div id="memoInfoPopup" class="info-popup" role="dialog" aria-live="polite">
         <img src="img/logo.gif" alt="Logo Go-Toolkit">
         <strong>Module Mémo</strong>
-        <span>Version 2026.01.14.11</span>
+        <span>Version 2026.01.16.2</span>
         <span>Usage réservé à Savane Consulting.</span>
         <div class="info-actions">
             <button id="memoUpdateBtn" type="button" class="update-btn">Mettre à jour</button>
@@ -805,21 +916,21 @@
         window.GO_TOOLKIT_SHARE_API_URL =
             window.GO_TOOLKIT_SHARE_API_URL || "https://share.gotoolkit.workers.dev/";
     </script>
-    <script src="js/config.js?v=2026.01.14.11"></script>
-    <script src="js/feature-visibility.js?v=2026.01.14.11"></script>
-    <script src="js/document-storage.js?v=2026.01.14.11"></script>
-    <script src="js/storage-service.js?v=2026.01.14.11"></script>
-    <script src="js/shared-ui.js?v=2026.01.14.11"></script>
-    <script src="js/cgu.js?v=2026.01.14.11"></script>
-    <script src="js/share-worker-client.js?v=2026.01.14.11"></script>
-    <script src="js/share-history.js?v=2026.01.14.11"></script>
-    <script src="js/document-api.js?v=2026.01.14.11"></script>
-    <script src="js/keywordIndex.js?v=2026.01.14.11"></script>
-    <script src="js/document-rag.js?v=2026.01.14.11"></script>
-    <script src="js/ia-config.js?v=2026.01.14.11"></script>
-    <script src="prompt.js?v=2026.01.14.11"></script>
-    <script src="js/ia-client.js?v=2026.01.14.11"></script>
-    <script src="js/document-markdown.js?v=2026.01.14.11"></script>
+    <script src="js/config.js?v=2026.01.16.2"></script>
+    <script src="js/feature-visibility.js?v=2026.01.16.2"></script>
+    <script src="js/document-storage.js?v=2026.01.16.2"></script>
+    <script src="js/storage-service.js?v=2026.01.16.2"></script>
+    <script src="js/shared-ui.js?v=2026.01.16.2"></script>
+    <script src="js/cgu.js?v=2026.01.16.2"></script>
+    <script src="js/share-worker-client.js?v=2026.01.16.2"></script>
+    <script src="js/share-history.js?v=2026.01.16.2"></script>
+    <script src="js/document-api.js?v=2026.01.16.2"></script>
+    <script src="js/keywordIndex.js?v=2026.01.16.2"></script>
+    <script src="js/document-rag.js?v=2026.01.16.2"></script>
+    <script src="js/ia-config.js?v=2026.01.16.2"></script>
+    <script src="prompt.js?v=2026.01.16.2"></script>
+    <script src="js/ia-client.js?v=2026.01.16.2"></script>
+    <script src="js/document-markdown.js?v=2026.01.16.2"></script>
     <script>
         // Initialize feedback configuration for Memo before loading feedback.js
         window.GoToolkitAppFeedbackConfig = {
@@ -838,12 +949,12 @@
             ]
         };
     </script>
-    <script src="js/feedback.js?v=2026.01.14.11"></script>
-    <script src="js/voice-video-player.js?v=2026.01.14.11"></script>
-    <script src="js/voice-audio-player.js?v=2026.01.14.11"></script>
-    <script src="js/voice.js?v=2026.01.14.11"></script>
-    <script src="js/voice-transcript.js?v=2026.01.14.11"></script>
-    <script src="js/draw-memo.js?v=2026.01.14.11"></script>
+    <script src="js/feedback.js?v=2026.01.16.2"></script>
+    <script src="js/voice-video-player.js?v=2026.01.16.2"></script>
+    <script src="js/voice-audio-player.js?v=2026.01.16.2"></script>
+    <script src="js/voice.js?v=2026.01.16.2"></script>
+    <script src="js/voice-transcript.js?v=2026.01.16.2"></script>
+    <script src="js/draw-memo.js?v=2026.01.16.2"></script>
     <script>
         // Suppress React DevTools prompt in dev builds.
         window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = window.__REACT_DEVTOOLS_GLOBAL_HOOK__ || {
@@ -853,9 +964,9 @@
             onCommitFiberUnmount: function () { }
         };
     </script>
-    <script src="js/memo.bundle.js?v=2026.01.14.11"></script>
-    <script src="js/assist.js?v=2026.01.14.11"></script>
-    <script src="js/document-panel.js?v=2026.01.14.11"></script>
+    <script src="js/memo.bundle.js?v=2026.01.16.2"></script>
+    <script src="js/assist.js?v=2026.01.16.2"></script>
+    <script src="js/document-panel.js?v=2026.01.16.2"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             setTimeout(function () {
@@ -3096,6 +3207,46 @@
                 selectionOverlay.style.left = currentBlockCoords.left + 'px';
                 selectionOverlay.style.width = Math.max(currentBlockCoords.width, 100) + 'px';
                 selectionOverlay.style.height = Math.max(currentBlockCoords.height, 20) + 'px';
+            }
+
+            // Synchroniser la position au scroll de l'éditeur
+            const editorWrap = document.querySelector('.editor-wrap');
+            if (editorWrap) {
+                editorWrap.addEventListener('scroll', () => {
+                    if (currentSelection && window.memoEditor) {
+                        try {
+                            const view = window.memoEditor.view;
+                            const coordsStart = view.coordsAtPos(currentSelection.from);
+                            const coordsEnd = view.coordsAtPos(currentSelection.to);
+
+                            // Mettre à jour currentCoords
+                            currentCoords = {
+                                top: coordsEnd.bottom + 10,
+                                left: coordsStart.left,
+                                bottom: coordsEnd.bottom,
+                                right: coordsEnd.right,
+                            };
+
+                            // Mettre à jour currentBlockCoords
+                            currentBlockCoords = {
+                                top: coordsStart.top,
+                                left: coordsStart.left,
+                                width: coordsEnd.right - coordsStart.left,
+                                height: coordsEnd.bottom - coordsStart.top,
+                            };
+
+                            // Repositionner
+                            if (container.style.display !== 'none') {
+                                positionEditor();
+                            }
+                            if (selectionOverlay.style.display !== 'none') {
+                                positionOverlay();
+                            }
+                        } catch (e) {
+                            // Erreur silencieuse possible si l'éditeur est en train de se détruire
+                        }
+                    }
+                }, { passive: true });
             }
 
             // Envoyer le message à l'IA

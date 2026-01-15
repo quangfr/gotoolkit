@@ -18,10 +18,36 @@ if (typeof window !== "undefined" && !(window as any).EXCALIDRAW_ASSET_PATH) {
     (window as any).EXCALIDRAW_ASSET_PATH = "https://unpkg.com/@excalidraw/excalidraw@0.17.6/dist/";
 }
 const MERMAID_ELEMENT_STYLE_DEFAULTS = {
-    strokeWidth: 2,
+    strokeWidth: 1.2,
     strokeStyle: "solid" as const,
-    roughness: 0,
+    roughness: 1,
     roundness: null
+};
+
+export type MermaidConvertOptions = {
+    fontSize?: number;
+    strokeWidth?: number;
+    roughness?: number;
+    flowchart?: {
+        padding?: number;
+        nodeSpacing?: number;
+        rankSpacing?: number;
+        htmlLabels?: boolean;
+    };
+    sequence?: {
+        diagramMarginX?: number;
+        diagramMarginY?: number;
+        actorMargin?: number;
+        width?: number;
+        height?: number;
+        boxMargin?: number;
+        boxTextMargin?: number;
+        noteMargin?: number;
+        messageMargin?: number;
+    };
+    class?: {
+        padding?: number;
+    };
 };
 const EDGE_HOST_CLASS = "go-excalidraw-edge";
 const EDGE_STYLE_ID = "go-excalidraw-edge-style";
@@ -76,6 +102,14 @@ const EDGE_STYLE_CONTENT = `.${EDGE_HOST_CLASS} .excalidraw .App-bottom-bar {
     --lg-button-size :1.3rem !important;
     touch-action: none !important;
 }
+
+/* Dynamic font-size for App-menu__left based on size preset */
+.${EDGE_HOST_CLASS}[data-size="small"] .excalidraw .Island.App-menu__left,
+.${EDGE_HOST_CLASS}[data-size="small"] .excalidraw .Island.App-menu__left * { font-size: 10px !important; }
+.${EDGE_HOST_CLASS}[data-size="medium"] .excalidraw .Island.App-menu__left, 
+.${EDGE_HOST_CLASS}[data-size="medium"] .excalidraw .Island.App-menu__left * { font-size: 12px !important; }
+.${EDGE_HOST_CLASS}[data-size="large"] .excalidraw .Island.App-menu__left,
+.${EDGE_HOST_CLASS}[data-size="large"] .excalidraw .Island.App-menu__left * { font-size: 14px !important; }
 
 .${EDGE_HOST_CLASS} .excalidraw .excalidraw__canvas {
     touch-action: none !important;
@@ -265,17 +299,20 @@ const createInitialData = () => ({
     }
 });
 
-const applyMermaidDefaults = (elements: readonly ExcalidrawElement[]): ExcalidrawElement[] =>
+const applyMermaidDefaults = (
+    elements: readonly ExcalidrawElement[],
+    options?: MermaidConvertOptions
+): ExcalidrawElement[] =>
     elements.map(element => {
         const mustForceSolidStroke = element.type === "arrow";
         return {
             ...element,
             locked: false,
-            strokeWidth: element.strokeWidth ?? MERMAID_ELEMENT_STYLE_DEFAULTS.strokeWidth,
+            strokeWidth: options?.strokeWidth ?? element.strokeWidth ?? MERMAID_ELEMENT_STYLE_DEFAULTS.strokeWidth,
             strokeStyle: mustForceSolidStroke
                 ? "solid"
                 : element.strokeStyle ?? MERMAID_ELEMENT_STYLE_DEFAULTS.strokeStyle,
-            roughness: MERMAID_ELEMENT_STYLE_DEFAULTS.roughness,
+            roughness: options?.roughness ?? element.roughness ?? MERMAID_ELEMENT_STYLE_DEFAULTS.roughness,
             roundness: MERMAID_ELEMENT_STYLE_DEFAULTS.roundness
         };
     });
@@ -355,12 +392,37 @@ class ExcalidrawBridge {
         return this.readyPromise.then(() => undefined);
     }
 
-    async convertMermaid(code: string): Promise<SceneData | null> {
+    updateSize(size: string) {
+        if (this.host) {
+            this.host.setAttribute("data-size", size);
+        }
+    }
+
+    async convertMermaid(code: string, options?: MermaidConvertOptions): Promise<SceneData | null> {
         const trimmed = code?.trim();
         if (!trimmed) {
             return null;
         }
-        const parsed = await parseMermaidToExcalidraw(trimmed, MERMAID_OPTIONS as any);
+
+        const fontSize = options?.fontSize ?? MERMAID_OPTIONS.fontSize;
+        
+        // Build the bridge-compatible config
+        const mermaidConfig: any = {
+            themeVariables: {
+                fontSize: `${fontSize}px`
+            },
+            flowchart: {
+                curve: "linear",
+                padding: options?.flowchart?.padding ?? 15,
+                nodeSpacing: options?.flowchart?.nodeSpacing ?? 50,
+                rankSpacing: options?.flowchart?.rankSpacing ?? 50,
+                htmlLabels: options?.flowchart?.htmlLabels ?? true
+            },
+            sequence: options?.sequence ?? {},
+            class: options?.class ?? {}
+        };
+
+        const parsed = await parseMermaidToExcalidraw(trimmed, mermaidConfig);
         const skeleton = Array.isArray(parsed?.elements) ? parsed?.elements : [];
         if (!skeleton.length) {
             return null;
@@ -375,7 +437,7 @@ class ExcalidrawBridge {
             return null;
         }
         const normalizedFiles = (!Array.isArray(converted) && (converted as any)?.files) || parsed?.files || null;
-        const sharpElements = applyMermaidDefaults(normalizedElements as readonly ExcalidrawElement[]);
+        const sharpElements = applyMermaidDefaults(normalizedElements as readonly ExcalidrawElement[], options);
         return {
             elements: sharpElements as readonly ExcalidrawElement[],
             files: normalizedFiles || undefined
@@ -458,7 +520,7 @@ const bridge = new ExcalidrawBridge();
 
 export type GoToolkitExcalidrawAPI = {
     initialize: (container: HTMLElement | string) => Promise<void>;
-    convertMermaid: (code: string) => Promise<SceneData | null>;
+    convertMermaid: (code: string, options?: MermaidConvertOptions) => Promise<SceneData | null>;
     applyScene: (scene: SceneData, shouldCenter?: boolean) => void;
     getApi: () => ExcalidrawImperativeAPI | null;
     exportToSvg: (elements: any, appState: any, files: any) => Promise<SVGSVGElement>;
@@ -473,7 +535,7 @@ declare global {
 
 window.GoToolkitExcalidraw = {
     initialize: container => bridge.initialize(container),
-    convertMermaid: code => bridge.convertMermaid(code),
+    convertMermaid: (code, options) => bridge.convertMermaid(code, options),
     applyScene: (scene, shouldCenter) => bridge.applyScene(scene, shouldCenter),
     getApi: () => bridge.getApi(),
     exportToSvg: (elements, appState, files) => exportToSvg({ elements, appState, files }),

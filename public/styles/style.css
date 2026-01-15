@@ -2342,9 +2342,9 @@ label {
 
 /* Toolbar action buttons (global keep/reject all) */
 .toolbar-action-btn {
-  min-width: 40px;
-  padding: 0.5rem 0.75rem !important;
-  font-size: 0.9rem;
+  min-width: 28px;
+  padding: 0 !important;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -2378,7 +2378,7 @@ label {
 .chat-inline-editor__wrapper {
   position: relative;
   display: flex;
-  width: 390px;
+  width: max(700px,70vh);
   height: auto;
   pointer-events: auto;
 }
