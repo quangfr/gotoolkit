@@ -20,7 +20,7 @@ if (typeof window !== "undefined" && !(window as any).EXCALIDRAW_ASSET_PATH) {
 const MERMAID_ELEMENT_STYLE_DEFAULTS = {
     strokeWidth: 1.2,
     strokeStyle: "solid" as const,
-    roughness: 1,
+    roughness: 0,
     roundness: null
 };
 
@@ -295,6 +295,7 @@ const createInitialData = () => ({
         gridModeEnabled: false,
         isLoading: false,
         currentItemRoundness: "sharp" as const,
+        currentItemRoughness: 0,
         zoom: { value: 0.9 as any }
     }
 });
@@ -312,7 +313,7 @@ const applyMermaidDefaults = (
             strokeStyle: mustForceSolidStroke
                 ? "solid"
                 : element.strokeStyle ?? MERMAID_ELEMENT_STYLE_DEFAULTS.strokeStyle,
-            roughness: options?.roughness ?? element.roughness ?? MERMAID_ELEMENT_STYLE_DEFAULTS.roughness,
+            roughness: options?.roughness ?? MERMAID_ELEMENT_STYLE_DEFAULTS.roughness,
             roundness: MERMAID_ELEMENT_STYLE_DEFAULTS.roundness
         };
     });
@@ -347,9 +348,13 @@ class ExcalidrawBridge {
                 let resolved = false;
                 const handleReady = (instance: ExcalidrawImperativeAPI) => {
                     this.api = instance;
-                    // Force edit mode on ready
+                    // Force edit mode and default styles on ready
                     instance.updateScene({
-                        appState: { viewModeEnabled: false }
+                        appState: { 
+                            viewModeEnabled: false,
+                            currentItemRoughness: 0,
+                            currentItemRoundness: "sharp"
+                        }
                     });
                     try {
                         instance.setActiveTool?.({ type: "selection" } as any);
@@ -458,6 +463,7 @@ class ExcalidrawBridge {
                 gridModeEnabled: false,
                 isLoading: false,
                 currentItemRoundness: "sharp",
+                currentItemRoughness: 0,
                 zoom: appState?.zoom?.value ? appState.zoom : { value: 0.9 }
             }
         };

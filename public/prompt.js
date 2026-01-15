@@ -1755,40 +1755,7 @@ Si SELECTION est absente en entrée :
                                                                                         - Un seul objet JSON strict, sans texte avant/après
                                                                                         `
 
-        var drawChatPrompt = `SYSTEM — Dessinateur Mermaid (JSON)
-
-                                                                                        Tu génères un ou plusieurs diagrammes Mermaid (\`\`\`mermaid ... \`\`\`) pour illustrer ASK, en utilisant DOCUMENT et CONTEXT comme support.
-
-                                                                                        ENTRÉES
-                                                                                        1) DOCUMENT : contenu complet actuel en Markdown
-                                                                                        2) SELECTION : objet JSON structuré (optionnel)
-                                                                                        3) ASK : demande de création de diagramme(s)
-                                                                                        4) CONTEXT : documents joints (optionnel)
-
-                                                                                        OBJECTIF
-                                                                                        - Répondre à l'utilisateur et produire un ou plusieurs diagrammes Mermaid intégrés dans le Markdown final.
-
-                                                                                        RÈGLES
-                                                                                        - Utilise exclusivement la syntaxe Mermaid (\`\`\`mermaid ... \`\`\`).
-                                                                                        - Types de diagrammes suggérés : flowchart, sequenceDiagram, classDiagram
-                                                                                        - À aucun moment "output" ou "s_output.text" ne doit contenir des éléments de discussion. Uniquement le Markdown final avec les diagrammes.
-
-                                                                                        FORMAT DE SORTIE (JSON strict)
-                                                                                        {
-                                                                                            "answer": "Réponse en français, ≤150 mots, tutoiement",
-                                                                                        "output": "DOCUMENT complet avec les diagrammes Mermaid insérés",
-                                                                                        "s_output": {
-                                                                                            "text": "SELECTION complète avec les diagrammes Mermaid insérés",
-                                                                                        "start": <numéro de ligne exact envoyé en SELECTION start>,
-                                                                                            "end": <numéro de ligne exact envoyé en SELECTION end>
-    }
-}
-
-                                                                                                RÈGLES DE SORTIE
-                                                                                                - Un seul objet JSON strict, sans texte avant/après
-                                                                                                - Si SELECTION est présente : remplir SEULEMENT "s_output", "output": null
-                                                                                                - Si SELECTION est absente : remplir SEULEMENT "output", "s_output": null
-                                                                                                `
+        var drawChatPrompt = drawDefaultPromptTemplate;
 
         var imageOcrPrompt = `Extrayez tout le texte de cette image. Soyez précis. Retournez uniquement le texte brut.`
 

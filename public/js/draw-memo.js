@@ -12,19 +12,19 @@ window.GoToolkitDrawMemo = (function () {
         small: {
             fontSize: 12,
             strokeWidth: 1.2,
-            roughness: 1,
+            roughness: 0,
             flowchart: { padding: 0, nodeSpacing: 20, rankSpacing: 20 }
         },
         medium: {
             fontSize: 12,
             strokeWidth: 1.2,
-            roughness: 1,
+            roughness: 0,
             flowchart: { padding: 3, nodeSpacing: 35, rankSpacing: 35 }
         },
         large: {
             fontSize: 12,
             strokeWidth: 1.2,
-            roughness: 1,
+            roughness: 0,
             flowchart: { padding: 6, nodeSpacing: 50, rankSpacing: 50 }
         }
     };
@@ -79,7 +79,7 @@ window.GoToolkitDrawMemo = (function () {
         return new Promise((resolve, reject) => {
             const script = document.createElement('script');
             // Use the version from the page if available, otherwise fallback
-            const version = window.GO_TOOLKIT_VERSION || '2026.01.16.2';
+            const version = window.GO_TOOLKIT_VERSION || '2026.01.16.4';
             script.src = `js/draw.bundle.js?v=${version}`;
             script.onload = () => {
                 isLoaded = true;

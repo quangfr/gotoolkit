@@ -2,7 +2,7 @@ import { Node, mergeAttributes, InputRule, Editor } from '@tiptap/core';
 import { ReactNodeViewRenderer, NodeViewWrapper } from '@tiptap/react';
 import React from 'react';
 import mermaid from 'mermaid';
-import { Shapes } from 'lucide-react';
+import { Shapes, RectangleHorizontal, Square, ArrowLeftRight, Workflow, Boxes, Send, Loader2, ChevronUp } from 'lucide-react';
 
 // Mermaid Diagram Component that shows only the diagram
 const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
@@ -17,9 +17,129 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
   const containerRef = React.useRef<HTMLDivElement>(null);
   const excalidrawHostRef = React.useRef<HTMLDivElement>(null);
 
+  // AI Generation States
+  const [promptInput, setPromptInput] = React.useState('');
+  const [diagramType, setDiagramType] = React.useState('flow');
+  const [isGenerating, setIsGenerating] = React.useState(false);
+  const [isTypeMenuOpen, setIsTypeMenuOpen] = React.useState(false);
+  const composerTextareaRef = React.useRef<HTMLTextAreaElement>(null);
+
+  const getAutoResizeHeight = (textarea: HTMLTextAreaElement) => {
+    textarea.style.height = 'auto';
+    const scrollHeight = textarea.scrollHeight;
+    const maxHeight = 140; // ~5 rows
+    return Math.min(scrollHeight, maxHeight) + 'px';
+  };
+
+  const handlePromptInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setPromptInput(e.target.value);
+    e.target.style.height = getAutoResizeHeight(e.target);
+    e.target.style.overflowY = e.target.scrollHeight > 140 ? 'auto' : 'hidden';
+  };
+
+  const diagramTypes = [
+    { id: 'sequence', label: 'Échange', promptValue: 'sequenceDiagram', Icon: ArrowLeftRight },
+    { id: 'flow', label: 'Processus', promptValue: 'flowchart', Icon: Workflow },
+    { id: 'class', label: 'Structure', promptValue: 'classDiagram', Icon: Boxes }
+  ];
+
+  const handleDrawSend = async () => {
+    if (!promptInput.trim() || isGenerating) return;
+
+    setIsGenerating(true);
+    setModalError(null);
+    try {
+      const presets = (window as any).GoToolkitChatPrompt?.PRESETS?.draw;
+      const template = presets?.defaultPrompt || presets?.prompt || "";
+      
+      const selectedType = diagramTypes.find(t => t.id === diagramType);
+      const drawTypeValue = selectedType?.promptValue || 'flowchart';
+
+      const finalPrompt = template
+        .replace('{{field_input}}', promptInput.trim())
+        .replace('{{draw_type}}', drawTypeValue);
+
+      const payload = {
+        model: (window as any).GoToolkitIAConfig.getOpenAiModel(),
+        messages: [
+          { role: "user", content: finalPrompt }
+        ],
+        temperature: 0.7
+      };
+
+      console.log("[DrawComposer] Sending payload:", payload);
+
+      const response = await (window as any).GoToolkitIA.chatCompletion({
+        payload
+      });
+
+      console.log("[DrawComposer] Received response:", response);
+
+      const responseText = typeof response === 'string' ? response : (response?.text || "");
+
+      if (responseText) {
+        // Handle common AI prefixes/suffixes or markdown blocks
+        let cleanCode = responseText.trim();
+        if (cleanCode.includes('```')) {
+          const match = cleanCode.match(/```(?:mermaid)?\n?([\s\S]*?)```/);
+          if (match) cleanCode = match[1].trim();
+        }
+        
+        // Auto-detect size
+        const lowerCode = cleanCode.toLowerCase();
+        let newSize = 'small';
+        if (lowerCode.includes('flowchart td') || lowerCode.includes('graph td')) {
+          newSize = 'large';
+        }
+
+        setDraftCode(cleanCode);
+        setPromptInput('');
+        if (composerTextareaRef.current) {
+          composerTextareaRef.current.style.height = 'auto';
+        }
+
+        // Sync to Excalidraw immediately (simulate click on "Générer")
+        if ((window as any).GoToolkitDrawMemo) {
+          setIsLoading(true);
+          try {
+            await (window as any).GoToolkitDrawMemo.updateFromMermaid(cleanCode, newSize);
+            const json = (window as any).GoToolkitDrawMemo.getSceneJSON();
+            const svgHtml = await (window as any).GoToolkitDrawMemo.getSVG(0.6);
+            
+            updateAttributes({ 
+              code: cleanCode, 
+              size: newSize,
+              excalidrawJSON: json || ''
+            });
+            if (svgHtml) setSvg(svgHtml);
+            setLastValidCode(cleanCode);
+            setModalError(null);
+          } catch (syncErr: any) {
+            setModalError(syncErr.message || "Erreur de synchronisation Excalidraw");
+          } finally {
+            setIsLoading(false);
+          }
+        }
+      }
+    } catch (err: any) {
+      setModalError(err.message || "Erreur de génération");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const code = node.attrs.code || '';
   const excalidrawJSON = node.attrs.excalidrawJSON || '';
-  const size = node.attrs.size || 'medium';
+  
+  // Dynamic default size: flowchart TD -> large, others -> small
+  const getAutoDetectedSize = (c: string) => {
+    const lower = c.toLowerCase();
+    if (lower.includes('flowchart td') || lower.includes('graph td')) return 'large';
+    return 'small';
+  };
+
+  let size = node.attrs.size || getAutoDetectedSize(code);
+  if (size === 'medium') size = 'small'; 
 
   // Immediate preview on paste/init if excalidrawJSON is missing but code exists
   React.useEffect(() => {
@@ -238,38 +358,49 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
   }, [isEditing]);
 
   const handleCloseModal = async () => {
-    if ((window as any).GoToolkitDrawMemo) {
-      const finalCode = modalError ? lastValidCode : draftCode;
+    try {
+      if ((window as any).GoToolkitDrawMemo) {
+        // If there's a modal error, we must revert to the last valid code as requested
+        const hasError = !!modalError;
+        const finalCode = hasError ? lastValidCode : draftCode;
 
-      // If there's a modal error, reset to last valid code before closing
-      if (modalError) {
-        updateAttributes({ code: lastValidCode });
-        // Re-sync Excalidraw with last valid code
-        await (window as any).GoToolkitDrawMemo.updateFromMermaid(lastValidCode);
-      } else {
-        // Persist whatever is in the textarea when closing
-        updateAttributes({ code: draftCode });
-      }
+        if (hasError) {
+          updateAttributes({ code: lastValidCode });
+          // Re-sync Excalidraw with last valid code to clean up the internal state
+          try {
+            await (window as any).GoToolkitDrawMemo.updateFromMermaid(lastValidCode, size);
+          } catch (e) {
+            console.warn("Failed to revert Excalidraw to last valid state, continuing...", e);
+          }
+        } else {
+          // Persist the current draft when closing normally
+          updateAttributes({ code: draftCode });
+        }
 
-      const json = (window as any).GoToolkitDrawMemo.getSceneJSON();
-      // Use 60% zoom for the document preview
-      const svgHtml = await (window as any).GoToolkitDrawMemo.getSVG(0.6);
-      
-      // If both code and excalidraw are empty, we clear everything
-      const isExcalidrawEmpty = !json || json === '{"elements":[],"appState":{}}' || json.includes('"elements":[]');
-      const finalExcalidrawJSON = (finalCode.trim() || !isExcalidrawEmpty) ? json : '';
-      
-      updateAttributes({ 
-        excalidrawJSON: finalExcalidrawJSON,
-      });
-      if (svgHtml && (finalCode.trim() || !isExcalidrawEmpty)) {
-        setSvg(svgHtml);
-      } else {
-        setSvg('');
+        const json = (window as any).GoToolkitDrawMemo.getSceneJSON();
+        // Use 60% zoom for the document preview
+        const svgHtml = await (window as any).GoToolkitDrawMemo.getSVG(0.6);
+        
+        // If both code and excalidraw are empty, we clear everything
+        const isExcalidrawEmpty = !json || json === '{"elements":[],"appState":{}}' || json.includes('"elements":[]');
+        const finalExcalidrawJSON = (finalCode.trim() || !isExcalidrawEmpty) ? json : '';
+        
+        updateAttributes({ 
+          excalidrawJSON: finalExcalidrawJSON,
+        });
+        if (svgHtml && (finalCode.trim() || !isExcalidrawEmpty)) {
+          setSvg(svgHtml);
+        } else {
+          setSvg('');
+        }
       }
+    } catch (err) {
+      console.error("Critical error during Mermaid modal close:", err);
+    } finally {
+      // Ensure the modal actually closes regardless of internal sync results
+      setIsEditing(false);
+      setModalError(null);
     }
-    setIsEditing(false);
-    setModalError(null);
   };
 
   React.useEffect(() => {
@@ -364,7 +495,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
           title="Double-cliquer pour modifier le diagramme"
           style={{ 
             cursor: 'pointer', 
-            minHeight: size === 'small' ? '400px' : size === 'medium' ? '500px' : '600px', 
+            minHeight: size === 'small' ? '400px' : '600px', 
             display: 'block', 
             width: '100%', 
             background: '#ffffff', 
@@ -383,9 +514,8 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
         >
           <div className="mermaid-controls" onClick={e => e.stopPropagation()}>
             {[
-              { id: 'small', label: 'S' },
-              { id: 'medium', label: 'M' },
-              { id: 'large', label: 'L' }
+              { id: 'small', label: 'S', Icon: RectangleHorizontal },
+              { id: 'large', label: 'L', Icon: Square }
             ].map(s => (
               <button 
                 key={s.id}
@@ -393,7 +523,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
                 onClick={() => handleSizeChange(s.id)}
                 title={s.label}
               >
-                {s.label}
+                <s.Icon size={14} />
               </button>
             ))}
           </div>
@@ -428,9 +558,8 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                   <div className="mermaid-modal-size-selector">
                     {[
-                      { id: 'small', label: 'S' },
-                      { id: 'medium', label: 'M' },
-                      { id: 'large', label: 'L' }
+                      { id: 'small', label: 'Petit', Icon: RectangleHorizontal },
+                      { id: 'large', label: 'Grand', Icon: Square }
                     ].map((s) => (
                       <button
                         key={s.id}
@@ -438,7 +567,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
                         onClick={() => handleSizeChange(s.id)}
                         title={`Taille ${s.label}`}
                       >
-                        {s.label}
+                        <s.Icon size={14} />
                       </button>
                     ))}
                   </div>
@@ -464,19 +593,95 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
                 />
               </div>
               <div className="mermaid-modal-editor">
-                <textarea
-                  className="mermaid-modal-textarea"
-                  value={draftCode}
-                  onChange={handleCodeChange}
-                  onFocus={handleTextareaFocus}
-                  placeholder="Entrez votre code Mermaid ici..."
-                  spellCheck={false}
-                />
-                {modalError && (
-                  <div className="mermaid-modal-error-display">
-                    {modalError}
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
+                  <textarea
+                    className="mermaid-modal-textarea"
+                    value={draftCode}
+                    onChange={handleCodeChange}
+                    onFocus={handleTextareaFocus}
+                    placeholder="Entrez votre code Mermaid ici..."
+                    spellCheck={false}
+                  />
+                  {modalError && (
+                    <div className="mermaid-modal-error-display">
+                      {modalError}
+                    </div>
+                  )}
+                </div>
+
+                {/* AI Composer */}
+                <div id="draw-composer" className="draw-composer chat-composer" style={{ borderTop: '1px solid #e2e8f0', background: '#fff' }}>
+                  <div className="chat-input-wrapper">
+                    <textarea
+                      ref={composerTextareaRef}
+                      id="draw-composer-input"
+                      className="chat-input"
+                      rows={2}
+                      value={promptInput}
+                      onChange={handlePromptInput}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleDrawSend();
+                        }
+                      }}
+                      placeholder="Décrivez votre diagramme..."
+                    />
                   </div>
-                )}
+                  <div className="chat-composer-actions">
+                    <div className="chat-composer-left-actions">
+                      <div className="diagram-type-dropdown chat-prompt-dropdown">
+                        <button
+                          type="button"
+                          id="diagram-type-selector"
+                          className="btn-secondary chat-prompt-btn"
+                          onClick={() => setIsTypeMenuOpen(!isTypeMenuOpen)}
+                          style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+                        >
+                          {(() => {
+                            const current = diagramTypes.find(t => t.id === diagramType);
+                            const Icon = current?.Icon || Workflow;
+                            return <><Icon size={14} /> <span>{current?.label}</span></>;
+                          })()}
+                          <ChevronUp size={12} style={{ transform: isTypeMenuOpen ? 'rotate(180deg)' : '' }} />
+                        </button>
+                        
+                        {isTypeMenuOpen && (
+                          <div id="diagram-type-menu" className="diagram-type-menu chat-prompt-menu open" style={{ bottom: '100%', top: 'auto', marginBottom: '8px' }}>
+                            {diagramTypes.map(t => (
+                              <button
+                                key={t.id}
+                                type="button"
+                                className="chat-prompt-menu-item"
+                                onClick={() => {
+                                  setDiagramType(t.id);
+                                  setIsTypeMenuOpen(false);
+                                }}
+                                style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+                              >
+                                <t.Icon size={14} />
+                                <span>{t.label}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <button
+                      type="button"
+                      className="btn-primary chat-send-btn"
+                      onClick={handleDrawSend}
+                      disabled={isGenerating || !promptInput.trim()}
+                    >
+                      {isGenerating ? (
+                        <Loader2 className="animate-spin" size={16} />
+                      ) : (
+                        <Send size={16} />
+                      )}
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -502,7 +707,7 @@ export const MermaidNode = Node.create({
         default: '',
       },
       size: {
-        default: 'medium',
+        default: 'small',
       },
     };
   },

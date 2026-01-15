@@ -1986,29 +1986,54 @@
     "use strict";
     Ve = xs(jJ());
     $e = xs(WJ());
-    window.Buffer = Ve.Buffer;
-    window.process = $e.default;
-    if (typeof window !== "undefined") {
+    (function() {
+      var t;
       try {
-        if (typeof window.Element === "undefined") {
-          window.Element = class f3t {
-          };
-        }
-        if (window.Element && typeof window.Element.prototype === "undefined") {
-          window.Element.prototype = {};
-        }
-      } catch (t) {
-        console.warn("Polyfill Element failed", t);
+        t = typeof window !== "undefined" ? window : typeof globalThis !== "undefined" ? globalThis : typeof self !== "undefined" ? self : {};
+      } catch (r) {
+        t = {};
       }
       try {
-        if (typeof window.Path2D === "undefined") {
-          window.Path2D = class p3t {
-          };
-        }
-      } catch (t) {
-        console.warn("Polyfill Path2D failed", t);
+        t.Buffer = Ve.Buffer;
+        t.process = $e.default;
+      } catch (r) {
       }
-    }
+      function e(r) {
+        try {
+          if (typeof t[r] === "undefined" || !t[r]) {
+            var n = function() {
+            };
+            n.prototype = {};
+            t[r] = n;
+          }
+          if (t[r] && typeof t[r].prototype === "undefined") {
+            try {
+              t[r].prototype = {};
+            } catch (i) {
+            }
+          }
+        } catch (i) {
+        }
+      }
+      e("Element");
+      e("Path2D");
+      e("SVGPathSeg");
+      try {
+        if (typeof Array !== "undefined" && Array.prototype && typeof Array.prototype.at !== "function") {
+          Object.defineProperty(Array.prototype, "at", {
+            value: function(r) {
+              r = Math.trunc(r) || 0;
+              if (r < 0) r += this.length;
+              if (r < 0 || r >= this.length) return void 0;
+              return this[r];
+            },
+            writable: true,
+            configurable: true
+          });
+        }
+      } catch (r) {
+      }
+    })();
   });
 
   // node_modules/react/cjs/react.production.min.js
@@ -2285,7 +2310,7 @@
   });
 
   // node_modules/react/index.js
-  var f1 = ao((b3t, ree) => {
+  var f1 = ao((v3t, ree) => {
     "use strict";
     ce();
     ue();
@@ -2550,7 +2575,7 @@
   });
 
   // node_modules/scheduler/index.js
-  var pee = ao((T3t, fee) => {
+  var pee = ao((E3t, fee) => {
     "use strict";
     ce();
     ue();
@@ -9167,7 +9192,7 @@
   });
 
   // node_modules/react-dom/index.js
-  var tw = ao((M3t, xne) => {
+  var tw = ao((I3t, xne) => {
     "use strict";
     ce();
     ue();
@@ -9202,25 +9227,25 @@
       bj.createRoot = wne.createRoot;
       bj.hydrateRoot = wne.hydrateRoot;
     } else {
-      P3t = wne.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+      L3t = wne.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
       bj.createRoot = function(t, e) {
-        P3t.usingClientEntryPoint = true;
+        L3t.usingClientEntryPoint = true;
         try {
           return wne.createRoot(t, e);
         } finally {
-          P3t.usingClientEntryPoint = false;
+          L3t.usingClientEntryPoint = false;
         }
       };
       bj.hydrateRoot = function(t, e, r) {
-        P3t.usingClientEntryPoint = true;
+        L3t.usingClientEntryPoint = true;
         try {
           return wne.hydrateRoot(t, e, r);
         } finally {
-          P3t.usingClientEntryPoint = false;
+          L3t.usingClientEntryPoint = false;
         }
       };
     }
-    var P3t;
+    var L3t;
   });
 
   // node_modules/react/cjs/react-jsx-runtime.production.min.js
@@ -9249,7 +9274,7 @@
   });
 
   // node_modules/react/jsx-runtime.js
-  var Kk = ao((Z3t, Tne) => {
+  var Kk = ao((F3t, Tne) => {
     "use strict";
     ce();
     ue();
@@ -58851,7 +58876,7 @@
   });
 
   // node_modules/@excalidraw/excalidraw/main.js
-  var Ane = ao((X3t, kj) => {
+  var Ane = ao((Y3t, kj) => {
     ce();
     ue();
     if (Ye.IS_PREACT === "true") {
@@ -82334,7 +82359,7 @@
   function zz(t) {
     return { type: t };
   }
-  var EOt, SOt, TOt, COt, _Ot, AOt;
+  var wOt, kOt, EOt, SOt, TOt, COt;
   var pue = Qe(() => {
     ce();
     ue();
@@ -82342,8 +82367,8 @@
     uue();
     due();
     hue();
-    ({ abs: EOt, max: SOt, min: TOt } = Math);
-    COt = {
+    ({ abs: wOt, max: kOt, min: EOt } = Math);
+    SOt = {
       name: "x",
       handles: ["w", "e"].map(zz),
       input: function(t, e) {
@@ -82353,7 +82378,7 @@
         return t && [t[0][0], t[1][0]];
       }
     };
-    _Ot = {
+    TOt = {
       name: "y",
       handles: ["n", "s"].map(zz),
       input: function(t, e) {
@@ -82363,7 +82388,7 @@
         return t && [t[0][1], t[1][1]];
       }
     };
-    AOt = {
+    COt = {
       name: "xy",
       handles: ["n", "w", "e", "s", "nw", "ne", "sw", "se"].map(zz),
       input: function(t) {
@@ -84996,11 +85021,11 @@
   function jA(t) {
     return typeof t === "object" && "length" in t ? t : Array.from(t);
   }
-  var EBt;
+  var wBt;
   var LZ = Qe(() => {
     ce();
     ue();
-    EBt = Array.prototype.slice;
+    wBt = Array.prototype.slice;
   });
 
   // node_modules/d3-shape/src/curve/linear.js
@@ -88510,7 +88535,7 @@
       throw new Error("Function yaml." + t + " is removed in js-yaml 4. Use yaml." + e + " instead, which is now safe by default.");
     };
   }
-  var JZe, eHe, tHe, rHe, nHe, iHe, Pl, Ed, aHe, oHe, sHe, qc, lHe, cHe, uHe, dHe, hHe, fHe, pHe, mHe, gHe, vHe, yHe, Ffe, bHe, zfe, Zfe, xHe, wHe, fH, kHe, EHe, SHe, THe, CHe, _He, AHe, IHe, r0e, iv, qA, n0e, i0e, XA, qZ, OHe, hfe, MHe, LHe, DHe, a0e, o0e, d0e, h0e, P2, ffe, PHe, RHe, C0e, _0e, A0e, gH, NHe, b8, BHe, jHe, FHe, zHe, tH, ZHe, HHe, WHe, UHe, I0e, $He, KA, GHe, VHe, YHe, qHe, O0e, M0e, XHe, L0e, KHe, D0e, Xc, QHe, JHe, eWe, x8, z0e, aH, Z0e, H0e, Fw, tWe, rWe, av, ov, Yzt, qzt, Xzt, Kzt, Qzt;
+  var JZe, eHe, tHe, rHe, nHe, iHe, Pl, Ed, aHe, oHe, sHe, qc, lHe, cHe, uHe, dHe, hHe, fHe, pHe, mHe, gHe, vHe, yHe, Ffe, bHe, zfe, Zfe, xHe, wHe, fH, kHe, EHe, SHe, THe, CHe, _He, AHe, IHe, r0e, iv, qA, n0e, i0e, XA, qZ, OHe, hfe, MHe, LHe, DHe, a0e, o0e, d0e, h0e, P2, ffe, PHe, RHe, C0e, _0e, A0e, gH, NHe, b8, BHe, jHe, FHe, zHe, tH, ZHe, HHe, WHe, UHe, I0e, $He, KA, GHe, VHe, YHe, qHe, O0e, M0e, XHe, L0e, KHe, D0e, Xc, QHe, JHe, eWe, x8, z0e, aH, Z0e, H0e, Fw, tWe, rWe, av, ov, Gzt, Vzt, Yzt, qzt, Xzt;
   var E8 = Qe(() => {
     ce();
     ue();
@@ -89026,11 +89051,11 @@
     oe(rI, "renamed");
     av = Ffe;
     ov = C0e.load;
-    Yzt = C0e.loadAll;
-    qzt = rWe.dump;
-    Xzt = rI("safeLoad", "load");
-    Kzt = rI("safeLoadAll", "loadAll");
-    Qzt = rI("safeDump", "dump");
+    Gzt = C0e.loadAll;
+    Vzt = rWe.dump;
+    Yzt = rI("safeLoad", "load");
+    qzt = rI("safeLoadAll", "loadAll");
+    Xzt = rI("safeDump", "dump");
   });
 
   // node_modules/mermaid/dist/chunks/mermaid.core/chunk-HN2XXSSU.mjs
@@ -92107,7 +92132,7 @@
   function Co(t, e) {
     return G2.parse(t, e);
   }
-  var V2, W8, jGe, Du, FGe, zGe, ZGe, U8, HGe, oW, Mge, Lge, WGe, sW, UGe, lW, $Ge, GGe, PI, cW, VGe, Dge, YGe, uW, Sge, qGe, XGe, KGe, QGe, Pge, JGe, RI, dW, Rge, eVe, Nge, tVe, rVe, nVe, Bge, iVe, aVe, jge, oVe, sVe, lVe, cVe, uVe, dVe, hVe, MI, fVe, Fge, zge, pVe, Tge, hW, mVe, rW, gVe, II, z8, vVe, Cge, LI, p0, DI, fW, m0, OI, H8, xVe, G2, HXt, WXt, UXt, $Xt, GXt, VXt, YXt;
+  var V2, W8, jGe, Du, FGe, zGe, ZGe, U8, HGe, oW, Mge, Lge, WGe, sW, UGe, lW, $Ge, GGe, PI, cW, VGe, Dge, YGe, uW, Sge, qGe, XGe, KGe, QGe, Pge, JGe, RI, dW, Rge, eVe, Nge, tVe, rVe, nVe, Bge, iVe, aVe, jge, oVe, sVe, lVe, cVe, uVe, dVe, hVe, MI, fVe, Fge, zge, pVe, Tge, hW, mVe, rW, gVe, II, z8, vVe, Cge, LI, p0, DI, fW, m0, OI, H8, xVe, G2, zXt, ZXt, HXt, WXt, UXt, $Xt, GXt;
   var Zge = Qe(() => {
     ce();
     ue();
@@ -93186,13 +93211,13 @@ Please report this to https://github.com/markedjs/marked.`, t) {
     Co.Tokenizer = LI;
     Co.Hooks = H8;
     Co.parse = Co;
-    HXt = Co.options;
-    WXt = Co.setOptions;
-    UXt = Co.use;
-    $Xt = Co.walkTokens;
-    GXt = Co.parseInline;
-    VXt = m0.parse;
-    YXt = p0.lex;
+    zXt = Co.options;
+    ZXt = Co.setOptions;
+    HXt = Co.use;
+    WXt = Co.walkTokens;
+    UXt = Co.parseInline;
+    $Xt = m0.parse;
+    GXt = p0.lex;
   });
 
   // node_modules/ts-dedent/esm/index.js
@@ -105324,13 +105349,13 @@ Please report this to https://github.com/markedjs/marked.`, t) {
   });
 
   // node_modules/dagre-d3-es/src/graphlib/alg/dijkstra.js
-  var vgr;
+  var mgr;
   var UU = Qe(() => {
     ce();
     ue();
     Ii();
     WU();
-    vgr = Cd(1);
+    mgr = Cd(1);
   });
 
   // node_modules/dagre-d3-es/src/graphlib/alg/dijkstra-all.js
@@ -105354,12 +105379,12 @@ Please report this to https://github.com/markedjs/marked.`, t) {
   });
 
   // node_modules/dagre-d3-es/src/graphlib/alg/floyd-warshall.js
-  var Lgr;
+  var Ogr;
   var vwe = Qe(() => {
     ce();
     ue();
     Ii();
-    Lgr = Cd(1);
+    Ogr = Cd(1);
   });
 
   // node_modules/dagre-d3-es/src/graphlib/alg/topsort.js
@@ -156933,7 +156958,7 @@ see: https://en.wikipedia.org/wiki/LL_parser#Left_factoring.`;
   function xD(t, e, r) {
     return r | e | t;
   }
-  var c7e, im, sdt, yD, bD, NS, BS, jS, w5, l4r;
+  var c7e, im, sdt, yD, bD, NS, BS, jS, w5, o4r;
   var wD = Qe(() => {
     ce();
     ue();
@@ -156946,7 +156971,7 @@ see: https://en.wikipedia.org/wiki/LL_parser#Left_factoring.`;
     BS = 4 << im;
     jS = 5 << im;
     w5 = 6 << im;
-    l4r = 32 - sdt;
+    o4r = 32 - sdt;
   });
 
   // node_modules/chevrotain/lib/src/parse/grammar/llk_lookahead.js
@@ -209780,7 +209805,7 @@ ${t.themeCSS}`;
   var BR = {
     strokeWidth: 1.2,
     strokeStyle: "solid",
-    roughness: 1,
+    roughness: 0,
     roundness: null
   };
   var Oi = "go-excalidraw-edge";
@@ -210023,18 +210048,19 @@ ${t.themeCSS}`;
       gridModeEnabled: false,
       isLoading: false,
       currentItemRoundness: "sharp",
+      currentItemRoughness: 0,
       zoom: { value: 0.9 }
     }
   });
   var Kwt = (t, e) => t.map((r) => {
-    var i, a, o, s, d;
+    var i, a, o, s;
     const n = r.type === "arrow";
     return {
       ...r,
       locked: false,
       strokeWidth: (a = (i = e == null ? void 0 : e.strokeWidth) != null ? i : r.strokeWidth) != null ? a : BR.strokeWidth,
       strokeStyle: n ? "solid" : (o = r.strokeStyle) != null ? o : BR.strokeStyle,
-      roughness: (d = (s = e == null ? void 0 : e.roughness) != null ? s : r.roughness) != null ? d : BR.roughness,
+      roughness: (s = e == null ? void 0 : e.roughness) != null ? s : BR.roughness,
       roundness: BR.roundness
     };
   });
@@ -210072,7 +210098,11 @@ ${t.themeCSS}`;
             var p, f;
             this.api = h;
             h.updateScene({
-              appState: { viewModeEnabled: false }
+              appState: {
+                viewModeEnabled: false,
+                currentItemRoughness: 0,
+                currentItemRoundness: "sharp"
+              }
             });
             try {
               (p = h.setActiveTool) == null ? void 0 : p.call(h, { type: "selection" });
@@ -210171,6 +210201,7 @@ ${t.themeCSS}`;
           gridModeEnabled: false,
           isLoading: false,
           currentItemRoundness: "sharp",
+          currentItemRoughness: 0,
           zoom: ((o = i == null ? void 0 : i.zoom) == null ? void 0 : o.value) ? i.zoom : { value: 0.9 }
         }
       };

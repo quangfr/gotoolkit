@@ -2821,7 +2821,7 @@
         menu.hidden = true;
 
         var presets = this.getPromptPresets();
-        var presetKeys = ["advice", "ask", "suggest", "edit", "draw"];
+        var presetKeys = ["advice", "ask", "suggest", "edit"];
         presetKeys.forEach(function (key) {
             var preset = presets[key];
             if (!preset) {

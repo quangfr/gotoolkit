@@ -2,15 +2,18 @@
 
 ## Structure
 - Static HTML modules in `public/`;
-- Workers live in `workers/` (OpenAI proxy, sharing, feedback, AssemblyAI).
+- Workers live in `workers/` (OpenAI proxy, sharing, feedback, AssemblyAI, OpenRouter proxy).
 
 ## Navigation + cache
 - `public/index.html` links: `grid.html` and `memo.html`.
-- All module links include `?v=2026.01.16.2`; bump everywhere when assets change.
+- All module links include `?v=2026.01.16.4`; bump everywhere when assets change.
+- **Bump the version only when explicitly asked to commit and sync on GitHub.**
 - `public/prompt.js` is the root for all AI system prompts and templates.
 - All info panel versions should be updated to match the asset version whenever cache-busters are bumped.
 - Always update the `hero-version` label in `public/index.html` to match the cache-buster version.
-- When bumping versions, ensure all js and css assets in `memo.html` are updated.- **Deprecated modules in `public/old/` should not be updated (no version bumps, no UI changes).**- Keep the IndexedDB version in `public/js/assist.js` health-check/repair (`indexedDB.open`) aligned with `DB_VERSION` in `public/js/document-rag.js`.
+- When bumping versions, ensure all js and css assets in `memo.html` are updated.
+- **Deprecated modules in `public/old/` should not be updated (no version bumps, no UI changes).**
+- Keep the IndexedDB version in `public/js/assist.js` health-check/repair (`indexedDB.open`) aligned with `DB_VERSION` in `public/js/document-rag.js`.
 - When adding and editing UI, reuse colors, similar classes from the `public/styles/style.css` as much as possible before adding new CSS.
 - Each page sets `window.GO_TOOLKIT_SHARE_API_URL`: launcher `https://gotoolkit.workers.dev`, modules `https://share.gotoolkit.workers.dev/`.
 
@@ -60,8 +63,8 @@ Only `public/js` may touch `window`:
 
 ## Debug + docs
 - Inspect `window.GoToolkit*`; local state in `localStorage` (`go-toolkit-*`) and IndexedDB (`go-toolkit`, `gotoolkit-documents`).
-- RAG state: IndexedDB stores `documents`, `chunks`, `memo_context_embeddings` (see RAG_ARCHITECTURE.md for schema).
+- RAG state: IndexedDB stores `documents`, `chunks`, `memo_context_embeddings` (see `public/content/toolkit_import.md` for schema).
 - Assist state: `window.GoToolkitAssistInstance` exposes sidebar + chat API.
 - New module steps: `CONTRIBUTE.md`.
-- Do not edit `public/releases.md` or `public/roadmap.md` unless explicitly asked.
+- Do not edit `public/content/index_releases.md` or `public/content/index_roadmap.md` unless explicitly asked.
 - Always use Context7 MCP when I need library/API documentation, code generation, setup or configuration steps without me having to explicitly ask.

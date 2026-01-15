@@ -1,0 +1,125 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - complementary "Exploration" [ref=e3]:
+      - generic [ref=e4]:
+        - button "Bibliothèque" [ref=e5] [cursor=pointer]:
+          - img [ref=e6]
+        - button "Table des matières" [ref=e8] [cursor=pointer]:
+          - img [ref=e9]
+        - button "Fermer" [ref=e10] [cursor=pointer]:
+          - img [ref=e11]
+      - generic [ref=e15]:
+        - generic [ref=e16]:
+          - button "Importer" [ref=e17] [cursor=pointer]:
+            - img [ref=e18]
+            - text: Importer
+          - button "Nouveau" [ref=e21] [cursor=pointer]:
+            - img [ref=e22]
+            - text: Nouveau
+        - generic [ref=e24]: Aucun document
+    - separator "Ajuster la largeur des documents" [ref=e25]
+    - generic [ref=e26]:
+      - generic [ref=e27]:
+        - generic [ref=e28]:
+          - button "Masquer les documents" [expanded] [ref=e29] [cursor=pointer]:
+            - img [ref=e30]
+          - button "Memo" [ref=e33] [cursor=pointer]:
+            - img [ref=e34]
+            - text: Memo
+            - img [ref=e36]
+          - button "Créer un document" [ref=e40] [cursor=pointer]: +
+        - button "Assist" [ref=e42] [cursor=pointer]:
+          - img [ref=e43]
+      - generic [ref=e46]: Fermer
+  - status
+  - generic [ref=e47]:
+    - generic [ref=e49]:
+      - button [ref=e50] [cursor=pointer]:
+        - img [ref=e51]
+      - generic [ref=e53]:
+        - img [ref=e54]
+        - text: Assist
+      - generic [ref=e57]:
+        - button "0" [ref=e58] [cursor=pointer]:
+          - img [ref=e59]
+          - text: "0"
+        - button "Prompt" [ref=e67] [cursor=pointer]:
+          - img [ref=e68]
+        - button [ref=e71] [cursor=pointer]:
+          - img [ref=e72]
+    - generic [ref=e77]:
+      - generic [ref=e78]:
+        - textbox "Que veux-tu demander ?" [active] [ref=e79]
+        - button [ref=e80] [cursor=pointer]:
+          - img [ref=e81]
+      - generic [ref=e84]:
+        - generic [ref=e85]:
+          - button "Demander" [ref=e87] [cursor=pointer]:
+            - text: Demander
+            - img [ref=e88]
+          - button "+" [ref=e90] [cursor=pointer]
+        - button [disabled] [ref=e91] [cursor=pointer]:
+          - img [ref=e92]
+  - generic:
+    - generic [ref=e95]:
+      - button "Envoyer un feedback" [ref=e96] [cursor=pointer]:
+        - img [ref=e97]
+      - button "Enregistrer une conversation" [ref=e99] [cursor=pointer]:
+        - img [ref=e100]
+    - status [ref=e103]
+  - generic [ref=e105]:
+    - button [ref=e106] [cursor=pointer]: ←
+    - button [ref=e107] [cursor=pointer]: ⤷ Importer
+    - button [ref=e108] [cursor=pointer]: ✕
+  - generic [ref=e110]:
+    - generic [ref=e111]:
+      - generic [ref=e113]:
+        - img [ref=e114]
+        - text: "| 0 fichiers"
+      - generic [ref=e122]:
+        - button [ref=e123] [cursor=pointer]: + Ajouter
+        - button [ref=e124] [cursor=pointer]: ↺ Réinitialiser
+        - button [ref=e125] [cursor=pointer]: ✕
+    - generic [ref=e126]:
+      - generic [ref=e127]:
+        - checkbox [ref=e129]
+        - button [ref=e131] [cursor=pointer]: Nom
+        - button [ref=e133] [cursor=pointer]: Source
+        - generic [ref=e134]: Description
+        - button [ref=e136] [cursor=pointer]: MàJ▼
+      - generic [ref=e137]:
+        - checkbox [ref=e139]
+        - generic [ref=e140]:
+          - button [ref=e141] [cursor=pointer]: ✐
+          - button [ref=e142] [cursor=pointer]: Toolkit Import
+        - generic [ref=e143]: Web
+        - generic [ref=e144]: "Import & OCR/Transcription : formats supportés, stockage IndexedDB, chunking, embeddings, OCR et stratégie voix."
+        - generic [ref=e145]: 4 j
+      - generic [ref=e146]:
+        - checkbox [ref=e148]
+        - generic [ref=e149]:
+          - button [ref=e150] [cursor=pointer]: ✐
+          - button [ref=e151] [cursor=pointer]: Modules Toolkit
+        - generic [ref=e152]: Web
+        - generic [ref=e153]: "Documentation complète de tous les modules : Assist, Canvas, Draw, Grid, Page d'accueil, Mémo, Timeline et Voice."
+        - generic [ref=e154]: 5 j
+      - generic [ref=e155]:
+        - checkbox [ref=e157]
+        - generic [ref=e158]:
+          - button [ref=e159] [cursor=pointer]: ✐
+          - button [ref=e160] [cursor=pointer]: Contexte Safran
+        - generic [ref=e161]: Web
+        - generic [ref=e162]: Brief de missions et de projets IT chez Safran
+        - generic [ref=e163]: 8 j
+      - generic [ref=e164]:
+        - checkbox [ref=e166]
+        - generic [ref=e167]:
+          - button [ref=e168] [cursor=pointer]: ✐
+          - button [ref=e169] [cursor=pointer]: Go-Live 101
+        - generic [ref=e170]: Web
+        - generic [ref=e171]: Guide des compétences essentiels du consultant
+        - generic [ref=e172]: 11 j
+```

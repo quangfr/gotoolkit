@@ -1,29 +1,55 @@
 import { Buffer } from 'buffer/';
 import process from 'process';
 
-window.Buffer = Buffer;
-window.process = process;
-
-// Fix for environments where Element or Path2D are missing (prevent crashes in polyfills)
-if (typeof window !== 'undefined') {
+// 1. Immediate global assignment in a safe closure
+(function() {
+    // Get the global object safely
+    var g: any;
     try {
-        if (typeof (window as any).Element === 'undefined') {
-            (window as any).Element = class Element { };
-        }
-        if ((window as any).Element && typeof (window as any).Element.prototype === 'undefined') {
-            (window as any).Element.prototype = {};
-        }
+        g = (typeof window !== 'undefined' ? window : (typeof globalThis !== 'undefined' ? globalThis : (typeof self !== 'undefined' ? self : {})));
     } catch (e) {
-        console.warn("Polyfill Element failed", e);
+        g = {};
+    }
+    
+    // Assign Buffer and process
+    try {
+        g.Buffer = Buffer;
+        g.process = process;
+    } catch(e) {}
+
+    // Safe shim function
+    function safeShim(name: string) {
+        try {
+            if (typeof g[name] === 'undefined' || !g[name]) {
+                var F = function() {};
+                F.prototype = {};
+                g[name] = F;
+            }
+            if (g[name] && typeof g[name].prototype === 'undefined') {
+                try { g[name].prototype = {}; } catch (e) {}
+            }
+        } catch (e) {}
     }
 
+    safeShim('Element');
+    safeShim('Path2D');
+    safeShim('SVGPathSeg');
+    
+    // Array.at polyfill with deep safety checks
     try {
-        if (typeof (window as any).Path2D === 'undefined') {
-            (window as any).Path2D = class Path2D { };
+        if (typeof Array !== 'undefined' && Array.prototype && typeof (Array.prototype as any).at !== 'function') {
+            Object.defineProperty(Array.prototype, 'at', {
+                value: function(n: number) {
+                    n = Math.trunc(n) || 0;
+                    if (n < 0) n += this.length;
+                    if (n < 0 || n >= this.length) return undefined;
+                    return (this as any)[n];
+                },
+                writable: true,
+                configurable: true
+            });
         }
-    } catch (e) {
-        console.warn("Polyfill Path2D failed", e);
-    }
-}
+    } catch (e) {}
+})();
 
 export { Buffer, process };
