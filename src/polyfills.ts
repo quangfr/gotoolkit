@@ -20,13 +20,19 @@ import process from 'process';
     // Safe shim function
     function safeShim(name: string) {
         try {
-            if (typeof g[name] === 'undefined' || !g[name]) {
+            var existing = g ? g[name] : undefined;
+            if (!existing) {
                 var F = function() {};
                 F.prototype = {};
-                g[name] = F;
+                try { g[name] = F; } catch (e) {}
+                existing = g ? g[name] : F;
             }
-            if (g[name] && typeof g[name].prototype === 'undefined') {
-                try { g[name].prototype = {}; } catch (e) {}
+            if (
+                existing &&
+                (typeof existing === 'function' || (typeof existing === 'object' && existing !== null)) &&
+                !('prototype' in existing)
+            ) {
+                try { (existing as any).prototype = {}; } catch (e) {}
             }
         } catch (e) {}
     }
