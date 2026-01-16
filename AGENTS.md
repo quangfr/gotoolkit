@@ -8,6 +8,7 @@
 - `public/index.html` links: `grid.html` and `memo.html`.
 - All module links include `?v=2026.01.16.6`; bump everywhere when assets change.
 - Update version to match current day YYYY.MM.DD.N (N is an increment number).
+- **Always run `npm run build` before a git commit and push to ensure bundles are up to date.**
 - **Bump the version only when explicitly asked to commit and sync on GitHub.**
 - `public/prompt.js` is the root for all AI system prompts and templates.
 - All info panel versions should be updated to match the asset version whenever cache-busters are bumped.
@@ -51,7 +52,7 @@ Only `public/js` may touch `window`:
 - Local history: `public/js/share-history.js`; documents: `public/js/document-api.js`.
 
 ## Build + runtime
-- Build: `npm install` → `npm run build` (bundles draw editor + memo bridge).
+- Build: `npm install` → `npm run build` (bundles draw editor + memo bridge). **Always run `npm run build` before a git commit and push.**
 - Dev: `npm start` serves `public/` on port 5000.
 - Excalidraw bridge: `src/draw-editor/index.tsx` forces light theme, normalizes Mermaid, exposes `window.GoToolkitExcalidraw`.
 - Memo bridge: `src/memo-bridge/index.tsx` exposes memo API to `window`.
