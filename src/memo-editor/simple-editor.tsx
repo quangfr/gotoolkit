@@ -48,7 +48,8 @@ import {
   ChevronDown, Check, CheckCheck, Type,
   Bot, X, Palette, Plus, Baseline, Shapes,
   MessageSquare,
-  CheckSquare, ChevronRight
+  CheckSquare, ChevronRight, ListTree,
+  Pencil, Copy
 } from 'lucide-react';
 
 
@@ -1014,6 +1015,72 @@ const BlockTypeDropdown = ({ editor, onOpenChange }: { editor: Editor, onOpenCha
   );
 };
 
+const QuoteTypeDropdown = ({ editor }: { editor: Editor }) => {
+  const [isOpen, setIsOpen] = React.useState(false);
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSelect = (type: string) => {
+    const chain = editor.chain().focus();
+    if (editor.isActive('blockquote', { type })) {
+      // Si on clique sur le type déjà actif, on "déblogquotise" (on descend d'un niveau)
+      chain.lift('blockquote').run();
+    } else if (editor.isActive('blockquote')) {
+      // Si on est déjà dans une citation mais d'un autre type, on change juste l'attribut
+      chain.updateAttributes('blockquote', { type }).run();
+    } else {
+      // Sinon on crée la citation et on met le bon type
+      chain.setBlockquote().updateAttributes('blockquote', { type }).run();
+    }
+    setIsOpen(false);
+  };
+
+  const isAnyQuoteActive = editor.isActive('blockquote');
+  const currentQuoteType = editor.getAttributes('blockquote').type || 'default';
+  const currentOption = ALERT_TYPES.find(a => a.type === currentQuoteType) || ALERT_TYPES[0];
+
+  return (
+    <div className="tiptap-dropdown" ref={dropdownRef}>
+      <button 
+        type="button"
+        className="tiptap-button" 
+        onClick={() => setIsOpen(!isOpen)}
+        data-active-state={isAnyQuoteActive ? 'on' : 'off'}
+        title="Citation"
+        style={{ width: 'auto', padding: '0 4px', gap: '2px', display: 'flex', alignItems: 'center' }}
+      >
+        <currentOption.icon size={16} style={{ color: isAnyQuoteActive ? currentOption.color : 'inherit' }} />
+        <ChevronDown size={14} />
+      </button>
+      {isOpen && (
+        <div className="tiptap-dropdown-menu" style={{ width: '180px' }}>
+          {ALERT_TYPES.map((alert) => (
+            <div 
+              key={alert.type} 
+              className="tiptap-dropdown-item" 
+              data-active={editor.isActive('blockquote', { type: alert.type })}
+              onClick={() => handleSelect(alert.type)}
+            >
+              <alert.icon size={16} style={{ color: alert.color }} />
+              <span style={{ flex: 1 }}>{alert.label}</span>
+              {editor.isActive('blockquote', { type: alert.type }) && <Check size={14} />}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const Toolbar = ({ editor, onDropdownToggle, onLink }: { 
   editor: Editor, 
   onDropdownToggle?: (isOpen: boolean) => void,
@@ -1216,25 +1283,11 @@ const Toolbar = ({ editor, onDropdownToggle, onLink }: {
           data-active-state={editor.isActive('details') ? 'on' : 'off'}
           title="Bloc dépliable"
         >
-          <ChevronRight size={16} />
+          <ListTree size={16} />
         </button>
 
-        <button
-          className="tiptap-button"
-          aria-label="Note"
-          type="button"
-          onClick={() => {
-            if (editor.isActive('blockquote', { type: 'default' })) {
-              editor.chain().focus().unsetBlockquote().run();
-            } else {
-              editor.chain().focus().setBlockquote().updateAttributes('blockquote', { type: 'default' }).run();
-            }
-          }}
-          data-active-state={editor.isActive('blockquote', { type: 'default' }) ? 'on' : 'off'}
-          title="Citation"
-        >
-          <MessageSquare size={16} />
-        </button>
+        <QuoteTypeDropdown editor={editor} />
+
         <button
           className="tiptap-button"
           aria-label="Strike"
@@ -1546,6 +1599,54 @@ const CodeSuggestion = Extension.create({
   },
 });
 
+async function copySvgAsPng(svgElement: SVGSVGElement) {
+  try {
+    const svgData = new XMLSerializer().serializeToString(svgElement);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    
+    // Use the actual rendered size for better quality
+    const rect = svgElement.getBoundingClientRect();
+    const scale = 2; // High resolution
+    const width = rect.width * scale;
+    const height = rect.height * scale;
+    
+    canvas.width = width;
+    canvas.height = height;
+    
+    // Add white background (SVG usually has transparent background)
+    if (ctx) {
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, width, height);
+    }
+    
+    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(svgBlob);
+    
+    img.onload = () => {
+      ctx?.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(async (blob) => {
+        if (blob) {
+          try {
+            const data = [new ClipboardItem({ 'image/png': blob })];
+            await navigator.clipboard.write(data);
+            document.dispatchEvent(new CustomEvent('copyToast', { 
+                detail: { message: 'Image copiée !' } 
+            }));
+          } catch (err) {
+            console.error("Failed to copy PNG:", err);
+          }
+        }
+        URL.revokeObjectURL(url);
+      }, 'image/png');
+    };
+    img.src = url;
+  } catch (err) {
+    console.error("Error generating PNG:", err);
+  }
+}
+
 const SimpleEditor: React.FC<SimpleEditorProps> = ({ 
   content = '', 
   onChange, 
@@ -1848,7 +1949,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       if (blockPos !== -1) {
         setBlockDeleteHandle({
           top: rect.top - containerRect.top + 8,
-          left: rect.right - containerRect.left - 36,
+          left: rect.right - containerRect.left - (label === "le diagramme" ? 36 : 48),
           pos: blockPos,
           label
         });
@@ -1977,6 +2078,40 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
             const title = node.getAttribute('data-title');
             const alertTag = title ? `[!${type}] ${title}` : `[!${type}]`;
             return '\n\n> ' + alertTag + '\n> ' + content.trim().replace(/\n/g, '\n> ') + '\n\n';
+          }
+        });
+
+        // Custom rule for Mermaid diagrams
+        turndown.addRule('mermaid-diagram', {
+          filter: 'mermaid-diagram',
+          replacement: function (content: string, node: any) {
+            const code = node.getAttribute('code') || '';
+            return '\n\n```mermaid\n' + code.trim() + '\n```\n\n';
+          }
+        });
+
+        // Custom rule for Details/Summary (Toggle block)
+        turndown.addRule('details', {
+          filter: 'details',
+          replacement: function (content: string, node: any) {
+            const summary = node.querySelector('summary');
+            const summaryText = summary ? summary.textContent.trim() : 'Détails';
+            
+            // For Tiptap Details, content is inside a specialized div
+            const contentDiv = node.querySelector('.details-content') || node.querySelector('[data-type="details-content"]');
+            let innerMarkdown = '';
+            
+            if (contentDiv) {
+              innerMarkdown = turndownRef.current.turndown(contentDiv.innerHTML).trim();
+            } else {
+              // Fallback: try to strip summary from the already converted content
+              innerMarkdown = content.trim();
+              if (summaryText && innerMarkdown.startsWith(summaryText)) {
+                innerMarkdown = innerMarkdown.substring(summaryText.length).trim();
+              }
+            }
+            
+            return `\n\n<details>\n<summary>${summaryText}</summary>\n${innerMarkdown}\n</details>\n\n`;
           }
         });
 
@@ -2139,11 +2274,27 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           });
 
           const html = marked.parse(processedMarkdown, { gfm: true }) as string;
+          
+          // Post-process to ensure Tiptap Details structure: <details><summary>...</summary><div data-type="details-content">...</div></details>
+          const finalHtml = html.replace(/<details>([\s\S]*?)<\/details>/g, (match, inner) => {
+            if (inner.includes('data-type="details-content"') || inner.includes('class="details-content"')) {
+              return match;
+            }
+            // Find the summary
+            const summaryMatch = inner.match(/<summary>([\s\S]*?)<\/summary>/);
+            if (summaryMatch) {
+              const summary = summaryMatch[0];
+              const content = inner.replace(summary, '').trim();
+              return `<details>${summary}<div data-type="details-content">${content}</div></details>`;
+            }
+            return match;
+          });
+
           if ((editor as any)?.commands?.clearContent) {
             (editor as any).commands.clearContent();
           }
           if ((editor as any)?.commands?.setContent) {
-            (editor as any).commands.setContent(html);
+            (editor as any).commands.setContent(finalHtml);
           }
         } catch (err) {
           console.warn('setEditorMarkdown failed', err);
@@ -2207,8 +2358,24 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           });
 
           const html = marked.parse(processedMarkdown, { gfm: true }) as string;
+          
+          // Post-process to ensure Tiptap Details structure: <details><summary>...</summary><div data-type="details-content">...</div></details>
+          const finalHtml = html.replace(/<details>([\s\S]*?)<\/details>/g, (match, inner) => {
+            if (inner.includes('data-type="details-content"') || inner.includes('class="details-content"')) {
+              return match;
+            }
+            // Find the summary
+            const summaryMatch = inner.match(/<summary>([\s\S]*?)<\/summary>/);
+            if (summaryMatch) {
+              const summary = summaryMatch[0];
+              const content = inner.replace(summary, '').trim();
+              return `<details>${summary}<div data-type="details-content">${content}</div></details>`;
+            }
+            return match;
+          });
+
           if (editor) {
-            editor.chain().focus().insertContentAt(editor.state.doc.content.size, (editor.isEmpty ? '' : '\n\n') + html).run();
+            editor.chain().focus().insertContentAt(editor.state.doc.content.size, (editor.isEmpty ? '' : '\n\n') + finalHtml).run();
           }
         } catch (err) {
           console.warn('insertEditorMarkdownAtEnd failed', err);
@@ -2408,24 +2575,93 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       )}
 
       {blockDeleteHandle && !dragState && (
-        <button
-          className="block-delete-button"
-          style={{ 
+        <div 
+          className="block-handle-container"
+          style={{
             position: 'absolute',
-            top: blockDeleteHandle.top, 
-            left: blockDeleteHandle.left,
-            opacity: 1,
+            top: blockDeleteHandle.top,
+            left: blockDeleteHandle.left - (blockDeleteHandle.label === "le diagramme" ? 72 : 16),
+            display: 'flex',
+            gap: '4px',
             zIndex: 10
-          }}
-          onClick={(e) => {
-            e.stopPropagation();
-            editor.chain().focus().setNodeSelection(blockDeleteHandle.pos).deleteSelection().run();
-            setBlockDeleteHandle(null);
-          }}
-          title={`Supprimer ${blockDeleteHandle.label}`}
-        >
-          <Trash2 size={16} />
-        </button>
+        }}>
+          {["le bloc de code", "la citation", "le tableau", "le bloc dépliable"].includes(blockDeleteHandle.label) && (
+            <button
+              className="block-delete-button"
+              style={{ position: 'static', opacity: 1 }}
+              onClick={(e) => {
+              e.stopPropagation();
+              const node = editor.state.doc.nodeAt(blockDeleteHandle.pos);
+              if (node) {
+                const text = node.textContent;
+                navigator.clipboard.writeText(text).then(() => {
+                  document.dispatchEvent(new CustomEvent('copyToast', { 
+                    detail: { message: 'Texte copié !' } 
+                  }));
+                });
+              }
+            }}
+            title="Copier le contenu"
+          >
+            <Copy size={16} />
+          </button>
+        )}
+
+        {blockDeleteHandle.label === "le diagramme" && (
+          <>
+            <button
+              className="block-delete-button"
+              style={{ position: 'static', opacity: 1 }}
+              onClick={(e) => {
+                e.stopPropagation();
+                const dom = editor.view.nodeDOM(blockDeleteHandle.pos) as HTMLElement;
+                if (dom) {
+                  const container = dom.querySelector('.mermaid-diagram-container');
+                  if (container) {
+                    container.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+                  }
+                }
+              }}
+              title="Modifier le diagramme"
+            >
+              <Pencil size={16} />
+            </button>
+            <button
+              className="block-delete-button"
+              style={{ position: 'static', opacity: 1 }}
+              onClick={(e) => {
+                e.stopPropagation();
+                const dom = editor.view.nodeDOM(blockDeleteHandle.pos) as HTMLElement;
+                if (dom) {
+                  const svg = dom.querySelector('svg');
+                  if (svg) {
+                    copySvgAsPng(svg as any);
+                    document.dispatchEvent(new CustomEvent('copyToast', { 
+                      detail: { message: 'Image copiée !' } 
+                    }));
+                  }
+                }
+              }}
+              title="Copier en PNG"
+            >
+              <Copy size={16} />
+            </button>
+          </>
+        )}
+
+          <button
+            className="block-delete-button"
+            style={{ position: 'static', opacity: 1 }}
+            onClick={(e) => {
+              e.stopPropagation();
+              editor.chain().focus().setNodeSelection(blockDeleteHandle.pos).deleteSelection().run();
+              setBlockDeleteHandle(null);
+            }}
+            title={`Supprimer ${blockDeleteHandle.label}`}
+          >
+            <Trash2 size={16} />
+          </button>
+        </div>
       )}
 
       {dropIndicator && (
@@ -2484,7 +2720,20 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
                 className="quote-context-menu-item"
                 data-active={editor.state.doc.nodeAt(quoteMenu.pos)?.attrs.type === alert.type}
                 onClick={() => {
-                  editor.chain().focus().setNodeSelection(quoteMenu.pos).updateAttributes('blockquote', { type: alert.type }).run();
+                  const node = editor.state.doc.nodeAt(quoteMenu.pos);
+                  if (node?.attrs.type === alert.type) {
+                    // Si on clique sur le type déjà actif, on enlève la citation
+                    editor.chain().focus()
+                      .setTextSelection({ from: quoteMenu.pos + 1, to: quoteMenu.pos + 1 })
+                      .lift('blockquote')
+                      .run();
+                  } else {
+                    // Sinon on change juste le type de l'alerte
+                    editor.chain().focus()
+                      .setNodeSelection(quoteMenu.pos)
+                      .updateAttributes('blockquote', { type: alert.type })
+                      .run();
+                  }
                   setQuoteMenu(null);
                 }}
               >
@@ -2492,17 +2741,6 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
                 {alert.label}
               </div>
             ))}
-            <div className="tiptap-separator" style={{ height: '1px', width: '100%', margin: '4px 0', backgroundColor: '#e2e8f0' }} />
-            <div 
-              className="quote-context-menu-item"
-              onClick={() => {
-                editor.chain().focus().setNodeSelection(quoteMenu.pos).unsetBlockquote().run();
-                setQuoteMenu(null);
-              }}
-            >
-              <Type size={14} />
-              Texte
-            </div>
           </div>
         </>
       )}

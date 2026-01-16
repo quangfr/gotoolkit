@@ -1,6 +1,6 @@
 {
   "name": "gotoolkit",
-  "version": "2026.01.15.12",
+  "version": "2026.01.16.1",
   "description": "Go-Toolkit combine deux expériences pensées pour les consultants : **Go-Slides** (pour créer des planches claires et structurées) et **Go-Timeline** (pour visualiser et ajuster un planning). Chaque outil s’utilise en ouvrant directement son fichier dans un navigateur, avec des assistants IA, des exports réactifs et des modèles prêts à l’emploi.",
   "main": "index.js",
   "scripts": {
@@ -9,7 +9,7 @@
     "dev:connect": "esbuild src/draw-editor/index.tsx --bundle --format=iife --platform=browser --target=es2018 --sourcemap --define:process.env.NODE_ENV=\"'development'\" --define:process.env=\"{}\" --define:global=\"window\" --inject:src/polyfills.ts --outdir=public/js --entry-names=draw.bundle --asset-names=assets/[name]-[hash] --loader:.css=text --loader:.woff=file --loader:.woff2=file --loader:.ttf=file --loader:.svg=file --loader:.png=file --watch",
     "dev:memo": "esbuild src/memo-bridge/index.tsx --bundle --format=iife --platform=browser --target=es2018 --sourcemap --define:process.env.NODE_ENV=\"'development'\" --define:process.env=\"{}\" --define:global=\"window\" --inject:src/polyfills.ts --outdir=public/js --entry-names=memo.bundle --asset-names=assets/[name]-[hash] --alias:@=./src --watch",
     "build": "npm run build:connect && npm run build:memo",
-    "build:connect": "esbuild src/draw-editor/index.tsx --bundle --format=iife --platform=browser --target=es2018 --sourcemap --minify-identifiers --define:process.env.NODE_ENV=\"'production'\" --define:process.env=\"{}\" --define:global=\"window\" --inject:src/polyfills.ts --outdir=public/js --entry-names=draw.bundle --asset-names=assets/[name]-[hash] --loader:.css=text --loader:.woff=file --loader:.woff2=file --loader:.ttf=file --loader:.svg=file --loader:.png=file",
+    "build:connect": "esbuild src/draw-editor/index.tsx --bundle --format=iife --platform=browser --target=es2018 --sourcemap --minify --define:process.env.NODE_ENV=\"'production'\" --define:process.env=\"{}\" --define:global=\"window\" --inject:src/polyfills.ts --outdir=public/js --entry-names=draw.bundle --asset-names=assets/[name]-[hash] --loader:.css=text --loader:.woff=file --loader:.woff2=file --loader:.ttf=file --loader:.svg=file --loader:.png=file",
     "build:memo": "esbuild src/memo-bridge/index.tsx --bundle --format=iife --platform=browser --target=es2018 --sourcemap --minify --define:process.env.NODE_ENV=\"'production'\" --define:process.env=\"{}\" --define:global=\"window\" --inject:src/polyfills.ts --outdir=public/js --entry-names=memo.bundle --asset-names=assets/[name]-[hash] --alias:@=./src",
     "test:playwright": "npx playwright test"
   },

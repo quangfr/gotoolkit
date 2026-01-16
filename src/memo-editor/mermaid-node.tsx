@@ -559,7 +559,6 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
           ref={containerRef}
           className="mermaid-diagram-container"
           onDoubleClick={handleDoubleClick}
-          onClick={(e) => e.stopPropagation()}
           title="Double-cliquer pour modifier le diagramme"
           style={{ 
             cursor: 'pointer', 
@@ -770,6 +769,8 @@ export const MermaidNode = Node.create({
   name: 'mermaidDiagram',
   group: 'block',
   atom: true,
+  selectable: true,
+  draggable: true,
   
   addAttributes() {
     return {

@@ -55,10 +55,10 @@ Ajoutez des libellés pour classer vos informations. Tapez \`\`\` suivi du nom d
 
 Idéal pour masquer du contenu secondaire ou des détails techniques. Tapez \`>>\` pour créer un bloc dépliable
 
->>Bloc 1
->Contenu dépliable
->>Bloc 1.1
->Contenu dépliable
+> \> Bloc 1
+> Contenu dépliable
+> \> Bloc 1.1
+> Contenu dépliable
 
 ## 📊 Tableaux
 
@@ -76,7 +76,7 @@ Utilisez l'icône **Table** pour insérer un tableau.
 
 ## 🧜‍♂️ Diagrammes Mermaid
 
-Générez des diagrammes à partir de texte.
+Générez des diagrammes à partir de texte. Avec la possibilité d'éditer directement le code ou le diagramme ou en prompt.
 
 \`\`\`\`
 \`\`\`mermaid

@@ -1,0 +1,161 @@
+{
+  "maintenanceContracts": [
+    {
+      "contractId": "MC-ENG-0001",
+      "airline": { "code": "AF", "name": "Air France" },
+      "engine": {
+        "manufacturer": "Safran Aircraft Engines",
+        "model": "CFM56-7B",
+        "serialNumber": "CFM56-7B-982341",
+        "enginePosition": "LH"
+      },
+      "aircraft": {
+        "model": "Boeing 737-800",
+        "registration": "F-GKXA",
+        "msn": "34567"
+      },
+      "contractType": "PBH",
+      "financials": {
+        "currency": "USD",
+        "ratePerFlightHour": 185,
+        "minimumAnnualHours": 2500,
+        "annualCap": 480000
+      },
+      "contractPeriod": {
+        "startDate": "2024-01-01",
+        "endDate": "2032-12-31"
+      },
+      "status": "Active"
+    },
+    {
+      "contractId": "MC-ENG-0002",
+      "airline": { "code": "LH", "name": "Lufthansa" },
+      "engine": {
+        "manufacturer": "GE Aviation",
+        "model": "GE90-115B",
+        "serialNumber": "GE90-115B-771204",
+        "enginePosition": "RH"
+      },
+      "aircraft": {
+        "model": "Boeing 777-300ER",
+        "registration": "D-ABYU",
+        "msn": "38901"
+      },
+      "contractType": "Time & Material",
+      "financials": {
+        "currency": "EUR",
+        "hourlyLaborRate": 420,
+        "materialMarkup": 0.15
+      },
+      "contractPeriod": {
+        "startDate": "2023-06-01",
+        "endDate": "2028-05-31"
+      },
+      "status": "Active"
+    },
+    {
+      "contractId": "MC-ENG-0003",
+      "airline": { "code": "EK", "name": "Emirates" },
+      "engine": {
+        "manufacturer": "Rolls-Royce",
+        "model": "Trent 900",
+        "serialNumber": "TRENT900-556782",
+        "enginePosition": "LH"
+      },
+      "aircraft": {
+        "model": "Airbus A380-800",
+        "registration": "A6-EOD",
+        "msn": "157"
+      },
+      "contractType": "TotalCare",
+      "financials": {
+        "currency": "USD",
+        "ratePerFlightHour": 1250
+      },
+      "contractPeriod": {
+        "startDate": "2022-01-01",
+        "endDate": "2030-12-31"
+      },
+      "status": "Active"
+    },
+    {
+      "contractId": "MC-ENG-0004",
+      "airline": { "code": "QR", "name": "Qatar Airways" },
+      "engine": {
+        "manufacturer": "GE Aviation",
+        "model": "GEnx-1B",
+        "serialNumber": "GENX1B-883412",
+        "enginePosition": "RH"
+      },
+      "aircraft": {
+        "model": "Boeing 787-9",
+        "registration": "A7-BHG",
+        "msn": "65432"
+      },
+      "contractType": "PBH",
+      "financials": {
+        "currency": "USD",
+        "ratePerFlightHour": 640
+      },
+      "contractPeriod": {
+        "startDate": "2024-04-01",
+        "endDate": "2034-03-31"
+      },
+      "status": "Active"
+    },
+    {
+      "contractId": "MC-ENG-0005",
+      "airline": { "code": "DL", "name": "Delta Air Lines" },
+      "engine": {
+        "manufacturer": "Pratt & Whitney",
+        "model": "PW1100G-JM",
+        "serialNumber": "PW1100G-334901",
+        "enginePosition": "LH"
+      },
+      "aircraft": {
+        "model": "Airbus A320neo",
+        "registration": "N371DN",
+        "msn": "81234"
+      },
+      "contractType": "Flight Hour Agreement",
+      "financials": {
+        "currency": "USD",
+        "ratePerFlightHour": 520
+      },
+      "contractPeriod": {
+        "startDate": "2021-09-01",
+        "endDate": "2031-08-31"
+      },
+      "status": "Active"
+    },
+    {
+      "contractId": "MC-ENG-0006",
+      "airline": { "code": "SQ", "name": "Singapore Airlines" },
+      "engine": {
+        "manufacturer": "Rolls-Royce",
+        "model": "Trent XWB-84",
+        "serialNumber": "XWB84-990231",
+        "enginePosition": "RH"
+      },
+      "aircraft": {
+        "model": "Airbus A350-900",
+        "registration": "9V-SMF",
+        "msn": "298"
+      },
+      "contractType": "TotalCare",
+      "financials": {
+        "currency": "USD",
+        "ratePerFlightHour": 980
+      },
+      "contractPeriod": {
+        "startDate": "2020-02-01",
+        "endDate": "2035-01-31"
+      },
+      "status": "Active"
+    }
+  ],
+  "metadata": {
+    "version": "1.1",
+    "generatedAt": "2026-01-16T01:05:00Z"
+  }
+}

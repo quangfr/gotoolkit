@@ -1,5 +1,8 @@
 ## Module Mémo `T1 2026`
-- Intégration de Bibliothèque et d'Assist `À planifier`
+- Intégration d'un bloc code JSON
+
+## Module Grid `T1 2026`
+- Ajoute de Bibliothèque et de Assist
 
 ## Accès ressources tiers (Polène)`À étudier`
 - Fichiers Sharepoint / Outlook / OneDrive 

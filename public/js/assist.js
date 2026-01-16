@@ -678,10 +678,12 @@
     var aiCounterToasterState = {
         isRunning: false,
         timerId: null,
-        remaining: 0
+        remaining: 0,
+        isLooping: false,
+        originalDuration: 0
     };
 
-    function startCharacterCounterToaster(tokenCount) {
+    function startCharacterCounterToaster(tokenCount, options = {}) {
         if (typeof tokenCount !== 'number' || tokenCount < 0) {
             tokenCount = 0;
         }
@@ -692,14 +694,17 @@
         // Stop any existing timer
         stopCharacterCounterToaster();
 
-        // Calculate duration: 40000 chars = 10000 tokens = 20 seconds
-        // 4 chars = 1 token, so: durationMs = (tokenCount * 4) / 2 = tokenCount * 2
-        // Simplified: durationMs = tokenCount * 2
-        var durationMs = Math.round(tokenCount * 2);
-        durationMs = Math.max(durationMs, 5000); // Minimum 5 seconds (2500 tokens)
+        var isImport = options.isImport || false;
+
+        // Calculate duration: 15s to 90s
+        // Base: 15s for 0 tokens, up to 90s for ~30000 tokens (approx 120k chars)
+        var durationMs = 15000 + Math.round(tokenCount * 2.5);
+        durationMs = Math.min(durationMs, 90000); // Max 1m30
 
         aiCounterToasterState.isRunning = true;
         aiCounterToasterState.remaining = durationMs;
+        aiCounterToasterState.isLooping = isImport;
+        aiCounterToasterState.originalDuration = durationMs;
 
         toasterEl.classList.add("visible");
         toasterEl.style.display = "";
@@ -721,8 +726,13 @@
 
             aiCounterToasterState.remaining -= 1000;
 
-            if (aiCounterToasterState.remaining <= 0) {
-                stopCharacterCounterToaster();
+            if (aiCounterToasterState.remaining < 0) {
+                if (aiCounterToasterState.isLooping) {
+                    aiCounterToasterState.remaining = aiCounterToasterState.originalDuration;
+                    aiCounterToasterState.timerId = setTimeout(updateCounter, 1000);
+                } else {
+                    stopCharacterCounterToaster();
+                }
             } else {
                 aiCounterToasterState.timerId = setTimeout(updateCounter, 1000);
             }
@@ -3038,10 +3048,21 @@
             });
     };
 
-    AssistSidebar.prototype.getFileImportAcceptString = function () {
+    AssistSidebar.prototype.getFileImportAcceptString = function (options) {
+        var exclude = options?.exclude || [];
+        var filterFn = function (item) {
+            if (!item) return false;
+            var low = item.toLowerCase();
+            return !exclude.some(function (ext) {
+                var extLow = ext.toLowerCase();
+                // Check if it's an extension or part of a mime-type
+                return low === extLow || low === "." + extLow || low.indexOf("/" + extLow) !== -1 || low.indexOf("." + extLow) !== -1;
+            });
+        };
+
         var config = window.GoToolkitSiteConfig?.get("fileImport.supportedExtensions");
         if (config && Array.isArray(config.mimeTypes) && Array.isArray(config.extensions)) {
-            var base = config.mimeTypes.concat(config.extensions);
+            var base = config.mimeTypes.concat(config.extensions).filter(filterFn);
             var media = [
                 "audio/mpeg", ".mp3",
                 "audio/wav", ".wav",
@@ -3060,11 +3081,13 @@
                 "image/gif", ".gif",
                 "image/bmp", ".bmp",
                 "image/tiff", ".tif", ".tiff"
-            ];
+            ].filter(filterFn);
             return base.concat(media).join(",");
         }
+
         // Fallback to default if config not available
-        return "application/pdf,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx,application/vnd.openxmlformats-officedocument.presentationml.presentation,.pptx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,.xlsx,text/plain,.txt,text/markdown,.md,text/vtt,.vtt,application/json,.json,.hag,application/rtf,.rtf,application/msword,.doc,application/vnd.oasis.opendocument.text,.odt,application/vnd.oasis.opendocument.spreadsheet,.ods,audio/mpeg,.mp3,audio/wav,.wav,audio/mp4,.mp4,.m4a,audio/aac,.aac,audio/ogg,.ogg,audio/webm,.webm,audio/flac,.flac,video/mp4,video/webm,video/quicktime,.mov,video/x-msvideo,.avi";
+        var fallback = "application/pdf,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx,application/vnd.openxmlformats-officedocument.presentationml.presentation,.pptx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,.xlsx,text/plain,.txt,text/markdown,.md,text/vtt,.vtt,application/json,.json,.hag,application/rtf,.rtf,application/msword,.doc,application/vnd.oasis.opendocument.text,.odt,application/vnd.oasis.opendocument.spreadsheet,.ods,audio/mpeg,.mp3,audio/wav,.wav,audio/mp4,.mp4,.m4a,audio/aac,.aac,audio/ogg,.ogg,audio/webm,.webm,audio/flac,.flac,video/mp4,video/webm,video/quicktime,.mov,video/x-msvideo,.avi";
+        return fallback.split(",").filter(filterFn).join(",");
     };
 
     AssistSidebar.prototype.createDocumentPickers = function () {
@@ -3098,7 +3121,9 @@
         this.importFileInput = document.createElement("input");
         this.importFileInput.type = "file";
         this.importFileInput.multiple = true;
-        this.importFileInput.accept = this.getFileImportAcceptString();
+        this.importFileInput.accept = this.getFileImportAcceptString({
+            exclude: ["xlsx", "csv", "tsv", "ods", "json", "har", "hag"]
+        });
         this.importFileInput.style.display = "none";
         this.importFileInput.addEventListener("change", this.handleImportFilesSelected.bind(this));
         document.body.appendChild(this.importFileInput);
@@ -3125,7 +3150,9 @@
         this.mediaTotalCount = files.length;
         this.mediaUploadCount = 0;
         this.mediaTranscribedCount = 0;
-        this.updateAttachmentIndicator();
+        if (!options?.skipIndicator) {
+            this.updateAttachmentIndicator();
+        }
         var index = 0;
         var runWorker = async function () {
             while (index < files.length) {
@@ -3140,13 +3167,17 @@
                 this.setDocumentUploadStatus("Upload audio/vidéo → " + (file?.name || ""));
                 var uploadUrl = await transcriptApi.uploadAudioToAssembly(file, key);
                 this.mediaUploadCount += 1;
-                this.updateAttachmentIndicator();
+                if (!options?.skipIndicator) {
+                    this.updateAttachmentIndicator();
+                }
                 var payload = transcriptApi.buildAssemblyTranscriptPayload(uploadUrl, 0);
                 var transcriptId = await transcriptApi.requestAssemblyTranscript(payload, key);
                 this.setDocumentUploadStatus("Transcription → " + (file?.name || ""));
                 var result = await transcriptApi.pollAssemblyTranscript(transcriptId, key);
                 this.mediaTranscribedCount += 1;
-                this.updateAttachmentIndicator();
+                if (!options?.skipIndicator) {
+                    this.updateAttachmentIndicator();
+                }
                 try {
                     console.log("AssemblyAI transcript response:", result);
                 } catch (err) {
@@ -3200,6 +3231,19 @@
 
         var self = this;
         var fileArray = Array.from(files);
+
+        // Filter out table-like/structured formats not supported for memo import
+        var unsupportedImportExtensions = ["xlsx", "csv", "tsv", "ods", "json", "har", "hag"];
+        var filteredFiles = fileArray.filter(function (file) {
+            var ext = (file.name || "").split('.').pop().toLowerCase();
+            return !unsupportedImportExtensions.includes(ext);
+        });
+
+        if (!filteredFiles.length && fileArray.length > 0) {
+            return;
+        }
+        fileArray = filteredFiles;
+
         var memoId = this.getActiveMemoId();
         var tabId = memoId || null;
         var createdImportBubble = false;
@@ -3209,6 +3253,7 @@
         var skipEmbeddings = Boolean(options.skipEmbeddings);
         var directPasteMode = Boolean(options.directPasteMode) ||
             Boolean(global.GoToolkitSiteConfig?.get?.("memo.import.directPasteEnabled", false));
+
         this.attachmentsTotalCount = fileArray.length;
         this.attachmentsTotalSize = fileArray.reduce(function (acc, file) {
             return acc + (Number(file?.size) || 0);
@@ -3224,12 +3269,18 @@
                 this.attachmentsFileSizes.set(file.name, Number(file.size) || 0);
             }
         }, this);
-        this.updateAttachmentIndicator();
+
+        // Do not display indicator for memo import (skipEmbeddings)
+        if (!skipEmbeddings) {
+            this.updateAttachmentIndicator();
+        }
 
         try {
             this.importInProgress = true;
             this.setSendButtonBusy(true);
-            if (CHAT_APP_ID === "memo") {
+
+            // Hide generic toast for memo import (skipEmbeddings)
+            if (CHAT_APP_ID === "memo" && !skipEmbeddings) {
                 window.GoToolkitMemoToast?.("Import en cours");
             }
             // 1. Ingérer les fichiers (parsing, chunking) comme chatAttachFilesBtn
@@ -3243,17 +3294,16 @@
             var docFiles = fileArray.filter(function (file) {
                 return !isMediaFile(file);
             });
-            if (mediaFiles.length) {
-                hadMediaTranscription = true;
-                this.deferSendButtonRestoreUntilAI = true;
-                this.setTranscriptionUiState(true);
-                var mediaNames = mediaFiles.map(function (file) { return file?.name || ""; }).filter(Boolean);
-                var importLabel = "⤷ Importer " + (mediaNames.length === 1 ? mediaNames[0] : mediaNames.length + " fichiers");
+
+            // For memo import (skipEmbeddings): always write the import message immediately
+            if (skipEmbeddings && fileArray.length > 0) {
+                var fileNames = fileArray.map(function (file) { return file?.name || ""; }).filter(Boolean);
+                var importLabel = "⤷ Importer " + (fileNames.length === 1 ? fileNames[0] : fileNames.length + " fichiers");
                 var userMessage = {
                     id: "msg-" + Date.now(),
                     role: "user",
                     content: importLabel,
-                    attachments: mediaNames
+                    attachments: fileNames
                 };
                 this.conversation.messages.push(userMessage);
                 this.appendMessage(userMessage);
@@ -3261,19 +3311,44 @@
                 this.scrollToBottom();
                 createdImportBubble = true;
 
-                var statusMessage = {
-                    id: "msg-" + (Date.now() + 1),
-                    role: "bot",
-                    content: "..."
-                };
-                this.conversation.messages.push(statusMessage);
-                this.appendMessage(statusMessage);
-                this.persist();
-                this.scrollToBottom();
+                // Do not create statusMessage "..." here as sendAIRequest will create its own placeholder
+            }
+
+            if (mediaFiles.length) {
+                hadMediaTranscription = true;
+                this.deferSendButtonRestoreUntilAI = true;
+                this.setTranscriptionUiState(true);
+                var mediaNames = mediaFiles.map(function (file) { return file?.name || ""; }).filter(Boolean);
+
+                if (!skipEmbeddings) {
+                    var importLabel = "⤷ Importer " + (mediaNames.length === 1 ? mediaNames[0] : mediaNames.length + " fichiers");
+                    var userMessage = {
+                        id: "msg-" + Date.now(),
+                        role: "user",
+                        content: importLabel,
+                        attachments: mediaNames
+                    };
+                    this.conversation.messages.push(userMessage);
+                    this.appendMessage(userMessage);
+                    this.persist();
+                    this.scrollToBottom();
+                    createdImportBubble = true;
+
+                    var statusMessage = {
+                        id: "msg-" + (Date.now() + 1),
+                        role: "bot",
+                        content: "..."
+                    };
+                    this.conversation.messages.push(statusMessage);
+                    this.appendMessage(statusMessage);
+                    this.persist();
+                    this.scrollToBottom();
+                }
 
                 this.setDocumentUploadStatus("Transcription audio/vidéo en cours…");
                 var transcriptResult = await this.prepareMediaTranscripts(mediaFiles, {
                     concurrency: 2,
+                    skipIndicator: skipEmbeddings,
                     onTranscript: async function (entry) {
                         if (entry?.file?.name && entry?.sourceFile) {
                             mediaTranscriptMap.set(entry.file.name, entry.sourceFile);
@@ -3291,7 +3366,7 @@
                         var memoId = this.getActiveMemoId();
                         var tabId = memoId || null;
 
-                        // Ingest with skipEmbeddings=true - send AI request immediately without waiting for embeddings
+                        // Ingest with skipEmbeddings=true
                         var results = await this.docManager.ingestFiles([entry.file], this.conversation.id, {
                             onProgress: this.handleDocumentProgress.bind(this),
                             sourceType: "context",
@@ -3302,24 +3377,26 @@
                         });
                         mediaIngestResults.push.apply(mediaIngestResults, results);
 
-                        // Send AI request immediately with chatImportPrompt when transcript is ready
-                        var systemPrompt = window.GoToolkitChatPrompt?.PRESETS?.import?.prompt ||
-                            window.GoToolkitChatPrompt?.PRESETS?.import?.defaultPrompt ||
-                            "Analyse le DOCUMENT fourni et produis une synthèse structurée.";
-                        var payload = {
-                            system: systemPrompt,
-                            messages: [
-                                {
-                                    role: "user",
-                                    content: "DOCUMENT\n" + entry.transcriptText
-                                }
-                            ],
-                            stream: false,
-                            model: global.GoToolkitIAConfig?.getOpenRouterModel?.() || "openai/gpt-oss-120b"
-                        };
-
-                        // Send AI request immediately
-                        this.sendAIRequest(payload);
+                        // If NOT in memo import skipEmbeddings mode, we might want individual requests
+                        // but for memo import we wait for all to be ready or handle them here?
+                        // The user said "go throught chatImportPrompt"
+                        if (!skipEmbeddings) {
+                            var systemPrompt = window.GoToolkitChatPrompt?.PRESETS?.import?.prompt ||
+                                window.GoToolkitChatPrompt?.PRESETS?.import?.defaultPrompt ||
+                                "Analyse le DOCUMENT fourni et produis une synthèse structurée.";
+                            var payload = {
+                                system: systemPrompt,
+                                messages: [
+                                    {
+                                        role: "user",
+                                        content: "DOCUMENT\n" + entry.transcriptText
+                                    }
+                                ],
+                                stream: false,
+                                model: global.GoToolkitIAConfig?.getOpenRouterModel?.() || "openai/gpt-oss-120b"
+                            };
+                            this.sendAIRequest(payload);
+                        }
                     }.bind(this)
                 });
                 if (transcriptResult.errors && transcriptResult.errors.length) {
@@ -3427,7 +3504,7 @@
                     var toastMsg = readyDocNames.length === 1
                         ? "⤷ " + readyDocNames[0] + " importé"
                         : readyDocNames.length + " documents importés";
-                    window.GoToolkitMemoToast?.(toastMsg);
+                    if (!skipEmbeddings) window.GoToolkitMemoToast?.(toastMsg);
                 }
 
                 // Create a user message indicating direct paste
@@ -3471,7 +3548,7 @@
                 });
                 if (transcriptParts.length) {
                     window.GoToolkitMemoAppendText?.(transcriptParts.join("\n\n"));
-                    window.GoToolkitMemoToast?.("Transcription importée.");
+                    if (!skipEmbeddings) window.GoToolkitMemoToast?.("Transcription importée.");
                 }
             }
 
@@ -3511,7 +3588,7 @@
                 var toastMsg = readyDocNames.length === 1
                     ? "⤷ " + readyDocNames[0] + " importé"
                     : readyDocNames.length + " documents importés";
-                window.GoToolkitMemoToast?.(toastMsg);
+                if (!skipEmbeddings) window.GoToolkitMemoToast?.(toastMsg);
 
                 // Create a user message indicating direct paste
                 var userMessage = {
@@ -3910,7 +3987,7 @@
                 percent = 100;
             }
             var ingested = Math.min(completed, total);
-            return "🗎 " + ingested + "/" + total + " fichiers | " + percent + " %";
+            return "🗎 " + ingested + "/" + total + " | " + percent + " %";
         }
 
         // After import complete (total === 0, but pendingCount > 0)
@@ -3934,8 +4011,8 @@
             if (window.lucide) window.lucide.createIcons();
             return;
         }
-        this.sendButton.disabled = false;
         this.sendButton.innerHTML = this.sendButtonBaseLabel || `<i data-lucide="send" style="width:16px;height:16px;"></i>`;
+        this.updateComposerState();
         if (window.lucide) window.lucide.createIcons();
     };
 
@@ -6275,7 +6352,7 @@
             var output = (typeof payload?.output === "string") ? payload.output : "";
             var finalContent = (answerContent && answerContent.length)
                 ? answerContent
-                : "Non trouvé dans la base";
+                : (output && output.length ? "Import effectué." : "Non trouvé dans la base");
             return {
                 content: finalContent,
                 references: references
@@ -6550,7 +6627,10 @@
                 }
             });
         }
-        startCharacterCounterToaster(totalPayloadChars);
+
+        // Determine if it's an import to enable looping and custom duration
+        var isImportRequest = payload.system && payload.system.includes("Importer le DOCUMENT");
+        startCharacterCounterToaster(totalPayloadChars / 4, { isImport: isImportRequest });
 
         // Créer un message bot provisoire pour la réponse
         var botMessage = {
@@ -6603,14 +6683,18 @@
             var responseObj = null;
             var rawTextFallback = '';
 
-            if (typeof rawResponse === 'string') {
+            // Handle return format from ia-client.js: { text: "...", usage: ... }
+            var resultText = (rawResponse && typeof rawResponse === 'object') ? (rawResponse.text || rawResponse.content) : rawResponse;
+
+            if (typeof resultText === 'string') {
                 try {
-                    responseObj = JSON.parse(rawResponse);
+                    responseObj = JSON.parse(resultText);
+                    rawTextFallback = resultText;
                 } catch (e) {
-                    rawTextFallback = rawResponse.trim();
+                    rawTextFallback = (resultText || '').trim();
                 }
-            } else if (rawResponse && typeof rawResponse === 'object') {
-                responseObj = rawResponse;
+            } else if (resultText && typeof resultText === 'object') {
+                responseObj = resultText;
             }
 
             // Extraire l'output
@@ -6628,12 +6712,12 @@
                 } else if (responseObj.content && typeof responseObj.content === 'object') {
                     responseObj = responseObj.content;
                 }
-                output = responseObj.output || responseObj.answer || null;
+                output = responseObj.output || responseObj.mermaid || null;
             }
 
             // Parser le contenu pour le chat
             var parsedResponse = self.parseAssistantResponse(
-                JSON.stringify(responseObj || { answer: rawTextFallback })
+                JSON.stringify(responseObj || { answer: rawTextFallback || "Import effectué." })
             );
 
             // Mettre à jour le message bot
@@ -6661,9 +6745,16 @@
             self.scrollToBottom();
             self.persist();
             stopCharacterCounterToaster();
+            self.setSendButtonBusy(false);
             if (self.deferSendButtonRestoreUntilAI) {
                 self.deferSendButtonRestoreUntilAI = false;
                 self.setTranscriptionUiState(false);
+            }
+            if (self.importInProgress) {
+                self.importInProgress = false;
+                if (CHAT_APP_ID === "memo") {
+                    window.GoToolkitMemoToast?.("");
+                }
             }
 
         }).catch(function (err) {
@@ -6674,12 +6765,19 @@
             var messageEntry = self.messageNodes[botMessage.id];
             if (messageEntry && messageEntry.contentEl) {
                 messageEntry.contentEl.innerHTML = self.renderBotContent(botMessage);
+                self.syncBotExtras?.(messageEntry, botMessage);
             }
-            self.persist();
             stopCharacterCounterToaster();
+            self.setSendButtonBusy(false);
             if (self.deferSendButtonRestoreUntilAI) {
                 self.deferSendButtonRestoreUntilAI = false;
                 self.setTranscriptionUiState(false);
+            }
+            if (self.importInProgress) {
+                self.importInProgress = false;
+                if (CHAT_APP_ID === "memo") {
+                    window.GoToolkitMemoToast?.("", true);
+                }
             }
         });
     };
