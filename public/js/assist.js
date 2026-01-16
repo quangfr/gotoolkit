@@ -2929,7 +2929,7 @@
         this.tabIndicator.style.display = "none";
         this.tabIndicator.style.paddingLeft = "4px";
         this.tabIndicator.style.fontSize = "0.7rem";
-        this.tabIndicator.style.color = "#999";
+        this.tabIndicator.style.color = "var(--muted)";
         this.tabIndicator.style.userSelect = "none";
         this.sidebar.appendChild(this.tabIndicator);
 
@@ -6993,7 +6993,7 @@
                                 this.previewBodyEl.innerHTML = this.formatPreviewText(accumulated);
                             }.bind(this));
                             if (!accumulated) {
-                                this.previewBodyEl.innerHTML = "<div style='color: #999; font-style: italic;'>(extrait indisponible)</div>";
+                                this.previewBodyEl.innerHTML = "<div style='color: var(--muted); font-style: italic;'>(extrait indisponible)</div>";
                             }
                             return;
                         }
@@ -7014,7 +7014,7 @@
                 var rawText = await fetched.text();
                 if (fetchedType.includes("markdown") || this.detectFileTypeFromPath(entry.path) === "markdown") {
                     var html = renderDocumentMarkdown(rawText);
-                    this.previewBodyEl.innerHTML = html || "<div style='color: #999; font-style: italic;'>(extrait indisponible)</div>";
+                    this.previewBodyEl.innerHTML = html || "<div style='color: var(--muted); font-style: italic;'>(extrait indisponible)</div>";
                     return;
                 }
                 if (fetchedType.includes("html")) {
@@ -7268,7 +7268,7 @@
                 markdownSource = snippet;
             }
             var markdownHtml = renderDocumentMarkdown(markdownSource);
-            this.previewBodyEl.innerHTML = markdownHtml || "<div style='color: #999; font-style: italic;'>(extrait indisponible)</div>";
+            this.previewBodyEl.innerHTML = markdownHtml || "<div style='color: var(--muted); font-style: italic;'>(extrait indisponible)</div>";
 
             // Highlight AI snippets in markdown content
             if (aiSnippets.length > 0 && this.previewBodyEl.innerHTML) {
@@ -7307,7 +7307,7 @@
             if (snippet) {
                 this.previewBodyEl.innerHTML = this.formatPreviewText(snippet, highlightLine, opts);
             } else {
-                this.previewBodyEl.innerHTML = "<div style='color: #999; font-style: italic;'>(extrait indisponible)</div>";
+                this.previewBodyEl.innerHTML = "<div style='color: var(--muted); font-style: italic;'>(extrait indisponible)</div>";
             }
             return;
         }

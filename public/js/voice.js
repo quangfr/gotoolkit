@@ -66,19 +66,19 @@
                 gap: 4px;
             }
             .go-toolkit-voice-button.is-recording {
-                border-color: rgba(220, 38, 38, 0.7);
+                border-color: var(--intent-error-border);
                 animation: go-toolkit-voice-pulse 2.4s ease-in-out infinite;
             }
             @keyframes go-toolkit-voice-pulse {
-                0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.25); }
-                70% { box-shadow: 0 0 0 10px rgba(220, 38, 38, 0); }
-                100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+                0% { box-shadow: 0 0 0 0 rgba(180, 35, 24, 0.25); }
+                70% { box-shadow: 0 0 0 10px rgba(180, 35, 24, 0); }
+                100% { box-shadow: 0 0 0 0 rgba(180, 35, 24, 0); }
             }
             .voice-overlay {
                 position: fixed;
                 inset: 0;
                 background: rgba(0, 0, 0, 0.78);
-                color: #fff;
+                color: var(--white);
                 z-index: 11000;
                 display: none;
                 flex-direction: column;
@@ -102,7 +102,7 @@
             }
             .voice-overlay__ready:hover {
                 transform: scale(1.04);
-                color: #facc15;
+                color: var(--intent-warning-border);
             }
             .voice-overlay__tiles {
                 display: flex;
@@ -130,7 +130,7 @@
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                color: #fff;
+                color: var(--white);
                 font-size: 20px;
                 font-weight: 700;
                 text-align: center;
@@ -156,7 +156,7 @@
                 display: none;
             }
             .voice-overlay__tile--active {
-                border-color: #facc15;
+                border-color: var(--intent-warning-border);
                 box-shadow: 0 18px 50px rgba(0, 0, 0, 0.65), 0 0 0 6px rgba(250, 204, 21, 0.18);
             }
             .voice-overlay__caption {
@@ -171,7 +171,7 @@
                 right: 32px;
                 background: none;
                 border: none;
-                color: #fff;
+                color: var(--white);
                 font-size: 28px;
                 cursor: pointer;
                 padding: 8px;
@@ -183,15 +183,15 @@
                 z-index: 10;
             }
             .voice-overlay__close:hover {
-                color: #facc15;
+                color: var(--intent-warning-border);
                 transform: scale(1.1);
             }
             .go-toolkit-voice-toast {
                 position: fixed;
                 left: 16px;
                 bottom: 70px;
-                background: rgba(15, 23, 42, 0.95);
-                color: #fff;
+                background: var(--gray-900);
+                color: var(--white);
                 padding: 8px 12px;
                 border-radius: 10px;
                 font-size: 12px;
@@ -214,7 +214,7 @@
             document.body.appendChild(state.toast);
         }
         state.toast.textContent = message;
-        state.toast.style.background = isError ? "rgba(176, 0, 32, 0.95)" : "rgba(15, 23, 42, 0.95)";
+        state.toast.style.background = isError ? "var(--intent-error-border)" : "var(--gray-900)";
         state.toast.classList.add("visible");
         clearTimeout(state.toast._timer);
         state.toast._timer = setTimeout(() => state.toast.classList.remove("visible"), 2400);
@@ -247,7 +247,7 @@
             const timeStr = (mins < 10 ? "0" : "") + mins + ":" + (secs < 10 ? "0" : "") + secs;
 
             state.toast.innerHTML = frame + " Transcription en cours (" + timeStr + ")";
-            state.toast.style.background = "rgba(15, 23, 42, 0.95)";
+            state.toast.style.background = "var(--gray-900)";
             state.toast.classList.add("visible");
         };
 

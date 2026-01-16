@@ -1,18 +1,22 @@
-## Module Mémo `T1 2026`
-- Intégration d'un bloc code JSON
+## Fichiers de données
+- Import et visualisation JSON
+- Export Markdown
+- Intégration Grid et import CSV, XLSX, ODS
 
-## Module Grid `T1 2026`
-- Ajoute de Bibliothèque et de Assist
+## Modèles de document
+- Vision : Go-Roadmap
+- Spécifications : Mapping de données
 
-## Accès ressources tiers (Polène)`À étudier`
+
+## Interface 
+- Mode sombre
+
+## Intégration tiers
 - Fichiers Sharepoint / Outlook / OneDrive 
 - Fichiers Gmail / Google Drive 
+- Jira / Confluence / Notion
 
-## Confidentialité des données `A étudier`
-- Pseudonymisation des données sensibles envoyées et hébergées en ligne 
-- Connexion à un service IA cloud ou auto-hébergé 
-- Reconstruction locale suite à pseudonomisation 
-
-## Compte en ligne sécurisé `À étudier` 
-- Accès à l'espace de partage en ligne sur d’autres appareils `À planifier` 
-- Quota par utilisateur pour les requêtes API `À planifier`
+## Sécurité des données 
+- Pseudonymisation des données
+- Connexion à un serveur IA auto-hébergé 
+- Compte connecté et sauvegarde en ligne

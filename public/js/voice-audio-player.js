@@ -31,7 +31,7 @@
                 position: relative;
                 width: min(92vw, 600px);
                 height: min(92vh, 900px);
-                background: #fff;
+                background: var(--white);
                 border-radius: 20px;
                 padding: 20px;
                 box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
@@ -49,7 +49,7 @@
                 background: none;
                 font-size: 22px;
                 cursor: pointer;
-                color: #101828;
+                color: var(--gray-900);
             }
             .voice-audio-player-header {
                 display: flex;
@@ -65,18 +65,18 @@
             .voice-audio-player-title {
                 font-weight: 600;
                 font-size: 15px;
-                color: #0f172a;
+                color: var(--gray-900);
             }
             .voice-audio-player-subtitle {
                 font-size: 12px;
-                color: #475467;
+                color: var(--gray-600);
             }
             .voice-audio-player-delete {
                 margin-left: auto;
                 border: none;
                 background: transparent;
                 font-size: 13px;
-                color: #b42318;
+                color: var(--intent-error-border);
                 cursor: pointer;
             }
             .voice-audio-player-controls {
@@ -85,20 +85,20 @@
                 gap: 10px;
             }
             .voice-audio-player-play-toggle {
-                border: 1px solid #d0c3ad;
+                border: 1px solid var(--border-strong);
                 border-radius: 8px;
                 width: 36px;
                 height: 36px;
                 background: transparent;
                 cursor: pointer;
                 font-size: 16px;
-                color: #1f2937;
+                color: var(--gray-800);
             }
             .voice-audio-player-speed {
-                border: 1px solid #d0c3ad;
+                border: 1px solid var(--border-strong);
                 border-radius: 999px;
-                background: #fff;
-                color: #1f2937;
+                background: var(--white);
+                color: var(--gray-800);
                 font-size: 13px;
                 padding: 0 8px;
                 height: 32px;
@@ -109,7 +109,7 @@
                 appearance: none;
                 height: 6px;
                 border-radius: 6px;
-                background: #e5e7eb;
+                background: var(--gray-200);
                 outline: none;
             }
             .voice-audio-player-progress::-webkit-slider-thumb {
@@ -117,21 +117,21 @@
                 width: 14px;
                 height: 14px;
                 border-radius: 50%;
-                background: #2a7a57;
-                border: 2px solid #fff;
+                background: var(--app-primary);
+                border: 2px solid var(--white);
                 box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2);
             }
             .voice-audio-player-progress::-moz-range-thumb {
                 width: 14px;
                 height: 14px;
                 border-radius: 50%;
-                background: #2a7a57;
-                border: 2px solid #fff;
+                background: var(--app-primary);
+                border: 2px solid var(--white);
                 box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2);
             }
             .voice-audio-player-time {
                 font-size: 12px;
-                color: #475467;
+                color: var(--gray-600);
                 min-width: 110px;
                 text-align: right;
             }
@@ -140,7 +140,7 @@
                 width: 100%;
                 min-height: 220px;
                 border-radius: 14px;
-                border: 1px solid rgba(15, 23, 42, 0.12);
+                border: 1px solid var(--border-strong);
                 padding: 12px;
                 font-size: 13px;
                 line-height: 1.5;

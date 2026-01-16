@@ -35,14 +35,6 @@
     <link rel="stylesheet" href="styles/style.css?v=2026.01.16.4">
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        :root {
-            --app-bg: #f3f4f6;
-            --app-border: #cdd4ed;
-            --app-border-strong: #cdd4ed;
-            --app-text: #101428;
-            --memo-card-bg: #ffffff;
-        }
-
         html,
         body {
             min-height: 100vh;
@@ -53,8 +45,8 @@
         body {
             margin: 0;
             padding: 0;
-            font-family: var(--app-font, "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif);
-            background: #f3f4f6;
+            font-family: var(--font-sans);
+            background: var(--app-bg);
             color: var(--app-text);
         }
 
@@ -72,7 +64,7 @@
         .document-explorer {
             width: var(--doc-sidebar-width, 180px);
             flex: 0 0 var(--doc-sidebar-width, 180px);
-            background: #ffffff;
+            background: var(--white);
             display: flex;
             flex-direction: column;
             gap: 4px;
@@ -112,13 +104,13 @@
         }
 
         .document-explorer__tab-btn:hover {
-            background-color: #f1f5f9;
+            background-color: var(--gray-100);
             color: var(--app-text);
         }
 
         .document-explorer__tab-btn.active {
-            color: var(--app-primary, #2a7a57);
-            background-color: #eff6ff;
+            color: var(--color-primary);
+            background-color: var(--gray-50);
         }
 
         .document-explorer__body {
@@ -156,20 +148,20 @@
             overflow: hidden;
             text-overflow: ellipsis;
             border-radius: 4px;
-            color: #0f172a;
+            color: var(--gray-800);
             transition: all 0.1s ease;
             line-height: 1.2;
         }
 
         .toc-item:hover {
-            background-color: #f1f5f9;
+            background-color: var(--gray-100);
             color: var(--app-text);
         }
 
         .toc-item--active {
-            color: var(--app-primary, #2a7a57);
+            color: var(--color-primary);
             font-weight: 600;
-            background-color: #eff6ff;
+            background-color: var(--gray-50);
         }
 
         .toc-item--h1 {
@@ -185,13 +177,13 @@
         .toc-item--h3 {
             padding-left: 18px;
             font-size: 13px;
-            color: #94a3b8;
+            color: var(--gray-400);
         }
 
         .toc-item--h4 {
             padding-left: 26px;
             font-size: 13px;
-            color: #94a3b8;
+            color: var(--gray-400);
             font-style: italic;
         }
 
@@ -205,7 +197,7 @@
 
         .document-explorer__item {
             border: 1px solid var(--app-border, #dfe3f5);
-            background: #fff;
+            background: var(--white);
             color: var(--app-text);
             border-radius: 6px;
             padding: 4px 5px;
@@ -225,7 +217,7 @@
         }
 
         .document-explorer__item--active {
-            border: 2px solid var(--primary, var(--app-primary, #2a7a57));
+            border: 2px solid var(--color-primary);
         }
 
         .document-explorer__item>span:first-child {
@@ -254,13 +246,13 @@
             padding: 0 2px;
             font-size: 13px;
             line-height: 1;
-            color: #111827;
+            color: var(--gray-900);
             cursor: pointer;
         }
 
         .document-explorer__item-action:hover,
         .document-explorer__item-action:focus-visible {
-            color: #0f172a;
+            color: var(--gray-900);
             outline: none;
         }
 
@@ -282,13 +274,13 @@
 
         .document-explorer__item:hover,
         .document-explorer__item:focus-visible {
-            border-color: var(--app-primary);
+            border-color: var(--color-primary);
             outline: none;
         }
 
         .document-explorer__empty {
             font-size: 12px;
-            color: #6b7280;
+            color: var(--gray-500);
             padding: 8px 10px;
         }
 
@@ -376,7 +368,7 @@
         .document-tab {
             background: transparent;
             border: 1px solid var(--app-border-strong);
-            color: var(--app-primary-strong);
+            color: var(--color-primary-strong);
             padding: 4px 10px;
             border-radius: 8px;
             transition: background 0.2s ease, color 0.2s ease;
@@ -387,9 +379,9 @@
         }
 
         .document-tab.active {
-            background: var(--app-primary);
-            border-color: var(--app-primary);
-            color: #ffffff;
+            background: var(--color-primary);
+            border-color: var(--color-primary);
+            color: var(--white);
         }
 
         .document-tab:not(.active) span {
@@ -405,13 +397,13 @@
         }
 
         .document-tab.document-tab--create {
-            background: #ffffff;
+            background: var(--white);
             cursor: pointer;
         }
 
         .document-tab.document-tab--create:hover,
         .document-tab.document-tab--create:focus-visible {
-            border-color: var(--app-primary);
+            border-color: var(--color-primary);
             outline: none;
         }
 
@@ -427,7 +419,7 @@
 
         .document-tab__close:hover,
         .document-tab__close:focus-visible {
-            color: var(--app-primary-strong);
+            color: var(--color-primary-strong);
             outline: none;
         }
 
@@ -440,9 +432,9 @@
 
         .memo-card {
             background: var(--memo-card-bg);
-            border: 1px solid #ebe0d1;
+            border: 1px solid var(--app-border);
             border-radius: 8px;
-            box-shadow: var(--app-shadow);
+            box-shadow: var(--shadow-sm);
             padding: 0;
             flex: 1;
             display: flex;
@@ -457,7 +449,7 @@
             display: none;
             align-items: center;
             justify-content: center;
-            color: #64748b;
+            color: var(--gray-500);
             font-size: 16px;
             text-align: center;
         }
@@ -466,7 +458,7 @@
             padding: 0px 10px 10px 10px;
             flex: 1;
             overflow-y: auto;
-            background: #fff;
+            background: var(--white);
             scrollbar-width: thin;
         }
 
@@ -475,12 +467,12 @@
             padding: 16px 16px 22px;
             min-height: 320px;
             outline: none;
-            background: #fff;
+            background: var(--white);
         }
 
         .editor:focus-within {
-            border-color: #cbd5e1;
-            box-shadow: 0 0 0 4px rgba(203, 213, 225, .35);
+            border-color: var(--app-border-strong);
+            box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.05);
         }
 
         /* Tiptap content */
@@ -521,14 +513,14 @@
         .ProseMirror blockquote {
             margin: 10px 0;
             padding: 10px 12px;
-            border-left: 3px solid #e5e7eb;
-            color: #111827;
-            background: #fafafa;
+            border-left: 3px solid var(--gray-200);
+            color: var(--gray-900);
+            background: var(--gray-50);
             border-radius: 8px;
         }
 
         .ProseMirror code {
-            background: #f3f4f6;
+            background: var(--gray-100);
             padding: 2px 6px;
             border-radius: 8px;
             font-size: .95em;
@@ -539,16 +531,16 @@
             display: flex;
             gap: 6px;
             padding: 8px;
-            background: #fff;
-            border: 1px solid #e5e7eb;
+            background: var(--white);
+            border: 1px solid var(--app-border);
             border-radius: 8px;
-            box-shadow: 0 10px 25px rgba(15, 23, 42, .05);
+            box-shadow: var(--shadow-sm);
             z-index: 10000;
         }
 
         .menu button {
             border: none;
-            background: #fff;
+            background: var(--white);
             border-radius: 8px;
             padding: 7px 10px;
             font-size: 12px;
@@ -556,12 +548,12 @@
         }
 
         .menu button:hover {
-            background: #eef2f7;
+            background: var(--gray-100);
         }
 
         .menu button[data-active="true"] {
-            border-color: #cbd5e1;
-            background: #f8fafc;
+            border-color: var(--gray-300);
+            background: var(--gray-50);
             font-weight: 650;
         }
 
@@ -570,10 +562,10 @@
             position: fixed;
             z-index: 9999;
             width: 240px;
-            background: #fff;
-            border: 1px solid #e5e7eb;
+            background: var(--white);
+            border: 1px solid var(--app-border);
             border-radius: 8px;
-            box-shadow: 0 14px 30px rgba(15, 23, 42, .14);
+            box-shadow: var(--shadow-sm);
             padding: 6px;
             display: none;
         }
@@ -589,7 +581,7 @@
         }
 
         .slash .item:hover {
-            background: #eef2f7;
+            background: var(--gray-100);
         }
 
         .slash .ico {
@@ -597,11 +589,11 @@
             height: 24px;
             display: grid;
             place-items: center;
-            border: 1px solid #e5e7eb;
+            border: 1px solid var(--app-border);
             border-radius: 8px;
             font-size: 12px;
-            color: #64748b;
-            background: #fff;
+            color: var(--gray-500);
+            background: var(--white);
             flex: 0 0 auto;
         }
 
@@ -612,14 +604,14 @@
         }
 
         .slash .meta small {
-            color: #64748b;
+            color: var(--gray-500);
             font-size: 11px;
         }
 
         .modal textarea {
             width: 100%;
             border-radius: 8px;
-            border: 1px solid #d0c3ad;
+            border: 1px solid var(--app-border);
             padding: 10px;
             font-family: "Menlo", "SFMono-Regular", "Consolas", "Liberation Mono", "Courier New", monospace;
             font-size: 13px;
@@ -641,8 +633,8 @@
         }
 
         .memo-prompt-preset-btn.active {
-            background-color: var(--accent-bg, rgba(0, 0, 0, 0.05));
-            border-color: var(--accent-color, #000);
+            background-color: var(--color-primary-soft));
+            border-color: var(--color-primary);
             font-weight: bold;
         }
 
@@ -651,8 +643,8 @@
             position: fixed;
             bottom: 18px;
             right: 18px;
-            background: rgba(15, 23, 42, 0.92);
-            color: #fff;
+            background: var(--gray-900);
+            color: var(--white);
             padding: 8px 16px;
             border-radius: 999px;
             box-shadow: 0 8px 26px rgba(0, 0, 0, 0.25);
@@ -779,7 +771,7 @@
                             data-lucide="library"></i></button>
                     <div class="nav-switch">
                         <button id="navSwitcherBtn" class="nav-switch-btn" type="button" aria-haspopup="true"
-                            aria-expanded="false"><i data-lucide="command"></i> Memo <i
+                            aria-expanded="false"><i data-lucide="zap"></i> Memo <i
                                 data-lucide="chevron-down"></i></button>
                         <div id="navSwitcherMenu" class="nav-switch-menu" role="menu">
                             <a class="nav-switch-link" href="/?v=2026.01.16.4" role="menuitem"><i
@@ -3066,8 +3058,8 @@
             selectionOverlay.id = 'chat-selection-overlay';
             selectionOverlay.style.cssText = `
                 position: fixed;
-                background: rgba(255, 235, 59, 0.15);
-                border: 1px solid rgba(255, 235, 59, 0.3);
+                background: rgba(245, 158, 11, 0.15);
+                border: 1px solid rgba(245, 158, 11, 0.3);
                 pointer-events: none;
                 display: none;
                 z-index: 998;
@@ -3463,7 +3455,7 @@
     <div id="memo-source-overlay"
         style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:100000;">
         <div id="memo-source-modal" role="dialog" aria-modal="true" aria-label="Document source"
-            style="position:absolute; top:1vh; left:50%; transform:translateX(-50%); width:1100px; max-width:calc(100vw - 24px); height:98vh; background:#111; color:#eee; border:1px solid rgba(255,255,255,.12); border-radius:8px; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,.6); font-size:13px;">
+            style="position:absolute; top:1vh; left:50%; transform:translateX(-50%); width:1100px; max-width:calc(100vw - 24px); height:98vh; background:var(--gray-900); color:var(--gray-200); border:1px solid rgba(255,255,255,.12); border-radius:8px; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,.6); font-size:13px;">
             <div
                 style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-bottom:1px solid rgba(255,255,255,.12); font-size:13px;">
                 <div style="font-weight:600; font-size:13px;">Source</div>
@@ -3471,7 +3463,7 @@
 
                 <label for="memo-source-format" style="font-size:13px; opacity:.8;">Format</label>
                 <select id="memo-source-format"
-                    style="height:28px; background:#1a1a1a; color:#eee; border:1px solid rgba(255,255,255,.16); border-radius:8px; padding:0 8px; font-size:13px;">
+                    style="height:28px; background:var(--gray-800); color:var(--gray-200); border:1px solid rgba(255,255,255,.16); border-radius:8px; padding:0 8px; font-size:13px;">
                     <option value="markdown" selected>Markdown</option>
                     <option value="html">HTML</option>
                     <option value="json">JSON</option>
@@ -3480,16 +3472,16 @@
                 </select>
 
                 <button id="memo-source-close" type="button"
-                    style="height:28px; padding:0 10px; background:#1a1a1a; color:#eee; border:1px solid rgba(255,255,255,.16); border-radius:8px; cursor:pointer; font-size:13px;">
+                    style="height:28px; padding:0 10px; background:var(--gray-800); color:var(--gray-200); border:1px solid rgba(255,255,255,.16); border-radius:8px; cursor:pointer; font-size:13px;">
                     Close
                 </button>
             </div>
 
             <textarea id="memo-source-text" readonly spellcheck="false" title="Click to copy all"
-                style="width:100%; height:calc(98vh - 52px); padding:12px; border:0; outline:none; resize:none; background:#0b0b0b; color:#eaeaea; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; font-size:13px; line-height:1.45;"></textarea>
+                style="width:100%; height:calc(98vh - 52px); padding:12px; border:0; outline:none; resize:none; background:var(--gray-900); color:var(--gray-200); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; font-size:13px; line-height:1.45;"></textarea>
 
             <div id="memo-source-toast" role="status" aria-live="polite"
-                style="position:absolute; left:50%; bottom:14px; transform:translateX(-50%); background:rgba(20,20,20,.95); color:#fff; border:1px solid rgba(255,255,255,.12); padding:8px 10px; border-radius:8px; font-size:13px; display:none; pointer-events:none; max-width:calc(100% - 24px); text-align:center;">
+                style="position:absolute; left:50%; bottom:14px; transform:translateX(-50%); background:rgba(20,20,20,.95); color:var(--white); border:1px solid rgba(255,255,255,.12); padding:8px 10px; border-radius:8px; font-size:13px; display:none; pointer-events:none; max-width:calc(100% - 24px); text-align:center;">
             </div>
         </div>
     </div>

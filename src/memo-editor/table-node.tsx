@@ -29,10 +29,10 @@ export { TableRow, TableHeader };
 
 export const TABLE_COLORS = [
   { name: 'Défaut', value: 'transparent' },
-  { name: 'Bleu', value: '#e0f2fe' },
-  { name: 'Vert', value: '#dcfce7' },
-  { name: 'Jaune', value: '#fef9c3' },
-  { name: 'Rouge', value: '#fee2e2' },
-  { name: 'Violet', value: '#f3e8ff' },
-  { name: 'Gris', value: '#f3f4f6' },
+  { name: 'Bleu', value: 'var(--intent-info-bg)' },
+  { name: 'Vert', value: 'var(--intent-success-bg)' },
+  { name: 'Jaune', value: 'var(--intent-warning-bg)' },
+  { name: 'Rouge', value: 'var(--intent-error-bg)' },
+  { name: 'Violet', value: 'var(--intent-important-bg)' },
+  { name: 'Gris', value: 'var(--gray-100)' },
 ];

@@ -31,7 +31,7 @@
                 position: relative;
                 width: 95vw;
                 max-height: 90vh;
-                background: #fff;
+                background: var(--white);
                 border-radius: 24px;
                 padding: 22px;
                 box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
@@ -50,7 +50,7 @@
             .voice-video-player-title {
                 font-weight: 600;
                 font-size: 15px;
-                color: #0f172a;
+                color: var(--gray-900);
             }
             .voice-video-player-header-actions {
                 margin-left: auto;
@@ -62,14 +62,14 @@
                 border: none;
                 background: transparent;
                 font-size: 13px;
-                color: #1d4ed8;
+                color: var(--intent-info-border);
                 cursor: pointer;
             }
             .voice-video-player-delete {
                 border: none;
                 background: transparent;
                 font-size: 13px;
-                color: #b42318;
+                color: var(--intent-error-border);
                 cursor: pointer;
             }
             .voice-video-player-close {
@@ -80,7 +80,7 @@
                 background: none;
                 font-size: 22px;
                 cursor: pointer;
-                color: #101828;
+                color: var(--gray-900);
             }
             .voice-video-player-body {
                 display: flex;
@@ -99,7 +99,7 @@
                 flex: 1;
                 border-radius: 16px;
                 overflow: hidden;
-                background: #000;
+                background: var(--black);
                 box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
             }
             .voice-video-player-video-frame video {
@@ -107,7 +107,7 @@
                 height: 100%;
                 object-fit: contain;
                 display: block;
-                background: #000;
+                background: var(--black);
             }
             .voice-video-player-controls {
                 display: flex;
@@ -115,21 +115,21 @@
                 gap: 10px;
             }
             .voice-video-player-play-toggle {
-                border: 1px solid #d0c3ad;
+                border: 1px solid var(--border-strong);
                 border-radius: 50%;
                 width: 36px;
                 height: 36px;
                 background: transparent;
                 cursor: pointer;
                 font-size: 16px;
-                color: #1f2937;
+                color: var(--gray-800);
                 border-radius: 8px;
             }
             .voice-video-player-speed {
-                border: 1px solid #d0c3ad;
+                border: 1px solid var(--border-strong);
                 border-radius: 999px;
-                background: #fff;
-                color: #1f2937;
+                background: var(--white);
+                color: var(--gray-800);
                 font-size: 13px;
                 padding: 0 8px;
                 height: 32px;
@@ -140,7 +140,7 @@
                 appearance: none;
                 height: 6px;
                 border-radius: 6px;
-                background: #e5e7eb;
+                background: var(--gray-200);
                 outline: none;
             }
             .voice-video-player-progress::-webkit-slider-thumb {
@@ -148,21 +148,21 @@
                 width: 14px;
                 height: 14px;
                 border-radius: 50%;
-                background: #2a7a57;
-                border: 2px solid #fff;
+                background: var(--app-primary);
+                border: 2px solid var(--white);
                 box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2);
             }
             .voice-video-player-progress::-moz-range-thumb {
                 width: 14px;
                 height: 14px;
                 border-radius: 50%;
-                background: #2a7a57;
-                border: 2px solid #fff;
+                background: var(--app-primary);
+                border: 2px solid var(--white);
                 box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2);
             }
             .voice-video-player-time {
                 font-size: 12px;
-                color: #475467;
+                color: var(--gray-600);
                 min-width: 120px;
                 text-align: right;
             }
@@ -178,13 +178,13 @@
             }
             .voice-video-player-transcript-header {
                 font-weight: 600;
-                color: #0f172a;
+                color: var(--gray-900);
                 font-size: 14px;
                 letter-spacing: 0.02em;
             }
             .voice-video-player-transcript-subtitle {
                 font-size: 12px;
-                color: #475467;
+                color: var(--gray-600);
                 margin-top: -4px;
             }
             .voice-video-player-transcript-list {
@@ -198,22 +198,22 @@
             .voice-video-player-transcript-item {
                 border-radius: 12px;
                 padding: 10px;
-                border: 1px solid rgba(15, 23, 42, 0.12);
-                background: #fff;
+                border: 1px solid var(--border-strong);
+                background: var(--white);
                 display: flex;
                 flex-direction: column;
                 gap: 6px;
             }
             .voice-video-player-transcript-item--active {
                 background: transparent;
-                border: 2px solid var(--primary-color, #2a7a57);
+                border: 2px solid var(--app-primary);
             }
             .voice-video-player-transcript-item__times {
                 display: flex;
                 gap: 6px;
                 align-items: center;
                 font-size: 12px;
-                color: #475467;
+                color: var(--gray-600);
             }
             .voice-video-player-transcript-time {
                 flex: 1;
@@ -221,12 +221,12 @@
                 padding: 4px 8px;
                 font-size: 12px;
                 background: transparent;
-                color: var(--border-color, #475467);
+                color: var(--gray-600);
                 width:50px;
                 border: none;
             }
             .voice-video-player-transcript-time:focus {
-                border: 1px solid var(--border-color, #e2e8f0);
+                border: 1px solid var(--gray-200);
                 border-radius: 4px;
             }
             .voice-video-player-transcript-item__content {
@@ -235,11 +235,11 @@
                 line-height: 1.4;
                 border-radius: 8px;
                 padding: 6px 8px;
-                border: 1px solid #e2e8f0;
+                border: 1px solid var(--gray-200);
             }
 
 .voice-video-player-transcript-item__content:focus,.voice-video-player-transcript-item__content:focus-visible {
-            border: 1px solid #e2e8f0;
+            border: 1px solid var(--gray-200);
 }
 
             .voice-video-player-transcript-save {
@@ -247,8 +247,8 @@
                 outline: none;
                 border-radius: 12px;
                 padding: 6px 14px;
-                background: #2a7a57;
-                color: #fff;
+                background: var(--app-primary);
+                color: var(--white);
                 cursor: pointer;
                 transition: background 0.2s ease;
                 display: inline-flex;

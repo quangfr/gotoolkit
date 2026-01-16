@@ -296,14 +296,14 @@ const DetailsInputRule = Extension.create({
 });
 
 const TEXT_COLORS = [
-  { name: 'Noir', value: '#1e293b' },
-  { name: 'Gris', value: '#64748b' },
-  { name: 'Rouge', value: '#ef4444' },
-  { name: 'Orange', value: '#f97316' },
-  { name: 'Jaune', value: '#eab308' },
-  { name: 'Vert', value: '#22c55e' },
-  { name: 'Bleu', value: '#3b82f6' },
-  { name: 'Violet', value: '#a855f7' },
+  { name: 'Noir', value: 'var(--gray-800)' },
+  { name: 'Gris', value: 'var(--gray-500)' },
+  { name: 'Rouge', value: 'var(--color-red)' },
+  { name: 'Orange', value: 'var(--color-orange)' },
+  { name: 'Jaune', value: 'var(--color-yellow)' },
+  { name: 'Vert', value: 'var(--color-green)' },
+  { name: 'Bleu', value: 'var(--color-blue)' },
+  { name: 'Violet', value: 'var(--color-purple)' },
 ];
 
 import TurndownService from 'turndown';
@@ -443,7 +443,7 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLi
           zIndex: 1000,
           willChange: 'opacity',
           padding: '4px 8px',
-          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+          boxShadow: 'var(--app-shadow)',
         }}
       >
         <div role="group" className="tiptap-toolbar-group">
@@ -509,10 +509,10 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLi
                   left: '50%',
                   transform: 'translateX(-50%)',
                   marginTop: '8px',
-                  backgroundColor: 'white',
-                  border: '1px solid #e2e8f0',
+                  backgroundColor: 'var(--white)',
+                  border: '1px solid var(--gray-200)',
                   borderRadius: '8px',
-                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                  boxShadow: 'var(--app-shadow)',
                   zIndex: 1001,
                   padding: '8px',
                   display: 'grid',
@@ -530,7 +530,7 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLi
                       backgroundColor: color.value, 
                       borderRadius: '4px',
                       cursor: 'pointer',
-                      border: '1px solid #e2e8f0'
+                      border: '1px solid var(--gray-200)'
                     }}
                     title={color.name}
                     onClick={() => {
@@ -544,10 +544,10 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLi
                   style={{ 
                     width: '20px', 
                     height: '20px', 
-                    backgroundColor: '#fff', 
+                    backgroundColor: 'var(--white)', 
                     borderRadius: '4px',
                     cursor: 'pointer',
-                    border: '1px solid #e2e8f0',
+                    border: '1px solid var(--gray-200)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -565,7 +565,7 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLi
             )}
           </div>
 
-          <div className="tiptap-separator-inline" style={{ width: '1px', height: '18px', backgroundColor: '#e2e8f0', margin: '0 6px' }}></div>
+          <div className="tiptap-separator-inline" style={{ width: '1px', height: '18px', backgroundColor: 'var(--gray-200)', margin: '0 6px' }}></div>
 
           <button
             className="tiptap-button"
@@ -617,10 +617,10 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLi
                     left: '50%',
                     transform: 'translateX(-50%)',
                     marginTop: '8px',
-                    backgroundColor: 'white',
-                    border: '1px solid #e2e8f0',
+                    backgroundColor: 'var(--white)',
+                    border: '1px solid var(--gray-200)',
                     borderRadius: '8px',
-                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                    boxShadow: 'var(--app-shadow)',
                     zIndex: 1001,
                     padding: '8px',
                     display: 'grid',
@@ -635,8 +635,8 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLi
                       style={{ 
                         width: '20px', 
                         height: '20px', 
-                        backgroundColor: color.value === 'transparent' ? '#fff' : color.value, 
-                        border: color.value === 'transparent' ? '1px solid #ddd' : 'none',
+                        backgroundColor: color.value === 'transparent' ? 'var(--white)' : color.value, 
+                        border: color.value === 'transparent' ? '1px solid var(--gray-300)' : 'none',
                         borderRadius: '4px',
                         cursor: 'pointer'
                       }}
@@ -662,7 +662,7 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLi
                 type="button"
                 onClick={onKeep}
                 title="Garder"
-                style={{ color: '#059669' }}
+                style={{ color: 'var(--intent-success-border)' }}
               >
                 <Check size={16} />
               </button>
@@ -671,7 +671,7 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLi
                 type="button"
                 onClick={onReject}
                 title="Annuler"
-                style={{ color: '#dc2626' }}
+                style={{ color: 'var(--intent-error-border)' }}
               >
                 <X size={16} />
               </button>
@@ -1198,10 +1198,10 @@ const Toolbar = ({ editor, onDropdownToggle, onLink }: {
                 left: '50%',
                 transform: 'translateX(-50%)',
                 marginTop: '8px',
-                backgroundColor: 'white',
-                border: '1px solid #e2e8f0',
+                backgroundColor: 'var(--white)',
+                border: '1px solid var(--gray-200)',
                 borderRadius: '8px',
-                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                boxShadow: 'var(--app-shadow)',
                 zIndex: 1001,
                 padding: '8px',
                 display: 'grid',
@@ -1219,7 +1219,7 @@ const Toolbar = ({ editor, onDropdownToggle, onLink }: {
                     backgroundColor: color.value, 
                     borderRadius: '4px',
                     cursor: 'pointer',
-                    border: '1px solid #e2e8f0'
+                    border: '1px solid var(--gray-200)'
                   }}
                   title={color.name}
                   onClick={() => {
@@ -1233,10 +1233,10 @@ const Toolbar = ({ editor, onDropdownToggle, onLink }: {
                 style={{ 
                   width: '20px', 
                   height: '20px', 
-                  backgroundColor: '#fff', 
+                  backgroundColor: 'var(--white)', 
                   borderRadius: '4px',
                   cursor: 'pointer',
-                  border: '1px solid #e2e8f0',
+                  border: '1px solid var(--gray-200)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -1435,10 +1435,10 @@ const CodeList = React.forwardRef((props: any, ref: any) => {
   return (
     <div
       style={{
-        background: 'white',
-        border: '1px solid #e2e8f0',
+        background: 'var(--white)',
+        border: '1px solid var(--gray-200)',
         borderRadius: '8px',
-        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+        boxShadow: 'var(--app-shadow)',
         padding: '4px',
         maxHeight: '200px',
         overflowY: 'auto',
@@ -1455,13 +1455,13 @@ const CodeList = React.forwardRef((props: any, ref: any) => {
             width: '100%',
             textAlign: 'left',
             padding: '6px 8px',
-            background: index === selectedIndex ? '#f1f5f9' : 'transparent',
+            background: index === selectedIndex ? 'var(--gray-100)' : 'transparent',
             border: 'none',
             cursor: 'pointer',
             borderRadius: '4px',
             fontSize: '13px',
             fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-            color: '#1e293b',
+            color: 'var(--gray-800)',
           }}
         >
           {item}
@@ -2686,7 +2686,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
             opacity: 0.8,
             pointerEvents: 'none',
             zIndex: 2000,
-            boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+            boxShadow: 'var(--app-shadow)',
             transform: `translate(-50%, -50%) ${dragState.type === 'col' ? 'rotate(90deg)' : ''}`
           }}
         >

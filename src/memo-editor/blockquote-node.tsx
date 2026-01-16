@@ -5,12 +5,12 @@ import {
 } from 'lucide-react';
 
 export const ALERT_TYPES = [
-  { type: 'default', label: 'Citation', icon: MessageSquare, color: '#4a5568' },
-  { type: 'NOTE', label: 'Note', icon: Info, color: '#1d4ed8' },
-  { type: 'TIP', label: 'Conseil', icon: Lightbulb, color: '#15803d' },
-  { type: 'IMPORTANT', label: 'Important', icon: Star, color: '#7e22ce' },
-  { type: 'WARNING', label: 'Alerte', icon: AlertTriangle, color: '#a16207' },
-  { type: 'CAUTION', label: 'Attention', icon: AlertCircle, color: '#b91c1c' },
+  { type: 'default', label: 'Citation', icon: MessageSquare, color: 'var(--gray-600)' },
+  { type: 'NOTE', label: 'Note', icon: Info, color: 'var(--intent-info-border)' },
+  { type: 'TIP', label: 'Conseil', icon: Lightbulb, color: 'var(--intent-success-border)' },
+  { type: 'IMPORTANT', label: 'Important', icon: Star, color: 'var(--intent-important-border)' },
+  { type: 'WARNING', label: 'Alerte', icon: AlertTriangle, color: 'var(--intent-warning-border)' },
+  { type: 'CAUTION', label: 'Attention', icon: AlertCircle, color: 'var(--intent-error-border)' },
 ];
 
 const AlertComponent = ({ node, updateAttributes }: any) => {

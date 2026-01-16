@@ -102,7 +102,7 @@
     function showToast(text, error = false) {
         if (!toast) return;
         toast.textContent = text;
-        toast.style.background = error ? "rgba(176, 0, 32, 0.95)" : "rgba(15, 23, 42, 0.95)";
+        toast.style.background = error ? "var(--intent-error-border)" : "var(--gray-900)";
         toast.classList.add("show");
         setTimeout(() => {
             toast.classList.remove("show");
