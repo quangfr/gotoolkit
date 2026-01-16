@@ -6,7 +6,7 @@
         popupId: "infoPopup",
         moduleLabel: "Go-Toolkit",
         description: "Usage réservé à Savane Consulting.",
-        version: "2026.01.16.4",
+        version: "2026.01.16.5",
         logoSrc: "img/logo.gif",
         logoAlt: "Logo Go-Toolkit",
         versionQueryParam: "v",
@@ -99,9 +99,15 @@
         popup.setAttribute("role", "dialog");
         popup.setAttribute("aria-live", "polite");
 
-        const logo = document.createElement("img");
-        logo.src = config.logoSrc;
-        logo.alt = config.logoAlt;
+        const logoLight = document.createElement("img");
+        logoLight.src = config.logoSrc;
+        logoLight.alt = config.logoAlt;
+        logoLight.className = "logo-light";
+
+        const logoDark = document.createElement("img");
+        logoDark.src = config.logoSrc.replace("logo.gif", "logo_inverted.gif");
+        logoDark.alt = config.logoAlt;
+        logoDark.className = "logo-dark";
 
         const label = document.createElement("strong");
         label.textContent = config.moduleLabel;
@@ -136,7 +142,8 @@
         actions.appendChild(updateBtn);
         actions.appendChild(legalBtn);
 
-        popup.appendChild(logo);
+        popup.appendChild(logoLight);
+        popup.appendChild(logoDark);
         popup.appendChild(label);
         popup.appendChild(versionLabel);
         popup.appendChild(description);

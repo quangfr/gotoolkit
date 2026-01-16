@@ -45,7 +45,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
-    <link rel="stylesheet" href="styles/style.css?v=2026.01.16.4">
+    <link rel="stylesheet" href="styles/style.css?v=2026.01.16.5">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-grid.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-theme-quartz.css">
     <script
@@ -151,8 +151,8 @@
             gap: 6px;
             padding: 2px 6px;
             border-radius: 6px;
-            border: 1px solid var(--app-border);
-            background: var(--gray-50);
+            border: 1px solid var(--border-strong);
+            background: var(--bg-surface-soft);
             font-size: 11px;
         }
 
@@ -178,7 +178,7 @@
             border-radius: 999px;
             border: none;
             background: transparent;
-            color: var(--app-muted);
+            color: var(--text-muted);
             font-size: 14px;
             display: inline-flex;
             align-items: center;
@@ -199,7 +199,7 @@
             justify-content: center;
             cursor: pointer;
             border: none;
-            color: var(--app-muted);
+            color: var(--text-muted);
             border-radius: 999px;
             transition: box-shadow 0.2s ease, opacity 0.2s ease;
             opacity: 1;
@@ -249,7 +249,7 @@
         }
 
         .speech-suggestion-partial {
-            color: var(--gray-500);
+            color: var(--text-muted);
         }
 
         .speech-suggestion:not(.visible) {
@@ -295,7 +295,7 @@
             font-family: inherit;
             font-size: inherit;
             line-height: inherit;
-            color: var(--gray-400);
+            color: var(--text-muted);
             overflow: hidden;
             z-index: 40;
             height: 100%;
@@ -306,7 +306,7 @@
         }
 
         .prompt-suggestion .prompt-suggestion-hint {
-            color: var(--gray-400);
+            color: var(--text-muted);
         }
 
         .prompt-alt-row {
@@ -317,9 +317,9 @@
         }
 
         .prompt-alt-badge {
-            border: 1px solid var(--app-border);
+            border: 1px solid var(--border-strong);
             background: var(--bg-surface);
-            color: var(--gray-900);
+            color: var(--text-main);
             border-radius: 12px;
             padding: 3px 6px;
             font-size: 11px;
@@ -330,8 +330,8 @@
 
         .prompt-alt-badge:hover,
         .prompt-alt-badge:focus-visible {
-            background: var(--gray-50);
-            border-color: var(--app-border);
+            background: var(--bg-surface-soft);
+            border-color: var(--border-strong);
             outline: none;
         }
 
@@ -551,7 +551,7 @@
         }
 
         .tree-template .ag-theme-quartz {
-            --ag-font-family: var(--app-font, "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif);
+            --ag-font-family: var(--font-sans);
             --ag-border-color: transparent;
             --ag-row-hover-color: rgba(0, 0, 0, 0.04);
             --ag-row-border-color: #e6e9ef;
@@ -671,7 +671,7 @@
 
         textarea:focus {
             outline: none;
-            border-color: var(--app-primary);
+            border-color: var(--color-primary);
             scrollbar-width: thin;
         }
 
@@ -1046,21 +1046,25 @@
         .ag-theme-quartz .ag-body-viewport,
         .ag-theme-quartz .ag-body-horizontal-scroll {
             scrollbar-width: thin;
-            scrollbar-color: rgba(15, 23, 42, 0.45) rgba(255, 255, 255, 0.8);
+            scrollbar-color: var(--scrollbar-thumb) transparent;
         }
 
         .ag-theme-quartz ::-webkit-scrollbar {
-            width: 4px;
-            height: 3px;
+            width: 6px;
+            height: 6px;
         }
 
         .ag-theme-quartz ::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.9);
+            background: transparent;
         }
 
         .ag-theme-quartz ::-webkit-scrollbar-thumb {
             border-radius: 999px;
-            background: rgba(15, 23, 42, 0.35);
+            background: var(--scrollbar-thumb);
+        }
+
+        .ag-theme-quartz ::-webkit-scrollbar-thumb:hover {
+            background: var(--scrollbar-thumb-hover);
         }
 
         @media (max-width: 1200px) {
@@ -1107,21 +1111,21 @@
 <body class="app-body">
     <div class="app">
         <header class="app-header">
-            <a class="app-home-link" href="/?v=2026.01.16.4" title="Revenir à l'accueil"><i data-lucide="home"
+            <a class="app-home-link" href="/?v=2026.01.16.5" title="Revenir à l'accueil"><i data-lucide="home"
                     style="width:16px;height:16px;"></i></a>
             <div class="nav-switch">
                 <button id="navSwitcherBtn" class="nav-switch-btn" type="button"><i data-lucide="grid-3x3"
                         style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i>Grid <i
                         data-lucide="chevron-down" style="width:12px;height:12px;vertical-align:middle;"></i></button>
                 <div id="navSwitcherMenu" class="nav-switch-menu">
-                    <a class="nav-switch-link" href="/?v=2026.01.16.4"><i data-lucide="home"
+                    <a class="nav-switch-link" href="/?v=2026.01.16.5"><i data-lucide="home"
                             style="width:14px;height:14px;vertical-align:middle;margin-right:6px;"></i>Accueil</a>
-                    <a class="nav-switch-link" href="memo.html?v=2026.01.16.4" data-app="memo"><i data-lucide="zap"
+                    <a class="nav-switch-link" href="memo.html?v=2026.01.16.5" data-app="memo"><i data-lucide="zap"
                             style="width:14px;height:14px;vertical-align:middle;margin-right:6px;"></i>Mémo</a>
-                    <a class="nav-switch-link" href="old/timeline.html?v=2026.01.16.4" data-app="timeline"><i
+                    <a class="nav-switch-link" href="old/timeline.html?v=2026.01.16.5" data-app="timeline"><i
                             data-lucide="layout-list"
                             style="width:14px;height:14px;vertical-align:middle;margin-right:6px;"></i>Timeline</a>
-                    <a class="nav-switch-link" href="old/voice.html?v=2026.01.16.4" data-app="voice"><i
+                    <a class="nav-switch-link" href="old/voice.html?v=2026.01.16.5" data-app="voice"><i
                             data-lucide="mic"
                             style="width:14px;height:14px;vertical-align:middle;margin-right:6px;"></i>Voice</a>
                 </div>
@@ -1183,7 +1187,8 @@
                         </div>
                     </div>
                     <div id="infoPopup" class="info-popup" role="dialog" aria-live="polite">
-                        <img src="img/logo.gif" alt="Logo Go-Toolkit">
+                        <img src="img/logo.gif" alt="Logo Go-Toolkit" class="logo-light">
+                        <img src="img/logo_inverted.gif" alt="Logo Go-Toolkit" class="logo-dark">
                         <strong>Module Grid (Le Cardinal)</strong>
                         <span>Version 2026.01.16.1</span>
                         <div class="info-actions">
@@ -1380,18 +1385,18 @@
         </div>
     </div>
 
-    <script src="prompt.js?v=2026.01.16.4"></script>
-    <script src="js/ia-config.js?v=2026.01.16.4"></script>
-    <script src="js/ia-client.js?v=2026.01.16.4"></script>
-    <script src="js/config.js?v=2026.01.16.4"></script>
-    <script src="js/feature-visibility.js?v=2026.01.16.4"></script>
-    <script src="js/document-storage.js?v=2026.01.16.4"></script>
-    <script src="js/storage-service.js?v=2026.01.16.4"></script>
-    <script src="js/shared-ui.js?v=2026.01.16.4"></script>
-    <script src="js/cgu.js?v=2026.01.16.4"></script>
-    <script src="js/share-worker-client.js?v=2026.01.16.4"></script>
-    <script src="js/share-history.js?v=2026.01.16.4"></script>
-    <script src="js/document-api.js?v=2026.01.16.4"></script>
+    <script src="prompt.js?v=2026.01.16.5"></script>
+    <script src="js/ia-config.js?v=2026.01.16.5"></script>
+    <script src="js/ia-client.js?v=2026.01.16.5"></script>
+    <script src="js/config.js?v=2026.01.16.5"></script>
+    <script src="js/feature-visibility.js?v=2026.01.16.5"></script>
+    <script src="js/document-storage.js?v=2026.01.16.5"></script>
+    <script src="js/storage-service.js?v=2026.01.16.5"></script>
+    <script src="js/shared-ui.js?v=2026.01.16.5"></script>
+    <script src="js/cgu.js?v=2026.01.16.5"></script>
+    <script src="js/share-worker-client.js?v=2026.01.16.5"></script>
+    <script src="js/share-history.js?v=2026.01.16.5"></script>
+    <script src="js/document-api.js?v=2026.01.16.5"></script>
     <script src="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/dist/ag-grid-community.min.noStyle.js"></script>
     <script>
         (() => {
@@ -9430,7 +9435,7 @@
             })
         };
     </script>
-    <script src="js/feedback.js?v=2026.01.16.4"></script>
+    <script src="js/feedback.js?v=2026.01.16.5"></script>
     <script>
         (function () {
             const templateTrigger = document.getElementById("gtTemplateModalTrigger");

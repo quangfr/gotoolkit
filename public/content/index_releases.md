@@ -1,3 +1,6 @@
+## 2026-01-16
+- Mode sombre
+
 ## 2026-01-14
 - Mémo : Éditer un diagramme `Draw` avec Assist
 - Mémo : Style, tableau, bloc, sommaire, lien

@@ -443,7 +443,7 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLi
           zIndex: 1000,
           willChange: 'opacity',
           padding: '4px 8px',
-          boxShadow: 'var(--app-shadow)',
+          boxShadow: 'var(--shadow-md)',
         }}
       >
         <div role="group" className="tiptap-toolbar-group">
@@ -512,7 +512,7 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLi
                   backgroundColor: 'var(--white)',
                   border: '1px solid var(--border-main)',
                   borderRadius: '8px',
-                  boxShadow: 'var(--app-shadow)',
+                  boxShadow: 'var(--shadow-md)',
                   zIndex: 1001,
                   padding: '8px',
                   display: 'grid',
@@ -620,7 +620,7 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLi
                     backgroundColor: 'var(--white)',
                     border: '1px solid var(--border-main)',
                     borderRadius: '8px',
-                    boxShadow: 'var(--app-shadow)',
+                    boxShadow: 'var(--shadow-md)',
                     zIndex: 1001,
                     padding: '8px',
                     display: 'grid',
@@ -1201,7 +1201,7 @@ const Toolbar = ({ editor, onDropdownToggle, onLink }: {
                 backgroundColor: 'var(--white)',
                 border: '1px solid var(--border-main)',
                 borderRadius: '8px',
-                boxShadow: 'var(--app-shadow)',
+                boxShadow: 'var(--shadow-md)',
                 zIndex: 1001,
                 padding: '8px',
                 display: 'grid',
@@ -1438,7 +1438,7 @@ const CodeList = React.forwardRef((props: any, ref: any) => {
         background: 'var(--white)',
         border: '1px solid var(--border-main)',
         borderRadius: '8px',
-        boxShadow: 'var(--app-shadow)',
+        boxShadow: 'var(--shadow-md)',
         padding: '4px',
         maxHeight: '200px',
         overflowY: 'auto',
@@ -2686,7 +2686,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
             opacity: 0.8,
             pointerEvents: 'none',
             zIndex: 2000,
-            boxShadow: 'var(--app-shadow)',
+            boxShadow: 'var(--shadow-md)',
             transform: `translate(-50%, -50%) ${dragState.type === 'col' ? 'rotate(90deg)' : ''}`
           }}
         >

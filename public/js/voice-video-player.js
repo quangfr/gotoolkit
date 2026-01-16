@@ -50,7 +50,7 @@
             .voice-video-player-title {
                 font-weight: 600;
                 font-size: 15px;
-                color: var(--gray-900);
+                color: var(--text-main);
             }
             .voice-video-player-header-actions {
                 margin-left: auto;
@@ -80,7 +80,7 @@
                 background: none;
                 font-size: 22px;
                 cursor: pointer;
-                color: var(--gray-900);
+                color: var(--text-main);
             }
             .voice-video-player-body {
                 display: flex;
@@ -122,14 +122,14 @@
                 background: transparent;
                 cursor: pointer;
                 font-size: 16px;
-                color: var(--gray-800);
+                color: var(--text-main);
                 border-radius: 8px;
             }
             .voice-video-player-speed {
                 border: 1px solid var(--border-strong);
                 border-radius: 999px;
                 background: var(--white);
-                color: var(--gray-800);
+                color: var(--text-main);
                 font-size: 13px;
                 padding: 0 8px;
                 height: 32px;
@@ -140,7 +140,7 @@
                 appearance: none;
                 height: 6px;
                 border-radius: 6px;
-                background: var(--gray-200);
+                background: var(--border-main);
                 outline: none;
             }
             .voice-video-player-progress::-webkit-slider-thumb {
@@ -148,7 +148,7 @@
                 width: 14px;
                 height: 14px;
                 border-radius: 50%;
-                background: var(--app-primary);
+                background: var(--color-primary);
                 border: 2px solid var(--white);
                 box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2);
             }
@@ -156,13 +156,13 @@
                 width: 14px;
                 height: 14px;
                 border-radius: 50%;
-                background: var(--app-primary);
+                background: var(--color-primary);
                 border: 2px solid var(--white);
                 box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2);
             }
             .voice-video-player-time {
                 font-size: 12px;
-                color: var(--gray-600);
+                color: var(--text-muted);
                 min-width: 120px;
                 text-align: right;
             }
@@ -178,13 +178,13 @@
             }
             .voice-video-player-transcript-header {
                 font-weight: 600;
-                color: var(--gray-900);
+                color: var(--text-main);
                 font-size: 14px;
                 letter-spacing: 0.02em;
             }
             .voice-video-player-transcript-subtitle {
                 font-size: 12px;
-                color: var(--gray-600);
+                color: var(--text-muted);
                 margin-top: -4px;
             }
             .voice-video-player-transcript-list {
@@ -206,14 +206,14 @@
             }
             .voice-video-player-transcript-item--active {
                 background: transparent;
-                border: 2px solid var(--app-primary);
+                border: 2px solid var(--color-primary);
             }
             .voice-video-player-transcript-item__times {
                 display: flex;
                 gap: 6px;
                 align-items: center;
                 font-size: 12px;
-                color: var(--gray-600);
+                color: var(--text-muted);
             }
             .voice-video-player-transcript-time {
                 flex: 1;
@@ -221,12 +221,12 @@
                 padding: 4px 8px;
                 font-size: 12px;
                 background: transparent;
-                color: var(--gray-600);
+                color: var(--text-muted);
                 width:50px;
                 border: none;
             }
             .voice-video-player-transcript-time:focus {
-                border: 1px solid var(--gray-200);
+                border: 1px solid var(--border-main);
                 border-radius: 4px;
             }
             .voice-video-player-transcript-item__content {
@@ -235,11 +235,11 @@
                 line-height: 1.4;
                 border-radius: 8px;
                 padding: 6px 8px;
-                border: 1px solid var(--gray-200);
+                border: 1px solid var(--border-main);
             }
 
 .voice-video-player-transcript-item__content:focus,.voice-video-player-transcript-item__content:focus-visible {
-            border: 1px solid var(--gray-200);
+            border: 1px solid var(--border-main);
 }
 
             .voice-video-player-transcript-save {
@@ -247,7 +247,7 @@
                 outline: none;
                 border-radius: 12px;
                 padding: 6px 14px;
-                background: var(--app-primary);
+                background: var(--color-primary);
                 color: var(--white);
                 cursor: pointer;
                 transition: background 0.2s ease;

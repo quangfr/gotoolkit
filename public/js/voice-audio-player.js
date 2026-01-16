@@ -49,7 +49,7 @@
                 background: none;
                 font-size: 22px;
                 cursor: pointer;
-                color: var(--gray-900);
+                color: var(--text-main);
             }
             .voice-audio-player-header {
                 display: flex;
@@ -65,11 +65,11 @@
             .voice-audio-player-title {
                 font-weight: 600;
                 font-size: 15px;
-                color: var(--gray-900);
+                color: var(--text-main);
             }
             .voice-audio-player-subtitle {
                 font-size: 12px;
-                color: var(--gray-600);
+                color: var(--text-muted);
             }
             .voice-audio-player-delete {
                 margin-left: auto;
@@ -92,13 +92,13 @@
                 background: transparent;
                 cursor: pointer;
                 font-size: 16px;
-                color: var(--gray-800);
+                color: var(--text-main);
             }
             .voice-audio-player-speed {
                 border: 1px solid var(--border-strong);
                 border-radius: 999px;
                 background: var(--white);
-                color: var(--gray-800);
+                color: var(--text-main);
                 font-size: 13px;
                 padding: 0 8px;
                 height: 32px;
@@ -109,7 +109,7 @@
                 appearance: none;
                 height: 6px;
                 border-radius: 6px;
-                background: var(--gray-200);
+                background: var(--border-main);
                 outline: none;
             }
             .voice-audio-player-progress::-webkit-slider-thumb {
@@ -117,7 +117,7 @@
                 width: 14px;
                 height: 14px;
                 border-radius: 50%;
-                background: var(--app-primary);
+                background: var(--color-primary);
                 border: 2px solid var(--white);
                 box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2);
             }
@@ -125,13 +125,13 @@
                 width: 14px;
                 height: 14px;
                 border-radius: 50%;
-                background: var(--app-primary);
+                background: var(--color-primary);
                 border: 2px solid var(--white);
                 box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2);
             }
             .voice-audio-player-time {
                 font-size: 12px;
-                color: var(--gray-600);
+                color: var(--text-muted);
                 min-width: 110px;
                 text-align: right;
             }

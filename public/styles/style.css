@@ -12,8 +12,8 @@
 
   /* 4. Functional Theme Tokens (Default: Dark Theme) */
   --bg-app: #000000;
-  --bg-surface: #121212;
-  --bg-surface-soft: #1a1a1a;
+  --bg-surface: #222222;
+  --bg-surface-soft: #333333;
   --text-main: #f5f5f5;
   --text-muted: #9ca3af;
   --border-main: #262626;
@@ -38,12 +38,15 @@
   /* Legacy Compat/Internal */
   --tooltip-bg: rgba(0, 0, 0, 0.85);
   --muted: var(--text-muted);
+  --scrollbar-thumb: rgba(0, 0, 0, 0.2);
+  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.3);
 }
 
 /* --- Theme Overrides --- */
 
 /* App Shell (Light) Theme */
 [data-theme="app"] {
+  color-scheme: light;
   --bg-app: #f1f5f9; /* gray-100 */
   --bg-surface: #ffffff; /* white */
   --bg-surface-soft: #f8fafc; /* gray-50 */
@@ -55,13 +58,14 @@
 
 /* Memo (Cream) Theme */
 [data-theme="cream"] {
+  color-scheme: light;
   --bg-app: #f5f2eb;
   --bg-surface: #ffffff;
   --bg-surface-soft: #fcfaf7;
   --text-main: #2f2922;
   --text-muted: #8b8173;
-  --border-main: #dfd5c7;
-  --border-strong: #d0c3ad;
+  --border-main: #ece4e4;
+  --border-strong: #ededed;
   --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.12);
   --shadow-lg: 0 18px 40px rgba(47, 41, 34, 0.08);
   --color-primary-soft: rgba(42, 122, 87, 0.08);
@@ -69,13 +73,16 @@
 
 /* Dark Theme */
 [data-theme="dark"] {
+  color-scheme: dark;
   --bg-app: #000000;
-  --bg-surface: #121212;
-  --bg-surface-soft: #1a1a1a;
+  --bg-surface: #222222;
+  --bg-surface-soft: #333333;
   --text-main: #f5f5f5;
-  --text-muted: #9ca3af;
-  --border-main: #262626;
-  --border-strong: #404040;
+  --text-muted: #aaa6a5;
+  --border-main: #4b4949;
+  --border-strong: #7d7979;
+  --scrollbar-thumb: rgba(255, 255, 255, 0.1);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.15);
   --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.5);
   --shadow-lg: 0 18px 40px rgba(0, 0, 0, 0.6);
   --color-primary-soft: rgba(42, 122, 87, 0.2);
@@ -86,6 +93,19 @@
   --intent-warning-border: #eab308;
   --intent-error-border: #ef4444;
   --intent-important-border: #8b5cf6;
+}
+
+/* Logo Theme Switch */
+.logo-dark {
+  display: none !important;
+}
+
+[data-theme="dark"] .logo-light {
+  display: none !important;
+}
+
+[data-theme="dark"] .logo-dark {
+  display: block !important;
 }
 
 * {
@@ -117,6 +137,29 @@ body.app-body {
   display: none;
 }
 
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
 .app {
   min-height: 100vh;
   display: flex;
@@ -134,6 +177,7 @@ body.app-body {
   flex-wrap: wrap;
   width: 100%;
   padding: 0 12px;
+  margin-bottom: 2px;
   border: none;
   border-radius: 0;
   box-shadow: none;
@@ -175,7 +219,7 @@ body.app-body {
 .tab,
 .tab-btn {
   border: 1px solid var(--border-strong);
-  background: transparent;
+  background: var(--bg-surface);
   color: var(--color-primary-strong);
   padding: 4px 10px;
   border-radius: var(--radius-full);
@@ -874,7 +918,7 @@ body.context-resizing {
 .btn-secondary,
 button.btn-secondary {
   border: 1px solid var(--border-main);
-  background: transparent;
+  background: var(--bg-surface);
   color: var(--text-main);
   border-radius: var(--radius-md);
   padding: 4px 6px;
@@ -906,7 +950,7 @@ button.btn-small-active {
 
 .tab-btn {
   border: 1px solid var(--border-strong);
-  background: transparent;
+  background: var(--bg-surface);
   color: var(--color-primary-strong);
   padding: 4px 10px;
   border-radius: var(--radius-full);
@@ -952,7 +996,7 @@ button.btn-small-active {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  z-index: 2000;
+  z-index: 3000;
 }
 
 .modal-overlay.open {
@@ -995,6 +1039,7 @@ button.btn-small-active {
 
 .modal {
   background: var(--bg-surface);
+  border: 1px solid var(--border-main);
   border-radius: var(--radius-md);
   padding: 18px;
   width: min(800px, 100%);
@@ -2044,7 +2089,7 @@ label {
   border: 1px solid var(--border-main);
   border-radius: var(--radius-md);
   padding: 8px;
-  background: var(--bg-surface);
+  background: var(--bg-surface-soft);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -2138,8 +2183,8 @@ label {
   font-size: 14px;
   min-height: 56px;
   max-height: 140px;
-  background-color: transparent;
   color: var(--text-main);
+  background-color: transparent;
 }
 
 .chat-input:focus {
@@ -2369,7 +2414,7 @@ label {
 
 .chat-input::-webkit-scrollbar-thumb,
 .chat-messages::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--scrollbar-thumb);
   border-radius: var(--radius-full);
   opacity: 0;
   transition: opacity 0.2s ease;
@@ -2393,7 +2438,7 @@ label {
 }
 
 .chat-messages:hover {
-  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
 }
 
 /* Highlight added text in pale yellow */
@@ -2414,6 +2459,7 @@ label {
   background: var(--bg-surface);
   border-radius: var(--radius-sm);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
 }
 
 .bubble-menu-btn {

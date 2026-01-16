@@ -79,7 +79,7 @@ window.GoToolkitDrawMemo = (function () {
         return new Promise((resolve, reject) => {
             const script = document.createElement('script');
             // Use the version from the page if available, otherwise fallback
-            const version = window.GO_TOOLKIT_VERSION || '2026.01.16.4';
+            const version = window.GO_TOOLKIT_VERSION || '2026.01.16.5';
             script.src = `js/draw.bundle.js?v=${version}`;
             script.onload = () => {
                 isLoaded = true;

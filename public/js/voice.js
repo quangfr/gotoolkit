@@ -190,7 +190,7 @@
                 position: fixed;
                 left: 16px;
                 bottom: 70px;
-                background: var(--gray-900);
+                background: var(--bg-surface);
                 color: var(--white);
                 padding: 8px 12px;
                 border-radius: 10px;
@@ -199,6 +199,7 @@
                 pointer-events: none;
                 transition: opacity 0.2s ease;
                 z-index: 9999;
+                border: 1px solid var(--border-strong);
             }
             .go-toolkit-voice-toast.visible {
                 opacity: 1;
@@ -214,7 +215,7 @@
             document.body.appendChild(state.toast);
         }
         state.toast.textContent = message;
-        state.toast.style.background = isError ? "var(--intent-error-border)" : "var(--gray-900)";
+        state.toast.style.background = isError ? "var(--intent-error-border)" : "var(--bg-surface)";
         state.toast.classList.add("visible");
         clearTimeout(state.toast._timer);
         state.toast._timer = setTimeout(() => state.toast.classList.remove("visible"), 2400);
@@ -247,7 +248,7 @@
             const timeStr = (mins < 10 ? "0" : "") + mins + ":" + (secs < 10 ? "0" : "") + secs;
 
             state.toast.innerHTML = frame + " Transcription en cours (" + timeStr + ")";
-            state.toast.style.background = "var(--gray-900)";
+            state.toast.style.background = "var(--bg-surface)";
             state.toast.classList.add("visible");
         };
 

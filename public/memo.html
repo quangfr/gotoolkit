@@ -39,7 +39,7 @@
         })();
     </script>
     <title>Mémo | Go-Toolkit</title>
-    <link rel="stylesheet" href="styles/style.css?v=2026.01.16.4">
+    <link rel="stylesheet" href="styles/style.css?v=2026.01.16.5">
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         html,
@@ -78,6 +78,7 @@
             padding: 8px;
             color: var(--text-main);
             overflow: hidden;
+            border-right: 1px solid var(--border-main);
         }
 
         .document-explorer.document-explorer--collapsed {
@@ -97,7 +98,7 @@
                 height: 100vh;
                 z-index: 40;
                 box-shadow: 8px 0 24px rgba(15, 23, 42, 0.15);
-                border-right: 1px solid var(--border-main);
+                border-right: 1px solid var(--border-strong);
                 transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                 transform: translateX(0);
             }
@@ -120,7 +121,7 @@
 
         .document-explorer__tab-btn {
             border: none;
-            background: transparent;
+            background: var(--bg-surface);
             color: var(--text-main);
             padding: 4px;
             border-radius: 4px;
@@ -224,7 +225,7 @@
         }
 
         .document-explorer__item {
-            border: 1px solid var(--app-border, #dfe3f5);
+            border: 1px solid var(--border-main);
             background: var(--bg-surface);
             color: var(--text-main);
             border-radius: 6px;
@@ -241,7 +242,7 @@
         }
 
         .document-explorer__item--open {
-            border: 2px solid var(--border-strong, var(--app-border-strong, #cdd4ed));
+            border: 2px solid var(--border-strong);
         }
 
         .document-explorer__item--active {
@@ -394,8 +395,8 @@
         }
 
         .document-tab {
-            background: transparent;
-            border: 1px solid var(--border-strong);
+            background: var(--bg-surface);
+            border: 1px solid var(--border-main);
             color: var(--color-primary-strong);
             padding: 4px 10px;
             border-radius: 8px;
@@ -463,7 +464,7 @@
             border: 1px solid var(--border-main);
             border-radius: 8px;
             box-shadow: var(--shadow-sm);
-            padding: 0;
+            padding: 2px;
             flex: 1;
             display: flex;
             flex-direction: column;
@@ -671,11 +672,12 @@
             position: fixed;
             bottom: 18px;
             right: 18px;
-            background: var(--gray-900);
-            color: var(--white);
+            background: var(--bg-surface);
+            color: var(--text-main);
             padding: 8px 16px;
             border-radius: 999px;
-            box-shadow: 0 8px 26px rgba(0, 0, 0, 0.25);
+            border: 1px solid var(--border-strong);
+            box-shadow: var(--shadow-md);
             font-size: 12px;
             font-weight: 600;
             line-height: 1.4;
@@ -745,7 +747,7 @@
             }
 
             .memo-card {
-                padding: 4px;
+                padding: 2px;
             }
         }
 
@@ -763,7 +765,7 @@
             }
         }
     </style>
-    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.01.16.4">
+    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.01.16.5">
 </head>
 
 <body class="app-body">
@@ -802,14 +804,14 @@
                             aria-expanded="false"><i data-lucide="zap"></i> Memo <i
                                 data-lucide="chevron-down"></i></button>
                         <div id="navSwitcherMenu" class="nav-switch-menu" role="menu">
-                            <a class="nav-switch-link" href="/?v=2026.01.16.4" role="menuitem"><i
+                            <a class="nav-switch-link" href="/?v=2026.01.16.5" role="menuitem"><i
                                     data-lucide="home"></i> Accueil</a>
-                            <a class="nav-switch-link" href="grid.html?v=2026.01.16.4" role="menuitem"
+                            <a class="nav-switch-link" href="grid.html?v=2026.01.16.5" role="menuitem"
                                 data-app="grid"><i data-lucide="grid-3x3"></i>
                                 Grid</a>
-                            <a class="nav-switch-link" href="timeline.html?v=2026.01.16.4" role="menuitem"
+                            <a class="nav-switch-link" href="timeline.html?v=2026.01.16.5" role="menuitem"
                                 data-app="timeline"><i data-lucide="layout-list"></i> Timeline</a>
-                            <a class="nav-switch-link" href="voice.html?v=2026.01.16.4" role="menuitem"
+                            <a class="nav-switch-link" href="voice.html?v=2026.01.16.5" role="menuitem"
                                 data-app="voice"><i data-lucide="mic"></i>
                                 Voice</a>
                         </div>
@@ -926,7 +928,8 @@
     </div>
 
     <div id="memoInfoPopup" class="info-popup" role="dialog" aria-live="polite">
-        <img src="img/logo.gif" alt="Logo Go-Toolkit">
+        <img src="img/logo.gif" alt="Logo Go-Toolkit" class="logo-light">
+        <img src="img/logo_inverted.gif" alt="Logo Go-Toolkit" class="logo-dark">
         <strong>Module Mémo</strong>
         <span>Version 2026.01.16.1</span>
         <span>Usage réservé à Savane Consulting.</span>
@@ -982,21 +985,21 @@
         window.GO_TOOLKIT_SHARE_API_URL =
             window.GO_TOOLKIT_SHARE_API_URL || "https://share.gotoolkit.workers.dev/";
     </script>
-    <script src="js/config.js?v=2026.01.16.4"></script>
-    <script src="js/feature-visibility.js?v=2026.01.16.4"></script>
-    <script src="js/document-storage.js?v=2026.01.16.4"></script>
-    <script src="js/storage-service.js?v=2026.01.16.4"></script>
-    <script src="js/shared-ui.js?v=2026.01.16.4"></script>
-    <script src="js/cgu.js?v=2026.01.16.4"></script>
-    <script src="js/share-worker-client.js?v=2026.01.16.4"></script>
-    <script src="js/share-history.js?v=2026.01.16.4"></script>
-    <script src="js/document-api.js?v=2026.01.16.4"></script>
-    <script src="js/keywordIndex.js?v=2026.01.16.4"></script>
-    <script src="js/document-rag.js?v=2026.01.16.4"></script>
-    <script src="js/ia-config.js?v=2026.01.16.4"></script>
-    <script src="prompt.js?v=2026.01.16.4"></script>
-    <script src="js/ia-client.js?v=2026.01.16.4"></script>
-    <script src="js/document-markdown.js?v=2026.01.16.4"></script>
+    <script src="js/config.js?v=2026.01.16.5"></script>
+    <script src="js/feature-visibility.js?v=2026.01.16.5"></script>
+    <script src="js/document-storage.js?v=2026.01.16.5"></script>
+    <script src="js/storage-service.js?v=2026.01.16.5"></script>
+    <script src="js/shared-ui.js?v=2026.01.16.5"></script>
+    <script src="js/cgu.js?v=2026.01.16.5"></script>
+    <script src="js/share-worker-client.js?v=2026.01.16.5"></script>
+    <script src="js/share-history.js?v=2026.01.16.5"></script>
+    <script src="js/document-api.js?v=2026.01.16.5"></script>
+    <script src="js/keywordIndex.js?v=2026.01.16.5"></script>
+    <script src="js/document-rag.js?v=2026.01.16.5"></script>
+    <script src="js/ia-config.js?v=2026.01.16.5"></script>
+    <script src="prompt.js?v=2026.01.16.5"></script>
+    <script src="js/ia-client.js?v=2026.01.16.5"></script>
+    <script src="js/document-markdown.js?v=2026.01.16.5"></script>
     <script>
         // Initialize feedback configuration for Memo before loading feedback.js
         window.GoToolkitAppFeedbackConfig = {
@@ -1015,12 +1018,12 @@
             ]
         };
     </script>
-    <script src="js/feedback.js?v=2026.01.16.4"></script>
-    <script src="js/voice-video-player.js?v=2026.01.16.4"></script>
-    <script src="js/voice-audio-player.js?v=2026.01.16.4"></script>
-    <script src="js/voice.js?v=2026.01.16.4"></script>
-    <script src="js/voice-transcript.js?v=2026.01.16.4"></script>
-    <script src="js/draw-memo.js?v=2026.01.16.4"></script>
+    <script src="js/feedback.js?v=2026.01.16.5"></script>
+    <script src="js/voice-video-player.js?v=2026.01.16.5"></script>
+    <script src="js/voice-audio-player.js?v=2026.01.16.5"></script>
+    <script src="js/voice.js?v=2026.01.16.5"></script>
+    <script src="js/voice-transcript.js?v=2026.01.16.5"></script>
+    <script src="js/draw-memo.js?v=2026.01.16.5"></script>
     <script>
         // Suppress React DevTools prompt in dev builds.
         window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = window.__REACT_DEVTOOLS_GLOBAL_HOOK__ || {
@@ -1030,9 +1033,9 @@
             onCommitFiberUnmount: function () { }
         };
     </script>
-    <script src="js/memo.bundle.js?v=2026.01.16.4"></script>
-    <script src="js/assist.js?v=2026.01.16.4"></script>
-    <script src="js/document-panel.js?v=2026.01.16.4"></script>
+    <script src="js/memo.bundle.js?v=2026.01.16.5"></script>
+    <script src="js/assist.js?v=2026.01.16.5"></script>
+    <script src="js/document-panel.js?v=2026.01.16.5"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             setTimeout(function () {
@@ -3538,15 +3541,15 @@
     <div id="memo-source-overlay"
         style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:100000;">
         <div id="memo-source-modal" role="dialog" aria-modal="true" aria-label="Document source"
-            style="position:absolute; top:1vh; left:50%; transform:translateX(-50%); width:1100px; max-width:calc(100vw - 24px); height:98vh; background:var(--gray-900); color:var(--gray-200); border:1px solid rgba(255,255,255,.12); border-radius:8px; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,.6); font-size:13px;">
+            style="position:absolute; top:1vh; left:50%; transform:translateX(-50%); width:1100px; max-width:calc(100vw - 24px); height:98vh; background:var(--bg-surface); color:var(--text-main); border:1px solid var(--border-strong); border-radius:8px; overflow:hidden; box-shadow:var(--shadow-lg); font-size:13px;">
             <div
-                style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-bottom:1px solid rgba(255,255,255,.12); font-size:13px;">
+                style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-bottom:1px solid var(--border-main); font-size:13px;">
                 <div style="font-weight:600; font-size:13px;">Source</div>
                 <div style="flex:1;"></div>
 
                 <label for="memo-source-format" style="font-size:13px; opacity:.8;">Format</label>
                 <select id="memo-source-format"
-                    style="height:28px; background:var(--gray-800); color:var(--gray-200); border:1px solid rgba(255,255,255,.16); border-radius:8px; padding:0 8px; font-size:13px;">
+                    style="height:28px; background:var(--bg-app); color:var(--text-main); border:1px solid var(--border-strong); border-radius:8px; padding:0 8px; font-size:13px;">
                     <option value="markdown" selected>Markdown</option>
                     <option value="html">HTML</option>
                     <option value="json">JSON</option>
@@ -3555,16 +3558,16 @@
                 </select>
 
                 <button id="memo-source-close" type="button"
-                    style="height:28px; padding:0 10px; background:var(--gray-800); color:var(--gray-200); border:1px solid rgba(255,255,255,.16); border-radius:8px; cursor:pointer; font-size:13px;">
+                    style="height:28px; padding:0 10px; background:var(--bg-app); color:var(--text-main); border:1px solid var(--border-strong); border-radius:8px; cursor:pointer; font-size:13px;">
                     Close
                 </button>
             </div>
 
             <textarea id="memo-source-text" readonly spellcheck="false" title="Click to copy all"
-                style="width:100%; height:calc(98vh - 52px); padding:12px; border:0; outline:none; resize:none; background:var(--gray-900); color:var(--gray-200); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; font-size:13px; line-height:1.45;"></textarea>
+                style="width:100%; height:calc(98vh - 52px); padding:12px; border:0; outline:none; resize:none; background:var(--bg-surface); color:var(--text-main); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; font-size:13px; line-height:1.45;"></textarea>
 
             <div id="memo-source-toast" role="status" aria-live="polite"
-                style="position:absolute; left:50%; bottom:14px; transform:translateX(-50%); background:rgba(20,20,20,.95); color:var(--white); border:1px solid rgba(255,255,255,.12); padding:8px 10px; border-radius:8px; font-size:13px; display:none; pointer-events:none; max-width:calc(100% - 24px); text-align:center;">
+                style="position:absolute; left:50%; bottom:14px; transform:translateX(-50%); background:var(--bg-surface-soft); color:var(--text-main); border:1px solid var(--border-main); padding:8px 10px; border-radius:8px; font-size:13px; display:none; pointer-events:none; max-width:calc(100% - 24px); text-align:center;">
             </div>
         </div>
     </div>
