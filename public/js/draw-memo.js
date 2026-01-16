@@ -79,7 +79,7 @@ window.GoToolkitDrawMemo = (function () {
         return new Promise((resolve, reject) => {
             const script = document.createElement('script');
             // Use the version from the page if available, otherwise fallback
-            const version = window.GO_TOOLKIT_VERSION || '2026.01.16.5';
+            const version = window.GO_TOOLKIT_VERSION || '2026.01.16.6';
             script.src = `js/draw.bundle.js?v=${version}`;
             script.onload = () => {
                 isLoaded = true;
@@ -205,12 +205,34 @@ window.GoToolkitDrawMemo = (function () {
             const api = excalidrawInstance.getApi();
             if (!api) return null;
 
-            if (typeof zoom === 'number' && excalidrawInstance.exportToSvgWithZoom) {
+            let finalZoom = zoom;
+
+            // Adaptive zoom calculation
+            if (zoom === 'auto' && excalidrawInstance.getSceneBounds) {
+                const elements = api.getSceneElements();
+                if (elements && elements.length > 0) {
+                    const bounds = excalidrawInstance.getSceneBounds(elements);
+                    const padding = 40; // Total padding (20 top, 20 bottom)
+                    const targetHeight = 600; // Match max-height in CSS (650) minus some margin
+                    const contentHeight = bounds.height;
+
+                    if (contentHeight > 0) {
+                        // Calculate zoom to fit height
+                        finalZoom = Math.min(1.5, Math.max(0.4, (targetHeight - padding) / contentHeight));
+                    } else {
+                        finalZoom = 0.6;
+                    }
+                } else {
+                    finalZoom = 0.6;
+                }
+            }
+
+            if (typeof finalZoom === 'number' && excalidrawInstance.exportToSvgWithZoom) {
                 const svg = await excalidrawInstance.exportToSvgWithZoom(
                     api.getSceneElements(),
                     api.getAppState(),
                     api.getFiles(),
-                    zoom
+                    finalZoom
                 );
                 return svg.outerHTML;
             }

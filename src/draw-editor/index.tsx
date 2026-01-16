@@ -3,7 +3,8 @@ import { createRoot, type Root } from "react-dom/client";
 import {
     Excalidraw,
     convertToExcalidrawElements,
-    exportToSvg
+    exportToSvg,
+    getCommonBounds
 } from "@excalidraw/excalidraw";
 import type {
     BinaryFiles,
@@ -530,6 +531,7 @@ export type GoToolkitExcalidrawAPI = {
     convertMermaid: (code: string, options?: MermaidConvertOptions) => Promise<SceneData | null>;
     applyScene: (scene: SceneData, shouldCenter?: boolean) => void;
     getApi: () => ExcalidrawImperativeAPI | null;
+    getSceneBounds: (elements: any) => { minX: number; minY: number; maxX: number; maxY: number; width: number; height: number };
     exportToSvg: (elements: any, appState: any, files: any) => Promise<SVGSVGElement>;
     exportToSvgWithZoom: (elements: any, appState: any, files: any, zoom: number) => Promise<SVGSVGElement>;
 };
@@ -545,6 +547,10 @@ window.GoToolkitExcalidraw = {
     convertMermaid: (code, options) => bridge.convertMermaid(code, options),
     applyScene: (scene, shouldCenter) => bridge.applyScene(scene, shouldCenter),
     getApi: () => bridge.getApi(),
+    getSceneBounds: (elements) => {
+        const [minX, minY, maxX, maxY] = getCommonBounds(elements);
+        return { minX, minY, maxX, maxY, width: maxX - minX, height: maxY - minY };
+    },
     exportToSvg: (elements, appState, files) => exportToSvg({ elements, appState, files }),
     exportToSvgWithZoom: (elements, appState, files, zoom) => 
         exportToSvg({ 

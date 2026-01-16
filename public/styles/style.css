@@ -66,11 +66,11 @@
 /* App Shell (Light) Theme */
 [data-theme="app"] {
   color-scheme: light;
-  --bg-app: #f1f5f9; /* gray-100 */
-  --bg-surface: #ffffff; /* white */
-  --bg-surface-soft: #f8fafc; /* gray-50 */
-  --text-main: #0f172a; /* gray-900 */
-  --text-muted: #64748b; /* gray-500 */
+  --bg-app: #f1f5f9; 
+  --bg-surface: #ebe5e5; 
+  --bg-surface-soft: #c7c7c7; 
+  --text-main: #0f172a; 
+  --text-muted: #64748b;
   --border-main: #dfe3f5;
   --border-strong: #cdd4ed;
 }
@@ -79,10 +79,10 @@
 [data-theme="cream"] {
   color-scheme: light;
   --bg-app: #f5f2eb;
-  --bg-surface: #ffffff;
-  --bg-surface-soft: #fcfaf7;
+  --bg-surface: #fff9f9; 
+  --bg-surface-soft: #eee6e6; 
   --text-main: #2f2922;
-  --text-muted: #ccc6bf;
+  --text-muted: #817a71;
   --border-main: #ece4e4;
   --border-strong: #ededed;
   --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.12);
@@ -1596,7 +1596,7 @@ label {
 .chat-content pre {
   margin: 0 0 6px;
   background: var(--bg-app);
-  color: #e5e7eb;
+  color: var(--text-main);
   padding: 10px;
   border-radius: var(--radius-md);
   overflow: auto;

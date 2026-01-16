@@ -124,7 +124,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
             try {
               await (window as any).GoToolkitDrawMemo.updateFromMermaid(cleanCode, newSize);
               const json = (window as any).GoToolkitDrawMemo.getSceneJSON();
-              const svgHtml = await (window as any).GoToolkitDrawMemo.getSVG(0.6);
+              const svgHtml = await (window as any).GoToolkitDrawMemo.getSVG('auto');
               
               updateAttributes({ 
                 code: cleanCode, 
@@ -180,7 +180,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
         try {
           // Prefer the bridge preview helper if available (serialized & sized host)
           if ((window as any).GoToolkitDrawMemo.renderPreview) {
-            const result = await (window as any).GoToolkitDrawMemo.renderPreview(code, 0.6, size);
+            const result = await (window as any).GoToolkitDrawMemo.renderPreview(code, 'auto', size);
             const json = result?.json;
             const svgHtml = result?.svg;
             if (json) {
@@ -207,7 +207,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
           await new Promise<void>(resolve => window.requestAnimationFrame(() => resolve()));
           await new Promise<void>(resolve => window.requestAnimationFrame(() => resolve()));
           const json = (window as any).GoToolkitDrawMemo.getSceneJSON();
-          const svgHtml = await (window as any).GoToolkitDrawMemo.getSVG(0.6);
+          const svgHtml = await (window as any).GoToolkitDrawMemo.getSVG('auto');
           updateAttributes({ excalidrawJSON: json });
           setSvg(svgHtml);
           setLastValidCode(code);
@@ -230,7 +230,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
         // If we have Excalidraw JSON, use it to generate SVG
         if ((window as any).GoToolkitDrawMemo) {
           if ((window as any).GoToolkitDrawMemo.renderPreview) {
-            const result = await (window as any).GoToolkitDrawMemo.renderPreview(excalidrawJSON, 0.6, size);
+            const result = await (window as any).GoToolkitDrawMemo.renderPreview(excalidrawJSON, 'auto', size);
             if (result?.svg) {
               setSvg(result.svg);
               setError(null);
@@ -250,7 +250,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
           await (window as any).GoToolkitDrawMemo.init(tempDiv, excalidrawJSON, size);
           await new Promise<void>(resolve => window.requestAnimationFrame(() => resolve()));
           await new Promise<void>(resolve => window.requestAnimationFrame(() => resolve()));
-          const svgHtml = await (window as any).GoToolkitDrawMemo.getSVG(0.6);
+          const svgHtml = await (window as any).GoToolkitDrawMemo.getSVG('auto');
           setSvg(svgHtml);
           document.body.removeChild(tempDiv);
           setError(null);
@@ -409,8 +409,8 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
         }
 
         const json = (window as any).GoToolkitDrawMemo.getSceneJSON();
-        // Use 60% zoom for the document preview
-        const svgHtml = await (window as any).GoToolkitDrawMemo.getSVG(0.6);
+        // Use auto zoom to fit height
+        const svgHtml = await (window as any).GoToolkitDrawMemo.getSVG('auto');
         
         // If both code and excalidraw are empty, we clear everything
         const isExcalidrawEmpty = !json || json === '{"elements":[],"appState":{}}' || json.includes('"elements":[]');
@@ -462,7 +462,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
 
       // Now that Excalidraw has applied the scene, persist the results.
       const json = (window as any).GoToolkitDrawMemo.getSceneJSON();
-      const svgHtml = await (window as any).GoToolkitDrawMemo.getSVG(0.6);
+      const svgHtml = await (window as any).GoToolkitDrawMemo.getSVG('auto');
       updateAttributes({
         code: draftCode,
         excalidrawJSON: json || '',
@@ -541,7 +541,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
         
         // Sync the preview immediately
         const json = (window as any).GoToolkitDrawMemo.getSceneJSON();
-        const svgHtml = await (window as any).GoToolkitDrawMemo.getSVG(0.6);
+        const svgHtml = await (window as any).GoToolkitDrawMemo.getSVG('auto');
         updateAttributes({ excalidrawJSON: json });
         if (svgHtml) setSvg(svgHtml);
       }
@@ -576,8 +576,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
             overflow: 'hidden', 
             contentVisibility: 'visible', 
             transform: 'none', 
-            minWidth: '100px', 
-            height: 'auto' 
+            minWidth: '100px'
           }}
         >
           <div className="mermaid-controls" onClick={e => e.stopPropagation()}>
@@ -685,7 +684,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
                 </div>
 
                 {/* AI Composer */}
-                <div id="draw-composer" className="draw-composer chat-composer" style={{ border: 'none', background: '#fff' }}>
+                <div id="draw-composer" className="draw-composer chat-composer" style={{ border: 'none', background: 'var(--bg-surface)' }}>
                   <div className="chat-input-wrapper">
                     <textarea
                       ref={composerTextareaRef}
