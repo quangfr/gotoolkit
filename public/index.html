@@ -1310,14 +1310,6 @@
                         <div class="launcher-desc">Trace ton planning</div>
                     </span>
                 </a>
-                <a class="launcher" href="old/voice.html" data-app="voice">
-                    <span class="launcher-emoji"><i data-lucide="mic"></i></span>
-                    <span class="launcher-name">
-                        Voice <i data-lucide="zap"
-                            style="width:12px;height:12px;vertical-align:middle;margin:0 2px;"></i> Tuto Tarantino
-                        <div class="launcher-desc">Pilote tes réunions</div>
-                    </span>
-                </a>
                 <a class="launcher" href="grid.html" data-app="grid">
                     <span class="launcher-emoji"><i data-lucide="grid-3x3"></i></span>
                     <span class="launcher-name">
@@ -1387,11 +1379,8 @@
                                     <option value="tous" selected>Tous</option>
                                     <option value="bug-general">Bug Général</option>
                                     <option value="bug-assist">Bug Assist</option>
-                                    <option value="bug-canvas">Bug Canvas</option>
-                                    <option value="bug-draw">Bug Draw</option>
                                     <option value="bug-grid">Bug Grid</option>
                                     <option value="bug-timeline">Bug Timeline</option>
-                                    <option value="bug-voice">Bug Voice</option>
                                     <option value="suggestion">Suggestion</option>
                                 </select>
                             </label>
@@ -1410,11 +1399,8 @@
                                 <select id="requestType" disabled>
                                     <option value="bug-general">Bug Général</option>
                                     <option value="bug-assist">Bug Assist</option>
-                                    <option value="bug-canvas">Bug Canvas</option>
-                                    <option value="bug-draw">Bug Draw</option>
                                     <option value="bug-grid">Bug Grid</option>
                                     <option value="bug-timeline">Bug Timeline</option>
-                                    <option value="bug-voice">Bug Voice</option>
                                     <option value="suggestion">Suggestion</option>
                                 </select>
                             </label>
@@ -2186,11 +2172,8 @@
 
             const APP_DEFINITIONS = {
                 memo: { icon: "zap", name: "Memo", page: "memo.html", collection: "memos" },
-                nuances: { icon: "palette", name: "Canvas", page: "old/canvas.html", collection: "slides" },
                 plan: { icon: "layout-list", name: "Timeline", page: "old/timeline.html", collection: "timelines" },
-                draw: { icon: "pen-tool", name: "Draw", page: "old/draw.html", collection: "diagrams" },
-                grid: { icon: "grid-3x3", name: "Grid", page: "grid.html", collection: "grids" },
-                voice: { icon: "mic", name: "Voice", page: "old/voice.html", collection: "voices" }
+                grid: { icon: "grid-3x3", name: "Grid", page: "grid.html", collection: "grids" }
             };
             const GRID_TEMPLATE_LABELS = {
                 "tree-structure": "Structure de données",
@@ -2250,12 +2233,6 @@
                     .slice(0, 2);
             }
 
-            const DRAW_TYPE_LABELS = {
-                sequence: "Échange",
-                flow: "Processus",
-                class: "Structure"
-            };
-
             function stripEmojiPrefix(text) {
                 if (!text || typeof text !== "string") return "";
                 try {
@@ -2275,18 +2252,6 @@
 
             function extractPreview(app, payload) {
                 let templateLabel = "";
-                if (app === "nuances") {
-                    const firstSlide = payload?.slides?.[0];
-                    const tabName = firstSlide?.title || "Sans titre";
-                    const context = payload?.settings?.globalContext || payload?.settings?.context || "";
-                    templateLabel =
-                        payload?.settings?.templateName ||
-                        payload?.settings?.defaultTemplateId ||
-                        firstSlide?.templateName ||
-                        firstSlide?.templateId ||
-                        "";
-                    return { tabName, lines: normalizeLines(context), templateLabel };
-                }
                 if (app === "plan") {
                     const firstView = payload?.views?.[0];
                     const tabName = firstView?.title || firstView?.name || "Planning";
@@ -2298,20 +2263,6 @@
                         "";
                     return { tabName, lines: normalizeLines(brief), templateLabel };
                 }
-                if (app === "draw") {
-                    const firstPage = payload?.pages?.[0];
-                    const tabName = firstPage?.title || firstPage?.label || "Page 1";
-                    const context = firstPage?.input || "";
-                    templateLabel =
-                        payload?.templateName ||
-                        payload?.templateId ||
-                        payload?.template?.name ||
-                        payload?.template?.id ||
-                        "";
-                    const drawType = firstPage?.drawType || payload?.drawType || "";
-                    const drawTypeLabel = DRAW_TYPE_LABELS[drawType] || drawType || "";
-                    return { tabName, lines: normalizeLines(context), templateLabel, drawTypeLabel };
-                }
                 if (app === "grid") {
                     const tabName = payload?.title || "Tableau";
                     const context = payload?.scenario || "";
@@ -2321,16 +2272,6 @@
                         payload?.templateId ||
                         "";
                     return { tabName, lines: normalizeLines(context), templateLabel };
-                }
-                if (app === "voice") {
-                    const firstPage = payload?.pages?.[0];
-                    const tabName = firstPage?.title || "Voice";
-                    const summary = firstPage?.summary || "";
-                    const transcript = firstPage?.transcript || "";
-                    const scenario = firstPage?.scenario || "";
-                    const lines = normalizeLines(summary || scenario || transcript);
-                    const templateLabel = firstPage?.templateName || firstPage?.templateId || "";
-                    return { tabName, lines, templateLabel };
                 }
                 if (app === "memo") {
                     const firstTab = payload?.tabs?.[0];
@@ -2372,7 +2313,7 @@
                 card.target = target;
                 card.rel = target === "_self" ? "noopener" : "noopener noreferrer";
                 card.setAttribute("data-app", app);
-                const metaHtml = buildMetaBadge(preview.templateLabel || preview.drawTypeLabel);
+                const metaHtml = buildMetaBadge(preview.templateLabel);
                 card.innerHTML = `
                     <p class="share-card-title"><i data-lucide="${definition.icon}" style="width:14px;height:14px;vertical-align:middle;margin-right:6px;"></i>${preview.tabName}</p>
                     ${metaHtml}
@@ -2460,7 +2401,7 @@
                 card.target = "_self";
                 card.rel = "noopener";
                 card.setAttribute("data-app", record.app);
-                const metaHtml = buildMetaBadge(preview.templateLabel || preview.drawTypeLabel);
+                const metaHtml = buildMetaBadge(preview.templateLabel);
                 card.innerHTML = `
                     <p class="share-card-title"><i data-lucide="${definition.icon}" style="width:14px;height:14px;vertical-align:middle;margin-right:6px;"></i>${preview.tabName}</p>
                     ${metaHtml}
@@ -2491,9 +2432,6 @@
                     event.stopPropagation();
                     const confirmed = window.confirm("Supprimer cette capsule ?");
                     if (!confirmed) return;
-                    if (record.app === "voice") {
-                        await deleteVoiceAudio(record.id);
-                    }
                     await documentApi.removeRecord?.(record.id);
                     refreshSavedGallery().catch(() => { /* noop */ });
                 });
@@ -2525,11 +2463,8 @@
                     "problem",
                     "opportunity"
                 ],
-                nuances: ["slides", "blocks", "subtitle"],
                 plan: ["views", "items", "milestones"],
-                draw: ["pages", "drawType", "mermaid", "code"],
-                grid: ["rows", "columns", "fields", "value", "headerName"],
-                voice: ["pages", "participants"]
+                grid: ["rows", "columns", "fields", "value", "headerName"]
             };
 
             function collectPayloadText(value, keyWhitelist, output, depth = 0) {
@@ -3464,182 +3399,6 @@
             }
         }
 
-        function getWebllmModelLabel(modelId) {
-            if (!modelId) return "WebLLM";
-            const models = window.GoToolkitIAConfig?.WEBLLM_MODELS || [];
-            const match = models.find(entry => entry.id === modelId);
-            return (match && match.label) || modelId || "WebLLM";
-        }
-
-        function isSupportedWebllmModel(modelId) {
-            const models = window.GoToolkitIAConfig?.WEBLLM_MODELS || [];
-            return models.some(entry => entry.id === modelId);
-        }
-
-        function formatWebllmOptionLabel(entry, installed, meta, rawLabel) {
-            const base = rawLabel || entry.label || entry.id;
-            const parts = [];
-            if (meta?.features?.length) parts.push(meta.features.join(","));
-            const suffix = parts.length ? ` (${parts.join(" · ")})` : "";
-            const icon = installed === false ? "🡇 " : "";
-            return icon + base + suffix;
-        }
-
-        async function detectGpuCapabilities() {
-            if (!navigator.gpu || typeof navigator.gpu.requestAdapter !== "function") {
-                return { adapter: null, features: new Set(), limits: {} };
-            }
-            try {
-                const adapter = await navigator.gpu.requestAdapter();
-                if (!adapter) return { adapter: null, features: new Set(), limits: {} };
-                const features = new Set(adapter.features ? Array.from(adapter.features) : []);
-                const limits = adapter.limits ? { ...adapter.limits } : {};
-                return { adapter, features, limits };
-            } catch (err) {
-                console.warn("GPU capability detection failed", err);
-                return { adapter: null, features: new Set(), limits: {} };
-            }
-        }
-
-        function meetsModelRequirements(model, gpuInfo) {
-            if (!model) return true;
-            const features = gpuInfo.features || new Set();
-            const limits = gpuInfo.limits || {};
-            const requiredFeatures = model.required_features || [];
-            for (const feat of requiredFeatures) {
-                if (!features.has(feat)) return false;
-            }
-            if (model.buffer_size_required_bytes && limits.maxStorageBufferBindingSize) {
-                if (limits.maxStorageBufferBindingSize < model.buffer_size_required_bytes) {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        async function buildWebllmModelOptions() {
-            if (!webllmModelSelect) return;
-            webllmModelSelect.innerHTML = "";
-            const appConfig = await (window.GoToolkitWebLLM?.getAppConfig?.() || window.GoToolkitIAConfig?.WEBLLM_MODELS);
-            const gpuInfo = await detectGpuCapabilities();
-            const prebuiltList = appConfig?.model_list || [];
-            const fallbackList = window.GoToolkitIAConfig?.WEBLLM_MODELS || [];
-            const mappedPrebuilt = prebuiltList.map(item => ({
-                id: item.model_id,
-                label: item.model_id,
-                required_features: item.required_features,
-                buffer_size_required_bytes: item.buffer_size_required_bytes,
-                vram_required_MB: item.vram_required_MB
-            }));
-            const mappedFallback = fallbackList.map(entry => ({
-                id: entry.id,
-                label: entry.label,
-                required_features: entry.required_features || [],
-                buffer_size_required_bytes: entry.buffer_size_required_bytes,
-                vram_required_MB: entry.vram_required_MB
-            }));
-            const mergedMap = new Map();
-            [...mappedPrebuilt, ...mappedFallback].forEach(entry => {
-                if (entry.id && !mergedMap.has(entry.id)) {
-                    mergedMap.set(entry.id, entry);
-                }
-            });
-            const list = Array.from(mergedMap.values());
-            const options = [];
-            let hasModelInCacheFn = null;
-            try {
-                const mod = await import("https://esm.sh/@mlc-ai/web-llm");
-                hasModelInCacheFn = mod.hasModelInCache || (mod.default && mod.default.hasModelInCache);
-            } catch (err) {
-                /* ignore */
-            }
-            for (const entry of list) {
-                const opt = document.createElement("option");
-                opt.value = entry.id;
-                const label = entry.label || entry.id;
-                const meta = [];
-                if (entry.required_features && entry.required_features.length) {
-                    meta.push(entry.required_features.join(","));
-                }
-                opt.textContent = meta.length ? `${label} (${meta.join(" · ")})` : label;
-                const supported = meetsModelRequirements(entry, gpuInfo);
-                if (!supported) {
-                    opt.disabled = true;
-                    opt.textContent += " — non supporté";
-                }
-                opt.dataset.metaVram = entry.vram_required_MB ? Math.round(entry.vram_required_MB) + "MB" : "";
-                opt.dataset.metaFeatures = entry.required_features ? entry.required_features.join(",") : "";
-                opt.dataset.installed = "0";
-                options.push(opt);
-            }
-            if (typeof hasModelInCacheFn === "function") {
-                for (const opt of options) {
-                    try {
-                        const installed = await hasModelInCacheFn(opt.value);
-                        opt.dataset.installed = installed ? "1" : "0";
-                        opt.textContent = formatWebllmOptionLabel(
-                            { id: opt.value, label: opt.textContent.replace(/^🡇\s*/, "") },
-                            installed === true ? true : false,
-                            {
-                                features: opt.dataset.metaFeatures ? opt.dataset.metaFeatures.split(",").filter(Boolean) : []
-                            },
-                            opt.textContent.replace(/^🡇\s*/, "")
-                        );
-                    } catch (err) {
-                        /* ignore per option */
-                    }
-                }
-            }
-            options
-                .sort((a, b) => {
-                    const ai = a.dataset.installed === "1" ? 0 : 1;
-                    const bi = b.dataset.installed === "1" ? 0 : 1;
-                    if (ai !== bi) return ai - bi;
-                    return String(a.value).localeCompare(String(b.value));
-                })
-                .forEach(opt => webllmModelSelect.appendChild(opt));
-            const preferred = getSelectedWebllmModel();
-            if (preferred) {
-                webllmModelSelect.value = preferred;
-            }
-            webllmModelSelect.dataset.initialized = "1";
-        }
-
-        function populateWebllmModelSelect() {
-            if (!webllmModelSelect) return;
-            webllmModelSelect.dataset.initialized = "";
-            webllmModelSelect.innerHTML = "";
-            buildWebllmModelOptions().catch(() => {
-                const models = window.GoToolkitIAConfig?.WEBLLM_MODELS || [];
-                if (!models.length) {
-                    const option = document.createElement("option");
-                    option.textContent = "Modèles WebLLM indisponibles";
-                    option.disabled = true;
-                    webllmModelSelect.appendChild(option);
-                    return;
-                }
-                models.forEach(entry => {
-                    const option = document.createElement("option");
-                    option.value = entry.id;
-                    option.textContent = entry.label || entry.id;
-                    webllmModelSelect.appendChild(option);
-                });
-            });
-        }
-
-        function getSelectedWebllmModel() {
-            if (webllmModelSelect && webllmModelSelect.value) {
-                const val = webllmModelSelect.value;
-                return isSupportedWebllmModel(val) ? val : (window.GoToolkitIAConfig?.DEFAULTS?.WEBLLM_MODEL || "");
-            }
-            if (window.GoToolkitIAConfig && typeof window.GoToolkitIAConfig.getWebllmModel === "function") {
-                const stored = window.GoToolkitIAConfig.getWebllmModel();
-                return isSupportedWebllmModel(stored)
-                    ? stored
-                    : (window.GoToolkitIAConfig?.DEFAULTS?.WEBLLM_MODEL || "");
-            }
-            return window.GoToolkitIAConfig?.DEFAULTS?.WEBLLM_MODEL || "";
-        }
 
         function populateOpenrouterModelInput() {
             if (!openrouterModelInput) return;
@@ -3659,237 +3418,6 @@
             if (stored) {
                 openrouterOcrModelInput.value = stored;
             }
-        }
-
-        async function installWebllmModel() {
-            if (!window.GoToolkitWebLLM) {
-                showToast("WebLLM indisponible dans ce navigateur.", true);
-                return;
-            }
-            const model = getSelectedWebllmModel();
-            if (!model) {
-                showToast("Sélectionne un moteur WebLLM.", true);
-                return;
-            }
-            const baseLabel = "Installer";
-            if (webllmInstallBtn) {
-                webllmInstallBtn.disabled = true;
-                let lastPercent = -1;
-                webllmInstallBtn.textContent = `${baseLabel} (0%)`;
-                try {
-                    await window.GoToolkitWebLLM.installModel(model, progress => {
-                        const percent = Math.min(
-                            100,
-                            Math.max(0, Math.round((progress?.progress ?? 0) * 100))
-                        );
-                        if (percent !== lastPercent) {
-                            lastPercent = percent;
-                            webllmInstallBtn.textContent = `${baseLabel} (${percent}%)`;
-                        }
-                    });
-                    updateStatusIcon(webllmStatusEl, "ready");
-                    showToast("Modèle WebLLM prêt (" + getWebllmModelLabel(model) + ")");
-                } catch (err) {
-                    console.warn("WebLLM install failed", err);
-                    updateStatusIcon(webllmStatusEl, "error");
-                    showToast(
-                        "Échec de l'installation WebLLM (" + ((err && err.message) || "erreur") + ")",
-                        true
-                    );
-                } finally {
-                    webllmInstallBtn.disabled = false;
-                    webllmInstallBtn.textContent = baseLabel;
-                }
-            } else {
-                await window.GoToolkitWebLLM.installModel(model);
-            }
-        }
-
-        async function verifyWebllmModel({ showToasts = true } = {}) {
-            if (!window.GoToolkitWebLLM) {
-                if (showToasts) {
-                    showToast("WebLLM indisponible dans ce navigateur.", true);
-                }
-                return false;
-            }
-            const model = getSelectedWebllmModel();
-            if (!model) {
-                if (showToasts) {
-                    showToast("Sélectionne un moteur WebLLM.", true);
-                }
-                return false;
-            }
-            if (webllmVerifyBtn) {
-                webllmVerifyBtn.disabled = true;
-            }
-            updateStatusIcon(webllmStatusEl, "verifying");
-            try {
-                await window.GoToolkitWebLLM.verifyModel(model);
-                updateStatusIcon(webllmStatusEl, "ready");
-                if (showToasts) {
-                    showToast("WebLLM prêt (" + getWebllmModelLabel(model) + ")");
-                }
-                return true;
-            } catch (err) {
-                console.warn("WebLLM verify failed", err);
-                updateStatusIcon(webllmStatusEl, "error");
-                if (showToasts) {
-                    showToast(
-                        "Échec de la vérification WebLLM (" + ((err && err.message) || "erreur") + ")",
-                        true
-                    );
-                }
-                return false;
-            } finally {
-                if (webllmVerifyBtn) {
-                    webllmVerifyBtn.disabled = false;
-                }
-            }
-        }
-        function extractOllamaModelNames(payload) {
-            if (!payload) {
-                return [];
-            }
-            const candidates = [];
-            const pushArray = value => {
-                if (Array.isArray(value)) {
-                    candidates.push(...value);
-                }
-            };
-            pushArray(payload.tags);
-            pushArray(payload.models);
-            pushArray(payload.items);
-            if (payload.data) {
-                pushArray(payload.data.tags);
-                pushArray(payload.data.models);
-                pushArray(payload.data.items);
-            }
-            if (Array.isArray(payload)) {
-                pushArray(payload);
-            }
-            const normalized = [];
-            const seen = new Set();
-            for (const item of candidates) {
-                if (!item) {
-                    continue;
-                }
-                let name = "";
-                if (typeof item === "string") {
-                    name = item;
-                } else if (typeof item.name === "string") {
-                    name = item.name;
-                } else if (typeof item.tag === "string") {
-                    name = item.tag;
-                } else if (typeof item.model === "string") {
-                    name = item.model;
-                } else if (typeof item.id === "string") {
-                    name = item.id;
-                }
-                name = name.trim();
-                if (name && !seen.has(name)) {
-                    seen.add(name);
-                    normalized.push(name);
-                }
-            }
-            return normalized;
-        }
-        function populateOllamaModelSelect(models, preferred) {
-            if (!settingsOllamaModelSelect || !Array.isArray(models) || !models.length) {
-                return;
-            }
-            const current = preferred || (window.GoToolkitIAConfig?.getOllamaModel?.() || settingsOllamaModelSelect.value || "");
-            settingsOllamaModelSelect.innerHTML = "";
-            let matched = false;
-            for (const model of models) {
-                const option = document.createElement("option");
-                option.value = model;
-                option.textContent = model;
-                settingsOllamaModelSelect.appendChild(option);
-                if (model === current) {
-                    matched = true;
-                }
-            }
-            if (matched) {
-                settingsOllamaModelSelect.value = current;
-            } else {
-                settingsOllamaModelSelect.value = models[0];
-            }
-            const selectedModel = settingsOllamaModelSelect.value;
-            if (
-                selectedModel &&
-                window.GoToolkitIAConfig &&
-                typeof window.GoToolkitIAConfig.setOllamaModel === "function"
-            ) {
-                window.GoToolkitIAConfig.setOllamaModel(selectedModel);
-            }
-        }
-        async function refreshOllamaModels({ showErrors = false } = {}) {
-            var config = window.GoToolkitIAConfig;
-            var url = "";
-            var addressSelection = settingsOllamaAddressSelect ? settingsOllamaAddressSelect.value : "";
-            if (addressSelection === "local") {
-                url = "http://localhost:11434";
-            } else if (addressSelection === "cloud") {
-                url = "https://ollama.com";
-            } else if (settingsOllamaUrlInput && settingsOllamaUrlInput.value) {
-                url = settingsOllamaUrlInput.value;
-            } else if (config && typeof config.getOllamaUrl === "function") {
-                url = config.getOllamaUrl();
-            }
-            // keep config/storage in sync with the selection so future calls use the right base URL
-            if (config && typeof config.setOllamaUrl === "function" && url) {
-                config.setOllamaUrl(url);
-            }
-            if (!url) {
-                if (showErrors) {
-                    showToast("URL Ollama manquante pour récupérer les modèles.", true);
-                }
-                return [];
-            }
-            var normalizedUrl = url.replace(/\/+$/, "");
-            var apiKey = config && typeof config.getOllamaApiKey === "function" ? config.getOllamaApiKey() : "";
-            try {
-                var response = await fetch(normalizedUrl + "/api/tags", {
-                    method: "GET",
-                    headers: buildOllamaHeaders(apiKey, { targetUrl: normalizedUrl }),
-                    cache: "no-cache"
-                });
-                if (!response.ok) {
-                    throw new Error("HTTP " + response.status + " " + (response.statusText || ""));
-                }
-                var payload = await response.json().catch(() => null);
-                var models = extractOllamaModelNames(payload);
-                if (models.length) {
-                    populateOllamaModelSelect(models);
-                } else if (showErrors) {
-                    showToast("Aucun modèle Ollama détecté dans /api/tags.", true);
-                }
-                return models;
-            } catch (err) {
-                console.warn("Ollama tags fetch failed", err);
-                if (showErrors) {
-                    var message = (err && err.message) || "erreur inconnue";
-                    showToast("Échec de la récupération des modèles Ollama (" + message + ")", true);
-                }
-                return [];
-            }
-        }
-        function isLocalOllama(url) {
-            if (!url || typeof url !== "string") return false;
-            return /^https?:\/\/(localhost|127(?:\.\d+){3})(:\d+)?/i.test(url.trim());
-        }
-        function buildOllamaHeaders(apiKey, options) {
-            var headers = {};
-            if (options?.json) {
-                headers["Content-Type"] = "application/json";
-            }
-            // Avoid adding custom auth headers for local Ollama to dodge CORS preflight blocks.
-            if (apiKey && !isLocalOllama(options?.targetUrl)) {
-                headers.Authorization = "Bearer " + apiKey;
-                headers["Ollama-Api-Key"] = apiKey;
-                headers["X-Ollama-Api-Key"] = apiKey;
-            }
-            return headers;
         }
 
         async function testOpenAiConnection({ showToasts = true } = {}) {
@@ -4076,30 +3604,6 @@
             }
         }
 
-        async function testOllamaConnection({ showToasts = true } = {}) {
-            var config = window.GoToolkitIAConfig;
-            var url = config && typeof config.getOllamaUrl === "function" ? config.getOllamaUrl() : "";
-            if (!url) {
-                updateStatusIcon(ollamaStatusEl, "error");
-                if (showToasts) {
-                    showToast("URL Ollama manquante pour tester la connexion.", true);
-                }
-                return false;
-            }
-            var normalizedUrl = url.replace(/\/+$/, "");
-            var apiKey = config && typeof config.getOllamaApiKey === "function" ? config.getOllamaApiKey() : "";
-            updateStatusIcon(ollamaStatusEl, "verifying");
-            const models = await refreshOllamaModels({ showErrors: showToasts });
-            if (!models.length) {
-                updateStatusIcon(ollamaStatusEl, "error");
-                return false;
-            }
-            if (showToasts) {
-                showToast("Modèles Ollama détectés (" + normalizedUrl + ")");
-            }
-            updateStatusIcon(ollamaStatusEl, "ready");
-            return true;
-        }
         async function testOpenRouterConnection({ showToasts = true } = {}) {
             var config = window.GoToolkitIAConfig;
             var apiKey = config && typeof config.getOpenRouterApiKey === "function" ? config.getOpenRouterApiKey() : "";
@@ -4143,28 +3647,13 @@
         const settingsReasoningSelect = document.getElementById("reasoningEffortSelect");
         const settingsOpenAiModelSelect = document.getElementById("openaiModelSelect");
         const settingsSpeechModeSelect = document.getElementById("speechModeSelect");
-        const settingsOllamaUrlInput = document.getElementById("ollamaUrlInput");
-        const settingsOllamaApiKeyInput = document.getElementById("ollamaApiKeyInput");
-        const settingsOllamaAddressSelect = document.getElementById("ollamaAddressSelect");
-        const settingsOllamaUrlRow = document.getElementById("ollamaUrlRow");
-        const settingsOllamaApiKeyRow = document.getElementById("ollamaApiKeyRow");
-        const settingsOllamaModelSelect = document.getElementById("ollamaModelSelect");
         const openaiStatusEl = document.getElementById("openaiStatus");
-        const ollamaStatusEl = document.getElementById("ollamaStatus");
-        const webllmStatusEl = document.getElementById("webllmStatus");
         const assemblyAiStatusEl = document.getElementById("assemblyAiStatus");
         const openaiVerifyBtn = document.getElementById("openaiVerifyBtn");
-        const ollamaVerifyBtn = document.getElementById("ollamaVerifyBtn");
         const assemblyAiVerifyBtn = document.getElementById("assemblyAiVerifyBtn");
-        const webllmInstallBtn = document.getElementById("webllmInstallBtn");
-        const webllmClearBtn = document.getElementById("webllmClearBtn");
-        const webllmVerifyBtn = document.getElementById("webllmVerifyBtn");
         const aiBackendSelect = document.getElementById("aiBackendSelect");
         const openaiSettingsEl = document.getElementById("openaiSettings");
         const openrouterSettingsEl = document.getElementById("openrouterSettings");
-        const ollamaSettingsEl = document.getElementById("ollamaSettings");
-        const webllmSettingsEl = document.getElementById("webllmSettings");
-        const webllmModelSelect = document.getElementById("webllmModelSelect");
         const assemblyAiKeyInput = document.getElementById("assemblyAiKeyInput");
         const openrouterApiKeyInput = document.getElementById("openrouterApiKeyInput");
         const openrouterExtras = document.getElementById("openrouterExtras");
@@ -4270,7 +3759,6 @@
         const openrouterLatencies = { private: null, shared: null };
         const openrouterRateLimits = { private: null, shared: null };
         const ASSEMBLY_AI_KEY_STORAGE = "go-toolkit-assemblyai-key";
-        const VOICE_AUDIO_DB = { name: "go-toolkit-voice-audio", store: "recordings" };
 
         try {
             const storedKey = (localStorage.getItem(ASSEMBLY_AI_KEY_STORAGE) || "").trim();
@@ -4282,8 +3770,6 @@
             const val = (aiBackendSelect && aiBackendSelect.value) || "openrouter";
             if (openaiSettingsEl) openaiSettingsEl.style.display = val === "openai" ? "" : "none";
             if (openrouterSettingsEl) openrouterSettingsEl.style.display = val === "openrouter" ? "" : "none";
-            if (ollamaSettingsEl) ollamaSettingsEl.style.display = val === "ollama" ? "" : "none";
-            if (webllmSettingsEl) webllmSettingsEl.style.display = val === "webllm" ? "" : "none";
             if (val === "openrouter") {
                 populateOpenrouterModelInput();
                 populateOpenrouterOcrModelInput();
@@ -4301,89 +3787,11 @@
             }
         }
 
-        function updateOllamaAddressUI() {
-            if (!settingsOllamaAddressSelect) return;
-            const val = settingsOllamaAddressSelect.value || 'local';
-            if (settingsOllamaUrlRow) {
-                settingsOllamaUrlRow.style.display = (val === 'custom') ? '' : 'none';
-            }
-            if (settingsOllamaUrlInput) {
-                if (val === 'local') {
-                    settingsOllamaUrlInput.value = 'http://localhost:11434';
-                } else if (val === 'cloud') {
-                    settingsOllamaUrlInput.value = 'https://ollama.com';
-                }
-            }
-            if (settingsOllamaApiKeyRow) {
-                settingsOllamaApiKeyRow.style.display = (val === 'local') ? 'none' : '';
-            }
-        }
-
-        settingsOllamaAddressSelect?.addEventListener('change', () => {
-            updateOllamaAddressUI();
-        });
-
-        (function initOllamaAddressSelection() {
-            const configUrl = (window.GoToolkitIAConfig && typeof window.GoToolkitIAConfig.getOllamaUrl === 'function') ? window.GoToolkitIAConfig.getOllamaUrl() : (settingsOllamaUrlInput?.value || '');
-            if (!settingsOllamaAddressSelect) return;
-            if (configUrl.startsWith('http://localhost') || configUrl.startsWith('https://localhost')) {
-                settingsOllamaAddressSelect.value = 'local';
-            } else if (configUrl.startsWith('https://ollama.com')) {
-                settingsOllamaAddressSelect.value = 'cloud';
-            } else if (configUrl) {
-                settingsOllamaAddressSelect.value = 'custom';
-                if (settingsOllamaUrlInput && !settingsOllamaUrlInput.value) settingsOllamaUrlInput.value = configUrl;
-            } else {
-                settingsOllamaAddressSelect.value = 'local';
-            }
-            updateOllamaAddressUI();
-        })();
-
         aiBackendSelect?.addEventListener("change", function () {
             try {
                 localStorage.setItem("go-toolkit-ai-backend", aiBackendSelect.value);
             } catch (e) { }
             updateBackendVisibility();
-        });
-
-        webllmInstallBtn?.addEventListener("click", () => {
-            installWebllmModel().catch(() => { /* noop */ });
-        });
-        webllmClearBtn?.addEventListener("click", async () => {
-            if (!window.GoToolkitWebLLM || typeof window.GoToolkitWebLLM.getAppConfig !== "function") {
-                showToast("WebLLM indisponible pour vider le cache.", true);
-                return;
-            }
-            try {
-                const mod = await import("https://esm.sh/@mlc-ai/web-llm");
-                const deleteModelAllInfoInCache = mod.deleteModelAllInfoInCache || (mod.default && mod.default.deleteModelAllInfoInCache);
-                if (!deleteModelAllInfoInCache) {
-                    showToast("Nettoyage WebLLM indisponible.", true);
-                    return;
-                }
-                const appConfig = await (window.GoToolkitWebLLM.getAppConfig());
-                const models = appConfig?.model_list || [];
-                for (const m of models) {
-                    try { await deleteModelAllInfoInCache(m.model_id); } catch (err) { /* ignore individual failures */ }
-                }
-                if (window.GoToolkitWebLLM && typeof window.GoToolkitWebLLM.resetEngine === "function") {
-                    window.GoToolkitWebLLM.resetEngine();
-                }
-                updateStatusIcon(webllmStatusEl);
-                showToast("Cache WebLLM vidé.");
-            } catch (err) {
-                console.warn("WebLLM clear cache failed", err);
-                showToast("Échec du nettoyage WebLLM.", true);
-            }
-        });
-        webllmVerifyBtn?.addEventListener("click", () => {
-            verifyWebllmModel().catch(() => { /* noop */ });
-        });
-        webllmModelSelect?.addEventListener("change", () => {
-            if (window.GoToolkitWebLLM && typeof window.GoToolkitWebLLM.resetEngine === "function") {
-                window.GoToolkitWebLLM.resetEngine();
-            }
-            updateStatusIcon(webllmStatusEl);
         });
 
         const THEME_STORAGE_KEY = "go-toolkit-theme";
@@ -4422,33 +3830,7 @@
                     settingsOpenAiModelSelect.value = storedOpenAiModel;
                 }
                 var storedContextWindow = (config && typeof config.getContextWindow === "function" ? config.getContextWindow() : "") || "4000";
-                var storedOllamaUrl = (config && typeof config.getOllamaUrl === "function" ? config.getOllamaUrl() : "") || "http://localhost:11434";
-                if (settingsOllamaUrlInput) {
-                    settingsOllamaUrlInput.value = storedOllamaUrl;
-                }
-                var storedOllamaApiKey = (config && typeof config.getOllamaApiKey === "function" ? config.getOllamaApiKey() : "") || "";
-                if (settingsOllamaApiKeyInput) {
-                    settingsOllamaApiKeyInput.value = storedOllamaApiKey;
-                }
-                var storedOllamaModel = (config && typeof config.getOllamaModel === "function" ? config.getOllamaModel() : "") || "genma3";
-                if (settingsOllamaModelSelect) {
-                    settingsOllamaModelSelect.value = storedOllamaModel;
-                }
-                populateWebllmModelSelect();
-                var storedWebllmModel = (config && typeof config.getWebllmModel === "function" ? config.getWebllmModel() : "") || window.GoToolkitIAConfig?.DEFAULTS?.WEBLLM_MODEL || "";
-                if (!isSupportedWebllmModel(storedWebllmModel)) {
-                    storedWebllmModel = window.GoToolkitIAConfig?.DEFAULTS?.WEBLLM_MODEL || "";
-                }
-                if (webllmModelSelect && storedWebllmModel) {
-                    webllmModelSelect.value = storedWebllmModel;
-                }
                 var storedBackend = (config && typeof config.getBackend === "function" ? config.getBackend() : null) || localStorage.getItem("go-toolkit-ai-backend") || "openrouter";
-                // Ollama access is disabled on the launcher; if it was previously selected, migrate to OpenRouter.
-                if (storedBackend === "ollama") {
-                    storedBackend = "openrouter";
-                    try { localStorage.setItem("go-toolkit-ai-backend", storedBackend); } catch (e) { }
-                    try { config && typeof config.setBackend === "function" && config.setBackend(storedBackend); } catch (e) { }
-                }
                 if (aiBackendSelect) aiBackendSelect.value = storedBackend;
                 updateBackendVisibility();
                 var storedOpenRouterKey = (config && typeof config.getOpenRouterApiKey === "function" ? config.getOpenRouterApiKey() : "") || "";
@@ -4683,27 +4065,6 @@
             settingsModal.setAttribute("aria-hidden", "true");
         }
 
-        async function deleteVoiceAudio(draftId) {
-            if (!draftId || !("indexedDB" in window)) return;
-            try {
-                const req = indexedDB.open(VOICE_AUDIO_DB.name, 1);
-                const db = await new Promise((resolve, reject) => {
-                    req.onupgradeneeded = () => {
-                        const db = req.result;
-                        if (!db.objectStoreNames.contains(VOICE_AUDIO_DB.store)) {
-                            db.createObjectStore(VOICE_AUDIO_DB.store);
-                        }
-                    };
-                    req.onsuccess = () => resolve(req.result);
-                    req.onerror = () => reject(req.error || new Error("IndexedDB audio KO"));
-                });
-                const tx = db.transaction(VOICE_AUDIO_DB.store, "readwrite");
-                tx.objectStore(VOICE_AUDIO_DB.store).delete(draftId);
-            } catch (err) {
-                console.warn("Suppression audio voice", err);
-            }
-        }
-
         async function persistSettings({ skipClose = false, showSavedToast = true } = {}) {
             let selectedBackend = (aiBackendSelect && aiBackendSelect.value) || "openrouter";
             try {
@@ -4772,14 +4133,6 @@
                 try { window.GoToolkitAssemblyAiKey = assemblyKeyValue; } catch (e) { /* noop */ }
                 // expose immediate selection to runtime
                 try { window.GoToolkitSelectedAIBackend = selectedBackend; } catch (e) { }
-                const ollamaUrlValue = (settingsOllamaUrlInput?.value || "").trim();
-                if (iaConfig && typeof iaConfig.setOllamaUrl === "function") {
-                    iaConfig.setOllamaUrl(ollamaUrlValue);
-                }
-                const ollamaApiKeyValue = (settingsOllamaApiKeyInput?.value || "").trim();
-                if (iaConfig && typeof iaConfig.setOllamaApiKey === "function") {
-                    iaConfig.setOllamaApiKey(ollamaApiKeyValue);
-                }
                 const adminTokenValue = (adminTokenInput?.value || "").trim();
                 try {
                     if (adminTokenValue) {
@@ -4788,50 +4141,9 @@
                         localStorage.removeItem("feedback-admin-token");
                     }
                 } catch (e) { /* noop */ }
-                const ollamaModelValue = (settingsOllamaModelSelect?.value || "").trim();
-                if (iaConfig && typeof iaConfig.setOllamaModel === "function" && ollamaModelValue) {
-                    iaConfig.setOllamaModel(ollamaModelValue);
-                }
-                const webllmModelValue = (webllmModelSelect?.value || "").trim();
-                if (iaConfig && typeof iaConfig.setWebllmModel === "function" && webllmModelValue) {
-                    iaConfig.setWebllmModel(webllmModelValue);
-                }
-                if (window.GoToolkitWebLLM && typeof window.GoToolkitWebLLM.resetEngine === "function") {
-                    window.GoToolkitWebLLM.resetEngine();
-                }
                 localStorage.setItem("plan-reasoning-effort", reasoning);
                 try { localStorage.setItem("nuances-reasoning-effort", reasoning); } catch (e) { }
-                // If user selected Ollama, validate Ollama is reachable
-                if (selectedBackend === "ollama") {
-                    try {
-                        if (!window.GoToolkitAIBackend || typeof window.GoToolkitAIBackend.getBackend !== "function") {
-                            const models = await refreshOllamaModels({ showErrors: true });
-                            if (!models || !models.length) {
-                                showToast("Impossible de contacter Ollama — vérifie l'URL ou la connexion.", true);
-                                return { success: false, selectedBackend };
-                            }
-                            if (showSavedToast) showToast("Réglages sauvegardés");
-                            if (!skipClose) closeSettings();
-                            checkIaConnection();
-                            return { success: true, selectedBackend };
-                        }
-                        const probe = await GoToolkitAIBackend.getBackend("responses");
-                        if (!probe || probe.type !== "ollama") {
-                            showToast("Impossible de contacter Ollama — vérifie l'URL ou la connexion.", true);
-                            return { success: false, selectedBackend };
-                        }
-                        if (showSavedToast) showToast("Réglages sauvegardés");
-                        if (!skipClose) closeSettings();
-                        checkIaConnection();
-                        return { success: true, selectedBackend };
-                    } catch (err) {
-                        console.warn("Ollama check failed", err);
-                        showToast("Impossible de contacter Ollama — vérifie l'URL ou la connexion.", true);
-                        return { success: false, selectedBackend };
-                    }
-                }
-
-                // For non-Ollama backends (OpenAI or default), optionally validate OpenAI key but do not block save.
+                // Optionally validate OpenAI key but do not block save.
                 if (apiKey && showSavedToast) {
                     var openaiKeyPattern = /^sk-[A-Za-z0-9\-_]{20,}$/;
                     if (openaiKeyPattern.test(apiKey)) {
@@ -4839,7 +4151,7 @@
                     } else {
                         showToast("Clé OpenAI invalide — vérifie la clé", true);
                     }
-                } else if (selectedBackend !== "ollama" && showSavedToast) {
+                } else if (showSavedToast) {
                     showToast("Réglages sauvegardés");
                 }
                 if (!skipClose) closeSettings();
@@ -4943,12 +4255,6 @@
                 testAssemblyAiConnection({ showToasts: true }).catch(() => { /* noop */ });
             }
         });
-        if (ollamaVerifyBtn) ollamaVerifyBtn.addEventListener("click", async () => {
-            const result = await persistSettings({ skipClose: true, showSavedToast: true });
-            if (result?.success) {
-                testOllamaConnection({ showToasts: true }).catch(() => { /* noop */ });
-            }
-        });
         if (openrouterVerifyBtn) openrouterVerifyBtn.addEventListener("click", async () => {
             const result = await persistSettings({ skipClose: true, showSavedToast: true });
             if (result?.success) {
@@ -5037,11 +4343,6 @@
                     setOpenAiStatusLabel("", { state: null });
                 }
             }
-            if (ollamaStatusEl) {
-                const ready = backend?.type === "ollama";
-                updateStatusIcon(ollamaStatusEl, ready ? "ready" : null);
-                ollamaStatusEl.setAttribute("aria-hidden", ready ? "false" : "true");
-            }
             if (openrouterStatusEl) {
                 const ready = typeof backend?.type === "string" && backend.type.startsWith("openrouter");
                 let openrouterIconState = ready ? "ready" : null;
@@ -5080,13 +4381,6 @@
                     }
                     if (backend.type === "openai") {
                         showToast(`Connexion OpenAI prête (${backend.model})`);
-                    } else if (backend.type === "ollama") {
-                        const host =
-                            window.GoToolkitIAConfig && typeof window.GoToolkitIAConfig.getOllamaUrl === "function"
-                                ? window.GoToolkitIAConfig.getOllamaUrl()
-                                : backend.endpoint;
-                        const label = backend.model ? `${host} · ${backend.model}` : host;
-                        showToast(`Connexion Ollama prête (${label})`);
                     } else if (typeof backend.type === "string" && backend.type.startsWith("openrouter")) {
                         const label = backend.model ? backend.model : "modèle OpenRouter";
                         showToast(`Connexion OpenRouter prête (${label})`);

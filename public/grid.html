@@ -1125,9 +1125,6 @@
                     <a class="nav-switch-link" href="old/timeline.html?v=2026.01.16.8" data-app="timeline"><i
                             data-lucide="layout-list"
                             style="width:14px;height:14px;vertical-align:middle;margin-right:6px;"></i>Timeline</a>
-                    <a class="nav-switch-link" href="old/voice.html?v=2026.01.16.8" data-app="voice"><i
-                            data-lucide="mic"
-                            style="width:14px;height:14px;vertical-align:middle;margin-right:6px;"></i>Voice</a>
                 </div>
             </div>
 
@@ -5761,46 +5758,12 @@
                 return "openrouter";
             }
 
-            function isWebllmBackendSelected() {
-                return getSelectedAiBackend() === "webllm";
-            }
-
-            function shouldSignalWebllmServiceWorker() {
-                if (typeof navigator === "undefined" || !navigator.serviceWorker || !navigator.serviceWorker.controller) {
-                    return false;
-                }
-                if (!window.GoToolkitWebLLM || typeof window.GoToolkitWebLLM.getEngineKind !== "function") {
-                    return false;
-                }
-                return window.GoToolkitWebLLM.getEngineKind() === "service-worker";
-            }
-
-            function signalWebllmServiceWorkerAbort() {
-                if (!isWebllmBackendSelected() || !shouldSignalWebllmServiceWorker()) {
-                    return;
-                }
-                try {
-                    const uuid =
-                        typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-                            ? crypto.randomUUID()
-                            : `grid-webllm-abort-${Date.now()}`;
-                    navigator.serviceWorker.controller.postMessage({
-                        kind: "interruptGenerate",
-                        uuid,
-                        content: null
-                    });
-                } catch (err) {
-                    console.warn("Impossible d'interrompre le worker WebLLM", err);
-                }
-            }
-
             function cancelActiveAiRequest() {
                 if (!activeRequestController) {
                     return;
                 }
                 pendingAbortStatus = true;
                 activeRequestController.abort();
-                signalWebllmServiceWorkerAbort();
                 showStatus("Requête annulée.", true);
             }
 

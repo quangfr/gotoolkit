@@ -74,13 +74,13 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
         temperature: 0.3
       };
 
-      console.log("[DrawComposer] Sending payload:", payload);
+
 
       const response = await (window as any).GoToolkitIA.chatCompletion({
         payload
       });
 
-      console.log("[DrawComposer] Received response:", response);
+
 
       const responseText = typeof response === 'string' ? response : (response?.text || "");
 
