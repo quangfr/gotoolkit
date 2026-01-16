@@ -6,7 +6,7 @@
 
 ## Navigation + cache
 - `public/index.html` links: `grid.html` and `memo.html`.
-- All module links include `?v=2026.01.16.4`; bump everywhere when assets change.
+- All module links include `?v=2026.01.16.3`; bump everywhere when assets change.
 - **Bump the version only when explicitly asked to commit and sync on GitHub.**
 - `public/prompt.js` is the root for all AI system prompts and templates.
 - All info panel versions should be updated to match the asset version whenever cache-busters are bumped.
