@@ -57,7 +57,7 @@ function corsHeaders(request, env) {
   const origin = request.headers.get("Origin");
   const isLocalhost = origin && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin);
   const headers = {
-    "Access-Control-Allow-Methods": "GET,PUT,OPTIONS",
+    "Access-Control-Allow-Methods": "GET,PUT,POST,DELETE,OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
     "Access-Control-Allow-Origin": isLocalhost
       ? origin
@@ -402,6 +402,41 @@ async function deleteShareDocument(env, collection, documentId) {
   return true;
 }
 
+async function createShareDocument(env, collection, payload, request) {
+  const url = `${getFirestoreBaseUrl(env)}/${collection}`;
+  const now = new Date().toISOString();
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${await getAccessToken(env)}`,
+      "Content-Type": "application/json",
+      Accept: "application/json"
+    },
+    body: JSON.stringify({ fields: buildDocumentFields(payload, now) })
+  });
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    throw new Error(`Erreur Firestore: ${response.status} ${body}`);
+  }
+  let createdId = null;
+  try {
+    const data = await response.json();
+    if (data?.name) {
+      const segments = data.name.split("/");
+      createdId = segments[segments.length - 1];
+    }
+  } catch (err) {
+    createdId = null;
+  }
+  return {
+    payload,
+    meta: {
+      updatedAt: now
+    },
+    id: createdId
+  };
+}
+
 function buildDocumentFields(payload, updatedAt) {
   return {
     payload: {
@@ -474,6 +509,9 @@ async function handleRequest(request, env) {
     if (rateLimitResponse) {
       return rateLimitResponse;
     }
+    if (request.method === "PUT" && !path.documentId) {
+      return errorResponse("Identifiant de document manquant", 400, request, env);
+    }
     let body = null;
     try {
       body = await request.json();
@@ -482,6 +520,13 @@ async function handleRequest(request, env) {
     }
     if (!body || !Object.prototype.hasOwnProperty.call(body, "payload")) {
       return errorResponse("Payload manquant", 400, request, env);
+    }
+    if (request.method === "POST") {
+      if (path.documentId) {
+        return errorResponse("POST ne prend pas d'identifiant", 400, request, env);
+      }
+      const result = await createShareDocument(env, path.collection, body.payload, request);
+      return jsonResponse(result, 200, request, env);
     }
     const result = await upsertShareDocument(env, path.collection, path.documentId, body.payload, request);
     return jsonResponse(result, 200, request, env);

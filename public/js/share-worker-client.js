@@ -21,6 +21,9 @@
 
   function buildShareUrl(base, collection, token) {
     const encodedCollection = encodeURIComponent(collection);
+    if (!token || token === "undefined" || token === "null") {
+      return `${base}/${API_VERSION}/shares/${encodedCollection}`;
+    }
     const encodedToken = encodeURIComponent(token);
     return `${base}/${API_VERSION}/shares/${encodedCollection}/${encodedToken}`;
   }
@@ -116,8 +119,10 @@
   async function saveSharePayload(collection, token, payload) {
     assertReady();
     return withWorkerFallback(async base => {
-      const url = token ? buildShareUrl(base, collection, token) : buildShareUrl(base, collection);
-      const method = token ? "PUT" : "POST";
+      const normalizedToken =
+        !token || token === "undefined" || token === "null" ? null : token;
+      const url = buildShareUrl(base, collection, normalizedToken);
+      const method = normalizedToken ? "PUT" : "POST";
       const response = await fetch(url, {
         method,
         headers: {
