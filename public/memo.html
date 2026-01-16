@@ -888,12 +888,6 @@
                                         data-lucide="edit-3"></i> Renommer</button>
                                 <button id="deleteDocumentBtn" type="button" class="menu-panel-btn"><i
                                         data-lucide="trash-2"></i> Supprimer</button>
-                                <div class="menu-separator"></div>
-                                <button id="publishTemplateBtn" type="button" class="menu-panel-btn"
-                                    style="display:none">
-                                    <i data-lucide="upload-cloud"></i> Publier
-                                </button>
-                                <div class="menu-separator"></div>
                                 <button id="infoButton" type="button" class="menu-panel-btn"><i data-lucide="info"></i>
                                     À propos</button>
                             </div>
@@ -950,8 +944,12 @@
                         data-lucide="x"></i></button>
             </div>
             <div class="gt-template-modal__list" id="gtTemplateModalList" role="radiogroup"></div>
-            <div class="gt-template-modal__actions">
-                <button id="gtTemplateModalApply" type="button" class="btn-primary">Créer</button>
+            <div class="gt-template-modal__actions modal-actions">
+                <button id="publishTemplateBtn" type="button" class="btn btn-secondary"
+                    style="display:none; margin-left:auto;">
+                    <i data-lucide="upload-cloud"></i> Publier
+                </button>
+                <button id="gtTemplateModalApply" type="button" class="btn-primary">Utiliser</button>
             </div>
         </div>
     </div>
@@ -1255,6 +1253,13 @@
                     return crypto.randomUUID();
                 }
                 return "memo-" + Math.random().toString(16).slice(2);
+            }
+
+            function createTemplateUuid() {
+                if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+                    return crypto.randomUUID();
+                }
+                return "template-" + Math.random().toString(16).slice(2);
             }
 
             function createDefaultState() {
@@ -2814,7 +2819,10 @@
                 const payload = {
                     label: result.name,
                     description: result.description,
-                    html: tab.content || ""
+                    html: tab.content || "",
+                    meta: {
+                        uuid: createTemplateUuid()
+                    }
                 };
 
                 try {
