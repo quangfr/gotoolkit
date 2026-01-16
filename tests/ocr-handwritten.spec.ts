@@ -6,7 +6,7 @@ test.describe("Assist OCR handwritten image", () => {
     test.setTimeout(240_000);
     const baseUrl = "http://127.0.0.1:5000";
     const dataDir = path.resolve(process.cwd(), "test-data");
-    const filePath = path.join(dataDir, "ocr_handwritten.webp");
+    const filePath = path.join(dataDir, "sample_handwritten.webp");
 
     await page.goto(`${baseUrl}/memo.html`, { waitUntil: "load" });
     await page.waitForFunction(
@@ -81,7 +81,24 @@ test.describe("Assist OCR handwritten image", () => {
         const qwenStart = performance.now();
         const qwenResponse = await client.chatCompletion({ payload });
         const qwenEnd = performance.now();
-        qwenText = (qwenResponse || "").trim();
+        const extractText = (response: any) => {
+          if (!response) return "";
+          if (typeof response === "string") return response;
+          const content = response?.choices?.[0]?.message?.content;
+          if (typeof content === "string") return content;
+          if (Array.isArray(content)) {
+            const parts = content
+              .map((entry: any) => entry?.text)
+              .filter((value: any) => typeof value === "string" && value.trim());
+            if (parts.length) {
+              return parts.join("\n");
+            }
+          }
+          if (typeof response?.text === "string") return response.text;
+          if (typeof response?.content === "string") return response.content;
+          return "";
+        };
+        qwenText = extractText(qwenResponse).trim();
         qwenMetrics = {
           durationMs: qwenEnd - qwenStart,
           inputTokens,

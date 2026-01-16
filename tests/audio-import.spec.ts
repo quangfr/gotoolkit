@@ -7,8 +7,8 @@ test.describe("Assist audio import (AssemblyAI)", () => {
     const baseUrl = "http://127.0.0.1:5000";
     const dataDir = path.resolve(process.cwd(), "test-data");
     const filePaths = [
-      path.join(dataDir, "audio_one.mp3"),
-      path.join(dataDir, "audio_two.mp3"),
+      path.join(dataDir, "sample.mp3"),
+      path.join(dataDir, "sample.wav"),
     ];
 
     await page.goto(`${baseUrl}/memo.html`, { waitUntil: "load" });

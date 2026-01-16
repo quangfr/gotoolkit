@@ -1,32 +1,26 @@
 # GoToolkit contributor cheat sheet (concise)
 
 ## Structure
-- Static HTML modules in `public/`;
+- Static HTML modules in `public/`.
 - Workers live in `workers/` (OpenAI proxy, sharing, feedback, AssemblyAI, OpenRouter proxy).
 
 ## Navigation + cache
 - `public/index.html` links: `grid.html` and `memo.html`.
-- All module links include `?v=2026.01.16.6`; bump everywhere when assets change.
-- Update version to match current day YYYY.MM.DD.N (N is an increment number).
-- **Always run `npm run build` before a git commit and push to ensure bundles are up to date.**
+- All module links include `?v=2026.01.16.8`; bump everywhere when assets change.
+- Version format: YYYY.MM.DD.N (N is an increment number for the day).
 - **Bump the version only when explicitly asked to commit and sync on GitHub.**
 - `public/prompt.js` is the root for all AI system prompts and templates.
-- All info panel versions should be updated to match the asset version whenever cache-busters are bumped.
-- Always update the `hero-version` label in `public/index.html` to match the cache-buster version.
-- When bumping versions, ensure all js and css assets in `memo.html` are updated.
+- Keep info panel versions and the `hero-version` label in `public/index.html` aligned with the cache-buster.
+- When bumping versions, ensure all JS/CSS assets in `memo.html` are updated.
 - **Deprecated modules in `public/old/` should not be updated (no version bumps, no UI changes).**
 - Keep the IndexedDB version in `public/js/assist.js` health-check/repair (`indexedDB.open`) aligned with `DB_VERSION` in `public/js/document-rag.js`.
-- When adding and editing UI, reuse colors, similar classes from the `public/styles/style.css` as much as possible before adding new CSS.
-- Each page sets `window.GO_TOOLKIT_SHARE_API_URL`: launcher `https://gotoolkit.workers.dev`, modules `https://share.gotoolkit.workers.dev/`.
+- When adding/editing UI, reuse colors and classes from `public/styles/style.css` before adding new CSS.
+- Each page sets `window.GO_TOOLKIT_SHARE_API_URL` (launcher `https://gotoolkit.workers.dev`, modules `https://share.gotoolkit.workers.dev/`).
 
 ## Modules
-- **Memo** (`memos`): Rich-text editor + RAG-powered chat (assist.js); document management, context embeddings per memo.
+- **Memo** (`memos`): Rich-text editor + RAG-powered chat (`public/js/assist.js`); document management, context embeddings per memo.
 - Grid (`grids`): AG Grid, CSV/JSON export, template/criteria modal `public/js/template-criteria.js`, covered by Playwright.
-- Canvas (`slides`). Deprecated.
-- Draw (`diagrams`): Deprecated.
-- Timeline (`timelines`). Deprecated.
-- Voice (`voices`). Deprecated.
-
+- Canvas (`slides`), Draw (`diagrams`), Timeline (`timelines`), Voice (`voices`): deprecated.
 
 ## Globals (keep stable)
 Only `public/js` may touch `window`:
@@ -36,15 +30,15 @@ Only `public/js` may touch `window`:
 - `public/js/ia-config.js`: OpenAI/Ollama/WebLLM config + endpoints (direct + `https://openai.gotoolkit.workers.dev`). Ollama and WebLLM deprecated.
 - `public/js/ia-client.js`: stream normalization + backend routing; WebLLM workers in `public/js/webllm-worker.js` / `public/js/webllm-sw.js`.
 - `public/js/document-storage.js`: IndexedDB `go-toolkit` (stores `document-api`, `share-history`, `documents-settings`) + shared store wrappers.
-- **RAG System** (`public/js/document-rag.js`): Vector search + semantic retrieval via `GoToolkitDocumentManager`. See **[RAG Architecture](public/content/toolkit_import.md)** - for more info on design, chunking strategies, retrieval flow. 
+- **RAG System** (`public/js/document-rag.js`): vector search + semantic retrieval via `GoToolkitDocumentManager`. See **[RAG Architecture](public/content/toolkit_import.md)**.
   - IndexedDB stores: `documents` (file metadata + chunking config), `chunks` (384-dim embeddings), `keyword_meta` (hybrid search), `memo_context_embeddings` (memo-scoped links + enabled flag).
   - Model: Transformers.js on-device embedding (Xenova/all-MiniLM-L6-v2, 384 dims), cached via IndexedDB to avoid re-compute.
   - Formats: 12 supported (PDF, DOCX, PPTX, XLSX, JSON, CSV, TSV, TXT, MD, ODF, RTF, logs). Format-specific extraction + chunking strategies.
-  - Ingestion: File deduplication (fileHash), heuristic chunking (small/medium based on format), batch embedding, sharding by docId for per-file stats + deletion.
-  - Retrieval: `vectorSearch()` embeds query → cosine similarity scoring → min-score filtering (0.1) → top-K (10). Fallback: `searchKeywordCandidates()` for pre-filtering.
-  - Text recognition: Optional OpenCV preprocessing; Qwen vision via OpenRouter.
+  - Ingestion: file deduplication (fileHash), heuristic chunking (small/medium by format), batch embedding, sharding by docId for per-file stats + deletion.
+  - Retrieval: `vectorSearch()` embeds query → cosine similarity scoring → min-score filtering (0.1) → top-K (10). Fallback: `searchKeywordCandidates()` pre-filtering.
+  - Text recognition: optional OpenCV preprocessing; Qwen vision via OpenRouter.
   - Voice recognition: AssemblyAI proxy for media transcription; imported media stores transcript text only.
-- **AI Defaults**: By default, use `openai/gpt-oss-120b` and temperature `0.3` for any new AI prompt unless specified otherwise.
+- **AI Defaults**: use `openai/gpt-oss-120b` and temperature `0.3` for new AI prompts unless specified otherwise.
 
 ## Sharing
 - `public/js/share-worker-client.js` builds URLs from `GO_TOOLKIT_SHARE_API_URL(S)`.

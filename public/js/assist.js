@@ -51,53 +51,65 @@
     // IndexedDB verification and repair function
     async function verifyAndRepairDocumentsDb() {
         try {
-
-
             return new Promise((resolve) => {
-                try {
-                    const testReq = indexedDB.open("gotoolkit-documents", 6);
-                    let isHealthy = true;
+                let resolved = false;
+                const finish = (ok) => {
+                    if (resolved) return;
+                    resolved = true;
+                    emitDocumentsDbStatus(ok ? "ready" : "failed");
+                    resolve(ok);
+                };
 
+                let testReq;
+                try {
+                    testReq = indexedDB.open("gotoolkit-documents", 6);
+                } catch (openErr) {
+                    console.warn("verifyAndRepairDocumentsDb open error:", openErr);
+                    finish(false);
+                    return;
+                }
+
+                testReq.onerror = () => {
                     emitDocumentsDbStatus("repairing");
-                    repairDocumentsDb().then(function (ok) {
-                        emitDocumentsDbStatus(ok ? "ready" : "failed");
-                        resolve(true);
-                    });
+                    repairDocumentsDb().then(finish);
+                };
+
+                testReq.onupgradeneeded = () => {
+                    // Upgrade triggered; allow onsuccess to handle health check.
                 };
 
                 testReq.onsuccess = () => {
                     const db = testReq.result;
+                    let needsRepair = false;
                     try {
-                        // Verify that required stores exist
                         const requiredStores = ["documents", "chunks", "keyword_meta", "memo_context_embeddings"];
-                        const hasAllStores = requiredStores.every(store =>
-                            db.objectStoreNames.contains(store)
-                        );
+                        const hasAllStores = requiredStores.every(store => db.objectStoreNames.contains(store));
+                        if (!hasAllStores) {
+                            needsRepair = true;
+                        }
+                    } catch (err) {
+                        needsRepair = true;
+                    }
 
-                        emitDocumentsDbStatus("repairing");
+                    if (needsRepair) {
                         try {
                             db.close();
                         } catch (err) {
                             // ignore
                         }
-                        repairDocumentsDb().then(function (ok) {
-                            emitDocumentsDbStatus(ok ? "ready" : "failed");
-                            resolve(true);
-                        });
-                    } else {
-                        // Try to read a small test value to ensure stores are accessible
+                        emitDocumentsDbStatus("repairing");
+                        repairDocumentsDb().then(finish);
+                        return;
+                    }
+
+                    try {
                         const tx = db.transaction("documents", "readonly");
                         const docStore = tx.objectStore("documents");
                         const countReq = docStore.count();
+                        let isHealthy = true;
 
                         countReq.onerror = () => {
-                            console.warn("Cannot access document store, attempting repair...");
                             isHealthy = false;
-                            emitDocumentsDbStatus("repairing");
-                        };
-
-                        countReq.onsuccess = () => {
-                            // Health check ok
                         };
 
                         tx.onerror = () => {
@@ -105,43 +117,35 @@
                         };
 
                         tx.oncomplete = () => {
+                            try {
+                                db.close();
+                            } catch (err) {
+                                // ignore
+                            }
                             if (isHealthy) {
                                 emitDocumentsDbStatus("ready");
                                 resolve(true);
                             } else {
                                 emitDocumentsDbStatus("repairing");
-                                repairDocumentsDb().then(function (ok) {
-                                    emitDocumentsDbStatus(ok ? "ready" : "failed");
-                                    resolve(true);
-                                });
+                                repairDocumentsDb().then(finish);
                             }
                         };
+                    } catch (err) {
+                        try {
+                            db.close();
+                        } catch (closeErr) {
+                            // ignore
+                        }
+                        emitDocumentsDbStatus("repairing");
+                        repairDocumentsDb().then(finish);
                     }
-                    isHealthy = false;
-                    db.close();
-                    emitDocumentsDbStatus("repairing");
-                    repairDocumentsDb().then(function (ok) {
-                        emitDocumentsDbStatus(ok ? "ready" : "failed");
-                        resolve(true);
-                    });
-                }
-            };
-
-            testReq.onupgradeneeded = () => {
-                // Upgrade triggered
-            };
-            emitDocumentsDbStatus("repairing");
-            repairDocumentsDb().then(function (ok) {
-                emitDocumentsDbStatus(ok ? "ready" : "failed");
-                resolve(true);
+                };
             });
+        } catch (err) {
+            console.warn("verifyAndRepairDocumentsDb error:", err);
+            emitDocumentsDbStatus("failed");
+            return false;
         }
-            });
-} catch (err) {
-    console.warn("verifyAndRepairDocumentsDb error:", err);
-    emitDocumentsDbStatus("failed");
-    return false;
-}
     }
 
 function repairDocumentsDb() {
@@ -150,13 +154,21 @@ function repairDocumentsDb() {
             emitDocumentsDbStatus("repairing");
             const deleteReq = indexedDB.deleteDatabase("gotoolkit-documents");
 
+            deleteReq.onerror = () => {
+                emitDocumentsDbStatus("failed");
+                resolve(false);
+            };
+
+            deleteReq.onblocked = () => {
+                emitDocumentsDbStatus("failed");
+                resolve(false);
+            };
+
             deleteReq.onsuccess = () => {
-                // Recreate the database with fresh stores
                 const recreateReq = indexedDB.open("gotoolkit-documents", 6);
 
                 recreateReq.onupgradeneeded = () => {
                     const db = recreateReq.result;
-                    // Create required stores
                     if (!db.objectStoreNames.contains("documents")) {
                         const docs = db.createObjectStore("documents", { keyPath: "id" });
                         docs.createIndex("conversationId", "conversationId", { unique: false });
@@ -179,26 +191,23 @@ function repairDocumentsDb() {
                     }
                 };
 
+                recreateReq.onerror = () => {
+                    emitDocumentsDbStatus("failed");
+                    resolve(false);
+                };
+
                 recreateReq.onsuccess = () => {
                     emitDocumentsDbStatus("ready");
                     resolve(true);
                 };
-
-                emitDocumentsDbStatus("failed");
-                resolve(false);
             };
-        };
-
-        emitDocumentsDbStatus("failed");
-        resolve(false);
-    };
-} catch (err) {
-    console.warn("repairDocumentsDb error:", err);
-    emitDocumentsDbStatus("failed");
-    resolve(false);
+        } catch (err) {
+            console.warn("repairDocumentsDb error:", err);
+            emitDocumentsDbStatus("failed");
+            resolve(false);
+        }
+    });
 }
-        });
-    }
 
 function formatFileSize(bytes) {
     var value = Number(bytes) || 0;
