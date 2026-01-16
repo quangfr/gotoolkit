@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 
 export const ALERT_TYPES = [
-  { type: 'default', label: 'Citation', icon: MessageSquare, color: 'var(--gray-600)' },
+  { type: 'default', label: 'Citation', icon: MessageSquare, color: 'var(--text-muted)' },
   { type: 'NOTE', label: 'Note', icon: Info, color: 'var(--intent-info-border)' },
   { type: 'TIP', label: 'Conseil', icon: Lightbulb, color: 'var(--intent-success-border)' },
   { type: 'IMPORTANT', label: 'Important', icon: Star, color: 'var(--intent-important-border)' },

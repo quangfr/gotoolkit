@@ -2,6 +2,13 @@
 <html lang="fr">
 
 <head>
+    <script>
+        (function () {
+            const storedTheme = localStorage.getItem('go-toolkit-theme');
+            const theme = storedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'cream');
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
     <meta charset="UTF-8" />
     <script>
         // Global Polyfill for missing browser APIs (prevents crashes in Excalidraw/Mermaid)
@@ -46,8 +53,8 @@
             margin: 0;
             padding: 0;
             font-family: var(--font-sans);
-            background: var(--app-bg);
-            color: var(--app-text);
+            background: var(--bg-app);
+            color: var(--text-main);
         }
 
         .memo-shell {
@@ -64,12 +71,12 @@
         .document-explorer {
             width: var(--doc-sidebar-width, 180px);
             flex: 0 0 var(--doc-sidebar-width, 180px);
-            background: var(--white);
+            background: var(--bg-surface);
             display: flex;
             flex-direction: column;
             gap: 4px;
             padding: 8px;
-            color: var(--app-text);
+            color: var(--text-main);
             overflow: hidden;
         }
 
@@ -82,18 +89,39 @@
             pointer-events: none;
         }
 
+        @media (max-width: 900px) {
+            .document-explorer {
+                position: fixed;
+                left: 0;
+                top: 0;
+                height: 100vh;
+                z-index: 40;
+                box-shadow: 8px 0 24px rgba(15, 23, 42, 0.15);
+                border-right: 1px solid var(--border-main);
+                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                transform: translateX(0);
+            }
+
+            .document-explorer.document-explorer--collapsed {
+                transform: translateX(-100%);
+                width: var(--doc-sidebar-width, 180px);
+                opacity: 1;
+                pointer-events: none;
+            }
+        }
+
         .document-explorer__header {
             display: flex;
             align-items: center;
             gap: 4px;
             padding-bottom: 6px;
-            border-bottom: 1px solid var(--app-border, #dfe3f5);
+            border-bottom: 1px solid var(--border-main);
         }
 
         .document-explorer__tab-btn {
             border: none;
             background: transparent;
-            color: var(--app-text);
+            color: var(--text-main);
             padding: 4px;
             border-radius: 4px;
             cursor: pointer;
@@ -104,13 +132,13 @@
         }
 
         .document-explorer__tab-btn:hover {
-            background-color: var(--gray-100);
-            color: var(--app-text);
+            background-color: var(--bg-surface-soft);
+            color: var(--text-main);
         }
 
         .document-explorer__tab-btn.active {
             color: var(--color-primary);
-            background-color: var(--gray-50);
+            background-color: var(--bg-surface-soft);
         }
 
         .document-explorer__body {
@@ -148,20 +176,20 @@
             overflow: hidden;
             text-overflow: ellipsis;
             border-radius: 4px;
-            color: var(--gray-800);
+            color: var(--text-main);
             transition: all 0.1s ease;
             line-height: 1.2;
         }
 
         .toc-item:hover {
-            background-color: var(--gray-100);
-            color: var(--app-text);
+            background-color: var(--bg-surface-soft);
+            color: var(--text-main);
         }
 
         .toc-item--active {
             color: var(--color-primary);
             font-weight: 600;
-            background-color: var(--gray-50);
+            background-color: var(--bg-surface-soft);
         }
 
         .toc-item--h1 {
@@ -177,13 +205,13 @@
         .toc-item--h3 {
             padding-left: 18px;
             font-size: 13px;
-            color: var(--gray-400);
+            color: var(--text-muted);
         }
 
         .toc-item--h4 {
             padding-left: 26px;
             font-size: 13px;
-            color: var(--gray-400);
+            color: var(--text-muted);
             font-style: italic;
         }
 
@@ -197,8 +225,8 @@
 
         .document-explorer__item {
             border: 1px solid var(--app-border, #dfe3f5);
-            background: var(--white);
-            color: var(--app-text);
+            background: var(--bg-surface);
+            color: var(--text-main);
             border-radius: 6px;
             padding: 4px 5px;
             font-size: 11px;
@@ -246,13 +274,13 @@
             padding: 0 2px;
             font-size: 13px;
             line-height: 1;
-            color: var(--gray-900);
+            color: var(--text-main);
             cursor: pointer;
         }
 
         .document-explorer__item-action:hover,
         .document-explorer__item-action:focus-visible {
-            color: var(--gray-900);
+            color: var(--text-main);
             outline: none;
         }
 
@@ -280,7 +308,7 @@
 
         .document-explorer__empty {
             font-size: 12px;
-            color: var(--gray-500);
+            color: var(--text-muted);
             padding: 8px 10px;
         }
 
@@ -367,7 +395,7 @@
 
         .document-tab {
             background: transparent;
-            border: 1px solid var(--app-border-strong);
+            border: 1px solid var(--border-strong);
             color: var(--color-primary-strong);
             padding: 4px 10px;
             border-radius: 8px;
@@ -397,7 +425,7 @@
         }
 
         .document-tab.document-tab--create {
-            background: var(--white);
+            background: var(--bg-surface);
             cursor: pointer;
         }
 
@@ -431,8 +459,8 @@
         }
 
         .memo-card {
-            background: var(--memo-card-bg);
-            border: 1px solid var(--app-border);
+            background: var(--bg-surface);
+            border: 1px solid var(--border-main);
             border-radius: 8px;
             box-shadow: var(--shadow-sm);
             padding: 0;
@@ -449,7 +477,7 @@
             display: none;
             align-items: center;
             justify-content: center;
-            color: var(--gray-500);
+            color: var(--text-muted);
             font-size: 16px;
             text-align: center;
         }
@@ -458,7 +486,7 @@
             padding: 0px 10px 10px 10px;
             flex: 1;
             overflow-y: auto;
-            background: var(--white);
+            background: var(--bg-surface);
             scrollbar-width: thin;
         }
 
@@ -467,11 +495,11 @@
             padding: 16px 16px 22px;
             min-height: 320px;
             outline: none;
-            background: var(--white);
+            background: var(--bg-surface);
         }
 
         .editor:focus-within {
-            border-color: var(--app-border-strong);
+            border-color: var(--border-strong);
             box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.05);
         }
 
@@ -513,14 +541,15 @@
         .ProseMirror blockquote {
             margin: 10px 0;
             padding: 10px 12px;
-            border-left: 3px solid var(--gray-200);
-            color: var(--gray-900);
-            background: var(--gray-50);
+            border-left: 3px solid var(--border-main);
+            color: var(--text-main);
+            background: var(--bg-surface-soft);
             border-radius: 8px;
         }
 
         .ProseMirror code {
-            background: var(--gray-100);
+            background: var(--bg-surface);
+            color: var(--text-main);
             padding: 2px 6px;
             border-radius: 8px;
             font-size: .95em;
@@ -531,8 +560,8 @@
             display: flex;
             gap: 6px;
             padding: 8px;
-            background: var(--white);
-            border: 1px solid var(--app-border);
+            background: var(--bg-surface);
+            border: 1px solid var(--border-main);
             border-radius: 8px;
             box-shadow: var(--shadow-sm);
             z-index: 10000;
@@ -540,7 +569,7 @@
 
         .menu button {
             border: none;
-            background: var(--white);
+            background: var(--bg-surface);
             border-radius: 8px;
             padding: 7px 10px;
             font-size: 12px;
@@ -548,12 +577,12 @@
         }
 
         .menu button:hover {
-            background: var(--gray-100);
+            background: var(--bg-surface-soft);
         }
 
         .menu button[data-active="true"] {
-            border-color: var(--gray-300);
-            background: var(--gray-50);
+            border-color: var(--border-strong);
+            background: var(--bg-surface-soft);
             font-weight: 650;
         }
 
@@ -562,8 +591,8 @@
             position: fixed;
             z-index: 9999;
             width: 240px;
-            background: var(--white);
-            border: 1px solid var(--app-border);
+            background: var(--bg-surface);
+            border: 1px solid var(--border-main);
             border-radius: 8px;
             box-shadow: var(--shadow-sm);
             padding: 6px;
@@ -581,7 +610,7 @@
         }
 
         .slash .item:hover {
-            background: var(--gray-100);
+            background: var(--bg-surface-soft);
         }
 
         .slash .ico {
@@ -589,11 +618,11 @@
             height: 24px;
             display: grid;
             place-items: center;
-            border: 1px solid var(--app-border);
+            border: 1px solid var(--border-main);
             border-radius: 8px;
             font-size: 12px;
-            color: var(--gray-500);
-            background: var(--white);
+            color: var(--text-muted);
+            background: var(--bg-surface);
             flex: 0 0 auto;
         }
 
@@ -604,14 +633,14 @@
         }
 
         .slash .meta small {
-            color: var(--gray-500);
+            color: var(--text-muted);
             font-size: 11px;
         }
 
         .modal textarea {
             width: 100%;
             border-radius: 8px;
-            border: 1px solid var(--app-border);
+            border: 1px solid var(--border-main);
             padding: 10px;
             font-family: "Menlo", "SFMono-Regular", "Consolas", "Liberation Mono", "Courier New", monospace;
             font-size: 13px;
@@ -633,8 +662,7 @@
         }
 
         .memo-prompt-preset-btn.active {
-            background-color: var(--color-primary-soft));
-            border-color: var(--color-primary);
+            background-color: var(--color-primary-soft);
             font-weight: bold;
         }
 
@@ -814,6 +842,24 @@
                                 <div class="menu-separator"></div>
                                 <button id="infoButton" type="button" class="menu-panel-btn"><i data-lucide="info"></i>
                                     À propos</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="menu-trigger" id="themeMenuTrigger">
+                        <button id="themeBtn" class="btn btn-secondary app-header-btn" type="button" title="Thème">
+                            <i data-lucide="palette"></i>
+                        </button>
+                        <div class="context-menu" id="themeMenu">
+                            <div class="menu-panel" style="padding: 4px;">
+                                <button type="button" class="menu-panel-btn theme-item" data-theme-id="auto">
+                                    <i data-lucide="monitor" style="width:14px;height:14px;margin-right:8px;"></i>Auto
+                                </button>
+                                <button type="button" class="menu-panel-btn theme-item" data-theme-id="dark">
+                                    <i data-lucide="moon" style="width:14px;height:14px;margin-right:8px;"></i>Sombre
+                                </button>
+                                <button type="button" class="menu-panel-btn theme-item" data-theme-id="cream">
+                                    <i data-lucide="sun" style="width:14px;height:14px;margin-right:8px;"></i>Clair
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -1042,9 +1088,22 @@
             const templates = getMemoTemplates();
 
             const tabsEl = document.getElementById("memo-tabs");
+            const THEME_STORAGE_KEY = "go-toolkit-theme";
+            function applyTheme(theme) {
+                if (theme === "auto") {
+                    const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+                    document.documentElement.setAttribute("data-theme", isDark ? "dark" : "cream");
+                } else {
+                    document.documentElement.setAttribute("data-theme", theme);
+                }
+                if (window.lucide) window.lucide.createIcons();
+            }
+
             const documentTabsEl = document.getElementById("document-tabs");
             const fileMenuBtn = document.getElementById("fileMenuBtn");
             const fileMenu = document.getElementById("fileMenu");
+            const themeBtn = document.getElementById("themeBtn");
+            const themeMenu = document.getElementById("themeMenu");
             const fileMenuTrigger = document.getElementById("fileMenuTrigger");
             const memoOpenImportBtn = document.getElementById("memoOpenImportBtn");
             const saveDocumentBtn = document.getElementById("saveDocumentBtn");
@@ -1529,6 +1588,7 @@
             function closeMenus(except) {
                 if (fileMenu && fileMenu !== except) fileMenu.classList.remove("open");
                 if (shareMenu && shareMenu !== except) shareMenu.classList.remove("open");
+                if (themeMenu && themeMenu !== except) themeMenu.classList.remove("open");
             }
 
             function renderTabs() {
@@ -2744,6 +2804,28 @@
                 }
             });
 
+            themeBtn?.addEventListener("click", event => {
+                event.stopPropagation();
+                closeMenus(themeMenu);
+                themeMenu?.classList.toggle("open");
+            });
+
+            document.querySelectorAll(".theme-item").forEach(item => {
+                item.addEventListener("click", () => {
+                    const theme = item.getAttribute("data-theme-id");
+                    localStorage.setItem(THEME_STORAGE_KEY, theme);
+                    applyTheme(theme);
+                    closeMenus();
+                });
+            });
+
+            window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function () {
+                const current = localStorage.getItem(THEME_STORAGE_KEY) || "auto";
+                if (current === "auto") {
+                    applyTheme("auto");
+                }
+            });
+
             fileMenuBtn?.addEventListener("click", event => {
                 event.stopPropagation();
                 closeMenus(fileMenu);
@@ -2888,6 +2970,7 @@
             document.addEventListener("click", event => {
                 if (fileMenu?.contains(event.target) || fileMenuBtn?.contains(event.target)) return;
                 if (shareMenu?.contains(event.target) || shareBtn?.contains(event.target)) return;
+                if (themeMenu?.contains(event.target) || themeBtn?.contains(event.target)) return;
                 if (memoInfoPopup?.contains(event.target) || infoButton?.contains(event.target)) return;
                 closeMenus();
                 closeInfoPopup();

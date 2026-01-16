@@ -11,8 +11,8 @@
   display: flex;
   align-items: center;
   padding: 0px;
-  background-color: var(--white);
-  border: 1px solid var(--gray-200);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-main);
   border-radius: 8px;
   gap: 0px;
   flex-wrap: wrap;
@@ -21,7 +21,7 @@
   margin: 0 auto 10px auto;
   z-index: 20;
   width: fit-content;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
 }
 
 .tiptap-bubble-menu {
@@ -43,7 +43,7 @@
   height: 28px;
   border: none;
   background: transparent;
-  color: var(--gray-500);
+  color: var(--text-muted);
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s;
@@ -51,38 +51,39 @@
 }
 
 .tiptap-button:hover:not(:disabled) {
-  background-color: var(--gray-100);
-  color: var(--gray-800);
+  background-color: var(--bg-surface-soft);
+  color: var(--text-main);
 }
 
 .tiptap-button:disabled {
-  color: var(--gray-300);
+  color: var(--border-strong);
   cursor: not-allowed;
 }
 
 .tiptap-button[data-active-state="on"] {
-  background-color: var(--gray-100);
-  color: var(--app-primary);
+  background-color: var(--bg-surface-soft);
+  color: var(--color-primary);
 }
 
 .ProseMirror blockquote {
-  border-left: 3px solid var(--gray-200);
+  border-left: 3px solid var(--border-strong);
   padding-left: 1rem;
   margin: 1rem 0;
   border-radius: 4px;
   position: relative;
   transition: all 0.2s;
+  color: var(--text-main);
 }
 
 [data-node-view-content] {
   line-height: 1 !important;
 }
 
-.ProseMirror blockquote[data-type="NOTE"] { border-left-color: var(--intent-info-border); background-color: var(--intent-info-bg); }
-.ProseMirror blockquote[data-type="TIP"] { border-left-color: var(--intent-success-border); background-color: var(--intent-success-bg); }
-.ProseMirror blockquote[data-type="IMPORTANT"] { border-left-color: var(--intent-important-border); background-color: var(--intent-important-bg); }
-.ProseMirror blockquote[data-type="WARNING"] { border-left-color: var(--intent-warning-border); background-color: var(--intent-warning-bg); }
-.ProseMirror blockquote[data-type="CAUTION"] { border-left-color: var(--intent-error-border); background-color: var(--intent-error-bg); }
+.ProseMirror blockquote[data-type="NOTE"] { border-left-color: var(--intent-info-border); background-color: var(--bg-surface); }
+.ProseMirror blockquote[data-type="TIP"] { border-left-color: var(--intent-success-border); background-color: var(--bg-surface); }
+.ProseMirror blockquote[data-type="IMPORTANT"] { border-left-color: var(--intent-important-border); background-color: var(--bg-surface); }
+.ProseMirror blockquote[data-type="WARNING"] { border-left-color: var(--intent-warning-border); background-color: var(--bg-surface); }
+.ProseMirror blockquote[data-type="CAUTION"] { border-left-color: var(--intent-error-border); background-color: var(--bg-surface); }
 
 .ProseMirror blockquote[data-type] {
   padding-left: 0;
@@ -136,7 +137,7 @@
 }
 
 .ProseMirror .details:hover {
-  border-color: var(--gray-200);
+  border-color: var(--border-main);
 }
 
 .ProseMirror .details > button {
@@ -151,12 +152,12 @@
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  color: var(--gray-500);
+  color: var(--text-muted);
   font-size: 1.2rem;
 }
 
 .ProseMirror .details > button:hover {
-  background-color: var(--gray-100);
+  background-color: var(--bg-surface-soft);
 }
 
 .ProseMirror .details > button::before {
@@ -176,7 +177,7 @@
 }
 
 .ProseMirror .details summary {
-  color: var(--gray-800);
+  color: var(--text-main);
   list-style: none;
   cursor: pointer;
   font-weight: 600;
@@ -193,12 +194,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--white);
-  border: 1px solid var(--gray-200);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-main);
   border-radius: 4px;
   cursor: pointer;
   z-index: 5000;
-  color: var(--gray-400);
+  color: var(--text-muted);
   font-size: 12px;
   box-shadow: 0 1px 2px rgba(0,0,0,0.05);
   transition: all 0.2s;
@@ -206,15 +207,15 @@
 }
 
 .quote-handle:hover {
-  background-color: var(--gray-100);
-  color: var(--app-primary);
-  border-color: var(--gray-300);
+  background-color: var(--bg-surface-soft);
+  color: var(--color-primary);
+  border-color: var(--border-strong);
 }
 
 .quote-context-menu {
   position: absolute;
-  background: var(--white);
-  border: 1px solid var(--gray-200);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-main);
   border-radius: 8px;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
   z-index: 1000;
@@ -230,17 +231,17 @@
   cursor: pointer;
   border-radius: 4px;
   gap: 8px;
-  color: var(--gray-600);
+  color: var(--text-muted);
 }
 
 .quote-context-menu-item:hover {
-  background: var(--gray-100);
-  color: var(--gray-800);
+  background: var(--bg-surface-soft);
+  color: var(--text-main);
 }
 
 .quote-context-menu-item[data-active="true"] {
-  background: var(--intent-info-bg);
-  color: var(--app-primary);
+  background: var(--bg-surface);
+  color: var(--color-primary);
 }
 
 .tiptap-button-icon {
@@ -252,18 +253,18 @@
 .mermaid-diagram-size-buttons {
   display: flex;
   gap: 2px;
-  background: var(--gray-100);
+  background: var(--bg-surface-soft);
   padding: 2px;
   border-radius: 6px;
   margin-left: 8px;
-  border: 1px solid var(--gray-200);
+  border: 1px solid var(--border-main);
 }
 
 .mermaid-diagram-size-button {
   padding: 1px 6px;
   font-size: 10px;
   font-weight: 700;
-  color: var(--gray-500);
+  color: var(--text-muted);
   border-radius: 4px;
   border: none;
   background: transparent;
@@ -276,12 +277,12 @@
 }
 
 .mermaid-diagram-size-button:hover {
-  background: var(--white);
-  color: var(--gray-800);
+  background: var(--bg-surface);
+  color: var(--text-main);
 }
 
 .mermaid-diagram-size-button[data-active="true"] {
-  background: var(--white);
+  background: var(--bg-surface);
   color: var(--intent-info-border);
   box-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
@@ -298,18 +299,18 @@
   gap: 4px;
   font-size: 13px;
   font-weight: 500;
-  color: #4a5568;
+  color: var(--text-muted);
   padding: 0 8px;
   height: 32px;
   border-radius: 6px;
   border: none;
-  background-color: #fff;
+  background-color: var(--bg-surface);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .tiptap-dropdown-trigger:hover {
-  background-color: #f1f5f9;
+  background-color: var(--bg-surface-soft);
 }
 
 .tiptap-dropdown-menu {
@@ -317,8 +318,8 @@
   top: 100%;
   left: 0;
   margin-top: 4px;
-  background: var(--white);
-  border: 1px solid var(--gray-200);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-main);
   border-radius: 8px;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
   padding: 4px;
@@ -337,18 +338,18 @@
   font-size: 13px;
   border-radius: 4px;
   cursor: pointer;
-  color: var(--gray-500);
+  color: var(--text-muted);
   transition: background 0.2s;
 }
 
 .tiptap-dropdown-item:hover {
-  background-color: var(--gray-100);
-  color: var(--gray-800);
+  background-color: var(--bg-surface-soft);
+  color: var(--text-main);
 }
 
 .tiptap-dropdown-item[data-active="true"] {
-  background-color: var(--intent-info-bg);
-  color: var(--app-primary);
+  background-color: var(--bg-surface);
+  color: var(--color-primary);
 }
 
 .tiptap-heading-label {
@@ -367,7 +368,7 @@
 .tiptap-separator {
   width: 1px;
   height: 20px;
-  background-color: var(--gray-200);
+  background-color: var(--border-main);
   margin: 0 4px;
 }
 
@@ -393,30 +394,30 @@
 }
 
 .mermaid-diagram-container:focus {
-  border: 2px solid var(--app-primary);
+  border: 2px solid var(--color-primary);
 }
 
 .simple-editor .ProseMirror p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
   float: left;
-  color: var(--gray-400);
+  color: var(--text-muted);
   pointer-events: none;
   height: 0;
 }
 
 .bubble-menu {
   display: flex;
-  background-color: var(--white);
+  background-color: var(--bg-surface);
   padding: 0.2rem;
   border-radius: 0.5rem;
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
-  border: 1px solid var(--gray-200);
+  border: 1px solid var(--border-main);
 }
 
 .bubble-menu button {
   border: none;
   background: none;
-  color: var(--gray-600);
+  color: var(--text-muted);
   font-size: 0.85rem;
   font-weight: 500;
   padding: 0.4rem 0.6rem;
@@ -426,12 +427,12 @@
 }
 
 .bubble-menu button:hover {
-  background-color: var(--gray-50);
-  color: var(--gray-700);
+  background-color: var(--bg-surface-soft);
+  color: var(--text-main);
 }
 
 .bubble-menu button.is-active {
-  background-color: var(--gray-100);
+  background-color: var(--bg-surface-soft);
   color: var(--intent-info-border);
 }
 
@@ -455,7 +456,7 @@
 .ProseMirror td,
 .ProseMirror th {
   min-width: 40px;
-  border: 1px solid var(--gray-200);
+  border: 1px solid var(--border-main);
   padding: 8px 12px;
   vertical-align: top;
   box-sizing: border-box;
@@ -472,7 +473,8 @@
 .ProseMirror th {
   font-weight: bold;
   text-align: left;
-  background-color: var(--gray-50);
+  background-color: var(--bg-surface-soft);
+  color: var(--text-main);
 }
 
 .ProseMirror .selectedCell:after {
@@ -506,12 +508,12 @@
   justify-content: center;
   width: 16px;
   height: 20px;
-  background: var(--white);
-  border: 1px solid var(--gray-200);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-main);
   border-radius: 4px;
   cursor: grab;
   z-index: 50;
-  color: var(--gray-500);
+  color: var(--text-muted);
   font-size: 12px;
   user-select: none;
   box-shadow: 0 1px 2px rgba(0,0,0,0.05);
@@ -519,8 +521,8 @@
 }
 
 .table-handle:hover {
-  background-color: var(--gray-50);
-  color: var(--gray-700);
+  background-color: var(--bg-surface-soft);
+  color: var(--text-main);
 }
 
 .table-handle:active {
@@ -558,8 +560,8 @@
 /* Table context menu */
 .table-context-menu {
   position: fixed;
-  background: var(--white);
-  border: 1px solid var(--gray-200);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-main);
   border-radius: 6px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   z-index: 1000;
@@ -572,15 +574,15 @@
   align-items: center;
   padding: 6px 12px;
   font-size: 13px;
-  color: var(--gray-600);
+  color: var(--text-muted);
   cursor: pointer;
   border-radius: 4px;
   transition: background-color 0.2s;
 }
 
 .table-context-menu-item:hover {
-  background-color: var(--gray-50);
-  color: var(--gray-700);
+  background-color: var(--bg-surface-soft);
+  color: var(--text-main);
 }
 
 .ProseMirror.resize-cursor {
@@ -596,13 +598,14 @@
 }
 
 .mermaid-diagram-wrapper.ProseMirror-selectednode .mermaid-diagram-container {
-  border-color: var(--app-primary);
+  border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.2);
 }
 
 .mermaid-diagram-container {
-  background-color: var(--gray-50);
-  border: 1px solid var(--gray-200);
+  background-color: var(--bg-app);
+  color: var(--text-main);
+  border: 1px solid var(--border-main);
   padding: 16px;
   max-height: 650px;
   display: flex;
@@ -628,7 +631,7 @@
   border: none;
   border-radius: 6px;
   background-color: transparent;
-  color: var(--gray-500);
+  color: var(--text-muted);
   cursor: pointer;
   transition: all 0.2s;
   opacity: 0;
@@ -648,12 +651,12 @@
 }
 
 .ProseMirror pre .block-delete-button {
-  color: var(--white);
+  color: var(--bg-surface);
 }
 
 .block-delete-button:hover {
-  background-color: var(--gray-100);
-  color: var(--gray-800);
+  background-color: var(--bg-surface-soft);
+  color: var(--text-main);
 }
 
 .mermaid-svg-container {
@@ -693,14 +696,14 @@
 .mermaid-placeholder-text,
 .mermaid-error-text {
   font-size: 1rem;
-  color: var(--gray-600);
+  color: var(--text-muted);
   margin-bottom: 0.25rem;
 }
 
 .mermaid-placeholder-hint,
 .mermaid-error-hint {
   font-size: 0.875rem;
-  color: var(--gray-500);
+  color: var(--text-muted);
 }
 
 .mermaid-error {
@@ -737,7 +740,7 @@
 }
 
 .mermaid-modal {
-  background-color: var(--white);
+  background-color: var(--bg-surface);
   border-radius: 12px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   width: 98%;
@@ -758,7 +761,7 @@
 
 .mermaid-modal-size-selector {
   display: flex;
-  background-color: var(--gray-100);
+  background-color: var(--bg-surface-soft);
   padding: 2px;
   border-radius: 6px;
   gap: 2px;
@@ -774,7 +777,7 @@
   justify-content: center;
   border: none;
   background: transparent;
-  color: var(--gray-500);
+  color: var(--text-muted);
   font-size: 11px;
   font-weight: 600;
   border-radius: 4px;
@@ -783,20 +786,20 @@
 }
 
 .mermaid-modal-size-btn:hover {
-  background-color: var(--gray-200);
-  color: var(--gray-800);
+  background-color: var(--border-main);
+  color: var(--text-main);
 }
 
 .mermaid-modal-size-btn.active {
-  background-color: var(--white);
-  color: var(--app-primary);
+  background-color: var(--bg-surface);
+  color: var(--color-primary);
   box-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
 
 .mermaid-loading-spinner {
   width: 20px;
   height: 20px;
-  border: 2px solid var(--gray-200);
+  border: 2px solid var(--border-main);
   border-top: 2px solid var(--intent-info-border);
   border-radius: 50%;
   animation: mermaid-spin 0.8s linear infinite;
@@ -823,7 +826,7 @@
   align-items: center;
   justify-content: flex-end;
   padding: 4px 8px;
-  border-bottom: 1px solid var(--gray-200);
+  border-bottom: 1px solid var(--border-main);
 }
 
 .mermaid-modal-header h3 {
@@ -831,14 +834,14 @@
   padding: 0;
   font-size: 11px;
   font-weight: 600;
-  color: var(--gray-900);
+  color: var(--text-main);
 }
 
 .mermaid-modal-close {
   background-color: var(--intent-info-border);
   border: none;
   font-size: 13px;
-  color: var(--white);
+  color: var(--bg-surface);
   cursor: pointer;
   padding: 4px 12px;
   height: 28px;
@@ -854,7 +857,7 @@
 
 .mermaid-modal-close:hover {
   background-color: var(--app-primary-strong);
-  color: var(--white);
+  color: var(--bg-surface);
 }
 
 .mermaid-modal-close::before {
@@ -878,8 +881,8 @@
   position: fixed;
   bottom: 20px;
   right: 20px;
-  background: var(--gray-700);
-  color: var(--white);
+  background: var(--text-main);
+  color: var(--bg-surface);
   padding: 8px 16px;
   border-radius: 4px;
   font-size: 12px;
@@ -895,10 +898,10 @@
 
 .mermaid-modal-draw-container {
   flex: 1;
-  border-right: 1px solid var(--gray-200);
+  border-right: 1px solid var(--border-main);
   display: flex;
   flex-direction: column;
-  background-color: var(--gray-50);
+  background-color: var(--bg-surface-soft);
   min-width: 0;
 }
 
@@ -917,9 +920,9 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--gray-500);
-  background-color: var(--gray-100);
-  border-bottom: 1px solid var(--gray-200);
+  color: var(--text-muted);
+  background-color: var(--bg-surface-soft);
+  border-bottom: 1px solid var(--border-main);
 }
 
 .mermaid-modal-editor {
@@ -927,7 +930,7 @@
   flex: 0 0 350px;
   display: flex;
   flex-direction: column;
-  border-left: 1px solid var(--gray-200);
+  border-left: 1px solid var(--border-main);
 }
 
 .mermaid-modal-textarea {
@@ -940,12 +943,12 @@
   line-height: 1.5;
   resize: none;
   outline: none;
-  background-color: var(--gray-800);
-  color: var(--gray-200);
+  background-color: var(--text-main);
+  color: var(--border-main);
 }
 
 .mermaid-modal-textarea::placeholder {
-  color: var(--gray-500);
+  color: var(--text-muted);
 }
 
 .mermaid-modal-error-display {
@@ -966,7 +969,7 @@
 
 .mermaid-modal-footer {
   padding: 8px 12px;
-  border-top: 1px solid var(--gray-200);
+  border-top: 1px solid var(--border-main);
   display: flex;
   justify-content: flex-end;
   gap: 8px;
@@ -984,7 +987,7 @@
 
 .mermaid-modal-btn-primary {
   background-color: var(--intent-info-border);
-  color: var(--white);
+  color: var(--bg-surface);
 }
 
 .mermaid-modal-btn-primary:hover {
@@ -992,18 +995,18 @@
 }
 
 .mermaid-modal-btn-secondary {
-  background-color: var(--gray-100);
-  color: var(--gray-600);
+  background-color: var(--bg-surface-soft);
+  color: var(--text-muted);
 }
 
 .mermaid-modal-btn-secondary:hover {
-  background-color: var(--gray-200);
+  background-color: var(--border-main);
 }
 
 /* Code block with mermaid language */
 .ProseMirror pre {
-  background: var(--gray-800);
-  color: var(--gray-200);
+  background: var(--text-main);
+  color: var(--border-main);
   padding: 1rem;
   border-radius: 8px;
   overflow-x: auto;
@@ -1030,24 +1033,24 @@
 .simple-editor .ProseMirror ul, 
 .simple-editor .ProseMirror ol { padding-left: 16px; margin: 1rem 0; }
 .simple-editor .ProseMirror blockquote {
-  border-left: 3px solid var(--gray-200);
+  border-left: 3px solid var(--border-main);
   padding-left: 1rem;
   font-style: normal;
-  color: var(--gray-800);
+  color: var(--text-main);
   margin: 1rem 0;
   border-radius: 4px;
   position: relative;
   transition: all 0.2s;
-  background-color: var(--gray-50);
+  background-color: var(--bg-surface-soft);
 }
 
-.ProseMirror blockquote[data-type="default"] { border-left-color: var(--gray-200); border-left-width: 3px; }
+.ProseMirror blockquote[data-type="default"] { border-left-color: var(--border-main); border-left-width: 3px; }
 
-.ProseMirror blockquote[data-type="NOTE"] { border-left-color: var(--intent-info-border); border-left-width: 4px; background-color: var(--intent-info-bg); }
-.ProseMirror blockquote[data-type="TIP"] { border-left-color: var(--intent-success-border); border-left-width: 4px; background-color: var(--intent-success-bg); }
-.ProseMirror blockquote[data-type="IMPORTANT"] { border-left-color: var(--intent-important-border); border-left-width: 4px; background-color: var(--intent-important-bg); }
-.ProseMirror blockquote[data-type="WARNING"] { border-left-color: var(--intent-warning-border); border-left-width: 4px; background-color: var(--intent-warning-bg); }
-.ProseMirror blockquote[data-type="CAUTION"] { border-left-color: var(--intent-error-border); border-left-width: 4px; background-color: var(--intent-error-bg); }
+.ProseMirror blockquote[data-type="NOTE"] { border-left-color: var(--intent-info-border); border-left-width: 4px; background-color: var(--bg-surface); }
+.ProseMirror blockquote[data-type="TIP"] { border-left-color: var(--intent-success-border); border-left-width: 4px; background-color: var(--bg-surface); }
+.ProseMirror blockquote[data-type="IMPORTANT"] { border-left-color: var(--intent-important-border); border-left-width: 4px; background-color: var(--bg-surface); }
+.ProseMirror blockquote[data-type="WARNING"] { border-left-color: var(--intent-warning-border); border-left-width: 4px; background-color: var(--bg-surface); }
+.ProseMirror blockquote[data-type="CAUTION"] { border-left-color: var(--intent-error-border); border-left-width: 4px; background-color: var(--bg-surface); }
 
 /* Modern Bubble Menu Styles */
 .bubble-menu {
@@ -1065,7 +1068,7 @@
 .bubble-menu-separator {
   width: 1px;
   height: 18px;
-  background-color: var(--gray-200);
+  background-color: var(--border-main);
   margin: 0 6px;
 }
 
@@ -1074,7 +1077,7 @@
   align-items: center;
   justify-content: center;
   padding: 6px !important;
-  color: var(--gray-600) !important;
+  color: var(--text-muted) !important;
   border: none !important;
   background: transparent !important;
   border-radius: 6px !important;
@@ -1083,17 +1086,17 @@
 }
 
 .bubble-menu-button:hover:not(:disabled) {
-  background-color: var(--gray-100) !important;
-  color: var(--gray-900) !important;
+  background-color: var(--bg-surface-soft) !important;
+  color: var(--text-main) !important;
 }
 
 .bubble-menu-button.is-active {
-  background-color: var(--intent-info-bg) !important;
-  color: var(--app-primary) !important;
+  background-color: var(--bg-surface) !important;
+  color: var(--color-primary) !important;
 }
 
 .bubble-menu-button-assist {
-  background-color: var(--gray-50) !important;
+  background-color: var(--bg-surface-soft) !important;
   color: #6366f1 !important;
   font-weight: 600 !important;
   gap: 6px;
@@ -1102,7 +1105,7 @@
 }
 
 .bubble-menu-button-assist:hover {
-  background-color: var(--gray-100) !important;
+  background-color: var(--bg-surface-soft) !important;
   color: #4f46e5 !important;
   box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.1);
 }
@@ -1112,7 +1115,7 @@
 }
 
 .bubble-menu-button-keep:hover {
-  background-color: var(--intent-success-bg) !important;
+  background-color: var(--bg-surface) !important;
 }
 
 .bubble-menu-button-reject {
@@ -1120,14 +1123,14 @@
 }
 
 .bubble-menu-button-reject:hover {
-  background-color: var(--intent-error-bg) !important;
+  background-color: var(--bg-surface) !important;
 }
 
 /* Table Enhancements */
 .table-context-menu {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(12px);
-  border: 1px solid var(--gray-200);
+  border: 1px solid var(--border-main);
   border-radius: 10px;
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);
   padding: 6px;
@@ -1143,19 +1146,19 @@
   display: flex;
   align-items: center;
   font-size: 13px;
-  color: var(--gray-700);
+  color: var(--text-main);
   transition: all 0.2s;
   font-weight: 500;
 }
 
 .table-context-menu-item:hover {
-  background: var(--gray-100);
-  color: var(--gray-900);
+  background: var(--bg-surface-soft);
+  color: var(--text-main);
 }
 
 .table-context-menu-divider {
   height: 1px;
-  background: var(--gray-100);
+  background: var(--bg-surface-soft);
   margin: 6px 4px;
 }
 
@@ -1165,7 +1168,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #64748b;
+  color: var(--text-muted);
   display: flex;
   align-items: center;
 }
@@ -1214,12 +1217,12 @@ ul[data-type="taskList"] li > div {
 
 ul[data-type="taskList"] input[type="checkbox"] {
   cursor: pointer;
-  accent-color: var(--app-primary);
+  accent-color: var(--color-primary);
 }
 
 ul[data-type="taskList"] li[data-checked="true"] > div {
   text-decoration: line-through;
-  color: #64748b;
+  color: var(--text-muted);
 }
 
 ul[data-type="taskList"] li p {
@@ -1228,12 +1231,12 @@ ul[data-type="taskList"] li p {
 
 /* Link Search Modal */
 .link-search-modal {
-  background: var(--white);
+  background: var(--bg-surface);
   border-radius: 12px;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(0,0,0,0.05);
   width: 300px;
   overflow: hidden;
-  border: 1px solid var(--gray-200);
+  border: 1px solid var(--border-main);
   padding: 0;
   animation: modal-slide-up 0.2s ease-out;
 }
@@ -1247,15 +1250,15 @@ ul[data-type="taskList"] li p {
   width: 100%;
   padding: 12px 14px;
   border: none;
-  border-bottom: 1px solid var(--gray-100);
+  border-bottom: 1px solid var(--bg-surface-soft);
   outline: none;
   font-size: 13px;
-  color: var(--gray-800);
+  color: var(--text-main);
   background: transparent;
 }
 
 .link-search-modal input::placeholder {
-  color: var(--gray-400);
+  color: var(--text-muted);
 }
 
 .link-search-results {
@@ -1276,11 +1279,11 @@ ul[data-type="taskList"] li p {
 }
 
 .link-search-item:hover, .link-search-item.selected {
-  background: var(--gray-50);
+  background: var(--bg-surface-soft);
 }
 
 .link-search-item.selected {
-  background: var(--gray-100);
+  background: var(--bg-surface-soft);
 }
 
 .link-search-item-info {
@@ -1291,7 +1294,7 @@ ul[data-type="taskList"] li p {
 .link-search-item-title {
   font-size: 13px;
   font-weight: 500;
-  color: var(--gray-700);
+  color: var(--text-main);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1301,7 +1304,7 @@ ul[data-type="taskList"] li p {
 
 .link-search-item-path {
   font-size: 10px;
-  color: var(--gray-400);
+  color: var(--text-muted);
   font-family: inherit;
   margin-top: 2px;
 }
@@ -1313,7 +1316,7 @@ ul[data-type="taskList"] li p {
 }
 
 .link-search-item-action {
-  color: var(--app-primary);
+  color: var(--color-primary);
   opacity: 0;
   transition: opacity 0.2s;
   flex-shrink: 0;
@@ -1327,7 +1330,7 @@ ul[data-type="taskList"] li p {
   padding: 16px;
   text-align: center;
   font-size: 12px;
-  color: var(--gray-400);
+  color: var(--text-muted);
 }
 
 /* Mermaid Diagram Sizing Controls */
@@ -1337,14 +1340,14 @@ ul[data-type="taskList"] li p {
   left: 8px;
   display: flex;
   gap: 4px;
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--bg-surface);
   padding: 4px;
   border-radius: 6px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  box-shadow: var(--shadow-md);
   z-index: 10;
   opacity: 0;
   transition: opacity 0.2s;
-  border: none;
+  border: 1px solid var(--border-main);
 }
 
 .mermaid-diagram-container:hover .mermaid-controls {
@@ -1360,7 +1363,7 @@ ul[data-type="taskList"] li p {
   border-radius: 4px;
   font-size: 11px;
   font-weight: 600;
-  color: var(--gray-500);
+  color: var(--text-muted);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -1369,13 +1372,13 @@ ul[data-type="taskList"] li p {
 }
 
 .mermaid-controls .size-btn:hover {
-  background: var(--gray-100);
-  color: var(--gray-700);
+  background: var(--bg-surface-soft);
+  color: var(--text-main);
 }
 
 .mermaid-controls .size-btn.active {
-  background: var(--gray-100);
-  color: var(--app-primary);
+  background: var(--bg-surface-soft);
+  color: var(--color-primary);
 }
 
 

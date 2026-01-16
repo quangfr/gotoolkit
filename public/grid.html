@@ -2,6 +2,13 @@
 <html lang="fr">
 
 <head>
+    <script>
+        (function () {
+            const storedTheme = localStorage.getItem('go-toolkit-theme');
+            const theme = storedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'cream');
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
     <script>window.GO_TOOLKIT_SHARE_API_URL = 'https://share.gotoolkit.workers.dev/'</script>
     <meta charset="UTF-8">
     <script>
@@ -311,7 +318,7 @@
 
         .prompt-alt-badge {
             border: 1px solid var(--app-border);
-            background: var(--white);
+            background: var(--bg-surface);
             color: var(--gray-900);
             border-radius: 12px;
             padding: 3px 6px;
@@ -357,7 +364,7 @@
         }
 
         .gt-template-card {
-            border: 1px solid #dfe3f5;
+            border: 1px solid var(--border-main);
             border-radius: 12px;
             padding: 10px;
             cursor: pointer;
@@ -496,8 +503,8 @@
             width: 26px;
             height: 26px;
             border-radius: 8px;
-            border: 1px solid #d6dde8;
-            background: #ffffff;
+            border: 1px solid var(--border-main);
+            background: var(--bg-surface);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -652,7 +659,7 @@
         textarea {
             width: 100%;
             border-radius: 4px;
-            border: 1px solid #d6dbf2;
+            border: 1px solid var(--border-main);
             padding: 8px;
             resize: none;
             font-family: inherit;
@@ -799,8 +806,8 @@
             font-weight: 700;
             border: 1px solid transparent;
             border-radius: 8px;
-            background: #ffffff;
-            color: #0f172a;
+            background: var(--bg-surface);
+            color: var(--text-main);
             flex: 1 1 auto;
         }
 
@@ -815,7 +822,7 @@
         .grid-filter-input {
             width: 100%;
             border-radius: 10px;
-            border: 1px solid #dfe3f5;
+            border: 1px solid var(--border-main);
             padding: 6px 8px;
             margin: 4px 0px 2px 0px;
             font-size: 12px;
@@ -851,7 +858,7 @@
             left: 0;
             right: 0;
             top: calc(100% + 6px);
-            background: #ffffff;
+            background: var(--bg-surface);
             border: 1px solid rgba(15, 23, 42, 0.12);
             border-radius: 14px;
             box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16);
@@ -887,7 +894,7 @@
 
         .grid-filter-suggestion-title {
             font-size: 12px;
-            color: #0f172a;
+            color: var(--text-main);
             font-weight: 600;
         }
 
@@ -925,7 +932,7 @@
             position: absolute;
             top: calc(100% + 6px);
             right: 0;
-            background: #ffffff;
+            background: var(--bg-surface);
             border: 1px solid rgba(15, 23, 42, 0.1);
             border-radius: 16px;
             box-shadow: 0 16px 32px rgba(15, 23, 42, 0.2);
@@ -938,9 +945,16 @@
             display: block;
         }
 
+        .menu-separator {
+            height: 1px;
+            background: var(--border-main);
+            margin: 4px 0;
+            opacity: 0.6;
+        }
+
         .context-menu label {
             font-size: 13px;
-            color: #0f172a;
+            color: var(--text-main);
             display: flex;
             flex-direction: column;
             gap: 6px;
@@ -948,20 +962,20 @@
 
         .context-menu select {
             border-radius: 8px;
-            border: 1px solid #dfe3f5;
+            border: 1px solid var(--border-main);
             padding: 6px 8px;
             font-size: 13px;
-            background: #ffffff;
-            color: #0f172a;
+            background: var(--bg-surface);
+            color: var(--text-main);
         }
 
         .modal select {
             border-radius: 8px;
-            border: 1px solid #dfe3f5;
+            border: 1px solid var(--border-main);
             padding: 6px 8px;
             font-size: 13px;
-            background: #ffffff;
-            color: #0f172a;
+            background: var(--bg-surface);
+            color: var(--text-main);
         }
 
         .tree-source-header {
@@ -992,10 +1006,10 @@
             width: 100%;
             min-height: 160px;
             border-radius: 10px;
-            border: 1px solid #dfe3f5;
+            border: 1px solid var(--border-main);
             padding: 10px 12px;
             font-size: 13px;
-            color: #0f172a;
+            color: var(--text-main);
             resize: vertical;
         }
 
@@ -1024,8 +1038,8 @@
         .ag-theme-quartz {
             --ag-font-size: var(--grid-font-size, 12px);
             --ag-border-color: #dfe3f5;
-            --ag-header-foreground-color: #0f172a;
-            --ag-foreground-color: #0f172a;
+            --ag-header-foreground-color: var(--text-main);
+            --ag-foreground-color: var(--text-main);
             --ag-background-color: #ffffff;
         }
 
@@ -1154,6 +1168,18 @@
                                 Télécharger</button>
                             <button id="capsuleDownloadBtn" type="button" class="menu-panel-btn">🡇 CSV</button>
                             <button id="infoButton" type="button" class="menu-panel-btn">⎉ À propos</button>
+                            <div class="menu-separator"></div>
+                            <div style="padding: 10px 14px;">
+                                <div
+                                    style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">
+                                    Thème</div>
+                                <select id="themeSelectGrid" class="menu-panel-select"
+                                    style="width: 100%; border-radius: 6px; padding: 4px; font-size: 13px; background: var(--bg-surface-soft); color: var(--text-main); border: 1px solid var(--border-main); outline: none;">
+                                    <option value="auto">Automatique</option>
+                                    <option value="dark">Sombre</option>
+                                    <option value="cream">Crème</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                     <div id="infoPopup" class="info-popup" role="dialog" aria-live="polite">
@@ -9087,6 +9113,37 @@
             }
 
             function wireEvents() {
+                // Theme management
+                (function () {
+                    const THEME_STORAGE_KEY = "go-toolkit-theme";
+                    const themeSelect = document.getElementById("themeSelectGrid");
+
+                    function applyTheme(theme) {
+                        if (theme === "auto") {
+                            const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+                            document.documentElement.setAttribute("data-theme", isDark ? "dark" : "cream");
+                        } else {
+                            document.documentElement.setAttribute("data-theme", theme);
+                        }
+                    }
+
+                    if (themeSelect) {
+                        themeSelect.value = localStorage.getItem(THEME_STORAGE_KEY) || "auto";
+                        themeSelect.addEventListener("change", function () {
+                            const theme = themeSelect.value;
+                            localStorage.setItem(THEME_STORAGE_KEY, theme);
+                            applyTheme(theme);
+                        });
+                    }
+
+                    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function () {
+                        const current = localStorage.getItem(THEME_STORAGE_KEY) || "auto";
+                        if (current === "auto") {
+                            applyTheme("auto");
+                        }
+                    });
+                })();
+
                 renderTabs();
                 setActivePage(state.activeIndex);
                 wireNavSwitcher();

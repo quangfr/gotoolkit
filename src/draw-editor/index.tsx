@@ -91,7 +91,8 @@ const EDGE_STYLE_CONTENT = `.${EDGE_HOST_CLASS} .excalidraw .App-bottom-bar {
 
 .${EDGE_HOST_CLASS} .excalidraw .help-Icon,
 .${EDGE_HOST_CLASS} .excalidraw .help-icon {
-    background-color: #ffffff !important;
+    background-color: var(--bg-surface) !important;
+    color: var(--text-main) !important;
     padding: 4px !important;
 }
 
@@ -175,14 +176,14 @@ const EDGE_STYLE_CONTENT = `.${EDGE_HOST_CLASS} .excalidraw .App-bottom-bar {
     right: 0px !important;
 }
 
-/* Change background color of buttons to white */
+/* Change background color of buttons to surface color */
 .${EDGE_HOST_CLASS} .excalidraw .Island,
 .${EDGE_HOST_CLASS} .excalidraw .ToolIcon,
 .${EDGE_HOST_CLASS} .excalidraw .dropdown-menu-button,
 .${EDGE_HOST_CLASS} .excalidraw .App-toolbar,
 .${EDGE_HOST_CLASS} .excalidraw .hint,
 .${EDGE_HOST_CLASS} .excalidraw .help-Icon {
-    background-color: #ffffff !important;
+    background-color: var(--bg-surface) !important;
 }
 
 /* Smaller zoom and undo/redo buttons */
@@ -291,7 +292,7 @@ const createInitialData = () => ({
     elements: [] as ExcalidrawElement[],
     appState: {
         viewModeEnabled: false,
-        viewBackgroundColor: "#fdfdfd",
+        viewBackgroundColor: document.documentElement.getAttribute("data-theme") === "dark" ? "#000000" : "#fdfdfd",
         gridModeEnabled: false,
         isLoading: false,
         currentItemRoundness: "sharp" as const,
@@ -368,6 +369,19 @@ class ExcalidrawBridge {
                     }
                 };
                 const Surface: React.FC<{ onReady: (api: ExcalidrawImperativeAPI) => void }> = ({ onReady }) => {
+                    const [theme, setTheme] = React.useState<"light" | "dark">(() => {
+                        return document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
+                    });
+
+                    React.useEffect(() => {
+                        const observer = new MutationObserver(() => {
+                            const newTheme = document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
+                            setTheme(newTheme);
+                        });
+                        observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+                        return () => observer.disconnect();
+                    }, []);
+
                     const syncApi = useCallback(
                         (api: ExcalidrawImperativeAPI | null) => {
                             if (api) {
@@ -380,7 +394,7 @@ class ExcalidrawBridge {
                     return (
                         <ExcalidrawAny
                             excalidrawAPI={syncApi}
-                            theme="light"
+                            theme={theme}
                             viewModeEnabled={false}
                             gridModeEnabled={false}
                             zenModeEnabled={false}
@@ -459,7 +473,7 @@ class ExcalidrawBridge {
                 ...appState,
                 viewModeEnabled: false,
                 activeTool: { type: "selection" },
-                viewBackgroundColor: "#fdfdfd",
+                viewBackgroundColor: document.documentElement.getAttribute("data-theme") === "dark" ? "#000000" : "#fdfdfd",
                 gridModeEnabled: false,
                 isLoading: false,
                 currentItemRoundness: "sharp",

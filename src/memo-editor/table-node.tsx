@@ -29,10 +29,5 @@ export { TableRow, TableHeader };
 
 export const TABLE_COLORS = [
   { name: 'Défaut', value: 'transparent' },
-  { name: 'Bleu', value: 'var(--intent-info-bg)' },
-  { name: 'Vert', value: 'var(--intent-success-bg)' },
-  { name: 'Jaune', value: 'var(--intent-warning-bg)' },
-  { name: 'Rouge', value: 'var(--intent-error-bg)' },
-  { name: 'Violet', value: 'var(--intent-important-bg)' },
-  { name: 'Gris', value: 'var(--gray-100)' },
+  { name: 'Surface', value: 'var(--bg-surface)' },
 ];

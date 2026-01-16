@@ -245,7 +245,7 @@
             return candidate;
         }
 
-        let isOpen = readBool(openKey, false);
+        let isOpen = (window.innerWidth < 900) ? false : readBool(openKey, false);
         let width = clamp(readNumber(widthKey, DEFAULT_WIDTH), MIN_WIDTH, MAX_WIDTH);
 
         function applyWidth(nextWidth) {
@@ -535,6 +535,12 @@
 
         applyWidth(width);
         applyOpen(isOpen);
+
+        window.addEventListener("resize", () => {
+            if (window.innerWidth < 900 && isOpen) {
+                applyOpen(false);
+            }
+        });
 
         return {
             refresh,

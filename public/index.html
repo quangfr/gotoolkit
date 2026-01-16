@@ -2,6 +2,13 @@
 <html lang="fr">
 
 <head>
+    <script>
+        (function () {
+            const storedTheme = localStorage.getItem('go-toolkit-theme');
+            const theme = storedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'cream');
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
     <script>window.GO_TOOLKIT_SHARE_API_URL = 'https://gotoolkit.workers.dev'</script>
     <script>
             // Global Polyfill for missing browser APIs (prevents crashes in Excalidraw/Mermaid)
@@ -90,8 +97,8 @@
         body {
             margin: 0;
             font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-            background: radial-gradient(circle at top, rgba(255, 255, 255, 0.4), transparent 55%), var(--app-bg);
-            color: var(--app-text);
+            background: radial-gradient(circle at top, rgba(255, 255, 255, 0.4), transparent 55%), var(--bg-app);
+            color: var(--text-main);
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -115,7 +122,7 @@
             padding: 4px 2px;
             font-size: 0.65rem;
             line-height: 1.2;
-            color: var(--app-muted);
+            color: var(--text-muted);
             opacity: 0.8;
             text-align: center;
             background: transparent;
@@ -129,14 +136,14 @@
 
         .legal-footer a:hover,
         .legal-footer a:focus-visible {
-            color: var(--app-text);
+            color: var(--text-main);
         }
 
         .hero,
         .section {
             border-radius: 12px;
-            border: 1px solid var(--app-border);
-            background: var(--app-surface);
+            border: 1px solid var(--border-main);
+            background: var(--bg-surface);
             padding: 12px;
             box-shadow: var(--shadow-sm);
         }
@@ -180,7 +187,7 @@
             padding: 2px 6px;
             border-radius: 8px;
             border: 1px solid var(--intent-warning-border);
-            background: var(--intent-warning-bg);
+            background: var(--bg-surface);
             color: var(--intent-warning-border);
             font-size: 0.7rem;
             font-weight: 700;
@@ -191,7 +198,7 @@
         .hero p {
             margin: 0;
             max-width: 420px;
-            color: var(--app-muted);
+            color: var(--text-muted);
             line-height: 1.3;
             font-size: 0.85rem;
         }
@@ -209,13 +216,13 @@
             font-weight: 600;
             letter-spacing: 0.16em;
             text-transform: uppercase;
-            color: var(--app-muted);
+            color: var(--text-muted);
             margin: 5px 5px 15px 5px;
         }
 
         .section-helper {
             font-size: 0.75rem;
-            color: var(--app-muted);
+            color: var(--text-muted);
             margin: 0;
         }
 
@@ -237,7 +244,7 @@
         .ia-status {
             margin-left: 6px;
             font-size: 15px;
-            color: var(--app-text);
+            color: var(--text-main);
             min-width: 0;
             display: inline-flex;
             justify-content: center;
@@ -253,17 +260,17 @@
         .ia-model-label {
             margin-left: 6px;
             font-size: 0.75rem;
-            color: var(--app-muted);
+            color: var(--text-muted);
             display: inline-block;
         }
 
 
 
         .ghost-button {
-            border: 1px solid var(--app-border-strong);
+            border: 1px solid var(--border-strong);
             border-radius: 999px;
             background: transparent;
-            color: var(--app-text);
+            color: var(--text-main);
             font-size: 0.8rem;
             padding: 2px 6px;
             cursor: pointer;
@@ -288,29 +295,29 @@
             flex: 1 1 180px;
             min-width: 150px;
             text-decoration: none;
-            color: var(--app-text);
+            color: var(--text-main);
             border-radius: 8px;
             padding: 25px 10px;
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            border: 1px solid var(--app-border);
-            background: var(--gray-50);
+            border: 1px solid var(--border-main);
+            background: var(--bg-surface-soft);
             transition: box-shadow 0.2s ease, transform 0.2s ease;
             min-height: 30px;
             height: 30px;
         }
 
         .launcher.launcher--disabled {
-            color: var(--gray-400);
-            border-color: var(--gray-300);
-            background: var(--gray-50);
+            color: var(--text-muted);
+            border-color: var(--border-main);
+            background: var(--bg-surface-soft);
             pointer-events: none;
             cursor: default;
         }
 
         .launcher.launcher--disabled .launcher-desc {
-            color: var(--gray-400);
+            color: var(--text-muted);
         }
 
         #assistLauncherBtn {
@@ -368,7 +375,7 @@
 
         .launcher-desc {
             font-size: 0.85rem;
-            color: var(--app-muted);
+            color: var(--text-muted);
             font-weight: 400;
             letter-spacing: 0;
         }
@@ -385,10 +392,10 @@
             gap: 10px;
             border-radius: 8px;
             padding: 6px;
-            border: 1px solid var(--app-border);
-            background: var(--gray-50);
+            border: 1px solid var(--border-main);
+            background: var(--bg-surface-soft);
             text-decoration: none;
-            color: var(--app-text);
+            color: var(--text-main);
             min-height: 120px;
             transition: box-shadow 0.2s ease;
             position: relative;
@@ -409,13 +416,13 @@
 
         .share-card-meta {
             margin: 0;
-            color: var(--app-muted);
+            color: var(--text-muted);
             font-size: 0.82rem;
         }
 
         .share-card-desc {
             margin: 0;
-            color: var(--app-muted);
+            color: var(--text-muted);
             line-height: 1.3;
             min-height: 2em;
             font-size: 0.85rem;
@@ -428,13 +435,13 @@
         .share-card-date {
             margin: 4px 0 0;
             font-size: 0.75rem;
-            color: var(--app-muted);
+            color: var(--text-muted);
         }
 
         .share-card-action {
             position: absolute;
             bottom: 6px;
-            border: 1px solid var(--app-border-strong);
+            border: 1px solid var(--border-strong);
             background: var(--white);
             border-radius: 12px;
             width: 24px;
@@ -472,14 +479,14 @@
             text-transform: uppercase;
             padding: 2px 8px;
             border-radius: 999px;
-            border: 1px solid var(--gray-400);
+            border: 1px solid var(--text-muted);
             background: rgba(156, 163, 175, 0.18);
             color: var(--gray-500);
         }
 
         .share-helper {
             margin: 8px 0 0;
-            color: var(--app-muted);
+            color: var(--text-muted);
             font-size: 0.8rem;
         }
 
@@ -493,10 +500,10 @@
 
         .feedback-button {
             margin-left: auto;
-            border: 1px solid var(--app-border-strong);
+            border: 1px solid var(--border-strong);
             border-radius: 8px;
-            background: var(--white);
-            color: var(--app-text);
+            background: var(--bg-app);
+            color: var(--text-main);
             font-weight: 500;
             font-size: 14px;
             padding: 3px 9px;
@@ -534,7 +541,7 @@
             width: min(720px, 100%);
             background: var(--white);
             border-radius: 12px;
-            border: 1px solid var(--app-border);
+            border: 1px solid var(--border-main);
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
             padding: 16px;
             display: flex;
@@ -601,7 +608,7 @@
         .superpower-intro {
             margin: 0;
             font-size: 0.85rem;
-            color: var(--app-muted);
+            color: var(--text-muted);
             line-height: 1.4;
         }
 
@@ -633,32 +640,32 @@
             text-transform: uppercase;
             padding: 2px 8px;
             border-radius: 999px;
-            border: 1px solid var(--gray-400);
+            border: 1px solid var(--text-muted);
             background: rgba(156, 163, 175, 0.18);
             color: var(--gray-500);
         }
 
         .superpower-tag--development {
             border-color: var(--intent-warning-border);
-            background: var(--intent-warning-bg);
+            background: var(--bg-surface);
             color: var(--intent-warning-border);
         }
 
         .superpower-tag--soon {
-            border-color: var(--gray-400);
+            border-color: var(--text-muted);
             background: rgba(156, 163, 175, 0.18);
             color: var(--gray-500);
         }
 
         .superpower-tag--cockpit {
             border-color: var(--intent-warning-border);
-            background: var(--intent-warning-bg);
+            background: var(--bg-surface);
             color: var(--intent-warning-border);
         }
 
         .superpower-tag--satellite {
             border-color: var(--intent-important-border);
-            background: var(--intent-important-bg);
+            background: var(--bg-surface);
             color: var(--intent-important-border);
         }
 
@@ -695,19 +702,19 @@
             flex-direction: column;
             gap: 6px;
             font-size: 0.78rem;
-            color: var(--app-text);
+            color: var(--text-main);
         }
 
         .feedback-form input,
         .feedback-form select,
         .feedback-form textarea {
             border-radius: 10px;
-            border: 1px solid var(--app-border);
+            border: 1px solid var(--border-main);
             padding: 10px 12px;
             font-family: inherit;
             font-size: 0.83rem;
             background: transparent;
-            color: var(--app-text);
+            color: var(--text-main);
         }
 
 
@@ -759,7 +766,7 @@
 
         .feedback-helper {
             margin: 4px 0 0 0;
-            color: var(--app-muted);
+            color: var(--text-muted);
             font-size: 0.75rem;
         }
 
@@ -768,9 +775,9 @@
             left: 10px;
             bottom: 12px;
             z-index: 60;
-            border: 1px solid var(--app-border);
-            background: var(--app-surface);
-            color: var(--app-text);
+            border: 1px solid var(--border-main);
+            background: var(--bg-surface);
+            color: var(--text-main);
             border-radius: 999px;
             padding: 4px 10px;
             font-size: 13px;
@@ -781,7 +788,7 @@
         .requests-modal {
             min-width: 1200px;
             max-width: 95vw;
-            background: var(--app-surface);
+            background: var(--bg-surface);
             border-radius: 12px;
             box-shadow: var(--shadow-sm);
             padding: 10px;
@@ -799,9 +806,9 @@
         }
 
         .requests-list-panel {
-            border: 1px solid var(--app-border);
+            border: 1px solid var(--border-main);
             border-radius: 10px;
-            background: var(--gray-50);
+            background: var(--bg-surface-soft);
             display: flex;
             flex-direction: column;
             min-height: 0;
@@ -809,7 +816,7 @@
 
         .requests-filter {
             padding: 8px 10px;
-            border-bottom: 1px solid var(--app-border);
+            border-bottom: 1px solid var(--border-main);
             display: flex;
             align-items: center;
             gap: 8px;
@@ -819,7 +826,7 @@
 
         .requests-filter select {
             border-radius: 8px;
-            border: 1px solid var(--app-border);
+            border: 1px solid var(--border-main);
             padding: 4px 6px;
             font-size: 0.8rem;
             background: var(--white);
@@ -834,7 +841,7 @@
         }
 
         .requests-item {
-            border: 1px solid var(--app-border);
+            border: 1px solid var(--border-main);
             border-radius: 10px;
             padding: 6px;
             background: var(--white);
@@ -856,7 +863,7 @@
         }
 
         .requests-item-meta {
-            color: var(--app-muted);
+            color: var(--text-muted);
             font-size: 13px;
             display: flex;
             gap: 0px;
@@ -867,7 +874,7 @@
         .requests-item-message {
             margin: 0;
             font-size: 0.76rem;
-            color: var(--app-text);
+            color: var(--text-main);
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
@@ -875,7 +882,7 @@
         }
 
         .requests-content {
-            border: 1px solid var(--app-border);
+            border: 1px solid var(--border-main);
             border-radius: 10px;
             background: var(--white);
             padding: 8px;
@@ -921,7 +928,7 @@
         .request-content-body input,
         .request-content-body textarea,
         .request-content-body select {
-            border: 1px solid var(--app-border);
+            border: 1px solid var(--border-main);
             border-radius: 8px;
             padding: 6px;
             font-size: 13px;
@@ -942,9 +949,9 @@
         }
 
         .btn-secondary {
-            border: 1px solid var(--app-border);
+            border: 1px solid var(--border-main);
             background: transparent;
-            color: var(--app-text);
+            color: var(--text-main);
             border-radius: 10px;
             padding: 6px 10px;
             cursor: pointer;
@@ -1008,13 +1015,13 @@
         .label-subtitle {
             display: block;
             margin-top: 2px;
-            color: var(--app-muted);
+            color: var(--text-muted);
             font-size: 11px;
             line-height: 1.2;
         }
 
         #assistLauncherBtn {
-            background: var(--gray-50)
+            background: var(--bg-surface-soft)
         }
 
         .hero-meta {
@@ -1030,7 +1037,7 @@
         }
 
         .hero-version {
-            color: var(--app-muted);
+            color: var(--text-muted);
             font-size: 0.56rem;
             font-weight: 700;
             line-height: 1.2;
@@ -1056,7 +1063,7 @@
             max-height: 90vh;
             border-radius: 18px;
             padding: 24px;
-            background: var(--app-surface);
+            background: var(--bg-surface);
             box-shadow: 0 24px 50px rgba(15, 23, 42, 0.35);
             overflow-y: auto;
             display: flex;
@@ -1082,12 +1089,12 @@
             line-height: 1;
             cursor: pointer;
             padding: 4px 6px;
-            color: var(--app-muted);
+            color: var(--text-muted);
         }
 
         .release-notes-close:hover,
         .release-notes-close:focus-visible {
-            color: var(--app-text);
+            color: var(--text-main);
         }
 
         .release-notes-list {
@@ -1104,7 +1111,7 @@
             border: 1px solid rgba(var(--color-primary-rgb), 0.15);
             border-radius: 10px;
             padding: 10px 12px;
-            background: var(--intent-success-bg);
+            background: var(--bg-surface);
         }
 
         .release-note-date,
@@ -1112,12 +1119,12 @@
             font-size: 0.85rem;
             letter-spacing: 0.16em;
             text-transform: uppercase;
-            color: var(--app-muted);
+            color: var(--text-muted);
         }
 
         .release-note-list,
         ul.release-roadmap-text {
-            color: var(--app-text);
+            color: var(--text-main);
             font-size: 0.92rem;
             line-height: 1.4;
             margin: 6px 0 0;
@@ -1143,7 +1150,7 @@
         .release-note-text {
             margin: 0;
             font-size: 0.92rem;
-            color: var(--app-text);
+            color: var(--text-main);
             line-height: 1.4;
         }
 
@@ -1160,14 +1167,14 @@
             padding: 8px 10px;
             font-size: 0.8rem;
             background: transparent;
-            color: var(--app-muted);
+            color: var(--text-muted);
             cursor: pointer;
             text-align: center;
             text-transform: uppercase;
         }
 
         .release-tab--active {
-            border-color: var(--app-border-strong);
+            border-color: var(--border-strong);
         }
 
         .release-tab:focus,
@@ -1195,7 +1202,7 @@
             border: 1px solid rgba(var(--color-primary-rgb), 0.15);
             border-radius: 10px;
             padding: 10px 12px;
-            background: var(--intent-success-bg);
+            background: var(--bg-surface);
             display: flex;
             flex-direction: column;
             gap: 6px;
@@ -1205,18 +1212,18 @@
             font-size: 0.85rem;
             letter-spacing: 0.16em;
             text-transform: uppercase;
-            color: var(--app-muted);
+            color: var(--text-muted);
         }
 
         .release-roadmap-text {
             margin: 0;
-            color: var(--app-text);
+            color: var(--text-main);
             font-size: 0.9rem;
             line-height: 1.4;
         }
 
         .release-roadmap-tag {
-            background: var(--gray-100);
+            background: var(--bg-app);
             color: var(--gray-600);
             font-size: 0.75rem;
             padding: 3px 8px;
@@ -1746,6 +1753,7 @@
                             </div>
 
                         </div>
+
                         <div class="settings-tab-panel" data-panel="promptTab" hidden>
                             <div class="field-row">
                                 <label>
@@ -4375,6 +4383,25 @@
                 window.GoToolkitWebLLM.resetEngine();
             }
             updateStatusIcon(webllmStatusEl);
+        });
+
+        const THEME_STORAGE_KEY = "go-toolkit-theme";
+
+        function applyTheme(theme) {
+            if (theme === "auto") {
+                const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+                document.documentElement.setAttribute("data-theme", isDark ? "dark" : "cream");
+            } else {
+                document.documentElement.setAttribute("data-theme", theme);
+            }
+        }
+
+        // Listen for OS theme changes if on auto
+        window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function () {
+            const current = localStorage.getItem(THEME_STORAGE_KEY) || "auto";
+            if (current === "auto") {
+                applyTheme("auto");
+            }
         });
 
         function openSettings() {

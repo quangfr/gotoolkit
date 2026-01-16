@@ -296,8 +296,8 @@ const DetailsInputRule = Extension.create({
 });
 
 const TEXT_COLORS = [
-  { name: 'Noir', value: 'var(--gray-800)' },
-  { name: 'Gris', value: 'var(--gray-500)' },
+  { name: 'Noir', value: 'var(--text-main)' },
+  { name: 'Gris', value: 'var(--text-muted)' },
   { name: 'Rouge', value: 'var(--color-red)' },
   { name: 'Orange', value: 'var(--color-orange)' },
   { name: 'Jaune', value: 'var(--color-yellow)' },
@@ -510,7 +510,7 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLi
                   transform: 'translateX(-50%)',
                   marginTop: '8px',
                   backgroundColor: 'var(--white)',
-                  border: '1px solid var(--gray-200)',
+                  border: '1px solid var(--border-main)',
                   borderRadius: '8px',
                   boxShadow: 'var(--app-shadow)',
                   zIndex: 1001,
@@ -530,7 +530,7 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLi
                       backgroundColor: color.value, 
                       borderRadius: '4px',
                       cursor: 'pointer',
-                      border: '1px solid var(--gray-200)'
+                      border: '1px solid var(--border-main)'
                     }}
                     title={color.name}
                     onClick={() => {
@@ -547,7 +547,7 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLi
                     backgroundColor: 'var(--white)', 
                     borderRadius: '4px',
                     cursor: 'pointer',
-                    border: '1px solid var(--gray-200)',
+                    border: '1px solid var(--border-main)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -565,7 +565,7 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLi
             )}
           </div>
 
-          <div className="tiptap-separator-inline" style={{ width: '1px', height: '18px', backgroundColor: 'var(--gray-200)', margin: '0 6px' }}></div>
+          <div className="tiptap-separator-inline" style={{ width: '1px', height: '18px', backgroundColor: 'var(--border-main)', margin: '0 6px' }}></div>
 
           <button
             className="tiptap-button"
@@ -618,7 +618,7 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLi
                     transform: 'translateX(-50%)',
                     marginTop: '8px',
                     backgroundColor: 'var(--white)',
-                    border: '1px solid var(--gray-200)',
+                    border: '1px solid var(--border-main)',
                     borderRadius: '8px',
                     boxShadow: 'var(--app-shadow)',
                     zIndex: 1001,
@@ -636,7 +636,7 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLi
                         width: '20px', 
                         height: '20px', 
                         backgroundColor: color.value === 'transparent' ? 'var(--white)' : color.value, 
-                        border: color.value === 'transparent' ? '1px solid var(--gray-300)' : 'none',
+                        border: color.value === 'transparent' ? '1px solid var(--border-main)' : 'none',
                         borderRadius: '4px',
                         cursor: 'pointer'
                       }}
@@ -1199,7 +1199,7 @@ const Toolbar = ({ editor, onDropdownToggle, onLink }: {
                 transform: 'translateX(-50%)',
                 marginTop: '8px',
                 backgroundColor: 'var(--white)',
-                border: '1px solid var(--gray-200)',
+                border: '1px solid var(--border-main)',
                 borderRadius: '8px',
                 boxShadow: 'var(--app-shadow)',
                 zIndex: 1001,
@@ -1219,7 +1219,7 @@ const Toolbar = ({ editor, onDropdownToggle, onLink }: {
                     backgroundColor: color.value, 
                     borderRadius: '4px',
                     cursor: 'pointer',
-                    border: '1px solid var(--gray-200)'
+                    border: '1px solid var(--border-main)'
                   }}
                   title={color.name}
                   onClick={() => {
@@ -1236,7 +1236,7 @@ const Toolbar = ({ editor, onDropdownToggle, onLink }: {
                   backgroundColor: 'var(--white)', 
                   borderRadius: '4px',
                   cursor: 'pointer',
-                  border: '1px solid var(--gray-200)',
+                  border: '1px solid var(--border-main)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -1436,7 +1436,7 @@ const CodeList = React.forwardRef((props: any, ref: any) => {
     <div
       style={{
         background: 'var(--white)',
-        border: '1px solid var(--gray-200)',
+        border: '1px solid var(--border-main)',
         borderRadius: '8px',
         boxShadow: 'var(--app-shadow)',
         padding: '4px',
@@ -1455,13 +1455,13 @@ const CodeList = React.forwardRef((props: any, ref: any) => {
             width: '100%',
             textAlign: 'left',
             padding: '6px 8px',
-            background: index === selectedIndex ? 'var(--gray-100)' : 'transparent',
+            background: index === selectedIndex ? 'var(--bg-surface)' : 'transparent',
             border: 'none',
             cursor: 'pointer',
             borderRadius: '4px',
             fontSize: '13px',
             fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-            color: 'var(--gray-800)',
+            color: 'var(--text-main)',
           }}
         >
           {item}

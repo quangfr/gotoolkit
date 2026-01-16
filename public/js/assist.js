@@ -391,6 +391,7 @@
     }
 
     function loadOpenState() {
+        if (window.innerWidth < 1200) return false;
         try {
             var stored = global.localStorage.getItem(OPEN_KEY);
             if (stored === "1") return true;
@@ -1265,8 +1266,9 @@
 
     AssistSidebar.prototype.applyPagePadding = function () {
         if (!this.page) return;
+        var isDrawer = window.innerWidth < 1200;
         var offset = Math.max(0, this.sidebarWidth);
-        this.page.style.marginRight = this.isOpen ? offset + "px" : "";
+        this.page.style.marginRight = (this.isOpen && !isDrawer) ? offset + "px" : "";
         this.page.style.paddingRight = "";
     };
 
@@ -1280,7 +1282,6 @@
         if (!this.sidebar) return;
         this.isOpen = true;
         this.sidebar.classList.add("chat-sidebar--open");
-        this.sidebar.style.display = "flex";
         this.applyPagePadding();
         this.updateSidebarWidthVar();
         if (this.toggleButton) {
@@ -1317,7 +1318,6 @@
         this.closeActiveModals();
         this.isOpen = false;
         this.sidebar.classList.remove("chat-sidebar--open");
-        this.sidebar.style.display = "none";
         this.applyPagePadding();
         this.updateSidebarWidthVar();
         if (this.toggleButton) {
@@ -2863,7 +2863,6 @@
         this.sidebar = document.createElement("div");
         this.sidebar.id = "assistSidebar";
         this.sidebar.className = "chat-sidebar";
-        this.sidebar.style.display = "none";
         this.sidebar.style.width = this.sidebarWidth + "px";
 
         var resizer = document.createElement("div");
@@ -7474,6 +7473,13 @@
         if (this.isOpen) {
             this.open();
         }
+        window.addEventListener("resize", () => {
+            if (window.innerWidth < 1200 && this.isOpen) {
+                this.close();
+            } else {
+                this.applyPagePadding();
+            }
+        });
         this.ensureKnowledgeIndexWarm();
     };
 
