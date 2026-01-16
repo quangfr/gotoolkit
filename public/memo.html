@@ -549,7 +549,7 @@
         }
 
         .ProseMirror code {
-            background: var(--bg-surface);
+            background: var(--bg-gray);
             color: var(--text-main);
             padding: 2px 6px;
             border-radius: 8px;
@@ -764,6 +764,56 @@
                 transform: rotate(360deg);
             }
         }
+
+        .gt-template-card {
+            font-size: 13px;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border-main);
+            background: var(--bg-surface);
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .gt-template-card h4 {
+            margin: 0 0 4px;
+            font-size: 14px;
+        }
+
+        .gt-template-card p {
+            margin: 0;
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        .gt-template-card--selected {
+            border-color: var(--color-primary);
+            background: var(--color-primary-soft);
+        }
+
+        .gt-template-card__delete {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: var(--text-muted);
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .gt-template-card__delete:hover {
+            color: var(--color-primary);
+            background: var(--bg-surface-soft);
+        }
     </style>
     <link rel="stylesheet" href="js/memo.bundle.css?v=2026.01.16.5">
 </head>
@@ -839,8 +889,10 @@
                                 <button id="deleteDocumentBtn" type="button" class="menu-panel-btn"><i
                                         data-lucide="trash-2"></i> Supprimer</button>
                                 <div class="menu-separator"></div>
-                                <button id="gtTemplateModalTrigger" type="button" class="menu-panel-btn"><i
-                                        data-lucide="layout-template"></i> Modèles</button>
+                                <button id="publishTemplateBtn" type="button" class="menu-panel-btn"
+                                    style="display:none">
+                                    <i data-lucide="upload-cloud"></i> Publier
+                                </button>
                                 <div class="menu-separator"></div>
                                 <button id="infoButton" type="button" class="menu-panel-btn"><i data-lucide="info"></i>
                                     À propos</button>
@@ -865,6 +917,10 @@
                             </div>
                         </div>
                     </div>
+                    <button id="gtTemplateModalTrigger" class="btn btn-secondary app-header-btn" type="button"
+                        title="Modèles">
+                        <i data-lucide="layout-template"></i>
+                    </button>
                     <button id="assistLauncherBtn" class="btn btn-secondary app-header-btn" type="button" title="Assist"
                         data-app="assist">
                         <i data-lucide="bot"></i></button>
@@ -895,7 +951,7 @@
             </div>
             <div class="gt-template-modal__list" id="gtTemplateModalList" role="radiogroup"></div>
             <div class="gt-template-modal__actions">
-                <button id="gtTemplateModalApply" type="button" class="btn-primary">Appliquer</button>
+                <button id="gtTemplateModalApply" type="button" class="btn-primary">Créer</button>
             </div>
         </div>
     </div>
@@ -936,6 +992,13 @@
         <div class="info-actions">
             <button id="memoUpdateBtn" type="button" class="update-btn">Réinitialiser</button>
             <button type="button" class="secondary" data-open-nexus-modal>Mentions légales</button>
+        </div>
+        <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border-main);">
+            <label for="adminTokenInput"
+                style="font-size: 10px; display: block; margin-bottom: 4px; opacity: 0.7; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Admin
+                Token</label>
+            <input type="password" id="adminTokenInput"
+                style="width: 100%; height: 26px; font-size: 11px; border-radius: 6px; border: 1px solid var(--border-main); background: var(--bg-app); color: var(--text-main); padding: 0 8px; outline: none;">
         </div>
     </div>
 
@@ -1053,6 +1116,7 @@
             const PROMPT_PRESET_STORAGE_KEY = "goToolkit.memo.promptPreset";
             const SHARE_QUERY_PARAM = "share";
             const FIRESTORE_COLLECTION = "memos";
+            const TEMPLATES_COLLECTION = "template-memos";
 
             function saveLastPromptPreset(presetId) {
                 try {
@@ -1074,21 +1138,6 @@
                 }
                 return "advice";
             }
-
-            function getMemoTemplates() {
-                const templates = window.GoPrompts?.memoTemplates;
-                if (Array.isArray(templates) && templates.length) return templates;
-                return [
-                    {
-                        id: "default",
-                        label: "🕊️ Guide rapide",
-                        description: "Aperçu des fonctionnalités avancées de GoToolkit",
-                        markdown: "# Guide rapide — GoToolkit\n\nBienvenue dans l'éditeur Mémo.\n"
-                    }
-                ];
-            }
-
-            const templates = getMemoTemplates();
 
             const tabsEl = document.getElementById("memo-tabs");
             const THEME_STORAGE_KEY = "go-toolkit-theme";
@@ -1112,6 +1161,8 @@
             const saveDocumentBtn = document.getElementById("saveDocumentBtn");
             const renameDocumentBtn = document.getElementById("renameDocumentBtn");
             const deleteDocumentBtn = document.getElementById("deleteDocumentBtn");
+            const publishTemplateBtn = document.getElementById("publishTemplateBtn");
+            const adminTokenInput = document.getElementById("adminTokenInput");
             const importJsonInput = document.getElementById("importJsonInput");
             const infoButton = document.getElementById("infoButton");
             const memoInfoPopup = document.getElementById("memoInfoPopup");
@@ -1140,6 +1191,7 @@
             let memoEditorApi = null;
             let activeDocumentId = null;
             let openDocuments = [];
+            let cloudTemplates = [];
 
             const copyToast = document.getElementById("copyToast");
             const shareWorker = window.goToolkitShareWorker;
@@ -1152,6 +1204,32 @@
             let isDocumentSaving = false;
             let autoSaveTimer = null;
             let memoExplorer = null;
+
+            function isUserAdmin() {
+                const token = (adminTokenInput?.value || localStorage.getItem("feedback-admin-token") || "").trim();
+                return token.length > 0;
+            }
+
+            function updateAdminVisibility() {
+                const isAdmin = isUserAdmin();
+                if (publishTemplateBtn) {
+                    publishTemplateBtn.style.display = isAdmin ? "flex" : "none";
+                }
+                // Also toggle delete icons in template modal
+                document.querySelectorAll(".gt-template-card__delete").forEach(btn => {
+                    btn.style.display = isAdmin ? "flex" : "none";
+                });
+            }
+
+            if (adminTokenInput) {
+                adminTokenInput.value = localStorage.getItem("feedback-admin-token") || "";
+                adminTokenInput.addEventListener("input", () => {
+                    localStorage.setItem("feedback-admin-token", adminTokenInput.value.trim());
+                    updateAdminVisibility();
+                });
+                // Also check on load
+                setTimeout(updateAdminVisibility, 500);
+            }
 
             function updateEmptyState() {
                 const hasOpenDoc = openDocuments.length > 0 && Boolean(activeDocumentId);
@@ -1179,25 +1257,23 @@
                 return "memo-" + Math.random().toString(16).slice(2);
             }
 
-            function createDefaultState(useTemplate = false) {
+            function createDefaultState() {
                 const id = createId();
                 const lastPromptPreset = getLastSavedPromptPreset();
-                const defaultMarkdown = (useTemplate && templates[0]) ? templates[0].markdown : "";
-                const defaultHtml = (useTemplate && templates[0]) ? renderMemoTemplateMarkdown(defaultMarkdown) : "";
-                const defaultTitle = (useTemplate && templates[0]) ? (templates[0].label.replace(/^[^\s]+\s+/, "") || "Doc 1") : "Doc 1";
 
                 return {
                     tabs: [
                         {
                             id,
-                            title: defaultTitle,
-                            content: defaultHtml,
+                            title: "Doc 1",
+                            description: "",
+                            content: "",
                             contextEmbeddings: []
                         }
                     ],
                     activeTabId: id,
-                    templateId: (useTemplate && templates[0]) ? templates[0].id : null,
-                    templateLabel: (useTemplate && templates[0]) ? templates[0].label : null,
+                    templateId: null,
+                    templateLabel: null,
                     promptPresetId: lastPromptPreset
                 };
             }
@@ -1211,11 +1287,12 @@
                     const title = typeof tab.title === "string" && tab.title.trim()
                         ? tab.title.trim()
                         : "Doc " + (index + 1);
+                    const description = typeof tab.description === "string" ? tab.description : "";
                     const content = typeof tab.content === "string" ? tab.content : "";
                     const contextEmbeddings = Array.isArray(tab.contextEmbeddings)
                         ? tab.contextEmbeddings.filter(Boolean)
                         : [];
-                    return { id, title, content, contextEmbeddings };
+                    return { id, title, description, content, contextEmbeddings };
                 });
                 const activeId = normalizedTabs.some(tab => tab.id === raw.activeTabId)
                     ? raw.activeTabId
@@ -1245,7 +1322,13 @@
                     };
                     return;
                 }
-                openDocuments.push(doc);
+                openDocuments.push({
+                    id: doc.id,
+                    title: doc.title,
+                    description: doc.description || "",
+                    payload: doc.payload,
+                    updatedAt: doc.updatedAt || new Date().toISOString()
+                });
             }
 
             function renderDocumentTabs() {
@@ -1694,7 +1777,7 @@
             function buildSharePreview() {
                 const tab = getActiveTab();
                 const title = tab?.title || "Doc";
-                const description = (tab?.content || "").trim().slice(0, 140);
+                const description = tab?.description || (tab?.content || "").trim().replace(/<[^>]*>/g, "").slice(0, 160);
                 return {
                     title: title,
                     description: description || "Document"
@@ -1881,14 +1964,21 @@
                 return window.GoToolkitMemoDocumentExplorer || null;
             }
 
-            async function applyDocumentRename(docId, nextName) {
+            async function applyDocumentRename(docId, nextName, nextDescription) {
                 if (!docId || !nextName) return;
                 const doc = openDocuments.find(item => item.id === docId);
                 if (doc && doc.payload && Array.isArray(doc.payload.tabs) && doc.payload.tabs[0]) {
                     doc.payload.tabs[0].title = nextName;
+                    if (nextDescription !== undefined) {
+                        doc.payload.tabs[0].description = nextDescription;
+                        doc.description = nextDescription;
+                    }
                 }
                 if (docId === activeDocumentId && state.tabs[0]) {
                     state.tabs[0].title = nextName;
+                    if (nextDescription !== undefined) {
+                        state.tabs[0].description = nextDescription;
+                    }
                     persistState();
                 }
                 if (documentApi) {
@@ -1898,13 +1988,14 @@
                         app: "memo",
                         payload,
                         title: nextName,
-                        description: doc?.description || "",
+                        description: nextDescription !== undefined ? nextDescription : (doc?.description || ""),
                         updatedAt: new Date().toISOString()
                     });
                 }
                 upsertOpenDocument({
                     id: docId,
                     title: nextName,
+                    description: nextDescription !== undefined ? nextDescription : (doc?.description || ""),
                     payload: doc?.payload || buildSharePayload(),
                     updatedAt: new Date().toISOString()
                 });
@@ -1912,17 +2003,18 @@
                 getExplorer()?.refresh?.();
             }
 
-            async function renameDocument(docId, currentTitle) {
+            async function renameDocument(docId, currentTitle, currentDescription) {
                 const explorer = getExplorer();
-                const desired = await explorer?.openRenameModal?.(currentTitle || "");
-                if (!desired) return;
-                const finalName = explorer?.uniqueName?.(desired) || desired;
-                await applyDocumentRename(docId, finalName);
+                const result = await explorer?.openRenameModal?.(currentTitle || "", currentDescription || "");
+                if (!result) return;
+                const finalName = explorer?.uniqueName?.(result.name) || result.name;
+                await applyDocumentRename(docId, finalName, result.description);
             }
 
             async function renameActiveDocument() {
                 if (!activeDocumentId) return;
-                await renameDocument(activeDocumentId, getDocumentTitleFromState(state));
+                const tab = state.tabs[0];
+                await renameDocument(activeDocumentId, tab?.title || "", tab?.description || "");
             }
 
             async function deleteDocument(docId) {
@@ -1968,7 +2060,7 @@
 
             let isCreatingNewDocument = false;
 
-            async function createNewDocument(name) {
+            async function createNewDocument(name, description, initialContent) {
                 if (isCreatingNewDocument) return;
                 isCreatingNewDocument = true;
                 try {
@@ -1976,13 +2068,17 @@
                     const nextState = createDefaultState();
                     if (nextState.tabs[0]) {
                         nextState.tabs[0].title = name;
+                        nextState.tabs[0].description = description || "";
+                        if (typeof initialContent === "string") {
+                            nextState.tabs[0].content = initialContent;
+                        }
                     }
                     state = nextState;
                     activeDocumentId = (documentApi?.generateId && documentApi.generateId()) || createId();
                     renderTabs();
                     setActiveTab(state.activeTabId);
                     syncAssistPresetFromState();
-                    await saveDocument({ showToast: true, created: true });
+                    await saveDocument({ showToast: true, created: true, description: description });
                     getExplorer()?.refresh?.();
                     window.GoToolkitAssistInstance?.open?.();
                 } finally {
@@ -2092,7 +2188,7 @@
                         app: "memo",
                         payload,
                         title: preview.title,
-                        description: preview.description,
+                        description: options?.description !== undefined ? options.description : preview.description,
                         updatedAt: now
                     });
                     if (record) {
@@ -2103,6 +2199,7 @@
                         upsertOpenDocument({
                             id,
                             title: preview.title || getDocumentTitleFromState(state),
+                            description: options?.description !== undefined ? options.description : preview.description,
                             payload,
                             updatedAt: now
                         });
@@ -2134,237 +2231,18 @@
                     .replace(/'/g, "&#39;");
             }
 
-            function formatInlineMarkdown(text) {
-                let out = escapeHtml(text);
-                // After escapeHtml, special chars like > are &gt;
-                // We should NOT call escapeHtml again inside the replacements
-                out = out.replace(/`([^`]+)`/g, (_, code) => `<code>${code}</code>`);
-                out = out.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
-                out = out.replace(/__([^_]+)__/g, "<strong>$1</strong>");
-                out = out.replace(/\*([^*]+)\*/g, "<em>$1</em>");
-                out = out.replace(/_([^_]+)_/g, "<em>$1</em>");
-                out = out.replace(/~~([^~]+)~~/g, "<s>$1</s>");
-                out = out.replace(/~([^~]+)~/g, "<s>$1</s>"); // Handle single ~ as well
-                out = out.replace(/==([^=]+)==/g, "<mark>$1</mark>");
-                out = out.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, label, url) => {
-                    const safeLabel = label; // already escaped via escapeHtml(text)
-                    const safeUrl = String(url || "").trim()
-                        .replace(/&amp;/g, "&") // unescape common entities in URL if they were double escaped
-                        .replace(/&/g, "&amp;")
-                        .replace(/"/g, "&quot;");
-                    if (!/^https?:\/\//i.test(safeUrl)) return safeLabel;
-                    return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer">${safeLabel}</a>`;
-                });
-                return out;
-            }
-
-            function renderMemoTemplateMarkdown(markdown) {
-                const raw = String(markdown || "");
-                if (!raw.trim()) return "";
-
-                const lines = raw.replace(/\r\n/g, "\n").split("\n");
-                const html = [];
-
-                let inCodeBlock = false;
-                let codeBlockDelim = "";
-                let codeLanguage = "";
-                let codeLines = [];
-
-                let listItems = [];
-                let taskItems = [];
-                let quoteLines = [];
-
-                function flushList() {
-                    if (!listItems.length) return;
-                    html.push(`<ul>${listItems.map(item => `<li>${formatInlineMarkdown(item)}</li>`).join("")}</ul>`);
-                    listItems = [];
-                }
-
-                function flushTasks() {
-                    if (!taskItems.length) return;
-                    html.push(
-                        `<ul data-type="taskList">${taskItems.map(item =>
-                            `<li data-type="taskItem" data-checked="${item.checked ? "true" : "false"}">${formatInlineMarkdown(item.text)}</li>`
-                        ).join("")}</ul>`
-                    );
-                    taskItems = [];
-                }
-
-                function flushQuote() {
-                    if (!quoteLines.length) return;
-
-                    let type = "default";
-                    let title = null;
-                    let contentLines = [...quoteLines];
-
-                    // Check for [!TYPE title] on the first line
-                    if (contentLines.length > 0) {
-                        const firstLine = contentLines[0].trim();
-                        const alertMatch = firstLine.match(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)(?:\s+(.*))?\]$/i);
-                        if (alertMatch) {
-                            type = alertMatch[1].toUpperCase();
-                            if (alertMatch[2]) title = alertMatch[2].trim();
-                            contentLines.shift(); // Remove the header line
-                        }
-                    }
-
-                    const attrs = [];
-                    if (type !== "default") attrs.push(`data-type="${type}"`);
-                    if (title) attrs.push(`data-title="${escapeHtml(title)}"`);
-
-                    const attrStr = attrs.length ? " " + attrs.join(" ") : "";
-                    const content = contentLines.map(line => `<p>${formatInlineMarkdown(line)}</p>`).join("");
-                    html.push(`<blockquote${attrStr}>${content}</blockquote>`);
-                    quoteLines = [];
-                }
-
-                function tryParseTable(startIndex) {
-                    const headerLine = lines[startIndex];
-                    const sepLine = lines[startIndex + 1];
-                    if (!headerLine || !sepLine) return null;
-                    if (!/\|/.test(headerLine)) return null;
-                    if (!/^\s*\|?\s*:?[-]{2,}.*\|.*$/.test(sepLine.trim())) return null;
-
-                    const readRow = (line) => {
-                        const trimmed = String(line || "").trim();
-                        if (!trimmed) return null;
-                        if (!/\|/.test(trimmed)) return null;
-                        const parts = trimmed
-                            .replace(/^\|/, "")
-                            .replace(/\|$/, "")
-                            .split("|")
-                            .map(cell => cell.trim());
-                        return parts;
-                    };
-
-                    const header = readRow(headerLine);
-                    if (!header || !header.length) return null;
-
-                    const rows = [];
-                    let i = startIndex + 2;
-                    for (; i < lines.length; i++) {
-                        const row = readRow(lines[i]);
-                        if (!row) break;
-                        rows.push(row);
-                    }
-
-                    const thead = `<tr>${header.map(cell => `<th>${formatInlineMarkdown(cell)}</th>`).join("")}</tr>`;
-                    const tbody = rows.map(r => `<tr>${r.map(cell => `<td>${formatInlineMarkdown(cell)}</td>`).join("")}</tr>`).join("");
-                    const tableHtml = `<table><tbody>${thead}${tbody}</tbody></table>`;
-                    return { html: tableHtml, nextIndex: i - 1 };
-                }
-
-                for (let i = 0; i < lines.length; i++) {
-                    const line = lines[i];
-                    const trimmed = String(line || "").trim();
-
-                    if (!inCodeBlock && /^```+/.test(trimmed)) {
-                        flushList();
-                        flushTasks();
-                        flushQuote();
-                        inCodeBlock = true;
-                        codeBlockDelim = trimmed.match(/^```+/)[0];
-                        codeLanguage = trimmed.slice(codeBlockDelim.length).trim().toLowerCase();
-                        continue;
-                    }
-
-                    if (inCodeBlock) {
-                        if (trimmed === codeBlockDelim) {
-                            if (codeLanguage === "mermaid") {
-                                const code = codeLines.join("\n");
-                                html.push(`<mermaid-diagram code="${escapeHtml(code)}"></mermaid-diagram>`);
-                            } else {
-                                html.push(`<pre><code>${escapeHtml(codeLines.join("\n"))}</code></pre>`);
-                            }
-                            codeLines = [];
-                            codeLanguage = "";
-                            codeBlockDelim = "";
-                            inCodeBlock = false;
-                        } else {
-                            codeLines.push(line);
-                        }
-                        continue;
-                    }
-
-                    const maybeTable = tryParseTable(i);
-                    if (maybeTable) {
-                        flushList();
-                        flushTasks();
-                        flushQuote();
-                        html.push(maybeTable.html);
-                        i = maybeTable.nextIndex;
-                        continue;
-                    }
-
-                    if (!trimmed) {
-                        flushList();
-                        flushTasks();
-                        flushQuote();
-                        continue;
-                    }
-
-                    const quoteMatch = trimmed.match(/^>\s?(.*)$/);
-                    if (quoteMatch) {
-                        flushList();
-                        flushTasks();
-                        quoteLines.push(quoteMatch[1] || "");
-                        continue;
-                    }
-
-                    const headingMatch = trimmed.match(/^(#{1,3})\s+(.*)$/);
-                    if (headingMatch) {
-                        flushList();
-                        flushTasks();
-                        flushQuote();
-                        const level = headingMatch[1].length;
-                        const tag = level === 1 ? "h1" : level === 2 ? "h2" : "h3";
-                        html.push(`<${tag}>${formatInlineMarkdown(headingMatch[2])}</${tag}>`);
-                        continue;
-                    }
-
-                    const taskMatch = trimmed.match(/^[-*+]\s+\[( |x|X)\]\s+(.*)$/);
-                    if (taskMatch) {
-                        flushList();
-                        flushQuote();
-                        taskItems.push({ checked: /x/i.test(taskMatch[1]), text: taskMatch[2] || "" });
-                        continue;
-                    }
-
-                    const listMatch = trimmed.match(/^[-*+]\s+(.*)$/);
-                    if (listMatch) {
-                        flushTasks();
-                        flushQuote();
-                        listItems.push(listMatch[1] || "");
-                        continue;
-                    }
-
-                    flushList();
-                    flushTasks();
-                    flushQuote();
-                    html.push(`<p>${formatInlineMarkdown(trimmed)}</p>`);
-                }
-
-                flushList();
-                flushTasks();
-                flushQuote();
-
-                if (inCodeBlock && codeLines.length) {
-                    html.push(`<pre><code>${escapeHtml(codeLines.join("\n"))}</code></pre>`);
-                }
-
-                return html.join("");
-            }
-
             let templateInsertMode = "append";
 
             function applyTemplateContent(template) {
                 if (!template) return;
-                const markdown = template.markdown || "";
-                const html = renderMemoTemplateMarkdown(markdown);
+                const html = template.html || "";
+                if (templateInsertMode !== "append") {
+                    createNewDocument(template.label || "Nouveau document", template.description || "", html);
+                    return;
+                }
+
                 const current = getActiveTab()?.content || "";
-                const next = templateInsertMode === "append" && current.trim()
-                    ? `${current}${html}`
-                    : html;
+                const next = current.trim() ? `${current}\n\n${html}` : html;
                 memoEditorApi?.setValue(next);
                 updateActiveTabContent(next);
                 state.templateId = template.id || null;
@@ -2372,15 +2250,66 @@
                 persistState();
             }
 
-            function renderTemplateList() {
+            async function renderTemplateList() {
                 if (!templateModalList) return;
+                templateModalList.innerHTML = '<div style="padding: 20px; text-align: center; opacity: 0.7;">Chargement des modèles...</div>';
+
+                let templatesToRender = [];
+                try {
+                    const baseUrl = shareWorker.baseUrl || "https://share.gotoolkit.workers.dev";
+                    const response = await fetch(`${baseUrl}/v1/shares/${TEMPLATES_COLLECTION}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        cloudTemplates = (data.documents || []).map(doc => ({
+                            id: doc.id,
+                            label: doc.payload?.label || "Modèle sans titre",
+                            description: doc.payload?.description || "",
+                            html: doc.payload?.html || ""
+                        }));
+                    }
+                } catch (err) {
+                    console.warn("Failed to fetch cloud templates", err);
+                }
+
                 templateModalList.innerHTML = "";
-                templates.forEach((template, index) => {
+
+                if (!cloudTemplates.length) {
+                    templateModalList.innerHTML = '<div style="padding: 20px; text-align: center; opacity: 0.7;">Aucun modèle disponible.</div>';
+                    return;
+                }
+
+                const isAdmin = isUserAdmin();
+
+                cloudTemplates.forEach((template, index) => {
                     const btn = document.createElement("button");
                     btn.type = "button";
                     btn.className = "gt-template-card";
                     btn.dataset.templateId = template.id;
-                    btn.innerHTML = `<h4>${template.label}</h4><p>${template.description || ""}</p>`;
+                    btn.innerHTML = `<h4>${escapeHtml(template.label)}</h4><p>${escapeHtml(template.description || "")}</p>`;
+
+                    if (cloudTemplates.some(t => t.id === template.id)) {
+                        const deleteBtn = document.createElement("button");
+                        deleteBtn.type = "button";
+                        deleteBtn.className = "gt-template-card__delete";
+                        deleteBtn.innerHTML = '<i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>';
+                        deleteBtn.style.display = isAdmin ? "flex" : "none";
+                        deleteBtn.addEventListener("click", async (e) => {
+                            e.stopPropagation();
+                            if (!confirm(`Supprimer le modèle "${template.label}" ?`)) return;
+                            try {
+                                const ok = await shareWorker.deleteSharePayload(TEMPLATES_COLLECTION, template.id);
+                                if (ok) {
+                                    setStatus("Modèle supprimé");
+                                    renderTemplateList();
+                                }
+                            } catch (err) {
+                                console.error("Template delete failed", err);
+                                setStatus("Erreur lors de la suppression", true);
+                            }
+                        });
+                        btn.appendChild(deleteBtn);
+                    }
+
                     btn.addEventListener("click", () => {
                         templateModalList.querySelectorAll(".gt-template-card--selected")
                             .forEach(el => el.classList.remove("gt-template-card--selected"));
@@ -2391,16 +2320,17 @@
                     }
                     templateModalList.appendChild(btn);
                 });
+                if (window.lucide) window.lucide.createIcons();
             }
 
             function getSelectedTemplate() {
                 const active = templateModalList?.querySelector(".gt-template-card--selected");
                 const id = active?.dataset?.templateId;
-                return templates.find(template => template.id === id) || templates[0];
+                return cloudTemplates.find(template => template.id === id) || cloudTemplates[0];
             }
 
             function openTemplateModal(mode) {
-                templateInsertMode = mode || "append";
+                templateInsertMode = mode || "create";
                 renderTemplateList();
                 templateModal?.classList.add("open");
                 templateModal?.setAttribute("aria-hidden", "false");
@@ -2872,6 +2802,32 @@
                 await renameActiveDocument();
             });
 
+            publishTemplateBtn?.addEventListener("click", async () => {
+                closeMenus();
+                const tab = getActiveTab();
+                if (!tab) return;
+
+                const explorer = getExplorer();
+                const result = await explorer?.openRenameModal?.(tab.title || "", tab.description || "");
+                if (!result) return;
+
+                const payload = {
+                    label: result.name,
+                    description: result.description,
+                    html: tab.content || ""
+                };
+
+                try {
+                    setStatus("Publication du modèle...");
+                    // Pass null as token to trigger POST (Firestore ID generation)
+                    await shareWorker.saveSharePayload(TEMPLATES_COLLECTION, null, payload);
+                    setStatus("Modèle publié avec succès");
+                } catch (err) {
+                    console.error("Template publish failed", err);
+                    setStatus("Échec de la publication", true);
+                }
+            });
+
             deleteDocumentBtn?.addEventListener("click", async () => {
                 closeMenus();
                 await deleteActiveDocument();
@@ -2937,7 +2893,7 @@
                 handleShareUpdate();
             });
 
-            templateModalTrigger?.addEventListener("click", () => openTemplateModal("append"));
+            templateModalTrigger?.addEventListener("click", () => openTemplateModal("create"));
             templateModalClose?.addEventListener("click", () => closeTemplateModal());
             templateModal?.addEventListener("click", event => {
                 if (event.target === templateModal) closeTemplateModal();

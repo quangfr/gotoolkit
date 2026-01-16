@@ -116,8 +116,10 @@
   async function saveSharePayload(collection, token, payload) {
     assertReady();
     return withWorkerFallback(async base => {
-      const response = await fetchWithBase(base, collection, token, {
-        method: "PUT",
+      const url = token ? buildShareUrl(base, collection, token) : buildShareUrl(base, collection);
+      const method = token ? "PUT" : "POST";
+      const response = await fetch(url, {
+        method,
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json"
@@ -129,7 +131,7 @@
         throw new Error(body || "Impossible de sauvegarder le partage");
       }
       const data = await response.json();
-      return data.meta || {};
+      return data.meta || data;
     });
   }
 

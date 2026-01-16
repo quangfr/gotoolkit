@@ -28,6 +28,12 @@ export const TableNode = Table.configure({
 export { TableRow, TableHeader };
 
 export const TABLE_COLORS = [
-  { name: 'Défaut', value: 'transparent' },
-  { name: 'Surface', value: 'var(--bg-surface)' },
+  { name: 'Aucun', value: 'var(--bg-none)' },
+  { name: 'Gris', value: 'var(--bg-gray)' },
+  { name: 'Rouge', value: 'var(--bg-red)' },
+  { name: 'Orange', value: 'var(--bg-orange)' },
+  { name: 'Jaune', value: 'var(--bg-yellow)' },
+  { name: 'Vert', value: 'var(--bg-green)' },
+  { name: 'Bleu', value: 'var(--bg-blue)' },
+  { name: 'Violet', value: 'var(--bg-purple)' },
 ];

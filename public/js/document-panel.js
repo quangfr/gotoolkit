@@ -157,15 +157,19 @@
         modalOverlay.setAttribute("aria-modal", "true");
         modalOverlay.style.display = "none";
         modalOverlay.innerHTML = `
-            <div class="modal">
+            <div class="modal document-edit-modal">
                 <div class="modal-header">
-                    <h3>Nom du document</h3>
+                    <h3>Document</h3>
                     <button class="modal-close" type="button" aria-label="Fermer"><i data-lucide="x"></i></button>
                 </div>
                 <div class="ia-actions">
                     <div class="header-row ia-header-actions">
                         <label for="document-explorer-name-input">Nom</label>
-                        <input id="document-explorer-name-input" type="text" />
+                        <input id="document-explorer-name-input" type="text" placeholder="Nom du document" />
+                    </div>
+                    <div class="header-row ia-header-actions">
+                        <label for="document-explorer-description-input">Description</label>
+                        <textarea id="document-explorer-description-input" rows="3" placeholder="Description courte (optionnelle)"></textarea>
                     </div>
                     <div class="modal-actions" style="justify-content:flex-end;">
                         <button class="btn btn-secondary" type="button" data-cancel>Annuler</button>
@@ -179,6 +183,7 @@
         const modalCancelBtn = modalOverlay.querySelector("[data-cancel]");
         const modalConfirmBtn = modalOverlay.querySelector("[data-confirm]");
         const modalInput = modalOverlay.querySelector("#document-explorer-name-input");
+        const modalDescInput = modalOverlay.querySelector("#document-explorer-description-input");
         let modalResolver = null;
 
         function closeModal() {
@@ -187,12 +192,13 @@
             modalResolver = null;
         }
 
-        function openNameModal(defaultValue) {
+        function openNameModal(defaultValue, defaultDescription) {
             if (!modalInput) return Promise.resolve(null);
             modalOverlay.style.display = "flex";
             modalOverlay.classList.add("open");
             if (window.lucide) window.lucide.createIcons();
             modalInput.value = defaultValue || "";
+            if (modalDescInput) modalDescInput.value = defaultDescription || "";
             requestAnimationFrame(() => {
                 modalInput.focus();
                 modalInput.select();
@@ -211,7 +217,12 @@
 
         modalCloseBtn?.addEventListener("click", () => resolveModal(null));
         modalCancelBtn?.addEventListener("click", () => resolveModal(null));
-        modalConfirmBtn?.addEventListener("click", () => resolveModal(modalInput?.value || ""));
+        modalConfirmBtn?.addEventListener("click", () => {
+            resolveModal({
+                name: modalInput?.value || "",
+                description: modalDescInput?.value || ""
+            });
+        });
         modalOverlay.addEventListener("click", event => {
             if (event.target === modalOverlay) {
                 resolveModal(null);
@@ -221,7 +232,10 @@
         modalInput?.addEventListener("keydown", event => {
             if (event.key === "Enter") {
                 event.preventDefault();
-                resolveModal(modalInput?.value || "");
+                resolveModal({
+                    name: modalInput?.value || "",
+                    description: modalDescInput?.value || ""
+                });
             }
         });
 
@@ -433,9 +447,9 @@
                 renameBtn.addEventListener("click", event => {
                     event.stopPropagation();
                     if (!onRename) return;
-                    openNameModal(item.title || "").then(result => {
+                    openNameModal(item.title || "", item.description || "").then(result => {
                         if (!result) return;
-                        onRename(item, uniqueName(result, cachedItems));
+                        onRename(item, uniqueName(result.name, cachedItems), result.description);
                     });
                 });
                 actions.appendChild(renameBtn);
@@ -492,9 +506,9 @@
                 const baseName = uniqueName(`Doc ${cachedItems.length + 1}`, cachedItems, Array.from(pendingNames));
                 const result = await openNameModal(baseName);
                 if (!result) return;
-                const name = uniqueName(result, cachedItems, Array.from(pendingNames));
+                const name = uniqueName(result.name, cachedItems, Array.from(pendingNames));
                 pendingNames.add(name);
-                await Promise.resolve(onCreate(name));
+                await Promise.resolve(onCreate(name, result.description));
             } finally {
                 isCreating = false;
                 createBtn.disabled = false;
@@ -553,8 +567,8 @@
             close() {
                 applyOpen(false);
             },
-            openRenameModal(name) {
-                return openNameModal(name);
+            openRenameModal(name, description) {
+                return openNameModal(name, description);
             },
             uniqueName(name) {
                 return uniqueName(name, cachedItems);

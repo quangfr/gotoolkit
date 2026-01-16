@@ -10,6 +10,25 @@
   --color-primary-strong: var(--text-main);
   --color-primary-soft: rgba(42, 122, 87, 0.2);
 
+  /* 3. Background & Text Color Palettes */
+  --bg-none: transparent;
+  --bg-gray: #cbd5e1;
+  --bg-red: #e48787;
+  --bg-orange: #f0b484;
+  --bg-yellow: #eddd8d;
+  --bg-green: #89d6a5;
+  --bg-blue: #7faadd;
+  --bg-purple: #b186dc;
+
+  --bg-text-main: var(--text-main);
+  --bg-text-gray: #57595c;
+  --bg-text-red: #dc2626;
+  --bg-text-orange: #d97706;
+  --bg-text-yellow: #cac004;
+  --bg-text-green: #16a34a;
+  --bg-text-blue: #074795;
+  --bg-text-purple: #6614d1;
+
   /* 4. Functional Theme Tokens (Default: Dark Theme) */
   --bg-app: #000000;
   --bg-surface: #222222;
@@ -63,7 +82,7 @@
   --bg-surface: #ffffff;
   --bg-surface-soft: #fcfaf7;
   --text-main: #2f2922;
-  --text-muted: #8b8173;
+  --text-muted: #ccc6bf;
   --border-main: #ece4e4;
   --border-strong: #ededed;
   --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.12);
@@ -78,7 +97,7 @@
   --bg-surface: #222222;
   --bg-surface-soft: #333333;
   --text-main: #f5f5f5;
-  --text-muted: #aaa6a5;
+  --text-muted: #6d6664;
   --border-main: #4b4949;
   --border-strong: #7d7979;
   --scrollbar-thumb: rgba(255, 255, 255, 0.1);
@@ -111,6 +130,7 @@
 * {
   box-sizing: border-box;
 }
+
 
 body {
   margin: 0;
@@ -685,6 +705,11 @@ body.context-resizing {
   font-family: inherit;
   background: var(--bg-surface-soft);
 }
+
+mark {
+  background-color: var(--bg-yellow);
+}
+
 
 .share-actions {
   display: flex;

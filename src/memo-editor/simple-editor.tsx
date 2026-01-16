@@ -1,8 +1,9 @@
 import React from 'react';
 import { useEditor, EditorContent, Editor, ReactRenderer } from '@tiptap/react';
-import { Extension, InputRule } from '@tiptap/core';
+import { Extension, InputRule, markInputRule } from '@tiptap/core';
 import Suggestion from '@tiptap/suggestion';
 import StarterKit from '@tiptap/starter-kit';
+import Code from '@tiptap/extension-code';
 import Placeholder from '@tiptap/extension-placeholder';
 import Highlight from '@tiptap/extension-highlight';
 import TiptapUnderline from '@tiptap/extension-underline';
@@ -47,9 +48,8 @@ import {
   Highlighter, Table as TableIcon, Trash2, CodeXml,
   ChevronDown, Check, CheckCheck, Type,
   Bot, X, Palette, Plus, Baseline, Shapes,
-  MessageSquare,
-  CheckSquare, ChevronRight, ListTree,
-  Pencil, Copy
+  CheckSquare, ListTree,
+  Pencil, Copy, Image as ImageIcon
 } from 'lucide-react';
 
 
@@ -296,14 +296,14 @@ const DetailsInputRule = Extension.create({
 });
 
 const TEXT_COLORS = [
-  { name: 'Noir', value: 'var(--text-main)' },
-  { name: 'Gris', value: 'var(--text-muted)' },
-  { name: 'Rouge', value: 'var(--color-red)' },
-  { name: 'Orange', value: 'var(--color-orange)' },
-  { name: 'Jaune', value: 'var(--color-yellow)' },
-  { name: 'Vert', value: 'var(--color-green)' },
-  { name: 'Bleu', value: 'var(--color-blue)' },
-  { name: 'Violet', value: 'var(--color-purple)' },
+  { name: 'Défaut', value: 'var(--bg-text-main)' },
+  { name: 'Gris', value: 'var(--bg-text-gray)' },
+  { name: 'Rouge', value: 'var(--bg-text-red)' },
+  { name: 'Orange', value: 'var(--bg-text-orange)' },
+  { name: 'Jaune', value: 'var(--bg-text-yellow)' },
+  { name: 'Vert', value: 'var(--bg-text-green)' },
+  { name: 'Bleu', value: 'var(--bg-text-blue)' },
+  { name: 'Violet', value: 'var(--bg-text-purple)' },
 ];
 
 import TurndownService from 'turndown';
@@ -509,15 +509,6 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLi
                   left: '50%',
                   transform: 'translateX(-50%)',
                   marginTop: '8px',
-                  backgroundColor: 'var(--white)',
-                  border: '1px solid var(--border-main)',
-                  borderRadius: '8px',
-                  boxShadow: 'var(--shadow-md)',
-                  zIndex: 1001,
-                  padding: '8px',
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(4, 1fr)',
-                  gap: '4px',
                 }}
               >
                 {TEXT_COLORS.map(color => (
@@ -617,15 +608,6 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLi
                     left: '50%',
                     transform: 'translateX(-50%)',
                     marginTop: '8px',
-                    backgroundColor: 'var(--white)',
-                    border: '1px solid var(--border-main)',
-                    borderRadius: '8px',
-                    boxShadow: 'var(--shadow-md)',
-                    zIndex: 1001,
-                    padding: '8px',
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(4, 1fr)',
-                    gap: '4px',
                   }}
                 >
                   {TABLE_COLORS.map(color => (
@@ -635,8 +617,8 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLi
                       style={{ 
                         width: '20px', 
                         height: '20px', 
-                        backgroundColor: color.value === 'transparent' ? 'var(--white)' : color.value, 
-                        border: color.value === 'transparent' ? '1px solid var(--border-main)' : 'none',
+                        backgroundColor: color.value === 'var(--bg-none)' ? 'var(--white)' : color.value, 
+                        border: color.value === 'var(--bg-none)' ? '1px solid var(--border-main)' : 'none',
                         borderRadius: '4px',
                         cursor: 'pointer'
                       }}
@@ -1198,15 +1180,6 @@ const Toolbar = ({ editor, onDropdownToggle, onLink }: {
                 left: '50%',
                 transform: 'translateX(-50%)',
                 marginTop: '8px',
-                backgroundColor: 'var(--white)',
-                border: '1px solid var(--border-main)',
-                borderRadius: '8px',
-                boxShadow: 'var(--shadow-md)',
-                zIndex: 1001,
-                padding: '8px',
-                display: 'grid',
-                gridTemplateColumns: 'repeat(4, 1fr)',
-                gap: '4px',
               }}
             >
               {TEXT_COLORS.map(color => (
@@ -1434,8 +1407,9 @@ const CodeList = React.forwardRef((props: any, ref: any) => {
 
   return (
     <div
+      className="code-dropdown-autocomplete"
       style={{
-        background: 'var(--white)',
+        background: 'var(--bg-surface-soft)',
         border: '1px solid var(--border-main)',
         borderRadius: '8px',
         boxShadow: 'var(--shadow-md)',
@@ -1522,6 +1496,7 @@ const codeSuggestion = {
         component = new ReactRenderer(CodeList, {
           props,
           editor: props.editor,
+          className: 'code-dropdown-autocomplete',
         });
 
         document.body.appendChild(component.element);
@@ -1599,23 +1574,21 @@ const CodeSuggestion = Extension.create({
   },
 });
 
-async function copySvgAsPng(svgElement: SVGSVGElement) {
+async function downloadSvgAsPng(svgElement: SVGSVGElement, filename: string = 'diagramme.png') {
   try {
     const svgData = new XMLSerializer().serializeToString(svgElement);
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
-    const img = new Image();
+    const img = new (window as any).Image();
     
-    // Use the actual rendered size for better quality
     const rect = svgElement.getBoundingClientRect();
-    const scale = 2; // High resolution
+    const scale = 2;
     const width = rect.width * scale;
     const height = rect.height * scale;
     
     canvas.width = width;
     canvas.height = height;
     
-    // Add white background (SVG usually has transparent background)
     if (ctx) {
       ctx.fillStyle = 'white';
       ctx.fillRect(0, 0, width, height);
@@ -1626,24 +1599,16 @@ async function copySvgAsPng(svgElement: SVGSVGElement) {
     
     img.onload = () => {
       ctx?.drawImage(img, 0, 0, width, height);
-      canvas.toBlob(async (blob) => {
-        if (blob) {
-          try {
-            const data = [new ClipboardItem({ 'image/png': blob })];
-            await navigator.clipboard.write(data);
-            document.dispatchEvent(new CustomEvent('copyToast', { 
-                detail: { message: 'Image copiée !' } 
-            }));
-          } catch (err) {
-            console.error("Failed to copy PNG:", err);
-          }
-        }
-        URL.revokeObjectURL(url);
-      }, 'image/png');
+      const dataUrl = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = dataUrl;
+      link.click();
+      URL.revokeObjectURL(url);
     };
     img.src = url;
   } catch (err) {
-    console.error("Error generating PNG:", err);
+    console.error("Error downloading PNG:", err);
   }
 }
 
@@ -1680,6 +1645,17 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       StarterKit.configure({
         blockquote: false,
         heading: false, // Use our custom Heading instead to get IDs
+        code: false,
+      }),
+      Code.extend({
+        addInputRules() {
+          return [
+            markInputRule({
+              find: /(?:^|\s)(`([^`]+)`)$/,
+              type: this.type,
+            }),
+          ]
+        },
       }),
       CustomHeading.configure({
         levels: [1, 2, 3, 4],
@@ -2084,7 +2060,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         // Custom rule for Mermaid diagrams
         turndown.addRule('mermaid-diagram', {
           filter: 'mermaid-diagram',
-          replacement: function (content: string, node: any) {
+          replacement: function (_content: string, node: any) {
             const code = node.getAttribute('code') || '';
             return '\n\n```mermaid\n' + code.trim() + '\n```\n\n';
           }
@@ -2580,7 +2556,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           style={{
             position: 'absolute',
             top: blockDeleteHandle.top,
-            left: blockDeleteHandle.left - (blockDeleteHandle.label === "le diagramme" ? 72 : 16),
+            left: blockDeleteHandle.left - (blockDeleteHandle.label === "le diagramme" ? 104 : 16),
             display: 'flex',
             gap: '4px',
             zIndex: 10
@@ -2631,20 +2607,35 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
               style={{ position: 'static', opacity: 1 }}
               onClick={(e) => {
                 e.stopPropagation();
+                const node = editor.state.doc.nodeAt(blockDeleteHandle.pos);
+                if (node && node.attrs.code) {
+                  navigator.clipboard.writeText(node.attrs.code).then(() => {
+                    document.dispatchEvent(new CustomEvent('copyToast', { 
+                      detail: { message: 'Code copié !' } 
+                    }));
+                  });
+                }
+              }}
+              title="Copier"
+            >
+              <Copy size={16} />
+            </button>
+            <button
+              className="block-delete-button"
+              style={{ position: 'static', opacity: 1 }}
+              onClick={(e) => {
+                e.stopPropagation();
                 const dom = editor.view.nodeDOM(blockDeleteHandle.pos) as HTMLElement;
                 if (dom) {
                   const svg = dom.querySelector('svg');
                   if (svg) {
-                    copySvgAsPng(svg as any);
-                    document.dispatchEvent(new CustomEvent('copyToast', { 
-                      detail: { message: 'Image copiée !' } 
-                    }));
+                    downloadSvgAsPng(svg as any, 'diagramme.png');
                   }
                 }
               }}
-              title="Copier en PNG"
+              title="Télécharger en PNG"
             >
-              <Copy size={16} />
+              <ImageIcon size={16} />
             </button>
           </>
         )}

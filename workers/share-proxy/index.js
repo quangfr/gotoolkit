@@ -6,7 +6,8 @@ const VALID_COLLECTIONS = new Set([
   "diagrams",
   "grids",
   "voices", // voice module capsules
-  "memos"
+  "memos",
+  "template-memos"
 ]);
 const FIRESTORE_SCOPE = "https://www.googleapis.com/auth/datastore";
 const FIREBASE_TOKEN_URL = "https://oauth2.googleapis.com/token";
@@ -25,7 +26,7 @@ function parseSharePath(request) {
   const segments = normalizePathname(url.pathname)
     .split("/")
     .filter(Boolean);
-  if (segments.length < 4) {
+  if (segments.length < 3) {
     return null;
   }
   if (segments[0] !== API_VERSION || segments[1] !== SHARES_SEGMENT) {
@@ -33,12 +34,12 @@ function parseSharePath(request) {
   }
   const collection = segments[2];
   const documentId = segments[3];
-  if (!collection || !documentId || !VALID_COLLECTIONS.has(collection)) {
+  if (!collection || !VALID_COLLECTIONS.has(collection)) {
     return null;
   }
   return {
     collection,
-    documentId: decodeURIComponent(documentId)
+    documentId: documentId ? decodeURIComponent(documentId) : null
   };
 }
 
@@ -355,6 +356,52 @@ async function fetchShareDocument(env, collection, documentId) {
   };
 }
 
+async function listShareDocuments(env, collection) {
+  const baseUrl = getFirestoreBaseUrl(env);
+  const url = `${baseUrl}/${collection}?pageSize=100`;
+  const response = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${await getAccessToken(env)}`,
+      Accept: "application/json"
+    }
+  });
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    throw new Error(`Erreur Firestore: ${response.status} ${body}`);
+  }
+  const data = await response.json();
+  const documents = (data.documents || []).map(doc => {
+    // extract document ID from name path
+    const nameSegments = doc.name.split("/");
+    const id = nameSegments[nameSegments.length - 1];
+    return {
+      id,
+      payload: extractPayload(doc),
+      meta: extractMeta(doc)
+    };
+  });
+  return documents;
+}
+
+async function deleteShareDocument(env, collection, documentId) {
+  const url = getDocumentUrl(env, collection, documentId);
+  const response = await fetch(url, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${await getAccessToken(env)}`,
+      Accept: "application/json"
+    }
+  });
+  if (response.status === 404) {
+    return true;
+  }
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    throw new Error(`Erreur Firestore: ${response.status} ${body}`);
+  }
+  return true;
+}
+
 function buildDocumentFields(payload, updatedAt) {
   return {
     payload: {
@@ -405,11 +452,22 @@ async function handleRequest(request, env) {
     return notFoundResponse(request, env);
   }
   if (request.method === "GET") {
+    if (!path.documentId) {
+      const docs = await listShareDocuments(env, path.collection);
+      return jsonResponse({ documents: docs }, 200, request, env);
+    }
     const doc = await fetchShareDocument(env, path.collection, path.documentId);
     if (!doc) {
       return jsonResponse({ payload: null }, 404, request, env);
     }
     return jsonResponse({ payload: doc.payload, meta: doc.meta }, 200, request, env);
+  }
+  if (request.method === "DELETE") {
+    if (!path.documentId) {
+      return errorResponse("Identifiant de document manquant", 400, request, env);
+    }
+    await deleteShareDocument(env, path.collection, path.documentId);
+    return jsonResponse({ success: true }, 200, request, env);
   }
   if (request.method === "PUT" || request.method === "POST") {
     const rateLimitResponse = await enforceWriteRateLimit(request, env);
@@ -428,7 +486,7 @@ async function handleRequest(request, env) {
     const result = await upsertShareDocument(env, path.collection, path.documentId, body.payload, request);
     return jsonResponse(result, 200, request, env);
   }
-  const headers = Object.assign({ Allow: "GET,PUT,POST" }, corsHeaders(request, env));
+  const headers = Object.assign({ Allow: "GET,PUT,POST,DELETE" }, corsHeaders(request, env));
   return errorResponse("Méthode non autorisée", 405, request, env, headers);
 }
 

@@ -1,74 +1,79 @@
 {
-  "version": "2.0.0",
-  "tasks": [
-    {
-      "label": "Dev",
-      "type": "shell",
-      "command": "npm run dev",
-      "isBackground": true,
-      "problemMatcher": {
-        "pattern": {
-          "regexp": "^.*$",
-          "file": 1,
-          "location": 2,
-          "message": 3
-        },
-        "background": {
-          "activeOnStart": true,
-          "beginsPattern": "esbuild",
-          "endsPattern": "watch"
-        }
-      },
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "panel": "shared"
-      }
-    },
-    {
-      "label": "Serve public",
-      "type": "shell",
-      "command": "npm start",
-      "isBackground": true,
-      "problemMatcher": {
-        "pattern": {
-          "regexp": "^.*$",
-          "file": 1,
-          "location": 2,
-          "message": 3
-        },
-        "background": {
-          "activeOnStart": true,
-          "beginsPattern": "serving",
-          "endsPattern": "http"
-        }
-      },
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "panel": "shared"
-      }
-    },
-    {
-      "label": "Build",
-      "type": "shell",
-      "command": "npm run build",
-      "problemMatcher": [],
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "panel": "shared"
-      }
-    },
-    {
-      "label": "Dev + Serve public",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "Build",
-        "Dev",
-        "Serve public"
-      ],
-      "problemMatcher": []
-    }
-  ]
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Dev",
+			"type": "shell",
+			"command": "npm run dev",
+			"isBackground": true,
+			"problemMatcher": {
+				"pattern": {
+					"regexp": "^.*$",
+					"file": 1,
+					"location": 2,
+					"message": 3
+				},
+				"background": {
+					"activeOnStart": true,
+					"beginsPattern": "esbuild",
+					"endsPattern": "watch"
+				}
+			},
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"panel": "shared"
+			}
+		},
+		{
+			"label": "Serve public",
+			"type": "shell",
+			"command": "npm start",
+			"isBackground": true,
+			"problemMatcher": {
+				"pattern": {
+					"regexp": "^.*$",
+					"file": 1,
+					"location": 2,
+					"message": 3
+				},
+				"background": {
+					"activeOnStart": true,
+					"beginsPattern": "serving",
+					"endsPattern": "http"
+				}
+			},
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"panel": "shared"
+			}
+		},
+		{
+			"label": "Build",
+			"type": "shell",
+			"command": "npm run build",
+			"problemMatcher": [],
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"panel": "shared"
+			}
+		},
+		{
+			"label": "Dev + Serve public",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"Build",
+				"Dev",
+				"Serve public"
+			],
+			"problemMatcher": []
+		},
+		{
+			"label": "Build Project",
+			"type": "shell",
+			"command": "npm run build"
+		}
+	]
 }
