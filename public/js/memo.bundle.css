@@ -939,6 +939,10 @@ td .node-text.node-paragraph,
 .mermaid-modal-btn-secondary:hover {
   background-color: var(--border-main);
 }
+.btn-secondary,
+button.btn-secondary {
+  min-height: 28px;
+}
 .ProseMirror pre {
   background: var(--bg-surface-soft);
   color: var(--text-main);

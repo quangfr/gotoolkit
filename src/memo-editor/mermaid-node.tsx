@@ -44,6 +44,21 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
     { id: 'class', label: 'Structure', promptValue: 'classDiagram', Icon: Boxes }
   ];
 
+  const getDiagramTypeFromCode = (c: string) => {
+    const header = getDiagramHeaderLine(c).toLowerCase();
+    if (header.startsWith('sequencediagram')) return 'sequence';
+    if (header.startsWith('classdiagram')) return 'class';
+    if (header.startsWith('flowchart') || header.startsWith('graph')) return 'flow';
+    return null;
+  };
+
+  React.useEffect(() => {
+    const nextType = getDiagramTypeFromCode(draftCode || code);
+    if (nextType && nextType !== diagramType) {
+      setDiagramType(nextType);
+    }
+  }, [code, draftCode, diagramType]);
+
   const handleDrawSend = async () => {
     if (!promptInput.trim() || isGenerating) return;
 
@@ -112,6 +127,10 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
           if (lowerCode.includes('flowchart td') || lowerCode.includes('graph td')) {
             newSize = 'large';
           }
+          const nextType = getDiagramTypeFromCode(cleanCode);
+          if (nextType) {
+            setDiagramType(nextType);
+          }
 
           setDraftCode(cleanCode);
           setPromptInput('');
@@ -153,25 +172,68 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
   const code = node.attrs.code || '';
   const excalidrawJSON = node.attrs.excalidrawJSON || '';
   
-  // Dynamic default size
+  const getDiagramHeaderLine = (c: string) => {
+    const lines = (c || '').split('\n');
+    for (let i = 0; i < Math.min(lines.length, 5); i++) {
+      const line = lines[i].trim();
+      if (!line || line.startsWith('%%')) continue;
+      return line;
+    }
+    return '';
+  };
+
+  const getFlowchartDirection = (c: string) => {
+    const line = getDiagramHeaderLine(c);
+    if (/^(flowchart|graph)\b/i.test(line)) {
+      const match = line.match(/\b(LR|TD|TB|BT|RL)\b/i);
+      return match ? match[1].toUpperCase() : null;
+    }
+    return null;
+  };
+
+  const setFlowchartDirection = (c: string, direction: string) => {
+    const lines = (c || '').split('\n');
+    let updated = false;
+    for (let i = 0; i < Math.min(lines.length, 5); i++) {
+      const rawLine = lines[i];
+      const line = rawLine.trim();
+      if (!line || line.startsWith('%%')) continue;
+      if (/^(flowchart|graph)\b/i.test(line)) {
+        const directionMatch = rawLine.match(/(flowchart|graph)\s+(LR|TD|TB|BT|RL)/i);
+        if (directionMatch) {
+          lines[i] = rawLine.replace(/(flowchart|graph)\s+(LR|TD|TB|BT|RL)/i, `$1 ${direction}`);
+        } else {
+          lines[i] = rawLine.replace(/(flowchart|graph)/i, `$1 ${direction}`);
+        }
+        updated = true;
+        break;
+      }
+    }
+    return { code: lines.join('\n'), updated };
+  };
+
   const getAutoDetectedSize = (c: string) => {
-    const lower = (c || '').toLowerCase().trim();
-    if (lower.startsWith('classdiagram')) return 'large';
-    if (lower.startsWith('sequencediagram')) return 'small';
-    if (lower.includes('flowchart td') || lower.includes('graph td')) return 'large';
+    const header = getDiagramHeaderLine(c).toLowerCase();
+    if (header.startsWith('classdiagram')) return 'large';
+    if (header.startsWith('sequencediagram')) return 'small';
+    const direction = getFlowchartDirection(c);
+    if (direction === 'TD') return 'large';
+    if (direction === 'LR') return 'small';
+    if (header.includes('flowchart td') || header.includes('graph td')) return 'large';
     return 'small';
   };
 
   const isSizeSelectorVisible = (c: string) => {
-    const lower = (c || '').trim().toLowerCase();
-    if (lower.startsWith('sequencediagram') || lower.startsWith('classdiagram')) return false;
-    return true;
+    const header = getDiagramHeaderLine(c).toLowerCase();
+    if (header.startsWith('sequencediagram') || header.startsWith('classdiagram')) return false;
+    return header.startsWith('flowchart') || header.startsWith('graph');
   };
 
-  let size = node.attrs.size || getAutoDetectedSize(code);
+  const activeCode = isEditing ? draftCode : code;
+  const directionSize = getFlowchartDirection(activeCode);
+  let size = directionSize ? (directionSize === 'TD' ? 'large' : 'small') : node.attrs.size || getAutoDetectedSize(activeCode);
   if (size === 'medium') size = 'small'; 
-
-  const showSizeSelector = isSizeSelectorVisible(isEditing ? draftCode : code);
+  const showSizeSelector = isSizeSelectorVisible(activeCode);
 
   // Immediate preview on paste/init if excalidrawJSON is missing but code exists
   React.useEffect(() => {
@@ -502,41 +564,24 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
     }
   };
 
-  const handleSizeChange = async (newSize: string) => {
+  const handleSizeChange = async (newSize: string, sourceCode?: string) => {
     if (newSize === size) return;
     
     setIsLoading(true);
     try {
-      let updatedCode = draftCode;
+      let updatedCode = sourceCode || draftCode || code;
 
       // Flowchart orientation logic
-      const isFlowchart = draftCode.trim().toLowerCase().startsWith('flowchart') || draftCode.trim().toLowerCase().startsWith('graph');
+      const headerLine = getDiagramHeaderLine(updatedCode).toLowerCase();
+      const isFlowchart = headerLine.startsWith('flowchart') || headerLine.startsWith('graph');
       if (isFlowchart) {
-        const lines = draftCode.split('\n');
-        let orientationChanged = false;
-        
-        // Find the line that defines the flowchart type and orientation
-        for (let i = 0; i < Math.min(lines.length, 3); i++) {
-          const line = lines[i].trim().toLowerCase();
-          if (line.startsWith('flowchart') || line.startsWith('graph')) {
-            const direction = newSize === 'large' ? 'TD' : 'LR';
-            
-            // Check if it already has a direction
-            const directionMatch = lines[i].match(/(flowchart|graph)\s+(LR|TD|TB|BT|RL)/i);
-            if (directionMatch) {
-              lines[i] = lines[i].replace(/(flowchart|graph)\s+(LR|TD|TB|BT|RL)/i, `$1 ${direction}`);
-            } else {
-              // Otherwise append the direction
-              lines[i] = lines[i].replace(/(flowchart|graph)/i, `$1 ${direction}`);
-            }
-            orientationChanged = true;
-            break;
+        const direction = newSize === 'large' ? 'TD' : 'LR';
+        const { code: nextCode, updated } = setFlowchartDirection(updatedCode, direction);
+        if (updated) {
+          updatedCode = nextCode;
+          if (sourceCode !== code) {
+            setDraftCode(updatedCode);
           }
-        }
-        
-        if (orientationChanged) {
-          updatedCode = lines.join('\n');
-          setDraftCode(updatedCode);
         }
       }
 
@@ -573,7 +618,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
           title="Double-cliquer pour modifier le diagramme"
           style={{ 
             cursor: 'pointer', 
-            maxHeight: '650px', 
+            maxHeight: size === 'large' ? '650px' : '500px',
             display: 'flex', 
             flexDirection: 'column',
             width: '100%', 
@@ -590,23 +635,41 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
             minWidth: '100px'
           }}
         >
-          <div className="mermaid-controls" onClick={e => e.stopPropagation()}>
-            {showSizeSelector && (
-              [
+          {showSizeSelector && code.trim() && (
+            <div
+              className="mermaid-controls"
+              onClick={e => {
+                e.stopPropagation();
+                e.preventDefault();
+              }}
+              onMouseDown={e => {
+                e.stopPropagation();
+                e.preventDefault();
+              }}
+              onDoubleClick={e => {
+                e.stopPropagation();
+                e.preventDefault();
+              }}
+            >
+              {[
                 { id: 'small', label: 'Rectangle', Icon: RectangleHorizontal },
                 { id: 'large', label: 'Carré', Icon: Square }
               ].map(s => (
                 <button 
                   key={s.id}
                   className={`size-btn ${size === s.id ? 'active' : ''}`}
-                  onClick={() => handleSizeChange(s.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    handleSizeChange(s.id, code);
+                  }}
                   title={s.label}
                 >
                   <s.Icon size={14} />
                 </button>
-              ))
-            )}
-          </div>
+              ))}
+            </div>
+          )}
 
           {error ? (
             <div className="mermaid-error">
@@ -645,7 +708,11 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
                         <button
                           key={s.id}
                           className={`mermaid-modal-size-btn ${size === s.id ? 'active' : ''}`}
-                          onClick={() => handleSizeChange(s.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            handleSizeChange(s.id, draftCode);
+                          }}
                           title={s.label}
                         >
                           <s.Icon size={14} />
@@ -723,7 +790,8 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
                           {(() => {
                             const current = diagramTypes.find(t => t.id === diagramType);
                             const Icon = current?.Icon || Workflow;
-                            return <><Icon size={14} /> <span>{current?.label}</span></>;
+                            const label = (draftCode || code).trim() ? current?.label : 'Éditer';
+                            return <><Icon size={14} /> <span>{label}</span></>;
                           })()}
                           <ChevronUp size={12} style={{ transform: isTypeMenuOpen ? 'rotate(180deg)' : '' }} />
                         </button>

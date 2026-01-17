@@ -31836,6 +31836,19 @@ ${content}</tr>
       { id: "flow", label: "Processus", promptValue: "flowchart", Icon: Workflow },
       { id: "class", label: "Structure", promptValue: "classDiagram", Icon: Boxes }
     ];
+    const getDiagramTypeFromCode = (c) => {
+      const header = getDiagramHeaderLine(c).toLowerCase();
+      if (header.startsWith("sequencediagram")) return "sequence";
+      if (header.startsWith("classdiagram")) return "class";
+      if (header.startsWith("flowchart") || header.startsWith("graph")) return "flow";
+      return null;
+    };
+    react_shim_default.useEffect(() => {
+      const nextType = getDiagramTypeFromCode(draftCode || code);
+      if (nextType && nextType !== diagramType) {
+        setDiagramType(nextType);
+      }
+    }, [code, draftCode, diagramType]);
     const handleDrawSend = async () => {
       var _a, _b, _c;
       if (!promptInput.trim() || isGenerating) return;
@@ -31890,6 +31903,10 @@ ${promptInput.trim()}`
             if (lowerCode.includes("flowchart td") || lowerCode.includes("graph td")) {
               newSize = "large";
             }
+            const nextType = getDiagramTypeFromCode(cleanCode);
+            if (nextType) {
+              setDiagramType(nextType);
+            }
             setDraftCode(cleanCode);
             setPromptInput("");
             if (composerTextareaRef.current) {
@@ -31925,21 +31942,63 @@ ${promptInput.trim()}`
     };
     const code = node.attrs.code || "";
     const excalidrawJSON = node.attrs.excalidrawJSON || "";
+    const getDiagramHeaderLine = (c) => {
+      const lines = (c || "").split("\n");
+      for (let i = 0; i < Math.min(lines.length, 5); i++) {
+        const line = lines[i].trim();
+        if (!line || line.startsWith("%%")) continue;
+        return line;
+      }
+      return "";
+    };
+    const getFlowchartDirection = (c) => {
+      const line = getDiagramHeaderLine(c);
+      if (/^(flowchart|graph)\b/i.test(line)) {
+        const match = line.match(/\b(LR|TD|TB|BT|RL)\b/i);
+        return match ? match[1].toUpperCase() : null;
+      }
+      return null;
+    };
+    const setFlowchartDirection = (c, direction) => {
+      const lines = (c || "").split("\n");
+      let updated = false;
+      for (let i = 0; i < Math.min(lines.length, 5); i++) {
+        const rawLine = lines[i];
+        const line = rawLine.trim();
+        if (!line || line.startsWith("%%")) continue;
+        if (/^(flowchart|graph)\b/i.test(line)) {
+          const directionMatch = rawLine.match(/(flowchart|graph)\s+(LR|TD|TB|BT|RL)/i);
+          if (directionMatch) {
+            lines[i] = rawLine.replace(/(flowchart|graph)\s+(LR|TD|TB|BT|RL)/i, `$1 ${direction}`);
+          } else {
+            lines[i] = rawLine.replace(/(flowchart|graph)/i, `$1 ${direction}`);
+          }
+          updated = true;
+          break;
+        }
+      }
+      return { code: lines.join("\n"), updated };
+    };
     const getAutoDetectedSize = (c) => {
-      const lower = (c || "").toLowerCase().trim();
-      if (lower.startsWith("classdiagram")) return "large";
-      if (lower.startsWith("sequencediagram")) return "small";
-      if (lower.includes("flowchart td") || lower.includes("graph td")) return "large";
+      const header = getDiagramHeaderLine(c).toLowerCase();
+      if (header.startsWith("classdiagram")) return "large";
+      if (header.startsWith("sequencediagram")) return "small";
+      const direction = getFlowchartDirection(c);
+      if (direction === "TD") return "large";
+      if (direction === "LR") return "small";
+      if (header.includes("flowchart td") || header.includes("graph td")) return "large";
       return "small";
     };
     const isSizeSelectorVisible = (c) => {
-      const lower = (c || "").trim().toLowerCase();
-      if (lower.startsWith("sequencediagram") || lower.startsWith("classdiagram")) return false;
-      return true;
+      const header = getDiagramHeaderLine(c).toLowerCase();
+      if (header.startsWith("sequencediagram") || header.startsWith("classdiagram")) return false;
+      return header.startsWith("flowchart") || header.startsWith("graph");
     };
-    let size2 = node.attrs.size || getAutoDetectedSize(code);
+    const activeCode = isEditing ? draftCode : code;
+    const directionSize = getFlowchartDirection(activeCode);
+    let size2 = directionSize ? directionSize === "TD" ? "large" : "small" : node.attrs.size || getAutoDetectedSize(activeCode);
     if (size2 === "medium") size2 = "small";
-    const showSizeSelector = isSizeSelectorVisible(isEditing ? draftCode : code);
+    const showSizeSelector = isSizeSelectorVisible(activeCode);
     react_shim_default.useEffect(() => {
       if (isEditing) return;
       if (code && !excalidrawJSON && window.GoToolkitDrawMemo) {
@@ -32211,32 +32270,21 @@ ${promptInput.trim()}`
         });
       }
     };
-    const handleSizeChange = async (newSize) => {
+    const handleSizeChange = async (newSize, sourceCode) => {
       if (newSize === size2) return;
       setIsLoading(true);
       try {
-        let updatedCode = draftCode;
-        const isFlowchart = draftCode.trim().toLowerCase().startsWith("flowchart") || draftCode.trim().toLowerCase().startsWith("graph");
+        let updatedCode = sourceCode || draftCode || code;
+        const headerLine = getDiagramHeaderLine(updatedCode).toLowerCase();
+        const isFlowchart = headerLine.startsWith("flowchart") || headerLine.startsWith("graph");
         if (isFlowchart) {
-          const lines = draftCode.split("\n");
-          let orientationChanged = false;
-          for (let i = 0; i < Math.min(lines.length, 3); i++) {
-            const line = lines[i].trim().toLowerCase();
-            if (line.startsWith("flowchart") || line.startsWith("graph")) {
-              const direction = newSize === "large" ? "TD" : "LR";
-              const directionMatch = lines[i].match(/(flowchart|graph)\s+(LR|TD|TB|BT|RL)/i);
-              if (directionMatch) {
-                lines[i] = lines[i].replace(/(flowchart|graph)\s+(LR|TD|TB|BT|RL)/i, `$1 ${direction}`);
-              } else {
-                lines[i] = lines[i].replace(/(flowchart|graph)/i, `$1 ${direction}`);
-              }
-              orientationChanged = true;
-              break;
+          const direction = newSize === "large" ? "TD" : "LR";
+          const { code: nextCode, updated } = setFlowchartDirection(updatedCode, direction);
+          if (updated) {
+            updatedCode = nextCode;
+            if (sourceCode !== code) {
+              setDraftCode(updatedCode);
             }
-          }
-          if (orientationChanged) {
-            updatedCode = lines.join("\n");
-            setDraftCode(updatedCode);
           }
         }
         updateAttributes2({ size: newSize, code: updatedCode });
@@ -32265,7 +32313,7 @@ ${promptInput.trim()}`
             title: "Double-cliquer pour modifier le diagramme",
             style: {
               cursor: "pointer",
-              maxHeight: "650px",
+              maxHeight: size2 === "large" ? "650px" : "500px",
               display: "flex",
               flexDirection: "column",
               width: "100%",
@@ -32282,19 +32330,41 @@ ${promptInput.trim()}`
               minWidth: "100px"
             },
             children: [
-              /* @__PURE__ */ jsx("div", { className: "mermaid-controls", onClick: (e) => e.stopPropagation(), children: showSizeSelector && [
-                { id: "small", label: "Rectangle", Icon: RectangleHorizontal },
-                { id: "large", label: "Carr\xE9", Icon: Square }
-              ].map((s) => /* @__PURE__ */ jsx(
-                "button",
+              showSizeSelector && code.trim() && /* @__PURE__ */ jsx(
+                "div",
                 {
-                  className: `size-btn ${size2 === s.id ? "active" : ""}`,
-                  onClick: () => handleSizeChange(s.id),
-                  title: s.label,
-                  children: /* @__PURE__ */ jsx(s.Icon, { size: 14 })
-                },
-                s.id
-              )) }),
+                  className: "mermaid-controls",
+                  onClick: (e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                  },
+                  onMouseDown: (e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                  },
+                  onDoubleClick: (e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                  },
+                  children: [
+                    { id: "small", label: "Rectangle", Icon: RectangleHorizontal },
+                    { id: "large", label: "Carr\xE9", Icon: Square }
+                  ].map((s) => /* @__PURE__ */ jsx(
+                    "button",
+                    {
+                      className: `size-btn ${size2 === s.id ? "active" : ""}`,
+                      onClick: (e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        handleSizeChange(s.id, code);
+                      },
+                      title: s.label,
+                      children: /* @__PURE__ */ jsx(s.Icon, { size: 14 })
+                    },
+                    s.id
+                  ))
+                }
+              ),
               error ? /* @__PURE__ */ jsxs("div", { className: "mermaid-error", children: [
                 /* @__PURE__ */ jsx("div", { className: "mermaid-error-icon", children: "\u26A0\uFE0E" }),
                 /* @__PURE__ */ jsx("div", { className: "mermaid-error-text", children: "Erreur de syntaxe" }),
@@ -32323,7 +32393,11 @@ ${promptInput.trim()}`
             "button",
             {
               className: `mermaid-modal-size-btn ${size2 === s.id ? "active" : ""}`,
-              onClick: () => handleSizeChange(s.id),
+              onClick: (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                handleSizeChange(s.id, draftCode);
+              },
               title: s.label,
               children: /* @__PURE__ */ jsx(s.Icon, { size: 14 })
             },
@@ -32399,10 +32473,11 @@ ${promptInput.trim()}`
                         (() => {
                           const current = diagramTypes.find((t) => t.id === diagramType);
                           const Icon2 = (current == null ? void 0 : current.Icon) || Workflow;
+                          const label = (draftCode || code).trim() ? current == null ? void 0 : current.label : "\xC9diter";
                           return /* @__PURE__ */ jsxs(Fragment3, { children: [
                             /* @__PURE__ */ jsx(Icon2, { size: 14 }),
                             " ",
-                            /* @__PURE__ */ jsx("span", { children: current == null ? void 0 : current.label })
+                            /* @__PURE__ */ jsx("span", { children: label })
                           ] });
                         })(),
                         /* @__PURE__ */ jsx(ChevronUp, { size: 12, style: { transform: isTypeMenuOpen ? "rotate(180deg)" : "" } })
