@@ -17,6 +17,24 @@ import process from 'process';
         g.process = process;
     } catch(e) {}
 
+    if (typeof g.require !== 'function') {
+        g.require = function(moduleName: string) {
+            switch (moduleName) {
+                case 'react':
+                    return g.React;
+                case 'react-dom':
+                case 'react-dom/client':
+                    return g.ReactDOM;
+                case '@excalidraw/excalidraw':
+                    return g.ExcalidrawLib;
+                case 'mermaid':
+                    return g.mermaid;
+                default:
+                    throw new Error("Cannot find module '" + moduleName + "'");
+            }
+        };
+    }
+
     // Safe shim function
     function safeShim(name: string) {
         try {

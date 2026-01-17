@@ -1,0 +1,21 @@
+// src/react-shim.ts
+const React = (window as any).React;
+export default React;
+export const useState = React?.useState;
+export const useEffect = React?.useEffect;
+export const useCallback = React?.useCallback;
+export const useMemo = React?.useMemo;
+export const useRef = React?.useRef;
+export const useImperativeHandle = React?.useImperativeHandle;
+export const forwardRef = React?.forwardRef;
+export const createContext = React?.createContext;
+export const useContext = React?.useContext;
+export const useDebugValue = React?.useDebugValue;
+export const useLayoutEffect = React?.useLayoutEffect;
+export const createRef = React?.createRef;
+export const version = React?.version;
+export const memo = React?.memo;
+export const Fragment = React?.Fragment;
+export const createElement = React?.createElement;
+export const cloneElement = React?.cloneElement;
+export const Children = React?.Children;

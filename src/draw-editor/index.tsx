@@ -1,11 +1,5 @@
 import React, { useCallback } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import {
-    Excalidraw,
-    convertToExcalidrawElements,
-    exportToSvg,
-    getCommonBounds
-} from "@excalidraw/excalidraw";
 import type {
     BinaryFiles,
     ExcalidrawImperativeAPI
@@ -18,6 +12,22 @@ const MERMAID_OPTIONS = { fontSize: 20 };
 if (typeof window !== "undefined" && !(window as any).EXCALIDRAW_ASSET_PATH) {
     (window as any).EXCALIDRAW_ASSET_PATH = "https://unpkg.com/@excalidraw/excalidraw@0.17.6/";
 }
+const getExcalidrawLib = () => {
+    const lib = (window as any).ExcalidrawLib;
+    if (!lib) {
+        throw new Error("Excalidraw CDN is not loaded.");
+    }
+    return lib;
+};
+const getExcalidrawExports = () => {
+    const lib = getExcalidrawLib();
+    return {
+        Excalidraw: lib.Excalidraw,
+        convertToExcalidrawElements: lib.convertToExcalidrawElements,
+        exportToSvg: lib.exportToSvg,
+        getCommonBounds: lib.getCommonBounds
+    };
+};
 const MERMAID_ELEMENT_STYLE_DEFAULTS = {
     strokeWidth: 1.2,
     strokeStyle: "solid" as const,
@@ -378,6 +388,7 @@ class ExcalidrawBridge {
                         },
                         [onReady]
                     );
+                    const { Excalidraw } = getExcalidrawExports();
                     const ExcalidrawAny = Excalidraw as unknown as React.ComponentType<any>;
                     return (
                         <ExcalidrawAny
@@ -434,6 +445,7 @@ class ExcalidrawBridge {
         if (!skeleton.length) {
             return null;
         }
+        const { convertToExcalidrawElements } = getExcalidrawExports();
         const converted = convertToExcalidrawElements(skeleton as any);
         const normalizedElements = Array.isArray(converted)
             ? converted
@@ -548,14 +560,21 @@ window.GoToolkitExcalidraw = {
     applyScene: (scene, shouldCenter) => bridge.applyScene(scene, shouldCenter),
     getApi: () => bridge.getApi(),
     getSceneBounds: (elements) => {
+        const { getCommonBounds } = getExcalidrawExports();
         const [minX, minY, maxX, maxY] = getCommonBounds(elements);
         return { minX, minY, maxX, maxY, width: maxX - minX, height: maxY - minY };
     },
-    exportToSvg: (elements, appState, files) => exportToSvg({ elements, appState, files }),
+    exportToSvg: (elements, appState, files) => {
+        const { exportToSvg } = getExcalidrawExports();
+        return exportToSvg({ elements, appState, files });
+    },
     exportToSvgWithZoom: (elements, appState, files, zoom) => 
-        exportToSvg({ 
-            elements, 
-            appState: { ...appState, zoom: { value: zoom } }, 
-            files 
-        })
+        (() => {
+            const { exportToSvg } = getExcalidrawExports();
+            return exportToSvg({ 
+                elements, 
+                appState: { ...appState, zoom: { value: zoom } }, 
+                files 
+            });
+        })()
 };

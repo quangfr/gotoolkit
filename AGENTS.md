@@ -6,13 +6,12 @@
 
 ## Navigation + cache
 - `public/index.html` links: `grid.html` and `memo.html`.
-- All module links include `?v=2026.01.16.8`; bump everywhere when assets change.
+- All module links include `?v=2026.01.17.2`; bump everywhere when assets change.
 - Version format: YYYY.MM.DD.N (N is an increment number for the day).
 - **Bump the version only when explicitly asked to commit and sync on GitHub.**
 - `public/prompt.js` is the root for all AI system prompts and templates.
 - Keep info panel versions and the `hero-version` label in `public/index.html` aligned with the cache-buster.
 - When bumping versions, ensure all JS/CSS assets in `memo.html` are updated.
-- **Deprecated modules in `public/old/` should not be updated (no version bumps, no UI changes).**
 - Keep the IndexedDB version in `public/js/assist.js` health-check/repair (`indexedDB.open`) aligned with `DB_VERSION` in `public/js/document-rag.js`.
 - When adding/editing UI, reuse colors and classes from `public/styles/style.css` before adding new CSS.
 - Each page sets `window.GO_TOOLKIT_SHARE_API_URL` (launcher `https://gotoolkit.workers.dev`, modules `https://share.gotoolkit.workers.dev/`).
@@ -27,8 +26,8 @@ Only `public/js` may touch `window`:
 `GoToolkitIAConfig`, `GoToolkitAIBackend`, `GoToolkitIAClient.chatCompletion`, `GoToolkitIA.chatCompletion`, `GoToolkitOpenAI`, `GoToolkitWebLLM`, `GoToolkitExcalidraw`, `goToolkitNexusModal`, `goToolkitDocStore`, `goToolkitDocumentApi`, `goToolkitShareHistory`, `goToolkitShareWorker`, `GoToolkitDocumentManager`.
 
 ## AI + storage
-- `public/js/ia-config.js`: OpenAI/Ollama/WebLLM config + endpoints (direct + `https://openai.gotoolkit.workers.dev`). Ollama and WebLLM deprecated.
-- `public/js/ia-client.js`: stream normalization + backend routing; WebLLM workers in `public/js/webllm-worker.js` / `public/js/webllm-sw.js`.
+- `public/js/ia-config.js`: OpenAI / OpenRouter config + endpoints (direct + `https://openai.gotoolkit.workers.dev`). 
+- `public/js/ia-client.js`: stream normalization + backend routing.
 - `public/js/document-storage.js`: IndexedDB `go-toolkit` (stores `document-api`, `share-history`, `documents-settings`) + shared store wrappers.
 - **RAG System** (`public/js/document-rag.js`): vector search + semantic retrieval via `GoToolkitDocumentManager`. See **[RAG Architecture](public/content/toolkit_import.md)**.
   - IndexedDB stores: `documents` (file metadata + chunking config), `chunks` (384-dim embeddings), `keyword_meta` (hybrid search), `memo_context_embeddings` (memo-scoped links + enabled flag).
@@ -46,7 +45,10 @@ Only `public/js` may touch `window`:
 - Local history: `public/js/share-history.js`; documents: `public/js/document-api.js`.
 
 ## Build + runtime
-- Build: `npm install` → `npm run build` (bundles draw editor + memo bridge). **Always run `npm run build` before a git commit and push.**
+- Build: `npm install` → `npm run build`. This runs drawing and memo bundles in parallel using `esbuild`. 
+- Production: Build is automated via GitHub Actions (`npm run build:prod`). Local result files are ignored by Git. 
+- Heavy Libraries: React, ReactDOM, Excalidraw, and Mermaid are loaded via CDN (see `memo.html`).
+- Shims: Build aliases in `package.json` map module imports (e.g., `react`, `react-dom`, `excalidraw`, `mermaid`) to `window` globals via `src/*-shim.ts` files (react-shim, react-dom-shim, etc.) to keep bundles small and fast.
 - Dev: `npm start` serves `public/` on port 5000.
 - Excalidraw bridge: `src/draw-editor/index.tsx` forces light theme, normalizes Mermaid, exposes `window.GoToolkitExcalidraw`.
 - Memo bridge: `src/memo-bridge/index.tsx` exposes memo API to `window`.

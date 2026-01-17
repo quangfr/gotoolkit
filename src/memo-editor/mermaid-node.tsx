@@ -1,8 +1,9 @@
 import { Node, mergeAttributes, InputRule, Editor } from '@tiptap/core';
 import { ReactNodeViewRenderer, NodeViewWrapper } from '@tiptap/react';
 import React from 'react';
-import mermaid from 'mermaid';
 import { Shapes, RectangleHorizontal, Square, ArrowLeftRight, Workflow, Boxes, Send, Loader2, ChevronUp } from 'lucide-react';
+
+const getMermaidApi = () => (window as any).mermaid;
 
 // Mermaid Diagram Component that shows only the diagram
 const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
@@ -268,17 +269,24 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
     }
 
     try {
+      const mermaidApi = getMermaidApi();
+      if (!mermaidApi) {
+        setError('Mermaid CDN non chargé');
+        setSvg('');
+        return;
+      }
+
       // Generate unique ID for this diagram
       const id = `mermaid-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       
       // Configure mermaid for this render
-      mermaid.initialize({ 
+      mermaidApi.initialize({ 
         startOnLoad: false,
         theme: 'default',
         securityLevel: 'loose',
       });
 
-      const { svg } = await mermaid.render(id, code);
+      const { svg } = await mermaidApi.render(id, code);
       setSvg(svg);
       setError(null);
     } catch (err: any) {
