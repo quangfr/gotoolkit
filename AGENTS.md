@@ -6,7 +6,7 @@
 
 ## Navigation + cache
 - `public/index.html` links: `grid.html` and `memo.html`.
-- All module links include `?v=2026.01.17.2`; bump everywhere when assets change.
+- All module links include `?v=2026.01.17.3`; bump everywhere when assets change.
 - Version format: YYYY.MM.DD.N (N is an increment number for the day).
 - **Bump the version only when explicitly asked to commit and sync on GitHub.**
 - `public/prompt.js` is the root for all AI system prompts and templates.
@@ -18,8 +18,8 @@
 
 ## Modules
 - **Memo** (`memos`): Rich-text editor + RAG-powered chat (`public/js/assist.js`); document management, context embeddings per memo.
-- Grid (`grids`): AG Grid, CSV/JSON export, template/criteria modal `public/js/template-criteria.js`, covered by Playwright.
-- Canvas (`slides`), Draw (`diagrams`), Timeline (`timelines`), Voice (`voices`): deprecated.
+- **Grid** (`grids`): AG Grid, CSV/JSON export, template/criteria modal `public/js/template-criteria.js`, covered by Playwright.
+- **Templates**: System for sharing and reusing memo structures via `template-memos`.
 
 ## Globals (keep stable)
 Only `public/js` may touch `window`:
@@ -41,7 +41,9 @@ Only `public/js` may touch `window`:
 
 ## Sharing
 - `public/js/share-worker-client.js` builds URLs from `GO_TOOLKIT_SHARE_API_URL(S)`.
-- `workers/share-proxy`: Firestore + KV `RATE_LIMIT`; allowed collections `slides`, `timelines`, `diagrams`, `grids`, `voices`, `memos`.
+- `workers/share-proxy`: Cloudflare Worker → Firestore (Read/Write) + KV (Rate Limit).
+- Collections: `memos` (document sharing), `grids` (grid sharing), `template-memos` (reusable document templates).
+- Template system: Allows saving and loading memo structures as templates via the `template-memos` collection.
 - Local history: `public/js/share-history.js`; documents: `public/js/document-api.js`.
 
 ## Build + runtime

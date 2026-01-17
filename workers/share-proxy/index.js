@@ -1,11 +1,7 @@
 const API_VERSION = "v1";
 const SHARES_SEGMENT = "shares";
 const VALID_COLLECTIONS = new Set([
-  "slides",
-  "timelines",
-  "diagrams",
   "grids",
-  "voices", // voice module capsules
   "memos",
   "template-memos"
 ]);
