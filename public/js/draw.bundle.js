@@ -2976,7 +2976,6 @@
   init_define_process_env();
   init_polyfills();
   var cleanCSSValue = (value) => {
-    console.log("@", value);
     return value.replace(/\s*!important\s*$/i, "").trim();
   };
 
@@ -3078,8 +3077,23 @@
       labelStyle
     };
   };
-  var parseEdge = (edge, edgeIndex, containerEl) => {
-    const node = containerEl.querySelector(`[id*="${edge.id}"]`);
+  var parseEdge = (edge, edgeIndex, containerEl, fallbackIndex, edgePaths) => {
+    let node = containerEl.querySelector(`[id*="${edge.id}"]`);
+    if (!node && edge.start && edge.end) {
+      node = containerEl.querySelector(`path.flowchart-link.LS-${edge.start}.LE-${edge.end}`);
+    }
+    if (!node && Array.isArray(edgePaths) && edgePaths.length) {
+      if (edge.start && edge.end) {
+        const idPrefix = `L-${edge.start}-${edge.end}-`;
+        node = edgePaths.find((path) => {
+          var _a;
+          return (_a = path.getAttribute("id")) == null ? void 0 : _a.startsWith(idPrefix);
+        }) || null;
+      }
+      if (!node && typeof fallbackIndex === "number" && edgePaths[fallbackIndex]) {
+        node = edgePaths[fallbackIndex];
+      }
+    }
     if (!node) {
       throw new Error("Edge element not found");
     }
@@ -3090,6 +3104,27 @@
       ...edge,
       ...edgePositionData,
       text: entityCodesToText(edge.text)
+    };
+  };
+  var parseEdgeFromPath = (pathEl, containerEl) => {
+    const classList = Array.from(pathEl.classList || []);
+    const startToken = classList.find((token) => token.startsWith("LS-"));
+    const endToken = classList.find((token) => token.startsWith("LE-"));
+    if (!startToken || !endToken) {
+      return null;
+    }
+    const start = startToken.replace("LS-", "");
+    const end = endToken.replace("LE-", "");
+    const position = computeElementPosition(pathEl, containerEl);
+    const edgePositionData = computeEdgePositions(pathEl, position);
+    return {
+      id: pathEl.getAttribute("id") || `${start}-${end}`,
+      start,
+      end,
+      type: "arrow_point",
+      stroke: "normal",
+      text: "",
+      ...edgePositionData
     };
   };
   var computeElementPosition = (el, containerEl) => {
@@ -3140,15 +3175,25 @@
       });
     }
     const edgeCountMap = /* @__PURE__ */ new Map();
-    const edges = (Array.isArray(edgesData) ? edgesData : []).map((edge) => {
+    const edgePaths = Array.from(containerEl.querySelectorAll("path.flowchart-link"));
+    const edges = (Array.isArray(edgesData) ? edgesData : []).map((edge, index) => {
       if (!containerEl.querySelector(`[id*="${edge.id}"]`)) {
-        return null;
+        const classMatch = edge.start && edge.end ? containerEl.querySelector(`path.flowchart-link.LS-${edge.start}.LE-${edge.end}`) : null;
+        const idPrefix = edge.start && edge.end ? `L-${edge.start}-${edge.end}-` : "";
+        const idMatch = idPrefix ? edgePaths.find((path) => {
+          var _a;
+          return (_a = path.getAttribute("id")) == null ? void 0 : _a.startsWith(idPrefix);
+        }) : null;
+        if (!classMatch && !idMatch && !edgePaths[index]) {
+          return null;
+        }
       }
       const edgeMapKey = `${edge.start}-${edge.end}`;
       const count = edgeCountMap.get(edgeMapKey) || 0;
       edgeCountMap.set(edgeMapKey, count + 1);
-      return parseEdge(edge, count, containerEl);
+      return parseEdge(edge, count, containerEl, index, edgePaths);
     }).filter((edge) => edge !== null && edge.reflectionPoints.length > 1);
+    const finalEdges = edges.length ? edges : edgePaths.map((pathEl) => parseEdgeFromPath(pathEl, containerEl)).filter((edge) => edge !== null && edge.reflectionPoints.length > 1);
     const subGraphs = (Array.isArray(subGraphsData) ? subGraphsData : []).map((subgraph) => {
       return parseSubGraph(subgraph, containerEl);
     });
@@ -3156,7 +3201,7 @@
       type: "flowchart",
       subGraphs,
       vertices,
-      edges
+      edges: finalEdges
     };
   };
 
@@ -4313,6 +4358,39 @@
     roughness: 0,
     roundness: null
   };
+  var parseSvgPathPoints = (d) => {
+    const commands = d.match(/[MLCQ][^MLCQ]*/gi) || [];
+    const points = [];
+    commands.forEach((command) => {
+      const type = command[0].toUpperCase();
+      const raw = command.slice(1).trim();
+      if (!raw) {
+        return;
+      }
+      const numbers = raw.split(/[\s,]+/).map((value) => Number.parseFloat(value)).filter((value) => !Number.isNaN(value));
+      if (numbers.length < 2) {
+        return;
+      }
+      switch (type) {
+        case "M":
+        case "L":
+          points.push({ x: numbers[0], y: numbers[1] });
+          break;
+        case "C":
+        case "Q": {
+          const x = numbers[numbers.length - 2];
+          const y = numbers[numbers.length - 1];
+          if (!Number.isNaN(x) && !Number.isNaN(y)) {
+            points.push({ x, y });
+          }
+          break;
+        }
+        default:
+          break;
+      }
+    });
+    return points;
+  };
   var EDGE_HOST_CLASS = "go-excalidraw-edge";
   var EDGE_STYLE_ID = "go-excalidraw-edge-style";
   var EDGE_STYLE_CONTENT = `.${EDGE_HOST_CLASS} .excalidraw .App-bottom-bar {
@@ -4663,6 +4741,7 @@
         return null;
       }
       const fontSize = (_a = options == null ? void 0 : options.fontSize) != null ? _a : MERMAID_OPTIONS.fontSize;
+      const isFlowchart = trimmed.toLowerCase().startsWith("flowchart") || trimmed.toLowerCase().startsWith("graph");
       const mermaidConfig = {
         themeVariables: {
           fontSize: `${fontSize}px`
@@ -4687,6 +4766,61 @@
       const normalizedElements = Array.isArray(converted) ? converted : Array.isArray(converted == null ? void 0 : converted.elements) ? converted.elements : [];
       if (!normalizedElements.length) {
         return null;
+      }
+      const hasLineElements = normalizedElements.some(
+        (el) => (el == null ? void 0 : el.type) === "line" || (el == null ? void 0 : el.type) === "arrow"
+      );
+      if (isFlowchart && !hasLineElements) {
+        try {
+          const mermaidApi = window.mermaid;
+          if (mermaidApi == null ? void 0 : mermaidApi.render) {
+            const id = `mermaid-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+            const { svg } = await mermaidApi.render(id, trimmed);
+            const container = document.createElement("div");
+            container.innerHTML = svg;
+            const edgePaths = Array.from(
+              container.querySelectorAll("path.flowchart-link")
+            );
+            const fallbackArrows = edgePaths.map((pathEl, index) => {
+              const dAttr = pathEl.getAttribute("d");
+              if (!dAttr) {
+                return null;
+              }
+              const points = parseSvgPathPoints(dAttr);
+              if (points.length < 2) {
+                return null;
+              }
+              const start = points[0];
+              const relPoints = points.map((point) => [
+                point.x - start.x,
+                point.y - start.y
+              ]);
+              const classList = Array.from(pathEl.classList);
+              const strokeStyle = classList.some(
+                (token) => token.includes("edge-pattern-dotted") || token.includes("edge-pattern-dashed")
+              ) ? "dashed" : "solid";
+              const strokeWidth = classList.some(
+                (token) => token.includes("edge-thickness-thick")
+              ) ? 4 : 2;
+              return {
+                id: pathEl.getAttribute("id") || `edge-path-${index}`,
+                type: "arrow",
+                x: start.x,
+                y: start.y,
+                points: relPoints,
+                strokeWidth,
+                strokeStyle,
+                roundness: { type: 2 },
+                endArrowhead: "arrow"
+              };
+            }).filter(Boolean);
+            if (fallbackArrows.length) {
+              normalizedElements.push(...fallbackArrows);
+            }
+          }
+        } catch (error) {
+          console.warn("[GoToolkit][Mermaid->Excalidraw] svg edge fallback failed", error);
+        }
       }
       const normalizedFiles = !Array.isArray(converted) && (converted == null ? void 0 : converted.files) || (parsed == null ? void 0 : parsed.files) || null;
       const sharpElements = applyMermaidDefaults(normalizedElements, options);

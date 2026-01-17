@@ -34,6 +34,42 @@ const MERMAID_ELEMENT_STYLE_DEFAULTS = {
     roughness: 0,
     roundness: null
 };
+const parseSvgPathPoints = (d: string): Array<{ x: number; y: number }> => {
+    const commands = d.match(/[MLCQ][^MLCQ]*/gi) || [];
+    const points: Array<{ x: number; y: number }> = [];
+    commands.forEach(command => {
+        const type = command[0].toUpperCase();
+        const raw = command.slice(1).trim();
+        if (!raw) {
+            return;
+        }
+        const numbers = raw
+            .split(/[\s,]+/)
+            .map(value => Number.parseFloat(value))
+            .filter(value => !Number.isNaN(value));
+        if (numbers.length < 2) {
+            return;
+        }
+        switch (type) {
+            case "M":
+            case "L":
+                points.push({ x: numbers[0], y: numbers[1] });
+                break;
+            case "C":
+            case "Q": {
+                const x = numbers[numbers.length - 2];
+                const y = numbers[numbers.length - 1];
+                if (!Number.isNaN(x) && !Number.isNaN(y)) {
+                    points.push({ x, y });
+                }
+                break;
+            }
+            default:
+                break;
+        }
+    });
+    return points;
+};
 
 export type MermaidConvertOptions = {
     fontSize?: number;
@@ -423,6 +459,8 @@ class ExcalidrawBridge {
         }
 
         const fontSize = options?.fontSize ?? MERMAID_OPTIONS.fontSize;
+        const isFlowchart =
+            trimmed.toLowerCase().startsWith("flowchart") || trimmed.toLowerCase().startsWith("graph");
         
         // Build the bridge-compatible config
         const mermaidConfig: any = {
@@ -454,6 +492,68 @@ class ExcalidrawBridge {
             : [];
         if (!normalizedElements.length) {
             return null;
+        }
+        const hasLineElements = normalizedElements.some(
+            (el: any) => el?.type === "line" || el?.type === "arrow"
+        );
+        if (isFlowchart && !hasLineElements) {
+            try {
+                const mermaidApi = (window as any).mermaid;
+                if (mermaidApi?.render) {
+                    const id = `mermaid-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+                    const { svg } = await mermaidApi.render(id, trimmed);
+                    const container = document.createElement("div");
+                    container.innerHTML = svg;
+                    const edgePaths = Array.from(
+                        container.querySelectorAll("path.flowchart-link")
+                    );
+                    const fallbackArrows = edgePaths
+                        .map((pathEl, index) => {
+                            const dAttr = pathEl.getAttribute("d");
+                            if (!dAttr) {
+                                return null;
+                            }
+                            const points = parseSvgPathPoints(dAttr);
+                            if (points.length < 2) {
+                                return null;
+                            }
+                            const start = points[0];
+                            const relPoints: [number, number][] = points.map(point => [
+                                point.x - start.x,
+                                point.y - start.y
+                            ]);
+                            const classList = Array.from(pathEl.classList);
+                            const strokeStyle = classList.some(token =>
+                                token.includes("edge-pattern-dotted") ||
+                                token.includes("edge-pattern-dashed")
+                            )
+                                ? "dashed"
+                                : "solid";
+                            const strokeWidth = classList.some(token =>
+                                token.includes("edge-thickness-thick")
+                            )
+                                ? 4
+                                : 2;
+                            return {
+                                id: pathEl.getAttribute("id") || `edge-path-${index}`,
+                                type: "arrow",
+                                x: start.x,
+                                y: start.y,
+                                points: relPoints,
+                                strokeWidth,
+                                strokeStyle,
+                                roundness: { type: 2 },
+                                endArrowhead: "arrow"
+                            };
+                        })
+                        .filter(Boolean);
+                    if (fallbackArrows.length) {
+                        normalizedElements.push(...(fallbackArrows as any));
+                    }
+                }
+            } catch (error) {
+                console.warn("[GoToolkit][Mermaid->Excalidraw] svg edge fallback failed", error);
+            }
         }
         const normalizedFiles = (!Array.isArray(converted) && (converted as any)?.files) || parsed?.files || null;
         const sharpElements = applyMermaidDefaults(normalizedElements as readonly ExcalidrawElement[], options);
