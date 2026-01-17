@@ -743,7 +743,7 @@ mark {
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.2s ease;
-  z-index: 230;
+  z-index: 6200;
 }
 
 .toast.visible,

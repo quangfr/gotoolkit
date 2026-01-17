@@ -2314,26 +2314,45 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     // 2b. Details Drag Handle (Left)
     if (detailsEl && containerRef.current.contains(detailsEl)) {
       const rect = detailsEl.getBoundingClientRect();
-      const pos = editor.view.posAtCoords({ left: e.clientX, top: e.clientY })?.pos;
-      if (pos !== undefined) {
-        const $pos = editor.state.doc.resolve(pos);
-        let detailsPos = -1;
+      let detailsPos = -1;
+      try {
+        const domPos = editor.view.posAtDOM(detailsEl, 0);
+        const $pos = editor.state.doc.resolve(domPos);
         for (let d = $pos.depth; d > 0; d--) {
           if ($pos.node(d).type.name === 'details') {
             detailsPos = $pos.before(d);
             break;
           }
         }
-
-        if (detailsPos !== -1) {
-          setDetailsHandle({
-            top: rect.top - containerRect.top + 10,
-            left: rect.left - containerRect.left + 5,
-            pos: detailsPos
-          });
-        } else {
-          setDetailsHandle(null);
+        if (detailsPos === -1) {
+          const node = editor.state.doc.nodeAt(domPos);
+          if (node?.type.name === 'details') detailsPos = domPos;
         }
+      } catch (err) {
+        // ignore
+      }
+
+      if (detailsPos === -1) {
+        const pos = editor.view.posAtCoords({ left: e.clientX, top: e.clientY })?.pos;
+        if (pos !== undefined) {
+          const $pos = editor.state.doc.resolve(pos);
+          for (let d = $pos.depth; d > 0; d--) {
+            if ($pos.node(d).type.name === 'details') {
+              detailsPos = $pos.before(d);
+              break;
+            }
+          }
+        }
+      }
+
+      if (detailsPos !== -1) {
+        setDetailsHandle({
+          top: rect.top - containerRect.top + 10,
+          left: rect.left - containerRect.left - 15,
+          pos: detailsPos
+        });
+      } else {
+        setDetailsHandle(null);
       }
     } else if (!(e.target as HTMLElement).closest('.details-handle')) {
       setDetailsHandle(null);
@@ -3069,7 +3088,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
                 const text = node.textContent;
                 navigator.clipboard.writeText(text).then(() => {
                   document.dispatchEvent(new CustomEvent('copyToast', { 
-                    detail: { message: 'Texte copié !' } 
+                    detail: { message: 'Text copié' } 
                   }));
                 });
               }

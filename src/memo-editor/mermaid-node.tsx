@@ -1,7 +1,7 @@
 import { Node, mergeAttributes, InputRule, Editor } from '@tiptap/core';
 import { ReactNodeViewRenderer, NodeViewWrapper } from '@tiptap/react';
 import React from 'react';
-import { Shapes, RectangleHorizontal, Square, ArrowLeftRight, Workflow, Boxes, Send, Loader2, ChevronUp } from 'lucide-react';
+import { Shapes, RectangleHorizontal, Square, ArrowLeftRight, Workflow, Boxes, Send, Loader2, ChevronUp, Copy, CircleX } from 'lucide-react';
 
 const getMermaidApi = () => (window as any).mermaid;
 
@@ -24,6 +24,9 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
   const [isGenerating, setIsGenerating] = React.useState(false);
   const [isTypeMenuOpen, setIsTypeMenuOpen] = React.useState(false);
   const composerTextareaRef = React.useRef<HTMLTextAreaElement>(null);
+
+  const code = node.attrs.code || '';
+  const excalidrawJSON = node.attrs.excalidrawJSON || '';
 
   const getAutoResizeHeight = (textarea: HTMLTextAreaElement) => {
     textarea.style.height = 'auto';
@@ -169,9 +172,6 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
     }
   };
 
-  const code = node.attrs.code || '';
-  const excalidrawJSON = node.attrs.excalidrawJSON || '';
-  
   const getDiagramHeaderLine = (c: string) => {
     const lines = (c || '').split('\n');
     for (let i = 0; i < Math.min(lines.length, 5); i++) {
@@ -555,13 +555,17 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
     }
   };
 
-  const handleTextareaFocus = () => {
-    if (draftCode) {
-      navigator.clipboard.writeText(draftCode).then(() => {
-        setShowToast(true);
-        setTimeout(() => setShowToast(false), 2000);
-      });
-    }
+  const handleCopyCode = () => {
+    if (!draftCode) return;
+    navigator.clipboard.writeText(draftCode).then(() => {
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 2000);
+    });
+  };
+
+  const handleClearCode = () => {
+    setDraftCode('');
+    setModalError(null);
   };
 
   const handleSizeChange = async (newSize: string, sourceCode?: string) => {
@@ -747,10 +751,27 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
                     className="mermaid-modal-textarea"
                     value={draftCode}
                     onChange={handleCodeChange}
-                    onFocus={handleTextareaFocus}
                     placeholder="Entrez votre code Mermaid ici..."
                     spellCheck={false}
                   />
+                  <div className="mermaid-modal-textarea-actions">
+                    <button
+                      type="button"
+                      className="mermaid-modal-textarea-btn"
+                      onClick={handleCopyCode}
+                      title="Copier"
+                    >
+                      <Copy size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      className="mermaid-modal-textarea-btn"
+                      onClick={handleClearCode}
+                      title="Effacer"
+                    >
+                      <CircleX size={14} data-lucide="circle-x" />
+                    </button>
+                  </div>
                   {modalError && (
                     <div className="mermaid-modal-error-display">
                       {modalError}

@@ -1000,8 +1000,37 @@ td .node-text.node-paragraph,
   line-height: 1.5;
   resize: none;
   outline: none;
-  background-color: var(--text-main);
-  color: var(--border-main);
+  background-color: black;
+  color: white;
+}
+
+.mermaid-modal-textarea-actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 6px;
+  z-index: 2;
+}
+
+.mermaid-modal-textarea-btn {
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--border-main);
+  background: var(--bg-surface);
+  color: var(--text-main);
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.mermaid-modal-textarea-btn:hover {
+  background: var(--bg-surface-soft);
+  color: var(--color-primary);
+  border-color: var(--border-strong);
 }
 
 .mermaid-modal-textarea::placeholder {
