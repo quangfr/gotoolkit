@@ -448,6 +448,9 @@ td .node-text.node-paragraph,
 .ProseMirror th > * {
   margin-bottom: 0;
 }
+.ProseMirror table p {
+  margin: 0;
+}
 .ProseMirror th {
   font-weight: bold;
   text-align: left;
@@ -499,6 +502,24 @@ td .node-text.node-paragraph,
 }
 .table-handle:active {
   cursor: grabbing;
+}
+.drag-ghost {
+  position: fixed;
+  pointer-events: none;
+  z-index: 1900;
+  opacity: 0.75;
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.2));
+}
+.drag-ghost-content {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-main);
+  border-radius: 6px;
+}
+.drag-ghost-content table {
+  width: 100%;
 }
 .mermaid-node-handle {
   position: absolute;
@@ -1006,21 +1027,25 @@ button.btn-secondary {
   font-size: 1.8rem;
   margin-top: 2.2rem;
   margin-bottom: 1.0rem;
+  font-weight: 400;
 }
 .simple-editor .ProseMirror h2 {
   font-size: 1.6rem;
   margin-top: 1.7rem;
   margin-bottom: 1.0rem;
+  font-weight: 400;
 }
 .simple-editor .ProseMirror h3 {
   font-size: 1.4rem;
   margin-top: 1.3rem;
   margin-bottom: 1.0rem;
+  font-weight: 400;
 }
 .simple-editor .ProseMirror h4 {
   font-size: 1.2rem;
   margin-top: 1rem;
   margin-bottom: 1.0rem;
+  font-weight: 400;
 }
 .simple-editor .ProseMirror h1:first-child,
 .simple-editor .ProseMirror h2:first-child,

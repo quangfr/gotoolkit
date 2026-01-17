@@ -28384,42 +28384,66 @@ img.ProseMirror-separator {
     return Component;
   };
 
-  // node_modules/lucide-react/dist/esm/icons/arrow-left-right.js
+  // node_modules/lucide-react/dist/esm/icons/arrow-down-a-z.js
   init_define_process_env();
   init_polyfills();
   var __iconNode = [
+    ["path", { d: "m3 16 4 4 4-4", key: "1co6wj" }],
+    ["path", { d: "M7 20V4", key: "1yoxec" }],
+    ["path", { d: "M20 8h-5", key: "1vsyxs" }],
+    ["path", { d: "M15 10V6.5a2.5 2.5 0 0 1 5 0V10", key: "ag13bf" }],
+    ["path", { d: "M15 14h5l-5 6h5", key: "ur5jdg" }]
+  ];
+  var ArrowDownAZ = createLucideIcon("arrow-down-a-z", __iconNode);
+
+  // node_modules/lucide-react/dist/esm/icons/arrow-left-right.js
+  init_define_process_env();
+  init_polyfills();
+  var __iconNode2 = [
     ["path", { d: "M8 3 4 7l4 4", key: "9rb6wj" }],
     ["path", { d: "M4 7h16", key: "6tx8e3" }],
     ["path", { d: "m16 21 4-4-4-4", key: "siv7j2" }],
     ["path", { d: "M20 17H4", key: "h6l3hr" }]
   ];
-  var ArrowLeftRight = createLucideIcon("arrow-left-right", __iconNode);
+  var ArrowLeftRight = createLucideIcon("arrow-left-right", __iconNode2);
+
+  // node_modules/lucide-react/dist/esm/icons/arrow-up-a-z.js
+  init_define_process_env();
+  init_polyfills();
+  var __iconNode3 = [
+    ["path", { d: "m3 8 4-4 4 4", key: "11wl7u" }],
+    ["path", { d: "M7 4v16", key: "1glfcx" }],
+    ["path", { d: "M20 8h-5", key: "1vsyxs" }],
+    ["path", { d: "M15 10V6.5a2.5 2.5 0 0 1 5 0V10", key: "ag13bf" }],
+    ["path", { d: "M15 14h5l-5 6h5", key: "ur5jdg" }]
+  ];
+  var ArrowUpAZ = createLucideIcon("arrow-up-a-z", __iconNode3);
 
   // node_modules/lucide-react/dist/esm/icons/baseline.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode2 = [
+  var __iconNode4 = [
     ["path", { d: "M4 20h16", key: "14thso" }],
     ["path", { d: "m6 16 6-12 6 12", key: "1b4byz" }],
     ["path", { d: "M8 12h8", key: "1wcyev" }]
   ];
-  var Baseline = createLucideIcon("baseline", __iconNode2);
+  var Baseline = createLucideIcon("baseline", __iconNode4);
 
   // node_modules/lucide-react/dist/esm/icons/bold.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode3 = [
+  var __iconNode5 = [
     [
       "path",
       { d: "M6 12h9a4 4 0 0 1 0 8H7a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h7a4 4 0 0 1 0 8", key: "mg9rjx" }
     ]
   ];
-  var Bold2 = createLucideIcon("bold", __iconNode3);
+  var Bold2 = createLucideIcon("bold", __iconNode5);
 
   // node_modules/lucide-react/dist/esm/icons/bot.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode4 = [
+  var __iconNode6 = [
     ["path", { d: "M12 8V4H8", key: "hb8ula" }],
     ["rect", { width: "16", height: "12", x: "4", y: "8", rx: "2", key: "enze0r" }],
     ["path", { d: "M2 14h2", key: "vft8re" }],
@@ -28427,12 +28451,12 @@ img.ProseMirror-separator {
     ["path", { d: "M15 13v2", key: "1xurst" }],
     ["path", { d: "M9 13v2", key: "rq6x2g" }]
   ];
-  var Bot = createLucideIcon("bot", __iconNode4);
+  var Bot = createLucideIcon("bot", __iconNode6);
 
   // node_modules/lucide-react/dist/esm/icons/boxes.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode5 = [
+  var __iconNode7 = [
     [
       "path",
       {
@@ -28464,163 +28488,163 @@ img.ProseMirror-separator {
     ["path", { d: "m12 8 4.74-2.85", key: "3rx089" }],
     ["path", { d: "M12 13.5V8", key: "1io7kd" }]
   ];
-  var Boxes = createLucideIcon("boxes", __iconNode5);
+  var Boxes = createLucideIcon("boxes", __iconNode7);
 
   // node_modules/lucide-react/dist/esm/icons/check-check.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode6 = [
+  var __iconNode8 = [
     ["path", { d: "M18 6 7 17l-5-5", key: "116fxf" }],
     ["path", { d: "m22 10-7.5 7.5L13 16", key: "ke71qq" }]
   ];
-  var CheckCheck = createLucideIcon("check-check", __iconNode6);
+  var CheckCheck = createLucideIcon("check-check", __iconNode8);
 
   // node_modules/lucide-react/dist/esm/icons/check.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode7 = [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]];
-  var Check = createLucideIcon("check", __iconNode7);
+  var __iconNode9 = [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]];
+  var Check = createLucideIcon("check", __iconNode9);
 
   // node_modules/lucide-react/dist/esm/icons/chevron-down.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode8 = [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]];
-  var ChevronDown = createLucideIcon("chevron-down", __iconNode8);
+  var __iconNode10 = [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]];
+  var ChevronDown = createLucideIcon("chevron-down", __iconNode10);
 
   // node_modules/lucide-react/dist/esm/icons/chevron-up.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode9 = [["path", { d: "m18 15-6-6-6 6", key: "153udz" }]];
-  var ChevronUp = createLucideIcon("chevron-up", __iconNode9);
+  var __iconNode11 = [["path", { d: "m18 15-6-6-6 6", key: "153udz" }]];
+  var ChevronUp = createLucideIcon("chevron-up", __iconNode11);
 
   // node_modules/lucide-react/dist/esm/icons/circle-alert.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode10 = [
+  var __iconNode12 = [
     ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
     ["line", { x1: "12", x2: "12", y1: "8", y2: "12", key: "1pkeuh" }],
     ["line", { x1: "12", x2: "12.01", y1: "16", y2: "16", key: "4dfq90" }]
   ];
-  var CircleAlert = createLucideIcon("circle-alert", __iconNode10);
+  var CircleAlert = createLucideIcon("circle-alert", __iconNode12);
 
   // node_modules/lucide-react/dist/esm/icons/circle-x.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode11 = [
+  var __iconNode13 = [
     ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
     ["path", { d: "m15 9-6 6", key: "1uzhvr" }],
     ["path", { d: "m9 9 6 6", key: "z0biqf" }]
   ];
-  var CircleX = createLucideIcon("circle-x", __iconNode11);
+  var CircleX = createLucideIcon("circle-x", __iconNode13);
 
   // node_modules/lucide-react/dist/esm/icons/code-xml.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode12 = [
+  var __iconNode14 = [
     ["path", { d: "m18 16 4-4-4-4", key: "1inbqp" }],
     ["path", { d: "m6 8-4 4 4 4", key: "15zrgr" }],
     ["path", { d: "m14.5 4-5 16", key: "e7oirm" }]
   ];
-  var CodeXml = createLucideIcon("code-xml", __iconNode12);
+  var CodeXml = createLucideIcon("code-xml", __iconNode14);
 
   // node_modules/lucide-react/dist/esm/icons/copy.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode13 = [
+  var __iconNode15 = [
     ["rect", { width: "14", height: "14", x: "8", y: "8", rx: "2", ry: "2", key: "17jyea" }],
     ["path", { d: "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2", key: "zix9uf" }]
   ];
-  var Copy = createLucideIcon("copy", __iconNode13);
+  var Copy = createLucideIcon("copy", __iconNode15);
 
   // node_modules/lucide-react/dist/esm/icons/heading-1.js
-  init_define_process_env();
-  init_polyfills();
-  var __iconNode14 = [
-    ["path", { d: "M4 12h8", key: "17cfdx" }],
-    ["path", { d: "M4 18V6", key: "1rz3zl" }],
-    ["path", { d: "M12 18V6", key: "zqpxq5" }],
-    ["path", { d: "m17 12 3-2v8", key: "1hhhft" }]
-  ];
-  var Heading1 = createLucideIcon("heading-1", __iconNode14);
-
-  // node_modules/lucide-react/dist/esm/icons/heading-2.js
-  init_define_process_env();
-  init_polyfills();
-  var __iconNode15 = [
-    ["path", { d: "M4 12h8", key: "17cfdx" }],
-    ["path", { d: "M4 18V6", key: "1rz3zl" }],
-    ["path", { d: "M12 18V6", key: "zqpxq5" }],
-    ["path", { d: "M21 18h-4c0-4 4-3 4-6 0-1.5-2-2.5-4-1", key: "9jr5yi" }]
-  ];
-  var Heading2 = createLucideIcon("heading-2", __iconNode15);
-
-  // node_modules/lucide-react/dist/esm/icons/heading-3.js
   init_define_process_env();
   init_polyfills();
   var __iconNode16 = [
     ["path", { d: "M4 12h8", key: "17cfdx" }],
     ["path", { d: "M4 18V6", key: "1rz3zl" }],
     ["path", { d: "M12 18V6", key: "zqpxq5" }],
+    ["path", { d: "m17 12 3-2v8", key: "1hhhft" }]
+  ];
+  var Heading1 = createLucideIcon("heading-1", __iconNode16);
+
+  // node_modules/lucide-react/dist/esm/icons/heading-2.js
+  init_define_process_env();
+  init_polyfills();
+  var __iconNode17 = [
+    ["path", { d: "M4 12h8", key: "17cfdx" }],
+    ["path", { d: "M4 18V6", key: "1rz3zl" }],
+    ["path", { d: "M12 18V6", key: "zqpxq5" }],
+    ["path", { d: "M21 18h-4c0-4 4-3 4-6 0-1.5-2-2.5-4-1", key: "9jr5yi" }]
+  ];
+  var Heading2 = createLucideIcon("heading-2", __iconNode17);
+
+  // node_modules/lucide-react/dist/esm/icons/heading-3.js
+  init_define_process_env();
+  init_polyfills();
+  var __iconNode18 = [
+    ["path", { d: "M4 12h8", key: "17cfdx" }],
+    ["path", { d: "M4 18V6", key: "1rz3zl" }],
+    ["path", { d: "M12 18V6", key: "zqpxq5" }],
     ["path", { d: "M17.5 10.5c1.7-1 3.5 0 3.5 1.5a2 2 0 0 1-2 2", key: "68ncm8" }],
     ["path", { d: "M17 17.5c2 1.5 4 .3 4-1.5a2 2 0 0 0-2-2", key: "1ejuhz" }]
   ];
-  var Heading3 = createLucideIcon("heading-3", __iconNode16);
+  var Heading3 = createLucideIcon("heading-3", __iconNode18);
 
   // node_modules/lucide-react/dist/esm/icons/heading-4.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode17 = [
+  var __iconNode19 = [
     ["path", { d: "M12 18V6", key: "zqpxq5" }],
     ["path", { d: "M17 10v3a1 1 0 0 0 1 1h3", key: "tj5zdr" }],
     ["path", { d: "M21 10v8", key: "1kdml4" }],
     ["path", { d: "M4 12h8", key: "17cfdx" }],
     ["path", { d: "M4 18V6", key: "1rz3zl" }]
   ];
-  var Heading4 = createLucideIcon("heading-4", __iconNode17);
+  var Heading4 = createLucideIcon("heading-4", __iconNode19);
 
   // node_modules/lucide-react/dist/esm/icons/highlighter.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode18 = [
+  var __iconNode20 = [
     ["path", { d: "m9 11-6 6v3h9l3-3", key: "1a3l36" }],
     ["path", { d: "m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4", key: "14a9rk" }]
   ];
-  var Highlighter = createLucideIcon("highlighter", __iconNode18);
+  var Highlighter = createLucideIcon("highlighter", __iconNode20);
 
   // node_modules/lucide-react/dist/esm/icons/image.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode19 = [
+  var __iconNode21 = [
     ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", ry: "2", key: "1m3agn" }],
     ["circle", { cx: "9", cy: "9", r: "2", key: "af1f0g" }],
     ["path", { d: "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21", key: "1xmnt7" }]
   ];
-  var Image3 = createLucideIcon("image", __iconNode19);
+  var Image3 = createLucideIcon("image", __iconNode21);
 
   // node_modules/lucide-react/dist/esm/icons/info.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode20 = [
+  var __iconNode22 = [
     ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
     ["path", { d: "M12 16v-4", key: "1dtifu" }],
     ["path", { d: "M12 8h.01", key: "e9boi3" }]
   ];
-  var Info = createLucideIcon("info", __iconNode20);
+  var Info = createLucideIcon("info", __iconNode22);
 
   // node_modules/lucide-react/dist/esm/icons/italic.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode21 = [
+  var __iconNode23 = [
     ["line", { x1: "19", x2: "10", y1: "4", y2: "4", key: "15jd3p" }],
     ["line", { x1: "14", x2: "5", y1: "20", y2: "20", key: "bu0au3" }],
     ["line", { x1: "15", x2: "9", y1: "4", y2: "20", key: "uljnxc" }]
   ];
-  var Italic2 = createLucideIcon("italic", __iconNode21);
+  var Italic2 = createLucideIcon("italic", __iconNode23);
 
   // node_modules/lucide-react/dist/esm/icons/lightbulb.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode22 = [
+  var __iconNode24 = [
     [
       "path",
       {
@@ -28631,33 +28655,33 @@ img.ProseMirror-separator {
     ["path", { d: "M9 18h6", key: "x1upvd" }],
     ["path", { d: "M10 22h4", key: "ceow96" }]
   ];
-  var Lightbulb = createLucideIcon("lightbulb", __iconNode22);
+  var Lightbulb = createLucideIcon("lightbulb", __iconNode24);
 
   // node_modules/lucide-react/dist/esm/icons/link.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode23 = [
+  var __iconNode25 = [
     ["path", { d: "M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71", key: "1cjeqo" }],
     ["path", { d: "M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71", key: "19qd67" }]
   ];
-  var Link2 = createLucideIcon("link", __iconNode23);
+  var Link2 = createLucideIcon("link", __iconNode25);
 
   // node_modules/lucide-react/dist/esm/icons/list-tree.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode24 = [
+  var __iconNode26 = [
     ["path", { d: "M8 5h13", key: "1pao27" }],
     ["path", { d: "M13 12h8", key: "h98zly" }],
     ["path", { d: "M13 19h8", key: "c3s6r1" }],
     ["path", { d: "M3 10a2 2 0 0 0 2 2h3", key: "1npucw" }],
     ["path", { d: "M3 5v12a2 2 0 0 0 2 2h3", key: "x1gjn2" }]
   ];
-  var ListTree = createLucideIcon("list-tree", __iconNode24);
+  var ListTree = createLucideIcon("list-tree", __iconNode26);
 
   // node_modules/lucide-react/dist/esm/icons/list.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode25 = [
+  var __iconNode27 = [
     ["path", { d: "M3 5h.01", key: "18ugdj" }],
     ["path", { d: "M3 12h.01", key: "nlz23k" }],
     ["path", { d: "M3 19h.01", key: "noohij" }],
@@ -28665,18 +28689,18 @@ img.ProseMirror-separator {
     ["path", { d: "M8 12h13", key: "1za7za" }],
     ["path", { d: "M8 19h13", key: "m83p4d" }]
   ];
-  var List = createLucideIcon("list", __iconNode25);
+  var List = createLucideIcon("list", __iconNode27);
 
   // node_modules/lucide-react/dist/esm/icons/loader-circle.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode26 = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
-  var LoaderCircle = createLucideIcon("loader-circle", __iconNode26);
+  var __iconNode28 = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
+  var LoaderCircle = createLucideIcon("loader-circle", __iconNode28);
 
   // node_modules/lucide-react/dist/esm/icons/message-square.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode27 = [
+  var __iconNode29 = [
     [
       "path",
       {
@@ -28685,12 +28709,12 @@ img.ProseMirror-separator {
       }
     ]
   ];
-  var MessageSquare = createLucideIcon("message-square", __iconNode27);
+  var MessageSquare = createLucideIcon("message-square", __iconNode29);
 
   // node_modules/lucide-react/dist/esm/icons/palette.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode28 = [
+  var __iconNode30 = [
     [
       "path",
       {
@@ -28703,12 +28727,12 @@ img.ProseMirror-separator {
     ["circle", { cx: "6.5", cy: "12.5", r: ".5", fill: "currentColor", key: "qy21gx" }],
     ["circle", { cx: "8.5", cy: "7.5", r: ".5", fill: "currentColor", key: "fotxhn" }]
   ];
-  var Palette = createLucideIcon("palette", __iconNode28);
+  var Palette = createLucideIcon("palette", __iconNode30);
 
   // node_modules/lucide-react/dist/esm/icons/pencil.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode29 = [
+  var __iconNode31 = [
     [
       "path",
       {
@@ -28718,38 +28742,38 @@ img.ProseMirror-separator {
     ],
     ["path", { d: "m15 5 4 4", key: "1mk7zo" }]
   ];
-  var Pencil = createLucideIcon("pencil", __iconNode29);
+  var Pencil = createLucideIcon("pencil", __iconNode31);
 
   // node_modules/lucide-react/dist/esm/icons/plus.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode30 = [
+  var __iconNode32 = [
     ["path", { d: "M5 12h14", key: "1ays0h" }],
     ["path", { d: "M12 5v14", key: "s699le" }]
   ];
-  var Plus = createLucideIcon("plus", __iconNode30);
+  var Plus = createLucideIcon("plus", __iconNode32);
 
   // node_modules/lucide-react/dist/esm/icons/rectangle-horizontal.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode31 = [
+  var __iconNode33 = [
     ["rect", { width: "20", height: "12", x: "2", y: "6", rx: "2", key: "9lu3g6" }]
   ];
-  var RectangleHorizontal = createLucideIcon("rectangle-horizontal", __iconNode31);
+  var RectangleHorizontal = createLucideIcon("rectangle-horizontal", __iconNode33);
 
   // node_modules/lucide-react/dist/esm/icons/redo-2.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode32 = [
+  var __iconNode34 = [
     ["path", { d: "m15 14 5-5-5-5", key: "12vg1m" }],
     ["path", { d: "M20 9H9.5A5.5 5.5 0 0 0 4 14.5A5.5 5.5 0 0 0 9.5 20H13", key: "6uklza" }]
   ];
-  var Redo2 = createLucideIcon("redo-2", __iconNode32);
+  var Redo2 = createLucideIcon("redo-2", __iconNode34);
 
   // node_modules/lucide-react/dist/esm/icons/send.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode33 = [
+  var __iconNode35 = [
     [
       "path",
       {
@@ -28759,12 +28783,12 @@ img.ProseMirror-separator {
     ],
     ["path", { d: "m21.854 2.147-10.94 10.939", key: "12cjpa" }]
   ];
-  var Send = createLucideIcon("send", __iconNode33);
+  var Send = createLucideIcon("send", __iconNode35);
 
   // node_modules/lucide-react/dist/esm/icons/shapes.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode34 = [
+  var __iconNode36 = [
     [
       "path",
       {
@@ -28775,42 +28799,42 @@ img.ProseMirror-separator {
     ["rect", { x: "3", y: "14", width: "7", height: "7", rx: "1", key: "1bkyp8" }],
     ["circle", { cx: "17.5", cy: "17.5", r: "3.5", key: "w3z12y" }]
   ];
-  var Shapes = createLucideIcon("shapes", __iconNode34);
+  var Shapes = createLucideIcon("shapes", __iconNode36);
 
   // node_modules/lucide-react/dist/esm/icons/square-check-big.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode35 = [
+  var __iconNode37 = [
     [
       "path",
       { d: "M21 10.656V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h12.344", key: "2acyp4" }
     ],
     ["path", { d: "m9 11 3 3L22 4", key: "1pflzl" }]
   ];
-  var SquareCheckBig = createLucideIcon("square-check-big", __iconNode35);
+  var SquareCheckBig = createLucideIcon("square-check-big", __iconNode37);
 
   // node_modules/lucide-react/dist/esm/icons/square-code.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode36 = [
+  var __iconNode38 = [
     ["path", { d: "m10 9-3 3 3 3", key: "1oro0q" }],
     ["path", { d: "m14 15 3-3-3-3", key: "bz13h7" }],
     ["rect", { x: "3", y: "3", width: "18", height: "18", rx: "2", key: "h1oib" }]
   ];
-  var SquareCode = createLucideIcon("square-code", __iconNode36);
+  var SquareCode = createLucideIcon("square-code", __iconNode38);
 
   // node_modules/lucide-react/dist/esm/icons/square.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode37 = [
+  var __iconNode39 = [
     ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }]
   ];
-  var Square = createLucideIcon("square", __iconNode37);
+  var Square = createLucideIcon("square", __iconNode39);
 
   // node_modules/lucide-react/dist/esm/icons/star.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode38 = [
+  var __iconNode40 = [
     [
       "path",
       {
@@ -28819,45 +28843,45 @@ img.ProseMirror-separator {
       }
     ]
   ];
-  var Star = createLucideIcon("star", __iconNode38);
+  var Star = createLucideIcon("star", __iconNode40);
 
   // node_modules/lucide-react/dist/esm/icons/strikethrough.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode39 = [
+  var __iconNode41 = [
     ["path", { d: "M16 4H9a3 3 0 0 0-2.83 4", key: "43sutm" }],
     ["path", { d: "M14 12a4 4 0 0 1 0 8H6", key: "nlfj13" }],
     ["line", { x1: "4", x2: "20", y1: "12", y2: "12", key: "1e0a9i" }]
   ];
-  var Strikethrough = createLucideIcon("strikethrough", __iconNode39);
+  var Strikethrough = createLucideIcon("strikethrough", __iconNode41);
 
   // node_modules/lucide-react/dist/esm/icons/table.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode40 = [
+  var __iconNode42 = [
     ["path", { d: "M12 3v18", key: "108xh3" }],
     ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }],
     ["path", { d: "M3 9h18", key: "1pudct" }],
     ["path", { d: "M3 15h18", key: "5xshup" }]
   ];
-  var Table2 = createLucideIcon("table", __iconNode40);
+  var Table2 = createLucideIcon("table", __iconNode42);
 
   // node_modules/lucide-react/dist/esm/icons/trash-2.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode41 = [
+  var __iconNode43 = [
     ["path", { d: "M10 11v6", key: "nco0om" }],
     ["path", { d: "M14 11v6", key: "outv1u" }],
     ["path", { d: "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6", key: "miytrc" }],
     ["path", { d: "M3 6h18", key: "d0wm0j" }],
     ["path", { d: "M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2", key: "e791ji" }]
   ];
-  var Trash2 = createLucideIcon("trash-2", __iconNode41);
+  var Trash2 = createLucideIcon("trash-2", __iconNode43);
 
   // node_modules/lucide-react/dist/esm/icons/triangle-alert.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode42 = [
+  var __iconNode44 = [
     [
       "path",
       {
@@ -28868,54 +28892,54 @@ img.ProseMirror-separator {
     ["path", { d: "M12 9v4", key: "juzpu7" }],
     ["path", { d: "M12 17h.01", key: "p32p05" }]
   ];
-  var TriangleAlert = createLucideIcon("triangle-alert", __iconNode42);
+  var TriangleAlert = createLucideIcon("triangle-alert", __iconNode44);
 
   // node_modules/lucide-react/dist/esm/icons/type.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode43 = [
+  var __iconNode45 = [
     ["path", { d: "M12 4v16", key: "1654pz" }],
     ["path", { d: "M4 7V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2", key: "e0r10z" }],
     ["path", { d: "M9 20h6", key: "s66wpe" }]
   ];
-  var Type = createLucideIcon("type", __iconNode43);
+  var Type = createLucideIcon("type", __iconNode45);
 
   // node_modules/lucide-react/dist/esm/icons/underline.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode44 = [
+  var __iconNode46 = [
     ["path", { d: "M6 4v6a6 6 0 0 0 12 0V4", key: "9kb039" }],
     ["line", { x1: "4", x2: "20", y1: "20", y2: "20", key: "nun2al" }]
   ];
-  var Underline2 = createLucideIcon("underline", __iconNode44);
+  var Underline2 = createLucideIcon("underline", __iconNode46);
 
   // node_modules/lucide-react/dist/esm/icons/undo-2.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode45 = [
+  var __iconNode47 = [
     ["path", { d: "M9 14 4 9l5-5", key: "102s5s" }],
     ["path", { d: "M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11", key: "f3b9sd" }]
   ];
-  var Undo2 = createLucideIcon("undo-2", __iconNode45);
+  var Undo2 = createLucideIcon("undo-2", __iconNode47);
 
   // node_modules/lucide-react/dist/esm/icons/workflow.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode46 = [
+  var __iconNode48 = [
     ["rect", { width: "8", height: "8", x: "3", y: "3", rx: "2", key: "by2w9f" }],
     ["path", { d: "M7 11v4a2 2 0 0 0 2 2h4", key: "xkn7yn" }],
     ["rect", { width: "8", height: "8", x: "13", y: "13", rx: "2", key: "1cgmvn" }]
   ];
-  var Workflow = createLucideIcon("workflow", __iconNode46);
+  var Workflow = createLucideIcon("workflow", __iconNode48);
 
   // node_modules/lucide-react/dist/esm/icons/x.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode47 = [
+  var __iconNode49 = [
     ["path", { d: "M18 6 6 18", key: "1bl5f8" }],
     ["path", { d: "m6 6 12 12", key: "d8bk6v" }]
   ];
-  var X = createLucideIcon("x", __iconNode47);
+  var X = createLucideIcon("x", __iconNode49);
 
   // node_modules/turndown/lib/turndown.browser.es.js
   init_define_process_env();
@@ -32551,7 +32575,7 @@ ${promptInput.trim()}`
           ] })
         ] })
       ] }) }),
-      showToast && /* @__PURE__ */ jsx("div", { className: "mermaid-toast", children: "Code copi\xE9 !" })
+      showToast && /* @__PURE__ */ jsx("div", { className: "mermaid-toast", children: "Texte copi\xE9" })
     ] });
   };
   var MermaidNode = Node3.create({
@@ -33426,7 +33450,8 @@ ${promptInput.trim()}`
         rows.push(node);
       }
     });
-    if (fromRowIndex < 0 || fromRowIndex >= rows.length || toRowIndex < 0 || toRowIndex >= rows.length) return false;
+    if (fromRowIndex <= 0 || toRowIndex <= 0) return false;
+    if (fromRowIndex >= rows.length || toRowIndex >= rows.length) return false;
     const newRows = [...rows];
     const [rowToMove] = newRows.splice(fromRowIndex, 1);
     newRows.splice(toRowIndex, 0, rowToMove);
@@ -33449,6 +33474,36 @@ ${promptInput.trim()}`
       newRows.push(row.type.create(row.attrs, cells));
     });
     const newTable = table.type.create(table.attrs, newRows);
+    editor.view.dispatch(tr2.replaceWith(tablePos, tablePos + table.nodeSize, newTable));
+    return true;
+  };
+  var sortColumn = (editor, tablePos, colIndex, direction) => {
+    const { tr: tr2 } = editor.state;
+    const table = editor.state.doc.nodeAt(tablePos);
+    if (!table || table.type.name !== "table") return false;
+    const rows = [];
+    table.forEach((row) => {
+      if (row.type.name === "tableRow") rows.push(row);
+    });
+    if (rows.length <= 1) return false;
+    const headerRow = rows[0];
+    const bodyRows = rows.slice(1);
+    const collator = new Intl.Collator("fr", { numeric: true, sensitivity: "base" });
+    const getCellText = (row) => {
+      const cell2 = row.childCount > colIndex ? row.child(colIndex) : null;
+      return cell2 ? cell2.textContent.trim() : "";
+    };
+    const sortedRows = bodyRows.map((row, index) => ({ row, index })).sort((a, b) => {
+      const aText = getCellText(a.row);
+      const bText = getCellText(b.row);
+      if (!aText && !bText) return 0;
+      if (!aText) return 1;
+      if (!bText) return -1;
+      const result = collator.compare(aText, bText);
+      if (result !== 0) return direction === "asc" ? result : -result;
+      return a.index - b.index;
+    }).map(({ row }) => row);
+    const newTable = table.type.create(table.attrs, [headerRow, ...sortedRows]);
     editor.view.dispatch(tr2.replaceWith(tablePos, tablePos + table.nodeSize, newTable));
     return true;
   };
@@ -34217,6 +34272,7 @@ ${promptInput.trim()}`
     onChange,
     placeholder = "Commencez \xE0 \xE9crire..."
   }) => {
+    var _a, _b, _c, _d;
     const turndownRef = react_shim_default.useRef(null);
     const containerRef = react_shim_default.useRef(null);
     const [rowHandle, setRowHandle] = react_shim_default.useState(null);
@@ -34238,7 +34294,9 @@ ${promptInput.trim()}`
     const [blockDragPending, setBlockDragPending] = react_shim_default.useState(null);
     const [blockDragState, setBlockDragState] = react_shim_default.useState(null);
     const [blockDropIndicator, setBlockDropIndicator] = react_shim_default.useState(null);
+    const [dragGhost, setDragGhost] = react_shim_default.useState(null);
     const [showLinkModal, setShowLinkModal] = react_shim_default.useState(false);
+    const [isFocusWithinMemoCard, setIsFocusWithinMemoCard] = react_shim_default.useState(false);
     const blockDragMovedRef = react_shim_default.useRef(false);
     const editor = useEditor({
       extensions: [
@@ -34346,6 +34404,25 @@ ${promptInput.trim()}`
       };
     }, [editor]);
     react_shim_default.useEffect(() => {
+      var _a2;
+      const memoCard = (_a2 = containerRef.current) == null ? void 0 : _a2.closest(".memo-card");
+      if (!memoCard) return;
+      const updateFocusState = () => {
+        const activeElement = document.activeElement;
+        setIsFocusWithinMemoCard(!!activeElement && memoCard.contains(activeElement));
+      };
+      const handleFocusOut = () => {
+        requestAnimationFrame(updateFocusState);
+      };
+      memoCard.addEventListener("focusin", updateFocusState);
+      memoCard.addEventListener("focusout", handleFocusOut);
+      updateFocusState();
+      return () => {
+        memoCard.removeEventListener("focusin", updateFocusState);
+        memoCard.removeEventListener("focusout", handleFocusOut);
+      };
+    }, []);
+    react_shim_default.useEffect(() => {
       const handleGlobalMouseMove = (e) => {
         if (!dragState && !mouseDownPoints) return;
         if (!containerRef.current || !editor) return;
@@ -34441,6 +34518,45 @@ ${promptInput.trim()}`
         window.removeEventListener("mouseup", handleGlobalMouseUp);
       };
     }, [dragState, mouseDownPoints, editor]);
+    react_shim_default.useEffect(() => {
+      if (!editor) return;
+      if (!dragState && !blockDragState) {
+        setDragGhost(null);
+        return;
+      }
+      if (dragGhost) return;
+      if (dragState) {
+        const tableDOM = editor.view.nodeDOM(dragState.tablePos);
+        if (!tableDOM) return;
+        const ghost = dragState.type === "row" ? buildRowGhost(tableDOM, dragState.index) : buildColGhost(tableDOM, dragState.index);
+        if (!ghost) return;
+        const offsetX = dragState.x - ghost.rect.left;
+        const offsetY = dragState.y - ghost.rect.top;
+        setDragGhost({
+          html: ghost.html,
+          width: ghost.rect.width,
+          height: ghost.rect.height,
+          offsetX,
+          offsetY
+        });
+        return;
+      }
+      if (blockDragState) {
+        const node = editor.state.doc.nodeAt(blockDragState.pos);
+        if (!node) return;
+        const ghost = buildBlockGhost(blockDragState.pos, node);
+        if (!ghost) return;
+        const offsetX = blockDragState.x - ghost.rect.left;
+        const offsetY = blockDragState.y - ghost.rect.top;
+        setDragGhost({
+          html: ghost.html,
+          width: ghost.rect.width,
+          height: ghost.rect.height,
+          offsetX,
+          offsetY
+        });
+      }
+    }, [dragState, blockDragState, dragGhost, editor]);
     const moveBlockNode = (fromPos, targetPos, placeAfter) => {
       if (!editor) return;
       const node = editor.state.doc.nodeAt(fromPos);
@@ -34499,12 +34615,12 @@ ${promptInput.trim()}`
       const containerRect = containerRef.current.getBoundingClientRect();
       const handles = [];
       editor.state.doc.descendants((node, pos) => {
-        var _a;
+        var _a2;
         if (node.type.name !== "mermaidDiagram") return;
         if (pos !== hoveredMermaidPos) return;
         const dom = editor.view.nodeDOM(pos);
         const wrapper = dom == null ? void 0 : dom.closest(".mermaid-diagram-wrapper");
-        const rect = (_a = wrapper || dom) == null ? void 0 : _a.getBoundingClientRect();
+        const rect = (_a2 = wrapper || dom) == null ? void 0 : _a2.getBoundingClientRect();
         if (!rect) return;
         handles.push({
           top: rect.top - containerRect.top + 10,
@@ -34549,6 +34665,51 @@ ${promptInput.trim()}`
         right: end.right,
         width: containerRef.current.getBoundingClientRect().width
       };
+    };
+    const buildRowGhost = (tableDOM, rowIndex) => {
+      const rows = Array.from(tableDOM.querySelectorAll("tr"));
+      const row = rows[rowIndex];
+      if (!row) return null;
+      const rect = row.getBoundingClientRect();
+      const ghostTable = document.createElement("table");
+      ghostTable.className = tableDOM.className;
+      ghostTable.style.borderCollapse = "collapse";
+      const tbody = document.createElement("tbody");
+      tbody.appendChild(row.cloneNode(true));
+      ghostTable.appendChild(tbody);
+      return { html: ghostTable.outerHTML, rect };
+    };
+    const buildColGhost = (tableDOM, colIndex) => {
+      const rows = Array.from(tableDOM.querySelectorAll("tr"));
+      const ghostTable = document.createElement("table");
+      ghostTable.className = tableDOM.className;
+      ghostTable.style.borderCollapse = "collapse";
+      const tbody = document.createElement("tbody");
+      let cellRect = null;
+      rows.forEach((row) => {
+        const cell2 = row.children[colIndex];
+        if (!cell2) return;
+        if (!cellRect) cellRect = cell2.getBoundingClientRect();
+        const newRow = document.createElement("tr");
+        const cloned = cell2.cloneNode(true);
+        newRow.appendChild(cloned);
+        tbody.appendChild(newRow);
+      });
+      if (!tbody.children.length || !cellRect) return null;
+      ghostTable.appendChild(tbody);
+      const tableRect = tableDOM.getBoundingClientRect();
+      const rect = new DOMRect(cellRect.left, tableRect.top, cellRect.width, tableRect.height);
+      return { html: ghostTable.outerHTML, rect };
+    };
+    const buildBlockGhost = (pos, node) => {
+      if (!editor) return null;
+      const dom = editor.view.nodeDOM(pos);
+      const wrapper = dom == null ? void 0 : dom.closest(".tableWrapper, .mermaid-diagram-wrapper, .alert-wrapper");
+      const target = wrapper || dom;
+      if (!target) return null;
+      const rect = getBlockRectForPos(pos, node);
+      if (!rect) return null;
+      return { html: target.outerHTML, rect };
     };
     const maybeAutoScroll = (clientY) => {
       const threshold = 140;
@@ -34627,7 +34788,7 @@ ${promptInput.trim()}`
       };
     }, [blockDragPending, blockDragState, editor]);
     const handleMouseMove2 = (e) => {
-      var _a, _b, _c, _d, _e, _f, _g, _h, _i;
+      var _a2, _b2, _c2, _d2, _e, _f, _g, _h, _i;
       if (!editor || dragState || blockDragState || !containerRef.current) return;
       if (e.target.closest(".table-handle, .quote-handle, .details-handle, .mermaid-handle, .node-handle, .block-delete-button")) return;
       const element = document.elementFromPoint(e.clientX, e.clientY);
@@ -34651,7 +34812,7 @@ ${promptInput.trim()}`
           const $pos = editor.state.doc.resolve(pos);
           if (tableEl) {
             for (let d = $pos.depth; d >= 0; d--) {
-              if (((_a = $pos.node(d)) == null ? void 0 : _a.type.name) === "table") {
+              if (((_a2 = $pos.node(d)) == null ? void 0 : _a2.type.name) === "table") {
                 blockPos = $pos.before(d);
                 label = "le tableau";
                 break;
@@ -34659,7 +34820,7 @@ ${promptInput.trim()}`
             }
           } else if (detailsEl) {
             for (let d = $pos.depth; d >= 0; d--) {
-              if (((_b = $pos.node(d)) == null ? void 0 : _b.type.name) === "details") {
+              if (((_b2 = $pos.node(d)) == null ? void 0 : _b2.type.name) === "details") {
                 blockPos = $pos.before(d);
                 label = "le bloc d\xE9pliable";
                 break;
@@ -34667,7 +34828,7 @@ ${promptInput.trim()}`
             }
           } else if (blockquoteEl) {
             for (let d = $pos.depth; d >= 0; d--) {
-              if (((_c = $pos.node(d)) == null ? void 0 : _c.type.name) === "blockquote") {
+              if (((_c2 = $pos.node(d)) == null ? void 0 : _c2.type.name) === "blockquote") {
                 blockPos = $pos.before(d);
                 label = "la citation";
                 break;
@@ -34675,7 +34836,7 @@ ${promptInput.trim()}`
             }
           } else if (mermaidEl) {
             for (let d = $pos.depth; d >= 0; d--) {
-              if (((_d = $pos.node(d)) == null ? void 0 : _d.type.name) === "mermaidDiagram") {
+              if (((_d2 = $pos.node(d)) == null ? void 0 : _d2.type.name) === "mermaidDiagram") {
                 blockPos = $pos.before(d);
                 label = "le diagramme";
                 break;
@@ -34887,9 +35048,10 @@ ${promptInput.trim()}`
           const isInWrapper = e.clientX >= tableWrapperRect.left && e.clientX <= tableWrapperRect.right && e.clientY >= tableWrapperRect.top && e.clientY <= tableWrapperRect.bottom;
           const isInTable2 = e.clientX >= tableRect.left && e.clientX <= tableRect.right && e.clientY >= tableRect.top && e.clientY <= tableRect.bottom;
           if (isInWrapper) {
+            const rowHandleLeft = rowIndex === 0 ? tableWrapperRect.left - containerRect.left + 9 : tableRect.left - containerRect.left + 29;
             setRowHandle({
               top: rect.top - containerRect.top + rect.height / 2,
-              left: tableWrapperRect.left - containerRect.left + 5,
+              left: rowHandleLeft,
               rowIndex,
               tablePos
             });
@@ -34991,7 +35153,7 @@ ${innerMarkdown}
           turndownRef.current = turndown;
         }
         window.getEditorMarkdown = () => {
-          var _a;
+          var _a2;
           try {
             if (typeof editor.getHTML === "function") {
               const html2 = editor.getHTML();
@@ -35034,7 +35196,7 @@ ${innerMarkdown}
                 });
               });
               const processedHtml = doc3.body.innerHTML;
-              const markdown = (((_a = turndownRef.current) == null ? void 0 : _a.turndown(processedHtml)) || "").toString();
+              const markdown = (((_a2 = turndownRef.current) == null ? void 0 : _a2.turndown(processedHtml)) || "").toString();
               return markdown;
             }
             if (typeof editor.getText === "function") {
@@ -35045,7 +35207,7 @@ ${innerMarkdown}
           return "";
         };
         window.getMemoEditorSource = (format) => {
-          var _a;
+          var _a2;
           try {
             if (format === "html") {
               return editor.getHTML();
@@ -35053,13 +35215,13 @@ ${innerMarkdown}
             if (format === "json") {
               return JSON.stringify(editor.getJSON(), null, 2);
             }
-            return ((_a = window.getEditorMarkdown) == null ? void 0 : _a.call(window)) || "";
+            return ((_a2 = window.getEditorMarkdown) == null ? void 0 : _a2.call(window)) || "";
           } catch (err) {
             return "";
           }
         };
         window.setEditorMarkdown = (markdown) => {
-          var _a, _b;
+          var _a2, _b2;
           if (typeof markdown !== "string") return;
           try {
             const shortAlertRegex = /^>(note|alerte|warning|important|conseil|tip|attention|caution|remarque)\s(.*)$/gmi;
@@ -35115,10 +35277,10 @@ ${innerMarkdown}
               }
               return match;
             });
-            if ((_a = editor == null ? void 0 : editor.commands) == null ? void 0 : _a.clearContent) {
+            if ((_a2 = editor == null ? void 0 : editor.commands) == null ? void 0 : _a2.clearContent) {
               editor.commands.clearContent();
             }
-            if ((_b = editor == null ? void 0 : editor.commands) == null ? void 0 : _b.setContent) {
+            if ((_b2 = editor == null ? void 0 : editor.commands) == null ? void 0 : _b2.setContent) {
               editor.commands.setContent(finalHtml);
             }
           } catch (err) {
@@ -35212,7 +35374,7 @@ ${innerMarkdown}
           return;
         }
         selectionTimeout = setTimeout(() => {
-          var _a, _b;
+          var _a2, _b2;
           const currentSelection = editor.state.selection;
           if (currentSelection.from === from2 && currentSelection.to === to) {
             const selectedText = editor.state.doc.textBetween(from2, to, " ");
@@ -35224,7 +35386,7 @@ ${innerMarkdown}
               const tmp = document.createElement("div");
               tmp.appendChild(fragment);
               const html2 = tmp.innerHTML;
-              selectionMarkdown = (((_a = turndownRef.current) == null ? void 0 : _a.turndown(html2)) || "").trim();
+              selectionMarkdown = (((_a2 = turndownRef.current) == null ? void 0 : _a2.turndown(html2)) || "").trim();
             } catch (err) {
               selectionMarkdown = "";
             }
@@ -35252,8 +35414,8 @@ ${innerMarkdown}
                 return -1;
               };
               const isEmptyTextblock = (resolvedPos) => {
-                var _a2;
-                return ((_a2 = resolvedPos.parent) == null ? void 0 : _a2.isTextblock) && resolvedPos.parent.content.size === 0;
+                var _a3;
+                return ((_a3 = resolvedPos.parent) == null ? void 0 : _a3.isTextblock) && resolvedPos.parent.content.size === 0;
               };
               const preferPos = isEmptyTextblock($to) ? $to : $from;
               let blockDepth = pickBlockDepth(preferPos);
@@ -35285,7 +35447,7 @@ ${innerMarkdown}
               const tmp = document.createElement("div");
               tmp.appendChild(fragment);
               const html2 = tmp.innerHTML;
-              blockMarkdown = (((_b = turndownRef.current) == null ? void 0 : _b.turndown(html2)) || "").trim();
+              blockMarkdown = (((_b2 = turndownRef.current) == null ? void 0 : _b2.turndown(html2)) || "").trim();
             } catch (err) {
               blockMarkdown = "";
             }
@@ -35333,7 +35495,7 @@ ${innerMarkdown}
         ref: containerRef,
         onMouseMove: handleMouseMove2,
         onMouseDown: (e) => {
-          var _a;
+          var _a2;
           const target = e.target;
           if (!editor || e.button !== 0) return;
           const handle = target.closest(".mermaid-node-handle");
@@ -35341,7 +35503,7 @@ ${innerMarkdown}
           const isMermaidDragTarget = !!handle || mermaidContainer && !target.closest(".mermaid-controls, .mermaid-modal, .mermaid-modal-overlay, .mermaid-modal-editor") && !target.closest("button, input, textarea, select");
           if (!isMermaidDragTarget) return;
           if (handle) e.preventDefault();
-          const wrapper = (_a = handle || mermaidContainer) == null ? void 0 : _a.closest(".mermaid-diagram-wrapper");
+          const wrapper = (_a2 = handle || mermaidContainer) == null ? void 0 : _a2.closest(".mermaid-diagram-wrapper");
           if (!wrapper) return;
           try {
             const pos = editor.view.posAtDOM(wrapper, 0);
@@ -35379,7 +35541,7 @@ ${innerMarkdown}
             BubbleMenuComponent,
             {
               editor,
-              visible: !isDropdownOpen,
+              visible: !isDropdownOpen && isFocusWithinMemoCard,
               onKeep: () => keepSelection(editor),
               onReject: () => rejectSelection(editor),
               onAssist: handleAssist,
@@ -35401,15 +35563,25 @@ ${innerMarkdown}
               style: { top: rowHandle.top, left: rowHandle.left },
               onMouseDown: (e) => {
                 e.preventDefault();
-                const node = editor.state.doc.nodeAt(rowHandle.tablePos);
-                if (!node) return;
-                setBlockDragPending({
-                  pos: rowHandle.tablePos,
-                  nodeSize: node.nodeSize,
-                  startX: e.clientX,
-                  startY: e.clientY
+                if (rowHandle.rowIndex === 0) {
+                  const node = editor.state.doc.nodeAt(rowHandle.tablePos);
+                  if (!node) return;
+                  setBlockDragPending({
+                    pos: rowHandle.tablePos,
+                    nodeSize: node.nodeSize,
+                    startX: e.clientX,
+                    startY: e.clientY
+                  });
+                  blockDragMovedRef.current = false;
+                  return;
+                }
+                setMouseDownPoints({
+                  type: "row",
+                  index: rowHandle.rowIndex,
+                  tablePos: rowHandle.tablePos,
+                  x: e.clientX,
+                  y: e.clientY
                 });
-                blockDragMovedRef.current = false;
               },
               children: "\u283F"
             }
@@ -35451,7 +35623,7 @@ ${innerMarkdown}
                         const text = node.textContent;
                         navigator.clipboard.writeText(text).then(() => {
                           document.dispatchEvent(new CustomEvent("copyToast", {
-                            detail: { message: "Text copi\xE9" }
+                            detail: { message: "Texte copi\xE9" }
                           }));
                         });
                       }
@@ -35491,7 +35663,7 @@ ${innerMarkdown}
                         if (node && node.attrs.code) {
                           navigator.clipboard.writeText(node.attrs.code).then(() => {
                             document.dispatchEvent(new CustomEvent("copyToast", {
-                              detail: { message: "Code copi\xE9 !" }
+                              detail: { message: "Texte copi\xE9" }
                             }));
                           });
                         }
@@ -35559,6 +35731,19 @@ ${innerMarkdown}
                 width: blockDropIndicator.width,
                 height: 2
               }
+            }
+          ),
+          dragGhost && (dragState || blockDragState) && /* @__PURE__ */ jsx(
+            "div",
+            {
+              className: "drag-ghost",
+              style: {
+                top: ((_b = (_a = dragState == null ? void 0 : dragState.y) != null ? _a : blockDragState == null ? void 0 : blockDragState.y) != null ? _b : 0) - dragGhost.offsetY,
+                left: ((_d = (_c = dragState == null ? void 0 : dragState.x) != null ? _c : blockDragState == null ? void 0 : blockDragState.x) != null ? _d : 0) - dragGhost.offsetX,
+                width: dragGhost.width,
+                height: dragGhost.height
+              },
+              children: /* @__PURE__ */ jsx("div", { className: "drag-ghost-content", dangerouslySetInnerHTML: { __html: dragGhost.html } })
             }
           ),
           dragState && /* @__PURE__ */ jsx(
@@ -35696,12 +35881,12 @@ ${innerMarkdown}
                 className: "quote-context-menu",
                 style: { top: quoteMenu.top, left: quoteMenu.left },
                 children: ALERT_TYPES.map((alert) => {
-                  var _a;
+                  var _a2;
                   return /* @__PURE__ */ jsxs(
                     "div",
                     {
                       className: "quote-context-menu-item",
-                      "data-active": ((_a = editor.state.doc.nodeAt(quoteMenu.pos)) == null ? void 0 : _a.attrs.type) === alert.type,
+                      "data-active": ((_a2 = editor.state.doc.nodeAt(quoteMenu.pos)) == null ? void 0 : _a2.attrs.type) === alert.type,
                       onClick: () => {
                         const node = editor.state.doc.nodeAt(quoteMenu.pos);
                         if ((node == null ? void 0 : node.attrs.type) === alert.type) {
@@ -35823,7 +36008,38 @@ ${innerMarkdown}
                         "Supprimer"
                       ]
                     }
-                  )
+                  ),
+                  tableContextMenu.type === "col" && /* @__PURE__ */ jsxs(Fragment3, { children: [
+                    /* @__PURE__ */ jsx("div", { className: "table-context-menu-divider" }),
+                    /* @__PURE__ */ jsxs(
+                      "div",
+                      {
+                        className: "table-context-menu-item",
+                        onClick: () => {
+                          sortColumn(editor, tableContextMenu.tablePos, tableContextMenu.index, "asc");
+                          setTableContextMenu(null);
+                        },
+                        children: [
+                          /* @__PURE__ */ jsx(ArrowDownAZ, { size: 14, style: { marginRight: 8 } }),
+                          "Trier a-z"
+                        ]
+                      }
+                    ),
+                    /* @__PURE__ */ jsxs(
+                      "div",
+                      {
+                        className: "table-context-menu-item",
+                        onClick: () => {
+                          sortColumn(editor, tableContextMenu.tablePos, tableContextMenu.index, "desc");
+                          setTableContextMenu(null);
+                        },
+                        children: [
+                          /* @__PURE__ */ jsx(ArrowUpAZ, { size: 14, style: { marginRight: 8 } }),
+                          "Trier z-a"
+                        ]
+                      }
+                    )
+                  ] })
                 ]
               }
             )
@@ -56010,7 +56226,9 @@ lucide-react/dist/esm/shared/src/utils.js:
 lucide-react/dist/esm/defaultAttributes.js:
 lucide-react/dist/esm/Icon.js:
 lucide-react/dist/esm/createLucideIcon.js:
+lucide-react/dist/esm/icons/arrow-down-a-z.js:
 lucide-react/dist/esm/icons/arrow-left-right.js:
+lucide-react/dist/esm/icons/arrow-up-a-z.js:
 lucide-react/dist/esm/icons/baseline.js:
 lucide-react/dist/esm/icons/bold.js:
 lucide-react/dist/esm/icons/bot.js:

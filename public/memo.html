@@ -1764,6 +1764,10 @@
             }
 
             window.GoToolkitMemoToast = setStatus;
+            document.addEventListener("copyToast", (event) => {
+                const message = event?.detail?.message;
+                if (message) setStatus(message);
+            });
 
             function setDbStatus(message) {
                 const toast = document.getElementById("dbStatusToast");
@@ -3754,12 +3758,12 @@
                 const text = textarea.value || '';
                 try {
                     await navigator.clipboard.writeText(text);
-                    showToast('Copié dans le presse-papiers');
+                    showToast('Texte copié');
                 } catch (e) {
                     textarea.focus();
                     textarea.select();
                     const ok = document.execCommand && document.execCommand('copy');
-                    showToast(ok ? 'Copié dans le presse-papiers' : 'Copie impossible');
+                    showToast(ok ? 'Texte copié' : 'Copie impossible');
                 }
             }
 

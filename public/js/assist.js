@@ -531,6 +531,86 @@ function escapeRegex(value) {
     return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+function copyTextToClipboard(text) {
+    var value = String(text || "");
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+        return navigator.clipboard.writeText(value);
+    }
+    return new Promise(function (resolve, reject) {
+        try {
+            var textarea = document.createElement("textarea");
+            textarea.value = value;
+            textarea.setAttribute("readonly", "");
+            textarea.style.position = "fixed";
+            textarea.style.top = "-9999px";
+            document.body.appendChild(textarea);
+            textarea.select();
+            var ok = document.execCommand("copy");
+            textarea.remove();
+            if (ok) {
+                resolve();
+            } else {
+                reject(new Error("Copy failed"));
+            }
+        } catch (err) {
+            reject(err);
+        }
+    });
+}
+
+function getPreCopyText(pre) {
+    if (!pre) return "";
+    var code = pre.querySelector("code");
+    if (code) return code.textContent || "";
+    var clone = pre.cloneNode(true);
+    var btn = clone.querySelector(".chat-pre-copy-btn");
+    if (btn) btn.remove();
+    return clone.textContent || "";
+}
+
+function showCopyToast(message) {
+    var text = String(message || "");
+    if (!text) return;
+    if (typeof window.GoToolkitMemoToast === "function") {
+        window.GoToolkitMemoToast(text);
+        return;
+    }
+    document.dispatchEvent(new CustomEvent("copyToast", { detail: { message: text } }));
+}
+
+function addCopyButtonsToChatContent(contentEl) {
+    if (!contentEl) return;
+    var preBlocks = contentEl.querySelectorAll("pre");
+    preBlocks.forEach(function (pre) {
+        if (pre.querySelector(".chat-pre-copy-btn")) return;
+        pre.classList.add("chat-pre-has-copy");
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "chat-pre-copy-btn";
+        btn.setAttribute("aria-label", "Copier");
+        btn.innerHTML = '<i data-lucide="copy" style="width:12px;height:12px;"></i>';
+        btn.addEventListener("click", function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            var originalLabel = btn.getAttribute("aria-label") || "Copier";
+            copyTextToClipboard(getPreCopyText(pre)).then(function () {
+                btn.setAttribute("aria-label", "Copié");
+                showCopyToast("Texte copié");
+                setTimeout(function () {
+                    btn.setAttribute("aria-label", originalLabel);
+                }, 1200);
+            }).catch(function () {
+                btn.setAttribute("aria-label", "Erreur");
+                setTimeout(function () {
+                    btn.setAttribute("aria-label", originalLabel);
+                }, 1200);
+            });
+        });
+        pre.insertBefore(btn, pre.firstChild);
+        if (window.lucide) window.lucide.createIcons({ props: { size: 12 } });
+    });
+}
+
 function renderBotMarkdown(text) {
     if (global.GoToolkitMarkdown) {
         if (typeof global.GoToolkitMarkdown.renderDocument === "function") {
@@ -1489,6 +1569,7 @@ AssistSidebar.prototype.updateBotMessage = function (message) {
         entry.contentEl.textContent = message.content || "";
     } else {
         entry.contentEl.innerHTML = this.renderBotContent(message);
+        addCopyButtonsToChatContent(entry.contentEl);
     }
     this.applyTechnicalHover(entry, message);
     this.syncBotExtras(entry, message);
@@ -1567,6 +1648,7 @@ AssistSidebar.prototype.appendMessage = function (message, options) {
 
     if (message.role === "bot") {
         content.innerHTML = this.renderBotContent(message);
+        addCopyButtonsToChatContent(content);
     } else {
         content.innerHTML = escapeHtml(message.content || "").replace(/\n/g, "<br>");
     }
@@ -2584,6 +2666,7 @@ AssistSidebar.prototype.handleSend = async function () {
         var liveEntry = self.messageNodes[botMessage.id];
         if (liveEntry && liveEntry.contentEl) {
             liveEntry.contentEl.innerHTML = renderBotMarkdown(botMessage.content || "");
+            addCopyButtonsToChatContent(liveEntry.contentEl);
         }
         self.throttledPersist();
     }
@@ -6706,6 +6789,7 @@ AssistSidebar.prototype.sendAIRequest = function (payload) {
         var messageEntry = self.messageNodes[botMessage.id];
         if (messageEntry && messageEntry.contentEl) {
             messageEntry.contentEl.innerHTML = self.renderBotContent(botMessage);
+            addCopyButtonsToChatContent(messageEntry.contentEl);
             self.syncBotExtras?.(messageEntry, botMessage);
         }
 
@@ -6742,6 +6826,7 @@ AssistSidebar.prototype.sendAIRequest = function (payload) {
         var messageEntry = self.messageNodes[botMessage.id];
         if (messageEntry && messageEntry.contentEl) {
             messageEntry.contentEl.innerHTML = self.renderBotContent(botMessage);
+            addCopyButtonsToChatContent(messageEntry.contentEl);
             self.syncBotExtras?.(messageEntry, botMessage);
         }
         stopCharacterCounterToaster();
@@ -7681,6 +7766,7 @@ async function sendInlineEditToAssist(options) {
         const contentEl = messageEntry.contentEl || messageEntry.querySelector?.('.chat-message-content');
         if (contentEl) {
             contentEl.innerHTML = assistInstance.renderBotContent(botMessage);
+            addCopyButtonsToChatContent(contentEl);
             assistInstance.syncBotExtras?.(messageEntry, botMessage);
             assistInstance.scrollToBottom?.();
         }

@@ -858,7 +858,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
           </div>
         </div>
       )}
-      {showToast && <div className="mermaid-toast">Code copié !</div>}
+      {showToast && <div className="mermaid-toast">Texte copié</div>}
     </>
   );
 };

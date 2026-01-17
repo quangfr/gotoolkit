@@ -54,7 +54,8 @@ import {
   ChevronDown, Check, CheckCheck, Type,
   Bot, X, Palette, Plus, Baseline, Shapes,
   CheckSquare, ListTree,
-  Pencil, Copy, Image as ImageIcon
+  Pencil, Copy, Image as ImageIcon,
+  ArrowDownAZ, ArrowUpAZ
 } from 'lucide-react';
 
 
@@ -796,7 +797,8 @@ const moveRow = (editor: Editor, tablePos: number, fromRowIndex: number, toRowIn
     }
   });
 
-  if (fromRowIndex < 0 || fromRowIndex >= rows.length || toRowIndex < 0 || toRowIndex >= rows.length) return false;
+  if (fromRowIndex <= 0 || toRowIndex <= 0) return false;
+  if (fromRowIndex >= rows.length || toRowIndex >= rows.length) return false;
 
   const newRows = [...rows];
   const [rowToMove] = newRows.splice(fromRowIndex, 1);
@@ -825,6 +827,45 @@ const moveColumn = (editor: Editor, tablePos: number, fromColIndex: number, toCo
   });
 
   const newTable = table.type.create(table.attrs, newRows);
+  editor.view.dispatch(tr.replaceWith(tablePos, tablePos + table.nodeSize, newTable));
+  return true;
+};
+
+const sortColumn = (editor: Editor, tablePos: number, colIndex: number, direction: 'asc' | 'desc') => {
+  const { tr } = editor.state;
+  const table = editor.state.doc.nodeAt(tablePos);
+  if (!table || table.type.name !== 'table') return false;
+
+  const rows: PMNode[] = [];
+  table.forEach((row: PMNode) => {
+    if (row.type.name === 'tableRow') rows.push(row);
+  });
+
+  if (rows.length <= 1) return false;
+
+  const headerRow = rows[0];
+  const bodyRows = rows.slice(1);
+  const collator = new Intl.Collator('fr', { numeric: true, sensitivity: 'base' });
+  const getCellText = (row: PMNode) => {
+    const cell = row.childCount > colIndex ? row.child(colIndex) : null;
+    return cell ? cell.textContent.trim() : '';
+  };
+
+  const sortedRows = bodyRows
+    .map((row, index) => ({ row, index }))
+    .sort((a, b) => {
+      const aText = getCellText(a.row);
+      const bText = getCellText(b.row);
+    if (!aText && !bText) return 0;
+    if (!aText) return 1;
+    if (!bText) return -1;
+    const result = collator.compare(aText, bText);
+      if (result !== 0) return direction === 'asc' ? result : -result;
+      return a.index - b.index;
+    })
+    .map(({ row }) => row);
+
+  const newTable = table.type.create(table.attrs, [headerRow, ...sortedRows]);
   editor.view.dispatch(tr.replaceWith(tablePos, tablePos + table.nodeSize, newTable));
   return true;
 };
@@ -1714,7 +1755,9 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   const [blockDragPending, setBlockDragPending] = React.useState<{ pos: number, nodeSize: number, startX: number, startY: number } | null>(null);
   const [blockDragState, setBlockDragState] = React.useState<{ pos: number, nodeSize: number, x: number, y: number } | null>(null);
   const [blockDropIndicator, setBlockDropIndicator] = React.useState<{ top: number, left: number, width: number } | null>(null);
+  const [dragGhost, setDragGhost] = React.useState<{ html: string, width: number, height: number, offsetX: number, offsetY: number } | null>(null);
   const [showLinkModal, setShowLinkModal] = React.useState(false);
+  const [isFocusWithinMemoCard, setIsFocusWithinMemoCard] = React.useState(false);
   const blockDragMovedRef = React.useRef(false);
 
   const editor = useEditor({
@@ -1826,6 +1869,29 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     };
   }, [editor]);
 
+  React.useEffect(() => {
+    const memoCard = containerRef.current?.closest('.memo-card');
+    if (!memoCard) return;
+
+    const updateFocusState = () => {
+      const activeElement = document.activeElement;
+      setIsFocusWithinMemoCard(!!activeElement && memoCard.contains(activeElement));
+    };
+
+    const handleFocusOut = () => {
+      requestAnimationFrame(updateFocusState);
+    };
+
+    memoCard.addEventListener('focusin', updateFocusState);
+    memoCard.addEventListener('focusout', handleFocusOut);
+    updateFocusState();
+
+    return () => {
+      memoCard.removeEventListener('focusin', updateFocusState);
+      memoCard.removeEventListener('focusout', handleFocusOut);
+    };
+  }, []);
+
   // Expose editor to window for the bridge
   React.useEffect(() => {
     const handleGlobalMouseMove = (e: MouseEvent) => {
@@ -1935,6 +2001,51 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       window.removeEventListener('mouseup', handleGlobalMouseUp);
     };
   }, [dragState, mouseDownPoints, editor]);
+
+  React.useEffect(() => {
+    if (!editor) return;
+    if (!dragState && !blockDragState) {
+      setDragGhost(null);
+      return;
+    }
+
+    if (dragGhost) return;
+    if (dragState) {
+      const tableDOM = editor.view.nodeDOM(dragState.tablePos) as HTMLElement | null;
+      if (!tableDOM) return;
+      const ghost =
+        dragState.type === 'row'
+          ? buildRowGhost(tableDOM, dragState.index)
+          : buildColGhost(tableDOM, dragState.index);
+      if (!ghost) return;
+      const offsetX = dragState.x - ghost.rect.left;
+      const offsetY = dragState.y - ghost.rect.top;
+      setDragGhost({
+        html: ghost.html,
+        width: ghost.rect.width,
+        height: ghost.rect.height,
+        offsetX,
+        offsetY
+      });
+      return;
+    }
+
+    if (blockDragState) {
+      const node = editor.state.doc.nodeAt(blockDragState.pos);
+      if (!node) return;
+      const ghost = buildBlockGhost(blockDragState.pos, node);
+      if (!ghost) return;
+      const offsetX = blockDragState.x - ghost.rect.left;
+      const offsetY = blockDragState.y - ghost.rect.top;
+      setDragGhost({
+        html: ghost.html,
+        width: ghost.rect.width,
+        height: ghost.rect.height,
+        offsetX,
+        offsetY
+      });
+    }
+  }, [dragState, blockDragState, dragGhost, editor]);
 
   const moveBlockNode = (fromPos: number, targetPos: number, placeAfter: boolean) => {
     if (!editor) return;
@@ -2050,6 +2161,54 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       right: end.right,
       width: containerRef.current.getBoundingClientRect().width
     } as DOMRect;
+  };
+
+  const buildRowGhost = (tableDOM: HTMLElement, rowIndex: number) => {
+    const rows = Array.from(tableDOM.querySelectorAll('tr'));
+    const row = rows[rowIndex] as HTMLElement | undefined;
+    if (!row) return null;
+    const rect = row.getBoundingClientRect();
+    const ghostTable = document.createElement('table');
+    ghostTable.className = tableDOM.className;
+    ghostTable.style.borderCollapse = 'collapse';
+    const tbody = document.createElement('tbody');
+    tbody.appendChild(row.cloneNode(true));
+    ghostTable.appendChild(tbody);
+    return { html: ghostTable.outerHTML, rect };
+  };
+
+  const buildColGhost = (tableDOM: HTMLElement, colIndex: number) => {
+    const rows = Array.from(tableDOM.querySelectorAll('tr'));
+    const ghostTable = document.createElement('table');
+    ghostTable.className = tableDOM.className;
+    ghostTable.style.borderCollapse = 'collapse';
+    const tbody = document.createElement('tbody');
+    let cellRect: DOMRect | null = null;
+    rows.forEach((row) => {
+      const cell = row.children[colIndex] as HTMLElement | undefined;
+      if (!cell) return;
+      if (!cellRect) cellRect = cell.getBoundingClientRect();
+      const newRow = document.createElement('tr');
+      const cloned = cell.cloneNode(true) as HTMLElement;
+      newRow.appendChild(cloned);
+      tbody.appendChild(newRow);
+    });
+    if (!tbody.children.length || !cellRect) return null;
+    ghostTable.appendChild(tbody);
+    const tableRect = tableDOM.getBoundingClientRect();
+    const rect = new DOMRect(cellRect.left, tableRect.top, cellRect.width, tableRect.height);
+    return { html: ghostTable.outerHTML, rect };
+  };
+
+  const buildBlockGhost = (pos: number, node: PMNode) => {
+    if (!editor) return null;
+    const dom = editor.view.nodeDOM(pos) as HTMLElement | null;
+    const wrapper = dom?.closest('.tableWrapper, .mermaid-diagram-wrapper, .alert-wrapper');
+    const target = (wrapper as HTMLElement | null) || dom;
+    if (!target) return null;
+    const rect = getBlockRectForPos(pos, node);
+    if (!rect) return null;
+    return { html: target.outerHTML, rect };
   };
 
   const maybeAutoScroll = (clientY: number) => {
@@ -2445,9 +2604,12 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           e.clientY <= tableRect.bottom;
 
         if (isInWrapper) {
+          const rowHandleLeft = rowIndex === 0
+            ? tableWrapperRect.left - containerRect.left + 9
+            : tableRect.left - containerRect.left + 29;
           setRowHandle({
             top: rect.top - containerRect.top + rect.height / 2,
-            left: tableWrapperRect.left - containerRect.left + 5,
+            left: rowHandleLeft,
             rowIndex,
             tablePos
           });
@@ -3043,7 +3205,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       <Toolbar editor={editor} onDropdownToggle={setIsDropdownOpen} onLink={() => setShowLinkModal(true)} />
       <BubbleMenuComponent 
         editor={editor}
-        visible={!isDropdownOpen}
+        visible={!isDropdownOpen && isFocusWithinMemoCard}
         onKeep={() => keepSelection(editor)}
         onReject={() => rejectSelection(editor)}
         onAssist={handleAssist}
@@ -3064,15 +3226,25 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           style={{ top: rowHandle.top, left: rowHandle.left }}
           onMouseDown={(e) => {
             e.preventDefault();
-            const node = editor.state.doc.nodeAt(rowHandle.tablePos);
-            if (!node) return;
-            setBlockDragPending({
-              pos: rowHandle.tablePos,
-              nodeSize: node.nodeSize,
-              startX: e.clientX,
-              startY: e.clientY
+            if (rowHandle.rowIndex === 0) {
+              const node = editor.state.doc.nodeAt(rowHandle.tablePos);
+              if (!node) return;
+              setBlockDragPending({
+                pos: rowHandle.tablePos,
+                nodeSize: node.nodeSize,
+                startX: e.clientX,
+                startY: e.clientY
+              });
+              blockDragMovedRef.current = false;
+              return;
+            }
+            setMouseDownPoints({
+              type: 'row',
+              index: rowHandle.rowIndex,
+              tablePos: rowHandle.tablePos,
+              x: e.clientX,
+              y: e.clientY
             });
-            blockDragMovedRef.current = false;
           }}
         >
           ⠿
@@ -3114,7 +3286,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
                 const text = node.textContent;
                 navigator.clipboard.writeText(text).then(() => {
                   document.dispatchEvent(new CustomEvent('copyToast', { 
-                    detail: { message: 'Text copié' } 
+                    detail: { message: 'Texte copié' } 
                   }));
                 });
               }
@@ -3153,7 +3325,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
                 if (node && node.attrs.code) {
                   navigator.clipboard.writeText(node.attrs.code).then(() => {
                     document.dispatchEvent(new CustomEvent('copyToast', { 
-                      detail: { message: 'Code copié !' } 
+                      detail: { message: 'Texte copié' } 
                     }));
                   });
                 }
@@ -3219,6 +3391,20 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
             height: 2 
           }}
         />
+      )}
+
+      {dragGhost && (dragState || blockDragState) && (
+        <div
+          className="drag-ghost"
+          style={{
+            top: (dragState?.y ?? blockDragState?.y ?? 0) - dragGhost.offsetY,
+            left: (dragState?.x ?? blockDragState?.x ?? 0) - dragGhost.offsetX,
+            width: dragGhost.width,
+            height: dragGhost.height
+          }}
+        >
+          <div className="drag-ghost-content" dangerouslySetInnerHTML={{ __html: dragGhost.html }} />
+        </div>
       )}
 
       {dragState && (
@@ -3480,6 +3666,31 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
               <X size={14} style={{ marginRight: 8 }} />
               Supprimer
             </div>
+            {tableContextMenu.type === 'col' && (
+              <>
+                <div className="table-context-menu-divider" />
+                <div 
+                  className="table-context-menu-item"
+                  onClick={() => {
+                    sortColumn(editor, tableContextMenu.tablePos, tableContextMenu.index, 'asc');
+                    setTableContextMenu(null);
+                  }}
+                >
+                  <ArrowDownAZ size={14} style={{ marginRight: 8 }} />
+                  Trier a-z
+                </div>
+                <div 
+                  className="table-context-menu-item"
+                  onClick={() => {
+                    sortColumn(editor, tableContextMenu.tablePos, tableContextMenu.index, 'desc');
+                    setTableContextMenu(null);
+                  }}
+                >
+                  <ArrowUpAZ size={14} style={{ marginRight: 8 }} />
+                  Trier z-a
+                </div>
+              </>
+            )}
           </div>
         </>
       )}
