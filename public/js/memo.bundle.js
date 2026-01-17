@@ -34432,7 +34432,7 @@ ${promptInput.trim()}`
         return rect;
       }
       const start = editor.view.coordsAtPos(pos);
-      const end = editor.view.coordsAtPos(pos + node.nodeSize);
+      const end = editor.view.coordsAtPos(pos + node.nodeSize, -1);
       return {
         top: start.top,
         bottom: end.bottom,
@@ -35068,7 +35068,7 @@ ${innerMarkdown}
     const handleAssist = () => {
       if (selectionData) {
         document.dispatchEvent(new CustomEvent("memoEditorSelectionChanged", {
-          detail: selectionData
+          detail: { ...selectionData, focus: true }
         }));
       }
     };
@@ -35105,7 +35105,7 @@ ${innerMarkdown}
             let blockFrom = from2;
             let blockTo = to;
             let blockText2 = selectedText;
-            editor.state.doc.nodesBetween(from2, to, (node, pos) => {
+            editor.state.doc.nodesBetween(from2, to > from2 ? to - 1 : to, (node, pos) => {
               if (node.type.name === "paragraph" || node.type.name === "heading" || node.type.name === "codeBlock" || node.type.name === "table" || node.type.name === "listItem" || node.type.name === "blockquote" || node.type.name === "mermaidDiagram") {
                 blockFrom = Math.min(blockFrom, pos);
                 blockTo = Math.max(blockTo, pos + node.nodeSize);
@@ -35113,7 +35113,7 @@ ${innerMarkdown}
             });
             blockText2 = editor.state.doc.textBetween(blockFrom, blockTo, "\n").trim();
             let nodeType = "";
-            editor.state.doc.nodesBetween(from2, to, (node) => {
+            editor.state.doc.nodesBetween(from2, to > from2 ? to - 1 : to, (node) => {
               if (node.type.name === "mermaidDiagram") nodeType = "mermaidDiagram";
             });
             let blockMarkdown = "";
@@ -35130,7 +35130,7 @@ ${innerMarkdown}
             }
             try {
               const coordsStart = editor.view.coordsAtPos(blockFrom);
-              const coordsEnd = editor.view.coordsAtPos(blockTo);
+              const coordsEnd = editor.view.coordsAtPos(blockTo, -1);
               setSelectionData({
                 isSelected: true,
                 nodeType,

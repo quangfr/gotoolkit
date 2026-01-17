@@ -82,9 +82,7 @@
   color: var(--text-main);
 }
 
-[data-node-view-content] {
-  line-height: 1.3 !important;
-}
+
 
 .ProseMirror blockquote[data-type="NOTE"] { border-left-color: var(--intent-info-border); background-color: var(--bg-surface-soft); }
 .ProseMirror blockquote[data-type="TIP"] { border-left-color: var(--intent-success-border); background-color: var(--bg-surface-soft); }
@@ -214,7 +212,9 @@
 }
 
 th .node-text.node-paragraph,
-td .node-text.node-paragraph {
+td .node-text.node-paragraph,
+.alert-content .node-text.node-paragraph,
+.node-blockquote .node-text.node-paragraph {
   padding-left: 0px;
 }
 

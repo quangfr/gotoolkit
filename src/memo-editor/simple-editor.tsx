@@ -2042,7 +2042,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       return rect;
     }
     const start = editor.view.coordsAtPos(pos);
-    const end = editor.view.coordsAtPos(pos + node.nodeSize);
+    const end = editor.view.coordsAtPos(pos + node.nodeSize, -1);
     return {
       top: start.top,
       bottom: end.bottom,
@@ -2806,7 +2806,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   const handleAssist = () => {
     if (selectionData) {
       document.dispatchEvent(new CustomEvent('memoEditorSelectionChanged', {
-        detail: selectionData
+        detail: { ...selectionData, focus: true }
       }));
     }
   };
@@ -2860,7 +2860,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           let blockTo = to;
           let blockText = selectedText;
 
-          editor.state.doc.nodesBetween(from, to, (node, pos) => {
+          editor.state.doc.nodesBetween(from, to > from ? to - 1 : to, (node, pos) => {
             // Trouver le bloc parent (paragraphe, heading, table, code block, list item)
             if (
               node.type.name === 'paragraph' ||
@@ -2881,7 +2881,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
 
           // Déterminer le type de nœud principal
           let nodeType = '';
-          editor.state.doc.nodesBetween(from, to, (node) => {
+          editor.state.doc.nodesBetween(from, to > from ? to - 1 : to, (node) => {
             if (node.type.name === 'mermaidDiagram') nodeType = 'mermaidDiagram';
           });
 
@@ -2902,7 +2902,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           // Calculer la position (en bas de la sélection, à gauche du début)
           try {
             const coordsStart = editor.view.coordsAtPos(blockFrom);
-            const coordsEnd = editor.view.coordsAtPos(blockTo);
+            const coordsEnd = editor.view.coordsAtPos(blockTo, -1);
             
             // Stocker les données pour "Assist" au lieu d'émettre
             setSelectionData({
