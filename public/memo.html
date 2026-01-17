@@ -3441,11 +3441,16 @@
                     // 2) Fallback historique: approximation via positions ProseMirror
                     if (!Number.isFinite(selectionEndLine) || selectionEndLine <= selectionStartLine) {
                         const lines = documentContent.split('\n');
+                        const selectionText = (currentSelection.selectionText || '').toString();
+                        const selectionBlockText = (currentSelection.blockText || '').toString();
+                        const isWhitespaceSelection = selectionText.trim().length === 0 && selectionBlockText.trim().length === 0;
+                        const anchorFrom = isWhitespaceSelection ? currentSelection.to : currentSelection.from;
+                        const anchorTo = isWhitespaceSelection ? currentSelection.to : currentSelection.to;
                         let charCount = 0;
 
                         for (let i = 0; i < lines.length; i++) {
                             const lineLength = lines[i].length + 1; // +1 pour le newline
-                            if (charCount + lineLength > currentSelection.from) {
+                            if (charCount + lineLength > anchorFrom) {
                                 selectionStartLine = i;
                                 break;
                             }
@@ -3457,11 +3462,15 @@
                         selectionEndLine = lines.length;
                         for (let i = 0; i < lines.length; i++) {
                             const lineLength = lines[i].length + 1;
-                            if (charCount + lineLength > currentSelection.to) {
+                            if (charCount + lineLength > anchorTo) {
                                 selectionEndLine = i + 1;
                                 break;
                             }
                             charCount += lineLength;
+                        }
+
+                        if (isWhitespaceSelection && selectionEndLine <= selectionStartLine) {
+                            selectionEndLine = selectionStartLine + 1;
                         }
                     }
 

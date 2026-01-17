@@ -2878,22 +2878,48 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           let blockFrom = from;
           let blockTo = to;
           let blockText = selectedText;
+          const allowedBlockTypes = new Set([
+            'paragraph',
+            'heading',
+            'codeBlock',
+            'table',
+            'listItem',
+            'blockquote',
+            'mermaidDiagram'
+          ]);
+          const isWhitespaceSelection = selectedText.trim().length === 0;
 
-          editor.state.doc.nodesBetween(from, to > from ? to - 1 : to, (node, pos) => {
-            // Trouver le bloc parent (paragraphe, heading, table, code block, list item)
-            if (
-              node.type.name === 'paragraph' ||
-              node.type.name === 'heading' ||
-              node.type.name === 'codeBlock' ||
-              node.type.name === 'table' ||
-              node.type.name === 'listItem' ||
-              node.type.name === 'blockquote' ||
-              node.type.name === 'mermaidDiagram'
-            ) {
-              blockFrom = Math.min(blockFrom, pos);
-              blockTo = Math.max(blockTo, pos + node.nodeSize);
+          if (isWhitespaceSelection) {
+            const { $from, $to } = editor.state.selection;
+            const pickBlockDepth = (resolvedPos: typeof $from) => {
+              for (let depth = resolvedPos.depth; depth >= 0; depth--) {
+                if (allowedBlockTypes.has(resolvedPos.node(depth).type.name)) {
+                  return depth;
+                }
+              }
+              return -1;
+            };
+            const isEmptyTextblock = (resolvedPos: typeof $from) =>
+              resolvedPos.parent?.isTextblock && resolvedPos.parent.content.size === 0;
+            const preferPos = isEmptyTextblock($to) ? $to : $from;
+            let blockDepth = pickBlockDepth(preferPos);
+
+            if (blockDepth < 0 && preferPos !== $from) {
+              blockDepth = pickBlockDepth($from);
             }
-          });
+            if (blockDepth >= 0) {
+              blockFrom = preferPos.start(blockDepth);
+              blockTo = preferPos.end(blockDepth);
+            }
+          } else {
+            editor.state.doc.nodesBetween(from, to > from ? to - 1 : to, (node, pos) => {
+              // Trouver le bloc parent (paragraphe, heading, table, code block, list item)
+              if (allowedBlockTypes.has(node.type.name)) {
+                blockFrom = Math.min(blockFrom, pos);
+                blockTo = Math.max(blockTo, pos + node.nodeSize);
+              }
+            });
+          }
 
           // Extraire le texte du bloc complet
           blockText = editor.state.doc.textBetween(blockFrom, blockTo, '\n').trim();

@@ -35231,12 +35231,47 @@ ${innerMarkdown}
             let blockFrom = from2;
             let blockTo = to;
             let blockText2 = selectedText;
-            editor.state.doc.nodesBetween(from2, to > from2 ? to - 1 : to, (node, pos) => {
-              if (node.type.name === "paragraph" || node.type.name === "heading" || node.type.name === "codeBlock" || node.type.name === "table" || node.type.name === "listItem" || node.type.name === "blockquote" || node.type.name === "mermaidDiagram") {
-                blockFrom = Math.min(blockFrom, pos);
-                blockTo = Math.max(blockTo, pos + node.nodeSize);
+            const allowedBlockTypes = /* @__PURE__ */ new Set([
+              "paragraph",
+              "heading",
+              "codeBlock",
+              "table",
+              "listItem",
+              "blockquote",
+              "mermaidDiagram"
+            ]);
+            const isWhitespaceSelection = selectedText.trim().length === 0;
+            if (isWhitespaceSelection) {
+              const { $from, $to } = editor.state.selection;
+              const pickBlockDepth = (resolvedPos) => {
+                for (let depth = resolvedPos.depth; depth >= 0; depth--) {
+                  if (allowedBlockTypes.has(resolvedPos.node(depth).type.name)) {
+                    return depth;
+                  }
+                }
+                return -1;
+              };
+              const isEmptyTextblock = (resolvedPos) => {
+                var _a2;
+                return ((_a2 = resolvedPos.parent) == null ? void 0 : _a2.isTextblock) && resolvedPos.parent.content.size === 0;
+              };
+              const preferPos = isEmptyTextblock($to) ? $to : $from;
+              let blockDepth = pickBlockDepth(preferPos);
+              if (blockDepth < 0 && preferPos !== $from) {
+                blockDepth = pickBlockDepth($from);
               }
-            });
+              if (blockDepth >= 0) {
+                blockFrom = preferPos.start(blockDepth);
+                blockTo = preferPos.end(blockDepth);
+              }
+            } else {
+              editor.state.doc.nodesBetween(from2, to > from2 ? to - 1 : to, (node, pos) => {
+                if (allowedBlockTypes.has(node.type.name)) {
+                  blockFrom = Math.min(blockFrom, pos);
+                  blockTo = Math.max(blockTo, pos + node.nodeSize);
+                }
+              });
+            }
             blockText2 = editor.state.doc.textBetween(blockFrom, blockTo, "\n").trim();
             let nodeType = "";
             editor.state.doc.nodesBetween(from2, to > from2 ? to - 1 : to, (node) => {
