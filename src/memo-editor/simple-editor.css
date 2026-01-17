@@ -1002,6 +1002,7 @@ td .node-text.node-paragraph,
   outline: none;
   background-color: black;
   color: white;
+  font-size:12px;
 }
 
 .mermaid-modal-textarea-actions {

@@ -124,6 +124,106 @@
             border-bottom: 1px solid var(--border-main);
         }
 
+        #memo-source-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            z-index: 100000;
+        }
+
+        #memo-source-modal {
+            position: absolute;
+            top: 1vh;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 1100px;
+            max-width: calc(100vw - 24px);
+            height: 98vh;
+            background: var(--bg-surface);
+            color: var(--text-main);
+            border: 1px solid var(--border-strong);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+            font-size: 13px;
+        }
+
+        .memo-source-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border-main);
+            font-size: 13px;
+        }
+
+        .memo-source-title {
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .memo-source-spacer {
+            flex: 1;
+        }
+
+        .memo-source-label {
+            font-size: 13px;
+            opacity: 0.8;
+        }
+
+        .memo-source-select {
+            height: 28px;
+            background: var(--bg-app);
+            color: var(--text-main);
+            border: 1px solid var(--border-strong);
+            border-radius: 8px;
+            padding: 0 8px;
+            font-size: 13px;
+        }
+
+        .memo-source-button {
+            height: 28px;
+            padding: 0 10px;
+            background: var(--bg-app);
+            color: var(--text-main);
+            border: 1px solid var(--border-strong);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        #memo-source-text {
+            width: 100%;
+            height: calc(98vh - 52px);
+            padding: 12px;
+            border: 0;
+            outline: none;
+            resize: none;
+            background: black;
+            color: white;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.45;
+        }
+
+        #memo-source-toast {
+            position: absolute;
+            left: 50%;
+            bottom: 14px;
+            transform: translateX(-50%);
+            background: var(--bg-surface-soft);
+            color: var(--text-main);
+            border: 1px solid var(--border-main);
+            padding: 8px 10px;
+            border-radius: 8px;
+            font-size: 13px;
+            display: none;
+            pointer-events: none;
+            max-width: calc(100% - 24px);
+            text-align: center;
+        }
+
         .document-explorer__tab-btn {
             border: none;
             background: var(--bg-surface);
@@ -3505,18 +3605,14 @@
         })();
     </script>
 
-    <div id="memo-source-overlay"
-        style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:100000;">
-        <div id="memo-source-modal" role="dialog" aria-modal="true" aria-label="Document source"
-            style="position:absolute; top:1vh; left:50%; transform:translateX(-50%); width:1100px; max-width:calc(100vw - 24px); height:98vh; background:var(--bg-surface); color:var(--text-main); border:1px solid var(--border-strong); border-radius:8px; overflow:hidden; box-shadow:var(--shadow-lg); font-size:13px;">
-            <div
-                style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-bottom:1px solid var(--border-main); font-size:13px;">
-                <div style="font-weight:600; font-size:13px;">Source</div>
-                <div style="flex:1;"></div>
+    <div id="memo-source-overlay">
+        <div id="memo-source-modal" role="dialog" aria-modal="true" aria-label="Document source">
+            <div class="memo-source-header">
+                <div class="memo-source-title">Source</div>
+                <div class="memo-source-spacer"></div>
 
-                <label for="memo-source-format" style="font-size:13px; opacity:.8;">Format</label>
-                <select id="memo-source-format"
-                    style="height:28px; background:var(--bg-app); color:var(--text-main); border:1px solid var(--border-strong); border-radius:8px; padding:0 8px; font-size:13px;">
+                <label for="memo-source-format" class="memo-source-label">Format</label>
+                <select id="memo-source-format" class="memo-source-select">
                     <option value="markdown" selected>Markdown</option>
                     <option value="html">HTML</option>
                     <option value="json">JSON</option>
@@ -3524,22 +3620,18 @@
                     <option value="ai_out">AI Out</option>
                 </select>
 
-                <button id="memo-source-copy" type="button"
-                    style="height:28px; padding:0 10px; background:var(--bg-app); color:var(--text-main); border:1px solid var(--border-strong); border-radius:8px; cursor:pointer; font-size:13px;">
+                <button id="memo-source-copy" type="button" class="memo-source-button">
                     Copier
                 </button>
 
-                <button id="memo-source-close" type="button"
-                    style="height:28px; padding:0 10px; background:var(--bg-app); color:var(--text-main); border:1px solid var(--border-strong); border-radius:8px; cursor:pointer; font-size:13px;">
+                <button id="memo-source-close" type="button" class="memo-source-button">
                     Close
                 </button>
             </div>
 
-            <textarea id="memo-source-text" readonly spellcheck="false"
-                style="width:100%; height:calc(98vh - 52px); padding:12px; border:0; outline:none; resize:none; background:var(--bg-surface); color:var(--text-main); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; font-size:13px; line-height:1.45;"></textarea>
+            <textarea id="memo-source-text" readonly spellcheck="false"></textarea>
 
-            <div id="memo-source-toast" role="status" aria-live="polite"
-                style="position:absolute; left:50%; bottom:14px; transform:translateX(-50%); background:var(--bg-surface-soft); color:var(--text-main); border:1px solid var(--border-main); padding:8px 10px; border-radius:8px; font-size:13px; display:none; pointer-events:none; max-width:calc(100% - 24px); text-align:center;">
+            <div id="memo-source-toast" role="status" aria-live="polite">
             </div>
         </div>
     </div>
