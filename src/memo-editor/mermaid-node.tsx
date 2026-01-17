@@ -555,6 +555,9 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
   return (
     <>
       <NodeViewWrapper className="mermaid-diagram-wrapper node-mermaidDiagram">
+        <div className="table-handle mermaid-node-handle" title="Déplacer">
+          ⠿
+        </div>
         <div 
           ref={containerRef}
           className="mermaid-diagram-container"
@@ -579,9 +582,6 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
             minWidth: '100px'
           }}
         >
-          <div className="table-handle mermaid-node-handle" title="Déplacer">
-            ⠿
-          </div>
           <div className="mermaid-controls" onClick={e => e.stopPropagation()}>
             {showSizeSelector && (
               [

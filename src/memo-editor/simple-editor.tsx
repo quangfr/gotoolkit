@@ -2108,7 +2108,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     const detailsEl = element?.closest('.details');
     const mermaidEl = element?.closest('.mermaid-diagram-container');
     const codeEl = element?.closest('pre');
-    const targetBlock = tableEl || detailsEl || mermaidEl || codeEl;
+    const targetBlock = tableEl || blockquoteEl || detailsEl || mermaidEl || codeEl;
 
     if (targetBlock && containerRef.current.contains(targetBlock)) {
       let rect = targetBlock.getBoundingClientRect();
@@ -2868,10 +2868,17 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       onMouseMove={handleMouseMove}
       onMouseDown={(e) => {
         const target = e.target as HTMLElement;
+        if (!editor || e.button !== 0) return;
         const handle = target.closest('.mermaid-node-handle');
-        if (!handle || !editor) return;
-        e.preventDefault();
-        const wrapper = handle.closest('.mermaid-diagram-wrapper') as HTMLElement | null;
+        const mermaidContainer = target.closest('.mermaid-diagram-container');
+        const isMermaidDragTarget = !!handle || (
+          mermaidContainer &&
+          !target.closest('.mermaid-controls, .mermaid-modal, .mermaid-modal-overlay, .mermaid-modal-editor') &&
+          !target.closest('button, input, textarea, select')
+        );
+        if (!isMermaidDragTarget) return;
+        if (handle) e.preventDefault();
+        const wrapper = (handle || mermaidContainer)?.closest('.mermaid-diagram-wrapper') as HTMLElement | null;
         if (!wrapper) return;
         try {
           const pos = editor.view.posAtDOM(wrapper, 0);
