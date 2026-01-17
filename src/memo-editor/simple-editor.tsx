@@ -2990,7 +2990,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         />
       )}
 
-      {rowHandle && !dragState && (
+      {rowHandle && !dragState && !blockDragState && (
         <div 
           className="table-handle table-handle-row"
           style={{ top: rowHandle.top, left: rowHandle.left }}
@@ -3011,7 +3011,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         </div>
       )}
 
-      {colHandle && !dragState && (
+      {colHandle && !dragState && !blockDragState && (
         <div 
           className="table-handle table-handle-col"
           style={{ top: colHandle.top, left: colHandle.left }}
@@ -3024,7 +3024,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         </div>
       )}
 
-      {blockDeleteHandle && !dragState && (
+      {blockDeleteHandle && !dragState && !blockDragState && (
         <div 
           className="block-handle-container"
           style={{
@@ -3171,8 +3171,25 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         </div>
       )}
 
+      {blockDragState && (
+        <div
+          className="table-handle block-drag-handle"
+          style={{
+            position: 'fixed',
+            top: blockDragState.y,
+            left: blockDragState.x,
+            opacity: 0.8,
+            pointerEvents: 'none',
+            zIndex: 2000,
+            boxShadow: 'var(--shadow-md)',
+            transform: 'translate(-50%, -50%)'
+          }}
+        >
+          ⠿
+        </div>
+      )}
 
-      {textHandle && (
+      {textHandle && !dragState && !blockDragState && (
         <div
           className="table-handle node-handle text-handle"
           style={{ top: textHandle.top, left: textHandle.left }}
@@ -3192,7 +3209,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         </div>
       )}
 
-      {quoteHandle && (
+      {quoteHandle && !dragState && !blockDragState && (
         <div 
           className="table-handle quote-handle"
           style={{ top: quoteHandle.top, left: quoteHandle.left }}
@@ -3220,7 +3237,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         </div>
       )}
 
-      {detailsHandle && (
+      {detailsHandle && !dragState && !blockDragState && (
         <div 
           className="table-handle details-handle"
           style={{ top: detailsHandle.top, left: detailsHandle.left }}
@@ -3248,7 +3265,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         </div>
       )}
 
-      {mermaidHandles.map((handle) => (
+      {!dragState && !blockDragState && mermaidHandles.map((handle) => (
         <div
           key={`mermaid-handle-${handle.pos}`}
           className="table-handle mermaid-handle"

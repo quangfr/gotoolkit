@@ -50,12 +50,6 @@ node_modules/
 # Optional npm cache directory
 .npm
 
-# Build artifacts
-public/js/*.bundle.js
-public/js/*.bundle.js.map
-public/js/*.bundle.css
-public/js/*.bundle.css.map
-
 # Optional eslint cache
 .eslintcache
 
