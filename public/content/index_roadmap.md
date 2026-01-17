@@ -7,7 +7,6 @@
 - Vision : Go-Roadmap
 - Spécifications : Mapping de données
 
-
 ## Interface 
 - Mode sombre
 

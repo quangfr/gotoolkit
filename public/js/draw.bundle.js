@@ -4276,8 +4276,14 @@
   init_define_process_env();
   init_polyfills();
   var React2 = window.React;
-  var jsx = React2 == null ? void 0 : React2.createElement;
-  var jsxs = React2 == null ? void 0 : React2.createElement;
+  var createElement2 = React2 == null ? void 0 : React2.createElement;
+  var jsx = (type, props, key) => {
+    if (!createElement2) return null;
+    if (key !== void 0) {
+      props = props ? { ...props, key } : { key };
+    }
+    return createElement2(type, props);
+  };
   var Fragment2 = React2 == null ? void 0 : React2.Fragment;
 
   // src/draw-editor/index.tsx

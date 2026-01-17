@@ -1,6 +1,6 @@
 ## 2026-01-16
 - Mémo : Mode sombre
-- Mémo : Glissez-déposer des blocs
+- Mémo : Glisser-déposer des blocs
 - Mémo : Modèles de document
 
 ## 2026-01-14

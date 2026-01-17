@@ -31785,8 +31785,21 @@ ${content}</tr>
   init_define_process_env();
   init_polyfills();
   var React2 = window.React;
-  var jsx = React2 == null ? void 0 : React2.createElement;
-  var jsxs = React2 == null ? void 0 : React2.createElement;
+  var createElement2 = React2 == null ? void 0 : React2.createElement;
+  var jsx = (type2, props, key) => {
+    if (!createElement2) return null;
+    if (key !== void 0) {
+      props = props ? { ...props, key } : { key };
+    }
+    return createElement2(type2, props);
+  };
+  var jsxs = (type2, props, key) => {
+    if (!createElement2) return null;
+    if (key !== void 0) {
+      props = props ? { ...props, key } : { key };
+    }
+    return createElement2(type2, props);
+  };
   var Fragment3 = React2 == null ? void 0 : React2.Fragment;
 
   // src/memo-editor/mermaid-node.tsx
@@ -35495,8 +35508,7 @@ ${innerMarkdown}
                   startY: e.clientY
                 });
                 blockDragMovedRef.current = false;
-              },
-              children: "\u283F"
+              }
             },
             `mermaid-handle-${handle.pos}`
           )),

@@ -112,8 +112,6 @@ test.describe("Mermaid Diagram AI Composer", () => {
     // We expect the text to change from 'graph TD; A-->B;' to something containing 'Process 1'
     await expect(modalTextArea).toHaveValue(/Process 1/, { timeout: 15000 });
     
-    console.log('Textarea updated correctly');
-
     // Verify Excalidraw host has elements
     const excalidrawHost = page.locator('.mermaid-modal-excalidraw-host');
     await expect(excalidrawHost).toBeVisible();
@@ -123,6 +121,5 @@ test.describe("Mermaid Diagram AI Composer", () => {
     const canvas = excalidrawHost.locator('canvas');
     await expect(canvas.first()).toBeVisible({ timeout: 10000 });
     
-    console.log('Excalidraw diagram rendered correctly');
   });
 });

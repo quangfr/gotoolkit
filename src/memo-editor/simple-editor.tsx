@@ -3282,7 +3282,6 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
             blockDragMovedRef.current = false;
           }}
         >
-          ⠿
         </div>
       ))}
 

@@ -30,14 +30,9 @@ test.describe("Memo Mermaid Markdown Export", () => {
 
     // Get the markdown export
     const result = await page.evaluate(() => {
-      const editor = (window as any).MemoEditor;
-      const html = editor.getHTML();
       const markdown = (window as any).getEditorMarkdown();
-      return { html, markdown };
+      return { markdown };
     });
-
-    console.log('Editor HTML:', result.html);
-    console.log('Exported Markdown:', result.markdown);
 
     // Check if the markdown contains the expected mermaid block
     expect(result.markdown).toContain('```mermaid');
@@ -66,7 +61,6 @@ test.describe("Memo Mermaid Markdown Export", () => {
     // We check the HTML to see if the node was inserted
     // If typing fails to trigger the rule in headless mode, we'll know from the log
     const html = await page.evaluate(() => (window as any).MemoEditor.getHTML());
-    console.log('Final Editor HTML:', html);
 
     // In some environments, typing might not trigger input rules correctly in headless mode
     // If it failed, we'll skip the assertion but log it
@@ -93,7 +87,6 @@ test.describe("Memo Mermaid Markdown Export", () => {
 
     // Debug: log the HTML
     const html = await page.evaluate(() => document.querySelector('.tiptap.ProseMirror')?.innerHTML);
-    console.log('Editor HTML after setEditorMarkdown:', html);
 
     // Verify it was converted to a mermaid-diagram-wrapper
     const mermaidWrapper = page.locator('.mermaid-diagram-wrapper');
