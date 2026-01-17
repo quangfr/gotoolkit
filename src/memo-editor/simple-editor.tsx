@@ -1702,6 +1702,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   const [quoteMenu, setQuoteMenu] = React.useState<{ top: number, left: number, pos: number } | null>(null);
   const [detailsHandle, setDetailsHandle] = React.useState<{ top: number, left: number, pos: number } | null>(null);
   const [detailsMenu, setDetailsMenu] = React.useState<{ top: number, left: number, pos: number } | null>(null);
+  const [mermaidHandles, setMermaidHandles] = React.useState<Array<{ top: number, left: number, pos: number }>>([]);
   const [textHandle, setTextHandle] = React.useState<{ top: number, left: number, pos: number } | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
   const [selectionData, setSelectionData] = React.useState<any>(null);
@@ -1988,12 +1989,47 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     return null;
   };
 
+  const updateMermaidHandles = React.useCallback(() => {
+    if (!editor || !containerRef.current) return;
+    const containerRect = containerRef.current.getBoundingClientRect();
+    const handles: Array<{ top: number, left: number, pos: number }> = [];
+    editor.state.doc.descendants((node, pos) => {
+      if (node.type.name !== 'mermaidDiagram') return;
+      const dom = editor.view.nodeDOM(pos) as HTMLElement | null;
+      const wrapper = dom?.closest('.mermaid-diagram-wrapper') as HTMLElement | null;
+      const rect = (wrapper || dom)?.getBoundingClientRect();
+      if (!rect) return;
+      handles.push({
+        top: rect.top - containerRect.top + 10,
+        left: rect.left - containerRect.left + 5,
+        pos
+      });
+    });
+    setMermaidHandles(handles);
+  }, [editor]);
+
+  React.useEffect(() => {
+    if (!editor) return;
+    const handleUpdate = () => updateMermaidHandles();
+    handleUpdate();
+    editor.on('update', handleUpdate);
+    editor.on('selectionUpdate', handleUpdate);
+    window.addEventListener('resize', handleUpdate);
+    window.addEventListener('scroll', handleUpdate, true);
+    return () => {
+      editor.off('update', handleUpdate);
+      editor.off('selectionUpdate', handleUpdate);
+      window.removeEventListener('resize', handleUpdate);
+      window.removeEventListener('scroll', handleUpdate, true);
+    };
+  }, [editor, updateMermaidHandles]);
+
   const getBlockRectForPos = (pos: number, node: PMNode) => {
     if (!editor || !containerRef.current) return null;
     const dom = editor.view.nodeDOM(pos) as HTMLElement | null;
     if (dom?.getBoundingClientRect) {
       let rect = dom.getBoundingClientRect();
-      const wrapper = dom.closest('.tableWrapper, .mermaid-diagram-wrapper');
+      const wrapper = dom.closest('.tableWrapper, .mermaid-diagram-wrapper, .alert-wrapper');
       if (wrapper) {
         rect = wrapper.getBoundingClientRect();
       }
@@ -2097,7 +2133,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     if (!editor || dragState || blockDragState || !containerRef.current) return;
     
     // Don't hide handles if mouse is over them
-    if ((e.target as HTMLElement).closest('.table-handle, .quote-handle, .details-handle, .node-handle, .block-delete-button')) return;
+    if ((e.target as HTMLElement).closest('.table-handle, .quote-handle, .details-handle, .mermaid-handle, .node-handle, .block-delete-button')) return;
 
     const element = document.elementFromPoint(e.clientX, e.clientY);
     const containerRect = containerRef.current.getBoundingClientRect();
@@ -2209,28 +2245,52 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
 
     // 2. Blockquote Menu Handle (Left)
     if (blockquoteEl && containerRef.current.contains(blockquoteEl)) {
-      const rect = blockquoteEl.getBoundingClientRect();
-      const pos = editor.view.posAtCoords({ left: e.clientX, top: e.clientY })?.pos;
-      if (pos !== undefined) {
-        const $pos = editor.state.doc.resolve(pos);
-        let quotePos = -1;
+      let quotePos = -1;
+      try {
+        const domPos = editor.view.posAtDOM(blockquoteEl, 0);
+        const $pos = editor.state.doc.resolve(domPos);
         for (let d = $pos.depth; d > 0; d--) {
           if ($pos.node(d).type.name === 'blockquote') {
             quotePos = $pos.before(d);
             break;
           }
         }
+        if (quotePos === -1) {
+          const node = editor.state.doc.nodeAt(domPos);
+          if (node?.type.name === 'blockquote') quotePos = domPos;
+        }
+      } catch (err) {
+        // ignore
+      }
 
-        if (quotePos !== -1) {
+      if (quotePos === -1) {
+        const pos = editor.view.posAtCoords({ left: e.clientX, top: e.clientY })?.pos;
+        if (pos !== undefined) {
+          const $pos = editor.state.doc.resolve(pos);
+          for (let d = $pos.depth; d > 0; d--) {
+            if ($pos.node(d).type.name === 'blockquote') {
+              quotePos = $pos.before(d);
+              break;
+            }
+          }
+        }
+      }
+
+      if (quotePos !== -1) {
+        const node = editor.state.doc.nodeAt(quotePos);
+        const rect = node ? getBlockRectForPos(quotePos, node) : blockquoteEl.getBoundingClientRect();
+        if (rect) {
           setQuoteHandle({
             top: rect.top - containerRect.top + 10,
-            left: rect.left - containerRect.left + 15,
+            left: rect.left - containerRect.left + 5,
             pos: quotePos,
-            type: editor.state.doc.nodeAt(quotePos)?.attrs.type || 'default'
+            type: node?.attrs.type || 'default'
           });
         } else {
           setQuoteHandle(null);
         }
+      } else {
+        setQuoteHandle(null);
       }
     } else if (!(e.target as HTMLElement).closest('.quote-handle')) {
       setQuoteHandle(null);
@@ -3187,6 +3247,27 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           ⠿
         </div>
       )}
+
+      {mermaidHandles.map((handle) => (
+        <div
+          key={`mermaid-handle-${handle.pos}`}
+          className="table-handle mermaid-handle"
+          style={{ top: handle.top, left: handle.left }}
+          onMouseDown={(e) => {
+            const node = editor.state.doc.nodeAt(handle.pos);
+            if (!node) return;
+            setBlockDragPending({
+              pos: handle.pos,
+              nodeSize: node.nodeSize,
+              startX: e.clientX,
+              startY: e.clientY
+            });
+            blockDragMovedRef.current = false;
+          }}
+        >
+          ⠿
+        </div>
+      ))}
 
       {quoteMenu && (
         <>
