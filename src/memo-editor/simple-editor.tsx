@@ -2414,10 +2414,18 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         const tableRect = tableDOM.getBoundingClientRect();
         const tableWrapper = tableDOM.closest('.tableWrapper') as HTMLElement | null;
         const tableWrapperRect = tableWrapper ? tableWrapper.getBoundingClientRect() : tableRect;
-        const nearRowHandle = e.clientX <= tableWrapperRect.left + 24;
-        const nearColHandle = e.clientY <= tableRect.top + 24;
+        const isInWrapper =
+          e.clientX >= tableWrapperRect.left &&
+          e.clientX <= tableWrapperRect.right &&
+          e.clientY >= tableWrapperRect.top &&
+          e.clientY <= tableWrapperRect.bottom;
+        const isInTable =
+          e.clientX >= tableRect.left &&
+          e.clientX <= tableRect.right &&
+          e.clientY >= tableRect.top &&
+          e.clientY <= tableRect.bottom;
 
-        if (nearRowHandle) {
+        if (isInWrapper) {
           setRowHandle({
             top: rect.top - containerRect.top + rect.height / 2,
             left: tableWrapperRect.left - containerRect.left + 5,
@@ -2428,7 +2436,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           setRowHandle(null);
         }
 
-        if (nearColHandle) {
+        if (isInTable) {
           setColHandle({
             top: tableRect.top - containerRect.top - 10,
             left: rect.left - containerRect.left + rect.width / 2,
@@ -2439,7 +2447,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           setColHandle(null);
         }
 
-        if (nearRowHandle || nearColHandle) {
+        if (isInWrapper || isInTable) {
           return;
         }
       }

@@ -34758,9 +34758,9 @@ ${promptInput.trim()}`
           const tableRect = tableDOM.getBoundingClientRect();
           const tableWrapper = tableDOM.closest(".tableWrapper");
           const tableWrapperRect = tableWrapper ? tableWrapper.getBoundingClientRect() : tableRect;
-          const nearRowHandle = e.clientX <= tableWrapperRect.left + 24;
-          const nearColHandle = e.clientY <= tableRect.top + 24;
-          if (nearRowHandle) {
+          const isInWrapper = e.clientX >= tableWrapperRect.left && e.clientX <= tableWrapperRect.right && e.clientY >= tableWrapperRect.top && e.clientY <= tableWrapperRect.bottom;
+          const isInTable2 = e.clientX >= tableRect.left && e.clientX <= tableRect.right && e.clientY >= tableRect.top && e.clientY <= tableRect.bottom;
+          if (isInWrapper) {
             setRowHandle({
               top: rect.top - containerRect.top + rect.height / 2,
               left: tableWrapperRect.left - containerRect.left + 5,
@@ -34770,7 +34770,7 @@ ${promptInput.trim()}`
           } else {
             setRowHandle(null);
           }
-          if (nearColHandle) {
+          if (isInTable2) {
             setColHandle({
               top: tableRect.top - containerRect.top - 10,
               left: rect.left - containerRect.left + rect.width / 2,
@@ -34780,7 +34780,7 @@ ${promptInput.trim()}`
           } else {
             setColHandle(null);
           }
-          if (nearRowHandle || nearColHandle) {
+          if (isInWrapper || isInTable2) {
             return;
           }
         }
