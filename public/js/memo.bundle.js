@@ -34118,6 +34118,7 @@ ${promptInput.trim()}`
     const [detailsHandle, setDetailsHandle] = react_shim_default.useState(null);
     const [detailsMenu, setDetailsMenu] = react_shim_default.useState(null);
     const [mermaidHandles, setMermaidHandles] = react_shim_default.useState([]);
+    const [hoveredMermaidPos, setHoveredMermaidPos] = react_shim_default.useState(null);
     const [textHandle, setTextHandle] = react_shim_default.useState(null);
     const [isDropdownOpen, setIsDropdownOpen] = react_shim_default.useState(false);
     const [selectionData, setSelectionData] = react_shim_default.useState(null);
@@ -34382,11 +34383,16 @@ ${promptInput.trim()}`
     };
     const updateMermaidHandles = react_shim_default.useCallback(() => {
       if (!editor || !containerRef.current) return;
+      if (hoveredMermaidPos === null) {
+        setMermaidHandles([]);
+        return;
+      }
       const containerRect = containerRef.current.getBoundingClientRect();
       const handles = [];
       editor.state.doc.descendants((node, pos) => {
         var _a;
         if (node.type.name !== "mermaidDiagram") return;
+        if (pos !== hoveredMermaidPos) return;
         const dom = editor.view.nodeDOM(pos);
         const wrapper = dom == null ? void 0 : dom.closest(".mermaid-diagram-wrapper");
         const rect = (_a = wrapper || dom) == null ? void 0 : _a.getBoundingClientRect();
@@ -34398,7 +34404,7 @@ ${promptInput.trim()}`
         });
       });
       setMermaidHandles(handles);
-    }, [editor]);
+    }, [editor, hoveredMermaidPos]);
     react_shim_default.useEffect(() => {
       if (!editor) return;
       const handleUpdate = () => updateMermaidHandles();
@@ -34519,8 +34525,8 @@ ${promptInput.trim()}`
       const containerRect = containerRef.current.getBoundingClientRect();
       const tableEl = element == null ? void 0 : element.closest("table");
       const blockquoteEl = element == null ? void 0 : element.closest(".node-blockquote");
-      const detailsEl = element == null ? void 0 : element.closest(".details");
-      const mermaidEl = element == null ? void 0 : element.closest(".mermaid-diagram-container");
+      const detailsEl = element == null ? void 0 : element.closest(".node-details");
+      const mermaidEl = element == null ? void 0 : element.closest(".node-mermaidDiagram, .mermaid-diagram-container");
       const codeEl = element == null ? void 0 : element.closest("pre");
       const targetBlock = tableEl || blockquoteEl || detailsEl || mermaidEl || codeEl;
       if (targetBlock && containerRef.current.contains(targetBlock)) {
@@ -34597,6 +34603,11 @@ ${promptInput.trim()}`
             }
           }
         }
+        if (mermaidEl && blockPos !== -1) {
+          setHoveredMermaidPos(blockPos);
+        } else if (!mermaidEl && hoveredMermaidPos !== null) {
+          setHoveredMermaidPos(null);
+        }
         if (blockPos !== -1) {
           setBlockDeleteHandle({
             top: rect.top - containerRect.top + 8,
@@ -34607,6 +34618,9 @@ ${promptInput.trim()}`
         }
       } else if (!e.target.closest(".block-delete-button")) {
         setBlockDeleteHandle(null);
+      }
+      if (!mermaidEl && hoveredMermaidPos !== null) {
+        setHoveredMermaidPos(null);
       }
       if (blockquoteEl && containerRef.current.contains(blockquoteEl)) {
         let quotePos = -1;
@@ -35508,7 +35522,8 @@ ${innerMarkdown}
                   startY: e.clientY
                 });
                 blockDragMovedRef.current = false;
-              }
+              },
+              children: "\u283F"
             },
             `mermaid-handle-${handle.pos}`
           )),

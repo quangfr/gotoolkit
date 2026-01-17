@@ -488,7 +488,7 @@ td .node-text.node-paragraph {
   border-radius: 4px;
   cursor: grab;
   z-index: 50;
-  color: var(--text-muted);
+  color: var(--text-main);
   font-size: 13px;
   user-select: none;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
@@ -554,7 +554,7 @@ td .node-text.node-paragraph {
   align-items: center;
   padding: 6px 12px;
   font-size: 13px;
-  color: var(--text-muted);
+  color: var(--text-main);
   cursor: pointer;
   border-radius: 4px;
   transition: background-color 0.2s;
@@ -603,7 +603,7 @@ td .node-text.node-paragraph {
   border: none;
   border-radius: 6px;
   background-color: transparent;
-  color: var(--text-muted);
+  color: var(--text-main);
   cursor: pointer;
   transition: all 0.2s;
   opacity: 0;
@@ -733,7 +733,7 @@ td .node-text.node-paragraph {
   justify-content: center;
   border: none;
   background: var(--bg-surface);
-  color: var(--text-muted);
+  color: var(--text-main);
   font-size: 11px;
   font-weight: 600;
   border-radius: 4px;
@@ -935,7 +935,7 @@ td .node-text.node-paragraph {
 }
 .mermaid-modal-btn-secondary {
   background-color: var(--bg-surface-soft);
-  color: var(--text-muted);
+  color: var(--text-main);
 }
 .mermaid-modal-btn-secondary:hover {
   background-color: var(--border-main);
@@ -1067,7 +1067,7 @@ li .node-text.node-paragraph {
   align-items: center;
   justify-content: center;
   padding: 6px !important;
-  color: var(--text-muted) !important;
+  color: var(--text-main) !important;
   border: none !important;
   background: transparent !important;
   border-radius: 6px !important;
@@ -1144,7 +1144,7 @@ li .node-text.node-paragraph {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--text-muted);
+  color: var(--text-main);
   display: flex;
   align-items: center;
 }

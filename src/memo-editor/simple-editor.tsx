@@ -1703,6 +1703,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   const [detailsHandle, setDetailsHandle] = React.useState<{ top: number, left: number, pos: number } | null>(null);
   const [detailsMenu, setDetailsMenu] = React.useState<{ top: number, left: number, pos: number } | null>(null);
   const [mermaidHandles, setMermaidHandles] = React.useState<Array<{ top: number, left: number, pos: number }>>([]);
+  const [hoveredMermaidPos, setHoveredMermaidPos] = React.useState<number | null>(null);
   const [textHandle, setTextHandle] = React.useState<{ top: number, left: number, pos: number } | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
   const [selectionData, setSelectionData] = React.useState<any>(null);
@@ -1991,10 +1992,15 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
 
   const updateMermaidHandles = React.useCallback(() => {
     if (!editor || !containerRef.current) return;
+    if (hoveredMermaidPos === null) {
+      setMermaidHandles([]);
+      return;
+    }
     const containerRect = containerRef.current.getBoundingClientRect();
     const handles: Array<{ top: number, left: number, pos: number }> = [];
     editor.state.doc.descendants((node, pos) => {
       if (node.type.name !== 'mermaidDiagram') return;
+      if (pos !== hoveredMermaidPos) return;
       const dom = editor.view.nodeDOM(pos) as HTMLElement | null;
       const wrapper = dom?.closest('.mermaid-diagram-wrapper') as HTMLElement | null;
       const rect = (wrapper || dom)?.getBoundingClientRect();
@@ -2006,7 +2012,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       });
     });
     setMermaidHandles(handles);
-  }, [editor]);
+  }, [editor, hoveredMermaidPos]);
 
   React.useEffect(() => {
     if (!editor) return;
@@ -2141,8 +2147,8 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     // 1. Generic Block Delete Handle (Top-Right)
     const tableEl = element?.closest('table');
     const blockquoteEl = element?.closest('.node-blockquote');
-    const detailsEl = element?.closest('.details');
-    const mermaidEl = element?.closest('.mermaid-diagram-container');
+    const detailsEl = element?.closest('.node-details');
+    const mermaidEl = element?.closest('.node-mermaidDiagram, .mermaid-diagram-container');
     const codeEl = element?.closest('pre');
     const targetBlock = tableEl || blockquoteEl || detailsEl || mermaidEl || codeEl;
 
@@ -2231,6 +2237,12 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         }
       }
 
+      if (mermaidEl && blockPos !== -1) {
+        setHoveredMermaidPos(blockPos);
+      } else if (!mermaidEl && hoveredMermaidPos !== null) {
+        setHoveredMermaidPos(null);
+      }
+
       if (blockPos !== -1) {
         setBlockDeleteHandle({
           top: rect.top - containerRect.top + 8,
@@ -2241,6 +2253,9 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       }
     } else if (!(e.target as HTMLElement).closest('.block-delete-button')) {
       setBlockDeleteHandle(null);
+    }
+    if (!mermaidEl && hoveredMermaidPos !== null) {
+      setHoveredMermaidPos(null);
     }
 
     // 2. Blockquote Menu Handle (Left)
@@ -3282,6 +3297,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
             blockDragMovedRef.current = false;
           }}
         >
+          ⠿
         </div>
       ))}
 
