@@ -684,7 +684,7 @@ td .node-text.node-paragraph,
   height: 28px;
   border: none;
   border-radius: 6px;
-  background-color: transparent;
+  background-color: var(--bg-surface);
   color: var(--text-main);
   cursor: pointer;
   transition: all 0.2s;

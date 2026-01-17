@@ -601,7 +601,7 @@ td .node-text.node-paragraph,
   height: 28px;
   border: none;
   border-radius: 6px;
-  background-color: transparent;
+  background-color: var(--bg-surface);
   color: var(--text-main);
   cursor: pointer;
   transition: all 0.2s;
@@ -890,6 +890,7 @@ td .node-text.node-paragraph,
   outline: none;
   background-color: black;
   color: white;
+  font-size: 12px;
 }
 .mermaid-modal-textarea-actions {
   position: absolute;
