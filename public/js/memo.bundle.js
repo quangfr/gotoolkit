@@ -32878,6 +32878,21 @@ ${promptInput.trim()}`
       });
     }
   });
+  var selectTableCellText = (view, pos) => {
+    const { state: state2 } = view;
+    const $pos = state2.doc.resolve(pos);
+    for (let depth = $pos.depth; depth > 0; depth--) {
+      const node = $pos.node(depth);
+      if (node.type.name === "tableCell" || node.type.name === "tableHeader") {
+        const cellPos = $pos.before(depth);
+        const from2 = cellPos + 1;
+        const to = cellPos + node.nodeSize - 1;
+        view.dispatch(state2.tr.setSelection(TextSelection.create(state2.doc, from2, to)));
+        return true;
+      }
+    }
+    return false;
+  };
   var CustomBulletList = BulletList.extend({
     addNodeView() {
       return ReactNodeViewRenderer(() => /* @__PURE__ */ jsx(NodeViewWrapper, { className: "node-text", children: /* @__PURE__ */ jsx(NodeViewContent, { as: "ul" }) }));
@@ -33084,17 +33099,20 @@ ${promptInput.trim()}`
     const [showTextColors, setShowTextColors] = react_shim_default.useState(false);
     const menuRef = react_shim_default.useRef(null);
     const containerRef = react_shim_default.useRef(null);
+    const pointerDownRef = react_shim_default.useRef(false);
     const updatePosition = react_shim_default.useCallback(() => {
       var _a, _b, _c;
-      if (!editor || !visible) {
+      if (!editor || !visible || pointerDownRef.current) {
         setPosition((prev) => ({ ...prev, opacity: 0 }));
         setShowColors(false);
+        setShowTextColors(false);
         return;
       }
       const { from: from2, to } = editor.state.selection;
       if (from2 === to || editor.isActive("mermaidDiagram")) {
         setPosition((prev) => ({ ...prev, opacity: 0 }));
         setShowColors(false);
+        setShowTextColors(false);
         return;
       }
       const hasHighlight = hasMarkInSelection(editor, "highlight");
@@ -33106,6 +33124,8 @@ ${promptInput.trim()}`
         const end = view.coordsAtPos(to);
         if (!start || !end) {
           setPosition((prev) => ({ ...prev, opacity: 0 }));
+          setShowColors(false);
+          setShowTextColors(false);
           return;
         }
         const container2 = containerRef.current;
@@ -33142,10 +33162,26 @@ ${promptInput.trim()}`
     }, [editor, visible]);
     react_shim_default.useEffect(() => {
       if (!editor) return;
+      const viewDom = editor.view.dom;
+      const handlePointerDown = () => {
+        pointerDownRef.current = true;
+        setPosition((prev) => ({ ...prev, opacity: 0 }));
+        setShowColors(false);
+        setShowTextColors(false);
+      };
+      const handlePointerUp = () => {
+        if (!pointerDownRef.current) return;
+        pointerDownRef.current = false;
+        updatePosition();
+      };
+      viewDom.addEventListener("pointerdown", handlePointerDown);
+      window.addEventListener("pointerup", handlePointerUp);
       editor.on("selectionUpdate", updatePosition);
       editor.on("update", updatePosition);
       updatePosition();
       return () => {
+        viewDom.removeEventListener("pointerdown", handlePointerDown);
+        window.removeEventListener("pointerup", handlePointerUp);
         editor.off("selectionUpdate", updatePosition);
         editor.off("update", updatePosition);
       };
@@ -34371,6 +34407,9 @@ ${promptInput.trim()}`
         })
       ],
       content,
+      editorProps: {
+        handleTripleClickOn: (view, pos) => selectTableCellText(view, pos)
+      },
       onUpdate: ({ editor: editor2 }) => {
         if (onChange) {
           if (window._memoSaveTimeout) {
@@ -34401,6 +34440,29 @@ ${promptInput.trim()}`
       editor.on("update", syncTableWrappers);
       return () => {
         editor.off("update", syncTableWrappers);
+      };
+    }, [editor]);
+    react_shim_default.useEffect(() => {
+      if (!editor) return;
+      const syncDetailsState = () => {
+        editor.view.dom.querySelectorAll("details.details").forEach((el) => {
+          const detailsEl = el;
+          const isOpen = detailsEl.open || detailsEl.getAttribute("data-open") === "true";
+          detailsEl.classList.toggle("is-open", isOpen);
+        });
+      };
+      const handleToggle = (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLDetailsElement)) return;
+        const isOpen = target.open || target.getAttribute("data-open") === "true";
+        target.classList.toggle("is-open", isOpen);
+      };
+      syncDetailsState();
+      editor.view.dom.addEventListener("toggle", handleToggle, true);
+      editor.on("update", syncDetailsState);
+      return () => {
+        editor.view.dom.removeEventListener("toggle", handleToggle, true);
+        editor.off("update", syncDetailsState);
       };
     }, [editor]);
     react_shim_default.useEffect(() => {

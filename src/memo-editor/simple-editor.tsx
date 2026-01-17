@@ -17,7 +17,7 @@ import { Color } from '@tiptap/extension-color';
 import { computePosition, offset, shift } from '@floating-ui/dom';
 import { DOMSerializer, Node as PMNode } from '@tiptap/pm/model';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
-import { NodeSelection } from 'prosemirror-state';
+import { NodeSelection, TextSelection } from 'prosemirror-state';
 import Details from '@tiptap/extension-details';
 import DetailsSummary from '@tiptap/extension-details-summary';
 import DetailsContent from '@tiptap/extension-details-content';
@@ -136,6 +136,22 @@ const CustomParagraph = Paragraph.extend({
     });
   },
 });
+
+const selectTableCellText = (view: any, pos: number) => {
+  const { state } = view;
+  const $pos = state.doc.resolve(pos);
+  for (let depth = $pos.depth; depth > 0; depth--) {
+    const node = $pos.node(depth);
+    if (node.type.name === 'tableCell' || node.type.name === 'tableHeader') {
+      const cellPos = $pos.before(depth);
+      const from = cellPos + 1;
+      const to = cellPos + node.nodeSize - 1;
+      view.dispatch(state.tr.setSelection(TextSelection.create(state.doc, from, to)));
+      return true;
+    }
+  }
+  return false;
+};
 
 const CustomBulletList = BulletList.extend({
   addNodeView() {
@@ -408,11 +424,13 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLi
   const [showTextColors, setShowTextColors] = React.useState(false);
   const menuRef = React.useRef<HTMLDivElement>(null);
   const containerRef = React.useRef<HTMLDivElement>(null);
+  const pointerDownRef = React.useRef(false);
 
   const updatePosition = React.useCallback(() => {
-    if (!editor || !visible) {
+    if (!editor || !visible || pointerDownRef.current) {
       setPosition(prev => ({ ...prev, opacity: 0 }));
       setShowColors(false);
+      setShowTextColors(false);
       return;
     }
 
@@ -420,6 +438,7 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLi
     if (from === to || editor.isActive('mermaidDiagram')) {
       setPosition(prev => ({ ...prev, opacity: 0 }));
       setShowColors(false);
+      setShowTextColors(false);
       return;
     }
 
@@ -435,6 +454,8 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLi
       
       if (!start || !end) {
         setPosition(prev => ({ ...prev, opacity: 0 }));
+        setShowColors(false);
+        setShowTextColors(false);
         return;
       }
 
@@ -489,12 +510,29 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLi
   React.useEffect(() => {
     if (!editor) return;
 
+    const viewDom = editor.view.dom;
+    const handlePointerDown = () => {
+      pointerDownRef.current = true;
+      setPosition(prev => ({ ...prev, opacity: 0 }));
+      setShowColors(false);
+      setShowTextColors(false);
+    };
+    const handlePointerUp = () => {
+      if (!pointerDownRef.current) return;
+      pointerDownRef.current = false;
+      updatePosition();
+    };
+
+    viewDom.addEventListener('pointerdown', handlePointerDown);
+    window.addEventListener('pointerup', handlePointerUp);
     editor.on('selectionUpdate', updatePosition);
     editor.on('update', updatePosition);
 
     updatePosition();
 
     return () => {
+      viewDom.removeEventListener('pointerdown', handlePointerDown);
+      window.removeEventListener('pointerup', handlePointerUp);
       editor.off('selectionUpdate', updatePosition);
       editor.off('update', updatePosition);
     };
@@ -1833,6 +1871,9 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       }),
     ],
     content,
+    editorProps: {
+      handleTripleClickOn: (view, pos) => selectTableCellText(view, pos),
+    },
     onUpdate: ({ editor }) => {
       if (onChange) {
         // Debounce the onChange call to avoid excessive saves
@@ -1866,6 +1907,34 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     editor.on('update', syncTableWrappers);
     return () => {
       editor.off('update', syncTableWrappers);
+    };
+  }, [editor]);
+
+  React.useEffect(() => {
+    if (!editor) return;
+
+    const syncDetailsState = () => {
+      editor.view.dom.querySelectorAll('details.details').forEach((el) => {
+        const detailsEl = el as HTMLDetailsElement;
+        const isOpen = detailsEl.open || detailsEl.getAttribute('data-open') === 'true';
+        detailsEl.classList.toggle('is-open', isOpen);
+      });
+    };
+
+    const handleToggle = (event: Event) => {
+      const target = event.target as HTMLElement | null;
+      if (!(target instanceof HTMLDetailsElement)) return;
+      const isOpen = target.open || target.getAttribute('data-open') === 'true';
+      target.classList.toggle('is-open', isOpen);
+    };
+
+    syncDetailsState();
+    editor.view.dom.addEventListener('toggle', handleToggle, true);
+    editor.on('update', syncDetailsState);
+
+    return () => {
+      editor.view.dom.removeEventListener('toggle', handleToggle, true);
+      editor.off('update', syncDetailsState);
     };
   }, [editor]);
 

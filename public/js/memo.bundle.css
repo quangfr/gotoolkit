@@ -195,6 +195,9 @@
   margin-left: 35px;
   padding-left: 0px;
 }
+.node-details .node-blockquote {
+  padding-left: 0px;
+}
 th .node-text.node-paragraph,
 td .node-text.node-paragraph,
 .alert-content .node-text.node-paragraph,
@@ -1256,8 +1259,12 @@ ul[data-type=taskList] li[data-checked=true] > div {
 ul[data-type=taskList] li p {
   margin: 0;
 }
-div[data-type=detailsContent] .node-paragraph.node-text {
-  padding-left: 0px;
+div[data-type=detailsContent] .node-paragraph .node-text,
+div[data-type=detailsContent] .node-codeBlock .node-text {
+  padding-left: 0;
+}
+div[data-type=detailsContent] .tableWrapper {
+  padding: 0;
 }
 .link-search-modal {
   background: var(--bg-surface);
