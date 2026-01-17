@@ -1260,6 +1260,7 @@ AssistSidebar.prototype.open = function () {
     if (this.toggleButton) {
         this.toggleButton.classList.add("active");
     }
+    this.updateToggleIcon();
     persistOpenState(true);
     if (this.textarea) {
         this.textarea.focus();
@@ -1296,6 +1297,7 @@ AssistSidebar.prototype.close = function () {
     if (this.toggleButton) {
         this.toggleButton.classList.remove("active");
     }
+    this.updateToggleIcon();
     persistOpenState(false);
 };
 
@@ -1305,6 +1307,16 @@ AssistSidebar.prototype.toggle = function () {
     } else {
         this.open();
     }
+};
+
+AssistSidebar.prototype.updateToggleIcon = function () {
+    if (!this.toggleButton) return;
+    var icon = this.toggleButton.querySelector("i[data-lucide]");
+    if (!icon) return;
+    var nextIcon = this.isOpen ? "panel-right-close" : "panel-right-open";
+    if (icon.getAttribute("data-lucide") === nextIcon) return;
+    icon.setAttribute("data-lucide", nextIcon);
+    if (global.lucide) global.lucide.createIcons();
 };
 
 AssistSidebar.prototype.abortStream = function () {
@@ -2830,6 +2842,7 @@ AssistSidebar.prototype.buildUI = function () {
     }
     this.toggleButton = staticLauncher;
     this.toggleButton.classList.add("chat-toggle-button");
+    this.updateToggleIcon();
 
     this.toggleButton.addEventListener("click", this.toggle.bind(this));
 

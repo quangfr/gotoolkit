@@ -2,7 +2,7 @@ import { Node, mergeAttributes, InputRule, Editor } from '@tiptap/core';
 import { ReactNodeViewRenderer, NodeViewWrapper } from '@tiptap/react';
 import React from 'react';
 import mermaid from 'mermaid';
-import { Shapes, RectangleHorizontal, Square, ArrowLeftRight, Workflow, Boxes, Send, Loader2, ChevronUp, GripVertical } from 'lucide-react';
+import { Shapes, RectangleHorizontal, Square, ArrowLeftRight, Workflow, Boxes, Send, Loader2, ChevronUp } from 'lucide-react';
 
 // Mermaid Diagram Component that shows only the diagram
 const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
@@ -554,7 +554,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
 
   return (
     <>
-      <NodeViewWrapper className="mermaid-diagram-wrapper">
+      <NodeViewWrapper className="mermaid-diagram-wrapper node-mermaidDiagram">
         <div 
           ref={containerRef}
           className="mermaid-diagram-container"
@@ -579,10 +579,10 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
             minWidth: '100px'
           }}
         >
+          <div className="table-handle mermaid-node-handle" title="Déplacer">
+            ⠿
+          </div>
           <div className="mermaid-controls" onClick={e => e.stopPropagation()}>
-            <div className="size-btn drag-handle" data-drag-handle style={{ cursor: 'grab' }} title="Déplacer">
-              <GripVertical size={14} />
-            </div>
             {showSizeSelector && (
               [
                 { id: 'small', label: 'Rectangle', Icon: RectangleHorizontal },

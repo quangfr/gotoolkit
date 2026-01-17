@@ -1,5 +1,5 @@
 import React from 'react';
-import { useEditor, EditorContent, Editor, ReactRenderer } from '@tiptap/react';
+import { useEditor, EditorContent, Editor, ReactRenderer, ReactNodeViewRenderer, NodeViewWrapper, NodeViewContent } from '@tiptap/react';
 import { Extension, InputRule, markInputRule } from '@tiptap/core';
 import Suggestion from '@tiptap/suggestion';
 import StarterKit from '@tiptap/starter-kit';
@@ -17,11 +17,16 @@ import { Color } from '@tiptap/extension-color';
 import { computePosition, offset, shift } from '@floating-ui/dom';
 import { DOMSerializer, Node as PMNode } from '@tiptap/pm/model';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
+import { NodeSelection } from 'prosemirror-state';
 import Details from '@tiptap/extension-details';
 import DetailsSummary from '@tiptap/extension-details-summary';
 import DetailsContent from '@tiptap/extension-details-content';
 import { TableOfContents } from '@tiptap/extension-table-of-contents';
 import Heading from '@tiptap/extension-heading';
+import Paragraph from '@tiptap/extension-paragraph';
+import BulletList from '@tiptap/extension-bullet-list';
+import OrderedList from '@tiptap/extension-ordered-list';
+import CodeBlock from '@tiptap/extension-code-block';
 
 import { TableNode, TableRow, TableHeader, CustomTableCell, TABLE_COLORS } from './table-node';
 import { TaskListNode, TaskItemNode } from './task-node';
@@ -92,6 +97,74 @@ const CustomHeading = Heading.extend({
         },
       }),
     ];
+  },
+  addNodeView() {
+    return ReactNodeViewRenderer(({ node }) => {
+      const level = Math.min(4, Math.max(1, node.attrs.level || 1));
+      const tag = `h${level}` as keyof JSX.IntrinsicElements;
+      return (
+        <NodeViewWrapper className="node-text">
+          <NodeViewContent as={tag} />
+        </NodeViewWrapper>
+      );
+    });
+  },
+});
+
+const CustomParagraph = Paragraph.extend({
+  addNodeView() {
+    return ReactNodeViewRenderer(({ editor, getPos }) => {
+      let isListItem = false;
+      if (typeof getPos === 'function') {
+        const pos = getPos();
+        if (typeof pos === 'number') {
+          const $pos = editor.state.doc.resolve(pos);
+          for (let d = $pos.depth; d > 0; d--) {
+            if ($pos.node(d).type.name === 'listItem') {
+              isListItem = true;
+              break;
+            }
+          }
+        }
+      }
+      return (
+        <NodeViewWrapper className={isListItem ? undefined : 'node-text node-paragraph'}>
+          <NodeViewContent as="p" />
+        </NodeViewWrapper>
+      );
+    });
+  },
+});
+
+const CustomBulletList = BulletList.extend({
+  addNodeView() {
+    return ReactNodeViewRenderer(() => (
+      <NodeViewWrapper className="node-text">
+        <NodeViewContent as="ul" />
+      </NodeViewWrapper>
+    ));
+  },
+});
+
+const CustomOrderedList = OrderedList.extend({
+  addNodeView() {
+    return ReactNodeViewRenderer(() => (
+      <NodeViewWrapper className="node-text">
+        <NodeViewContent as="ol" />
+      </NodeViewWrapper>
+    ));
+  },
+});
+
+const CustomCodeBlock = CodeBlock.extend({
+  addNodeView() {
+    return ReactNodeViewRenderer(() => (
+      <NodeViewWrapper className="node-text">
+        <pre>
+          <NodeViewContent as="code" />
+        </pre>
+      </NodeViewWrapper>
+    ));
   },
 });
 
@@ -1227,8 +1300,40 @@ const Toolbar = ({ editor, onDropdownToggle, onLink }: {
           )}
         </div>
 
-        <div className="tiptap-separator" data-orientation="vertical" role="none"></div>
+        <button
+          className="tiptap-button"
+          aria-label="Strike"
+          type="button"
+          onClick={() => editor.chain().focus().toggleStrike().run()}
+          data-active-state={editor.isActive('strike') ? 'on' : 'off'}
+        >
+          <Strikethrough size={16} />
+        </button>
+        <button
+          className="tiptap-button"
+          aria-label="Highlight"
+          type="button"
+          onClick={() => editor.chain().focus().toggleHighlight().run()}
+          data-active-state={editor.isActive('highlight') ? 'on' : 'off'}
+          title="Surligner"
+        >
+          <Highlighter size={16} />
+        </button>
+        <button
+          className="tiptap-button"
+          aria-label="Link"
+          type="button"
+          onClick={onLink}
+          data-active-state={editor.isActive('link') ? 'on' : 'off'}
+          title="Lien"
+        >
+          <Link size={16} />
+        </button>
+      </div>
 
+      <div className="tiptap-separator" data-orientation="vertical" role="none"></div>
+
+      <div role="group" className="tiptap-toolbar-group" aria-label="Bloc">
         <button
           className="tiptap-button"
           aria-label="Bloc dépliable"
@@ -1260,36 +1365,6 @@ const Toolbar = ({ editor, onDropdownToggle, onLink }: {
         </button>
 
         <QuoteTypeDropdown editor={editor} />
-
-        <button
-          className="tiptap-button"
-          aria-label="Strike"
-          type="button"
-          onClick={() => editor.chain().focus().toggleStrike().run()}
-          data-active-state={editor.isActive('strike') ? 'on' : 'off'}
-        >
-          <Strikethrough size={16} />
-        </button>
-        <button
-          className="tiptap-button"
-          aria-label="Highlight"
-          type="button"
-          onClick={() => editor.chain().focus().toggleHighlight().run()}
-          data-active-state={editor.isActive('highlight') ? 'on' : 'off'}
-          title="Surligner"
-        >
-          <Highlighter size={16} />
-        </button>
-        <button
-          className="tiptap-button"
-          aria-label="Link"
-          type="button"
-          onClick={onLink}
-          data-active-state={editor.isActive('link') ? 'on' : 'off'}
-          title="Lien"
-        >
-          <Link size={16} />
-        </button>
       </div>
 
       <div className="tiptap-separator" data-orientation="vertical" role="none"></div>
@@ -1625,19 +1700,26 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   const [blockDeleteHandle, setBlockDeleteHandle] = React.useState<{ top: number, left: number, pos: number, label: string } | null>(null);
   const [quoteHandle, setQuoteHandle] = React.useState<{ top: number, left: number, pos: number, type: string } | null>(null);
   const [quoteMenu, setQuoteMenu] = React.useState<{ top: number, left: number, pos: number } | null>(null);
+  const [detailsHandle, setDetailsHandle] = React.useState<{ top: number, left: number, pos: number } | null>(null);
+  const [detailsMenu, setDetailsMenu] = React.useState<{ top: number, left: number, pos: number } | null>(null);
+  const [textHandle, setTextHandle] = React.useState<{ top: number, left: number, pos: number } | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
   const [selectionData, setSelectionData] = React.useState<any>(null);
   const [tableContextMenu, setTableContextMenu] = React.useState<{ top: number, left: number, type: 'row' | 'col', index: number, tablePos: number } | null>(null);
   const [mouseDownPoints, setMouseDownPoints] = React.useState<{ type: 'row' | 'col', index: number, tablePos: number, x: number, y: number } | null>(null);
   const [dragState, setDragState] = React.useState<{ type: 'row' | 'col', index: number, tablePos: number, x: number, y: number } | null>(null);
   const [dropIndicator, setDropIndicator] = React.useState<{ top: number, left: number, width?: number, height?: number, type: 'row' | 'col' } | null>(null);
+  const [blockDragPending, setBlockDragPending] = React.useState<{ pos: number, nodeSize: number, startX: number, startY: number } | null>(null);
+  const [blockDragState, setBlockDragState] = React.useState<{ pos: number, nodeSize: number, x: number, y: number } | null>(null);
+  const [blockDropIndicator, setBlockDropIndicator] = React.useState<{ top: number, left: number, width: number } | null>(null);
   const [showLinkModal, setShowLinkModal] = React.useState(false);
+  const blockDragMovedRef = React.useRef(false);
 
   const editor = useEditor({
     extensions: [
       CustomDetails.configure({
         HTMLAttributes: {
-          class: 'details',
+          class: 'details node-details',
         },
       }),
       DetailsSummary,
@@ -1646,6 +1728,10 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         blockquote: false,
         heading: false, // Use our custom Heading instead to get IDs
         code: false,
+        paragraph: false,
+        bulletList: false,
+        orderedList: false,
+        codeBlock: false,
       }),
       Code.extend({
         addInputRules() {
@@ -1660,6 +1746,10 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       CustomHeading.configure({
         levels: [1, 2, 3, 4],
       }),
+      CustomParagraph,
+      CustomBulletList,
+      CustomOrderedList,
+      CustomCodeBlock,
       Alert,
       TextStyle,
       Color,
@@ -1720,6 +1810,20 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     },
   });
 
+  React.useEffect(() => {
+    if (!editor) return;
+    const syncTableWrappers = () => {
+      editor.view.dom.querySelectorAll('.tableWrapper').forEach((el) => {
+        el.classList.add('node-table');
+      });
+    };
+    syncTableWrappers();
+    editor.on('update', syncTableWrappers);
+    return () => {
+      editor.off('update', syncTableWrappers);
+    };
+  }, [editor]);
+
   // Expose editor to window for the bridge
   React.useEffect(() => {
     const handleGlobalMouseMove = (e: MouseEvent) => {
@@ -1728,6 +1832,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
 
       const x = e.clientX;
       const y = e.clientY;
+      maybeAutoScroll(y);
 
       if (!dragState && mouseDownPoints) {
         const dist = Math.sqrt(Math.pow(x - mouseDownPoints.x, 2) + Math.pow(y - mouseDownPoints.y, 2));
@@ -1793,6 +1898,15 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
               moveColumn(editor, dragState.tablePos, dragState.index, targetIndex);
             }
           }
+        } else {
+          const target = getBlockTargetFromCoords(e.clientX, e.clientY);
+          if (target) {
+            const rect = getBlockRectForPos(target.pos, target.node);
+            const placeAfter = rect ? e.clientY > rect.top + rect.height / 2 : true;
+            if (target.pos !== dragState.tablePos) {
+              moveBlockNode(dragState.tablePos, target.pos, placeAfter);
+            }
+          }
         }
       } else if (mouseDownPoints) {
         setTableContextMenu({ 
@@ -1820,22 +1934,181 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     };
   }, [dragState, mouseDownPoints, editor]);
 
+  const moveBlockNode = (fromPos: number, targetPos: number, placeAfter: boolean) => {
+    if (!editor) return;
+    const node = editor.state.doc.nodeAt(fromPos);
+    const targetNode = editor.state.doc.nodeAt(targetPos);
+    if (!node || !targetNode) return;
+
+    let insertPos = targetPos + (placeAfter ? targetNode.nodeSize : 0);
+    if (insertPos > fromPos) {
+      insertPos -= node.nodeSize;
+    }
+    if (insertPos === fromPos) return;
+
+    const tr = editor.state.tr;
+    tr.delete(fromPos, fromPos + node.nodeSize);
+    tr.insert(insertPos, node);
+    tr.setSelection(NodeSelection.create(tr.doc, insertPos));
+    editor.view.dispatch(tr);
+  };
+
+  const setAllDetailsOpen = (open: boolean) => {
+    if (!editor) return;
+    const { tr, doc } = editor.state;
+    let touched = false;
+    doc.descendants((node, pos) => {
+      if (node.type.name === 'details') {
+        tr.setNodeMarkup(pos, undefined, { ...node.attrs, open });
+        touched = true;
+      }
+    });
+    if (touched) {
+      editor.view.dispatch(tr);
+    }
+  };
+
+  const getBlockTargetFromCoords = (x: number, y: number) => {
+    if (!editor) return null;
+    const coords = editor.view.posAtCoords({ left: x, top: y });
+    if (!coords) return null;
+    const $pos = editor.state.doc.resolve(coords.pos);
+    for (let d = $pos.depth; d > 0; d--) {
+      const node = $pos.node(d);
+      if (node.type.name === 'bulletList' || node.type.name === 'orderedList') {
+        return { pos: $pos.before(d), node };
+      }
+      if (node.type.name === 'listItem') {
+        continue;
+      }
+      if (node.isBlock && node.type.name !== 'doc') {
+        return { pos: $pos.before(d), node };
+      }
+    }
+    return null;
+  };
+
+  const getBlockRectForPos = (pos: number, node: PMNode) => {
+    if (!editor || !containerRef.current) return null;
+    const dom = editor.view.nodeDOM(pos) as HTMLElement | null;
+    if (dom?.getBoundingClientRect) {
+      let rect = dom.getBoundingClientRect();
+      const wrapper = dom.closest('.tableWrapper, .mermaid-diagram-wrapper');
+      if (wrapper) {
+        rect = wrapper.getBoundingClientRect();
+      }
+      return rect;
+    }
+    const start = editor.view.coordsAtPos(pos);
+    const end = editor.view.coordsAtPos(pos + node.nodeSize);
+    return {
+      top: start.top,
+      bottom: end.bottom,
+      left: start.left,
+      right: end.right,
+      width: containerRef.current.getBoundingClientRect().width
+    } as DOMRect;
+  };
+
+  const maybeAutoScroll = (clientY: number) => {
+    const threshold = 140;
+    const maxSpeed = 24;
+    if (clientY < threshold) {
+      const speed = Math.min(maxSpeed, Math.ceil((threshold - clientY) / 6));
+      window.scrollBy(0, -speed);
+      return;
+    }
+    const distanceBottom = clientY - (window.innerHeight - threshold);
+    if (distanceBottom > 0) {
+      const speed = Math.min(maxSpeed, Math.ceil(distanceBottom / 6));
+      window.scrollBy(0, speed);
+    }
+  };
+
+  React.useEffect(() => {
+    if (!editor || (!blockDragPending && !blockDragState)) return;
+
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      if (blockDragPending && !blockDragState) {
+        const dx = Math.abs(e.clientX - blockDragPending.startX);
+        const dy = Math.abs(e.clientY - blockDragPending.startY);
+        if (dx > 4 || dy > 4) {
+          blockDragMovedRef.current = true;
+          setBlockDragState({
+            pos: blockDragPending.pos,
+            nodeSize: blockDragPending.nodeSize,
+            x: e.clientX,
+            y: e.clientY
+          });
+        } else {
+          return;
+        }
+      }
+
+      if (blockDragState && containerRef.current) {
+        setBlockDragState(prev => (prev ? { ...prev, x: e.clientX, y: e.clientY } : prev));
+        maybeAutoScroll(e.clientY);
+        const target = getBlockTargetFromCoords(e.clientX, e.clientY);
+        if (target) {
+          const rect = getBlockRectForPos(target.pos, target.node);
+          if (rect) {
+            const placeAfter = e.clientY > rect.top + rect.height / 2;
+            const containerRect = containerRef.current.getBoundingClientRect();
+            setBlockDropIndicator({
+              top: (placeAfter ? rect.bottom : rect.top) - containerRect.top,
+              left: rect.left - containerRect.left,
+              width: rect.width
+            });
+          } else {
+            setBlockDropIndicator(null);
+          }
+        } else {
+          setBlockDropIndicator(null);
+        }
+      }
+    };
+
+    const handleGlobalMouseUp = (e: MouseEvent) => {
+      if (blockDragState && editor) {
+        const target = getBlockTargetFromCoords(e.clientX, e.clientY);
+        if (target) {
+          const rect = getBlockRectForPos(target.pos, target.node);
+          const placeAfter = rect ? e.clientY > rect.top + rect.height / 2 : true;
+          if (target.pos !== blockDragState.pos) {
+            moveBlockNode(blockDragState.pos, target.pos, placeAfter);
+          }
+        }
+      }
+
+      setBlockDragPending(null);
+      setBlockDragState(null);
+      setBlockDropIndicator(null);
+    };
+
+    window.addEventListener('mousemove', handleGlobalMouseMove);
+    window.addEventListener('mouseup', handleGlobalMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleGlobalMouseMove);
+      window.removeEventListener('mouseup', handleGlobalMouseUp);
+    };
+  }, [blockDragPending, blockDragState, editor]);
+
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!editor || dragState || !containerRef.current) return;
+    if (!editor || dragState || blockDragState || !containerRef.current) return;
     
     // Don't hide handles if mouse is over them
-    if ((e.target as HTMLElement).closest('.table-handle, .quote-handle, .block-delete-button')) return;
+    if ((e.target as HTMLElement).closest('.table-handle, .quote-handle, .details-handle, .node-handle, .block-delete-button')) return;
 
     const element = document.elementFromPoint(e.clientX, e.clientY);
     const containerRect = containerRef.current.getBoundingClientRect();
 
     // 1. Generic Block Delete Handle (Top-Right)
     const tableEl = element?.closest('table');
-    const blockquoteEl = element?.closest('blockquote');
+    const blockquoteEl = element?.closest('.node-blockquote');
     const detailsEl = element?.closest('.details');
     const mermaidEl = element?.closest('.mermaid-diagram-container');
     const codeEl = element?.closest('pre');
-    const targetBlock = tableEl || detailsEl || blockquoteEl || mermaidEl || codeEl;
+    const targetBlock = tableEl || detailsEl || mermaidEl || codeEl;
 
     if (targetBlock && containerRef.current.contains(targetBlock)) {
       let rect = targetBlock.getBoundingClientRect();
@@ -1951,7 +2224,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         if (quotePos !== -1) {
           setQuoteHandle({
             top: rect.top - containerRect.top + 10,
-            left: rect.left - containerRect.left - 12,
+            left: rect.left - containerRect.left + 15,
             pos: quotePos,
             type: editor.state.doc.nodeAt(quotePos)?.attrs.type || 'default'
           });
@@ -1962,6 +2235,74 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     } else if (!(e.target as HTMLElement).closest('.quote-handle')) {
       setQuoteHandle(null);
     }
+
+    // 2b. Details Drag Handle (Left)
+    if (detailsEl && containerRef.current.contains(detailsEl)) {
+      const rect = detailsEl.getBoundingClientRect();
+      const pos = editor.view.posAtCoords({ left: e.clientX, top: e.clientY })?.pos;
+      if (pos !== undefined) {
+        const $pos = editor.state.doc.resolve(pos);
+        let detailsPos = -1;
+        for (let d = $pos.depth; d > 0; d--) {
+          if ($pos.node(d).type.name === 'details') {
+            detailsPos = $pos.before(d);
+            break;
+          }
+        }
+
+        if (detailsPos !== -1) {
+          setDetailsHandle({
+            top: rect.top - containerRect.top + 10,
+            left: rect.left - containerRect.left + 5,
+            pos: detailsPos
+          });
+        } else {
+          setDetailsHandle(null);
+        }
+      }
+    } else if (!(e.target as HTMLElement).closest('.details-handle')) {
+      setDetailsHandle(null);
+    }
+
+    // 2c. Text Node Drag Handle (Left)
+    let nodeTextEl = element?.closest('.node-text') as HTMLElement | null;
+    if (nodeTextEl?.closest('li')) {
+      nodeTextEl = element?.closest('ul.node-text, ol.node-text') as HTMLElement | null;
+    }
+    const isNestedBlock = nodeTextEl?.closest('.alert-wrapper, .details, .tableWrapper, .mermaid-diagram-wrapper, li');
+    if (nodeTextEl && containerRef.current.contains(nodeTextEl) && !isNestedBlock) {
+      const rect = nodeTextEl.getBoundingClientRect();
+      if (e.clientX <= rect.left + 120) {
+        try {
+          const pos = editor.view.posAtDOM(nodeTextEl, 0);
+          const $pos = editor.state.doc.resolve(pos);
+          let textPos = -1;
+          for (let d = $pos.depth; d > 0; d--) {
+            const typeName = $pos.node(d).type.name;
+            if (['paragraph', 'heading', 'bulletList', 'orderedList', 'codeBlock'].includes(typeName)) {
+              textPos = $pos.before(d);
+              break;
+            }
+          }
+          if (textPos !== -1) {
+            setTextHandle({
+              top: rect.top - containerRect.top + 6,
+              left: rect.left - containerRect.left + 5,
+              pos: textPos
+            });
+          } else {
+            setTextHandle(null);
+          }
+        } catch (err) {
+          setTextHandle(null);
+        }
+      } else {
+        setTextHandle(null);
+      }
+    } else if (!(e.target as HTMLElement).closest('.node-handle')) {
+      setTextHandle(null);
+    }
+
 
     // 3. Table Cell Handles (Row/Col)
     let info = getTableCellInfo(editor.view, e.nativeEvent);
@@ -1996,20 +2337,36 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       if (cellDOM && tableDOM) {
         const rect = cellDOM.getBoundingClientRect();
         const tableRect = tableDOM.getBoundingClientRect();
-        
-        setRowHandle({
-          top: rect.top - containerRect.top + rect.height / 2,
-          left: tableRect.left - containerRect.left - 8,
-          rowIndex,
-          tablePos
-        });
-        setColHandle({
-          top: tableRect.top - containerRect.top - 10,
-          left: rect.left - containerRect.left + rect.width / 2,
-          colIndex,
-          tablePos
-        });
-        return;
+        const tableWrapper = tableDOM.closest('.tableWrapper') as HTMLElement | null;
+        const tableWrapperRect = tableWrapper ? tableWrapper.getBoundingClientRect() : tableRect;
+        const nearRowHandle = e.clientX <= tableWrapperRect.left + 24;
+        const nearColHandle = e.clientY <= tableRect.top + 24;
+
+        if (nearRowHandle) {
+          setRowHandle({
+            top: rect.top - containerRect.top + rect.height / 2,
+            left: tableWrapperRect.left - containerRect.left + 5,
+            rowIndex,
+            tablePos
+          });
+        } else {
+          setRowHandle(null);
+        }
+
+        if (nearColHandle) {
+          setColHandle({
+            top: tableRect.top - containerRect.top - 10,
+            left: rect.left - containerRect.left + rect.width / 2,
+            colIndex,
+            tablePos
+          });
+        } else {
+          setColHandle(null);
+        }
+
+        if (nearRowHandle || nearColHandle) {
+          return;
+        }
       }
     }
 
@@ -2505,7 +2862,49 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   }
 
   return (
-    <div className="simple-editor" ref={containerRef} onMouseMove={handleMouseMove} onMouseLeave={() => { setRowHandle(null); setColHandle(null); }}>
+    <div
+      className="simple-editor"
+      ref={containerRef}
+      onMouseMove={handleMouseMove}
+      onMouseDown={(e) => {
+        const target = e.target as HTMLElement;
+        const handle = target.closest('.mermaid-node-handle');
+        if (!handle || !editor) return;
+        e.preventDefault();
+        const wrapper = handle.closest('.mermaid-diagram-wrapper') as HTMLElement | null;
+        if (!wrapper) return;
+        try {
+          const pos = editor.view.posAtDOM(wrapper, 0);
+          const $pos = editor.state.doc.resolve(pos);
+          let mermaidPos = -1;
+          for (let d = $pos.depth; d > 0; d--) {
+            if ($pos.node(d).type.name === 'mermaidDiagram') {
+              mermaidPos = $pos.before(d);
+              break;
+            }
+          }
+          if (mermaidPos === -1) return;
+          const node = editor.state.doc.nodeAt(mermaidPos);
+          if (!node) return;
+          setBlockDragPending({
+            pos: mermaidPos,
+            nodeSize: node.nodeSize,
+            startX: e.clientX,
+            startY: e.clientY
+          });
+          blockDragMovedRef.current = false;
+        } catch (err) {
+          // ignore
+        }
+      }}
+      onMouseLeave={() => {
+        setRowHandle(null);
+        setColHandle(null);
+        setQuoteHandle(null);
+        setDetailsHandle(null);
+        setTextHandle(null);
+      }}
+    >
       <Toolbar editor={editor} onDropdownToggle={setIsDropdownOpen} onLink={() => setShowLinkModal(true)} />
       <BubbleMenuComponent 
         editor={editor}
@@ -2530,7 +2929,15 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           style={{ top: rowHandle.top, left: rowHandle.left }}
           onMouseDown={(e) => {
             e.preventDefault();
-            setMouseDownPoints({ type: 'row', index: rowHandle.rowIndex, tablePos: rowHandle.tablePos, x: e.clientX, y: e.clientY });
+            const node = editor.state.doc.nodeAt(rowHandle.tablePos);
+            if (!node) return;
+            setBlockDragPending({
+              pos: rowHandle.tablePos,
+              nodeSize: node.nodeSize,
+              startX: e.clientX,
+              startY: e.clientY
+            });
+            blockDragMovedRef.current = false;
           }}
         >
           ⠿
@@ -2556,7 +2963,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           style={{
             position: 'absolute',
             top: blockDeleteHandle.top,
-            left: blockDeleteHandle.left - (blockDeleteHandle.label === "le diagramme" ? 104 : 16),
+            left: blockDeleteHandle.left - (blockDeleteHandle.label === "le diagramme" ? 104 : 26),
             display: 'flex',
             gap: '4px',
             zIndex: 10
@@ -2667,6 +3074,18 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         />
       )}
 
+      {blockDropIndicator && (
+        <div 
+          className="table-drop-indicator table-drop-indicator-row"
+          style={{ 
+            top: blockDropIndicator.top, 
+            left: blockDropIndicator.left, 
+            width: blockDropIndicator.width, 
+            height: 2 
+          }}
+        />
+      )}
+
       {dragState && (
         <div 
           className={`table-handle ${dragState.type === 'col' ? 'table-handle-col' : 'table-handle-row'}`}
@@ -2685,13 +3104,77 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         </div>
       )}
 
+
+      {textHandle && (
+        <div
+          className="table-handle node-handle text-handle"
+          style={{ top: textHandle.top, left: textHandle.left }}
+          onMouseDown={(e) => {
+            const node = editor.state.doc.nodeAt(textHandle.pos);
+            if (!node) return;
+            setBlockDragPending({
+              pos: textHandle.pos,
+              nodeSize: node.nodeSize,
+              startX: e.clientX,
+              startY: e.clientY
+            });
+            blockDragMovedRef.current = false;
+          }}
+        >
+          ⠿
+        </div>
+      )}
+
       {quoteHandle && (
         <div 
           className="table-handle quote-handle"
           style={{ top: quoteHandle.top, left: quoteHandle.left }}
+          onMouseDown={(e) => {
+            const node = editor.state.doc.nodeAt(quoteHandle.pos);
+            if (!node) return;
+            setBlockDragPending({
+              pos: quoteHandle.pos,
+              nodeSize: node.nodeSize,
+              startX: e.clientX,
+              startY: e.clientY
+            });
+            blockDragMovedRef.current = false;
+          }}
           onClick={(e) => {
+            if (blockDragMovedRef.current) {
+              blockDragMovedRef.current = false;
+              return;
+            }
             e.stopPropagation();
             setQuoteMenu({ top: quoteHandle.top, left: quoteHandle.left + 30, pos: quoteHandle.pos });
+          }}
+        >
+          ⠿
+        </div>
+      )}
+
+      {detailsHandle && (
+        <div 
+          className="table-handle details-handle"
+          style={{ top: detailsHandle.top, left: detailsHandle.left }}
+          onMouseDown={(e) => {
+            const node = editor.state.doc.nodeAt(detailsHandle.pos);
+            if (!node) return;
+            setBlockDragPending({
+              pos: detailsHandle.pos,
+              nodeSize: node.nodeSize,
+              startX: e.clientX,
+              startY: e.clientY
+            });
+            blockDragMovedRef.current = false;
+          }}
+          onClick={(e) => {
+            if (blockDragMovedRef.current) {
+              blockDragMovedRef.current = false;
+              return;
+            }
+            e.stopPropagation();
+            setDetailsMenu({ top: detailsHandle.top, left: detailsHandle.left + 30, pos: detailsHandle.pos });
           }}
         >
           ⠿
@@ -2732,6 +3215,35 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
                 {alert.label}
               </div>
             ))}
+          </div>
+        </>
+      )}
+
+      {detailsMenu && (
+        <>
+          <div style={{ position: 'fixed', inset: 0, zIndex: 999 }} onClick={() => setDetailsMenu(null)} />
+          <div 
+            className="quote-context-menu"
+            style={{ top: detailsMenu.top, left: detailsMenu.left }}
+          >
+            <div 
+              className="quote-context-menu-item"
+              onClick={() => {
+                setAllDetailsOpen(true);
+                setDetailsMenu(null);
+              }}
+            >
+              Tout déplier
+            </div>
+            <div 
+              className="quote-context-menu-item"
+              onClick={() => {
+                setAllDetailsOpen(false);
+                setDetailsMenu(null);
+              }}
+            >
+              Tout replier
+            </div>
           </div>
         </>
       )}

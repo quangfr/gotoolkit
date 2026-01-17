@@ -83,7 +83,7 @@
 }
 
 [data-node-view-content] {
-  line-height: 1 !important;
+  line-height: 1.3 !important;
 }
 
 .ProseMirror blockquote[data-type="NOTE"] { border-left-color: var(--intent-info-border); background-color: var(--bg-surface-soft); }
@@ -138,12 +138,12 @@
   margin: 0 0;
   border: 1px solid transparent;
   border-radius: 4px;
-  padding: 0;
+  padding: 5px 10px 5px 20px;
   transition: border-color 0.2s;
 }
 
 .ProseMirror .details:hover {
-  border-color: var(--border-main);
+  border-color: var(--border-strong);
 }
 
 .ProseMirror .details > button {
@@ -152,7 +152,7 @@
   justify-content: center;
   width: 1.25rem;
   height: 1.25rem;
-  margin-top: 0rem;
+  margin-top: 4px;
   padding: 0;
   background: transparent;
   border: none;
@@ -180,6 +180,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  padding-top: 4px;
 }
 
 .ProseMirror .details summary {
@@ -193,10 +194,21 @@
   display: none;
 }
 
+.node-text,
+.node-table,
+.node-mermaidDiagram,
+.node-blockquote,
+.node-details {
+  padding-left: 40px;
+  padding-right: 10px;
+  box-sizing: border-box;
+}
+
+
 .quote-handle {
   position: absolute;
-  width: 16px;
-  height: 20px;
+  width: 20px;
+  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -206,7 +218,7 @@
   cursor: pointer;
   z-index: 5000;
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: 13px;
   box-shadow: 0 1px 2px rgba(0,0,0,0.05);
   transition: all 0.2s;
   pointer-events: auto;
@@ -449,7 +461,7 @@
   max-width: 100%;
   margin: 1rem 0;
   scrollbar-width: thin;
-  padding: 0px; /* Space around the table for handles and interaction */
+  padding: 5px 10px 5px 40px; /* Space around the table for handles and interaction */
 }
 
 .ProseMirror table {
@@ -513,15 +525,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 20px;
+  width: 20px;
+  height: 24px;
   background: var(--bg-surface);
   border: 1px solid var(--border-main);
   border-radius: 4px;
   cursor: grab;
   z-index: 50;
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: 13px;
   user-select: none;
   box-shadow: 0 1px 2px rgba(0,0,0,0.05);
   transition: background-color 0.2s, color 0.2s;
@@ -534,6 +546,13 @@
 
 .table-handle:active {
   cursor: grabbing;
+}
+
+.mermaid-node-handle {
+  position: absolute;
+  top: 10px;
+  left: 15px;
+  z-index: 20;
 }
 
 .table-handle-row {
@@ -1034,11 +1053,15 @@
 }
 
 .ProseMirror pre code {
-  background: none;
+  background: var(--bg-surface-soft);
   color: inherit;
   padding: 0;
   font-size: 0.875rem;
   font-family: 'Fira Code', 'Monaco', 'Consolas', monospace;
+}
+
+.ProseMirror blockquote code {
+  background: var(--bg-surface);
 }
 .simple-editor .ProseMirror h1 { font-size: 1.8rem; margin-top: 2.2rem; margin-bottom:1.0rem}
 .simple-editor .ProseMirror h2 { font-size: 1.6rem; margin-top: 1.7rem; margin-bottom:1.0rem}
@@ -1051,7 +1074,7 @@
   margin-top: 0; 
 }
 .simple-editor .ProseMirror ul, 
-.simple-editor .ProseMirror ol { padding-left: 16px; margin: 1rem 0; }
+.simple-editor .ProseMirror ol { padding-left: 40px; margin: 1rem 0; }
 .simple-editor .ProseMirror blockquote {
   border-left: 3px solid var(--border-main);
   padding-left: 1rem;
@@ -1062,6 +1085,10 @@
   position: relative;
   transition: all 0.2s;
   background-color: var(--bg-surface-soft);
+}
+
+li .node-text.node-paragraph {
+    padding-left: 0px;
 }
 
 .ProseMirror blockquote[data-type="default"] { border-left-color: var(--border-main); border-left-width: 3px; background-color: var(--bg-surface-soft);}

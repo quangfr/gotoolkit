@@ -1,5 +1,7 @@
 ## 2026-01-16
-- Mode sombre
+- Mémo : Mode sombre
+- Mémo : Glissez-déposer des blocs
+- Mémo : Modèles de document
 
 ## 2026-01-14
 - Mémo : Éditer un diagramme `Draw` avec Assist

@@ -21,14 +21,14 @@ const AlertComponent = ({ node, updateAttributes }: any) => {
 
   if (type === 'default') {
     return (
-      <NodeViewWrapper as="blockquote" className="alert-wrapper">
+      <NodeViewWrapper as="blockquote" className="alert-wrapper node-blockquote">
         <NodeViewContent />
       </NodeViewWrapper>
     );
   }
 
   return (
-    <NodeViewWrapper as="blockquote" data-type={type} className="alert-wrapper">
+    <NodeViewWrapper as="blockquote" data-type={type} className="alert-wrapper node-blockquote">
       <div 
         className="alert-header" 
         contentEditable={false}
@@ -167,7 +167,7 @@ export const Alert = Node.create({
         getAttributes: () => ({ type: 'CAUTION' }),
       }),
       wrappingInputRule({
-        find: /^>\s$/,
+        find: /^>\.\s$/,
         type: this.type,
         getAttributes: () => ({ type: 'default' }),
       }),
