@@ -32,25 +32,19 @@
         localStorage.setItem('last_template_sync', now.toString());
 
         try {
-            const baseUrl = window.goToolkitShareWorker?.baseUrl || "https://share.gotoolkit.workers.dev";
-            const response = await fetch(`${baseUrl}/v1/shares/${TEMPLATES_COLLECTION}`);
-            if (response.ok) {
-                const data = await response.json();
-                const fetched = (data.documents || []).map(doc => ({
-                    id: doc.id,
-                    label: doc.payload?.label || "Modèle sans titre",
-                    description: doc.payload?.description || "",
-                    category: doc.payload?.category || "",
-                    superpowers: doc.payload?.superpowers || [],
-                    html: doc.payload?.html || "",
-                    updatedAt: doc.meta?.updatedDate || doc.meta?.updatedAt || ""
-                }));
+            const fetched = await window.goToolkitShareWorker.listShares(TEMPLATES_COLLECTION);
+            const mapped = (fetched || []).map(doc => ({
+                id: doc.id,
+                label: doc.payload?.label || "Modèle sans titre",
+                description: doc.payload?.description || "",
+                category: doc.payload?.category || "",
+                superpowers: doc.payload?.superpowers || [],
+                html: doc.payload?.html || "",
+                updatedAt: doc.meta?.updatedDate || doc.meta?.updatedAt || ""
+            }));
 
-                await window.goToolkitTemplateStore.saveAll(fetched);
-                cloudTemplates = fetched;
-            } else {
-                cloudTemplates = await window.goToolkitTemplateStore.list();
-            }
+            await window.goToolkitTemplateStore.saveAll(mapped);
+            cloudTemplates = mapped;
         } catch (err) {
             console.warn("Failed to fetch cloud templates, falling back to local store", err);
             cloudTemplates = await window.goToolkitTemplateStore.list();

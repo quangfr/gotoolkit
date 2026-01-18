@@ -73,7 +73,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Sora:wght@400;500;600&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles/style.css?v=2026.01.18.3">
+    <link rel="stylesheet" href="styles/style.css?v=2026.01.18.4">
     <style>
         .lucide-spin {
             animation: lucide-spin 1.4s linear infinite;
@@ -1319,7 +1319,7 @@
             </div>
             <h1>Go-Toolkit <span class="hero-beta">beta</span></h1>
             <p>La boîte à outils IA des Product Owners</p>
-            <span class="hero-version label-link" id="releaseNotesTrigger" tabindex="0">v2026.01.18.3</span>
+            <span class="hero-version label-link" id="releaseNotesTrigger" tabindex="0">v2026.01.18.4</span>
 
             <div class="hero-meta">
                 <button id="openSettingsBtn" class="feedback-button" type="button"><i data-lucide="settings"
@@ -1331,11 +1331,11 @@
             <div class="section-title-row">
                 <p class="section-label superpower-label label-link" id="superpowerToggle">
                     <i data-lucide="zap" style="width:14px;height:14px;margin-right:2px;"></i>Superpouvoirs
-                    <button id="refreshTemplatesBtn" class="share-card-action refresh-templates-btn"
-                        title="Rafraîchir les modèles">
-                        <i data-lucide="refresh-cw" style="width:14px;height:14px;"></i>
-                    </button>
                 </p>
+                <button id="refreshTemplatesBtn" class="share-card-action refresh-templates-btn"
+                    title="Rafraîchir les modèles">
+                    <i data-lucide="refresh-cw" style="width:14px;height:14px;"></i>
+                </button>
             </div>
             <div class="gt-template-modal__list" id="gtTemplateModalList"></div>
         </section>
@@ -1708,19 +1708,19 @@
         window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL =
             window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL || "https://assemblyai.gotoolkit.workers.dev/token";
     </script>
-    <script src="js/config.js?v=2026.01.18.3"></script>
-    <script src="js/feature-visibility.js?v=2026.01.18.3"></script>
-    <script src="js/document-storage.js?v=2026.01.18.3"></script>
-    <script src="js/storage-service.js?v=2026.01.18.3"></script>
-    <script src="js/shared-ui.js?v=2026.01.18.3"></script>
-    <script src="js/cgu.js?v=2026.01.18.3"></script>
-    <script src="js/share-worker-client.js?v=2026.01.18.3"></script>
-    <script src="js/share-history.js?v=2026.01.18.3"></script>
-    <script src="js/document-api.js?v=2026.01.18.3"></script>
-    <script src="js/ia-config.js?v=2026.01.18.3"></script>
-    <script src="prompt.js?v=2026.01.18.3"></script>
-    <script src="js/ia-client.js?v=2026.01.18.3"></script>
-    <script src="js/template-gallery.js?v=2026.01.18.3"></script>
+    <script src="js/config.js?v=2026.01.18.4"></script>
+    <script src="js/feature-visibility.js?v=2026.01.18.4"></script>
+    <script src="js/document-storage.js?v=2026.01.18.4"></script>
+    <script src="js/storage-service.js?v=2026.01.18.4"></script>
+    <script src="js/shared-ui.js?v=2026.01.18.4"></script>
+    <script src="js/cgu.js?v=2026.01.18.4"></script>
+    <script src="js/share-worker-client.js?v=2026.01.18.4"></script>
+    <script src="js/share-history.js?v=2026.01.18.4"></script>
+    <script src="js/document-api.js?v=2026.01.18.4"></script>
+    <script src="js/ia-config.js?v=2026.01.18.4"></script>
+    <script src="prompt.js?v=2026.01.18.4"></script>
+    <script src="js/ia-client.js?v=2026.01.18.4"></script>
+    <script src="js/template-gallery.js?v=2026.01.18.4"></script>
     <script>
         // Initialize feedback configuration before loading feedback.js
         window.GoToolkitAppFeedbackConfig = {
@@ -1730,7 +1730,7 @@
             primaryColor: "#2a7a57"
         };
     </script>
-    <script src="js/feedback.js?v=2026.01.18.3"></script>
+    <script src="js/feedback.js?v=2026.01.18.4"></script>
 
     <script>
         (function () {
@@ -2146,6 +2146,46 @@
                 return `<span class="share-card-template">${safe}</span>`;
             }
 
+            let superpowersCatalog = null;
+
+            async function getSuperpowersCatalog() {
+                if (superpowersCatalog) return superpowersCatalog;
+                try {
+                    const resp = await fetch('content/superpowers.json');
+                    if (resp.ok) {
+                        superpowersCatalog = await resp.json();
+                        return superpowersCatalog;
+                    }
+                } catch (e) {
+                    // ignore
+                }
+                superpowersCatalog = [];
+                return superpowersCatalog;
+            }
+
+            function normalizeSuperpowers(list, category) {
+                const normalized = Array.isArray(list) ? list.filter(Boolean) : [];
+                if (normalized.length) return normalized;
+                return category ? [category] : [];
+            }
+
+            function buildSuperpowerBadges(superpowers, catalog) {
+                if (!Array.isArray(superpowers) || !superpowers.length) return "";
+                const badges = superpowers
+                    .map(id => {
+                        const match = (catalog || []).find(sp => sp.id === id || sp.id == id);
+                        const label = match?.title || String(id || "").trim();
+                        if (!label) return null;
+                        const safe = label.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                        const icon = match?.icon || "sparkles";
+                        return `<span class="share-card-template"><i data-lucide="${icon}" style="width:12px;height:12px;margin-right:6px;vertical-align:middle;"></i>${safe}</span>`;
+                    })
+                    .filter(Boolean);
+                if (!badges.length) return "";
+                const badgeHtml = badges.join(" ");
+                return `<p class="share-card-meta">${badgeHtml}</p>`;
+            }
+
             function extractPreview(app, payload) {
                 let templateLabel = "";
                 if (app === "plan") {
@@ -2202,7 +2242,7 @@
             }
 
             function createShareCardElement(cardInfo, target = "_blank") {
-                const { definition, preview, formattedDate, href, app, record } = cardInfo;
+                const { definition, preview, formattedDate, href, app, record, superpowerHtml } = cardInfo;
                 const card = document.createElement("a");
                 card.className = "share-card";
                 card.href = href;
@@ -2212,6 +2252,7 @@
                 const metaHtml = buildMetaBadge(preview.templateLabel);
                 card.innerHTML = `
                     <p class="share-card-title"><i data-lucide="${definition.icon}" style="width:14px;height:14px;vertical-align:middle;margin-right:6px;"></i>${preview.tabName}</p>
+                    ${superpowerHtml || ""}
                     ${metaHtml}
                     <p class="share-card-desc">${preview.lines.join(" · ") || "(sans contexte)"}</p>
                     <p class="share-card-date">${formattedDate}</p>
@@ -2274,12 +2315,15 @@
                 const formattedDate = formatFriendlyDate(updatedAt);
                 const href = buildShareUrl(definition, record.token);
                 const isPinned = Boolean(record.pinned);
-                const cardInfo = { app, definition, record, preview, formattedDate, href };
+                const catalog = await getSuperpowersCatalog();
+                const superpowers = normalizeSuperpowers(record.superpowers, record.category);
+                const superpowerHtml = buildSuperpowerBadges(superpowers, catalog);
+                const cardInfo = { app, definition, record, preview, formattedDate, href, superpowerHtml };
                 const card = createShareCardElement(cardInfo);
                 return { ...cardInfo, card, updatedAt, isPinned };
             }
 
-            function buildSavedCard(record) {
+            function buildSavedCard(record, catalog) {
                 if (!record || !documentApi) {
                     return null;
                 }
@@ -2298,8 +2342,11 @@
                 card.rel = "noopener";
                 card.setAttribute("data-app", record.app);
                 const metaHtml = buildMetaBadge(preview.templateLabel);
+                const superpowers = normalizeSuperpowers(record.superpowers, record.category);
+                const superpowerHtml = buildSuperpowerBadges(superpowers, catalog);
                 card.innerHTML = `
                     <p class="share-card-title"><i data-lucide="${definition.icon}" style="width:14px;height:14px;vertical-align:middle;margin-right:6px;"></i>${preview.tabName}</p>
+                    ${superpowerHtml}
                     ${metaHtml}
                     <p class="share-card-desc">${preview.lines.join(" · ") || "Complète le contexte pour l'afficher ici."}</p>
                     <p class="share-card-date">${formattedDate}</p>
@@ -2464,8 +2511,9 @@
                     const sharedKeys = window.__goToolkitSharedPreviewKeys || new Set();
                     // Deduplicate both against shared and within saved
                     const seenSavedKeys = new Set();
+                    const catalog = await getSuperpowersCatalog();
                     const cards = filtered
-                        .map(buildSavedCard)
+                        .map(record => buildSavedCard(record, catalog))
                         .filter(Boolean)
                         .filter(item => {
                             try {

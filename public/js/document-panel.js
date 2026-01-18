@@ -21,8 +21,17 @@
         }
     }
 
+    function normalizeSuperpowersList(list, category) {
+        const normalized = Array.isArray(list) ? list.filter(Boolean) : [];
+        if (normalized.length) return normalized;
+        return category ? [category] : [];
+    }
+
     function populateSuperpowerCheckboxes(selectedIds = []) {
-        currentModalSelectedIds = selectedIds;
+        const normalizedSelectedIds = Array.isArray(selectedIds)
+            ? selectedIds.filter(Boolean)
+            : [];
+        currentModalSelectedIds = normalizedSelectedIds;
         const container = document.getElementById("document-explorer-superpowers-container");
         if (!container) return;
         container.innerHTML = '';
@@ -30,10 +39,10 @@
         superpowers.forEach(sp => {
             const label = document.createElement('label');
             label.className = 'superpower-checkbox-label';
-            const isChecked = selectedIds.includes(String(sp.id)) || selectedIds.includes(Number(sp.id));
+            const isChecked = normalizedSelectedIds.some(id => String(id) == String(sp.id));
             label.innerHTML = `
                 <input type="checkbox" value="${sp.id}" ${isChecked ? 'checked' : ''} style="display:none;">
-                <span class="superpower-pill">
+                <span class="superpower-pill ${isChecked ? 'active' : ''}">
                     <i data-lucide="${sp.icon}" style="width:12px;height:12px;"></i>
                     ${sp.title}
                     <i data-lucide="check" class="pill-check-icon" style="width:12px;height:12px;display:${isChecked ? 'inline-block' : 'none'};"></i>
@@ -47,9 +56,6 @@
                 pill.classList.toggle('active', input.checked);
                 if (checkIcon) checkIcon.style.display = input.checked ? 'inline-block' : 'none';
             });
-            if (isChecked) {
-                pill.classList.add('active');
-            }
             container.appendChild(label);
         });
         if (window.lucide) window.lucide.createIcons();
@@ -195,9 +201,15 @@
             if (hasDefaultTabSet) return;
             const activeId = typeof getActiveId?.() === "string" ? getActiveId().trim() : "";
             const headings = (window.MemoHeadings || []).filter(h => h.level >= 1 && h.level <= 4);
-            const shouldShowToc = Boolean(activeId) && headings.length > 0;
-            setActiveTab(shouldShowToc ? "toc" : "library", { renderToc: shouldShowToc });
-            hasDefaultTabSet = true;
+
+            if (activeId && headings.length > 0) {
+                setActiveTab("toc", { renderToc: true });
+                hasDefaultTabSet = true;
+            } else if (!activeId) {
+                setActiveTab("library");
+                hasDefaultTabSet = true;
+            }
+            // Wait for headings if activeId exists but headings haven't arrived yet
         }
 
         // Tab Switching Logic
@@ -274,7 +286,7 @@
                     <div class="modal-actions" style="justify-content:flex-end;">
                         <button class="btn btn-secondary" type="button" data-cancel>Annuler</button>
                         <button class="btn btn-secondary" type="button" data-publish style="display:none;">Publier</button>
-                        <button class="btn-primary" type="button" data-confirm>Valider</button>
+                        <button class="btn-primary" type="button" data-confirm>Enregistrer</button>
                     </div>
                 </div>
             </div>
@@ -310,14 +322,30 @@
             modalOverlay.style.display = "flex";
             modalOverlay.classList.add("open");
 
-            const selectedSuperpowers = (options && options.superpowers)
-                ? options.superpowers
-                : (options && options.category ? [options.category] : []);
+            const selectedSuperpowers = normalizeSuperpowersList(
+                options && options.superpowers,
+                options && options.category
+            );
 
             populateSuperpowerCheckboxes(selectedSuperpowers);
             if (window.lucide) window.lucide.createIcons();
             modalInput.value = defaultValue || "";
             if (modalDescInput) modalDescInput.value = defaultDescription || "";
+            const shouldFetchFromStore =
+                (!options || options.superpowers === undefined || (Array.isArray(options.superpowers) && options.superpowers.length === 0))
+                && options?.documentId;
+            if (shouldFetchFromStore) {
+                const documentApi = window.goToolkitDocumentApi;
+                if (documentApi?.getRecord) {
+                    documentApi.getRecord(options.documentId).then(record => {
+                        const fallback = normalizeSuperpowersList(record?.superpowers, record?.category);
+                        if (fallback.length) {
+                            populateSuperpowerCheckboxes(fallback);
+                            if (window.lucide) window.lucide.createIcons();
+                        }
+                    }).catch(() => { /* noop */ });
+                }
+            }
             const allowPublish = Boolean(options && options.allowPublish && hasAdminToken());
             if (modalPublishBtn) {
                 modalPublishBtn.style.display = allowPublish ? "inline-flex" : "none";
@@ -425,6 +453,46 @@
             writeBool(openKey, isOpen);
         }
 
+        function getSafeHeadingPos(editor, heading) {
+            if (!editor || !heading) return null;
+            const rawPos = Number.isFinite(heading.pos) ? heading.pos : null;
+            if (rawPos === null) return null;
+
+            const doc = editor.state?.doc;
+            if (!doc) return null;
+
+            const maxPos = Math.max(0, doc.content.size);
+            const clampPos = pos => Math.max(0, Math.min(pos, maxPos));
+
+            const tryResolve = pos => {
+                try {
+                    const $pos = doc.resolve(clampPos(pos));
+                    return $pos?.parent?.inlineContent ? $pos.pos : null;
+                } catch (e) {
+                    return null;
+                }
+            };
+
+            let safePos = tryResolve(rawPos);
+            if (safePos !== null) return safePos;
+
+            safePos = tryResolve(rawPos + 1);
+            if (safePos !== null) return safePos;
+
+            const node = doc.nodeAt(clampPos(rawPos));
+            if (node && node.isTextblock && node.content.size > 0) {
+                safePos = tryResolve(rawPos + 1);
+                if (safePos !== null) return safePos;
+            }
+
+            for (let offset = 2; offset <= 6; offset += 1) {
+                safePos = tryResolve(rawPos + offset);
+                if (safePos !== null) return safePos;
+            }
+
+            return null;
+        }
+
         function renderTOC() {
             if (!tocEl) return;
             const headings = (window.MemoHeadings || []).filter(h => h.level >= 1 && h.level <= 4);
@@ -446,41 +514,38 @@
                     if (editor) {
                         try {
                             const element = editor.view.dom.querySelector(`[id="${heading.id}"]`);
-                            if (element) {
-                                // Calculate position relative to the scrollable container (.editor-wrap)
-                                const scrollArea = document.querySelector(".editor-wrap");
-                                const offset = 20; // offset to not stick exactly to the top
+                            const safePos = getSafeHeadingPos(editor, heading);
+                            const scrollArea = document.querySelector(".editor-wrap");
+                            const offset = 20; // offset to not stick exactly to the top
 
-                                if (scrollArea) {
-                                    const areaRect = scrollArea.getBoundingClientRect();
-                                    const elementRect = element.getBoundingClientRect();
-                                    const relativeTop = elementRect.top - areaRect.top + scrollArea.scrollTop;
+                            // Highlight active immediately
+                            tocEl.querySelectorAll(".toc-item").forEach(el => el.classList.remove("toc-item--active"));
+                            item.classList.add("toc-item--active");
 
-                                    scrollArea.scrollTo({
-                                        top: relativeTop - offset,
-                                        behavior: "smooth"
-                                    });
-                                } else {
-                                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                }
-
-                                // Highlight active immediately
-                                tocEl.querySelectorAll(".toc-item").forEach(el => el.classList.remove("toc-item--active"));
-                                item.classList.add("toc-item--active");
+                            if (safePos !== null) {
+                                editor.chain().focus().setTextSelection(safePos).run();
                             } else {
-                                // Fallback to editor command if available or search by text/pos
-                                const pos = heading.pos;
-                                if (pos !== undefined) {
-                                    try {
-                                        // Use focus(pos) which is more robust in Tiptap
-                                        editor.commands.focus(pos);
-                                        editor.commands.scrollIntoView();
-                                    } catch (e) {
-                                        // Last resort fallback
-                                        console.warn("Could not set selection at pos:", pos);
-                                        editor.commands.focus();
-                                    }
-                                }
+                                editor.commands.focus();
+                            }
+
+                            if (element && scrollArea) {
+                                const areaRect = scrollArea.getBoundingClientRect();
+                                const elementRect = element.getBoundingClientRect();
+                                const relativeTop = elementRect.top - areaRect.top + scrollArea.scrollTop;
+                                scrollArea.scrollTo({
+                                    top: Math.max(0, relativeTop - offset),
+                                    behavior: "smooth"
+                                });
+                            } else if (safePos !== null && editor.view?.coordsAtPos && scrollArea) {
+                                const coords = editor.view.coordsAtPos(safePos);
+                                const areaRect = scrollArea.getBoundingClientRect();
+                                const relativeTop = coords.top - areaRect.top + scrollArea.scrollTop;
+                                scrollArea.scrollTo({
+                                    top: Math.max(0, relativeTop - offset),
+                                    behavior: "smooth"
+                                });
+                            } else if (element) {
+                                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
                             }
                         } catch (e) {
                             console.error("ToC scroll error:", e);
@@ -608,29 +673,6 @@
                     }
                 }
 
-                const sps = item.superpowers || (item.category ? [item.category] : []);
-                if (Array.isArray(sps) && sps.length > 0) {
-                    const icons = document.createElement("span");
-                    icons.className = "document-explorer__item-superpowers";
-                    icons.style.display = "flex";
-                    icons.style.gap = "2px";
-                    icons.style.marginRight = "6px";
-                    icons.style.opacity = "0.7";
-                    icons.style.flexShrink = "0";
-
-                    sps.forEach(spId => {
-                        const sp = superpowersMap.find(s => s.id === spId || s.id == spId);
-                        if (sp) {
-                            const i = document.createElement("i");
-                            i.dataset.lucide = sp.icon || "star";
-                            i.style.width = "12px";
-                            i.style.height = "12px";
-                            icons.appendChild(i);
-                        }
-                    });
-                    button.appendChild(icons);
-                }
-
                 const label = document.createElement("span");
                 label.className = "document-explorer__item-title";
                 label.textContent = item.title || "Mémo sans titre";
@@ -657,7 +699,8 @@
                     event.stopPropagation();
                     if (!onRename) return;
                     openNameModal(item.title || "", item.description || "", {
-                        superpowers: item.superpowers || (item.category ? [item.category] : []),
+                        superpowers: normalizeSuperpowersList(item.superpowers, item.category),
+                        documentId: item.id,
                         allowPublish: true
                     }).then(result => {
                         if (!result) return;

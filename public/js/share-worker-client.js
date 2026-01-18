@@ -116,6 +116,28 @@
     });
   }
 
+  async function listShares(collection) {
+    assertReady();
+    return withWorkerFallback(async base => {
+      const response = await fetchWithBase(base, collection, null, {
+        method: "GET",
+        headers: {
+          Accept: "application/json"
+        }
+      });
+      if (!response.ok) {
+        const body = await response.text().catch(() => "");
+        throw new Error(body || "Impossible de récupérer la liste");
+      }
+      const data = await response.json();
+      return (data.documents || []).map(doc => ({
+        id: doc.id,
+        payload: doc.payload || null,
+        meta: doc.meta || null
+      }));
+    });
+  }
+
   async function saveSharePayload(collection, token, payload) {
     assertReady();
     return withWorkerFallback(async base => {
@@ -147,6 +169,7 @@
     isReady,
     fetchSharePayload,
     saveSharePayload,
-    deleteSharePayload
+    deleteSharePayload,
+    listShares
   };
 })();
