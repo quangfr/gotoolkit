@@ -15,9 +15,9 @@
 
 ## 2026-01-12
 - IA : Reconnaissance texte OCR avec `qwen-2.5-vl-7b-instruct` 
-- Assist : Extraction du texte des images, PDF, DOCX et PPTX mixtes
-- Assist : Import des médias avec transcription
-- Assist : Ajout des fichiers JSON
+- Document : Extraction du texte des images, PDF, DOCX et PPTX mixtes
+- Document : Import des médias avec transcription
+- Document : Ajout des fichiers JSON
 - Mémo : Ouverture de documents en barre latérale
 
 ## 2026-01-09
@@ -62,7 +62,7 @@
 - Brouillon, stockage local et bibliothèque en local
 
 ## 2025-12-08
-- Module `Feedback` pour reccueillir les bugs et suggestions
+- Feedback pour reccueillir les bugs et suggestions
 
 ## 2025-12-04
 - Module `Draw` : diagrammes de classe, de flux et séquentiel
