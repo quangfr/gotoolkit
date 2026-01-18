@@ -419,6 +419,10 @@ td .node-text.node-paragraph,
   background-color: var(--bg-surface-soft);
   color: var(--text-main);
 }
+.simple-editor .ProseMirror .tableWrapper ul {
+  padding-left: 0;
+  margin: 0;
+}
 .ProseMirror .selectedCell:after {
   z-index: 2;
   position: absolute;

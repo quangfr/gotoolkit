@@ -1,6 +1,6 @@
 import React from 'react';
 import { useEditor, EditorContent, Editor, ReactRenderer, ReactNodeViewRenderer, NodeViewWrapper, NodeViewContent } from '@tiptap/react';
-import { Extension, InputRule, markInputRule } from '@tiptap/core';
+import { Extension, InputRule, markInputRule, mergeAttributes } from '@tiptap/core';
 import Suggestion from '@tiptap/suggestion';
 import StarterKit from '@tiptap/starter-kit';
 import Code from '@tiptap/extension-code';
@@ -17,7 +17,7 @@ import { Color } from '@tiptap/extension-color';
 import { computePosition, offset, shift } from '@floating-ui/dom';
 import { DOMSerializer, Node as PMNode, Slice, Fragment } from '@tiptap/pm/model';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
-import { NodeSelection, TextSelection } from 'prosemirror-state';
+import { NodeSelection, TextSelection, Transaction } from 'prosemirror-state';
 import Details from '@tiptap/extension-details';
 import DetailsSummary from '@tiptap/extension-details-summary';
 import DetailsContent from '@tiptap/extension-details-content';
@@ -31,6 +31,8 @@ import CodeBlock from '@tiptap/extension-code-block';
 import { TableNode, TableRow, TableHeader, CustomTableCell } from './table-node';
 import { TaskListNode, TaskItemNode } from './task-node';
 
+const DETAILS_TOGGLE_META = 'detailsToggle';
+
 const CustomDetails = Details.extend({
   addAttributes() {
     return {
@@ -38,11 +40,128 @@ const CustomDetails = Details.extend({
       open: {
         default: true,
         parseHTML: element => element.hasAttribute('open') || element.getAttribute('data-open') === 'true',
-        renderHTML: attributes => {
+        renderHTML: () => {
           return {};
         },
       },
     }
+  },
+  addNodeView() {
+    return ({ editor, getPos, node, HTMLAttributes }) => {
+      const dom = document.createElement('div');
+      const attributes = mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
+        'data-type': this.name,
+      });
+      Object.entries(attributes).forEach(([key, value]) => dom.setAttribute(key, value));
+
+      const toggle = document.createElement('button');
+      toggle.type = 'button';
+      dom.append(toggle);
+
+      const content = document.createElement('div');
+      dom.append(content);
+
+      const toggleDetailsContent = (setToValue?: boolean) => {
+        if (setToValue !== undefined) {
+          if (setToValue) {
+            if (dom.classList.contains(this.options.openClassName)) {
+              return;
+            }
+            dom.classList.add(this.options.openClassName);
+          } else {
+            if (!dom.classList.contains(this.options.openClassName)) {
+              return;
+            }
+            dom.classList.remove(this.options.openClassName);
+          }
+        } else {
+          dom.classList.toggle(this.options.openClassName);
+        }
+
+        const event = new Event('toggleDetailsContent');
+        const detailsContent = content.querySelector(':scope > div[data-type="detailsContent"]');
+        detailsContent?.dispatchEvent(event);
+      };
+
+      if (node.attrs.open) {
+        setTimeout(() => toggleDetailsContent(true));
+      }
+
+      toggle.addEventListener('click', () => {
+        toggleDetailsContent();
+
+        if (!this.options.persist) {
+          editor.commands.focus(undefined, { scrollIntoView: false });
+          return;
+        }
+
+        if (editor.isEditable && typeof getPos === 'function') {
+          const { from, to } = editor.state.selection;
+          editor.chain().command(({ tr }) => {
+            const pos = getPos();
+            const currentNode = tr.doc.nodeAt(pos);
+            if (currentNode?.type !== this.type) {
+              return false;
+            }
+            tr.setMeta(DETAILS_TOGGLE_META, true);
+            tr.setNodeMarkup(pos, undefined, {
+              ...currentNode.attrs,
+              open: !currentNode.attrs.open,
+            });
+            return true;
+          }).setTextSelection({ from, to }).focus(undefined, { scrollIntoView: false }).run();
+        }
+      });
+
+      return {
+        dom,
+        contentDOM: content,
+        ignoreMutation(mutation) {
+          if (mutation.type === 'selection') {
+            return false;
+          }
+          return !dom.contains(mutation.target as Node) || dom === mutation.target;
+        },
+        update: (updatedNode) => {
+          if (updatedNode.type !== this.type) {
+            return false;
+          }
+          if (updatedNode.attrs.open !== undefined) {
+            toggleDetailsContent(updatedNode.attrs.open);
+          }
+          return true;
+        },
+      };
+    };
+  },
+  addProseMirrorPlugins() {
+    const plugins = this.parent?.() || [];
+    return [
+      ...plugins,
+      new Plugin({
+        key: new PluginKey('detailsOpenGuard'),
+        appendTransaction: (transactions, oldState, newState) => {
+          const allowToggle = transactions.some((tr) => tr.getMeta(DETAILS_TOGGLE_META) === true);
+          if (allowToggle) {
+            return;
+          }
+          let tr: Transaction | null = null;
+          newState.doc.descendants((node, pos) => {
+            if (node.type.name !== this.name) return;
+            if (pos > oldState.doc.content.size) return;
+            const oldNode = oldState.doc.nodeAt(pos);
+            if (!oldNode || oldNode.type !== node.type) return;
+            if (oldNode.attrs.open && node.attrs.open === false) {
+              if (!tr) {
+                tr = newState.tr;
+              }
+              tr.setNodeMarkup(pos, undefined, { ...node.attrs, open: true });
+            }
+          });
+          return tr || null;
+        },
+      }),
+    ];
   },
 });
 
@@ -813,6 +932,16 @@ const getTableCellInfo = (view: any, event: MouseEvent) => {
   });
 
   return { table, tablePos, row, rowPos, cell, cellPos, rowIndex, colIndex };
+};
+
+const getTableCellPosFromResolved = (resolvedPos: any) => {
+  for (let d = resolvedPos.depth; d > 0; d--) {
+    const node = resolvedPos.node(d);
+    if (node.type.name === 'tableCell' || node.type.name === 'tableHeader') {
+      return resolvedPos.before(d);
+    }
+  }
+  return null;
 };
 
 const moveRow = (editor: Editor, tablePos: number, fromRowIndex: number, toRowIndex: number) => {
@@ -1973,6 +2102,12 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         if (!event || !(event instanceof DragEvent)) return false;
         const coords = view.posAtCoords({ left: event.clientX, top: event.clientY });
         if (!coords) return false;
+        const originCellPos = getTableCellPosFromResolved(view.state.selection.$from);
+        const targetCellPos = getTableCellPosFromResolved(view.state.doc.resolve(coords.pos));
+        if (originCellPos !== null && targetCellPos !== null && originCellPos !== targetCellPos) {
+          event.preventDefault();
+          return true;
+        }
         const originInDetails = hasAncestorNode(view.state.selection.$from, 'details');
         if (!originInDetails) return false;
         const targetInDetails = hasAncestorNode(view.state.doc.resolve(coords.pos), 'details');
@@ -2316,6 +2451,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       }
     });
     if (touched) {
+      tr.setMeta(DETAILS_TOGGLE_META, true);
       editor.view.dispatch(tr);
     }
   };

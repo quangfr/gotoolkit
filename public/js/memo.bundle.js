@@ -31826,6 +31826,7 @@ ${content}</tr>
     const composerTextareaRef = react_shim_default.useRef(null);
     const code = node.attrs.code || "";
     const excalidrawJSON = node.attrs.excalidrawJSON || "";
+    const autoOpen = node.attrs.autoOpen === true;
     const getAutoResizeHeight = (textarea) => {
       textarea.style.height = "auto";
       const scrollHeight = textarea.scrollHeight;
@@ -31854,7 +31855,7 @@ ${content}</tr>
       if (nextType && nextType !== diagramType) {
         setDiagramType(nextType);
       }
-    }, [code, draftCode, diagramType]);
+    }, [code, draftCode]);
     const handleDrawSend = async () => {
       var _a, _b, _c;
       if (!promptInput.trim() || isGenerating) return;
@@ -32111,6 +32112,15 @@ ${promptInput.trim()}`
     react_shim_default.useEffect(() => {
       renderDiagram();
     }, [renderDiagram]);
+    react_shim_default.useEffect(() => {
+      if (!autoOpen) return;
+      setIsEditing(true);
+      setIsLoading(true);
+      setModalError(null);
+      setLastValidCode(code);
+      setDraftCode(code);
+      updateAttributes2({ autoOpen: false });
+    }, [autoOpen, code, updateAttributes2]);
     const handleDoubleClick2 = async () => {
       setIsEditing(true);
       setIsLoading(true);
@@ -32530,6 +32540,9 @@ ${promptInput.trim()}`
         },
         size: {
           default: "small"
+        },
+        autoOpen: {
+          default: false
         }
       };
     },
@@ -32557,7 +32570,7 @@ ${promptInput.trim()}`
             tr2.delete(start, end);
             chain().insertContentAt(start, {
               type: this.name,
-              attrs: { code: "" }
+              attrs: { code: "", autoOpen: true }
             }).run();
           }
         })
@@ -32567,7 +32580,7 @@ ${promptInput.trim()}`
   var insertMermaidDiagram = (editor, code = "") => {
     editor.chain().focus().insertContent({
       type: "mermaidDiagram",
-      attrs: { code }
+      attrs: { code, autoOpen: true }
     }).run();
   };
 
@@ -32732,6 +32745,7 @@ ${promptInput.trim()}`
   });
 
   // src/memo-editor/simple-editor.tsx
+  var DETAILS_TOGGLE_META = "detailsToggle";
   var CustomDetails = Details.extend({
     addAttributes() {
       var _a;
@@ -32740,11 +32754,120 @@ ${promptInput.trim()}`
         open: {
           default: true,
           parseHTML: (element) => element.hasAttribute("open") || element.getAttribute("data-open") === "true",
-          renderHTML: (attributes) => {
+          renderHTML: () => {
             return {};
           }
         }
       };
+    },
+    addNodeView() {
+      return ({ editor, getPos, node, HTMLAttributes }) => {
+        const dom = document.createElement("div");
+        const attributes = mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
+          "data-type": this.name
+        });
+        Object.entries(attributes).forEach(([key, value]) => dom.setAttribute(key, value));
+        const toggle = document.createElement("button");
+        toggle.type = "button";
+        dom.append(toggle);
+        const content = document.createElement("div");
+        dom.append(content);
+        const toggleDetailsContent = (setToValue) => {
+          if (setToValue !== void 0) {
+            if (setToValue) {
+              if (dom.classList.contains(this.options.openClassName)) {
+                return;
+              }
+              dom.classList.add(this.options.openClassName);
+            } else {
+              if (!dom.classList.contains(this.options.openClassName)) {
+                return;
+              }
+              dom.classList.remove(this.options.openClassName);
+            }
+          } else {
+            dom.classList.toggle(this.options.openClassName);
+          }
+          const event = new Event("toggleDetailsContent");
+          const detailsContent = content.querySelector(':scope > div[data-type="detailsContent"]');
+          detailsContent == null ? void 0 : detailsContent.dispatchEvent(event);
+        };
+        if (node.attrs.open) {
+          setTimeout(() => toggleDetailsContent(true));
+        }
+        toggle.addEventListener("click", () => {
+          toggleDetailsContent();
+          if (!this.options.persist) {
+            editor.commands.focus(void 0, { scrollIntoView: false });
+            return;
+          }
+          if (editor.isEditable && typeof getPos === "function") {
+            const { from: from2, to } = editor.state.selection;
+            editor.chain().command(({ tr: tr2 }) => {
+              const pos = getPos();
+              const currentNode = tr2.doc.nodeAt(pos);
+              if ((currentNode == null ? void 0 : currentNode.type) !== this.type) {
+                return false;
+              }
+              tr2.setMeta(DETAILS_TOGGLE_META, true);
+              tr2.setNodeMarkup(pos, void 0, {
+                ...currentNode.attrs,
+                open: !currentNode.attrs.open
+              });
+              return true;
+            }).setTextSelection({ from: from2, to }).focus(void 0, { scrollIntoView: false }).run();
+          }
+        });
+        return {
+          dom,
+          contentDOM: content,
+          ignoreMutation(mutation) {
+            if (mutation.type === "selection") {
+              return false;
+            }
+            return !dom.contains(mutation.target) || dom === mutation.target;
+          },
+          update: (updatedNode) => {
+            if (updatedNode.type !== this.type) {
+              return false;
+            }
+            if (updatedNode.attrs.open !== void 0) {
+              toggleDetailsContent(updatedNode.attrs.open);
+            }
+            return true;
+          }
+        };
+      };
+    },
+    addProseMirrorPlugins() {
+      var _a;
+      const plugins = ((_a = this.parent) == null ? void 0 : _a.call(this)) || [];
+      return [
+        ...plugins,
+        new Plugin({
+          key: new PluginKey("detailsOpenGuard"),
+          appendTransaction: (transactions, oldState, newState) => {
+            const allowToggle = transactions.some((tr3) => tr3.getMeta(DETAILS_TOGGLE_META) === true);
+            if (allowToggle) {
+              return;
+            }
+            let tr2 = null;
+            newState.doc.descendants((node, pos) => {
+              if (node.type.name !== this.name) return;
+              if (pos > oldState.doc.content.size) return;
+              const oldNode = oldState.doc.nodeAt(pos);
+              if (!oldNode || oldNode.type !== node.type) return;
+              if (oldNode.attrs.open && node.attrs.open === false) {
+                if (!tr2) {
+                  tr2 = newState.tr;
+                }
+                tr2.setNodeMarkup(pos, void 0, { ...node.attrs, open: true });
+              }
+            });
+            return tr2 || null;
+          }
+        })
+      ];
     }
   });
   var CustomCode = Code.extend({
@@ -33391,6 +33514,15 @@ ${promptInput.trim()}`
       }
     });
     return { table, tablePos, row, rowPos, cell: cell2, cellPos, rowIndex, colIndex };
+  };
+  var getTableCellPosFromResolved = (resolvedPos) => {
+    for (let d = resolvedPos.depth; d > 0; d--) {
+      const node = resolvedPos.node(d);
+      if (node.type.name === "tableCell" || node.type.name === "tableHeader") {
+        return resolvedPos.before(d);
+      }
+    }
+    return null;
   };
   var moveRow = (editor, tablePos, fromRowIndex, toRowIndex) => {
     const { tr: tr2 } = editor.state;
@@ -34071,7 +34203,7 @@ ${promptInput.trim()}`
                 width: "100%",
                 textAlign: "left",
                 padding: "6px 8px",
-                background: index === selectedIndex ? "var(--bg-surface)" : "var(--bg-surface-soft)",
+                background: index === selectedIndex ? "var(--bg-surface)" : "transparent",
                 border: "none",
                 cursor: "pointer",
                 borderRadius: "4px",
@@ -34423,6 +34555,12 @@ ${promptInput.trim()}`
           if (!event || !(event instanceof DragEvent)) return false;
           const coords = view.posAtCoords({ left: event.clientX, top: event.clientY });
           if (!coords) return false;
+          const originCellPos = getTableCellPosFromResolved(view.state.selection.$from);
+          const targetCellPos = getTableCellPosFromResolved(view.state.doc.resolve(coords.pos));
+          if (originCellPos !== null && targetCellPos !== null && originCellPos !== targetCellPos) {
+            event.preventDefault();
+            return true;
+          }
           const originInDetails = hasAncestorNode(view.state.selection.$from, "details");
           if (!originInDetails) return false;
           const targetInDetails = hasAncestorNode(view.state.doc.resolve(coords.pos), "details");
@@ -34722,6 +34860,7 @@ ${promptInput.trim()}`
         }
       });
       if (touched) {
+        tr2.setMeta(DETAILS_TOGGLE_META, true);
         editor.view.dispatch(tr2);
       }
     };

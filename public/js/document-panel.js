@@ -57,12 +57,38 @@
         }
     }
 
-    function sortByUpdatedAt(list) {
+    function getRecentTimestamp(item) {
+        const opened = Date.parse(item?.lastOpenedAt || "");
+        if (Number.isFinite(opened) && opened > 0) return opened;
+        const updated = Date.parse(item?.updatedAt || "");
+        return Number.isFinite(updated) ? updated : 0;
+    }
+
+    function sortByOpenAndRecent(list, openIds) {
+        const openSet = new Set((openIds || []).filter(Boolean));
         return [...list].sort((a, b) => {
-            const aTime = Date.parse(a?.updatedAt || "") || 0;
-            const bTime = Date.parse(b?.updatedAt || "") || 0;
+            const aOpen = openSet.has(a?.id);
+            const bOpen = openSet.has(b?.id);
+            if (aOpen !== bOpen) return aOpen ? -1 : 1;
+            const aTime = getRecentTimestamp(a);
+            const bTime = getRecentTimestamp(b);
             return bTime - aTime;
         });
+    }
+
+    function formatRelativeShort(value) {
+        const timestamp = Date.parse(value || "");
+        if (!Number.isFinite(timestamp) || timestamp <= 0) return "";
+        const deltaSeconds = Math.max(0, Math.floor((Date.now() - timestamp) / 1000));
+        if (deltaSeconds < 60) return "<1mn";
+        const minutes = Math.floor(deltaSeconds / 60);
+        if (minutes < 60) return `${minutes}mn`;
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) return `${hours}h`;
+        const days = Math.floor(hours / 24);
+        if (days < 30) return `${days}j`;
+        const months = Math.floor(days / 30) || 1;
+        return `${months}m`;
     }
 
     function createDocumentExplorer(options) {
@@ -93,22 +119,39 @@
         const getActiveId = typeof opts.getActiveId === "function" ? opts.getActiveId : null;
         let cachedItems = [];
 
+        let hasDefaultTabSet = false;
+
+        function setActiveTab(target, options) {
+            const nextTarget = target === "toc" ? "toc" : "library";
+            const shouldRender = options?.renderToc ?? true;
+
+            tabBtns.forEach(b => b.classList.toggle("active", b.dataset.tab === nextTarget));
+            libraryPanel?.classList.toggle("active", nextTarget === "library");
+            tocPanel?.classList.toggle("active", nextTarget === "toc");
+
+            if (actionRow) {
+                actionRow.style.display = nextTarget === "library" ? "flex" : "none";
+            }
+
+            if (nextTarget === "toc" && shouldRender) {
+                renderTOC();
+            }
+        }
+
+        function ensureDefaultTab() {
+            if (hasDefaultTabSet) return;
+            const activeId = typeof getActiveId?.() === "string" ? getActiveId().trim() : "";
+            const headings = (window.MemoHeadings || []).filter(h => h.level >= 1 && h.level <= 4);
+            const shouldShowToc = Boolean(activeId) && headings.length > 0;
+            setActiveTab(shouldShowToc ? "toc" : "library", { renderToc: shouldShowToc });
+            hasDefaultTabSet = true;
+        }
+
         // Tab Switching Logic
         tabBtns.forEach(btn => {
             btn.addEventListener("click", () => {
                 const target = btn.dataset.tab;
-
-                tabBtns.forEach(b => b.classList.toggle("active", b === btn));
-                libraryPanel?.classList.toggle("active", target === "library");
-                tocPanel?.classList.toggle("active", target === "toc");
-
-                if (actionRow) {
-                    actionRow.style.display = target === "library" ? "flex" : "none";
-                }
-
-                if (target === "toc") {
-                    renderTOC();
-                }
+                setActiveTab(target);
             });
         });
 
@@ -168,11 +211,16 @@
                         <input id="document-explorer-name-input" type="text" placeholder="Nom du document" />
                     </div>
                     <div class="header-row ia-header-actions">
+                        <label for="document-explorer-category-input">Catégorie</label>
+                        <input id="document-explorer-category-input" type="text" placeholder="Catégorie (optionnelle)" />
+                    </div>
+                    <div class="header-row ia-header-actions">
                         <label for="document-explorer-description-input">Description</label>
                         <textarea id="document-explorer-description-input" rows="3" placeholder="Description courte (optionnelle)"></textarea>
                     </div>
                     <div class="modal-actions" style="justify-content:flex-end;">
                         <button class="btn btn-secondary" type="button" data-cancel>Annuler</button>
+                        <button class="btn btn-secondary" type="button" data-publish style="display:none;">Publier</button>
                         <button class="btn-primary" type="button" data-confirm>Valider</button>
                     </div>
                 </div>
@@ -181,8 +229,10 @@
         document.body.appendChild(modalOverlay);
         const modalCloseBtn = modalOverlay.querySelector(".modal-close");
         const modalCancelBtn = modalOverlay.querySelector("[data-cancel]");
+        const modalPublishBtn = modalOverlay.querySelector("[data-publish]");
         const modalConfirmBtn = modalOverlay.querySelector("[data-confirm]");
         const modalInput = modalOverlay.querySelector("#document-explorer-name-input");
+        const modalCategoryInput = modalOverlay.querySelector("#document-explorer-category-input");
         const modalDescInput = modalOverlay.querySelector("#document-explorer-description-input");
         let modalResolver = null;
 
@@ -192,13 +242,28 @@
             modalResolver = null;
         }
 
-        function openNameModal(defaultValue, defaultDescription) {
+        function hasAdminToken() {
+            const token = localStorage.getItem("feedback-admin-token") || "";
+            return Boolean(String(token).trim());
+        }
+
+        function openNameModal(defaultValue, defaultDescription, options) {
             if (!modalInput) return Promise.resolve(null);
             modalOverlay.style.display = "flex";
             modalOverlay.classList.add("open");
             if (window.lucide) window.lucide.createIcons();
             modalInput.value = defaultValue || "";
+            if (modalCategoryInput) {
+                modalCategoryInput.value = (options && options.category) || "";
+            }
             if (modalDescInput) modalDescInput.value = defaultDescription || "";
+            const allowPublish = Boolean(options && options.allowPublish && hasAdminToken());
+            if (modalPublishBtn) {
+                modalPublishBtn.style.display = allowPublish ? "inline-flex" : "none";
+            }
+            if (modalCancelBtn) {
+                modalCancelBtn.style.display = allowPublish ? "none" : "inline-flex";
+            }
             requestAnimationFrame(() => {
                 modalInput.focus();
                 modalInput.select();
@@ -217,10 +282,20 @@
 
         modalCloseBtn?.addEventListener("click", () => resolveModal(null));
         modalCancelBtn?.addEventListener("click", () => resolveModal(null));
+        modalPublishBtn?.addEventListener("click", () => {
+            resolveModal({
+                name: modalInput?.value || "",
+                description: modalDescInput?.value || "",
+                category: modalCategoryInput?.value || "",
+                action: "publish"
+            });
+        });
         modalConfirmBtn?.addEventListener("click", () => {
             resolveModal({
                 name: modalInput?.value || "",
-                description: modalDescInput?.value || ""
+                description: modalDescInput?.value || "",
+                category: modalCategoryInput?.value || "",
+                action: "confirm"
             });
         });
         modalOverlay.addEventListener("click", event => {
@@ -234,7 +309,9 @@
                 event.preventDefault();
                 resolveModal({
                     name: modalInput?.value || "",
-                    description: modalDescInput?.value || ""
+                    description: modalDescInput?.value || "",
+                    category: modalCategoryInput?.value || "",
+                    action: "confirm"
                 });
             }
         });
@@ -380,6 +457,7 @@
         }
 
         window.addEventListener('memo:headings-updated', () => {
+            ensureDefaultTab();
             if (tocPanel?.classList.contains("active")) {
                 renderTOC();
             }
@@ -436,6 +514,15 @@
                 label.textContent = item.title || "Mémo sans titre";
                 button.appendChild(label);
 
+                const openedLabel = formatRelativeShort(item?.lastOpenedAt || "");
+                if (openedLabel) {
+                    const openedAt = document.createElement("span");
+                    openedAt.className = "document-explorer__item-opened";
+                    openedAt.textContent = openedLabel;
+                    openedAt.title = "Dernière ouverture";
+                    button.appendChild(openedAt);
+                }
+
                 const actions = document.createElement("span");
                 actions.className = "document-explorer__item-actions";
 
@@ -447,9 +534,15 @@
                 renameBtn.addEventListener("click", event => {
                     event.stopPropagation();
                     if (!onRename) return;
-                    openNameModal(item.title || "", item.description || "").then(result => {
+                    openNameModal(item.title || "", item.description || "", {
+                        category: item.category || "",
+                        allowPublish: true
+                    }).then(result => {
                         if (!result) return;
-                        onRename(item, uniqueName(result.name, cachedItems), result.description);
+                        onRename(item, {
+                            ...result,
+                            name: uniqueName(result.name, cachedItems)
+                        });
                     });
                 });
                 actions.appendChild(renameBtn);
@@ -481,7 +574,8 @@
             try {
                 const items = await getItems();
                 const normalized = Array.isArray(items) ? items : [];
-                cachedItems = sortByUpdatedAt(normalized);
+                const openIds = Array.isArray(getOpenIds?.()) ? getOpenIds() : [];
+                cachedItems = sortByOpenAndRecent(normalized, openIds);
                 renderList(cachedItems);
             } catch (err) {
                 renderEmpty();
@@ -508,7 +602,7 @@
                 if (!result) return;
                 const name = uniqueName(result.name, cachedItems, Array.from(pendingNames));
                 pendingNames.add(name);
-                await Promise.resolve(onCreate(name, result.description));
+                await Promise.resolve(onCreate(name, result.description, result.category));
             } finally {
                 isCreating = false;
                 createBtn.disabled = false;
@@ -549,6 +643,7 @@
 
         applyWidth(width);
         applyOpen(isOpen);
+        ensureDefaultTab();
 
         window.addEventListener("resize", () => {
             if (window.innerWidth < 900 && isOpen) {
@@ -559,6 +654,8 @@
         return {
             refresh,
             refreshIndicators() {
+                const openIds = Array.isArray(getOpenIds?.()) ? getOpenIds() : [];
+                cachedItems = sortByOpenAndRecent(cachedItems, openIds);
                 renderList(cachedItems);
             },
             open() {
@@ -567,14 +664,15 @@
             close() {
                 applyOpen(false);
             },
-            openRenameModal(name, description) {
-                return openNameModal(name, description);
+            openRenameModal(name, description, options) {
+                return openNameModal(name, description, options);
             },
             uniqueName(name) {
                 return uniqueName(name, cachedItems);
             },
             setItems(items) {
-                cachedItems = sortByUpdatedAt(Array.isArray(items) ? items : []);
+                const openIds = Array.isArray(getOpenIds?.()) ? getOpenIds() : [];
+                cachedItems = sortByOpenAndRecent(Array.isArray(items) ? items : [], openIds);
                 renderList(cachedItems);
             }
         };

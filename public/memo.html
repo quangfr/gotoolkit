@@ -334,7 +334,7 @@
             background: var(--bg-surface);
             color: var(--text-main);
             border-radius: 6px;
-            padding: 4px 5px;
+            padding: 4px 44px 4px 5px;
             font-size: 11px;
             text-align: left;
             cursor: pointer;
@@ -344,6 +344,7 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            position: relative;
         }
 
         .document-explorer__item--open {
@@ -362,16 +363,34 @@
         }
 
         .document-explorer__item-actions {
-            margin-left: auto;
+            position: absolute;
+            right: 6px;
+            top: 50%;
+            transform: translateY(-50%);
             display: inline-flex;
             gap: 4px;
             opacity: 0;
             transition: opacity 0.2s ease;
         }
 
+        .document-explorer__item-opened {
+            position: absolute;
+            right: 6px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 10px;
+            opacity: 0.7;
+            letter-spacing: 0.2px;
+        }
+
         .document-explorer__item:hover .document-explorer__item-actions,
         .document-explorer__item:focus-within .document-explorer__item-actions {
             opacity: 1;
+        }
+
+        .document-explorer__item:hover .document-explorer__item-opened,
+        .document-explorer__item:focus-within .document-explorer__item-opened {
+            opacity: 0;
         }
 
         .document-explorer__item-action {
@@ -901,6 +920,39 @@
             background: var(--color-primary-soft);
         }
 
+        .gt-template-filter {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-left: 12px;
+            margin-right: auto;
+            font-size: 12px;
+        }
+
+        .gt-template-filter label {
+            margin: 0;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .gt-template-filter__select {
+            font-size: 12px;
+            padding: 4px 6px;
+            border-radius: 6px;
+            border: 1px solid var(--border-main);
+            background: var(--bg-surface);
+            color: var(--text-main);
+        }
+
+        .gt-template-card__meta {
+            margin-top: 6px;
+            font-size: 11px;
+            color: var(--text-muted);
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
         .gt-template-card__delete {
             position: absolute;
             top: 10px;
@@ -1044,6 +1096,12 @@
         <div class="modal">
             <div class="modal-header">
                 <h3 id="gtTemplateModalTitle" title="Modèles">Modèles</h3>
+                <div class="gt-template-filter">
+                    <label for="gtTemplateCategoryFilter">Catégorie</label>
+                    <select id="gtTemplateCategoryFilter" class="gt-template-filter__select">
+                        <option value="Tous">Tous</option>
+                    </select>
+                </div>
                 <button class="modal-close" id="gtTemplateModalClose" type="button" aria-label="Fermer"><i
                         data-lucide="x"></i></button>
             </div>
@@ -1281,6 +1339,7 @@
             const templateModalTrigger = document.getElementById("gtTemplateModalTrigger");
             const templateModalClose = document.getElementById("gtTemplateModalClose");
             const templateModalList = document.getElementById("gtTemplateModalList");
+            const templateCategoryFilter = document.getElementById("gtTemplateCategoryFilter");
             const templateModalApply = document.getElementById("gtTemplateModalApply");
             const promptModal = document.getElementById("gtPromptModal");
             const promptModalTrigger = document.getElementById("gtPromptModalTrigger");
@@ -1376,6 +1435,7 @@
                             id,
                             title: "Doc 1",
                             description: "",
+                            category: "",
                             content: "",
                             contextEmbeddings: []
                         }
@@ -1397,11 +1457,12 @@
                         ? tab.title.trim()
                         : "Doc " + (index + 1);
                     const description = typeof tab.description === "string" ? tab.description : "";
+                    const category = typeof tab.category === "string" ? tab.category : "";
                     const content = typeof tab.content === "string" ? tab.content : "";
                     const contextEmbeddings = Array.isArray(tab.contextEmbeddings)
                         ? tab.contextEmbeddings.filter(Boolean)
                         : [];
-                    return { id, title, description, content, contextEmbeddings };
+                    return { id, title, description, category, content, contextEmbeddings };
                 });
                 const activeId = normalizedTabs.some(tab => tab.id === raw.activeTabId)
                     ? raw.activeTabId
@@ -1435,6 +1496,7 @@
                     id: doc.id,
                     title: doc.title,
                     description: doc.description || "",
+                    category: doc.category || "",
                     payload: doc.payload,
                     updatedAt: doc.updatedAt || new Date().toISOString()
                 });
@@ -1523,6 +1585,46 @@
                 renderDocumentTabs();
             }
 
+            async function markDocumentOpened(doc, existingRecord) {
+                if (!documentApi || !doc?.id) return;
+                const now = new Date().toISOString();
+                let existing = existingRecord || null;
+                if (!existing) {
+                    try {
+                        existing = await documentApi.getRecord(doc.id);
+                    } catch (err) {
+                        existing = null;
+                    }
+                }
+                const payload = doc.payload || existing?.payload || buildSharePayload();
+                const updatedAt = doc.updatedAt || existing?.updatedAt || new Date().toISOString();
+                const title = doc.title || existing?.title || getDocumentTitleFromState(state);
+                const description = doc.description || existing?.description || "";
+                const category = doc.category || existing?.category || "";
+                const record = await documentApi.upsertRecord({
+                    id: doc.id,
+                    app: "memo",
+                    payload,
+                    title,
+                    description,
+                    category,
+                    updatedAt,
+                    lastOpenedAt: now
+                });
+                if (record) {
+                    upsertOpenDocument({
+                        id: doc.id,
+                        title: record.title || title,
+                        description: record.description || description,
+                        category: record.category || category,
+                        payload,
+                        updatedAt: record.updatedAt || updatedAt,
+                        lastOpenedAt: now
+                    });
+                    memoExplorer?.refresh?.();
+                }
+            }
+
             function setActiveDocument(docId) {
                 if (!docId || docId === activeDocumentId) return;
                 const target = openDocuments.find(item => item.id === docId);
@@ -1536,6 +1638,7 @@
                 setActiveTab(state.activeTabId);
                 syncAssistPresetFromState();
                 renderDocumentTabs();
+                markDocumentOpened(target);
             }
 
             function closeDocumentTab(docId) {
@@ -2061,10 +2164,20 @@
                 upsertOpenDocument({
                     id: record.id,
                     title: record.title || getDocumentTitleFromState(state),
+                    description: record.description || "",
+                    category: record.category || "",
                     payload: buildSharePayload(),
                     updatedAt: record.updatedAt || new Date().toISOString()
                 });
                 renderDocumentTabs();
+                markDocumentOpened({
+                    id: record.id,
+                    title: record.title || getDocumentTitleFromState(state),
+                    description: record.description || "",
+                    category: record.category || "",
+                    payload: buildSharePayload(),
+                    updatedAt: record.updatedAt || new Date().toISOString()
+                }, record);
                 hydrateMemoContextEmbeddings();
             }
 
@@ -2082,7 +2195,57 @@
                 return window.GoToolkitMemoDocumentExplorer || null;
             }
 
-            async function applyDocumentRename(docId, nextName, nextDescription) {
+            function isAutoDocName(value) {
+                return /^Doc\s+\d+$/i.test(String(value || "").trim());
+            }
+
+            function getFirstLineTitleFromContent(raw) {
+                if (!raw) return "";
+                const text = String(raw)
+                    .replace(/<[^>]*>/g, "\n")
+                    .replace(/&nbsp;/g, " ");
+                const line = text.split(/\r?\n/).map(l => l.trim()).find(Boolean) || "";
+                if (!line) return "";
+                return line
+                    .replace(/^#+\s*/, "")
+                    .replace(/^>\s*/, "")
+                    .replace(/^[-*+]\s+/, "")
+                    .trim();
+            }
+
+            function getPreferredRenameTitle(currentTitle, fallbackContent) {
+                if (!isAutoDocName(currentTitle)) return currentTitle || "";
+                const editorContent = typeof window.getEditorMarkdown === "function"
+                    ? window.getEditorMarkdown()
+                    : "";
+                const candidate = getFirstLineTitleFromContent(editorContent || fallbackContent || "");
+                return candidate || currentTitle || "";
+            }
+
+            async function publishTemplateFromTab(tab, meta) {
+                if (!tab) return;
+                const payload = {
+                    label: meta?.name || tab.title || "Modèle sans titre",
+                    description: meta?.description || "",
+                    category: meta?.category || "",
+                    html: tab.content || "",
+                    meta: {
+                        uuid: createTemplateUuid()
+                    }
+                };
+
+                try {
+                    setStatus("Publication du modèle...");
+                    await shareWorker.saveSharePayload(TEMPLATES_COLLECTION, null, payload);
+                    setStatus("Le modèle a été publié");
+                    renderTemplateList();
+                } catch (err) {
+                    console.error("Template publish failed", err);
+                    setStatus("Échec de la publication", true);
+                }
+            }
+
+            async function applyDocumentRename(docId, nextName, nextDescription, nextCategory) {
                 if (!docId || !nextName) return;
                 const doc = openDocuments.find(item => item.id === docId);
                 if (doc && doc.payload && Array.isArray(doc.payload.tabs) && doc.payload.tabs[0]) {
@@ -2091,11 +2254,18 @@
                         doc.payload.tabs[0].description = nextDescription;
                         doc.description = nextDescription;
                     }
+                    if (nextCategory !== undefined) {
+                        doc.payload.tabs[0].category = nextCategory;
+                        doc.category = nextCategory;
+                    }
                 }
                 if (docId === activeDocumentId && state.tabs[0]) {
                     state.tabs[0].title = nextName;
                     if (nextDescription !== undefined) {
                         state.tabs[0].description = nextDescription;
+                    }
+                    if (nextCategory !== undefined) {
+                        state.tabs[0].category = nextCategory;
                     }
                     persistState();
                 }
@@ -2107,6 +2277,7 @@
                         payload,
                         title: nextName,
                         description: nextDescription !== undefined ? nextDescription : (doc?.description || ""),
+                        category: nextCategory !== undefined ? nextCategory : (doc?.category || ""),
                         updatedAt: new Date().toISOString()
                     });
                 }
@@ -2114,6 +2285,7 @@
                     id: docId,
                     title: nextName,
                     description: nextDescription !== undefined ? nextDescription : (doc?.description || ""),
+                    category: nextCategory !== undefined ? nextCategory : (doc?.category || ""),
                     payload: doc?.payload || buildSharePayload(),
                     updatedAt: new Date().toISOString()
                 });
@@ -2121,18 +2293,35 @@
                 getExplorer()?.refresh?.();
             }
 
-            async function renameDocument(docId, currentTitle, currentDescription) {
+            async function renameDocument(docId, currentTitle, currentDescription, currentCategory) {
                 const explorer = getExplorer();
-                const result = await explorer?.openRenameModal?.(currentTitle || "", currentDescription || "");
+                const activeContent = state?.tabs?.[0]?.content || "";
+                const fallbackContent = docId === activeDocumentId
+                    ? activeContent
+                    : (openDocuments.find(doc => doc.id === docId)?.payload?.tabs?.[0]?.content || "");
+                const preferredName = getPreferredRenameTitle(currentTitle, fallbackContent);
+                const result = await explorer?.openRenameModal?.(preferredName || currentTitle || "", currentDescription || "", {
+                    category: currentCategory || "",
+                    allowPublish: true
+                });
                 if (!result) return;
                 const finalName = explorer?.uniqueName?.(result.name) || result.name;
-                await applyDocumentRename(docId, finalName, result.description);
+                await applyDocumentRename(docId, finalName, result.description, result.category);
+
+                if (result.action === "publish") {
+                    const tab = getActiveTab();
+                    await publishTemplateFromTab(tab, {
+                        name: finalName,
+                        description: result.description,
+                        category: result.category
+                    });
+                }
             }
 
             async function renameActiveDocument() {
                 if (!activeDocumentId) return;
                 const tab = state.tabs[0];
-                await renameDocument(activeDocumentId, tab?.title || "", tab?.description || "");
+                await renameDocument(activeDocumentId, tab?.title || "", tab?.description || "", tab?.category || "");
             }
 
             async function deleteDocument(docId) {
@@ -2178,7 +2367,7 @@
 
             let isCreatingNewDocument = false;
 
-            async function createNewDocument(name, description, initialContent) {
+            async function createNewDocument(name, description, category, initialContent) {
                 if (isCreatingNewDocument) return;
                 isCreatingNewDocument = true;
                 try {
@@ -2187,6 +2376,7 @@
                     if (nextState.tabs[0]) {
                         nextState.tabs[0].title = name;
                         nextState.tabs[0].description = description || "";
+                        nextState.tabs[0].category = category || "";
                         if (typeof initialContent === "string") {
                             nextState.tabs[0].content = initialContent;
                         }
@@ -2196,9 +2386,16 @@
                     renderTabs();
                     setActiveTab(state.activeTabId);
                     syncAssistPresetFromState();
-                    await saveDocument({ showToast: true, created: true, description: description });
+                    await saveDocument({ showToast: true, created: true, description: description, category: category });
                     getExplorer()?.refresh?.();
                     window.GoToolkitAssistInstance?.open?.();
+                    markDocumentOpened({
+                        id: activeDocumentId,
+                        title: getDocumentTitleFromState(state),
+                        description: description || "",
+                        category: category || "",
+                        payload: buildSharePayload()
+                    });
                 } finally {
                     isCreatingNewDocument = false;
                 }
@@ -2267,13 +2464,21 @@
                 },
                 getOpenIds: () => openDocuments.map(doc => doc.id).filter(Boolean),
                 getActiveId: () => activeDocumentId || "",
-                onCreate: name => {
+                onCreate: (name, description, category) => {
                     if (!name) return;
-                    createNewDocument(name);
+                    createNewDocument(name, description, category);
                 },
-                onRename: (item, nextName) => {
-                    if (!item || !nextName) return;
-                    applyDocumentRename(item.id, nextName);
+                onRename: (item, result) => {
+                    if (!item || !result || !result.name) return;
+                    applyDocumentRename(item.id, result.name, result.description, result.category);
+                    if (result.action === "publish" && item.id === activeDocumentId) {
+                        const tab = getActiveTab();
+                        publishTemplateFromTab(tab, {
+                            name: result.name,
+                            description: result.description,
+                            category: result.category
+                        });
+                    }
                 },
                 onDelete: item => {
                     if (!item) return;
@@ -2297,6 +2502,8 @@
                 try {
                     const payload = buildSharePayload();
                     const preview = buildSharePreview();
+                    const activeTab = getActiveTab();
+                    const category = activeTab?.category || options?.category || "";
                     // IMPORTANT: Preserve existing activeDocumentId if it exists
                     const startedWithId = activeDocumentId;
                     const id = startedWithId || (documentApi.generateId && documentApi.generateId()) || createId();
@@ -2307,6 +2514,7 @@
                         payload,
                         title: preview.title,
                         description: options?.description !== undefined ? options.description : preview.description,
+                        category: category,
                         updatedAt: now
                     });
                     if (record) {
@@ -2318,6 +2526,7 @@
                             id,
                             title: preview.title || getDocumentTitleFromState(state),
                             description: options?.description !== undefined ? options.description : preview.description,
+                            category: category,
                             payload,
                             updatedAt: now
                         });
@@ -2351,11 +2560,12 @@
 
             let templateInsertMode = "append";
 
-            function applyTemplateContent(template) {
+            async function applyTemplateContent(template) {
                 if (!template) return;
                 const html = template.html || "";
                 if (templateInsertMode !== "append") {
-                    createNewDocument(template.label || "Nouveau document", template.description || "", html);
+                    const name = await getAutoDocumentName();
+                    createNewDocument(name, template.description || "", template.category || "", html);
                     return;
                 }
 
@@ -2366,6 +2576,61 @@
                 state.templateId = template.id || null;
                 state.templateLabel = template.label || null;
                 persistState();
+            }
+
+            function parseTemplateUpdatedAt(value) {
+                if (!value) return 0;
+                if (typeof value === "number") return value;
+                const parsed = Date.parse(String(value));
+                return Number.isFinite(parsed) ? parsed : 0;
+            }
+
+            function formatTemplateRelativeDate(value) {
+                const ts = parseTemplateUpdatedAt(value);
+                if (!ts) return "—";
+                const deltaSeconds = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+                if (deltaSeconds < 60) return "Il y a <1 mn";
+                const minutes = Math.floor(deltaSeconds / 60);
+                if (minutes < 60) {
+                    return `Il y a ${minutes} mn`;
+                }
+                const hours = Math.floor(minutes / 60);
+                if (hours < 24) {
+                    return `Il y a ${hours} h`;
+                }
+                const days = Math.floor(hours / 24);
+                if (days < 30) {
+                    return `Il y a ${days} j`;
+                }
+                const months = Math.floor(days / 30) || 1;
+                return `Il y a ${months} m`;
+            }
+
+            function normalizeTemplateCategory(value) {
+                return (value || "").toString().trim();
+            }
+
+            function updateTemplateCategoryFilter(templates) {
+                if (!templateCategoryFilter) return;
+                const currentValue = templateCategoryFilter.value || "Tous";
+                const categories = new Set();
+                (templates || []).forEach(template => {
+                    const category = normalizeTemplateCategory(template.category);
+                    if (category) categories.add(category);
+                });
+                const sorted = Array.from(categories).sort((a, b) => a.localeCompare(b, "fr", { sensitivity: "base" }));
+                templateCategoryFilter.innerHTML = "";
+                const allOption = document.createElement("option");
+                allOption.value = "Tous";
+                allOption.textContent = "Tous";
+                templateCategoryFilter.appendChild(allOption);
+                sorted.forEach(category => {
+                    const option = document.createElement("option");
+                    option.value = category;
+                    option.textContent = category;
+                    templateCategoryFilter.appendChild(option);
+                });
+                templateCategoryFilter.value = sorted.includes(currentValue) ? currentValue : "Tous";
             }
 
             async function renderTemplateList() {
@@ -2382,7 +2647,9 @@
                             id: doc.id,
                             label: doc.payload?.label || "Modèle sans titre",
                             description: doc.payload?.description || "",
-                            html: doc.payload?.html || ""
+                            category: doc.payload?.category || "",
+                            html: doc.payload?.html || "",
+                            updatedAt: doc.meta?.updatedDate || doc.meta?.updatedAt || ""
                         }));
                     }
                 } catch (err) {
@@ -2396,14 +2663,29 @@
                     return;
                 }
 
+                updateTemplateCategoryFilter(cloudTemplates);
+                const selectedCategory = normalizeTemplateCategory(templateCategoryFilter?.value || "Tous");
+                templatesToRender = cloudTemplates.filter(template => {
+                    if (!selectedCategory || selectedCategory === "Tous") return true;
+                    return normalizeTemplateCategory(template.category) === selectedCategory;
+                });
+
+                if (!templatesToRender.length) {
+                    templateModalList.innerHTML = '<div style="padding: 20px; text-align: center; opacity: 0.7;">Aucun modèle disponible.</div>';
+                    return;
+                }
+
+                templatesToRender.sort((a, b) => parseTemplateUpdatedAt(b.updatedAt) - parseTemplateUpdatedAt(a.updatedAt));
+
                 const isAdmin = isUserAdmin();
 
-                cloudTemplates.forEach((template, index) => {
+                templatesToRender.forEach((template, index) => {
                     const btn = document.createElement("button");
                     btn.type = "button";
                     btn.className = "gt-template-card";
                     btn.dataset.templateId = template.id;
-                    btn.innerHTML = `<h4>${escapeHtml(template.label)}</h4><p>${escapeHtml(template.description || "")}</p>`;
+                    const updatedLabel = formatTemplateRelativeDate(template.updatedAt);
+                    btn.innerHTML = `<h4>${escapeHtml(template.label)}</h4><p>${escapeHtml(template.description || "")}</p><div class="gt-template-card__meta">Màj · ${escapeHtml(updatedLabel)}</div>`;
 
                     if (cloudTemplates.some(t => t.id === template.id)) {
                         const deleteBtn = document.createElement("button");
@@ -2926,28 +3208,16 @@
                 if (!tab) return;
 
                 const explorer = getExplorer();
-                const result = await explorer?.openRenameModal?.(tab.title || "", tab.description || "");
+                const result = await explorer?.openRenameModal?.(tab.title || "", tab.description || "", {
+                    category: tab?.category || "",
+                    allowPublish: false
+                });
                 if (!result) return;
-
-                const payload = {
-                    label: result.name,
+                await publishTemplateFromTab(tab, {
+                    name: result.name,
                     description: result.description,
-                    html: tab.content || "",
-                    meta: {
-                        uuid: createTemplateUuid()
-                    }
-                };
-
-                try {
-                    setStatus("Publication du modèle...");
-                    // Pass null as token to trigger POST (Firestore ID generation)
-                    await shareWorker.saveSharePayload(TEMPLATES_COLLECTION, null, payload);
-                    setStatus("Le modèle a été publié");
-                    renderTemplateList();
-                } catch (err) {
-                    console.error("Template publish failed", err);
-                    setStatus("Échec de la publication", true);
-                }
+                    category: result.category
+                });
             });
 
             deleteDocumentBtn?.addEventListener("click", async () => {
@@ -3020,9 +3290,12 @@
             templateModal?.addEventListener("click", event => {
                 if (event.target === templateModal) closeTemplateModal();
             });
-            templateModalApply?.addEventListener("click", () => {
+            templateCategoryFilter?.addEventListener("change", () => {
+                renderTemplateList();
+            });
+            templateModalApply?.addEventListener("click", async () => {
                 const template = getSelectedTemplate();
-                applyTemplateContent(template);
+                await applyTemplateContent(template);
                 closeTemplateModal();
             });
 

@@ -61,7 +61,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
     if (nextType && nextType !== diagramType) {
       setDiagramType(nextType);
     }
-  }, [code, draftCode, diagramType]);
+  }, [code, draftCode]);
 
   const handleDrawSend = async () => {
     if (!promptInput.trim() || isGenerating) return;

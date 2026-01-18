@@ -83,7 +83,9 @@
             payload: value.payload,
             title: typeof value.title === "string" ? value.title : "",
             description: typeof value.description === "string" ? value.description : "",
+            category: typeof value.category === "string" ? value.category : "",
             updatedAt: value.updatedAt || new Date().toISOString(),
+            lastOpenedAt: value.lastOpenedAt || "",
             pinned: Boolean(value.pinned)
         };
     }
@@ -124,7 +126,9 @@
             payload: normalized.payload,
             title: normalized.title || (existing && existing.title) || "",
             description: normalized.description || (existing && existing.description) || "",
+            category: normalized.category || (existing && existing.category) || "",
             updatedAt: normalized.updatedAt || new Date().toISOString(),
+            lastOpenedAt: normalized.lastOpenedAt || (existing && existing.lastOpenedAt) || "",
             pinned:
                 typeof record.pinned === "boolean"
                     ? record.pinned
