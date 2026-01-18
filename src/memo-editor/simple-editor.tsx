@@ -15,7 +15,7 @@ import TiptapLink from '@tiptap/extension-link';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import { computePosition, offset, shift } from '@floating-ui/dom';
-import { DOMSerializer, Node as PMNode, Slice, Fragment } from '@tiptap/pm/model';
+import { DOMSerializer, Node as PMNode } from '@tiptap/pm/model';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
 import { NodeSelection, TextSelection, Transaction } from 'prosemirror-state';
 import Details from '@tiptap/extension-details';
@@ -617,9 +617,8 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLi
     }
 
     const { from, to } = editor.state.selection;
-    if (from === to || editor.isActive('mermaidDiagram')) {
+    if (from === to) {
       setPosition(prev => ({ ...prev, opacity: 0 }));
-      setShowTextColors(false);
       setShowTextColors(false);
       return;
     }
@@ -1712,7 +1711,6 @@ const CodeList = React.forwardRef((props: any, ref: any) => {
             width: '100%',
             textAlign: 'left',
             padding: '6px 8px',
-            background: index === selectedIndex ? 'var(--bg-surface)' : 'transparent',
             border: 'none',
             cursor: 'pointer',
             borderRadius: '4px',
@@ -1722,7 +1720,9 @@ const CodeList = React.forwardRef((props: any, ref: any) => {
             fontWeight: isBold ? 700 : 400,
             fontStyle: isItalic ? 'italic' : 'normal',
             textDecoration: `${isUnderline ? 'underline' : ''}${isStrike ? ' line-through' : ''}`.trim() || 'none',
-            backgroundColor: isHighlight ? (marks.find((mark: any) => mark.type === 'highlight')?.attrs?.color || 'var(--bg-surface)') : undefined,
+            backgroundColor: isHighlight
+              ? (marks.find((mark: any) => mark.type === 'highlight')?.attrs?.color || 'var(--bg-surface)')
+              : (index === selectedIndex ? 'var(--bg-surface)' : 'var(--bg-surface-soft)'),
           }}
         >
           {label}
@@ -1733,6 +1733,149 @@ const CodeList = React.forwardRef((props: any, ref: any) => {
 });
 
 const CODE_SUGGESTION_USAGE_KEY = 'go-toolkit-code-suggestion-usage';
+const CODE_SUGGESTION_STYLE_KEY = 'go-toolkit-code-suggestion-styles';
+const codeSuggestionInitialSyncMap = new WeakMap<Editor, boolean>();
+type CodeSuggestionStyle = {
+  bold?: boolean;
+  italic?: boolean;
+  color?: string;
+};
+
+const loadCodeSuggestionStyles = (): Record<string, CodeSuggestionStyle> => {
+  try {
+    const raw = localStorage.getItem(CODE_SUGGESTION_STYLE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch (err) {
+    return {};
+  }
+};
+
+const saveCodeSuggestionStyles = (styles: Record<string, CodeSuggestionStyle>) => {
+  try {
+    localStorage.setItem(CODE_SUGGESTION_STYLE_KEY, JSON.stringify(styles));
+  } catch (err) {
+    // ignore storage failures
+  }
+};
+
+const normalizeCodeSuggestionText = (text: string) => (text || '').trim();
+
+const extractCodeSuggestionStyle = (marks: ReadonlyArray<{ type: any; attrs?: Record<string, any> }>) => {
+  const hasType = (type: string) => marks.some(mark => (mark.type?.name || mark.type) === type);
+  const colorMark = marks.find(mark => (mark.type?.name || mark.type) === 'textStyle');
+  const color = colorMark?.attrs?.color;
+  return {
+    bold: hasType('bold'),
+    italic: hasType('italic'),
+    color: color || undefined,
+  } as CodeSuggestionStyle;
+};
+
+const codeSuggestionStylesEqual = (a?: CodeSuggestionStyle, b?: CodeSuggestionStyle) => {
+  const normalizedA = {
+    bold: !!a?.bold,
+    italic: !!a?.italic,
+    color: a?.color || '',
+  };
+  const normalizedB = {
+    bold: !!b?.bold,
+    italic: !!b?.italic,
+    color: b?.color || '',
+  };
+  return normalizedA.bold === normalizedB.bold
+    && normalizedA.italic === normalizedB.italic
+    && normalizedA.color === normalizedB.color;
+};
+
+const buildMarksFromCodeSuggestionStyle = (style?: CodeSuggestionStyle) => {
+  const marks: Array<{ type: string; attrs?: Record<string, any> }> = [];
+  if (style?.bold) {
+    marks.push({ type: 'bold' });
+  }
+  if (style?.italic) {
+    marks.push({ type: 'italic' });
+  }
+  if (style?.color) {
+    marks.push({ type: 'textStyle', attrs: { color: style.color } });
+  }
+  return marks;
+};
+
+const syncCodeSuggestionStylesOnLoad = (editor: Editor) => {
+  const storedStyles = loadCodeSuggestionStyles();
+  const nextStyles: Record<string, CodeSuggestionStyle> = { ...storedStyles };
+  let stylesChanged = false;
+
+  const latestStyles = new Map<string, CodeSuggestionStyle>();
+
+  editor.state.doc.descendants((node) => {
+    if (!node.isText || !node.text) return true;
+    const hasCode = node.marks.some(mark => mark.type.name === 'code');
+    if (!hasCode) return true;
+    const key = normalizeCodeSuggestionText(node.text);
+    if (!key) return true;
+    const style = extractCodeSuggestionStyle(node.marks);
+    latestStyles.set(key, style);
+    return true;
+  });
+
+  latestStyles.forEach((style, key) => {
+    if (!nextStyles[key]) {
+      nextStyles[key] = style;
+      stylesChanged = true;
+    }
+  });
+
+  if (stylesChanged) {
+    saveCodeSuggestionStyles(nextStyles);
+  }
+
+  const { schema } = editor.state;
+  let tr = editor.state.tr;
+  let modified = false;
+
+  editor.state.doc.descendants((node, pos) => {
+    if (!node.isText || !node.text) return true;
+    const hasCode = node.marks.some(mark => mark.type.name === 'code');
+    if (!hasCode) return true;
+    const key = normalizeCodeSuggestionText(node.text);
+    if (!key) return true;
+    const desired = nextStyles[key];
+    if (!desired) return true;
+    const current = extractCodeSuggestionStyle(node.marks);
+    if (codeSuggestionStylesEqual(desired, current)) return true;
+
+    const end = pos + node.nodeSize;
+    if (schema.marks.bold) {
+      tr.removeMark(pos, end, schema.marks.bold);
+    }
+    if (schema.marks.italic) {
+      tr.removeMark(pos, end, schema.marks.italic);
+    }
+    if (schema.marks.textStyle) {
+      tr.removeMark(pos, end, schema.marks.textStyle);
+    }
+    if (desired.bold && schema.marks.bold) {
+      tr.addMark(pos, end, schema.marks.bold.create());
+    }
+    if (desired.italic && schema.marks.italic) {
+      tr.addMark(pos, end, schema.marks.italic.create());
+    }
+    if (desired.color && schema.marks.textStyle) {
+      tr.addMark(pos, end, schema.marks.textStyle.create({ color: desired.color }));
+    }
+
+    modified = true;
+    return true;
+  });
+
+  if (modified) {
+    tr.setMeta('codeSuggestionInitialSync', true);
+    editor.view.dispatch(tr);
+  }
+};
 const loadCodeSuggestionUsage = () => {
   try {
     const raw = localStorage.getItem(CODE_SUGGESTION_USAGE_KEY);
@@ -1760,21 +1903,23 @@ const bumpCodeSuggestionUsage = (snippet: string) => {
 const codeSuggestion = {
   items: ({ editor, query }: { editor: Editor, query: string }) => {
     const snippets = new Map<string, { text: string; marks: Array<{ type: string; attrs?: Record<string, any> }> }>();
+    const styles = loadCodeSuggestionStyles();
     
     editor.state.doc.descendants((node) => {
       if (node.isText) {
         const codeMark = node.marks.find(m => m.type.name === 'code');
         if (codeMark && node.text) {
-          const trimmed = node.text.trim();
+          const trimmed = normalizeCodeSuggestionText(node.text);
           if (!trimmed) return true;
-          const marks = node.marks.map(mark => ({
-            type: mark.type.name,
-            attrs: mark.attrs || {},
-          }));
-          const signature = JSON.stringify(marks);
-          const key = `${trimmed}::${signature}`;
-          if (!snippets.has(key)) {
-            snippets.set(key, { text: trimmed, marks });
+          if (!snippets.has(trimmed)) {
+            const storedStyle = styles[trimmed];
+            const marks = storedStyle
+              ? buildMarksFromCodeSuggestionStyle(storedStyle)
+              : node.marks.map(mark => ({
+                type: mark.type.name,
+                attrs: mark.attrs || {},
+              }));
+            snippets.set(trimmed, { text: trimmed, marks });
           }
         }
       }
@@ -1876,6 +2021,7 @@ const CodeSuggestion = Extension.create({
           const suggestionMarks = Array.isArray(props.marks) ? props.marks : [];
           const marksMap = new Map<string, { type: string; attrs?: Record<string, any> }>();
           const normalizeType = (type: any) => (typeof type === 'string' ? type : type?.name);
+          const isStyleMarkType = (type: string) => type === 'bold' || type === 'italic' || type === 'textStyle';
           const addMark = (mark: { type: any; attrs?: Record<string, any> }) => {
             const key = normalizeType(mark.type);
             if (!key) return;
@@ -1888,7 +2034,11 @@ const CodeSuggestion = Extension.create({
 
           addMark({ type: 'code' });
           suggestionMarks.forEach(mark => addMark(mark));
-          storedMarks.forEach(mark => addMark({ type: mark.type, attrs: mark.attrs }));
+          storedMarks.forEach(mark => {
+            const key = normalizeType(mark.type);
+            if (key && isStyleMarkType(key)) return;
+            addMark({ type: mark.type, attrs: mark.attrs });
+          });
           if (activeColor && !suggestionMarks.some(mark => normalizeType(mark.type) === 'textStyle')) {
             marksMap.set('textStyle', { type: 'textStyle', attrs: { color: activeColor } });
           }
@@ -1924,6 +2074,87 @@ const CodeSuggestion = Extension.create({
 
   addProseMirrorPlugins() {
     return [
+      new Plugin({
+        key: new PluginKey('codeSuggestionStyleSync'),
+        appendTransaction: (transactions, _oldState, newState) => {
+          if (!transactions.some(transaction => transaction.docChanged)) {
+            return null;
+          }
+
+          const storedStyles = loadCodeSuggestionStyles();
+          const nextStyles: Record<string, CodeSuggestionStyle> = { ...storedStyles };
+          let stylesChanged = false;
+
+          const latestStyles = new Map<string, CodeSuggestionStyle>();
+
+          newState.doc.descendants((node) => {
+            if (!node.isText || !node.text) return true;
+            const hasCode = node.marks.some(mark => mark.type.name === 'code');
+            if (!hasCode) return true;
+            const key = normalizeCodeSuggestionText(node.text);
+            if (!key) return true;
+            const style = extractCodeSuggestionStyle(node.marks);
+            latestStyles.set(key, style);
+            return true;
+          });
+
+          latestStyles.forEach((style, key) => {
+            const existing = nextStyles[key];
+            if (!existing || !codeSuggestionStylesEqual(existing, style)) {
+              nextStyles[key] = style;
+              stylesChanged = true;
+            }
+          });
+
+          let tr = newState.tr;
+          let modified = false;
+
+          newState.doc.descendants((node, pos) => {
+            if (!node.isText || !node.text) return true;
+            const hasCode = node.marks.some(mark => mark.type.name === 'code');
+            if (!hasCode) return true;
+            const key = normalizeCodeSuggestionText(node.text);
+            if (!key) return true;
+            const desired = nextStyles[key];
+            if (!desired) return true;
+
+            const current = extractCodeSuggestionStyle(node.marks);
+            if (codeSuggestionStylesEqual(desired, current)) return true;
+
+            const end = pos + node.nodeSize;
+            const { schema } = newState;
+
+            if (schema.marks.bold) {
+              tr.removeMark(pos, end, schema.marks.bold);
+            }
+            if (schema.marks.italic) {
+              tr.removeMark(pos, end, schema.marks.italic);
+            }
+            if (schema.marks.textStyle) {
+              tr.removeMark(pos, end, schema.marks.textStyle);
+            }
+
+            if (desired.bold && schema.marks.bold) {
+              tr.addMark(pos, end, schema.marks.bold.create());
+            }
+            if (desired.italic && schema.marks.italic) {
+              tr.addMark(pos, end, schema.marks.italic.create());
+            }
+            if (desired.color && schema.marks.textStyle) {
+              tr.addMark(pos, end, schema.marks.textStyle.create({ color: desired.color }));
+            }
+
+            modified = true;
+            return true;
+          });
+
+          if (stylesChanged) {
+            saveCodeSuggestionStyles(nextStyles);
+          }
+
+          return modified ? tr : null;
+        },
+      }),
       Suggestion({
         editor: this.editor,
         ...this.options.suggestion,
@@ -2098,7 +2329,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         }
         return false;
       },
-      handleDrop: (view, event, slice, moved) => {
+      handleDrop: (view, event) => {
         if (!event || !(event instanceof DragEvent)) return false;
         const coords = view.posAtCoords({ left: event.clientX, top: event.clientY });
         if (!coords) return false;
@@ -2108,46 +2339,15 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           event.preventDefault();
           return true;
         }
-        const originInDetails = hasAncestorNode(view.state.selection.$from, 'details');
-        if (!originInDetails) return false;
+        const selection = view.state.selection;
+        const originIsDetailsNode = selection instanceof NodeSelection && selection.node.type.name === 'details';
+        const originInDetails = originIsDetailsNode || hasAncestorNode(view.state.selection.$from, 'details');
         const targetInDetails = hasAncestorNode(view.state.doc.resolve(coords.pos), 'details');
-        if (targetInDetails) return false;
-        let changed = false;
-        const nodes: PMNode[] = [];
-        slice.content.forEach((node) => {
-          if (node.type.name === 'details') {
-            const detailsContent = node.content.content.find(child => child.type.name === 'detailsContent');
-            if (!detailsContent) {
-              nodes.push(node);
-              return;
-            }
-            detailsContent.content.forEach(child => {
-              nodes.push(child);
-            });
-            changed = true;
-            return;
-          }
-
-          if (node.type.name === 'detailsContent') {
-            node.content.forEach(child => {
-              nodes.push(child);
-            });
-            changed = true;
-            return;
-          }
-
-          nodes.push(node);
-        });
-
-        if (!changed) return false;
-        const tr = view.state.tr;
-        if (moved) {
-          tr.deleteSelection();
+        if (originInDetails || targetInDetails) {
+          event.preventDefault();
+          return true;
         }
-        const insertPos = tr.mapping.map(coords.pos);
-        tr.replaceRange(insertPos, insertPos, new Slice(Fragment.fromArray(nodes), 0, 0));
-        view.dispatch(tr.scrollIntoView());
-        return true;
+        return false;
       },
     },
     onUpdate: ({ editor }) => {
@@ -2171,6 +2371,40 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       }
     },
   });
+
+  const copyBlockHtmlAtPos = React.useCallback((pos: number) => {
+    if (!editor) return;
+    try {
+      const node = editor.state.doc.nodeAt(pos);
+      if (!node) return;
+      const slice = editor.state.doc.slice(pos, pos + node.nodeSize);
+      const serializer = DOMSerializer.fromSchema(editor.state.schema);
+      const fragment = serializer.serializeFragment(slice.content);
+      const tmp = document.createElement('div');
+      tmp.appendChild(fragment);
+      const html = tmp.innerHTML.trim();
+      if (!html) return;
+      const text = (tmp.textContent || '').trim();
+      const write = async () => {
+        if (navigator.clipboard && typeof (navigator.clipboard as any).write === 'function' && typeof (window as any).ClipboardItem === 'function') {
+          const item = new (window as any).ClipboardItem({
+            'text/html': new Blob([html], { type: 'text/html' }),
+            'text/plain': new Blob([text || html], { type: 'text/plain' })
+          });
+          await (navigator.clipboard as any).write([item]);
+        } else if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+          await navigator.clipboard.writeText(text || html);
+        }
+      };
+      write().then(() => {
+        document.dispatchEvent(new CustomEvent('copyToast', {
+          detail: { message: 'Contenu copié' }
+        }));
+      });
+    } catch (err) {
+      // ignore
+    }
+  }, [editor]);
 
   React.useEffect(() => {
     if (!editor) return;
@@ -2423,6 +2657,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
 
   const moveBlockNode = (fromPos: number, targetPos: number, placeAfter: boolean) => {
     if (!editor) return;
+    if (isDetailsDragBlocked(fromPos) || isDetailsDragBlocked(targetPos)) return;
     const node = editor.state.doc.nodeAt(fromPos);
     const targetNode = editor.state.doc.nodeAt(targetPos);
     if (!node || !targetNode) return;
@@ -2455,6 +2690,14 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       editor.view.dispatch(tr);
     }
   };
+
+  const isDetailsDragBlocked = React.useCallback((pos: number) => {
+    if (!editor) return false;
+    const node = editor.state.doc.nodeAt(pos);
+    if (node?.type.name === 'details') return true;
+    const $pos = editor.state.doc.resolve(pos);
+    return hasAncestorNode($pos, 'details');
+  }, [editor]);
 
   const getBlockTargetFromCoords = (x: number, y: number) => {
     if (!editor) return null;
@@ -2625,7 +2868,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         setBlockDragState(prev => (prev ? { ...prev, x: e.clientX, y: e.clientY } : prev));
         maybeAutoScroll(e.clientY);
         const target = getBlockTargetFromCoords(e.clientX, e.clientY);
-        if (target) {
+        if (target && !isDetailsDragBlocked(blockDragState.pos) && !isDetailsDragBlocked(target.pos)) {
           const rect = getBlockRectForPos(target.pos, target.node);
           if (rect) {
             const placeAfter = e.clientY > rect.top + rect.height / 2;
@@ -2647,7 +2890,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     const handleGlobalMouseUp = (e: MouseEvent) => {
       if (blockDragState && editor) {
         const target = getBlockTargetFromCoords(e.clientX, e.clientY);
-        if (target) {
+        if (target && !isDetailsDragBlocked(blockDragState.pos) && !isDetailsDragBlocked(target.pos)) {
           const rect = getBlockRectForPos(target.pos, target.node);
           const placeAfter = rect ? e.clientY > rect.top + rect.height / 2 : true;
           if (target.pos !== blockDragState.pos) {
@@ -3056,9 +3299,11 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
 
         // Custom rule for Mermaid diagrams
         turndown.addRule('mermaid-diagram', {
-          filter: 'mermaid-diagram',
+          filter: function (node: HTMLElement) {
+            return node.nodeName === 'MERMAID-DIAGRAM' || node.tagName === 'MERMAID-DIAGRAM' || node.nodeName === 'mermaid-diagram';
+          },
           replacement: function (_content: string, node: any) {
-            const code = node.getAttribute('code') || '';
+            const code = node.getAttribute('code') || node.getAttribute('data-code') || '';
             return '\n\n```mermaid\n' + code.trim() + '\n```\n\n';
           }
         });
@@ -3115,7 +3360,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
             // 1. Handle Mermaid diagrams
             const diagrams = doc.querySelectorAll('mermaid-diagram');
             diagrams.forEach(diag => {
-              const code = diag.getAttribute('code') || '';
+              const code = diag.getAttribute('code') || diag.getAttribute('data-code') || '';
               const pre = doc.createElement('pre');
               const codeElement = doc.createElement('code');
               codeElement.className = 'language-mermaid';
@@ -3190,78 +3435,86 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         }
       };
 
+      const convertEditorMarkdownToHtml = (markdown: string) => {
+        if (typeof markdown !== 'string') return '';
+
+        // Pre-process newer alert format: >note, >alerte, etc. (case insensitive)
+        const shortAlertRegex = /^>(note|alerte|warning|important|conseil|tip|attention|caution|remarque)\s(.*)$/gmi;
+        const markdownWithShortAlerts = markdown.replace(shortAlertRegex, (_match, type, content) => {
+          const typeMap: any = {
+            'note': 'NOTE',
+            'alerte': 'WARNING',
+            'warning': 'WARNING',
+            'important': 'IMPORTANT',
+            'conseil': 'TIP',
+            'tip': 'TIP',
+            'attention': 'CAUTION',
+            'caution': 'CAUTION',
+            'remarque': 'default'
+          };
+          return `<blockquote data-type="${typeMap[type.toLowerCase()] || 'NOTE'}">${content}</blockquote>`;
+        });
+
+        // Pre-process GitHub style alerts: > [!NOTE] Custom Title -> <blockquote data-type="NOTE" data-title="Custom Title">
+        const alertRegex = /^> ?\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION|ALERTE|ATTENTION)(?:\s+(.*))?\]\s*\n((?:>.*\n?)*)/gmi;
+        const markdownWithAlerts = markdownWithShortAlerts.replace(alertRegex, (_match, type, title, content) => {
+          const typeMap: any = {
+            'NOTE': 'NOTE',
+            'TIP': 'TIP',
+            'IMPORTANT': 'IMPORTANT',
+            'WARNING': 'WARNING',
+            'ALERTE': 'WARNING',
+            'CAUTION': 'CAUTION',
+            'ATTENTION': 'CAUTION',
+          };
+          const normalizedType = typeMap[type.toUpperCase()] || 'NOTE';
+          const cleanContent = content.replace(/^> ?/gm, '').trim();
+          const titleAttr = title ? ` data-title="${title.trim()}"` : '';
+          return `<blockquote data-type="${normalizedType}"${titleAttr}>${cleanContent}</blockquote>`;
+        });
+
+        // Convert == markers to <mark> HTML before parsing
+        const markdownWithHighlight = markdownWithAlerts.replace(
+          /==(.*?)==/g,
+          '<mark>$1</mark>'
+        );
+
+        // Pre-process mermaid code blocks to mermaid-diagram tags
+        const mermaidRegex = /```mermaid\n([\s\S]*?)\n```/g;
+        const processedMarkdown = markdownWithHighlight.replace(mermaidRegex, (_match, code) => {
+          const escapedCode = code.trim()
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+          return `<mermaid-diagram code="${escapedCode}"></mermaid-diagram>`;
+        });
+
+        const html = marked.parse(processedMarkdown, { gfm: true }) as string;
+
+        // Post-process to ensure Tiptap Details structure: <details><summary>...</summary><div data-type="details-content">...</div></details>
+        const finalHtml = html.replace(/<details>([\s\S]*?)<\/details>/g, (match, inner) => {
+          if (inner.includes('data-type="details-content"') || inner.includes('class="details-content"')) {
+            return match;
+          }
+          // Find the summary
+          const summaryMatch = inner.match(/<summary>([\s\S]*?)<\/summary>/);
+          if (summaryMatch) {
+            const summary = summaryMatch[0];
+            const content = inner.replace(summary, '').trim();
+            return `<details>${summary}<div data-type="details-content">${content}</div></details>`;
+          }
+          return match;
+        });
+
+        return finalHtml;
+      };
+
       (window as any).setEditorMarkdown = (markdown: string) => {
         if (typeof markdown !== 'string') return;
         try {
-          // Pre-process newer alert format: >note, >alerte, etc. (case insensitive)
-          const shortAlertRegex = /^>(note|alerte|warning|important|conseil|tip|attention|caution|remarque)\s(.*)$/gmi;
-          const markdownWithShortAlerts = markdown.replace(shortAlertRegex, (_match, type, content) => {
-            const typeMap: any = {
-              'note': 'NOTE',
-              'alerte': 'WARNING',
-              'warning': 'WARNING',
-              'important': 'IMPORTANT',
-              'conseil': 'TIP',
-              'tip': 'TIP',
-              'attention': 'CAUTION',
-              'caution': 'CAUTION',
-              'remarque': 'default'
-            };
-            return `<blockquote data-type="${typeMap[type.toLowerCase()] || 'NOTE'}">${content}</blockquote>`;
-          });
-
-          // Pre-process GitHub style alerts: > [!NOTE] Custom Title -> <blockquote data-type="NOTE" data-title="Custom Title">
-          const alertRegex = /^> ?\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION|ALERTE|ATTENTION)(?:\s+(.*))?\]\s*\n((?:>.*\n?)*)/gmi;
-          const markdownWithAlerts = markdownWithShortAlerts.replace(alertRegex, (_match, type, title, content) => {
-            const typeMap: any = {
-              'NOTE': 'NOTE',
-              'TIP': 'TIP',
-              'IMPORTANT': 'IMPORTANT',
-              'WARNING': 'WARNING',
-              'ALERTE': 'WARNING',
-              'CAUTION': 'CAUTION',
-              'ATTENTION': 'CAUTION',
-            };
-            const normalizedType = typeMap[type.toUpperCase()] || 'NOTE';
-            const cleanContent = content.replace(/^> ?/gm, '').trim();
-            const titleAttr = title ? ` data-title="${title.trim()}"` : '';
-            return `<blockquote data-type="${normalizedType}"${titleAttr}>${cleanContent}</blockquote>`;
-          });
-
-          // Convert == markers to <mark> HTML before parsing
-          const markdownWithHighlight = markdownWithAlerts.replace(
-            /==(.*?)==/g,
-            '<mark>$1</mark>'
-          );
-          
-          // Pre-process mermaid code blocks to mermaid-diagram tags
-          const mermaidRegex = /```mermaid\n([\s\S]*?)\n```/g;
-          const processedMarkdown = markdownWithHighlight.replace(mermaidRegex, (_match, code) => {
-            const escapedCode = code.trim()
-              .replace(/&/g, '&amp;')
-              .replace(/</g, '&lt;')
-              .replace(/>/g, '&gt;')
-              .replace(/"/g, '&quot;')
-              .replace(/'/g, '&#039;');
-            return `<mermaid-diagram code="${escapedCode}"></mermaid-diagram>`;
-          });
-
-          const html = marked.parse(processedMarkdown, { gfm: true }) as string;
-          
-          // Post-process to ensure Tiptap Details structure: <details><summary>...</summary><div data-type="details-content">...</div></details>
-          const finalHtml = html.replace(/<details>([\s\S]*?)<\/details>/g, (match, inner) => {
-            if (inner.includes('data-type="details-content"') || inner.includes('class="details-content"')) {
-              return match;
-            }
-            // Find the summary
-            const summaryMatch = inner.match(/<summary>([\s\S]*?)<\/summary>/);
-            if (summaryMatch) {
-              const summary = summaryMatch[0];
-              const content = inner.replace(summary, '').trim();
-              return `<details>${summary}<div data-type="details-content">${content}</div></details>`;
-            }
-            return match;
-          });
+          const finalHtml = convertEditorMarkdownToHtml(markdown);
 
           if ((editor as any)?.commands?.clearContent) {
             (editor as any).commands.clearContent();
@@ -3274,78 +3527,25 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         }
       };
 
+      (window as any).insertEditorMarkdownAtRange = (markdown: string, range: { from: number; to: number }) => {
+        if (typeof markdown !== 'string' || !range) return;
+        try {
+          const from = Number(range.from);
+          const to = Number(range.to);
+          if (!Number.isFinite(from) || !Number.isFinite(to)) return;
+          const finalHtml = convertEditorMarkdownToHtml(markdown);
+          if (editor) {
+            editor.chain().focus().insertContentAt({ from, to }, finalHtml).run();
+          }
+        } catch (err) {
+          console.warn('insertEditorMarkdownAtRange failed', err);
+        }
+      };
+
       (window as any).insertEditorMarkdownAtEnd = (markdown: string) => {
         if (typeof markdown !== 'string') return;
         try {
-          // Pre-process newer alert format: >note, >alerte, etc. (case insensitive)
-          const shortAlertRegex = /^>(note|alerte|warning|important|conseil|tip|attention|caution|remarque)\s(.*)$/gmi;
-          const markdownWithShortAlerts = markdown.replace(shortAlertRegex, (_match, type, content) => {
-            const typeMap: any = {
-              'note': 'NOTE',
-              'alerte': 'WARNING',
-              'warning': 'WARNING',
-              'important': 'IMPORTANT',
-              'conseil': 'TIP',
-              'tip': 'TIP',
-              'attention': 'CAUTION',
-              'caution': 'CAUTION',
-              'remarque': 'default'
-            };
-            return `<blockquote data-type="${typeMap[type.toLowerCase()] || 'NOTE'}">${content}</blockquote>`;
-          });
-
-          // Pre-process GitHub style alerts: > [!NOTE] Custom Title -> <blockquote data-type="NOTE" data-title="Custom Title">
-          const alertRegex = /^> ?\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION|ALERTE|ATTENTION)(?:\s+(.*))?\]\s*\n((?:>.*\n?)*)/gmi;
-          const markdownWithAlerts = markdownWithShortAlerts.replace(alertRegex, (_match, type, title, content) => {
-            const typeMap: any = {
-              'NOTE': 'NOTE',
-              'TIP': 'TIP',
-              'IMPORTANT': 'IMPORTANT',
-              'WARNING': 'WARNING',
-              'ALERTE': 'WARNING',
-              'CAUTION': 'CAUTION',
-              'ATTENTION': 'CAUTION',
-            };
-            const normalizedType = typeMap[type.toUpperCase()] || 'NOTE';
-            const cleanContent = content.replace(/^> ?/gm, '').trim();
-            const titleAttr = title ? ` data-title="${title.trim()}"` : '';
-            return `<blockquote data-type="${normalizedType}"${titleAttr}>${cleanContent}</blockquote>`;
-          });
-
-          // Convert == markers to <mark> HTML before parsing
-          const markdownWithHighlight = markdownWithAlerts.replace(
-            /==(.*?)==/g,
-            '<mark>$1</mark>'
-          );
-          
-          // Pre-process mermaid code blocks to mermaid-diagram tags
-          const mermaidRegex = /```mermaid\n([\s\S]*?)\n```/g;
-          const processedMarkdown = markdownWithHighlight.replace(mermaidRegex, (_match, code) => {
-            const escapedCode = code.trim()
-              .replace(/&/g, '&amp;')
-              .replace(/</g, '&lt;')
-              .replace(/>/g, '&gt;')
-              .replace(/"/g, '&quot;')
-              .replace(/'/g, '&#039;');
-            return `<mermaid-diagram code="${escapedCode}"></mermaid-diagram>`;
-          });
-
-          const html = marked.parse(processedMarkdown, { gfm: true }) as string;
-          
-          // Post-process to ensure Tiptap Details structure: <details><summary>...</summary><div data-type="details-content">...</div></details>
-          const finalHtml = html.replace(/<details>([\s\S]*?)<\/details>/g, (match, inner) => {
-            if (inner.includes('data-type="details-content"') || inner.includes('class="details-content"')) {
-              return match;
-            }
-            // Find the summary
-            const summaryMatch = inner.match(/<summary>([\s\S]*?)<\/summary>/);
-            if (summaryMatch) {
-              const summary = summaryMatch[0];
-              const content = inner.replace(summary, '').trim();
-              return `<details>${summary}<div data-type="details-content">${content}</div></details>`;
-            }
-            return match;
-          });
+          const finalHtml = convertEditorMarkdownToHtml(markdown);
 
           if (editor) {
             editor.chain().focus().insertContentAt(editor.state.doc.content.size, (editor.isEmpty ? '' : '\n\n') + finalHtml).run();
@@ -3488,6 +3688,11 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
             const coordsEnd = editor.view.coordsAtPos(blockTo, -1);
             
             // Stocker les données pour "Assist" au lieu d'émettre
+            let finalExcerpt = blockText.substring(0, 100) + (blockText.length > 100 ? '…' : '');
+            if (!finalExcerpt.trim() && nodeType === 'mermaidDiagram') {
+              finalExcerpt = 'Diagramme Mermaid';
+            }
+
             setSelectionData({
               isSelected: true,
               nodeType: nodeType,
@@ -3495,7 +3700,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
               selectionMarkdown: selectionMarkdown,
               blockText: blockText,
               blockMarkdown: blockMarkdown,
-              selectionExcerpt: blockText.substring(0, 100) + (blockText.length > 100 ? '…' : ''),
+              selectionExcerpt: finalExcerpt,
               positionFrom: blockFrom,
               positionTo: blockTo,
               coords: {
@@ -3603,6 +3808,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           onMouseDown={(e) => {
             e.preventDefault();
             if (rowHandle.rowIndex === 0) {
+              if (isDetailsDragBlocked(rowHandle.tablePos)) return;
               const node = editor.state.doc.nodeAt(rowHandle.tablePos);
               if (!node) return;
               setBlockDragPending({
@@ -3657,15 +3863,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
               style={{ position: 'static', opacity: 1 }}
               onClick={(e) => {
               e.stopPropagation();
-              const node = editor.state.doc.nodeAt(blockDeleteHandle.pos);
-              if (node) {
-                const text = node.textContent;
-                navigator.clipboard.writeText(text).then(() => {
-                  document.dispatchEvent(new CustomEvent('copyToast', { 
-                    detail: { message: 'Texte copié' } 
-                  }));
-                });
-              }
+              copyBlockHtmlAtPos(blockDeleteHandle.pos);
             }}
             title="Copier le contenu"
           >
@@ -3752,14 +3950,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
               style={{ position: 'static', opacity: 1 }}
               onClick={(e) => {
                 e.stopPropagation();
-                const node = editor.state.doc.nodeAt(blockDeleteHandle.pos);
-                if (node && node.attrs.code) {
-                  navigator.clipboard.writeText(node.attrs.code).then(() => {
-                    document.dispatchEvent(new CustomEvent('copyToast', { 
-                      detail: { message: 'Texte copié' } 
-                    }));
-                  });
-                }
+                copyBlockHtmlAtPos(blockDeleteHandle.pos);
               }}
               title="Copier"
             >
@@ -3879,6 +4070,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           className="table-handle quote-handle"
           style={{ top: quoteHandle.top, left: quoteHandle.left }}
           onMouseDown={(e) => {
+            if (isDetailsDragBlocked(quoteHandle.pos)) return;
             const node = editor.state.doc.nodeAt(quoteHandle.pos);
             if (!node) return;
             setBlockDragPending({
@@ -3907,6 +4099,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           className="table-handle details-handle"
           style={{ top: detailsHandle.top, left: detailsHandle.left }}
           onMouseDown={(e) => {
+            if (isDetailsDragBlocked(detailsHandle.pos)) return;
             const node = editor.state.doc.nodeAt(detailsHandle.pos);
             if (!node) return;
             setBlockDragPending({
@@ -3935,6 +4128,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           className="table-handle code-handle"
           style={{ top: codeHandle.top, left: codeHandle.left }}
           onMouseDown={(e) => {
+            if (isDetailsDragBlocked(codeHandle.pos)) return;
             const node = editor.state.doc.nodeAt(codeHandle.pos);
             if (!node) return;
             setBlockDragPending({
@@ -3956,6 +4150,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           className="table-handle mermaid-handle"
           style={{ top: handle.top, left: handle.left }}
           onMouseDown={(e) => {
+            if (isDetailsDragBlocked(handle.pos)) return;
             const node = editor.state.doc.nodeAt(handle.pos);
             if (!node) return;
             setBlockDragPending({

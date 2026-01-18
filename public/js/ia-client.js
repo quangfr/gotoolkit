@@ -616,6 +616,46 @@
         }
     }
 
+    function recordAIRequest(payload) {
+        try {
+            global.localStorage.setItem("goToolkit.chat.lastAIRequest", JSON.stringify({
+                timestamp: new Date().toISOString(),
+                payload: payload
+            }));
+        } catch (err) {
+            // noop
+        }
+    }
+
+    function recordAIResponse(result) {
+        try {
+            global.localStorage.setItem("goToolkit.chat.lastAIResponse", JSON.stringify({
+                timestamp: new Date().toISOString(),
+                payload: result
+            }));
+        } catch (err) {
+            // noop
+        }
+    }
+
+    function getLastAIRequest() {
+        try {
+            const stored = global.localStorage.getItem("goToolkit.chat.lastAIRequest");
+            return stored ? JSON.parse(stored) : null;
+        } catch (err) {
+            return null;
+        }
+    }
+
+    function getLastAIResponse() {
+        try {
+            const stored = global.localStorage.getItem("goToolkit.chat.lastAIResponse");
+            return stored ? JSON.parse(stored) : null;
+        } catch (err) {
+            return null;
+        }
+    }
+
     async function executeWithBackend(backend, payload, stopCondition, signal, endpointType, onChunk) {
         const initial = { ...(payload || {}) };
         if (!initial.model && backend?.model) {
@@ -679,10 +719,14 @@
 
     async function autoChatCompletion({ payload, stopCondition, signal, endpointType = "responses", onChunk } = {}) {
         const backendProvider = global.GoToolkitAIBackend;
+
+        // Record the request
+        recordAIRequest(payload);
+
         if (!backendProvider || typeof backendProvider.getBackend !== "function") {
             const fallbackEndpoint =
                 global.GoToolkitIAConfig?.PROXY_ENDPOINTS?.responses || "https://openai.gotoolkit.workers.dev/v1/responses";
-            return chatCompletion({
+            const result = await chatCompletion({
                 endpoint: fallbackEndpoint,
                 apiKey: "",
                 payload: payload || {},
@@ -690,9 +734,13 @@
                 signal,
                 onChunk
             });
+            recordAIResponse(result);
+            return result;
         }
         const backend = await backendProvider.getBackend(endpointType);
-        return executeWithBackend(backend, payload, stopCondition, signal, endpointType, onChunk);
+        const result = await executeWithBackend(backend, payload, stopCondition, signal, endpointType, onChunk);
+        recordAIResponse(result);
+        return result;
     }
 
     global.GoToolkitIAClient = {
@@ -704,6 +752,12 @@
     global.GoToolkitOpenAI = global.GoToolkitIAClient;
 
     global.GoToolkitIA = {
-        chatCompletion: autoChatCompletion
+        chatCompletion: autoChatCompletion,
+        getLastAIRequest,
+        getLastAIResponse
     };
+
+    // Expose getters to global for direct access (e.g. from memo.html)
+    global.getLastAIRequest = getLastAIRequest;
+    global.getLastAIResponse = getLastAIResponse;
 })(window);

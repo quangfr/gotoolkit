@@ -32521,7 +32521,7 @@ ${promptInput.trim()}`
           ] })
         ] })
       ] }) }),
-      showToast && /* @__PURE__ */ jsx("div", { className: "mermaid-toast", children: "Texte copi\xE9" })
+      showToast && /* @__PURE__ */ jsx("div", { className: "mermaid-toast", children: "Contenu copier" })
     ] });
   };
   var MermaidNode = Node3.create({
@@ -33224,9 +33224,8 @@ ${promptInput.trim()}`
         return;
       }
       const { from: from2, to } = editor.state.selection;
-      if (from2 === to || editor.isActive("mermaidDiagram")) {
+      if (from2 === to) {
         setPosition((prev) => ({ ...prev, opacity: 0 }));
-        setShowTextColors(false);
         setShowTextColors(false);
         return;
       }
@@ -34203,7 +34202,6 @@ ${promptInput.trim()}`
                 width: "100%",
                 textAlign: "left",
                 padding: "6px 8px",
-                background: index === selectedIndex ? "var(--bg-surface)" : "transparent",
                 border: "none",
                 cursor: "pointer",
                 borderRadius: "4px",
@@ -34213,7 +34211,7 @@ ${promptInput.trim()}`
                 fontWeight: isBold ? 700 : 400,
                 fontStyle: isItalic ? "italic" : "normal",
                 textDecoration: `${isUnderline ? "underline" : ""}${isStrike ? " line-through" : ""}`.trim() || "none",
-                backgroundColor: isHighlight ? ((_d = (_c = marks.find((mark) => mark.type === "highlight")) == null ? void 0 : _c.attrs) == null ? void 0 : _d.color) || "var(--bg-surface)" : void 0
+                backgroundColor: isHighlight ? ((_d = (_c = marks.find((mark) => mark.type === "highlight")) == null ? void 0 : _c.attrs) == null ? void 0 : _d.color) || "var(--bg-surface)" : index === selectedIndex ? "var(--bg-surface)" : "var(--bg-surface-soft)"
               },
               children: label
             },
@@ -34224,6 +34222,67 @@ ${promptInput.trim()}`
     );
   });
   var CODE_SUGGESTION_USAGE_KEY = "go-toolkit-code-suggestion-usage";
+  var CODE_SUGGESTION_STYLE_KEY = "go-toolkit-code-suggestion-styles";
+  var loadCodeSuggestionStyles = () => {
+    try {
+      const raw = localStorage.getItem(CODE_SUGGESTION_STYLE_KEY);
+      if (!raw) return {};
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch (err) {
+      return {};
+    }
+  };
+  var saveCodeSuggestionStyles = (styles) => {
+    try {
+      localStorage.setItem(CODE_SUGGESTION_STYLE_KEY, JSON.stringify(styles));
+    } catch (err) {
+    }
+  };
+  var normalizeCodeSuggestionText = (text) => (text || "").trim();
+  var extractCodeSuggestionStyle = (marks) => {
+    var _a;
+    const hasType = (type2) => marks.some((mark) => {
+      var _a2;
+      return (((_a2 = mark.type) == null ? void 0 : _a2.name) || mark.type) === type2;
+    });
+    const colorMark = marks.find((mark) => {
+      var _a2;
+      return (((_a2 = mark.type) == null ? void 0 : _a2.name) || mark.type) === "textStyle";
+    });
+    const color = (_a = colorMark == null ? void 0 : colorMark.attrs) == null ? void 0 : _a.color;
+    return {
+      bold: hasType("bold"),
+      italic: hasType("italic"),
+      color: color || void 0
+    };
+  };
+  var codeSuggestionStylesEqual = (a, b) => {
+    const normalizedA = {
+      bold: !!(a == null ? void 0 : a.bold),
+      italic: !!(a == null ? void 0 : a.italic),
+      color: (a == null ? void 0 : a.color) || ""
+    };
+    const normalizedB = {
+      bold: !!(b == null ? void 0 : b.bold),
+      italic: !!(b == null ? void 0 : b.italic),
+      color: (b == null ? void 0 : b.color) || ""
+    };
+    return normalizedA.bold === normalizedB.bold && normalizedA.italic === normalizedB.italic && normalizedA.color === normalizedB.color;
+  };
+  var buildMarksFromCodeSuggestionStyle = (style2) => {
+    const marks = [];
+    if (style2 == null ? void 0 : style2.bold) {
+      marks.push({ type: "bold" });
+    }
+    if (style2 == null ? void 0 : style2.italic) {
+      marks.push({ type: "italic" });
+    }
+    if (style2 == null ? void 0 : style2.color) {
+      marks.push({ type: "textStyle", attrs: { color: style2.color } });
+    }
+    return marks;
+  };
   var loadCodeSuggestionUsage = () => {
     try {
       const raw = localStorage.getItem(CODE_SUGGESTION_USAGE_KEY);
@@ -34247,20 +34306,20 @@ ${promptInput.trim()}`
   var codeSuggestion = {
     items: ({ editor, query }) => {
       const snippets = /* @__PURE__ */ new Map();
+      const styles = loadCodeSuggestionStyles();
       editor.state.doc.descendants((node) => {
         if (node.isText) {
           const codeMark = node.marks.find((m) => m.type.name === "code");
           if (codeMark && node.text) {
-            const trimmed = node.text.trim();
+            const trimmed = normalizeCodeSuggestionText(node.text);
             if (!trimmed) return true;
-            const marks = node.marks.map((mark) => ({
-              type: mark.type.name,
-              attrs: mark.attrs || {}
-            }));
-            const signature = JSON.stringify(marks);
-            const key = `${trimmed}::${signature}`;
-            if (!snippets.has(key)) {
-              snippets.set(key, { text: trimmed, marks });
+            if (!snippets.has(trimmed)) {
+              const storedStyle = styles[trimmed];
+              const marks = storedStyle ? buildMarksFromCodeSuggestionStyle(storedStyle) : node.marks.map((mark) => ({
+                type: mark.type.name,
+                attrs: mark.attrs || {}
+              }));
+              snippets.set(trimmed, { text: trimmed, marks });
             }
           }
         }
@@ -34347,6 +34406,7 @@ ${promptInput.trim()}`
             const suggestionMarks = Array.isArray(props.marks) ? props.marks : [];
             const marksMap = /* @__PURE__ */ new Map();
             const normalizeType = (type2) => typeof type2 === "string" ? type2 : type2 == null ? void 0 : type2.name;
+            const isStyleMarkType = (type2) => type2 === "bold" || type2 === "italic" || type2 === "textStyle";
             const addMark2 = (mark) => {
               const key = normalizeType(mark.type);
               if (!key) return;
@@ -34358,7 +34418,11 @@ ${promptInput.trim()}`
             };
             addMark2({ type: "code" });
             suggestionMarks.forEach((mark) => addMark2(mark));
-            storedMarks.forEach((mark) => addMark2({ type: mark.type, attrs: mark.attrs }));
+            storedMarks.forEach((mark) => {
+              const key = normalizeType(mark.type);
+              if (key && isStyleMarkType(key)) return;
+              addMark2({ type: mark.type, attrs: mark.attrs });
+            });
             if (activeColor && !suggestionMarks.some((mark) => normalizeType(mark.type) === "textStyle")) {
               marksMap.set("textStyle", { type: "textStyle", attrs: { color: activeColor } });
             }
@@ -34387,6 +34451,74 @@ ${promptInput.trim()}`
     },
     addProseMirrorPlugins() {
       return [
+        new Plugin({
+          key: new PluginKey("codeSuggestionStyleSync"),
+          appendTransaction: (transactions, _oldState, newState) => {
+            if (!transactions.some((transaction) => transaction.docChanged)) {
+              return null;
+            }
+            const storedStyles = loadCodeSuggestionStyles();
+            const nextStyles = { ...storedStyles };
+            let stylesChanged = false;
+            const latestStyles = /* @__PURE__ */ new Map();
+            newState.doc.descendants((node) => {
+              if (!node.isText || !node.text) return true;
+              const hasCode = node.marks.some((mark) => mark.type.name === "code");
+              if (!hasCode) return true;
+              const key = normalizeCodeSuggestionText(node.text);
+              if (!key) return true;
+              const style2 = extractCodeSuggestionStyle(node.marks);
+              latestStyles.set(key, style2);
+              return true;
+            });
+            latestStyles.forEach((style2, key) => {
+              const existing = nextStyles[key];
+              if (!existing || !codeSuggestionStylesEqual(existing, style2)) {
+                nextStyles[key] = style2;
+                stylesChanged = true;
+              }
+            });
+            let tr2 = newState.tr;
+            let modified = false;
+            newState.doc.descendants((node, pos) => {
+              if (!node.isText || !node.text) return true;
+              const hasCode = node.marks.some((mark) => mark.type.name === "code");
+              if (!hasCode) return true;
+              const key = normalizeCodeSuggestionText(node.text);
+              if (!key) return true;
+              const desired = nextStyles[key];
+              if (!desired) return true;
+              const current = extractCodeSuggestionStyle(node.marks);
+              if (codeSuggestionStylesEqual(desired, current)) return true;
+              const end = pos + node.nodeSize;
+              const { schema } = newState;
+              if (schema.marks.bold) {
+                tr2.removeMark(pos, end, schema.marks.bold);
+              }
+              if (schema.marks.italic) {
+                tr2.removeMark(pos, end, schema.marks.italic);
+              }
+              if (schema.marks.textStyle) {
+                tr2.removeMark(pos, end, schema.marks.textStyle);
+              }
+              if (desired.bold && schema.marks.bold) {
+                tr2.addMark(pos, end, schema.marks.bold.create());
+              }
+              if (desired.italic && schema.marks.italic) {
+                tr2.addMark(pos, end, schema.marks.italic.create());
+              }
+              if (desired.color && schema.marks.textStyle) {
+                tr2.addMark(pos, end, schema.marks.textStyle.create({ color: desired.color }));
+              }
+              modified = true;
+              return true;
+            });
+            if (stylesChanged) {
+              saveCodeSuggestionStyles(nextStyles);
+            }
+            return modified ? tr2 : null;
+          }
+        }),
         Suggestion({
           editor: this.editor,
           ...this.options.suggestion,
@@ -34551,7 +34683,7 @@ ${promptInput.trim()}`
           }
           return false;
         },
-        handleDrop: (view, event, slice2, moved) => {
+        handleDrop: (view, event) => {
           if (!event || !(event instanceof DragEvent)) return false;
           const coords = view.posAtCoords({ left: event.clientX, top: event.clientY });
           if (!coords) return false;
@@ -34561,43 +34693,15 @@ ${promptInput.trim()}`
             event.preventDefault();
             return true;
           }
-          const originInDetails = hasAncestorNode(view.state.selection.$from, "details");
-          if (!originInDetails) return false;
+          const selection = view.state.selection;
+          const originIsDetailsNode = selection instanceof NodeSelection && selection.node.type.name === "details";
+          const originInDetails = originIsDetailsNode || hasAncestorNode(view.state.selection.$from, "details");
           const targetInDetails = hasAncestorNode(view.state.doc.resolve(coords.pos), "details");
-          if (targetInDetails) return false;
-          let changed = false;
-          const nodes = [];
-          slice2.content.forEach((node) => {
-            if (node.type.name === "details") {
-              const detailsContent = node.content.content.find((child) => child.type.name === "detailsContent");
-              if (!detailsContent) {
-                nodes.push(node);
-                return;
-              }
-              detailsContent.content.forEach((child) => {
-                nodes.push(child);
-              });
-              changed = true;
-              return;
-            }
-            if (node.type.name === "detailsContent") {
-              node.content.forEach((child) => {
-                nodes.push(child);
-              });
-              changed = true;
-              return;
-            }
-            nodes.push(node);
-          });
-          if (!changed) return false;
-          const tr2 = view.state.tr;
-          if (moved) {
-            tr2.deleteSelection();
+          if (originInDetails || targetInDetails) {
+            event.preventDefault();
+            return true;
           }
-          const insertPos = tr2.mapping.map(coords.pos);
-          tr2.replaceRange(insertPos, insertPos, new Slice(Fragment2.fromArray(nodes), 0, 0));
-          view.dispatch(tr2.scrollIntoView());
-          return true;
+          return false;
         }
       },
       onUpdate: ({ editor: editor2 }) => {
@@ -34619,6 +34723,38 @@ ${promptInput.trim()}`
         }
       }
     });
+    const copyBlockHtmlAtPos = react_shim_default.useCallback((pos) => {
+      if (!editor) return;
+      try {
+        const node = editor.state.doc.nodeAt(pos);
+        if (!node) return;
+        const slice2 = editor.state.doc.slice(pos, pos + node.nodeSize);
+        const serializer = DOMSerializer.fromSchema(editor.state.schema);
+        const fragment = serializer.serializeFragment(slice2.content);
+        const tmp = document.createElement("div");
+        tmp.appendChild(fragment);
+        const html2 = tmp.innerHTML.trim();
+        if (!html2) return;
+        const text = (tmp.textContent || "").trim();
+        const write = async () => {
+          if (navigator.clipboard && typeof navigator.clipboard.write === "function" && typeof window.ClipboardItem === "function") {
+            const item = new window.ClipboardItem({
+              "text/html": new Blob([html2], { type: "text/html" }),
+              "text/plain": new Blob([text || html2], { type: "text/plain" })
+            });
+            await navigator.clipboard.write([item]);
+          } else if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+            await navigator.clipboard.writeText(text || html2);
+          }
+        };
+        write().then(() => {
+          document.dispatchEvent(new CustomEvent("copyToast", {
+            detail: { message: "Contenu copier" }
+          }));
+        });
+      } catch (err) {
+      }
+    }, [editor]);
     react_shim_default.useEffect(() => {
       if (!editor) return;
       const syncTableWrappers = () => {
@@ -34835,6 +34971,7 @@ ${promptInput.trim()}`
     }, [dragState, blockDragState, dragGhost, editor]);
     const moveBlockNode = (fromPos, targetPos, placeAfter) => {
       if (!editor) return;
+      if (isDetailsDragBlocked(fromPos) || isDetailsDragBlocked(targetPos)) return;
       const node = editor.state.doc.nodeAt(fromPos);
       const targetNode = editor.state.doc.nodeAt(targetPos);
       if (!node || !targetNode) return;
@@ -34864,6 +35001,13 @@ ${promptInput.trim()}`
         editor.view.dispatch(tr2);
       }
     };
+    const isDetailsDragBlocked = react_shim_default.useCallback((pos) => {
+      if (!editor) return false;
+      const node = editor.state.doc.nodeAt(pos);
+      if ((node == null ? void 0 : node.type.name) === "details") return true;
+      const $pos = editor.state.doc.resolve(pos);
+      return hasAncestorNode($pos, "details");
+    }, [editor]);
     const getBlockTargetFromCoords = (x, y) => {
       if (!editor) return null;
       const coords = editor.view.posAtCoords({ left: x, top: y });
@@ -35024,7 +35168,7 @@ ${promptInput.trim()}`
           setBlockDragState((prev) => prev ? { ...prev, x: e.clientX, y: e.clientY } : prev);
           maybeAutoScroll(e.clientY);
           const target = getBlockTargetFromCoords(e.clientX, e.clientY);
-          if (target) {
+          if (target && !isDetailsDragBlocked(blockDragState.pos) && !isDetailsDragBlocked(target.pos)) {
             const rect = getBlockRectForPos(target.pos, target.node);
             if (rect) {
               const placeAfter = e.clientY > rect.top + rect.height / 2;
@@ -35045,7 +35189,7 @@ ${promptInput.trim()}`
       const handleGlobalMouseUp = (e) => {
         if (blockDragState && editor) {
           const target = getBlockTargetFromCoords(e.clientX, e.clientY);
-          if (target) {
+          if (target && !isDetailsDragBlocked(blockDragState.pos) && !isDetailsDragBlocked(target.pos)) {
             const rect = getBlockRectForPos(target.pos, target.node);
             const placeAfter = rect ? e.clientY > rect.top + rect.height / 2 : true;
             if (target.pos !== blockDragState.pos) {
@@ -35387,9 +35531,11 @@ ${promptInput.trim()}`
             }
           });
           turndown.addRule("mermaid-diagram", {
-            filter: "mermaid-diagram",
+            filter: function(node) {
+              return node.nodeName === "MERMAID-DIAGRAM" || node.tagName === "MERMAID-DIAGRAM" || node.nodeName === "mermaid-diagram";
+            },
             replacement: function(_content, node) {
-              const code = node.getAttribute("code") || "";
+              const code = node.getAttribute("code") || node.getAttribute("data-code") || "";
               return "\n\n```mermaid\n" + code.trim() + "\n```\n\n";
             }
           });
@@ -35439,7 +35585,7 @@ ${innerMarkdown}
               const doc3 = parser2.parseFromString(html2, "text/html");
               const diagrams = doc3.querySelectorAll("mermaid-diagram");
               diagrams.forEach((diag) => {
-                const code = diag.getAttribute("code") || "";
+                const code = diag.getAttribute("code") || diag.getAttribute("data-code") || "";
                 const pre = doc3.createElement("pre");
                 const codeElement = doc3.createElement("code");
                 codeElement.className = "language-mermaid";
@@ -35498,63 +35644,68 @@ ${innerMarkdown}
             return "";
           }
         };
+        const convertEditorMarkdownToHtml = (markdown) => {
+          if (typeof markdown !== "string") return "";
+          const shortAlertRegex = /^>(note|alerte|warning|important|conseil|tip|attention|caution|remarque)\s(.*)$/gmi;
+          const markdownWithShortAlerts = markdown.replace(shortAlertRegex, (_match, type2, content2) => {
+            const typeMap = {
+              "note": "NOTE",
+              "alerte": "WARNING",
+              "warning": "WARNING",
+              "important": "IMPORTANT",
+              "conseil": "TIP",
+              "tip": "TIP",
+              "attention": "CAUTION",
+              "caution": "CAUTION",
+              "remarque": "default"
+            };
+            return `<blockquote data-type="${typeMap[type2.toLowerCase()] || "NOTE"}">${content2}</blockquote>`;
+          });
+          const alertRegex = /^> ?\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION|ALERTE|ATTENTION)(?:\s+(.*))?\]\s*\n((?:>.*\n?)*)/gmi;
+          const markdownWithAlerts = markdownWithShortAlerts.replace(alertRegex, (_match, type2, title, content2) => {
+            const typeMap = {
+              "NOTE": "NOTE",
+              "TIP": "TIP",
+              "IMPORTANT": "IMPORTANT",
+              "WARNING": "WARNING",
+              "ALERTE": "WARNING",
+              "CAUTION": "CAUTION",
+              "ATTENTION": "CAUTION"
+            };
+            const normalizedType = typeMap[type2.toUpperCase()] || "NOTE";
+            const cleanContent = content2.replace(/^> ?/gm, "").trim();
+            const titleAttr = title ? ` data-title="${title.trim()}"` : "";
+            return `<blockquote data-type="${normalizedType}"${titleAttr}>${cleanContent}</blockquote>`;
+          });
+          const markdownWithHighlight = markdownWithAlerts.replace(
+            /==(.*?)==/g,
+            "<mark>$1</mark>"
+          );
+          const mermaidRegex = /```mermaid\n([\s\S]*?)\n```/g;
+          const processedMarkdown = markdownWithHighlight.replace(mermaidRegex, (_match, code) => {
+            const escapedCode = code.trim().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+            return `<mermaid-diagram code="${escapedCode}"></mermaid-diagram>`;
+          });
+          const html2 = marked.parse(processedMarkdown, { gfm: true });
+          const finalHtml = html2.replace(/<details>([\s\S]*?)<\/details>/g, (match, inner) => {
+            if (inner.includes('data-type="details-content"') || inner.includes('class="details-content"')) {
+              return match;
+            }
+            const summaryMatch = inner.match(/<summary>([\s\S]*?)<\/summary>/);
+            if (summaryMatch) {
+              const summary = summaryMatch[0];
+              const content2 = inner.replace(summary, "").trim();
+              return `<details>${summary}<div data-type="details-content">${content2}</div></details>`;
+            }
+            return match;
+          });
+          return finalHtml;
+        };
         window.setEditorMarkdown = (markdown) => {
           var _a2, _b2;
           if (typeof markdown !== "string") return;
           try {
-            const shortAlertRegex = /^>(note|alerte|warning|important|conseil|tip|attention|caution|remarque)\s(.*)$/gmi;
-            const markdownWithShortAlerts = markdown.replace(shortAlertRegex, (_match, type2, content2) => {
-              const typeMap = {
-                "note": "NOTE",
-                "alerte": "WARNING",
-                "warning": "WARNING",
-                "important": "IMPORTANT",
-                "conseil": "TIP",
-                "tip": "TIP",
-                "attention": "CAUTION",
-                "caution": "CAUTION",
-                "remarque": "default"
-              };
-              return `<blockquote data-type="${typeMap[type2.toLowerCase()] || "NOTE"}">${content2}</blockquote>`;
-            });
-            const alertRegex = /^> ?\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION|ALERTE|ATTENTION)(?:\s+(.*))?\]\s*\n((?:>.*\n?)*)/gmi;
-            const markdownWithAlerts = markdownWithShortAlerts.replace(alertRegex, (_match, type2, title, content2) => {
-              const typeMap = {
-                "NOTE": "NOTE",
-                "TIP": "TIP",
-                "IMPORTANT": "IMPORTANT",
-                "WARNING": "WARNING",
-                "ALERTE": "WARNING",
-                "CAUTION": "CAUTION",
-                "ATTENTION": "CAUTION"
-              };
-              const normalizedType = typeMap[type2.toUpperCase()] || "NOTE";
-              const cleanContent = content2.replace(/^> ?/gm, "").trim();
-              const titleAttr = title ? ` data-title="${title.trim()}"` : "";
-              return `<blockquote data-type="${normalizedType}"${titleAttr}>${cleanContent}</blockquote>`;
-            });
-            const markdownWithHighlight = markdownWithAlerts.replace(
-              /==(.*?)==/g,
-              "<mark>$1</mark>"
-            );
-            const mermaidRegex = /```mermaid\n([\s\S]*?)\n```/g;
-            const processedMarkdown = markdownWithHighlight.replace(mermaidRegex, (_match, code) => {
-              const escapedCode = code.trim().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-              return `<mermaid-diagram code="${escapedCode}"></mermaid-diagram>`;
-            });
-            const html2 = marked.parse(processedMarkdown, { gfm: true });
-            const finalHtml = html2.replace(/<details>([\s\S]*?)<\/details>/g, (match, inner) => {
-              if (inner.includes('data-type="details-content"') || inner.includes('class="details-content"')) {
-                return match;
-              }
-              const summaryMatch = inner.match(/<summary>([\s\S]*?)<\/summary>/);
-              if (summaryMatch) {
-                const summary = summaryMatch[0];
-                const content2 = inner.replace(summary, "").trim();
-                return `<details>${summary}<div data-type="details-content">${content2}</div></details>`;
-              }
-              return match;
-            });
+            const finalHtml = convertEditorMarkdownToHtml(markdown);
             if ((_a2 = editor == null ? void 0 : editor.commands) == null ? void 0 : _a2.clearContent) {
               editor.commands.clearContent();
             }
@@ -35565,62 +35716,24 @@ ${innerMarkdown}
             console.warn("setEditorMarkdown failed", err);
           }
         };
+        window.insertEditorMarkdownAtRange = (markdown, range2) => {
+          if (typeof markdown !== "string" || !range2) return;
+          try {
+            const from2 = Number(range2.from);
+            const to = Number(range2.to);
+            if (!Number.isFinite(from2) || !Number.isFinite(to)) return;
+            const finalHtml = convertEditorMarkdownToHtml(markdown);
+            if (editor) {
+              editor.chain().focus().insertContentAt({ from: from2, to }, finalHtml).run();
+            }
+          } catch (err) {
+            console.warn("insertEditorMarkdownAtRange failed", err);
+          }
+        };
         window.insertEditorMarkdownAtEnd = (markdown) => {
           if (typeof markdown !== "string") return;
           try {
-            const shortAlertRegex = /^>(note|alerte|warning|important|conseil|tip|attention|caution|remarque)\s(.*)$/gmi;
-            const markdownWithShortAlerts = markdown.replace(shortAlertRegex, (_match, type2, content2) => {
-              const typeMap = {
-                "note": "NOTE",
-                "alerte": "WARNING",
-                "warning": "WARNING",
-                "important": "IMPORTANT",
-                "conseil": "TIP",
-                "tip": "TIP",
-                "attention": "CAUTION",
-                "caution": "CAUTION",
-                "remarque": "default"
-              };
-              return `<blockquote data-type="${typeMap[type2.toLowerCase()] || "NOTE"}">${content2}</blockquote>`;
-            });
-            const alertRegex = /^> ?\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION|ALERTE|ATTENTION)(?:\s+(.*))?\]\s*\n((?:>.*\n?)*)/gmi;
-            const markdownWithAlerts = markdownWithShortAlerts.replace(alertRegex, (_match, type2, title, content2) => {
-              const typeMap = {
-                "NOTE": "NOTE",
-                "TIP": "TIP",
-                "IMPORTANT": "IMPORTANT",
-                "WARNING": "WARNING",
-                "ALERTE": "WARNING",
-                "CAUTION": "CAUTION",
-                "ATTENTION": "CAUTION"
-              };
-              const normalizedType = typeMap[type2.toUpperCase()] || "NOTE";
-              const cleanContent = content2.replace(/^> ?/gm, "").trim();
-              const titleAttr = title ? ` data-title="${title.trim()}"` : "";
-              return `<blockquote data-type="${normalizedType}"${titleAttr}>${cleanContent}</blockquote>`;
-            });
-            const markdownWithHighlight = markdownWithAlerts.replace(
-              /==(.*?)==/g,
-              "<mark>$1</mark>"
-            );
-            const mermaidRegex = /```mermaid\n([\s\S]*?)\n```/g;
-            const processedMarkdown = markdownWithHighlight.replace(mermaidRegex, (_match, code) => {
-              const escapedCode = code.trim().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-              return `<mermaid-diagram code="${escapedCode}"></mermaid-diagram>`;
-            });
-            const html2 = marked.parse(processedMarkdown, { gfm: true });
-            const finalHtml = html2.replace(/<details>([\s\S]*?)<\/details>/g, (match, inner) => {
-              if (inner.includes('data-type="details-content"') || inner.includes('class="details-content"')) {
-                return match;
-              }
-              const summaryMatch = inner.match(/<summary>([\s\S]*?)<\/summary>/);
-              if (summaryMatch) {
-                const summary = summaryMatch[0];
-                const content2 = inner.replace(summary, "").trim();
-                return `<details>${summary}<div data-type="details-content">${content2}</div></details>`;
-              }
-              return match;
-            });
+            const finalHtml = convertEditorMarkdownToHtml(markdown);
             if (editor) {
               editor.chain().focus().insertContentAt(editor.state.doc.content.size, (editor.isEmpty ? "" : "\n\n") + finalHtml).run();
             }
@@ -35732,6 +35845,10 @@ ${innerMarkdown}
             try {
               const coordsStart = editor.view.coordsAtPos(blockFrom);
               const coordsEnd = editor.view.coordsAtPos(blockTo, -1);
+              let finalExcerpt = blockText2.substring(0, 100) + (blockText2.length > 100 ? "\u2026" : "");
+              if (!finalExcerpt.trim() && nodeType === "mermaidDiagram") {
+                finalExcerpt = "Diagramme Mermaid";
+              }
               setSelectionData({
                 isSelected: true,
                 nodeType,
@@ -35739,7 +35856,7 @@ ${innerMarkdown}
                 selectionMarkdown,
                 blockText: blockText2,
                 blockMarkdown,
-                selectionExcerpt: blockText2.substring(0, 100) + (blockText2.length > 100 ? "\u2026" : ""),
+                selectionExcerpt: finalExcerpt,
                 positionFrom: blockFrom,
                 positionTo: blockTo,
                 coords: {
@@ -35842,6 +35959,7 @@ ${innerMarkdown}
               onMouseDown: (e) => {
                 e.preventDefault();
                 if (rowHandle.rowIndex === 0) {
+                  if (isDetailsDragBlocked(rowHandle.tablePos)) return;
                   const node = editor.state.doc.nodeAt(rowHandle.tablePos);
                   if (!node) return;
                   setBlockDragPending({
@@ -35896,15 +36014,7 @@ ${innerMarkdown}
                     style: { position: "static", opacity: 1 },
                     onClick: (e) => {
                       e.stopPropagation();
-                      const node = editor.state.doc.nodeAt(blockDeleteHandle.pos);
-                      if (node) {
-                        const text = node.textContent;
-                        navigator.clipboard.writeText(text).then(() => {
-                          document.dispatchEvent(new CustomEvent("copyToast", {
-                            detail: { message: "Texte copi\xE9" }
-                          }));
-                        });
-                      }
+                      copyBlockHtmlAtPos(blockDeleteHandle.pos);
                     },
                     title: "Copier le contenu",
                     children: /* @__PURE__ */ jsx(Copy, { size: 16 })
@@ -35984,14 +36094,7 @@ ${innerMarkdown}
                       style: { position: "static", opacity: 1 },
                       onClick: (e) => {
                         e.stopPropagation();
-                        const node = editor.state.doc.nodeAt(blockDeleteHandle.pos);
-                        if (node && node.attrs.code) {
-                          navigator.clipboard.writeText(node.attrs.code).then(() => {
-                            document.dispatchEvent(new CustomEvent("copyToast", {
-                              detail: { message: "Texte copi\xE9" }
-                            }));
-                          });
-                        }
+                        copyBlockHtmlAtPos(blockDeleteHandle.pos);
                       },
                       title: "Copier",
                       children: /* @__PURE__ */ jsx(Copy, { size: 16 })
@@ -36111,6 +36214,7 @@ ${innerMarkdown}
               className: "table-handle quote-handle",
               style: { top: quoteHandle.top, left: quoteHandle.left },
               onMouseDown: (e) => {
+                if (isDetailsDragBlocked(quoteHandle.pos)) return;
                 const node = editor.state.doc.nodeAt(quoteHandle.pos);
                 if (!node) return;
                 setBlockDragPending({
@@ -36138,6 +36242,7 @@ ${innerMarkdown}
               className: "table-handle details-handle",
               style: { top: detailsHandle.top, left: detailsHandle.left },
               onMouseDown: (e) => {
+                if (isDetailsDragBlocked(detailsHandle.pos)) return;
                 const node = editor.state.doc.nodeAt(detailsHandle.pos);
                 if (!node) return;
                 setBlockDragPending({
@@ -36165,6 +36270,7 @@ ${innerMarkdown}
               className: "table-handle code-handle",
               style: { top: codeHandle.top, left: codeHandle.left },
               onMouseDown: (e) => {
+                if (isDetailsDragBlocked(codeHandle.pos)) return;
                 const node = editor.state.doc.nodeAt(codeHandle.pos);
                 if (!node) return;
                 setBlockDragPending({
@@ -36184,6 +36290,7 @@ ${innerMarkdown}
               className: "table-handle mermaid-handle",
               style: { top: handle.top, left: handle.left },
               onMouseDown: (e) => {
+                if (isDetailsDragBlocked(handle.pos)) return;
                 const node = editor.state.doc.nodeAt(handle.pos);
                 if (!node) return;
                 setBlockDragPending({

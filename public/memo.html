@@ -4038,12 +4038,12 @@
                 const text = textarea.value || '';
                 try {
                     await navigator.clipboard.writeText(text);
-                    showToast('Texte copié');
+                    showToast('Contenu copié');
                 } catch (e) {
                     textarea.focus();
                     textarea.select();
                     const ok = document.execCommand && document.execCommand('copy');
-                    showToast(ok ? 'Texte copié' : 'Copie impossible');
+                    showToast(ok ? 'Contenu copié' : 'Copie impossible');
                 }
             }
 
