@@ -1,6 +1,6 @@
 import React from 'react';
 import { useEditor, EditorContent, Editor, ReactRenderer, ReactNodeViewRenderer, NodeViewWrapper, NodeViewContent } from '@tiptap/react';
-import { Extension, InputRule, markInputRule, mergeAttributes } from '@tiptap/core';
+import { Extension, markInputRule } from '@tiptap/core';
 import Suggestion from '@tiptap/suggestion';
 import StarterKit from '@tiptap/starter-kit';
 import Code from '@tiptap/extension-code';
@@ -17,10 +17,8 @@ import { Color } from '@tiptap/extension-color';
 import { computePosition, offset, shift } from '@floating-ui/dom';
 import { DOMSerializer, Node as PMNode } from '@tiptap/pm/model';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
-import { NodeSelection, TextSelection, Transaction } from 'prosemirror-state';
-import Details from '@tiptap/extension-details';
-import DetailsSummary from '@tiptap/extension-details-summary';
-import DetailsContent from '@tiptap/extension-details-content';
+import { Decoration, DecorationSet } from '@tiptap/pm/view';
+import { NodeSelection, TextSelection } from 'prosemirror-state';
 import { TableOfContents } from '@tiptap/extension-table-of-contents';
 import Heading from '@tiptap/extension-heading';
 import Paragraph from '@tiptap/extension-paragraph';
@@ -31,211 +29,6 @@ import CodeBlock from '@tiptap/extension-code-block';
 import { TableNode, TableRow, TableHeader, CustomTableCell } from './table-node';
 import { TaskListNode, TaskItemNode } from './task-node';
 
-const DETAILS_TOGGLE_META = 'detailsToggle';
-
-const CustomDetails = Details.extend({
-  addKeyboardShortcuts() {
-    return {
-      ...(this.parent?.() || {}),
-      Backspace: () => {
-        const { schema, selection } = this.editor.state;
-        const { empty, $anchor } = selection;
-        if (!empty || $anchor.parent.type !== schema.nodes.detailsSummary) {
-          return false;
-        }
-        if ($anchor.parentOffset !== 0) {
-          return this.editor.commands.command(({ tr }) => {
-            const from = $anchor.pos - 1;
-            const to = $anchor.pos;
-            tr.delete(from, to);
-            return true;
-          });
-        }
-        // Keep the details block open when deleting the last character in the summary.
-        return true;
-      },
-    };
-  },
-  addAttributes() {
-    return {
-      ...this.parent?.(),
-      open: {
-        default: true,
-        parseHTML: element => element.hasAttribute('open') || element.getAttribute('data-open') === 'true',
-        renderHTML: () => {
-          return {};
-        },
-      },
-    }
-  },
-  addNodeView() {
-    return ({ editor, getPos, node, HTMLAttributes }) => {
-      const dom = document.createElement('div');
-      const attributes = mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
-        'data-type': this.name,
-      });
-      Object.entries(attributes).forEach(([key, value]) => dom.setAttribute(key, value));
-
-      const toggle = document.createElement('button');
-      toggle.type = 'button';
-      dom.append(toggle);
-
-      const content = document.createElement('div');
-      dom.append(content);
-
-      const toggleDetailsContent = (setToValue?: boolean) => {
-        if (setToValue !== undefined) {
-          if (setToValue) {
-            if (dom.classList.contains(this.options.openClassName)) {
-              return;
-            }
-            dom.classList.add(this.options.openClassName);
-          } else {
-            if (!dom.classList.contains(this.options.openClassName)) {
-              return;
-            }
-            dom.classList.remove(this.options.openClassName);
-          }
-        } else {
-          dom.classList.toggle(this.options.openClassName);
-        }
-
-        const isOpen = dom.classList.contains(this.options.openClassName);
-        const event = new CustomEvent('toggleDetailsContent', {
-          detail: { open: isOpen },
-        });
-        const detailsContent = content.querySelector(':scope > div[data-type="detailsContent"]');
-        detailsContent?.dispatchEvent(event);
-      };
-
-      if (node.attrs.open) {
-        setTimeout(() => toggleDetailsContent(true));
-      }
-
-      toggle.addEventListener('click', () => {
-        toggleDetailsContent();
-
-        if (!this.options.persist) {
-          editor.commands.focus(undefined, { scrollIntoView: false });
-          return;
-        }
-
-        if (editor.isEditable && typeof getPos === 'function') {
-          const { from, to } = editor.state.selection;
-          editor.chain().command(({ tr }) => {
-            const pos = getPos();
-            const currentNode = tr.doc.nodeAt(pos);
-            if (currentNode?.type !== this.type) {
-              return false;
-            }
-            tr.setMeta(DETAILS_TOGGLE_META, true);
-            tr.setNodeMarkup(pos, undefined, {
-              ...currentNode.attrs,
-              open: !currentNode.attrs.open,
-            });
-            return true;
-          }).setTextSelection({ from, to }).focus(undefined, { scrollIntoView: false }).run();
-        }
-      });
-
-      return {
-        dom,
-        contentDOM: content,
-        ignoreMutation(mutation) {
-          if (mutation.type === 'selection') {
-            return false;
-          }
-          return !dom.contains(mutation.target as Node) || dom === mutation.target;
-        },
-        update: (updatedNode) => {
-          if (updatedNode.type !== this.type) {
-            return false;
-          }
-          if (updatedNode.attrs.open !== undefined) {
-            toggleDetailsContent(updatedNode.attrs.open);
-          }
-          return true;
-        },
-      };
-    };
-  },
-  addProseMirrorPlugins() {
-    const plugins = this.parent?.() || [];
-    return [
-      ...plugins,
-      new Plugin({
-        key: new PluginKey('detailsOpenGuard'),
-        appendTransaction: (transactions, oldState, newState) => {
-          const allowToggle = transactions.some((tr) => tr.getMeta(DETAILS_TOGGLE_META) === true);
-          if (allowToggle) {
-            return;
-          }
-          let tr: Transaction | null = null;
-          newState.doc.descendants((node, pos) => {
-            if (node.type.name !== this.name) return;
-            if (pos > oldState.doc.content.size) return;
-            const oldNode = oldState.doc.nodeAt(pos);
-            if (!oldNode || oldNode.type !== node.type) return;
-            if (oldNode.attrs.open && node.attrs.open === false) {
-              if (!tr) {
-                tr = newState.tr;
-              }
-              tr.setNodeMarkup(pos, undefined, { ...node.attrs, open: true });
-            }
-          });
-          return tr || null;
-        },
-      }),
-    ];
-  },
-});
-
-const CustomDetailsContent = DetailsContent.extend({
-  addNodeView() {
-    return ({ HTMLAttributes }) => {
-      const dom = document.createElement('div');
-      const attributes = mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
-        'data-type': this.name,
-        hidden: 'hidden',
-      });
-      Object.entries(attributes).forEach(([key, value]) => dom.setAttribute(key, value));
-
-      const setHidden = (open?: boolean) => {
-        if (open === undefined) {
-          dom.toggleAttribute('hidden');
-          return;
-        }
-        if (open) {
-          dom.removeAttribute('hidden');
-        } else {
-          dom.setAttribute('hidden', 'hidden');
-        }
-      };
-
-      dom.addEventListener('toggleDetailsContent', (event: Event) => {
-        const detail = (event as CustomEvent<{ open?: boolean }>).detail;
-        setHidden(detail?.open);
-      });
-
-      return {
-        dom,
-        contentDOM: dom,
-        ignoreMutation(mutation) {
-          if (mutation.type === 'selection') {
-            return false;
-          }
-          return !dom.contains(mutation.target) || dom === mutation.target;
-        },
-        update: (updatedNode) => {
-          if (updatedNode.type !== this.type) {
-            return false;
-          }
-          return true;
-        },
-      };
-    };
-  },
-});
 
 const CustomCode = Code.extend({
   excludes: '',
@@ -255,7 +48,7 @@ import {
   Highlighter, Table as TableIcon, Trash2, CodeXml,
   ChevronDown, Check, CheckCheck, Type,
   Bot, X, Plus, Baseline, Shapes,
-  CheckSquare, ListTree,
+  CheckSquare,
   Pencil, Copy, Image as ImageIcon,
   Square, RectangleHorizontal, Tag,
   ArrowDownAZ, ArrowUpAZ
@@ -272,6 +65,13 @@ const CustomHeading = Heading.extend({
         parseHTML: element => element.getAttribute('id'),
         renderHTML: attributes => ({
           id: attributes.id,
+        }),
+      },
+      collapsed: {
+        default: false,
+        parseHTML: element => element.getAttribute('data-collapsed') === 'true',
+        renderHTML: attributes => ({
+          'data-collapsed': attributes.collapsed,
         }),
       },
     }
@@ -300,15 +100,73 @@ const CustomHeading = Heading.extend({
           return modified ? tr : null;
         },
       }),
+      new Plugin({
+        key: new PluginKey('heading-folding'),
+        props: {
+          decorations(state) {
+            const decorations: any[] = [];
+            state.doc.descendants((node, pos) => {
+              if (node.type.name === 'heading' && node.attrs.collapsed) {
+                const level = node.attrs.level;
+                let end = state.doc.content.size;
+                
+                // Find the next heading of same or higher level
+                state.doc.nodesBetween(pos + node.nodeSize, state.doc.content.size, (nextChild, nextPos) => {
+                  if (nextPos <= pos) return true;
+                  if (nextChild.isBlock && nextChild.type.name === 'heading' && nextChild.attrs.level <= level) {
+                    end = nextPos;
+                    return false;
+                  }
+                  return true;
+                });
+                
+                // Hide all top-level blocks in this range
+                let currentPos = pos + node.nodeSize;
+                while (currentPos < end) {
+                  const childNode = state.doc.nodeAt(currentPos);
+                  if (!childNode) break;
+                  decorations.push(Decoration.node(currentPos, currentPos + childNode.nodeSize, {
+                    style: 'display: none',
+                    class: 'collapsed-node'
+                  }));
+                  currentPos += childNode.nodeSize;
+                }
+              }
+            });
+            return DecorationSet.create(state.doc, decorations);
+          },
+        },
+      }),
     ];
   },
   addNodeView() {
-    return ReactNodeViewRenderer(({ node }) => {
+    return ReactNodeViewRenderer(({ node, editor, getPos }) => {
       const level = Math.min(4, Math.max(1, node.attrs.level || 1));
-      const tag = `h${level}` as keyof JSX.IntrinsicElements;
+      const tag = `h${level}` as any;
+      const collapsed = node.attrs.collapsed;
+
+      const toggleCollapse = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof getPos === 'function') {
+          const pos = getPos();
+          editor.view.dispatch(editor.state.tr.setNodeMarkup(pos, undefined, {
+            ...node.attrs,
+            collapsed: !collapsed
+          }));
+        }
+      };
+
       return (
-        <NodeViewWrapper className="node-text">
-          <NodeViewContent as={tag} />
+        <NodeViewWrapper className={`node-heading-wrapper ${collapsed ? 'is-collapsed' : ''}`}>
+          <button 
+            className="heading-collapse-toggle" 
+            onClick={toggleCollapse}
+            contentEditable={false}
+          >
+            {collapsed ? '▶' : '◢'}
+          </button>
+          <NodeViewContent as={tag} className="node-text" />
         </NodeViewWrapper>
       );
     });
@@ -615,29 +473,6 @@ const LinkSearchModal = ({ editor, onClose }: { editor: Editor, onClose: () => v
     </div>
   );
 };
-
-const DetailsInputRule = Extension.create({
-  name: 'detailsInputRule',
-  addInputRules() {
-    return [
-      new InputRule({
-        find: /^>>\s$/,
-        handler: ({ state, range, chain }) => {
-          const $from = state.doc.resolve(range.from);
-          if ($from.parent.type.name !== 'paragraph') {
-            return null;
-          }
-          
-          chain()
-            .deleteRange(range)
-            .setDetails()
-            .updateAttributes('details', { open: true })
-            .run();
-        },
-      }),
-    ]
-  },
-});
 
 const TEXT_COLORS = [
   { name: 'Défaut', value: 'var(--bg-text-main)' },
@@ -1597,36 +1432,6 @@ const Toolbar = ({ editor, onDropdownToggle, onLink }: {
         >
           <Tag size={16} />
         </button>
-        <button
-          className="tiptap-button"
-          aria-label="Bloc dépliable"
-          type="button"
-          onClick={() => {
-            editor.chain().focus().setDetails().updateAttributes('details', { open: true }).run();
-            // Focus the summary line
-            setTimeout(() => {
-              const { state } = editor;
-              const { selection } = state;
-              const pos = selection.from;
-              
-              const searchFrom = Math.max(0, pos - 20);
-              const searchTo = Math.min(state.doc.content.size, pos + 20);
-              
-              // Find the detailsSummary node and focus it
-              state.doc.nodesBetween(searchFrom, searchTo, (node, nodePos) => {
-                if (node.type.name === 'detailsSummary') {
-                  editor.chain().focus(nodePos + 1).run();
-                  return false;
-                }
-              });
-            }, 10);
-          }}
-          data-active-state={editor.isActive('details') ? 'on' : 'off'}
-          title="Bloc dépliable"
-        >
-          <ListTree size={16} />
-        </button>
-
         <QuoteTypeDropdown editor={editor} />
       </div>
 
@@ -2288,8 +2093,6 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   const [blockDeleteHandle, setBlockDeleteHandle] = React.useState<{ top: number, left: number, pos: number, label: string } | null>(null);
   const [quoteHandle, setQuoteHandle] = React.useState<{ top: number, left: number, pos: number, type: string } | null>(null);
   const [quoteMenu, setQuoteMenu] = React.useState<{ top: number, left: number, pos: number } | null>(null);
-  const [detailsHandle, setDetailsHandle] = React.useState<{ top: number, left: number, pos: number } | null>(null);
-  const [detailsMenu, setDetailsMenu] = React.useState<{ top: number, left: number, pos: number } | null>(null);
   const [codeHandle, setCodeHandle] = React.useState<{ top: number, left: number, pos: number } | null>(null);
   const [mermaidHandles, setMermaidHandles] = React.useState<Array<{ top: number, left: number, pos: number }>>([]);
   const [hoveredMermaidPos, setHoveredMermaidPos] = React.useState<number | null>(null);
@@ -2309,13 +2112,6 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
 
   const editor = useEditor({
     extensions: [
-      CustomDetails.configure({
-        HTMLAttributes: {
-          class: 'details node-details',
-        },
-      }),
-      DetailsSummary,
-      CustomDetailsContent,
       StarterKit.configure({
         blockquote: false,
         heading: false, // Use our custom Heading instead to get IDs
@@ -2358,7 +2154,6 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       TaskItemNode,
       MermaidNode,
       CodeSuggestion,
-      DetailsInputRule,
       TableOfContents.configure({
         onUpdate(content: any[]) {
           (window as any).MemoHeadings = content;
@@ -2729,7 +2524,6 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
 
   const moveBlockNode = (fromPos: number, targetPos: number, placeAfter: boolean) => {
     if (!editor) return;
-    if (isDetailsDragBlocked(fromPos) || isDetailsDragBlocked(targetPos)) return;
     const node = editor.state.doc.nodeAt(fromPos);
     const targetNode = editor.state.doc.nodeAt(targetPos);
     if (!node || !targetNode) return;
@@ -2746,30 +2540,6 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     tr.setSelection(NodeSelection.create(tr.doc, insertPos));
     editor.view.dispatch(tr);
   };
-
-  const setAllDetailsOpen = (open: boolean) => {
-    if (!editor) return;
-    const { tr, doc } = editor.state;
-    let touched = false;
-    doc.descendants((node, pos) => {
-      if (node.type.name === 'details') {
-        tr.setNodeMarkup(pos, undefined, { ...node.attrs, open });
-        touched = true;
-      }
-    });
-    if (touched) {
-      tr.setMeta(DETAILS_TOGGLE_META, true);
-      editor.view.dispatch(tr);
-    }
-  };
-
-  const isDetailsDragBlocked = React.useCallback((pos: number) => {
-    if (!editor) return false;
-    const node = editor.state.doc.nodeAt(pos);
-    if (node?.type.name === 'details') return true;
-    const $pos = editor.state.doc.resolve(pos);
-    return hasAncestorNode($pos, 'details');
-  }, [editor]);
 
   const getBlockTargetFromCoords = (x: number, y: number) => {
     if (!editor) return null;
@@ -2886,7 +2656,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     if (!tbody.children.length || !cellRect) return null;
     ghostTable.appendChild(tbody);
     const tableRect = tableDOM.getBoundingClientRect();
-    const rect = new DOMRect(cellRect.left, tableRect.top, cellRect.width, tableRect.height);
+    const rect = new DOMRect((cellRect as DOMRect).left, tableRect.top, (cellRect as DOMRect).width, tableRect.height);
     return { html: ghostTable.outerHTML, rect };
   };
 
@@ -2940,7 +2710,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         setBlockDragState(prev => (prev ? { ...prev, x: e.clientX, y: e.clientY } : prev));
         maybeAutoScroll(e.clientY);
         const target = getBlockTargetFromCoords(e.clientX, e.clientY);
-        if (target && !isDetailsDragBlocked(blockDragState.pos) && !isDetailsDragBlocked(target.pos)) {
+        if (target) {
           const rect = getBlockRectForPos(target.pos, target.node);
           if (rect) {
             const placeAfter = e.clientY > rect.top + rect.height / 2;
@@ -2962,7 +2732,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     const handleGlobalMouseUp = (e: MouseEvent) => {
       if (blockDragState && editor) {
         const target = getBlockTargetFromCoords(e.clientX, e.clientY);
-        if (target && !isDetailsDragBlocked(blockDragState.pos) && !isDetailsDragBlocked(target.pos)) {
+        if (target) {
           const rect = getBlockRectForPos(target.pos, target.node);
           const placeAfter = rect ? e.clientY > rect.top + rect.height / 2 : true;
           if (target.pos !== blockDragState.pos) {
@@ -3204,52 +2974,6 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     }
 
     // 2b. Details Drag Handle (Left)
-    if (detailsEl && containerRef.current.contains(detailsEl)) {
-      const rect = detailsEl.getBoundingClientRect();
-      let detailsPos = -1;
-      try {
-        const domPos = editor.view.posAtDOM(detailsEl, 0);
-        const $pos = editor.state.doc.resolve(domPos);
-        for (let d = $pos.depth; d > 0; d--) {
-          if ($pos.node(d).type.name === 'details') {
-            detailsPos = $pos.before(d);
-            break;
-          }
-        }
-        if (detailsPos === -1) {
-          const node = editor.state.doc.nodeAt(domPos);
-          if (node?.type.name === 'details') detailsPos = domPos;
-        }
-      } catch (err) {
-        // ignore
-      }
-
-      if (detailsPos === -1) {
-        const pos = editor.view.posAtCoords({ left: e.clientX, top: e.clientY })?.pos;
-        if (pos !== undefined) {
-          const $pos = editor.state.doc.resolve(pos);
-          for (let d = $pos.depth; d > 0; d--) {
-            if ($pos.node(d).type.name === 'details') {
-              detailsPos = $pos.before(d);
-              break;
-            }
-          }
-        }
-      }
-
-      if (detailsPos !== -1) {
-        setDetailsHandle({
-          top: rect.top - containerRect.top + 10,
-          left: rect.left - containerRect.left - 15,
-          pos: detailsPos
-        });
-      } else {
-        setDetailsHandle(null);
-      }
-    } else if (!(e.target as HTMLElement).closest('.details-handle')) {
-      setDetailsHandle(null);
-    }
-
     // 3. Table Cell Handles (Row/Col)
     let info = getTableCellInfo(editor.view, e.nativeEvent);
     
@@ -3851,7 +3575,6 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         setRowHandle(null);
         setColHandle(null);
         setQuoteHandle(null);
-        setDetailsHandle(null);
         setCodeHandle(null);
       }}
     >
@@ -3880,7 +3603,6 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           onMouseDown={(e) => {
             e.preventDefault();
             if (rowHandle.rowIndex === 0) {
-              if (isDetailsDragBlocked(rowHandle.tablePos)) return;
               const node = editor.state.doc.nodeAt(rowHandle.tablePos);
               if (!node) return;
               setBlockDragPending({
@@ -4142,7 +3864,6 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           className="table-handle quote-handle"
           style={{ top: quoteHandle.top, left: quoteHandle.left }}
           onMouseDown={(e) => {
-            if (isDetailsDragBlocked(quoteHandle.pos)) return;
             const node = editor.state.doc.nodeAt(quoteHandle.pos);
             if (!node) return;
             setBlockDragPending({
@@ -4166,41 +3887,11 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         </div>
       )}
 
-      {detailsHandle && !dragState && !blockDragState && (
-        <div 
-          className="table-handle details-handle"
-          style={{ top: detailsHandle.top, left: detailsHandle.left }}
-          onMouseDown={(e) => {
-            if (isDetailsDragBlocked(detailsHandle.pos)) return;
-            const node = editor.state.doc.nodeAt(detailsHandle.pos);
-            if (!node) return;
-            setBlockDragPending({
-              pos: detailsHandle.pos,
-              nodeSize: node.nodeSize,
-              startX: e.clientX,
-              startY: e.clientY
-            });
-            blockDragMovedRef.current = false;
-          }}
-          onClick={(e) => {
-            if (blockDragMovedRef.current) {
-              blockDragMovedRef.current = false;
-              return;
-            }
-            e.stopPropagation();
-            setDetailsMenu({ top: detailsHandle.top, left: detailsHandle.left + 30, pos: detailsHandle.pos });
-          }}
-        >
-          ⠿
-        </div>
-      )}
-
       {codeHandle && !dragState && !blockDragState && (
         <div
           className="table-handle code-handle"
           style={{ top: codeHandle.top, left: codeHandle.left }}
           onMouseDown={(e) => {
-            if (isDetailsDragBlocked(codeHandle.pos)) return;
             const node = editor.state.doc.nodeAt(codeHandle.pos);
             if (!node) return;
             setBlockDragPending({
@@ -4222,7 +3913,6 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           className="table-handle mermaid-handle"
           style={{ top: handle.top, left: handle.left }}
           onMouseDown={(e) => {
-            if (isDetailsDragBlocked(handle.pos)) return;
             const node = editor.state.doc.nodeAt(handle.pos);
             if (!node) return;
             setBlockDragPending({
@@ -4272,35 +3962,6 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
                 {alert.label}
               </div>
             ))}
-          </div>
-        </>
-      )}
-
-      {detailsMenu && (
-        <>
-          <div style={{ position: 'fixed', inset: 0, zIndex: 999 }} onClick={() => setDetailsMenu(null)} />
-          <div 
-            className="quote-context-menu"
-            style={{ top: detailsMenu.top, left: detailsMenu.left }}
-          >
-            <div 
-              className="quote-context-menu-item"
-              onClick={() => {
-                setAllDetailsOpen(true);
-                setDetailsMenu(null);
-              }}
-            >
-              Tout déplier
-            </div>
-            <div 
-              className="quote-context-menu-item"
-              onClick={() => {
-                setAllDetailsOpen(false);
-                setDetailsMenu(null);
-              }}
-            >
-              Tout replier
-            </div>
           </div>
         </>
       )}

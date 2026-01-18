@@ -97,66 +97,39 @@
   margin-top: 4px;
   padding-bottom: 10px;
 }
-.ProseMirror .details {
-  display: flex;
-  gap: 0rem;
-  margin: 0 0;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  padding: 5px 10px 5px 20px;
-  transition: border-color 0.2s;
+.node-heading-wrapper {
+  position: relative;
 }
-.ProseMirror .details:hover {
-  border-color: var(--border-strong);
-}
-.ProseMirror .details > button {
+.heading-collapse-toggle {
+  position: absolute;
+  left: -25px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  padding: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 1.25rem;
-  height: 1.25rem;
-  margin-top: 4px;
-  padding: 0;
-  background: transparent;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  color: var(--text-muted);
-  font-size: 1.2rem;
+  user-select: none;
+  line-height: 1;
 }
-.ProseMirror .details > button:hover {
-  background-color: var(--bg-surface-soft);
+.node-heading-wrapper:hover .heading-collapse-toggle {
+  opacity: 1;
 }
-.ProseMirror .details > button::before {
-  content: "\25b8";
-}
-.ProseMirror .details[open] > button::before,
-.ProseMirror .details.is-open > button::before {
-  content: "\25be";
-}
-.ProseMirror .details > div {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  padding-top: 4px;
-}
-.ProseMirror .details summary {
+.heading-collapse-toggle:hover {
   color: var(--text-main);
-  cursor: pointer;
-  font-weight: 600;
 }
-.ProseMirror .details summary::-webkit-details-marker {
-  display: none;
+.is-collapsed .node-text {
+  opacity: 0.7;
 }
 .node-mermaidDiagram {
   position: relative;
-}
-.details.node-details {
-  padding-left: 0px;
-}
-.node-details .node-blockquote {
-  padding-left: 0px;
 }
 th .node-text.node-paragraph,
 td .node-text.node-paragraph,
@@ -1241,13 +1214,6 @@ ul[data-type=taskList] li[data-checked=true] > div {
 }
 ul[data-type=taskList] li p {
   margin: 0;
-}
-div[data-type=detailsContent] .node-paragraph .node-text,
-div[data-type=detailsContent] .node-codeBlock .node-text {
-  padding-left: 0;
-}
-div[data-type=detailsContent] .tableWrapper {
-  padding: 0;
 }
 .link-search-modal {
   background: var(--bg-surface);

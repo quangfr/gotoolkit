@@ -16438,18 +16438,6 @@
     }
     return null;
   }
-  function findChildren(node, predicate) {
-    const nodesWithPos = [];
-    node.descendants((child, pos) => {
-      if (predicate(child)) {
-        nodesWithPos.push({
-          node: child,
-          pos
-        });
-      }
-    });
-    return nodesWithPos;
-  }
   function findChildrenInRange(node, range2, predicate) {
     const nodesWithPos = [];
     node.nodesBetween(range2.from, range2.to, (child, pos) => {
@@ -25004,493 +24992,6 @@ img.ProseMirror-separator {
     });
   };
 
-  // node_modules/@tiptap/extension-details/dist/index.js
-  init_define_process_env();
-  init_polyfills();
-  var isNodeVisible = (position, editor) => {
-    const node = editor.view.domAtPos(position).node;
-    const isOpen = node.offsetParent !== null;
-    return isOpen;
-  };
-  var findClosestVisibleNode = ($pos, predicate, editor) => {
-    for (let i = $pos.depth; i > 0; i -= 1) {
-      const node = $pos.node(i);
-      const match = predicate(node);
-      const isVisible = isNodeVisible($pos.start(i), editor);
-      if (match && isVisible) {
-        return {
-          pos: i > 0 ? $pos.before(i) : 0,
-          start: $pos.start(i),
-          depth: i,
-          node
-        };
-      }
-    }
-  };
-  var setGapCursor = (editor, direction) => {
-    const { state: state2, view, extensionManager } = editor;
-    const { schema, selection } = state2;
-    const { empty: empty2, $anchor } = selection;
-    const hasGapCursorExtension = !!extensionManager.extensions.find((extension) => extension.name === "gapCursor");
-    if (!empty2 || $anchor.parent.type !== schema.nodes.detailsSummary || !hasGapCursorExtension) {
-      return false;
-    }
-    if (direction === "right" && $anchor.parentOffset !== $anchor.parent.nodeSize - 2) {
-      return false;
-    }
-    const details = findParentNode((node) => node.type === schema.nodes.details)(selection);
-    if (!details) {
-      return false;
-    }
-    const detailsContent = findChildren(details.node, (node) => node.type === schema.nodes.detailsContent);
-    if (!detailsContent.length) {
-      return false;
-    }
-    const isOpen = isNodeVisible(details.start + detailsContent[0].pos + 1, editor);
-    if (isOpen) {
-      return false;
-    }
-    const $position = state2.doc.resolve(details.pos + details.node.nodeSize);
-    const $validPosition = GapCursor.findFrom($position, 1, false);
-    if (!$validPosition) {
-      return false;
-    }
-    const { tr: tr2 } = state2;
-    const gapCursorSelection = new GapCursor($validPosition);
-    tr2.setSelection(gapCursorSelection);
-    tr2.scrollIntoView();
-    view.dispatch(tr2);
-    return true;
-  };
-  var Details = Node3.create({
-    name: "details",
-    content: "detailsSummary detailsContent",
-    group: "block",
-    defining: true,
-    isolating: true,
-    allowGapCursor: false,
-    addOptions() {
-      return {
-        persist: false,
-        openClassName: "is-open",
-        HTMLAttributes: {}
-      };
-    },
-    addAttributes() {
-      if (!this.options.persist) {
-        return [];
-      }
-      return {
-        open: {
-          default: false,
-          parseHTML: (element) => element.hasAttribute("open"),
-          renderHTML: ({ open }) => {
-            if (!open) {
-              return {};
-            }
-            return { open: "" };
-          }
-        }
-      };
-    },
-    parseHTML() {
-      return [
-        {
-          tag: "details"
-        }
-      ];
-    },
-    renderHTML({ HTMLAttributes }) {
-      return [
-        "details",
-        mergeAttributes(this.options.HTMLAttributes, HTMLAttributes),
-        0
-      ];
-    },
-    addNodeView() {
-      return ({ editor, getPos, node, HTMLAttributes }) => {
-        const dom = document.createElement("div");
-        const attributes = mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
-          "data-type": this.name
-        });
-        Object.entries(attributes).forEach(([key, value]) => dom.setAttribute(key, value));
-        const toggle = document.createElement("button");
-        toggle.type = "button";
-        dom.append(toggle);
-        const content = document.createElement("div");
-        dom.append(content);
-        const toggleDetailsContent = (setToValue) => {
-          if (setToValue !== void 0) {
-            if (setToValue) {
-              if (dom.classList.contains(this.options.openClassName)) {
-                return;
-              }
-              dom.classList.add(this.options.openClassName);
-            } else {
-              if (!dom.classList.contains(this.options.openClassName)) {
-                return;
-              }
-              dom.classList.remove(this.options.openClassName);
-            }
-          } else {
-            dom.classList.toggle(this.options.openClassName);
-          }
-          const event = new Event("toggleDetailsContent");
-          const detailsContent = content.querySelector(':scope > div[data-type="detailsContent"]');
-          detailsContent === null || detailsContent === void 0 ? void 0 : detailsContent.dispatchEvent(event);
-        };
-        if (node.attrs.open) {
-          setTimeout(() => toggleDetailsContent());
-        }
-        toggle.addEventListener("click", () => {
-          toggleDetailsContent();
-          if (!this.options.persist) {
-            editor.commands.focus(void 0, { scrollIntoView: false });
-            return;
-          }
-          if (editor.isEditable && typeof getPos === "function") {
-            const { from: from2, to } = editor.state.selection;
-            editor.chain().command(({ tr: tr2 }) => {
-              const pos = getPos();
-              const currentNode = tr2.doc.nodeAt(pos);
-              if ((currentNode === null || currentNode === void 0 ? void 0 : currentNode.type) !== this.type) {
-                return false;
-              }
-              tr2.setNodeMarkup(pos, void 0, {
-                open: !currentNode.attrs.open
-              });
-              return true;
-            }).setTextSelection({
-              from: from2,
-              to
-            }).focus(void 0, { scrollIntoView: false }).run();
-          }
-        });
-        return {
-          dom,
-          contentDOM: content,
-          ignoreMutation(mutation) {
-            if (mutation.type === "selection") {
-              return false;
-            }
-            return !dom.contains(mutation.target) || dom === mutation.target;
-          },
-          update: (updatedNode) => {
-            if (updatedNode.type !== this.type) {
-              return false;
-            }
-            if (updatedNode.attrs.open !== void 0) {
-              toggleDetailsContent(updatedNode.attrs.open);
-            }
-            return true;
-          }
-        };
-      };
-    },
-    addCommands() {
-      return {
-        setDetails: () => ({ state: state2, chain }) => {
-          var _a;
-          const { schema, selection } = state2;
-          const { $from, $to } = selection;
-          const range2 = $from.blockRange($to);
-          if (!range2) {
-            return false;
-          }
-          const slice2 = state2.doc.slice(range2.start, range2.end);
-          const match = schema.nodes.detailsContent.contentMatch.matchFragment(slice2.content);
-          if (!match) {
-            return false;
-          }
-          const content = ((_a = slice2.toJSON()) === null || _a === void 0 ? void 0 : _a.content) || [];
-          return chain().insertContentAt({ from: range2.start, to: range2.end }, {
-            type: this.name,
-            content: [
-              {
-                type: "detailsSummary"
-              },
-              {
-                type: "detailsContent",
-                content
-              }
-            ]
-          }).setTextSelection(range2.start + 2).run();
-        },
-        unsetDetails: () => ({ state: state2, chain }) => {
-          const { selection, schema } = state2;
-          const details = findParentNode((node) => node.type === this.type)(selection);
-          if (!details) {
-            return false;
-          }
-          const detailsSummaries = findChildren(details.node, (node) => node.type === schema.nodes.detailsSummary);
-          const detailsContents = findChildren(details.node, (node) => node.type === schema.nodes.detailsContent);
-          if (!detailsSummaries.length || !detailsContents.length) {
-            return false;
-          }
-          const detailsSummary = detailsSummaries[0];
-          const detailsContent = detailsContents[0];
-          const from2 = details.pos;
-          const $from = state2.doc.resolve(from2);
-          const to = from2 + details.node.nodeSize;
-          const range2 = { from: from2, to };
-          const content = detailsContent.node.content.toJSON() || [];
-          const defaultTypeForSummary = $from.parent.type.contentMatch.defaultType;
-          const summaryContent = defaultTypeForSummary === null || defaultTypeForSummary === void 0 ? void 0 : defaultTypeForSummary.create(null, detailsSummary.node.content).toJSON();
-          const mergedContent = [
-            summaryContent,
-            ...content
-          ];
-          return chain().insertContentAt(range2, mergedContent).setTextSelection(from2 + 1).run();
-        }
-      };
-    },
-    addKeyboardShortcuts() {
-      return {
-        Backspace: () => {
-          const { schema, selection } = this.editor.state;
-          const { empty: empty2, $anchor } = selection;
-          if (!empty2 || $anchor.parent.type !== schema.nodes.detailsSummary) {
-            return false;
-          }
-          if ($anchor.parentOffset !== 0) {
-            return this.editor.commands.command(({ tr: tr2 }) => {
-              const from2 = $anchor.pos - 1;
-              const to = $anchor.pos;
-              tr2.delete(from2, to);
-              return true;
-            });
-          }
-          return this.editor.commands.unsetDetails();
-        },
-        // Creates a new node below it if it is closed.
-        // Otherwise inside `DetailsContent`.
-        Enter: ({ editor }) => {
-          const { state: state2, view } = editor;
-          const { schema, selection } = state2;
-          const { $head } = selection;
-          if ($head.parent.type !== schema.nodes.detailsSummary) {
-            return false;
-          }
-          const isVisible = isNodeVisible($head.after() + 1, editor);
-          const above = isVisible ? state2.doc.nodeAt($head.after()) : $head.node(-2);
-          if (!above) {
-            return false;
-          }
-          const after = isVisible ? 0 : $head.indexAfter(-1);
-          const type2 = defaultBlockAt2(above.contentMatchAt(after));
-          if (!type2 || !above.canReplaceWith(after, after, type2)) {
-            return false;
-          }
-          const node = type2.createAndFill();
-          if (!node) {
-            return false;
-          }
-          const pos = isVisible ? $head.after() + 1 : $head.after(-1);
-          const tr2 = state2.tr.replaceWith(pos, pos, node);
-          const $pos = tr2.doc.resolve(pos);
-          const newSelection = Selection.near($pos, 1);
-          tr2.setSelection(newSelection);
-          tr2.scrollIntoView();
-          view.dispatch(tr2);
-          return true;
-        },
-        // The default gapcursor implementation can’t handle hidden content, so we need to fix this.
-        ArrowRight: ({ editor }) => {
-          return setGapCursor(editor, "right");
-        },
-        // The default gapcursor implementation can’t handle hidden content, so we need to fix this.
-        ArrowDown: ({ editor }) => {
-          return setGapCursor(editor, "down");
-        }
-      };
-    },
-    addProseMirrorPlugins() {
-      return [
-        // This plugin prevents text selections within the hidden content in `DetailsContent`.
-        // The cursor is moved to the next visible position.
-        new Plugin({
-          key: new PluginKey("detailsSelection"),
-          appendTransaction: (transactions, oldState, newState) => {
-            const { editor, type: type2 } = this;
-            const selectionSet = transactions.some((transaction2) => transaction2.selectionSet);
-            if (!selectionSet || !oldState.selection.empty || !newState.selection.empty) {
-              return;
-            }
-            const detailsIsActive = isActive(newState, type2.name);
-            if (!detailsIsActive) {
-              return;
-            }
-            const { $from } = newState.selection;
-            const isVisible = isNodeVisible($from.pos, editor);
-            if (isVisible) {
-              return;
-            }
-            const details = findClosestVisibleNode($from, (node) => node.type === type2, editor);
-            if (!details) {
-              return;
-            }
-            const detailsSummaries = findChildren(details.node, (node) => node.type === newState.schema.nodes.detailsSummary);
-            if (!detailsSummaries.length) {
-              return;
-            }
-            const detailsSummary = detailsSummaries[0];
-            const selectionDirection = oldState.selection.from < newState.selection.from ? "forward" : "backward";
-            const correctedPosition = selectionDirection === "forward" ? details.start + detailsSummary.pos : details.pos + detailsSummary.pos + detailsSummary.node.nodeSize;
-            const selection = TextSelection.create(newState.doc, correctedPosition);
-            const transaction = newState.tr.setSelection(selection);
-            return transaction;
-          }
-        })
-      ];
-    }
-  });
-
-  // node_modules/@tiptap/extension-details-summary/dist/index.js
-  init_define_process_env();
-  init_polyfills();
-  var DetailsSummary = Node3.create({
-    name: "detailsSummary",
-    content: "text*",
-    defining: true,
-    selectable: false,
-    isolating: true,
-    addOptions() {
-      return {
-        HTMLAttributes: {}
-      };
-    },
-    parseHTML() {
-      return [
-        {
-          tag: "summary"
-        }
-      ];
-    },
-    renderHTML({ HTMLAttributes }) {
-      return [
-        "summary",
-        mergeAttributes(this.options.HTMLAttributes, HTMLAttributes),
-        0
-      ];
-    }
-  });
-
-  // node_modules/@tiptap/extension-details-content/dist/index.js
-  init_define_process_env();
-  init_polyfills();
-  var DetailsContent = Node3.create({
-    name: "detailsContent",
-    content: "block+",
-    defining: true,
-    selectable: false,
-    addOptions() {
-      return {
-        HTMLAttributes: {}
-      };
-    },
-    parseHTML() {
-      return [
-        {
-          tag: `div[data-type="${this.name}"]`
-        }
-      ];
-    },
-    renderHTML({ HTMLAttributes }) {
-      return [
-        "div",
-        mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, { "data-type": this.name }),
-        0
-      ];
-    },
-    addNodeView() {
-      return ({ HTMLAttributes }) => {
-        const dom = document.createElement("div");
-        const attributes = mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
-          "data-type": this.name,
-          hidden: "hidden"
-        });
-        Object.entries(attributes).forEach(([key, value]) => dom.setAttribute(key, value));
-        dom.addEventListener("toggleDetailsContent", () => {
-          dom.toggleAttribute("hidden");
-        });
-        return {
-          dom,
-          contentDOM: dom,
-          ignoreMutation(mutation) {
-            if (mutation.type === "selection") {
-              return false;
-            }
-            return !dom.contains(mutation.target) || dom === mutation.target;
-          },
-          update: (updatedNode) => {
-            if (updatedNode.type !== this.type) {
-              return false;
-            }
-            return true;
-          }
-        };
-      };
-    },
-    addKeyboardShortcuts() {
-      return {
-        // Escape node on double enter
-        Enter: ({ editor }) => {
-          const { state: state2, view } = editor;
-          const { selection } = state2;
-          const { $from, empty: empty2 } = selection;
-          const detailsContent = findParentNode((node2) => node2.type === this.type)(selection);
-          if (!empty2 || !detailsContent || !detailsContent.node.childCount) {
-            return false;
-          }
-          const fromIndex = $from.index(detailsContent.depth);
-          const { childCount } = detailsContent.node;
-          const isAtEnd = childCount === fromIndex + 1;
-          if (!isAtEnd) {
-            return false;
-          }
-          const defaultChildType = detailsContent.node.type.contentMatch.defaultType;
-          const defaultChildNode = defaultChildType === null || defaultChildType === void 0 ? void 0 : defaultChildType.createAndFill();
-          if (!defaultChildNode) {
-            return false;
-          }
-          const $childPos = state2.doc.resolve(detailsContent.pos + 1);
-          const lastChildIndex = childCount - 1;
-          const lastChildNode = detailsContent.node.child(lastChildIndex);
-          const lastChildPos = $childPos.posAtIndex(lastChildIndex, detailsContent.depth);
-          const lastChildNodeIsEmpty = lastChildNode.eq(defaultChildNode);
-          if (!lastChildNodeIsEmpty) {
-            return false;
-          }
-          const above = $from.node(-3);
-          if (!above) {
-            return false;
-          }
-          const after = $from.indexAfter(-3);
-          const type2 = defaultBlockAt2(above.contentMatchAt(after));
-          if (!type2 || !above.canReplaceWith(after, after, type2)) {
-            return false;
-          }
-          const node = type2.createAndFill();
-          if (!node) {
-            return false;
-          }
-          const { tr: tr2 } = state2;
-          const pos = $from.after(-2);
-          tr2.replaceWith(pos, pos, node);
-          const $pos = tr2.doc.resolve(pos);
-          const newSelection = Selection.near($pos, 1);
-          tr2.setSelection(newSelection);
-          const deleteFrom = lastChildPos;
-          const deleteTo = lastChildPos + lastChildNode.nodeSize;
-          tr2.delete(deleteFrom, deleteTo);
-          tr2.scrollIntoView();
-          view.dispatch(tr2);
-          return true;
-        }
-      };
-    }
-  });
-
   // node_modules/@tiptap/extension-table-of-contents/dist/index.js
   init_define_process_env();
   init_polyfills();
@@ -28639,22 +28140,10 @@ img.ProseMirror-separator {
   ];
   var Link2 = createLucideIcon("link", __iconNode25);
 
-  // node_modules/lucide-react/dist/esm/icons/list-tree.js
-  init_define_process_env();
-  init_polyfills();
-  var __iconNode26 = [
-    ["path", { d: "M8 5h13", key: "1pao27" }],
-    ["path", { d: "M13 12h8", key: "h98zly" }],
-    ["path", { d: "M13 19h8", key: "c3s6r1" }],
-    ["path", { d: "M3 10a2 2 0 0 0 2 2h3", key: "1npucw" }],
-    ["path", { d: "M3 5v12a2 2 0 0 0 2 2h3", key: "x1gjn2" }]
-  ];
-  var ListTree = createLucideIcon("list-tree", __iconNode26);
-
   // node_modules/lucide-react/dist/esm/icons/list.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode27 = [
+  var __iconNode26 = [
     ["path", { d: "M3 5h.01", key: "18ugdj" }],
     ["path", { d: "M3 12h.01", key: "nlz23k" }],
     ["path", { d: "M3 19h.01", key: "noohij" }],
@@ -28662,18 +28151,18 @@ img.ProseMirror-separator {
     ["path", { d: "M8 12h13", key: "1za7za" }],
     ["path", { d: "M8 19h13", key: "m83p4d" }]
   ];
-  var List = createLucideIcon("list", __iconNode27);
+  var List = createLucideIcon("list", __iconNode26);
 
   // node_modules/lucide-react/dist/esm/icons/loader-circle.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode28 = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
-  var LoaderCircle = createLucideIcon("loader-circle", __iconNode28);
+  var __iconNode27 = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
+  var LoaderCircle = createLucideIcon("loader-circle", __iconNode27);
 
   // node_modules/lucide-react/dist/esm/icons/message-square.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode29 = [
+  var __iconNode28 = [
     [
       "path",
       {
@@ -28682,12 +28171,12 @@ img.ProseMirror-separator {
       }
     ]
   ];
-  var MessageSquare = createLucideIcon("message-square", __iconNode29);
+  var MessageSquare = createLucideIcon("message-square", __iconNode28);
 
   // node_modules/lucide-react/dist/esm/icons/pencil.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode30 = [
+  var __iconNode29 = [
     [
       "path",
       {
@@ -28697,38 +28186,38 @@ img.ProseMirror-separator {
     ],
     ["path", { d: "m15 5 4 4", key: "1mk7zo" }]
   ];
-  var Pencil = createLucideIcon("pencil", __iconNode30);
+  var Pencil = createLucideIcon("pencil", __iconNode29);
 
   // node_modules/lucide-react/dist/esm/icons/plus.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode31 = [
+  var __iconNode30 = [
     ["path", { d: "M5 12h14", key: "1ays0h" }],
     ["path", { d: "M12 5v14", key: "s699le" }]
   ];
-  var Plus = createLucideIcon("plus", __iconNode31);
+  var Plus = createLucideIcon("plus", __iconNode30);
 
   // node_modules/lucide-react/dist/esm/icons/rectangle-horizontal.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode32 = [
+  var __iconNode31 = [
     ["rect", { width: "20", height: "12", x: "2", y: "6", rx: "2", key: "9lu3g6" }]
   ];
-  var RectangleHorizontal = createLucideIcon("rectangle-horizontal", __iconNode32);
+  var RectangleHorizontal = createLucideIcon("rectangle-horizontal", __iconNode31);
 
   // node_modules/lucide-react/dist/esm/icons/redo-2.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode33 = [
+  var __iconNode32 = [
     ["path", { d: "m15 14 5-5-5-5", key: "12vg1m" }],
     ["path", { d: "M20 9H9.5A5.5 5.5 0 0 0 4 14.5A5.5 5.5 0 0 0 9.5 20H13", key: "6uklza" }]
   ];
-  var Redo2 = createLucideIcon("redo-2", __iconNode33);
+  var Redo2 = createLucideIcon("redo-2", __iconNode32);
 
   // node_modules/lucide-react/dist/esm/icons/send.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode34 = [
+  var __iconNode33 = [
     [
       "path",
       {
@@ -28738,12 +28227,12 @@ img.ProseMirror-separator {
     ],
     ["path", { d: "m21.854 2.147-10.94 10.939", key: "12cjpa" }]
   ];
-  var Send = createLucideIcon("send", __iconNode34);
+  var Send = createLucideIcon("send", __iconNode33);
 
   // node_modules/lucide-react/dist/esm/icons/shapes.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode35 = [
+  var __iconNode34 = [
     [
       "path",
       {
@@ -28754,42 +28243,42 @@ img.ProseMirror-separator {
     ["rect", { x: "3", y: "14", width: "7", height: "7", rx: "1", key: "1bkyp8" }],
     ["circle", { cx: "17.5", cy: "17.5", r: "3.5", key: "w3z12y" }]
   ];
-  var Shapes = createLucideIcon("shapes", __iconNode35);
+  var Shapes = createLucideIcon("shapes", __iconNode34);
 
   // node_modules/lucide-react/dist/esm/icons/square-check-big.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode36 = [
+  var __iconNode35 = [
     [
       "path",
       { d: "M21 10.656V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h12.344", key: "2acyp4" }
     ],
     ["path", { d: "m9 11 3 3L22 4", key: "1pflzl" }]
   ];
-  var SquareCheckBig = createLucideIcon("square-check-big", __iconNode36);
+  var SquareCheckBig = createLucideIcon("square-check-big", __iconNode35);
 
   // node_modules/lucide-react/dist/esm/icons/square-code.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode37 = [
+  var __iconNode36 = [
     ["path", { d: "m10 9-3 3 3 3", key: "1oro0q" }],
     ["path", { d: "m14 15 3-3-3-3", key: "bz13h7" }],
     ["rect", { x: "3", y: "3", width: "18", height: "18", rx: "2", key: "h1oib" }]
   ];
-  var SquareCode = createLucideIcon("square-code", __iconNode37);
+  var SquareCode = createLucideIcon("square-code", __iconNode36);
 
   // node_modules/lucide-react/dist/esm/icons/square.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode38 = [
+  var __iconNode37 = [
     ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }]
   ];
-  var Square = createLucideIcon("square", __iconNode38);
+  var Square = createLucideIcon("square", __iconNode37);
 
   // node_modules/lucide-react/dist/esm/icons/star.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode39 = [
+  var __iconNode38 = [
     [
       "path",
       {
@@ -28798,33 +28287,33 @@ img.ProseMirror-separator {
       }
     ]
   ];
-  var Star = createLucideIcon("star", __iconNode39);
+  var Star = createLucideIcon("star", __iconNode38);
 
   // node_modules/lucide-react/dist/esm/icons/strikethrough.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode40 = [
+  var __iconNode39 = [
     ["path", { d: "M16 4H9a3 3 0 0 0-2.83 4", key: "43sutm" }],
     ["path", { d: "M14 12a4 4 0 0 1 0 8H6", key: "nlfj13" }],
     ["line", { x1: "4", x2: "20", y1: "12", y2: "12", key: "1e0a9i" }]
   ];
-  var Strikethrough = createLucideIcon("strikethrough", __iconNode40);
+  var Strikethrough = createLucideIcon("strikethrough", __iconNode39);
 
   // node_modules/lucide-react/dist/esm/icons/table.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode41 = [
+  var __iconNode40 = [
     ["path", { d: "M12 3v18", key: "108xh3" }],
     ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }],
     ["path", { d: "M3 9h18", key: "1pudct" }],
     ["path", { d: "M3 15h18", key: "5xshup" }]
   ];
-  var Table2 = createLucideIcon("table", __iconNode41);
+  var Table2 = createLucideIcon("table", __iconNode40);
 
   // node_modules/lucide-react/dist/esm/icons/tag.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode42 = [
+  var __iconNode41 = [
     [
       "path",
       {
@@ -28834,24 +28323,24 @@ img.ProseMirror-separator {
     ],
     ["circle", { cx: "7.5", cy: "7.5", r: ".5", fill: "currentColor", key: "kqv944" }]
   ];
-  var Tag = createLucideIcon("tag", __iconNode42);
+  var Tag = createLucideIcon("tag", __iconNode41);
 
   // node_modules/lucide-react/dist/esm/icons/trash-2.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode43 = [
+  var __iconNode42 = [
     ["path", { d: "M10 11v6", key: "nco0om" }],
     ["path", { d: "M14 11v6", key: "outv1u" }],
     ["path", { d: "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6", key: "miytrc" }],
     ["path", { d: "M3 6h18", key: "d0wm0j" }],
     ["path", { d: "M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2", key: "e791ji" }]
   ];
-  var Trash2 = createLucideIcon("trash-2", __iconNode43);
+  var Trash2 = createLucideIcon("trash-2", __iconNode42);
 
   // node_modules/lucide-react/dist/esm/icons/triangle-alert.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode44 = [
+  var __iconNode43 = [
     [
       "path",
       {
@@ -28862,54 +28351,54 @@ img.ProseMirror-separator {
     ["path", { d: "M12 9v4", key: "juzpu7" }],
     ["path", { d: "M12 17h.01", key: "p32p05" }]
   ];
-  var TriangleAlert = createLucideIcon("triangle-alert", __iconNode44);
+  var TriangleAlert = createLucideIcon("triangle-alert", __iconNode43);
 
   // node_modules/lucide-react/dist/esm/icons/type.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode45 = [
+  var __iconNode44 = [
     ["path", { d: "M12 4v16", key: "1654pz" }],
     ["path", { d: "M4 7V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2", key: "e0r10z" }],
     ["path", { d: "M9 20h6", key: "s66wpe" }]
   ];
-  var Type = createLucideIcon("type", __iconNode45);
+  var Type = createLucideIcon("type", __iconNode44);
 
   // node_modules/lucide-react/dist/esm/icons/underline.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode46 = [
+  var __iconNode45 = [
     ["path", { d: "M6 4v6a6 6 0 0 0 12 0V4", key: "9kb039" }],
     ["line", { x1: "4", x2: "20", y1: "20", y2: "20", key: "nun2al" }]
   ];
-  var Underline2 = createLucideIcon("underline", __iconNode46);
+  var Underline2 = createLucideIcon("underline", __iconNode45);
 
   // node_modules/lucide-react/dist/esm/icons/undo-2.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode47 = [
+  var __iconNode46 = [
     ["path", { d: "M9 14 4 9l5-5", key: "102s5s" }],
     ["path", { d: "M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11", key: "f3b9sd" }]
   ];
-  var Undo2 = createLucideIcon("undo-2", __iconNode47);
+  var Undo2 = createLucideIcon("undo-2", __iconNode46);
 
   // node_modules/lucide-react/dist/esm/icons/workflow.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode48 = [
+  var __iconNode47 = [
     ["rect", { width: "8", height: "8", x: "3", y: "3", rx: "2", key: "by2w9f" }],
     ["path", { d: "M7 11v4a2 2 0 0 0 2 2h4", key: "xkn7yn" }],
     ["rect", { width: "8", height: "8", x: "13", y: "13", rx: "2", key: "1cgmvn" }]
   ];
-  var Workflow = createLucideIcon("workflow", __iconNode48);
+  var Workflow = createLucideIcon("workflow", __iconNode47);
 
   // node_modules/lucide-react/dist/esm/icons/x.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode49 = [
+  var __iconNode48 = [
     ["path", { d: "M18 6 6 18", key: "1bl5f8" }],
     ["path", { d: "m6 6 12 12", key: "d8bk6v" }]
   ];
-  var X = createLucideIcon("x", __iconNode49);
+  var X = createLucideIcon("x", __iconNode48);
 
   // node_modules/turndown/lib/turndown.browser.es.js
   init_define_process_env();
@@ -32745,199 +32234,6 @@ ${promptInput.trim()}`
   });
 
   // src/memo-editor/simple-editor.tsx
-  var DETAILS_TOGGLE_META = "detailsToggle";
-  var CustomDetails = Details.extend({
-    addKeyboardShortcuts() {
-      var _a;
-      return {
-        ...((_a = this.parent) == null ? void 0 : _a.call(this)) || {},
-        Backspace: () => {
-          const { schema, selection } = this.editor.state;
-          const { empty: empty2, $anchor } = selection;
-          if (!empty2 || $anchor.parent.type !== schema.nodes.detailsSummary) {
-            return false;
-          }
-          if ($anchor.parentOffset !== 0) {
-            return this.editor.commands.command(({ tr: tr2 }) => {
-              const from2 = $anchor.pos - 1;
-              const to = $anchor.pos;
-              tr2.delete(from2, to);
-              return true;
-            });
-          }
-          return true;
-        }
-      };
-    },
-    addAttributes() {
-      var _a;
-      return {
-        ...(_a = this.parent) == null ? void 0 : _a.call(this),
-        open: {
-          default: true,
-          parseHTML: (element) => element.hasAttribute("open") || element.getAttribute("data-open") === "true",
-          renderHTML: () => {
-            return {};
-          }
-        }
-      };
-    },
-    addNodeView() {
-      return ({ editor, getPos, node, HTMLAttributes }) => {
-        const dom = document.createElement("div");
-        const attributes = mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
-          "data-type": this.name
-        });
-        Object.entries(attributes).forEach(([key, value]) => dom.setAttribute(key, value));
-        const toggle = document.createElement("button");
-        toggle.type = "button";
-        dom.append(toggle);
-        const content = document.createElement("div");
-        dom.append(content);
-        const toggleDetailsContent = (setToValue) => {
-          if (setToValue !== void 0) {
-            if (setToValue) {
-              if (dom.classList.contains(this.options.openClassName)) {
-                return;
-              }
-              dom.classList.add(this.options.openClassName);
-            } else {
-              if (!dom.classList.contains(this.options.openClassName)) {
-                return;
-              }
-              dom.classList.remove(this.options.openClassName);
-            }
-          } else {
-            dom.classList.toggle(this.options.openClassName);
-          }
-          const isOpen = dom.classList.contains(this.options.openClassName);
-          const event = new CustomEvent("toggleDetailsContent", {
-            detail: { open: isOpen }
-          });
-          const detailsContent = content.querySelector(':scope > div[data-type="detailsContent"]');
-          detailsContent == null ? void 0 : detailsContent.dispatchEvent(event);
-        };
-        if (node.attrs.open) {
-          setTimeout(() => toggleDetailsContent(true));
-        }
-        toggle.addEventListener("click", () => {
-          toggleDetailsContent();
-          if (!this.options.persist) {
-            editor.commands.focus(void 0, { scrollIntoView: false });
-            return;
-          }
-          if (editor.isEditable && typeof getPos === "function") {
-            const { from: from2, to } = editor.state.selection;
-            editor.chain().command(({ tr: tr2 }) => {
-              const pos = getPos();
-              const currentNode = tr2.doc.nodeAt(pos);
-              if ((currentNode == null ? void 0 : currentNode.type) !== this.type) {
-                return false;
-              }
-              tr2.setMeta(DETAILS_TOGGLE_META, true);
-              tr2.setNodeMarkup(pos, void 0, {
-                ...currentNode.attrs,
-                open: !currentNode.attrs.open
-              });
-              return true;
-            }).setTextSelection({ from: from2, to }).focus(void 0, { scrollIntoView: false }).run();
-          }
-        });
-        return {
-          dom,
-          contentDOM: content,
-          ignoreMutation(mutation) {
-            if (mutation.type === "selection") {
-              return false;
-            }
-            return !dom.contains(mutation.target) || dom === mutation.target;
-          },
-          update: (updatedNode) => {
-            if (updatedNode.type !== this.type) {
-              return false;
-            }
-            if (updatedNode.attrs.open !== void 0) {
-              toggleDetailsContent(updatedNode.attrs.open);
-            }
-            return true;
-          }
-        };
-      };
-    },
-    addProseMirrorPlugins() {
-      var _a;
-      const plugins = ((_a = this.parent) == null ? void 0 : _a.call(this)) || [];
-      return [
-        ...plugins,
-        new Plugin({
-          key: new PluginKey("detailsOpenGuard"),
-          appendTransaction: (transactions, oldState, newState) => {
-            const allowToggle = transactions.some((tr3) => tr3.getMeta(DETAILS_TOGGLE_META) === true);
-            if (allowToggle) {
-              return;
-            }
-            let tr2 = null;
-            newState.doc.descendants((node, pos) => {
-              if (node.type.name !== this.name) return;
-              if (pos > oldState.doc.content.size) return;
-              const oldNode = oldState.doc.nodeAt(pos);
-              if (!oldNode || oldNode.type !== node.type) return;
-              if (oldNode.attrs.open && node.attrs.open === false) {
-                if (!tr2) {
-                  tr2 = newState.tr;
-                }
-                tr2.setNodeMarkup(pos, void 0, { ...node.attrs, open: true });
-              }
-            });
-            return tr2 || null;
-          }
-        })
-      ];
-    }
-  });
-  var CustomDetailsContent = DetailsContent.extend({
-    addNodeView() {
-      return ({ HTMLAttributes }) => {
-        const dom = document.createElement("div");
-        const attributes = mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
-          "data-type": this.name,
-          hidden: "hidden"
-        });
-        Object.entries(attributes).forEach(([key, value]) => dom.setAttribute(key, value));
-        const setHidden = (open) => {
-          if (open === void 0) {
-            dom.toggleAttribute("hidden");
-            return;
-          }
-          if (open) {
-            dom.removeAttribute("hidden");
-          } else {
-            dom.setAttribute("hidden", "hidden");
-          }
-        };
-        dom.addEventListener("toggleDetailsContent", (event) => {
-          const detail = event.detail;
-          setHidden(detail == null ? void 0 : detail.open);
-        });
-        return {
-          dom,
-          contentDOM: dom,
-          ignoreMutation(mutation) {
-            if (mutation.type === "selection") {
-              return false;
-            }
-            return !dom.contains(mutation.target) || dom === mutation.target;
-          },
-          update: (updatedNode) => {
-            if (updatedNode.type !== this.type) {
-              return false;
-            }
-            return true;
-          }
-        };
-      };
-    }
-  });
   var CustomCode = Code.extend({
     excludes: "",
     inclusive: false,
@@ -32960,6 +32256,13 @@ ${promptInput.trim()}`
           parseHTML: (element) => element.getAttribute("id"),
           renderHTML: (attributes) => ({
             id: attributes.id
+          })
+        },
+        collapsed: {
+          default: false,
+          parseHTML: (element) => element.getAttribute("data-collapsed") === "true",
+          renderHTML: (attributes) => ({
+            "data-collapsed": attributes.collapsed
           })
         }
       };
@@ -32984,14 +32287,70 @@ ${promptInput.trim()}`
             }
             return modified ? tr2 : null;
           }
+        }),
+        new Plugin({
+          key: new PluginKey("heading-folding"),
+          props: {
+            decorations(state2) {
+              const decorations = [];
+              state2.doc.descendants((node, pos) => {
+                if (node.type.name === "heading" && node.attrs.collapsed) {
+                  const level = node.attrs.level;
+                  let end = state2.doc.content.size;
+                  state2.doc.nodesBetween(pos + node.nodeSize, state2.doc.content.size, (nextChild, nextPos) => {
+                    if (nextPos <= pos) return true;
+                    if (nextChild.isBlock && nextChild.type.name === "heading" && nextChild.attrs.level <= level) {
+                      end = nextPos;
+                      return false;
+                    }
+                    return true;
+                  });
+                  let currentPos = pos + node.nodeSize;
+                  while (currentPos < end) {
+                    const childNode = state2.doc.nodeAt(currentPos);
+                    if (!childNode) break;
+                    decorations.push(Decoration.node(currentPos, currentPos + childNode.nodeSize, {
+                      style: "display: none",
+                      class: "collapsed-node"
+                    }));
+                    currentPos += childNode.nodeSize;
+                  }
+                }
+              });
+              return DecorationSet.create(state2.doc, decorations);
+            }
+          }
         })
       ];
     },
     addNodeView() {
-      return ReactNodeViewRenderer(({ node }) => {
+      return ReactNodeViewRenderer(({ node, editor, getPos }) => {
         const level = Math.min(4, Math.max(1, node.attrs.level || 1));
         const tag2 = `h${level}`;
-        return /* @__PURE__ */ jsx(NodeViewWrapper, { className: "node-text", children: /* @__PURE__ */ jsx(NodeViewContent, { as: tag2 }) });
+        const collapsed = node.attrs.collapsed;
+        const toggleCollapse = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (typeof getPos === "function") {
+            const pos = getPos();
+            editor.view.dispatch(editor.state.tr.setNodeMarkup(pos, void 0, {
+              ...node.attrs,
+              collapsed: !collapsed
+            }));
+          }
+        };
+        return /* @__PURE__ */ jsxs(NodeViewWrapper, { className: `node-heading-wrapper ${collapsed ? "is-collapsed" : ""}`, children: [
+          /* @__PURE__ */ jsx(
+            "button",
+            {
+              className: "heading-collapse-toggle",
+              onClick: toggleCollapse,
+              contentEditable: false,
+              children: collapsed ? "\u25B6" : "\u25E2"
+            }
+          ),
+          /* @__PURE__ */ jsx(NodeViewContent, { as: tag2, className: "node-text" })
+        ] });
       });
     }
   });
@@ -33248,23 +32607,6 @@ ${promptInput.trim()}`
       }
     );
   };
-  var DetailsInputRule = Extension.create({
-    name: "detailsInputRule",
-    addInputRules() {
-      return [
-        new InputRule({
-          find: /^>>\s$/,
-          handler: ({ state: state2, range: range2, chain }) => {
-            const $from = state2.doc.resolve(range2.from);
-            if ($from.parent.type.name !== "paragraph") {
-              return null;
-            }
-            chain().deleteRange(range2).setDetails().updateAttributes("details", { open: true }).run();
-          }
-        })
-      ];
-    }
-  });
   var TEXT_COLORS = [
     { name: "D\xE9faut", value: "var(--bg-text-main)" },
     { name: "Gris", value: "var(--bg-text-gray)" },
@@ -34089,33 +33431,6 @@ ${promptInput.trim()}`
             children: /* @__PURE__ */ jsx(Tag, { size: 16 })
           }
         ),
-        /* @__PURE__ */ jsx(
-          "button",
-          {
-            className: "tiptap-button",
-            "aria-label": "Bloc d\xE9pliable",
-            type: "button",
-            onClick: () => {
-              editor.chain().focus().setDetails().updateAttributes("details", { open: true }).run();
-              setTimeout(() => {
-                const { state: state2 } = editor;
-                const { selection } = state2;
-                const pos = selection.from;
-                const searchFrom = Math.max(0, pos - 20);
-                const searchTo = Math.min(state2.doc.content.size, pos + 20);
-                state2.doc.nodesBetween(searchFrom, searchTo, (node, nodePos) => {
-                  if (node.type.name === "detailsSummary") {
-                    editor.chain().focus(nodePos + 1).run();
-                    return false;
-                  }
-                });
-              }, 10);
-            },
-            "data-active-state": editor.isActive("details") ? "on" : "off",
-            title: "Bloc d\xE9pliable",
-            children: /* @__PURE__ */ jsx(ListTree, { size: 16 })
-          }
-        ),
         /* @__PURE__ */ jsx(QuoteTypeDropdown, { editor })
       ] }),
       /* @__PURE__ */ jsx("div", { className: "tiptap-separator", "data-orientation": "vertical", role: "none" }),
@@ -34641,8 +33956,6 @@ ${promptInput.trim()}`
     const [blockDeleteHandle, setBlockDeleteHandle] = react_shim_default.useState(null);
     const [quoteHandle, setQuoteHandle] = react_shim_default.useState(null);
     const [quoteMenu, setQuoteMenu] = react_shim_default.useState(null);
-    const [detailsHandle, setDetailsHandle] = react_shim_default.useState(null);
-    const [detailsMenu, setDetailsMenu] = react_shim_default.useState(null);
     const [codeHandle, setCodeHandle] = react_shim_default.useState(null);
     const [mermaidHandles, setMermaidHandles] = react_shim_default.useState([]);
     const [hoveredMermaidPos, setHoveredMermaidPos] = react_shim_default.useState(null);
@@ -34661,13 +33974,6 @@ ${promptInput.trim()}`
     const blockDragMovedRef = react_shim_default.useRef(false);
     const editor = useEditor({
       extensions: [
-        CustomDetails.configure({
-          HTMLAttributes: {
-            class: "details node-details"
-          }
-        }),
-        DetailsSummary,
-        CustomDetailsContent,
         StarterKit.configure({
           blockquote: false,
           heading: false,
@@ -34711,7 +34017,6 @@ ${promptInput.trim()}`
         TaskItemNode,
         MermaidNode,
         CodeSuggestion,
-        DetailsInputRule,
         TableOfContents.configure({
           onUpdate(content2) {
             window.MemoHeadings = content2;
@@ -35039,7 +34344,6 @@ ${promptInput.trim()}`
     }, [dragState, blockDragState, dragGhost, editor]);
     const moveBlockNode = (fromPos, targetPos, placeAfter) => {
       if (!editor) return;
-      if (isDetailsDragBlocked(fromPos) || isDetailsDragBlocked(targetPos)) return;
       const node = editor.state.doc.nodeAt(fromPos);
       const targetNode = editor.state.doc.nodeAt(targetPos);
       if (!node || !targetNode) return;
@@ -35054,28 +34358,6 @@ ${promptInput.trim()}`
       tr2.setSelection(NodeSelection.create(tr2.doc, insertPos));
       editor.view.dispatch(tr2);
     };
-    const setAllDetailsOpen = (open) => {
-      if (!editor) return;
-      const { tr: tr2, doc: doc3 } = editor.state;
-      let touched = false;
-      doc3.descendants((node, pos) => {
-        if (node.type.name === "details") {
-          tr2.setNodeMarkup(pos, void 0, { ...node.attrs, open });
-          touched = true;
-        }
-      });
-      if (touched) {
-        tr2.setMeta(DETAILS_TOGGLE_META, true);
-        editor.view.dispatch(tr2);
-      }
-    };
-    const isDetailsDragBlocked = react_shim_default.useCallback((pos) => {
-      if (!editor) return false;
-      const node = editor.state.doc.nodeAt(pos);
-      if ((node == null ? void 0 : node.type.name) === "details") return true;
-      const $pos = editor.state.doc.resolve(pos);
-      return hasAncestorNode($pos, "details");
-    }, [editor]);
     const getBlockTargetFromCoords = (x, y) => {
       if (!editor) return null;
       const coords = editor.view.posAtCoords({ left: x, top: y });
@@ -35236,7 +34518,7 @@ ${promptInput.trim()}`
           setBlockDragState((prev) => prev ? { ...prev, x: e.clientX, y: e.clientY } : prev);
           maybeAutoScroll(e.clientY);
           const target = getBlockTargetFromCoords(e.clientX, e.clientY);
-          if (target && !isDetailsDragBlocked(blockDragState.pos) && !isDetailsDragBlocked(target.pos)) {
+          if (target) {
             const rect = getBlockRectForPos(target.pos, target.node);
             if (rect) {
               const placeAfter = e.clientY > rect.top + rect.height / 2;
@@ -35257,7 +34539,7 @@ ${promptInput.trim()}`
       const handleGlobalMouseUp = (e) => {
         if (blockDragState && editor) {
           const target = getBlockTargetFromCoords(e.clientX, e.clientY);
-          if (target && !isDetailsDragBlocked(blockDragState.pos) && !isDetailsDragBlocked(target.pos)) {
+          if (target) {
             const rect = getBlockRectForPos(target.pos, target.node);
             const placeAfter = rect ? e.clientY > rect.top + rect.height / 2 : true;
             if (target.pos !== blockDragState.pos) {
@@ -35277,7 +34559,7 @@ ${promptInput.trim()}`
       };
     }, [blockDragPending, blockDragState, editor]);
     const handleMouseMove2 = (e) => {
-      var _a2, _b2, _c2, _d2, _e, _f, _g, _h, _i, _j;
+      var _a2, _b2, _c2, _d2, _e, _f, _g, _h, _i;
       if (!editor || dragState || blockDragState || !containerRef.current) return;
       if (e.target.closest(".table-handle, .quote-handle, .details-handle, .mermaid-handle, .node-handle, .block-delete-button")) return;
       const element = document.elementFromPoint(e.clientX, e.clientY);
@@ -35466,48 +34748,6 @@ ${promptInput.trim()}`
         }
       } else if (!e.target.closest(".quote-handle")) {
         setQuoteHandle(null);
-      }
-      if (detailsEl && containerRef.current.contains(detailsEl)) {
-        const rect = detailsEl.getBoundingClientRect();
-        let detailsPos = -1;
-        try {
-          const domPos = editor.view.posAtDOM(detailsEl, 0);
-          const $pos = editor.state.doc.resolve(domPos);
-          for (let d = $pos.depth; d > 0; d--) {
-            if ($pos.node(d).type.name === "details") {
-              detailsPos = $pos.before(d);
-              break;
-            }
-          }
-          if (detailsPos === -1) {
-            const node = editor.state.doc.nodeAt(domPos);
-            if ((node == null ? void 0 : node.type.name) === "details") detailsPos = domPos;
-          }
-        } catch (err) {
-        }
-        if (detailsPos === -1) {
-          const pos = (_j = editor.view.posAtCoords({ left: e.clientX, top: e.clientY })) == null ? void 0 : _j.pos;
-          if (pos !== void 0) {
-            const $pos = editor.state.doc.resolve(pos);
-            for (let d = $pos.depth; d > 0; d--) {
-              if ($pos.node(d).type.name === "details") {
-                detailsPos = $pos.before(d);
-                break;
-              }
-            }
-          }
-        }
-        if (detailsPos !== -1) {
-          setDetailsHandle({
-            top: rect.top - containerRect.top + 10,
-            left: rect.left - containerRect.left - 15,
-            pos: detailsPos
-          });
-        } else {
-          setDetailsHandle(null);
-        }
-      } else if (!e.target.closest(".details-handle")) {
-        setDetailsHandle(null);
       }
       let info = getTableCellInfo(editor.view, e.nativeEvent);
       if (!info) {
@@ -35995,7 +35235,6 @@ ${innerMarkdown}
           setRowHandle(null);
           setColHandle(null);
           setQuoteHandle(null);
-          setDetailsHandle(null);
           setCodeHandle(null);
         },
         children: [
@@ -36027,7 +35266,6 @@ ${innerMarkdown}
               onMouseDown: (e) => {
                 e.preventDefault();
                 if (rowHandle.rowIndex === 0) {
-                  if (isDetailsDragBlocked(rowHandle.tablePos)) return;
                   const node = editor.state.doc.nodeAt(rowHandle.tablePos);
                   if (!node) return;
                   setBlockDragPending({
@@ -36282,7 +35520,6 @@ ${innerMarkdown}
               className: "table-handle quote-handle",
               style: { top: quoteHandle.top, left: quoteHandle.left },
               onMouseDown: (e) => {
-                if (isDetailsDragBlocked(quoteHandle.pos)) return;
                 const node = editor.state.doc.nodeAt(quoteHandle.pos);
                 if (!node) return;
                 setBlockDragPending({
@@ -36304,41 +35541,12 @@ ${innerMarkdown}
               children: "\u283F"
             }
           ),
-          detailsHandle && !dragState && !blockDragState && /* @__PURE__ */ jsx(
-            "div",
-            {
-              className: "table-handle details-handle",
-              style: { top: detailsHandle.top, left: detailsHandle.left },
-              onMouseDown: (e) => {
-                if (isDetailsDragBlocked(detailsHandle.pos)) return;
-                const node = editor.state.doc.nodeAt(detailsHandle.pos);
-                if (!node) return;
-                setBlockDragPending({
-                  pos: detailsHandle.pos,
-                  nodeSize: node.nodeSize,
-                  startX: e.clientX,
-                  startY: e.clientY
-                });
-                blockDragMovedRef.current = false;
-              },
-              onClick: (e) => {
-                if (blockDragMovedRef.current) {
-                  blockDragMovedRef.current = false;
-                  return;
-                }
-                e.stopPropagation();
-                setDetailsMenu({ top: detailsHandle.top, left: detailsHandle.left + 30, pos: detailsHandle.pos });
-              },
-              children: "\u283F"
-            }
-          ),
           codeHandle && !dragState && !blockDragState && /* @__PURE__ */ jsx(
             "div",
             {
               className: "table-handle code-handle",
               style: { top: codeHandle.top, left: codeHandle.left },
               onMouseDown: (e) => {
-                if (isDetailsDragBlocked(codeHandle.pos)) return;
                 const node = editor.state.doc.nodeAt(codeHandle.pos);
                 if (!node) return;
                 setBlockDragPending({
@@ -36358,7 +35566,6 @@ ${innerMarkdown}
               className: "table-handle mermaid-handle",
               style: { top: handle.top, left: handle.left },
               onMouseDown: (e) => {
-                if (isDetailsDragBlocked(handle.pos)) return;
                 const node = editor.state.doc.nodeAt(handle.pos);
                 if (!node) return;
                 setBlockDragPending({
@@ -36404,40 +35611,6 @@ ${innerMarkdown}
                     alert.type
                   );
                 })
-              }
-            )
-          ] }),
-          detailsMenu && /* @__PURE__ */ jsxs(Fragment3, { children: [
-            /* @__PURE__ */ jsx("div", { style: { position: "fixed", inset: 0, zIndex: 999 }, onClick: () => setDetailsMenu(null) }),
-            /* @__PURE__ */ jsxs(
-              "div",
-              {
-                className: "quote-context-menu",
-                style: { top: detailsMenu.top, left: detailsMenu.left },
-                children: [
-                  /* @__PURE__ */ jsx(
-                    "div",
-                    {
-                      className: "quote-context-menu-item",
-                      onClick: () => {
-                        setAllDetailsOpen(true);
-                        setDetailsMenu(null);
-                      },
-                      children: "Tout d\xE9plier"
-                    }
-                  ),
-                  /* @__PURE__ */ jsx(
-                    "div",
-                    {
-                      className: "quote-context-menu-item",
-                      onClick: () => {
-                        setAllDetailsOpen(false);
-                        setDetailsMenu(null);
-                      },
-                      children: "Tout replier"
-                    }
-                  )
-                ]
               }
             )
           ] }),
@@ -56774,7 +55947,6 @@ lucide-react/dist/esm/icons/info.js:
 lucide-react/dist/esm/icons/italic.js:
 lucide-react/dist/esm/icons/lightbulb.js:
 lucide-react/dist/esm/icons/link.js:
-lucide-react/dist/esm/icons/list-tree.js:
 lucide-react/dist/esm/icons/list.js:
 lucide-react/dist/esm/icons/loader-circle.js:
 lucide-react/dist/esm/icons/message-square.js:
