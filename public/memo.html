@@ -589,7 +589,8 @@
         }
 
         .editor-wrap {
-            padding: 0px 0px 10px 0px;
+            padding: 0px 0px 15px 0px;
+            margin-left: 15px;
             flex: 1;
             overflow-y: auto;
             background: var(--bg-surface);
@@ -655,10 +656,11 @@
 
         .ProseMirror code {
             background: var(--bg-gray);
-            color: var(--text-main);
+            color: inherit;
             padding: 2px 6px;
             border-radius: 8px;
             font-size: .95em;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
         }
 
         /* Bubble menu */
@@ -1334,7 +1336,7 @@
             function updateEmptyState() {
                 const hasOpenDoc = openDocuments.length > 0 && Boolean(activeDocumentId);
                 if (templateModalTrigger) {
-                    templateModalTrigger.style.display = hasOpenDoc ? "" : "none";
+                    templateModalTrigger.style.display = "";
                 }
                 if (fileMenuTrigger) {
                     fileMenuTrigger.style.display = hasOpenDoc ? "" : "none";
@@ -1839,6 +1841,11 @@
             }
 
             window.GoToolkitMemoAppendText = appendToActiveTab;
+            window.scrollMemoEditorToEnd = function () {
+                const editorWrap = document.querySelector('.editor-wrap');
+                if (!editorWrap) return;
+                editorWrap.scrollTop = editorWrap.scrollHeight;
+            };
 
             function addTab() {
                 const id = createId();

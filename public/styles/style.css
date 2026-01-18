@@ -11,29 +11,34 @@
   --color-primary-soft: rgba(42, 122, 87, 0.2);
 
   /* 3. Background & Text Color Palettes */
+  --bg-highlight: #fff59d;
   --bg-none: transparent;
-  --bg-gray: #cbd5e1;
-  --bg-red: #e48787;
-  --bg-orange: #f0b484;
-  --bg-yellow: #eddd8d;
-  --bg-green: #89d6a5;
-  --bg-blue: #7faadd;
-  --bg-purple: #b186dc;
+  --bg-gray: #f1f1ef;
+  --bg-brown: #f3eeee;
+  --bg-orange: #f8ecdf;
+  --bg-yellow: #faf3dd;
+  --bg-green: #eef3ed;
+  --bg-blue: #e9f3f7;
+  --bg-purple: #f6f3f8;
+  --bg-pink: #f9f2f5;
+  --bg-red: #faecec;
 
   --bg-text-main: var(--text-main);
-  --bg-text-gray: #57595c;
-  --bg-text-red: #dc2626;
-  --bg-text-orange: #d97706;
-  --bg-text-yellow: #cac004;
-  --bg-text-green: #16a34a;
-  --bg-text-blue: #074795;
-  --bg-text-purple: #6614d1;
+  --bg-text-gray: #787774;
+  --bg-text-brown: #976d57;
+  --bg-text-orange: #cc782f;
+  --bg-text-yellow: #c29343;
+  --bg-text-green: #548164;
+  --bg-text-blue: #487ca5;
+  --bg-text-purple: #8a67ab;
+  --bg-text-pink: #b35488;
+  --bg-text-red: #c4554d;
 
   /* 4. Functional Theme Tokens (DONT USE DIRECTLY) */
   --bg-app: #000000;
   --bg-surface: #222222;
   --bg-surface-soft: #424242;
-  --text-main: #f5f5f5;
+  --text-main: #373530;
   --text-muted: #9ca3af;
   --border-main: #262626;
   --border-strong: #404040;
@@ -48,11 +53,13 @@
   --shadow-lg: 0 18px 40px rgba(0, 0, 0, 0.6);
 
   /* 6. Intent States */
-  --intent-info-border: #1d4ed8;
-  --intent-success-border: #15803d;
-  --intent-warning-border: #a16207;
-  --intent-error-border: #b91c1c;
-  --intent-important-border: #7c3aed;
+  --intent-info-border: var(--bg-text-blue);
+  --intent-success-border: var(--bg-text-green);
+  --intent-warning-border: var(--bg-text-orange);
+  --intent-error-border: var(--bg-text-red);
+  --intent-important-border: var(--bg-text-purple);
+  --intent-quote-border: var(--bg-text-gray);
+  --intent-quote-border: var(--bg-text-gray);
 
   /* Legacy Compat/Internal */
   --tooltip-bg: rgba(0, 0, 0, 0.85);
@@ -80,7 +87,7 @@
   color-scheme: light;
   --bg-app: #f5f2eb;
   --bg-surface: #fff9f9; 
-  --bg-surface-soft: #eee6e6; 
+  --bg-surface-soft: #f3ecec; 
   --text-main: #2f2922;
   --text-muted: #817a71;
   --border-main: #ece4e4;
@@ -100,6 +107,15 @@
   --text-muted: #6d6664;
   --border-main: #4b4949;
   --border-strong: #7d7979;
+  --bg-text-gray: #9b9b9b;
+  --bg-text-brown: #a27763;
+  --bg-text-orange: #cb7b37;
+  --bg-text-yellow: #c19138;
+  --bg-text-green: #4f9768;
+  --bg-text-blue: #447acb;
+  --bg-text-purple: #865dbb;
+  --bg-text-pink: #ba4a78;
+  --bg-text-red: #be524b;
   --scrollbar-thumb: rgba(255, 255, 255, 0.1);
   --scrollbar-thumb-hover: rgba(255, 255, 255, 0.15);
   --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.5);
@@ -107,11 +123,11 @@
   --color-primary-soft: rgba(42, 122, 87, 0.2);
 
   /* Dark Intents */
-  --intent-info-border: #3b82f6;
-  --intent-success-border: #22c55e;
-  --intent-warning-border: #eab308;
-  --intent-error-border: #ef4444;
-  --intent-important-border: #8b5cf6;
+  --intent-info-border: var(--bg-text-blue);
+  --intent-success-border: var(--bg-text-green);
+  --intent-warning-border: var(--bg-text-orange);
+  --intent-error-border: var(--bg-text-red);
+  --intent-important-border: var(--bg-text-purple);
 }
 
 /* Logo Theme Switch */
@@ -707,7 +723,7 @@ body.context-resizing {
 }
 
 mark {
-  background-color: var(--bg-yellow);
+  background-color: var(--bg-highlight);
 }
 
 
@@ -2531,6 +2547,27 @@ label {
 
 .bubble-reject {
   color: var(--intent-error-border);
+}
+
+.table-color-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 20px);
+  gap: 6px;
+  padding: 6px;
+  border-radius: 8px;
+  border: 1px solid var(--border-main);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-md);
+  z-index: 1100;
+  pointer-events: auto;
+}
+
+.table-color-option {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid var(--border-main);
 }
 
 /* Toolbar action buttons (global keep/reject all) */

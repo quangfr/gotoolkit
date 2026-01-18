@@ -19350,11 +19350,11 @@ img.ProseMirror-separator {
   });
   var useReactNodeView = () => useContext(ReactNodeViewContext);
   var NodeViewContent = (props) => {
-    const Tag = props.as || "div";
+    const Tag2 = props.as || "div";
     const { nodeViewContentRef } = useReactNodeView();
     return (
       // @ts-ignore
-      react_shim_default.createElement(Tag, { ...props, ref: nodeViewContentRef, "data-node-view-content": "", style: {
+      react_shim_default.createElement(Tag2, { ...props, ref: nodeViewContentRef, "data-node-view-content": "", style: {
         whiteSpace: "pre-wrap",
         ...props.style
       } })
@@ -19362,10 +19362,10 @@ img.ProseMirror-separator {
   };
   var NodeViewWrapper = react_shim_default.forwardRef((props, ref2) => {
     const { onDragStart } = useReactNodeView();
-    const Tag = props.as || "div";
+    const Tag2 = props.as || "div";
     return (
       // @ts-ignore
-      react_shim_default.createElement(Tag, { ...props, ref: ref2, "data-node-view-wrapper": "", onDragStart, style: {
+      react_shim_default.createElement(Tag2, { ...props, ref: ref2, "data-node-view-wrapper": "", onDragStart, style: {
         whiteSpace: "normal",
         ...props.style
       } })
@@ -28050,37 +28050,10 @@ img.ProseMirror-separator {
   });
 
   // src/memo-editor/table-node.tsx
-  var CustomTableCell = TableCell.extend({
-    addAttributes() {
-      var _a;
-      return {
-        ...(_a = this.parent) == null ? void 0 : _a.call(this),
-        backgroundColor: {
-          default: null,
-          parseHTML: (element) => element.getAttribute("data-background-color"),
-          renderHTML: (attributes) => {
-            return {
-              "data-background-color": attributes.backgroundColor,
-              style: `background-color: ${attributes.backgroundColor}`
-            };
-          }
-        }
-      };
-    }
-  });
+  var CustomTableCell = TableCell.extend({});
   var TableNode = Table.configure({
     resizable: true
   });
-  var TABLE_COLORS = [
-    { name: "Aucun", value: "var(--bg-none)" },
-    { name: "Gris", value: "var(--bg-gray)" },
-    { name: "Rouge", value: "var(--bg-red)" },
-    { name: "Orange", value: "var(--bg-orange)" },
-    { name: "Jaune", value: "var(--bg-yellow)" },
-    { name: "Vert", value: "var(--bg-green)" },
-    { name: "Bleu", value: "var(--bg-blue)" },
-    { name: "Violet", value: "var(--bg-purple)" }
-  ];
 
   // src/memo-editor/task-node.tsx
   init_define_process_env();
@@ -28711,28 +28684,10 @@ img.ProseMirror-separator {
   ];
   var MessageSquare = createLucideIcon("message-square", __iconNode29);
 
-  // node_modules/lucide-react/dist/esm/icons/palette.js
-  init_define_process_env();
-  init_polyfills();
-  var __iconNode30 = [
-    [
-      "path",
-      {
-        d: "M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z",
-        key: "e79jfc"
-      }
-    ],
-    ["circle", { cx: "13.5", cy: "6.5", r: ".5", fill: "currentColor", key: "1okk4w" }],
-    ["circle", { cx: "17.5", cy: "10.5", r: ".5", fill: "currentColor", key: "f64h9f" }],
-    ["circle", { cx: "6.5", cy: "12.5", r: ".5", fill: "currentColor", key: "qy21gx" }],
-    ["circle", { cx: "8.5", cy: "7.5", r: ".5", fill: "currentColor", key: "fotxhn" }]
-  ];
-  var Palette = createLucideIcon("palette", __iconNode30);
-
   // node_modules/lucide-react/dist/esm/icons/pencil.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode31 = [
+  var __iconNode30 = [
     [
       "path",
       {
@@ -28742,38 +28697,38 @@ img.ProseMirror-separator {
     ],
     ["path", { d: "m15 5 4 4", key: "1mk7zo" }]
   ];
-  var Pencil = createLucideIcon("pencil", __iconNode31);
+  var Pencil = createLucideIcon("pencil", __iconNode30);
 
   // node_modules/lucide-react/dist/esm/icons/plus.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode32 = [
+  var __iconNode31 = [
     ["path", { d: "M5 12h14", key: "1ays0h" }],
     ["path", { d: "M12 5v14", key: "s699le" }]
   ];
-  var Plus = createLucideIcon("plus", __iconNode32);
+  var Plus = createLucideIcon("plus", __iconNode31);
 
   // node_modules/lucide-react/dist/esm/icons/rectangle-horizontal.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode33 = [
+  var __iconNode32 = [
     ["rect", { width: "20", height: "12", x: "2", y: "6", rx: "2", key: "9lu3g6" }]
   ];
-  var RectangleHorizontal = createLucideIcon("rectangle-horizontal", __iconNode33);
+  var RectangleHorizontal = createLucideIcon("rectangle-horizontal", __iconNode32);
 
   // node_modules/lucide-react/dist/esm/icons/redo-2.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode34 = [
+  var __iconNode33 = [
     ["path", { d: "m15 14 5-5-5-5", key: "12vg1m" }],
     ["path", { d: "M20 9H9.5A5.5 5.5 0 0 0 4 14.5A5.5 5.5 0 0 0 9.5 20H13", key: "6uklza" }]
   ];
-  var Redo2 = createLucideIcon("redo-2", __iconNode34);
+  var Redo2 = createLucideIcon("redo-2", __iconNode33);
 
   // node_modules/lucide-react/dist/esm/icons/send.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode35 = [
+  var __iconNode34 = [
     [
       "path",
       {
@@ -28783,12 +28738,12 @@ img.ProseMirror-separator {
     ],
     ["path", { d: "m21.854 2.147-10.94 10.939", key: "12cjpa" }]
   ];
-  var Send = createLucideIcon("send", __iconNode35);
+  var Send = createLucideIcon("send", __iconNode34);
 
   // node_modules/lucide-react/dist/esm/icons/shapes.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode36 = [
+  var __iconNode35 = [
     [
       "path",
       {
@@ -28799,42 +28754,42 @@ img.ProseMirror-separator {
     ["rect", { x: "3", y: "14", width: "7", height: "7", rx: "1", key: "1bkyp8" }],
     ["circle", { cx: "17.5", cy: "17.5", r: "3.5", key: "w3z12y" }]
   ];
-  var Shapes = createLucideIcon("shapes", __iconNode36);
+  var Shapes = createLucideIcon("shapes", __iconNode35);
 
   // node_modules/lucide-react/dist/esm/icons/square-check-big.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode37 = [
+  var __iconNode36 = [
     [
       "path",
       { d: "M21 10.656V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h12.344", key: "2acyp4" }
     ],
     ["path", { d: "m9 11 3 3L22 4", key: "1pflzl" }]
   ];
-  var SquareCheckBig = createLucideIcon("square-check-big", __iconNode37);
+  var SquareCheckBig = createLucideIcon("square-check-big", __iconNode36);
 
   // node_modules/lucide-react/dist/esm/icons/square-code.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode38 = [
+  var __iconNode37 = [
     ["path", { d: "m10 9-3 3 3 3", key: "1oro0q" }],
     ["path", { d: "m14 15 3-3-3-3", key: "bz13h7" }],
     ["rect", { x: "3", y: "3", width: "18", height: "18", rx: "2", key: "h1oib" }]
   ];
-  var SquareCode = createLucideIcon("square-code", __iconNode38);
+  var SquareCode = createLucideIcon("square-code", __iconNode37);
 
   // node_modules/lucide-react/dist/esm/icons/square.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode39 = [
+  var __iconNode38 = [
     ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }]
   ];
-  var Square = createLucideIcon("square", __iconNode39);
+  var Square = createLucideIcon("square", __iconNode38);
 
   // node_modules/lucide-react/dist/esm/icons/star.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode40 = [
+  var __iconNode39 = [
     [
       "path",
       {
@@ -28843,28 +28798,43 @@ img.ProseMirror-separator {
       }
     ]
   ];
-  var Star = createLucideIcon("star", __iconNode40);
+  var Star = createLucideIcon("star", __iconNode39);
 
   // node_modules/lucide-react/dist/esm/icons/strikethrough.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode41 = [
+  var __iconNode40 = [
     ["path", { d: "M16 4H9a3 3 0 0 0-2.83 4", key: "43sutm" }],
     ["path", { d: "M14 12a4 4 0 0 1 0 8H6", key: "nlfj13" }],
     ["line", { x1: "4", x2: "20", y1: "12", y2: "12", key: "1e0a9i" }]
   ];
-  var Strikethrough = createLucideIcon("strikethrough", __iconNode41);
+  var Strikethrough = createLucideIcon("strikethrough", __iconNode40);
 
   // node_modules/lucide-react/dist/esm/icons/table.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode42 = [
+  var __iconNode41 = [
     ["path", { d: "M12 3v18", key: "108xh3" }],
     ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }],
     ["path", { d: "M3 9h18", key: "1pudct" }],
     ["path", { d: "M3 15h18", key: "5xshup" }]
   ];
-  var Table2 = createLucideIcon("table", __iconNode42);
+  var Table2 = createLucideIcon("table", __iconNode41);
+
+  // node_modules/lucide-react/dist/esm/icons/tag.js
+  init_define_process_env();
+  init_polyfills();
+  var __iconNode42 = [
+    [
+      "path",
+      {
+        d: "M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z",
+        key: "vktsd0"
+      }
+    ],
+    ["circle", { cx: "7.5", cy: "7.5", r: ".5", fill: "currentColor", key: "kqv944" }]
+  ];
+  var Tag = createLucideIcon("tag", __iconNode42);
 
   // node_modules/lucide-react/dist/esm/icons/trash-2.js
   init_define_process_env();
@@ -31873,7 +31843,7 @@ ${content}</tr>
       { id: "class", label: "Structure", promptValue: "classDiagram", Icon: Boxes }
     ];
     const getDiagramTypeFromCode = (c) => {
-      const header = getDiagramHeaderLine(c).toLowerCase();
+      const header = getDiagramHeaderLine2(c).toLowerCase();
       if (header.startsWith("sequencediagram")) return "sequence";
       if (header.startsWith("classdiagram")) return "class";
       if (header.startsWith("flowchart") || header.startsWith("graph")) return "flow";
@@ -31976,7 +31946,7 @@ ${promptInput.trim()}`
         setIsGenerating(false);
       }
     };
-    const getDiagramHeaderLine = (c) => {
+    const getDiagramHeaderLine2 = (c) => {
       const lines = (c || "").split("\n");
       for (let i = 0; i < Math.min(lines.length, 5); i++) {
         const line = lines[i].trim();
@@ -31986,14 +31956,14 @@ ${promptInput.trim()}`
       return "";
     };
     const getFlowchartDirection = (c) => {
-      const line = getDiagramHeaderLine(c);
+      const line = getDiagramHeaderLine2(c);
       if (/^(flowchart|graph)\b/i.test(line)) {
         const match = line.match(/\b(LR|TD|TB|BT|RL)\b/i);
         return match ? match[1].toUpperCase() : null;
       }
       return null;
     };
-    const setFlowchartDirection = (c, direction) => {
+    const setFlowchartDirection2 = (c, direction) => {
       const lines = (c || "").split("\n");
       let updated = false;
       for (let i = 0; i < Math.min(lines.length, 5); i++) {
@@ -32014,7 +31984,7 @@ ${promptInput.trim()}`
       return { code: lines.join("\n"), updated };
     };
     const getAutoDetectedSize = (c) => {
-      const header = getDiagramHeaderLine(c).toLowerCase();
+      const header = getDiagramHeaderLine2(c).toLowerCase();
       if (header.startsWith("classdiagram")) return "large";
       if (header.startsWith("sequencediagram")) return "small";
       const direction = getFlowchartDirection(c);
@@ -32024,7 +31994,7 @@ ${promptInput.trim()}`
       return "small";
     };
     const isSizeSelectorVisible = (c) => {
-      const header = getDiagramHeaderLine(c).toLowerCase();
+      const header = getDiagramHeaderLine2(c).toLowerCase();
       if (header.startsWith("sequencediagram") || header.startsWith("classdiagram")) return false;
       return header.startsWith("flowchart") || header.startsWith("graph");
     };
@@ -32312,11 +32282,11 @@ ${promptInput.trim()}`
       setIsLoading(true);
       try {
         let updatedCode = sourceCode || draftCode || code;
-        const headerLine = getDiagramHeaderLine(updatedCode).toLowerCase();
+        const headerLine = getDiagramHeaderLine2(updatedCode).toLowerCase();
         const isFlowchart = headerLine.startsWith("flowchart") || headerLine.startsWith("graph");
         if (isFlowchart) {
           const direction = newSize === "large" ? "TD" : "LR";
-          const { code: nextCode, updated } = setFlowchartDirection(updatedCode, direction);
+          const { code: nextCode, updated } = setFlowchartDirection2(updatedCode, direction);
           if (updated) {
             updatedCode = nextCode;
             if (sourceCode !== code) {
@@ -32341,7 +32311,7 @@ ${promptInput.trim()}`
     return /* @__PURE__ */ jsxs(Fragment3, { children: [
       /* @__PURE__ */ jsxs(NodeViewWrapper, { className: "mermaid-diagram-wrapper node-mermaidDiagram", children: [
         /* @__PURE__ */ jsx("div", { className: "table-handle mermaid-node-handle", title: "D\xE9placer", children: "\u283F" }),
-        /* @__PURE__ */ jsxs(
+        /* @__PURE__ */ jsx(
           "div",
           {
             ref: containerRef,
@@ -32366,58 +32336,21 @@ ${promptInput.trim()}`
               transform: "none",
               minWidth: "100px"
             },
-            children: [
-              showSizeSelector && code.trim() && /* @__PURE__ */ jsx(
-                "div",
-                {
-                  className: "mermaid-controls",
-                  onClick: (e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                  },
-                  onMouseDown: (e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                  },
-                  onDoubleClick: (e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                  },
-                  children: [
-                    { id: "small", label: "Rectangle", Icon: RectangleHorizontal },
-                    { id: "large", label: "Carr\xE9", Icon: Square }
-                  ].map((s) => /* @__PURE__ */ jsx(
-                    "button",
-                    {
-                      className: `size-btn ${size2 === s.id ? "active" : ""}`,
-                      onClick: (e) => {
-                        e.stopPropagation();
-                        e.preventDefault();
-                        handleSizeChange(s.id, code);
-                      },
-                      title: s.label,
-                      children: /* @__PURE__ */ jsx(s.Icon, { size: 14 })
-                    },
-                    s.id
-                  ))
-                }
-              ),
-              error ? /* @__PURE__ */ jsxs("div", { className: "mermaid-error", children: [
-                /* @__PURE__ */ jsx("div", { className: "mermaid-error-icon", children: "\u26A0\uFE0E" }),
-                /* @__PURE__ */ jsx("div", { className: "mermaid-error-text", children: "Erreur de syntaxe" }),
-                /* @__PURE__ */ jsx("div", { className: "mermaid-error-hint", children: "Double-cliquez pour corriger" })
-              ] }) : svg ? /* @__PURE__ */ jsx(
-                "div",
-                {
-                  className: "mermaid-svg-container",
-                  dangerouslySetInnerHTML: { __html: svg }
-                }
-              ) : /* @__PURE__ */ jsxs("div", { className: "mermaid-placeholder", children: [
-                /* @__PURE__ */ jsx("div", { className: "mermaid-placeholder-icon", children: /* @__PURE__ */ jsx(Shapes, { size: 32 }) }),
-                /* @__PURE__ */ jsx("div", { className: "mermaid-placeholder-text", children: "Diagramme vide" }),
-                /* @__PURE__ */ jsx("div", { className: "mermaid-placeholder-hint", children: "Double-cliquez pour \xE9diter" })
-              ] })
-            ]
+            children: error ? /* @__PURE__ */ jsxs("div", { className: "mermaid-error", children: [
+              /* @__PURE__ */ jsx("div", { className: "mermaid-error-icon", children: "\u26A0\uFE0E" }),
+              /* @__PURE__ */ jsx("div", { className: "mermaid-error-text", children: "Erreur de syntaxe" }),
+              /* @__PURE__ */ jsx("div", { className: "mermaid-error-hint", children: "Double-cliquez pour corriger" })
+            ] }) : svg ? /* @__PURE__ */ jsx(
+              "div",
+              {
+                className: "mermaid-svg-container",
+                dangerouslySetInnerHTML: { __html: svg }
+              }
+            ) : /* @__PURE__ */ jsxs("div", { className: "mermaid-placeholder", children: [
+              /* @__PURE__ */ jsx("div", { className: "mermaid-placeholder-icon", children: /* @__PURE__ */ jsx(Shapes, { size: 32 }) }),
+              /* @__PURE__ */ jsx("div", { className: "mermaid-placeholder-text", children: "Diagramme vide" }),
+              /* @__PURE__ */ jsx("div", { className: "mermaid-placeholder-hint", children: "Double-cliquez pour \xE9diter" })
+            ] })
           }
         )
       ] }),
@@ -32805,12 +32738,22 @@ ${promptInput.trim()}`
           default: true,
           parseHTML: (element) => element.hasAttribute("open") || element.getAttribute("data-open") === "true",
           renderHTML: (attributes) => {
-            return {
-              open: attributes.open ? "" : null
-            };
+            return {};
           }
         }
       };
+    }
+  });
+  var CustomCode = Code.extend({
+    excludes: "",
+    inclusive: false,
+    addInputRules() {
+      return [
+        markInputRule({
+          find: /(?:^|\s)(`([^`]+)`)$/,
+          type: this.type
+        })
+      ];
     }
   });
   var CustomHeading = Heading.extend({
@@ -32878,6 +32821,46 @@ ${promptInput.trim()}`
       });
     }
   });
+  var hasAncestorNode = ($pos, typeName) => {
+    for (let d = $pos.depth; d > 0; d--) {
+      if ($pos.node(d).type.name === typeName) return true;
+    }
+    return false;
+  };
+  var getDiagramHeaderLine = (code) => {
+    const lines = (code || "").split("\n");
+    for (let i = 0; i < Math.min(lines.length, 5); i++) {
+      const rawLine = lines[i];
+      const line = rawLine.trim();
+      if (!line || line.startsWith("%%")) continue;
+      return line;
+    }
+    return "";
+  };
+  var isFlowchartDiagram = (code) => {
+    const header = getDiagramHeaderLine(code).toLowerCase();
+    return header.startsWith("flowchart") || header.startsWith("graph");
+  };
+  var setFlowchartDirection = (code, direction) => {
+    const lines = (code || "").split("\n");
+    let updated = false;
+    for (let i = 0; i < Math.min(lines.length, 5); i++) {
+      const rawLine = lines[i];
+      const line = rawLine.trim();
+      if (!line || line.startsWith("%%")) continue;
+      if (/^(flowchart|graph)\b/i.test(line)) {
+        const directionMatch = rawLine.match(/(flowchart|graph)\s+(LR|TD|TB|BT|RL)/i);
+        if (directionMatch) {
+          lines[i] = rawLine.replace(/(flowchart|graph)\s+(LR|TD|TB|BT|RL)/i, `$1 ${direction}`);
+        } else {
+          lines[i] = rawLine.replace(/(flowchart|graph)/i, `$1 ${direction}`);
+        }
+        updated = true;
+        break;
+      }
+    }
+    return { code: lines.join("\n"), updated };
+  };
   var selectTableCellText = (view, pos) => {
     const { state: state2 } = view;
     const $pos = state2.doc.resolve(pos);
@@ -32905,7 +32888,7 @@ ${promptInput.trim()}`
   });
   var CustomCodeBlock = CodeBlock.extend({
     addNodeView() {
-      return ReactNodeViewRenderer(() => /* @__PURE__ */ jsx(NodeViewWrapper, { className: "node-text", children: /* @__PURE__ */ jsx("pre", { children: /* @__PURE__ */ jsx(NodeViewContent, { as: "code" }) }) }));
+      return ReactNodeViewRenderer(() => /* @__PURE__ */ jsx(NodeViewWrapper, { className: "node-text node-codeBlock", children: /* @__PURE__ */ jsx("pre", { children: /* @__PURE__ */ jsx(NodeViewContent, { as: "code" }) }) }));
     }
   });
   var LinkSearchModal = ({ editor, onClose }) => {
@@ -33076,7 +33059,7 @@ ${promptInput.trim()}`
             if ($from.parent.type.name !== "paragraph") {
               return null;
             }
-            chain().deleteRange(range2).setDetails().run();
+            chain().deleteRange(range2).setDetails().updateAttributes("details", { open: true }).run();
           }
         })
       ];
@@ -33085,17 +33068,18 @@ ${promptInput.trim()}`
   var TEXT_COLORS = [
     { name: "D\xE9faut", value: "var(--bg-text-main)" },
     { name: "Gris", value: "var(--bg-text-gray)" },
-    { name: "Rouge", value: "var(--bg-text-red)" },
+    { name: "Marron", value: "var(--bg-text-brown)" },
     { name: "Orange", value: "var(--bg-text-orange)" },
     { name: "Jaune", value: "var(--bg-text-yellow)" },
     { name: "Vert", value: "var(--bg-text-green)" },
     { name: "Bleu", value: "var(--bg-text-blue)" },
-    { name: "Violet", value: "var(--bg-text-purple)" }
+    { name: "Violet", value: "var(--bg-text-purple)" },
+    { name: "Rose", value: "var(--bg-text-pink)" },
+    { name: "Rouge", value: "var(--bg-text-red)" }
   ];
   var BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLink }) => {
     const [position, setPosition] = react_shim_default.useState({ top: 0, left: 0, opacity: 0 });
     const [hasMarks, setHasMarks] = react_shim_default.useState(false);
-    const [showColors, setShowColors] = react_shim_default.useState(false);
     const [showTextColors, setShowTextColors] = react_shim_default.useState(false);
     const menuRef = react_shim_default.useRef(null);
     const containerRef = react_shim_default.useRef(null);
@@ -33104,14 +33088,13 @@ ${promptInput.trim()}`
       var _a, _b, _c;
       if (!editor || !visible || pointerDownRef.current) {
         setPosition((prev) => ({ ...prev, opacity: 0 }));
-        setShowColors(false);
         setShowTextColors(false);
         return;
       }
       const { from: from2, to } = editor.state.selection;
       if (from2 === to || editor.isActive("mermaidDiagram")) {
         setPosition((prev) => ({ ...prev, opacity: 0 }));
-        setShowColors(false);
+        setShowTextColors(false);
         setShowTextColors(false);
         return;
       }
@@ -33124,7 +33107,7 @@ ${promptInput.trim()}`
         const end = view.coordsAtPos(to);
         if (!start || !end) {
           setPosition((prev) => ({ ...prev, opacity: 0 }));
-          setShowColors(false);
+          setShowTextColors(false);
           setShowTextColors(false);
           return;
         }
@@ -33163,10 +33146,12 @@ ${promptInput.trim()}`
     react_shim_default.useEffect(() => {
       if (!editor) return;
       const viewDom = editor.view.dom;
-      const handlePointerDown = () => {
+      const handlePointerDown = (event) => {
+        if (menuRef.current && menuRef.current.contains(event.target)) {
+          return;
+        }
         pointerDownRef.current = true;
         setPosition((prev) => ({ ...prev, opacity: 0 }));
-        setShowColors(false);
         setShowTextColors(false);
       };
       const handlePointerUp = () => {
@@ -33256,15 +33241,15 @@ ${promptInput.trim()}`
                 {
                   className: "tiptap-button",
                   type: "button",
+                  onMouseDown: (event) => event.preventDefault(),
                   onClick: () => {
                     setShowTextColors(!showTextColors);
-                    setShowColors(false);
                   },
                   title: "Couleur du texte",
                   children: /* @__PURE__ */ jsx(Baseline, { size: 14 })
                 }
               ),
-              showTextColors && /* @__PURE__ */ jsxs(
+              showTextColors && /* @__PURE__ */ jsx(
                 "div",
                 {
                   className: "table-color-grid",
@@ -33275,52 +33260,22 @@ ${promptInput.trim()}`
                     transform: "translateX(-50%)",
                     marginTop: "8px"
                   },
-                  children: [
-                    TEXT_COLORS.map((color) => /* @__PURE__ */ jsx(
-                      "div",
-                      {
-                        className: "table-color-option",
-                        style: {
-                          width: "20px",
-                          height: "20px",
-                          backgroundColor: color.value,
-                          borderRadius: "4px",
-                          cursor: "pointer",
-                          border: "1px solid var(--border-main)"
-                        },
-                        title: color.name,
-                        onClick: () => {
-                          editor.chain().focus().setColor(color.value).run();
-                          setShowTextColors(false);
-                        }
+                  children: TEXT_COLORS.map((color) => /* @__PURE__ */ jsx(
+                    "div",
+                    {
+                      className: "table-color-option",
+                      style: {
+                        backgroundColor: color.value
                       },
-                      color.value
-                    )),
-                    /* @__PURE__ */ jsx(
-                      "div",
-                      {
-                        className: "table-color-option",
-                        style: {
-                          width: "20px",
-                          height: "20px",
-                          backgroundColor: "var(--white)",
-                          borderRadius: "4px",
-                          cursor: "pointer",
-                          border: "1px solid var(--border-main)",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: "10px"
-                        },
-                        title: "R\xE9initialiser",
-                        onClick: () => {
-                          editor.chain().focus().unsetColor().run();
-                          setShowTextColors(false);
-                        },
-                        children: /* @__PURE__ */ jsx(X, { size: 10 })
+                      title: color.name,
+                      onMouseDown: (event) => event.preventDefault(),
+                      onClick: () => {
+                        editor.chain().focus().setColor(color.value).run();
+                        setShowTextColors(false);
                       }
-                    )
-                  ]
+                    },
+                    color.value
+                  ))
                 }
               )
             ] }),
@@ -33357,55 +33312,7 @@ ${promptInput.trim()}`
                 title: "Lien",
                 children: /* @__PURE__ */ jsx(Link2, { size: 14 })
               }
-            ),
-            (editor.isActive("tableCell") || editor.isActive("tableHeader")) && /* @__PURE__ */ jsxs("div", { style: { position: "relative" }, children: [
-              /* @__PURE__ */ jsx(
-                "button",
-                {
-                  className: "tiptap-button",
-                  type: "button",
-                  onClick: () => {
-                    setShowColors(!showColors);
-                    setShowTextColors(false);
-                  },
-                  title: "Couleur de cellule",
-                  children: /* @__PURE__ */ jsx(Palette, { size: 14 })
-                }
-              ),
-              showColors && /* @__PURE__ */ jsx(
-                "div",
-                {
-                  className: "table-color-grid",
-                  style: {
-                    position: "absolute",
-                    top: "100%",
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    marginTop: "8px"
-                  },
-                  children: TABLE_COLORS.map((color) => /* @__PURE__ */ jsx(
-                    "div",
-                    {
-                      className: "table-color-option",
-                      style: {
-                        width: "20px",
-                        height: "20px",
-                        backgroundColor: color.value === "var(--bg-none)" ? "var(--white)" : color.value,
-                        border: color.value === "var(--bg-none)" ? "1px solid var(--border-main)" : "none",
-                        borderRadius: "4px",
-                        cursor: "pointer"
-                      },
-                      title: color.name,
-                      onClick: () => {
-                        editor.chain().focus().setCellAttribute("backgroundColor", color.value).run();
-                        setShowColors(false);
-                      }
-                    },
-                    color.value
-                  ))
-                }
-              )
-            ] })
+            )
           ] }),
           hasMarks && /* @__PURE__ */ jsxs(Fragment3, { children: [
             /* @__PURE__ */ jsx("div", { className: "tiptap-separator", "data-orientation": "vertical", role: "none" }),
@@ -33883,12 +33790,13 @@ ${promptInput.trim()}`
               className: "tiptap-button",
               "aria-label": "Text Color",
               type: "button",
+              onMouseDown: (event) => event.preventDefault(),
               onClick: () => setShowTextColors(!showTextColors),
               title: "Couleur du texte",
               children: /* @__PURE__ */ jsx(Baseline, { size: 16 })
             }
           ),
-          showTextColors && /* @__PURE__ */ jsxs(
+          showTextColors && /* @__PURE__ */ jsx(
             "div",
             {
               className: "table-color-grid",
@@ -33899,55 +33807,28 @@ ${promptInput.trim()}`
                 transform: "translateX(-50%)",
                 marginTop: "8px"
               },
-              children: [
-                TEXT_COLORS.map((color) => /* @__PURE__ */ jsx(
-                  "div",
-                  {
-                    className: "table-color-option",
-                    style: {
-                      width: "20px",
-                      height: "20px",
-                      backgroundColor: color.value,
-                      borderRadius: "4px",
-                      cursor: "pointer",
-                      border: "1px solid var(--border-main)"
-                    },
-                    title: color.name,
-                    onClick: () => {
-                      editor.chain().focus().setColor(color.value).run();
-                      setShowTextColors(false);
-                    }
+              children: TEXT_COLORS.map((color) => /* @__PURE__ */ jsx(
+                "div",
+                {
+                  className: "table-color-option",
+                  style: {
+                    backgroundColor: color.value
                   },
-                  color.value
-                )),
-                /* @__PURE__ */ jsx(
-                  "div",
-                  {
-                    className: "table-color-option",
-                    style: {
-                      width: "20px",
-                      height: "20px",
-                      backgroundColor: "var(--white)",
-                      borderRadius: "4px",
-                      cursor: "pointer",
-                      border: "1px solid var(--border-main)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: "10px"
-                    },
-                    title: "R\xE9initialiser",
-                    onClick: () => {
-                      editor.chain().focus().unsetColor().run();
-                      setShowTextColors(false);
-                    },
-                    children: /* @__PURE__ */ jsx(X, { size: 10 })
+                  title: color.name,
+                  onMouseDown: (event) => event.preventDefault(),
+                  onClick: () => {
+                    editor.chain().focus().setColor(color.value).run();
+                    setShowTextColors(false);
                   }
-                )
-              ]
+                },
+                color.value
+              ))
             }
           )
-        ] }),
+        ] })
+      ] }),
+      /* @__PURE__ */ jsx("div", { className: "tiptap-separator", "data-orientation": "vertical", role: "none" }),
+      /* @__PURE__ */ jsxs("div", { role: "group", className: "tiptap-toolbar-group", "aria-label": "Texte avanc\xE9", children: [
         /* @__PURE__ */ jsx(
           "button",
           {
@@ -33990,10 +33871,24 @@ ${promptInput.trim()}`
           "button",
           {
             className: "tiptap-button",
+            "aria-label": "Libell\xE9",
+            type: "button",
+            onClick: () => {
+              editor.chain().focus().insertContent("`").run();
+            },
+            "data-active-state": editor.isActive("code") ? "on" : "off",
+            title: "Libell\xE9",
+            children: /* @__PURE__ */ jsx(Tag, { size: 16 })
+          }
+        ),
+        /* @__PURE__ */ jsx(
+          "button",
+          {
+            className: "tiptap-button",
             "aria-label": "Bloc d\xE9pliable",
             type: "button",
             onClick: () => {
-              editor.chain().focus().setDetails().run();
+              editor.chain().focus().setDetails().updateAttributes("details", { open: true }).run();
               setTimeout(() => {
                 const { state: state2 } = editor;
                 const { selection } = state2;
@@ -34079,9 +33974,12 @@ ${promptInput.trim()}`
     const selectItem = (index) => {
       var _a2;
       const item = (_a2 = props.items) == null ? void 0 : _a2[index];
-      if (item) {
+      if (!item) return;
+      if (typeof item === "string") {
         props.command({ text: item });
+        return;
       }
+      props.command({ text: item.text, marks: item.marks || [] });
     };
     const upHandler = () => {
       var _a2;
@@ -34141,43 +34039,99 @@ ${promptInput.trim()}`
           minWidth: "150px",
           zIndex: 9999
         },
-        children: props.items.map((item, index) => /* @__PURE__ */ jsx(
-          "button",
-          {
-            onClick: () => selectItem(index),
-            style: {
-              display: "block",
-              width: "100%",
-              textAlign: "left",
-              padding: "6px 8px",
-              background: index === selectedIndex ? "var(--bg-surface)" : "transparent",
-              border: "none",
-              cursor: "pointer",
-              borderRadius: "4px",
-              fontSize: "13px",
-              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-              color: "var(--text-main)"
+        children: props.items.map((item, index) => {
+          var _a2, _b, _c, _d;
+          const label = typeof item === "string" ? item : item.text;
+          const marks = typeof item === "string" ? [] : item.marks || [];
+          const color = (_b = (_a2 = marks.find((mark) => mark.type === "textStyle")) == null ? void 0 : _a2.attrs) == null ? void 0 : _b.color;
+          const isBold = marks.some((mark) => mark.type === "bold");
+          const isItalic = marks.some((mark) => mark.type === "italic");
+          const isUnderline = marks.some((mark) => mark.type === "underline");
+          const isStrike = marks.some((mark) => mark.type === "strike");
+          const isHighlight = marks.some((mark) => mark.type === "highlight");
+          return /* @__PURE__ */ jsx(
+            "button",
+            {
+              onMouseDown: (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                selectItem(index);
+              },
+              style: {
+                display: "block",
+                width: "100%",
+                textAlign: "left",
+                padding: "6px 8px",
+                background: index === selectedIndex ? "var(--bg-surface)" : "var(--bg-surface-soft)",
+                border: "none",
+                cursor: "pointer",
+                borderRadius: "4px",
+                fontSize: "13px",
+                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                color: color || "var(--text-main)",
+                fontWeight: isBold ? 700 : 400,
+                fontStyle: isItalic ? "italic" : "normal",
+                textDecoration: `${isUnderline ? "underline" : ""}${isStrike ? " line-through" : ""}`.trim() || "none",
+                backgroundColor: isHighlight ? ((_d = (_c = marks.find((mark) => mark.type === "highlight")) == null ? void 0 : _c.attrs) == null ? void 0 : _d.color) || "var(--bg-surface)" : void 0
+              },
+              children: label
             },
-            children: item
-          },
-          index
-        ))
+            index
+          );
+        })
       }
     );
   });
+  var CODE_SUGGESTION_USAGE_KEY = "go-toolkit-code-suggestion-usage";
+  var loadCodeSuggestionUsage = () => {
+    try {
+      const raw = localStorage.getItem(CODE_SUGGESTION_USAGE_KEY);
+      if (!raw) return {};
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch (err) {
+      return {};
+    }
+  };
+  var bumpCodeSuggestionUsage = (snippet) => {
+    const key = (snippet || "").trim();
+    if (!key) return;
+    const usage = loadCodeSuggestionUsage();
+    usage[key] = (usage[key] || 0) + 1;
+    try {
+      localStorage.setItem(CODE_SUGGESTION_USAGE_KEY, JSON.stringify(usage));
+    } catch (err) {
+    }
+  };
   var codeSuggestion = {
     items: ({ editor, query }) => {
-      const snippets = /* @__PURE__ */ new Set();
+      const snippets = /* @__PURE__ */ new Map();
       editor.state.doc.descendants((node) => {
         if (node.isText) {
           const codeMark = node.marks.find((m) => m.type.name === "code");
           if (codeMark && node.text) {
-            snippets.add(node.text.trim());
+            const trimmed = node.text.trim();
+            if (!trimmed) return true;
+            const marks = node.marks.map((mark) => ({
+              type: mark.type.name,
+              attrs: mark.attrs || {}
+            }));
+            const signature = JSON.stringify(marks);
+            const key = `${trimmed}::${signature}`;
+            if (!snippets.has(key)) {
+              snippets.set(key, { text: trimmed, marks });
+            }
           }
         }
         return true;
       });
-      return Array.from(snippets).filter((item) => item.toLowerCase().includes(query.toLowerCase())).slice(0, 10);
+      const usage = loadCodeSuggestionUsage();
+      return Array.from(snippets.values()).filter(({ text }) => text.toLowerCase().includes(query.toLowerCase())).sort((a, b) => {
+        const aCount = usage[a.text] || 0;
+        const bCount = usage[b.text] || 0;
+        if (aCount !== bCount) return bCount - aCount;
+        return a.text.localeCompare(b.text);
+      }).slice(0, 10);
     },
     render: () => {
       let component;
@@ -34245,17 +34199,47 @@ ${promptInput.trim()}`
             return !editor.isActive("codeBlock");
           },
           command: ({ editor, range: range2, props }) => {
+            var _a;
+            bumpCodeSuggestionUsage(props.text);
+            const activeColor = (_a = editor.getAttributes("textStyle")) == null ? void 0 : _a.color;
+            const storedMarks = editor.state.storedMarks || editor.state.selection.$from.marks();
+            const suggestionMarks = Array.isArray(props.marks) ? props.marks : [];
+            const marksMap = /* @__PURE__ */ new Map();
+            const normalizeType = (type2) => typeof type2 === "string" ? type2 : type2 == null ? void 0 : type2.name;
+            const addMark2 = (mark) => {
+              const key = normalizeType(mark.type);
+              if (!key) return;
+              if (key === "code") {
+                marksMap.set("code", { type: "code" });
+                return;
+              }
+              marksMap.set(key, { type: key, attrs: mark.attrs || {} });
+            };
+            addMark2({ type: "code" });
+            suggestionMarks.forEach((mark) => addMark2(mark));
+            storedMarks.forEach((mark) => addMark2({ type: mark.type, attrs: mark.attrs }));
+            if (activeColor && !suggestionMarks.some((mark) => normalizeType(mark.type) === "textStyle")) {
+              marksMap.set("textStyle", { type: "textStyle", attrs: { color: activeColor } });
+            }
+            const finalMarks = Array.from(marksMap.values());
             editor.chain().focus().insertContentAt(range2, [
               {
                 type: "text",
                 text: props.text,
-                marks: [{ type: "code" }]
+                marks: finalMarks
               },
               {
                 type: "text",
                 text: " "
               }
             ]).run();
+            const nextPos = range2.from + props.text.length + 1;
+            const restoreChain = editor.chain().focus().setTextSelection(nextPos);
+            storedMarks.filter((mark) => mark.type.name !== "code").forEach((mark) => restoreChain.setMark(mark.type.name, mark.attrs || {}));
+            if (activeColor) {
+              restoreChain.setColor(activeColor);
+            }
+            restoreChain.run();
           }
         }
       };
@@ -34318,9 +34302,9 @@ ${promptInput.trim()}`
     const [quoteMenu, setQuoteMenu] = react_shim_default.useState(null);
     const [detailsHandle, setDetailsHandle] = react_shim_default.useState(null);
     const [detailsMenu, setDetailsMenu] = react_shim_default.useState(null);
+    const [codeHandle, setCodeHandle] = react_shim_default.useState(null);
     const [mermaidHandles, setMermaidHandles] = react_shim_default.useState([]);
     const [hoveredMermaidPos, setHoveredMermaidPos] = react_shim_default.useState(null);
-    const [textHandle, setTextHandle] = react_shim_default.useState(null);
     const [isDropdownOpen, setIsDropdownOpen] = react_shim_default.useState(false);
     const [selectionData, setSelectionData] = react_shim_default.useState(null);
     const [tableContextMenu, setTableContextMenu] = react_shim_default.useState(null);
@@ -34353,16 +34337,7 @@ ${promptInput.trim()}`
           orderedList: false,
           codeBlock: false
         }),
-        Code.extend({
-          addInputRules() {
-            return [
-              markInputRule({
-                find: /(?:^|\s)(`([^`]+)`)$/,
-                type: this.type
-              })
-            ];
-          }
-        }),
+        CustomCode,
         CustomHeading.configure({
           levels: [1, 2, 3, 4]
         }),
@@ -34408,7 +34383,75 @@ ${promptInput.trim()}`
       ],
       content,
       editorProps: {
-        handleTripleClickOn: (view, pos) => selectTableCellText(view, pos)
+        handleTripleClickOn: (view, pos) => selectTableCellText(view, pos),
+        handleKeyDown: (_view, event) => {
+          if (!editor) return false;
+          const clearStoredMarks = () => {
+            const blockedMarks = /* @__PURE__ */ new Set(["code", "textStyle", "bold", "italic", "underline", "strike", "highlight"]);
+            const storedMarks = editor.state.storedMarks || editor.state.selection.$from.marks();
+            if (!(storedMarks == null ? void 0 : storedMarks.length)) return;
+            const filtered = storedMarks.filter((mark) => !blockedMarks.has(mark.type.name));
+            if (filtered.length === storedMarks.length) return;
+            const tr2 = editor.state.tr.setStoredMarks(filtered.length ? filtered : null);
+            editor.view.dispatch(tr2);
+          };
+          if (event.key === " " || event.key === "Spacebar") {
+            if (!editor.isActive("code")) return false;
+            editor.chain().focus().insertContent(" ").unsetCode().run();
+            clearStoredMarks();
+            return true;
+          }
+          if (event.key === "ArrowRight" && editor.isActive("code")) {
+            setTimeout(() => {
+              if (!editor.isActive("code")) {
+                clearStoredMarks();
+              }
+            }, 0);
+          }
+          return false;
+        },
+        handleDrop: (view, event, slice2, moved) => {
+          if (!event || !(event instanceof DragEvent)) return false;
+          const coords = view.posAtCoords({ left: event.clientX, top: event.clientY });
+          if (!coords) return false;
+          const originInDetails = hasAncestorNode(view.state.selection.$from, "details");
+          if (!originInDetails) return false;
+          const targetInDetails = hasAncestorNode(view.state.doc.resolve(coords.pos), "details");
+          if (targetInDetails) return false;
+          let changed = false;
+          const nodes = [];
+          slice2.content.forEach((node) => {
+            if (node.type.name === "details") {
+              const detailsContent = node.content.content.find((child) => child.type.name === "detailsContent");
+              if (!detailsContent) {
+                nodes.push(node);
+                return;
+              }
+              detailsContent.content.forEach((child) => {
+                nodes.push(child);
+              });
+              changed = true;
+              return;
+            }
+            if (node.type.name === "detailsContent") {
+              node.content.forEach((child) => {
+                nodes.push(child);
+              });
+              changed = true;
+              return;
+            }
+            nodes.push(node);
+          });
+          if (!changed) return false;
+          const tr2 = view.state.tr;
+          if (moved) {
+            tr2.deleteSelection();
+          }
+          const insertPos = tr2.mapping.map(coords.pos);
+          tr2.replaceRange(insertPos, insertPos, new Slice(Fragment2.fromArray(nodes), 0, 0));
+          view.dispatch(tr2.scrollIntoView());
+          return true;
+        }
       },
       onUpdate: ({ editor: editor2 }) => {
         if (onChange) {
@@ -34444,10 +34487,34 @@ ${promptInput.trim()}`
     }, [editor]);
     react_shim_default.useEffect(() => {
       if (!editor) return;
+      let isAdjusting = false;
+      const clearInlineCodeCarryover = () => {
+        if (isAdjusting) return;
+        if (editor.isActive("code")) return;
+        const storedMarks = editor.state.storedMarks || editor.state.selection.$from.marks();
+        if (!(storedMarks == null ? void 0 : storedMarks.length)) return;
+        const blockedMarks = /* @__PURE__ */ new Set(["code", "textStyle", "bold", "italic", "underline", "strike", "highlight"]);
+        const filtered = storedMarks.filter((mark) => !blockedMarks.has(mark.type.name));
+        if (filtered.length === storedMarks.length) return;
+        const tr2 = editor.state.tr.setStoredMarks(filtered.length ? filtered : null);
+        isAdjusting = true;
+        editor.view.dispatch(tr2);
+        isAdjusting = false;
+      };
+      editor.on("selectionUpdate", clearInlineCodeCarryover);
+      return () => {
+        editor.off("selectionUpdate", clearInlineCodeCarryover);
+      };
+    }, [editor]);
+    react_shim_default.useEffect(() => {
+      if (!editor) return;
       const syncDetailsState = () => {
-        editor.view.dom.querySelectorAll("details.details").forEach((el) => {
+        editor.view.dom.querySelectorAll("details.details, .details.node-details").forEach((el) => {
           const detailsEl = el;
-          const isOpen = detailsEl.open || detailsEl.getAttribute("data-open") === "true";
+          const dataOpen = detailsEl.getAttribute("data-open");
+          const contentEl = detailsEl.querySelector('[data-type="detailsContent"]');
+          const isContentHidden = contentEl ? contentEl.hasAttribute("hidden") : false;
+          const isOpen = dataOpen !== null ? dataOpen === "true" : contentEl ? !isContentHidden : !!detailsEl.open;
           detailsEl.classList.toggle("is-open", isOpen);
         });
       };
@@ -34850,7 +34917,7 @@ ${promptInput.trim()}`
       };
     }, [blockDragPending, blockDragState, editor]);
     const handleMouseMove2 = (e) => {
-      var _a2, _b2, _c2, _d2, _e, _f, _g, _h, _i;
+      var _a2, _b2, _c2, _d2, _e, _f, _g, _h, _i, _j;
       if (!editor || dragState || blockDragState || !containerRef.current) return;
       if (e.target.closest(".table-handle, .quote-handle, .details-handle, .mermaid-handle, .node-handle, .block-delete-button")) return;
       const element = document.elementFromPoint(e.clientX, e.clientY);
@@ -34859,7 +34926,7 @@ ${promptInput.trim()}`
       const blockquoteEl = element == null ? void 0 : element.closest(".node-blockquote");
       const detailsEl = element == null ? void 0 : element.closest(".node-details");
       const mermaidEl = element == null ? void 0 : element.closest(".node-mermaidDiagram, .mermaid-diagram-container");
-      const codeEl = element == null ? void 0 : element.closest("pre");
+      const codeEl = element == null ? void 0 : element.closest(".node-codeBlock, pre");
       const targetBlock = tableEl || blockquoteEl || detailsEl || mermaidEl || codeEl;
       if (targetBlock && containerRef.current.contains(targetBlock)) {
         let rect = targetBlock.getBoundingClientRect();
@@ -34954,6 +35021,44 @@ ${promptInput.trim()}`
       if (!mermaidEl && hoveredMermaidPos !== null) {
         setHoveredMermaidPos(null);
       }
+      if (codeEl && containerRef.current.contains(codeEl)) {
+        const rect = codeEl.getBoundingClientRect();
+        let codePos = -1;
+        try {
+          const domPos = editor.view.posAtDOM(codeEl, 0);
+          const $pos = editor.state.doc.resolve(domPos);
+          for (let d = $pos.depth; d > 0; d--) {
+            if ($pos.node(d).type.name === "codeBlock") {
+              codePos = $pos.before(d);
+              break;
+            }
+          }
+        } catch (err) {
+        }
+        if (codePos === -1) {
+          const pos = (_h = editor.view.posAtCoords({ left: e.clientX, top: e.clientY })) == null ? void 0 : _h.pos;
+          if (pos !== void 0) {
+            const $pos = editor.state.doc.resolve(pos);
+            for (let d = $pos.depth; d > 0; d--) {
+              if ($pos.node(d).type.name === "codeBlock") {
+                codePos = $pos.before(d);
+                break;
+              }
+            }
+          }
+        }
+        if (codePos !== -1) {
+          setCodeHandle({
+            top: rect.top - containerRect.top + 10,
+            left: rect.left - containerRect.left + 8,
+            pos: codePos
+          });
+        } else {
+          setCodeHandle(null);
+        }
+      } else if (!e.target.closest(".code-handle")) {
+        setCodeHandle(null);
+      }
       if (blockquoteEl && containerRef.current.contains(blockquoteEl)) {
         let quotePos = -1;
         try {
@@ -34972,7 +35077,7 @@ ${promptInput.trim()}`
         } catch (err) {
         }
         if (quotePos === -1) {
-          const pos = (_h = editor.view.posAtCoords({ left: e.clientX, top: e.clientY })) == null ? void 0 : _h.pos;
+          const pos = (_i = editor.view.posAtCoords({ left: e.clientX, top: e.clientY })) == null ? void 0 : _i.pos;
           if (pos !== void 0) {
             const $pos = editor.state.doc.resolve(pos);
             for (let d = $pos.depth; d > 0; d--) {
@@ -35021,7 +35126,7 @@ ${promptInput.trim()}`
         } catch (err) {
         }
         if (detailsPos === -1) {
-          const pos = (_i = editor.view.posAtCoords({ left: e.clientX, top: e.clientY })) == null ? void 0 : _i.pos;
+          const pos = (_j = editor.view.posAtCoords({ left: e.clientX, top: e.clientY })) == null ? void 0 : _j.pos;
           if (pos !== void 0) {
             const $pos = editor.state.doc.resolve(pos);
             for (let d = $pos.depth; d > 0; d--) {
@@ -35043,43 +35148,6 @@ ${promptInput.trim()}`
         }
       } else if (!e.target.closest(".details-handle")) {
         setDetailsHandle(null);
-      }
-      let nodeTextEl = element == null ? void 0 : element.closest(".node-text");
-      if (nodeTextEl == null ? void 0 : nodeTextEl.closest("li")) {
-        nodeTextEl = element == null ? void 0 : element.closest("ul.node-text, ol.node-text");
-      }
-      const isNestedBlock = nodeTextEl == null ? void 0 : nodeTextEl.closest(".alert-wrapper, .details, .tableWrapper, .mermaid-diagram-wrapper, li");
-      if (nodeTextEl && containerRef.current.contains(nodeTextEl) && !isNestedBlock) {
-        const rect = nodeTextEl.getBoundingClientRect();
-        if (e.clientX <= rect.left + 120) {
-          try {
-            const pos = editor.view.posAtDOM(nodeTextEl, 0);
-            const $pos = editor.state.doc.resolve(pos);
-            let textPos = -1;
-            for (let d = $pos.depth; d > 0; d--) {
-              const typeName = $pos.node(d).type.name;
-              if (["paragraph", "heading", "bulletList", "orderedList", "codeBlock"].includes(typeName)) {
-                textPos = $pos.before(d);
-                break;
-              }
-            }
-            if (textPos !== -1) {
-              setTextHandle({
-                top: rect.top - containerRect.top + 6,
-                left: rect.left - containerRect.left + 5,
-                pos: textPos
-              });
-            } else {
-              setTextHandle(null);
-            }
-          } catch (err) {
-            setTextHandle(null);
-          }
-        } else {
-          setTextHandle(null);
-        }
-      } else if (!e.target.closest(".node-handle")) {
-        setTextHandle(null);
       }
       let info = getTableCellInfo(editor.view, e.nativeEvent);
       if (!info) {
@@ -35110,7 +35178,7 @@ ${promptInput.trim()}`
           const isInWrapper = e.clientX >= tableWrapperRect.left && e.clientX <= tableWrapperRect.right && e.clientY >= tableWrapperRect.top && e.clientY <= tableWrapperRect.bottom;
           const isInTable2 = e.clientX >= tableRect.left && e.clientX <= tableRect.right && e.clientY >= tableRect.top && e.clientY <= tableRect.bottom;
           if (isInWrapper) {
-            const rowHandleLeft = rowIndex === 0 ? tableWrapperRect.left - containerRect.left + 9 : tableRect.left - containerRect.left + 29;
+            const rowHandleLeft = tableRect.left - containerRect.left;
             setRowHandle({
               top: rect.top - containerRect.top + rect.height / 2,
               left: rowHandleLeft,
@@ -35562,7 +35630,7 @@ ${innerMarkdown}
           if (!editor || e.button !== 0) return;
           const handle = target.closest(".mermaid-node-handle");
           const mermaidContainer = target.closest(".mermaid-diagram-container");
-          const isMermaidDragTarget = !!handle || mermaidContainer && !target.closest(".mermaid-controls, .mermaid-modal, .mermaid-modal-overlay, .mermaid-modal-editor") && !target.closest("button, input, textarea, select");
+          const isMermaidDragTarget = !!handle || mermaidContainer && !target.closest(".mermaid-modal, .mermaid-modal-overlay, .mermaid-modal-editor") && !target.closest("button, input, textarea, select");
           if (!isMermaidDragTarget) return;
           if (handle) e.preventDefault();
           const wrapper = (_a2 = handle || mermaidContainer) == null ? void 0 : _a2.closest(".mermaid-diagram-wrapper");
@@ -35595,7 +35663,7 @@ ${innerMarkdown}
           setColHandle(null);
           setQuoteHandle(null);
           setDetailsHandle(null);
-          setTextHandle(null);
+          setCodeHandle(null);
         },
         children: [
           /* @__PURE__ */ jsx(Toolbar, { editor, onDropdownToggle: setIsDropdownOpen, onLink: () => setShowLinkModal(true) }),
@@ -35667,7 +35735,7 @@ ${innerMarkdown}
               style: {
                 position: "absolute",
                 top: blockDeleteHandle.top,
-                left: blockDeleteHandle.left - (blockDeleteHandle.label === "le diagramme" ? 104 : 26),
+                left: blockDeleteHandle.left - (blockDeleteHandle.label === "le diagramme" ? 140 : 26),
                 display: "flex",
                 gap: "4px",
                 zIndex: 10
@@ -35695,6 +35763,39 @@ ${innerMarkdown}
                   }
                 ),
                 blockDeleteHandle.label === "le diagramme" && /* @__PURE__ */ jsxs(Fragment3, { children: [
+                  (() => {
+                    const node = editor.state.doc.nodeAt(blockDeleteHandle.pos);
+                    if (!node || node.type.name !== "mermaidDiagram") return null;
+                    const code = node.attrs.code || "";
+                    if (!code.trim() || !isFlowchartDiagram(code)) return null;
+                    const isSquare = node.attrs.size === "large";
+                    const nextSize = isSquare ? "small" : "large";
+                    const label = isSquare ? "Rectangle" : "Carr\xE9";
+                    const Icon2 = isSquare ? RectangleHorizontal : Square;
+                    return /* @__PURE__ */ jsxs(
+                      "button",
+                      {
+                        className: "block-delete-button mermaid-size-toggle",
+                        style: { position: "static", opacity: 1 },
+                        onClick: (e) => {
+                          e.stopPropagation();
+                          const { code: nextCode, updated } = setFlowchartDirection(
+                            code,
+                            nextSize === "large" ? "TD" : "LR"
+                          );
+                          editor.chain().focus().setNodeSelection(blockDeleteHandle.pos).updateAttributes("mermaidDiagram", {
+                            size: nextSize,
+                            code: updated ? nextCode : code
+                          }).run();
+                        },
+                        title: label,
+                        children: [
+                          /* @__PURE__ */ jsx(Icon2, { size: 14 }),
+                          /* @__PURE__ */ jsx("span", { children: label })
+                        ]
+                      }
+                    );
+                  })(),
                   /* @__PURE__ */ jsx(
                     "button",
                     {
@@ -35842,25 +35943,6 @@ ${innerMarkdown}
               children: "\u283F"
             }
           ),
-          textHandle && !dragState && !blockDragState && /* @__PURE__ */ jsx(
-            "div",
-            {
-              className: "table-handle node-handle text-handle",
-              style: { top: textHandle.top, left: textHandle.left },
-              onMouseDown: (e) => {
-                const node = editor.state.doc.nodeAt(textHandle.pos);
-                if (!node) return;
-                setBlockDragPending({
-                  pos: textHandle.pos,
-                  nodeSize: node.nodeSize,
-                  startX: e.clientX,
-                  startY: e.clientY
-                });
-                blockDragMovedRef.current = false;
-              },
-              children: "\u283F"
-            }
-          ),
           quoteHandle && !dragState && !blockDragState && /* @__PURE__ */ jsx(
             "div",
             {
@@ -35911,6 +35993,25 @@ ${innerMarkdown}
                 }
                 e.stopPropagation();
                 setDetailsMenu({ top: detailsHandle.top, left: detailsHandle.left + 30, pos: detailsHandle.pos });
+              },
+              children: "\u283F"
+            }
+          ),
+          codeHandle && !dragState && !blockDragState && /* @__PURE__ */ jsx(
+            "div",
+            {
+              className: "table-handle code-handle",
+              style: { top: codeHandle.top, left: codeHandle.left },
+              onMouseDown: (e) => {
+                const node = editor.state.doc.nodeAt(codeHandle.pos);
+                if (!node) return;
+                setBlockDragPending({
+                  pos: codeHandle.pos,
+                  nodeSize: node.nodeSize,
+                  startX: e.clientX,
+                  startY: e.clientY
+                });
+                blockDragMovedRef.current = false;
               },
               children: "\u283F"
             }
@@ -56121,8 +56222,8 @@ ${innerMarkdown}
         const isItalic = marks.some((m) => m.type === "italic");
         const isUnderline = marks.some((m) => m.type === "underline");
         const isStrike = marks.some((m) => m.type === "strike");
-        const color = (_b = (_a = marks.find((m) => m.type === "textStyle")) == null ? void 0 : _a.attrs) == null ? void 0 : _b.color;
-        const highlight = (_d = (_c = marks.find((m) => m.type === "highlight")) == null ? void 0 : _c.attrs) == null ? void 0 : _d.color;
+        const color = resolveDocxColor((_b = (_a = marks.find((m) => m.type === "textStyle")) == null ? void 0 : _a.attrs) == null ? void 0 : _b.color);
+        const highlight = resolveDocxColor((_d = (_c = marks.find((m) => m.type === "highlight")) == null ? void 0 : _c.attrs) == null ? void 0 : _d.color);
         const isCode = marks.some((m) => m.type === "code");
         runs.push(new TextRun({
           text: node.text,
@@ -56132,7 +56233,7 @@ ${innerMarkdown}
           strike: isStrike,
           color: color ? color.replace("#", "") : defaults2.color ? defaults2.color.replace("#", "") : void 0,
           highlight: highlight ? highlight.replace("#", "") : void 0,
-          font: isCode ? "Courier New" : defaults2.font || DEFAULT_FONT,
+          font: isCode ? "Consolas" : defaults2.font || DEFAULT_FONT,
           size: isCode ? 18 : void 0,
           shading: isCode ? { fill: "F1F5F9", type: ShadingType.CLEAR } : void 0
         }));
@@ -56141,6 +56242,29 @@ ${innerMarkdown}
       }
     }
     return runs;
+  }
+  function resolveDocxColor(raw) {
+    if (!raw) return void 0;
+    const normalized = raw.trim();
+    if (!normalized) return void 0;
+    if (normalized.startsWith("#")) {
+      return normalized;
+    }
+    if (normalized.startsWith("var(")) {
+      const name = normalized.slice(4, -1).trim();
+      if (typeof document !== "undefined") {
+        const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        return resolveDocxColor(value);
+      }
+    }
+    if (normalized.startsWith("rgb")) {
+      const match = normalized.match(/rgba?\(([^)]+)\)/);
+      if (!match) return void 0;
+      const parts = match[1].split(",").map((part) => Number(part.trim()));
+      if (parts.length < 3 || parts.some((part) => Number.isNaN(part))) return void 0;
+      return `#${parts.slice(0, 3).map((part) => part.toString(16).padStart(2, "0")).join("")}`;
+    }
+    return void 0;
   }
   function getAlertColors(type2) {
     switch (type2) {
@@ -56317,7 +56441,6 @@ lucide-react/dist/esm/icons/list-tree.js:
 lucide-react/dist/esm/icons/list.js:
 lucide-react/dist/esm/icons/loader-circle.js:
 lucide-react/dist/esm/icons/message-square.js:
-lucide-react/dist/esm/icons/palette.js:
 lucide-react/dist/esm/icons/pencil.js:
 lucide-react/dist/esm/icons/plus.js:
 lucide-react/dist/esm/icons/rectangle-horizontal.js:
@@ -56330,6 +56453,7 @@ lucide-react/dist/esm/icons/square.js:
 lucide-react/dist/esm/icons/star.js:
 lucide-react/dist/esm/icons/strikethrough.js:
 lucide-react/dist/esm/icons/table.js:
+lucide-react/dist/esm/icons/tag.js:
 lucide-react/dist/esm/icons/trash-2.js:
 lucide-react/dist/esm/icons/triangle-alert.js:
 lucide-react/dist/esm/icons/type.js:

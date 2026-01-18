@@ -639,42 +639,6 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
             minWidth: '100px'
           }}
         >
-          {showSizeSelector && code.trim() && (
-            <div
-              className="mermaid-controls"
-              onClick={e => {
-                e.stopPropagation();
-                e.preventDefault();
-              }}
-              onMouseDown={e => {
-                e.stopPropagation();
-                e.preventDefault();
-              }}
-              onDoubleClick={e => {
-                e.stopPropagation();
-                e.preventDefault();
-              }}
-            >
-              {[
-                { id: 'small', label: 'Rectangle', Icon: RectangleHorizontal },
-                { id: 'large', label: 'Carré', Icon: Square }
-              ].map(s => (
-                <button 
-                  key={s.id}
-                  className={`size-btn ${size === s.id ? 'active' : ''}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    handleSizeChange(s.id, code);
-                  }}
-                  title={s.label}
-                >
-                  <s.Icon size={14} />
-                </button>
-              ))}
-            </div>
-          )}
-
           {error ? (
             <div className="mermaid-error">
               <div className="mermaid-error-icon">⚠︎</div>

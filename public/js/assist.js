@@ -1299,6 +1299,7 @@ function AssistSidebar(root) {
     this.mediaUploadCount = 0;
     this.mediaTranscribedCount = 0;
     this.mediaTotalCount = 0;
+    this.mainApp = null;
 }
 
 AssistSidebar.prototype.persist = function () {
@@ -2918,6 +2919,20 @@ AssistSidebar.prototype.buildPromptDropdown = function () {
 AssistSidebar.prototype.buildUI = function () {
     if (!this.root) return false;
     this.page = document.getElementById("page");
+    this.mainApp = document.querySelector(".app-main");
+    if (this.mainApp) {
+        if (!this.mainApp.hasAttribute("tabindex")) {
+            this.mainApp.setAttribute("tabindex", "-1");
+        }
+        this.mainApp.addEventListener("focusin", function () {
+            if (!this.isOpen) return;
+            if (window.innerWidth >= 1200) return;
+            this.close();
+            try {
+                this.mainApp.focus();
+            } catch (err) { /* ignore */ }
+        }.bind(this));
+    }
     var staticLauncher = document.getElementById("assistLauncherBtn");
     if (!staticLauncher) {
         console.error("GoToolkitAssist requires #assistLauncherBtn to be present");
@@ -7818,19 +7833,19 @@ async function sendInlineEditToAssist(options) {
                 // Cas DOCUMENT entier (Maintenant APPEND par défaut dans le mode "edit" sans sélection)
                 if (typeof window.insertEditorMarkdownAtEnd === 'function') {
                     window.insertEditorMarkdownAtEnd(editMetadata.output);
-                    restoreScroll();
+                    window.scrollMemoEditorToEnd?.();
                 } else if (typeof window.setEditorMarkdown === 'function') {
                     // Fallback si insertEditorMarkdownAtEnd n'est pas dispo
                     const current = window.getEditorMarkdown?.() || '';
                     window.setEditorMarkdown(current + (current ? '\n\n' : '') + editMetadata.output);
-                    restoreScroll();
+                    window.scrollMemoEditorToEnd?.();
                 } else {
                     editor
                         .chain()
                         .focus()
                         .insertContentAt(editor.state.doc.content.size, editMetadata.output)
                         .run();
-                    restoreScroll();
+                    window.scrollMemoEditorToEnd?.();
                 }
             }
         }

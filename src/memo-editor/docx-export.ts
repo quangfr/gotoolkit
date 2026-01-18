@@ -364,8 +364,8 @@ async function transformInlineContent(nodes: any[], defaults: { font?: string, c
       const isItalic = marks.some((m: any) => m.type === 'italic');
       const isUnderline = marks.some((m: any) => m.type === 'underline');
       const isStrike = marks.some((m: any) => m.type === 'strike');
-      const color = marks.find((m: any) => m.type === 'textStyle')?.attrs?.color;
-      const highlight = marks.find((m: any) => m.type === 'highlight')?.attrs?.color;
+      const color = resolveDocxColor(marks.find((m: any) => m.type === 'textStyle')?.attrs?.color);
+      const highlight = resolveDocxColor(marks.find((m: any) => m.type === 'highlight')?.attrs?.color);
       const isCode = marks.some((m: any) => m.type === 'code');
 
       runs.push(new TextRun({
@@ -376,7 +376,7 @@ async function transformInlineContent(nodes: any[], defaults: { font?: string, c
         strike: isStrike,
         color: color ? color.replace('#', '') : (defaults.color ? defaults.color.replace('#', '') : undefined),
         highlight: highlight ? highlight.replace('#', '') : undefined,
-        font: isCode ? "Courier New" : (defaults.font || DEFAULT_FONT),
+        font: isCode ? "Consolas" : (defaults.font || DEFAULT_FONT),
         size: isCode ? 18 : undefined,
         shading: isCode ? { fill: "F1F5F9", type: ShadingType.CLEAR } : undefined
       }));
@@ -385,6 +385,30 @@ async function transformInlineContent(nodes: any[], defaults: { font?: string, c
     }
   }
   return runs;
+}
+
+function resolveDocxColor(raw?: string): string | undefined {
+  if (!raw) return undefined;
+  const normalized = raw.trim();
+  if (!normalized) return undefined;
+  if (normalized.startsWith('#')) {
+    return normalized;
+  }
+  if (normalized.startsWith('var(')) {
+    const name = normalized.slice(4, -1).trim();
+    if (typeof document !== 'undefined') {
+      const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+      return resolveDocxColor(value);
+    }
+  }
+  if (normalized.startsWith('rgb')) {
+    const match = normalized.match(/rgba?\(([^)]+)\)/);
+    if (!match) return undefined;
+    const parts = match[1].split(',').map(part => Number(part.trim()));
+    if (parts.length < 3 || parts.some(part => Number.isNaN(part))) return undefined;
+    return `#${parts.slice(0, 3).map(part => part.toString(16).padStart(2, '0')).join('')}`;
+  }
+  return undefined;
 }
 
 function getAlertColors(type: string): { border: string, bg: string } {

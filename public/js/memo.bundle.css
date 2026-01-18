@@ -64,35 +64,6 @@
   background-color: var(--bg-surface-soft);
   color: var(--color-primary);
 }
-.ProseMirror blockquote {
-  border-left: 3px solid var(--border-strong);
-  padding-left: 1rem;
-  margin: 1rem 0;
-  border-radius: 4px;
-  position: relative;
-  transition: all 0.2s;
-  color: var(--text-main);
-}
-.ProseMirror blockquote[data-type=NOTE] {
-  border-left-color: var(--intent-info-border);
-  background-color: var(--bg-surface-soft);
-}
-.ProseMirror blockquote[data-type=TIP] {
-  border-left-color: var(--intent-success-border);
-  background-color: var(--bg-surface-soft);
-}
-.ProseMirror blockquote[data-type=IMPORTANT] {
-  border-left-color: var(--intent-important-border);
-  background-color: var(--bg-surface-soft);
-}
-.ProseMirror blockquote[data-type=WARNING] {
-  border-left-color: var(--intent-warning-border);
-  background-color: var(--bg-surface-soft);
-}
-.ProseMirror blockquote[data-type=CAUTION] {
-  border-left-color: var(--intent-error-border);
-  background-color: var(--bg-surface-soft);
-}
 .ProseMirror blockquote[data-type] {
   padding-left: 0;
 }
@@ -111,7 +82,7 @@
 .alert-header-main {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 2px;
   font-weight: 600;
   font-size: 0.875rem;
 }
@@ -172,27 +143,16 @@
 }
 .ProseMirror .details summary {
   color: var(--text-main);
-  list-style: none;
   cursor: pointer;
   font-weight: 600;
 }
 .ProseMirror .details summary::-webkit-details-marker {
   display: none;
 }
-.node-text,
-.node-table,
-.node-mermaidDiagram,
-.node-blockquote,
-.node-details {
-  padding-left: 40px;
-  padding-right: 10px;
-  box-sizing: border-box;
-}
 .node-mermaidDiagram {
   position: relative;
 }
 .details.node-details {
-  margin-left: 35px;
   padding-left: 0px;
 }
 .node-details .node-blockquote {
@@ -427,7 +387,6 @@ td .node-text.node-paragraph,
   max-width: 100%;
   margin: 1rem 0;
   scrollbar-width: thin;
-  padding: 5px 10px 5px 40px;
 }
 .ProseMirror table {
   border-collapse: collapse;
@@ -541,7 +500,7 @@ td .node-text.node-paragraph,
   display: none;
 }
 .table-handle-row {
-  transform: translateY(-50%);
+  transform: translate(-50%, -50%);
 }
 .table-handle-col {
   transform: translateX(-50%) rotate(90deg);
@@ -648,6 +607,13 @@ td .node-text.node-paragraph,
 .block-delete-button:hover {
   background-color: var(--bg-surface-soft);
   color: var(--text-main);
+}
+.mermaid-size-toggle {
+  width: auto;
+  padding: 0 8px;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
 }
 .mermaid-svg-container {
   width: 100%;
@@ -1007,10 +973,19 @@ button.btn-secondary {
 }
 .ProseMirror code {
   background: var(--bg-surface-soft);
-  color: var(--text-main);
+  color: inherit;
   padding: 2px 6px;
   border-radius: 8px;
   font-size: 0.95em;
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Monaco,
+    Consolas,
+    "Liberation Mono",
+    "Courier New",
+    monospace;
 }
 .ProseMirror pre code {
   background: var(--bg-surface-soft);
@@ -1018,37 +993,41 @@ button.btn-secondary {
   padding: 0;
   font-size: 0.875rem;
   font-family:
-    "Fira Code",
-    "Monaco",
-    "Consolas",
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Monaco,
+    Consolas,
+    "Liberation Mono",
+    "Courier New",
     monospace;
 }
 .ProseMirror blockquote code {
-  background: var(--bg-surface);
+  background: var(--bg-surface-soft);
 }
 .simple-editor .ProseMirror h1 {
   font-size: 1.8rem;
   margin-top: 2.2rem;
   margin-bottom: 1.0rem;
-  font-weight: 400;
+  font-weight: 500;
 }
 .simple-editor .ProseMirror h2 {
   font-size: 1.6rem;
   margin-top: 1.7rem;
   margin-bottom: 1.0rem;
-  font-weight: 400;
+  font-weight: 500;
 }
 .simple-editor .ProseMirror h3 {
   font-size: 1.4rem;
   margin-top: 1.3rem;
   margin-bottom: 1.0rem;
-  font-weight: 400;
+  font-weight: 500;
 }
 .simple-editor .ProseMirror h4 {
   font-size: 1.2rem;
   margin-top: 1rem;
   margin-bottom: 1.0rem;
-  font-weight: 400;
+  font-weight: 500;
 }
 .simple-editor .ProseMirror h1:first-child,
 .simple-editor .ProseMirror h2:first-child,
@@ -1062,7 +1041,7 @@ button.btn-secondary {
   margin: 1rem 0;
 }
 .simple-editor .ProseMirror blockquote {
-  border-left: 3px solid var(--border-main);
+  border-left: 5px solid var(--intent-quote-border);
   padding-left: 1rem;
   font-style: normal;
   color: var(--text-main);
@@ -1070,40 +1049,61 @@ button.btn-secondary {
   border-radius: 4px;
   position: relative;
   transition: all 0.2s;
-  background-color: var(--bg-surface-soft);
+  background-color: var(--bg-surface);
+  border-right: 2px solid var(--intent-quote-border);
+  border-top: 2px solid var(--intent-quote-border);
+  border-bottom: 2px solid var(--intent-quote-border);
 }
 li .node-text.node-paragraph {
   padding-left: 0px;
 }
 .ProseMirror blockquote[data-type=default] {
-  border-left-color: var(--border-main);
-  border-left-width: 3px;
-  background-color: var(--bg-surface-soft);
+  border-left-color: var(--intent-quote-border);
+  border-left-width: 5px;
+  background-color: var(--bg-surface);
+  border-right: 2px solid var(--intent-quote-border);
+  border-top: 2px solid var(--intent-quote-border);
+  border-bottom: 2px solid var(--intent-quote-border);
 }
 .ProseMirror blockquote[data-type=NOTE] {
   border-left-color: var(--intent-info-border);
-  border-left-width: 4px;
-  background-color: var(--bg-surface-soft);
+  border-left-width: 5px;
+  border-right: 2px solid var(--intent-info-border);
+  border-top: 2px solid var(--intent-info-border);
+  border-bottom: 2px solid var(--intent-info-border);
+  background-color: var(--bg-surface);
 }
 .ProseMirror blockquote[data-type=TIP] {
   border-left-color: var(--intent-success-border);
-  border-left-width: 4px;
-  background-color: var(--bg-surface-soft);
+  border-left-width: 5px;
+  border-right: 2px solid var(--intent-success-border);
+  border-top: 2px solid var(--intent-success-border);
+  border-bottom: 2px solid var(--intent-success-border);
+  background-color: var(--bg-surface);
 }
 .ProseMirror blockquote[data-type=IMPORTANT] {
   border-left-color: var(--intent-important-border);
-  border-left-width: 4px;
-  background-color: var(--bg-surface-soft);
+  border-left-width: 5px;
+  border-right: 2px solid var(--intent-important-border);
+  border-top: 2px solid var(--intent-important-border);
+  border-bottom: 2px solid var(--intent-important-border);
+  background-color: var(--bg-surface);
 }
 .ProseMirror blockquote[data-type=WARNING] {
   border-left-color: var(--intent-warning-border);
-  border-left-width: 4px;
-  background-color: var(--bg-surface-soft);
+  border-left-width: 5px;
+  border-right: 2px solid var(--intent-warning-border);
+  border-top: 2px solid var(--intent-warning-border);
+  border-bottom: 2px solid var(--intent-warning-border);
+  background-color: var(--bg-surface);
 }
 .ProseMirror blockquote[data-type=CAUTION] {
   border-left-color: var(--intent-error-border);
-  border-left-width: 4px;
-  background-color: var(--bg-surface-soft);
+  border-left-width: 5px;
+  border-right: 2px solid var(--intent-error-border);
+  border-top: 2px solid var(--intent-error-border);
+  border-bottom: 2px solid var(--intent-error-border);
+  background-color: var(--bg-surface);
 }
 .bubble-menu {
   display: flex;
@@ -1208,28 +1208,6 @@ li .node-text.node-paragraph {
   color: var(--text-main);
   display: flex;
   align-items: center;
-}
-.table-color-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
-  padding: 8px 12px;
-  background: var(--bg-surface-soft);
-  border: 1px solid var(--border-main);
-  border-radius: 8px;
-  box-shadow: var(--shadow-md);
-  z-index: 1001;
-}
-.table-color-option {
-  aspect-ratio: 1;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: all 0.2s ease-in-out;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
-}
-.table-color-option:hover {
-  transform: scale(1.15);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 ul[data-type=taskList] {
   list-style: none;
@@ -1364,46 +1342,4 @@ div[data-type=detailsContent] .tableWrapper {
   text-align: center;
   font-size: 12px;
   color: var(--text-muted);
-}
-.mermaid-controls {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  display: flex;
-  gap: 4px;
-  background: var(--bg-surface);
-  padding: 4px;
-  border-radius: 6px;
-  box-shadow: var(--shadow-md);
-  z-index: 10;
-  opacity: 0;
-  transition: opacity 0.2s;
-  border: 1px solid var(--border-main);
-}
-.mermaid-diagram-container:hover .mermaid-controls {
-  opacity: 1;
-}
-.mermaid-controls .size-btn {
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-muted);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-}
-.mermaid-controls .size-btn:hover {
-  background: var(--bg-surface-soft);
-  color: var(--text-main);
-}
-.mermaid-controls .size-btn.active {
-  background: var(--bg-surface-soft);
-  color: var(--color-primary);
 }
