@@ -4,6 +4,47 @@
     const MAX_WIDTH = 520;
     const DEFAULT_TITLE = "Documents";
 
+    let superpowers = [];
+    async function loadSuperpowers() {
+        try {
+            const response = await fetch('content/superpowers.json');
+            if (response.ok) {
+                superpowers = await response.json();
+                populateSuperpowerCheckboxes();
+            }
+        } catch (err) {
+            console.error('Erreur lors du chargement des super-pouvoirs:', err);
+        }
+    }
+
+    function populateSuperpowerCheckboxes(selectedIds = []) {
+        const container = document.getElementById("document-explorer-superpowers-container");
+        if (!container) return;
+        container.innerHTML = '';
+
+        superpowers.forEach(sp => {
+            const label = document.createElement('label');
+            label.className = 'superpower-checkbox-label';
+            const isChecked = selectedIds.includes(String(sp.id)) || selectedIds.includes(Number(sp.id));
+            label.innerHTML = `
+                <input type="checkbox" value="${sp.id}" ${isChecked ? 'checked' : ''} style="display:none;">
+                <span class="superpower-pill">
+                    <i data-lucide="${sp.icon}" style="width:12px;height:12px;"></i>
+                    ${sp.title}
+                </span>
+            `;
+            const input = label.querySelector('input');
+            input.addEventListener('change', () => {
+                label.querySelector('.superpower-pill').classList.toggle('active', input.checked);
+            });
+            if (isChecked) {
+                label.querySelector('.superpower-pill').classList.add('active');
+            }
+            container.appendChild(label);
+        });
+        if (window.lucide) window.lucide.createIcons();
+    }
+
     function clamp(value, min, max) {
         return Math.min(Math.max(value, min), max);
     }
@@ -121,6 +162,8 @@
 
         let hasDefaultTabSet = false;
 
+        loadSuperpowers();
+
         function setActiveTab(target, options) {
             const nextTarget = target === "toc" ? "toc" : "library";
             const shouldRender = options?.renderToc ?? true;
@@ -210,9 +253,9 @@
                         <label for="document-explorer-name-input">Nom</label>
                         <input id="document-explorer-name-input" type="text" placeholder="Nom du document" />
                     </div>
-                    <div class="header-row ia-header-actions">
-                        <label for="document-explorer-category-input">Catégorie</label>
-                        <input id="document-explorer-category-input" type="text" placeholder="Catégorie (optionnelle)" />
+                    <div class="header-row ia-header-actions" style="display:block;">
+                        <label>Superpouvoirs</label>
+                        <div id="document-explorer-superpowers-container" class="superpowers-checkbox-group"></div>
                     </div>
                     <div class="header-row ia-header-actions">
                         <label for="document-explorer-description-input">Description</label>
@@ -232,9 +275,14 @@
         const modalPublishBtn = modalOverlay.querySelector("[data-publish]");
         const modalConfirmBtn = modalOverlay.querySelector("[data-confirm]");
         const modalInput = modalOverlay.querySelector("#document-explorer-name-input");
-        const modalCategoryInput = modalOverlay.querySelector("#document-explorer-category-input");
         const modalDescInput = modalOverlay.querySelector("#document-explorer-description-input");
         let modalResolver = null;
+
+        function getSelectedSuperpowers() {
+            const container = modalOverlay.querySelector("#document-explorer-superpowers-container");
+            if (!container) return [];
+            return Array.from(container.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+        }
 
         function closeModal() {
             modalOverlay.classList.remove("open");
@@ -251,11 +299,14 @@
             if (!modalInput) return Promise.resolve(null);
             modalOverlay.style.display = "flex";
             modalOverlay.classList.add("open");
+
+            const selectedSuperpowers = (options && options.superpowers)
+                ? options.superpowers
+                : (options && options.category ? [options.category] : []);
+
+            populateSuperpowerCheckboxes(selectedSuperpowers);
             if (window.lucide) window.lucide.createIcons();
             modalInput.value = defaultValue || "";
-            if (modalCategoryInput) {
-                modalCategoryInput.value = (options && options.category) || "";
-            }
             if (modalDescInput) modalDescInput.value = defaultDescription || "";
             const allowPublish = Boolean(options && options.allowPublish && hasAdminToken());
             if (modalPublishBtn) {
@@ -286,7 +337,7 @@
             resolveModal({
                 name: modalInput?.value || "",
                 description: modalDescInput?.value || "",
-                category: modalCategoryInput?.value || "",
+                superpowers: getSelectedSuperpowers(),
                 action: "publish"
             });
         });
@@ -294,7 +345,7 @@
             resolveModal({
                 name: modalInput?.value || "",
                 description: modalDescInput?.value || "",
-                category: modalCategoryInput?.value || "",
+                superpowers: getSelectedSuperpowers(),
                 action: "confirm"
             });
         });
@@ -310,7 +361,7 @@
                 resolveModal({
                     name: modalInput?.value || "",
                     description: modalDescInput?.value || "",
-                    category: modalCategoryInput?.value || "",
+                    superpowers: getSelectedSuperpowers(),
                     action: "confirm"
                 });
             }
@@ -487,13 +538,27 @@
             listEl.appendChild(empty);
         }
 
-        function renderList(items) {
+        let cachedSuperpowers = null;
+        async function getSuperpowers() {
+            if (cachedSuperpowers) return cachedSuperpowers;
+            try {
+                const resp = await fetch('content/superpowers.json');
+                if (resp.ok) {
+                    cachedSuperpowers = await resp.json();
+                    return cachedSuperpowers;
+                }
+            } catch (e) { }
+            return [];
+        }
+
+        async function renderList(items) {
             if (!listEl) return;
             listEl.innerHTML = "";
             if (!items || !items.length) {
                 renderEmpty();
                 return;
             }
+            const superpowersMap = await getSuperpowers();
             const openIds = Array.isArray(getOpenIds?.()) ? getOpenIds() : [];
             const activeId = typeof getActiveId?.() === "string" ? getActiveId() : "";
             const openSet = new Set(openIds.filter(Boolean));
@@ -510,6 +575,29 @@
                         button.classList.add("document-explorer__item--active");
                     }
                 }
+
+                const sps = item.superpowers || (item.category ? [item.category] : []);
+                if (Array.isArray(sps) && sps.length > 0) {
+                    const icons = document.createElement("span");
+                    icons.className = "document-explorer__item-superpowers";
+                    icons.style.display = "flex";
+                    icons.style.gap = "2px";
+                    icons.style.marginRight = "6px";
+                    icons.style.opacity = "0.7";
+
+                    sps.forEach(spId => {
+                        const sp = superpowersMap.find(s => s.id === spId || s.id == spId);
+                        if (sp) {
+                            const i = document.createElement("i");
+                            i.dataset.lucide = sp.icon || "star";
+                            i.style.width = "12px";
+                            i.style.height = "12px";
+                            icons.appendChild(i);
+                        }
+                    });
+                    button.appendChild(icons);
+                }
+
                 const label = document.createElement("span");
                 label.textContent = item.title || "Mémo sans titre";
                 button.appendChild(label);
@@ -535,7 +623,7 @@
                     event.stopPropagation();
                     if (!onRename) return;
                     openNameModal(item.title || "", item.description || "", {
-                        category: item.category || "",
+                        superpowers: item.superpowers || (item.category ? [item.category] : []),
                         allowPublish: true
                     }).then(result => {
                         if (!result) return;
@@ -576,7 +664,7 @@
                 const normalized = Array.isArray(items) ? items : [];
                 const openIds = Array.isArray(getOpenIds?.()) ? getOpenIds() : [];
                 cachedItems = sortByOpenAndRecent(normalized, openIds);
-                renderList(cachedItems);
+                await renderList(cachedItems);
             } catch (err) {
                 renderEmpty();
             }
@@ -602,7 +690,7 @@
                 if (!result) return;
                 const name = uniqueName(result.name, cachedItems, Array.from(pendingNames));
                 pendingNames.add(name);
-                await Promise.resolve(onCreate(name, result.description, result.category));
+                await Promise.resolve(onCreate(name, result.description, result.superpowers));
             } finally {
                 isCreating = false;
                 createBtn.disabled = false;
@@ -653,10 +741,10 @@
 
         return {
             refresh,
-            refreshIndicators() {
+            async refreshIndicators() {
                 const openIds = Array.isArray(getOpenIds?.()) ? getOpenIds() : [];
                 cachedItems = sortByOpenAndRecent(cachedItems, openIds);
-                renderList(cachedItems);
+                await renderList(cachedItems);
             },
             open() {
                 applyOpen(true);
@@ -670,10 +758,10 @@
             uniqueName(name) {
                 return uniqueName(name, cachedItems);
             },
-            setItems(items) {
+            async setItems(items) {
                 const openIds = Array.isArray(getOpenIds?.()) ? getOpenIds() : [];
                 cachedItems = sortByOpenAndRecent(Array.isArray(items) ? items : [], openIds);
-                renderList(cachedItems);
+                await renderList(cachedItems);
             }
         };
     }

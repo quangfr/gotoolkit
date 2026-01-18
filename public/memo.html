@@ -44,7 +44,7 @@
     <script src="https://unpkg.com/@excalidraw/excalidraw@0.17.6/dist/excalidraw.production.min.js"
         crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.min.js" crossorigin></script>
-    <link rel="stylesheet" href="styles/style.css?v=2026.01.18.2">
+    <link rel="stylesheet" href="styles/style.css?v=2026.01.18.3">
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         html,
@@ -529,19 +529,26 @@
             align-items: center;
             gap: 6px;
             cursor: move;
+            min-width: 0;
         }
 
         .document-tab.active {
             background: var(--color-primary);
             border-color: var(--color-primary);
             color: var(--white);
+            max-width: 150px;
         }
 
-        .document-tab:not(.active) span {
-            max-width: 10ch;
+        .document-tab span:first-of-type {
             overflow: hidden;
-            text-overflow: "…";
+            text-overflow: ellipsis;
             white-space: nowrap;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .document-tab:not(.active) span:first-of-type {
+            max-width: 10ch;
         }
 
         .document-tab.is-dragging {
@@ -894,6 +901,9 @@
         .gt-template-card {
             font-size: 13px;
             padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
             border-radius: 8px;
             border: 1px solid var(--border-main);
             background: var(--bg-surface);
@@ -901,17 +911,25 @@
             text-align: left;
             transition: all 0.2s ease;
             position: relative;
+            width: 100%;
         }
 
-        .gt-template-card h4 {
-            margin: 0 0 4px;
-            font-size: 14px;
-        }
-
-        .gt-template-card p {
+        .gt-template-card__title {
+            font-size: 1rem;
+            font-weight: 600;
             margin: 0;
-            font-size: 12px;
             color: var(--text-main);
+        }
+
+        .gt-template-card__desc {
+            margin: 0;
+            font-size: 0.82rem;
+            color: var(--text-main);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
             line-height: 1.4;
         }
 
@@ -945,9 +963,9 @@
         }
 
         .gt-template-card__meta {
-            margin-top: 6px;
-            font-size: 11px;
-            color: var(--text-muted);
+            margin: 4px 0 0;
+            font-size: 0.75rem;
+            color: var(--text-main);
             display: flex;
             gap: 6px;
             align-items: center;
@@ -973,8 +991,19 @@
             color: var(--color-primary);
             background: var(--bg-surface-soft);
         }
+
+        .superpowers-checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .gt-template-modal {
+            --modal-width: 800px;
+        }
     </style>
-    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.01.18.2">
+    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.01.18.3">
 </head>
 
 <body class="app-body">
@@ -1013,12 +1042,12 @@
                             aria-expanded="false"><i data-lucide="zap"></i> Memo <i
                                 data-lucide="chevron-down"></i></button>
                         <div id="navSwitcherMenu" class="nav-switch-menu" role="menu">
-                            <a class="nav-switch-link" href="/?v=2026.01.18.2" role="menuitem"><i
+                            <a class="nav-switch-link" href="/?v=2026.01.18.3" role="menuitem"><i
                                     data-lucide="home"></i> Accueil</a>
-                            <a class="nav-switch-link" href="grid.html?v=2026.01.18.2" role="menuitem"
+                            <a class="nav-switch-link" href="grid.html?v=2026.01.18.3" role="menuitem"
                                 data-app="grid"><i data-lucide="grid-3x3"></i>
                                 Grid</a>
-                            <a class="nav-switch-link" href="timeline.html?v=2026.01.18.2" role="menuitem"
+                            <a class="nav-switch-link" href="timeline.html?v=2026.01.18.3" role="menuitem"
                                 data-app="timeline"><i data-lucide="layout-list"></i> Timeline</a>
                         </div>
                     </div>
@@ -1097,8 +1126,8 @@
             <div class="modal-header">
                 <h3 id="gtTemplateModalTitle" title="Modèles">Modèles</h3>
                 <div class="gt-template-filter">
-                    <label for="gtTemplateCategoryFilter">Catégorie</label>
-                    <select id="gtTemplateCategoryFilter" class="gt-template-filter__select">
+                    <label for="gtTemplateSuperpowerFilter">Superpouvoir</label>
+                    <select id="gtTemplateSuperpowerFilter" class="gt-template-filter__select">
                         <option value="Tous">Tous</option>
                     </select>
                 </div>
@@ -1106,12 +1135,16 @@
                         data-lucide="x"></i></button>
             </div>
             <div class="gt-template-modal__list" id="gtTemplateModalList" role="radiogroup"></div>
-            <div class="gt-template-modal__actions modal-actions">
+            <div class="gt-template-modal__actions modal-actions" style="justify-content: flex-start; gap: 8px;">
+                <button id="refreshTemplatesBtn" type="button" class="btn btn-secondary" title="Rafraîchir les modèles">
+                    <i data-lucide="refresh-cw"></i> Rafraîchir
+                </button>
                 <button id="publishTemplateBtn" type="button" class="btn btn-secondary"
                     style="display:none; margin-left:auto;">
                     <i data-lucide="upload-cloud"></i> Publier
                 </button>
-                <button id="gtTemplateModalApply" type="button" class="btn-primary">Utiliser</button>
+                <button id="gtTemplateModalApply" type="button" class="btn-primary"
+                    style="margin-left:auto;">Utiliser</button>
             </div>
         </div>
     </div>
@@ -1147,7 +1180,7 @@
         <img src="img/logo.gif" alt="Logo Go-Toolkit" class="logo-light">
         <img src="img/logo_inverted.gif" alt="Logo Go-Toolkit" class="logo-dark">
         <strong>Module Mémo</strong>
-        <span>Version 2026.01.18.2</span>
+        <span>Version 2026.01.18.3</span>
         <span>Usage réservé à Savane Consulting.</span>
         <div class="info-actions">
             <button id="memoUpdateBtn" type="button" class="update-btn">Réinitialiser</button>
@@ -1208,21 +1241,21 @@
         window.GO_TOOLKIT_SHARE_API_URL =
             window.GO_TOOLKIT_SHARE_API_URL || "https://share.gotoolkit.workers.dev/";
     </script>
-    <script src="js/config.js?v=2026.01.18.2"></script>
-    <script src="js/feature-visibility.js?v=2026.01.18.2"></script>
-    <script src="js/document-storage.js?v=2026.01.18.2"></script>
-    <script src="js/storage-service.js?v=2026.01.18.2"></script>
-    <script src="js/shared-ui.js?v=2026.01.18.2"></script>
-    <script src="js/cgu.js?v=2026.01.18.2"></script>
-    <script src="js/share-worker-client.js?v=2026.01.18.2"></script>
-    <script src="js/share-history.js?v=2026.01.18.2"></script>
-    <script src="js/document-api.js?v=2026.01.18.2"></script>
-    <script src="js/keywordIndex.js?v=2026.01.18.2"></script>
-    <script src="js/document-rag.js?v=2026.01.18.2"></script>
-    <script src="js/ia-config.js?v=2026.01.18.2"></script>
-    <script src="prompt.js?v=2026.01.18.2"></script>
-    <script src="js/ia-client.js?v=2026.01.18.2"></script>
-    <script src="js/document-markdown.js?v=2026.01.18.2"></script>
+    <script src="js/config.js?v=2026.01.18.3"></script>
+    <script src="js/feature-visibility.js?v=2026.01.18.3"></script>
+    <script src="js/document-storage.js?v=2026.01.18.3"></script>
+    <script src="js/storage-service.js?v=2026.01.18.3"></script>
+    <script src="js/shared-ui.js?v=2026.01.18.3"></script>
+    <script src="js/cgu.js?v=2026.01.18.3"></script>
+    <script src="js/share-worker-client.js?v=2026.01.18.3"></script>
+    <script src="js/share-history.js?v=2026.01.18.3"></script>
+    <script src="js/document-api.js?v=2026.01.18.3"></script>
+    <script src="js/keywordIndex.js?v=2026.01.18.3"></script>
+    <script src="js/document-rag.js?v=2026.01.18.3"></script>
+    <script src="js/ia-config.js?v=2026.01.18.3"></script>
+    <script src="prompt.js?v=2026.01.18.3"></script>
+    <script src="js/ia-client.js?v=2026.01.18.3"></script>
+    <script src="js/document-markdown.js?v=2026.01.18.3"></script>
     <script>
         // Initialize feedback configuration for Memo before loading feedback.js
         window.GoToolkitAppFeedbackConfig = {
@@ -1241,12 +1274,12 @@
             ]
         };
     </script>
-    <script src="js/feedback.js?v=2026.01.18.2"></script>
-    <script src="js/voice-video-player.js?v=2026.01.18.2"></script>
-    <script src="js/voice-audio-player.js?v=2026.01.18.2"></script>
-    <script src="js/voice.js?v=2026.01.18.2"></script>
-    <script src="js/voice-transcript.js?v=2026.01.18.2"></script>
-    <script src="js/draw-memo.js?v=2026.01.18.2"></script>
+    <script src="js/feedback.js?v=2026.01.18.3"></script>
+    <script src="js/voice-video-player.js?v=2026.01.18.3"></script>
+    <script src="js/voice-audio-player.js?v=2026.01.18.3"></script>
+    <script src="js/voice.js?v=2026.01.18.3"></script>
+    <script src="js/voice-transcript.js?v=2026.01.18.3"></script>
+    <script src="js/draw-memo.js?v=2026.01.18.3"></script>
     <script>
         // Suppress React DevTools prompt in dev builds.
         window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = window.__REACT_DEVTOOLS_GLOBAL_HOOK__ || {
@@ -1256,9 +1289,9 @@
             onCommitFiberUnmount: function () { }
         };
     </script>
-    <script src="js/memo.bundle.js?v=2026.01.18.2"></script>
-    <script src="js/assist.js?v=2026.01.18.2"></script>
-    <script src="js/document-panel.js?v=2026.01.18.2"></script>
+    <script src="js/memo.bundle.js?v=2026.01.18.3"></script>
+    <script src="js/assist.js?v=2026.01.18.3"></script>
+    <script src="js/document-panel.js?v=2026.01.18.3"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             setTimeout(function () {
@@ -1339,7 +1372,7 @@
             const templateModalTrigger = document.getElementById("gtTemplateModalTrigger");
             const templateModalClose = document.getElementById("gtTemplateModalClose");
             const templateModalList = document.getElementById("gtTemplateModalList");
-            const templateCategoryFilter = document.getElementById("gtTemplateCategoryFilter");
+            const templateSuperpowerFilter = document.getElementById("gtTemplateSuperpowerFilter");
             const templateModalApply = document.getElementById("gtTemplateModalApply");
             const promptModal = document.getElementById("gtPromptModal");
             const promptModalTrigger = document.getElementById("gtPromptModalTrigger");
@@ -1435,6 +1468,7 @@
                             id,
                             title: "Doc 1",
                             description: "",
+                            superpowers: [],
                             category: "",
                             content: "",
                             contextEmbeddings: []
@@ -1458,11 +1492,12 @@
                         : "Doc " + (index + 1);
                     const description = typeof tab.description === "string" ? tab.description : "";
                     const category = typeof tab.category === "string" ? tab.category : "";
+                    const superpowers = Array.isArray(tab.superpowers) ? tab.superpowers : (category ? [category] : []);
                     const content = typeof tab.content === "string" ? tab.content : "";
                     const contextEmbeddings = Array.isArray(tab.contextEmbeddings)
                         ? tab.contextEmbeddings.filter(Boolean)
                         : [];
-                    return { id, title, description, category, content, contextEmbeddings };
+                    return { id, title, description, category, superpowers, content, contextEmbeddings };
                 });
                 const activeId = normalizedTabs.some(tab => tab.id === raw.activeTabId)
                     ? raw.activeTabId
@@ -1496,7 +1531,7 @@
                     id: doc.id,
                     title: doc.title,
                     description: doc.description || "",
-                    category: doc.category || "",
+                    superpowers: doc.superpowers || [],
                     payload: doc.payload,
                     updatedAt: doc.updatedAt || new Date().toISOString()
                 });
@@ -1511,6 +1546,7 @@
                     btn.className = "tab document-tab" + (doc.id === activeDocumentId ? " active" : "");
                     btn.dataset.documentId = doc.id;
                     btn.draggable = true;
+                    btn.title = doc.title || "Mémo";
 
                     const label = document.createElement("span");
                     label.textContent = doc.title || "Mémo";
@@ -1600,14 +1636,14 @@
                 const updatedAt = doc.updatedAt || existing?.updatedAt || new Date().toISOString();
                 const title = doc.title || existing?.title || getDocumentTitleFromState(state);
                 const description = doc.description || existing?.description || "";
-                const category = doc.category || existing?.category || "";
+                const superpowers = doc.superpowers || existing?.superpowers || [];
                 const record = await documentApi.upsertRecord({
                     id: doc.id,
                     app: "memo",
                     payload,
                     title,
                     description,
-                    category,
+                    superpowers,
                     updatedAt,
                     lastOpenedAt: now
                 });
@@ -1616,7 +1652,7 @@
                         id: doc.id,
                         title: record.title || title,
                         description: record.description || description,
-                        category: record.category || category,
+                        superpowers: record.superpowers || superpowers,
                         payload,
                         updatedAt: record.updatedAt || updatedAt,
                         lastOpenedAt: now
@@ -2165,7 +2201,7 @@
                     id: record.id,
                     title: record.title || getDocumentTitleFromState(state),
                     description: record.description || "",
-                    category: record.category || "",
+                    superpowers: record.superpowers || [],
                     payload: buildSharePayload(),
                     updatedAt: record.updatedAt || new Date().toISOString()
                 });
@@ -2174,7 +2210,7 @@
                     id: record.id,
                     title: record.title || getDocumentTitleFromState(state),
                     description: record.description || "",
-                    category: record.category || "",
+                    superpowers: record.superpowers || [],
                     payload: buildSharePayload(),
                     updatedAt: record.updatedAt || new Date().toISOString()
                 }, record);
@@ -2228,6 +2264,7 @@
                     label: meta?.name || tab.title || "Modèle sans titre",
                     description: meta?.description || "",
                     category: meta?.category || "",
+                    superpowers: meta?.superpowers || [],
                     html: tab.content || "",
                     meta: {
                         uuid: createTemplateUuid()
@@ -2245,7 +2282,7 @@
                 }
             }
 
-            async function applyDocumentRename(docId, nextName, nextDescription, nextCategory) {
+            async function applyDocumentRename(docId, nextName, nextDescription, nextSuperpowers) {
                 if (!docId || !nextName) return;
                 const doc = openDocuments.find(item => item.id === docId);
                 if (doc && doc.payload && Array.isArray(doc.payload.tabs) && doc.payload.tabs[0]) {
@@ -2254,9 +2291,9 @@
                         doc.payload.tabs[0].description = nextDescription;
                         doc.description = nextDescription;
                     }
-                    if (nextCategory !== undefined) {
-                        doc.payload.tabs[0].category = nextCategory;
-                        doc.category = nextCategory;
+                    if (nextSuperpowers !== undefined) {
+                        doc.payload.tabs[0].superpowers = nextSuperpowers;
+                        doc.superpowers = nextSuperpowers;
                     }
                 }
                 if (docId === activeDocumentId && state.tabs[0]) {
@@ -2264,8 +2301,8 @@
                     if (nextDescription !== undefined) {
                         state.tabs[0].description = nextDescription;
                     }
-                    if (nextCategory !== undefined) {
-                        state.tabs[0].category = nextCategory;
+                    if (nextSuperpowers !== undefined) {
+                        state.tabs[0].superpowers = nextSuperpowers;
                     }
                     persistState();
                 }
@@ -2277,7 +2314,7 @@
                         payload,
                         title: nextName,
                         description: nextDescription !== undefined ? nextDescription : (doc?.description || ""),
-                        category: nextCategory !== undefined ? nextCategory : (doc?.category || ""),
+                        superpowers: nextSuperpowers !== undefined ? nextSuperpowers : (doc?.superpowers || []),
                         updatedAt: new Date().toISOString()
                     });
                 }
@@ -2285,7 +2322,7 @@
                     id: docId,
                     title: nextName,
                     description: nextDescription !== undefined ? nextDescription : (doc?.description || ""),
-                    category: nextCategory !== undefined ? nextCategory : (doc?.category || ""),
+                    superpowers: nextSuperpowers !== undefined ? nextSuperpowers : (doc?.superpowers || []),
                     payload: doc?.payload || buildSharePayload(),
                     updatedAt: new Date().toISOString()
                 });
@@ -2293,7 +2330,7 @@
                 getExplorer()?.refresh?.();
             }
 
-            async function renameDocument(docId, currentTitle, currentDescription, currentCategory) {
+            async function renameDocument(docId, currentTitle, currentDescription, currentSuperpowers) {
                 const explorer = getExplorer();
                 const activeContent = state?.tabs?.[0]?.content || "";
                 const fallbackContent = docId === activeDocumentId
@@ -2301,19 +2338,19 @@
                     : (openDocuments.find(doc => doc.id === docId)?.payload?.tabs?.[0]?.content || "");
                 const preferredName = getPreferredRenameTitle(currentTitle, fallbackContent);
                 const result = await explorer?.openRenameModal?.(preferredName || currentTitle || "", currentDescription || "", {
-                    category: currentCategory || "",
+                    superpowers: currentSuperpowers || [],
                     allowPublish: true
                 });
                 if (!result) return;
                 const finalName = explorer?.uniqueName?.(result.name) || result.name;
-                await applyDocumentRename(docId, finalName, result.description, result.category);
+                await applyDocumentRename(docId, finalName, result.description, result.superpowers);
 
                 if (result.action === "publish") {
                     const tab = getActiveTab();
                     await publishTemplateFromTab(tab, {
                         name: finalName,
                         description: result.description,
-                        category: result.category
+                        superpowers: result.superpowers
                     });
                 }
             }
@@ -2321,7 +2358,7 @@
             async function renameActiveDocument() {
                 if (!activeDocumentId) return;
                 const tab = state.tabs[0];
-                await renameDocument(activeDocumentId, tab?.title || "", tab?.description || "", tab?.category || "");
+                await renameDocument(activeDocumentId, tab?.title || "", tab?.description || "", tab?.superpowers || []);
             }
 
             async function deleteDocument(docId) {
@@ -2367,7 +2404,7 @@
 
             let isCreatingNewDocument = false;
 
-            async function createNewDocument(name, description, category, initialContent) {
+            async function createNewDocument(name, description, superpowers, initialContent) {
                 if (isCreatingNewDocument) return;
                 isCreatingNewDocument = true;
                 try {
@@ -2376,7 +2413,7 @@
                     if (nextState.tabs[0]) {
                         nextState.tabs[0].title = name;
                         nextState.tabs[0].description = description || "";
-                        nextState.tabs[0].category = category || "";
+                        nextState.tabs[0].superpowers = Array.isArray(superpowers) ? superpowers : [];
                         if (typeof initialContent === "string") {
                             nextState.tabs[0].content = initialContent;
                         }
@@ -2386,14 +2423,14 @@
                     renderTabs();
                     setActiveTab(state.activeTabId);
                     syncAssistPresetFromState();
-                    await saveDocument({ showToast: true, created: true, description: description, category: category });
+                    await saveDocument({ showToast: true, created: true, description: description, superpowers: nextState.tabs[0].superpowers });
                     getExplorer()?.refresh?.();
                     window.GoToolkitAssistInstance?.open?.();
                     markDocumentOpened({
                         id: activeDocumentId,
                         title: getDocumentTitleFromState(state),
                         description: description || "",
-                        category: category || "",
+                        superpowers: nextState.tabs[0].superpowers,
                         payload: buildSharePayload()
                     });
                 } finally {
@@ -2464,19 +2501,19 @@
                 },
                 getOpenIds: () => openDocuments.map(doc => doc.id).filter(Boolean),
                 getActiveId: () => activeDocumentId || "",
-                onCreate: (name, description, category) => {
+                onCreate: (name, description, superpowers) => {
                     if (!name) return;
-                    createNewDocument(name, description, category);
+                    createNewDocument(name, description, superpowers);
                 },
                 onRename: (item, result) => {
                     if (!item || !result || !result.name) return;
-                    applyDocumentRename(item.id, result.name, result.description, result.category);
+                    applyDocumentRename(item.id, result.name, result.description, result.superpowers);
                     if (result.action === "publish" && item.id === activeDocumentId) {
                         const tab = getActiveTab();
                         publishTemplateFromTab(tab, {
                             name: result.name,
                             description: result.description,
-                            category: result.category
+                            superpowers: result.superpowers
                         });
                     }
                 },
@@ -2503,7 +2540,7 @@
                     const payload = buildSharePayload();
                     const preview = buildSharePreview();
                     const activeTab = getActiveTab();
-                    const category = activeTab?.category || options?.category || "";
+                    const superpowers = activeTab?.superpowers || options?.superpowers || [];
                     // IMPORTANT: Preserve existing activeDocumentId if it exists
                     const startedWithId = activeDocumentId;
                     const id = startedWithId || (documentApi.generateId && documentApi.generateId()) || createId();
@@ -2514,7 +2551,7 @@
                         payload,
                         title: preview.title,
                         description: options?.description !== undefined ? options.description : preview.description,
-                        category: category,
+                        superpowers: superpowers,
                         updatedAt: now
                     });
                     if (record) {
@@ -2526,7 +2563,7 @@
                             id,
                             title: preview.title || getDocumentTitleFromState(state),
                             description: options?.description !== undefined ? options.description : preview.description,
-                            category: category,
+                            superpowers: superpowers,
                             payload,
                             updatedAt: now
                         });
@@ -2558,6 +2595,18 @@
                     .replace(/'/g, "&#39;");
             }
 
+            async function getSuperpowers() {
+                if (window._superpowersCached) return window._superpowersCached;
+                try {
+                    const resp = await fetch('content/superpowers.json');
+                    if (resp.ok) {
+                        window._superpowersCached = await resp.json();
+                        return window._superpowersCached;
+                    }
+                } catch (e) { }
+                return [];
+            }
+
             let templateInsertMode = "append";
 
             async function applyTemplateContent(template) {
@@ -2565,7 +2614,7 @@
                 const html = template.html || "";
                 if (templateInsertMode !== "append") {
                     const name = await getAutoDocumentName();
-                    createNewDocument(name, template.description || "", template.category || "", html);
+                    createNewDocument(name, template.description || "", template.superpowers || [], html);
                     return;
                 }
 
@@ -2606,55 +2655,83 @@
                 return `Il y a ${months} m`;
             }
 
-            function normalizeTemplateCategory(value) {
-                return (value || "").toString().trim();
-            }
+            async function updateTemplateSuperpowerFilter(templates) {
+                if (!templateSuperpowerFilter) return;
+                const currentValue = templateSuperpowerFilter.value || "Tous";
+                const superpowersMap = await getSuperpowers();
 
-            function updateTemplateCategoryFilter(templates) {
-                if (!templateCategoryFilter) return;
-                const currentValue = templateCategoryFilter.value || "Tous";
-                const categories = new Set();
+                const stats = {};
                 (templates || []).forEach(template => {
-                    const category = normalizeTemplateCategory(template.category);
-                    if (category) categories.add(category);
+                    const sps = template.superpowers || [];
+                    sps.forEach(spId => {
+                        stats[spId] = (stats[spId] || 0) + 1;
+                    });
                 });
-                const sorted = Array.from(categories).sort((a, b) => a.localeCompare(b, "fr", { sensitivity: "base" }));
-                templateCategoryFilter.innerHTML = "";
+
+                templateSuperpowerFilter.innerHTML = "";
                 const allOption = document.createElement("option");
                 allOption.value = "Tous";
-                allOption.textContent = "Tous";
-                templateCategoryFilter.appendChild(allOption);
-                sorted.forEach(category => {
+                allOption.textContent = `Tous (${templates.length})`;
+                templateSuperpowerFilter.appendChild(allOption);
+
+                superpowersMap.forEach(sp => {
+                    const count = stats[sp.id] || 0;
+                    if (count === 0) return;
                     const option = document.createElement("option");
-                    option.value = category;
-                    option.textContent = category;
-                    templateCategoryFilter.appendChild(option);
+                    option.value = String(sp.id);
+                    option.textContent = `${sp.title} (${count})`;
+                    templateSuperpowerFilter.appendChild(option);
                 });
-                templateCategoryFilter.value = sorted.includes(currentValue) ? currentValue : "Tous";
+
+                templateSuperpowerFilter.value = templateSuperpowerFilter.querySelector(`option[value="${currentValue}"]`) ? currentValue : "Tous";
+            }
+
+            const TEMPLATE_SYNC_PERIOD = 24 * 60 * 60 * 1000; // 24h
+
+            async function syncTemplates(force = false) {
+                if (!window.goToolkitTemplateStore) return;
+
+                const lastSync = parseInt(localStorage.getItem('last_template_sync') || '0');
+                const now = Date.now();
+
+                if (!force && lastSync && (now - lastSync < TEMPLATE_SYNC_PERIOD)) {
+                    cloudTemplates = await window.goToolkitTemplateStore.list();
+                    if (cloudTemplates.length > 0) return;
+                }
+
+                localStorage.setItem('last_template_sync', now.toString());
+
+                try {
+                    const baseUrl = shareWorker.baseUrl || "https://share.gotoolkit.workers.dev";
+                    const response = await fetch(`${baseUrl}/v1/shares/${TEMPLATES_COLLECTION}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        const fetched = (data.documents || []).map(doc => ({
+                            id: doc.id,
+                            label: doc.payload?.label || "Modèle sans titre",
+                            description: doc.payload?.description || "",
+                            category: doc.payload?.category || "",
+                            superpowers: doc.payload?.superpowers || [],
+                            html: doc.payload?.html || "",
+                            updatedAt: doc.meta?.updatedDate || doc.meta?.updatedAt || ""
+                        }));
+
+                        await window.goToolkitTemplateStore.saveAll(fetched);
+                        cloudTemplates = fetched;
+                    }
+                } catch (err) {
+                    console.warn("Failed to fetch cloud templates", err);
+                    cloudTemplates = await window.goToolkitTemplateStore.list();
+                }
             }
 
             async function renderTemplateList() {
                 if (!templateModalList) return;
                 templateModalList.innerHTML = '<div style="padding: 20px; text-align: center; opacity: 0.7;">Chargement des modèles...</div>';
 
-                let templatesToRender = [];
-                try {
-                    const baseUrl = shareWorker.baseUrl || "https://share.gotoolkit.workers.dev";
-                    const response = await fetch(`${baseUrl}/v1/shares/${TEMPLATES_COLLECTION}`);
-                    if (response.ok) {
-                        const data = await response.json();
-                        cloudTemplates = (data.documents || []).map(doc => ({
-                            id: doc.id,
-                            label: doc.payload?.label || "Modèle sans titre",
-                            description: doc.payload?.description || "",
-                            category: doc.payload?.category || "",
-                            html: doc.payload?.html || "",
-                            updatedAt: doc.meta?.updatedDate || doc.meta?.updatedAt || ""
-                        }));
-                    }
-                } catch (err) {
-                    console.warn("Failed to fetch cloud templates", err);
-                }
+                await syncTemplates();
+
+                const superpowersMap = await getSuperpowers();
 
                 templateModalList.innerHTML = "";
 
@@ -2663,11 +2740,12 @@
                     return;
                 }
 
-                updateTemplateCategoryFilter(cloudTemplates);
-                const selectedCategory = normalizeTemplateCategory(templateCategoryFilter?.value || "Tous");
-                templatesToRender = cloudTemplates.filter(template => {
-                    if (!selectedCategory || selectedCategory === "Tous") return true;
-                    return normalizeTemplateCategory(template.category) === selectedCategory;
+                updateTemplateSuperpowerFilter(cloudTemplates);
+                const selectedSpIdStr = templateSuperpowerFilter?.value || "Tous";
+                let templatesToRender = cloudTemplates.filter(template => {
+                    if (!selectedSpIdStr || selectedSpIdStr === "Tous") return true;
+                    const spId = parseInt(selectedSpIdStr);
+                    return template.superpowers && template.superpowers.includes(spId);
                 });
 
                 if (!templatesToRender.length) {
@@ -2684,8 +2762,26 @@
                     btn.type = "button";
                     btn.className = "gt-template-card";
                     btn.dataset.templateId = template.id;
+
                     const updatedLabel = formatTemplateRelativeDate(template.updatedAt);
-                    btn.innerHTML = `<h4>${escapeHtml(template.label)}</h4><p>${escapeHtml(template.description || "")}</p><div class="gt-template-card__meta">Màj · ${escapeHtml(updatedLabel)}</div>`;
+                    let superpowersHtml = "";
+                    if (template.superpowers && Array.isArray(template.superpowers)) {
+                        const pills = template.superpowers.map(spId => {
+                            const sp = superpowersMap.find(s => s.id === spId);
+                            if (!sp) return "";
+                            return `<span class="superpower-pill"><i data-lucide="${sp.icon || 'star'}" style="width: 10px; height: 10px;"></i> ${escapeHtml(sp.title)}</span>`;
+                        }).join("");
+                        if (pills) {
+                            superpowersHtml = `<div class="gt-template-card__superpowers">${pills}</div>`;
+                        }
+                    }
+
+                    btn.innerHTML = `
+                        <div class="gt-template-card__title">${escapeHtml(template.label)}</div>
+                        ${superpowersHtml}
+                        <div class="gt-template-card__desc">${escapeHtml(template.description || "")}</div>
+                        <div class="gt-template-card__meta">${escapeHtml(updatedLabel)}</div>
+                    `;
 
                     if (cloudTemplates.some(t => t.id === template.id)) {
                         const deleteBtn = document.createElement("button");
@@ -2700,6 +2796,8 @@
                                 const ok = await shareWorker.deleteSharePayload(TEMPLATES_COLLECTION, template.id);
                                 if (ok) {
                                     setStatus("Modèle supprimé");
+                                    await window.goToolkitTemplateStore?.delete(template.id);
+                                    cloudTemplates = cloudTemplates.filter(t => t.id !== template.id);
                                     renderTemplateList();
                                 }
                             } catch (err) {
@@ -3040,6 +3138,8 @@
                         restoredDocs.push({
                             id: record.id,
                             title: record.title || "Mémo",
+                            description: record.description || "",
+                            superpowers: record.superpowers || [],
                             payload: record.payload,
                             updatedAt: record.updatedAt || new Date().toISOString()
                         });
@@ -3075,6 +3175,8 @@
                     upsertOpenDocument({
                         id: record.id,
                         title: record.title || getDocumentTitleFromState(state),
+                        description: record.description || "",
+                        superpowers: record.superpowers || [],
                         payload: record.payload,
                         updatedAt: record.updatedAt || new Date().toISOString()
                     });
@@ -3095,7 +3197,19 @@
                 return restored;
             })();
 
-            documentLoadedPromise.then(() => {
+            documentLoadedPromise.then(async () => {
+                // Check if we came from index.html with a template to load
+                try {
+                    const templateData = localStorage.getItem("goToolkit.memo.templateToLoad");
+                    if (templateData) {
+                        localStorage.removeItem("goToolkit.memo.templateToLoad");
+                        const template = JSON.parse(templateData);
+                        await createNewDocument(template.label, template.description, template.superpowers, template.html);
+                    }
+                } catch (err) {
+                    console.warn("Failed to load template from localStorage", err);
+                }
+
                 window.__memoState = state;
                 renderTabs();
                 renderDocumentTabs();
@@ -3209,14 +3323,14 @@
 
                 const explorer = getExplorer();
                 const result = await explorer?.openRenameModal?.(tab.title || "", tab.description || "", {
-                    category: tab?.category || "",
+                    superpowers: tab?.superpowers || [],
                     allowPublish: false
                 });
                 if (!result) return;
                 await publishTemplateFromTab(tab, {
                     name: result.name,
                     description: result.description,
-                    category: result.category
+                    superpowers: result.superpowers
                 });
             });
 
@@ -3286,11 +3400,18 @@
             });
 
             templateModalTrigger?.addEventListener("click", () => openTemplateModal("create"));
+            document.getElementById("refreshTemplatesBtn")?.addEventListener("click", async () => {
+                const btn = document.getElementById("refreshTemplatesBtn");
+                if (btn) btn.classList.add("btn--loading");
+                await syncTemplates(true);
+                renderTemplateList();
+                if (btn) btn.classList.remove("btn--loading");
+            });
             templateModalClose?.addEventListener("click", () => closeTemplateModal());
             templateModal?.addEventListener("click", event => {
                 if (event.target === templateModal) closeTemplateModal();
             });
-            templateCategoryFilter?.addEventListener("change", () => {
+            templateSuperpowerFilter?.addEventListener("change", () => {
                 renderTemplateList();
             });
             templateModalApply?.addEventListener("click", async () => {

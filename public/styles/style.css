@@ -1188,7 +1188,7 @@ label {
   display: grid;
   grid-template-columns: repeat(3, minmax(240px, 1fr));
   gap: 12px;
-  margin: 10px 0 12px;
+  margin: 0;
   overflow-y: auto;
   max-height: 60vh;
 }
@@ -1197,10 +1197,10 @@ label {
   border: 1px solid var(--border-main);
   border-radius: var(--radius-md);
   background: var(--bg-surface-soft);
-  padding: 12px 14px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 10px;
   cursor: pointer;
   transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.06s ease;
   min-height: 84px;
@@ -1218,16 +1218,52 @@ label {
   box-shadow: 0 10px 22px rgba(42, 122, 87, 0.12);
 }
 
-.gt-template-card h4 {
+.gt-template-card__title {
+  font-size: 1rem;
+  font-weight: 600;
   margin: 0;
-  font-size: 13px;
   color: var(--text-main);
+  text-align: left;
 }
 
-.gt-template-card p {
+.gt-template-card__desc {
   margin: 0;
-  font-size: 12px;
+  font-size: 0.82rem;
   color: var(--text-main);
+  text-align: left;
+  line-height: 1.4;
+}
+
+.gt-template-card__superpowers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+}
+
+.superpower-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 99px;
+  border: 1px solid var(--border-main);
+  background: var(--bg-surface);
+  font-size: 11px;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.superpower-pill:hover {
+  border-color: var(--color-primary);
+}
+
+.superpower-pill.active {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
 }
 
 @media (max-width: 899px) {

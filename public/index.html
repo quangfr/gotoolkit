@@ -73,7 +73,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Sora:wght@400;500;600&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles/style.css?v=2026.01.18.2">
+    <link rel="stylesheet" href="styles/style.css?v=2026.01.18.3">
     <style>
         .lucide-spin {
             animation: lucide-spin 1.4s linear infinite;
@@ -223,6 +223,8 @@
             text-transform: uppercase;
             color: var(--text-main);
             margin: 5px 5px 15px 5px;
+            display: flex;
+            align-items: center;
         }
 
         .section-helper {
@@ -235,6 +237,7 @@
             border-bottom: 1px dashed currentColor;
             cursor: pointer;
             display: inline-flex;
+            align-items: center;
             gap: 4px;
             padding-bottom: 2px;
         }
@@ -385,9 +388,66 @@
             letter-spacing: 0;
         }
 
+        /* Launcher Template Gallery */
+        #gtTemplateModalList {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(200px, 1fr));
+            gap: 12px;
+            overflow-x: auto;
+            padding: 4px 2px 12px;
+            margin: 0;
+            scrollbar-width: thin;
+            scroll-snap-type: x mandatory;
+        }
+
+        #gtTemplateModalList>.gt-template-card {
+            scroll-snap-align: start;
+            min-width: 200px;
+        }
+
+        .gt-template-card__meta {
+            margin: 4px 0 0;
+            font-size: 0.75rem;
+            color: var(--text-main);
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .gt-template-card__title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 0;
+            color: var(--text-main);
+        }
+
+        .gt-template-card__desc {
+            margin: 0;
+            font-size: 0.82rem;
+            color: var(--text-main);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            line-height: 1.4;
+        }
+
+        @media (max-width: 1024px) {
+            #gtTemplateModalList {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 640px) {
+            #gtTemplateModalList {
+                grid-template-columns: repeat(1, minmax(0, 1fr));
+            }
+        }
+
         .share-gallery {
             display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-columns: repeat(5, minmax(0, 1fr));
             gap: 12px;
         }
 
@@ -396,7 +456,7 @@
             flex-direction: column;
             gap: 10px;
             border-radius: 8px;
-            padding: 6px;
+            padding: 12px;
             border: 1px solid var(--border-main);
             background: var(--bg-surface-soft);
             text-decoration: none;
@@ -404,7 +464,7 @@
             min-height: 120px;
             transition: box-shadow 0.2s ease;
             position: relative;
-            padding-bottom: 28px;
+            padding-bottom: 36px;
         }
 
         .share-card:hover,
@@ -428,11 +488,11 @@
         .share-card-desc {
             margin: 0;
             color: var(--text-main);
-            line-height: 1.3;
-            min-height: 2em;
-            font-size: 0.85rem;
+            line-height: 1.4;
+            font-size: 0.82rem;
             display: -webkit-box;
             -webkit-line-clamp: 2;
+            line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
         }
@@ -445,7 +505,7 @@
 
         .share-card-action {
             position: absolute;
-            bottom: 6px;
+            bottom: 10px;
             border: 1px solid var(--border-strong);
             background: var(--bg-surface);
             border-radius: 12px;
@@ -466,6 +526,20 @@
             box-shadow: 0 10px 18px rgba(0, 0, 0, 0.12);
             border-color: var(--color-primary);
             outline: none;
+        }
+
+        .refresh-templates-btn {
+            position: relative;
+            bottom: auto;
+            margin-left: 8px;
+            vertical-align: middle;
+            padding: 3px;
+            box-sizing: border-box;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
         }
 
         .share-card-delete {
@@ -581,7 +655,7 @@
 
         .superpower-modal {
             width: min(900px, 90vw);
-            background: var(--white);
+            background: var(--bg-surface);
             border-radius: 18px;
             box-shadow: 0 22px 45px rgba(15, 23, 42, 0.25);
             padding: 10px 14px;
@@ -619,59 +693,18 @@
 
         .superpower-head {
             display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        /* In the modal, show name and tag on the same row */
-        .superpower-modal .superpower-head {
             flex-direction: row;
             align-items: center;
-            justify-content: space-between;
+            justify-content: flex-start;
             gap: 12px;
         }
 
-        .superpower-tag-row {
-            display: flex;
-            gap: 6px;
-            flex-wrap: wrap;
-        }
-
-        .superpower-tag {
-            display: inline-flex;
+        /* In the modal, show name and title on the same row */
+        .superpower-modal .superpower-head {
+            flex-direction: row;
             align-items: center;
-            font-size: 0.65rem;
-            letter-spacing: 0.15em;
-            text-transform: uppercase;
-            padding: 2px 8px;
-            border-radius: 999px;
-            border: 1px solid var(--text-main);
-            background: rgba(156, 163, 175, 0.18);
-            color: var(--text-main);
-        }
-
-        .superpower-tag--development {
-            border-color: var(--intent-warning-border);
-            background: var(--bg-surface);
-            color: var(--intent-warning-border);
-        }
-
-        .superpower-tag--soon {
-            border-color: var(--text-main);
-            background: rgba(156, 163, 175, 0.18);
-            color: var(--text-main);
-        }
-
-        .superpower-tag--cockpit {
-            border-color: var(--intent-warning-border);
-            background: var(--bg-surface);
-            color: var(--intent-warning-border);
-        }
-
-        .superpower-tag--satellite {
-            border-color: var(--intent-important-border);
-            background: var(--bg-surface);
-            color: var(--intent-important-border);
+            justify-content: flex-start;
+            gap: 12px;
         }
 
         .superpower-list section {
@@ -1286,7 +1319,7 @@
             </div>
             <h1>Go-Toolkit <span class="hero-beta">beta</span></h1>
             <p>La boîte à outils IA des Product Owners</p>
-            <span class="hero-version label-link" id="releaseNotesTrigger" tabindex="0">v2026.01.18.2</span>
+            <span class="hero-version label-link" id="releaseNotesTrigger" tabindex="0">v2026.01.18.3</span>
 
             <div class="hero-meta">
                 <button id="openSettingsBtn" class="feedback-button" type="button"><i data-lucide="settings"
@@ -1296,46 +1329,28 @@
 
         <section class="section">
             <div class="section-title-row">
-                <p class="section-label superpower-label label-link" id="superpowerToggle"><i data-lucide="zap"
-                        style="width:14px;height:14px;vertical-align:middle;margin-right:2px;"></i>Super-pouvoirs</p>
+                <p class="section-label superpower-label label-link" id="superpowerToggle">
+                    <i data-lucide="zap" style="width:14px;height:14px;margin-right:2px;"></i>Superpouvoirs
+                    <button id="refreshTemplatesBtn" class="share-card-action refresh-templates-btn"
+                        title="Rafraîchir les modèles">
+                        <i data-lucide="refresh-cw" style="width:14px;height:14px;"></i>
+                    </button>
+                </p>
             </div>
-            <div class="launcher-grid">
-                <a class="launcher" href="memo.html" data-app="memo">
-                    <span class="launcher-emoji"><i data-lucide="zap"></i></span>
-                    <span class="launcher-name">
-                        Mémo
-                        <div class="launcher-desc">Accélère ta rédaction</div>
-                    </span>
-                </a>
-                <a class="launcher" href="old/timeline.html" data-app="timeline">
-                    <span class="launcher-emoji"><i data-lucide="layout-list"></i></span>
-                    <span class="launcher-name">
-                        Timeline <i data-lucide="zap"
-                            style="width:12px;height:12px;vertical-align:middle;margin:0 2px;"></i> Goal Digger
-                        <div class="launcher-desc">Trace ton planning</div>
-                    </span>
-                </a>
-                <a class="launcher" href="grid.html" data-app="grid">
-                    <span class="launcher-emoji"><i data-lucide="grid-3x3"></i></span>
-                    <span class="launcher-name">
-                        Grid
-                        <div class="launcher-desc">Clarifie tes données</div>
-                    </span>
-                </a>
-            </div>
+            <div class="gt-template-modal__list" id="gtTemplateModalList"></div>
         </section>
 
         <section class="section">
             <div id="pinnedBlock" hidden>
                 <div class="section-title-row" style="margin-top: 4px;">
                     <p class="section-label"><i data-lucide="pin"
-                            style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i>Mes favoris</p>
+                            style="width:14px;height:14px;margin-right:4px;"></i>Mes favoris</p>
                 </div>
                 <div id="pinnedGallery" class="share-gallery" aria-live="polite"></div>
             </div>
             <div class="section-title-row">
                 <p class="section-label nexus-label label-link" data-open-nexus-modal><i data-lucide="cloud"
-                        style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i>Espace en ligne</p>
+                        style="width:14px;height:14px;margin-right:4px;"></i>Espace en ligne</p>
             </div>
 
             <div id="shareGallery" class="share-gallery" aria-live="polite"></div>
@@ -1344,7 +1359,7 @@
             <p id="shareError" class="share-helper share-helper-error" hidden></p>
             <div class="section-title-row" style="margin-top: 12px;">
                 <p class="section-label nexus-label label-link" data-open-nexus-modal><i data-lucide="database"
-                        style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i>Bibliothèque locale
+                        style="width:14px;height:14px;margin-right:4px;"></i>Bibliothèque locale
                 </p>
             </div>
             <div id="savedGallery" class="share-gallery" aria-live="polite"></div>
@@ -1441,141 +1456,16 @@
             <div class="superpower-modal">
                 <header>
                     <h3><i data-lucide="zap"
-                            style="width:20px;height:20px;vertical-align:middle;margin-right:8px;"></i>Super-pouvoirs
+                            style="width:20px;height:20px;vertical-align:middle;margin-right:8px;"></i>Superpouvoirs
                         Go-Live</h3>
                     <button id="closeSuperpowerBtn" class="btn-secondary" type="button" aria-label="Fermer"><i
                             data-lucide="x" style="width:16px;height:16px;"></i></button>
                 </header>
-                <div class="superpower-list">
+                <div class="superpower-list" id="superpowerList">
                     <p class="superpower-subtitle">
-                        La Go-Toolkit illustre les super-pouvoirs du Product Owner assistés par l'IA.
+                        La Go-Toolkit illustre les superpouvoirs du Product Owner assistés par l'IA.
                     </p>
-                    <section>
-                        <div class="superpower-head">
-                            <h4><i data-lucide="grid-3x3"
-                                    style="width:18px;height:18px;vertical-align:middle;margin-right:8px;"></i>Le
-                                Cardinal</h4>
-                            <div class="superpower-tag-row">
-                                <span class="superpower-tag">Module Grid</span>
-                            </div>
-                        </div>
-                        <div class="superpower-subtitle">Le pouvoir de modéliser avec clarté. Vulgariser des structures
-                            complexes, expliquer la cardinalité avec pédagogie, et co-créer des schémas métiers
-                            structurés. Transformer des brainstorms flous en artefacts limpides.</div>
-                    </section>
-                    <section>
-
-                        <div class="superpower-head">
-                            <h4><i data-lucide="palette"
-                                    style="width:18px;height:18px;vertical-align:middle;margin-right:8px;"></i>50
-                                nuances de vrai</h4>
-                            <div class="superpower-tag-row">
-                                <span class="superpower-tag">Module Canvas</span>
-                            </div>
-                        </div>
-                        <div class="superpower-subtitle">Varier sincèrement les messages. Dire une même vérité de
-                            plusieurs façons, sans trahir son intention. Adapter sa voix à chaque contexte, avec
-                            justesse, empathie et cohérence.</div>
-                    </section>
-                    <section>
-
-                        <div class="superpower-head">
-                            <h4><i data-lucide="languages"
-                                    style="width:18px;height:18px;vertical-align:middle;margin-right:8px;"></i>Le Petit
-                                Robert Downey Jr</h4>
-                            <div class="superpower-tag-row">
-                                <span class="superpower-tag superpower-tag--soon">À venir</span>
-                            </div>
-                        </div>
-                        <div class="superpower-subtitle">Le pouvoir du discernement sémantique. Rétablir la clarté quand
-                            les mots se confondent. Forger un vocabulaire métier partagé, documenté et stable.</div>
-                    </section>
-                    <section>
-                        <div class="superpower-head">
-                            <h4><i data-lucide="pen-tool"
-                                    style="width:18px;height:18px;vertical-align:middle;margin-right:8px;"></i>Indélébile
-                            </h4>
-                            <div class="superpower-tag-row">
-                                <span class="superpower-tag superpower-tag">Module Draw</span>
-                            </div>
-                        </div>
-                        <div class="superpower-subtitle">Le pouvoir de l’ancrage visuel. Facilitation graphique en
-                            réunion, ateliers et supports. Faire durer les idées grâce à l’image.</div>
-                    </section>
-                    <section>
-                        <div class="superpower-head">
-                            <h4><i data-lucide="rocket"
-                                    style="width:18px;height:18px;vertical-align:middle;margin-right:8px;"></i>Protocop
-                            </h4>
-                            <div class="superpower-tag-row">
-                                <span class="superpower-tag superpower-tag--soon">À venir</span>
-                            </div>
-                        </div>
-                        <div class="superpower-subtitle">Le pouvoir de prototyper vite et bien. Donner corps à l’idée
-                            avant le développement. Transformer l'intuition en objet de projection et d'envie.</div>
-                    </section>
-                    <section>
-                        <div class="superpower-head">
-                            <h4><i data-lucide="mic"
-                                    style="width:18px;height:18px;vertical-align:middle;margin-right:8px;"></i>Tuto
-                                Tarantino</h4>
-                            <div class="superpower-tag-row">
-                                <span class="superpower-tag superpower-tag">Module Voice</span>
-                            </div>
-                        </div>
-                        <div class="superpower-subtitle">Le pouvoir de captiver par des tutoriels vidéo percutants.
-                            Rythme, narration, pédagogie : transmettre devient un art.</div>
-                    </section>
-                    <section>
-                        <div class="superpower-head">
-                            <h4><i data-lucide="layout-list"
-                                    style="width:18px;height:18px;vertical-align:middle;margin-right:8px;"></i>Goal
-                                Digger</h4>
-                            <div class="superpower-tag-row">
-                                <span class="superpower-tag">Module Timeline</span>
-                            </div>
-                        </div>
-                        <div class="superpower-subtitle">Le pouvoir de creuser au bon endroit pour faire émerger une
-                            vraie roadmap de valeur. Tracer une route claire autour d’objectifs d’impact.</div>
-                    </section>
-                    <section>
-                        <div class="superpower-head">
-                            <h4><i data-lucide="bot"
-                                    style="width:18px;height:18px;vertical-align:middle;margin-right:8px;"></i>Promptzilla
-                            </h4>
-                            <div class="superpower-tag-row">
-                                <span class="superpower-tag superpower-tag">Module Assist</span>
-                            </div>
-                        </div>
-                        <div class="superpower-subtitle">Le pouvoir d'invoquer l'IA avec précision et créativité.
-                            Utiliser
-                            l'IA pour accélérer la production sans sacrifier la rigueur.</div>
-                    </section>
-                    <section>
-                        <div class="superpower-head">
-                            <h4><i data-lucide="zap"
-                                    style="width:18px;height:18px;vertical-align:middle;margin-right:8px;"></i>Soulgorithm
-                            </h4>
-                            <div class="superpower-tag-row">
-                                <span class="superpower-tag superpower-tag--soon">À venir</span>
-                            </div>
-                        </div>
-                        <div class="superpower-subtitle">Le pouvoir d’imaginer des fonctionnalités IA qui font vraiment
-                            sens. Prioriser l’impact utilisateur avant la techno.</div>
-                    </section>
-                    <section>
-                        <div class="superpower-head">
-                            <h4><i data-lucide="network"
-                                    style="width:18px;height:18px;vertical-align:middle;margin-right:8px;"></i>Pôlène
-                            </h4>
-                            <div class="superpower-tag-row">
-                                <span class="superpower-tag superpower-tag--soon">À venir</span>
-                            </div>
-                        </div>
-                        <div class="superpower-subtitle">Le pouvoir de concevoir des produits qui exposent leur valeur
-                            par la donnée. Anticiper APIs, événements métiers et données pivots pour polliniser
-                            l’écosystème.</div>
-                    </section>
+                    <!-- Contenu chargé dynamiquement depuis superpowers.json -->
                 </div>
             </div>
         </div>
@@ -1818,18 +1708,19 @@
         window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL =
             window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL || "https://assemblyai.gotoolkit.workers.dev/token";
     </script>
-    <script src="js/config.js?v=2026.01.18.2"></script>
-    <script src="js/feature-visibility.js?v=2026.01.18.2"></script>
-    <script src="js/document-storage.js?v=2026.01.18.2"></script>
-    <script src="js/storage-service.js?v=2026.01.18.2"></script>
-    <script src="js/shared-ui.js?v=2026.01.18.2"></script>
-    <script src="js/cgu.js?v=2026.01.18.2"></script>
-    <script src="js/share-worker-client.js?v=2026.01.18.2"></script>
-    <script src="js/share-history.js?v=2026.01.18.2"></script>
-    <script src="js/document-api.js?v=2026.01.18.2"></script>
-    <script src="js/ia-config.js?v=2026.01.18.2"></script>
-    <script src="prompt.js?v=2026.01.18.2"></script>
-    <script src="js/ia-client.js?v=2026.01.18.2"></script>
+    <script src="js/config.js?v=2026.01.18.3"></script>
+    <script src="js/feature-visibility.js?v=2026.01.18.3"></script>
+    <script src="js/document-storage.js?v=2026.01.18.3"></script>
+    <script src="js/storage-service.js?v=2026.01.18.3"></script>
+    <script src="js/shared-ui.js?v=2026.01.18.3"></script>
+    <script src="js/cgu.js?v=2026.01.18.3"></script>
+    <script src="js/share-worker-client.js?v=2026.01.18.3"></script>
+    <script src="js/share-history.js?v=2026.01.18.3"></script>
+    <script src="js/document-api.js?v=2026.01.18.3"></script>
+    <script src="js/ia-config.js?v=2026.01.18.3"></script>
+    <script src="prompt.js?v=2026.01.18.3"></script>
+    <script src="js/ia-client.js?v=2026.01.18.3"></script>
+    <script src="js/template-gallery.js?v=2026.01.18.3"></script>
     <script>
         // Initialize feedback configuration before loading feedback.js
         window.GoToolkitAppFeedbackConfig = {
@@ -1839,7 +1730,7 @@
             primaryColor: "#2a7a57"
         };
     </script>
-    <script src="js/feedback.js?v=2026.01.18.2"></script>
+    <script src="js/feedback.js?v=2026.01.18.3"></script>
 
     <script>
         (function () {

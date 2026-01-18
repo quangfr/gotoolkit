@@ -84,6 +84,7 @@
             title: typeof value.title === "string" ? value.title : "",
             description: typeof value.description === "string" ? value.description : "",
             category: typeof value.category === "string" ? value.category : "",
+            superpowers: Array.isArray(value.superpowers) ? value.superpowers : [],
             updatedAt: value.updatedAt || new Date().toISOString(),
             lastOpenedAt: value.lastOpenedAt || "",
             pinned: Boolean(value.pinned)

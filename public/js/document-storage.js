@@ -1,6 +1,6 @@
 (function () {
     const DB_NAME = "go-toolkit";
-    const DB_VERSION = 8;
+    const DB_VERSION = 9;
     const STORES = [
         "document-api",
         "share-history",
@@ -12,7 +12,8 @@
         "knowledge-overrides",
         "knowledge-selection",
         "knowledge-descriptions-overrides",
-        "knowledge-local-docs"
+        "knowledge-local-docs",
+        "templates"
     ];
 
     function isIndexedDbAvailable() {
@@ -83,4 +84,36 @@
     window.goToolkitDocStore = window.goToolkitDocStore || {
         createStore
     };
+
+    /**
+     * Managed storage for templates in IndexedDB
+     */
+    const templateStore = {
+        async list() {
+            return (await withStore("templates", "readonly", s => s.getAll())) || [];
+        },
+        async save(template) {
+            if (!template || !template.id) return;
+            return withStore("templates", "readwrite", s => s.put(template, template.id));
+        },
+        async saveAll(templates) {
+            if (!Array.isArray(templates)) return;
+            const db = await openDatabase();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction("templates", "readwrite");
+                const store = tx.objectStore("templates");
+                templates.forEach(t => store.put(t, t.id));
+                tx.oncomplete = () => resolve();
+                tx.onerror = () => reject(tx.error);
+            });
+        },
+        async delete(id) {
+            return withStore("templates", "readwrite", s => s.delete(id));
+        },
+        async clear() {
+            return withStore("templates", "readwrite", s => s.clear());
+        }
+    };
+
+    window.goToolkitTemplateStore = templateStore;
 })();
