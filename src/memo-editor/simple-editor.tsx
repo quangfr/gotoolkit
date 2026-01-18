@@ -175,20 +175,26 @@ const isFlowchartDiagram = (code: string) => {
 const setFlowchartDirection = (code: string, direction: string) => {
   const lines = (code || '').split('\n');
   let updated = false;
-  for (let i = 0; i < Math.min(lines.length, 5); i++) {
+  const maxLines = Math.min(lines.length, 8);
+  let targetIndex = -1;
+  for (let i = 0; i < maxLines; i++) {
     const rawLine = lines[i];
     const line = rawLine.trim();
     if (!line || line.startsWith('%%')) continue;
     if (/^(flowchart|graph)\b/i.test(line)) {
-      const directionMatch = rawLine.match(/(flowchart|graph)\s+(LR|TD|TB|BT|RL)/i);
-      if (directionMatch) {
-        lines[i] = rawLine.replace(/(flowchart|graph)\s+(LR|TD|TB|BT|RL)/i, `$1 ${direction}`);
-      } else {
-        lines[i] = rawLine.replace(/(flowchart|graph)/i, `$1 ${direction}`);
-      }
-      updated = true;
+      targetIndex = i;
       break;
     }
+  }
+  if (targetIndex !== -1) {
+    const rawLine = lines[targetIndex];
+    const directionMatch = rawLine.match(/(flowchart|graph)\s+(LR|TD|TB|BT|RL)/i);
+    if (directionMatch) {
+      lines[targetIndex] = rawLine.replace(/(flowchart|graph)\s+(LR|TD|TB|BT|RL)/i, `$1 ${direction}`);
+    } else {
+      lines[targetIndex] = rawLine.replace(/(flowchart|graph)/i, `$1 ${direction}`);
+    }
+    updated = true;
   }
   return { code: lines.join('\n'), updated };
 };
@@ -1577,7 +1583,7 @@ const CodeList = React.forwardRef((props: any, ref: any) => {
             width: '100%',
             textAlign: 'left',
             padding: '6px 8px',
-            background: index === selectedIndex ? 'var(--bg-surface)' : 'var(--bg-surface-soft)',
+            background: index === selectedIndex ? 'var(--bg-surface)' : 'transparent',
             border: 'none',
             cursor: 'pointer',
             borderRadius: '4px',
@@ -3552,14 +3558,34 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
                       code,
                       nextSize === 'large' ? 'TD' : 'LR'
                     );
+                    const updatedCode = updated ? nextCode : code;
                     editor.chain()
                       .focus()
                       .setNodeSelection(blockDeleteHandle.pos)
                       .updateAttributes('mermaidDiagram', {
                         size: nextSize,
-                        code: updated ? nextCode : code
+                        code: updatedCode,
+                        excalidrawJSON: null
                       })
                       .run();
+                    const drawMemo = (window as any).GoToolkitDrawMemo;
+                    if (drawMemo) {
+                      (async () => {
+                        try {
+                          await drawMemo.updateFromMermaid(updatedCode, nextSize);
+                          const json = drawMemo.getSceneJSON();
+                          editor.chain()
+                            .focus()
+                            .setNodeSelection(blockDeleteHandle.pos)
+                            .updateAttributes('mermaidDiagram', {
+                              excalidrawJSON: json
+                            })
+                            .run();
+                        } catch (err) {
+                          console.error("Failed to update mermaid preview", err);
+                        }
+                      })();
+                    }
                   }}
                   title={label}
                   aria-label={label}

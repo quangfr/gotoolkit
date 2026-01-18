@@ -27,6 +27,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
 
   const code = node.attrs.code || '';
   const excalidrawJSON = node.attrs.excalidrawJSON || '';
+  const autoOpen = node.attrs.autoOpen === true;
 
   const getAutoResizeHeight = (textarea: HTMLTextAreaElement) => {
     textarea.style.height = 'auto';
@@ -362,6 +363,16 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
     renderDiagram();
   }, [renderDiagram]);
 
+  React.useEffect(() => {
+    if (!autoOpen) return;
+    setIsEditing(true);
+    setIsLoading(true);
+    setModalError(null);
+    setLastValidCode(code);
+    setDraftCode(code);
+    updateAttributes({ autoOpen: false });
+  }, [autoOpen, code, updateAttributes]);
+
   const handleDoubleClick = async () => {
     setIsEditing(true);
     setIsLoading(true);
@@ -572,39 +583,36 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
     if (newSize === size) return;
     
     setIsLoading(true);
-    try {
-      let updatedCode = sourceCode || draftCode || code;
+    let updatedCode = sourceCode || draftCode || code;
+    const headerLine = getDiagramHeaderLine(updatedCode).toLowerCase();
+    const isFlowchart = headerLine.startsWith('flowchart') || headerLine.startsWith('graph');
+    if (isFlowchart) {
+      const direction = newSize === 'large' ? 'TD' : 'LR';
+      const { code: nextCode, updated } = setFlowchartDirection(updatedCode, direction);
+      if (updated) {
+        updatedCode = nextCode;
+      }
+    }
 
-      // Flowchart orientation logic
-      const headerLine = getDiagramHeaderLine(updatedCode).toLowerCase();
-      const isFlowchart = headerLine.startsWith('flowchart') || headerLine.startsWith('graph');
-      if (isFlowchart) {
-        const direction = newSize === 'large' ? 'TD' : 'LR';
-        const { code: nextCode, updated } = setFlowchartDirection(updatedCode, direction);
-        if (updated) {
-          updatedCode = nextCode;
-          if (sourceCode !== code) {
-            setDraftCode(updatedCode);
-          }
+    setDraftCode(updatedCode);
+    updateAttributes({ size: newSize, code: updatedCode });
+
+    const drawMemo = (window as any).GoToolkitDrawMemo;
+    if (drawMemo) {
+      (async () => {
+        try {
+          await drawMemo.updateFromMermaid(updatedCode, newSize);
+          const json = drawMemo.getSceneJSON();
+          const svgHtml = await drawMemo.getSVG('auto');
+          updateAttributes({ excalidrawJSON: json });
+          if (svgHtml) setSvg(svgHtml);
+        } catch (err) {
+          console.error("Failed to update size", err);
+        } finally {
+          setIsLoading(false);
         }
-      }
-
-      // Update attributes (might trigger some re-renders but we stay in modal)
-      updateAttributes({ size: newSize, code: updatedCode });
-      
-      if ((window as any).GoToolkitDrawMemo) {
-        // Re-generate the diagram with the new size/font settings
-        await (window as any).GoToolkitDrawMemo.updateFromMermaid(updatedCode, newSize);
-        
-        // Sync the preview immediately
-        const json = (window as any).GoToolkitDrawMemo.getSceneJSON();
-        const svgHtml = await (window as any).GoToolkitDrawMemo.getSVG('auto');
-        updateAttributes({ excalidrawJSON: json });
-        if (svgHtml) setSvg(svgHtml);
-      }
-    } catch (err) {
-      console.error("Failed to update size", err);
-    } finally {
+      })();
+    } else {
       setIsLoading(false);
     }
   };
@@ -846,6 +854,9 @@ export const MermaidNode = Node.create({
       size: {
         default: 'small',
       },
+      autoOpen: {
+        default: false,
+      },
     };
   },
 
@@ -881,7 +892,7 @@ export const MermaidNode = Node.create({
           chain()
             .insertContentAt(start, {
               type: this.name,
-              attrs: { code: '' },
+              attrs: { code: '', autoOpen: true },
             })
             .run();
         },
@@ -894,6 +905,6 @@ export const MermaidNode = Node.create({
 export const insertMermaidDiagram = (editor: Editor, code: string = '') => {
   editor.chain().focus().insertContent({
     type: 'mermaidDiagram',
-    attrs: { code },
+    attrs: { code, autoOpen: true },
   }).run();
 };

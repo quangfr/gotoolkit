@@ -32280,31 +32280,34 @@ ${promptInput.trim()}`
     const handleSizeChange = async (newSize, sourceCode) => {
       if (newSize === size2) return;
       setIsLoading(true);
-      try {
-        let updatedCode = sourceCode || draftCode || code;
-        const headerLine = getDiagramHeaderLine2(updatedCode).toLowerCase();
-        const isFlowchart = headerLine.startsWith("flowchart") || headerLine.startsWith("graph");
-        if (isFlowchart) {
-          const direction = newSize === "large" ? "TD" : "LR";
-          const { code: nextCode, updated } = setFlowchartDirection2(updatedCode, direction);
-          if (updated) {
-            updatedCode = nextCode;
-            if (sourceCode !== code) {
-              setDraftCode(updatedCode);
-            }
+      let updatedCode = sourceCode || draftCode || code;
+      const headerLine = getDiagramHeaderLine2(updatedCode).toLowerCase();
+      const isFlowchart = headerLine.startsWith("flowchart") || headerLine.startsWith("graph");
+      if (isFlowchart) {
+        const direction = newSize === "large" ? "TD" : "LR";
+        const { code: nextCode, updated } = setFlowchartDirection2(updatedCode, direction);
+        if (updated) {
+          updatedCode = nextCode;
+        }
+      }
+      setDraftCode(updatedCode);
+      updateAttributes2({ size: newSize, code: updatedCode });
+      const drawMemo = window.GoToolkitDrawMemo;
+      if (drawMemo) {
+        (async () => {
+          try {
+            await drawMemo.updateFromMermaid(updatedCode, newSize);
+            const json = drawMemo.getSceneJSON();
+            const svgHtml = await drawMemo.getSVG("auto");
+            updateAttributes2({ excalidrawJSON: json });
+            if (svgHtml) setSvg(svgHtml);
+          } catch (err) {
+            console.error("Failed to update size", err);
+          } finally {
+            setIsLoading(false);
           }
-        }
-        updateAttributes2({ size: newSize, code: updatedCode });
-        if (window.GoToolkitDrawMemo) {
-          await window.GoToolkitDrawMemo.updateFromMermaid(updatedCode, newSize);
-          const json = window.GoToolkitDrawMemo.getSceneJSON();
-          const svgHtml = await window.GoToolkitDrawMemo.getSVG("auto");
-          updateAttributes2({ excalidrawJSON: json });
-          if (svgHtml) setSvg(svgHtml);
-        }
-      } catch (err) {
-        console.error("Failed to update size", err);
-      } finally {
+        })();
+      } else {
         setIsLoading(false);
       }
     };
@@ -32844,20 +32847,26 @@ ${promptInput.trim()}`
   var setFlowchartDirection = (code, direction) => {
     const lines = (code || "").split("\n");
     let updated = false;
-    for (let i = 0; i < Math.min(lines.length, 5); i++) {
+    const maxLines = Math.min(lines.length, 8);
+    let targetIndex = -1;
+    for (let i = 0; i < maxLines; i++) {
       const rawLine = lines[i];
       const line = rawLine.trim();
       if (!line || line.startsWith("%%")) continue;
       if (/^(flowchart|graph)\b/i.test(line)) {
-        const directionMatch = rawLine.match(/(flowchart|graph)\s+(LR|TD|TB|BT|RL)/i);
-        if (directionMatch) {
-          lines[i] = rawLine.replace(/(flowchart|graph)\s+(LR|TD|TB|BT|RL)/i, `$1 ${direction}`);
-        } else {
-          lines[i] = rawLine.replace(/(flowchart|graph)/i, `$1 ${direction}`);
-        }
-        updated = true;
+        targetIndex = i;
         break;
       }
+    }
+    if (targetIndex !== -1) {
+      const rawLine = lines[targetIndex];
+      const directionMatch = rawLine.match(/(flowchart|graph)\s+(LR|TD|TB|BT|RL)/i);
+      if (directionMatch) {
+        lines[targetIndex] = rawLine.replace(/(flowchart|graph)\s+(LR|TD|TB|BT|RL)/i, `$1 ${direction}`);
+      } else {
+        lines[targetIndex] = rawLine.replace(/(flowchart|graph)/i, `$1 ${direction}`);
+      }
+      updated = true;
     }
     return { code: lines.join("\n"), updated };
   };
@@ -35772,7 +35781,7 @@ ${innerMarkdown}
                     const nextSize = isSquare ? "small" : "large";
                     const label = isSquare ? "Rectangle" : "Carr\xE9";
                     const Icon2 = isSquare ? RectangleHorizontal : Square;
-                    return /* @__PURE__ */ jsxs(
+                    return /* @__PURE__ */ jsx(
                       "button",
                       {
                         className: "block-delete-button mermaid-size-toggle",
@@ -35783,16 +35792,30 @@ ${innerMarkdown}
                             code,
                             nextSize === "large" ? "TD" : "LR"
                           );
+                          const updatedCode = updated ? nextCode : code;
                           editor.chain().focus().setNodeSelection(blockDeleteHandle.pos).updateAttributes("mermaidDiagram", {
                             size: nextSize,
-                            code: updated ? nextCode : code
+                            code: updatedCode,
+                            excalidrawJSON: null
                           }).run();
+                          const drawMemo = window.GoToolkitDrawMemo;
+                          if (drawMemo) {
+                            (async () => {
+                              try {
+                                await drawMemo.updateFromMermaid(updatedCode, nextSize);
+                                const json = drawMemo.getSceneJSON();
+                                editor.chain().focus().setNodeSelection(blockDeleteHandle.pos).updateAttributes("mermaidDiagram", {
+                                  excalidrawJSON: json
+                                }).run();
+                              } catch (err) {
+                                console.error("Failed to update mermaid preview", err);
+                              }
+                            })();
+                          }
                         },
                         title: label,
-                        children: [
-                          /* @__PURE__ */ jsx(Icon2, { size: 14 }),
-                          /* @__PURE__ */ jsx("span", { children: label })
-                        ]
+                        "aria-label": label,
+                        children: /* @__PURE__ */ jsx(Icon2, { size: 14 })
                       }
                     );
                   })(),

@@ -970,6 +970,7 @@ button.btn-secondary {
   border-radius: 8px;
   overflow-x: auto;
   margin: 1rem 0;
+  font-size: 12px;
 }
 .ProseMirror code {
   background: var(--bg-surface-soft);
