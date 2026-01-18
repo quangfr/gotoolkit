@@ -128,6 +128,7 @@
             title: normalized.title || (existing && existing.title) || "",
             description: normalized.description || (existing && existing.description) || "",
             category: normalized.category || (existing && existing.category) || "",
+            superpowers: record.superpowers !== undefined ? normalized.superpowers : (existing && existing.superpowers) || [],
             updatedAt: normalized.updatedAt || new Date().toISOString(),
             lastOpenedAt: normalized.lastOpenedAt || (existing && existing.lastOpenedAt) || "",
             pinned:

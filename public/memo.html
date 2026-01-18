@@ -334,7 +334,7 @@
             background: var(--bg-surface);
             color: var(--text-main);
             border-radius: 6px;
-            padding: 4px 44px 4px 5px;
+            padding: 4px 32px 4px 5px;
             font-size: 11px;
             text-align: left;
             cursor: pointer;
@@ -355,27 +355,28 @@
             border: 2px solid var(--color-primary);
         }
 
-        .document-explorer__item>span:first-child {
+        .document-explorer__item-title {
             flex: 1 1 auto;
             min-width: 0;
             overflow: hidden;
             text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .document-explorer__item-actions {
             position: absolute;
-            right: 6px;
+            right: 2px;
             top: 50%;
             transform: translateY(-50%);
             display: inline-flex;
-            gap: 4px;
+            gap: 0px;
             opacity: 0;
             transition: opacity 0.2s ease;
         }
 
         .document-explorer__item-opened {
             position: absolute;
-            right: 6px;
+            right: 4px;
             top: 50%;
             transform: translateY(-50%);
             font-size: 10px;
@@ -396,8 +397,9 @@
         .document-explorer__item-action {
             border: none;
             background: transparent;
-            padding: 0 2px;
-            font-size: 13px;
+            padding: 0px;
+            margin: 0px;
+            font-size: 12px;
             line-height: 1;
             color: var(--text-main);
             cursor: pointer;
@@ -410,7 +412,7 @@
         }
 
         .document-explorer__item-action.document-explorer__delete {
-            font-size: 12px;
+            font-size: 11px;
         }
 
         .document-explorer .chat-knowledge-modal__add {
@@ -536,7 +538,7 @@
             background: var(--color-primary);
             border-color: var(--color-primary);
             color: var(--white);
-            max-width: 150px;
+            max-width: 200px;
         }
 
         .document-tab span:first-of-type {
@@ -901,9 +903,6 @@
         .gt-template-card {
             font-size: 13px;
             padding: 12px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
             border-radius: 8px;
             border: 1px solid var(--border-main);
             background: var(--bg-surface);
@@ -911,25 +910,17 @@
             text-align: left;
             transition: all 0.2s ease;
             position: relative;
-            width: 100%;
         }
 
-        .gt-template-card__title {
-            font-size: 1rem;
-            font-weight: 600;
-            margin: 0;
-            color: var(--text-main);
+        .gt-template-card h4 {
+            margin: 0 0 4px;
+            font-size: 14px;
         }
 
-        .gt-template-card__desc {
+        .gt-template-card p {
             margin: 0;
-            font-size: 0.82rem;
+            font-size: 12px;
             color: var(--text-main);
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
             line-height: 1.4;
         }
 
@@ -963,9 +954,9 @@
         }
 
         .gt-template-card__meta {
-            margin: 4px 0 0;
-            font-size: 0.75rem;
-            color: var(--text-main);
+            margin-top: 6px;
+            font-size: 11px;
+            color: var(--text-muted);
             display: flex;
             gap: 6px;
             align-items: center;
@@ -997,6 +988,48 @@
             flex-wrap: wrap;
             gap: 6px;
             margin-top: 8px;
+        }
+
+        .superpower-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 99px;
+            border: 1px solid var(--border-main);
+            background: var(--bg-surface);
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .superpower-pill:hover {
+            border-color: var(--color-primary);
+        }
+
+        .superpower-pill.active {
+            background: var(--color-primary);
+            color: white;
+            border-color: var(--color-primary);
+        }
+
+        .gt-template-card__superpowers {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 6px;
+        }
+
+        .gt-template-card__sp-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            font-size: 10px;
+            background: var(--bg-surface-soft);
+            padding: 2px 6px;
+            border-radius: 4px;
+            opacity: 0.8;
         }
 
         .gt-template-modal {
@@ -1037,20 +1070,10 @@
                     <button id="documentExplorerToggle" class="app-home-link" type="button"
                         title="Afficher la bibliothèque" aria-expanded="false" aria-controls="documentExplorer"><i
                             data-lucide="library"></i></button>
-                    <div class="nav-switch">
-                        <button id="navSwitcherBtn" class="nav-switch-btn" type="button" aria-haspopup="true"
-                            aria-expanded="false"><i data-lucide="zap"></i> Memo <i
-                                data-lucide="chevron-down"></i></button>
-                        <div id="navSwitcherMenu" class="nav-switch-menu" role="menu">
-                            <a class="nav-switch-link" href="/?v=2026.01.18.3" role="menuitem"><i
-                                    data-lucide="home"></i> Accueil</a>
-                            <a class="nav-switch-link" href="grid.html?v=2026.01.18.3" role="menuitem"
-                                data-app="grid"><i data-lucide="grid-3x3"></i>
-                                Grid</a>
-                            <a class="nav-switch-link" href="timeline.html?v=2026.01.18.3" role="menuitem"
-                                data-app="timeline"><i data-lucide="layout-list"></i> Timeline</a>
-                        </div>
-                    </div>
+                    <a href="/?v=2026.01.18.3" class="nav-switch-btn" title="Accueil"
+                        style="text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                        <i data-lucide="home"></i> Accueil
+                    </a>
 
                     <div id="tabs" class="tabs">
                         <div id="document-tabs" class="tabs"></div>
@@ -2769,7 +2792,7 @@
                         const pills = template.superpowers.map(spId => {
                             const sp = superpowersMap.find(s => s.id === spId);
                             if (!sp) return "";
-                            return `<span class="superpower-pill"><i data-lucide="${sp.icon || 'star'}" style="width: 10px; height: 10px;"></i> ${escapeHtml(sp.title)}</span>`;
+                            return `<span class="gt-template-card__sp-pill"><i data-lucide="${sp.icon || 'star'}" style="width: 10px; height: 10px;"></i> ${escapeHtml(sp.title)}</span>`;
                         }).join("");
                         if (pills) {
                             superpowersHtml = `<div class="gt-template-card__superpowers">${pills}</div>`;
@@ -2777,10 +2800,10 @@
                     }
 
                     btn.innerHTML = `
-                        <div class="gt-template-card__title">${escapeHtml(template.label)}</div>
+                        <h4>${escapeHtml(template.label)}</h4>
+                        <p>${escapeHtml(template.description || "")}</p>
                         ${superpowersHtml}
-                        <div class="gt-template-card__desc">${escapeHtml(template.description || "")}</div>
-                        <div class="gt-template-card__meta">${escapeHtml(updatedLabel)}</div>
+                        <div class="gt-template-card__meta">Màj · ${escapeHtml(updatedLabel)}</div>
                     `;
 
                     if (cloudTemplates.some(t => t.id === template.id)) {
@@ -3522,18 +3545,6 @@
                 if (nextIndex > openDocuments.length) nextIndex = openDocuments.length;
                 openDocuments.splice(nextIndex, 0, moved);
                 renderDocumentTabs();
-            });
-
-            const navSwitcherBtn = document.getElementById("navSwitcherBtn");
-            const navSwitcherMenu = document.getElementById("navSwitcherMenu");
-            navSwitcherBtn?.addEventListener("click", event => {
-                event.stopPropagation();
-                navSwitcherMenu?.classList.toggle("open");
-            });
-            document.addEventListener("click", event => {
-                if (!navSwitcherMenu) return;
-                if (navSwitcherMenu.contains(event.target) || navSwitcherBtn === event.target) return;
-                navSwitcherMenu.classList.remove("open");
             });
 
             window.applyMemoOperations = function (operations) {

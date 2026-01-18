@@ -5,12 +5,16 @@
     const DEFAULT_TITLE = "Documents";
 
     let superpowers = [];
+    let currentModalSelectedIds = [];
+
     async function loadSuperpowers() {
         try {
             const response = await fetch('content/superpowers.json');
             if (response.ok) {
                 superpowers = await response.json();
-                populateSuperpowerCheckboxes();
+                if (document.querySelector(".modal-overlay.open")) {
+                    populateSuperpowerCheckboxes(currentModalSelectedIds);
+                }
             }
         } catch (err) {
             console.error('Erreur lors du chargement des super-pouvoirs:', err);
@@ -18,6 +22,7 @@
     }
 
     function populateSuperpowerCheckboxes(selectedIds = []) {
+        currentModalSelectedIds = selectedIds;
         const container = document.getElementById("document-explorer-superpowers-container");
         if (!container) return;
         container.innerHTML = '';
@@ -31,14 +36,19 @@
                 <span class="superpower-pill">
                     <i data-lucide="${sp.icon}" style="width:12px;height:12px;"></i>
                     ${sp.title}
+                    <i data-lucide="check" class="pill-check-icon" style="width:12px;height:12px;display:${isChecked ? 'inline-block' : 'none'};"></i>
                 </span>
             `;
             const input = label.querySelector('input');
+            const pill = label.querySelector('.superpower-pill');
+            const checkIcon = pill.querySelector('.pill-check-icon');
+
             input.addEventListener('change', () => {
-                label.querySelector('.superpower-pill').classList.toggle('active', input.checked);
+                pill.classList.toggle('active', input.checked);
+                if (checkIcon) checkIcon.style.display = input.checked ? 'inline-block' : 'none';
             });
             if (isChecked) {
-                label.querySelector('.superpower-pill').classList.add('active');
+                pill.classList.add('active');
             }
             container.appendChild(label);
         });
@@ -437,17 +447,39 @@
                         try {
                             const element = editor.view.dom.querySelector(`[id="${heading.id}"]`);
                             if (element) {
-                                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                // Calculate position relative to the scrollable container (.editor-wrap)
+                                const scrollArea = document.querySelector(".editor-wrap");
+                                const offset = 20; // offset to not stick exactly to the top
+
+                                if (scrollArea) {
+                                    const areaRect = scrollArea.getBoundingClientRect();
+                                    const elementRect = element.getBoundingClientRect();
+                                    const relativeTop = elementRect.top - areaRect.top + scrollArea.scrollTop;
+
+                                    scrollArea.scrollTo({
+                                        top: relativeTop - offset,
+                                        behavior: "smooth"
+                                    });
+                                } else {
+                                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                }
+
                                 // Highlight active immediately
                                 tocEl.querySelectorAll(".toc-item").forEach(el => el.classList.remove("toc-item--active"));
                                 item.classList.add("toc-item--active");
                             } else {
                                 // Fallback to editor command if available or search by text/pos
-                                editor.commands.focus();
                                 const pos = heading.pos;
                                 if (pos !== undefined) {
-                                    editor.commands.setTextSelection(pos);
-                                    editor.commands.scrollIntoView();
+                                    try {
+                                        // Use focus(pos) which is more robust in Tiptap
+                                        editor.commands.focus(pos);
+                                        editor.commands.scrollIntoView();
+                                    } catch (e) {
+                                        // Last resort fallback
+                                        console.warn("Could not set selection at pos:", pos);
+                                        editor.commands.focus();
+                                    }
                                 }
                             }
                         } catch (e) {
@@ -584,6 +616,7 @@
                     icons.style.gap = "2px";
                     icons.style.marginRight = "6px";
                     icons.style.opacity = "0.7";
+                    icons.style.flexShrink = "0";
 
                     sps.forEach(spId => {
                         const sp = superpowersMap.find(s => s.id === spId || s.id == spId);
@@ -599,6 +632,7 @@
                 }
 
                 const label = document.createElement("span");
+                label.className = "document-explorer__item-title";
                 label.textContent = item.title || "Mémo sans titre";
                 button.appendChild(label);
 
