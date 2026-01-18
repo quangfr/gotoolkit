@@ -34,6 +34,28 @@ import { TaskListNode, TaskItemNode } from './task-node';
 const DETAILS_TOGGLE_META = 'detailsToggle';
 
 const CustomDetails = Details.extend({
+  addKeyboardShortcuts() {
+    return {
+      ...(this.parent?.() || {}),
+      Backspace: () => {
+        const { schema, selection } = this.editor.state;
+        const { empty, $anchor } = selection;
+        if (!empty || $anchor.parent.type !== schema.nodes.detailsSummary) {
+          return false;
+        }
+        if ($anchor.parentOffset !== 0) {
+          return this.editor.commands.command(({ tr }) => {
+            const from = $anchor.pos - 1;
+            const to = $anchor.pos;
+            tr.delete(from, to);
+            return true;
+          });
+        }
+        // Keep the details block open when deleting the last character in the summary.
+        return true;
+      },
+    };
+  },
   addAttributes() {
     return {
       ...this.parent?.(),
@@ -78,7 +100,10 @@ const CustomDetails = Details.extend({
           dom.classList.toggle(this.options.openClassName);
         }
 
-        const event = new Event('toggleDetailsContent');
+        const isOpen = dom.classList.contains(this.options.openClassName);
+        const event = new CustomEvent('toggleDetailsContent', {
+          detail: { open: isOpen },
+        });
         const detailsContent = content.querySelector(':scope > div[data-type="detailsContent"]');
         detailsContent?.dispatchEvent(event);
       };
@@ -162,6 +187,53 @@ const CustomDetails = Details.extend({
         },
       }),
     ];
+  },
+});
+
+const CustomDetailsContent = DetailsContent.extend({
+  addNodeView() {
+    return ({ HTMLAttributes }) => {
+      const dom = document.createElement('div');
+      const attributes = mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
+        'data-type': this.name,
+        hidden: 'hidden',
+      });
+      Object.entries(attributes).forEach(([key, value]) => dom.setAttribute(key, value));
+
+      const setHidden = (open?: boolean) => {
+        if (open === undefined) {
+          dom.toggleAttribute('hidden');
+          return;
+        }
+        if (open) {
+          dom.removeAttribute('hidden');
+        } else {
+          dom.setAttribute('hidden', 'hidden');
+        }
+      };
+
+      dom.addEventListener('toggleDetailsContent', (event: Event) => {
+        const detail = (event as CustomEvent<{ open?: boolean }>).detail;
+        setHidden(detail?.open);
+      });
+
+      return {
+        dom,
+        contentDOM: dom,
+        ignoreMutation(mutation) {
+          if (mutation.type === 'selection') {
+            return false;
+          }
+          return !dom.contains(mutation.target) || dom === mutation.target;
+        },
+        update: (updatedNode) => {
+          if (updatedNode.type !== this.type) {
+            return false;
+          }
+          return true;
+        },
+      };
+    };
   },
 });
 
@@ -2243,7 +2315,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         },
       }),
       DetailsSummary,
-      DetailsContent,
+      CustomDetailsContent,
       StarterKit.configure({
         blockquote: false,
         heading: false, // Use our custom Heading instead to get IDs

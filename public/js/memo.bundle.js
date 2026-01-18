@@ -32521,7 +32521,7 @@ ${promptInput.trim()}`
           ] })
         ] })
       ] }) }),
-      showToast && /* @__PURE__ */ jsx("div", { className: "mermaid-toast", children: "Contenu copier" })
+      showToast && /* @__PURE__ */ jsx("div", { className: "mermaid-toast", children: "Contenu copi\xE9" })
     ] });
   };
   var MermaidNode = Node3.create({
@@ -32747,6 +32747,28 @@ ${promptInput.trim()}`
   // src/memo-editor/simple-editor.tsx
   var DETAILS_TOGGLE_META = "detailsToggle";
   var CustomDetails = Details.extend({
+    addKeyboardShortcuts() {
+      var _a;
+      return {
+        ...((_a = this.parent) == null ? void 0 : _a.call(this)) || {},
+        Backspace: () => {
+          const { schema, selection } = this.editor.state;
+          const { empty: empty2, $anchor } = selection;
+          if (!empty2 || $anchor.parent.type !== schema.nodes.detailsSummary) {
+            return false;
+          }
+          if ($anchor.parentOffset !== 0) {
+            return this.editor.commands.command(({ tr: tr2 }) => {
+              const from2 = $anchor.pos - 1;
+              const to = $anchor.pos;
+              tr2.delete(from2, to);
+              return true;
+            });
+          }
+          return true;
+        }
+      };
+    },
     addAttributes() {
       var _a;
       return {
@@ -32788,7 +32810,10 @@ ${promptInput.trim()}`
           } else {
             dom.classList.toggle(this.options.openClassName);
           }
-          const event = new Event("toggleDetailsContent");
+          const isOpen = dom.classList.contains(this.options.openClassName);
+          const event = new CustomEvent("toggleDetailsContent", {
+            detail: { open: isOpen }
+          });
           const detailsContent = content.querySelector(':scope > div[data-type="detailsContent"]');
           detailsContent == null ? void 0 : detailsContent.dispatchEvent(event);
         };
@@ -32868,6 +32893,49 @@ ${promptInput.trim()}`
           }
         })
       ];
+    }
+  });
+  var CustomDetailsContent = DetailsContent.extend({
+    addNodeView() {
+      return ({ HTMLAttributes }) => {
+        const dom = document.createElement("div");
+        const attributes = mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
+          "data-type": this.name,
+          hidden: "hidden"
+        });
+        Object.entries(attributes).forEach(([key, value]) => dom.setAttribute(key, value));
+        const setHidden = (open) => {
+          if (open === void 0) {
+            dom.toggleAttribute("hidden");
+            return;
+          }
+          if (open) {
+            dom.removeAttribute("hidden");
+          } else {
+            dom.setAttribute("hidden", "hidden");
+          }
+        };
+        dom.addEventListener("toggleDetailsContent", (event) => {
+          const detail = event.detail;
+          setHidden(detail == null ? void 0 : detail.open);
+        });
+        return {
+          dom,
+          contentDOM: dom,
+          ignoreMutation(mutation) {
+            if (mutation.type === "selection") {
+              return false;
+            }
+            return !dom.contains(mutation.target) || dom === mutation.target;
+          },
+          update: (updatedNode) => {
+            if (updatedNode.type !== this.type) {
+              return false;
+            }
+            return true;
+          }
+        };
+      };
     }
   });
   var CustomCode = Code.extend({
@@ -34599,7 +34667,7 @@ ${promptInput.trim()}`
           }
         }),
         DetailsSummary,
-        DetailsContent,
+        CustomDetailsContent,
         StarterKit.configure({
           blockquote: false,
           heading: false,
@@ -34749,7 +34817,7 @@ ${promptInput.trim()}`
         };
         write().then(() => {
           document.dispatchEvent(new CustomEvent("copyToast", {
-            detail: { message: "Contenu copier" }
+            detail: { message: "Contenu copi\xE9" }
           }));
         });
       } catch (err) {
