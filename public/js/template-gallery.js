@@ -150,9 +150,9 @@
             let superpowersHtml = "";
             if (template.superpowers && Array.isArray(template.superpowers)) {
                 const pills = template.superpowers.map(spId => {
-                    const sp = superpowersMap.find(s => s.id === spId);
+                    const sp = superpowersMap.find(s => s.id == spId);
                     if (!sp) return "";
-                    return `<span class="superpower-pill"><i data-lucide="${sp.icon || 'star'}" style="width: 10px; height: 10px;"></i> ${escapeHtml(sp.title)}</span>`;
+                    return `<span class="share-card-template"><i data-lucide="${sp.icon || 'star'}" style="width: 12px; height: 12px; margin-right: 4px; vertical-align: middle;"></i>${escapeHtml(sp.title)}</span>`;
                 }).join("");
                 if (pills) {
                     superpowersHtml = `<div class="gt-template-card__superpowers">${pills}</div>`;

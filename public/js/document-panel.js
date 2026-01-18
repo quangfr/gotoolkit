@@ -27,6 +27,19 @@
         return category ? [category] : [];
     }
 
+    function areSameSuperpowers(a, b) {
+        const listA = Array.isArray(a) ? a.filter(Boolean) : [];
+        const listB = Array.isArray(b) ? b.filter(Boolean) : [];
+        if (listA.length !== listB.length) return false;
+        const setA = new Set(listA.map(value => String(value)));
+        const setB = new Set(listB.map(value => String(value)));
+        if (setA.size !== setB.size) return false;
+        for (const value of setA) {
+            if (!setB.has(value)) return false;
+        }
+        return true;
+    }
+
     function populateSuperpowerCheckboxes(selectedIds = []) {
         const normalizedSelectedIds = Array.isArray(selectedIds)
             ? selectedIds.filter(Boolean)
@@ -331,16 +344,15 @@
             if (window.lucide) window.lucide.createIcons();
             modalInput.value = defaultValue || "";
             if (modalDescInput) modalDescInput.value = defaultDescription || "";
-            const shouldFetchFromStore =
-                (!options || options.superpowers === undefined || (Array.isArray(options.superpowers) && options.superpowers.length === 0))
-                && options?.documentId;
+            const shouldFetchFromStore = Boolean(options?.documentId);
             if (shouldFetchFromStore) {
                 const documentApi = window.goToolkitDocumentApi;
                 if (documentApi?.getRecord) {
                     documentApi.getRecord(options.documentId).then(record => {
-                        const fallback = normalizeSuperpowersList(record?.superpowers, record?.category);
-                        if (fallback.length) {
-                            populateSuperpowerCheckboxes(fallback);
+                        if (!record) return;
+                        const fromStore = normalizeSuperpowersList(record?.superpowers, record?.category);
+                        if (!areSameSuperpowers(fromStore, currentModalSelectedIds)) {
+                            populateSuperpowerCheckboxes(fromStore);
                             if (window.lucide) window.lucide.createIcons();
                         }
                     }).catch(() => { /* noop */ });

@@ -421,6 +421,19 @@
             color: var(--text-main);
         }
 
+        .gt-template-card__superpowers {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin: 4px 0 6px;
+        }
+
+        .gt-template-card__superpowers .share-card-template {
+            pointer-events: none;
+            margin: 0;
+            opacity: 0.9;
+        }
+
         .gt-template-card__desc {
             margin: 0;
             font-size: 0.82rem;
@@ -559,8 +572,7 @@
             padding: 2px 8px;
             border-radius: 999px;
             border: 1px solid var(--text-main);
-            background: rgba(156, 163, 175, 0.18);
-            color: var(--text-main);
+            background: var(--bg-surface-soft) color: var(--text-main);
         }
 
         .share-helper {

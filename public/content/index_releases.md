@@ -1,26 +1,32 @@
+## 2026-01-18
+- Accueil : Affichage des modèles par superpouvoir
+- Mémo : Libellé avec autocomplétion, style et couleurs
+
 ## 2026-01-16
 - Mémo : Mode sombre
-- Mémo : Glisser-déposer des blocs
-- Mémo : Modèles de document
+- Mémo : Glisser-déposer et copier-coller des blocs
+- Mémo : Catalogue de modèles de document
 
 ## 2026-01-14
-- Mémo : Éditer un diagramme `Draw` avec Assist
-- Mémo : Style, tableau, bloc, sommaire, lien
+- Mémo : Visualiser et éditer un diagramme `Draw` 
+- Mémo : Couleur de texte, tableau, lien
+- Mémo : Blocs dépliants, code et encadrés 
+- Mémo : Sommaire
 
 ## 2026-01-12
 - IA : Reconnaissance texte OCR avec `qwen-2.5-vl-7b-instruct` 
-- Assist : Extraction du texte des images, PDF et DOCX et PPTX mixtes
+- Assist : Extraction du texte des images, PDF, DOCX et PPTX mixtes
 - Assist : Import des médias avec transcription
-- Assist : Support des fichiers JSON
+- Assist : Ajout des fichiers JSON
 - Mémo : Ouverture de documents en barre latérale
 
 ## 2026-01-09
 - Mémo : Enregistrement vocale et partage d'écran avec transcription
 - Mémo : Bibliothèque en barre latérale
-- Assist : Mode `↬ Demander` en discussion avec références et citations 
+- Assist : Mode `↬ Demander` pour discuter sans éditer avec références 
 
 ## 2026-01-08
-- Mémo : Mode `⤷ Importer` pour les fichiers
+- Mémo : Mode `⤷ Importer` pour convertir les fichiers en documents
 - Mémo : Édition avec sélection du texte
 
 ## 2026-01-06

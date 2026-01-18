@@ -983,6 +983,10 @@
             background: var(--bg-surface-soft);
         }
 
+        .superpower-checkbox-label {
+            display: contents;
+        }
+
         .superpowers-checkbox-group {
             display: flex;
             flex-wrap: wrap;
@@ -1146,16 +1150,14 @@
     <div class="modal-overlay gt-template-modal" id="gtTemplateModal" role="dialog" aria-modal="true"
         aria-labelledby="gtTemplateModalTitle">
         <div class="modal">
-            <div class="modal-header">
-                <h3 id="gtTemplateModalTitle" title="Modèles">Modèles</h3>
-                <div class="gt-template-filter">
-                    <label for="gtTemplateSuperpowerFilter">Superpouvoir</label>
-                    <select id="gtTemplateSuperpowerFilter" class="gt-template-filter__select">
-                        <option value="Tous">Tous</option>
-                    </select>
+            <div class="modal-header" style="flex-direction: column; align-items: stretch; height: auto; gap: 8px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                    <h3 id="gtTemplateModalTitle" title="Modèles">Modèles</h3>
+                    <button class="modal-close" id="gtTemplateModalClose" type="button" aria-label="Fermer"><i
+                            data-lucide="x"></i></button>
                 </div>
-                <button class="modal-close" id="gtTemplateModalClose" type="button" aria-label="Fermer"><i
-                        data-lucide="x"></i></button>
+                <div id="gtTemplateSuperpowerList" class="superpowers-checkbox-group"
+                    style="margin-top: 0; margin-bottom: 8px;"></div>
             </div>
             <div class="gt-template-modal__list" id="gtTemplateModalList" role="radiogroup"></div>
             <div class="gt-template-modal__actions modal-actions" style="justify-content: flex-start; gap: 8px;">
@@ -1394,7 +1396,8 @@
             const templateModalTrigger = document.getElementById("gtTemplateModalTrigger");
             const templateModalClose = document.getElementById("gtTemplateModalClose");
             const templateModalList = document.getElementById("gtTemplateModalList");
-            const templateSuperpowerFilter = document.getElementById("gtTemplateSuperpowerFilter");
+            const templateSuperpowerList = document.getElementById("gtTemplateSuperpowerList");
+            let selectedTemplateSuperpowerIds = [];
             const templateModalApply = document.getElementById("gtTemplateModalApply");
             const promptModal = document.getElementById("gtPromptModal");
             const promptModalTrigger = document.getElementById("gtPromptModalTrigger");
@@ -2693,8 +2696,7 @@
             }
 
             async function updateTemplateSuperpowerFilter(templates) {
-                if (!templateSuperpowerFilter) return;
-                const currentValue = templateSuperpowerFilter.value || "Tous";
+                if (!templateSuperpowerList) return;
                 const superpowersMap = await getSuperpowers();
 
                 const stats = {};
@@ -2705,22 +2707,40 @@
                     });
                 });
 
-                templateSuperpowerFilter.innerHTML = "";
-                const allOption = document.createElement("option");
-                allOption.value = "Tous";
-                allOption.textContent = `Tous (${templates.length})`;
-                templateSuperpowerFilter.appendChild(allOption);
+                templateSuperpowerList.innerHTML = "";
 
                 superpowersMap.forEach(sp => {
                     const count = stats[sp.id] || 0;
                     if (count === 0) return;
-                    const option = document.createElement("option");
-                    option.value = String(sp.id);
-                    option.textContent = `${sp.title} (${count})`;
-                    templateSuperpowerFilter.appendChild(option);
-                });
 
-                templateSuperpowerFilter.value = templateSuperpowerFilter.querySelector(`option[value="${currentValue}"]`) ? currentValue : "Tous";
+                    const isChecked = selectedTemplateSuperpowerIds.includes(parseInt(sp.id));
+
+                    const label = document.createElement("label");
+                    label.className = "superpower-checkbox-label";
+                    label.innerHTML = `
+                        <input type="checkbox" value="${sp.id}" ${isChecked ? 'checked' : ''} style="display:none;">
+                        <span class="superpower-pill ${isChecked ? 'active' : ''}">
+                            <i data-lucide="${sp.icon || 'zap'}" style="width:12px;height:12px;"></i>
+                            ${escapeHtml(sp.title)} (${count})
+                        </span>
+                    `;
+
+                    const input = label.querySelector('input');
+                    input.addEventListener('change', () => {
+                        const id = parseInt(input.value);
+                        if (input.checked) {
+                            if (!selectedTemplateSuperpowerIds.includes(id)) {
+                                selectedTemplateSuperpowerIds.push(id);
+                            }
+                        } else {
+                            selectedTemplateSuperpowerIds = selectedTemplateSuperpowerIds.filter(v => v !== id);
+                        }
+                        renderTemplateList();
+                    });
+
+                    templateSuperpowerList.appendChild(label);
+                });
+                if (window.lucide) window.lucide.createIcons();
             }
 
             const TEMPLATE_SYNC_PERIOD = 24 * 60 * 60 * 1000; // 24h
@@ -2774,11 +2794,10 @@
                 }
 
                 updateTemplateSuperpowerFilter(cloudTemplates);
-                const selectedSpIdStr = templateSuperpowerFilter?.value || "Tous";
+
                 let templatesToRender = cloudTemplates.filter(template => {
-                    if (!selectedSpIdStr || selectedSpIdStr === "Tous") return true;
-                    const spId = parseInt(selectedSpIdStr);
-                    return template.superpowers && template.superpowers.includes(spId);
+                    if (selectedTemplateSuperpowerIds.length === 0) return true;
+                    return template.superpowers && template.superpowers.some(spId => selectedTemplateSuperpowerIds.includes(parseInt(spId)));
                 });
 
                 if (!templatesToRender.length) {
@@ -3443,9 +3462,6 @@
             templateModalClose?.addEventListener("click", () => closeTemplateModal());
             templateModal?.addEventListener("click", event => {
                 if (event.target === templateModal) closeTemplateModal();
-            });
-            templateSuperpowerFilter?.addEventListener("change", () => {
-                renderTemplateList();
             });
             templateModalApply?.addEventListener("click", async () => {
                 const template = getSelectedTemplate();
