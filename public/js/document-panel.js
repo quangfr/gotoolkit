@@ -4,21 +4,22 @@
     const MAX_WIDTH = 520;
     const DEFAULT_TITLE = "Documents";
 
-    let superpowers = [];
+    let superpowersCatalog = null;
     let currentModalSelectedIds = [];
 
-    async function loadSuperpowers() {
+    async function ensureSuperpowersLoaded() {
+        if (superpowersCatalog) return superpowersCatalog;
         try {
             const response = await fetch('content/superpowers.json');
             if (response.ok) {
-                superpowers = await response.json();
-                if (document.querySelector(".modal-overlay.open")) {
-                    populateSuperpowerCheckboxes(currentModalSelectedIds);
-                }
+                superpowersCatalog = await response.json();
+                return superpowersCatalog;
             }
         } catch (err) {
             console.error('Erreur lors du chargement des super-pouvoirs:', err);
         }
+        superpowersCatalog = [];
+        return superpowersCatalog;
     }
 
     function normalizeSuperpowersList(list, category) {
@@ -27,32 +28,25 @@
         return category ? [category] : [];
     }
 
-    function areSameSuperpowers(a, b) {
-        const listA = Array.isArray(a) ? a.filter(Boolean) : [];
-        const listB = Array.isArray(b) ? b.filter(Boolean) : [];
-        if (listA.length !== listB.length) return false;
-        const setA = new Set(listA.map(value => String(value)));
-        const setB = new Set(listB.map(value => String(value)));
-        if (setA.size !== setB.size) return false;
-        for (const value of setA) {
-            if (!setB.has(value)) return false;
-        }
-        return true;
-    }
-
-    function populateSuperpowerCheckboxes(selectedIds = []) {
+    async function populateSuperpowerCheckboxes(selectedIds = []) {
+        const catalog = await ensureSuperpowersLoaded();
         const normalizedSelectedIds = Array.isArray(selectedIds)
-            ? selectedIds.filter(Boolean)
+            ? selectedIds.filter(Boolean).map(id => String(id).toLowerCase())
             : [];
+
         currentModalSelectedIds = normalizedSelectedIds;
         const container = document.getElementById("document-explorer-superpowers-container");
         if (!container) return;
         container.innerHTML = '';
 
-        superpowers.forEach(sp => {
+        catalog.forEach(sp => {
             const label = document.createElement('label');
             label.className = 'superpower-checkbox-label';
-            const isChecked = normalizedSelectedIds.some(id => String(id) == String(sp.id));
+
+            const spIdStr = String(sp.id).toLowerCase();
+            const spTitleStr = String(sp.title).toLowerCase();
+            const isChecked = normalizedSelectedIds.some(sid => sid === spIdStr || sid === spTitleStr);
+
             label.innerHTML = `
                 <input type="checkbox" value="${sp.id}" ${isChecked ? 'checked' : ''} style="display:none;">
                 <span class="superpower-pill ${isChecked ? 'active' : ''}">
@@ -191,7 +185,7 @@
 
         let hasDefaultTabSet = false;
 
-        loadSuperpowers();
+        ensureSuperpowersLoaded();
 
         function setActiveTab(target, options) {
             const nextTarget = target === "toc" ? "toc" : "library";
@@ -330,8 +324,8 @@
             return Boolean(String(token).trim());
         }
 
-        function openNameModal(defaultValue, defaultDescription, options) {
-            if (!modalInput) return Promise.resolve(null);
+        async function openNameModal(defaultValue, defaultDescription, options) {
+            if (!modalInput) return null;
             modalOverlay.style.display = "flex";
             modalOverlay.classList.add("open");
 
@@ -340,7 +334,7 @@
                 options && options.category
             );
 
-            populateSuperpowerCheckboxes(selectedSuperpowers);
+            await populateSuperpowerCheckboxes(selectedSuperpowers);
             if (window.lucide) window.lucide.createIcons();
             modalInput.value = defaultValue || "";
             if (modalDescInput) modalDescInput.value = defaultDescription || "";
@@ -348,14 +342,16 @@
             if (shouldFetchFromStore) {
                 const documentApi = window.goToolkitDocumentApi;
                 if (documentApi?.getRecord) {
-                    documentApi.getRecord(options.documentId).then(record => {
-                        if (!record) return;
-                        const fromStore = normalizeSuperpowersList(record?.superpowers, record?.category);
-                        if (!areSameSuperpowers(fromStore, currentModalSelectedIds)) {
-                            populateSuperpowerCheckboxes(fromStore);
+                    try {
+                        const record = await documentApi.getRecord(options.documentId);
+                        console.log("[GoToolkit] Document record from IndexedDB:", record);
+                        if (record) {
+                            const fromStore = normalizeSuperpowersList(record?.superpowers, record?.category);
+                            // On repeuple systématiquement si on a un documentId pour être sûr d'avoir la donnée de la source de vérité
+                            await populateSuperpowerCheckboxes(fromStore);
                             if (window.lucide) window.lucide.createIcons();
                         }
-                    }).catch(() => { /* noop */ });
+                    } catch (err) { /* noop */ }
                 }
             }
             const allowPublish = Boolean(options && options.allowPublish && hasAdminToken());
@@ -422,9 +418,12 @@
             return name || "Doc";
         }
 
-        function uniqueName(name, list, extraNames) {
+        function uniqueName(name, list, extraNames, excludeId) {
             const base = normalizeName(name);
-            const names = (list || []).map(item => String(item.title || "").trim()).filter(Boolean);
+            const names = (list || [])
+                .filter(item => !excludeId || item.id !== excludeId)
+                .map(item => String(item.title || "").trim())
+                .filter(Boolean);
             const extras = Array.isArray(extraNames) ? extraNames.map(value => String(value || "").trim()).filter(Boolean) : [];
             const allNames = names.concat(extras);
             if (!allNames.includes(base)) return base;
@@ -647,19 +646,6 @@
             listEl.appendChild(empty);
         }
 
-        let cachedSuperpowers = null;
-        async function getSuperpowers() {
-            if (cachedSuperpowers) return cachedSuperpowers;
-            try {
-                const resp = await fetch('content/superpowers.json');
-                if (resp.ok) {
-                    cachedSuperpowers = await resp.json();
-                    return cachedSuperpowers;
-                }
-            } catch (e) { }
-            return [];
-        }
-
         async function renderList(items) {
             if (!listEl) return;
             listEl.innerHTML = "";
@@ -667,7 +653,7 @@
                 renderEmpty();
                 return;
             }
-            const superpowersMap = await getSuperpowers();
+            const superpowersMap = await ensureSuperpowersLoaded();
             const openIds = Array.isArray(getOpenIds?.()) ? getOpenIds() : [];
             const activeId = typeof getActiveId?.() === "string" ? getActiveId() : "";
             const openSet = new Set(openIds.filter(Boolean));
@@ -718,7 +704,7 @@
                         if (!result) return;
                         onRename(item, {
                             ...result,
-                            name: uniqueName(result.name, cachedItems)
+                            name: uniqueName(result.name, cachedItems, null, item.id)
                         });
                     });
                 });
@@ -844,8 +830,8 @@
             openRenameModal(name, description, options) {
                 return openNameModal(name, description, options);
             },
-            uniqueName(name) {
-                return uniqueName(name, cachedItems);
+            uniqueName(name, excludeId) {
+                return uniqueName(name, cachedItems, null, excludeId);
             },
             async setItems(items) {
                 const openIds = Array.isArray(getOpenIds?.()) ? getOpenIds() : [];

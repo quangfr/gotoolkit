@@ -4,6 +4,11 @@
     let cloudTemplates = [];
     let superpowersMap = [];
 
+    function isAdmin() {
+        const token = (localStorage.getItem("feedback-admin-token") || "").trim();
+        return token.length > 0;
+    }
+
     async function getSuperpowers() {
         if (window._superpowersCached) return window._superpowersCached;
         try {
@@ -42,8 +47,7 @@
                 html: doc.payload?.html || "",
                 updatedAt: doc.meta?.updatedDate || doc.meta?.updatedAt || ""
             }));
-
-            await window.goToolkitTemplateStore.saveAll(mapped);
+            await window.goToolkitTemplateStore.clear(); await window.goToolkitTemplateStore.saveAll(mapped);
             cloudTemplates = mapped;
         } catch (err) {
             console.warn("Failed to fetch cloud templates, falling back to local store", err);
@@ -122,13 +126,13 @@
         if (window.lucide) window.lucide.createIcons();
     }
 
-    async function renderTemplateGallery() {
+    async function renderTemplateGallery(force = false) {
         const gallery = document.getElementById("gtTemplateModalList");
         if (!gallery) return;
 
         gallery.innerHTML = '<div style="padding: 20px; text-align: center; grid-column: 1 / -1; opacity: 0.7;">Chargement des modèles...</div>';
 
-        await syncTemplates();
+        await syncTemplates(force);
         superpowersMap = await getSuperpowers();
 
         if (!cloudTemplates || !cloudTemplates.length) {
@@ -141,6 +145,8 @@
         const toShow = shuffled;
 
         gallery.innerHTML = "";
+        const userIsAdmin = isAdmin();
+
         toShow.forEach(template => {
             const btn = document.createElement("button");
             btn.type = "button";
@@ -166,6 +172,31 @@
                 <div class="gt-template-card__desc">${escapeHtml(template.description || "")}</div>
                 <div class="gt-template-card__meta">${escapeHtml(updatedLabel)}</div>
             `;
+
+            if (userIsAdmin) {
+                const deleteBtn = document.createElement("button");
+                deleteBtn.type = "button";
+                deleteBtn.className = "share-card-action share-card-delete";
+                deleteBtn.title = "Supprimer ce modèle";
+                deleteBtn.innerHTML = `<i data-lucide="x" style="width:14px;height:14px;"></i>`;
+                deleteBtn.addEventListener("click", async event => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    const confirmed = window.confirm(`Supprimer le modèle "${template.label}" du cloud ?`);
+                    if (!confirmed) return;
+                    try {
+                        const ok = await window.goToolkitShareWorker.deleteSharePayload(TEMPLATES_COLLECTION, template.id);
+                        if (ok) {
+                            await window.goToolkitTemplateStore.delete(template.id);
+                            await renderTemplateGallery(true);
+                        }
+                    } catch (err) {
+                        console.error("Failed to delete template", err);
+                        alert("Erreur lors de la suppression.");
+                    }
+                });
+                btn.appendChild(deleteBtn);
+            }
 
             btn.addEventListener("click", () => {
                 // Open Mémo with this template
@@ -194,8 +225,7 @@
             refreshBtn.addEventListener("click", async () => {
                 const icon = refreshBtn.querySelector("i");
                 if (icon) icon.classList.add("lucide-spin");
-                await syncTemplates(true);
-                await renderTemplateGallery();
+                await renderTemplateGallery(true);
                 if (icon) icon.classList.remove("lucide-spin");
             });
         }
