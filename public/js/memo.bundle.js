@@ -32296,9 +32296,10 @@ ${promptInput.trim()}`
               state2.doc.descendants((node, pos) => {
                 if (node.type.name === "heading" && node.attrs.collapsed) {
                   const level = node.attrs.level;
-                  let end = state2.doc.content.size;
-                  state2.doc.nodesBetween(pos + node.nodeSize, state2.doc.content.size, (nextChild, nextPos) => {
-                    if (nextPos <= pos) return true;
+                  const docSize = state2.doc.content.size;
+                  let end = docSize;
+                  state2.doc.nodesBetween(pos + node.nodeSize, docSize, (nextChild, nextPos) => {
+                    if (end !== docSize) return false;
                     if (nextChild.isBlock && nextChild.type.name === "heading" && nextChild.attrs.level <= level) {
                       end = nextPos;
                       return false;
@@ -34031,6 +34032,7 @@ ${promptInput.trim()}`
       editorProps: {
         handleTripleClickOn: (view, pos) => selectTableCellText(view, pos),
         handleKeyDown: (_view, event) => {
+          var _a2, _b2;
           if (!editor) return false;
           const clearStoredMarks = () => {
             const blockedMarks = /* @__PURE__ */ new Set(["code", "textStyle", "bold", "italic", "underline", "strike", "highlight"]);
@@ -34053,6 +34055,32 @@ ${promptInput.trim()}`
                 clearStoredMarks();
               }
             }, 0);
+          }
+          if (event.key === "Enter") {
+            const { state: state2 } = editor;
+            const { selection } = state2;
+            const $from = selection.$from;
+            const parent = $from.parent;
+            if (((_a2 = parent == null ? void 0 : parent.type) == null ? void 0 : _a2.name) === "heading" && ((_b2 = parent.attrs) == null ? void 0 : _b2.collapsed)) {
+              const level = parent.attrs.level || 1;
+              const headingPos = $from.before($from.depth);
+              const docSize = state2.doc.content.size;
+              let insertPos = docSize;
+              state2.doc.nodesBetween(headingPos + parent.nodeSize, docSize, (node, pos) => {
+                if (insertPos !== docSize) return false;
+                if (node.type.name === "heading" && node.attrs.level <= level) {
+                  insertPos = pos;
+                  return false;
+                }
+                return true;
+              });
+              event.preventDefault();
+              const tr2 = state2.tr.insert(insertPos, state2.schema.nodes.heading.create({ level }, state2.schema.text("")));
+              const nextSelection = TextSelection.create(tr2.doc, insertPos + 1);
+              tr2.setSelection(nextSelection);
+              editor.view.dispatch(tr2);
+              return true;
+            }
           }
           return false;
         },
@@ -55831,6 +55859,13 @@ ${innerMarkdown}
             window.MemoEditor.commands.setContent(newContent);
           }
         },
+        getValue: () => {
+          const editor = window.MemoEditor;
+          if (editor && typeof editor.getHTML === "function") {
+            return editor.getHTML();
+          }
+          return "";
+        },
         onChange: (callback) => {
           setOnChangeCb(() => callback);
         },
@@ -55840,6 +55875,28 @@ ${innerMarkdown}
             return await exportEditorToDocx(editor, title);
           }
           return null;
+        },
+        getEditorState: () => {
+          var _a;
+          try {
+            const editor = window.MemoEditor;
+            if ((_a = editor == null ? void 0 : editor.state) == null ? void 0 : _a.toJSON) {
+              return editor.state.toJSON();
+            }
+          } catch (err) {
+          }
+          return null;
+        },
+        setEditorState: (state2) => {
+          var _a;
+          try {
+            const editor = window.MemoEditor;
+            if (!((_a = editor == null ? void 0 : editor.view) == null ? void 0 : _a.updateState) || !state2) return;
+            const nextState = EditorState.fromJSON(editor.state.schema, state2, editor.state.plugins);
+            editor.view.updateState(nextState);
+          } catch (err) {
+            console.warn("setEditorState failed", err);
+          }
         }
       };
       window.GoToolkitMemoEditorReady = Promise.resolve(api);

@@ -2,12 +2,16 @@ import React, { useEffect, useImperativeHandle, forwardRef, useState } from 'rea
 import { createRoot } from 'react-dom/client';
 import { SimpleEditor } from '@/memo-editor';
 import { exportEditorToDocx } from '@/memo-editor/docx-export';
+import { EditorState } from '@tiptap/pm/state';
 
 // Bridge to maintain compatibility with memo.html
 interface MemoEditorApi {
     setValue: (content: string) => void;
+    getValue: () => string;
     onChange: (callback: (content: string) => void) => void;
     exportDocx: (title?: string) => Promise<Blob | null>;
+    getEditorState: () => any;
+    setEditorState: (state: any) => void;
 }
 
 const App = () => {
@@ -24,6 +28,13 @@ const App = () => {
                     (window as any).MemoEditor.commands.setContent(newContent);
                 }
             },
+            getValue: () => {
+                const editor = (window as any).MemoEditor;
+                if (editor && typeof editor.getHTML === 'function') {
+                    return editor.getHTML();
+                }
+                return '';
+            },
             onChange: (callback: (content: string) => void) => {
                 setOnChangeCb(() => callback);
             },
@@ -33,6 +44,27 @@ const App = () => {
                     return await exportEditorToDocx(editor, title);
                 }
                 return null;
+            },
+            getEditorState: () => {
+                try {
+                    const editor = (window as any).MemoEditor;
+                    if (editor?.state?.toJSON) {
+                        return editor.state.toJSON();
+                    }
+                } catch (err) {
+                    // ignore
+                }
+                return null;
+            },
+            setEditorState: (state: any) => {
+                try {
+                    const editor = (window as any).MemoEditor;
+                    if (!editor?.view?.updateState || !state) return;
+                    const nextState = EditorState.fromJSON(editor.state.schema, state, editor.state.plugins);
+                    editor.view.updateState(nextState);
+                } catch (err) {
+                    console.warn('setEditorState failed', err);
+                }
             }
         };
 

@@ -1363,7 +1363,7 @@
                 <div id="pinnedGallery" class="share-gallery" aria-live="polite"></div>
             </div>
             <div class="section-title-row">
-                <p class="section-label nexus-label label-link" data-open-nexus-modal><i data-lucide="database"
+                <p class="section-label nexus-label label-link" data-open-nexus-modal><i data-lucide="library"
                         style="width:14px;height:14px;margin-right:4px;"></i>Bibliothèque locale
                 </p>
             </div>
@@ -2266,7 +2266,7 @@
                 card.setAttribute("data-app", app);
                 const metaHtml = buildMetaBadge(preview.templateLabel);
                 card.innerHTML = `
-                    <p class="share-card-title"><i data-lucide="${definition.icon}" style="width:14px;height:14px;vertical-align:middle;margin-right:6px;"></i>${preview.tabName}</p>
+                    <p class="share-card-title">${preview.tabName}</p>
                     ${superpowerHtml || ""}
                     ${metaHtml}
                     <p class="share-card-desc">${preview.lines.join(" · ") || "(sans contexte)"}</p>
@@ -2360,7 +2360,7 @@
                 const superpowers = normalizeSuperpowers(record.superpowers, record.category);
                 const superpowerHtml = buildSuperpowerBadges(superpowers, catalog);
                 card.innerHTML = `
-                    <p class="share-card-title"><i data-lucide="${definition.icon}" style="width:14px;height:14px;vertical-align:middle;margin-right:6px;"></i>${preview.tabName}</p>
+                    <p class="share-card-title">${preview.tabName}</p>
                     ${superpowerHtml}
                     ${metaHtml}
                     <p class="share-card-desc">${preview.lines.join(" · ") || "Complète le contexte pour l'afficher ici."}</p>

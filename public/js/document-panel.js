@@ -129,15 +129,13 @@
     }
 
     function sortByOpenAndRecent(list, openIds) {
-        const openSet = new Set((openIds || []).filter(Boolean));
-        return [...list].sort((a, b) => {
-            const aOpen = openSet.has(a?.id);
-            const bOpen = openSet.has(b?.id);
-            if (aOpen !== bOpen) return aOpen ? -1 : 1;
-            const aTime = getRecentTimestamp(a);
-            const bTime = getRecentTimestamp(b);
-            return bTime - aTime;
-        });
+        const openOrder = Array.isArray(openIds) ? openIds.filter(Boolean) : [];
+        const openSet = new Set(openOrder);
+        const byId = new Map((list || []).map(item => [item?.id, item]));
+        const openItems = openOrder.map(id => byId.get(id)).filter(Boolean);
+        const closedItems = (list || []).filter(item => item && !openSet.has(item.id));
+        closedItems.sort((a, b) => getRecentTimestamp(b) - getRecentTimestamp(a));
+        return [...openItems, ...closedItems];
     }
 
     function formatRelativeShort(value) {
@@ -676,13 +674,15 @@
                 label.textContent = item.title || "Mémo sans titre";
                 button.appendChild(label);
 
-                const openedLabel = formatRelativeShort(item?.lastOpenedAt || "");
-                if (openedLabel) {
-                    const openedAt = document.createElement("span");
-                    openedAt.className = "document-explorer__item-opened";
-                    openedAt.textContent = openedLabel;
-                    openedAt.title = "Dernière ouverture";
-                    button.appendChild(openedAt);
+                if (!openSet.has(item.id)) {
+                    const openedLabel = formatRelativeShort(item?.lastOpenedAt || "");
+                    if (openedLabel) {
+                        const openedAt = document.createElement("span");
+                        openedAt.className = "document-explorer__item-opened";
+                        openedAt.textContent = openedLabel;
+                        openedAt.title = "Dernière ouverture";
+                        button.appendChild(openedAt);
+                    }
                 }
 
                 const actions = document.createElement("span");

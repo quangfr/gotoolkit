@@ -108,11 +108,12 @@ const CustomHeading = Heading.extend({
             state.doc.descendants((node, pos) => {
               if (node.type.name === 'heading' && node.attrs.collapsed) {
                 const level = node.attrs.level;
-                let end = state.doc.content.size;
+                const docSize = state.doc.content.size;
+                let end = docSize;
                 
-                // Find the next heading of same or higher level
-                state.doc.nodesBetween(pos + node.nodeSize, state.doc.content.size, (nextChild, nextPos) => {
-                  if (nextPos <= pos) return true;
+                // Find the next heading of the same or higher level
+                state.doc.nodesBetween(pos + node.nodeSize, docSize, (nextChild, nextPos) => {
+                  if (end !== docSize) return false;
                   if (nextChild.isBlock && nextChild.type.name === 'heading' && nextChild.attrs.level <= level) {
                     end = nextPos;
                     return false;
@@ -2193,6 +2194,35 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
               clearStoredMarks();
             }
           }, 0);
+        }
+        if (event.key === 'Enter') {
+          const { state } = editor;
+          const { selection } = state;
+          const $from = selection.$from;
+          const parent = $from.parent;
+          if (parent?.type?.name === 'heading' && parent.attrs?.collapsed) {
+            const level = parent.attrs.level || 1;
+            const headingPos = $from.before($from.depth);
+            const docSize = state.doc.content.size;
+            let insertPos = docSize;
+
+            // Find the end of the collapsed section to insert after it
+            state.doc.nodesBetween(headingPos + parent.nodeSize, docSize, (node, pos) => {
+              if (insertPos !== docSize) return false;
+              if (node.type.name === 'heading' && node.attrs.level <= level) {
+                insertPos = pos;
+                return false;
+              }
+              return true;
+            });
+
+            event.preventDefault();
+            const tr = state.tr.insert(insertPos, state.schema.nodes.heading.create({ level }, state.schema.text('')));
+            const nextSelection = TextSelection.create(tr.doc, insertPos + 1);
+            tr.setSelection(nextSelection);
+            editor.view.dispatch(tr);
+            return true;
+          }
         }
         return false;
       },
