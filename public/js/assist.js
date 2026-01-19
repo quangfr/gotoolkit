@@ -299,7 +299,7 @@
     var OPEN_KEY = scopedKey("goToolkit.chat.sidebarOpen");
     var KNOWLEDGE_MODAL_OPEN_KEY = scopedKey("goToolkit.chat.knowledgeModalOpen");
     var DEFAULT_WIDTH = 400;
-    var MIN_WIDTH = 320;
+    var MIN_WIDTH = 200;
     var MAX_WIDTH = 800;
     var MAX_WIDTH_RATIO = 0.6;
     var PROMPT_PRESET_KEY = "goToolkit.chat.prompt.preset";
@@ -2761,14 +2761,19 @@
         }
 
         function onMouseUp() {
+            global.document.body.classList.remove("is-resizing");
             global.removeEventListener("mousemove", onMouseMove);
             global.removeEventListener("mouseup", onMouseUp);
+            if (self.sidebarWidth <= 200) {
+                self.close();
+            }
             saveWidth(self.sidebarWidth);
         }
 
         resizer.addEventListener("mousedown", function (event) {
             startX = event.clientX;
             startWidth = self.sidebarWidth;
+            global.document.body.classList.add("is-resizing");
             global.addEventListener("mousemove", onMouseMove);
             global.addEventListener("mouseup", onMouseUp);
         });

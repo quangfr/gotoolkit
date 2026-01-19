@@ -1,6 +1,6 @@
 (() => {
     const DEFAULT_WIDTH = 220;
-    const MIN_WIDTH = 150;
+    const MIN_WIDTH = 100;
     const MAX_WIDTH = 520;
     const DEFAULT_TITLE = "Documents";
 
@@ -650,14 +650,20 @@
             listEl.appendChild(empty);
         }
 
+        let renderListNonce = 0;
+
         async function renderList(items) {
             if (!listEl) return;
+            const nonce = ++renderListNonce;
+            const superpowersMap = await ensureSuperpowersLoaded();
+
+            if (nonce !== renderListNonce) return;
+
             listEl.innerHTML = "";
             if (!items || !items.length) {
                 renderEmpty();
                 return;
             }
-            const superpowersMap = await ensureSuperpowersLoaded();
             const openIds = Array.isArray(getOpenIds?.()) ? getOpenIds() : [];
             const activeId = typeof getActiveId?.() === "string" ? getActiveId() : "";
             const openSet = new Set(openIds.filter(Boolean));
@@ -735,13 +741,18 @@
             if (window.lucide) window.lucide.createIcons();
         }
 
+        let renderSharedListNonce = 0;
+
         async function renderSharedList() {
             if (!shareListEl) return;
-            shareListEl.innerHTML = "";
+            const nonce = ++renderSharedListNonce;
             const shareHistory = window.goToolkitShareHistory;
             if (!shareHistory) return;
 
             const records = await shareHistory.getRecordsByApp("memo");
+            if (nonce !== renderSharedListNonce) return;
+
+            shareListEl.innerHTML = "";
             if (!records || !records.length) {
                 const empty = document.createElement("div");
                 empty.className = "document-explorer__empty";
@@ -876,16 +887,21 @@
             };
 
             const stopResize = () => {
+                document.body.classList.remove("is-resizing");
                 document.removeEventListener("mousemove", onMove);
                 document.removeEventListener("mouseup", stopResize);
                 document.removeEventListener("touchmove", onMove);
                 document.removeEventListener("touchend", stopResize);
+                if (width <= 100) {
+                    applyOpen(false);
+                }
             };
 
             const startResize = (event) => {
                 event.preventDefault();
                 startX = event.touches ? event.touches[0].clientX : event.clientX;
                 startWidth = width;
+                document.body.classList.add("is-resizing");
                 document.addEventListener("mousemove", onMove);
                 document.addEventListener("mouseup", stopResize);
                 document.addEventListener("touchmove", onMove);

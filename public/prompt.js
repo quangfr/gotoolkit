@@ -341,20 +341,15 @@ RÈGLES SPÉCIFIQUES :
 - Pour ajouter ou éditer un tableau, utilise la syntaxe markdown gfm.
 - Pour créer des encadrés d'information, utilise la syntaxe github markdown suivante :
 
-> [!NOTE] Information, remarque
-> Petit contexte utile, même en lecture rapide.
+> ℹ️ Contexte utile, information importante
 
-> [!TIP] Astuce, conseil.
-> Astuce pour aller plus vite / mieux faire.
+> 💡 Astuce ou conseil pratique
 
-> [!IMPORTANT] Point clé, essentiel
-> Info clé pour réussir l’objectif.
+> ✅ Synthèse, point-clé important
 
-> [!WARNING] Vigilance, prudence
-> À lire absolument pour éviter un souci.
+> ⚠️ Vigilance, prudence
 
-> [!CAUTION] Danger, attention
-> Risque / effet négatif possible.
+> 🚨 Danger, attention, risque
 
 - Pour des mots-clés récurrents (état, type, priorité, statut, terminologie informatique, id), utilise le marquage inline \`code\` : 
 1/ Flowchart : explication polyvalente, processus métier
