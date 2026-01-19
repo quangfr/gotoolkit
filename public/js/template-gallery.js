@@ -64,15 +64,6 @@
             .replace(/'/g, "&#39;");
     }
 
-    function shuffleArray(array) {
-        const arr = [...array];
-        for (let i = arr.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [arr[i], arr[j]] = [arr[j], arr[i]];
-        }
-        return arr;
-    }
-
     function parseTemplateUpdatedAt(value) {
         if (!value) return 0;
         if (typeof value === "number") return value;
@@ -140,9 +131,10 @@
             return;
         }
 
-        const shuffled = shuffleArray(cloudTemplates);
-        // We show all templates shuffled, initially 5 fit on large screens
-        const toShow = shuffled;
+        const sorted = [...cloudTemplates].sort((a, b) => {
+            return parseTemplateUpdatedAt(b.updatedAt) - parseTemplateUpdatedAt(a.updatedAt);
+        });
+        const toShow = sorted;
 
         gallery.innerHTML = "";
         const userIsAdmin = isAdmin();
