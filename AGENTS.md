@@ -6,12 +6,14 @@
 
 ## Navigation + cache
 - `public/index.html` links: `grid.html` and `memo.html`.
-- All module links include `?v=2026.01.19.4`; bump everywhere when assets change.
-- Version format: YYYY.MM.DD.N (N is an increment number for the day).
-- **Bump the version only when explicitly asked to commit and sync on GitHub.**
+- Version format: `YYYY.MM.DD.N` (N is an increment number for the day).
+- **Bump the version only when explicitly asked to commit and sync on GitHub (never before).**
+- **Bumping version checklist**:
+  1. Increment `version` in `package.json`.
+  2. Search and replace all `?v=...` cache-busters in `public/index.html`, `public/memo.html`, and `public/grid.html`.
+  3. Update the version label in `public/index.html` (`hero-version`), `public/memo.html` (if any), and `public/grid.html` (bottom panel).
+  4. Sync version in `AGENTS.md` example.
 - `public/prompt.js` is the root for all AI system prompts and templates.
-- Keep info panel versions and the `hero-version` label in `public/index.html` aligned with the cache-buster.
-- When bumping versions, ensure all JS/CSS assets in `memo.html` are updated.
 - Keep the IndexedDB version in `public/js/assist.js` health-check/repair (`indexedDB.open`) aligned with `DB_VERSION` in `public/js/document-rag.js`.
 - When adding/editing UI, reuse colors and classes from `public/styles/style.css` before adding new CSS.
 - Each page sets `window.GO_TOOLKIT_SHARE_API_URL` (launcher `https://gotoolkit.workers.dev`, modules `https://share.gotoolkit.workers.dev/`).
