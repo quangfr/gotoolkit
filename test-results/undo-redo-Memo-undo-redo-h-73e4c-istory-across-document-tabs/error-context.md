@@ -1,0 +1,236 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary "Exploration" [ref=e3]:
+      - generic [ref=e4]:
+        - button "Bibliothèque" [ref=e5] [cursor=pointer]:
+          - img [ref=e6]
+        - button "Table des matières" [ref=e8] [cursor=pointer]:
+          - img [ref=e9]
+        - button "Fermer" [ref=e10] [cursor=pointer]:
+          - img [ref=e11]
+      - generic [ref=e15]:
+        - generic [ref=e16]:
+          - button "Importer" [ref=e17] [cursor=pointer]:
+            - img [ref=e18]
+            - text: Importer
+          - button "Nouveau" [ref=e21] [cursor=pointer]:
+            - img [ref=e22]
+            - text: Nouveau
+        - generic [ref=e23]:
+          - button "Doc 1 Renommer Supprimer" [ref=e24] [cursor=pointer]:
+            - generic [ref=e25]: Doc 1
+            - generic [ref=e26]:
+              - button "Renommer" [ref=e27]:
+                - img [ref=e28]
+              - button "Supprimer" [ref=e31]:
+                - img [ref=e32]
+          - button "Doc 2 Renommer Supprimer" [ref=e35] [cursor=pointer]:
+            - generic [ref=e36]: Doc 2
+            - generic [ref=e37]:
+              - button "Renommer" [ref=e38]:
+                - img [ref=e39]
+              - button "Supprimer" [ref=e42]:
+                - img [ref=e43]
+    - separator "Ajuster la largeur des documents" [ref=e46]
+    - generic [ref=e47]:
+      - generic [ref=e48]:
+        - generic [ref=e49]:
+          - button "Masquer les documents" [expanded] [ref=e50] [cursor=pointer]:
+            - img [ref=e51]
+          - link "Accueil" [ref=e54] [cursor=pointer]:
+            - /url: /?v=2026.01.19.2
+            - img [ref=e55]
+            - text: Accueil
+          - generic [ref=e59]:
+            - button "Doc 1 Fermer le document" [ref=e60]:
+              - generic [ref=e61]: Doc 1
+              - button "Fermer le document" [ref=e62] [cursor=pointer]:
+                - img [ref=e63]
+            - button "Doc 2 Fermer le document" [ref=e66]:
+              - generic [ref=e67]: Doc 2
+              - button "Fermer le document" [ref=e68] [cursor=pointer]:
+                - img [ref=e69]
+            - button "Créer un document" [ref=e72] [cursor=pointer]:
+              - img [ref=e73]
+        - generic [ref=e74]:
+          - button "Document" [ref=e76] [cursor=pointer]:
+            - img [ref=e77]
+          - button "Modèles" [ref=e80] [cursor=pointer]:
+            - img [ref=e81]
+          - button "Thème" [ref=e84] [cursor=pointer]:
+            - img [ref=e85]
+          - button "Assist" [ref=e91] [cursor=pointer]:
+            - img [ref=e92]
+      - generic [ref=e98]:
+        - toolbar "toolbar" [ref=e99]:
+          - group [ref=e100]:
+            - button "Undo" [ref=e101] [cursor=pointer]:
+              - img [ref=e102]
+            - button "Redo" [disabled] [ref=e105]:
+              - img [ref=e106]
+          - group [ref=e109]:
+            - button "Texte" [ref=e111] [cursor=pointer]:
+              - img [ref=e112]
+              - generic [ref=e114]: Texte
+              - img [ref=e115]
+          - group "Style" [ref=e117]:
+            - button "Bold" [ref=e118] [cursor=pointer]:
+              - img [ref=e119]
+            - button "Italic" [ref=e121] [cursor=pointer]:
+              - img [ref=e122]
+            - button "Underline" [ref=e124] [cursor=pointer]:
+              - img [ref=e125]
+            - button "Text Color" [ref=e128] [cursor=pointer]:
+              - img [ref=e129]
+          - group "Texte avancé" [ref=e131]:
+            - button "Strike" [ref=e132] [cursor=pointer]:
+              - img [ref=e133]
+            - button "Highlight" [ref=e136] [cursor=pointer]:
+              - img [ref=e137]
+            - button "Link" [ref=e140] [cursor=pointer]:
+              - img [ref=e141]
+          - group "Bloc" [ref=e144]:
+            - button "Libellé" [ref=e145] [cursor=pointer]:
+              - img [ref=e146]
+            - button "Citation" [ref=e150] [cursor=pointer]:
+              - img [ref=e151]
+              - img [ref=e153]
+          - group "Insertion" [ref=e155]:
+            - button "Insert Table" [ref=e156] [cursor=pointer]:
+              - img [ref=e157]
+            - button "Insert Mermaid Diagram" [ref=e159] [cursor=pointer]:
+              - img [ref=e160]
+          - group [ref=e164]:
+            - button "Voir le code source" [ref=e165] [cursor=pointer]:
+              - img [ref=e166]
+        - generic [ref=e170]:
+          - generic:
+            - group:
+              - button "Assist":
+                - img
+            - group:
+              - button "Gras":
+                - img
+              - button "Italique":
+                - img
+              - button "Souligné":
+                - img
+              - generic:
+                - button "Couleur du texte":
+                  - img
+              - button "Barré":
+                - img
+              - button "Surligné":
+                - img
+              - button "Lien":
+                - img
+        - textbox [ref=e172]:
+          - paragraph [ref=e175]:
+            - generic [ref=e176]: Bravo one Bravo two
+  - status: Mémo créé
+  - generic [ref=e177]:
+    - generic [ref=e179]:
+      - button [ref=e180] [cursor=pointer]:
+        - img [ref=e181]
+      - generic [ref=e183]:
+        - img [ref=e184]
+        - text: Assist
+      - generic [ref=e187]:
+        - button "0" [ref=e188] [cursor=pointer]:
+          - img [ref=e189]
+          - text: "0"
+        - button "Prompt" [ref=e197] [cursor=pointer]:
+          - img [ref=e198]
+        - button [ref=e201] [cursor=pointer]:
+          - img [ref=e202]
+    - generic [ref=e207]:
+      - generic [ref=e208]:
+        - textbox "Que veux-tu demander ?" [ref=e209]
+        - button [ref=e210] [cursor=pointer]:
+          - img [ref=e211]
+      - generic [ref=e214]:
+        - generic [ref=e215]:
+          - button "Demander" [ref=e217] [cursor=pointer]:
+            - text: Demander
+            - img [ref=e218]
+          - button [ref=e220] [cursor=pointer]:
+            - img [ref=e221]
+        - button [disabled] [ref=e223] [cursor=pointer]:
+          - img [ref=e224]
+  - generic:
+    - generic [ref=e227]:
+      - button "Envoyer un feedback" [ref=e228] [cursor=pointer]:
+        - img [ref=e229]
+      - button "Enregistrer une conversation" [ref=e231] [cursor=pointer]:
+        - img [ref=e232]
+    - status [ref=e235]
+  - generic [ref=e237]:
+    - button [ref=e238] [cursor=pointer]: ←
+    - button [ref=e239] [cursor=pointer]: ⤷ Importer
+    - button [ref=e240] [cursor=pointer]: ✕
+  - generic [ref=e242]:
+    - generic [ref=e243]:
+      - generic [ref=e245]:
+        - img [ref=e246]
+        - text: "| 0 fichiers"
+      - generic [ref=e254]:
+        - button [ref=e255] [cursor=pointer]: + Ajouter
+        - button [ref=e256] [cursor=pointer]: ↺ Réinitialiser
+        - button [ref=e257] [cursor=pointer]: ✕
+    - generic [ref=e258]:
+      - generic [ref=e259]:
+        - checkbox [ref=e261]
+        - button [ref=e263] [cursor=pointer]: Nom
+        - button [ref=e265] [cursor=pointer]: Source
+        - generic [ref=e266]: Description
+        - button [ref=e268] [cursor=pointer]: MàJ▼
+      - generic [ref=e269]:
+        - checkbox [ref=e271]
+        - generic [ref=e272]:
+          - button [ref=e273] [cursor=pointer]: ✐
+          - button [ref=e274] [cursor=pointer]: Doc 2
+        - generic [ref=e275]: Mémo
+        - generic [ref=e276]: à l'instant
+      - generic [ref=e277]:
+        - checkbox [ref=e279]
+        - generic [ref=e280]:
+          - button [ref=e281] [cursor=pointer]: ✐
+          - button [ref=e282] [cursor=pointer]: Doc 1
+        - generic [ref=e283]: Mémo
+        - generic [ref=e284]: à l'instant
+      - generic [ref=e285]:
+        - checkbox [ref=e287]
+        - generic [ref=e288]:
+          - button [ref=e289] [cursor=pointer]: ✐
+          - button [ref=e290] [cursor=pointer]: Go-Live 101
+        - generic [ref=e291]: Web
+        - generic [ref=e292]: Guide des compétences essentiels du consultant
+        - generic [ref=e293]: 1 j
+      - generic [ref=e294]:
+        - checkbox [ref=e296]
+        - generic [ref=e297]:
+          - button [ref=e298] [cursor=pointer]: ✐
+          - button [ref=e299] [cursor=pointer]: Toolkit Import
+        - generic [ref=e300]: Web
+        - generic [ref=e301]: "Import & OCR/Transcription : formats supportés, stockage IndexedDB, chunking, embeddings, OCR et stratégie voix."
+        - generic [ref=e302]: 8 j
+      - generic [ref=e303]:
+        - checkbox [ref=e305]
+        - generic [ref=e306]:
+          - button [ref=e307] [cursor=pointer]: ✐
+          - button [ref=e308] [cursor=pointer]: Modules Toolkit
+        - generic [ref=e309]: Web
+        - generic [ref=e310]: "Documentation complète de tous les modules : Assist, Canvas, Draw, Grid, Page d'accueil, Mémo, Timeline et Voice."
+        - generic [ref=e311]: 9 j
+      - generic [ref=e312]:
+        - checkbox [ref=e314]
+        - generic [ref=e315]:
+          - button [ref=e316] [cursor=pointer]: ✐
+          - button [ref=e317] [cursor=pointer]: Contexte Safran
+        - generic [ref=e318]: Web
+        - generic [ref=e319]: Brief de missions et de projets IT chez Safran
+        - generic [ref=e320]: 12 j
+```

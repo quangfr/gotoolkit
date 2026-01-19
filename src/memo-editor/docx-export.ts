@@ -18,6 +18,7 @@ import {
   UnderlineType
 } from "docx";
 import { saveAs } from "file-saver"; // I'll need to install file-saver or use Blob
+import { ALERT_TYPES } from "./blockquote-node";
 
 const DEFAULT_FONT = "Tahoma";
 const DEFAULT_LINE_SPACING = 360; // 1.5 line height (240 * 1.5)
@@ -152,10 +153,11 @@ async function transformNode(node: any, editor: any): Promise<any> {
       
       // Add Title for Alerts
       if (isAlert) {
-        const title = node.attrs.title || type;
+        const alertConfig = ALERT_TYPES.find(a => a.type === type);
+        const title = node.attrs.title || alertConfig?.label || type;
         tableChildren.push(new Paragraph({
           children: [new TextRun({ 
-            text: title.toUpperCase(), 
+            text: title, 
             bold: true, 
             color: colors.border.replace('#', ''),
             font: DEFAULT_FONT 

@@ -44,7 +44,7 @@
     <script src="https://unpkg.com/@excalidraw/excalidraw@0.17.6/dist/excalidraw.production.min.js"
         crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.min.js" crossorigin></script>
-    <link rel="stylesheet" href="styles/style.css?v=2026.01.19.2">
+    <link rel="stylesheet" href="styles/style.css?v=2026.01.19.3">
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         html,
@@ -1040,7 +1040,7 @@
             --modal-width: 800px;
         }
     </style>
-    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.01.19.2">
+    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.01.19.3">
 </head>
 
 <body class="app-body">
@@ -1074,7 +1074,7 @@
                     <button id="documentExplorerToggle" class="app-home-link" type="button"
                         title="Afficher la bibliothèque" aria-expanded="false" aria-controls="documentExplorer"><i
                             data-lucide="library"></i></button>
-                    <a href="/?v=2026.01.19.2" class="nav-switch-btn" title="Accueil"
+                    <a href="/?v=2026.01.19.3" class="nav-switch-btn" title="Accueil"
                         style="text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
                         <i data-lucide="home"></i> Accueil
                     </a>
@@ -1205,7 +1205,7 @@
         <img src="img/logo.gif" alt="Logo Go-Toolkit" class="logo-light">
         <img src="img/logo_inverted.gif" alt="Logo Go-Toolkit" class="logo-dark">
         <strong>Module Mémo</strong>
-        <span>Version 2026.01.19.2</span>
+        <span>Version 2026.01.19.3</span>
         <span>Usage réservé à Savane Consulting.</span>
         <div class="info-actions">
             <button id="memoUpdateBtn" type="button" class="update-btn">Réinitialiser</button>
@@ -1251,13 +1251,22 @@
     <!-- Floating Chat Inline Editor Component -->
     <div id="chat-inline-editor-container" style="display: none;">
         <div id="chat-inline-editor" class="chat-inline-editor">
-            <div class="chat-inline-editor__wrapper">
-                <textarea id="chat-inline-editor-input" class="chat-inline-editor__input"
-                    placeholder="Que veux-tu modifier ?"></textarea>
-                <button id="chat-inline-editor-btn" class="chat-inline-editor__btn" type="button"
-                    title="Envoyer à l'IA">
-                    <i data-lucide="send" style="width:16px;height:16px;"></i>
-                </button>
+            <div class="chat-inline-editor__wrapper" style="flex-direction: column; align-items: flex-start;">
+                <div class="chat-prompt-dropdown" style="margin-bottom: 4px; margin-left: 4px; margin-top: 2px;">
+                    <button type="button" class="btn-secondary chat-prompt-btn" id="chat-inline-prompt-btn">
+                        Edit <i data-lucide="chevron-down" style="width:12px;height:12px;margin-left:2px"></i>
+                    </button>
+                    <div class="chat-prompt-menu" id="chat-inline-prompt-menu" hidden>
+                    </div>
+                </div>
+                <div style="position: relative; width: 100%; display: flex;">
+                    <textarea id="chat-inline-editor-input" class="chat-inline-editor__input"
+                        placeholder="Que veux-tu modifier ?"></textarea>
+                    <button id="chat-inline-editor-btn" class="chat-inline-editor__btn" type="button"
+                        title="Envoyer à l'IA">
+                        <i data-lucide="send" style="width:16px;height:16px;"></i>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -1266,21 +1275,21 @@
         window.GO_TOOLKIT_SHARE_API_URL =
             window.GO_TOOLKIT_SHARE_API_URL || "https://share.gotoolkit.workers.dev/";
     </script>
-    <script src="js/config.js?v=2026.01.19.2"></script>
-    <script src="js/feature-visibility.js?v=2026.01.19.2"></script>
-    <script src="js/document-storage.js?v=2026.01.19.2"></script>
-    <script src="js/storage-service.js?v=2026.01.19.2"></script>
-    <script src="js/shared-ui.js?v=2026.01.19.2"></script>
-    <script src="js/cgu.js?v=2026.01.19.2"></script>
-    <script src="js/share-worker-client.js?v=2026.01.19.2"></script>
-    <script src="js/share-history.js?v=2026.01.19.2"></script>
-    <script src="js/document-api.js?v=2026.01.19.2"></script>
-    <script src="js/keywordIndex.js?v=2026.01.19.2"></script>
-    <script src="js/document-rag.js?v=2026.01.19.2"></script>
-    <script src="js/ia-config.js?v=2026.01.19.2"></script>
-    <script src="prompt.js?v=2026.01.19.2"></script>
-    <script src="js/ia-client.js?v=2026.01.19.2"></script>
-    <script src="js/document-markdown.js?v=2026.01.19.2"></script>
+    <script src="js/config.js?v=2026.01.19.3"></script>
+    <script src="js/feature-visibility.js?v=2026.01.19.3"></script>
+    <script src="js/document-storage.js?v=2026.01.19.3"></script>
+    <script src="js/storage-service.js?v=2026.01.19.3"></script>
+    <script src="js/shared-ui.js?v=2026.01.19.3"></script>
+    <script src="js/cgu.js?v=2026.01.19.3"></script>
+    <script src="js/share-worker-client.js?v=2026.01.19.3"></script>
+    <script src="js/share-history.js?v=2026.01.19.3"></script>
+    <script src="js/document-api.js?v=2026.01.19.3"></script>
+    <script src="js/keywordIndex.js?v=2026.01.19.3"></script>
+    <script src="js/document-rag.js?v=2026.01.19.3"></script>
+    <script src="js/ia-config.js?v=2026.01.19.3"></script>
+    <script src="prompt.js?v=2026.01.19.3"></script>
+    <script src="js/ia-client.js?v=2026.01.19.3"></script>
+    <script src="js/document-markdown.js?v=2026.01.19.3"></script>
     <script>
         // Initialize feedback configuration for Memo before loading feedback.js
         window.GoToolkitAppFeedbackConfig = {
@@ -1299,12 +1308,12 @@
             ]
         };
     </script>
-    <script src="js/feedback.js?v=2026.01.19.2"></script>
-    <script src="js/voice-video-player.js?v=2026.01.19.2"></script>
-    <script src="js/voice-audio-player.js?v=2026.01.19.2"></script>
-    <script src="js/voice.js?v=2026.01.19.2"></script>
-    <script src="js/voice-transcript.js?v=2026.01.19.2"></script>
-    <script src="js/draw-memo.js?v=2026.01.19.2"></script>
+    <script src="js/feedback.js?v=2026.01.19.3"></script>
+    <script src="js/voice-video-player.js?v=2026.01.19.3"></script>
+    <script src="js/voice-audio-player.js?v=2026.01.19.3"></script>
+    <script src="js/voice.js?v=2026.01.19.3"></script>
+    <script src="js/voice-transcript.js?v=2026.01.19.3"></script>
+    <script src="js/draw-memo.js?v=2026.01.19.3"></script>
     <script>
         // Suppress React DevTools prompt in dev builds.
         window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = window.__REACT_DEVTOOLS_GLOBAL_HOOK__ || {
@@ -1314,9 +1323,9 @@
             onCommitFiberUnmount: function () { }
         };
     </script>
-    <script src="js/memo.bundle.js?v=2026.01.19.2"></script>
-    <script src="js/assist.js?v=2026.01.19.2"></script>
-    <script src="js/document-panel.js?v=2026.01.19.2"></script>
+    <script src="js/memo.bundle.js?v=2026.01.19.3"></script>
+    <script src="js/assist.js?v=2026.01.19.3"></script>
+    <script src="js/document-panel.js?v=2026.01.19.3"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             setTimeout(function () {
@@ -2210,6 +2219,47 @@
                     }
                 } catch (err) {
                     console.error("Share load failed", err);
+                }
+                return false;
+            }
+
+            async function loadEditFromUrl() {
+                try {
+                    const params = new URLSearchParams(window.location.search);
+                    const docId = params.get("edit");
+                    if (!docId) return false;
+
+                    let handled = false;
+                    if (docId === "new") {
+                        await createAutoDocument();
+                        handled = true;
+                    } else {
+                        // Check if already open
+                        const existing = openDocuments.find(d => d.id === docId);
+                        if (existing) {
+                            setActiveDocument(docId);
+                            handled = true;
+                        } else if (documentApi) {
+                            const record = await documentApi.getRecord(docId);
+                            if (record) {
+                                await openDocumentFromRecord(record);
+                                handled = true;
+                            }
+                        }
+                    }
+
+                    if (handled) {
+                        const url = new URL(window.location.href);
+                        url.searchParams.delete("edit");
+                        // If no more params, simplify to clean path
+                        const nextUrl = url.searchParams.toString()
+                            ? url.toString()
+                            : window.location.pathname;
+                        history.replaceState(null, "", nextUrl);
+                        return true;
+                    }
+                } catch (err) {
+                    console.error("Failed to load document from URL", err);
                 }
                 return false;
             }
@@ -3253,11 +3303,16 @@
                     if (templateData) {
                         localStorage.removeItem("goToolkit.memo.templateToLoad");
                         const template = JSON.parse(templateData);
-                        await createNewDocument(template.label, template.description, template.superpowers, template.html);
+                        const autoName = await getAutoDocumentName();
+                        await createNewDocument(autoName, template.description, template.superpowers, template.html);
                     }
                 } catch (err) {
                     console.warn("Failed to load template from localStorage", err);
                 }
+
+                loadShareFromUrl().then(loaded => {
+                    if (!loaded) loadEditFromUrl().catch(err => console.error(err));
+                });
 
                 window.__memoState = state;
                 renderTabs();
@@ -3506,8 +3561,6 @@
                 }
             });
 
-            loadShareFromUrl();
-
             const EDGE_DROP_BUFFER = 50;
             let draggedDocumentId = null;
             documentTabsEl?.addEventListener("dragstart", event => {
@@ -3645,6 +3698,109 @@
             const input = document.getElementById('chat-inline-editor-input');
             const btn = document.getElementById('chat-inline-editor-btn');
 
+            // Initialisation du menu prompt (synchro avec sidebar)
+            const inlineBtn = document.getElementById('chat-inline-prompt-btn');
+            const inlineMenu = document.getElementById('chat-inline-prompt-menu');
+
+            const syncPromptDropdown = () => {
+                const assistSidebar = window.GoToolkitAssistInstance;
+                if (!assistSidebar || !inlineBtn) return;
+
+                const presetId = assistSidebar.promptPresetId || "edit";
+                const presets = assistSidebar.getPromptPresets();
+                const activePreset = presets[presetId] || { label: presetId };
+
+                inlineBtn.innerHTML = `${activePreset.label} <i data-lucide="chevron-down" style="width:12px;height:12px;margin-left:2px"></i>`;
+                if (window.lucide) window.lucide.createIcons();
+
+                if (inlineMenu) {
+                    const items = inlineMenu.querySelectorAll('.chat-prompt-menu-item');
+                    items.forEach(item => {
+                        item.classList.toggle('active', item.dataset.preset === presetId);
+                    });
+                }
+            };
+
+            const updatePlaceholder = () => {
+                const assistSidebar = window.GoToolkitAssistInstance;
+                const activePreset = assistSidebar?.promptPresetId || "edit";
+                const placeholders = {
+                    'edit': 'Que veux-tu modifier ?',
+                    'advice': 'Que veux-tu demander ?',
+                    'draw': 'Que veux-tu dessiner ?',
+                    'suggest': 'Que veux-tu corriger ?',
+                    'ask': 'Que veux-tu explorer ?',
+                    'import': 'Que veux-tu importer ?',
+                    'extract': 'Que veux-tu extraire ?'
+                };
+                if (input) {
+                    input.placeholder = placeholders[activePreset] || 'Que veux-tu faire ?';
+                }
+            };
+
+            const buildInlinePromptMenu = () => {
+                if (!inlineMenu) return;
+                inlineMenu.innerHTML = '';
+                const assistSidebar = window.GoToolkitAssistInstance;
+                if (!assistSidebar) return;
+
+                const presets = assistSidebar.getPromptPresets();
+                const presetIds = ["advice", "edit", "suggest"];
+
+                presetIds.forEach(id => {
+                    const preset = presets[id];
+                    if (!preset) return;
+
+                    const item = document.createElement('button');
+                    item.type = 'button';
+                    item.className = 'chat-prompt-menu-item';
+                    item.dataset.preset = id;
+                    item.textContent = preset.label || id;
+
+                    item.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        assistSidebar.setPromptPreset(id);
+                        inlineMenu.hidden = true;
+                        inlineMenu.classList.remove('open');
+                    });
+
+                    inlineMenu.appendChild(item);
+                });
+            };
+
+            if (inlineBtn && inlineMenu) {
+                inlineBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const willOpen = inlineMenu.hidden;
+                    inlineMenu.hidden = !willOpen;
+                    inlineMenu.classList.toggle('open', willOpen);
+                });
+
+                // Fermer le menu au clic ailleurs
+                document.body.addEventListener('click', (e) => {
+                    if (!inlineMenu.contains(e.target) && e.target !== inlineBtn) {
+                        inlineMenu.hidden = true;
+                        inlineMenu.classList.remove('open');
+                    }
+                });
+            }
+
+            document.addEventListener('goToolkitChatPromptPresetChanged', () => {
+                syncPromptDropdown();
+                updatePlaceholder();
+            });
+
+            // Init sync
+            const initSync = () => {
+                if (window.GoToolkitAssistInstance) {
+                    buildInlinePromptMenu();
+                    syncPromptDropdown();
+                } else {
+                    setTimeout(initSync, 100);
+                }
+            };
+            initSync();
+
             // Créer l'overlay de sélection
             const selectionOverlay = document.createElement('div');
             selectionOverlay.id = 'chat-selection-overlay';
@@ -3668,21 +3824,8 @@
             document.addEventListener('memoEditorSelectionChanged', (e) => {
                 const { detail } = e;
 
-                // Vérifier le preset actif
-                const assistSidebar = window.GoToolkitAssistInstance;
-                const activePreset = assistSidebar?.promptPresetId || "edit";
-
                 // Mettre à jour le placeholder selon le preset
-                const placeholders = {
-                    'edit': 'Que veux-tu modifier ?',
-                    'advice': 'Que veux-tu demander ?',
-                    'draw': 'Que veux-tu dessiner ?',
-                    'suggest': 'Que veux-tu corriger ?',
-                    'ask': 'Que veux-tu explorer ?',
-                    'import': 'Que veux-tu importer ?',
-                    'extract': 'Que veux-tu extraire ?'
-                };
-                input.placeholder = placeholders[activePreset] || 'Que veux-tu faire ?';
+                if (typeof updatePlaceholder === 'function') updatePlaceholder();
 
                 if (!detail.isSelected) {
                     // Pas de sélection - cacher le composant et l'overlay
@@ -3725,6 +3868,7 @@
                 // Positionner et afficher le composant (mais pas l'overlay immédiatement)
                 positionEditor();
                 container.style.display = 'block';
+                if (typeof syncPromptDropdown === 'function') syncPromptDropdown();
 
                 // Si l'événement demande explicitement le focus (ex: via le bubble menu)
                 if (detail.focus) {

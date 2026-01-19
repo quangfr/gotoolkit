@@ -55573,10 +55573,11 @@ ${innerMarkdown}
         const isAlert = type2 !== "default";
         const tableChildren = [];
         if (isAlert) {
-          const title = node.attrs.title || type2;
+          const alertConfig = ALERT_TYPES.find((a) => a.type === type2);
+          const title = node.attrs.title || (alertConfig == null ? void 0 : alertConfig.label) || type2;
           tableChildren.push(new Paragraph2({
             children: [new TextRun({
-              text: title.toUpperCase(),
+              text: title,
               bold: true,
               color: colors.border.replace("#", ""),
               font: DEFAULT_FONT

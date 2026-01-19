@@ -1,6 +1,6 @@
 (function () {
     const DB_NAME = "go-toolkit";
-    const DB_VERSION = 9;
+    const DB_VERSION = 10;
     const STORES = [
         "document-api",
         "share-history",

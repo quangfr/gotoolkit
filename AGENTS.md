@@ -6,7 +6,7 @@
 
 ## Navigation + cache
 - `public/index.html` links: `grid.html` and `memo.html`.
-- All module links include `?v=2026.01.19.2`; bump everywhere when assets change.
+- All module links include `?v=2026.01.19.3`; bump everywhere when assets change.
 - Version format: YYYY.MM.DD.N (N is an increment number for the day).
 - **Bump the version only when explicitly asked to commit and sync on GitHub.**
 - `public/prompt.js` is the root for all AI system prompts and templates.

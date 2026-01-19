@@ -200,10 +200,11 @@
 
             btn.addEventListener("click", () => {
                 // Open Mémo with this template
-                // We pass the template data via localStorage or query params?
-                // The most reliable way is probably to save it as a "draft" or use a specific storage key
                 localStorage.setItem("goToolkit.memo.templateToLoad", JSON.stringify(template));
-                window.location.href = "memo.html";
+                // We use target="memo" to avoid opening multiple tabs if already open, 
+                // but window.location.href changes the CURRENT tab.
+                // To keep the user on index.html but open/focus memo, we should use window.open
+                window.open("memo.html", "memo");
             });
 
             gallery.appendChild(btn);
