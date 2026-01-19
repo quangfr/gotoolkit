@@ -382,6 +382,13 @@
             font-size: 10px;
             opacity: 0.7;
             letter-spacing: 0.2px;
+            pointer-events: none;
+        }
+
+        .document-explorer__item--non-clickable:hover,
+        .document-explorer__item--non-clickable:focus-visible {
+            background-color: transparent !important;
+            border-color: var(--border-main) !important;
         }
 
         .document-explorer__item:hover .document-explorer__item-actions,
@@ -397,18 +404,30 @@
         .document-explorer__item-action {
             border: none;
             background: transparent;
-            padding: 0px;
+            padding: 2px;
             margin: 0px;
             font-size: 12px;
             line-height: 1;
             color: var(--text-main);
             cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: background 0.1s ease;
         }
 
-        .document-explorer__item-action:hover,
-        .document-explorer__item-action:focus-visible {
-            color: var(--text-main);
-            outline: none;
+        .document-explorer__item-action i,
+        .document-explorer__item-action svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .document-explorer__item-action:hover {
+            background-color: var(--bg-surface-strong);
+        }
+
+        outline: none;
         }
 
         .document-explorer__item-action.document-explorer__delete {
@@ -1050,6 +1069,9 @@
                 <button type="button" class="document-explorer__tab-btn active" data-tab="library" title="Bibliothèque">
                     <i data-lucide="library"></i>
                 </button>
+                <button type="button" class="document-explorer__tab-btn" data-tab="shares" title="Espace en ligne">
+                    <i data-lucide="cloud"></i>
+                </button>
                 <button type="button" class="document-explorer__tab-btn" data-tab="toc" title="Table des matières">
                     <i data-lucide="table-of-contents"></i>
                 </button>
@@ -1060,6 +1082,9 @@
             <div class="document-explorer__body">
                 <div class="document-explorer__tab-panel active" data-panel="library">
                     <div class="document-explorer__list" data-document-explorer-list></div>
+                </div>
+                <div class="document-explorer__tab-panel" data-panel="shares">
+                    <div class="document-explorer__list" data-share-explorer-list></div>
                 </div>
                 <div class="document-explorer__tab-panel" data-panel="toc">
                     <div class="document-explorer__toc" data-document-toc></div>
@@ -1093,7 +1118,7 @@
                                 <button id="memoOpenImportBtn" type="button" class="menu-panel-btn"><i
                                         data-lucide="import"></i> Importer</button>
                                 <button id="saveDocumentBtn" type="button" class="menu-panel-btn"><i
-                                        data-lucide="save"></i> Enregistrer</button>
+                                        data-lucide="download"></i> Exporter</button>
                                 <button id="shareBtn" type="button" class="menu-panel-btn"><i data-lucide="share-2"></i>
                                     Partager</button>
                                 <button id="renameDocumentBtn" type="button" class="menu-panel-btn"><i
@@ -1104,6 +1129,7 @@
                                     À propos</button>
                             </div>
                         </div>
+                        <div data-share-menu-slot></div>
                     </div>
                     <button id="gtTemplateModalTrigger" class="btn btn-secondary app-header-btn" type="button"
                         title="Modèles">
@@ -1205,7 +1231,7 @@
         <img src="img/logo.gif" alt="Logo Go-Toolkit" class="logo-light">
         <img src="img/logo_inverted.gif" alt="Logo Go-Toolkit" class="logo-dark">
         <strong>Module Mémo</strong>
-        <span>Version 2026.01.19.3</span>
+        <span>Version 2026.01.19.6</span>
         <span>Usage réservé à Savane Consulting.</span>
         <div class="info-actions">
             <button id="memoUpdateBtn" type="button" class="update-btn">Réinitialiser</button>
@@ -2168,8 +2194,12 @@
                 if (!shareLinkField) return;
                 if (currentShareToken) {
                     shareLinkField.value = buildShareUrl(currentShareToken);
+                    shareLinkField.style.cursor = "pointer";
+                    shareLinkField.title = "Cliquez pour copier";
                 } else {
                     shareLinkField.value = "";
+                    shareLinkField.style.cursor = "default";
+                    shareLinkField.title = "";
                 }
             }
 
@@ -2211,21 +2241,58 @@
                     if (!result || !result.payload) return false;
                     const loaded = normalizeState(result.payload);
                     if (loaded) {
+                        const newLocalId = (documentApi.generateId && documentApi.generateId()) || createId();
                         state = loaded;
                         currentShareToken = token;
+
+                        // Import locally
+                        const docTitle = getDocumentTitleFromState(state);
+                        await documentApi.upsertRecord({
+                            id: newLocalId,
+                            app: "memo",
+                            title: docTitle,
+                            payload: buildSharePayload(), // This uses current 'state' data
+                            updatedAt: new Date().toISOString()
+                        });
+
+                        // Add to share history
+                        if (window.goToolkitShareHistory) {
+                            await window.goToolkitShareHistory.upsertRecord("memo", {
+                                token: token,
+                                title: docTitle,
+                                updatedAt: new Date().toISOString()
+                            });
+                        }
+
+                        activeDocumentId = newLocalId;
+
+                        // Clean URL
+                        try {
+                            const url = new URL(window.location.href);
+                            url.searchParams.delete(SHARE_QUERY_PARAM);
+                            window.history.replaceState({}, "", url.toString());
+                        } catch (e) { }
+
                         renderTabs();
                         setActiveTab(state.activeTabId);
-                        activeDocumentId = token;
+
                         upsertOpenDocument({
-                            id: token,
-                            title: getDocumentTitleFromState(state),
+                            id: activeDocumentId,
+                            title: docTitle,
                             payload: buildSharePayload(),
                             updatedAt: new Date().toISOString()
                         });
+
                         renderDocumentTabs();
                         syncAssistPresetFromState();
                         syncShareLink();
-                        updateShareMenuStatus("Lien chargé.", "");
+                        updateShareMenuStatus("Importé depuis le lien.", "");
+
+                        // Refresh library and shares list if sidebar is open
+                        if (documentPanelInstance) {
+                            documentPanelInstance.refreshIndicators();
+                        }
+
                         return true;
                     }
                 } catch (err) {
@@ -3524,6 +3591,17 @@
 
             shareUpdateBtn?.addEventListener("click", () => {
                 handleShareUpdate();
+            });
+
+            shareLinkField?.addEventListener("click", () => {
+                if (!shareLinkField.value) return;
+                shareLinkField.select();
+                navigator.clipboard.writeText(shareLinkField.value).then(() => {
+                    showToast("Lien copié dans le presse-papier");
+                }).catch(() => {
+                    document.execCommand("copy");
+                    showToast("Lien copié");
+                });
             });
 
             templateModalTrigger?.addEventListener("click", () => openTemplateModal("create"));

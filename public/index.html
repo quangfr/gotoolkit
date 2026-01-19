@@ -2265,9 +2265,23 @@
                     return [];
                 }
                 const records = await shareHistory.getRecords() || {};
-                return Object.entries(records)
-                    .filter(([app, record]) => APP_DEFINITIONS[app] && record?.token)
-                    .map(([app, record]) => ({ app, record }));
+                const flat = [];
+                Object.entries(records).forEach(([app, appData]) => {
+                    if (APP_DEFINITIONS[app]) {
+                        if (appData && typeof appData === "object" && !appData.token) {
+                            // Support for the new structure (keyed by token)
+                            Object.values(appData).forEach(record => {
+                                if (record?.token) {
+                                    flat.push({ app, record });
+                                }
+                            });
+                        } else if (appData?.token) {
+                            // Support for legacy single record structure
+                            flat.push({ app, record: appData });
+                        }
+                    }
+                });
+                return flat;
             }
 
             function buildShareUrl(definition, token) {
@@ -2321,7 +2335,7 @@
                     } catch (err) {
                         console.warn("Suppression distante impossible", err);
                     }
-                    await shareHistory?.removeRecord?.(app);
+                    await shareHistory?.removeRecord?.(app, record.token);
                     refreshGallery().catch(() => { /* noop */ });
                 });
                 card.appendChild(pinBtn);

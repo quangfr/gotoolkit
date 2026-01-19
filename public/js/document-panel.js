@@ -167,9 +167,11 @@
         const resizer = resolveElement(opts.resizer);
         const toggleBtn = resolveElement(opts.toggleButton);
         const listEl = sidebar.querySelector("[data-document-explorer-list]");
+        const shareListEl = sidebar.querySelector("[data-share-explorer-list]");
         const tocEl = sidebar.querySelector("[data-document-toc]");
         const headerEl = sidebar.querySelector(".document-explorer__header");
         const libraryPanel = sidebar.querySelector('[data-panel="library"]');
+        const sharePanel = sidebar.querySelector('[data-panel="shares"]');
         const tocPanel = sidebar.querySelector('[data-panel="toc"]');
         const tabBtns = sidebar.querySelectorAll(".document-explorer__tab-btn[data-tab]");
 
@@ -186,11 +188,12 @@
         ensureSuperpowersLoaded();
 
         function setActiveTab(target, options) {
-            const nextTarget = target === "toc" ? "toc" : "library";
+            const nextTarget = target === "toc" ? "toc" : (target === "shares" ? "shares" : "library");
             const shouldRender = options?.renderToc ?? true;
 
             tabBtns.forEach(b => b.classList.toggle("active", b.dataset.tab === nextTarget));
             libraryPanel?.classList.toggle("active", nextTarget === "library");
+            sharePanel?.classList.toggle("active", nextTarget === "shares");
             tocPanel?.classList.toggle("active", nextTarget === "toc");
 
             if (actionRow) {
@@ -199,6 +202,9 @@
 
             if (nextTarget === "toc" && shouldRender) {
                 renderTOC();
+            }
+            if (nextTarget === "shares") {
+                renderSharedList();
             }
         }
 
@@ -724,6 +730,92 @@
 
                 button.appendChild(actions);
                 listEl.appendChild(button);
+            });
+
+            if (window.lucide) window.lucide.createIcons();
+        }
+
+        async function renderSharedList() {
+            if (!shareListEl) return;
+            shareListEl.innerHTML = "";
+            const shareHistory = window.goToolkitShareHistory;
+            if (!shareHistory) return;
+
+            const records = await shareHistory.getRecordsByApp("memo");
+            if (!records || !records.length) {
+                const empty = document.createElement("div");
+                empty.className = "document-explorer__empty";
+                empty.textContent = "Aucun partage";
+                shareListEl.appendChild(empty);
+                return;
+            }
+
+            records.forEach(item => {
+                const button = document.createElement("button");
+                button.type = "button";
+                button.className = "document-explorer__item document-explorer__item--non-clickable";
+                button.style.cursor = "default"; // Not clickable as requested
+
+                const label = document.createElement("span");
+                label.className = "document-explorer__item-title";
+                // Show title or use token as fallback
+                label.textContent = item.title || "Document partagé";
+                button.appendChild(label);
+
+                const openedLabel = shareHistory.formatFriendlyDate(item.updatedAt);
+                if (openedLabel) {
+                    const openedAt = document.createElement("span");
+                    openedAt.className = "document-explorer__item-opened";
+                    openedAt.textContent = openedLabel;
+                    button.appendChild(openedAt);
+                }
+
+                const actions = document.createElement("span");
+                actions.className = "document-explorer__item-actions";
+
+                const copyBtn = document.createElement("button");
+                copyBtn.type = "button";
+                copyBtn.className = "document-explorer__item-action";
+                copyBtn.innerHTML = '<i data-lucide="link"></i>';
+                copyBtn.title = "Copier le lien";
+                copyBtn.addEventListener("click", async event => {
+                    event.stopPropagation();
+                    const url = new URL(window.location.origin + window.location.pathname);
+                    url.searchParams.set("share", item.token);
+                    try {
+                        await navigator.clipboard.writeText(url.toString());
+                        document.dispatchEvent(new CustomEvent("copyToast", { detail: { message: "Lien copié" } }));
+                    } catch (err) {
+                        console.error("Failed to copy link", err);
+                    }
+                });
+                actions.appendChild(copyBtn);
+
+                const deleteBtn = document.createElement("button");
+                deleteBtn.type = "button";
+                deleteBtn.className = "document-explorer__item-action document-explorer__delete";
+                deleteBtn.innerHTML = '<i data-lucide="trash-2"></i>';
+                deleteBtn.title = "Supprimer";
+                deleteBtn.addEventListener("click", async event => {
+                    event.stopPropagation();
+                    const confirmed = window.confirm("Supprimer ce document partagé sur le serveur ?");
+                    if (!confirmed) return;
+
+                    try {
+                        const shareService = window.goToolkitShareWorker;
+                        if (shareService?.isReady) {
+                            await shareService.deleteSharePayload("memos", item.token);
+                        }
+                    } catch (err) {
+                        console.warn("Suppression distante échouée", err);
+                    }
+                    await shareHistory.removeRecord("memo", item.token);
+                    renderSharedList();
+                });
+                actions.appendChild(deleteBtn);
+
+                button.appendChild(actions);
+                shareListEl.appendChild(button);
             });
 
             if (window.lucide) window.lucide.createIcons();

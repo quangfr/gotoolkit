@@ -205,7 +205,7 @@ td .node-text.node-paragraph,
   cursor: pointer;
   border-radius: 4px;
   gap: 8px;
-  color: var(--text-muted);
+  color: var(--text-main);
 }
 
 .quote-context-menu-item:hover {

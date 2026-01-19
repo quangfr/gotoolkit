@@ -178,7 +178,7 @@ td .node-text.node-paragraph,
   cursor: pointer;
   border-radius: 4px;
   gap: 8px;
-  color: var(--text-muted);
+  color: var(--text-main);
 }
 .quote-context-menu-item:hover {
   background: var(--bg-surface-soft);
@@ -622,9 +622,7 @@ td .node-text.node-paragraph,
   stroke: var(--text-main) !important;
   fill: var(--bg-surface) !important;
 }
-.mermaid-svg-container svg path[fill=none],
-.mermaid-svg-container svg path[stroke="#1e1e1e"],
-.mermaid-svg-container svg path[stroke="rgb(30, 30, 30)"] {
+.mermaid-svg-container svg path[fill=none] {
   stroke: var(--text-main) !important;
 }
 .mermaid-svg-container svg text,
