@@ -27755,7 +27755,22 @@ img.ProseMirror-separator {
 
   // src/memo-editor/task-node.tsx
   var TaskListNode = TaskList;
-  var TaskItemNode = TaskItem.configure({
+  var TaskItemNode = TaskItem.extend({
+    addInputRules() {
+      return [
+        wrappingInputRule({
+          find: /^☒\s$/,
+          type: this.type,
+          getAttributes: () => ({ checked: true })
+        }),
+        wrappingInputRule({
+          find: /^☐\s$/,
+          type: this.type,
+          getAttributes: () => ({ checked: false })
+        })
+      ];
+    }
+  }).configure({
     nested: true
   });
 
@@ -28159,24 +28174,10 @@ img.ProseMirror-separator {
   var __iconNode27 = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
   var LoaderCircle = createLucideIcon("loader-circle", __iconNode27);
 
-  // node_modules/lucide-react/dist/esm/icons/message-square.js
-  init_define_process_env();
-  init_polyfills();
-  var __iconNode28 = [
-    [
-      "path",
-      {
-        d: "M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z",
-        key: "18887p"
-      }
-    ]
-  ];
-  var MessageSquare = createLucideIcon("message-square", __iconNode28);
-
   // node_modules/lucide-react/dist/esm/icons/pencil.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode29 = [
+  var __iconNode28 = [
     [
       "path",
       {
@@ -28186,16 +28187,37 @@ img.ProseMirror-separator {
     ],
     ["path", { d: "m15 5 4 4", key: "1mk7zo" }]
   ];
-  var Pencil = createLucideIcon("pencil", __iconNode29);
+  var Pencil = createLucideIcon("pencil", __iconNode28);
 
   // node_modules/lucide-react/dist/esm/icons/plus.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode30 = [
+  var __iconNode29 = [
     ["path", { d: "M5 12h14", key: "1ays0h" }],
     ["path", { d: "M12 5v14", key: "s699le" }]
   ];
-  var Plus = createLucideIcon("plus", __iconNode30);
+  var Plus = createLucideIcon("plus", __iconNode29);
+
+  // node_modules/lucide-react/dist/esm/icons/quote.js
+  init_define_process_env();
+  init_polyfills();
+  var __iconNode30 = [
+    [
+      "path",
+      {
+        d: "M16 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z",
+        key: "rib7q0"
+      }
+    ],
+    [
+      "path",
+      {
+        d: "M5 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z",
+        key: "1ymkrd"
+      }
+    ]
+  ];
+  var Quote = createLucideIcon("quote", __iconNode30);
 
   // node_modules/lucide-react/dist/esm/icons/rectangle-horizontal.js
   init_define_process_env();
@@ -28257,37 +28279,32 @@ img.ProseMirror-separator {
   ];
   var SquareCheckBig = createLucideIcon("square-check-big", __iconNode35);
 
-  // node_modules/lucide-react/dist/esm/icons/square-code.js
+  // node_modules/lucide-react/dist/esm/icons/square-check.js
   init_define_process_env();
   init_polyfills();
   var __iconNode36 = [
+    ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }],
+    ["path", { d: "m9 12 2 2 4-4", key: "dzmm74" }]
+  ];
+  var SquareCheck = createLucideIcon("square-check", __iconNode36);
+
+  // node_modules/lucide-react/dist/esm/icons/square-code.js
+  init_define_process_env();
+  init_polyfills();
+  var __iconNode37 = [
     ["path", { d: "m10 9-3 3 3 3", key: "1oro0q" }],
     ["path", { d: "m14 15 3-3-3-3", key: "bz13h7" }],
     ["rect", { x: "3", y: "3", width: "18", height: "18", rx: "2", key: "h1oib" }]
   ];
-  var SquareCode = createLucideIcon("square-code", __iconNode36);
+  var SquareCode = createLucideIcon("square-code", __iconNode37);
 
   // node_modules/lucide-react/dist/esm/icons/square.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode37 = [
+  var __iconNode38 = [
     ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }]
   ];
-  var Square = createLucideIcon("square", __iconNode37);
-
-  // node_modules/lucide-react/dist/esm/icons/star.js
-  init_define_process_env();
-  init_polyfills();
-  var __iconNode38 = [
-    [
-      "path",
-      {
-        d: "M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z",
-        key: "r04s7s"
-      }
-    ]
-  ];
-  var Star = createLucideIcon("star", __iconNode38);
+  var Square = createLucideIcon("square", __iconNode38);
 
   // node_modules/lucide-react/dist/esm/icons/strikethrough.js
   init_define_process_env();
@@ -32076,10 +32093,10 @@ ${promptInput.trim()}`
   init_define_process_env();
   init_polyfills();
   var ALERT_TYPES = [
-    { type: "default", label: "Citation", icon: MessageSquare, color: "var(--text-muted)" },
+    { type: "default", label: "Citation", icon: Quote, color: "var(--text-muted)" },
     { type: "NOTE", label: "Note", icon: Info, color: "var(--intent-info-border)" },
-    { type: "TIP", label: "Conseil", icon: Lightbulb, color: "var(--intent-success-border)" },
-    { type: "IMPORTANT", label: "Important", icon: Star, color: "var(--intent-important-border)" },
+    { type: "TIP", label: "Conseil", icon: Lightbulb, color: "var(--bg-text-yellow)" },
+    { type: "IMPORTANT", label: "Important", icon: SquareCheck, color: "var(--bg-text-green)" },
     { type: "WARNING", label: "Alerte", icon: TriangleAlert, color: "var(--intent-warning-border)" },
     { type: "CAUTION", label: "Attention", icon: CircleAlert, color: "var(--intent-error-border)" }
   ];
@@ -32087,45 +32104,10 @@ ${promptInput.trim()}`
     const type2 = node.attrs.type || "default";
     const alertConfig = ALERT_TYPES.find((a) => a.type === type2) || ALERT_TYPES[0];
     const Icon2 = alertConfig.icon;
-    const displayTitle = node.attrs.title || alertConfig.label;
-    if (type2 === "default") {
-      return /* @__PURE__ */ jsx(NodeViewWrapper, { as: "blockquote", className: "alert-wrapper node-blockquote", children: /* @__PURE__ */ jsx(NodeViewContent, {}) });
-    }
-    return /* @__PURE__ */ jsxs(NodeViewWrapper, { as: "blockquote", "data-type": type2, className: "alert-wrapper node-blockquote", children: [
-      /* @__PURE__ */ jsx(
-        "div",
-        {
-          className: "alert-header",
-          contentEditable: false,
-          children: /* @__PURE__ */ jsxs("div", { className: "alert-header-main", children: [
-            /* @__PURE__ */ jsx(Icon2, { size: 16, style: { color: alertConfig.color } }),
-            /* @__PURE__ */ jsx(
-              "span",
-              {
-                className: "alert-title",
-                style: { color: alertConfig.color },
-                contentEditable: true,
-                suppressContentEditableWarning: true,
-                onBlur: (e) => {
-                  const newTitle = e.target.innerText;
-                  if (newTitle !== (node.attrs.title || alertConfig.label)) {
-                    updateAttributes2({ title: newTitle });
-                  }
-                },
-                onKeyDown: (e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    e.target.blur();
-                  }
-                },
-                children: displayTitle
-              }
-            )
-          ] })
-        }
-      ),
+    return /* @__PURE__ */ jsx(NodeViewWrapper, { as: "blockquote", "data-type": type2, className: "alert-wrapper node-blockquote", children: /* @__PURE__ */ jsxs("div", { className: "alert-body", children: [
+      /* @__PURE__ */ jsx("div", { className: "alert-icon", contentEditable: false, children: /* @__PURE__ */ jsx(Icon2, { size: 18, style: { color: alertConfig.color } }) }),
       /* @__PURE__ */ jsx("div", { className: "alert-content", children: /* @__PURE__ */ jsx(NodeViewContent, {}) })
-    ] });
+    ] }) });
   };
   var Alert = Node3.create({
     name: "blockquote",
@@ -32220,6 +32202,31 @@ ${promptInput.trim()}`
         }),
         wrappingInputRule({
           find: /^>attention\s$/,
+          type: this.type,
+          getAttributes: () => ({ type: "CAUTION" })
+        }),
+        wrappingInputRule({
+          find: /^>ℹ️\s$/,
+          type: this.type,
+          getAttributes: () => ({ type: "NOTE" })
+        }),
+        wrappingInputRule({
+          find: /^>💡\s$/,
+          type: this.type,
+          getAttributes: () => ({ type: "TIP" })
+        }),
+        wrappingInputRule({
+          find: /^>✅\s$/,
+          type: this.type,
+          getAttributes: () => ({ type: "IMPORTANT" })
+        }),
+        wrappingInputRule({
+          find: /^>⚠️\s$/,
+          type: this.type,
+          getAttributes: () => ({ type: "WARNING" })
+        }),
+        wrappingInputRule({
+          find: /^>🚨\s$/,
           type: this.type,
           getAttributes: () => ({ type: "CAUTION" })
         }),
@@ -34981,8 +34988,25 @@ ${innerMarkdown}
         };
         const convertEditorMarkdownToHtml = (markdown) => {
           if (typeof markdown !== "string") return "";
-          const shortAlertRegex = /^>(note|alerte|warning|important|conseil|tip|attention|caution|remarque)\s(.*)$/gmi;
-          const markdownWithShortAlerts = markdown.replace(shortAlertRegex, (_match, type2, content2) => {
+          const markdownWithUnicodeTasks = markdown.replace(/^[ \t]*([☐☒])\s+(.*)$/gm, (match, char, content2) => {
+            const checked = char === "\u2612";
+            return `<ul data-type="taskList"><li data-type="taskItem" data-checked="${checked}"><p>${content2}</p></li></ul>`;
+          });
+          const emojiAlertRegex = /^[ \t]*>(ℹ️|💡|✅|⚠️|🚨)\s?([^\n]*(?:\n[ \t]*>.*)*)/gm;
+          const markdownWithEmojiAlerts = markdownWithUnicodeTasks.replace(emojiAlertRegex, (_match, emoji2, content2) => {
+            const emojiMap = {
+              "\u2139\uFE0F": "NOTE",
+              "\u{1F4A1}": "TIP",
+              "\u2705": "IMPORTANT",
+              "\u26A0\uFE0F": "WARNING",
+              "\u{1F6A8}": "CAUTION"
+            };
+            const normalizedType = emojiMap[emoji2] || "NOTE";
+            const cleanContent = content2.replace(/^[ \t]*> ?/gm, "").trim();
+            return `<blockquote data-type="${normalizedType}">${cleanContent}</blockquote>`;
+          });
+          const shortAlertRegex = /^[ \t]*>(note|alerte|warning|important|conseil|tip|attention|caution|remarque)\s(.*)$/gmi;
+          const markdownWithShortAlerts = markdownWithEmojiAlerts.replace(shortAlertRegex, (_match, type2, content2) => {
             const typeMap = {
               "note": "NOTE",
               "alerte": "WARNING",
@@ -34996,7 +35020,7 @@ ${innerMarkdown}
             };
             return `<blockquote data-type="${typeMap[type2.toLowerCase()] || "NOTE"}">${content2}</blockquote>`;
           });
-          const alertRegex = /^> ?\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION|ALERTE|ATTENTION)(?:\s+(.*))?\]\s*\n((?:>.*\n?)*)/gmi;
+          const alertRegex = /^[ \t]*> ?\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION|ALERTE|ATTENTION)(?:\s+(.*))?\]\s*\n((?:>.*\n?)*)/gmi;
           const markdownWithAlerts = markdownWithShortAlerts.replace(alertRegex, (_match, type2, title, content2) => {
             const typeMap = {
               "NOTE": "NOTE",
@@ -55608,25 +55632,27 @@ ${innerMarkdown}
       case "blockquote": {
         const type2 = ((_b = node.attrs) == null ? void 0 : _b.type) || "default";
         const colors = getAlertColors(type2);
-        const isAlert = type2 !== "default";
+        const emojiMap = {
+          "NOTE": "\u2139\uFE0F ",
+          "TIP": "\u{1F4A1} ",
+          "IMPORTANT": "\u2705 ",
+          "WARNING": "\u26A0\uFE0F ",
+          "CAUTION": "\u{1F6A8} ",
+          "default": "\u275E "
+        };
+        const emoji2 = emojiMap[type2] || "";
         const tableChildren = [];
-        if (isAlert) {
-          const alertConfig = ALERT_TYPES.find((a) => a.type === type2);
-          const title = node.attrs.title || (alertConfig == null ? void 0 : alertConfig.label) || type2;
-          tableChildren.push(new Paragraph2({
-            children: [new TextRun({
-              text: title,
-              bold: true,
-              color: colors.border.replace("#", ""),
-              font: DEFAULT_FONT
-            })],
-            spacing: { before: 100, after: 100 }
-          }));
-        }
         if (node.content) {
-          for (const child of node.content) {
+          for (let i = 0; i < node.content.length; i++) {
+            const child = node.content[i];
             const transformed = await transformNode(child, editor);
             if (transformed) {
+              if (i === 0 && emoji2 && transformed instanceof Paragraph2) {
+                const children = transformed.root && transformed.root[1] ? transformed.root[1] : [];
+                if (Array.isArray(children)) {
+                  children.unshift(new TextRun({ text: emoji2, font: DEFAULT_FONT }));
+                }
+              }
               if (Array.isArray(transformed)) tableChildren.push(...transformed);
               else tableChildren.push(transformed);
             }
@@ -55638,9 +55664,8 @@ ${innerMarkdown}
             new TableRow2({
               children: [
                 new TableCell2({
-                  shading: isAlert ? { fill: colors.bg.replace("#", ""), type: ShadingType.CLEAR } : void 0,
                   borders: {
-                    left: { style: BorderStyle.SINGLE, size: 24, color: isAlert ? colors.border.replace("#", "") : "E2E8F0" },
+                    left: { style: BorderStyle.SINGLE, size: 24, color: isAlert(type2) ? colors.border.replace("#", "") : "E2E8F0" },
                     top: { style: BorderStyle.NIL },
                     right: { style: BorderStyle.NIL },
                     bottom: { style: BorderStyle.NIL }
@@ -55843,14 +55868,19 @@ ${innerMarkdown}
     }
     return void 0;
   }
+  function isAlert(type2) {
+    return type2 !== "default";
+  }
   function getAlertColors(type2) {
     switch (type2) {
       case "NOTE":
         return { border: "#3b82f6", bg: "#eff6ff" };
       case "TIP":
-        return { border: "#22c55e", bg: "#f0fdf4" };
+        return { border: "#eab308", bg: "#fefce8" };
+      // Yellow
       case "IMPORTANT":
-        return { border: "#a855f7", bg: "#faf5ff" };
+        return { border: "#22c55e", bg: "#f0fdf4" };
+      // Green
       case "WARNING":
         return { border: "#eab308", bg: "#fefce8" };
       case "CAUTION":
@@ -56097,17 +56127,17 @@ lucide-react/dist/esm/icons/lightbulb.js:
 lucide-react/dist/esm/icons/link.js:
 lucide-react/dist/esm/icons/list.js:
 lucide-react/dist/esm/icons/loader-circle.js:
-lucide-react/dist/esm/icons/message-square.js:
 lucide-react/dist/esm/icons/pencil.js:
 lucide-react/dist/esm/icons/plus.js:
+lucide-react/dist/esm/icons/quote.js:
 lucide-react/dist/esm/icons/rectangle-horizontal.js:
 lucide-react/dist/esm/icons/redo-2.js:
 lucide-react/dist/esm/icons/send.js:
 lucide-react/dist/esm/icons/shapes.js:
 lucide-react/dist/esm/icons/square-check-big.js:
+lucide-react/dist/esm/icons/square-check.js:
 lucide-react/dist/esm/icons/square-code.js:
 lucide-react/dist/esm/icons/square.js:
-lucide-react/dist/esm/icons/star.js:
 lucide-react/dist/esm/icons/strikethrough.js:
 lucide-react/dist/esm/icons/table.js:
 lucide-react/dist/esm/icons/tag.js:

@@ -3273,9 +3273,32 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       const convertEditorMarkdownToHtml = (markdown: string) => {
         if (typeof markdown !== 'string') return '';
 
+        // Handle unicode tasks at beginning of lines, allowing optional leading whitespace
+        const markdownWithUnicodeTasks = markdown.replace(/^[ \t]*([☐☒])\s+(.*)$/gm, (match, char, content) => {
+          const checked = char === '☒';
+          // Tiptap's TaskList and TaskItem expect this structure to be parsed correctly as task items
+          return `<ul data-type="taskList"><li data-type="taskItem" data-checked="${checked}"><p>${content}</p></li></ul>`;
+        });
+
+        // Pre-process emoji alert format: >ℹ️, >💡, etc. (supports multi-line with >)
+        // Allowing leading whitespace and optional space after emoji
+        const emojiAlertRegex = /^[ \t]*>(ℹ️|💡|✅|⚠️|🚨)\s?([^\n]*(?:\n[ \t]*>.*)*)/gm;
+        const markdownWithEmojiAlerts = markdownWithUnicodeTasks.replace(emojiAlertRegex, (_match, emoji, content) => {
+          const emojiMap: any = {
+            'ℹ️': 'NOTE',
+            '💡': 'TIP',
+            '✅': 'IMPORTANT',
+            '⚠️': 'WARNING',
+            '🚨': 'CAUTION'
+          };
+          const normalizedType = emojiMap[emoji] || 'NOTE';
+          const cleanContent = content.replace(/^[ \t]*> ?/gm, '').trim();
+          return `<blockquote data-type="${normalizedType}">${cleanContent}</blockquote>`;
+        });
+
         // Pre-process newer alert format: >note, >alerte, etc. (case insensitive)
-        const shortAlertRegex = /^>(note|alerte|warning|important|conseil|tip|attention|caution|remarque)\s(.*)$/gmi;
-        const markdownWithShortAlerts = markdown.replace(shortAlertRegex, (_match, type, content) => {
+        const shortAlertRegex = /^[ \t]*>(note|alerte|warning|important|conseil|tip|attention|caution|remarque)\s(.*)$/gmi;
+        const markdownWithShortAlerts = markdownWithEmojiAlerts.replace(shortAlertRegex, (_match, type, content) => {
           const typeMap: any = {
             'note': 'NOTE',
             'alerte': 'WARNING',
@@ -3291,7 +3314,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         });
 
         // Pre-process GitHub style alerts: > [!NOTE] Custom Title -> <blockquote data-type="NOTE" data-title="Custom Title">
-        const alertRegex = /^> ?\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION|ALERTE|ATTENTION)(?:\s+(.*))?\]\s*\n((?:>.*\n?)*)/gmi;
+        const alertRegex = /^[ \t]*> ?\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION|ALERTE|ATTENTION)(?:\s+(.*))?\]\s*\n((?:>.*\n?)*)/gmi;
         const markdownWithAlerts = markdownWithShortAlerts.replace(alertRegex, (_match, type, title, content) => {
           const typeMap: any = {
             'NOTE': 'NOTE',

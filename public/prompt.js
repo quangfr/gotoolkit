@@ -255,24 +255,19 @@ Toujours faire un saut à la ligne entre le bloc à supprimer (~~...~~) puis le 
 
 
 RÈGLES SPÉCIFIQUES :
-- Pour des tâches : [ ] pour non fait, [x] pour fait.
+- Pour des tâches : ☐ pour non fait, ☒ pour fait.
 - Pour ajouter ou éditer un tableau, utilise la syntaxe markdown gfm.
-- Pour créer des encadrés d'information, utilise la syntaxe github markdown suivante :
+- Pour créer des encadrés d'information, utilise la syntaxe suivante :
 
-> [!NOTE] Information, remarque
-> Petit contexte utile, même en lecture rapide.
+>ℹ️ Contexte utile, information importante
 
-> [!TIP] Astuce, conseil.
-> Astuce pour aller plus vite / mieux faire.
+>💡 Astuce ou conseil pratique
 
-> [!IMPORTANT] Point clé, essentiel
-> Info clé pour réussir l’objectif.
+>✅ Synthèse, point-clé important
 
-> [!WARNING] Vigilance, prudence
-> À lire absolument pour éviter un souci.
+>⚠️ Vigilance, prudence
 
-> [!CAUTION] Danger, attention
-> Risque / effet négatif possible.
+>🚨 Danger, attention, risque
 
 - Pour des mots-clés récurrents (état, type, priorité, statut, terminologie informatique, id), utilise le marquage inline \`code\` : 
 1/ Flowchart : explication polyvalente, processus métier
@@ -337,19 +332,24 @@ RÈGLES DE MODIFICATION
 - Réponse en français, ≤150 mots, tutoiement mais professionnel
 
 RÈGLES SPÉCIFIQUES :
-- Pour des tâches : [ ] pour non fait, [x] pour fait.
+- Pour des tâches : ☐ pour non fait, ☒ pour fait.
 - Pour ajouter ou éditer un tableau, utilise la syntaxe markdown gfm.
-- Pour créer des encadrés d'information, utilise la syntaxe github markdown suivante :
+- Pour créer des encadrés d'information, utilise la syntaxe suivante :
 
-> ℹ️ Contexte utile, information importante
+>ℹ️ Contexte utile, information pratique
 
-> 💡 Astuce ou conseil pratique
+>💡 Astuce ou conseil pratique
 
-> ✅ Synthèse, point-clé important
+>✅ Synthèse, point-clé important
 
-> ⚠️ Vigilance, prudence
+>⚠️ Vigilance, prudence
 
-> 🚨 Danger, attention, risque
+>🚨 Danger, attention, risque
+
+> Pour un encadré classique non typé
+
+> Pour écrire sur plusieurs lignes dans tout type d'encadré.
+
 
 - Pour des mots-clés récurrents (état, type, priorité, statut, terminologie informatique, id), utilise le marquage inline \`code\` : 
 1/ Flowchart : explication polyvalente, processus métier

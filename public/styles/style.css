@@ -1447,7 +1447,7 @@ label {
   gap: 10px;
   padding: 12px;
   z-index: 2001;
-  overflow: hidden;
+  overflow: visible;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   transform: translateX(100%);
 }
@@ -1467,13 +1467,14 @@ label {
 
 .chat-resizer {
   position: absolute;
-  left: -3px;
+  left: -5px;
   top: 0;
-  width: 6px;
+  width: 10px;
   height: 100%;
   cursor: col-resize;
   background: transparent;
   touch-action: none;
+  z-index: 100;
 }
 #fileMenuBtn,#assistLauncherBtn{
   background: var(--bg-surface);
@@ -1485,6 +1486,12 @@ label {
 
 .chat-resizer:hover {
   background: rgba(0, 0, 0, 0.05);
+}
+
+.is-resizing,
+.is-resizing * {
+  cursor: col-resize !important;
+  user-select: none !important;
 }
 
 .chat-header {
@@ -2494,7 +2501,8 @@ label {
 }
 
 .chat-send-btn {
-  min-width: 48px;
+  min-width: 36px;
+  padding: 6px 0px;
 }
 
 .chat-toggle-button {

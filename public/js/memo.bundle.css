@@ -64,38 +64,27 @@
   background-color: var(--bg-surface-soft);
   color: var(--color-primary);
 }
-.ProseMirror blockquote[data-type] {
-  padding-left: 0;
+.alert-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
 }
-.alert-header {
+.alert-icon {
   display: flex;
   align-items: center;
-  gap: 8px;
-  user-select: none;
-  padding-left: 0;
+  margin-top: 3px;
+  flex-shrink: 0;
 }
 .alert-content {
-  margin-top: 4px;
-  padding-bottom: 10px;
-  padding-left: 0.75rem;
+  flex: 1;
 }
-.alert-header-main {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  font-weight: 600;
-  font-size: 0.875rem;
+.alert-content p,
+.alert-content .node-text.node-paragraph:first-child {
+  margin-top: 0 !important;
 }
-.alert-title {
-  cursor: text;
-  outline: none;
-  transition: background-color 0.2s;
-  padding: 2px 6px;
-  border-radius: 4px;
-}
-.alert-content {
-  margin-top: 4px;
-  padding-bottom: 10px;
+.alert-content p,
+.alert-content .node-text.node-paragraph:last-child {
+  margin-bottom: 0 !important;
 }
 .node-heading-wrapper {
   position: relative;
@@ -1054,17 +1043,14 @@ button.btn-secondary {
 }
 .simple-editor .ProseMirror blockquote {
   border-left: 5px solid var(--intent-quote-border);
-  padding-left: 1rem;
+  padding: 12px 10px;
   font-style: normal;
   color: var(--text-main);
   margin: 1rem 0;
   border-radius: 4px;
   position: relative;
   transition: all 0.2s;
-  background-color: var(--bg-surface);
-  border-right: 2px solid var(--intent-quote-border);
-  border-top: 2px solid var(--intent-quote-border);
-  border-bottom: 2px solid var(--intent-quote-border);
+  background-color: var(--bg-surface-soft);
 }
 li .node-text.node-paragraph {
   padding-left: 0px;
@@ -1072,50 +1058,32 @@ li .node-text.node-paragraph {
 .ProseMirror blockquote[data-type=default] {
   border-left-color: var(--intent-quote-border);
   border-left-width: 5px;
-  background-color: var(--bg-surface);
-  border-right: 2px solid var(--intent-quote-border);
-  border-top: 2px solid var(--intent-quote-border);
-  border-bottom: 2px solid var(--intent-quote-border);
+  background-color: var(--bg-surface-soft);
 }
 .ProseMirror blockquote[data-type=NOTE] {
   border-left-color: var(--intent-info-border);
   border-left-width: 5px;
-  border-right: 2px solid var(--intent-info-border);
-  border-top: 2px solid var(--intent-info-border);
-  border-bottom: 2px solid var(--intent-info-border);
-  background-color: var(--bg-surface);
+  background-color: var(--bg-surface-soft);
 }
 .ProseMirror blockquote[data-type=TIP] {
-  border-left-color: var(--intent-success-border);
+  border-left-color: var(--bg-text-yellow);
   border-left-width: 5px;
-  border-right: 2px solid var(--intent-success-border);
-  border-top: 2px solid var(--intent-success-border);
-  border-bottom: 2px solid var(--intent-success-border);
-  background-color: var(--bg-surface);
+  background-color: var(--bg-surface-soft);
 }
 .ProseMirror blockquote[data-type=IMPORTANT] {
-  border-left-color: var(--intent-important-border);
+  border-left-color: var(--bg-text-green);
   border-left-width: 5px;
-  border-right: 2px solid var(--intent-important-border);
-  border-top: 2px solid var(--intent-important-border);
-  border-bottom: 2px solid var(--intent-important-border);
-  background-color: var(--bg-surface);
+  background-color: var(--bg-surface-soft);
 }
 .ProseMirror blockquote[data-type=WARNING] {
   border-left-color: var(--intent-warning-border);
   border-left-width: 5px;
-  border-right: 2px solid var(--intent-warning-border);
-  border-top: 2px solid var(--intent-warning-border);
-  border-bottom: 2px solid var(--intent-warning-border);
-  background-color: var(--bg-surface);
+  background-color: var(--bg-surface-soft);
 }
 .ProseMirror blockquote[data-type=CAUTION] {
   border-left-color: var(--intent-error-border);
   border-left-width: 5px;
-  border-right: 2px solid var(--intent-error-border);
-  border-top: 2px solid var(--intent-error-border);
-  border-bottom: 2px solid var(--intent-error-border);
-  background-color: var(--bg-surface);
+  background-color: var(--bg-surface-soft);
 }
 .bubble-menu {
   display: flex;

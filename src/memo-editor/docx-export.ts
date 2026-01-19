@@ -171,29 +171,32 @@ async function transformNode(node: any, editor: any): Promise<any> {
       // Handle Alerts and standard blockquotes
       const type = node.attrs?.type || 'default';
       const colors = getAlertColors(type);
-      const isAlert = type !== 'default';
+
+      const emojiMap: Record<string, string> = {
+        'NOTE': 'ℹ️ ',
+        'TIP': '💡 ',
+        'IMPORTANT': '✅ ',
+        'WARNING': '⚠️ ',
+        'CAUTION': '🚨 ',
+        'default': '❞ '
+      };
       
+      const emoji = emojiMap[type] || '';
       const tableChildren: any[] = [];
       
-      // Add Title for Alerts
-      if (isAlert) {
-        const alertConfig = ALERT_TYPES.find(a => a.type === type);
-        const title = node.attrs.title || alertConfig?.label || type;
-        tableChildren.push(new Paragraph({
-          children: [new TextRun({ 
-            text: title, 
-            bold: true, 
-            color: colors.border.replace('#', ''),
-            font: DEFAULT_FONT 
-          })],
-          spacing: { before: 100, after: 100 }
-        }));
-      }
-
       if (node.content) {
-        for (const child of node.content) {
+        for (let i = 0; i < node.content.length; i++) {
+          const child = node.content[i];
           const transformed = await transformNode(child, editor);
           if (transformed) {
+            // Prepend emoji to the first paragraph of content
+            if (i === 0 && emoji && (transformed instanceof Paragraph)) {
+              const children = (transformed as any).root && (transformed as any).root[1] ? (transformed as any).root[1] : [];
+              if (Array.isArray(children)) {
+                children.unshift(new TextRun({ text: emoji, font: DEFAULT_FONT }));
+              }
+            }
+
             if (Array.isArray(transformed)) tableChildren.push(...transformed);
             else tableChildren.push(transformed);
           }
@@ -206,9 +209,8 @@ async function transformNode(node: any, editor: any): Promise<any> {
           new TableRow({
             children: [
               new TableCell({
-                shading: isAlert ? { fill: colors.bg.replace('#', ''), type: ShadingType.CLEAR } : undefined,
                 borders: {
-                  left: { style: BorderStyle.SINGLE, size: 24, color: isAlert ? colors.border.replace('#', '') : "E2E8F0" },
+                  left: { style: BorderStyle.SINGLE, size: 24, color: isAlert(type) ? colors.border.replace('#', '') : "E2E8F0" },
                   top: { style: BorderStyle.NIL },
                   right: { style: BorderStyle.NIL },
                   bottom: { style: BorderStyle.NIL },
@@ -437,11 +439,15 @@ function resolveDocxColor(raw?: string): string | undefined {
   return undefined;
 }
 
+function isAlert(type: string): boolean {
+  return type !== 'default';
+}
+
 function getAlertColors(type: string): { border: string, bg: string } {
   switch (type) {
     case 'NOTE': return { border: '#3b82f6', bg: '#eff6ff' };
-    case 'TIP': return { border: '#22c55e', bg: '#f0fdf4' };
-    case 'IMPORTANT': return { border: '#a855f7', bg: '#faf5ff' };
+    case 'TIP': return { border: '#eab308', bg: '#fefce8' }; // Yellow
+    case 'IMPORTANT': return { border: '#22c55e', bg: '#f0fdf4' }; // Green
     case 'WARNING': return { border: '#eab308', bg: '#fefce8' };
     case 'CAUTION': return { border: '#ef4444', bg: '#fef2f2' };
     default: return { border: '#e2e8f0', bg: '#f8fafc' };

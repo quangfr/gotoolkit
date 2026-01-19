@@ -1,14 +1,14 @@
 import { Node, mergeAttributes, wrappingInputRule } from '@tiptap/core';
 import { ReactNodeViewRenderer, NodeViewWrapper, NodeViewContent } from '@tiptap/react';
 import { 
-  Info, Lightbulb, AlertTriangle, AlertCircle, MessageSquare, Star 
+  Info, Lightbulb, AlertTriangle, AlertCircle, Quote, SquareCheck 
 } from 'lucide-react';
 
 export const ALERT_TYPES = [
-  { type: 'default', label: 'Citation', icon: MessageSquare, color: 'var(--text-muted)' },
+  { type: 'default', label: 'Citation', icon: Quote, color: 'var(--text-muted)' },
   { type: 'NOTE', label: 'Note', icon: Info, color: 'var(--intent-info-border)' },
-  { type: 'TIP', label: 'Conseil', icon: Lightbulb, color: 'var(--intent-success-border)' },
-  { type: 'IMPORTANT', label: 'Important', icon: Star, color: 'var(--intent-important-border)' },
+  { type: 'TIP', label: 'Conseil', icon: Lightbulb, color: 'var(--bg-text-yellow)' },
+  { type: 'IMPORTANT', label: 'Important', icon: SquareCheck, color: 'var(--bg-text-green)' },
   { type: 'WARNING', label: 'Alerte', icon: AlertTriangle, color: 'var(--intent-warning-border)' },
   { type: 'CAUTION', label: 'Attention', icon: AlertCircle, color: 'var(--intent-error-border)' },
 ];
@@ -17,48 +17,16 @@ const AlertComponent = ({ node, updateAttributes }: any) => {
   const type = node.attrs.type || 'default';
   const alertConfig = ALERT_TYPES.find(a => a.type === type) || ALERT_TYPES[0];
   const Icon = alertConfig.icon;
-  const displayTitle = node.attrs.title || alertConfig.label;
-
-  if (type === 'default') {
-    return (
-      <NodeViewWrapper as="blockquote" className="alert-wrapper node-blockquote">
-        <NodeViewContent />
-      </NodeViewWrapper>
-    );
-  }
 
   return (
     <NodeViewWrapper as="blockquote" data-type={type} className="alert-wrapper node-blockquote">
-      <div 
-        className="alert-header" 
-        contentEditable={false}
-      >
-        <div className="alert-header-main">
-          <Icon size={16} style={{ color: alertConfig.color }} />
-          <span
-            className="alert-title"
-            style={{ color: alertConfig.color }}
-            contentEditable={true}
-            suppressContentEditableWarning={true}
-            onBlur={(e: any) => {
-              const newTitle = e.target.innerText;
-              if (newTitle !== (node.attrs.title || alertConfig.label)) {
-                updateAttributes({ title: newTitle });
-              }
-            }}
-            onKeyDown={(e: any) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                e.target.blur();
-              }
-            }}
-          >
-            {displayTitle}
-          </span>
+      <div className="alert-body">
+        <div className="alert-icon" contentEditable={false}>
+          <Icon size={18} style={{ color: alertConfig.color }} />
         </div>
-      </div>
-      <div className="alert-content">
-        <NodeViewContent />
+        <div className="alert-content">
+          <NodeViewContent />
+        </div>
       </div>
     </NodeViewWrapper>
   );
@@ -163,6 +131,31 @@ export const Alert = Node.create({
       }),
       wrappingInputRule({
         find: /^>attention\s$/,
+        type: this.type,
+        getAttributes: () => ({ type: 'CAUTION' }),
+      }),
+      wrappingInputRule({
+        find: /^>ℹ️\s$/,
+        type: this.type,
+        getAttributes: () => ({ type: 'NOTE' }),
+      }),
+      wrappingInputRule({
+        find: /^>💡\s$/,
+        type: this.type,
+        getAttributes: () => ({ type: 'TIP' }),
+      }),
+      wrappingInputRule({
+        find: /^>✅\s$/,
+        type: this.type,
+        getAttributes: () => ({ type: 'IMPORTANT' }),
+      }),
+      wrappingInputRule({
+        find: /^>⚠️\s$/,
+        type: this.type,
+        getAttributes: () => ({ type: 'WARNING' }),
+      }),
+      wrappingInputRule({
+        find: /^>🚨\s$/,
         type: this.type,
         getAttributes: () => ({ type: 'CAUTION' }),
       }),
