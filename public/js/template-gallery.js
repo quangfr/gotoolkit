@@ -1,6 +1,6 @@
 (function () {
     const TEMPLATES_COLLECTION = "template-memos";
-    const TEMPLATE_SYNC_PERIOD = 24 * 60 * 60 * 1000; // 24h
+    const TEMPLATE_SYNC_PERIOD = 0; // 0 = always fetch on load (no cache)
     let cloudTemplates = [];
     let superpowersMap = [];
 
@@ -44,7 +44,7 @@
                 description: doc.payload?.description || "",
                 category: doc.payload?.category || "",
                 superpowers: doc.payload?.superpowers || [],
-                html: doc.payload?.html || "",
+                // html field intentionally omitted for gallery - loaded on demand
                 updatedAt: doc.meta?.updatedDate || doc.meta?.updatedAt || ""
             }));
             await window.goToolkitTemplateStore.clear(); await window.goToolkitTemplateStore.saveAll(mapped);
@@ -54,6 +54,20 @@
             cloudTemplates = await window.goToolkitTemplateStore.list();
         }
     }
+
+    async function loadTemplateContent(templateId) {
+        // Load full template content on demand
+        try {
+            const fetched = await window.goToolkitShareWorker.getShare(TEMPLATES_COLLECTION, templateId);
+            return fetched?.payload?.html || "";
+        } catch (err) {
+            console.error("Failed to load template content", err);
+            return "";
+        }
+    }
+
+    // Expose for external use
+    window.goToolkitTemplateLoadContent = loadTemplateContent;
 
     function escapeHtml(value) {
         return String(value || "")

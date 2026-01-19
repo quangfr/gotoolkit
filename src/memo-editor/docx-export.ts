@@ -1,21 +1,22 @@
 
-import { 
-  Document, 
-  Packer, 
-  Paragraph, 
-  TextRun, 
-  HeadingLevel, 
-  Table, 
-  TableRow, 
-  TableCell, 
-  VerticalAlign, 
-  BorderStyle, 
-  WidthType, 
+import {
+  Document,
+  Packer,
+  Paragraph,
+  TextRun,
+  HeadingLevel,
+  Table,
+  TableRow,
+  TableCell,
+  VerticalAlign,
+  BorderStyle,
+  WidthType,
   AlignmentType,
   ShadingType,
   ImageRun,
   ExternalHyperlink,
-  UnderlineType
+  UnderlineType,
+  SectionType
 } from "docx";
 import { saveAs } from "file-saver"; // I'll need to install file-saver or use Blob
 import { ALERT_TYPES } from "./blockquote-node";
@@ -44,6 +45,11 @@ export async function exportEditorToDocx(editor: any, _title: string = "Memo") {
   }
 
   const doc = new Document({
+    features: {
+      updateFields: true,
+    },
+    footnotes: undefined,
+    comments: undefined,
     styles: {
       default: {
         document: {
@@ -109,10 +115,28 @@ export async function exportEditorToDocx(editor: any, _title: string = "Memo") {
     },
     sections: [
       {
-        properties: {},
+        properties: {
+          type: SectionType.CONTINUOUS,
+        },
         children: children,
       },
     ],
+    numbering: {
+      config: [
+        {
+          reference: "main-numbering",
+          levels: [
+            {
+              level: 0,
+              format: "decimal",
+              text: "%1.",
+              alignment: AlignmentType.LEFT,
+              start: 1,
+            },
+          ],
+        },
+      ],
+    },
   });
 
   const blob = await Packer.toBlob(doc);

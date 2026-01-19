@@ -49144,6 +49144,13 @@ ${innerMarkdown}
       );
     }
   };
+  var SectionType = {
+    NEXT_PAGE: "nextPage",
+    NEXT_COLUMN: "nextColumn",
+    CONTINUOUS: "continuous",
+    EVEN_PAGE: "evenPage",
+    ODD_PAGE: "oddPage"
+  };
   var SectionTypeAttributes = class extends XmlAttributeComponent {
     constructor() {
       super(...arguments);
@@ -55471,6 +55478,11 @@ ${innerMarkdown}
       }
     }
     const doc3 = new File({
+      features: {
+        updateFields: true
+      },
+      footnotes: void 0,
+      comments: void 0,
       styles: {
         default: {
           document: {
@@ -55540,10 +55552,28 @@ ${innerMarkdown}
       },
       sections: [
         {
-          properties: {},
+          properties: {
+            type: SectionType.CONTINUOUS
+          },
           children
         }
-      ]
+      ],
+      numbering: {
+        config: [
+          {
+            reference: "main-numbering",
+            levels: [
+              {
+                level: 0,
+                format: "decimal",
+                text: "%1.",
+                alignment: AlignmentType.LEFT,
+                start: 1
+              }
+            ]
+          }
+        ]
+      }
     });
     const blob = await Packer.toBlob(doc3);
     return blob;

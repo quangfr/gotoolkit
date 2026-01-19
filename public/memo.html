@@ -2517,7 +2517,7 @@
                 }
             }
 
-            async function getAutoDocumentName() {
+            async function getAutoDocumentName(templateName = null) {
                 const explorer = getExplorer();
                 const records = await window.goToolkitDocumentApi?.getAllRecords?.();
                 const names = new Set();
@@ -2541,7 +2541,10 @@
                 });
                 let maxIndex = 0;
                 names.forEach(name => {
-                    const match = name.match(/^Doc\s+(\d+)$/i);
+                    const pattern = templateName
+                        ? new RegExp(`^Doc\\s+(\\d+)\\s+\\[${escapeRegExp(templateName)}\\]$`, 'i')
+                        : /^Doc\s+(\d+)$/i;
+                    const match = name.match(pattern);
                     if (match) {
                         const num = Number(match[1]);
                         if (Number.isFinite(num)) {
@@ -2550,12 +2553,20 @@
                     }
                 });
                 let candidateIndex = maxIndex + 1;
-                let candidateName = `Doc ${candidateIndex}`;
+                let candidateName = templateName
+                    ? `Doc ${candidateIndex} [${templateName}]`
+                    : `Doc ${candidateIndex}`;
                 while (names.has(candidateName)) {
                     candidateIndex += 1;
-                    candidateName = `Doc ${candidateIndex}`;
+                    candidateName = templateName
+                        ? `Doc ${candidateIndex} [${templateName}]`
+                        : `Doc ${candidateIndex}`;
                 }
                 return explorer?.uniqueName?.(candidateName) || candidateName;
+            }
+
+            function escapeRegExp(string) {
+                return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             }
 
             async function createAutoDocument() {
@@ -2697,9 +2708,10 @@
 
             async function applyTemplateContent(template) {
                 if (!template) return;
-                const html = template.html || "";
+                // Load template content on demand
+                const html = await window.goToolkitTemplateLoadContent?.(template.id) || "";
                 if (templateInsertMode !== "append") {
-                    const name = await getAutoDocumentName();
+                    const name = await getAutoDocumentName(template.label || null);
                     createNewDocument(name, template.description || "", template.superpowers || [], html);
                     return;
                 }
@@ -3303,8 +3315,10 @@
                     if (templateData) {
                         localStorage.removeItem("goToolkit.memo.templateToLoad");
                         const template = JSON.parse(templateData);
-                        const autoName = await getAutoDocumentName();
-                        await createNewDocument(autoName, template.description, template.superpowers, template.html);
+                        // Load template content on demand
+                        const html = await window.goToolkitTemplateLoadContent?.(template.id) || "";
+                        const autoName = await getAutoDocumentName(template.label || null);
+                        await createNewDocument(autoName, template.description, template.superpowers, html);
                     }
                 } catch (err) {
                     console.warn("Failed to load template from localStorage", err);
