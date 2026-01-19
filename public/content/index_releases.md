@@ -1,6 +1,7 @@
 ## 2026-01-18
 - Accueil : Affichage des modèles par superpouvoir
 - Mémo : Libellé avec autocomplétion, style et couleurs
+- Mémo : Sommaire et entêtes dépliables
 
 ## 2026-01-16
 - Mémo : Mode sombre
@@ -9,9 +10,8 @@
 
 ## 2026-01-14
 - Mémo : Visualiser et éditer un diagramme `Draw` 
-- Mémo : Couleur de texte, tableau, lien
-- Mémo : Blocs dépliants, code et encadrés 
-- Mémo : Sommaire
+- Mémo : Couleur de texte, lien 
+- Mémo : Blocs tableau, code et encadrés 
 
 ## 2026-01-12
 - IA : Reconnaissance texte OCR avec `qwen-2.5-vl-7b-instruct` 

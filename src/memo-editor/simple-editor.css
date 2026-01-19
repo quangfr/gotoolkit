@@ -626,7 +626,7 @@ td .node-text.node-paragraph,
 }
 
 .mermaid-diagram-container {
-  background-color: white;
+  background-color: var(--bg-surface);
   color: var(--text-main);
   border: 1px solid var(--border-main);
   padding: 16px;
@@ -710,6 +710,53 @@ td .node-text.node-paragraph,
   width: auto;
   display: block;
   object-fit: contain;
+}
+
+/* Theme-aware Excalidraw/Mermaid preview colors in memo */
+/* Apply only to preview blocks, not during export or in the editor modal */
+.mermaid-svg-container svg rect[fill="rgb(253, 253, 253)"],
+.mermaid-svg-container svg rect[fill="#fdfdfd"],
+.mermaid-svg-container svg rect[fill="#FDFDFD"] {
+  fill: var(--bg-surface) !important;
+}
+
+/* Specific fix for arrows/arrowheads and lines: ensure they use theme text color */
+.mermaid-svg-container svg path:not([fill="none"]):not([fill="rgb(253, 253, 253)"]):not([fill="#fdfdfd"]):not([fill="#FDFDFD"]),
+.mermaid-svg-container svg line,
+.mermaid-svg-container svg polyline,
+.mermaid-svg-container svg polygon:not([fill="rgb(253, 253, 253)"]):not([fill="#fdfdfd"]):not([fill="#FDFDFD"]) {
+  stroke: var(--text-main) !important;
+  fill: var(--bg-surface) !important;
+}
+
+/* For paths that are meant to be lines only (no fill), only set the stroke */
+.mermaid-svg-container svg path[fill="none"] {
+  stroke: var(--text-main) !important;
+}
+
+/* Force text color to match theme */
+.mermaid-svg-container svg text,
+.mermaid-svg-container svg text tspan {
+  fill: var(--text-main) !important;
+}
+
+/* Apply theme background inside shapes and to the board background */
+.mermaid-svg-container svg rect,
+.mermaid-svg-container svg circle,
+.mermaid-svg-container svg ellipse,
+.mermaid-svg-container svg polygon[fill="rgb(253, 253, 253)"],
+.mermaid-svg-container svg polygon[fill="#fdfdfd"],
+.mermaid-svg-container svg polygon[fill="#FDFDFD"] {
+  fill: var(--bg-surface) !important;
+  stroke: var(--text-main) !important;
+}
+
+/* Ensure the main board background rect is mapped to surface */
+.mermaid-svg-container svg rect[fill="rgb(253, 253, 253)"],
+.mermaid-svg-container svg rect[fill="#fdfdfd"],
+.mermaid-svg-container svg rect[fill="#FDFDFD"] {
+  fill: var(--bg-surface) !important;
+  stroke: none !important;
 }
 
 .mermaid-placeholder,
