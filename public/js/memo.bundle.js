@@ -33946,6 +33946,8 @@ ${promptInput.trim()}`
   var SimpleEditor = ({
     content = "",
     onChange,
+    editorId,
+    onReady,
     placeholder = "Commencez \xE0 \xE9crire..."
   }) => {
     var _a, _b, _c, _d;
@@ -34847,7 +34849,6 @@ ${promptInput.trim()}`
     };
     react_shim_default.useEffect(() => {
       if (editor) {
-        window.MemoEditor = editor;
         if (!turndownRef.current) {
           const turndown = new turndown_browser_es_default({
             headingStyle: "atx",
@@ -34911,7 +34912,7 @@ ${innerMarkdown}
           });
           turndownRef.current = turndown;
         }
-        window.getEditorMarkdown = () => {
+        const getEditorMarkdown = () => {
           var _a2;
           try {
             if (typeof editor.getHTML === "function") {
@@ -34965,8 +34966,7 @@ ${innerMarkdown}
           }
           return "";
         };
-        window.getMemoEditorSource = (format) => {
-          var _a2;
+        const getMemoEditorSource = (format) => {
           try {
             if (format === "html") {
               return editor.getHTML();
@@ -34974,7 +34974,7 @@ ${innerMarkdown}
             if (format === "json") {
               return JSON.stringify(editor.getJSON(), null, 2);
             }
-            return ((_a2 = window.getEditorMarkdown) == null ? void 0 : _a2.call(window)) || "";
+            return getEditorMarkdown();
           } catch (err) {
             return "";
           }
@@ -35036,7 +35036,7 @@ ${innerMarkdown}
           });
           return finalHtml;
         };
-        window.setEditorMarkdown = (markdown) => {
+        const setEditorMarkdown = (markdown) => {
           var _a2, _b2;
           if (typeof markdown !== "string") return;
           try {
@@ -35051,7 +35051,7 @@ ${innerMarkdown}
             console.warn("setEditorMarkdown failed", err);
           }
         };
-        window.insertEditorMarkdownAtRange = (markdown, range2) => {
+        const insertEditorMarkdownAtRange = (markdown, range2) => {
           if (typeof markdown !== "string" || !range2) return;
           try {
             const from2 = Number(range2.from);
@@ -35065,7 +35065,7 @@ ${innerMarkdown}
             console.warn("insertEditorMarkdownAtRange failed", err);
           }
         };
-        window.insertEditorMarkdownAtEnd = (markdown) => {
+        const insertEditorMarkdownAtEnd = (markdown) => {
           if (typeof markdown !== "string") return;
           try {
             const finalHtml = convertEditorMarkdownToHtml(markdown);
@@ -35076,9 +35076,18 @@ ${innerMarkdown}
             console.warn("insertEditorMarkdownAtEnd failed", err);
           }
         };
-        window.memoEditor = editor;
+        if (onReady) {
+          onReady({
+            getMarkdown: getEditorMarkdown,
+            setMarkdown: setEditorMarkdown,
+            insertMarkdownAtRange: insertEditorMarkdownAtRange,
+            insertMarkdownAtEnd: insertEditorMarkdownAtEnd,
+            getSource: getMemoEditorSource,
+            instance: editor
+          });
+        }
       }
-    }, [editor]);
+    }, [editor, onReady]);
     const handleAssist = () => {
       if (selectionData) {
         document.dispatchEvent(new CustomEvent("memoEditorSelectionChanged", {
@@ -55879,18 +55888,23 @@ ${innerMarkdown}
 
   // src/memo-bridge/index.tsx
   var App = () => {
-    const [content, setContent2] = useState("");
+    const [editors, setEditors] = useState({});
+    const [activeId, setActiveId] = useState("default");
     const [onChangeCb, setOnChangeCb] = useState(null);
-    const editorRef = react_shim_default.useRef(null);
+    const activeInstanceRef = react_shim_default.useRef(null);
     useEffect(() => {
       const api = {
         setValue: (newContent) => {
-          if (window.MemoEditor) {
+          const methods = activeInstanceRef.current;
+          if (methods == null ? void 0 : methods.instance) {
+            methods.instance.commands.setContent(newContent);
+          } else if (window.MemoEditor) {
             window.MemoEditor.commands.setContent(newContent);
           }
         },
         getValue: () => {
-          const editor = window.MemoEditor;
+          var _a;
+          const editor = ((_a = activeInstanceRef.current) == null ? void 0 : _a.instance) || window.MemoEditor;
           if (editor && typeof editor.getHTML === "function") {
             return editor.getHTML();
           }
@@ -55900,17 +55914,18 @@ ${innerMarkdown}
           setOnChangeCb(() => callback);
         },
         exportDocx: async (title) => {
-          const editor = window.MemoEditor;
+          var _a;
+          const editor = ((_a = activeInstanceRef.current) == null ? void 0 : _a.instance) || window.MemoEditor;
           if (editor) {
             return await exportEditorToDocx(editor, title);
           }
           return null;
         },
         getEditorState: () => {
-          var _a;
+          var _a, _b;
           try {
-            const editor = window.MemoEditor;
-            if ((_a = editor == null ? void 0 : editor.state) == null ? void 0 : _a.toJSON) {
+            const editor = ((_a = activeInstanceRef.current) == null ? void 0 : _a.instance) || window.MemoEditor;
+            if ((_b = editor == null ? void 0 : editor.state) == null ? void 0 : _b.toJSON) {
               return editor.state.toJSON();
             }
           } catch (err) {
@@ -55918,29 +55933,75 @@ ${innerMarkdown}
           return null;
         },
         setEditorState: (state2) => {
-          var _a;
+          var _a, _b;
           try {
-            const editor = window.MemoEditor;
-            if (!((_a = editor == null ? void 0 : editor.view) == null ? void 0 : _a.updateState) || !state2) return;
+            const editor = ((_a = activeInstanceRef.current) == null ? void 0 : _a.instance) || window.MemoEditor;
+            if (!((_b = editor == null ? void 0 : editor.view) == null ? void 0 : _b.updateState) || !state2) return;
             const nextState = EditorState.fromJSON(editor.state.schema, state2, editor.state.plugins);
             editor.view.updateState(nextState);
           } catch (err) {
             console.warn("setEditorState failed", err);
           }
+        },
+        switchTo: (id, initialContent) => {
+          setActiveId(id);
+          setEditors((prev) => {
+            if (prev[id]) return prev;
+            return {
+              ...prev,
+              [id]: { id, content: initialContent || "" }
+            };
+          });
+        },
+        removeInstance: (id) => {
+          setEditors((prev) => {
+            const next2 = { ...prev };
+            delete next2[id];
+            return next2;
+          });
         }
       };
+      setEditors({ "default": { id: "default", content: "" } });
       window.GoToolkitMemoEditorReady = Promise.resolve(api);
       window.GoToolkitMemoInstance = api;
     }, []);
-    return /* @__PURE__ */ jsx("div", { className: "memo-card", children: /* @__PURE__ */ jsx("div", { className: "editor-wrap", children: /* @__PURE__ */ jsx(
-      simple_editor_default,
-      {
-        content,
-        onChange: (newContent) => {
-          if (onChangeCb) onChangeCb(newContent);
-        }
+    useEffect(() => {
+      var _a;
+      const methods = (_a = editors[activeId]) == null ? void 0 : _a.methods;
+      if (methods) {
+        activeInstanceRef.current = methods;
+        window.MemoEditor = methods.instance;
+        window.memoEditor = methods.instance;
+        window.getEditorMarkdown = methods.getMarkdown;
+        window.setEditorMarkdown = methods.setMarkdown;
+        window.insertEditorMarkdownAtRange = methods.insertMarkdownAtRange;
+        window.insertEditorMarkdownAtEnd = methods.insertMarkdownAtEnd;
+        window.getMemoEditorSource = methods.getSource;
       }
-    ) }) });
+    }, [activeId, editors]);
+    return /* @__PURE__ */ jsx("div", { className: "memo-card", children: /* @__PURE__ */ jsx("div", { className: "editor-wrap", children: Object.values(editors).map((editor) => /* @__PURE__ */ jsx(
+      "div",
+      {
+        style: { display: editor.id === activeId ? "block" : "none", height: "100%" },
+        children: /* @__PURE__ */ jsx(
+          simple_editor_default,
+          {
+            editorId: editor.id,
+            content: editor.content,
+            onChange: (newContent, id) => {
+              if (onChangeCb) onChangeCb(newContent, id);
+            },
+            onReady: (methods) => {
+              setEditors((prev) => ({
+                ...prev,
+                [editor.id]: { ...prev[editor.id], methods }
+              }));
+            }
+          }
+        )
+      },
+      editor.id
+    )) }) });
   };
   var container = document.getElementById("app");
   if (container) {

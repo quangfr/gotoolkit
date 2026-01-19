@@ -497,7 +497,16 @@ import './simple-editor.css';
 
 interface SimpleEditorProps {
   content?: string;
-  onChange?: (content: string) => void;
+  onChange?: (content: string, id?: string) => void;
+  editorId?: string;
+  onReady?: (methods: {
+    getMarkdown: () => string;
+    setMarkdown: (md: string) => void;
+    insertMarkdownAtRange: (md: string, range: { from: number; to: number }) => void;
+    insertMarkdownAtEnd: (md: string) => void;
+    getSource: (format: 'markdown' | 'html' | 'json') => string;
+    instance: any;
+  }) => void;
   placeholder?: string;
 }
 
@@ -2084,6 +2093,8 @@ async function downloadSvgAsPng(svgElement: SVGSVGElement, filename: string = 'd
 const SimpleEditor: React.FC<SimpleEditorProps> = ({ 
   content = '', 
   onChange, 
+  editorId,
+  onReady,
   placeholder = 'Commencez à écrire...' 
 }) => {
   const turndownRef = React.useRef<any>(null);
@@ -3100,8 +3111,6 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
 
   React.useEffect(() => {
     if (editor) {
-      (window as any).MemoEditor = editor;
-
       if (!turndownRef.current) {
         const turndown = new TurndownService({
           headingStyle: 'atx',
@@ -3174,7 +3183,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         turndownRef.current = turndown;
       }
 
-      (window as any).getEditorMarkdown = () => {
+      const getEditorMarkdown = () => {
         try {
           if (typeof editor.getHTML === 'function') {
             const html = editor.getHTML();
@@ -3244,7 +3253,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         return '';
       };
 
-      (window as any).getMemoEditorSource = (format: 'markdown' | 'html' | 'json') => {
+      const getMemoEditorSource = (format: 'markdown' | 'html' | 'json') => {
         try {
           if (format === 'html') {
             return editor.getHTML();
@@ -3255,7 +3264,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           }
 
           // Markdown
-          return (window as any).getEditorMarkdown?.() || '';
+          return getEditorMarkdown();
         } catch (err) {
           return '';
         }
@@ -3337,7 +3346,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         return finalHtml;
       };
 
-      (window as any).setEditorMarkdown = (markdown: string) => {
+      const setEditorMarkdown = (markdown: string) => {
         if (typeof markdown !== 'string') return;
         try {
           const finalHtml = convertEditorMarkdownToHtml(markdown);
@@ -3353,7 +3362,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         }
       };
 
-      (window as any).insertEditorMarkdownAtRange = (markdown: string, range: { from: number; to: number }) => {
+      const insertEditorMarkdownAtRange = (markdown: string, range: { from: number; to: number }) => {
         if (typeof markdown !== 'string' || !range) return;
         try {
           const from = Number(range.from);
@@ -3368,7 +3377,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         }
       };
 
-      (window as any).insertEditorMarkdownAtEnd = (markdown: string) => {
+      const insertEditorMarkdownAtEnd = (markdown: string) => {
         if (typeof markdown !== 'string') return;
         try {
           const finalHtml = convertEditorMarkdownToHtml(markdown);
@@ -3381,10 +3390,18 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         }
       };
 
-      // Exposer l'éditeur Tiptap pour le composant flottant chat-inline-editor
-      (window as any).memoEditor = editor;
+      if (onReady) {
+        onReady({
+          getMarkdown: getEditorMarkdown,
+          setMarkdown: setEditorMarkdown,
+          insertMarkdownAtRange: insertEditorMarkdownAtRange,
+          insertMarkdownAtEnd: insertEditorMarkdownAtEnd,
+          getSource: getMemoEditorSource,
+          instance: editor
+        });
+      }
     }
-  }, [editor]);
+  }, [editor, onReady]);
 
   const handleAssist = () => {
     if (selectionData) {

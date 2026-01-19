@@ -1752,6 +1752,20 @@
             function closeDocumentTab(docId) {
                 const index = openDocuments.findIndex(item => item.id === docId);
                 if (index < 0) return;
+
+                const doc = openDocuments[index];
+                let payload = doc.payload;
+                if (typeof payload === "string") {
+                    try { payload = JSON.parse(payload); } catch (e) { }
+                }
+                if (payload && Array.isArray(payload.tabs)) {
+                    payload.tabs.forEach(t => {
+                        if (memoEditorApi && typeof memoEditorApi.removeInstance === "function") {
+                            memoEditorApi.removeInstance(t.id);
+                        }
+                    });
+                }
+
                 const wasActive = openDocuments[index].id === activeDocumentId;
                 openDocuments.splice(index, 1);
                 if (wasActive) {
@@ -2025,7 +2039,11 @@
                 if (!target) return;
                 state.activeTabId = target.id;
                 if (memoEditorApi) {
-                    memoEditorApi.setValue(target.content || "");
+                    if (typeof memoEditorApi.switchTo === "function") {
+                        memoEditorApi.switchTo(target.id, target.content || "");
+                    } else {
+                        memoEditorApi.setValue(target.content || "");
+                    }
                 }
                 renderTabs();
                 persistState();
@@ -2036,8 +2054,8 @@
                 window.GoToolkitMemoSyncContextEmbeddings?.(target.id);
             }
 
-            function updateActiveTabContent(value) {
-                const tab = getActiveTab();
+            function updateActiveTabContent(value, id) {
+                const tab = id ? state.tabs.find(t => t.id === id) : getActiveTab();
                 if (!tab) return;
                 tab.content = typeof value === "string" ? value : "";
                 persistState();
@@ -2088,6 +2106,9 @@
                     }
                 }
                 state.tabs.splice(index, 1);
+                if (memoEditorApi && typeof memoEditorApi.removeInstance === "function") {
+                    memoEditorApi.removeInstance(removed.id);
+                }
                 const next = state.tabs[Math.max(0, index - 1)];
                 state.activeTabId = next.id;
                 setActiveTab(next.id);
@@ -3419,8 +3440,8 @@
                 .then(([api]) => {
                     memoEditorApi = api;
                     if (!memoEditorApi) return;
-                    const debouncedChange = debounce(value => updateActiveTabContent(value), 500);
-                    memoEditorApi.onChange(value => debouncedChange(value));
+                    const debouncedChange = debounce((value, id) => updateActiveTabContent(value, id), 500);
+                    memoEditorApi.onChange((value, id) => debouncedChange(value, id));
                     setActiveTab(state.activeTabId);
                     if (autoSaveTimer) {
                         clearInterval(autoSaveTimer);
