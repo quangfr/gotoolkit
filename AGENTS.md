@@ -9,6 +9,7 @@
 - Version format: `YYYY.MM.DD.N` (N is an increment number for the day).
 - **Bump the version only when explicitly asked to commit and sync on GitHub (never before).**
 - **Automated Versioning**: Run `npm run bump` to automatically increment the version in `package.json`, update cache-busters `?v=...` in HTML files, and update version labels.
+- **Commits**: When asked to "commit" or "push", use a descriptive commit message. If multiple changes were made, provide a detailed bulleted list in the commit description (e.g., `git commit -m "title" -m "detailed list of changes"`).
 - **Manual Bumping checklist** (if `npm run bump` is not used):
   1. Increment `version` in `package.json`.
   2. Search and replace all `?v=...` cache-busters in `public/index.html`, `public/memo.html`, and `public/grid.html`.
