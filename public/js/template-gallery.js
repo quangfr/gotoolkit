@@ -193,10 +193,7 @@
             btn.addEventListener("click", () => {
                 // Open Mémo with this template
                 localStorage.setItem("goToolkit.memo.templateToLoad", JSON.stringify(template));
-                // We use target="memo" to avoid opening multiple tabs if already open, 
-                // but window.location.href changes the CURRENT tab.
-                // To keep the user on index.html but open/focus memo, we should use window.open
-                window.open("memo.html", "memo");
+                window.location.href = "memo.html";
             });
 
             gallery.appendChild(btn);

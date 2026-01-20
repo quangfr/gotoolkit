@@ -1,6 +1,6 @@
 # Go-Toolkit
 
-Votre tableau de bord centralise tous vos outils, vos favoris et votre base de connaissance locale.
+Votre tableau de bord centralise tous vos outils, vos favoris et votre base de connaissances locale.
 
 ## 1. Vos modules actifs
 - **Mémo** : Votre carnet de notes enrichi avec IA (rédaction, schémas Mermaid, RAG).
@@ -37,7 +37,7 @@ Cliquez sur **⌘ Paramètres** pour configurer vos services :
 
 L'Assist est votre compagnon IA présent dans Mémo et Grid. Il puise dans votre mémoire locale pour répondre à vos besoins.
 
-## 1. Mémoire (Base de connaissance)
+## 1. Mémoire (Base de connaissances)
 - Importez vos documents (PDF, Word, Excel, Markdown, JSON, etc.).
 - Ils sont indexés localement (RAG) et ne quittent jamais votre ordinateur.
 - Cliquez sur **⌗ Mémoire** pour gérer vos fichiers actifs.

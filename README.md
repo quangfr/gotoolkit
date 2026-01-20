@@ -9,7 +9,7 @@ Boîte à outils 100 % navigateur conçue pour les consultants. GoToolkit combin
 
 ## 🧠 L'Assistant (Assist)
 
-L'Assist est votre compagnon IA intégré, capable de puiser dans votre base de connaissance locale :
+L'Assist est votre compagnon IA intégré, capable de puiser dans votre base de connaissances locale :
 - **RAG Local** : Importez vos fichiers (PDF, Word, Excel, JSON, etc.). Ils sont indexés dans votre navigateur (IndexedDB) et ne quittent jamais votre machine.
 - **Modes Explorer & Demander** : Choisissez entre une recherche sourcée dans vos documents ou une génération libre.
 - **Outils Dédiés** : Suggérer des idées, Éditer une sélection, ou Dessiner des schémas Mermaid.

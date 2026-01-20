@@ -1023,13 +1023,13 @@
                 return url.toString();
             }
 
-            function createShareCardElement(cardInfo, target = "_blank") {
+            function createShareCardElement(cardInfo, target = "_self") {
                 const { definition, preview, formattedDate, href, app, record, superpowerHtml } = cardInfo;
                 const card = document.createElement("a");
                 card.className = "share-card";
                 card.href = href;
                 card.target = target;
-                card.rel = target === "_self" ? "noopener" : "noopener noreferrer";
+                card.rel = "noopener";
                 card.setAttribute("data-app", app);
                 const metaHtml = buildMetaBadge(preview.templateLabel);
                 card.innerHTML = `
@@ -1109,7 +1109,7 @@
                 const card = document.createElement("a");
                 card.className = "share-card share-card--create";
                 card.href = "memo.html?edit=new";
-                card.target = "memo";
+                card.target = "_self";
                 card.innerHTML = `
                     <p class="share-card-title"><i data-lucide="plus-circle" style="width:16px;height:16px;margin-right:8px;vertical-align:text-bottom;"></i>Créer un nouveau document</p>
                 `;
@@ -1131,12 +1131,10 @@
                 let target = "_self";
                 if (record.app === "memo") {
                     href = `memo.html?edit=${record.id}`;
-                    target = "memo";
                 } else {
                     const url = new URL(definition.page, window.location.origin);
                     url.searchParams.set("edit", record.id);
                     href = url.toString();
-                    target = `app_${record.app}_${record.id}`;
                 }
 
                 const card = document.createElement("a");

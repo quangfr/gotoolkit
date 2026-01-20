@@ -1197,7 +1197,7 @@
         this.memoConfirmedAttachmentMemos = new Set();
         this.headerDocCountEl = null;
         this.knowledgeDocumentNames = [];
-        this.headerDocCountTooltipDefault = "Base de connaissance";
+        this.headerDocCountTooltipDefault = "Base de connaissances";
         this.previewPanel = null;
         this.previewTitleEl = null;
         this.previewBodyEl = null;
@@ -2912,7 +2912,7 @@
         header.className = "chat-header";
         var title = document.createElement("span");
         title.className = "chat-header-title";
-        title.innerHTML = '<i data-lucide="bot"></i> Assist';
+        title.innerHTML = 'Base de connaissances';
         header.appendChild(title);
 
         var headerActions = document.createElement("div");
@@ -4349,7 +4349,11 @@
         this.headerDocCountEl.style.display = showMemoireButton ? "" : "none";
         var count = this.getMemoireDocumentCount();
         this.headerDocCountEl.dataset.count = count;
-        this.headerDocCountEl.innerHTML = '<i data-lucide="brain"></i> ' + count;
+        if (count > 0) {
+            this.headerDocCountEl.innerHTML = '<i data-lucide="brain"></i><span class="chat-header-badge">' + count + '</span>';
+        } else {
+            this.headerDocCountEl.innerHTML = '<i data-lucide="brain"></i>';
+        }
         if (window.lucide) window.lucide.createIcons();
     };
 
@@ -6417,7 +6421,7 @@
         backBtn.type = "button";
         backBtn.className = "chat-doc-preview__back";
         backBtn.textContent = "←";
-        backBtn.setAttribute("aria-label", "Retour à la base de connaissance");
+        backBtn.setAttribute("aria-label", "Retour à la base de connaissances");
         backBtn.addEventListener("click", function () {
             this.closePreviewPanel();
             this.openKnowledgeModal();
