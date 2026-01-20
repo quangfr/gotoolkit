@@ -683,7 +683,11 @@
 
                 const label = document.createElement("span");
                 label.className = "document-explorer__item-title";
-                label.textContent = item.title || "Mémo sans titre";
+                if (item.voiceRecordingId) {
+                    label.innerHTML = `<i data-lucide="videotape" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.8;"></i>${item.title || "Mémo sans titre"}`;
+                } else {
+                    label.textContent = item.title || "Mémo sans titre";
+                }
                 button.appendChild(label);
 
                 if (!openSet.has(item.id)) {
@@ -770,7 +774,11 @@
                 const label = document.createElement("span");
                 label.className = "document-explorer__item-title";
                 // Show title or use token as fallback
-                label.textContent = item.title || "Document partagé";
+                if (item.voiceRecordingId) {
+                    label.innerHTML = `<i data-lucide="videotape" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.8;"></i>${item.title || "Document partagé"}`;
+                } else {
+                    label.textContent = item.title || "Document partagé";
+                }
                 button.appendChild(label);
 
                 const openedLabel = shareHistory.formatFriendlyDate(item.updatedAt);

@@ -31,7 +31,7 @@
                 position: relative;
                 width: 95vw;
                 max-height: 90vh;
-                background: var(--white);
+                background: var(--bg-surface);
                 border-radius: 24px;
                 padding: 22px;
                 box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
@@ -128,7 +128,7 @@
             .voice-video-player-speed {
                 border: 1px solid var(--border-strong);
                 border-radius: 999px;
-                background: var(--white);
+                background: var(--bg-surface-soft);
                 color: var(--text-main);
                 font-size: 13px;
                 padding: 0 8px;
@@ -149,7 +149,7 @@
                 height: 14px;
                 border-radius: 50%;
                 background: var(--color-primary);
-                border: 2px solid var(--white);
+                border: 2px solid var(--bg-surface);
                 box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2);
             }
             .voice-video-player-progress::-moz-range-thumb {
@@ -157,7 +157,7 @@
                 height: 14px;
                 border-radius: 50%;
                 background: var(--color-primary);
-                border: 2px solid var(--white);
+                border: 2px solid var(--bg-surface);
                 box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2);
             }
             .voice-video-player-time {
@@ -199,7 +199,7 @@
                 border-radius: 12px;
                 padding: 10px;
                 border: 1px solid var(--border-strong);
-                background: var(--white);
+                background: var(--bg-surface-soft);
                 display: flex;
                 flex-direction: column;
                 gap: 6px;
@@ -248,7 +248,7 @@
                 border-radius: 12px;
                 padding: 6px 14px;
                 background: var(--color-primary);
-                color: var(--white);
+                color: var(--text-main);
                 cursor: pointer;
                 transition: background 0.2s ease;
                 display: inline-flex;

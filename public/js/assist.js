@@ -396,7 +396,7 @@
     }
 
     function getAllowedPromptPresetIds() {
-        if (CHAT_APP_ID === "memo") return ["advice", "edit", "suggest", "import", "draw"];
+        if (CHAT_APP_ID === "memo") return ["edit", "advice", "suggest", "import", "draw"];
         if (CHAT_APP_ID === "index") return ["advice", "ask"];
         return ["advice", "ask"];
     }
@@ -4070,6 +4070,7 @@
             this.setDocumentUploadStatus("Gestion des documents indisponible.");
             return;
         }
+        this.setSendButtonBusy(true);
         var fileArray = Array.from(files);
         if (!fileArray.length) return;
         var originalFiles = fileArray.slice();
@@ -4260,6 +4261,7 @@
                 this.setTranscriptionUiState(false);
             }
             if (this.documentsFileInput) this.documentsFileInput.disabled = false;
+            this.setSendButtonBusy(false);
         }
     };
 
@@ -6631,6 +6633,7 @@
 
     AssistSidebar.prototype.sendAIRequest = function (payload) {
         var self = this;
+        this.setSendButtonBusy(true);
 
         // Calculate total payload byte count and check size limit
         var payloadJson = JSON.stringify(payload);
@@ -7533,6 +7536,8 @@
             return;
         }
 
+        assistInstance.setSendButtonBusy(true);
+
         let botMessage = null;
 
         // Capturer la position du scroll avant la requête IA
@@ -7801,6 +7806,8 @@
                     assistInstance.messageNodes[botMessage.id].contentEl.innerHTML = '⚠️ Une erreur s\'est produite.';
                 }
             }
+        } finally {
+            assistInstance.setSendButtonBusy(false);
         }
     }
 

@@ -87,7 +87,8 @@
             superpowers: Array.isArray(value.superpowers) ? value.superpowers : [],
             updatedAt: value.updatedAt || new Date().toISOString(),
             lastOpenedAt: value.lastOpenedAt || "",
-            pinned: Boolean(value.pinned)
+            pinned: Boolean(value.pinned),
+            voiceRecordingId: value.voiceRecordingId || null
         };
     }
 

@@ -7,7 +7,7 @@
 ## Navigation + cache
 - `public/index.html` links: `grid.html` and `memo.html`.
 - Version format: `YYYY.MM.DD.N` (N is an increment number for the day).
-- **Bump the version only when explicitly asked to commit and sync on GitHub (never before).**
+- **Never bump the version, commit, or push unless explicitly asked to do so by the user.**
 - **Automated Versioning**: Run `npm run bump` to automatically increment the version in `package.json`, update cache-busters `?v=...` in HTML files, and update version labels.
 - **Commits**: When asked to "commit" or "push", use a descriptive commit message. If multiple changes were made, provide a detailed bulleted list in the commit description (e.g., `git commit -m "title" -m "detailed list of changes"`).
 - **Manual Bumping checklist** (if `npm run bump` is not used):

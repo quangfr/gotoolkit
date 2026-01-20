@@ -188,10 +188,10 @@
             }
             .go-toolkit-voice-toast {
                 position: fixed;
-                left: 16px;
+                right: 16px;
                 bottom: 70px;
                 background: var(--bg-surface);
-                color: var(--white);
+                color: var(--text-main);
                 padding: 8px 12px;
                 border-radius: 10px;
                 font-size: 12px;
@@ -520,8 +520,7 @@
 
     function buildButtonLabel() {
         if (state.isTranscribing) {
-            const countdown = Math.max(1, state.transcriptionCountdown || 1);
-            return `◴ ${countdown}s`;
+            return `<i data-lucide="loader-2" class="lucide-spin" style="width:14px;height:14px;"></i>`;
         }
         if (state.isRecording) {
             const duration = Math.floor((Date.now() - state.recordingStartTime) / 1000);
