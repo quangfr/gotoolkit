@@ -727,7 +727,6 @@ td .node-text.node-paragraph,
 }
 
 /* Apply theme background inside shapes and to the board background */
-.mermaid-svg-container svg rect,
 .mermaid-svg-container svg circle,
 .mermaid-svg-container svg ellipse,
 .mermaid-svg-container svg polygon[fill="rgb(253, 253, 253)"],
@@ -737,12 +736,17 @@ td .node-text.node-paragraph,
   stroke: var(--text-main) !important;
 }
 
+.mermaid-svg-container svg rect {
+  fill: var(--bg-surface) !important;
+  stroke: transparent !important;
+}
+
 /* Ensure the main board background rect is mapped to surface */
 .mermaid-svg-container svg rect[fill="rgb(253, 253, 253)"],
 .mermaid-svg-container svg rect[fill="#fdfdfd"],
 .mermaid-svg-container svg rect[fill="#FDFDFD"] {
   fill: var(--bg-surface) !important;
-  stroke: none !important;
+  stroke: transparent !important;
 }
 
 .mermaid-placeholder,

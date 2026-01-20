@@ -93,6 +93,11 @@
 				"reveal": "always",
 				"panel": "shared"
 			}
+		},
+		{
+			"label": "Bump Version",
+			"type": "shell",
+			"command": "npm run bump"
 		}
 	]
 }
