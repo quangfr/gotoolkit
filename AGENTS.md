@@ -8,10 +8,11 @@
 - `public/index.html` links: `grid.html` and `memo.html`.
 - Version format: `YYYY.MM.DD.N` (N is an increment number for the day).
 - **Bump the version only when explicitly asked to commit and sync on GitHub (never before).**
-- **Bumping version checklist**:
+- **Automated Versioning**: Run `npm run bump` to automatically increment the version in `package.json`, update cache-busters `?v=...` in HTML files, and update version labels.
+- **Manual Bumping checklist** (if `npm run bump` is not used):
   1. Increment `version` in `package.json`.
   2. Search and replace all `?v=...` cache-busters in `public/index.html`, `public/memo.html`, and `public/grid.html`.
-  3. Update the version label in `public/index.html` (`hero-version`), `public/memo.html` (if any), and `public/grid.html` (bottom panel).
+  3. Update the version label in `public/index.html` (`hero-version`), `public/memo.html` (info panel), and `public/grid.html` (info panel).
   4. Sync version in `AGENTS.md` example.
 - `public/prompt.js` is the root for all AI system prompts and templates.
 - Keep the IndexedDB version in `public/js/assist.js` health-check/repair (`indexedDB.open`) aligned with `DB_VERSION` in `public/js/document-rag.js`.

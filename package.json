@@ -1,19 +1,20 @@
 {
   "name": "gotoolkit",
-  "version": "2026.01.20.2",
+  "version": "2026.01.20.4",
   "description": "Go-Toolkit combine deux expériences pensées pour les consultants : **Go-Slides** (pour créer des planches claires et structurées) et **Go-Timeline** (pour visualiser et ajuster un planning). Chaque outil s’utilise en ouvrant directement son fichier dans un navigateur, avec des assistants IA, des exports réactifs et des modèles prêts à l’emploi.",
   "main": "index.js",
   "scripts": {
-    "start": "npx serve public -l 5000",
-    "dev": "npm run dev:connect & npm run dev:memo",
+    "start": "browser-sync start --server 'public' --files 'public/**/*' --port 5000",
+    "dev": "concurrently \"npm run dev:connect\" \"npm run dev:memo\" \"npm run start\"",
     "dev:connect": "esbuild src/draw-editor/index.tsx --bundle --format=iife --platform=browser --target=es2018 --sourcemap --define:process.env.NODE_ENV=\"'development'\" --define:process.env=\"{}\" --define:global=\"window\" --inject:src/polyfills.ts --alias:react=./src/react-shim.ts --alias:react/jsx-runtime=./src/jsx-runtime-shim.ts --alias:react-dom=./src/react-dom-shim.ts --alias:react-dom/client=./src/react-dom-shim.ts --alias:mermaid=./src/mermaid-shim.ts --alias:@excalidraw/excalidraw=./src/excalidraw-shim.ts --outdir=public/js --entry-names=draw.bundle --asset-names=assets/[name]-[hash] --loader:.css=text --loader:.woff=file --loader:.woff2=file --loader:.ttf=file --loader:.svg=file --loader:.png=file --watch",
     "dev:memo": "esbuild src/memo-bridge/index.tsx --bundle --format=iife --platform=browser --target=es2018 --sourcemap --define:process.env.NODE_ENV=\"'development'\" --define:process.env=\"{}\" --define:global=\"window\" --inject:src/polyfills.ts --alias:react=./src/react-shim.ts --alias:react/jsx-runtime=./src/jsx-runtime-shim.ts --alias:react-dom=./src/react-dom-shim.ts --alias:react-dom/client=./src/react-dom-shim.ts --alias:mermaid=./src/mermaid-shim.ts --alias:@excalidraw/excalidraw=./src/excalidraw-shim.ts --outdir=public/js --entry-names=memo.bundle --asset-names=assets/[name]-[hash] --alias:@=./src --watch",
-    "build": "npm run build:connect & npm run build:memo",
-    "build:prod": "npm run build:connect:prod & npm run build:memo:prod",
+    "build": "concurrently \"npm run build:connect\" \"npm run build:memo\"",
+    "build:prod": "concurrently \"npm run build:connect:prod\" \"npm run build:memo:prod\"",
     "build:connect": "esbuild src/draw-editor/index.tsx --bundle --format=iife --platform=browser --target=es2018 --define:process.env.NODE_ENV=\"'development'\" --define:process.env=\"{}\" --define:global=\"window\" --inject:src/polyfills.ts --alias:react=./src/react-shim.ts --alias:react/jsx-runtime=./src/jsx-runtime-shim.ts --alias:react-dom=./src/react-dom-shim.ts --alias:react-dom/client=./src/react-dom-shim.ts --alias:mermaid=./src/mermaid-shim.ts --alias:@excalidraw/excalidraw=./src/excalidraw-shim.ts --outdir=public/js --entry-names=draw.bundle --asset-names=assets/[name]-[hash] --loader:.css=text --loader:.woff=file --loader:.woff2=file --loader:.ttf=file --loader:.svg=file --loader:.png=file",
     "build:connect:prod": "esbuild src/draw-editor/index.tsx --bundle --format=iife --platform=browser --target=es2018 --sourcemap --minify --define:process.env.NODE_ENV=\"'production'\" --define:process.env=\"{}\" --define:global=\"window\" --inject:src/polyfills.ts --alias:react=./src/react-shim.ts --alias:react/jsx-runtime=./src/jsx-runtime-shim.ts --alias:react-dom=./src/react-dom-shim.ts --alias:react-dom/client=./src/react-dom-shim.ts --alias:mermaid=./src/mermaid-shim.ts --alias:@excalidraw/excalidraw=./src/excalidraw-shim.ts --outdir=public/js --entry-names=draw.bundle --asset-names=assets/[name]-[hash] --loader:.css=text --loader:.woff=file --loader:.woff2=file --loader:.ttf=file --loader:.svg=file --loader:.png=file",
     "build:memo": "esbuild src/memo-bridge/index.tsx --bundle --format=iife --platform=browser --target=es2018 --define:process.env.NODE_ENV=\"'development'\" --define:process.env=\"{}\" --define:global=\"window\" --inject:src/polyfills.ts --alias:react=./src/react-shim.ts --alias:react/jsx-runtime=./src/jsx-runtime-shim.ts --alias:react-dom=./src/react-dom-shim.ts --alias:react-dom/client=./src/react-dom-shim.ts --alias:mermaid=./src/mermaid-shim.ts --alias:@excalidraw/excalidraw=./src/excalidraw-shim.ts --outdir=public/js --entry-names=memo.bundle --asset-names=assets/[name]-[hash] --alias:@=./src",
     "build:memo:prod": "esbuild src/memo-bridge/index.tsx --bundle --format=iife --platform=browser --target=es2018 --sourcemap --minify --define:process.env.NODE_ENV=\"'production'\" --define:process.env=\"{}\" --define:global=\"window\" --inject:src/polyfills.ts --alias:react=./src/react-shim.ts --alias:react/jsx-runtime=./src/jsx-runtime-shim.ts --alias:react-dom=./src/react-dom-shim.ts --alias:react-dom/client=./src/react-dom-shim.ts --alias:mermaid=./src/mermaid-shim.ts --alias:@excalidraw/excalidraw=./src/excalidraw-shim.ts --outdir=public/js --entry-names=memo.bundle --asset-names=assets/[name]-[hash] --alias:@=./src",
+    "bump": "node scripts/version-bump.js",
     "test:playwright": "npx playwright test"
   },
   "repository": {
@@ -77,6 +78,8 @@
     "@playwright/test": "^1.57.0",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
+    "browser-sync": "^3.0.4",
+    "concurrently": "^9.2.1",
     "esbuild": "^0.27.1",
     "playwright": "^1.57.0",
     "serve": "^14.2.5"

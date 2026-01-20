@@ -2,7 +2,7 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
-			"label": "Dev",
+			"label": "Dev + Live Reload",
 			"type": "shell",
 			"command": "npm run dev",
 			"isBackground": true,
@@ -15,8 +15,8 @@
 				},
 				"background": {
 					"activeOnStart": true,
-					"beginsPattern": "esbuild",
-					"endsPattern": "watch"
+					"beginsPattern": "esbuild|browser-sync",
+					"endsPattern": "watch|Local:"
 				}
 			},
 			"presentation": {
@@ -26,30 +26,7 @@
 			}
 		},
 		{
-			"label": "Serve public",
-			"type": "shell",
-			"command": "npm start",
-			"isBackground": true,
-			"problemMatcher": {
-				"pattern": {
-					"regexp": "^.*$",
-					"file": 1,
-					"location": 2,
-					"message": 3
-				},
-				"background": {
-					"activeOnStart": true,
-					"beginsPattern": "serving",
-					"endsPattern": "http"
-				}
-			},
-			"presentation": {
-				"echo": true,
-				"reveal": "always",
-				"panel": "shared"
-			}
-		},
-		{
+			"label": "Build Project",
 			"label": "Build",
 			"type": "shell",
 			"command": "npm run build",
