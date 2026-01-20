@@ -329,6 +329,10 @@
             line-height: 1.2;
         }
 
+        .share-card-title {
+            padding-bottom: 3px;
+        }
+
         .gt-template-card__superpowers {
             display: flex;
             flex-wrap: wrap;

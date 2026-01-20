@@ -13,6 +13,10 @@
         ? new URL(currentScript.src, document.baseURI).searchParams.get("v")
         : "";
     let loadPromise = null;
+    let autoLoadTimer = null;
+    let autoLoadAttempts = 0;
+    const MAX_AUTOLOAD_ATTEMPTS = 120;
+    const AUTOLOAD_INTERVAL = 500;
 
     function buildScriptUrl(path) {
         if (!version) return path;
@@ -63,6 +67,56 @@
         return button;
     }
 
+    function getActiveMemo() {
+        return window.GoToolkitMemoVoice?.getActiveMemo?.() || null;
+    }
+
+    function getRecordingIdForMemo(memoId) {
+        if (!memoId) return null;
+        const getter = window.GoToolkitMemoVoice?.getVoiceRecordingId;
+        return typeof getter === "function" ? getter(memoId) : null;
+    }
+
+    function shouldAutoLoadVoice() {
+        if (window.GoToolkitVoice) return false;
+        const activeMemo = getActiveMemo();
+        if (!activeMemo?.id) return false;
+        return Boolean(getRecordingIdForMemo(activeMemo.id));
+    }
+
+    function stopAutoLoadTimer() {
+        if (!autoLoadTimer) return;
+        clearInterval(autoLoadTimer);
+        autoLoadTimer = null;
+    }
+
+    async function tryAutoLoadVoice() {
+        if (!shouldAutoLoadVoice()) return false;
+        try {
+            await loadVoiceStack();
+            const activeMemo = getActiveMemo();
+            if (activeMemo?.id && window.GoToolkitVoice?.setCurrentMemo) {
+                window.GoToolkitVoice.setCurrentMemo(activeMemo.title || "", activeMemo.id);
+            }
+            return true;
+        } catch (err) {
+            console.error("Voice auto-load error", err);
+            return false;
+        }
+    }
+
+    function scheduleAutoLoadCheck() {
+        if (autoLoadTimer || window.GoToolkitVoice) return;
+        autoLoadAttempts = 0;
+        autoLoadTimer = setInterval(async () => {
+            autoLoadAttempts += 1;
+            const loaded = await tryAutoLoadVoice();
+            if (loaded || autoLoadAttempts >= MAX_AUTOLOAD_ATTEMPTS) {
+                stopAutoLoadTimer();
+            }
+        }, AUTOLOAD_INTERVAL);
+    }
+
     async function handleVoiceClick(event) {
         const button = event.currentTarget;
         if (window.GoToolkitVoice) {
@@ -88,6 +142,9 @@
 
     function init() {
         ensureVoiceButton();
+        tryAutoLoadVoice().then(loaded => {
+            if (!loaded) scheduleAutoLoadCheck();
+        });
         const observer = new MutationObserver(() => ensureVoiceButton());
         observer.observe(document.body, { childList: true, subtree: true });
     }

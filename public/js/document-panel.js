@@ -683,8 +683,9 @@
 
                 const label = document.createElement("span");
                 label.className = "document-explorer__item-title";
-                if (item.voiceRecordingId) {
-                    label.innerHTML = `<i data-lucide="videotape" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.8;"></i>${item.title || "Mémo sans titre"}`;
+                const payloadRecordingId = item?.payload?.tabs?.find(tab => typeof tab?.voiceRecordingId === "string" && tab.voiceRecordingId)?.voiceRecordingId || null;
+                if (item.voiceRecordingId || payloadRecordingId) {
+                    label.innerHTML = `<i data-lucide="circle-play" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.8;"></i>${item.title || "Mémo sans titre"}`;
                 } else {
                     label.textContent = item.title || "Mémo sans titre";
                 }
@@ -774,8 +775,9 @@
                 const label = document.createElement("span");
                 label.className = "document-explorer__item-title";
                 // Show title or use token as fallback
-                if (item.voiceRecordingId) {
-                    label.innerHTML = `<i data-lucide="videotape" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.8;"></i>${item.title || "Document partagé"}`;
+                const sharePayloadRecordingId = item?.payload?.tabs?.find(tab => typeof tab?.voiceRecordingId === "string" && tab.voiceRecordingId)?.voiceRecordingId || null;
+                if (item.voiceRecordingId || sharePayloadRecordingId) {
+                    label.innerHTML = `<i data-lucide="circle-play" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.8;"></i>${item.title || "Document partagé"}`;
                 } else {
                     label.textContent = item.title || "Document partagé";
                 }

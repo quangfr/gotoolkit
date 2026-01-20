@@ -521,11 +521,10 @@
             return `■ ${timeLabel}`;
         }
         if (state.currentRecordingId) {
-            if (state.currentMemoId && state.recordingMemoId && state.currentMemoId !== state.recordingMemoId) {
-                const memoLabel = state.recordingMemoName ? ` (${state.recordingMemoName})` : "";
-                return `▶${memoLabel}`;
+            if (state.currentMemoId && state.recordingMemoId && state.currentMemoId === state.recordingMemoId) {
+                return '<i data-lucide="circle-play"></i>';
             }
-            return "▶";
+            return '<i data-lucide="mic"></i>';
         }
         return '<i data-lucide="mic"></i>';
     }
@@ -1072,7 +1071,7 @@
             stopRecording();
             return;
         }
-        if (state.currentRecordingId) {
+        if (state.currentRecordingId && state.currentMemoId && state.recordingMemoId === state.currentMemoId) {
             openRecordingPlayer();
             return;
         }
@@ -1149,6 +1148,10 @@
                     state.currentRecordingId = recording.id;
                     state.recordingMemoId = memoId;
                     state.recordingMemoName = memoName || "";
+                } else {
+                    state.currentRecordingId = null;
+                    state.recordingMemoId = null;
+                    state.recordingMemoName = "";
                 }
                 updateButton();
             });
