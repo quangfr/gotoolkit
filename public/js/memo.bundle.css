@@ -1004,7 +1004,7 @@ button.btn-secondary {
     monospace;
 }
 .ProseMirror blockquote code {
-  background: var(--bg-surface-soft);
+  background: var(--bg-surface);
 }
 .simple-editor .ProseMirror h1 {
   font-size: 1.8rem;
