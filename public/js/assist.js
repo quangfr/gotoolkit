@@ -2912,7 +2912,7 @@
         header.className = "chat-header";
         var title = document.createElement("span");
         title.className = "chat-header-title";
-        title.innerHTML = 'Base de connaissances';
+        title.innerHTML = '<i data-lucide="bot" style="width: 20px; height: 20px; vertical-align: middle; margin-right: 6px;"></i>';
         header.appendChild(title);
 
         var headerActions = document.createElement("div");

@@ -189,7 +189,7 @@
             .go-toolkit-voice-toast {
                 position: fixed;
                 right: 16px;
-                bottom: 70px;
+                bottom: 16px;
                 background: var(--bg-surface);
                 color: var(--text-main);
                 padding: 8px 12px;
@@ -198,7 +198,7 @@
                 opacity: 0;
                 pointer-events: none;
                 transition: opacity 0.2s ease;
-                z-index: 9999;
+                z-index: 20000;
                 border: 1px solid var(--border-strong);
             }
             .go-toolkit-voice-toast.visible {
@@ -262,17 +262,6 @@
             }
             updateToast();
         }, 1000);
-
-        // Auto-hide after a reasonable time (5 minutes max)
-        setTimeout(() => {
-            if (transcriptionToastTimer) {
-                clearInterval(transcriptionToastTimer);
-                transcriptionToastTimer = null;
-                if (state.toast) {
-                    state.toast.classList.remove("visible");
-                }
-            }
-        }, 300000);
     }
 
     function hideTranscriptionToast() {
@@ -982,6 +971,7 @@
             updateButton();
         } catch (err) {
             console.error("Transcription failed", err);
+            hideTranscriptionToast();
             state.isTranscribing = false;
             if (state.transcriptionCountdownTimer) {
                 clearInterval(state.transcriptionCountdownTimer);

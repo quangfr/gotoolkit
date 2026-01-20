@@ -58,19 +58,20 @@
                 align-items: center;
                 gap: 8px;
             }
-            .voice-video-player-copy {
-                border: none;
-                background: transparent;
-                font-size: 13px;
-                color: var(--intent-info-border);
-                cursor: pointer;
-            }
             .voice-video-player-delete {
                 border: none;
                 background: transparent;
                 font-size: 13px;
                 color: var(--intent-error-border);
                 cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 6px;
+            }
+            .voice-video-player-delete svg {
+                width: 16px;
+                height: 16px;
             }
             .voice-video-player-close {
                 position: absolute;
@@ -114,16 +115,23 @@
                 align-items: center;
                 gap: 10px;
             }
-            .voice-video-player-play-toggle {
+            .voice-video-player-play-toggle,
+            .voice-video-player-download {
                 border: 1px solid var(--border-strong);
-                border-radius: 50%;
+                border-radius: 8px;
                 width: 36px;
                 height: 36px;
                 background: transparent;
                 cursor: pointer;
                 font-size: 16px;
                 color: var(--text-main);
-                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .voice-video-player-download svg {
+                width: 18px;
+                height: 18px;
             }
             .voice-video-player-speed {
                 border: 1px solid var(--border-strong);
@@ -349,9 +357,9 @@
                     <div class="voice-video-player-header">
                         <div class="voice-video-player-title">Lecteur vidéo</div>
                         <div class="voice-video-player-header-actions">
-                            <button type="button" class="voice-video-player-copy">Transcript Audio</button>
-                            <button type="button" class="voice-video-player-copy">Transcript Vidéo</button>
-                            <button type="button" class="voice-video-player-delete btn btn-secondary">⊗ Supprimer</button>
+                            <button type="button" class="voice-video-player-delete btn btn-secondary" title="Copier le transcript audio"><i data-lucide="captions"></i> Audio</button>
+                            <button type="button" class="voice-video-player-delete btn btn-secondary" title="Copier le transcript vidéo"><i data-lucide="captions"></i> Vidéo</button>
+                            <button type="button" class="voice-video-player-delete btn btn-secondary"><i data-lucide="trash-2"></i></button>
                         </div>
                     </div>
                     <div class="voice-video-player-body">
@@ -361,6 +369,7 @@
                             </div>
                             <div class="voice-video-player-controls">
                                 <select class="voice-video-player-speed" aria-label="Vitesse de lecture"></select>
+                                <button type="button" class="voice-video-player-download" aria-label="Télécharger"><i data-lucide="download"></i></button>
                                 <button type="button" class="voice-video-player-play-toggle" aria-label="Lecture">▶</button>
                                 <input type="range" min="0" max="1" step="0.001" value="0" class="voice-video-player-progress">
                                 <span class="voice-video-player-time">00:00 / 00:00</span>
@@ -378,9 +387,11 @@
             (document.body || document.documentElement).appendChild(this.overlay);
             this.dialog = this.overlay.querySelector(".voice-video-player-dialog");
             this.closeButton = this.overlay.querySelector(".voice-video-player-close");
-            this.copyButtons = Array.from(this.overlay.querySelectorAll(".voice-video-player-copy"));
-            this.deleteButton = this.overlay.querySelector(".voice-video-player-delete");
+            const actionButtons = Array.from(this.overlay.querySelectorAll(".voice-video-player-header-actions .voice-video-player-delete"));
+            this.copyButtons = actionButtons.slice(0, 2);
+            this.deleteButton = actionButtons[2];
             this.videoEl = this.overlay.querySelector("video");
+            this.downloadButton = this.overlay.querySelector(".voice-video-player-download");
             this.playToggle = this.overlay.querySelector(".voice-video-player-play-toggle");
             this.speedSelect = this.overlay.querySelector(".voice-video-player-speed");
             this.progress = this.overlay.querySelector(".voice-video-player-progress");
@@ -421,6 +432,15 @@
             this.deleteButton?.addEventListener("click", () => {
                 if (!this.onDelete) return;
                 this.onDelete();
+            });
+            this.downloadButton?.addEventListener("click", () => {
+                if (!this.videoBlobUrl) return;
+                const a = document.createElement("a");
+                a.href = this.videoBlobUrl;
+                a.download = "video.mp4";
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
             });
             this.playToggle?.addEventListener("click", () => {
                 this._togglePlayback();
@@ -753,6 +773,7 @@
             document.body?.classList.add("voice-video-player-modal-open");
             document.addEventListener("keydown", this._handleKeydown);
             this._activeSentenceIndex = -1;
+            if (window.lucide) lucide.createIcons();
         }
 
         close() {

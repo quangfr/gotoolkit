@@ -78,6 +78,13 @@
                 font-size: 13px;
                 color: var(--intent-error-border);
                 cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .voice-audio-player-delete svg {
+                width: 16px;
+                height: 16px;
             }
             .voice-audio-player-controls {
                 display: flex;
@@ -187,7 +194,7 @@
                     <div class="voice-audio-player-header">
                         <div class="voice-audio-player-header-row">
                             <div class="voice-audio-player-title">Transcription audio</div>
-                            <button type="button" class="voice-audio-player-delete btn btn-secondary">⊗ Supprimer</button>
+                            <button type="button" class="voice-audio-player-delete btn btn-secondary"><i data-lucide="trash-2"></i></button>
                         </div>
                         <div class="voice-audio-player-subtitle"></div>
                     </div>
@@ -319,6 +326,7 @@
             this.overlay.classList.add("voice-audio-player-modal--open");
             this.overlay.setAttribute("aria-hidden", "false");
             document.body?.classList.add("voice-audio-player-modal-open");
+            if (window.lucide) lucide.createIcons();
         }
 
         close() {
