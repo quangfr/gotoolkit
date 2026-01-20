@@ -298,7 +298,7 @@
     var WIDTH_KEY = "goToolkit.chat.sidebarWidth";
     var OPEN_KEY = scopedKey("goToolkit.chat.sidebarOpen");
     var KNOWLEDGE_MODAL_OPEN_KEY = scopedKey("goToolkit.chat.knowledgeModalOpen");
-    var DEFAULT_WIDTH = 400;
+    var DEFAULT_WIDTH = 300;
     var MIN_WIDTH = 200;
     var MAX_WIDTH = 800;
     var MAX_WIDTH_RATIO = 0.6;
@@ -2917,12 +2917,6 @@
 
         var headerActions = document.createElement("div");
         headerActions.className = "chat-header-actions";
-        var closeBtn = document.createElement("button");
-        closeBtn.type = "button";
-        closeBtn.className = "btn-secondary chat-header-btn";
-        closeBtn.innerHTML = '<i data-lucide="arrow-left"></i>';
-        closeBtn.addEventListener("click", this.close.bind(this));
-        header.insertBefore(closeBtn, title);
 
         this.headerDocCountEl = document.createElement("button");
         this.headerDocCountEl.type = "button";
