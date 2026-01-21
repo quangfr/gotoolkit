@@ -3280,6 +3280,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       };
 
       const getMemoEditorSource = (format: 'markdown' | 'html' | 'json') => {
+        if (!editor) return '';
         try {
           if (format === 'html') {
             const html = editor.getHTML();
@@ -3287,27 +3288,44 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
             const doc = parser.parseFromString(html, 'text/html');
 
             // 1. Handle Mermaid diagrams (injecting SVG if present in the editor DOM)
-            const diagrams = doc.querySelectorAll('mermaid-diagram, .mermaid-diagram');
-            diagrams.forEach(diag => {
-              const code = diag.getAttribute('code') || diag.getAttribute('data-code') || '';
-              
-              // Search for the rendered SVG in the real DOM
-              const nodeSelector = `[code="${code.replace(/"/g, '\\"')}"] svg, [data-code="${code.replace(/"/g, '\\"')}"] svg`;
-              const renderedSvg = document.querySelector(nodeSelector);
-              
-              if (renderedSvg) {
-                const container = doc.createElement('div');
-                container.className = 'mermaid-rendered';
-                container.innerHTML = renderedSvg.outerHTML;
-                diag.replaceWith(container);
-              } else {
-                // Fallback to code block
-                const pre = doc.createElement('pre');
-                pre.className = 'mermaid';
-                pre.textContent = code;
-                diag.replaceWith(pre);
-              }
-            });
+            try {
+              const diagrams = doc.querySelectorAll('mermaid-diagram, .mermaid-diagram');
+              diagrams.forEach(diag => {
+                const code = (diag.getAttribute('code') || diag.getAttribute('data-code') || '').trim();
+                if (!code) return;
+
+                // Search for the rendered SVG in the real DOM more robustly
+                // We'll look for mermaid containers and then check their code
+                const realContainers = document.querySelectorAll('mermaid-diagram, .mermaid-diagram');
+                let foundSvg: string | null = null;
+                
+                for (const container of Array.from(realContainers)) {
+                  const cCode = (container.getAttribute('code') || container.getAttribute('data-code') || '').trim();
+                  if (cCode === code) {
+                    const svgEl = container.querySelector('svg');
+                    if (svgEl) {
+                      foundSvg = svgEl.outerHTML;
+                      break;
+                    }
+                  }
+                }
+                
+                if (foundSvg) {
+                  const container = doc.createElement('div');
+                  container.className = 'mermaid-rendered';
+                  container.innerHTML = foundSvg;
+                  diag.replaceWith(container);
+                } else {
+                  // Fallback to code block
+                  const pre = doc.createElement('pre');
+                  pre.className = 'mermaid';
+                  pre.textContent = code;
+                  diag.replaceWith(pre);
+                }
+              });
+            } catch (mermaidErr) {
+              console.warn('Error processing Mermaid for HTML source:', mermaidErr);
+            }
 
             // 2. Handle blockquote alerts (matching Markdown format)
             const emojiMap: Record<string, string> = {
@@ -3333,7 +3351,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
                 const firstChild = bq.firstChild;
                 if (firstChild) {
                   // If first child is a paragraph, inject inside it
-                  if ((firstChild as HTMLElement).tagName === 'P') {
+                  if (firstChild.nodeType === 1 && (firstChild as HTMLElement).tagName === 'P') {
                     firstChild.insertBefore(header, firstChild.firstChild);
                     firstChild.insertBefore(doc.createTextNode(' '), header.nextSibling);
                   } else {

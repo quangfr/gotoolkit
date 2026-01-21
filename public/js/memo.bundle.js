@@ -34907,8 +34907,8 @@ ${promptInput.trim()}`
               };
               const emoji2 = emojiMap[type2] || "\u2139\uFE0F";
               const title = node.getAttribute("data-title");
-              const alertHeader = title ? `${emoji2} **${title}**` : `${emoji2}`;
-              return "\n\n> " + alertHeader + "\n> " + content2.trim().replace(/\n/g, "\n> ") + "\n\n";
+              const alertHeader = title ? `${emoji2} **${title}** ` : `${emoji2} `;
+              return "\n\n> " + alertHeader + content2.trim().replace(/\n/g, "\n> ") + "\n\n";
             }
           });
           turndown.addRule("mermaid-diagram", {
@@ -35012,9 +35012,89 @@ ${innerMarkdown}
           return "";
         };
         const getMemoEditorSource = (format) => {
+          if (!editor) return "";
           try {
             if (format === "html") {
-              return editor.getHTML();
+              const html2 = editor.getHTML();
+              const parser2 = new DOMParser();
+              const doc3 = parser2.parseFromString(html2, "text/html");
+              try {
+                const diagrams = doc3.querySelectorAll("mermaid-diagram, .mermaid-diagram");
+                diagrams.forEach((diag) => {
+                  const code = (diag.getAttribute("code") || diag.getAttribute("data-code") || "").trim();
+                  if (!code) return;
+                  const realContainers = document.querySelectorAll("mermaid-diagram, .mermaid-diagram");
+                  let foundSvg = null;
+                  for (const container2 of Array.from(realContainers)) {
+                    const cCode = (container2.getAttribute("code") || container2.getAttribute("data-code") || "").trim();
+                    if (cCode === code) {
+                      const svgEl = container2.querySelector("svg");
+                      if (svgEl) {
+                        foundSvg = svgEl.outerHTML;
+                        break;
+                      }
+                    }
+                  }
+                  if (foundSvg) {
+                    const container2 = doc3.createElement("div");
+                    container2.className = "mermaid-rendered";
+                    container2.innerHTML = foundSvg;
+                    diag.replaceWith(container2);
+                  } else {
+                    const pre = doc3.createElement("pre");
+                    pre.className = "mermaid";
+                    pre.textContent = code;
+                    diag.replaceWith(pre);
+                  }
+                });
+              } catch (mermaidErr) {
+                console.warn("Error processing Mermaid for HTML source:", mermaidErr);
+              }
+              const emojiMap = {
+                "NOTE": "\u2139\uFE0F",
+                "TIP": "\u{1F4A1}",
+                "IMPORTANT": "\u2705",
+                "WARNING": "\u26A0\uFE0F",
+                "CAUTION": "\u{1F6A8}"
+              };
+              const blockquotes = doc3.querySelectorAll("blockquote[data-type]");
+              blockquotes.forEach((bq) => {
+                const type2 = bq.getAttribute("data-type");
+                if (type2 && type2 !== "default") {
+                  const emoji2 = emojiMap[type2] || "\u2139\uFE0F";
+                  const title = bq.getAttribute("data-title");
+                  const header = doc3.createElement("strong");
+                  header.textContent = title ? `${emoji2} ${title} ` : `${emoji2} `;
+                  const firstChild = bq.firstChild;
+                  if (firstChild) {
+                    if (firstChild.nodeType === 1 && firstChild.tagName === "P") {
+                      firstChild.insertBefore(header, firstChild.firstChild);
+                      firstChild.insertBefore(doc3.createTextNode(" "), header.nextSibling);
+                    } else {
+                      bq.insertBefore(header, firstChild);
+                    }
+                  } else {
+                    bq.appendChild(header);
+                  }
+                }
+              });
+              const tasks = doc3.querySelectorAll('li[data-type="taskItem"]');
+              tasks.forEach((task) => {
+                const checked = task.getAttribute("data-checked") === "true";
+                const symbol = checked ? "\u2612" : "\u2610";
+                const symbolSpan = doc3.createElement("span");
+                symbolSpan.textContent = symbol + " ";
+                symbolSpan.style.marginRight = "8px";
+                const p = task.querySelector("p");
+                if (p) {
+                  p.insertBefore(symbolSpan, p.firstChild);
+                } else {
+                  task.insertBefore(symbolSpan, task.firstChild);
+                }
+                task.removeAttribute("data-checked");
+                task.removeAttribute("data-type");
+              });
+              return doc3.body.innerHTML;
             }
             if (format === "json") {
               return JSON.stringify(editor.getJSON(), null, 2);
