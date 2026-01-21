@@ -55332,10 +55332,22 @@ ${innerMarkdown}
                 const el = img;
                 el.style.display = "block";
                 el.style.maxWidth = "100%";
+                el.style.margin = "20px auto";
                 const w = el.getAttribute("width");
                 const h = el.getAttribute("height");
                 if (w) el.style.width = w.endsWith("%") ? w : w + "px";
                 if (h) el.style.height = h.endsWith("%") ? h : h + "px";
+              });
+              doc3.querySelectorAll("hr").forEach((hr2) => {
+                const el = hr2;
+                el.style.border = "none";
+                el.style.borderTop = "1px solid #e5e7eb";
+                el.style.margin = "30px 0";
+              });
+              doc3.querySelectorAll("a").forEach((a) => {
+                const el = a;
+                el.style.color = "#2563eb";
+                el.style.textDecoration = "underline";
               });
               const content2 = doc3.body.innerHTML;
               if (format === "pdf") {
@@ -55345,8 +55357,15 @@ ${innerMarkdown}
 </div>`.trim();
               }
               return `
-<div class="html-email-export" style="font-family:${FONT_SANS}; font-size:14px; line-height:20px; color:#333333;">
-  ${content2}
+<div style="background-color: #f3f4f6; padding: 40px 20px; font-family: ${FONT_SANS};">
+  <div style="max-width: 650px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; border: 1px solid #e5e7eb; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); overflow: hidden;">
+    <div style="padding: 40px; color: #374151; line-height: 1.6;">
+      ${content2}
+    </div>
+    <div style="padding: 20px 40px; background-color: #f9fafb; border-top: 1px solid #e5e7eb; text-align: center;">
+      <p style="margin: 0; font-size: 12px; color: #9ca3af;">G\xE9n\xE9r\xE9 avec GoToolkit</p>
+    </div>
+  </div>
 </div>`.trim();
             }
             if (format === "json") {
