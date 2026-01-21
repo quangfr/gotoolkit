@@ -3351,7 +3351,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
               const color = alertColorMap[type || 'default'] || alertColorMap.default;
               
               bq.style.borderLeft = `4px solid ${color}`;
-              bq.style.padding = '12px 16px';
+              bq.style.padding = '4px 16px';
               bq.style.margin = '16px 0';
               bq.style.color = '#333333';
               bq.style.background = '#f9fafb';
