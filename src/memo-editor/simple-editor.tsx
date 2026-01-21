@@ -3501,33 +3501,11 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
 </div>`.trim();
             }
 
-            // 5. Wrap in Outlook-Safe Table Structure
-            const outlookHtml = `
-<table width="100%" border="0" cellspacing="0" cellpadding="0" style="width:100% !important;">
-  <tr>
-    <td align="center" style="padding: 20px 0;">
-      <!--[if mso]>
-      <table align="center" border="0" cellspacing="0" cellpadding="0" width="600" style="width:600px;">
-      <tr>
-      <td align="left" valign="top" width="600" style="width:600px;">
-      <![endif]-->
-      <table align="center" border="0" cellspacing="0" cellpadding="0" width="100%" style="max-width:600px; width:100%;">
-        <tr>
-          <td align="left" valign="top" style="font-family:${FONT_SANS}; font-size:14px; line-height:20px; color:#333333; padding: 0 20px;">
-            ${content}
-          </td>
-        </tr>
-      </table>
-      <!--[if mso]>
-      </td>
-      </tr>
-      </table>
-      <![endif]-->
-    </td>
-  </tr>
-</table>`.trim();
-
-            return outlookHtml;
+            // Return styled HTML content without Outlook table wrapping
+            return `
+<div class="html-email-export" style="font-family:${FONT_SANS}; font-size:14px; line-height:20px; color:#333333;">
+  ${content}
+</div>`.trim();
           }
 
           if (format === 'json') {
