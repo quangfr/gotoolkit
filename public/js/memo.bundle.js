@@ -28417,7538 +28417,6 @@ img.ProseMirror-separator {
   ];
   var X = createLucideIcon("x", __iconNode48);
 
-  // node_modules/turndown/lib/turndown.browser.es.js
-  init_define_process_env();
-  init_polyfills();
-  function extend(destination) {
-    for (var i = 1; i < arguments.length; i++) {
-      var source = arguments[i];
-      for (var key in source) {
-        if (source.hasOwnProperty(key)) destination[key] = source[key];
-      }
-    }
-    return destination;
-  }
-  function repeat(character, count) {
-    return Array(count + 1).join(character);
-  }
-  function trimLeadingNewlines(string) {
-    return string.replace(/^\n*/, "");
-  }
-  function trimTrailingNewlines(string) {
-    var indexEnd = string.length;
-    while (indexEnd > 0 && string[indexEnd - 1] === "\n") indexEnd--;
-    return string.substring(0, indexEnd);
-  }
-  function trimNewlines(string) {
-    return trimTrailingNewlines(trimLeadingNewlines(string));
-  }
-  var blockElements = [
-    "ADDRESS",
-    "ARTICLE",
-    "ASIDE",
-    "AUDIO",
-    "BLOCKQUOTE",
-    "BODY",
-    "CANVAS",
-    "CENTER",
-    "DD",
-    "DIR",
-    "DIV",
-    "DL",
-    "DT",
-    "FIELDSET",
-    "FIGCAPTION",
-    "FIGURE",
-    "FOOTER",
-    "FORM",
-    "FRAMESET",
-    "H1",
-    "H2",
-    "H3",
-    "H4",
-    "H5",
-    "H6",
-    "HEADER",
-    "HGROUP",
-    "HR",
-    "HTML",
-    "ISINDEX",
-    "LI",
-    "MAIN",
-    "MENU",
-    "NAV",
-    "NOFRAMES",
-    "NOSCRIPT",
-    "OL",
-    "OUTPUT",
-    "P",
-    "PRE",
-    "SECTION",
-    "TABLE",
-    "TBODY",
-    "TD",
-    "TFOOT",
-    "TH",
-    "THEAD",
-    "TR",
-    "UL"
-  ];
-  function isBlock(node) {
-    return is(node, blockElements);
-  }
-  var voidElements = [
-    "AREA",
-    "BASE",
-    "BR",
-    "COL",
-    "COMMAND",
-    "EMBED",
-    "HR",
-    "IMG",
-    "INPUT",
-    "KEYGEN",
-    "LINK",
-    "META",
-    "PARAM",
-    "SOURCE",
-    "TRACK",
-    "WBR"
-  ];
-  function isVoid(node) {
-    return is(node, voidElements);
-  }
-  function hasVoid(node) {
-    return has(node, voidElements);
-  }
-  var meaningfulWhenBlankElements = [
-    "A",
-    "TABLE",
-    "THEAD",
-    "TBODY",
-    "TFOOT",
-    "TH",
-    "TD",
-    "IFRAME",
-    "SCRIPT",
-    "AUDIO",
-    "VIDEO"
-  ];
-  function isMeaningfulWhenBlank(node) {
-    return is(node, meaningfulWhenBlankElements);
-  }
-  function hasMeaningfulWhenBlank(node) {
-    return has(node, meaningfulWhenBlankElements);
-  }
-  function is(node, tagNames) {
-    return tagNames.indexOf(node.nodeName) >= 0;
-  }
-  function has(node, tagNames) {
-    return node.getElementsByTagName && tagNames.some(function(tagName) {
-      return node.getElementsByTagName(tagName).length;
-    });
-  }
-  var rules = {};
-  rules.paragraph = {
-    filter: "p",
-    replacement: function(content) {
-      return "\n\n" + content + "\n\n";
-    }
-  };
-  rules.lineBreak = {
-    filter: "br",
-    replacement: function(content, node, options2) {
-      return options2.br + "\n";
-    }
-  };
-  rules.heading = {
-    filter: ["h1", "h2", "h3", "h4", "h5", "h6"],
-    replacement: function(content, node, options2) {
-      var hLevel = Number(node.nodeName.charAt(1));
-      if (options2.headingStyle === "setext" && hLevel < 3) {
-        var underline = repeat(hLevel === 1 ? "=" : "-", content.length);
-        return "\n\n" + content + "\n" + underline + "\n\n";
-      } else {
-        return "\n\n" + repeat("#", hLevel) + " " + content + "\n\n";
-      }
-    }
-  };
-  rules.blockquote = {
-    filter: "blockquote",
-    replacement: function(content) {
-      content = trimNewlines(content).replace(/^/gm, "> ");
-      return "\n\n" + content + "\n\n";
-    }
-  };
-  rules.list = {
-    filter: ["ul", "ol"],
-    replacement: function(content, node) {
-      var parent = node.parentNode;
-      if (parent.nodeName === "LI" && parent.lastElementChild === node) {
-        return "\n" + content;
-      } else {
-        return "\n\n" + content + "\n\n";
-      }
-    }
-  };
-  rules.listItem = {
-    filter: "li",
-    replacement: function(content, node, options2) {
-      var prefix = options2.bulletListMarker + "   ";
-      var parent = node.parentNode;
-      if (parent.nodeName === "OL") {
-        var start = parent.getAttribute("start");
-        var index = Array.prototype.indexOf.call(parent.children, node);
-        prefix = (start ? Number(start) + index : index + 1) + ".  ";
-      }
-      var isParagraph = /\n$/.test(content);
-      content = trimNewlines(content) + (isParagraph ? "\n" : "");
-      content = content.replace(/\n/gm, "\n" + " ".repeat(prefix.length));
-      return prefix + content + (node.nextSibling ? "\n" : "");
-    }
-  };
-  rules.indentedCodeBlock = {
-    filter: function(node, options2) {
-      return options2.codeBlockStyle === "indented" && node.nodeName === "PRE" && node.firstChild && node.firstChild.nodeName === "CODE";
-    },
-    replacement: function(content, node, options2) {
-      return "\n\n    " + node.firstChild.textContent.replace(/\n/g, "\n    ") + "\n\n";
-    }
-  };
-  rules.fencedCodeBlock = {
-    filter: function(node, options2) {
-      return options2.codeBlockStyle === "fenced" && node.nodeName === "PRE" && node.firstChild && node.firstChild.nodeName === "CODE";
-    },
-    replacement: function(content, node, options2) {
-      var className = node.firstChild.getAttribute("class") || "";
-      var language = (className.match(/language-(\S+)/) || [null, ""])[1];
-      var code = node.firstChild.textContent;
-      var fenceChar = options2.fence.charAt(0);
-      var fenceSize = 3;
-      var fenceInCodeRegex = new RegExp("^" + fenceChar + "{3,}", "gm");
-      var match;
-      while (match = fenceInCodeRegex.exec(code)) {
-        if (match[0].length >= fenceSize) {
-          fenceSize = match[0].length + 1;
-        }
-      }
-      var fence = repeat(fenceChar, fenceSize);
-      return "\n\n" + fence + language + "\n" + code.replace(/\n$/, "") + "\n" + fence + "\n\n";
-    }
-  };
-  rules.horizontalRule = {
-    filter: "hr",
-    replacement: function(content, node, options2) {
-      return "\n\n" + options2.hr + "\n\n";
-    }
-  };
-  rules.inlineLink = {
-    filter: function(node, options2) {
-      return options2.linkStyle === "inlined" && node.nodeName === "A" && node.getAttribute("href");
-    },
-    replacement: function(content, node) {
-      var href = node.getAttribute("href");
-      if (href) href = href.replace(/([()])/g, "\\$1");
-      var title = cleanAttribute(node.getAttribute("title"));
-      if (title) title = ' "' + title.replace(/"/g, '\\"') + '"';
-      return "[" + content + "](" + href + title + ")";
-    }
-  };
-  rules.referenceLink = {
-    filter: function(node, options2) {
-      return options2.linkStyle === "referenced" && node.nodeName === "A" && node.getAttribute("href");
-    },
-    replacement: function(content, node, options2) {
-      var href = node.getAttribute("href");
-      var title = cleanAttribute(node.getAttribute("title"));
-      if (title) title = ' "' + title + '"';
-      var replacement;
-      var reference;
-      switch (options2.linkReferenceStyle) {
-        case "collapsed":
-          replacement = "[" + content + "][]";
-          reference = "[" + content + "]: " + href + title;
-          break;
-        case "shortcut":
-          replacement = "[" + content + "]";
-          reference = "[" + content + "]: " + href + title;
-          break;
-        default:
-          var id = this.references.length + 1;
-          replacement = "[" + content + "][" + id + "]";
-          reference = "[" + id + "]: " + href + title;
-      }
-      this.references.push(reference);
-      return replacement;
-    },
-    references: [],
-    append: function(options2) {
-      var references = "";
-      if (this.references.length) {
-        references = "\n\n" + this.references.join("\n") + "\n\n";
-        this.references = [];
-      }
-      return references;
-    }
-  };
-  rules.emphasis = {
-    filter: ["em", "i"],
-    replacement: function(content, node, options2) {
-      if (!content.trim()) return "";
-      return options2.emDelimiter + content + options2.emDelimiter;
-    }
-  };
-  rules.strong = {
-    filter: ["strong", "b"],
-    replacement: function(content, node, options2) {
-      if (!content.trim()) return "";
-      return options2.strongDelimiter + content + options2.strongDelimiter;
-    }
-  };
-  rules.code = {
-    filter: function(node) {
-      var hasSiblings = node.previousSibling || node.nextSibling;
-      var isCodeBlock = node.parentNode.nodeName === "PRE" && !hasSiblings;
-      return node.nodeName === "CODE" && !isCodeBlock;
-    },
-    replacement: function(content) {
-      if (!content) return "";
-      content = content.replace(/\r?\n|\r/g, " ");
-      var extraSpace = /^`|^ .*?[^ ].* $|`$/.test(content) ? " " : "";
-      var delimiter = "`";
-      var matches2 = content.match(/`+/gm) || [];
-      while (matches2.indexOf(delimiter) !== -1) delimiter = delimiter + "`";
-      return delimiter + extraSpace + content + extraSpace + delimiter;
-    }
-  };
-  rules.image = {
-    filter: "img",
-    replacement: function(content, node) {
-      var alt = cleanAttribute(node.getAttribute("alt"));
-      var src = node.getAttribute("src") || "";
-      var title = cleanAttribute(node.getAttribute("title"));
-      var titlePart = title ? ' "' + title + '"' : "";
-      return src ? "![" + alt + "](" + src + titlePart + ")" : "";
-    }
-  };
-  function cleanAttribute(attribute) {
-    return attribute ? attribute.replace(/(\n+\s*)+/g, "\n") : "";
-  }
-  function Rules(options2) {
-    this.options = options2;
-    this._keep = [];
-    this._remove = [];
-    this.blankRule = {
-      replacement: options2.blankReplacement
-    };
-    this.keepReplacement = options2.keepReplacement;
-    this.defaultRule = {
-      replacement: options2.defaultReplacement
-    };
-    this.array = [];
-    for (var key in options2.rules) this.array.push(options2.rules[key]);
-  }
-  Rules.prototype = {
-    add: function(key, rule) {
-      this.array.unshift(rule);
-    },
-    keep: function(filter) {
-      this._keep.unshift({
-        filter,
-        replacement: this.keepReplacement
-      });
-    },
-    remove: function(filter) {
-      this._remove.unshift({
-        filter,
-        replacement: function() {
-          return "";
-        }
-      });
-    },
-    forNode: function(node) {
-      if (node.isBlank) return this.blankRule;
-      var rule;
-      if (rule = findRule(this.array, node, this.options)) return rule;
-      if (rule = findRule(this._keep, node, this.options)) return rule;
-      if (rule = findRule(this._remove, node, this.options)) return rule;
-      return this.defaultRule;
-    },
-    forEach: function(fn) {
-      for (var i = 0; i < this.array.length; i++) fn(this.array[i], i);
-    }
-  };
-  function findRule(rules3, node, options2) {
-    for (var i = 0; i < rules3.length; i++) {
-      var rule = rules3[i];
-      if (filterValue(rule, node, options2)) return rule;
-    }
-    return void 0;
-  }
-  function filterValue(rule, node, options2) {
-    var filter = rule.filter;
-    if (typeof filter === "string") {
-      if (filter === node.nodeName.toLowerCase()) return true;
-    } else if (Array.isArray(filter)) {
-      if (filter.indexOf(node.nodeName.toLowerCase()) > -1) return true;
-    } else if (typeof filter === "function") {
-      if (filter.call(rule, node, options2)) return true;
-    } else {
-      throw new TypeError("`filter` needs to be a string, array, or function");
-    }
-  }
-  function collapseWhitespace(options2) {
-    var element = options2.element;
-    var isBlock2 = options2.isBlock;
-    var isVoid2 = options2.isVoid;
-    var isPre = options2.isPre || function(node2) {
-      return node2.nodeName === "PRE";
-    };
-    if (!element.firstChild || isPre(element)) return;
-    var prevText = null;
-    var keepLeadingWs = false;
-    var prev = null;
-    var node = next(prev, element, isPre);
-    while (node !== element) {
-      if (node.nodeType === 3 || node.nodeType === 4) {
-        var text = node.data.replace(/[ \r\n\t]+/g, " ");
-        if ((!prevText || / $/.test(prevText.data)) && !keepLeadingWs && text[0] === " ") {
-          text = text.substr(1);
-        }
-        if (!text) {
-          node = remove(node);
-          continue;
-        }
-        node.data = text;
-        prevText = node;
-      } else if (node.nodeType === 1) {
-        if (isBlock2(node) || node.nodeName === "BR") {
-          if (prevText) {
-            prevText.data = prevText.data.replace(/ $/, "");
-          }
-          prevText = null;
-          keepLeadingWs = false;
-        } else if (isVoid2(node) || isPre(node)) {
-          prevText = null;
-          keepLeadingWs = true;
-        } else if (prevText) {
-          keepLeadingWs = false;
-        }
-      } else {
-        node = remove(node);
-        continue;
-      }
-      var nextNode = next(prev, node, isPre);
-      prev = node;
-      node = nextNode;
-    }
-    if (prevText) {
-      prevText.data = prevText.data.replace(/ $/, "");
-      if (!prevText.data) {
-        remove(prevText);
-      }
-    }
-  }
-  function remove(node) {
-    var next2 = node.nextSibling || node.parentNode;
-    node.parentNode.removeChild(node);
-    return next2;
-  }
-  function next(prev, current, isPre) {
-    if (prev && prev.parentNode === current || isPre(current)) {
-      return current.nextSibling || current.parentNode;
-    }
-    return current.firstChild || current.nextSibling || current.parentNode;
-  }
-  var root = typeof window !== "undefined" ? window : {};
-  function canParseHTMLNatively() {
-    var Parser = root.DOMParser;
-    var canParse = false;
-    try {
-      if (new Parser().parseFromString("", "text/html")) {
-        canParse = true;
-      }
-    } catch (e) {
-    }
-    return canParse;
-  }
-  function createHTMLParser() {
-    var Parser = function() {
-    };
-    {
-      if (shouldUseActiveX()) {
-        Parser.prototype.parseFromString = function(string) {
-          var doc3 = new window.ActiveXObject("htmlfile");
-          doc3.designMode = "on";
-          doc3.open();
-          doc3.write(string);
-          doc3.close();
-          return doc3;
-        };
-      } else {
-        Parser.prototype.parseFromString = function(string) {
-          var doc3 = document.implementation.createHTMLDocument("");
-          doc3.open();
-          doc3.write(string);
-          doc3.close();
-          return doc3;
-        };
-      }
-    }
-    return Parser;
-  }
-  function shouldUseActiveX() {
-    var useActiveX = false;
-    try {
-      document.implementation.createHTMLDocument("").open();
-    } catch (e) {
-      if (root.ActiveXObject) useActiveX = true;
-    }
-    return useActiveX;
-  }
-  var HTMLParser = canParseHTMLNatively() ? root.DOMParser : createHTMLParser();
-  function RootNode(input, options2) {
-    var root2;
-    if (typeof input === "string") {
-      var doc3 = htmlParser().parseFromString(
-        // DOM parsers arrange elements in the <head> and <body>.
-        // Wrapping in a custom element ensures elements are reliably arranged in
-        // a single element.
-        '<x-turndown id="turndown-root">' + input + "</x-turndown>",
-        "text/html"
-      );
-      root2 = doc3.getElementById("turndown-root");
-    } else {
-      root2 = input.cloneNode(true);
-    }
-    collapseWhitespace({
-      element: root2,
-      isBlock,
-      isVoid,
-      isPre: options2.preformattedCode ? isPreOrCode : null
-    });
-    return root2;
-  }
-  var _htmlParser;
-  function htmlParser() {
-    _htmlParser = _htmlParser || new HTMLParser();
-    return _htmlParser;
-  }
-  function isPreOrCode(node) {
-    return node.nodeName === "PRE" || node.nodeName === "CODE";
-  }
-  function Node4(node, options2) {
-    node.isBlock = isBlock(node);
-    node.isCode = node.nodeName === "CODE" || node.parentNode.isCode;
-    node.isBlank = isBlank(node);
-    node.flankingWhitespace = flankingWhitespace(node, options2);
-    return node;
-  }
-  function isBlank(node) {
-    return !isVoid(node) && !isMeaningfulWhenBlank(node) && /^\s*$/i.test(node.textContent) && !hasVoid(node) && !hasMeaningfulWhenBlank(node);
-  }
-  function flankingWhitespace(node, options2) {
-    if (node.isBlock || options2.preformattedCode && node.isCode) {
-      return { leading: "", trailing: "" };
-    }
-    var edges = edgeWhitespace(node.textContent);
-    if (edges.leadingAscii && isFlankedByWhitespace("left", node, options2)) {
-      edges.leading = edges.leadingNonAscii;
-    }
-    if (edges.trailingAscii && isFlankedByWhitespace("right", node, options2)) {
-      edges.trailing = edges.trailingNonAscii;
-    }
-    return { leading: edges.leading, trailing: edges.trailing };
-  }
-  function edgeWhitespace(string) {
-    var m = string.match(/^(([ \t\r\n]*)(\s*))(?:(?=\S)[\s\S]*\S)?((\s*?)([ \t\r\n]*))$/);
-    return {
-      leading: m[1],
-      // whole string for whitespace-only strings
-      leadingAscii: m[2],
-      leadingNonAscii: m[3],
-      trailing: m[4],
-      // empty for whitespace-only strings
-      trailingNonAscii: m[5],
-      trailingAscii: m[6]
-    };
-  }
-  function isFlankedByWhitespace(side, node, options2) {
-    var sibling;
-    var regExp;
-    var isFlanked;
-    if (side === "left") {
-      sibling = node.previousSibling;
-      regExp = / $/;
-    } else {
-      sibling = node.nextSibling;
-      regExp = /^ /;
-    }
-    if (sibling) {
-      if (sibling.nodeType === 3) {
-        isFlanked = regExp.test(sibling.nodeValue);
-      } else if (options2.preformattedCode && sibling.nodeName === "CODE") {
-        isFlanked = false;
-      } else if (sibling.nodeType === 1 && !isBlock(sibling)) {
-        isFlanked = regExp.test(sibling.textContent);
-      }
-    }
-    return isFlanked;
-  }
-  var reduce = Array.prototype.reduce;
-  var escapes = [
-    [/\\/g, "\\\\"],
-    [/\*/g, "\\*"],
-    [/^-/g, "\\-"],
-    [/^\+ /g, "\\+ "],
-    [/^(=+)/g, "\\$1"],
-    [/^(#{1,6}) /g, "\\$1 "],
-    [/`/g, "\\`"],
-    [/^~~~/g, "\\~~~"],
-    [/\[/g, "\\["],
-    [/\]/g, "\\]"],
-    [/^>/g, "\\>"],
-    [/_/g, "\\_"],
-    [/^(\d+)\. /g, "$1\\. "]
-  ];
-  function TurndownService(options2) {
-    if (!(this instanceof TurndownService)) return new TurndownService(options2);
-    var defaults2 = {
-      rules,
-      headingStyle: "setext",
-      hr: "* * *",
-      bulletListMarker: "*",
-      codeBlockStyle: "indented",
-      fence: "```",
-      emDelimiter: "_",
-      strongDelimiter: "**",
-      linkStyle: "inlined",
-      linkReferenceStyle: "full",
-      br: "  ",
-      preformattedCode: false,
-      blankReplacement: function(content, node) {
-        return node.isBlock ? "\n\n" : "";
-      },
-      keepReplacement: function(content, node) {
-        return node.isBlock ? "\n\n" + node.outerHTML + "\n\n" : node.outerHTML;
-      },
-      defaultReplacement: function(content, node) {
-        return node.isBlock ? "\n\n" + content + "\n\n" : content;
-      }
-    };
-    this.options = extend({}, defaults2, options2);
-    this.rules = new Rules(this.options);
-  }
-  TurndownService.prototype = {
-    /**
-     * The entry point for converting a string or DOM node to Markdown
-     * @public
-     * @param {String|HTMLElement} input The string or DOM node to convert
-     * @returns A Markdown representation of the input
-     * @type String
-     */
-    turndown: function(input) {
-      if (!canConvert(input)) {
-        throw new TypeError(
-          input + " is not a string, or an element/document/fragment node."
-        );
-      }
-      if (input === "") return "";
-      var output = process2.call(this, new RootNode(input, this.options));
-      return postProcess.call(this, output);
-    },
-    /**
-     * Add one or more plugins
-     * @public
-     * @param {Function|Array} plugin The plugin or array of plugins to add
-     * @returns The Turndown instance for chaining
-     * @type Object
-     */
-    use: function(plugin) {
-      if (Array.isArray(plugin)) {
-        for (var i = 0; i < plugin.length; i++) this.use(plugin[i]);
-      } else if (typeof plugin === "function") {
-        plugin(this);
-      } else {
-        throw new TypeError("plugin must be a Function or an Array of Functions");
-      }
-      return this;
-    },
-    /**
-     * Adds a rule
-     * @public
-     * @param {String} key The unique key of the rule
-     * @param {Object} rule The rule
-     * @returns The Turndown instance for chaining
-     * @type Object
-     */
-    addRule: function(key, rule) {
-      this.rules.add(key, rule);
-      return this;
-    },
-    /**
-     * Keep a node (as HTML) that matches the filter
-     * @public
-     * @param {String|Array|Function} filter The unique key of the rule
-     * @returns The Turndown instance for chaining
-     * @type Object
-     */
-    keep: function(filter) {
-      this.rules.keep(filter);
-      return this;
-    },
-    /**
-     * Remove a node that matches the filter
-     * @public
-     * @param {String|Array|Function} filter The unique key of the rule
-     * @returns The Turndown instance for chaining
-     * @type Object
-     */
-    remove: function(filter) {
-      this.rules.remove(filter);
-      return this;
-    },
-    /**
-     * Escapes Markdown syntax
-     * @public
-     * @param {String} string The string to escape
-     * @returns A string with Markdown syntax escaped
-     * @type String
-     */
-    escape: function(string) {
-      return escapes.reduce(function(accumulator, escape2) {
-        return accumulator.replace(escape2[0], escape2[1]);
-      }, string);
-    }
-  };
-  function process2(parentNode2) {
-    var self2 = this;
-    return reduce.call(parentNode2.childNodes, function(output, node) {
-      node = new Node4(node, self2.options);
-      var replacement = "";
-      if (node.nodeType === 3) {
-        replacement = node.isCode ? node.nodeValue : self2.escape(node.nodeValue);
-      } else if (node.nodeType === 1) {
-        replacement = replacementForNode.call(self2, node);
-      }
-      return join2(output, replacement);
-    }, "");
-  }
-  function postProcess(output) {
-    var self2 = this;
-    this.rules.forEach(function(rule) {
-      if (typeof rule.append === "function") {
-        output = join2(output, rule.append(self2.options));
-      }
-    });
-    return output.replace(/^[\t\r\n]+/, "").replace(/[\t\r\n\s]+$/, "");
-  }
-  function replacementForNode(node) {
-    var rule = this.rules.forNode(node);
-    var content = process2.call(this, node);
-    var whitespace2 = node.flankingWhitespace;
-    if (whitespace2.leading || whitespace2.trailing) content = content.trim();
-    return whitespace2.leading + rule.replacement(content, node, this.options) + whitespace2.trailing;
-  }
-  function join2(output, replacement) {
-    var s1 = trimTrailingNewlines(output);
-    var s2 = trimLeadingNewlines(replacement);
-    var nls = Math.max(output.length - s1.length, replacement.length - s2.length);
-    var separator = "\n\n".substring(0, nls);
-    return s1 + separator + s2;
-  }
-  function canConvert(input) {
-    return input != null && (typeof input === "string" || input.nodeType && (input.nodeType === 1 || input.nodeType === 9 || input.nodeType === 11));
-  }
-  var turndown_browser_es_default = TurndownService;
-
-  // node_modules/turndown-plugin-gfm/lib/turndown-plugin-gfm.es.js
-  init_define_process_env();
-  init_polyfills();
-  var highlightRegExp = /highlight-(?:text|source)-([a-z0-9]+)/;
-  function highlightedCodeBlock(turndownService) {
-    turndownService.addRule("highlightedCodeBlock", {
-      filter: function(node) {
-        var firstChild = node.firstChild;
-        return node.nodeName === "DIV" && highlightRegExp.test(node.className) && firstChild && firstChild.nodeName === "PRE";
-      },
-      replacement: function(content, node, options2) {
-        var className = node.className || "";
-        var language = (className.match(highlightRegExp) || [null, ""])[1];
-        return "\n\n" + options2.fence + language + "\n" + node.firstChild.textContent + "\n" + options2.fence + "\n\n";
-      }
-    });
-  }
-  function strikethrough(turndownService) {
-    turndownService.addRule("strikethrough", {
-      filter: ["del", "s", "strike"],
-      replacement: function(content) {
-        return "~" + content + "~";
-      }
-    });
-  }
-  var indexOf = Array.prototype.indexOf;
-  var every = Array.prototype.every;
-  var rules2 = {};
-  rules2.tableCell = {
-    filter: ["th", "td"],
-    replacement: function(content, node) {
-      return cell(content, node);
-    }
-  };
-  rules2.tableRow = {
-    filter: "tr",
-    replacement: function(content, node) {
-      var borderCells = "";
-      var alignMap = { left: ":--", right: "--:", center: ":-:" };
-      if (isHeadingRow(node)) {
-        for (var i = 0; i < node.childNodes.length; i++) {
-          var border = "---";
-          var align = (node.childNodes[i].getAttribute("align") || "").toLowerCase();
-          if (align) border = alignMap[align] || border;
-          borderCells += cell(border, node.childNodes[i]);
-        }
-      }
-      return "\n" + content + (borderCells ? "\n" + borderCells : "");
-    }
-  };
-  rules2.table = {
-    // Only convert tables with a heading row.
-    // Tables with no heading row are kept using `keep` (see below).
-    filter: function(node) {
-      return node.nodeName === "TABLE" && isHeadingRow(node.rows[0]);
-    },
-    replacement: function(content) {
-      content = content.replace("\n\n", "\n");
-      return "\n\n" + content + "\n\n";
-    }
-  };
-  rules2.tableSection = {
-    filter: ["thead", "tbody", "tfoot"],
-    replacement: function(content) {
-      return content;
-    }
-  };
-  function isHeadingRow(tr2) {
-    var parentNode2 = tr2.parentNode;
-    return parentNode2.nodeName === "THEAD" || parentNode2.firstChild === tr2 && (parentNode2.nodeName === "TABLE" || isFirstTbody(parentNode2)) && every.call(tr2.childNodes, function(n) {
-      return n.nodeName === "TH";
-    });
-  }
-  function isFirstTbody(element) {
-    var previousSibling = element.previousSibling;
-    return element.nodeName === "TBODY" && (!previousSibling || previousSibling.nodeName === "THEAD" && /^\s*$/i.test(previousSibling.textContent));
-  }
-  function cell(content, node) {
-    var index = indexOf.call(node.parentNode.childNodes, node);
-    var prefix = " ";
-    if (index === 0) prefix = "| ";
-    return prefix + content + " |";
-  }
-  function tables(turndownService) {
-    turndownService.keep(function(node) {
-      return node.nodeName === "TABLE" && !isHeadingRow(node.rows[0]);
-    });
-    for (var key in rules2) turndownService.addRule(key, rules2[key]);
-  }
-  function taskListItems(turndownService) {
-    turndownService.addRule("taskListItems", {
-      filter: function(node) {
-        return node.type === "checkbox" && node.parentNode.nodeName === "LI";
-      },
-      replacement: function(content, node) {
-        return (node.checked ? "[x]" : "[ ]") + " ";
-      }
-    });
-  }
-  function gfm(turndownService) {
-    turndownService.use([
-      highlightedCodeBlock,
-      strikethrough,
-      tables,
-      taskListItems
-    ]);
-  }
-
-  // node_modules/marked/lib/marked.esm.js
-  init_define_process_env();
-  init_polyfills();
-  function _getDefaults() {
-    return {
-      async: false,
-      breaks: false,
-      extensions: null,
-      gfm: true,
-      hooks: null,
-      pedantic: false,
-      renderer: null,
-      silent: false,
-      tokenizer: null,
-      walkTokens: null
-    };
-  }
-  var _defaults = _getDefaults();
-  function changeDefaults(newDefaults) {
-    _defaults = newDefaults;
-  }
-  var escapeTest = /[&<>"']/;
-  var escapeReplace = new RegExp(escapeTest.source, "g");
-  var escapeTestNoEncode = /[<>"']|&(?!(#\d{1,7}|#[Xx][a-fA-F0-9]{1,6}|\w+);)/;
-  var escapeReplaceNoEncode = new RegExp(escapeTestNoEncode.source, "g");
-  var escapeReplacements = {
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;"
-  };
-  var getEscapeReplacement = (ch) => escapeReplacements[ch];
-  function escape$1(html2, encode) {
-    if (encode) {
-      if (escapeTest.test(html2)) {
-        return html2.replace(escapeReplace, getEscapeReplacement);
-      }
-    } else {
-      if (escapeTestNoEncode.test(html2)) {
-        return html2.replace(escapeReplaceNoEncode, getEscapeReplacement);
-      }
-    }
-    return html2;
-  }
-  var unescapeTest = /&(#(?:\d+)|(?:#x[0-9A-Fa-f]+)|(?:\w+));?/ig;
-  function unescape2(html2) {
-    return html2.replace(unescapeTest, (_, n) => {
-      n = n.toLowerCase();
-      if (n === "colon")
-        return ":";
-      if (n.charAt(0) === "#") {
-        return n.charAt(1) === "x" ? String.fromCharCode(parseInt(n.substring(2), 16)) : String.fromCharCode(+n.substring(1));
-      }
-      return "";
-    });
-  }
-  var caret = /(^|[^\[])\^/g;
-  function edit(regex, opt) {
-    let source = typeof regex === "string" ? regex : regex.source;
-    opt = opt || "";
-    const obj = {
-      replace: (name, val) => {
-        let valSource = typeof val === "string" ? val : val.source;
-        valSource = valSource.replace(caret, "$1");
-        source = source.replace(name, valSource);
-        return obj;
-      },
-      getRegex: () => {
-        return new RegExp(source, opt);
-      }
-    };
-    return obj;
-  }
-  function cleanUrl(href) {
-    try {
-      href = encodeURI(href).replace(/%25/g, "%");
-    } catch (e) {
-      return null;
-    }
-    return href;
-  }
-  var noopTest = { exec: () => null };
-  function splitCells(tableRow, count) {
-    const row = tableRow.replace(/\|/g, (match, offset3, str) => {
-      let escaped = false;
-      let curr = offset3;
-      while (--curr >= 0 && str[curr] === "\\")
-        escaped = !escaped;
-      if (escaped) {
-        return "|";
-      } else {
-        return " |";
-      }
-    }), cells = row.split(/ \|/);
-    let i = 0;
-    if (!cells[0].trim()) {
-      cells.shift();
-    }
-    if (cells.length > 0 && !cells[cells.length - 1].trim()) {
-      cells.pop();
-    }
-    if (count) {
-      if (cells.length > count) {
-        cells.splice(count);
-      } else {
-        while (cells.length < count)
-          cells.push("");
-      }
-    }
-    for (; i < cells.length; i++) {
-      cells[i] = cells[i].trim().replace(/\\\|/g, "|");
-    }
-    return cells;
-  }
-  function rtrim(str, c, invert) {
-    const l = str.length;
-    if (l === 0) {
-      return "";
-    }
-    let suffLen = 0;
-    while (suffLen < l) {
-      const currChar = str.charAt(l - suffLen - 1);
-      if (currChar === c && !invert) {
-        suffLen++;
-      } else if (currChar !== c && invert) {
-        suffLen++;
-      } else {
-        break;
-      }
-    }
-    return str.slice(0, l - suffLen);
-  }
-  function findClosingBracket(str, b) {
-    if (str.indexOf(b[1]) === -1) {
-      return -1;
-    }
-    let level = 0;
-    for (let i = 0; i < str.length; i++) {
-      if (str[i] === "\\") {
-        i++;
-      } else if (str[i] === b[0]) {
-        level++;
-      } else if (str[i] === b[1]) {
-        level--;
-        if (level < 0) {
-          return i;
-        }
-      }
-    }
-    return -1;
-  }
-  function outputLink(cap, link2, raw, lexer2) {
-    const href = link2.href;
-    const title = link2.title ? escape$1(link2.title) : null;
-    const text = cap[1].replace(/\\([\[\]])/g, "$1");
-    if (cap[0].charAt(0) !== "!") {
-      lexer2.state.inLink = true;
-      const token = {
-        type: "link",
-        raw,
-        href,
-        title,
-        text,
-        tokens: lexer2.inlineTokens(text)
-      };
-      lexer2.state.inLink = false;
-      return token;
-    }
-    return {
-      type: "image",
-      raw,
-      href,
-      title,
-      text: escape$1(text)
-    };
-  }
-  function indentCodeCompensation(raw, text) {
-    const matchIndentToCode = raw.match(/^(\s+)(?:```)/);
-    if (matchIndentToCode === null) {
-      return text;
-    }
-    const indentToCode = matchIndentToCode[1];
-    return text.split("\n").map((node) => {
-      const matchIndentInNode = node.match(/^\s+/);
-      if (matchIndentInNode === null) {
-        return node;
-      }
-      const [indentInNode] = matchIndentInNode;
-      if (indentInNode.length >= indentToCode.length) {
-        return node.slice(indentToCode.length);
-      }
-      return node;
-    }).join("\n");
-  }
-  var _Tokenizer = class {
-    // set by the lexer
-    constructor(options2) {
-      __publicField(this, "options");
-      __publicField(this, "rules");
-      // set by the lexer
-      __publicField(this, "lexer");
-      this.options = options2 || _defaults;
-    }
-    space(src) {
-      const cap = this.rules.block.newline.exec(src);
-      if (cap && cap[0].length > 0) {
-        return {
-          type: "space",
-          raw: cap[0]
-        };
-      }
-    }
-    code(src) {
-      const cap = this.rules.block.code.exec(src);
-      if (cap) {
-        const text = cap[0].replace(/^ {1,4}/gm, "");
-        return {
-          type: "code",
-          raw: cap[0],
-          codeBlockStyle: "indented",
-          text: !this.options.pedantic ? rtrim(text, "\n") : text
-        };
-      }
-    }
-    fences(src) {
-      const cap = this.rules.block.fences.exec(src);
-      if (cap) {
-        const raw = cap[0];
-        const text = indentCodeCompensation(raw, cap[3] || "");
-        return {
-          type: "code",
-          raw,
-          lang: cap[2] ? cap[2].trim().replace(this.rules.inline.anyPunctuation, "$1") : cap[2],
-          text
-        };
-      }
-    }
-    heading(src) {
-      const cap = this.rules.block.heading.exec(src);
-      if (cap) {
-        let text = cap[2].trim();
-        if (/#$/.test(text)) {
-          const trimmed = rtrim(text, "#");
-          if (this.options.pedantic) {
-            text = trimmed.trim();
-          } else if (!trimmed || / $/.test(trimmed)) {
-            text = trimmed.trim();
-          }
-        }
-        return {
-          type: "heading",
-          raw: cap[0],
-          depth: cap[1].length,
-          text,
-          tokens: this.lexer.inline(text)
-        };
-      }
-    }
-    hr(src) {
-      const cap = this.rules.block.hr.exec(src);
-      if (cap) {
-        return {
-          type: "hr",
-          raw: cap[0]
-        };
-      }
-    }
-    blockquote(src) {
-      const cap = this.rules.block.blockquote.exec(src);
-      if (cap) {
-        let text = cap[0].replace(/\n {0,3}((?:=+|-+) *)(?=\n|$)/g, "\n    $1");
-        text = rtrim(text.replace(/^ *>[ \t]?/gm, ""), "\n");
-        const top = this.lexer.state.top;
-        this.lexer.state.top = true;
-        const tokens = this.lexer.blockTokens(text);
-        this.lexer.state.top = top;
-        return {
-          type: "blockquote",
-          raw: cap[0],
-          tokens,
-          text
-        };
-      }
-    }
-    list(src) {
-      let cap = this.rules.block.list.exec(src);
-      if (cap) {
-        let bull = cap[1].trim();
-        const isordered = bull.length > 1;
-        const list2 = {
-          type: "list",
-          raw: "",
-          ordered: isordered,
-          start: isordered ? +bull.slice(0, -1) : "",
-          loose: false,
-          items: []
-        };
-        bull = isordered ? `\\d{1,9}\\${bull.slice(-1)}` : `\\${bull}`;
-        if (this.options.pedantic) {
-          bull = isordered ? bull : "[*+-]";
-        }
-        const itemRegex = new RegExp(`^( {0,3}${bull})((?:[	 ][^\\n]*)?(?:\\n|$))`);
-        let raw = "";
-        let itemContents = "";
-        let endsWithBlankLine = false;
-        while (src) {
-          let endEarly = false;
-          if (!(cap = itemRegex.exec(src))) {
-            break;
-          }
-          if (this.rules.block.hr.test(src)) {
-            break;
-          }
-          raw = cap[0];
-          src = src.substring(raw.length);
-          let line = cap[2].split("\n", 1)[0].replace(/^\t+/, (t) => " ".repeat(3 * t.length));
-          let nextLine = src.split("\n", 1)[0];
-          let indent = 0;
-          if (this.options.pedantic) {
-            indent = 2;
-            itemContents = line.trimStart();
-          } else {
-            indent = cap[2].search(/[^ ]/);
-            indent = indent > 4 ? 1 : indent;
-            itemContents = line.slice(indent);
-            indent += cap[1].length;
-          }
-          let blankLine = false;
-          if (!line && /^ *$/.test(nextLine)) {
-            raw += nextLine + "\n";
-            src = src.substring(nextLine.length + 1);
-            endEarly = true;
-          }
-          if (!endEarly) {
-            const nextBulletRegex = new RegExp(`^ {0,${Math.min(3, indent - 1)}}(?:[*+-]|\\d{1,9}[.)])((?:[ 	][^\\n]*)?(?:\\n|$))`);
-            const hrRegex = new RegExp(`^ {0,${Math.min(3, indent - 1)}}((?:- *){3,}|(?:_ *){3,}|(?:\\* *){3,})(?:\\n+|$)`);
-            const fencesBeginRegex = new RegExp(`^ {0,${Math.min(3, indent - 1)}}(?:\`\`\`|~~~)`);
-            const headingBeginRegex = new RegExp(`^ {0,${Math.min(3, indent - 1)}}#`);
-            while (src) {
-              const rawLine = src.split("\n", 1)[0];
-              nextLine = rawLine;
-              if (this.options.pedantic) {
-                nextLine = nextLine.replace(/^ {1,4}(?=( {4})*[^ ])/g, "  ");
-              }
-              if (fencesBeginRegex.test(nextLine)) {
-                break;
-              }
-              if (headingBeginRegex.test(nextLine)) {
-                break;
-              }
-              if (nextBulletRegex.test(nextLine)) {
-                break;
-              }
-              if (hrRegex.test(src)) {
-                break;
-              }
-              if (nextLine.search(/[^ ]/) >= indent || !nextLine.trim()) {
-                itemContents += "\n" + nextLine.slice(indent);
-              } else {
-                if (blankLine) {
-                  break;
-                }
-                if (line.search(/[^ ]/) >= 4) {
-                  break;
-                }
-                if (fencesBeginRegex.test(line)) {
-                  break;
-                }
-                if (headingBeginRegex.test(line)) {
-                  break;
-                }
-                if (hrRegex.test(line)) {
-                  break;
-                }
-                itemContents += "\n" + nextLine;
-              }
-              if (!blankLine && !nextLine.trim()) {
-                blankLine = true;
-              }
-              raw += rawLine + "\n";
-              src = src.substring(rawLine.length + 1);
-              line = nextLine.slice(indent);
-            }
-          }
-          if (!list2.loose) {
-            if (endsWithBlankLine) {
-              list2.loose = true;
-            } else if (/\n *\n *$/.test(raw)) {
-              endsWithBlankLine = true;
-            }
-          }
-          let istask = null;
-          let ischecked;
-          if (this.options.gfm) {
-            istask = /^\[[ xX]\] /.exec(itemContents);
-            if (istask) {
-              ischecked = istask[0] !== "[ ] ";
-              itemContents = itemContents.replace(/^\[[ xX]\] +/, "");
-            }
-          }
-          list2.items.push({
-            type: "list_item",
-            raw,
-            task: !!istask,
-            checked: ischecked,
-            loose: false,
-            text: itemContents,
-            tokens: []
-          });
-          list2.raw += raw;
-        }
-        list2.items[list2.items.length - 1].raw = raw.trimEnd();
-        list2.items[list2.items.length - 1].text = itemContents.trimEnd();
-        list2.raw = list2.raw.trimEnd();
-        for (let i = 0; i < list2.items.length; i++) {
-          this.lexer.state.top = false;
-          list2.items[i].tokens = this.lexer.blockTokens(list2.items[i].text, []);
-          if (!list2.loose) {
-            const spacers = list2.items[i].tokens.filter((t) => t.type === "space");
-            const hasMultipleLineBreaks = spacers.length > 0 && spacers.some((t) => /\n.*\n/.test(t.raw));
-            list2.loose = hasMultipleLineBreaks;
-          }
-        }
-        if (list2.loose) {
-          for (let i = 0; i < list2.items.length; i++) {
-            list2.items[i].loose = true;
-          }
-        }
-        return list2;
-      }
-    }
-    html(src) {
-      const cap = this.rules.block.html.exec(src);
-      if (cap) {
-        const token = {
-          type: "html",
-          block: true,
-          raw: cap[0],
-          pre: cap[1] === "pre" || cap[1] === "script" || cap[1] === "style",
-          text: cap[0]
-        };
-        return token;
-      }
-    }
-    def(src) {
-      const cap = this.rules.block.def.exec(src);
-      if (cap) {
-        const tag2 = cap[1].toLowerCase().replace(/\s+/g, " ");
-        const href = cap[2] ? cap[2].replace(/^<(.*)>$/, "$1").replace(this.rules.inline.anyPunctuation, "$1") : "";
-        const title = cap[3] ? cap[3].substring(1, cap[3].length - 1).replace(this.rules.inline.anyPunctuation, "$1") : cap[3];
-        return {
-          type: "def",
-          tag: tag2,
-          raw: cap[0],
-          href,
-          title
-        };
-      }
-    }
-    table(src) {
-      const cap = this.rules.block.table.exec(src);
-      if (!cap) {
-        return;
-      }
-      if (!/[:|]/.test(cap[2])) {
-        return;
-      }
-      const headers = splitCells(cap[1]);
-      const aligns = cap[2].replace(/^\||\| *$/g, "").split("|");
-      const rows = cap[3] && cap[3].trim() ? cap[3].replace(/\n[ \t]*$/, "").split("\n") : [];
-      const item = {
-        type: "table",
-        raw: cap[0],
-        header: [],
-        align: [],
-        rows: []
-      };
-      if (headers.length !== aligns.length) {
-        return;
-      }
-      for (const align of aligns) {
-        if (/^ *-+: *$/.test(align)) {
-          item.align.push("right");
-        } else if (/^ *:-+: *$/.test(align)) {
-          item.align.push("center");
-        } else if (/^ *:-+ *$/.test(align)) {
-          item.align.push("left");
-        } else {
-          item.align.push(null);
-        }
-      }
-      for (const header of headers) {
-        item.header.push({
-          text: header,
-          tokens: this.lexer.inline(header)
-        });
-      }
-      for (const row of rows) {
-        item.rows.push(splitCells(row, item.header.length).map((cell2) => {
-          return {
-            text: cell2,
-            tokens: this.lexer.inline(cell2)
-          };
-        }));
-      }
-      return item;
-    }
-    lheading(src) {
-      const cap = this.rules.block.lheading.exec(src);
-      if (cap) {
-        return {
-          type: "heading",
-          raw: cap[0],
-          depth: cap[2].charAt(0) === "=" ? 1 : 2,
-          text: cap[1],
-          tokens: this.lexer.inline(cap[1])
-        };
-      }
-    }
-    paragraph(src) {
-      const cap = this.rules.block.paragraph.exec(src);
-      if (cap) {
-        const text = cap[1].charAt(cap[1].length - 1) === "\n" ? cap[1].slice(0, -1) : cap[1];
-        return {
-          type: "paragraph",
-          raw: cap[0],
-          text,
-          tokens: this.lexer.inline(text)
-        };
-      }
-    }
-    text(src) {
-      const cap = this.rules.block.text.exec(src);
-      if (cap) {
-        return {
-          type: "text",
-          raw: cap[0],
-          text: cap[0],
-          tokens: this.lexer.inline(cap[0])
-        };
-      }
-    }
-    escape(src) {
-      const cap = this.rules.inline.escape.exec(src);
-      if (cap) {
-        return {
-          type: "escape",
-          raw: cap[0],
-          text: escape$1(cap[1])
-        };
-      }
-    }
-    tag(src) {
-      const cap = this.rules.inline.tag.exec(src);
-      if (cap) {
-        if (!this.lexer.state.inLink && /^<a /i.test(cap[0])) {
-          this.lexer.state.inLink = true;
-        } else if (this.lexer.state.inLink && /^<\/a>/i.test(cap[0])) {
-          this.lexer.state.inLink = false;
-        }
-        if (!this.lexer.state.inRawBlock && /^<(pre|code|kbd|script)(\s|>)/i.test(cap[0])) {
-          this.lexer.state.inRawBlock = true;
-        } else if (this.lexer.state.inRawBlock && /^<\/(pre|code|kbd|script)(\s|>)/i.test(cap[0])) {
-          this.lexer.state.inRawBlock = false;
-        }
-        return {
-          type: "html",
-          raw: cap[0],
-          inLink: this.lexer.state.inLink,
-          inRawBlock: this.lexer.state.inRawBlock,
-          block: false,
-          text: cap[0]
-        };
-      }
-    }
-    link(src) {
-      const cap = this.rules.inline.link.exec(src);
-      if (cap) {
-        const trimmedUrl = cap[2].trim();
-        if (!this.options.pedantic && /^</.test(trimmedUrl)) {
-          if (!/>$/.test(trimmedUrl)) {
-            return;
-          }
-          const rtrimSlash = rtrim(trimmedUrl.slice(0, -1), "\\");
-          if ((trimmedUrl.length - rtrimSlash.length) % 2 === 0) {
-            return;
-          }
-        } else {
-          const lastParenIndex = findClosingBracket(cap[2], "()");
-          if (lastParenIndex > -1) {
-            const start = cap[0].indexOf("!") === 0 ? 5 : 4;
-            const linkLen = start + cap[1].length + lastParenIndex;
-            cap[2] = cap[2].substring(0, lastParenIndex);
-            cap[0] = cap[0].substring(0, linkLen).trim();
-            cap[3] = "";
-          }
-        }
-        let href = cap[2];
-        let title = "";
-        if (this.options.pedantic) {
-          const link2 = /^([^'"]*[^\s])\s+(['"])(.*)\2/.exec(href);
-          if (link2) {
-            href = link2[1];
-            title = link2[3];
-          }
-        } else {
-          title = cap[3] ? cap[3].slice(1, -1) : "";
-        }
-        href = href.trim();
-        if (/^</.test(href)) {
-          if (this.options.pedantic && !/>$/.test(trimmedUrl)) {
-            href = href.slice(1);
-          } else {
-            href = href.slice(1, -1);
-          }
-        }
-        return outputLink(cap, {
-          href: href ? href.replace(this.rules.inline.anyPunctuation, "$1") : href,
-          title: title ? title.replace(this.rules.inline.anyPunctuation, "$1") : title
-        }, cap[0], this.lexer);
-      }
-    }
-    reflink(src, links) {
-      let cap;
-      if ((cap = this.rules.inline.reflink.exec(src)) || (cap = this.rules.inline.nolink.exec(src))) {
-        const linkString = (cap[2] || cap[1]).replace(/\s+/g, " ");
-        const link2 = links[linkString.toLowerCase()];
-        if (!link2) {
-          const text = cap[0].charAt(0);
-          return {
-            type: "text",
-            raw: text,
-            text
-          };
-        }
-        return outputLink(cap, link2, cap[0], this.lexer);
-      }
-    }
-    emStrong(src, maskedSrc, prevChar = "") {
-      let match = this.rules.inline.emStrongLDelim.exec(src);
-      if (!match)
-        return;
-      if (match[3] && prevChar.match(/[\p{L}\p{N}]/u))
-        return;
-      const nextChar = match[1] || match[2] || "";
-      if (!nextChar || !prevChar || this.rules.inline.punctuation.exec(prevChar)) {
-        const lLength = [...match[0]].length - 1;
-        let rDelim, rLength, delimTotal = lLength, midDelimTotal = 0;
-        const endReg = match[0][0] === "*" ? this.rules.inline.emStrongRDelimAst : this.rules.inline.emStrongRDelimUnd;
-        endReg.lastIndex = 0;
-        maskedSrc = maskedSrc.slice(-1 * src.length + lLength);
-        while ((match = endReg.exec(maskedSrc)) != null) {
-          rDelim = match[1] || match[2] || match[3] || match[4] || match[5] || match[6];
-          if (!rDelim)
-            continue;
-          rLength = [...rDelim].length;
-          if (match[3] || match[4]) {
-            delimTotal += rLength;
-            continue;
-          } else if (match[5] || match[6]) {
-            if (lLength % 3 && !((lLength + rLength) % 3)) {
-              midDelimTotal += rLength;
-              continue;
-            }
-          }
-          delimTotal -= rLength;
-          if (delimTotal > 0)
-            continue;
-          rLength = Math.min(rLength, rLength + delimTotal + midDelimTotal);
-          const lastCharLength = [...match[0]][0].length;
-          const raw = src.slice(0, lLength + match.index + lastCharLength + rLength);
-          if (Math.min(lLength, rLength) % 2) {
-            const text2 = raw.slice(1, -1);
-            return {
-              type: "em",
-              raw,
-              text: text2,
-              tokens: this.lexer.inlineTokens(text2)
-            };
-          }
-          const text = raw.slice(2, -2);
-          return {
-            type: "strong",
-            raw,
-            text,
-            tokens: this.lexer.inlineTokens(text)
-          };
-        }
-      }
-    }
-    codespan(src) {
-      const cap = this.rules.inline.code.exec(src);
-      if (cap) {
-        let text = cap[2].replace(/\n/g, " ");
-        const hasNonSpaceChars = /[^ ]/.test(text);
-        const hasSpaceCharsOnBothEnds = /^ /.test(text) && / $/.test(text);
-        if (hasNonSpaceChars && hasSpaceCharsOnBothEnds) {
-          text = text.substring(1, text.length - 1);
-        }
-        text = escape$1(text, true);
-        return {
-          type: "codespan",
-          raw: cap[0],
-          text
-        };
-      }
-    }
-    br(src) {
-      const cap = this.rules.inline.br.exec(src);
-      if (cap) {
-        return {
-          type: "br",
-          raw: cap[0]
-        };
-      }
-    }
-    del(src) {
-      const cap = this.rules.inline.del.exec(src);
-      if (cap) {
-        return {
-          type: "del",
-          raw: cap[0],
-          text: cap[2],
-          tokens: this.lexer.inlineTokens(cap[2])
-        };
-      }
-    }
-    autolink(src) {
-      const cap = this.rules.inline.autolink.exec(src);
-      if (cap) {
-        let text, href;
-        if (cap[2] === "@") {
-          text = escape$1(cap[1]);
-          href = "mailto:" + text;
-        } else {
-          text = escape$1(cap[1]);
-          href = text;
-        }
-        return {
-          type: "link",
-          raw: cap[0],
-          text,
-          href,
-          tokens: [
-            {
-              type: "text",
-              raw: text,
-              text
-            }
-          ]
-        };
-      }
-    }
-    url(src) {
-      var _a, _b;
-      let cap;
-      if (cap = this.rules.inline.url.exec(src)) {
-        let text, href;
-        if (cap[2] === "@") {
-          text = escape$1(cap[0]);
-          href = "mailto:" + text;
-        } else {
-          let prevCapZero;
-          do {
-            prevCapZero = cap[0];
-            cap[0] = (_b = (_a = this.rules.inline._backpedal.exec(cap[0])) == null ? void 0 : _a[0]) != null ? _b : "";
-          } while (prevCapZero !== cap[0]);
-          text = escape$1(cap[0]);
-          if (cap[1] === "www.") {
-            href = "http://" + cap[0];
-          } else {
-            href = cap[0];
-          }
-        }
-        return {
-          type: "link",
-          raw: cap[0],
-          text,
-          href,
-          tokens: [
-            {
-              type: "text",
-              raw: text,
-              text
-            }
-          ]
-        };
-      }
-    }
-    inlineText(src) {
-      const cap = this.rules.inline.text.exec(src);
-      if (cap) {
-        let text;
-        if (this.lexer.state.inRawBlock) {
-          text = cap[0];
-        } else {
-          text = escape$1(cap[0]);
-        }
-        return {
-          type: "text",
-          raw: cap[0],
-          text
-        };
-      }
-    }
-  };
-  var newline = /^(?: *(?:\n|$))+/;
-  var blockCode = /^( {4}[^\n]+(?:\n(?: *(?:\n|$))*)?)+/;
-  var fences = /^ {0,3}(`{3,}(?=[^`\n]*(?:\n|$))|~{3,})([^\n]*)(?:\n|$)(?:|([\s\S]*?)(?:\n|$))(?: {0,3}\1[~`]* *(?=\n|$)|$)/;
-  var hr = /^ {0,3}((?:-[\t ]*){3,}|(?:_[ \t]*){3,}|(?:\*[ \t]*){3,})(?:\n+|$)/;
-  var heading = /^ {0,3}(#{1,6})(?=\s|$)(.*)(?:\n+|$)/;
-  var bullet = /(?:[*+-]|\d{1,9}[.)])/;
-  var lheading = edit(/^(?!bull |blockCode|fences|blockquote|heading|html)((?:.|\n(?!\s*?\n|bull |blockCode|fences|blockquote|heading|html))+?)\n {0,3}(=+|-+) *(?:\n+|$)/).replace(/bull/g, bullet).replace(/blockCode/g, / {4}/).replace(/fences/g, / {0,3}(?:`{3,}|~{3,})/).replace(/blockquote/g, / {0,3}>/).replace(/heading/g, / {0,3}#{1,6}/).replace(/html/g, / {0,3}<[^\n>]+>\n/).getRegex();
-  var _paragraph = /^([^\n]+(?:\n(?!hr|heading|lheading|blockquote|fences|list|html|table| +\n)[^\n]+)*)/;
-  var blockText = /^[^\n]+/;
-  var _blockLabel = /(?!\s*\])(?:\\.|[^\[\]\\])+/;
-  var def = edit(/^ {0,3}\[(label)\]: *(?:\n *)?([^<\s][^\s]*|<.*?>)(?:(?: +(?:\n *)?| *\n *)(title))? *(?:\n+|$)/).replace("label", _blockLabel).replace("title", /(?:"(?:\\"?|[^"\\])*"|'[^'\n]*(?:\n[^'\n]+)*\n?'|\([^()]*\))/).getRegex();
-  var list = edit(/^( {0,3}bull)([ \t][^\n]+?)?(?:\n|$)/).replace(/bull/g, bullet).getRegex();
-  var _tag = "address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h[1-6]|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|meta|nav|noframes|ol|optgroup|option|p|param|search|section|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul";
-  var _comment = /<!--(?:-?>|[\s\S]*?(?:-->|$))/;
-  var html = edit("^ {0,3}(?:<(script|pre|style|textarea)[\\s>][\\s\\S]*?(?:</\\1>[^\\n]*\\n+|$)|comment[^\\n]*(\\n+|$)|<\\?[\\s\\S]*?(?:\\?>\\n*|$)|<![A-Z][\\s\\S]*?(?:>\\n*|$)|<!\\[CDATA\\[[\\s\\S]*?(?:\\]\\]>\\n*|$)|</?(tag)(?: +|\\n|/?>)[\\s\\S]*?(?:(?:\\n *)+\\n|$)|<(?!script|pre|style|textarea)([a-z][\\w-]*)(?:attribute)*? */?>(?=[ \\t]*(?:\\n|$))[\\s\\S]*?(?:(?:\\n *)+\\n|$)|</(?!script|pre|style|textarea)[a-z][\\w-]*\\s*>(?=[ \\t]*(?:\\n|$))[\\s\\S]*?(?:(?:\\n *)+\\n|$))", "i").replace("comment", _comment).replace("tag", _tag).replace("attribute", / +[a-zA-Z:_][\w.:-]*(?: *= *"[^"\n]*"| *= *'[^'\n]*'| *= *[^\s"'=<>`]+)?/).getRegex();
-  var paragraph = edit(_paragraph).replace("hr", hr).replace("heading", " {0,3}#{1,6}(?:\\s|$)").replace("|lheading", "").replace("|table", "").replace("blockquote", " {0,3}>").replace("fences", " {0,3}(?:`{3,}(?=[^`\\n]*\\n)|~{3,})[^\\n]*\\n").replace("list", " {0,3}(?:[*+-]|1[.)]) ").replace("html", "</?(?:tag)(?: +|\\n|/?>)|<(?:script|pre|style|textarea|!--)").replace("tag", _tag).getRegex();
-  var blockquote = edit(/^( {0,3}> ?(paragraph|[^\n]*)(?:\n|$))+/).replace("paragraph", paragraph).getRegex();
-  var blockNormal = {
-    blockquote,
-    code: blockCode,
-    def,
-    fences,
-    heading,
-    hr,
-    html,
-    lheading,
-    list,
-    newline,
-    paragraph,
-    table: noopTest,
-    text: blockText
-  };
-  var gfmTable = edit("^ *([^\\n ].*)\\n {0,3}((?:\\| *)?:?-+:? *(?:\\| *:?-+:? *)*(?:\\| *)?)(?:\\n((?:(?! *\\n|hr|heading|blockquote|code|fences|list|html).*(?:\\n|$))*)\\n*|$)").replace("hr", hr).replace("heading", " {0,3}#{1,6}(?:\\s|$)").replace("blockquote", " {0,3}>").replace("code", " {4}[^\\n]").replace("fences", " {0,3}(?:`{3,}(?=[^`\\n]*\\n)|~{3,})[^\\n]*\\n").replace("list", " {0,3}(?:[*+-]|1[.)]) ").replace("html", "</?(?:tag)(?: +|\\n|/?>)|<(?:script|pre|style|textarea|!--)").replace("tag", _tag).getRegex();
-  var blockGfm = {
-    ...blockNormal,
-    table: gfmTable,
-    paragraph: edit(_paragraph).replace("hr", hr).replace("heading", " {0,3}#{1,6}(?:\\s|$)").replace("|lheading", "").replace("table", gfmTable).replace("blockquote", " {0,3}>").replace("fences", " {0,3}(?:`{3,}(?=[^`\\n]*\\n)|~{3,})[^\\n]*\\n").replace("list", " {0,3}(?:[*+-]|1[.)]) ").replace("html", "</?(?:tag)(?: +|\\n|/?>)|<(?:script|pre|style|textarea|!--)").replace("tag", _tag).getRegex()
-  };
-  var blockPedantic = {
-    ...blockNormal,
-    html: edit(`^ *(?:comment *(?:\\n|\\s*$)|<(tag)[\\s\\S]+?</\\1> *(?:\\n{2,}|\\s*$)|<tag(?:"[^"]*"|'[^']*'|\\s[^'"/>\\s]*)*?/?> *(?:\\n{2,}|\\s*$))`).replace("comment", _comment).replace(/tag/g, "(?!(?:a|em|strong|small|s|cite|q|dfn|abbr|data|time|code|var|samp|kbd|sub|sup|i|b|u|mark|ruby|rt|rp|bdi|bdo|span|br|wbr|ins|del|img)\\b)\\w+(?!:|[^\\w\\s@]*@)\\b").getRegex(),
-    def: /^ *\[([^\]]+)\]: *<?([^\s>]+)>?(?: +(["(][^\n]+[")]))? *(?:\n+|$)/,
-    heading: /^(#{1,6})(.*)(?:\n+|$)/,
-    fences: noopTest,
-    // fences not supported
-    lheading: /^(.+?)\n {0,3}(=+|-+) *(?:\n+|$)/,
-    paragraph: edit(_paragraph).replace("hr", hr).replace("heading", " *#{1,6} *[^\n]").replace("lheading", lheading).replace("|table", "").replace("blockquote", " {0,3}>").replace("|fences", "").replace("|list", "").replace("|html", "").replace("|tag", "").getRegex()
-  };
-  var escape = /^\\([!"#$%&'()*+,\-./:;<=>?@\[\]\\^_`{|}~])/;
-  var inlineCode = /^(`+)([^`]|[^`][\s\S]*?[^`])\1(?!`)/;
-  var br = /^( {2,}|\\)\n(?!\s*$)/;
-  var inlineText = /^(`+|[^`])(?:(?= {2,}\n)|[\s\S]*?(?:(?=[\\<!\[`*_]|\b_|$)|[^ ](?= {2,}\n)))/;
-  var _punctuation = "\\p{P}\\p{S}";
-  var punctuation = edit(/^((?![*_])[\spunctuation])/, "u").replace(/punctuation/g, _punctuation).getRegex();
-  var blockSkip = /\[[^[\]]*?\]\([^\(\)]*?\)|`[^`]*?`|<[^<>]*?>/g;
-  var emStrongLDelim = edit(/^(?:\*+(?:((?!\*)[punct])|[^\s*]))|^_+(?:((?!_)[punct])|([^\s_]))/, "u").replace(/punct/g, _punctuation).getRegex();
-  var emStrongRDelimAst = edit("^[^_*]*?__[^_*]*?\\*[^_*]*?(?=__)|[^*]+(?=[^*])|(?!\\*)[punct](\\*+)(?=[\\s]|$)|[^punct\\s](\\*+)(?!\\*)(?=[punct\\s]|$)|(?!\\*)[punct\\s](\\*+)(?=[^punct\\s])|[\\s](\\*+)(?!\\*)(?=[punct])|(?!\\*)[punct](\\*+)(?!\\*)(?=[punct])|[^punct\\s](\\*+)(?=[^punct\\s])", "gu").replace(/punct/g, _punctuation).getRegex();
-  var emStrongRDelimUnd = edit("^[^_*]*?\\*\\*[^_*]*?_[^_*]*?(?=\\*\\*)|[^_]+(?=[^_])|(?!_)[punct](_+)(?=[\\s]|$)|[^punct\\s](_+)(?!_)(?=[punct\\s]|$)|(?!_)[punct\\s](_+)(?=[^punct\\s])|[\\s](_+)(?!_)(?=[punct])|(?!_)[punct](_+)(?!_)(?=[punct])", "gu").replace(/punct/g, _punctuation).getRegex();
-  var anyPunctuation = edit(/\\([punct])/, "gu").replace(/punct/g, _punctuation).getRegex();
-  var autolink2 = edit(/^<(scheme:[^\s\x00-\x1f<>]*|email)>/).replace("scheme", /[a-zA-Z][a-zA-Z0-9+.-]{1,31}/).replace("email", /[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+(@)[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+(?![-_])/).getRegex();
-  var _inlineComment = edit(_comment).replace("(?:-->|$)", "-->").getRegex();
-  var tag = edit("^comment|^</[a-zA-Z][\\w:-]*\\s*>|^<[a-zA-Z][\\w-]*(?:attribute)*?\\s*/?>|^<\\?[\\s\\S]*?\\?>|^<![a-zA-Z]+\\s[\\s\\S]*?>|^<!\\[CDATA\\[[\\s\\S]*?\\]\\]>").replace("comment", _inlineComment).replace("attribute", /\s+[a-zA-Z:_][\w.:-]*(?:\s*=\s*"[^"]*"|\s*=\s*'[^']*'|\s*=\s*[^\s"'=<>`]+)?/).getRegex();
-  var _inlineLabel = /(?:\[(?:\\.|[^\[\]\\])*\]|\\.|`[^`]*`|[^\[\]\\`])*?/;
-  var link = edit(/^!?\[(label)\]\(\s*(href)(?:\s+(title))?\s*\)/).replace("label", _inlineLabel).replace("href", /<(?:\\.|[^\n<>\\])+>|[^\s\x00-\x1f]*/).replace("title", /"(?:\\"?|[^"\\])*"|'(?:\\'?|[^'\\])*'|\((?:\\\)?|[^)\\])*\)/).getRegex();
-  var reflink = edit(/^!?\[(label)\]\[(ref)\]/).replace("label", _inlineLabel).replace("ref", _blockLabel).getRegex();
-  var nolink = edit(/^!?\[(ref)\](?:\[\])?/).replace("ref", _blockLabel).getRegex();
-  var reflinkSearch = edit("reflink|nolink(?!\\()", "g").replace("reflink", reflink).replace("nolink", nolink).getRegex();
-  var inlineNormal = {
-    _backpedal: noopTest,
-    // only used for GFM url
-    anyPunctuation,
-    autolink: autolink2,
-    blockSkip,
-    br,
-    code: inlineCode,
-    del: noopTest,
-    emStrongLDelim,
-    emStrongRDelimAst,
-    emStrongRDelimUnd,
-    escape,
-    link,
-    nolink,
-    punctuation,
-    reflink,
-    reflinkSearch,
-    tag,
-    text: inlineText,
-    url: noopTest
-  };
-  var inlinePedantic = {
-    ...inlineNormal,
-    link: edit(/^!?\[(label)\]\((.*?)\)/).replace("label", _inlineLabel).getRegex(),
-    reflink: edit(/^!?\[(label)\]\s*\[([^\]]*)\]/).replace("label", _inlineLabel).getRegex()
-  };
-  var inlineGfm = {
-    ...inlineNormal,
-    escape: edit(escape).replace("])", "~|])").getRegex(),
-    url: edit(/^((?:ftp|https?):\/\/|www\.)(?:[a-zA-Z0-9\-]+\.?)+[^\s<]*|^email/, "i").replace("email", /[A-Za-z0-9._+-]+(@)[a-zA-Z0-9-_]+(?:\.[a-zA-Z0-9-_]*[a-zA-Z0-9])+(?![-_])/).getRegex(),
-    _backpedal: /(?:[^?!.,:;*_'"~()&]+|\([^)]*\)|&(?![a-zA-Z0-9]+;$)|[?!.,:;*_'"~)]+(?!$))+/,
-    del: /^(~~?)(?=[^\s~])([\s\S]*?[^\s~])\1(?=[^~]|$)/,
-    text: /^([`~]+|[^`~])(?:(?= {2,}\n)|(?=[a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-]+@)|[\s\S]*?(?:(?=[\\<!\[`*~_]|\b_|https?:\/\/|ftp:\/\/|www\.|$)|[^ ](?= {2,}\n)|[^a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-](?=[a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-]+@)))/
-  };
-  var inlineBreaks = {
-    ...inlineGfm,
-    br: edit(br).replace("{2,}", "*").getRegex(),
-    text: edit(inlineGfm.text).replace("\\b_", "\\b_| {2,}\\n").replace(/\{2,\}/g, "*").getRegex()
-  };
-  var block = {
-    normal: blockNormal,
-    gfm: blockGfm,
-    pedantic: blockPedantic
-  };
-  var inline2 = {
-    normal: inlineNormal,
-    gfm: inlineGfm,
-    breaks: inlineBreaks,
-    pedantic: inlinePedantic
-  };
-  var _Lexer = class __Lexer {
-    constructor(options2) {
-      __publicField(this, "tokens");
-      __publicField(this, "options");
-      __publicField(this, "state");
-      __publicField(this, "tokenizer");
-      __publicField(this, "inlineQueue");
-      this.tokens = [];
-      this.tokens.links = /* @__PURE__ */ Object.create(null);
-      this.options = options2 || _defaults;
-      this.options.tokenizer = this.options.tokenizer || new _Tokenizer();
-      this.tokenizer = this.options.tokenizer;
-      this.tokenizer.options = this.options;
-      this.tokenizer.lexer = this;
-      this.inlineQueue = [];
-      this.state = {
-        inLink: false,
-        inRawBlock: false,
-        top: true
-      };
-      const rules3 = {
-        block: block.normal,
-        inline: inline2.normal
-      };
-      if (this.options.pedantic) {
-        rules3.block = block.pedantic;
-        rules3.inline = inline2.pedantic;
-      } else if (this.options.gfm) {
-        rules3.block = block.gfm;
-        if (this.options.breaks) {
-          rules3.inline = inline2.breaks;
-        } else {
-          rules3.inline = inline2.gfm;
-        }
-      }
-      this.tokenizer.rules = rules3;
-    }
-    /**
-     * Expose Rules
-     */
-    static get rules() {
-      return {
-        block,
-        inline: inline2
-      };
-    }
-    /**
-     * Static Lex Method
-     */
-    static lex(src, options2) {
-      const lexer2 = new __Lexer(options2);
-      return lexer2.lex(src);
-    }
-    /**
-     * Static Lex Inline Method
-     */
-    static lexInline(src, options2) {
-      const lexer2 = new __Lexer(options2);
-      return lexer2.inlineTokens(src);
-    }
-    /**
-     * Preprocessing
-     */
-    lex(src) {
-      src = src.replace(/\r\n|\r/g, "\n");
-      this.blockTokens(src, this.tokens);
-      for (let i = 0; i < this.inlineQueue.length; i++) {
-        const next2 = this.inlineQueue[i];
-        this.inlineTokens(next2.src, next2.tokens);
-      }
-      this.inlineQueue = [];
-      return this.tokens;
-    }
-    blockTokens(src, tokens = []) {
-      if (this.options.pedantic) {
-        src = src.replace(/\t/g, "    ").replace(/^ +$/gm, "");
-      } else {
-        src = src.replace(/^( *)(\t+)/gm, (_, leading, tabs) => {
-          return leading + "    ".repeat(tabs.length);
-        });
-      }
-      let token;
-      let lastToken;
-      let cutSrc;
-      let lastParagraphClipped;
-      while (src) {
-        if (this.options.extensions && this.options.extensions.block && this.options.extensions.block.some((extTokenizer) => {
-          if (token = extTokenizer.call({ lexer: this }, src, tokens)) {
-            src = src.substring(token.raw.length);
-            tokens.push(token);
-            return true;
-          }
-          return false;
-        })) {
-          continue;
-        }
-        if (token = this.tokenizer.space(src)) {
-          src = src.substring(token.raw.length);
-          if (token.raw.length === 1 && tokens.length > 0) {
-            tokens[tokens.length - 1].raw += "\n";
-          } else {
-            tokens.push(token);
-          }
-          continue;
-        }
-        if (token = this.tokenizer.code(src)) {
-          src = src.substring(token.raw.length);
-          lastToken = tokens[tokens.length - 1];
-          if (lastToken && (lastToken.type === "paragraph" || lastToken.type === "text")) {
-            lastToken.raw += "\n" + token.raw;
-            lastToken.text += "\n" + token.text;
-            this.inlineQueue[this.inlineQueue.length - 1].src = lastToken.text;
-          } else {
-            tokens.push(token);
-          }
-          continue;
-        }
-        if (token = this.tokenizer.fences(src)) {
-          src = src.substring(token.raw.length);
-          tokens.push(token);
-          continue;
-        }
-        if (token = this.tokenizer.heading(src)) {
-          src = src.substring(token.raw.length);
-          tokens.push(token);
-          continue;
-        }
-        if (token = this.tokenizer.hr(src)) {
-          src = src.substring(token.raw.length);
-          tokens.push(token);
-          continue;
-        }
-        if (token = this.tokenizer.blockquote(src)) {
-          src = src.substring(token.raw.length);
-          tokens.push(token);
-          continue;
-        }
-        if (token = this.tokenizer.list(src)) {
-          src = src.substring(token.raw.length);
-          tokens.push(token);
-          continue;
-        }
-        if (token = this.tokenizer.html(src)) {
-          src = src.substring(token.raw.length);
-          tokens.push(token);
-          continue;
-        }
-        if (token = this.tokenizer.def(src)) {
-          src = src.substring(token.raw.length);
-          lastToken = tokens[tokens.length - 1];
-          if (lastToken && (lastToken.type === "paragraph" || lastToken.type === "text")) {
-            lastToken.raw += "\n" + token.raw;
-            lastToken.text += "\n" + token.raw;
-            this.inlineQueue[this.inlineQueue.length - 1].src = lastToken.text;
-          } else if (!this.tokens.links[token.tag]) {
-            this.tokens.links[token.tag] = {
-              href: token.href,
-              title: token.title
-            };
-          }
-          continue;
-        }
-        if (token = this.tokenizer.table(src)) {
-          src = src.substring(token.raw.length);
-          tokens.push(token);
-          continue;
-        }
-        if (token = this.tokenizer.lheading(src)) {
-          src = src.substring(token.raw.length);
-          tokens.push(token);
-          continue;
-        }
-        cutSrc = src;
-        if (this.options.extensions && this.options.extensions.startBlock) {
-          let startIndex = Infinity;
-          const tempSrc = src.slice(1);
-          let tempStart;
-          this.options.extensions.startBlock.forEach((getStartIndex) => {
-            tempStart = getStartIndex.call({ lexer: this }, tempSrc);
-            if (typeof tempStart === "number" && tempStart >= 0) {
-              startIndex = Math.min(startIndex, tempStart);
-            }
-          });
-          if (startIndex < Infinity && startIndex >= 0) {
-            cutSrc = src.substring(0, startIndex + 1);
-          }
-        }
-        if (this.state.top && (token = this.tokenizer.paragraph(cutSrc))) {
-          lastToken = tokens[tokens.length - 1];
-          if (lastParagraphClipped && lastToken.type === "paragraph") {
-            lastToken.raw += "\n" + token.raw;
-            lastToken.text += "\n" + token.text;
-            this.inlineQueue.pop();
-            this.inlineQueue[this.inlineQueue.length - 1].src = lastToken.text;
-          } else {
-            tokens.push(token);
-          }
-          lastParagraphClipped = cutSrc.length !== src.length;
-          src = src.substring(token.raw.length);
-          continue;
-        }
-        if (token = this.tokenizer.text(src)) {
-          src = src.substring(token.raw.length);
-          lastToken = tokens[tokens.length - 1];
-          if (lastToken && lastToken.type === "text") {
-            lastToken.raw += "\n" + token.raw;
-            lastToken.text += "\n" + token.text;
-            this.inlineQueue.pop();
-            this.inlineQueue[this.inlineQueue.length - 1].src = lastToken.text;
-          } else {
-            tokens.push(token);
-          }
-          continue;
-        }
-        if (src) {
-          const errMsg = "Infinite loop on byte: " + src.charCodeAt(0);
-          if (this.options.silent) {
-            console.error(errMsg);
-            break;
-          } else {
-            throw new Error(errMsg);
-          }
-        }
-      }
-      this.state.top = true;
-      return tokens;
-    }
-    inline(src, tokens = []) {
-      this.inlineQueue.push({ src, tokens });
-      return tokens;
-    }
-    /**
-     * Lexing/Compiling
-     */
-    inlineTokens(src, tokens = []) {
-      let token, lastToken, cutSrc;
-      let maskedSrc = src;
-      let match;
-      let keepPrevChar, prevChar;
-      if (this.tokens.links) {
-        const links = Object.keys(this.tokens.links);
-        if (links.length > 0) {
-          while ((match = this.tokenizer.rules.inline.reflinkSearch.exec(maskedSrc)) != null) {
-            if (links.includes(match[0].slice(match[0].lastIndexOf("[") + 1, -1))) {
-              maskedSrc = maskedSrc.slice(0, match.index) + "[" + "a".repeat(match[0].length - 2) + "]" + maskedSrc.slice(this.tokenizer.rules.inline.reflinkSearch.lastIndex);
-            }
-          }
-        }
-      }
-      while ((match = this.tokenizer.rules.inline.blockSkip.exec(maskedSrc)) != null) {
-        maskedSrc = maskedSrc.slice(0, match.index) + "[" + "a".repeat(match[0].length - 2) + "]" + maskedSrc.slice(this.tokenizer.rules.inline.blockSkip.lastIndex);
-      }
-      while ((match = this.tokenizer.rules.inline.anyPunctuation.exec(maskedSrc)) != null) {
-        maskedSrc = maskedSrc.slice(0, match.index) + "++" + maskedSrc.slice(this.tokenizer.rules.inline.anyPunctuation.lastIndex);
-      }
-      while (src) {
-        if (!keepPrevChar) {
-          prevChar = "";
-        }
-        keepPrevChar = false;
-        if (this.options.extensions && this.options.extensions.inline && this.options.extensions.inline.some((extTokenizer) => {
-          if (token = extTokenizer.call({ lexer: this }, src, tokens)) {
-            src = src.substring(token.raw.length);
-            tokens.push(token);
-            return true;
-          }
-          return false;
-        })) {
-          continue;
-        }
-        if (token = this.tokenizer.escape(src)) {
-          src = src.substring(token.raw.length);
-          tokens.push(token);
-          continue;
-        }
-        if (token = this.tokenizer.tag(src)) {
-          src = src.substring(token.raw.length);
-          lastToken = tokens[tokens.length - 1];
-          if (lastToken && token.type === "text" && lastToken.type === "text") {
-            lastToken.raw += token.raw;
-            lastToken.text += token.text;
-          } else {
-            tokens.push(token);
-          }
-          continue;
-        }
-        if (token = this.tokenizer.link(src)) {
-          src = src.substring(token.raw.length);
-          tokens.push(token);
-          continue;
-        }
-        if (token = this.tokenizer.reflink(src, this.tokens.links)) {
-          src = src.substring(token.raw.length);
-          lastToken = tokens[tokens.length - 1];
-          if (lastToken && token.type === "text" && lastToken.type === "text") {
-            lastToken.raw += token.raw;
-            lastToken.text += token.text;
-          } else {
-            tokens.push(token);
-          }
-          continue;
-        }
-        if (token = this.tokenizer.emStrong(src, maskedSrc, prevChar)) {
-          src = src.substring(token.raw.length);
-          tokens.push(token);
-          continue;
-        }
-        if (token = this.tokenizer.codespan(src)) {
-          src = src.substring(token.raw.length);
-          tokens.push(token);
-          continue;
-        }
-        if (token = this.tokenizer.br(src)) {
-          src = src.substring(token.raw.length);
-          tokens.push(token);
-          continue;
-        }
-        if (token = this.tokenizer.del(src)) {
-          src = src.substring(token.raw.length);
-          tokens.push(token);
-          continue;
-        }
-        if (token = this.tokenizer.autolink(src)) {
-          src = src.substring(token.raw.length);
-          tokens.push(token);
-          continue;
-        }
-        if (!this.state.inLink && (token = this.tokenizer.url(src))) {
-          src = src.substring(token.raw.length);
-          tokens.push(token);
-          continue;
-        }
-        cutSrc = src;
-        if (this.options.extensions && this.options.extensions.startInline) {
-          let startIndex = Infinity;
-          const tempSrc = src.slice(1);
-          let tempStart;
-          this.options.extensions.startInline.forEach((getStartIndex) => {
-            tempStart = getStartIndex.call({ lexer: this }, tempSrc);
-            if (typeof tempStart === "number" && tempStart >= 0) {
-              startIndex = Math.min(startIndex, tempStart);
-            }
-          });
-          if (startIndex < Infinity && startIndex >= 0) {
-            cutSrc = src.substring(0, startIndex + 1);
-          }
-        }
-        if (token = this.tokenizer.inlineText(cutSrc)) {
-          src = src.substring(token.raw.length);
-          if (token.raw.slice(-1) !== "_") {
-            prevChar = token.raw.slice(-1);
-          }
-          keepPrevChar = true;
-          lastToken = tokens[tokens.length - 1];
-          if (lastToken && lastToken.type === "text") {
-            lastToken.raw += token.raw;
-            lastToken.text += token.text;
-          } else {
-            tokens.push(token);
-          }
-          continue;
-        }
-        if (src) {
-          const errMsg = "Infinite loop on byte: " + src.charCodeAt(0);
-          if (this.options.silent) {
-            console.error(errMsg);
-            break;
-          } else {
-            throw new Error(errMsg);
-          }
-        }
-      }
-      return tokens;
-    }
-  };
-  var _Renderer = class {
-    constructor(options2) {
-      __publicField(this, "options");
-      this.options = options2 || _defaults;
-    }
-    code(code, infostring, escaped) {
-      var _a;
-      const lang = (_a = (infostring || "").match(/^\S*/)) == null ? void 0 : _a[0];
-      code = code.replace(/\n$/, "") + "\n";
-      if (!lang) {
-        return "<pre><code>" + (escaped ? code : escape$1(code, true)) + "</code></pre>\n";
-      }
-      return '<pre><code class="language-' + escape$1(lang) + '">' + (escaped ? code : escape$1(code, true)) + "</code></pre>\n";
-    }
-    blockquote(quote) {
-      return `<blockquote>
-${quote}</blockquote>
-`;
-    }
-    html(html2, block2) {
-      return html2;
-    }
-    heading(text, level, raw) {
-      return `<h${level}>${text}</h${level}>
-`;
-    }
-    hr() {
-      return "<hr>\n";
-    }
-    list(body, ordered, start) {
-      const type2 = ordered ? "ol" : "ul";
-      const startatt = ordered && start !== 1 ? ' start="' + start + '"' : "";
-      return "<" + type2 + startatt + ">\n" + body + "</" + type2 + ">\n";
-    }
-    listitem(text, task, checked) {
-      return `<li>${text}</li>
-`;
-    }
-    checkbox(checked) {
-      return "<input " + (checked ? 'checked="" ' : "") + 'disabled="" type="checkbox">';
-    }
-    paragraph(text) {
-      return `<p>${text}</p>
-`;
-    }
-    table(header, body) {
-      if (body)
-        body = `<tbody>${body}</tbody>`;
-      return "<table>\n<thead>\n" + header + "</thead>\n" + body + "</table>\n";
-    }
-    tablerow(content) {
-      return `<tr>
-${content}</tr>
-`;
-    }
-    tablecell(content, flags) {
-      const type2 = flags.header ? "th" : "td";
-      const tag2 = flags.align ? `<${type2} align="${flags.align}">` : `<${type2}>`;
-      return tag2 + content + `</${type2}>
-`;
-    }
-    /**
-     * span level renderer
-     */
-    strong(text) {
-      return `<strong>${text}</strong>`;
-    }
-    em(text) {
-      return `<em>${text}</em>`;
-    }
-    codespan(text) {
-      return `<code>${text}</code>`;
-    }
-    br() {
-      return "<br>";
-    }
-    del(text) {
-      return `<del>${text}</del>`;
-    }
-    link(href, title, text) {
-      const cleanHref = cleanUrl(href);
-      if (cleanHref === null) {
-        return text;
-      }
-      href = cleanHref;
-      let out = '<a href="' + href + '"';
-      if (title) {
-        out += ' title="' + title + '"';
-      }
-      out += ">" + text + "</a>";
-      return out;
-    }
-    image(href, title, text) {
-      const cleanHref = cleanUrl(href);
-      if (cleanHref === null) {
-        return text;
-      }
-      href = cleanHref;
-      let out = `<img src="${href}" alt="${text}"`;
-      if (title) {
-        out += ` title="${title}"`;
-      }
-      out += ">";
-      return out;
-    }
-    text(text) {
-      return text;
-    }
-  };
-  var _TextRenderer = class {
-    // no need for block level renderers
-    strong(text) {
-      return text;
-    }
-    em(text) {
-      return text;
-    }
-    codespan(text) {
-      return text;
-    }
-    del(text) {
-      return text;
-    }
-    html(text) {
-      return text;
-    }
-    text(text) {
-      return text;
-    }
-    link(href, title, text) {
-      return "" + text;
-    }
-    image(href, title, text) {
-      return "" + text;
-    }
-    br() {
-      return "";
-    }
-  };
-  var _Parser = class __Parser {
-    constructor(options2) {
-      __publicField(this, "options");
-      __publicField(this, "renderer");
-      __publicField(this, "textRenderer");
-      this.options = options2 || _defaults;
-      this.options.renderer = this.options.renderer || new _Renderer();
-      this.renderer = this.options.renderer;
-      this.renderer.options = this.options;
-      this.textRenderer = new _TextRenderer();
-    }
-    /**
-     * Static Parse Method
-     */
-    static parse(tokens, options2) {
-      const parser2 = new __Parser(options2);
-      return parser2.parse(tokens);
-    }
-    /**
-     * Static Parse Inline Method
-     */
-    static parseInline(tokens, options2) {
-      const parser2 = new __Parser(options2);
-      return parser2.parseInline(tokens);
-    }
-    /**
-     * Parse Loop
-     */
-    parse(tokens, top = true) {
-      let out = "";
-      for (let i = 0; i < tokens.length; i++) {
-        const token = tokens[i];
-        if (this.options.extensions && this.options.extensions.renderers && this.options.extensions.renderers[token.type]) {
-          const genericToken = token;
-          const ret = this.options.extensions.renderers[genericToken.type].call({ parser: this }, genericToken);
-          if (ret !== false || !["space", "hr", "heading", "code", "table", "blockquote", "list", "html", "paragraph", "text"].includes(genericToken.type)) {
-            out += ret || "";
-            continue;
-          }
-        }
-        switch (token.type) {
-          case "space": {
-            continue;
-          }
-          case "hr": {
-            out += this.renderer.hr();
-            continue;
-          }
-          case "heading": {
-            const headingToken = token;
-            out += this.renderer.heading(this.parseInline(headingToken.tokens), headingToken.depth, unescape2(this.parseInline(headingToken.tokens, this.textRenderer)));
-            continue;
-          }
-          case "code": {
-            const codeToken = token;
-            out += this.renderer.code(codeToken.text, codeToken.lang, !!codeToken.escaped);
-            continue;
-          }
-          case "table": {
-            const tableToken = token;
-            let header = "";
-            let cell2 = "";
-            for (let j = 0; j < tableToken.header.length; j++) {
-              cell2 += this.renderer.tablecell(this.parseInline(tableToken.header[j].tokens), { header: true, align: tableToken.align[j] });
-            }
-            header += this.renderer.tablerow(cell2);
-            let body = "";
-            for (let j = 0; j < tableToken.rows.length; j++) {
-              const row = tableToken.rows[j];
-              cell2 = "";
-              for (let k = 0; k < row.length; k++) {
-                cell2 += this.renderer.tablecell(this.parseInline(row[k].tokens), { header: false, align: tableToken.align[k] });
-              }
-              body += this.renderer.tablerow(cell2);
-            }
-            out += this.renderer.table(header, body);
-            continue;
-          }
-          case "blockquote": {
-            const blockquoteToken = token;
-            const body = this.parse(blockquoteToken.tokens);
-            out += this.renderer.blockquote(body);
-            continue;
-          }
-          case "list": {
-            const listToken = token;
-            const ordered = listToken.ordered;
-            const start = listToken.start;
-            const loose = listToken.loose;
-            let body = "";
-            for (let j = 0; j < listToken.items.length; j++) {
-              const item = listToken.items[j];
-              const checked = item.checked;
-              const task = item.task;
-              let itemBody = "";
-              if (item.task) {
-                const checkbox = this.renderer.checkbox(!!checked);
-                if (loose) {
-                  if (item.tokens.length > 0 && item.tokens[0].type === "paragraph") {
-                    item.tokens[0].text = checkbox + " " + item.tokens[0].text;
-                    if (item.tokens[0].tokens && item.tokens[0].tokens.length > 0 && item.tokens[0].tokens[0].type === "text") {
-                      item.tokens[0].tokens[0].text = checkbox + " " + item.tokens[0].tokens[0].text;
-                    }
-                  } else {
-                    item.tokens.unshift({
-                      type: "text",
-                      text: checkbox + " "
-                    });
-                  }
-                } else {
-                  itemBody += checkbox + " ";
-                }
-              }
-              itemBody += this.parse(item.tokens, loose);
-              body += this.renderer.listitem(itemBody, task, !!checked);
-            }
-            out += this.renderer.list(body, ordered, start);
-            continue;
-          }
-          case "html": {
-            const htmlToken = token;
-            out += this.renderer.html(htmlToken.text, htmlToken.block);
-            continue;
-          }
-          case "paragraph": {
-            const paragraphToken = token;
-            out += this.renderer.paragraph(this.parseInline(paragraphToken.tokens));
-            continue;
-          }
-          case "text": {
-            let textToken = token;
-            let body = textToken.tokens ? this.parseInline(textToken.tokens) : textToken.text;
-            while (i + 1 < tokens.length && tokens[i + 1].type === "text") {
-              textToken = tokens[++i];
-              body += "\n" + (textToken.tokens ? this.parseInline(textToken.tokens) : textToken.text);
-            }
-            out += top ? this.renderer.paragraph(body) : body;
-            continue;
-          }
-          default: {
-            const errMsg = 'Token with "' + token.type + '" type was not found.';
-            if (this.options.silent) {
-              console.error(errMsg);
-              return "";
-            } else {
-              throw new Error(errMsg);
-            }
-          }
-        }
-      }
-      return out;
-    }
-    /**
-     * Parse Inline Tokens
-     */
-    parseInline(tokens, renderer) {
-      renderer = renderer || this.renderer;
-      let out = "";
-      for (let i = 0; i < tokens.length; i++) {
-        const token = tokens[i];
-        if (this.options.extensions && this.options.extensions.renderers && this.options.extensions.renderers[token.type]) {
-          const ret = this.options.extensions.renderers[token.type].call({ parser: this }, token);
-          if (ret !== false || !["escape", "html", "link", "image", "strong", "em", "codespan", "br", "del", "text"].includes(token.type)) {
-            out += ret || "";
-            continue;
-          }
-        }
-        switch (token.type) {
-          case "escape": {
-            const escapeToken = token;
-            out += renderer.text(escapeToken.text);
-            break;
-          }
-          case "html": {
-            const tagToken = token;
-            out += renderer.html(tagToken.text);
-            break;
-          }
-          case "link": {
-            const linkToken = token;
-            out += renderer.link(linkToken.href, linkToken.title, this.parseInline(linkToken.tokens, renderer));
-            break;
-          }
-          case "image": {
-            const imageToken = token;
-            out += renderer.image(imageToken.href, imageToken.title, imageToken.text);
-            break;
-          }
-          case "strong": {
-            const strongToken = token;
-            out += renderer.strong(this.parseInline(strongToken.tokens, renderer));
-            break;
-          }
-          case "em": {
-            const emToken = token;
-            out += renderer.em(this.parseInline(emToken.tokens, renderer));
-            break;
-          }
-          case "codespan": {
-            const codespanToken = token;
-            out += renderer.codespan(codespanToken.text);
-            break;
-          }
-          case "br": {
-            out += renderer.br();
-            break;
-          }
-          case "del": {
-            const delToken = token;
-            out += renderer.del(this.parseInline(delToken.tokens, renderer));
-            break;
-          }
-          case "text": {
-            const textToken = token;
-            out += renderer.text(textToken.text);
-            break;
-          }
-          default: {
-            const errMsg = 'Token with "' + token.type + '" type was not found.';
-            if (this.options.silent) {
-              console.error(errMsg);
-              return "";
-            } else {
-              throw new Error(errMsg);
-            }
-          }
-        }
-      }
-      return out;
-    }
-  };
-  var _Hooks = class {
-    constructor(options2) {
-      __publicField(this, "options");
-      this.options = options2 || _defaults;
-    }
-    /**
-     * Process markdown before marked
-     */
-    preprocess(markdown) {
-      return markdown;
-    }
-    /**
-     * Process HTML after marked is finished
-     */
-    postprocess(html2) {
-      return html2;
-    }
-    /**
-     * Process all tokens before walk tokens
-     */
-    processAllTokens(tokens) {
-      return tokens;
-    }
-  };
-  __publicField(_Hooks, "passThroughHooks", /* @__PURE__ */ new Set([
-    "preprocess",
-    "postprocess",
-    "processAllTokens"
-  ]));
-  var _Marked_instances, parseMarkdown_fn, onError_fn;
-  var Marked = class {
-    constructor(...args) {
-      __privateAdd(this, _Marked_instances);
-      __publicField(this, "defaults", _getDefaults());
-      __publicField(this, "options", this.setOptions);
-      __publicField(this, "parse", __privateMethod(this, _Marked_instances, parseMarkdown_fn).call(this, _Lexer.lex, _Parser.parse));
-      __publicField(this, "parseInline", __privateMethod(this, _Marked_instances, parseMarkdown_fn).call(this, _Lexer.lexInline, _Parser.parseInline));
-      __publicField(this, "Parser", _Parser);
-      __publicField(this, "Renderer", _Renderer);
-      __publicField(this, "TextRenderer", _TextRenderer);
-      __publicField(this, "Lexer", _Lexer);
-      __publicField(this, "Tokenizer", _Tokenizer);
-      __publicField(this, "Hooks", _Hooks);
-      this.use(...args);
-    }
-    /**
-     * Run callback for every token
-     */
-    walkTokens(tokens, callback) {
-      var _a, _b;
-      let values = [];
-      for (const token of tokens) {
-        values = values.concat(callback.call(this, token));
-        switch (token.type) {
-          case "table": {
-            const tableToken = token;
-            for (const cell2 of tableToken.header) {
-              values = values.concat(this.walkTokens(cell2.tokens, callback));
-            }
-            for (const row of tableToken.rows) {
-              for (const cell2 of row) {
-                values = values.concat(this.walkTokens(cell2.tokens, callback));
-              }
-            }
-            break;
-          }
-          case "list": {
-            const listToken = token;
-            values = values.concat(this.walkTokens(listToken.items, callback));
-            break;
-          }
-          default: {
-            const genericToken = token;
-            if ((_b = (_a = this.defaults.extensions) == null ? void 0 : _a.childTokens) == null ? void 0 : _b[genericToken.type]) {
-              this.defaults.extensions.childTokens[genericToken.type].forEach((childTokens) => {
-                const tokens2 = genericToken[childTokens].flat(Infinity);
-                values = values.concat(this.walkTokens(tokens2, callback));
-              });
-            } else if (genericToken.tokens) {
-              values = values.concat(this.walkTokens(genericToken.tokens, callback));
-            }
-          }
-        }
-      }
-      return values;
-    }
-    use(...args) {
-      const extensions = this.defaults.extensions || { renderers: {}, childTokens: {} };
-      args.forEach((pack) => {
-        const opts = { ...pack };
-        opts.async = this.defaults.async || opts.async || false;
-        if (pack.extensions) {
-          pack.extensions.forEach((ext) => {
-            if (!ext.name) {
-              throw new Error("extension name required");
-            }
-            if ("renderer" in ext) {
-              const prevRenderer = extensions.renderers[ext.name];
-              if (prevRenderer) {
-                extensions.renderers[ext.name] = function(...args2) {
-                  let ret = ext.renderer.apply(this, args2);
-                  if (ret === false) {
-                    ret = prevRenderer.apply(this, args2);
-                  }
-                  return ret;
-                };
-              } else {
-                extensions.renderers[ext.name] = ext.renderer;
-              }
-            }
-            if ("tokenizer" in ext) {
-              if (!ext.level || ext.level !== "block" && ext.level !== "inline") {
-                throw new Error("extension level must be 'block' or 'inline'");
-              }
-              const extLevel = extensions[ext.level];
-              if (extLevel) {
-                extLevel.unshift(ext.tokenizer);
-              } else {
-                extensions[ext.level] = [ext.tokenizer];
-              }
-              if (ext.start) {
-                if (ext.level === "block") {
-                  if (extensions.startBlock) {
-                    extensions.startBlock.push(ext.start);
-                  } else {
-                    extensions.startBlock = [ext.start];
-                  }
-                } else if (ext.level === "inline") {
-                  if (extensions.startInline) {
-                    extensions.startInline.push(ext.start);
-                  } else {
-                    extensions.startInline = [ext.start];
-                  }
-                }
-              }
-            }
-            if ("childTokens" in ext && ext.childTokens) {
-              extensions.childTokens[ext.name] = ext.childTokens;
-            }
-          });
-          opts.extensions = extensions;
-        }
-        if (pack.renderer) {
-          const renderer = this.defaults.renderer || new _Renderer(this.defaults);
-          for (const prop in pack.renderer) {
-            if (!(prop in renderer)) {
-              throw new Error(`renderer '${prop}' does not exist`);
-            }
-            if (prop === "options") {
-              continue;
-            }
-            const rendererProp = prop;
-            const rendererFunc = pack.renderer[rendererProp];
-            const prevRenderer = renderer[rendererProp];
-            renderer[rendererProp] = (...args2) => {
-              let ret = rendererFunc.apply(renderer, args2);
-              if (ret === false) {
-                ret = prevRenderer.apply(renderer, args2);
-              }
-              return ret || "";
-            };
-          }
-          opts.renderer = renderer;
-        }
-        if (pack.tokenizer) {
-          const tokenizer = this.defaults.tokenizer || new _Tokenizer(this.defaults);
-          for (const prop in pack.tokenizer) {
-            if (!(prop in tokenizer)) {
-              throw new Error(`tokenizer '${prop}' does not exist`);
-            }
-            if (["options", "rules", "lexer"].includes(prop)) {
-              continue;
-            }
-            const tokenizerProp = prop;
-            const tokenizerFunc = pack.tokenizer[tokenizerProp];
-            const prevTokenizer = tokenizer[tokenizerProp];
-            tokenizer[tokenizerProp] = (...args2) => {
-              let ret = tokenizerFunc.apply(tokenizer, args2);
-              if (ret === false) {
-                ret = prevTokenizer.apply(tokenizer, args2);
-              }
-              return ret;
-            };
-          }
-          opts.tokenizer = tokenizer;
-        }
-        if (pack.hooks) {
-          const hooks = this.defaults.hooks || new _Hooks();
-          for (const prop in pack.hooks) {
-            if (!(prop in hooks)) {
-              throw new Error(`hook '${prop}' does not exist`);
-            }
-            if (prop === "options") {
-              continue;
-            }
-            const hooksProp = prop;
-            const hooksFunc = pack.hooks[hooksProp];
-            const prevHook = hooks[hooksProp];
-            if (_Hooks.passThroughHooks.has(prop)) {
-              hooks[hooksProp] = (arg) => {
-                if (this.defaults.async) {
-                  return Promise.resolve(hooksFunc.call(hooks, arg)).then((ret2) => {
-                    return prevHook.call(hooks, ret2);
-                  });
-                }
-                const ret = hooksFunc.call(hooks, arg);
-                return prevHook.call(hooks, ret);
-              };
-            } else {
-              hooks[hooksProp] = (...args2) => {
-                let ret = hooksFunc.apply(hooks, args2);
-                if (ret === false) {
-                  ret = prevHook.apply(hooks, args2);
-                }
-                return ret;
-              };
-            }
-          }
-          opts.hooks = hooks;
-        }
-        if (pack.walkTokens) {
-          const walkTokens2 = this.defaults.walkTokens;
-          const packWalktokens = pack.walkTokens;
-          opts.walkTokens = function(token) {
-            let values = [];
-            values.push(packWalktokens.call(this, token));
-            if (walkTokens2) {
-              values = values.concat(walkTokens2.call(this, token));
-            }
-            return values;
-          };
-        }
-        this.defaults = { ...this.defaults, ...opts };
-      });
-      return this;
-    }
-    setOptions(opt) {
-      this.defaults = { ...this.defaults, ...opt };
-      return this;
-    }
-    lexer(src, options2) {
-      return _Lexer.lex(src, options2 != null ? options2 : this.defaults);
-    }
-    parser(tokens, options2) {
-      return _Parser.parse(tokens, options2 != null ? options2 : this.defaults);
-    }
-  };
-  _Marked_instances = new WeakSet();
-  parseMarkdown_fn = function(lexer2, parser2) {
-    return (src, options2) => {
-      const origOpt = { ...options2 };
-      const opt = { ...this.defaults, ...origOpt };
-      if (this.defaults.async === true && origOpt.async === false) {
-        if (!opt.silent) {
-          console.warn("marked(): The async option was set to true by an extension. The async: false option sent to parse will be ignored.");
-        }
-        opt.async = true;
-      }
-      const throwError = __privateMethod(this, _Marked_instances, onError_fn).call(this, !!opt.silent, !!opt.async);
-      if (typeof src === "undefined" || src === null) {
-        return throwError(new Error("marked(): input parameter is undefined or null"));
-      }
-      if (typeof src !== "string") {
-        return throwError(new Error("marked(): input parameter is of type " + Object.prototype.toString.call(src) + ", string expected"));
-      }
-      if (opt.hooks) {
-        opt.hooks.options = opt;
-      }
-      if (opt.async) {
-        return Promise.resolve(opt.hooks ? opt.hooks.preprocess(src) : src).then((src2) => lexer2(src2, opt)).then((tokens) => opt.hooks ? opt.hooks.processAllTokens(tokens) : tokens).then((tokens) => opt.walkTokens ? Promise.all(this.walkTokens(tokens, opt.walkTokens)).then(() => tokens) : tokens).then((tokens) => parser2(tokens, opt)).then((html2) => opt.hooks ? opt.hooks.postprocess(html2) : html2).catch(throwError);
-      }
-      try {
-        if (opt.hooks) {
-          src = opt.hooks.preprocess(src);
-        }
-        let tokens = lexer2(src, opt);
-        if (opt.hooks) {
-          tokens = opt.hooks.processAllTokens(tokens);
-        }
-        if (opt.walkTokens) {
-          this.walkTokens(tokens, opt.walkTokens);
-        }
-        let html2 = parser2(tokens, opt);
-        if (opt.hooks) {
-          html2 = opt.hooks.postprocess(html2);
-        }
-        return html2;
-      } catch (e) {
-        return throwError(e);
-      }
-    };
-  };
-  onError_fn = function(silent, async) {
-    return (e) => {
-      e.message += "\nPlease report this to https://github.com/markedjs/marked.";
-      if (silent) {
-        const msg = "<p>An error occurred:</p><pre>" + escape$1(e.message + "", true) + "</pre>";
-        if (async) {
-          return Promise.resolve(msg);
-        }
-        return msg;
-      }
-      if (async) {
-        return Promise.reject(e);
-      }
-      throw e;
-    };
-  };
-  var markedInstance = new Marked();
-  function marked(src, opt) {
-    return markedInstance.parse(src, opt);
-  }
-  marked.options = marked.setOptions = function(options2) {
-    markedInstance.setOptions(options2);
-    marked.defaults = markedInstance.defaults;
-    changeDefaults(marked.defaults);
-    return marked;
-  };
-  marked.getDefaults = _getDefaults;
-  marked.defaults = _defaults;
-  marked.use = function(...args) {
-    markedInstance.use(...args);
-    marked.defaults = markedInstance.defaults;
-    changeDefaults(marked.defaults);
-    return marked;
-  };
-  marked.walkTokens = function(tokens, callback) {
-    return markedInstance.walkTokens(tokens, callback);
-  };
-  marked.parseInline = markedInstance.parseInline;
-  marked.Parser = _Parser;
-  marked.parser = _Parser.parse;
-  marked.Renderer = _Renderer;
-  marked.TextRenderer = _TextRenderer;
-  marked.Lexer = _Lexer;
-  marked.lexer = _Lexer.lex;
-  marked.Tokenizer = _Tokenizer;
-  marked.Hooks = _Hooks;
-  marked.parse = marked;
-  var options = marked.options;
-  var setOptions = marked.setOptions;
-  var use = marked.use;
-  var walkTokens = marked.walkTokens;
-  var parseInline = marked.parseInline;
-  var parser = _Parser.parse;
-  var lexer = _Lexer.lex;
-
-  // src/memo-editor/mermaid-node.tsx
-  init_define_process_env();
-  init_polyfills();
-
-  // src/jsx-runtime-shim.ts
-  init_define_process_env();
-  init_polyfills();
-  var React2 = window.React;
-  var createElement2 = React2 == null ? void 0 : React2.createElement;
-  var jsx = (type2, props, key) => {
-    if (!createElement2) return null;
-    if (key !== void 0) {
-      props = props ? { ...props, key } : { key };
-    }
-    return createElement2(type2, props);
-  };
-  var jsxs = (type2, props, key) => {
-    if (!createElement2) return null;
-    if (key !== void 0) {
-      props = props ? { ...props, key } : { key };
-    }
-    return createElement2(type2, props);
-  };
-  var Fragment3 = React2 == null ? void 0 : React2.Fragment;
-
-  // src/memo-editor/mermaid-node.tsx
-  var getMermaidApi = () => window.mermaid;
-  var MermaidDiagramComponent = ({ node, updateAttributes: updateAttributes2 }) => {
-    const [isEditing, setIsEditing] = react_shim_default.useState(false);
-    const [svg, setSvg] = react_shim_default.useState("");
-    const [error, setError] = react_shim_default.useState(null);
-    const [modalError, setModalError] = react_shim_default.useState(null);
-    const [lastValidCode, setLastValidCode] = react_shim_default.useState(node.attrs.code || "");
-    const [draftCode, setDraftCode] = react_shim_default.useState(node.attrs.code || "");
-    const [isLoading, setIsLoading] = react_shim_default.useState(false);
-    const [showToast, setShowToast] = react_shim_default.useState(false);
-    const containerRef = react_shim_default.useRef(null);
-    const excalidrawHostRef = react_shim_default.useRef(null);
-    const [promptInput, setPromptInput] = react_shim_default.useState("");
-    const [diagramType, setDiagramType] = react_shim_default.useState("flow");
-    const [isGenerating, setIsGenerating] = react_shim_default.useState(false);
-    const [isTypeMenuOpen, setIsTypeMenuOpen] = react_shim_default.useState(false);
-    const composerTextareaRef = react_shim_default.useRef(null);
-    const code = node.attrs.code || "";
-    const excalidrawJSON = node.attrs.excalidrawJSON || "";
-    const autoOpen = node.attrs.autoOpen === true;
-    const getAutoResizeHeight = (textarea) => {
-      textarea.style.height = "auto";
-      const scrollHeight = textarea.scrollHeight;
-      const maxHeight = 140;
-      return Math.min(scrollHeight, maxHeight) + "px";
-    };
-    const handlePromptInput = (e) => {
-      setPromptInput(e.target.value);
-      e.target.style.height = getAutoResizeHeight(e.target);
-      e.target.style.overflowY = e.target.scrollHeight > 140 ? "auto" : "hidden";
-    };
-    const diagramTypes = [
-      { id: "sequence", label: "\xC9change", promptValue: "sequenceDiagram", Icon: ArrowLeftRight },
-      { id: "flow", label: "Processus", promptValue: "flowchart", Icon: Workflow },
-      { id: "class", label: "Structure", promptValue: "classDiagram", Icon: Boxes }
-    ];
-    const getDiagramTypeFromCode = (c) => {
-      const header = getDiagramHeaderLine2(c).toLowerCase();
-      if (header.startsWith("sequencediagram")) return "sequence";
-      if (header.startsWith("classdiagram")) return "class";
-      if (header.startsWith("flowchart") || header.startsWith("graph")) return "flow";
-      return null;
-    };
-    react_shim_default.useEffect(() => {
-      const nextType = getDiagramTypeFromCode(draftCode || code);
-      if (nextType && nextType !== diagramType) {
-        setDiagramType(nextType);
-      }
-    }, [code, draftCode]);
-    const handleDrawSend = async () => {
-      var _a, _b, _c;
-      if (!promptInput.trim() || isGenerating) return;
-      setIsGenerating(true);
-      setModalError(null);
-      try {
-        const presets = (_b = (_a = window.GoToolkitChatPrompt) == null ? void 0 : _a.PRESETS) == null ? void 0 : _b.draw;
-        const template = (presets == null ? void 0 : presets.defaultPrompt) || (presets == null ? void 0 : presets.prompt) || "";
-        const selectedType = diagramTypes.find((t) => t.id === diagramType);
-        const drawTypeValue = (selectedType == null ? void 0 : selectedType.promptValue) || "flowchart";
-        const documentMarkdown = ((_c = window.getEditorMarkdown) == null ? void 0 : _c.call(window)) || "Contenu du document non disponible.";
-        const userContent = [
-          `DOCUMENT
-${documentMarkdown}`,
-          `CURRENT_CODE
-${draftCode.trim() || "Aucun diagramme actuel"}`,
-          `DRAW_TYPE
-${drawTypeValue}`,
-          `ASK
-${promptInput.trim()}`
-        ].join("\n\n");
-        const payload = {
-          model: "openai/gpt-oss-120b",
-          messages: [
-            { role: "system", content: template },
-            { role: "user", content: userContent }
-          ],
-          temperature: 0.3
-        };
-        const response = await window.GoToolkitIA.chatCompletion({
-          payload
-        });
-        const responseText = typeof response === "string" ? response : (response == null ? void 0 : response.text) || "";
-        if (responseText) {
-          let cleanCode = "";
-          try {
-            const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-            const jsonStr = jsonMatch ? jsonMatch[0] : responseText;
-            const parsed = JSON.parse(jsonStr);
-            cleanCode = parsed.mermaid || "";
-            if (!cleanCode && parsed.code) cleanCode = parsed.code;
-          } catch (e) {
-            cleanCode = responseText.trim();
-            if (cleanCode.includes("```")) {
-              const match = cleanCode.match(/```(?:mermaid)?\n?([\s\S]*?)```/);
-              if (match) cleanCode = match[1].trim();
-            }
-          }
-          if (cleanCode) {
-            const lowerCode = cleanCode.toLowerCase();
-            let newSize = "small";
-            if (lowerCode.includes("flowchart td") || lowerCode.includes("graph td")) {
-              newSize = "large";
-            }
-            const nextType = getDiagramTypeFromCode(cleanCode);
-            if (nextType) {
-              setDiagramType(nextType);
-            }
-            setDraftCode(cleanCode);
-            setPromptInput("");
-            if (composerTextareaRef.current) {
-              composerTextareaRef.current.style.height = "auto";
-            }
-            if (window.GoToolkitDrawMemo) {
-              setIsLoading(true);
-              try {
-                await window.GoToolkitDrawMemo.updateFromMermaid(cleanCode, newSize);
-                const json = window.GoToolkitDrawMemo.getSceneJSON();
-                const svgHtml = await window.GoToolkitDrawMemo.getSVG("auto");
-                updateAttributes2({
-                  code: cleanCode,
-                  size: newSize,
-                  excalidrawJSON: json || ""
-                });
-                if (svgHtml) setSvg(svgHtml);
-                setLastValidCode(cleanCode);
-                setModalError(null);
-              } catch (syncErr) {
-                setModalError(syncErr.message || "Erreur de synchronisation Excalidraw");
-              } finally {
-                setIsLoading(false);
-              }
-            }
-          }
-        }
-      } catch (err) {
-        setModalError(err.message || "Erreur de g\xE9n\xE9ration");
-      } finally {
-        setIsGenerating(false);
-      }
-    };
-    const getDiagramHeaderLine2 = (c) => {
-      const lines = (c || "").split("\n");
-      for (let i = 0; i < Math.min(lines.length, 5); i++) {
-        const line = lines[i].trim();
-        if (!line || line.startsWith("%%")) continue;
-        return line;
-      }
-      return "";
-    };
-    const getFlowchartDirection = (c) => {
-      const line = getDiagramHeaderLine2(c);
-      if (/^(flowchart|graph)\b/i.test(line)) {
-        const match = line.match(/\b(LR|TD|TB|BT|RL)\b/i);
-        return match ? match[1].toUpperCase() : null;
-      }
-      return null;
-    };
-    const setFlowchartDirection2 = (c, direction) => {
-      const lines = (c || "").split("\n");
-      let updated = false;
-      for (let i = 0; i < Math.min(lines.length, 5); i++) {
-        const rawLine = lines[i];
-        const line = rawLine.trim();
-        if (!line || line.startsWith("%%")) continue;
-        if (/^(flowchart|graph)\b/i.test(line)) {
-          const directionMatch = rawLine.match(/(flowchart|graph)\s+(LR|TD|TB|BT|RL)/i);
-          if (directionMatch) {
-            lines[i] = rawLine.replace(/(flowchart|graph)\s+(LR|TD|TB|BT|RL)/i, `$1 ${direction}`);
-          } else {
-            lines[i] = rawLine.replace(/(flowchart|graph)/i, `$1 ${direction}`);
-          }
-          updated = true;
-          break;
-        }
-      }
-      return { code: lines.join("\n"), updated };
-    };
-    const getAutoDetectedSize = (c) => {
-      const header = getDiagramHeaderLine2(c).toLowerCase();
-      if (header.startsWith("classdiagram")) return "large";
-      if (header.startsWith("sequencediagram")) return "small";
-      const direction = getFlowchartDirection(c);
-      if (direction === "TD") return "large";
-      if (direction === "LR") return "small";
-      if (header.includes("flowchart td") || header.includes("graph td")) return "large";
-      return "small";
-    };
-    const isSizeSelectorVisible = (c) => {
-      const header = getDiagramHeaderLine2(c).toLowerCase();
-      if (header.startsWith("sequencediagram") || header.startsWith("classdiagram")) return false;
-      return header.startsWith("flowchart") || header.startsWith("graph");
-    };
-    const activeCode = isEditing ? draftCode : code;
-    const directionSize = getFlowchartDirection(activeCode);
-    let size2 = directionSize ? directionSize === "TD" ? "large" : "small" : node.attrs.size || getAutoDetectedSize(activeCode);
-    if (size2 === "medium") size2 = "small";
-    const showSizeSelector = isSizeSelectorVisible(activeCode);
-    react_shim_default.useEffect(() => {
-      if (isEditing) return;
-      if (code && !excalidrawJSON && window.GoToolkitDrawMemo) {
-        const syncPreview = async () => {
-          try {
-            if (window.GoToolkitDrawMemo.renderPreview) {
-              const result = await window.GoToolkitDrawMemo.renderPreview(code, "auto", size2);
-              const json2 = result == null ? void 0 : result.json;
-              const svgHtml2 = result == null ? void 0 : result.svg;
-              if (json2) {
-                updateAttributes2({ excalidrawJSON: json2 });
-              }
-              if (svgHtml2) {
-                setSvg(svgHtml2);
-              }
-              setLastValidCode(code);
-              return;
-            }
-            const tempDiv = document.createElement("div");
-            tempDiv.style.position = "fixed";
-            tempDiv.style.left = "-10000px";
-            tempDiv.style.top = "0";
-            tempDiv.style.width = "1200px";
-            tempDiv.style.height = "800px";
-            tempDiv.style.opacity = "0";
-            tempDiv.style.pointerEvents = "none";
-            document.body.appendChild(tempDiv);
-            await window.GoToolkitDrawMemo.init(tempDiv, code, size2);
-            await new Promise((resolve) => window.requestAnimationFrame(() => resolve()));
-            await new Promise((resolve) => window.requestAnimationFrame(() => resolve()));
-            const json = window.GoToolkitDrawMemo.getSceneJSON();
-            const svgHtml = await window.GoToolkitDrawMemo.getSVG("auto");
-            updateAttributes2({ excalidrawJSON: json });
-            setSvg(svgHtml);
-            setLastValidCode(code);
-            document.body.removeChild(tempDiv);
-          } catch (e) {
-            console.warn("Immediate preview failed", e);
-          }
-        };
-        syncPreview();
-      }
-    }, [code, excalidrawJSON, isEditing, updateAttributes2, size2]);
-    const renderDiagram = react_shim_default.useCallback(async () => {
-      if (isEditing) return;
-      if (excalidrawJSON) {
-        try {
-          if (window.GoToolkitDrawMemo) {
-            if (window.GoToolkitDrawMemo.renderPreview) {
-              const result = await window.GoToolkitDrawMemo.renderPreview(excalidrawJSON, "auto", size2);
-              if (result == null ? void 0 : result.svg) {
-                setSvg(result.svg);
-                setError(null);
-                return;
-              }
-            }
-            const tempDiv = document.createElement("div");
-            tempDiv.style.position = "fixed";
-            tempDiv.style.left = "-10000px";
-            tempDiv.style.top = "0";
-            tempDiv.style.width = "1200px";
-            tempDiv.style.height = "800px";
-            tempDiv.style.opacity = "0";
-            tempDiv.style.pointerEvents = "none";
-            document.body.appendChild(tempDiv);
-            await window.GoToolkitDrawMemo.init(tempDiv, excalidrawJSON, size2);
-            await new Promise((resolve) => window.requestAnimationFrame(() => resolve()));
-            await new Promise((resolve) => window.requestAnimationFrame(() => resolve()));
-            const svgHtml = await window.GoToolkitDrawMemo.getSVG("auto");
-            setSvg(svgHtml);
-            document.body.removeChild(tempDiv);
-            setError(null);
-            return;
-          }
-        } catch (err) {
-          console.warn("Excalidraw render error, falling back to mermaid:", err);
-        }
-      }
-      if (!code.trim() && !excalidrawJSON) {
-        setSvg("");
-        setError(null);
-        return;
-      }
-      try {
-        const mermaidApi = getMermaidApi();
-        if (!mermaidApi) {
-          setError("Mermaid CDN non charg\xE9");
-          setSvg("");
-          return;
-        }
-        const id = `mermaid-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        mermaidApi.initialize({
-          startOnLoad: false,
-          theme: "default",
-          securityLevel: "loose"
-        });
-        const { svg: svg2 } = await mermaidApi.render(id, code);
-        setSvg(svg2);
-        setError(null);
-      } catch (err) {
-        console.warn("Mermaid render error:", err);
-        setError(err.message || "Invalid mermaid syntax");
-        setSvg("");
-      }
-    }, [code, excalidrawJSON, isEditing]);
-    react_shim_default.useEffect(() => {
-      renderDiagram();
-    }, [renderDiagram]);
-    react_shim_default.useEffect(() => {
-      if (!autoOpen) return;
-      setIsEditing(true);
-      setIsLoading(true);
-      setModalError(null);
-      setLastValidCode(code);
-      setDraftCode(code);
-      updateAttributes2({ autoOpen: false });
-    }, [autoOpen, code, updateAttributes2]);
-    const handleDoubleClick2 = async () => {
-      setIsEditing(true);
-      setIsLoading(true);
-      setModalError(null);
-      setLastValidCode(code);
-      setDraftCode(code);
-    };
-    react_shim_default.useEffect(() => {
-      if (isEditing && excalidrawHostRef.current) {
-        const initExcalidraw = async () => {
-          var _a, _b, _c, _d;
-          try {
-            if (window.GoToolkitDrawMemo) {
-              const initialData = excalidrawJSON || code;
-              await window.GoToolkitDrawMemo.init(excalidrawHostRef.current, initialData, size2);
-              const nudge = () => {
-                try {
-                  window.dispatchEvent(new Event("resize"));
-                } catch (e) {
-                }
-              };
-              const raf1 = window.requestAnimationFrame(() => {
-                window.requestAnimationFrame(nudge);
-              });
-              let ro = null;
-              const hostEl = excalidrawHostRef.current;
-              if (hostEl && typeof window.ResizeObserver !== "undefined") {
-                ro = new ResizeObserver(() => nudge());
-                ro.observe(hostEl);
-              }
-              try {
-                const api = (_b = (_a = window.GoToolkitDrawMemo) == null ? void 0 : _a.getApi) == null ? void 0 : _b.call(_a);
-                (_c = api == null ? void 0 : api.setActiveTool) == null ? void 0 : _c.call(api, { type: "selection" });
-                (_d = api == null ? void 0 : api.refresh) == null ? void 0 : _d.call(api);
-              } catch (e) {
-              }
-              const t1 = window.setTimeout(() => {
-                var _a2, _b2, _c2, _d2;
-                try {
-                  const api = (_b2 = (_a2 = window.GoToolkitDrawMemo) == null ? void 0 : _a2.getApi) == null ? void 0 : _b2.call(_a2);
-                  (_c2 = api == null ? void 0 : api.setActiveTool) == null ? void 0 : _c2.call(api, { type: "selection" });
-                  (_d2 = api == null ? void 0 : api.refresh) == null ? void 0 : _d2.call(api);
-                  nudge();
-                } catch (e) {
-                }
-              }, 150);
-              const t2 = window.setTimeout(() => {
-                var _a2, _b2, _c2, _d2;
-                try {
-                  const api = (_b2 = (_a2 = window.GoToolkitDrawMemo) == null ? void 0 : _a2.getApi) == null ? void 0 : _b2.call(_a2);
-                  (_c2 = api == null ? void 0 : api.setActiveTool) == null ? void 0 : _c2.call(api, { type: "selection" });
-                  (_d2 = api == null ? void 0 : api.refresh) == null ? void 0 : _d2.call(api);
-                  nudge();
-                } catch (e) {
-                }
-              }, 500);
-              return () => {
-                window.cancelAnimationFrame(raf1);
-                window.clearTimeout(t1);
-                window.clearTimeout(t2);
-                ro == null ? void 0 : ro.disconnect();
-              };
-            }
-          } catch (err) {
-            console.error("Failed to init Excalidraw", err);
-          } finally {
-            setIsLoading(false);
-          }
-        };
-        let cleanup;
-        void initExcalidraw().then((fn) => {
-          cleanup = typeof fn === "function" ? fn : void 0;
-        });
-        return () => {
-          cleanup == null ? void 0 : cleanup();
-        };
-      }
-    }, [isEditing]);
-    const handleCloseModal = async () => {
-      try {
-        if (window.GoToolkitDrawMemo) {
-          const hasError = !!modalError;
-          const finalCode = hasError ? lastValidCode : draftCode;
-          if (hasError) {
-            updateAttributes2({ code: lastValidCode });
-            try {
-              await window.GoToolkitDrawMemo.updateFromMermaid(lastValidCode, size2);
-            } catch (e) {
-              console.warn("Failed to revert Excalidraw to last valid state, continuing...", e);
-            }
-          } else {
-            updateAttributes2({ code: draftCode });
-          }
-          const json = window.GoToolkitDrawMemo.getSceneJSON();
-          const svgHtml = await window.GoToolkitDrawMemo.getSVG("auto");
-          const isExcalidrawEmpty = !json || json === '{"elements":[],"appState":{}}' || json.includes('"elements":[]');
-          const finalExcalidrawJSON = finalCode.trim() || !isExcalidrawEmpty ? json : "";
-          updateAttributes2({
-            excalidrawJSON: finalExcalidrawJSON
-          });
-          if (svgHtml && (finalCode.trim() || !isExcalidrawEmpty)) {
-            setSvg(svgHtml);
-          } else {
-            setSvg("");
-          }
-        }
-      } catch (err) {
-        console.error("Critical error during Mermaid modal close:", err);
-      } finally {
-        setIsEditing(false);
-        setModalError(null);
-      }
-    };
-    react_shim_default.useEffect(() => {
-      const handleKeyDown3 = (e) => {
-        if (e.key === "Escape" && isEditing) {
-          handleCloseModal();
-        }
-      };
-      window.addEventListener("keydown", handleKeyDown3);
-      return () => window.removeEventListener("keydown", handleKeyDown3);
-    }, [isEditing, modalError, lastValidCode]);
-    const handleCodeChange = (e) => {
-      const newCode = e.target.value;
-      setDraftCode(newCode);
-    };
-    const handleSyncFromMermaid = async () => {
-      if (!window.GoToolkitDrawMemo) return;
-      setIsLoading(true);
-      try {
-        const targetSize = !isSizeSelectorVisible(draftCode) ? getAutoDetectedSize(draftCode) : size2;
-        await window.GoToolkitDrawMemo.updateFromMermaid(draftCode, targetSize);
-        const json = window.GoToolkitDrawMemo.getSceneJSON();
-        const svgHtml = await window.GoToolkitDrawMemo.getSVG("auto");
-        updateAttributes2({
-          code: draftCode,
-          excalidrawJSON: json || "",
-          size: targetSize
-          // Persist the forced size too
-        });
-        if (svgHtml) {
-          setSvg(svgHtml);
-        }
-        setModalError(null);
-        setLastValidCode(draftCode);
-      } catch (err) {
-        if (draftCode == null ? void 0 : draftCode.trim()) {
-          setModalError(err.message || "Syntaxe Mermaid invalide");
-        } else {
-          setModalError(null);
-        }
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    const handleCopyCode = () => {
-      if (!draftCode) return;
-      navigator.clipboard.writeText(draftCode).then(() => {
-        setShowToast(true);
-        setTimeout(() => setShowToast(false), 2e3);
-      });
-    };
-    const handleClearCode = () => {
-      setDraftCode("");
-      setModalError(null);
-    };
-    const handleSizeChange = async (newSize, sourceCode) => {
-      if (newSize === size2) return;
-      setIsLoading(true);
-      let updatedCode = sourceCode || draftCode || code;
-      const headerLine = getDiagramHeaderLine2(updatedCode).toLowerCase();
-      const isFlowchart = headerLine.startsWith("flowchart") || headerLine.startsWith("graph");
-      if (isFlowchart) {
-        const direction = newSize === "large" ? "TD" : "LR";
-        const { code: nextCode, updated } = setFlowchartDirection2(updatedCode, direction);
-        if (updated) {
-          updatedCode = nextCode;
-        }
-      }
-      setDraftCode(updatedCode);
-      updateAttributes2({ size: newSize, code: updatedCode });
-      const drawMemo = window.GoToolkitDrawMemo;
-      if (drawMemo) {
-        (async () => {
-          try {
-            await drawMemo.updateFromMermaid(updatedCode, newSize);
-            const json = drawMemo.getSceneJSON();
-            const svgHtml = await drawMemo.getSVG("auto");
-            updateAttributes2({ excalidrawJSON: json });
-            if (svgHtml) setSvg(svgHtml);
-          } catch (err) {
-            console.error("Failed to update size", err);
-          } finally {
-            setIsLoading(false);
-          }
-        })();
-      } else {
-        setIsLoading(false);
-      }
-    };
-    return /* @__PURE__ */ jsxs(Fragment3, { children: [
-      /* @__PURE__ */ jsxs(NodeViewWrapper, { className: "mermaid-diagram-wrapper node-mermaidDiagram", children: [
-        /* @__PURE__ */ jsx("div", { className: "table-handle mermaid-node-handle", title: "D\xE9placer", children: "\u283F" }),
-        /* @__PURE__ */ jsx(
-          "div",
-          {
-            ref: containerRef,
-            className: "mermaid-diagram-container",
-            onDoubleClick: handleDoubleClick2,
-            title: "Double-cliquer pour modifier le diagramme",
-            style: {
-              cursor: "pointer",
-              maxHeight: size2 === "large" ? "650px" : "500px",
-              display: "flex",
-              flexDirection: "column",
-              width: "100%",
-              border: "none",
-              borderRadius: "8px",
-              visibility: "visible",
-              opacity: 1,
-              position: "relative",
-              zIndex: 1,
-              overflow: "hidden",
-              contentVisibility: "visible",
-              transform: "none",
-              minWidth: "100px"
-            },
-            children: error ? /* @__PURE__ */ jsxs("div", { className: "mermaid-error", children: [
-              /* @__PURE__ */ jsx("div", { className: "mermaid-error-icon", children: "\u26A0\uFE0E" }),
-              /* @__PURE__ */ jsx("div", { className: "mermaid-error-text", children: "Erreur de syntaxe" }),
-              /* @__PURE__ */ jsx("div", { className: "mermaid-error-hint", children: "Double-cliquez pour corriger" })
-            ] }) : svg ? /* @__PURE__ */ jsx(
-              "div",
-              {
-                className: "mermaid-svg-container",
-                dangerouslySetInnerHTML: { __html: svg }
-              }
-            ) : /* @__PURE__ */ jsxs("div", { className: "mermaid-placeholder", children: [
-              /* @__PURE__ */ jsx("div", { className: "mermaid-placeholder-icon", children: /* @__PURE__ */ jsx(Shapes, { size: 32 }) }),
-              /* @__PURE__ */ jsx("div", { className: "mermaid-placeholder-text", children: "Diagramme vide" }),
-              /* @__PURE__ */ jsx("div", { className: "mermaid-placeholder-hint", children: "Double-cliquez pour \xE9diter" })
-            ] })
-          }
-        )
-      ] }),
-      isEditing && /* @__PURE__ */ jsx("div", { className: "mermaid-modal-overlay", onClick: handleCloseModal, children: /* @__PURE__ */ jsxs("div", { className: "mermaid-modal", onClick: (e) => e.stopPropagation(), children: [
-        /* @__PURE__ */ jsx("div", { className: "mermaid-modal-header", children: /* @__PURE__ */ jsxs("div", { className: "mermaid-modal-header-actions", style: { justifyContent: "space-between", width: "100%" }, children: [
-          /* @__PURE__ */ jsx("div", { style: { display: "flex", gap: "8px", alignItems: "center" }, children: showSizeSelector && /* @__PURE__ */ jsx("div", { className: "mermaid-modal-size-selector", children: [
-            { id: "small", label: "Rectangle", Icon: RectangleHorizontal },
-            { id: "large", label: "Carr\xE9", Icon: Square }
-          ].map((s) => /* @__PURE__ */ jsx(
-            "button",
-            {
-              className: `mermaid-modal-size-btn ${size2 === s.id ? "active" : ""}`,
-              onClick: (e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                handleSizeChange(s.id, draftCode);
-              },
-              title: s.label,
-              children: /* @__PURE__ */ jsx(s.Icon, { size: 14 })
-            },
-            s.id
-          )) }) }),
-          /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: "12px", alignItems: "center" }, children: [
-            isLoading && /* @__PURE__ */ jsx("span", { className: "mermaid-loading-spinner" }),
-            /* @__PURE__ */ jsx(
-              "button",
-              {
-                className: "mermaid-modal-sync btn-secondary",
-                onClick: handleSyncFromMermaid,
-                children: "G\xE9n\xE9rer"
-              }
-            ),
-            /* @__PURE__ */ jsx("button", { className: "mermaid-modal-close btn-primary", onClick: handleCloseModal })
-          ] })
-        ] }) }),
-        /* @__PURE__ */ jsxs("div", { className: "mermaid-modal-body", children: [
-          /* @__PURE__ */ jsx("div", { className: "mermaid-modal-draw-container", children: /* @__PURE__ */ jsx(
-            "div",
-            {
-              ref: excalidrawHostRef,
-              className: "mermaid-modal-excalidraw-host",
-              style: { touchAction: "none", userSelect: "none" }
-            }
-          ) }),
-          /* @__PURE__ */ jsxs("div", { className: "mermaid-modal-editor", children: [
-            /* @__PURE__ */ jsxs("div", { style: { flex: 1, display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }, children: [
-              /* @__PURE__ */ jsx(
-                "textarea",
-                {
-                  className: "mermaid-modal-textarea",
-                  value: draftCode,
-                  onChange: handleCodeChange,
-                  placeholder: "Entrez votre code Mermaid ici...",
-                  spellCheck: false
-                }
-              ),
-              /* @__PURE__ */ jsxs("div", { className: "mermaid-modal-textarea-actions", children: [
-                /* @__PURE__ */ jsx(
-                  "button",
-                  {
-                    type: "button",
-                    className: "mermaid-modal-textarea-btn",
-                    onClick: handleCopyCode,
-                    title: "Copier",
-                    children: /* @__PURE__ */ jsx(Copy, { size: 14 })
-                  }
-                ),
-                /* @__PURE__ */ jsx(
-                  "button",
-                  {
-                    type: "button",
-                    className: "mermaid-modal-textarea-btn",
-                    onClick: handleClearCode,
-                    title: "Effacer",
-                    children: /* @__PURE__ */ jsx(CircleX, { size: 14, "data-lucide": "circle-x" })
-                  }
-                )
-              ] }),
-              modalError && /* @__PURE__ */ jsx("div", { className: "mermaid-modal-error-display", children: modalError })
-            ] }),
-            /* @__PURE__ */ jsxs("div", { id: "draw-composer", className: "draw-composer chat-composer", style: { border: "none", background: "var(--bg-surface)" }, children: [
-              /* @__PURE__ */ jsx("div", { className: "chat-input-wrapper", children: /* @__PURE__ */ jsx(
-                "textarea",
-                {
-                  ref: composerTextareaRef,
-                  id: "draw-composer-input",
-                  className: "chat-input",
-                  rows: 2,
-                  value: promptInput,
-                  onChange: handlePromptInput,
-                  onKeyDown: (e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      handleDrawSend();
-                    }
-                  },
-                  placeholder: "D\xE9crivez votre diagramme..."
-                }
-              ) }),
-              /* @__PURE__ */ jsxs("div", { className: "chat-composer-actions", children: [
-                /* @__PURE__ */ jsx("div", { className: "chat-composer-left-actions", children: /* @__PURE__ */ jsxs("div", { className: "diagram-type-dropdown chat-prompt-dropdown", children: [
-                  /* @__PURE__ */ jsxs(
-                    "button",
-                    {
-                      type: "button",
-                      id: "diagram-type-selector",
-                      className: "btn-secondary chat-prompt-btn",
-                      onClick: () => setIsTypeMenuOpen(!isTypeMenuOpen),
-                      style: { display: "flex", alignItems: "center", gap: "4px" },
-                      children: [
-                        (() => {
-                          const current = diagramTypes.find((t) => t.id === diagramType);
-                          const Icon2 = (current == null ? void 0 : current.Icon) || Workflow;
-                          const label = (draftCode || code).trim() ? current == null ? void 0 : current.label : "\xC9diter";
-                          return /* @__PURE__ */ jsxs(Fragment3, { children: [
-                            /* @__PURE__ */ jsx(Icon2, { size: 14 }),
-                            " ",
-                            /* @__PURE__ */ jsx("span", { children: label })
-                          ] });
-                        })(),
-                        /* @__PURE__ */ jsx(ChevronUp, { size: 12, style: { transform: isTypeMenuOpen ? "rotate(180deg)" : "" } })
-                      ]
-                    }
-                  ),
-                  isTypeMenuOpen && /* @__PURE__ */ jsx("div", { id: "diagram-type-menu", className: "diagram-type-menu chat-prompt-menu open", style: { bottom: "100%", top: "auto", marginBottom: "8px" }, children: diagramTypes.map((t) => /* @__PURE__ */ jsxs(
-                    "button",
-                    {
-                      type: "button",
-                      className: "chat-prompt-menu-item",
-                      onClick: () => {
-                        setDiagramType(t.id);
-                        setIsTypeMenuOpen(false);
-                      },
-                      style: { display: "flex", alignItems: "center", gap: "8px" },
-                      children: [
-                        /* @__PURE__ */ jsx(t.Icon, { size: 14 }),
-                        /* @__PURE__ */ jsx("span", { children: t.label })
-                      ]
-                    },
-                    t.id
-                  )) })
-                ] }) }),
-                /* @__PURE__ */ jsx(
-                  "button",
-                  {
-                    type: "button",
-                    className: "btn-primary chat-send-btn",
-                    onClick: handleDrawSend,
-                    disabled: isGenerating || !promptInput.trim(),
-                    children: isGenerating ? /* @__PURE__ */ jsx(LoaderCircle, { className: "animate-spin", size: 16 }) : /* @__PURE__ */ jsx(Send, { size: 16 })
-                  }
-                )
-              ] })
-            ] })
-          ] })
-        ] })
-      ] }) }),
-      showToast && /* @__PURE__ */ jsx("div", { className: "mermaid-toast", children: "Contenu copi\xE9" })
-    ] });
-  };
-  var MermaidNode = Node3.create({
-    name: "mermaidDiagram",
-    group: "block",
-    atom: true,
-    selectable: true,
-    draggable: true,
-    addAttributes() {
-      return {
-        code: {
-          default: ""
-        },
-        excalidrawJSON: {
-          default: ""
-        },
-        size: {
-          default: "small"
-        },
-        autoOpen: {
-          default: false
-        }
-      };
-    },
-    parseHTML() {
-      return [
-        {
-          tag: "mermaid-diagram"
-        }
-      ];
-    },
-    renderHTML({ HTMLAttributes }) {
-      return ["mermaid-diagram", mergeAttributes(HTMLAttributes)];
-    },
-    addNodeView() {
-      return ReactNodeViewRenderer(MermaidDiagramComponent);
-    },
-    addInputRules() {
-      return [
-        new InputRule({
-          find: /```mermaid\s$/,
-          handler: ({ state: state2, range: range2, chain }) => {
-            const { tr: tr2 } = state2;
-            const start = range2.from;
-            const end = range2.to;
-            tr2.delete(start, end);
-            chain().insertContentAt(start, {
-              type: this.name,
-              attrs: { code: "", autoOpen: true }
-            }).run();
-          }
-        })
-      ];
-    }
-  });
-  var insertMermaidDiagram = (editor, code = "") => {
-    editor.chain().focus().insertContent({
-      type: "mermaidDiagram",
-      attrs: { code, autoOpen: true }
-    }).run();
-  };
-
-  // src/memo-editor/blockquote-node.tsx
-  init_define_process_env();
-  init_polyfills();
-  var ALERT_TYPES = [
-    { type: "default", label: "Citation", icon: Quote, color: "var(--text-muted)" },
-    { type: "NOTE", label: "Note", icon: Info, color: "var(--intent-info-border)" },
-    { type: "TIP", label: "Conseil", icon: Lightbulb, color: "var(--bg-text-yellow)" },
-    { type: "IMPORTANT", label: "Important", icon: SquareCheck, color: "var(--bg-text-green)" },
-    { type: "WARNING", label: "Alerte", icon: TriangleAlert, color: "var(--intent-warning-border)" },
-    { type: "CAUTION", label: "Attention", icon: CircleAlert, color: "var(--intent-error-border)" }
-  ];
-  var AlertComponent = ({ node, updateAttributes: updateAttributes2 }) => {
-    const type2 = node.attrs.type || "default";
-    const alertConfig = ALERT_TYPES.find((a) => a.type === type2) || ALERT_TYPES[0];
-    const Icon2 = alertConfig.icon;
-    return /* @__PURE__ */ jsx(NodeViewWrapper, { as: "blockquote", "data-type": type2, className: "alert-wrapper node-blockquote", children: /* @__PURE__ */ jsxs("div", { className: "alert-body", children: [
-      /* @__PURE__ */ jsx("div", { className: "alert-icon", contentEditable: false, children: /* @__PURE__ */ jsx(Icon2, { size: 18, style: { color: alertConfig.color } }) }),
-      /* @__PURE__ */ jsx("div", { className: "alert-content", children: /* @__PURE__ */ jsx(NodeViewContent, {}) })
-    ] }) });
-  };
-  var Alert = Node3.create({
-    name: "blockquote",
-    content: "block+",
-    group: "block",
-    defining: true,
-    addAttributes() {
-      return {
-        type: {
-          default: "default",
-          parseHTML: (element) => element.getAttribute("data-type") || "default",
-          renderHTML: (attributes) => {
-            if (attributes.type === "default") return {};
-            return { "data-type": attributes.type };
-          }
-        },
-        title: {
-          default: null,
-          parseHTML: (element) => element.getAttribute("data-title"),
-          renderHTML: (attributes) => {
-            if (!attributes.title) return {};
-            return { "data-title": attributes.title };
-          }
-        }
-      };
-    },
-    parseHTML() {
-      return [
-        { tag: "blockquote" }
-      ];
-    },
-    renderHTML({ HTMLAttributes }) {
-      return ["blockquote", mergeAttributes(HTMLAttributes), 0];
-    },
-    addCommands() {
-      return {
-        setBlockquote: () => ({ commands: commands2 }) => {
-          return commands2.wrapIn(this.name);
-        },
-        toggleBlockquote: () => ({ commands: commands2 }) => {
-          return commands2.toggleWrap(this.name);
-        },
-        unsetBlockquote: () => ({ commands: commands2 }) => {
-          return commands2.lift(this.name);
-        }
-      };
-    },
-    addNodeView() {
-      return ReactNodeViewRenderer(AlertComponent);
-    },
-    addInputRules() {
-      return [
-        // GitHub-style alerts: >[!NOTE] Title
-        wrappingInputRule({
-          find: /^> ?\[!(note|tip|important|warning|caution|alerte|attention)\](?:\s+(.*))?\s$/,
-          type: this.type,
-          getAttributes: (match) => {
-            const typeMap = {
-              "note": "NOTE",
-              "tip": "TIP",
-              "important": "IMPORTANT",
-              "warning": "WARNING",
-              "alerte": "WARNING",
-              "caution": "CAUTION",
-              "attention": "CAUTION"
-            };
-            const rawType = match[1].toLowerCase();
-            const type2 = typeMap[rawType] || "NOTE";
-            const title = match[2] || null;
-            return { type: type2, title };
-          }
-        }),
-        wrappingInputRule({
-          find: /^>note\s$/,
-          type: this.type,
-          getAttributes: () => ({ type: "NOTE" })
-        }),
-        wrappingInputRule({
-          find: /^>tip\s$/,
-          type: this.type,
-          getAttributes: () => ({ type: "TIP" })
-        }),
-        wrappingInputRule({
-          find: /^>important\s$/,
-          type: this.type,
-          getAttributes: () => ({ type: "IMPORTANT" })
-        }),
-        wrappingInputRule({
-          find: /^>alerte\s$/,
-          type: this.type,
-          getAttributes: () => ({ type: "WARNING" })
-        }),
-        wrappingInputRule({
-          find: /^>attention\s$/,
-          type: this.type,
-          getAttributes: () => ({ type: "CAUTION" })
-        }),
-        wrappingInputRule({
-          find: /^>ℹ️\s$/,
-          type: this.type,
-          getAttributes: () => ({ type: "NOTE" })
-        }),
-        wrappingInputRule({
-          find: /^>💡\s$/,
-          type: this.type,
-          getAttributes: () => ({ type: "TIP" })
-        }),
-        wrappingInputRule({
-          find: /^>✅\s$/,
-          type: this.type,
-          getAttributes: () => ({ type: "IMPORTANT" })
-        }),
-        wrappingInputRule({
-          find: /^>⚠️\s$/,
-          type: this.type,
-          getAttributes: () => ({ type: "WARNING" })
-        }),
-        wrappingInputRule({
-          find: /^>🚨\s$/,
-          type: this.type,
-          getAttributes: () => ({ type: "CAUTION" })
-        }),
-        wrappingInputRule({
-          find: /^>\.\s$/,
-          type: this.type,
-          getAttributes: () => ({ type: "default" })
-        })
-      ];
-    }
-  });
-
-  // src/memo-editor/simple-editor.tsx
-  var CustomCode = Code.extend({
-    excludes: "",
-    inclusive: false,
-    addInputRules() {
-      return [
-        markInputRule({
-          find: /(?:^|\s)(`([^`]+)`)$/,
-          type: this.type
-        })
-      ];
-    }
-  });
-  var CustomHeading = Heading.extend({
-    addAttributes() {
-      var _a;
-      return {
-        ...(_a = this.parent) == null ? void 0 : _a.call(this),
-        id: {
-          default: null,
-          parseHTML: (element) => element.getAttribute("id"),
-          renderHTML: (attributes) => ({
-            id: attributes.id
-          })
-        },
-        collapsed: {
-          default: false,
-          parseHTML: (element) => element.getAttribute("data-collapsed") === "true",
-          renderHTML: (attributes) => ({
-            "data-collapsed": attributes.collapsed
-          })
-        }
-      };
-    },
-    addProseMirrorPlugins() {
-      return [
-        new Plugin({
-          appendTransaction: (transactions, _oldState, newState) => {
-            const { tr: tr2 } = newState;
-            let modified = false;
-            if (transactions.some((transaction) => transaction.docChanged)) {
-              newState.doc.descendants((node, pos) => {
-                if (node.type.name === "heading" && !node.attrs.id) {
-                  const id = `h-${Math.random().toString(36).substr(2, 6)}`;
-                  tr2.setNodeMarkup(pos, void 0, {
-                    ...node.attrs,
-                    id
-                  });
-                  modified = true;
-                }
-              });
-            }
-            return modified ? tr2 : null;
-          }
-        }),
-        new Plugin({
-          key: new PluginKey("heading-folding"),
-          props: {
-            decorations(state2) {
-              const decorations = [];
-              state2.doc.descendants((node, pos) => {
-                if (node.type.name === "heading" && node.attrs.collapsed) {
-                  const level = node.attrs.level;
-                  const docSize = state2.doc.content.size;
-                  let end = docSize;
-                  state2.doc.nodesBetween(pos + node.nodeSize, docSize, (nextChild, nextPos) => {
-                    if (end !== docSize) return false;
-                    if (nextChild.isBlock && nextChild.type.name === "heading" && nextChild.attrs.level <= level) {
-                      end = nextPos;
-                      return false;
-                    }
-                    return true;
-                  });
-                  let currentPos = pos + node.nodeSize;
-                  while (currentPos < end) {
-                    const childNode = state2.doc.nodeAt(currentPos);
-                    if (!childNode) break;
-                    decorations.push(Decoration.node(currentPos, currentPos + childNode.nodeSize, {
-                      style: "display: none",
-                      class: "collapsed-node"
-                    }));
-                    currentPos += childNode.nodeSize;
-                  }
-                }
-              });
-              return DecorationSet.create(state2.doc, decorations);
-            }
-          }
-        })
-      ];
-    },
-    addNodeView() {
-      return ReactNodeViewRenderer(({ node, editor, getPos }) => {
-        react_shim_default.useEffect(() => {
-          var _a;
-          console.log(`[CustomHeading] mounted ("${(_a = node.textContent) == null ? void 0 : _a.substring(0, 20)}...")`);
-        }, []);
-        const level = Math.min(4, Math.max(1, node.attrs.level || 1));
-        const tag2 = `h${level}`;
-        const collapsed = node.attrs.collapsed;
-        const toggleCollapse = (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          if (typeof getPos === "function") {
-            const pos = getPos();
-            editor.view.dispatch(editor.state.tr.setNodeMarkup(pos, void 0, {
-              ...node.attrs,
-              collapsed: !collapsed
-            }));
-          }
-        };
-        return /* @__PURE__ */ jsxs(NodeViewWrapper, { className: `node-heading-wrapper ${collapsed ? "is-collapsed" : ""}`, children: [
-          /* @__PURE__ */ jsx(
-            "button",
-            {
-              className: "heading-collapse-toggle",
-              onClick: toggleCollapse,
-              contentEditable: false,
-              children: collapsed ? "\u25B6" : "\u25E2"
-            }
-          ),
-          /* @__PURE__ */ jsx(NodeViewContent, { as: tag2, className: "node-text" })
-        ] });
-      });
-    }
-  });
-  var CustomParagraph = Paragraph.extend({
-    addAttributes() {
-      return {
-        class: {
-          default: "node-text node-paragraph",
-          renderHTML: (attributes) => {
-            return {
-              class: attributes.class
-            };
-          }
-        }
-      };
-    },
-    parseHTML() {
-      return [
-        { tag: "p" }
-      ];
-    },
-    renderHTML({ HTMLAttributes }) {
-      return ["p", mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0];
-    }
-  });
-  var hasAncestorNode = ($pos, typeName) => {
-    for (let d = $pos.depth; d > 0; d--) {
-      if ($pos.node(d).type.name === typeName) return true;
-    }
-    return false;
-  };
-  var getDiagramHeaderLine = (code) => {
-    const lines = (code || "").split("\n");
-    for (let i = 0; i < Math.min(lines.length, 5); i++) {
-      const rawLine = lines[i];
-      const line = rawLine.trim();
-      if (!line || line.startsWith("%%")) continue;
-      return line;
-    }
-    return "";
-  };
-  var isFlowchartDiagram = (code) => {
-    const header = getDiagramHeaderLine(code).toLowerCase();
-    return header.startsWith("flowchart") || header.startsWith("graph");
-  };
-  var setFlowchartDirection = (code, direction) => {
-    const lines = (code || "").split("\n");
-    let updated = false;
-    const maxLines = Math.min(lines.length, 8);
-    let targetIndex = -1;
-    for (let i = 0; i < maxLines; i++) {
-      const rawLine = lines[i];
-      const line = rawLine.trim();
-      if (!line || line.startsWith("%%")) continue;
-      if (/^(flowchart|graph)\b/i.test(line)) {
-        targetIndex = i;
-        break;
-      }
-    }
-    if (targetIndex !== -1) {
-      const rawLine = lines[targetIndex];
-      const directionMatch = rawLine.match(/(flowchart|graph)\s+(LR|TD|TB|BT|RL)/i);
-      if (directionMatch) {
-        lines[targetIndex] = rawLine.replace(/(flowchart|graph)\s+(LR|TD|TB|BT|RL)/i, `$1 ${direction}`);
-      } else {
-        lines[targetIndex] = rawLine.replace(/(flowchart|graph)/i, `$1 ${direction}`);
-      }
-      updated = true;
-    }
-    return { code: lines.join("\n"), updated };
-  };
-  var selectTableCellText = (view, pos) => {
-    const { state: state2 } = view;
-    const $pos = state2.doc.resolve(pos);
-    for (let depth = $pos.depth; depth > 0; depth--) {
-      const node = $pos.node(depth);
-      if (node.type.name === "tableCell" || node.type.name === "tableHeader") {
-        const cellPos = $pos.before(depth);
-        const from2 = cellPos + 1;
-        const to = cellPos + node.nodeSize - 1;
-        view.dispatch(state2.tr.setSelection(TextSelection.create(state2.doc, from2, to)));
-        return true;
-      }
-    }
-    return false;
-  };
-  var CustomBulletList = BulletList.extend({
-    renderHTML({ HTMLAttributes }) {
-      return ["ul", mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, { class: "node-text" }), 0];
-    }
-  });
-  var CustomOrderedList = OrderedList.extend({
-    renderHTML({ HTMLAttributes }) {
-      return ["ol", mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, { class: "node-text" }), 0];
-    }
-  });
-  var CustomCodeBlock = CodeBlock.extend({
-    renderHTML({ HTMLAttributes }) {
-      return [
-        "pre",
-        mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, { class: "node-text node-codeBlock" }),
-        ["code", {}, 0]
-      ];
-    }
-  });
-  var LinkSearchModal = ({ editor, onClose }) => {
-    const [query, setQuery] = react_shim_default.useState("");
-    const [selectedIndex, setSelectedIndex] = react_shim_default.useState(0);
-    const modalRef = react_shim_default.useRef(null);
-    react_shim_default.useEffect(() => {
-      const { view } = editor;
-      const { selection } = editor.state;
-      const { from: from2 } = selection;
-      let coords;
-      try {
-        coords = view.coordsAtPos(from2);
-      } catch (e) {
-        coords = { left: window.innerWidth / 2, top: window.innerHeight / 2 };
-      }
-      if (modalRef.current) {
-        const virtualElement = {
-          getBoundingClientRect() {
-            return new DOMRect(coords.left, coords.top, 0, 0);
-          }
-        };
-        computePosition2(virtualElement, modalRef.current, {
-          placement: "bottom-start",
-          middleware: [
-            offset2(10),
-            shift3({ padding: 10 })
-          ]
-        }).then(({ x, y, strategy }) => {
-          if (modalRef.current) {
-            Object.assign(modalRef.current.style, {
-              left: `${x}px`,
-              top: `${y}px`,
-              position: strategy,
-              display: "block"
-            });
-          }
-        });
-      }
-      const handleClickOutside = (e) => {
-        if (modalRef.current && !modalRef.current.contains(e.target)) {
-          onClose();
-        }
-      };
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, [editor, onClose]);
-    const headings = window.MemoHeadings || [];
-    const getHierarchy = (index) => {
-      const current = headings[index];
-      if (!current || current.level === 1) return "";
-      let path = [];
-      let lastLevel = current.level;
-      for (let i = index - 1; i >= 0; i--) {
-        if (headings[i].level < lastLevel) {
-          path.unshift(headings[i].textContent);
-          lastLevel = headings[i].level;
-          if (lastLevel === 1) break;
-        }
-      }
-      return path.length > 0 ? path.join(" / ") : "";
-    };
-    const isUrl = (str) => {
-      const pattern = /^([\da-z.-]+)\.([a-z.]{2,6})([\/\w .-]*)*\/?$/;
-      return pattern.test(str) || str.startsWith("http");
-    };
-    const filteredHeadings = headings.map((h, i) => ({ ...h, originalIndex: i })).filter((h) => h.textContent.toLowerCase().includes(query.toLowerCase())).slice(0, 3);
-    const items = [
-      ...filteredHeadings.map((h) => ({
-        type: "heading",
-        title: h.textContent,
-        id: h.id,
-        path: getHierarchy(h.originalIndex)
-      })),
-      ...query ? [{
-        type: "url",
-        title: query,
-        isValid: isUrl(query)
-      }] : []
-    ];
-    const handleSelect = (item) => {
-      let url = item.type === "heading" ? `#${item.id}` : item.title;
-      if (item.type === "url" && !url.startsWith("http") && !url.startsWith("#")) {
-        url = "https://" + url;
-      }
-      const { from: from2, to } = editor.state.selection;
-      if (from2 !== to) {
-        editor.chain().focus().setLink({ href: url }).run();
-      } else {
-        editor.chain().focus().insertContent([
-          {
-            type: "text",
-            text: item.title,
-            marks: [{ type: "link", attrs: { href: url } }]
-          },
-          { type: "text", text: " " }
-        ]).run();
-      }
-      onClose();
-    };
-    return /* @__PURE__ */ jsxs(
-      "div",
-      {
-        ref: modalRef,
-        className: "link-search-modal",
-        style: { position: "fixed", zIndex: 2e3, display: "none" },
-        children: [
-          /* @__PURE__ */ jsx(
-            "input",
-            {
-              autoFocus: true,
-              placeholder: "Rechercher un titre ou coller un lien...",
-              value: query,
-              onChange: (e) => {
-                setQuery(e.target.value);
-                setSelectedIndex(0);
-              },
-              onKeyDown: (e) => {
-                if (e.key === "Enter" && items[selectedIndex]) {
-                  handleSelect(items[selectedIndex]);
-                } else if (e.key === "ArrowDown") {
-                  setSelectedIndex((selectedIndex + 1) % items.length);
-                  e.preventDefault();
-                } else if (e.key === "ArrowUp") {
-                  setSelectedIndex((selectedIndex - 1 + items.length) % items.length);
-                  e.preventDefault();
-                } else if (e.key === "Escape") {
-                  onClose();
-                }
-              }
-            }
-          ),
-          /* @__PURE__ */ jsxs("div", { className: "link-search-results", children: [
-            items.map((item, i) => /* @__PURE__ */ jsxs(
-              "div",
-              {
-                className: `link-search-item ${i === selectedIndex ? "selected" : ""}`,
-                onMouseEnter: () => setSelectedIndex(i),
-                onClick: () => handleSelect(item),
-                children: [
-                  /* @__PURE__ */ jsxs("div", { className: "link-search-item-info", children: [
-                    /* @__PURE__ */ jsxs("div", { className: "link-search-item-title", children: [
-                      item.type === "url" ? /* @__PURE__ */ jsx(Link2, { size: 12, style: { marginRight: 8, opacity: 0.6 } }) : null,
-                      item.title
-                    ] }),
-                    item.path && /* @__PURE__ */ jsx("div", { className: "link-search-item-path", children: item.path }),
-                    item.type === "url" && !item.isValid && /* @__PURE__ */ jsx("div", { className: "link-search-item-invalid", children: "URL incompl\xE8te?" })
-                  ] }),
-                  /* @__PURE__ */ jsx("div", { className: "link-search-item-action", children: /* @__PURE__ */ jsx(Check, { size: 14 }) })
-                ]
-              },
-              i
-            )),
-            items.length === 0 && /* @__PURE__ */ jsx("div", { className: "link-search-no-results", children: "Aucun titre trouv\xE9" })
-          ] })
-        ]
-      }
-    );
-  };
-  var TEXT_COLORS = [
-    { name: "D\xE9faut", value: "var(--bg-text-main)" },
-    { name: "Gris", value: "var(--bg-text-gray)" },
-    { name: "Marron", value: "var(--bg-text-brown)" },
-    { name: "Orange", value: "var(--bg-text-orange)" },
-    { name: "Jaune", value: "var(--bg-text-yellow)" },
-    { name: "Vert", value: "var(--bg-text-green)" },
-    { name: "Bleu", value: "var(--bg-text-blue)" },
-    { name: "Violet", value: "var(--bg-text-purple)" },
-    { name: "Rose", value: "var(--bg-text-pink)" },
-    { name: "Rouge", value: "var(--bg-text-red)" }
-  ];
-  var BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLink }) => {
-    const [position, setPosition] = react_shim_default.useState({ top: 0, left: 0, opacity: 0 });
-    const [hasMarks, setHasMarks] = react_shim_default.useState(false);
-    const [showTextColors, setShowTextColors] = react_shim_default.useState(false);
-    const menuRef = react_shim_default.useRef(null);
-    const containerRef = react_shim_default.useRef(null);
-    const pointerDownRef = react_shim_default.useRef(false);
-    const updatePosition = react_shim_default.useCallback(() => {
-      var _a, _b, _c;
-      if (!editor || !visible || pointerDownRef.current) {
-        setPosition((prev) => ({ ...prev, opacity: 0 }));
-        setShowTextColors(false);
-        return;
-      }
-      const { from: from2, to } = editor.state.selection;
-      if (from2 === to) {
-        setPosition((prev) => ({ ...prev, opacity: 0 }));
-        setShowTextColors(false);
-        return;
-      }
-      const hasHighlight = hasMarkInSelection(editor, "highlight");
-      const hasStrike = hasMarkInSelection(editor, "strike");
-      setHasMarks(hasHighlight || hasStrike);
-      try {
-        const { view } = editor;
-        const start = view.coordsAtPos(from2);
-        const end = view.coordsAtPos(to);
-        if (!start || !end) {
-          setPosition((prev) => ({ ...prev, opacity: 0 }));
-          setShowTextColors(false);
-          setShowTextColors(false);
-          return;
-        }
-        const container2 = containerRef.current;
-        const relativeParent = container2 == null ? void 0 : container2.parentElement;
-        const parentRect = (relativeParent == null ? void 0 : relativeParent.getBoundingClientRect()) || { top: 0, left: 0 };
-        const menuRect = (_a = menuRef.current) == null ? void 0 : _a.getBoundingClientRect();
-        const menuWidth = (menuRect == null ? void 0 : menuRect.width) || ((_b = menuRef.current) == null ? void 0 : _b.offsetWidth) || 250;
-        const menuHeight = (menuRect == null ? void 0 : menuRect.height) || ((_c = menuRef.current) == null ? void 0 : _c.offsetHeight) || 40;
-        const verticalOffset = 18;
-        let bubbleTop = Math.min(start.top, end.top) - parentRect.top - menuHeight - verticalOffset;
-        let bubbleLeft = (start.left + end.left) / 2 - parentRect.left - menuWidth / 2;
-        const padding = 10;
-        const parentWidth = (relativeParent == null ? void 0 : relativeParent.clientWidth) || window.innerWidth;
-        const viewportTop = bubbleTop + parentRect.top;
-        if (bubbleLeft < padding) {
-          bubbleLeft = padding;
-        } else if (bubbleLeft + menuWidth > parentWidth - padding) {
-          bubbleLeft = parentWidth - menuWidth - padding;
-        }
-        if (viewportTop < padding) {
-          bubbleTop = Math.max(start.bottom, end.bottom) - parentRect.top + verticalOffset;
-        } else if (viewportTop + menuHeight > window.innerHeight - padding) {
-          bubbleTop = window.innerHeight - padding - menuHeight - parentRect.top;
-        }
-        setPosition({
-          top: bubbleTop,
-          left: bubbleLeft,
-          opacity: 1
-        });
-      } catch (err) {
-        console.warn("BubbleMenu positioning error:", err);
-        setPosition((prev) => ({ ...prev, opacity: 0 }));
-      }
-    }, [editor, visible]);
-    react_shim_default.useEffect(() => {
-      if (!editor) return;
-      const viewDom = editor.view.dom;
-      const handlePointerDown = (event) => {
-        if (menuRef.current && menuRef.current.contains(event.target)) {
-          return;
-        }
-        pointerDownRef.current = true;
-        setPosition((prev) => ({ ...prev, opacity: 0 }));
-        setShowTextColors(false);
-      };
-      const handlePointerUp = () => {
-        if (!pointerDownRef.current) return;
-        pointerDownRef.current = false;
-        updatePosition();
-      };
-      viewDom.addEventListener("pointerdown", handlePointerDown);
-      window.addEventListener("pointerup", handlePointerUp);
-      editor.on("selectionUpdate", updatePosition);
-      editor.on("update", updatePosition);
-      updatePosition();
-      return () => {
-        viewDom.removeEventListener("pointerdown", handlePointerDown);
-        window.removeEventListener("pointerup", handlePointerUp);
-        editor.off("selectionUpdate", updatePosition);
-        editor.off("update", updatePosition);
-      };
-    }, [editor, updatePosition]);
-    if (!editor) return null;
-    return /* @__PURE__ */ jsx("div", { ref: containerRef, style: { position: "relative", display: "contents" }, children: /* @__PURE__ */ jsxs(
-      "div",
-      {
-        ref: menuRef,
-        className: "tiptap-toolbar tiptap-bubble-menu",
-        style: {
-          position: "absolute",
-          top: `${position.top}px`,
-          left: `${position.left}px`,
-          opacity: position.opacity,
-          pointerEvents: position.opacity === 0 ? "none" : "auto",
-          transition: "opacity 0.15s ease-in-out",
-          zIndex: 1e3,
-          willChange: "opacity",
-          padding: "4px 8px",
-          boxShadow: "var(--shadow-md)"
-        },
-        children: [
-          /* @__PURE__ */ jsx("div", { role: "group", className: "tiptap-toolbar-group", children: /* @__PURE__ */ jsx(
-            "button",
-            {
-              className: "tiptap-button tiptap-button--primary",
-              type: "button",
-              onClick: onAssist,
-              title: "Assist",
-              children: /* @__PURE__ */ jsx(Bot, { size: 16 })
-            }
-          ) }),
-          /* @__PURE__ */ jsx("div", { className: "tiptap-separator", "data-orientation": "vertical", role: "none" }),
-          /* @__PURE__ */ jsxs("div", { role: "group", className: "tiptap-toolbar-group", children: [
-            /* @__PURE__ */ jsx(
-              "button",
-              {
-                className: "tiptap-button",
-                type: "button",
-                onClick: () => editor.chain().focus().toggleBold().run(),
-                "data-active-state": editor.isActive("bold") ? "on" : "off",
-                title: "Gras",
-                children: /* @__PURE__ */ jsx(Bold2, { size: 14 })
-              }
-            ),
-            /* @__PURE__ */ jsx(
-              "button",
-              {
-                className: "tiptap-button",
-                type: "button",
-                onClick: () => editor.chain().focus().toggleItalic().run(),
-                "data-active-state": editor.isActive("italic") ? "on" : "off",
-                title: "Italique",
-                children: /* @__PURE__ */ jsx(Italic2, { size: 14 })
-              }
-            ),
-            /* @__PURE__ */ jsx(
-              "button",
-              {
-                className: "tiptap-button",
-                type: "button",
-                onClick: () => editor.chain().focus().toggleUnderline().run(),
-                "data-active-state": editor.isActive("underline") ? "on" : "off",
-                title: "Soulign\xE9",
-                children: /* @__PURE__ */ jsx(Underline2, { size: 14 })
-              }
-            ),
-            /* @__PURE__ */ jsxs("div", { style: { position: "relative" }, children: [
-              /* @__PURE__ */ jsx(
-                "button",
-                {
-                  className: "tiptap-button",
-                  type: "button",
-                  onMouseDown: (event) => event.preventDefault(),
-                  onClick: () => {
-                    setShowTextColors(!showTextColors);
-                  },
-                  title: "Couleur du texte",
-                  children: /* @__PURE__ */ jsx(Baseline, { size: 14 })
-                }
-              ),
-              showTextColors && /* @__PURE__ */ jsx(
-                "div",
-                {
-                  className: "table-color-grid",
-                  style: {
-                    position: "absolute",
-                    top: "100%",
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    marginTop: "8px"
-                  },
-                  children: TEXT_COLORS.map((color) => /* @__PURE__ */ jsx(
-                    "div",
-                    {
-                      className: "table-color-option",
-                      style: {
-                        backgroundColor: color.value
-                      },
-                      title: color.name,
-                      onMouseDown: (event) => event.preventDefault(),
-                      onClick: () => {
-                        editor.chain().focus().setColor(color.value).run();
-                        setShowTextColors(false);
-                      }
-                    },
-                    color.value
-                  ))
-                }
-              )
-            ] }),
-            /* @__PURE__ */ jsx("div", { className: "tiptap-separator-inline", style: { width: "1px", height: "18px", backgroundColor: "var(--border-main)", margin: "0 6px" } }),
-            /* @__PURE__ */ jsx(
-              "button",
-              {
-                className: "tiptap-button",
-                type: "button",
-                onClick: () => editor.chain().focus().toggleStrike().run(),
-                "data-active-state": editor.isActive("strike") ? "on" : "off",
-                title: "Barr\xE9",
-                children: /* @__PURE__ */ jsx(Strikethrough, { size: 14 })
-              }
-            ),
-            /* @__PURE__ */ jsx(
-              "button",
-              {
-                className: "tiptap-button",
-                type: "button",
-                onClick: () => editor.chain().focus().toggleHighlight().run(),
-                "data-active-state": editor.isActive("highlight") ? "on" : "off",
-                title: "Surlign\xE9",
-                children: /* @__PURE__ */ jsx(Highlighter, { size: 14 })
-              }
-            ),
-            /* @__PURE__ */ jsx(
-              "button",
-              {
-                className: "tiptap-button",
-                type: "button",
-                onClick: onLink,
-                "data-active-state": editor.isActive("link") ? "on" : "off",
-                title: "Lien",
-                children: /* @__PURE__ */ jsx(Link2, { size: 14 })
-              }
-            )
-          ] }),
-          hasMarks && /* @__PURE__ */ jsxs(Fragment3, { children: [
-            /* @__PURE__ */ jsx("div", { className: "tiptap-separator", "data-orientation": "vertical", role: "none" }),
-            /* @__PURE__ */ jsxs("div", { role: "group", className: "tiptap-toolbar-group", children: [
-              /* @__PURE__ */ jsx(
-                "button",
-                {
-                  className: "tiptap-button bubble-keep",
-                  type: "button",
-                  onClick: onKeep,
-                  title: "Garder",
-                  style: { color: "var(--intent-success-border)" },
-                  children: /* @__PURE__ */ jsx(Check, { size: 16 })
-                }
-              ),
-              /* @__PURE__ */ jsx(
-                "button",
-                {
-                  className: "tiptap-button bubble-reject",
-                  type: "button",
-                  onClick: onReject,
-                  title: "Annuler",
-                  style: { color: "var(--intent-error-border)" },
-                  children: /* @__PURE__ */ jsx(X, { size: 16 })
-                }
-              )
-            ] })
-          ] })
-        ]
-      }
-    ) });
-  };
-  var getTableCellInfo = (view, event) => {
-    const pos = view.posAtCoords({ left: event.clientX, top: event.clientY });
-    if (!pos) return null;
-    const $pos = view.state.doc.resolve(pos.pos);
-    let table = null;
-    let row = null;
-    let cell2 = null;
-    let tablePos = -1;
-    let rowPos = -1;
-    let cellPos = -1;
-    for (let d = $pos.depth; d > 0; d--) {
-      const node = $pos.node(d);
-      if (node.type.name === "tableCell" || node.type.name === "tableHeader") {
-        cell2 = node;
-        cellPos = $pos.before(d);
-      } else if (node.type.name === "tableRow") {
-        row = node;
-        rowPos = $pos.before(d);
-      } else if (node.type.name === "table") {
-        table = node;
-        tablePos = $pos.before(d);
-      }
-    }
-    if (!table || !row || !cell2) return null;
-    let rowIndex = -1;
-    let colIndex = -1;
-    table.forEach((_r, offset3, index) => {
-      if (offset3 === rowPos - tablePos - 1) {
-        rowIndex = index;
-        _r.forEach((_c, offsetInRow, ci) => {
-          if (offsetInRow + offset3 + tablePos + 2 === cellPos) {
-            colIndex = ci;
-          }
-        });
-      }
-    });
-    return { table, tablePos, row, rowPos, cell: cell2, cellPos, rowIndex, colIndex };
-  };
-  var getTableCellPosFromResolved = (resolvedPos) => {
-    for (let d = resolvedPos.depth; d > 0; d--) {
-      const node = resolvedPos.node(d);
-      if (node.type.name === "tableCell" || node.type.name === "tableHeader") {
-        return resolvedPos.before(d);
-      }
-    }
-    return null;
-  };
-  var moveRow = (editor, tablePos, fromRowIndex, toRowIndex) => {
-    const { tr: tr2 } = editor.state;
-    const table = editor.state.doc.nodeAt(tablePos);
-    if (!table || table.type.name !== "table") return false;
-    const rows = [];
-    table.forEach((node) => {
-      if (node.type.name === "tableRow") {
-        rows.push(node);
-      }
-    });
-    if (fromRowIndex <= 0 || toRowIndex <= 0) return false;
-    if (fromRowIndex >= rows.length || toRowIndex >= rows.length) return false;
-    const newRows = [...rows];
-    const [rowToMove] = newRows.splice(fromRowIndex, 1);
-    newRows.splice(toRowIndex, 0, rowToMove);
-    const newTable = table.type.create(table.attrs, newRows);
-    editor.view.dispatch(tr2.replaceWith(tablePos, tablePos + table.nodeSize, newTable));
-    return true;
-  };
-  var moveColumn = (editor, tablePos, fromColIndex, toColIndex) => {
-    const { tr: tr2 } = editor.state;
-    const table = editor.state.doc.nodeAt(tablePos);
-    if (!table || table.type.name !== "table") return false;
-    const newRows = [];
-    table.forEach((row) => {
-      const cells = [];
-      row.forEach((cell2) => cells.push(cell2));
-      if (fromColIndex >= 0 && fromColIndex < cells.length && toColIndex >= 0 && toColIndex < cells.length) {
-        const [cellToMove] = cells.splice(fromColIndex, 1);
-        cells.splice(toColIndex, 0, cellToMove);
-      }
-      newRows.push(row.type.create(row.attrs, cells));
-    });
-    const newTable = table.type.create(table.attrs, newRows);
-    editor.view.dispatch(tr2.replaceWith(tablePos, tablePos + table.nodeSize, newTable));
-    return true;
-  };
-  var sortColumn = (editor, tablePos, colIndex, direction) => {
-    const { tr: tr2 } = editor.state;
-    const table = editor.state.doc.nodeAt(tablePos);
-    if (!table || table.type.name !== "table") return false;
-    const rows = [];
-    table.forEach((row) => {
-      if (row.type.name === "tableRow") rows.push(row);
-    });
-    if (rows.length <= 1) return false;
-    const headerRow = rows[0];
-    const bodyRows = rows.slice(1);
-    const collator = new Intl.Collator("fr", { numeric: true, sensitivity: "base" });
-    const getCellText = (row) => {
-      const cell2 = row.childCount > colIndex ? row.child(colIndex) : null;
-      return cell2 ? cell2.textContent.trim() : "";
-    };
-    const sortedRows = bodyRows.map((row, index) => ({ row, index })).sort((a, b) => {
-      const aText = getCellText(a.row);
-      const bText = getCellText(b.row);
-      if (!aText && !bText) return 0;
-      if (!aText) return 1;
-      if (!bText) return -1;
-      const result = collator.compare(aText, bText);
-      if (result !== 0) return direction === "asc" ? result : -result;
-      return a.index - b.index;
-    }).map(({ row }) => row);
-    const newTable = table.type.create(table.attrs, [headerRow, ...sortedRows]);
-    editor.view.dispatch(tr2.replaceWith(tablePos, tablePos + table.nodeSize, newTable));
-    return true;
-  };
-  var hasMarkInSelection = (editor, markName) => {
-    if (!editor) return false;
-    const { from: from2, to } = editor.state.selection;
-    if (from2 === to) return false;
-    let hasMarked = false;
-    editor.state.doc.nodesBetween(from2, to, (node) => {
-      if (node.marks.some((m) => m.type.name === markName)) {
-        hasMarked = true;
-        return false;
-      }
-    });
-    return hasMarked;
-  };
-  var hasMarksInDocument = (editor) => {
-    if (!editor) return false;
-    let hasMarks = false;
-    editor.state.doc.descendants((node) => {
-      if (node.marks.some((m) => m.type.name === "highlight" || m.type.name === "strike")) {
-        hasMarks = true;
-        return false;
-      }
-    });
-    return hasMarks;
-  };
-  var cleanupEmptyBlocks = (tr2) => {
-    const nodesToDelete = [];
-    const emptyListItemTypes = /* @__PURE__ */ new Set(["listItem"]);
-    const emptyListTypes = /* @__PURE__ */ new Set(["bulletList", "orderedList"]);
-    tr2.doc.descendants((node, pos) => {
-      var _a, _b, _c, _d, _e, _f, _g;
-      const typeName = (_a = node.type) == null ? void 0 : _a.name;
-      if (emptyListItemTypes.has(typeName)) {
-        const hasNestedList = node.childCount > 1 && Array.from({ length: node.childCount }).some((_, idx) => {
-          var _a2, _b2;
-          const childType = (_b2 = (_a2 = node.child(idx)) == null ? void 0 : _a2.type) == null ? void 0 : _b2.name;
-          return emptyListTypes.has(childType);
-        });
-        const isSingleEmptyParagraph = node.childCount === 1 && ((_c = (_b = node.firstChild) == null ? void 0 : _b.type) == null ? void 0 : _c.name) === "paragraph" && ((_e = (_d = node.firstChild) == null ? void 0 : _d.content) == null ? void 0 : _e.size) === 0;
-        if (!hasNestedList && isSingleEmptyParagraph) {
-          nodesToDelete.push({ from: pos, to: pos + node.nodeSize });
-          return;
-        }
-      }
-      if ((typeName === "paragraph" || typeName === "heading") && node.content.size === 0) {
-        const $pos = tr2.doc.resolve(pos);
-        const parentType = (_g = (_f = $pos.parent) == null ? void 0 : _f.type) == null ? void 0 : _g.name;
-        if (emptyListItemTypes.has(parentType)) {
-          return;
-        }
-        nodesToDelete.push({ from: pos, to: pos + node.nodeSize });
-        return;
-      }
-      if (emptyListTypes.has(typeName) && node.childCount === 0) {
-        nodesToDelete.push({ from: pos, to: pos + node.nodeSize });
-      }
-    });
-    nodesToDelete.reverse().forEach(({ from: delFrom, to: delTo }) => {
-      tr2.delete(delFrom, delTo);
-    });
-  };
-  var keepSelection = (editor) => {
-    if (!editor) return;
-    const { from: from2, to } = editor.state.selection;
-    editor.chain().focus().unsetMark("highlight").run();
-    let toDelete = [];
-    editor.state.doc.nodesBetween(from2, to, (node, pos) => {
-      if (node.marks.some((m) => m.type.name === "strike")) {
-        toDelete.push({ from: pos, to: pos + node.nodeSize });
-      }
-    });
-    toDelete.reverse().forEach(({ from: delFrom, to: delTo }) => {
-      editor.chain().deleteRange({ from: delFrom, to: delTo }).run();
-    });
-    editor.chain().focus().command(({ tr: tr2 }) => {
-      cleanupEmptyBlocks(tr2);
-      return true;
-    }).run();
-  };
-  var rejectSelection = (editor) => {
-    if (!editor) return;
-    const { from: from2, to } = editor.state.selection;
-    editor.chain().focus().unsetMark("strike").run();
-    let toDelete = [];
-    editor.state.doc.nodesBetween(from2, to, (node, pos) => {
-      if (node.marks.some((m) => m.type.name === "highlight")) {
-        toDelete.push({ from: pos, to: pos + node.nodeSize });
-      }
-    });
-    toDelete.reverse().forEach(({ from: delFrom, to: delTo }) => {
-      editor.chain().deleteRange({ from: delFrom, to: delTo }).run();
-    });
-    editor.chain().focus().command(({ tr: tr2 }) => {
-      cleanupEmptyBlocks(tr2);
-      return true;
-    }).run();
-  };
-  var keepAllDocument = (editor) => {
-    if (!editor) return;
-    editor.chain().focus().command(({ tr: tr2 }) => {
-      const toDelete = [];
-      tr2.doc.descendants((node, pos) => {
-        if (node.marks.some((m) => m.type.name === "highlight")) {
-          node.marks.forEach((mark) => {
-            if (mark.type.name === "highlight") {
-              tr2.removeMark(pos, pos + node.nodeSize, mark.type);
-            }
-          });
-        }
-        if (node.marks.some((m) => m.type.name === "strike")) {
-          toDelete.push({ from: pos, to: pos + node.nodeSize });
-        }
-      });
-      toDelete.reverse().forEach(({ from: delFrom, to: delTo }) => {
-        tr2.delete(delFrom, delTo);
-      });
-      cleanupEmptyBlocks(tr2);
-      return true;
-    }).run();
-  };
-  var BlockTypeDropdown = ({ editor, onOpenChange }) => {
-    const [isOpen, setIsOpen] = react_shim_default.useState(false);
-    const dropdownRef = react_shim_default.useRef(null);
-    react_shim_default.useEffect(() => {
-      onOpenChange == null ? void 0 : onOpenChange(isOpen);
-    }, [isOpen, onOpenChange]);
-    const options2 = [
-      { label: "Texte", value: "paragraph", icon: Type, active: editor.isActive("paragraph") },
-      { label: "Titre 1", value: "h1", icon: Heading1, active: editor.isActive("heading", { level: 1 }) },
-      { label: "Titre 2", value: "h2", icon: Heading2, active: editor.isActive("heading", { level: 2 }) },
-      { label: "Titre 3", value: "h3", icon: Heading3, active: editor.isActive("heading", { level: 3 }) },
-      { label: "Titre 4", value: "h4", icon: Heading4, active: editor.isActive("heading", { level: 4 }) },
-      { label: "Liste \xE0 puces", value: "bulletList", icon: List, active: editor.isActive("bulletList") },
-      { label: "T\xE2che", value: "taskList", icon: SquareCheckBig, active: editor.isActive("taskList") },
-      { label: "Bloc de code", value: "codeBlock", icon: SquareCode, active: editor.isActive("codeBlock") }
-    ];
-    const currentOption = options2.find((o) => o.active) || options2[0];
-    react_shim_default.useEffect(() => {
-      const handleClickOutside = (event) => {
-        if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-          setIsOpen(false);
-        }
-      };
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
-    const handleSelect = (value) => {
-      const chain = editor.chain().focus();
-      if (value === "paragraph") chain.setParagraph().run();
-      else if (value === "h1") chain.toggleHeading({ level: 1 }).run();
-      else if (value === "h2") chain.toggleHeading({ level: 2 }).run();
-      else if (value === "h3") chain.toggleHeading({ level: 3 }).run();
-      else if (value === "h4") chain.toggleHeading({ level: 4 }).run();
-      else if (value === "bulletList") chain.toggleBulletList().run();
-      else if (value === "taskList") chain.toggleTaskList().run();
-      else if (value === "code") chain.toggleCode().run();
-      else if (value === "codeBlock") chain.toggleCodeBlock().run();
-      setIsOpen(false);
-    };
-    return /* @__PURE__ */ jsxs("div", { className: "tiptap-dropdown", ref: dropdownRef, children: [
-      /* @__PURE__ */ jsxs(
-        "button",
-        {
-          type: "button",
-          className: "tiptap-dropdown-trigger",
-          onClick: () => setIsOpen(!isOpen),
-          children: [
-            /* @__PURE__ */ jsx(currentOption.icon, { size: 16 }),
-            /* @__PURE__ */ jsx("span", { children: currentOption.label }),
-            /* @__PURE__ */ jsx(ChevronDown, { size: 14 })
-          ]
-        }
-      ),
-      isOpen && /* @__PURE__ */ jsx("div", { className: "tiptap-dropdown-menu", children: options2.map((option) => /* @__PURE__ */ jsxs(
-        "div",
-        {
-          className: "tiptap-dropdown-item",
-          "data-active": option.active,
-          onClick: () => handleSelect(option.value),
-          children: [
-            /* @__PURE__ */ jsx(option.icon, { size: 16 }),
-            /* @__PURE__ */ jsx("span", { style: { flex: 1 }, children: option.label }),
-            option.active && /* @__PURE__ */ jsx(Check, { size: 14 })
-          ]
-        },
-        option.value
-      )) })
-    ] });
-  };
-  var QuoteTypeDropdown = ({ editor }) => {
-    const [isOpen, setIsOpen] = react_shim_default.useState(false);
-    const dropdownRef = react_shim_default.useRef(null);
-    react_shim_default.useEffect(() => {
-      const handleClickOutside = (event) => {
-        if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-          setIsOpen(false);
-        }
-      };
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
-    const handleSelect = (type2) => {
-      const chain = editor.chain().focus();
-      if (editor.isActive("blockquote", { type: type2 })) {
-        chain.lift("blockquote").run();
-      } else if (editor.isActive("blockquote")) {
-        chain.updateAttributes("blockquote", { type: type2 }).run();
-      } else {
-        chain.setBlockquote().updateAttributes("blockquote", { type: type2 }).run();
-      }
-      setIsOpen(false);
-    };
-    const isAnyQuoteActive = editor.isActive("blockquote");
-    const currentQuoteType = editor.getAttributes("blockquote").type || "default";
-    const currentOption = ALERT_TYPES.find((a) => a.type === currentQuoteType) || ALERT_TYPES[0];
-    return /* @__PURE__ */ jsxs("div", { className: "tiptap-dropdown", ref: dropdownRef, children: [
-      /* @__PURE__ */ jsxs(
-        "button",
-        {
-          type: "button",
-          className: "tiptap-button",
-          onClick: () => setIsOpen(!isOpen),
-          "data-active-state": isAnyQuoteActive ? "on" : "off",
-          title: "Citation",
-          style: { width: "auto", padding: "0 4px", gap: "2px", display: "flex", alignItems: "center" },
-          children: [
-            /* @__PURE__ */ jsx(currentOption.icon, { size: 16, style: { color: isAnyQuoteActive ? currentOption.color : "inherit" } }),
-            /* @__PURE__ */ jsx(ChevronDown, { size: 14 })
-          ]
-        }
-      ),
-      isOpen && /* @__PURE__ */ jsx("div", { className: "tiptap-dropdown-menu", style: { width: "180px" }, children: ALERT_TYPES.map((alert) => /* @__PURE__ */ jsxs(
-        "div",
-        {
-          className: "tiptap-dropdown-item",
-          "data-active": editor.isActive("blockquote", { type: alert.type }),
-          onClick: () => handleSelect(alert.type),
-          children: [
-            /* @__PURE__ */ jsx(alert.icon, { size: 16, style: { color: alert.color } }),
-            /* @__PURE__ */ jsx("span", { style: { flex: 1 }, children: alert.label }),
-            editor.isActive("blockquote", { type: alert.type }) && /* @__PURE__ */ jsx(Check, { size: 14 })
-          ]
-        },
-        alert.type
-      )) })
-    ] });
-  };
-  var Toolbar = ({ editor, onDropdownToggle, onLink }) => {
-    const [, forceUpdate] = react_shim_default.useReducer((x) => x + 1, 0);
-    const [showTextColors, setShowTextColors] = react_shim_default.useState(false);
-    const toolbarRef = react_shim_default.useRef(null);
-    react_shim_default.useEffect(() => {
-      onDropdownToggle == null ? void 0 : onDropdownToggle(showTextColors);
-    }, [showTextColors, onDropdownToggle]);
-    react_shim_default.useEffect(() => {
-      if (!editor) return;
-      const updateHandler = () => forceUpdate();
-      editor.on("update", updateHandler);
-      editor.on("selectionUpdate", updateHandler);
-      const handleClickOutside = (event) => {
-        if (toolbarRef.current && !toolbarRef.current.contains(event.target)) {
-          setShowTextColors(false);
-        }
-      };
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => {
-        editor.off("update", updateHandler);
-        editor.off("selectionUpdate", updateHandler);
-        document.removeEventListener("mousedown", handleClickOutside);
-      };
-    }, [editor]);
-    if (!editor) return null;
-    return /* @__PURE__ */ jsxs("div", { ref: toolbarRef, role: "toolbar", "aria-label": "toolbar", "data-variant": "fixed", className: "tiptap-toolbar", children: [
-      /* @__PURE__ */ jsxs("div", { role: "group", className: "tiptap-toolbar-group", children: [
-        /* @__PURE__ */ jsx(
-          "button",
-          {
-            className: "tiptap-button",
-            "aria-label": "Undo",
-            type: "button",
-            onClick: () => editor.chain().focus().undo().run(),
-            disabled: !editor.can().undo(),
-            children: /* @__PURE__ */ jsx(Undo2, { size: 16 })
-          }
-        ),
-        /* @__PURE__ */ jsx(
-          "button",
-          {
-            className: "tiptap-button",
-            "aria-label": "Redo",
-            type: "button",
-            onClick: () => editor.chain().focus().redo().run(),
-            disabled: !editor.can().redo(),
-            children: /* @__PURE__ */ jsx(Redo2, { size: 16 })
-          }
-        )
-      ] }),
-      /* @__PURE__ */ jsx("div", { className: "tiptap-separator", "data-orientation": "vertical", role: "none" }),
-      /* @__PURE__ */ jsx("div", { role: "group", className: "tiptap-toolbar-group", children: /* @__PURE__ */ jsx(BlockTypeDropdown, { editor, onOpenChange: onDropdownToggle }) }),
-      /* @__PURE__ */ jsx("div", { className: "tiptap-separator", "data-orientation": "vertical", role: "none" }),
-      /* @__PURE__ */ jsxs("div", { role: "group", className: "tiptap-toolbar-group", "aria-label": "Style", children: [
-        /* @__PURE__ */ jsx(
-          "button",
-          {
-            className: "tiptap-button",
-            "aria-label": "Bold",
-            type: "button",
-            onClick: () => editor.chain().focus().toggleBold().run(),
-            "data-active-state": editor.isActive("bold") ? "on" : "off",
-            children: /* @__PURE__ */ jsx(Bold2, { size: 16 })
-          }
-        ),
-        /* @__PURE__ */ jsx(
-          "button",
-          {
-            className: "tiptap-button",
-            "aria-label": "Italic",
-            type: "button",
-            onClick: () => editor.chain().focus().toggleItalic().run(),
-            "data-active-state": editor.isActive("italic") ? "on" : "off",
-            children: /* @__PURE__ */ jsx(Italic2, { size: 16 })
-          }
-        ),
-        /* @__PURE__ */ jsx(
-          "button",
-          {
-            className: "tiptap-button",
-            "aria-label": "Underline",
-            type: "button",
-            onClick: () => editor.chain().focus().toggleUnderline().run(),
-            "data-active-state": editor.isActive("underline") ? "on" : "off",
-            children: /* @__PURE__ */ jsx(Underline2, { size: 16 })
-          }
-        ),
-        /* @__PURE__ */ jsxs("div", { style: { position: "relative" }, children: [
-          /* @__PURE__ */ jsx(
-            "button",
-            {
-              className: "tiptap-button",
-              "aria-label": "Text Color",
-              type: "button",
-              onMouseDown: (event) => event.preventDefault(),
-              onClick: () => setShowTextColors(!showTextColors),
-              title: "Couleur du texte",
-              children: /* @__PURE__ */ jsx(Baseline, { size: 16 })
-            }
-          ),
-          showTextColors && /* @__PURE__ */ jsx(
-            "div",
-            {
-              className: "table-color-grid",
-              style: {
-                position: "absolute",
-                top: "100%",
-                left: "50%",
-                transform: "translateX(-50%)",
-                marginTop: "8px"
-              },
-              children: TEXT_COLORS.map((color) => /* @__PURE__ */ jsx(
-                "div",
-                {
-                  className: "table-color-option",
-                  style: {
-                    backgroundColor: color.value
-                  },
-                  title: color.name,
-                  onMouseDown: (event) => event.preventDefault(),
-                  onClick: () => {
-                    editor.chain().focus().setColor(color.value).run();
-                    setShowTextColors(false);
-                  }
-                },
-                color.value
-              ))
-            }
-          )
-        ] })
-      ] }),
-      /* @__PURE__ */ jsx("div", { className: "tiptap-separator", "data-orientation": "vertical", role: "none" }),
-      /* @__PURE__ */ jsxs("div", { role: "group", className: "tiptap-toolbar-group", "aria-label": "Texte avanc\xE9", children: [
-        /* @__PURE__ */ jsx(
-          "button",
-          {
-            className: "tiptap-button",
-            "aria-label": "Strike",
-            type: "button",
-            onClick: () => editor.chain().focus().toggleStrike().run(),
-            "data-active-state": editor.isActive("strike") ? "on" : "off",
-            children: /* @__PURE__ */ jsx(Strikethrough, { size: 16 })
-          }
-        ),
-        /* @__PURE__ */ jsx(
-          "button",
-          {
-            className: "tiptap-button",
-            "aria-label": "Highlight",
-            type: "button",
-            onClick: () => editor.chain().focus().toggleHighlight().run(),
-            "data-active-state": editor.isActive("highlight") ? "on" : "off",
-            title: "Surligner",
-            children: /* @__PURE__ */ jsx(Highlighter, { size: 16 })
-          }
-        ),
-        /* @__PURE__ */ jsx(
-          "button",
-          {
-            className: "tiptap-button",
-            "aria-label": "Link",
-            type: "button",
-            onClick: onLink,
-            "data-active-state": editor.isActive("link") ? "on" : "off",
-            title: "Lien",
-            children: /* @__PURE__ */ jsx(Link2, { size: 16 })
-          }
-        )
-      ] }),
-      /* @__PURE__ */ jsx("div", { className: "tiptap-separator", "data-orientation": "vertical", role: "none" }),
-      /* @__PURE__ */ jsxs("div", { role: "group", className: "tiptap-toolbar-group", "aria-label": "Bloc", children: [
-        /* @__PURE__ */ jsx(
-          "button",
-          {
-            className: "tiptap-button",
-            "aria-label": "Libell\xE9",
-            type: "button",
-            onClick: () => {
-              editor.chain().focus().insertContent("`").run();
-            },
-            "data-active-state": editor.isActive("code") ? "on" : "off",
-            title: "Libell\xE9",
-            children: /* @__PURE__ */ jsx(Tag, { size: 16 })
-          }
-        ),
-        /* @__PURE__ */ jsx(QuoteTypeDropdown, { editor })
-      ] }),
-      /* @__PURE__ */ jsx("div", { className: "tiptap-separator", "data-orientation": "vertical", role: "none" }),
-      /* @__PURE__ */ jsxs("div", { role: "group", className: "tiptap-toolbar-group", "aria-label": "Insertion", children: [
-        /* @__PURE__ */ jsx(
-          "button",
-          {
-            className: "tiptap-button",
-            "aria-label": "Insert Table",
-            type: "button",
-            onClick: () => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run(),
-            children: /* @__PURE__ */ jsx(Table2, { size: 16 })
-          }
-        ),
-        /* @__PURE__ */ jsx(
-          "button",
-          {
-            className: "tiptap-button",
-            "aria-label": "Insert Mermaid Diagram",
-            type: "button",
-            onClick: () => {
-              insertMermaidDiagram(editor);
-            },
-            "data-active-state": editor.isActive("mermaidDiagram") ? "on" : "off",
-            title: "Ins\xE9rer un diagramme Mermaid",
-            children: /* @__PURE__ */ jsx(Shapes, { size: 16 })
-          }
-        )
-      ] }),
-      /* @__PURE__ */ jsx("div", { className: "tiptap-separator", "data-orientation": "vertical", role: "none" }),
-      /* @__PURE__ */ jsxs("div", { role: "group", className: "tiptap-toolbar-group", children: [
-        editor && hasMarksInDocument(editor) && /* @__PURE__ */ jsx(
-          "button",
-          {
-            className: "tiptap-button toolbar-action-btn toolbar-keep",
-            "aria-label": "Garder tout",
-            type: "button",
-            title: "Garder tout",
-            onClick: () => keepAllDocument(editor),
-            children: /* @__PURE__ */ jsx(CheckCheck, { size: 16 })
-          }
-        ),
-        /* @__PURE__ */ jsx(
-          "button",
-          {
-            className: "tiptap-button",
-            "aria-label": "Voir le code source",
-            title: "Voir le code source",
-            type: "button",
-            onClick: () => {
-              var _a;
-              (_a = window.openMemoSourceModal) == null ? void 0 : _a.call(window);
-              document.dispatchEvent(new CustomEvent("memoEditorOpenSourceModal"));
-            },
-            children: /* @__PURE__ */ jsx(CodeXml, { size: 16 })
-          }
-        )
-      ] })
-    ] });
-  };
-  var CodeList = react_shim_default.forwardRef((props, ref2) => {
-    var _a;
-    const [selectedIndex, setSelectedIndex] = react_shim_default.useState(0);
-    const selectItem = (index) => {
-      var _a2;
-      const item = (_a2 = props.items) == null ? void 0 : _a2[index];
-      if (!item) return;
-      if (typeof item === "string") {
-        props.command({ text: item });
-        return;
-      }
-      props.command({ text: item.text, marks: item.marks || [] });
-    };
-    const upHandler = () => {
-      var _a2;
-      const len = ((_a2 = props.items) == null ? void 0 : _a2.length) || 0;
-      if (!len) return;
-      setSelectedIndex((prev) => (prev + len - 1) % len);
-    };
-    const downHandler = () => {
-      var _a2;
-      const len = ((_a2 = props.items) == null ? void 0 : _a2.length) || 0;
-      if (!len) return;
-      setSelectedIndex((prev) => (prev + 1) % len);
-    };
-    const enterHandler = () => {
-      selectItem(selectedIndex);
-    };
-    react_shim_default.useEffect(() => setSelectedIndex(0), [props.items]);
-    react_shim_default.useImperativeHandle(ref2, () => {
-      return {
-        onKeyDown: (x) => {
-          var _a2;
-          if (x.event.key === "ArrowUp") {
-            upHandler();
-            return true;
-          }
-          if (x.event.key === "ArrowDown") {
-            downHandler();
-            return true;
-          }
-          if (x.event.key === "Enter") {
-            enterHandler();
-            return true;
-          }
-          if (x.event.key === "Tab") {
-            if (((_a2 = props.items) == null ? void 0 : _a2.length) > 0) {
-              selectItem(0);
-              return true;
-            }
-          }
-          return false;
-        }
-      };
-    }, [selectedIndex, props.items]);
-    if (!((_a = props.items) == null ? void 0 : _a.length)) return null;
-    return /* @__PURE__ */ jsx(
-      "div",
-      {
-        className: "code-dropdown-autocomplete",
-        style: {
-          background: "var(--bg-surface-soft)",
-          border: "1px solid var(--border-main)",
-          borderRadius: "8px",
-          boxShadow: "var(--shadow-md)",
-          padding: "4px",
-          maxHeight: "200px",
-          overflowY: "auto",
-          minWidth: "150px",
-          zIndex: 9999
-        },
-        children: props.items.map((item, index) => {
-          var _a2, _b, _c, _d;
-          const label = typeof item === "string" ? item : item.text;
-          const marks = typeof item === "string" ? [] : item.marks || [];
-          const color = (_b = (_a2 = marks.find((mark) => mark.type === "textStyle")) == null ? void 0 : _a2.attrs) == null ? void 0 : _b.color;
-          const isBold = marks.some((mark) => mark.type === "bold");
-          const isItalic = marks.some((mark) => mark.type === "italic");
-          const isUnderline = marks.some((mark) => mark.type === "underline");
-          const isStrike = marks.some((mark) => mark.type === "strike");
-          const isHighlight = marks.some((mark) => mark.type === "highlight");
-          return /* @__PURE__ */ jsx(
-            "button",
-            {
-              onMouseDown: (event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                selectItem(index);
-              },
-              style: {
-                display: "block",
-                width: "100%",
-                textAlign: "left",
-                padding: "6px 8px",
-                border: "none",
-                cursor: "pointer",
-                borderRadius: "4px",
-                fontSize: "13px",
-                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-                color: color || "var(--text-main)",
-                fontWeight: isBold ? 700 : 400,
-                fontStyle: isItalic ? "italic" : "normal",
-                textDecoration: `${isUnderline ? "underline" : ""}${isStrike ? " line-through" : ""}`.trim() || "none",
-                backgroundColor: isHighlight ? ((_d = (_c = marks.find((mark) => mark.type === "highlight")) == null ? void 0 : _c.attrs) == null ? void 0 : _d.color) || "var(--bg-surface)" : index === selectedIndex ? "var(--bg-surface)" : "var(--bg-surface-soft)"
-              },
-              children: label
-            },
-            index
-          );
-        })
-      }
-    );
-  });
-  var CODE_SUGGESTION_USAGE_KEY = "go-toolkit-code-suggestion-usage";
-  var CODE_SUGGESTION_STYLE_KEY = "go-toolkit-code-suggestion-styles";
-  var loadCodeSuggestionStyles = () => {
-    try {
-      const raw = localStorage.getItem(CODE_SUGGESTION_STYLE_KEY);
-      if (!raw) return {};
-      const parsed = JSON.parse(raw);
-      return parsed && typeof parsed === "object" ? parsed : {};
-    } catch (err) {
-      return {};
-    }
-  };
-  var saveCodeSuggestionStyles = (styles) => {
-    try {
-      localStorage.setItem(CODE_SUGGESTION_STYLE_KEY, JSON.stringify(styles));
-    } catch (err) {
-    }
-  };
-  var normalizeCodeSuggestionText = (text) => (text || "").trim();
-  var extractCodeSuggestionStyle = (marks) => {
-    var _a;
-    const hasType = (type2) => marks.some((mark) => {
-      var _a2;
-      return (((_a2 = mark.type) == null ? void 0 : _a2.name) || mark.type) === type2;
-    });
-    const colorMark = marks.find((mark) => {
-      var _a2;
-      return (((_a2 = mark.type) == null ? void 0 : _a2.name) || mark.type) === "textStyle";
-    });
-    const color = (_a = colorMark == null ? void 0 : colorMark.attrs) == null ? void 0 : _a.color;
-    return {
-      bold: hasType("bold"),
-      italic: hasType("italic"),
-      color: color || void 0
-    };
-  };
-  var codeSuggestionStylesEqual = (a, b) => {
-    const normalizedA = {
-      bold: !!(a == null ? void 0 : a.bold),
-      italic: !!(a == null ? void 0 : a.italic),
-      color: (a == null ? void 0 : a.color) || ""
-    };
-    const normalizedB = {
-      bold: !!(b == null ? void 0 : b.bold),
-      italic: !!(b == null ? void 0 : b.italic),
-      color: (b == null ? void 0 : b.color) || ""
-    };
-    return normalizedA.bold === normalizedB.bold && normalizedA.italic === normalizedB.italic && normalizedA.color === normalizedB.color;
-  };
-  var buildMarksFromCodeSuggestionStyle = (style2) => {
-    const marks = [];
-    if (style2 == null ? void 0 : style2.bold) {
-      marks.push({ type: "bold" });
-    }
-    if (style2 == null ? void 0 : style2.italic) {
-      marks.push({ type: "italic" });
-    }
-    if (style2 == null ? void 0 : style2.color) {
-      marks.push({ type: "textStyle", attrs: { color: style2.color } });
-    }
-    return marks;
-  };
-  var loadCodeSuggestionUsage = () => {
-    try {
-      const raw = localStorage.getItem(CODE_SUGGESTION_USAGE_KEY);
-      if (!raw) return {};
-      const parsed = JSON.parse(raw);
-      return parsed && typeof parsed === "object" ? parsed : {};
-    } catch (err) {
-      return {};
-    }
-  };
-  var bumpCodeSuggestionUsage = (snippet) => {
-    const key = (snippet || "").trim();
-    if (!key) return;
-    const usage = loadCodeSuggestionUsage();
-    usage[key] = (usage[key] || 0) + 1;
-    try {
-      localStorage.setItem(CODE_SUGGESTION_USAGE_KEY, JSON.stringify(usage));
-    } catch (err) {
-    }
-  };
-  var codeSuggestion = {
-    items: ({ editor, query }) => {
-      const snippets = /* @__PURE__ */ new Map();
-      const styles = loadCodeSuggestionStyles();
-      editor.state.doc.descendants((node) => {
-        if (node.isText) {
-          const codeMark = node.marks.find((m) => m.type.name === "code");
-          if (codeMark && node.text) {
-            const trimmed = normalizeCodeSuggestionText(node.text);
-            if (!trimmed) return true;
-            if (!snippets.has(trimmed)) {
-              const storedStyle = styles[trimmed];
-              const marks = storedStyle ? buildMarksFromCodeSuggestionStyle(storedStyle) : node.marks.map((mark) => ({
-                type: mark.type.name,
-                attrs: mark.attrs || {}
-              }));
-              snippets.set(trimmed, { text: trimmed, marks });
-            }
-          }
-        }
-        return true;
-      });
-      const usage = loadCodeSuggestionUsage();
-      return Array.from(snippets.values()).filter(({ text }) => text.toLowerCase().includes(query.toLowerCase())).sort((a, b) => {
-        const aCount = usage[a.text] || 0;
-        const bCount = usage[b.text] || 0;
-        if (aCount !== bCount) return bCount - aCount;
-        return a.text.localeCompare(b.text);
-      }).slice(0, 10);
-    },
-    render: () => {
-      let component;
-      function repositionComponent(clientRect2) {
-        if (!(component == null ? void 0 : component.element)) return;
-        const rect = typeof clientRect2 === "function" ? clientRect2() : clientRect2;
-        if (!rect) return;
-        const virtualElement = {
-          getBoundingClientRect() {
-            return rect;
-          }
-        };
-        computePosition2(virtualElement, component.element, {
-          placement: "bottom-start"
-        }).then((pos) => {
-          Object.assign(component.element.style, {
-            left: `${pos.x}px`,
-            top: `${pos.y}px`,
-            position: pos.strategy === "fixed" ? "fixed" : "absolute"
-          });
-        });
-      }
-      return {
-        onStart: (props) => {
-          component = new ReactRenderer(CodeList, {
-            props,
-            editor: props.editor,
-            className: "code-dropdown-autocomplete"
-          });
-          document.body.appendChild(component.element);
-          repositionComponent(props.clientRect);
-        },
-        onUpdate(props) {
-          component.updateProps(props);
-          repositionComponent(props.clientRect);
-        },
-        onKeyDown(props) {
-          var _a;
-          if (props.event.key === "Escape" || props.event.key === "`") {
-            if (document.body.contains(component.element)) {
-              document.body.removeChild(component.element);
-            }
-            component.destroy();
-            return props.event.key === "Escape";
-          }
-          return (_a = component.ref) == null ? void 0 : _a.onKeyDown(props);
-        },
-        onExit() {
-          if ((component == null ? void 0 : component.element) && document.body.contains(component.element)) {
-            document.body.removeChild(component.element);
-          }
-          component == null ? void 0 : component.destroy();
-        }
-      };
-    }
-  };
-  var CodeSuggestion = Extension.create({
-    name: "codeSuggestion",
-    addOptions() {
-      return {
-        suggestion: {
-          char: "`",
-          pluginKey: new PluginKey("codeSuggestion"),
-          allow: ({ editor }) => {
-            return !editor.isActive("codeBlock");
-          },
-          command: ({ editor, range: range2, props }) => {
-            var _a;
-            bumpCodeSuggestionUsage(props.text);
-            const activeColor = (_a = editor.getAttributes("textStyle")) == null ? void 0 : _a.color;
-            const storedMarks = editor.state.storedMarks || editor.state.selection.$from.marks();
-            const suggestionMarks = Array.isArray(props.marks) ? props.marks : [];
-            const marksMap = /* @__PURE__ */ new Map();
-            const normalizeType = (type2) => typeof type2 === "string" ? type2 : type2 == null ? void 0 : type2.name;
-            const isStyleMarkType = (type2) => type2 === "bold" || type2 === "italic" || type2 === "textStyle";
-            const addMark2 = (mark) => {
-              const key = normalizeType(mark.type);
-              if (!key) return;
-              if (key === "code") {
-                marksMap.set("code", { type: "code" });
-                return;
-              }
-              marksMap.set(key, { type: key, attrs: mark.attrs || {} });
-            };
-            addMark2({ type: "code" });
-            suggestionMarks.forEach((mark) => addMark2(mark));
-            storedMarks.forEach((mark) => {
-              const key = normalizeType(mark.type);
-              if (key && isStyleMarkType(key)) return;
-              addMark2({ type: mark.type, attrs: mark.attrs });
-            });
-            if (activeColor && !suggestionMarks.some((mark) => normalizeType(mark.type) === "textStyle")) {
-              marksMap.set("textStyle", { type: "textStyle", attrs: { color: activeColor } });
-            }
-            const finalMarks = Array.from(marksMap.values());
-            editor.chain().focus().insertContentAt(range2, [
-              {
-                type: "text",
-                text: props.text,
-                marks: finalMarks
-              },
-              {
-                type: "text",
-                text: " "
-              }
-            ]).run();
-            const nextPos = range2.from + props.text.length + 1;
-            const restoreChain = editor.chain().focus().setTextSelection(nextPos);
-            storedMarks.filter((mark) => mark.type.name !== "code").forEach((mark) => restoreChain.setMark(mark.type.name, mark.attrs || {}));
-            if (activeColor) {
-              restoreChain.setColor(activeColor);
-            }
-            restoreChain.run();
-          }
-        }
-      };
-    },
-    addProseMirrorPlugins() {
-      return [
-        new Plugin({
-          key: new PluginKey("codeSuggestionStyleSync"),
-          appendTransaction: (transactions, _oldState, newState) => {
-            if (!transactions.some((transaction) => transaction.docChanged)) {
-              return null;
-            }
-            const storedStyles = loadCodeSuggestionStyles();
-            const nextStyles = { ...storedStyles };
-            let stylesChanged = false;
-            const latestStyles = /* @__PURE__ */ new Map();
-            newState.doc.descendants((node) => {
-              if (!node.isText || !node.text) return true;
-              const hasCode = node.marks.some((mark) => mark.type.name === "code");
-              if (!hasCode) return true;
-              const key = normalizeCodeSuggestionText(node.text);
-              if (!key) return true;
-              const style2 = extractCodeSuggestionStyle(node.marks);
-              latestStyles.set(key, style2);
-              return true;
-            });
-            latestStyles.forEach((style2, key) => {
-              const existing = nextStyles[key];
-              if (!existing || !codeSuggestionStylesEqual(existing, style2)) {
-                nextStyles[key] = style2;
-                stylesChanged = true;
-              }
-            });
-            let tr2 = newState.tr;
-            let modified = false;
-            newState.doc.descendants((node, pos) => {
-              if (!node.isText || !node.text) return true;
-              const hasCode = node.marks.some((mark) => mark.type.name === "code");
-              if (!hasCode) return true;
-              const key = normalizeCodeSuggestionText(node.text);
-              if (!key) return true;
-              const desired = nextStyles[key];
-              if (!desired) return true;
-              const current = extractCodeSuggestionStyle(node.marks);
-              if (codeSuggestionStylesEqual(desired, current)) return true;
-              const end = pos + node.nodeSize;
-              const { schema } = newState;
-              if (schema.marks.bold) {
-                tr2.removeMark(pos, end, schema.marks.bold);
-              }
-              if (schema.marks.italic) {
-                tr2.removeMark(pos, end, schema.marks.italic);
-              }
-              if (schema.marks.textStyle) {
-                tr2.removeMark(pos, end, schema.marks.textStyle);
-              }
-              if (desired.bold && schema.marks.bold) {
-                tr2.addMark(pos, end, schema.marks.bold.create());
-              }
-              if (desired.italic && schema.marks.italic) {
-                tr2.addMark(pos, end, schema.marks.italic.create());
-              }
-              if (desired.color && schema.marks.textStyle) {
-                tr2.addMark(pos, end, schema.marks.textStyle.create({ color: desired.color }));
-              }
-              modified = true;
-              return true;
-            });
-            if (stylesChanged) {
-              saveCodeSuggestionStyles(nextStyles);
-            }
-            return modified ? tr2 : null;
-          }
-        }),
-        Suggestion({
-          editor: this.editor,
-          ...this.options.suggestion,
-          items: codeSuggestion.items,
-          render: codeSuggestion.render
-        })
-      ];
-    }
-  });
-  async function downloadSvgAsPng(svgElement, filename = "diagramme.png") {
-    try {
-      const svgData = new XMLSerializer().serializeToString(svgElement);
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
-      const img = new window.Image();
-      const rect = svgElement.getBoundingClientRect();
-      const scale = 2;
-      const width = rect.width * scale;
-      const height = rect.height * scale;
-      canvas.width = width;
-      canvas.height = height;
-      if (ctx) {
-        ctx.fillStyle = "white";
-        ctx.fillRect(0, 0, width, height);
-      }
-      const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
-      const url = URL.createObjectURL(svgBlob);
-      img.onload = () => {
-        ctx == null ? void 0 : ctx.drawImage(img, 0, 0, width, height);
-        const dataUrl = canvas.toDataURL("image/png");
-        const link2 = document.createElement("a");
-        link2.download = filename;
-        link2.href = dataUrl;
-        link2.click();
-        URL.revokeObjectURL(url);
-      };
-      img.src = url;
-    } catch (err) {
-      console.error("Error downloading PNG:", err);
-    }
-  }
-  var SimpleEditor = ({
-    content = "",
-    onChange,
-    editorId,
-    onReady,
-    placeholder = "Commencez \xE0 \xE9crire..."
-  }) => {
-    var _a, _b, _c, _d;
-    const mountStart = react_shim_default.useRef(performance.now());
-    const turndownRef = react_shim_default.useRef(null);
-    const containerRef = react_shim_default.useRef(null);
-    const [rowHandle, setRowHandle] = react_shim_default.useState(null);
-    const [colHandle, setColHandle] = react_shim_default.useState(null);
-    const [blockDeleteHandle, setBlockDeleteHandle] = react_shim_default.useState(null);
-    const [quoteHandle, setQuoteHandle] = react_shim_default.useState(null);
-    const [quoteMenu, setQuoteMenu] = react_shim_default.useState(null);
-    const [codeHandle, setCodeHandle] = react_shim_default.useState(null);
-    const [mermaidHandles, setMermaidHandles] = react_shim_default.useState([]);
-    const [hoveredMermaidPos, setHoveredMermaidPos] = react_shim_default.useState(null);
-    const [isDropdownOpen, setIsDropdownOpen] = react_shim_default.useState(false);
-    const [selectionData, setSelectionData] = react_shim_default.useState(null);
-    const [tableContextMenu, setTableContextMenu] = react_shim_default.useState(null);
-    const [mouseDownPoints, setMouseDownPoints] = react_shim_default.useState(null);
-    const [dragState, setDragState] = react_shim_default.useState(null);
-    const [dropIndicator, setDropIndicator] = react_shim_default.useState(null);
-    const [blockDragPending, setBlockDragPending] = react_shim_default.useState(null);
-    const [blockDragState, setBlockDragState] = react_shim_default.useState(null);
-    const [blockDropIndicator, setBlockDropIndicator] = react_shim_default.useState(null);
-    const [dragGhost, setDragGhost] = react_shim_default.useState(null);
-    const [showLinkModal, setShowLinkModal] = react_shim_default.useState(false);
-    const [isFocusWithinMemoCard, setIsFocusWithinMemoCard] = react_shim_default.useState(false);
-    const blockDragMovedRef = react_shim_default.useRef(false);
-    const editor = useEditor({
-      extensions: [
-        StarterKit.configure({
-          blockquote: false,
-          heading: false,
-          // Use our custom Heading instead to get IDs
-          code: false,
-          paragraph: false,
-          bulletList: false,
-          orderedList: false,
-          codeBlock: false
-        }),
-        CustomCode,
-        CustomHeading.configure({
-          levels: [1, 2, 3, 4]
-        }),
-        CustomParagraph,
-        CustomBulletList,
-        CustomOrderedList,
-        CustomCodeBlock,
-        Alert,
-        TextStyle,
-        Color,
-        Highlight,
-        Underline,
-        Superscript,
-        Subscript,
-        TextAlign.configure({
-          types: ["heading", "paragraph"]
-        }),
-        Link.configure({
-          openOnClick: false,
-          HTMLAttributes: {
-            class: "memo-link"
-          }
-        }),
-        Image2,
-        TableNode,
-        TableRow,
-        TableHeader,
-        CustomTableCell,
-        TaskListNode,
-        TaskItemNode,
-        MermaidNode,
-        CodeSuggestion,
-        TableOfContents.configure({
-          onUpdate(content2) {
-            const start = performance.now();
-            window.MemoHeadings = content2;
-            window.dispatchEvent(new CustomEvent("memo:headings-updated", { detail: content2 }));
-            const duration = Math.round(performance.now() - start);
-            if (duration > 10) {
-              console.warn(`[SimpleEditor] TOC onUpdate took ${duration}ms`);
-            }
-          }
-        }),
-        Placeholder.configure({
-          placeholder
-        })
-      ],
-      content,
-      onCreate: ({ editor: editor2 }) => {
-        console.log(`[SimpleEditor] created in ${Math.round(performance.now() - mountStart.current)}ms with ${editor2.state.doc.nodeSize} nodes`);
-      },
-      editorProps: {
-        handleTripleClickOn: (view, pos) => selectTableCellText(view, pos),
-        handleKeyDown: (_view, event) => {
-          var _a2, _b2;
-          if (!editor) return false;
-          const clearStoredMarks = () => {
-            const blockedMarks = /* @__PURE__ */ new Set(["code", "textStyle", "bold", "italic", "underline", "strike", "highlight"]);
-            const storedMarks = editor.state.storedMarks || editor.state.selection.$from.marks();
-            if (!(storedMarks == null ? void 0 : storedMarks.length)) return;
-            const filtered = storedMarks.filter((mark) => !blockedMarks.has(mark.type.name));
-            if (filtered.length === storedMarks.length) return;
-            const tr2 = editor.state.tr.setStoredMarks(filtered.length ? filtered : null);
-            editor.view.dispatch(tr2);
-          };
-          if (event.key === " " || event.key === "Spacebar") {
-            if (!editor.isActive("code")) return false;
-            editor.chain().focus().insertContent(" ").unsetCode().run();
-            clearStoredMarks();
-            return true;
-          }
-          if (event.key === "ArrowRight" && editor.isActive("code")) {
-            setTimeout(() => {
-              if (!editor.isActive("code")) {
-                clearStoredMarks();
-              }
-            }, 0);
-          }
-          if (event.key === "Enter") {
-            const { state: state2 } = editor;
-            const { selection } = state2;
-            const $from = selection.$from;
-            const parent = $from.parent;
-            if (((_a2 = parent == null ? void 0 : parent.type) == null ? void 0 : _a2.name) === "heading" && ((_b2 = parent.attrs) == null ? void 0 : _b2.collapsed)) {
-              const level = parent.attrs.level || 1;
-              const headingPos = $from.before($from.depth);
-              const docSize = state2.doc.content.size;
-              let insertPos = docSize;
-              state2.doc.nodesBetween(headingPos + parent.nodeSize, docSize, (node, pos) => {
-                if (insertPos !== docSize) return false;
-                if (node.type.name === "heading" && node.attrs.level <= level) {
-                  insertPos = pos;
-                  return false;
-                }
-                return true;
-              });
-              event.preventDefault();
-              const tr2 = state2.tr.insert(insertPos, state2.schema.nodes.heading.create({ level }, state2.schema.text("")));
-              const nextSelection = TextSelection.create(tr2.doc, insertPos + 1);
-              tr2.setSelection(nextSelection);
-              editor.view.dispatch(tr2);
-              return true;
-            }
-          }
-          return false;
-        },
-        handleDrop: (view, event) => {
-          if (!event || !(event instanceof DragEvent)) return false;
-          const coords = view.posAtCoords({ left: event.clientX, top: event.clientY });
-          if (!coords) return false;
-          const originCellPos = getTableCellPosFromResolved(view.state.selection.$from);
-          const targetCellPos = getTableCellPosFromResolved(view.state.doc.resolve(coords.pos));
-          if (originCellPos !== null && targetCellPos !== null && originCellPos !== targetCellPos) {
-            event.preventDefault();
-            return true;
-          }
-          const selection = view.state.selection;
-          const originIsDetailsNode = selection instanceof NodeSelection && selection.node.type.name === "details";
-          const originInDetails = originIsDetailsNode || hasAncestorNode(view.state.selection.$from, "details");
-          const targetInDetails = hasAncestorNode(view.state.doc.resolve(coords.pos), "details");
-          if (originInDetails || targetInDetails) {
-            event.preventDefault();
-            return true;
-          }
-          return false;
-        }
-      },
-      onUpdate: ({ editor: editor2 }) => {
-        const start = performance.now();
-        if (onChange) {
-          if (window._memoSaveTimeout) {
-            clearTimeout(window._memoSaveTimeout);
-          }
-          window._memoSaveTimeout = setTimeout(() => {
-            const innerStart = performance.now();
-            const html2 = editor2.getHTML();
-            onChange(html2);
-            const duration = Math.round(performance.now() - innerStart);
-            if (duration > 50) {
-              console.warn(`[SimpleEditor] debounced onChange: getHTML/onChange took ${duration}ms`);
-            }
-          }, 500);
-        }
-        const totalDuration = Math.round(performance.now() - start);
-        if (totalDuration > 10) {
-          console.log(`[SimpleEditor] onUpdate (sync part) took ${totalDuration}ms`);
-        }
-      },
-      onBlur: ({ editor: editor2 }) => {
-        if (onChange) {
-          if (window._memoSaveTimeout) {
-            clearTimeout(window._memoSaveTimeout);
-          }
-          onChange(editor2.getHTML());
-        }
-      }
-    });
-    const copyBlockHtmlAtPos = react_shim_default.useCallback((pos) => {
-      if (!editor) return;
-      try {
-        const node = editor.state.doc.nodeAt(pos);
-        if (!node) return;
-        const slice2 = editor.state.doc.slice(pos, pos + node.nodeSize);
-        const serializer = DOMSerializer.fromSchema(editor.state.schema);
-        const fragment = serializer.serializeFragment(slice2.content);
-        const tmp = document.createElement("div");
-        tmp.appendChild(fragment);
-        const html2 = tmp.innerHTML.trim();
-        if (!html2) return;
-        const text = (tmp.textContent || "").trim();
-        const write = async () => {
-          if (navigator.clipboard && typeof navigator.clipboard.write === "function" && typeof window.ClipboardItem === "function") {
-            const item = new window.ClipboardItem({
-              "text/html": new Blob([html2], { type: "text/html" }),
-              "text/plain": new Blob([text || html2], { type: "text/plain" })
-            });
-            await navigator.clipboard.write([item]);
-          } else if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
-            await navigator.clipboard.writeText(text || html2);
-          }
-        };
-        write().then(() => {
-          document.dispatchEvent(new CustomEvent("copyToast", {
-            detail: { message: "Contenu copi\xE9" }
-          }));
-        });
-      } catch (err) {
-      }
-    }, [editor]);
-    react_shim_default.useEffect(() => {
-      if (!editor) return;
-      const syncTableWrappers = () => {
-        editor.view.dom.querySelectorAll(".tableWrapper").forEach((el) => {
-          el.classList.add("node-table");
-        });
-      };
-      syncTableWrappers();
-      editor.on("update", syncTableWrappers);
-      return () => {
-        editor.off("update", syncTableWrappers);
-      };
-    }, [editor]);
-    react_shim_default.useEffect(() => {
-      if (!editor) return;
-      let isAdjusting = false;
-      const clearInlineCodeCarryover = () => {
-        if (isAdjusting) return;
-        if (editor.isActive("code")) return;
-        const storedMarks = editor.state.storedMarks || editor.state.selection.$from.marks();
-        if (!(storedMarks == null ? void 0 : storedMarks.length)) return;
-        const blockedMarks = /* @__PURE__ */ new Set(["code", "textStyle", "bold", "italic", "underline", "strike", "highlight"]);
-        const filtered = storedMarks.filter((mark) => !blockedMarks.has(mark.type.name));
-        if (filtered.length === storedMarks.length) return;
-        const tr2 = editor.state.tr.setStoredMarks(filtered.length ? filtered : null);
-        isAdjusting = true;
-        editor.view.dispatch(tr2);
-        isAdjusting = false;
-      };
-      editor.on("selectionUpdate", clearInlineCodeCarryover);
-      return () => {
-        editor.off("selectionUpdate", clearInlineCodeCarryover);
-      };
-    }, [editor]);
-    react_shim_default.useEffect(() => {
-      if (!editor) return;
-      const syncDetailsState = () => {
-        editor.view.dom.querySelectorAll("details.details, .details.node-details").forEach((el) => {
-          const detailsEl = el;
-          const dataOpen = detailsEl.getAttribute("data-open");
-          const contentEl = detailsEl.querySelector('[data-type="detailsContent"]');
-          const isContentHidden = contentEl ? contentEl.hasAttribute("hidden") : false;
-          const isOpen = dataOpen !== null ? dataOpen === "true" : contentEl ? !isContentHidden : !!detailsEl.open;
-          detailsEl.classList.toggle("is-open", isOpen);
-        });
-      };
-      const handleToggle = (event) => {
-        const target = event.target;
-        if (!(target instanceof HTMLDetailsElement)) return;
-        const isOpen = target.open || target.getAttribute("data-open") === "true";
-        target.classList.toggle("is-open", isOpen);
-      };
-      syncDetailsState();
-      editor.view.dom.addEventListener("toggle", handleToggle, true);
-      editor.on("update", syncDetailsState);
-      return () => {
-        editor.view.dom.removeEventListener("toggle", handleToggle, true);
-        editor.off("update", syncDetailsState);
-      };
-    }, [editor]);
-    react_shim_default.useEffect(() => {
-      var _a2;
-      const memoCard = (_a2 = containerRef.current) == null ? void 0 : _a2.closest(".memo-card");
-      if (!memoCard) return;
-      const updateFocusState = () => {
-        const activeElement = document.activeElement;
-        setIsFocusWithinMemoCard(!!activeElement && memoCard.contains(activeElement));
-      };
-      const handleFocusOut = () => {
-        requestAnimationFrame(updateFocusState);
-      };
-      memoCard.addEventListener("focusin", updateFocusState);
-      memoCard.addEventListener("focusout", handleFocusOut);
-      updateFocusState();
-      return () => {
-        memoCard.removeEventListener("focusin", updateFocusState);
-        memoCard.removeEventListener("focusout", handleFocusOut);
-      };
-    }, []);
-    react_shim_default.useEffect(() => {
-      const handleGlobalMouseMove = (e) => {
-        if (!dragState && !mouseDownPoints) return;
-        if (!containerRef.current || !editor) return;
-        const x = e.clientX;
-        const y = e.clientY;
-        maybeAutoScroll(y);
-        if (!dragState && mouseDownPoints) {
-          const dist = Math.sqrt(Math.pow(x - mouseDownPoints.x, 2) + Math.pow(y - mouseDownPoints.y, 2));
-          if (dist > 5) {
-            setDragState({ ...mouseDownPoints, x, y });
-          }
-          return;
-        }
-        const containerRect = containerRef.current.getBoundingClientRect();
-        setDragState((prev) => prev ? { ...prev, x, y } : null);
-        if (dragState) {
-          const info = getTableCellInfo(editor.view, e);
-          if (info && info.tablePos === dragState.tablePos) {
-            const cellDOM = editor.view.nodeDOM(info.cellPos);
-            const rect = cellDOM.getBoundingClientRect();
-            const tableDOM = editor.view.nodeDOM(info.tablePos);
-            const tableRect = tableDOM.getBoundingClientRect();
-            if (dragState.type === "row") {
-              const isAfter = y > rect.top + rect.height / 2;
-              setDropIndicator({
-                top: (isAfter ? rect.bottom : rect.top) - containerRect.top,
-                left: tableRect.left - containerRect.left,
-                width: tableRect.width,
-                type: "row"
-              });
-            } else {
-              const isAfter = x > rect.left + rect.width / 2;
-              setDropIndicator({
-                top: tableRect.top - containerRect.top,
-                left: (isAfter ? rect.right : rect.left) - containerRect.left,
-                height: tableRect.height,
-                type: "col"
-              });
-            }
-          }
-        }
-      };
-      const handleGlobalMouseUp = (e) => {
-        if (dragState && editor) {
-          const info = getTableCellInfo(editor.view, e);
-          if (info && info.tablePos === dragState.tablePos) {
-            const cellDOM = editor.view.nodeDOM(info.cellPos);
-            const rect = cellDOM.getBoundingClientRect();
-            if (dragState.type === "row") {
-              const isAfter = e.clientY > rect.top + rect.height / 2;
-              let targetIndex = isAfter ? info.rowIndex + 1 : info.rowIndex;
-              if (targetIndex > dragState.index) targetIndex--;
-              if (targetIndex !== dragState.index) {
-                moveRow(editor, dragState.tablePos, dragState.index, targetIndex);
-              }
-            } else {
-              const isAfter = e.clientX > rect.left + rect.width / 2;
-              let targetIndex = isAfter ? info.colIndex + 1 : info.colIndex;
-              if (targetIndex > dragState.index) targetIndex--;
-              if (targetIndex !== dragState.index) {
-                moveColumn(editor, dragState.tablePos, dragState.index, targetIndex);
-              }
-            }
-          } else {
-            const target = getBlockTargetFromCoords(e.clientX, e.clientY);
-            if (target) {
-              const rect = getBlockRectForPos(target.pos, target.node);
-              const placeAfter = rect ? e.clientY > rect.top + rect.height / 2 : true;
-              if (target.pos !== dragState.tablePos) {
-                moveBlockNode(dragState.tablePos, target.pos, placeAfter);
-              }
-            }
-          }
-        } else if (mouseDownPoints) {
-          setTableContextMenu({
-            top: e.clientY,
-            left: e.clientX,
-            type: mouseDownPoints.type,
-            index: mouseDownPoints.index,
-            tablePos: mouseDownPoints.tablePos
-          });
-        }
-        setDragState(null);
-        setMouseDownPoints(null);
-        setDropIndicator(null);
-      };
-      if (dragState || mouseDownPoints) {
-        window.addEventListener("mousemove", handleGlobalMouseMove);
-        window.addEventListener("mouseup", handleGlobalMouseUp);
-      }
-      return () => {
-        window.removeEventListener("mousemove", handleGlobalMouseMove);
-        window.removeEventListener("mouseup", handleGlobalMouseUp);
-      };
-    }, [dragState, mouseDownPoints, editor]);
-    react_shim_default.useEffect(() => {
-      if (!editor) return;
-      if (!dragState && !blockDragState) {
-        setDragGhost(null);
-        return;
-      }
-      if (dragGhost) return;
-      if (dragState) {
-        const tableDOM = editor.view.nodeDOM(dragState.tablePos);
-        if (!tableDOM) return;
-        const ghost = dragState.type === "row" ? buildRowGhost(tableDOM, dragState.index) : buildColGhost(tableDOM, dragState.index);
-        if (!ghost) return;
-        const offsetX = dragState.x - ghost.rect.left;
-        const offsetY = dragState.y - ghost.rect.top;
-        setDragGhost({
-          html: ghost.html,
-          width: ghost.rect.width,
-          height: ghost.rect.height,
-          offsetX,
-          offsetY
-        });
-        return;
-      }
-      if (blockDragState) {
-        const node = editor.state.doc.nodeAt(blockDragState.pos);
-        if (!node) return;
-        const ghost = buildBlockGhost(blockDragState.pos, node);
-        if (!ghost) return;
-        const offsetX = blockDragState.x - ghost.rect.left;
-        const offsetY = blockDragState.y - ghost.rect.top;
-        setDragGhost({
-          html: ghost.html,
-          width: ghost.rect.width,
-          height: ghost.rect.height,
-          offsetX,
-          offsetY
-        });
-      }
-    }, [dragState, blockDragState, dragGhost, editor]);
-    const moveBlockNode = (fromPos, targetPos, placeAfter) => {
-      if (!editor) return;
-      const node = editor.state.doc.nodeAt(fromPos);
-      const targetNode = editor.state.doc.nodeAt(targetPos);
-      if (!node || !targetNode) return;
-      let insertPos = targetPos + (placeAfter ? targetNode.nodeSize : 0);
-      if (insertPos > fromPos) {
-        insertPos -= node.nodeSize;
-      }
-      if (insertPos === fromPos) return;
-      const tr2 = editor.state.tr;
-      tr2.delete(fromPos, fromPos + node.nodeSize);
-      tr2.insert(insertPos, node);
-      tr2.setSelection(NodeSelection.create(tr2.doc, insertPos));
-      editor.view.dispatch(tr2);
-    };
-    const getBlockTargetFromCoords = (x, y) => {
-      if (!editor) return null;
-      const coords = editor.view.posAtCoords({ left: x, top: y });
-      if (!coords) return null;
-      const $pos = editor.state.doc.resolve(coords.pos);
-      for (let d = $pos.depth; d > 0; d--) {
-        const node = $pos.node(d);
-        if (node.type.name === "bulletList" || node.type.name === "orderedList") {
-          return { pos: $pos.before(d), node };
-        }
-        if (node.type.name === "listItem") {
-          continue;
-        }
-        if (node.isBlock && node.type.name !== "doc") {
-          return { pos: $pos.before(d), node };
-        }
-      }
-      return null;
-    };
-    const updateMermaidHandles = react_shim_default.useCallback(() => {
-      if (!editor || !containerRef.current) return;
-      if (hoveredMermaidPos === null) {
-        setMermaidHandles([]);
-        return;
-      }
-      const containerRect = containerRef.current.getBoundingClientRect();
-      const handles = [];
-      editor.state.doc.descendants((node, pos) => {
-        var _a2;
-        if (node.type.name !== "mermaidDiagram") return;
-        if (pos !== hoveredMermaidPos) return;
-        const dom = editor.view.nodeDOM(pos);
-        const wrapper = dom == null ? void 0 : dom.closest(".mermaid-diagram-wrapper");
-        const rect = (_a2 = wrapper || dom) == null ? void 0 : _a2.getBoundingClientRect();
-        if (!rect) return;
-        handles.push({
-          top: rect.top - containerRect.top + 10,
-          left: rect.left - containerRect.left + 5,
-          pos
-        });
-      });
-      setMermaidHandles(handles);
-    }, [editor, hoveredMermaidPos]);
-    react_shim_default.useEffect(() => {
-      if (!editor) return;
-      const handleUpdate = () => updateMermaidHandles();
-      handleUpdate();
-      editor.on("update", handleUpdate);
-      editor.on("selectionUpdate", handleUpdate);
-      window.addEventListener("resize", handleUpdate);
-      window.addEventListener("scroll", handleUpdate, true);
-      return () => {
-        editor.off("update", handleUpdate);
-        editor.off("selectionUpdate", handleUpdate);
-        window.removeEventListener("resize", handleUpdate);
-        window.removeEventListener("scroll", handleUpdate, true);
-      };
-    }, [editor, updateMermaidHandles]);
-    const getBlockRectForPos = (pos, node) => {
-      if (!editor || !containerRef.current) return null;
-      const dom = editor.view.nodeDOM(pos);
-      if (dom == null ? void 0 : dom.getBoundingClientRect) {
-        let rect = dom.getBoundingClientRect();
-        const wrapper = dom.closest(".tableWrapper, .mermaid-diagram-wrapper, .alert-wrapper");
-        if (wrapper) {
-          rect = wrapper.getBoundingClientRect();
-        }
-        return rect;
-      }
-      const start = editor.view.coordsAtPos(pos);
-      const end = editor.view.coordsAtPos(pos + node.nodeSize, -1);
-      return {
-        top: start.top,
-        bottom: end.bottom,
-        left: start.left,
-        right: end.right,
-        width: containerRef.current.getBoundingClientRect().width
-      };
-    };
-    const buildRowGhost = (tableDOM, rowIndex) => {
-      const rows = Array.from(tableDOM.querySelectorAll("tr"));
-      const row = rows[rowIndex];
-      if (!row) return null;
-      const rect = row.getBoundingClientRect();
-      const ghostTable = document.createElement("table");
-      ghostTable.className = tableDOM.className;
-      ghostTable.style.borderCollapse = "collapse";
-      const tbody = document.createElement("tbody");
-      tbody.appendChild(row.cloneNode(true));
-      ghostTable.appendChild(tbody);
-      return { html: ghostTable.outerHTML, rect };
-    };
-    const buildColGhost = (tableDOM, colIndex) => {
-      const rows = Array.from(tableDOM.querySelectorAll("tr"));
-      const ghostTable = document.createElement("table");
-      ghostTable.className = tableDOM.className;
-      ghostTable.style.borderCollapse = "collapse";
-      const tbody = document.createElement("tbody");
-      let cellRect = null;
-      rows.forEach((row) => {
-        const cell2 = row.children[colIndex];
-        if (!cell2) return;
-        if (!cellRect) cellRect = cell2.getBoundingClientRect();
-        const newRow = document.createElement("tr");
-        const cloned = cell2.cloneNode(true);
-        newRow.appendChild(cloned);
-        tbody.appendChild(newRow);
-      });
-      if (!tbody.children.length || !cellRect) return null;
-      ghostTable.appendChild(tbody);
-      const tableRect = tableDOM.getBoundingClientRect();
-      const rect = new DOMRect(cellRect.left, tableRect.top, cellRect.width, tableRect.height);
-      return { html: ghostTable.outerHTML, rect };
-    };
-    const buildBlockGhost = (pos, node) => {
-      if (!editor) return null;
-      const dom = editor.view.nodeDOM(pos);
-      const wrapper = dom == null ? void 0 : dom.closest(".tableWrapper, .mermaid-diagram-wrapper, .alert-wrapper");
-      const target = wrapper || dom;
-      if (!target) return null;
-      const rect = getBlockRectForPos(pos, node);
-      if (!rect) return null;
-      return { html: target.outerHTML, rect };
-    };
-    const maybeAutoScroll = (clientY) => {
-      const threshold = 140;
-      const maxSpeed = 24;
-      if (clientY < threshold) {
-        const speed = Math.min(maxSpeed, Math.ceil((threshold - clientY) / 6));
-        window.scrollBy(0, -speed);
-        return;
-      }
-      const distanceBottom = clientY - (window.innerHeight - threshold);
-      if (distanceBottom > 0) {
-        const speed = Math.min(maxSpeed, Math.ceil(distanceBottom / 6));
-        window.scrollBy(0, speed);
-      }
-    };
-    react_shim_default.useEffect(() => {
-      if (!editor || !blockDragPending && !blockDragState) return;
-      const handleGlobalMouseMove = (e) => {
-        if (blockDragPending && !blockDragState) {
-          const dx = Math.abs(e.clientX - blockDragPending.startX);
-          const dy = Math.abs(e.clientY - blockDragPending.startY);
-          if (dx > 4 || dy > 4) {
-            blockDragMovedRef.current = true;
-            setBlockDragState({
-              pos: blockDragPending.pos,
-              nodeSize: blockDragPending.nodeSize,
-              x: e.clientX,
-              y: e.clientY
-            });
-          } else {
-            return;
-          }
-        }
-        if (blockDragState && containerRef.current) {
-          setBlockDragState((prev) => prev ? { ...prev, x: e.clientX, y: e.clientY } : prev);
-          maybeAutoScroll(e.clientY);
-          const target = getBlockTargetFromCoords(e.clientX, e.clientY);
-          if (target) {
-            const rect = getBlockRectForPos(target.pos, target.node);
-            if (rect) {
-              const placeAfter = e.clientY > rect.top + rect.height / 2;
-              const containerRect = containerRef.current.getBoundingClientRect();
-              setBlockDropIndicator({
-                top: (placeAfter ? rect.bottom : rect.top) - containerRect.top,
-                left: rect.left - containerRect.left,
-                width: rect.width
-              });
-            } else {
-              setBlockDropIndicator(null);
-            }
-          } else {
-            setBlockDropIndicator(null);
-          }
-        }
-      };
-      const handleGlobalMouseUp = (e) => {
-        if (blockDragState && editor) {
-          const target = getBlockTargetFromCoords(e.clientX, e.clientY);
-          if (target) {
-            const rect = getBlockRectForPos(target.pos, target.node);
-            const placeAfter = rect ? e.clientY > rect.top + rect.height / 2 : true;
-            if (target.pos !== blockDragState.pos) {
-              moveBlockNode(blockDragState.pos, target.pos, placeAfter);
-            }
-          }
-        }
-        setBlockDragPending(null);
-        setBlockDragState(null);
-        setBlockDropIndicator(null);
-      };
-      window.addEventListener("mousemove", handleGlobalMouseMove);
-      window.addEventListener("mouseup", handleGlobalMouseUp);
-      return () => {
-        window.removeEventListener("mousemove", handleGlobalMouseMove);
-        window.removeEventListener("mouseup", handleGlobalMouseUp);
-      };
-    }, [blockDragPending, blockDragState, editor]);
-    const handleMouseMove2 = (e) => {
-      var _a2, _b2, _c2, _d2, _e, _f, _g, _h, _i;
-      if (!editor || dragState || blockDragState || !containerRef.current) return;
-      if (e.target.closest(".table-handle, .quote-handle, .details-handle, .mermaid-handle, .node-handle, .block-delete-button")) return;
-      const element = document.elementFromPoint(e.clientX, e.clientY);
-      const containerRect = containerRef.current.getBoundingClientRect();
-      const tableEl = element == null ? void 0 : element.closest("table");
-      const blockquoteEl = element == null ? void 0 : element.closest(".node-blockquote");
-      const detailsEl = element == null ? void 0 : element.closest(".node-details");
-      const mermaidEl = element == null ? void 0 : element.closest(".node-mermaidDiagram, .mermaid-diagram-container");
-      const codeEl = element == null ? void 0 : element.closest(".node-codeBlock, pre");
-      const targetBlock = tableEl || blockquoteEl || detailsEl || mermaidEl || codeEl;
-      if (targetBlock && containerRef.current.contains(targetBlock)) {
-        let rect = targetBlock.getBoundingClientRect();
-        const wrapper = targetBlock.closest(".tableWrapper, .mermaid-diagram-wrapper");
-        if (wrapper) {
-          rect = wrapper.getBoundingClientRect();
-        }
-        let blockPos = -1;
-        let label = "le bloc";
-        try {
-          const pos = editor.view.posAtDOM(targetBlock, 0);
-          const $pos = editor.state.doc.resolve(pos);
-          if (tableEl) {
-            for (let d = $pos.depth; d >= 0; d--) {
-              if (((_a2 = $pos.node(d)) == null ? void 0 : _a2.type.name) === "table") {
-                blockPos = $pos.before(d);
-                label = "le tableau";
-                break;
-              }
-            }
-          } else if (detailsEl) {
-            for (let d = $pos.depth; d >= 0; d--) {
-              if (((_b2 = $pos.node(d)) == null ? void 0 : _b2.type.name) === "details") {
-                blockPos = $pos.before(d);
-                label = "le bloc d\xE9pliable";
-                break;
-              }
-            }
-          } else if (blockquoteEl) {
-            for (let d = $pos.depth; d >= 0; d--) {
-              if (((_c2 = $pos.node(d)) == null ? void 0 : _c2.type.name) === "blockquote") {
-                blockPos = $pos.before(d);
-                label = "la citation";
-                break;
-              }
-            }
-          } else if (mermaidEl) {
-            for (let d = $pos.depth; d >= 0; d--) {
-              if (((_d2 = $pos.node(d)) == null ? void 0 : _d2.type.name) === "mermaidDiagram") {
-                blockPos = $pos.before(d);
-                label = "le diagramme";
-                break;
-              }
-            }
-            if (blockPos === -1) {
-              const node = editor.state.doc.nodeAt(pos);
-              if ((node == null ? void 0 : node.type.name) === "mermaidDiagram") {
-                blockPos = pos;
-                label = "le diagramme";
-              }
-            }
-          } else if (codeEl) {
-            for (let d = $pos.depth; d >= 0; d--) {
-              if (((_e = $pos.node(d)) == null ? void 0 : _e.type.name) === "codeBlock") {
-                blockPos = $pos.before(d);
-                label = "le bloc de code";
-                break;
-              }
-            }
-          }
-        } catch (err) {
-          const coordsPos = (_f = editor.view.posAtCoords({ left: e.clientX, top: e.clientY })) == null ? void 0 : _f.pos;
-          if (coordsPos !== void 0) {
-            const $cPos = editor.state.doc.resolve(coordsPos);
-            if (mermaidEl) {
-              for (let d = $cPos.depth; d >= 0; d--) {
-                if (((_g = $cPos.node(d)) == null ? void 0 : _g.type.name) === "mermaidDiagram") {
-                  blockPos = $cPos.before(d);
-                  label = "le diagramme";
-                  break;
-                }
-              }
-            }
-          }
-        }
-        if (mermaidEl && blockPos !== -1) {
-          setHoveredMermaidPos(blockPos);
-        } else if (!mermaidEl && hoveredMermaidPos !== null) {
-          setHoveredMermaidPos(null);
-        }
-        if (blockPos !== -1) {
-          setBlockDeleteHandle({
-            top: rect.top - containerRect.top + 8,
-            left: rect.right - containerRect.left - (label === "le diagramme" ? 36 : 48),
-            pos: blockPos,
-            label
-          });
-        }
-      } else if (!e.target.closest(".block-delete-button")) {
-        setBlockDeleteHandle(null);
-      }
-      if (!mermaidEl && hoveredMermaidPos !== null) {
-        setHoveredMermaidPos(null);
-      }
-      if (codeEl && containerRef.current.contains(codeEl)) {
-        const rect = codeEl.getBoundingClientRect();
-        let codePos = -1;
-        try {
-          const domPos = editor.view.posAtDOM(codeEl, 0);
-          const $pos = editor.state.doc.resolve(domPos);
-          for (let d = $pos.depth; d > 0; d--) {
-            if ($pos.node(d).type.name === "codeBlock") {
-              codePos = $pos.before(d);
-              break;
-            }
-          }
-        } catch (err) {
-        }
-        if (codePos === -1) {
-          const pos = (_h = editor.view.posAtCoords({ left: e.clientX, top: e.clientY })) == null ? void 0 : _h.pos;
-          if (pos !== void 0) {
-            const $pos = editor.state.doc.resolve(pos);
-            for (let d = $pos.depth; d > 0; d--) {
-              if ($pos.node(d).type.name === "codeBlock") {
-                codePos = $pos.before(d);
-                break;
-              }
-            }
-          }
-        }
-        if (codePos !== -1) {
-          setCodeHandle({
-            top: rect.top - containerRect.top + 10,
-            left: rect.left - containerRect.left + 8,
-            pos: codePos
-          });
-        } else {
-          setCodeHandle(null);
-        }
-      } else if (!e.target.closest(".code-handle")) {
-        setCodeHandle(null);
-      }
-      if (blockquoteEl && containerRef.current.contains(blockquoteEl)) {
-        let quotePos = -1;
-        try {
-          const domPos = editor.view.posAtDOM(blockquoteEl, 0);
-          const $pos = editor.state.doc.resolve(domPos);
-          for (let d = $pos.depth; d > 0; d--) {
-            if ($pos.node(d).type.name === "blockquote") {
-              quotePos = $pos.before(d);
-              break;
-            }
-          }
-          if (quotePos === -1) {
-            const node = editor.state.doc.nodeAt(domPos);
-            if ((node == null ? void 0 : node.type.name) === "blockquote") quotePos = domPos;
-          }
-        } catch (err) {
-        }
-        if (quotePos === -1) {
-          const pos = (_i = editor.view.posAtCoords({ left: e.clientX, top: e.clientY })) == null ? void 0 : _i.pos;
-          if (pos !== void 0) {
-            const $pos = editor.state.doc.resolve(pos);
-            for (let d = $pos.depth; d > 0; d--) {
-              if ($pos.node(d).type.name === "blockquote") {
-                quotePos = $pos.before(d);
-                break;
-              }
-            }
-          }
-        }
-        if (quotePos !== -1) {
-          const node = editor.state.doc.nodeAt(quotePos);
-          const rect = node ? getBlockRectForPos(quotePos, node) : blockquoteEl.getBoundingClientRect();
-          if (rect) {
-            setQuoteHandle({
-              top: rect.top - containerRect.top + 10,
-              left: rect.left - containerRect.left + 5,
-              pos: quotePos,
-              type: (node == null ? void 0 : node.attrs.type) || "default"
-            });
-          } else {
-            setQuoteHandle(null);
-          }
-        } else {
-          setQuoteHandle(null);
-        }
-      } else if (!e.target.closest(".quote-handle")) {
-        setQuoteHandle(null);
-      }
-      let info = getTableCellInfo(editor.view, e.nativeEvent);
-      if (!info) {
-        const wrapper = element == null ? void 0 : element.closest(".tableWrapper");
-        if (wrapper) {
-          const table = wrapper.querySelector("table");
-          if (table) {
-            const rect = table.getBoundingClientRect();
-            const margin = 20;
-            if (e.clientX >= rect.left - margin && e.clientX <= rect.right + margin && e.clientY >= rect.top - margin && e.clientY <= rect.bottom + margin) {
-              const clampedX = Math.max(rect.left + 5, Math.min(rect.right - 5, e.clientX));
-              const clampedY = Math.max(rect.top + 5, Math.min(rect.bottom - 5, e.clientY));
-              const mockEvent = { clientX: clampedX, clientY: clampedY };
-              info = getTableCellInfo(editor.view, mockEvent);
-            }
-          }
-        }
-      }
-      if (info) {
-        const { rowIndex, colIndex, tablePos } = info;
-        const cellDOM = editor.view.nodeDOM(info.cellPos);
-        const tableDOM = editor.view.nodeDOM(tablePos);
-        if (cellDOM && tableDOM) {
-          const rect = cellDOM.getBoundingClientRect();
-          const tableRect = tableDOM.getBoundingClientRect();
-          const tableWrapper = tableDOM.closest(".tableWrapper");
-          const tableWrapperRect = tableWrapper ? tableWrapper.getBoundingClientRect() : tableRect;
-          const isInWrapper = e.clientX >= tableWrapperRect.left && e.clientX <= tableWrapperRect.right && e.clientY >= tableWrapperRect.top && e.clientY <= tableWrapperRect.bottom;
-          const isInTable2 = e.clientX >= tableRect.left && e.clientX <= tableRect.right && e.clientY >= tableRect.top && e.clientY <= tableRect.bottom;
-          if (isInWrapper) {
-            const rowHandleLeft = tableRect.left - containerRect.left;
-            setRowHandle({
-              top: rect.top - containerRect.top + rect.height / 2,
-              left: rowHandleLeft,
-              rowIndex,
-              tablePos
-            });
-          } else {
-            setRowHandle(null);
-          }
-          if (isInTable2) {
-            setColHandle({
-              top: tableRect.top - containerRect.top - 10,
-              left: rect.left - containerRect.left + rect.width / 2,
-              colIndex,
-              tablePos
-            });
-          } else {
-            setColHandle(null);
-          }
-          if (isInWrapper || isInTable2) {
-            return;
-          }
-        }
-      }
-      const mouseX = e.clientX;
-      const mouseY = e.clientY;
-      if (rowHandle) {
-        const handleX = containerRect.left + rowHandle.left;
-        const handleY = containerRect.top + rowHandle.top;
-        if (Math.sqrt(Math.pow(mouseX - handleX, 2) + Math.pow(mouseY - handleY, 2)) < 30) return;
-      }
-      if (colHandle) {
-        const handleX = containerRect.left + colHandle.left;
-        const handleY = containerRect.top + colHandle.top;
-        if (Math.sqrt(Math.pow(mouseX - handleX, 2) + Math.pow(mouseY - handleY, 2)) < 30) return;
-      }
-      setRowHandle(null);
-      setColHandle(null);
-    };
-    react_shim_default.useEffect(() => {
-      if (editor) {
-        if (!turndownRef.current) {
-          const turndown = new turndown_browser_es_default({
-            headingStyle: "atx",
-            codeBlockStyle: "fenced",
-            bulletListMarker: "-"
-          });
-          turndown.use(gfm);
-          turndown.addRule("blockquote-alerts", {
-            filter: "blockquote",
-            replacement: function(content2, node) {
-              const type2 = node.getAttribute("data-type");
-              if (!type2 || type2 === "default") return "\n\n> " + content2.trim().replace(/\n/g, "\n> ") + "\n\n";
-              const emojiMap = {
-                "NOTE": "\u2139\uFE0F",
-                "TIP": "\u{1F4A1}",
-                "IMPORTANT": "\u2705",
-                "WARNING": "\u26A0\uFE0F",
-                "CAUTION": "\u{1F6A8}"
-              };
-              const emoji2 = emojiMap[type2] || "\u2139\uFE0F";
-              const title = node.getAttribute("data-title");
-              const alertHeader = title ? `${emoji2} **${title}** ` : `${emoji2} `;
-              return "\n\n> " + alertHeader + content2.trim().replace(/\n/g, "\n> ") + "\n\n";
-            }
-          });
-          turndown.addRule("mermaid-diagram", {
-            filter: function(node) {
-              return node.nodeName === "MERMAID-DIAGRAM" || node.tagName === "MERMAID-DIAGRAM" || node.nodeName === "mermaid-diagram";
-            },
-            replacement: function(_content, node) {
-              const code = node.getAttribute("code") || node.getAttribute("data-code") || "";
-              return "\n\n```mermaid\n" + code.trim() + "\n```\n\n";
-            }
-          });
-          turndown.addRule("details", {
-            filter: "details",
-            replacement: function(content2, node) {
-              const summary = node.querySelector("summary");
-              const summaryText = summary ? summary.textContent.trim() : "D\xE9tails";
-              const contentDiv = node.querySelector(".details-content") || node.querySelector('[data-type="details-content"]');
-              let innerMarkdown = "";
-              if (contentDiv) {
-                innerMarkdown = turndownRef.current.turndown(contentDiv.innerHTML).trim();
-              } else {
-                innerMarkdown = content2.trim();
-                if (summaryText && innerMarkdown.startsWith(summaryText)) {
-                  innerMarkdown = innerMarkdown.substring(summaryText.length).trim();
-                }
-              }
-              return `
-
-<details>
-<summary>${summaryText}</summary>
-${innerMarkdown}
-</details>
-
-`;
-            }
-          });
-          turndown.addRule("taskList", {
-            filter: function(node) {
-              return node.nodeName === "LI" && node.parentNode.nodeName === "UL" && node.classList.contains("task-list-item");
-            },
-            replacement: function(content2, node) {
-              const checkbox = node.querySelector('input[type="checkbox"]');
-              const checked = checkbox && checkbox.checked ? "\u2612" : "\u2610";
-              return " " + checked + " " + content2.trim() + "\n";
-            }
-          });
-          turndownRef.current = turndown;
-        }
-        const getEditorMarkdown = () => {
-          var _a2;
-          try {
-            if (typeof editor.getHTML === "function") {
-              const html2 = editor.getHTML();
-              const parser2 = new DOMParser();
-              const doc3 = parser2.parseFromString(html2, "text/html");
-              const diagrams = doc3.querySelectorAll("mermaid-diagram");
-              diagrams.forEach((diag) => {
-                const code = diag.getAttribute("code") || diag.getAttribute("data-code") || "";
-                const pre = doc3.createElement("pre");
-                const codeElement = doc3.createElement("code");
-                codeElement.className = "language-mermaid";
-                codeElement.textContent = code.trim();
-                pre.appendChild(codeElement);
-                diag.replaceWith(pre);
-              });
-              const colgroups = doc3.querySelectorAll("colgroup");
-              colgroups.forEach((cg) => cg.remove());
-              const taskLists = doc3.querySelectorAll('ul[data-type="taskList"]');
-              taskLists.forEach((ul) => {
-                ul.querySelectorAll("li").forEach((li) => {
-                  li.classList.add("task-list-item");
-                });
-              });
-              const tables2 = doc3.querySelectorAll("table");
-              tables2.forEach((table) => {
-                table.removeAttribute("class");
-                table.removeAttribute("style");
-                table.querySelectorAll("td, th, tr").forEach((el) => {
-                  el.removeAttribute("class");
-                  el.removeAttribute("style");
-                  if (el.tagName === "TD" || el.tagName === "TH") {
-                    const paragraphs = el.querySelectorAll("p");
-                    paragraphs.forEach((p) => {
-                      const span = doc3.createElement("span");
-                      span.innerHTML = p.innerHTML;
-                      p.replaceWith(span);
-                    });
-                    el.innerHTML = el.innerHTML.replace(/\n/g, " ").trim();
-                  }
-                });
-              });
-              const processedHtml = doc3.body.innerHTML;
-              const markdown = (((_a2 = turndownRef.current) == null ? void 0 : _a2.turndown(processedHtml)) || "").toString();
-              return markdown;
-            }
-            if (typeof editor.getText === "function") {
-              return editor.getText();
-            }
-          } catch (err) {
-          }
-          return "";
-        };
-        const getMemoEditorSource = (format) => {
-          if (!editor) return "";
-          try {
-            if (format === "html") {
-              const html2 = editor.getHTML();
-              const parser2 = new DOMParser();
-              const doc3 = parser2.parseFromString(html2, "text/html");
-              try {
-                const diagrams = doc3.querySelectorAll("mermaid-diagram, .mermaid-diagram");
-                diagrams.forEach((diag) => {
-                  const code = (diag.getAttribute("code") || diag.getAttribute("data-code") || "").trim();
-                  if (!code) return;
-                  const realContainers = document.querySelectorAll("mermaid-diagram, .mermaid-diagram");
-                  let foundSvg = null;
-                  for (const container2 of Array.from(realContainers)) {
-                    const cCode = (container2.getAttribute("code") || container2.getAttribute("data-code") || "").trim();
-                    if (cCode === code) {
-                      const svgEl = container2.querySelector(".mermaid-svg-container svg") || container2.querySelector("svg");
-                      if (svgEl) {
-                        foundSvg = svgEl.outerHTML;
-                        break;
-                      }
-                    }
-                  }
-                  if (foundSvg) {
-                    const container2 = doc3.createElement("div");
-                    container2.className = "mermaid-rendered";
-                    container2.innerHTML = foundSvg;
-                    diag.replaceWith(container2);
-                  } else {
-                    const pre = doc3.createElement("pre");
-                    pre.className = "mermaid";
-                    pre.textContent = code;
-                    diag.replaceWith(pre);
-                  }
-                });
-              } catch (mermaidErr) {
-                console.warn("Error processing Mermaid for HTML source:", mermaidErr);
-              }
-              const emojiMap = {
-                "NOTE": "\u2139\uFE0F",
-                "TIP": "\u{1F4A1}",
-                "IMPORTANT": "\u2705",
-                "WARNING": "\u26A0\uFE0F",
-                "CAUTION": "\u{1F6A8}"
-              };
-              const blockquotes = doc3.querySelectorAll("blockquote[data-type]");
-              blockquotes.forEach((bq) => {
-                const type2 = bq.getAttribute("data-type");
-                if (type2 && type2 !== "default") {
-                  const emoji2 = emojiMap[type2] || "\u2139\uFE0F";
-                  const title = bq.getAttribute("data-title");
-                  const header = doc3.createElement("strong");
-                  header.textContent = title ? `${emoji2} ${title} ` : `${emoji2} `;
-                  const firstChild = bq.firstChild;
-                  if (firstChild) {
-                    if (firstChild.nodeType === 1 && firstChild.tagName === "P") {
-                      firstChild.insertBefore(header, firstChild.firstChild);
-                      firstChild.insertBefore(doc3.createTextNode(" "), header.nextSibling);
-                    } else {
-                      bq.insertBefore(header, firstChild);
-                    }
-                  } else {
-                    bq.appendChild(header);
-                  }
-                }
-              });
-              const taskLists = doc3.querySelectorAll('ul[data-type="taskList"]');
-              taskLists.forEach((ul) => {
-                const parent = ul.parentNode;
-                if (!parent) return;
-                const items = ul.querySelectorAll("li");
-                items.forEach((li) => {
-                  var _a2, _b2;
-                  const checked = li.getAttribute("data-checked") === "true" || li.querySelector("input[checked]") !== null;
-                  const symbol = checked ? "\u2612" : "\u2610";
-                  const p = li.querySelector("p");
-                  if (p) {
-                    const symbolSpan = doc3.createElement("span");
-                    symbolSpan.style.marginRight = "8px";
-                    symbolSpan.textContent = symbol + " ";
-                    p.insertBefore(symbolSpan, p.firstChild);
-                    (_a2 = ul.parentNode) == null ? void 0 : _a2.insertBefore(p, ul);
-                  } else {
-                    const newP = doc3.createElement("p");
-                    newP.textContent = symbol + " " + li.textContent;
-                    (_b2 = ul.parentNode) == null ? void 0 : _b2.insertBefore(newP, ul);
-                  }
-                });
-                ul.remove();
-              });
-              const headings = doc3.querySelectorAll("h1, h2, h3");
-              if (headings.length > 0) {
-                const tocContainer = doc3.createElement("div");
-                tocContainer.className = "memo-toc";
-                tocContainer.style.marginBottom = "24px";
-                tocContainer.style.padding = "16px";
-                tocContainer.style.border = "1px solid #e2e8f0";
-                tocContainer.style.borderRadius = "8px";
-                tocContainer.style.backgroundColor = "#f8fafc";
-                const tocTitle = doc3.createElement("div");
-                tocTitle.style.fontWeight = "bold";
-                tocTitle.style.marginBottom = "12px";
-                tocTitle.style.fontSize = "14px";
-                tocTitle.textContent = "Table des mati\xE8res";
-                tocContainer.appendChild(tocTitle);
-                const tocList = doc3.createElement("ul");
-                tocList.style.listStyle = "none";
-                tocList.style.padding = "0";
-                tocList.style.margin = "0";
-                headings.forEach((heading2) => {
-                  var _a2;
-                  const level = parseInt(heading2.tagName[1]);
-                  const id = heading2.getAttribute("id") || heading2.getAttribute("data-toc-id");
-                  if (!id) return;
-                  const listItem = doc3.createElement("li");
-                  listItem.style.marginLeft = `${(level - 1) * 16}px`;
-                  listItem.style.marginBottom = "6px";
-                  const link2 = doc3.createElement("a");
-                  link2.href = `#${id}`;
-                  link2.textContent = ((_a2 = heading2.textContent) == null ? void 0 : _a2.trim()) || "";
-                  link2.style.textDecoration = "none";
-                  link2.style.color = "#2563eb";
-                  link2.style.fontSize = "13px";
-                  listItem.appendChild(link2);
-                  tocList.appendChild(listItem);
-                });
-                tocContainer.appendChild(tocList);
-                doc3.body.insertBefore(tocContainer, doc3.body.firstChild);
-              }
-              return doc3.body.innerHTML;
-            }
-            if (format === "json") {
-              return JSON.stringify(editor.getJSON(), null, 2);
-            }
-            return getEditorMarkdown();
-          } catch (err) {
-            return "";
-          }
-        };
-        const convertEditorMarkdownToHtml = (markdown) => {
-          if (typeof markdown !== "string") return "";
-          const markdownWithUnicodeTasks = markdown.replace(/^[ \t]*([☐☒])\s+(.*)$/gm, (match, char, content2) => {
-            const checked = char === "\u2612";
-            return `<ul data-type="taskList"><li data-type="taskItem" data-checked="${checked}"><p>${content2}</p></li></ul>`;
-          });
-          const emojiAlertRegex = /^[ \t]*>(ℹ️|💡|✅|⚠️|🚨)\s?([^\n]*(?:\n[ \t]*>.*)*)/gm;
-          const markdownWithEmojiAlerts = markdownWithUnicodeTasks.replace(emojiAlertRegex, (_match, emoji2, content2) => {
-            const emojiMap = {
-              "\u2139\uFE0F": "NOTE",
-              "\u{1F4A1}": "TIP",
-              "\u2705": "IMPORTANT",
-              "\u26A0\uFE0F": "WARNING",
-              "\u{1F6A8}": "CAUTION"
-            };
-            const normalizedType = emojiMap[emoji2] || "NOTE";
-            const cleanContent = content2.replace(/^[ \t]*> ?/gm, "").trim();
-            return `<blockquote data-type="${normalizedType}">${cleanContent}</blockquote>`;
-          });
-          const shortAlertRegex = /^[ \t]*>(note|alerte|warning|important|conseil|tip|attention|caution|remarque)\s(.*)$/gmi;
-          const markdownWithShortAlerts = markdownWithEmojiAlerts.replace(shortAlertRegex, (_match, type2, content2) => {
-            const typeMap = {
-              "note": "NOTE",
-              "alerte": "WARNING",
-              "warning": "WARNING",
-              "important": "IMPORTANT",
-              "conseil": "TIP",
-              "tip": "TIP",
-              "attention": "CAUTION",
-              "caution": "CAUTION",
-              "remarque": "default"
-            };
-            return `<blockquote data-type="${typeMap[type2.toLowerCase()] || "NOTE"}">${content2}</blockquote>`;
-          });
-          const alertRegex = /^[ \t]*> ?\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION|ALERTE|ATTENTION)(?:\s+(.*))?\]\s*\n((?:>.*\n?)*)/gmi;
-          const markdownWithAlerts = markdownWithShortAlerts.replace(alertRegex, (_match, type2, title, content2) => {
-            const typeMap = {
-              "NOTE": "NOTE",
-              "TIP": "TIP",
-              "IMPORTANT": "IMPORTANT",
-              "WARNING": "WARNING",
-              "ALERTE": "WARNING",
-              "CAUTION": "CAUTION",
-              "ATTENTION": "CAUTION"
-            };
-            const normalizedType = typeMap[type2.toUpperCase()] || "NOTE";
-            const cleanContent = content2.replace(/^> ?/gm, "").trim();
-            const titleAttr = title ? ` data-title="${title.trim()}"` : "";
-            return `<blockquote data-type="${normalizedType}"${titleAttr}>${cleanContent}</blockquote>`;
-          });
-          const markdownWithHighlight = markdownWithAlerts.replace(
-            /==(.*?)==/g,
-            "<mark>$1</mark>"
-          );
-          const mermaidRegex = /```mermaid\n([\s\S]*?)\n```/g;
-          const processedMarkdown = markdownWithHighlight.replace(mermaidRegex, (_match, code) => {
-            const escapedCode = code.trim().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-            return `<mermaid-diagram code="${escapedCode}"></mermaid-diagram>`;
-          });
-          const html2 = marked.parse(processedMarkdown, { gfm: true });
-          const finalHtml = html2.replace(/<details>([\s\S]*?)<\/details>/g, (match, inner) => {
-            if (inner.includes('data-type="details-content"') || inner.includes('class="details-content"')) {
-              return match;
-            }
-            const summaryMatch = inner.match(/<summary>([\s\S]*?)<\/summary>/);
-            if (summaryMatch) {
-              const summary = summaryMatch[0];
-              const content2 = inner.replace(summary, "").trim();
-              return `<details>${summary}<div data-type="details-content">${content2}</div></details>`;
-            }
-            return match;
-          });
-          return finalHtml;
-        };
-        const setEditorMarkdown = (markdown) => {
-          var _a2, _b2;
-          if (typeof markdown !== "string") return;
-          try {
-            const finalHtml = convertEditorMarkdownToHtml(markdown);
-            if ((_a2 = editor == null ? void 0 : editor.commands) == null ? void 0 : _a2.clearContent) {
-              editor.commands.clearContent();
-            }
-            if ((_b2 = editor == null ? void 0 : editor.commands) == null ? void 0 : _b2.setContent) {
-              editor.commands.setContent(finalHtml);
-            }
-          } catch (err) {
-            console.warn("setEditorMarkdown failed", err);
-          }
-        };
-        const insertEditorMarkdownAtRange = (markdown, range2) => {
-          if (typeof markdown !== "string" || !range2) return;
-          try {
-            const from2 = Number(range2.from);
-            const to = Number(range2.to);
-            if (!Number.isFinite(from2) || !Number.isFinite(to)) return;
-            const finalHtml = convertEditorMarkdownToHtml(markdown);
-            if (editor) {
-              editor.chain().focus().insertContentAt({ from: from2, to }, finalHtml).run();
-            }
-          } catch (err) {
-            console.warn("insertEditorMarkdownAtRange failed", err);
-          }
-        };
-        const insertEditorMarkdownAtEnd = (markdown) => {
-          if (typeof markdown !== "string") return;
-          try {
-            const finalHtml = convertEditorMarkdownToHtml(markdown);
-            if (editor) {
-              editor.chain().focus().insertContentAt(editor.state.doc.content.size, (editor.isEmpty ? "" : "\n\n") + finalHtml).run();
-            }
-          } catch (err) {
-            console.warn("insertEditorMarkdownAtEnd failed", err);
-          }
-        };
-        const methods = {
-          getMarkdown: getEditorMarkdown,
-          setMarkdown: setEditorMarkdown,
-          insertMarkdownAtRange: insertEditorMarkdownAtRange,
-          insertMarkdownAtEnd: insertEditorMarkdownAtEnd,
-          getSource: getMemoEditorSource,
-          instance: editor
-        };
-        if (onReady) {
-          onReady(methods);
-        }
-      }
-    }, [editor, onReady]);
-    const handleAssist = () => {
-      if (selectionData) {
-        document.dispatchEvent(new CustomEvent("memoEditorSelectionChanged", {
-          detail: { ...selectionData, focus: true }
-        }));
-      }
-    };
-    react_shim_default.useEffect(() => {
-      if (!editor) return;
-      let selectionTimeout;
-      const handleSelectionChange = () => {
-        const { from: from2, to, empty: empty2 } = editor.state.selection;
-        clearTimeout(selectionTimeout);
-        if (empty2) {
-          document.dispatchEvent(new CustomEvent("memoEditorSelectionChanged", {
-            detail: { isSelected: false }
-          }));
-          setSelectionData(null);
-          return;
-        }
-        selectionTimeout = setTimeout(() => {
-          var _a2, _b2;
-          const currentSelection = editor.state.selection;
-          if (currentSelection.from === from2 && currentSelection.to === to) {
-            const selectedText = editor.state.doc.textBetween(from2, to, " ");
-            let selectionMarkdown = "";
-            try {
-              const slice2 = editor.state.selection.content();
-              const serializer = DOMSerializer.fromSchema(editor.state.schema);
-              const fragment = serializer.serializeFragment(slice2.content);
-              const tmp = document.createElement("div");
-              tmp.appendChild(fragment);
-              const html2 = tmp.innerHTML;
-              selectionMarkdown = (((_a2 = turndownRef.current) == null ? void 0 : _a2.turndown(html2)) || "").trim();
-            } catch (err) {
-              selectionMarkdown = "";
-            }
-            let blockFrom = from2;
-            let blockTo = to;
-            let blockText2 = selectedText;
-            const allowedBlockTypes = /* @__PURE__ */ new Set([
-              "paragraph",
-              "heading",
-              "codeBlock",
-              "table",
-              "listItem",
-              "blockquote",
-              "mermaidDiagram"
-            ]);
-            const isWhitespaceSelection = selectedText.trim().length === 0;
-            if (isWhitespaceSelection) {
-              const { $from, $to } = editor.state.selection;
-              const pickBlockDepth = (resolvedPos) => {
-                for (let depth = resolvedPos.depth; depth >= 0; depth--) {
-                  if (allowedBlockTypes.has(resolvedPos.node(depth).type.name)) {
-                    return depth;
-                  }
-                }
-                return -1;
-              };
-              const isEmptyTextblock = (resolvedPos) => {
-                var _a3;
-                return ((_a3 = resolvedPos.parent) == null ? void 0 : _a3.isTextblock) && resolvedPos.parent.content.size === 0;
-              };
-              const preferPos = isEmptyTextblock($to) ? $to : $from;
-              let blockDepth = pickBlockDepth(preferPos);
-              if (blockDepth < 0 && preferPos !== $from) {
-                blockDepth = pickBlockDepth($from);
-              }
-              if (blockDepth >= 0) {
-                blockFrom = preferPos.start(blockDepth);
-                blockTo = preferPos.end(blockDepth);
-              }
-            } else {
-              editor.state.doc.nodesBetween(from2, to > from2 ? to - 1 : to, (node, pos) => {
-                if (allowedBlockTypes.has(node.type.name)) {
-                  blockFrom = Math.min(blockFrom, pos);
-                  blockTo = Math.max(blockTo, pos + node.nodeSize);
-                }
-              });
-            }
-            blockText2 = editor.state.doc.textBetween(blockFrom, blockTo, "\n").trim();
-            let nodeType = "";
-            editor.state.doc.nodesBetween(from2, to > from2 ? to - 1 : to, (node) => {
-              if (node.type.name === "mermaidDiagram") nodeType = "mermaidDiagram";
-            });
-            let blockMarkdown = "";
-            try {
-              const blockSlice = editor.state.doc.slice(blockFrom, blockTo);
-              const serializer = DOMSerializer.fromSchema(editor.state.schema);
-              const fragment = serializer.serializeFragment(blockSlice.content);
-              const tmp = document.createElement("div");
-              tmp.appendChild(fragment);
-              const html2 = tmp.innerHTML;
-              blockMarkdown = (((_b2 = turndownRef.current) == null ? void 0 : _b2.turndown(html2)) || "").trim();
-            } catch (err) {
-              blockMarkdown = "";
-            }
-            try {
-              const coordsStart = editor.view.coordsAtPos(blockFrom);
-              const coordsEnd = editor.view.coordsAtPos(blockTo, -1);
-              let finalExcerpt = blockText2.substring(0, 100) + (blockText2.length > 100 ? "\u2026" : "");
-              if (!finalExcerpt.trim() && nodeType === "mermaidDiagram") {
-                finalExcerpt = "Diagramme Mermaid";
-              }
-              setSelectionData({
-                isSelected: true,
-                nodeType,
-                selectionText: selectedText,
-                selectionMarkdown,
-                blockText: blockText2,
-                blockMarkdown,
-                selectionExcerpt: finalExcerpt,
-                positionFrom: blockFrom,
-                positionTo: blockTo,
-                coords: {
-                  top: coordsEnd.bottom + 10,
-                  left: coordsStart.left,
-                  bottom: coordsEnd.bottom,
-                  right: coordsEnd.right
-                }
-              });
-            } catch (err) {
-              console.warn("Error getting selection coords:", err);
-            }
-          }
-        }, 300);
-      };
-      editor.on("update", handleSelectionChange);
-      editor.on("selectionUpdate", handleSelectionChange);
-      return () => {
-        clearTimeout(selectionTimeout);
-        editor.off("update", handleSelectionChange);
-        editor.off("selectionUpdate", handleSelectionChange);
-      };
-    }, [editor]);
-    if (!editor) {
-      return null;
-    }
-    return /* @__PURE__ */ jsxs(
-      "div",
-      {
-        className: "simple-editor",
-        ref: containerRef,
-        onMouseMove: handleMouseMove2,
-        onMouseDown: (e) => {
-          var _a2;
-          const target = e.target;
-          if (!editor || e.button !== 0) return;
-          const handle = target.closest(".mermaid-node-handle");
-          const mermaidContainer = target.closest(".mermaid-diagram-container");
-          const isMermaidDragTarget = !!handle || mermaidContainer && !target.closest(".mermaid-modal, .mermaid-modal-overlay, .mermaid-modal-editor") && !target.closest("button, input, textarea, select");
-          if (!isMermaidDragTarget) return;
-          if (handle) e.preventDefault();
-          const wrapper = (_a2 = handle || mermaidContainer) == null ? void 0 : _a2.closest(".mermaid-diagram-wrapper");
-          if (!wrapper) return;
-          try {
-            const pos = editor.view.posAtDOM(wrapper, 0);
-            const $pos = editor.state.doc.resolve(pos);
-            let mermaidPos = -1;
-            for (let d = $pos.depth; d > 0; d--) {
-              if ($pos.node(d).type.name === "mermaidDiagram") {
-                mermaidPos = $pos.before(d);
-                break;
-              }
-            }
-            if (mermaidPos === -1) return;
-            const node = editor.state.doc.nodeAt(mermaidPos);
-            if (!node) return;
-            setBlockDragPending({
-              pos: mermaidPos,
-              nodeSize: node.nodeSize,
-              startX: e.clientX,
-              startY: e.clientY
-            });
-            blockDragMovedRef.current = false;
-          } catch (err) {
-          }
-        },
-        onMouseLeave: () => {
-          setRowHandle(null);
-          setColHandle(null);
-          setQuoteHandle(null);
-          setCodeHandle(null);
-        },
-        children: [
-          /* @__PURE__ */ jsx(Toolbar, { editor, onDropdownToggle: setIsDropdownOpen, onLink: () => setShowLinkModal(true) }),
-          /* @__PURE__ */ jsx(
-            BubbleMenuComponent,
-            {
-              editor,
-              visible: !isDropdownOpen && isFocusWithinMemoCard,
-              onKeep: () => keepSelection(editor),
-              onReject: () => rejectSelection(editor),
-              onAssist: handleAssist,
-              onLink: () => setShowLinkModal(true)
-            }
-          ),
-          /* @__PURE__ */ jsx(EditorContent, { editor }),
-          showLinkModal && /* @__PURE__ */ jsx(
-            LinkSearchModal,
-            {
-              editor,
-              onClose: () => setShowLinkModal(false)
-            }
-          ),
-          rowHandle && !dragState && !blockDragState && /* @__PURE__ */ jsx(
-            "div",
-            {
-              className: "table-handle table-handle-row",
-              style: { top: rowHandle.top, left: rowHandle.left },
-              onMouseDown: (e) => {
-                e.preventDefault();
-                if (rowHandle.rowIndex === 0) {
-                  const node = editor.state.doc.nodeAt(rowHandle.tablePos);
-                  if (!node) return;
-                  setBlockDragPending({
-                    pos: rowHandle.tablePos,
-                    nodeSize: node.nodeSize,
-                    startX: e.clientX,
-                    startY: e.clientY
-                  });
-                  blockDragMovedRef.current = false;
-                  return;
-                }
-                setMouseDownPoints({
-                  type: "row",
-                  index: rowHandle.rowIndex,
-                  tablePos: rowHandle.tablePos,
-                  x: e.clientX,
-                  y: e.clientY
-                });
-              },
-              children: "\u283F"
-            }
-          ),
-          colHandle && !dragState && !blockDragState && /* @__PURE__ */ jsx(
-            "div",
-            {
-              className: "table-handle table-handle-col",
-              style: { top: colHandle.top, left: colHandle.left },
-              onMouseDown: (e) => {
-                e.preventDefault();
-                setMouseDownPoints({ type: "col", index: colHandle.colIndex, tablePos: colHandle.tablePos, x: e.clientX, y: e.clientY });
-              },
-              children: "\u283F"
-            }
-          ),
-          blockDeleteHandle && !dragState && !blockDragState && /* @__PURE__ */ jsxs(
-            "div",
-            {
-              className: "block-handle-container",
-              style: {
-                position: "absolute",
-                top: blockDeleteHandle.top,
-                left: blockDeleteHandle.left - (blockDeleteHandle.label === "le diagramme" ? 140 : 26),
-                display: "flex",
-                gap: "4px",
-                zIndex: 10
-              },
-              children: [
-                ["le bloc de code", "la citation", "le tableau", "le bloc d\xE9pliable"].includes(blockDeleteHandle.label) && /* @__PURE__ */ jsx(
-                  "button",
-                  {
-                    className: "block-delete-button",
-                    style: { position: "static", opacity: 1 },
-                    onClick: (e) => {
-                      e.stopPropagation();
-                      copyBlockHtmlAtPos(blockDeleteHandle.pos);
-                    },
-                    title: "Copier le contenu",
-                    children: /* @__PURE__ */ jsx(Copy, { size: 16 })
-                  }
-                ),
-                blockDeleteHandle.label === "le diagramme" && /* @__PURE__ */ jsxs(Fragment3, { children: [
-                  (() => {
-                    const node = editor.state.doc.nodeAt(blockDeleteHandle.pos);
-                    if (!node || node.type.name !== "mermaidDiagram") return null;
-                    const code = node.attrs.code || "";
-                    if (!code.trim() || !isFlowchartDiagram(code)) return null;
-                    const isSquare = node.attrs.size === "large";
-                    const nextSize = isSquare ? "small" : "large";
-                    const label = isSquare ? "Rectangle" : "Carr\xE9";
-                    const Icon2 = isSquare ? RectangleHorizontal : Square;
-                    return /* @__PURE__ */ jsx(
-                      "button",
-                      {
-                        className: "block-delete-button mermaid-size-toggle",
-                        style: { position: "static", opacity: 1 },
-                        onClick: (e) => {
-                          e.stopPropagation();
-                          const { code: nextCode, updated } = setFlowchartDirection(
-                            code,
-                            nextSize === "large" ? "TD" : "LR"
-                          );
-                          const updatedCode = updated ? nextCode : code;
-                          editor.chain().focus().setNodeSelection(blockDeleteHandle.pos).updateAttributes("mermaidDiagram", {
-                            size: nextSize,
-                            code: updatedCode,
-                            excalidrawJSON: null
-                          }).run();
-                          const drawMemo = window.GoToolkitDrawMemo;
-                          if (drawMemo) {
-                            (async () => {
-                              try {
-                                await drawMemo.updateFromMermaid(updatedCode, nextSize);
-                                const json = drawMemo.getSceneJSON();
-                                editor.chain().focus().setNodeSelection(blockDeleteHandle.pos).updateAttributes("mermaidDiagram", {
-                                  excalidrawJSON: json
-                                }).run();
-                              } catch (err) {
-                                console.error("Failed to update mermaid preview", err);
-                              }
-                            })();
-                          }
-                        },
-                        title: label,
-                        "aria-label": label,
-                        children: /* @__PURE__ */ jsx(Icon2, { size: 14 })
-                      }
-                    );
-                  })(),
-                  /* @__PURE__ */ jsx(
-                    "button",
-                    {
-                      className: "block-delete-button",
-                      style: { position: "static", opacity: 1 },
-                      onClick: (e) => {
-                        e.stopPropagation();
-                        const dom = editor.view.nodeDOM(blockDeleteHandle.pos);
-                        if (dom) {
-                          const container2 = dom.querySelector(".mermaid-diagram-container");
-                          if (container2) {
-                            container2.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
-                          }
-                        }
-                      },
-                      title: "Modifier le diagramme",
-                      children: /* @__PURE__ */ jsx(Pencil, { size: 16 })
-                    }
-                  ),
-                  /* @__PURE__ */ jsx(
-                    "button",
-                    {
-                      className: "block-delete-button",
-                      style: { position: "static", opacity: 1 },
-                      onClick: (e) => {
-                        e.stopPropagation();
-                        copyBlockHtmlAtPos(blockDeleteHandle.pos);
-                      },
-                      title: "Copier",
-                      children: /* @__PURE__ */ jsx(Copy, { size: 16 })
-                    }
-                  ),
-                  /* @__PURE__ */ jsx(
-                    "button",
-                    {
-                      className: "block-delete-button",
-                      style: { position: "static", opacity: 1 },
-                      onClick: (e) => {
-                        e.stopPropagation();
-                        const dom = editor.view.nodeDOM(blockDeleteHandle.pos);
-                        if (dom) {
-                          const svg = dom.querySelector("svg");
-                          if (svg) {
-                            downloadSvgAsPng(svg, "diagramme.png");
-                          }
-                        }
-                      },
-                      title: "T\xE9l\xE9charger en PNG",
-                      children: /* @__PURE__ */ jsx(Image3, { size: 16 })
-                    }
-                  )
-                ] }),
-                /* @__PURE__ */ jsx(
-                  "button",
-                  {
-                    className: "block-delete-button",
-                    style: { position: "static", opacity: 1 },
-                    onClick: (e) => {
-                      e.stopPropagation();
-                      editor.chain().focus().setNodeSelection(blockDeleteHandle.pos).deleteSelection().run();
-                      setBlockDeleteHandle(null);
-                    },
-                    title: `Supprimer ${blockDeleteHandle.label}`,
-                    children: /* @__PURE__ */ jsx(Trash2, { size: 16 })
-                  }
-                )
-              ]
-            }
-          ),
-          dropIndicator && /* @__PURE__ */ jsx(
-            "div",
-            {
-              className: `table-drop-indicator table-drop-indicator-${dropIndicator.type}`,
-              style: {
-                top: dropIndicator.top,
-                left: dropIndicator.left,
-                width: dropIndicator.width,
-                height: dropIndicator.height
-              }
-            }
-          ),
-          blockDropIndicator && /* @__PURE__ */ jsx(
-            "div",
-            {
-              className: "table-drop-indicator table-drop-indicator-row",
-              style: {
-                top: blockDropIndicator.top,
-                left: blockDropIndicator.left,
-                width: blockDropIndicator.width,
-                height: 2
-              }
-            }
-          ),
-          dragGhost && (dragState || blockDragState) && /* @__PURE__ */ jsx(
-            "div",
-            {
-              className: "drag-ghost",
-              style: {
-                top: ((_b = (_a = dragState == null ? void 0 : dragState.y) != null ? _a : blockDragState == null ? void 0 : blockDragState.y) != null ? _b : 0) - dragGhost.offsetY,
-                left: ((_d = (_c = dragState == null ? void 0 : dragState.x) != null ? _c : blockDragState == null ? void 0 : blockDragState.x) != null ? _d : 0) - dragGhost.offsetX,
-                width: dragGhost.width,
-                height: dragGhost.height
-              },
-              children: /* @__PURE__ */ jsx("div", { className: "drag-ghost-content", dangerouslySetInnerHTML: { __html: dragGhost.html } })
-            }
-          ),
-          dragState && /* @__PURE__ */ jsx(
-            "div",
-            {
-              className: `table-handle ${dragState.type === "col" ? "table-handle-col" : "table-handle-row"}`,
-              style: {
-                position: "fixed",
-                top: dragState.y,
-                left: dragState.x,
-                opacity: 0.8,
-                pointerEvents: "none",
-                zIndex: 2e3,
-                boxShadow: "var(--shadow-md)",
-                transform: `translate(-50%, -50%) ${dragState.type === "col" ? "rotate(90deg)" : ""}`
-              },
-              children: "\u283F"
-            }
-          ),
-          blockDragState && /* @__PURE__ */ jsx(
-            "div",
-            {
-              className: "table-handle block-drag-handle",
-              style: {
-                position: "fixed",
-                top: blockDragState.y,
-                left: blockDragState.x,
-                opacity: 0.8,
-                pointerEvents: "none",
-                zIndex: 2e3,
-                boxShadow: "var(--shadow-md)",
-                transform: "translate(-50%, -50%)"
-              },
-              children: "\u283F"
-            }
-          ),
-          quoteHandle && !dragState && !blockDragState && /* @__PURE__ */ jsx(
-            "div",
-            {
-              className: "table-handle quote-handle",
-              style: { top: quoteHandle.top, left: quoteHandle.left },
-              onMouseDown: (e) => {
-                const node = editor.state.doc.nodeAt(quoteHandle.pos);
-                if (!node) return;
-                setBlockDragPending({
-                  pos: quoteHandle.pos,
-                  nodeSize: node.nodeSize,
-                  startX: e.clientX,
-                  startY: e.clientY
-                });
-                blockDragMovedRef.current = false;
-              },
-              onClick: (e) => {
-                if (blockDragMovedRef.current) {
-                  blockDragMovedRef.current = false;
-                  return;
-                }
-                e.stopPropagation();
-                setQuoteMenu({ top: quoteHandle.top, left: quoteHandle.left + 30, pos: quoteHandle.pos });
-              },
-              children: "\u283F"
-            }
-          ),
-          codeHandle && !dragState && !blockDragState && /* @__PURE__ */ jsx(
-            "div",
-            {
-              className: "table-handle code-handle",
-              style: { top: codeHandle.top, left: codeHandle.left },
-              onMouseDown: (e) => {
-                const node = editor.state.doc.nodeAt(codeHandle.pos);
-                if (!node) return;
-                setBlockDragPending({
-                  pos: codeHandle.pos,
-                  nodeSize: node.nodeSize,
-                  startX: e.clientX,
-                  startY: e.clientY
-                });
-                blockDragMovedRef.current = false;
-              },
-              children: "\u283F"
-            }
-          ),
-          !dragState && !blockDragState && mermaidHandles.map((handle) => /* @__PURE__ */ jsx(
-            "div",
-            {
-              className: "table-handle mermaid-handle",
-              style: { top: handle.top, left: handle.left },
-              onMouseDown: (e) => {
-                const node = editor.state.doc.nodeAt(handle.pos);
-                if (!node) return;
-                setBlockDragPending({
-                  pos: handle.pos,
-                  nodeSize: node.nodeSize,
-                  startX: e.clientX,
-                  startY: e.clientY
-                });
-                blockDragMovedRef.current = false;
-              },
-              children: "\u283F"
-            },
-            `mermaid-handle-${handle.pos}`
-          )),
-          quoteMenu && /* @__PURE__ */ jsxs(Fragment3, { children: [
-            /* @__PURE__ */ jsx("div", { style: { position: "fixed", inset: 0, zIndex: 999 }, onClick: () => setQuoteMenu(null) }),
-            /* @__PURE__ */ jsx(
-              "div",
-              {
-                className: "quote-context-menu",
-                style: { top: quoteMenu.top, left: quoteMenu.left },
-                children: ALERT_TYPES.map((alert) => {
-                  var _a2;
-                  return /* @__PURE__ */ jsxs(
-                    "div",
-                    {
-                      className: "quote-context-menu-item",
-                      "data-active": ((_a2 = editor.state.doc.nodeAt(quoteMenu.pos)) == null ? void 0 : _a2.attrs.type) === alert.type,
-                      onClick: () => {
-                        const node = editor.state.doc.nodeAt(quoteMenu.pos);
-                        if ((node == null ? void 0 : node.attrs.type) === alert.type) {
-                          editor.chain().focus().setTextSelection({ from: quoteMenu.pos + 1, to: quoteMenu.pos + 1 }).lift("blockquote").run();
-                        } else {
-                          editor.chain().focus().setNodeSelection(quoteMenu.pos).updateAttributes("blockquote", { type: alert.type }).run();
-                        }
-                        setQuoteMenu(null);
-                      },
-                      children: [
-                        /* @__PURE__ */ jsx(alert.icon, { size: 14, style: { color: alert.color } }),
-                        alert.label
-                      ]
-                    },
-                    alert.type
-                  );
-                })
-              }
-            )
-          ] }),
-          tableContextMenu && /* @__PURE__ */ jsxs(Fragment3, { children: [
-            /* @__PURE__ */ jsx("div", { style: { position: "fixed", inset: 0, zIndex: 999 }, onClick: () => setTableContextMenu(null) }),
-            /* @__PURE__ */ jsxs(
-              "div",
-              {
-                className: "table-context-menu",
-                style: { top: tableContextMenu.top, left: tableContextMenu.left },
-                children: [
-                  /* @__PURE__ */ jsxs(
-                    "div",
-                    {
-                      className: "table-context-menu-item",
-                      onClick: () => {
-                        const { type: type2, index, tablePos } = tableContextMenu;
-                        const table = editor.state.doc.nodeAt(tablePos);
-                        if (table) {
-                          let cellPos = -1;
-                          if (type2 === "row") {
-                            cellPos = tablePos + 1;
-                            for (let i = 0; i < index; i++) cellPos += table.child(i).nodeSize;
-                            cellPos += 1;
-                          } else {
-                            const row = table.child(0);
-                            cellPos = tablePos + 1 + 1;
-                            for (let i = 0; i < index; i++) cellPos += row.child(i).nodeSize;
-                          }
-                          editor.chain().focus().setNodeSelection(cellPos).run();
-                          if (type2 === "row") editor.chain().addRowBefore().run();
-                          else editor.chain().addColumnBefore().run();
-                        }
-                        setTableContextMenu(null);
-                      },
-                      children: [
-                        /* @__PURE__ */ jsx(Plus, { size: 14, style: { marginRight: 8 } }),
-                        "Ajouter"
-                      ]
-                    }
-                  ),
-                  /* @__PURE__ */ jsxs(
-                    "div",
-                    {
-                      className: "table-context-menu-item",
-                      onClick: () => {
-                        const { type: type2, index, tablePos } = tableContextMenu;
-                        const table = editor.state.doc.nodeAt(tablePos);
-                        if (table) {
-                          let cellPos = -1;
-                          if (type2 === "row") {
-                            cellPos = tablePos + 1;
-                            for (let i = 0; i < index; i++) cellPos += table.child(i).nodeSize;
-                            cellPos += 1;
-                          } else {
-                            const row = table.child(0);
-                            cellPos = tablePos + 1 + 1;
-                            for (let i = 0; i < index; i++) cellPos += row.child(i).nodeSize;
-                          }
-                          editor.chain().focus().setNodeSelection(cellPos).run();
-                          if (type2 === "row") editor.chain().deleteRow().run();
-                          else editor.chain().deleteColumn().run();
-                        }
-                        setTableContextMenu(null);
-                      },
-                      children: [
-                        /* @__PURE__ */ jsx(X, { size: 14, style: { marginRight: 8 } }),
-                        "Supprimer"
-                      ]
-                    }
-                  ),
-                  tableContextMenu.type === "col" && /* @__PURE__ */ jsxs(Fragment3, { children: [
-                    /* @__PURE__ */ jsx("div", { className: "table-context-menu-divider" }),
-                    /* @__PURE__ */ jsxs(
-                      "div",
-                      {
-                        className: "table-context-menu-item",
-                        onClick: () => {
-                          sortColumn(editor, tableContextMenu.tablePos, tableContextMenu.index, "asc");
-                          setTableContextMenu(null);
-                        },
-                        children: [
-                          /* @__PURE__ */ jsx(ArrowDownAZ, { size: 14, style: { marginRight: 8 } }),
-                          "Trier a-z"
-                        ]
-                      }
-                    ),
-                    /* @__PURE__ */ jsxs(
-                      "div",
-                      {
-                        className: "table-context-menu-item",
-                        onClick: () => {
-                          sortColumn(editor, tableContextMenu.tablePos, tableContextMenu.index, "desc");
-                          setTableContextMenu(null);
-                        },
-                        children: [
-                          /* @__PURE__ */ jsx(ArrowUpAZ, { size: 14, style: { marginRight: 8 } }),
-                          "Trier z-a"
-                        ]
-                      }
-                    )
-                  ] })
-                ]
-              }
-            )
-          ] })
-        ]
-      }
-    );
-  };
-  var simple_editor_default = SimpleEditor;
-
   // src/memo-editor/docx-export.ts
   init_define_process_env();
   init_polyfills();
@@ -36509,7 +28977,7 @@ ${innerMarkdown}
     return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, "default") ? x["default"] : x;
   }
   var browser$1 = { exports: {} };
-  var process3 = browser$1.exports = {};
+  var process2 = browser$1.exports = {};
   var cachedSetTimeout;
   var cachedClearTimeout;
   function defaultSetTimout() {
@@ -36614,7 +29082,7 @@ ${innerMarkdown}
     draining = false;
     runClearTimeout(timeout);
   }
-  process3.nextTick = function(fun) {
+  process2.nextTick = function(fun) {
     var args = new Array(arguments.length - 1);
     if (arguments.length > 1) {
       for (var i = 1; i < arguments.length; i++) {
@@ -36633,36 +29101,36 @@ ${innerMarkdown}
   Item2.prototype.run = function() {
     this.fun.apply(null, this.array);
   };
-  process3.title = "browser";
-  process3.browser = true;
-  process3.env = {};
-  process3.argv = [];
-  process3.version = "";
-  process3.versions = {};
+  process2.title = "browser";
+  process2.browser = true;
+  process2.env = {};
+  process2.argv = [];
+  process2.version = "";
+  process2.versions = {};
   function noop2() {
   }
-  process3.on = noop2;
-  process3.addListener = noop2;
-  process3.once = noop2;
-  process3.off = noop2;
-  process3.removeListener = noop2;
-  process3.removeAllListeners = noop2;
-  process3.emit = noop2;
-  process3.prependListener = noop2;
-  process3.prependOnceListener = noop2;
-  process3.listeners = function(name) {
+  process2.on = noop2;
+  process2.addListener = noop2;
+  process2.once = noop2;
+  process2.off = noop2;
+  process2.removeListener = noop2;
+  process2.removeAllListeners = noop2;
+  process2.emit = noop2;
+  process2.prependListener = noop2;
+  process2.prependOnceListener = noop2;
+  process2.listeners = function(name) {
     return [];
   };
-  process3.binding = function(name) {
+  process2.binding = function(name) {
     throw new Error("process.binding is not supported");
   };
-  process3.cwd = function() {
+  process2.cwd = function() {
     return "/";
   };
-  process3.chdir = function(dir) {
+  process2.chdir = function(dir) {
     throw new Error("process.chdir is not supported");
   };
-  process3.umask = function() {
+  process2.umask = function() {
     return 0;
   };
   var browserExports = browser$1.exports;
@@ -56082,6 +48550,7638 @@ ${innerMarkdown}
     });
   }
 
+  // node_modules/turndown/lib/turndown.browser.es.js
+  init_define_process_env();
+  init_polyfills();
+  function extend(destination) {
+    for (var i = 1; i < arguments.length; i++) {
+      var source = arguments[i];
+      for (var key in source) {
+        if (source.hasOwnProperty(key)) destination[key] = source[key];
+      }
+    }
+    return destination;
+  }
+  function repeat(character, count) {
+    return Array(count + 1).join(character);
+  }
+  function trimLeadingNewlines(string) {
+    return string.replace(/^\n*/, "");
+  }
+  function trimTrailingNewlines(string) {
+    var indexEnd = string.length;
+    while (indexEnd > 0 && string[indexEnd - 1] === "\n") indexEnd--;
+    return string.substring(0, indexEnd);
+  }
+  function trimNewlines(string) {
+    return trimTrailingNewlines(trimLeadingNewlines(string));
+  }
+  var blockElements = [
+    "ADDRESS",
+    "ARTICLE",
+    "ASIDE",
+    "AUDIO",
+    "BLOCKQUOTE",
+    "BODY",
+    "CANVAS",
+    "CENTER",
+    "DD",
+    "DIR",
+    "DIV",
+    "DL",
+    "DT",
+    "FIELDSET",
+    "FIGCAPTION",
+    "FIGURE",
+    "FOOTER",
+    "FORM",
+    "FRAMESET",
+    "H1",
+    "H2",
+    "H3",
+    "H4",
+    "H5",
+    "H6",
+    "HEADER",
+    "HGROUP",
+    "HR",
+    "HTML",
+    "ISINDEX",
+    "LI",
+    "MAIN",
+    "MENU",
+    "NAV",
+    "NOFRAMES",
+    "NOSCRIPT",
+    "OL",
+    "OUTPUT",
+    "P",
+    "PRE",
+    "SECTION",
+    "TABLE",
+    "TBODY",
+    "TD",
+    "TFOOT",
+    "TH",
+    "THEAD",
+    "TR",
+    "UL"
+  ];
+  function isBlock(node) {
+    return is(node, blockElements);
+  }
+  var voidElements = [
+    "AREA",
+    "BASE",
+    "BR",
+    "COL",
+    "COMMAND",
+    "EMBED",
+    "HR",
+    "IMG",
+    "INPUT",
+    "KEYGEN",
+    "LINK",
+    "META",
+    "PARAM",
+    "SOURCE",
+    "TRACK",
+    "WBR"
+  ];
+  function isVoid(node) {
+    return is(node, voidElements);
+  }
+  function hasVoid(node) {
+    return has(node, voidElements);
+  }
+  var meaningfulWhenBlankElements = [
+    "A",
+    "TABLE",
+    "THEAD",
+    "TBODY",
+    "TFOOT",
+    "TH",
+    "TD",
+    "IFRAME",
+    "SCRIPT",
+    "AUDIO",
+    "VIDEO"
+  ];
+  function isMeaningfulWhenBlank(node) {
+    return is(node, meaningfulWhenBlankElements);
+  }
+  function hasMeaningfulWhenBlank(node) {
+    return has(node, meaningfulWhenBlankElements);
+  }
+  function is(node, tagNames) {
+    return tagNames.indexOf(node.nodeName) >= 0;
+  }
+  function has(node, tagNames) {
+    return node.getElementsByTagName && tagNames.some(function(tagName) {
+      return node.getElementsByTagName(tagName).length;
+    });
+  }
+  var rules = {};
+  rules.paragraph = {
+    filter: "p",
+    replacement: function(content) {
+      return "\n\n" + content + "\n\n";
+    }
+  };
+  rules.lineBreak = {
+    filter: "br",
+    replacement: function(content, node, options2) {
+      return options2.br + "\n";
+    }
+  };
+  rules.heading = {
+    filter: ["h1", "h2", "h3", "h4", "h5", "h6"],
+    replacement: function(content, node, options2) {
+      var hLevel = Number(node.nodeName.charAt(1));
+      if (options2.headingStyle === "setext" && hLevel < 3) {
+        var underline = repeat(hLevel === 1 ? "=" : "-", content.length);
+        return "\n\n" + content + "\n" + underline + "\n\n";
+      } else {
+        return "\n\n" + repeat("#", hLevel) + " " + content + "\n\n";
+      }
+    }
+  };
+  rules.blockquote = {
+    filter: "blockquote",
+    replacement: function(content) {
+      content = trimNewlines(content).replace(/^/gm, "> ");
+      return "\n\n" + content + "\n\n";
+    }
+  };
+  rules.list = {
+    filter: ["ul", "ol"],
+    replacement: function(content, node) {
+      var parent = node.parentNode;
+      if (parent.nodeName === "LI" && parent.lastElementChild === node) {
+        return "\n" + content;
+      } else {
+        return "\n\n" + content + "\n\n";
+      }
+    }
+  };
+  rules.listItem = {
+    filter: "li",
+    replacement: function(content, node, options2) {
+      var prefix = options2.bulletListMarker + "   ";
+      var parent = node.parentNode;
+      if (parent.nodeName === "OL") {
+        var start = parent.getAttribute("start");
+        var index = Array.prototype.indexOf.call(parent.children, node);
+        prefix = (start ? Number(start) + index : index + 1) + ".  ";
+      }
+      var isParagraph = /\n$/.test(content);
+      content = trimNewlines(content) + (isParagraph ? "\n" : "");
+      content = content.replace(/\n/gm, "\n" + " ".repeat(prefix.length));
+      return prefix + content + (node.nextSibling ? "\n" : "");
+    }
+  };
+  rules.indentedCodeBlock = {
+    filter: function(node, options2) {
+      return options2.codeBlockStyle === "indented" && node.nodeName === "PRE" && node.firstChild && node.firstChild.nodeName === "CODE";
+    },
+    replacement: function(content, node, options2) {
+      return "\n\n    " + node.firstChild.textContent.replace(/\n/g, "\n    ") + "\n\n";
+    }
+  };
+  rules.fencedCodeBlock = {
+    filter: function(node, options2) {
+      return options2.codeBlockStyle === "fenced" && node.nodeName === "PRE" && node.firstChild && node.firstChild.nodeName === "CODE";
+    },
+    replacement: function(content, node, options2) {
+      var className = node.firstChild.getAttribute("class") || "";
+      var language = (className.match(/language-(\S+)/) || [null, ""])[1];
+      var code = node.firstChild.textContent;
+      var fenceChar = options2.fence.charAt(0);
+      var fenceSize = 3;
+      var fenceInCodeRegex = new RegExp("^" + fenceChar + "{3,}", "gm");
+      var match;
+      while (match = fenceInCodeRegex.exec(code)) {
+        if (match[0].length >= fenceSize) {
+          fenceSize = match[0].length + 1;
+        }
+      }
+      var fence = repeat(fenceChar, fenceSize);
+      return "\n\n" + fence + language + "\n" + code.replace(/\n$/, "") + "\n" + fence + "\n\n";
+    }
+  };
+  rules.horizontalRule = {
+    filter: "hr",
+    replacement: function(content, node, options2) {
+      return "\n\n" + options2.hr + "\n\n";
+    }
+  };
+  rules.inlineLink = {
+    filter: function(node, options2) {
+      return options2.linkStyle === "inlined" && node.nodeName === "A" && node.getAttribute("href");
+    },
+    replacement: function(content, node) {
+      var href = node.getAttribute("href");
+      if (href) href = href.replace(/([()])/g, "\\$1");
+      var title = cleanAttribute(node.getAttribute("title"));
+      if (title) title = ' "' + title.replace(/"/g, '\\"') + '"';
+      return "[" + content + "](" + href + title + ")";
+    }
+  };
+  rules.referenceLink = {
+    filter: function(node, options2) {
+      return options2.linkStyle === "referenced" && node.nodeName === "A" && node.getAttribute("href");
+    },
+    replacement: function(content, node, options2) {
+      var href = node.getAttribute("href");
+      var title = cleanAttribute(node.getAttribute("title"));
+      if (title) title = ' "' + title + '"';
+      var replacement;
+      var reference;
+      switch (options2.linkReferenceStyle) {
+        case "collapsed":
+          replacement = "[" + content + "][]";
+          reference = "[" + content + "]: " + href + title;
+          break;
+        case "shortcut":
+          replacement = "[" + content + "]";
+          reference = "[" + content + "]: " + href + title;
+          break;
+        default:
+          var id = this.references.length + 1;
+          replacement = "[" + content + "][" + id + "]";
+          reference = "[" + id + "]: " + href + title;
+      }
+      this.references.push(reference);
+      return replacement;
+    },
+    references: [],
+    append: function(options2) {
+      var references = "";
+      if (this.references.length) {
+        references = "\n\n" + this.references.join("\n") + "\n\n";
+        this.references = [];
+      }
+      return references;
+    }
+  };
+  rules.emphasis = {
+    filter: ["em", "i"],
+    replacement: function(content, node, options2) {
+      if (!content.trim()) return "";
+      return options2.emDelimiter + content + options2.emDelimiter;
+    }
+  };
+  rules.strong = {
+    filter: ["strong", "b"],
+    replacement: function(content, node, options2) {
+      if (!content.trim()) return "";
+      return options2.strongDelimiter + content + options2.strongDelimiter;
+    }
+  };
+  rules.code = {
+    filter: function(node) {
+      var hasSiblings = node.previousSibling || node.nextSibling;
+      var isCodeBlock = node.parentNode.nodeName === "PRE" && !hasSiblings;
+      return node.nodeName === "CODE" && !isCodeBlock;
+    },
+    replacement: function(content) {
+      if (!content) return "";
+      content = content.replace(/\r?\n|\r/g, " ");
+      var extraSpace = /^`|^ .*?[^ ].* $|`$/.test(content) ? " " : "";
+      var delimiter = "`";
+      var matches2 = content.match(/`+/gm) || [];
+      while (matches2.indexOf(delimiter) !== -1) delimiter = delimiter + "`";
+      return delimiter + extraSpace + content + extraSpace + delimiter;
+    }
+  };
+  rules.image = {
+    filter: "img",
+    replacement: function(content, node) {
+      var alt = cleanAttribute(node.getAttribute("alt"));
+      var src = node.getAttribute("src") || "";
+      var title = cleanAttribute(node.getAttribute("title"));
+      var titlePart = title ? ' "' + title + '"' : "";
+      return src ? "![" + alt + "](" + src + titlePart + ")" : "";
+    }
+  };
+  function cleanAttribute(attribute) {
+    return attribute ? attribute.replace(/(\n+\s*)+/g, "\n") : "";
+  }
+  function Rules(options2) {
+    this.options = options2;
+    this._keep = [];
+    this._remove = [];
+    this.blankRule = {
+      replacement: options2.blankReplacement
+    };
+    this.keepReplacement = options2.keepReplacement;
+    this.defaultRule = {
+      replacement: options2.defaultReplacement
+    };
+    this.array = [];
+    for (var key in options2.rules) this.array.push(options2.rules[key]);
+  }
+  Rules.prototype = {
+    add: function(key, rule) {
+      this.array.unshift(rule);
+    },
+    keep: function(filter) {
+      this._keep.unshift({
+        filter,
+        replacement: this.keepReplacement
+      });
+    },
+    remove: function(filter) {
+      this._remove.unshift({
+        filter,
+        replacement: function() {
+          return "";
+        }
+      });
+    },
+    forNode: function(node) {
+      if (node.isBlank) return this.blankRule;
+      var rule;
+      if (rule = findRule(this.array, node, this.options)) return rule;
+      if (rule = findRule(this._keep, node, this.options)) return rule;
+      if (rule = findRule(this._remove, node, this.options)) return rule;
+      return this.defaultRule;
+    },
+    forEach: function(fn) {
+      for (var i = 0; i < this.array.length; i++) fn(this.array[i], i);
+    }
+  };
+  function findRule(rules3, node, options2) {
+    for (var i = 0; i < rules3.length; i++) {
+      var rule = rules3[i];
+      if (filterValue(rule, node, options2)) return rule;
+    }
+    return void 0;
+  }
+  function filterValue(rule, node, options2) {
+    var filter = rule.filter;
+    if (typeof filter === "string") {
+      if (filter === node.nodeName.toLowerCase()) return true;
+    } else if (Array.isArray(filter)) {
+      if (filter.indexOf(node.nodeName.toLowerCase()) > -1) return true;
+    } else if (typeof filter === "function") {
+      if (filter.call(rule, node, options2)) return true;
+    } else {
+      throw new TypeError("`filter` needs to be a string, array, or function");
+    }
+  }
+  function collapseWhitespace(options2) {
+    var element = options2.element;
+    var isBlock2 = options2.isBlock;
+    var isVoid2 = options2.isVoid;
+    var isPre = options2.isPre || function(node2) {
+      return node2.nodeName === "PRE";
+    };
+    if (!element.firstChild || isPre(element)) return;
+    var prevText = null;
+    var keepLeadingWs = false;
+    var prev = null;
+    var node = next(prev, element, isPre);
+    while (node !== element) {
+      if (node.nodeType === 3 || node.nodeType === 4) {
+        var text = node.data.replace(/[ \r\n\t]+/g, " ");
+        if ((!prevText || / $/.test(prevText.data)) && !keepLeadingWs && text[0] === " ") {
+          text = text.substr(1);
+        }
+        if (!text) {
+          node = remove(node);
+          continue;
+        }
+        node.data = text;
+        prevText = node;
+      } else if (node.nodeType === 1) {
+        if (isBlock2(node) || node.nodeName === "BR") {
+          if (prevText) {
+            prevText.data = prevText.data.replace(/ $/, "");
+          }
+          prevText = null;
+          keepLeadingWs = false;
+        } else if (isVoid2(node) || isPre(node)) {
+          prevText = null;
+          keepLeadingWs = true;
+        } else if (prevText) {
+          keepLeadingWs = false;
+        }
+      } else {
+        node = remove(node);
+        continue;
+      }
+      var nextNode = next(prev, node, isPre);
+      prev = node;
+      node = nextNode;
+    }
+    if (prevText) {
+      prevText.data = prevText.data.replace(/ $/, "");
+      if (!prevText.data) {
+        remove(prevText);
+      }
+    }
+  }
+  function remove(node) {
+    var next2 = node.nextSibling || node.parentNode;
+    node.parentNode.removeChild(node);
+    return next2;
+  }
+  function next(prev, current, isPre) {
+    if (prev && prev.parentNode === current || isPre(current)) {
+      return current.nextSibling || current.parentNode;
+    }
+    return current.firstChild || current.nextSibling || current.parentNode;
+  }
+  var root = typeof window !== "undefined" ? window : {};
+  function canParseHTMLNatively() {
+    var Parser = root.DOMParser;
+    var canParse = false;
+    try {
+      if (new Parser().parseFromString("", "text/html")) {
+        canParse = true;
+      }
+    } catch (e) {
+    }
+    return canParse;
+  }
+  function createHTMLParser() {
+    var Parser = function() {
+    };
+    {
+      if (shouldUseActiveX()) {
+        Parser.prototype.parseFromString = function(string) {
+          var doc3 = new window.ActiveXObject("htmlfile");
+          doc3.designMode = "on";
+          doc3.open();
+          doc3.write(string);
+          doc3.close();
+          return doc3;
+        };
+      } else {
+        Parser.prototype.parseFromString = function(string) {
+          var doc3 = document.implementation.createHTMLDocument("");
+          doc3.open();
+          doc3.write(string);
+          doc3.close();
+          return doc3;
+        };
+      }
+    }
+    return Parser;
+  }
+  function shouldUseActiveX() {
+    var useActiveX = false;
+    try {
+      document.implementation.createHTMLDocument("").open();
+    } catch (e) {
+      if (root.ActiveXObject) useActiveX = true;
+    }
+    return useActiveX;
+  }
+  var HTMLParser = canParseHTMLNatively() ? root.DOMParser : createHTMLParser();
+  function RootNode(input, options2) {
+    var root2;
+    if (typeof input === "string") {
+      var doc3 = htmlParser().parseFromString(
+        // DOM parsers arrange elements in the <head> and <body>.
+        // Wrapping in a custom element ensures elements are reliably arranged in
+        // a single element.
+        '<x-turndown id="turndown-root">' + input + "</x-turndown>",
+        "text/html"
+      );
+      root2 = doc3.getElementById("turndown-root");
+    } else {
+      root2 = input.cloneNode(true);
+    }
+    collapseWhitespace({
+      element: root2,
+      isBlock,
+      isVoid,
+      isPre: options2.preformattedCode ? isPreOrCode : null
+    });
+    return root2;
+  }
+  var _htmlParser;
+  function htmlParser() {
+    _htmlParser = _htmlParser || new HTMLParser();
+    return _htmlParser;
+  }
+  function isPreOrCode(node) {
+    return node.nodeName === "PRE" || node.nodeName === "CODE";
+  }
+  function Node4(node, options2) {
+    node.isBlock = isBlock(node);
+    node.isCode = node.nodeName === "CODE" || node.parentNode.isCode;
+    node.isBlank = isBlank(node);
+    node.flankingWhitespace = flankingWhitespace(node, options2);
+    return node;
+  }
+  function isBlank(node) {
+    return !isVoid(node) && !isMeaningfulWhenBlank(node) && /^\s*$/i.test(node.textContent) && !hasVoid(node) && !hasMeaningfulWhenBlank(node);
+  }
+  function flankingWhitespace(node, options2) {
+    if (node.isBlock || options2.preformattedCode && node.isCode) {
+      return { leading: "", trailing: "" };
+    }
+    var edges = edgeWhitespace(node.textContent);
+    if (edges.leadingAscii && isFlankedByWhitespace("left", node, options2)) {
+      edges.leading = edges.leadingNonAscii;
+    }
+    if (edges.trailingAscii && isFlankedByWhitespace("right", node, options2)) {
+      edges.trailing = edges.trailingNonAscii;
+    }
+    return { leading: edges.leading, trailing: edges.trailing };
+  }
+  function edgeWhitespace(string) {
+    var m = string.match(/^(([ \t\r\n]*)(\s*))(?:(?=\S)[\s\S]*\S)?((\s*?)([ \t\r\n]*))$/);
+    return {
+      leading: m[1],
+      // whole string for whitespace-only strings
+      leadingAscii: m[2],
+      leadingNonAscii: m[3],
+      trailing: m[4],
+      // empty for whitespace-only strings
+      trailingNonAscii: m[5],
+      trailingAscii: m[6]
+    };
+  }
+  function isFlankedByWhitespace(side, node, options2) {
+    var sibling;
+    var regExp;
+    var isFlanked;
+    if (side === "left") {
+      sibling = node.previousSibling;
+      regExp = / $/;
+    } else {
+      sibling = node.nextSibling;
+      regExp = /^ /;
+    }
+    if (sibling) {
+      if (sibling.nodeType === 3) {
+        isFlanked = regExp.test(sibling.nodeValue);
+      } else if (options2.preformattedCode && sibling.nodeName === "CODE") {
+        isFlanked = false;
+      } else if (sibling.nodeType === 1 && !isBlock(sibling)) {
+        isFlanked = regExp.test(sibling.textContent);
+      }
+    }
+    return isFlanked;
+  }
+  var reduce = Array.prototype.reduce;
+  var escapes = [
+    [/\\/g, "\\\\"],
+    [/\*/g, "\\*"],
+    [/^-/g, "\\-"],
+    [/^\+ /g, "\\+ "],
+    [/^(=+)/g, "\\$1"],
+    [/^(#{1,6}) /g, "\\$1 "],
+    [/`/g, "\\`"],
+    [/^~~~/g, "\\~~~"],
+    [/\[/g, "\\["],
+    [/\]/g, "\\]"],
+    [/^>/g, "\\>"],
+    [/_/g, "\\_"],
+    [/^(\d+)\. /g, "$1\\. "]
+  ];
+  function TurndownService(options2) {
+    if (!(this instanceof TurndownService)) return new TurndownService(options2);
+    var defaults2 = {
+      rules,
+      headingStyle: "setext",
+      hr: "* * *",
+      bulletListMarker: "*",
+      codeBlockStyle: "indented",
+      fence: "```",
+      emDelimiter: "_",
+      strongDelimiter: "**",
+      linkStyle: "inlined",
+      linkReferenceStyle: "full",
+      br: "  ",
+      preformattedCode: false,
+      blankReplacement: function(content, node) {
+        return node.isBlock ? "\n\n" : "";
+      },
+      keepReplacement: function(content, node) {
+        return node.isBlock ? "\n\n" + node.outerHTML + "\n\n" : node.outerHTML;
+      },
+      defaultReplacement: function(content, node) {
+        return node.isBlock ? "\n\n" + content + "\n\n" : content;
+      }
+    };
+    this.options = extend({}, defaults2, options2);
+    this.rules = new Rules(this.options);
+  }
+  TurndownService.prototype = {
+    /**
+     * The entry point for converting a string or DOM node to Markdown
+     * @public
+     * @param {String|HTMLElement} input The string or DOM node to convert
+     * @returns A Markdown representation of the input
+     * @type String
+     */
+    turndown: function(input) {
+      if (!canConvert(input)) {
+        throw new TypeError(
+          input + " is not a string, or an element/document/fragment node."
+        );
+      }
+      if (input === "") return "";
+      var output = process3.call(this, new RootNode(input, this.options));
+      return postProcess.call(this, output);
+    },
+    /**
+     * Add one or more plugins
+     * @public
+     * @param {Function|Array} plugin The plugin or array of plugins to add
+     * @returns The Turndown instance for chaining
+     * @type Object
+     */
+    use: function(plugin) {
+      if (Array.isArray(plugin)) {
+        for (var i = 0; i < plugin.length; i++) this.use(plugin[i]);
+      } else if (typeof plugin === "function") {
+        plugin(this);
+      } else {
+        throw new TypeError("plugin must be a Function or an Array of Functions");
+      }
+      return this;
+    },
+    /**
+     * Adds a rule
+     * @public
+     * @param {String} key The unique key of the rule
+     * @param {Object} rule The rule
+     * @returns The Turndown instance for chaining
+     * @type Object
+     */
+    addRule: function(key, rule) {
+      this.rules.add(key, rule);
+      return this;
+    },
+    /**
+     * Keep a node (as HTML) that matches the filter
+     * @public
+     * @param {String|Array|Function} filter The unique key of the rule
+     * @returns The Turndown instance for chaining
+     * @type Object
+     */
+    keep: function(filter) {
+      this.rules.keep(filter);
+      return this;
+    },
+    /**
+     * Remove a node that matches the filter
+     * @public
+     * @param {String|Array|Function} filter The unique key of the rule
+     * @returns The Turndown instance for chaining
+     * @type Object
+     */
+    remove: function(filter) {
+      this.rules.remove(filter);
+      return this;
+    },
+    /**
+     * Escapes Markdown syntax
+     * @public
+     * @param {String} string The string to escape
+     * @returns A string with Markdown syntax escaped
+     * @type String
+     */
+    escape: function(string) {
+      return escapes.reduce(function(accumulator, escape2) {
+        return accumulator.replace(escape2[0], escape2[1]);
+      }, string);
+    }
+  };
+  function process3(parentNode2) {
+    var self2 = this;
+    return reduce.call(parentNode2.childNodes, function(output, node) {
+      node = new Node4(node, self2.options);
+      var replacement = "";
+      if (node.nodeType === 3) {
+        replacement = node.isCode ? node.nodeValue : self2.escape(node.nodeValue);
+      } else if (node.nodeType === 1) {
+        replacement = replacementForNode.call(self2, node);
+      }
+      return join2(output, replacement);
+    }, "");
+  }
+  function postProcess(output) {
+    var self2 = this;
+    this.rules.forEach(function(rule) {
+      if (typeof rule.append === "function") {
+        output = join2(output, rule.append(self2.options));
+      }
+    });
+    return output.replace(/^[\t\r\n]+/, "").replace(/[\t\r\n\s]+$/, "");
+  }
+  function replacementForNode(node) {
+    var rule = this.rules.forNode(node);
+    var content = process3.call(this, node);
+    var whitespace2 = node.flankingWhitespace;
+    if (whitespace2.leading || whitespace2.trailing) content = content.trim();
+    return whitespace2.leading + rule.replacement(content, node, this.options) + whitespace2.trailing;
+  }
+  function join2(output, replacement) {
+    var s1 = trimTrailingNewlines(output);
+    var s2 = trimLeadingNewlines(replacement);
+    var nls = Math.max(output.length - s1.length, replacement.length - s2.length);
+    var separator = "\n\n".substring(0, nls);
+    return s1 + separator + s2;
+  }
+  function canConvert(input) {
+    return input != null && (typeof input === "string" || input.nodeType && (input.nodeType === 1 || input.nodeType === 9 || input.nodeType === 11));
+  }
+  var turndown_browser_es_default = TurndownService;
+
+  // node_modules/turndown-plugin-gfm/lib/turndown-plugin-gfm.es.js
+  init_define_process_env();
+  init_polyfills();
+  var highlightRegExp = /highlight-(?:text|source)-([a-z0-9]+)/;
+  function highlightedCodeBlock(turndownService) {
+    turndownService.addRule("highlightedCodeBlock", {
+      filter: function(node) {
+        var firstChild = node.firstChild;
+        return node.nodeName === "DIV" && highlightRegExp.test(node.className) && firstChild && firstChild.nodeName === "PRE";
+      },
+      replacement: function(content, node, options2) {
+        var className = node.className || "";
+        var language = (className.match(highlightRegExp) || [null, ""])[1];
+        return "\n\n" + options2.fence + language + "\n" + node.firstChild.textContent + "\n" + options2.fence + "\n\n";
+      }
+    });
+  }
+  function strikethrough(turndownService) {
+    turndownService.addRule("strikethrough", {
+      filter: ["del", "s", "strike"],
+      replacement: function(content) {
+        return "~" + content + "~";
+      }
+    });
+  }
+  var indexOf = Array.prototype.indexOf;
+  var every = Array.prototype.every;
+  var rules2 = {};
+  rules2.tableCell = {
+    filter: ["th", "td"],
+    replacement: function(content, node) {
+      return cell(content, node);
+    }
+  };
+  rules2.tableRow = {
+    filter: "tr",
+    replacement: function(content, node) {
+      var borderCells = "";
+      var alignMap = { left: ":--", right: "--:", center: ":-:" };
+      if (isHeadingRow(node)) {
+        for (var i = 0; i < node.childNodes.length; i++) {
+          var border = "---";
+          var align = (node.childNodes[i].getAttribute("align") || "").toLowerCase();
+          if (align) border = alignMap[align] || border;
+          borderCells += cell(border, node.childNodes[i]);
+        }
+      }
+      return "\n" + content + (borderCells ? "\n" + borderCells : "");
+    }
+  };
+  rules2.table = {
+    // Only convert tables with a heading row.
+    // Tables with no heading row are kept using `keep` (see below).
+    filter: function(node) {
+      return node.nodeName === "TABLE" && isHeadingRow(node.rows[0]);
+    },
+    replacement: function(content) {
+      content = content.replace("\n\n", "\n");
+      return "\n\n" + content + "\n\n";
+    }
+  };
+  rules2.tableSection = {
+    filter: ["thead", "tbody", "tfoot"],
+    replacement: function(content) {
+      return content;
+    }
+  };
+  function isHeadingRow(tr2) {
+    var parentNode2 = tr2.parentNode;
+    return parentNode2.nodeName === "THEAD" || parentNode2.firstChild === tr2 && (parentNode2.nodeName === "TABLE" || isFirstTbody(parentNode2)) && every.call(tr2.childNodes, function(n) {
+      return n.nodeName === "TH";
+    });
+  }
+  function isFirstTbody(element) {
+    var previousSibling = element.previousSibling;
+    return element.nodeName === "TBODY" && (!previousSibling || previousSibling.nodeName === "THEAD" && /^\s*$/i.test(previousSibling.textContent));
+  }
+  function cell(content, node) {
+    var index = indexOf.call(node.parentNode.childNodes, node);
+    var prefix = " ";
+    if (index === 0) prefix = "| ";
+    return prefix + content + " |";
+  }
+  function tables(turndownService) {
+    turndownService.keep(function(node) {
+      return node.nodeName === "TABLE" && !isHeadingRow(node.rows[0]);
+    });
+    for (var key in rules2) turndownService.addRule(key, rules2[key]);
+  }
+  function taskListItems(turndownService) {
+    turndownService.addRule("taskListItems", {
+      filter: function(node) {
+        return node.type === "checkbox" && node.parentNode.nodeName === "LI";
+      },
+      replacement: function(content, node) {
+        return (node.checked ? "[x]" : "[ ]") + " ";
+      }
+    });
+  }
+  function gfm(turndownService) {
+    turndownService.use([
+      highlightedCodeBlock,
+      strikethrough,
+      tables,
+      taskListItems
+    ]);
+  }
+
+  // node_modules/marked/lib/marked.esm.js
+  init_define_process_env();
+  init_polyfills();
+  function _getDefaults() {
+    return {
+      async: false,
+      breaks: false,
+      extensions: null,
+      gfm: true,
+      hooks: null,
+      pedantic: false,
+      renderer: null,
+      silent: false,
+      tokenizer: null,
+      walkTokens: null
+    };
+  }
+  var _defaults = _getDefaults();
+  function changeDefaults(newDefaults) {
+    _defaults = newDefaults;
+  }
+  var escapeTest = /[&<>"']/;
+  var escapeReplace = new RegExp(escapeTest.source, "g");
+  var escapeTestNoEncode = /[<>"']|&(?!(#\d{1,7}|#[Xx][a-fA-F0-9]{1,6}|\w+);)/;
+  var escapeReplaceNoEncode = new RegExp(escapeTestNoEncode.source, "g");
+  var escapeReplacements = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  };
+  var getEscapeReplacement = (ch) => escapeReplacements[ch];
+  function escape$1(html2, encode) {
+    if (encode) {
+      if (escapeTest.test(html2)) {
+        return html2.replace(escapeReplace, getEscapeReplacement);
+      }
+    } else {
+      if (escapeTestNoEncode.test(html2)) {
+        return html2.replace(escapeReplaceNoEncode, getEscapeReplacement);
+      }
+    }
+    return html2;
+  }
+  var unescapeTest = /&(#(?:\d+)|(?:#x[0-9A-Fa-f]+)|(?:\w+));?/ig;
+  function unescape2(html2) {
+    return html2.replace(unescapeTest, (_, n) => {
+      n = n.toLowerCase();
+      if (n === "colon")
+        return ":";
+      if (n.charAt(0) === "#") {
+        return n.charAt(1) === "x" ? String.fromCharCode(parseInt(n.substring(2), 16)) : String.fromCharCode(+n.substring(1));
+      }
+      return "";
+    });
+  }
+  var caret = /(^|[^\[])\^/g;
+  function edit(regex, opt) {
+    let source = typeof regex === "string" ? regex : regex.source;
+    opt = opt || "";
+    const obj = {
+      replace: (name, val) => {
+        let valSource = typeof val === "string" ? val : val.source;
+        valSource = valSource.replace(caret, "$1");
+        source = source.replace(name, valSource);
+        return obj;
+      },
+      getRegex: () => {
+        return new RegExp(source, opt);
+      }
+    };
+    return obj;
+  }
+  function cleanUrl(href) {
+    try {
+      href = encodeURI(href).replace(/%25/g, "%");
+    } catch (e) {
+      return null;
+    }
+    return href;
+  }
+  var noopTest = { exec: () => null };
+  function splitCells(tableRow, count) {
+    const row = tableRow.replace(/\|/g, (match, offset3, str) => {
+      let escaped = false;
+      let curr = offset3;
+      while (--curr >= 0 && str[curr] === "\\")
+        escaped = !escaped;
+      if (escaped) {
+        return "|";
+      } else {
+        return " |";
+      }
+    }), cells = row.split(/ \|/);
+    let i = 0;
+    if (!cells[0].trim()) {
+      cells.shift();
+    }
+    if (cells.length > 0 && !cells[cells.length - 1].trim()) {
+      cells.pop();
+    }
+    if (count) {
+      if (cells.length > count) {
+        cells.splice(count);
+      } else {
+        while (cells.length < count)
+          cells.push("");
+      }
+    }
+    for (; i < cells.length; i++) {
+      cells[i] = cells[i].trim().replace(/\\\|/g, "|");
+    }
+    return cells;
+  }
+  function rtrim(str, c, invert) {
+    const l = str.length;
+    if (l === 0) {
+      return "";
+    }
+    let suffLen = 0;
+    while (suffLen < l) {
+      const currChar = str.charAt(l - suffLen - 1);
+      if (currChar === c && !invert) {
+        suffLen++;
+      } else if (currChar !== c && invert) {
+        suffLen++;
+      } else {
+        break;
+      }
+    }
+    return str.slice(0, l - suffLen);
+  }
+  function findClosingBracket(str, b) {
+    if (str.indexOf(b[1]) === -1) {
+      return -1;
+    }
+    let level = 0;
+    for (let i = 0; i < str.length; i++) {
+      if (str[i] === "\\") {
+        i++;
+      } else if (str[i] === b[0]) {
+        level++;
+      } else if (str[i] === b[1]) {
+        level--;
+        if (level < 0) {
+          return i;
+        }
+      }
+    }
+    return -1;
+  }
+  function outputLink(cap, link2, raw, lexer2) {
+    const href = link2.href;
+    const title = link2.title ? escape$1(link2.title) : null;
+    const text = cap[1].replace(/\\([\[\]])/g, "$1");
+    if (cap[0].charAt(0) !== "!") {
+      lexer2.state.inLink = true;
+      const token = {
+        type: "link",
+        raw,
+        href,
+        title,
+        text,
+        tokens: lexer2.inlineTokens(text)
+      };
+      lexer2.state.inLink = false;
+      return token;
+    }
+    return {
+      type: "image",
+      raw,
+      href,
+      title,
+      text: escape$1(text)
+    };
+  }
+  function indentCodeCompensation(raw, text) {
+    const matchIndentToCode = raw.match(/^(\s+)(?:```)/);
+    if (matchIndentToCode === null) {
+      return text;
+    }
+    const indentToCode = matchIndentToCode[1];
+    return text.split("\n").map((node) => {
+      const matchIndentInNode = node.match(/^\s+/);
+      if (matchIndentInNode === null) {
+        return node;
+      }
+      const [indentInNode] = matchIndentInNode;
+      if (indentInNode.length >= indentToCode.length) {
+        return node.slice(indentToCode.length);
+      }
+      return node;
+    }).join("\n");
+  }
+  var _Tokenizer = class {
+    // set by the lexer
+    constructor(options2) {
+      __publicField(this, "options");
+      __publicField(this, "rules");
+      // set by the lexer
+      __publicField(this, "lexer");
+      this.options = options2 || _defaults;
+    }
+    space(src) {
+      const cap = this.rules.block.newline.exec(src);
+      if (cap && cap[0].length > 0) {
+        return {
+          type: "space",
+          raw: cap[0]
+        };
+      }
+    }
+    code(src) {
+      const cap = this.rules.block.code.exec(src);
+      if (cap) {
+        const text = cap[0].replace(/^ {1,4}/gm, "");
+        return {
+          type: "code",
+          raw: cap[0],
+          codeBlockStyle: "indented",
+          text: !this.options.pedantic ? rtrim(text, "\n") : text
+        };
+      }
+    }
+    fences(src) {
+      const cap = this.rules.block.fences.exec(src);
+      if (cap) {
+        const raw = cap[0];
+        const text = indentCodeCompensation(raw, cap[3] || "");
+        return {
+          type: "code",
+          raw,
+          lang: cap[2] ? cap[2].trim().replace(this.rules.inline.anyPunctuation, "$1") : cap[2],
+          text
+        };
+      }
+    }
+    heading(src) {
+      const cap = this.rules.block.heading.exec(src);
+      if (cap) {
+        let text = cap[2].trim();
+        if (/#$/.test(text)) {
+          const trimmed = rtrim(text, "#");
+          if (this.options.pedantic) {
+            text = trimmed.trim();
+          } else if (!trimmed || / $/.test(trimmed)) {
+            text = trimmed.trim();
+          }
+        }
+        return {
+          type: "heading",
+          raw: cap[0],
+          depth: cap[1].length,
+          text,
+          tokens: this.lexer.inline(text)
+        };
+      }
+    }
+    hr(src) {
+      const cap = this.rules.block.hr.exec(src);
+      if (cap) {
+        return {
+          type: "hr",
+          raw: cap[0]
+        };
+      }
+    }
+    blockquote(src) {
+      const cap = this.rules.block.blockquote.exec(src);
+      if (cap) {
+        let text = cap[0].replace(/\n {0,3}((?:=+|-+) *)(?=\n|$)/g, "\n    $1");
+        text = rtrim(text.replace(/^ *>[ \t]?/gm, ""), "\n");
+        const top = this.lexer.state.top;
+        this.lexer.state.top = true;
+        const tokens = this.lexer.blockTokens(text);
+        this.lexer.state.top = top;
+        return {
+          type: "blockquote",
+          raw: cap[0],
+          tokens,
+          text
+        };
+      }
+    }
+    list(src) {
+      let cap = this.rules.block.list.exec(src);
+      if (cap) {
+        let bull = cap[1].trim();
+        const isordered = bull.length > 1;
+        const list2 = {
+          type: "list",
+          raw: "",
+          ordered: isordered,
+          start: isordered ? +bull.slice(0, -1) : "",
+          loose: false,
+          items: []
+        };
+        bull = isordered ? `\\d{1,9}\\${bull.slice(-1)}` : `\\${bull}`;
+        if (this.options.pedantic) {
+          bull = isordered ? bull : "[*+-]";
+        }
+        const itemRegex = new RegExp(`^( {0,3}${bull})((?:[	 ][^\\n]*)?(?:\\n|$))`);
+        let raw = "";
+        let itemContents = "";
+        let endsWithBlankLine = false;
+        while (src) {
+          let endEarly = false;
+          if (!(cap = itemRegex.exec(src))) {
+            break;
+          }
+          if (this.rules.block.hr.test(src)) {
+            break;
+          }
+          raw = cap[0];
+          src = src.substring(raw.length);
+          let line = cap[2].split("\n", 1)[0].replace(/^\t+/, (t) => " ".repeat(3 * t.length));
+          let nextLine = src.split("\n", 1)[0];
+          let indent = 0;
+          if (this.options.pedantic) {
+            indent = 2;
+            itemContents = line.trimStart();
+          } else {
+            indent = cap[2].search(/[^ ]/);
+            indent = indent > 4 ? 1 : indent;
+            itemContents = line.slice(indent);
+            indent += cap[1].length;
+          }
+          let blankLine = false;
+          if (!line && /^ *$/.test(nextLine)) {
+            raw += nextLine + "\n";
+            src = src.substring(nextLine.length + 1);
+            endEarly = true;
+          }
+          if (!endEarly) {
+            const nextBulletRegex = new RegExp(`^ {0,${Math.min(3, indent - 1)}}(?:[*+-]|\\d{1,9}[.)])((?:[ 	][^\\n]*)?(?:\\n|$))`);
+            const hrRegex = new RegExp(`^ {0,${Math.min(3, indent - 1)}}((?:- *){3,}|(?:_ *){3,}|(?:\\* *){3,})(?:\\n+|$)`);
+            const fencesBeginRegex = new RegExp(`^ {0,${Math.min(3, indent - 1)}}(?:\`\`\`|~~~)`);
+            const headingBeginRegex = new RegExp(`^ {0,${Math.min(3, indent - 1)}}#`);
+            while (src) {
+              const rawLine = src.split("\n", 1)[0];
+              nextLine = rawLine;
+              if (this.options.pedantic) {
+                nextLine = nextLine.replace(/^ {1,4}(?=( {4})*[^ ])/g, "  ");
+              }
+              if (fencesBeginRegex.test(nextLine)) {
+                break;
+              }
+              if (headingBeginRegex.test(nextLine)) {
+                break;
+              }
+              if (nextBulletRegex.test(nextLine)) {
+                break;
+              }
+              if (hrRegex.test(src)) {
+                break;
+              }
+              if (nextLine.search(/[^ ]/) >= indent || !nextLine.trim()) {
+                itemContents += "\n" + nextLine.slice(indent);
+              } else {
+                if (blankLine) {
+                  break;
+                }
+                if (line.search(/[^ ]/) >= 4) {
+                  break;
+                }
+                if (fencesBeginRegex.test(line)) {
+                  break;
+                }
+                if (headingBeginRegex.test(line)) {
+                  break;
+                }
+                if (hrRegex.test(line)) {
+                  break;
+                }
+                itemContents += "\n" + nextLine;
+              }
+              if (!blankLine && !nextLine.trim()) {
+                blankLine = true;
+              }
+              raw += rawLine + "\n";
+              src = src.substring(rawLine.length + 1);
+              line = nextLine.slice(indent);
+            }
+          }
+          if (!list2.loose) {
+            if (endsWithBlankLine) {
+              list2.loose = true;
+            } else if (/\n *\n *$/.test(raw)) {
+              endsWithBlankLine = true;
+            }
+          }
+          let istask = null;
+          let ischecked;
+          if (this.options.gfm) {
+            istask = /^\[[ xX]\] /.exec(itemContents);
+            if (istask) {
+              ischecked = istask[0] !== "[ ] ";
+              itemContents = itemContents.replace(/^\[[ xX]\] +/, "");
+            }
+          }
+          list2.items.push({
+            type: "list_item",
+            raw,
+            task: !!istask,
+            checked: ischecked,
+            loose: false,
+            text: itemContents,
+            tokens: []
+          });
+          list2.raw += raw;
+        }
+        list2.items[list2.items.length - 1].raw = raw.trimEnd();
+        list2.items[list2.items.length - 1].text = itemContents.trimEnd();
+        list2.raw = list2.raw.trimEnd();
+        for (let i = 0; i < list2.items.length; i++) {
+          this.lexer.state.top = false;
+          list2.items[i].tokens = this.lexer.blockTokens(list2.items[i].text, []);
+          if (!list2.loose) {
+            const spacers = list2.items[i].tokens.filter((t) => t.type === "space");
+            const hasMultipleLineBreaks = spacers.length > 0 && spacers.some((t) => /\n.*\n/.test(t.raw));
+            list2.loose = hasMultipleLineBreaks;
+          }
+        }
+        if (list2.loose) {
+          for (let i = 0; i < list2.items.length; i++) {
+            list2.items[i].loose = true;
+          }
+        }
+        return list2;
+      }
+    }
+    html(src) {
+      const cap = this.rules.block.html.exec(src);
+      if (cap) {
+        const token = {
+          type: "html",
+          block: true,
+          raw: cap[0],
+          pre: cap[1] === "pre" || cap[1] === "script" || cap[1] === "style",
+          text: cap[0]
+        };
+        return token;
+      }
+    }
+    def(src) {
+      const cap = this.rules.block.def.exec(src);
+      if (cap) {
+        const tag2 = cap[1].toLowerCase().replace(/\s+/g, " ");
+        const href = cap[2] ? cap[2].replace(/^<(.*)>$/, "$1").replace(this.rules.inline.anyPunctuation, "$1") : "";
+        const title = cap[3] ? cap[3].substring(1, cap[3].length - 1).replace(this.rules.inline.anyPunctuation, "$1") : cap[3];
+        return {
+          type: "def",
+          tag: tag2,
+          raw: cap[0],
+          href,
+          title
+        };
+      }
+    }
+    table(src) {
+      const cap = this.rules.block.table.exec(src);
+      if (!cap) {
+        return;
+      }
+      if (!/[:|]/.test(cap[2])) {
+        return;
+      }
+      const headers = splitCells(cap[1]);
+      const aligns = cap[2].replace(/^\||\| *$/g, "").split("|");
+      const rows = cap[3] && cap[3].trim() ? cap[3].replace(/\n[ \t]*$/, "").split("\n") : [];
+      const item = {
+        type: "table",
+        raw: cap[0],
+        header: [],
+        align: [],
+        rows: []
+      };
+      if (headers.length !== aligns.length) {
+        return;
+      }
+      for (const align of aligns) {
+        if (/^ *-+: *$/.test(align)) {
+          item.align.push("right");
+        } else if (/^ *:-+: *$/.test(align)) {
+          item.align.push("center");
+        } else if (/^ *:-+ *$/.test(align)) {
+          item.align.push("left");
+        } else {
+          item.align.push(null);
+        }
+      }
+      for (const header of headers) {
+        item.header.push({
+          text: header,
+          tokens: this.lexer.inline(header)
+        });
+      }
+      for (const row of rows) {
+        item.rows.push(splitCells(row, item.header.length).map((cell2) => {
+          return {
+            text: cell2,
+            tokens: this.lexer.inline(cell2)
+          };
+        }));
+      }
+      return item;
+    }
+    lheading(src) {
+      const cap = this.rules.block.lheading.exec(src);
+      if (cap) {
+        return {
+          type: "heading",
+          raw: cap[0],
+          depth: cap[2].charAt(0) === "=" ? 1 : 2,
+          text: cap[1],
+          tokens: this.lexer.inline(cap[1])
+        };
+      }
+    }
+    paragraph(src) {
+      const cap = this.rules.block.paragraph.exec(src);
+      if (cap) {
+        const text = cap[1].charAt(cap[1].length - 1) === "\n" ? cap[1].slice(0, -1) : cap[1];
+        return {
+          type: "paragraph",
+          raw: cap[0],
+          text,
+          tokens: this.lexer.inline(text)
+        };
+      }
+    }
+    text(src) {
+      const cap = this.rules.block.text.exec(src);
+      if (cap) {
+        return {
+          type: "text",
+          raw: cap[0],
+          text: cap[0],
+          tokens: this.lexer.inline(cap[0])
+        };
+      }
+    }
+    escape(src) {
+      const cap = this.rules.inline.escape.exec(src);
+      if (cap) {
+        return {
+          type: "escape",
+          raw: cap[0],
+          text: escape$1(cap[1])
+        };
+      }
+    }
+    tag(src) {
+      const cap = this.rules.inline.tag.exec(src);
+      if (cap) {
+        if (!this.lexer.state.inLink && /^<a /i.test(cap[0])) {
+          this.lexer.state.inLink = true;
+        } else if (this.lexer.state.inLink && /^<\/a>/i.test(cap[0])) {
+          this.lexer.state.inLink = false;
+        }
+        if (!this.lexer.state.inRawBlock && /^<(pre|code|kbd|script)(\s|>)/i.test(cap[0])) {
+          this.lexer.state.inRawBlock = true;
+        } else if (this.lexer.state.inRawBlock && /^<\/(pre|code|kbd|script)(\s|>)/i.test(cap[0])) {
+          this.lexer.state.inRawBlock = false;
+        }
+        return {
+          type: "html",
+          raw: cap[0],
+          inLink: this.lexer.state.inLink,
+          inRawBlock: this.lexer.state.inRawBlock,
+          block: false,
+          text: cap[0]
+        };
+      }
+    }
+    link(src) {
+      const cap = this.rules.inline.link.exec(src);
+      if (cap) {
+        const trimmedUrl = cap[2].trim();
+        if (!this.options.pedantic && /^</.test(trimmedUrl)) {
+          if (!/>$/.test(trimmedUrl)) {
+            return;
+          }
+          const rtrimSlash = rtrim(trimmedUrl.slice(0, -1), "\\");
+          if ((trimmedUrl.length - rtrimSlash.length) % 2 === 0) {
+            return;
+          }
+        } else {
+          const lastParenIndex = findClosingBracket(cap[2], "()");
+          if (lastParenIndex > -1) {
+            const start = cap[0].indexOf("!") === 0 ? 5 : 4;
+            const linkLen = start + cap[1].length + lastParenIndex;
+            cap[2] = cap[2].substring(0, lastParenIndex);
+            cap[0] = cap[0].substring(0, linkLen).trim();
+            cap[3] = "";
+          }
+        }
+        let href = cap[2];
+        let title = "";
+        if (this.options.pedantic) {
+          const link2 = /^([^'"]*[^\s])\s+(['"])(.*)\2/.exec(href);
+          if (link2) {
+            href = link2[1];
+            title = link2[3];
+          }
+        } else {
+          title = cap[3] ? cap[3].slice(1, -1) : "";
+        }
+        href = href.trim();
+        if (/^</.test(href)) {
+          if (this.options.pedantic && !/>$/.test(trimmedUrl)) {
+            href = href.slice(1);
+          } else {
+            href = href.slice(1, -1);
+          }
+        }
+        return outputLink(cap, {
+          href: href ? href.replace(this.rules.inline.anyPunctuation, "$1") : href,
+          title: title ? title.replace(this.rules.inline.anyPunctuation, "$1") : title
+        }, cap[0], this.lexer);
+      }
+    }
+    reflink(src, links) {
+      let cap;
+      if ((cap = this.rules.inline.reflink.exec(src)) || (cap = this.rules.inline.nolink.exec(src))) {
+        const linkString = (cap[2] || cap[1]).replace(/\s+/g, " ");
+        const link2 = links[linkString.toLowerCase()];
+        if (!link2) {
+          const text = cap[0].charAt(0);
+          return {
+            type: "text",
+            raw: text,
+            text
+          };
+        }
+        return outputLink(cap, link2, cap[0], this.lexer);
+      }
+    }
+    emStrong(src, maskedSrc, prevChar = "") {
+      let match = this.rules.inline.emStrongLDelim.exec(src);
+      if (!match)
+        return;
+      if (match[3] && prevChar.match(/[\p{L}\p{N}]/u))
+        return;
+      const nextChar = match[1] || match[2] || "";
+      if (!nextChar || !prevChar || this.rules.inline.punctuation.exec(prevChar)) {
+        const lLength = [...match[0]].length - 1;
+        let rDelim, rLength, delimTotal = lLength, midDelimTotal = 0;
+        const endReg = match[0][0] === "*" ? this.rules.inline.emStrongRDelimAst : this.rules.inline.emStrongRDelimUnd;
+        endReg.lastIndex = 0;
+        maskedSrc = maskedSrc.slice(-1 * src.length + lLength);
+        while ((match = endReg.exec(maskedSrc)) != null) {
+          rDelim = match[1] || match[2] || match[3] || match[4] || match[5] || match[6];
+          if (!rDelim)
+            continue;
+          rLength = [...rDelim].length;
+          if (match[3] || match[4]) {
+            delimTotal += rLength;
+            continue;
+          } else if (match[5] || match[6]) {
+            if (lLength % 3 && !((lLength + rLength) % 3)) {
+              midDelimTotal += rLength;
+              continue;
+            }
+          }
+          delimTotal -= rLength;
+          if (delimTotal > 0)
+            continue;
+          rLength = Math.min(rLength, rLength + delimTotal + midDelimTotal);
+          const lastCharLength = [...match[0]][0].length;
+          const raw = src.slice(0, lLength + match.index + lastCharLength + rLength);
+          if (Math.min(lLength, rLength) % 2) {
+            const text2 = raw.slice(1, -1);
+            return {
+              type: "em",
+              raw,
+              text: text2,
+              tokens: this.lexer.inlineTokens(text2)
+            };
+          }
+          const text = raw.slice(2, -2);
+          return {
+            type: "strong",
+            raw,
+            text,
+            tokens: this.lexer.inlineTokens(text)
+          };
+        }
+      }
+    }
+    codespan(src) {
+      const cap = this.rules.inline.code.exec(src);
+      if (cap) {
+        let text = cap[2].replace(/\n/g, " ");
+        const hasNonSpaceChars = /[^ ]/.test(text);
+        const hasSpaceCharsOnBothEnds = /^ /.test(text) && / $/.test(text);
+        if (hasNonSpaceChars && hasSpaceCharsOnBothEnds) {
+          text = text.substring(1, text.length - 1);
+        }
+        text = escape$1(text, true);
+        return {
+          type: "codespan",
+          raw: cap[0],
+          text
+        };
+      }
+    }
+    br(src) {
+      const cap = this.rules.inline.br.exec(src);
+      if (cap) {
+        return {
+          type: "br",
+          raw: cap[0]
+        };
+      }
+    }
+    del(src) {
+      const cap = this.rules.inline.del.exec(src);
+      if (cap) {
+        return {
+          type: "del",
+          raw: cap[0],
+          text: cap[2],
+          tokens: this.lexer.inlineTokens(cap[2])
+        };
+      }
+    }
+    autolink(src) {
+      const cap = this.rules.inline.autolink.exec(src);
+      if (cap) {
+        let text, href;
+        if (cap[2] === "@") {
+          text = escape$1(cap[1]);
+          href = "mailto:" + text;
+        } else {
+          text = escape$1(cap[1]);
+          href = text;
+        }
+        return {
+          type: "link",
+          raw: cap[0],
+          text,
+          href,
+          tokens: [
+            {
+              type: "text",
+              raw: text,
+              text
+            }
+          ]
+        };
+      }
+    }
+    url(src) {
+      var _a, _b;
+      let cap;
+      if (cap = this.rules.inline.url.exec(src)) {
+        let text, href;
+        if (cap[2] === "@") {
+          text = escape$1(cap[0]);
+          href = "mailto:" + text;
+        } else {
+          let prevCapZero;
+          do {
+            prevCapZero = cap[0];
+            cap[0] = (_b = (_a = this.rules.inline._backpedal.exec(cap[0])) == null ? void 0 : _a[0]) != null ? _b : "";
+          } while (prevCapZero !== cap[0]);
+          text = escape$1(cap[0]);
+          if (cap[1] === "www.") {
+            href = "http://" + cap[0];
+          } else {
+            href = cap[0];
+          }
+        }
+        return {
+          type: "link",
+          raw: cap[0],
+          text,
+          href,
+          tokens: [
+            {
+              type: "text",
+              raw: text,
+              text
+            }
+          ]
+        };
+      }
+    }
+    inlineText(src) {
+      const cap = this.rules.inline.text.exec(src);
+      if (cap) {
+        let text;
+        if (this.lexer.state.inRawBlock) {
+          text = cap[0];
+        } else {
+          text = escape$1(cap[0]);
+        }
+        return {
+          type: "text",
+          raw: cap[0],
+          text
+        };
+      }
+    }
+  };
+  var newline = /^(?: *(?:\n|$))+/;
+  var blockCode = /^( {4}[^\n]+(?:\n(?: *(?:\n|$))*)?)+/;
+  var fences = /^ {0,3}(`{3,}(?=[^`\n]*(?:\n|$))|~{3,})([^\n]*)(?:\n|$)(?:|([\s\S]*?)(?:\n|$))(?: {0,3}\1[~`]* *(?=\n|$)|$)/;
+  var hr = /^ {0,3}((?:-[\t ]*){3,}|(?:_[ \t]*){3,}|(?:\*[ \t]*){3,})(?:\n+|$)/;
+  var heading = /^ {0,3}(#{1,6})(?=\s|$)(.*)(?:\n+|$)/;
+  var bullet = /(?:[*+-]|\d{1,9}[.)])/;
+  var lheading = edit(/^(?!bull |blockCode|fences|blockquote|heading|html)((?:.|\n(?!\s*?\n|bull |blockCode|fences|blockquote|heading|html))+?)\n {0,3}(=+|-+) *(?:\n+|$)/).replace(/bull/g, bullet).replace(/blockCode/g, / {4}/).replace(/fences/g, / {0,3}(?:`{3,}|~{3,})/).replace(/blockquote/g, / {0,3}>/).replace(/heading/g, / {0,3}#{1,6}/).replace(/html/g, / {0,3}<[^\n>]+>\n/).getRegex();
+  var _paragraph = /^([^\n]+(?:\n(?!hr|heading|lheading|blockquote|fences|list|html|table| +\n)[^\n]+)*)/;
+  var blockText = /^[^\n]+/;
+  var _blockLabel = /(?!\s*\])(?:\\.|[^\[\]\\])+/;
+  var def = edit(/^ {0,3}\[(label)\]: *(?:\n *)?([^<\s][^\s]*|<.*?>)(?:(?: +(?:\n *)?| *\n *)(title))? *(?:\n+|$)/).replace("label", _blockLabel).replace("title", /(?:"(?:\\"?|[^"\\])*"|'[^'\n]*(?:\n[^'\n]+)*\n?'|\([^()]*\))/).getRegex();
+  var list = edit(/^( {0,3}bull)([ \t][^\n]+?)?(?:\n|$)/).replace(/bull/g, bullet).getRegex();
+  var _tag = "address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h[1-6]|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|meta|nav|noframes|ol|optgroup|option|p|param|search|section|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul";
+  var _comment = /<!--(?:-?>|[\s\S]*?(?:-->|$))/;
+  var html = edit("^ {0,3}(?:<(script|pre|style|textarea)[\\s>][\\s\\S]*?(?:</\\1>[^\\n]*\\n+|$)|comment[^\\n]*(\\n+|$)|<\\?[\\s\\S]*?(?:\\?>\\n*|$)|<![A-Z][\\s\\S]*?(?:>\\n*|$)|<!\\[CDATA\\[[\\s\\S]*?(?:\\]\\]>\\n*|$)|</?(tag)(?: +|\\n|/?>)[\\s\\S]*?(?:(?:\\n *)+\\n|$)|<(?!script|pre|style|textarea)([a-z][\\w-]*)(?:attribute)*? */?>(?=[ \\t]*(?:\\n|$))[\\s\\S]*?(?:(?:\\n *)+\\n|$)|</(?!script|pre|style|textarea)[a-z][\\w-]*\\s*>(?=[ \\t]*(?:\\n|$))[\\s\\S]*?(?:(?:\\n *)+\\n|$))", "i").replace("comment", _comment).replace("tag", _tag).replace("attribute", / +[a-zA-Z:_][\w.:-]*(?: *= *"[^"\n]*"| *= *'[^'\n]*'| *= *[^\s"'=<>`]+)?/).getRegex();
+  var paragraph = edit(_paragraph).replace("hr", hr).replace("heading", " {0,3}#{1,6}(?:\\s|$)").replace("|lheading", "").replace("|table", "").replace("blockquote", " {0,3}>").replace("fences", " {0,3}(?:`{3,}(?=[^`\\n]*\\n)|~{3,})[^\\n]*\\n").replace("list", " {0,3}(?:[*+-]|1[.)]) ").replace("html", "</?(?:tag)(?: +|\\n|/?>)|<(?:script|pre|style|textarea|!--)").replace("tag", _tag).getRegex();
+  var blockquote = edit(/^( {0,3}> ?(paragraph|[^\n]*)(?:\n|$))+/).replace("paragraph", paragraph).getRegex();
+  var blockNormal = {
+    blockquote,
+    code: blockCode,
+    def,
+    fences,
+    heading,
+    hr,
+    html,
+    lheading,
+    list,
+    newline,
+    paragraph,
+    table: noopTest,
+    text: blockText
+  };
+  var gfmTable = edit("^ *([^\\n ].*)\\n {0,3}((?:\\| *)?:?-+:? *(?:\\| *:?-+:? *)*(?:\\| *)?)(?:\\n((?:(?! *\\n|hr|heading|blockquote|code|fences|list|html).*(?:\\n|$))*)\\n*|$)").replace("hr", hr).replace("heading", " {0,3}#{1,6}(?:\\s|$)").replace("blockquote", " {0,3}>").replace("code", " {4}[^\\n]").replace("fences", " {0,3}(?:`{3,}(?=[^`\\n]*\\n)|~{3,})[^\\n]*\\n").replace("list", " {0,3}(?:[*+-]|1[.)]) ").replace("html", "</?(?:tag)(?: +|\\n|/?>)|<(?:script|pre|style|textarea|!--)").replace("tag", _tag).getRegex();
+  var blockGfm = {
+    ...blockNormal,
+    table: gfmTable,
+    paragraph: edit(_paragraph).replace("hr", hr).replace("heading", " {0,3}#{1,6}(?:\\s|$)").replace("|lheading", "").replace("table", gfmTable).replace("blockquote", " {0,3}>").replace("fences", " {0,3}(?:`{3,}(?=[^`\\n]*\\n)|~{3,})[^\\n]*\\n").replace("list", " {0,3}(?:[*+-]|1[.)]) ").replace("html", "</?(?:tag)(?: +|\\n|/?>)|<(?:script|pre|style|textarea|!--)").replace("tag", _tag).getRegex()
+  };
+  var blockPedantic = {
+    ...blockNormal,
+    html: edit(`^ *(?:comment *(?:\\n|\\s*$)|<(tag)[\\s\\S]+?</\\1> *(?:\\n{2,}|\\s*$)|<tag(?:"[^"]*"|'[^']*'|\\s[^'"/>\\s]*)*?/?> *(?:\\n{2,}|\\s*$))`).replace("comment", _comment).replace(/tag/g, "(?!(?:a|em|strong|small|s|cite|q|dfn|abbr|data|time|code|var|samp|kbd|sub|sup|i|b|u|mark|ruby|rt|rp|bdi|bdo|span|br|wbr|ins|del|img)\\b)\\w+(?!:|[^\\w\\s@]*@)\\b").getRegex(),
+    def: /^ *\[([^\]]+)\]: *<?([^\s>]+)>?(?: +(["(][^\n]+[")]))? *(?:\n+|$)/,
+    heading: /^(#{1,6})(.*)(?:\n+|$)/,
+    fences: noopTest,
+    // fences not supported
+    lheading: /^(.+?)\n {0,3}(=+|-+) *(?:\n+|$)/,
+    paragraph: edit(_paragraph).replace("hr", hr).replace("heading", " *#{1,6} *[^\n]").replace("lheading", lheading).replace("|table", "").replace("blockquote", " {0,3}>").replace("|fences", "").replace("|list", "").replace("|html", "").replace("|tag", "").getRegex()
+  };
+  var escape = /^\\([!"#$%&'()*+,\-./:;<=>?@\[\]\\^_`{|}~])/;
+  var inlineCode = /^(`+)([^`]|[^`][\s\S]*?[^`])\1(?!`)/;
+  var br = /^( {2,}|\\)\n(?!\s*$)/;
+  var inlineText = /^(`+|[^`])(?:(?= {2,}\n)|[\s\S]*?(?:(?=[\\<!\[`*_]|\b_|$)|[^ ](?= {2,}\n)))/;
+  var _punctuation = "\\p{P}\\p{S}";
+  var punctuation = edit(/^((?![*_])[\spunctuation])/, "u").replace(/punctuation/g, _punctuation).getRegex();
+  var blockSkip = /\[[^[\]]*?\]\([^\(\)]*?\)|`[^`]*?`|<[^<>]*?>/g;
+  var emStrongLDelim = edit(/^(?:\*+(?:((?!\*)[punct])|[^\s*]))|^_+(?:((?!_)[punct])|([^\s_]))/, "u").replace(/punct/g, _punctuation).getRegex();
+  var emStrongRDelimAst = edit("^[^_*]*?__[^_*]*?\\*[^_*]*?(?=__)|[^*]+(?=[^*])|(?!\\*)[punct](\\*+)(?=[\\s]|$)|[^punct\\s](\\*+)(?!\\*)(?=[punct\\s]|$)|(?!\\*)[punct\\s](\\*+)(?=[^punct\\s])|[\\s](\\*+)(?!\\*)(?=[punct])|(?!\\*)[punct](\\*+)(?!\\*)(?=[punct])|[^punct\\s](\\*+)(?=[^punct\\s])", "gu").replace(/punct/g, _punctuation).getRegex();
+  var emStrongRDelimUnd = edit("^[^_*]*?\\*\\*[^_*]*?_[^_*]*?(?=\\*\\*)|[^_]+(?=[^_])|(?!_)[punct](_+)(?=[\\s]|$)|[^punct\\s](_+)(?!_)(?=[punct\\s]|$)|(?!_)[punct\\s](_+)(?=[^punct\\s])|[\\s](_+)(?!_)(?=[punct])|(?!_)[punct](_+)(?!_)(?=[punct])", "gu").replace(/punct/g, _punctuation).getRegex();
+  var anyPunctuation = edit(/\\([punct])/, "gu").replace(/punct/g, _punctuation).getRegex();
+  var autolink2 = edit(/^<(scheme:[^\s\x00-\x1f<>]*|email)>/).replace("scheme", /[a-zA-Z][a-zA-Z0-9+.-]{1,31}/).replace("email", /[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+(@)[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+(?![-_])/).getRegex();
+  var _inlineComment = edit(_comment).replace("(?:-->|$)", "-->").getRegex();
+  var tag = edit("^comment|^</[a-zA-Z][\\w:-]*\\s*>|^<[a-zA-Z][\\w-]*(?:attribute)*?\\s*/?>|^<\\?[\\s\\S]*?\\?>|^<![a-zA-Z]+\\s[\\s\\S]*?>|^<!\\[CDATA\\[[\\s\\S]*?\\]\\]>").replace("comment", _inlineComment).replace("attribute", /\s+[a-zA-Z:_][\w.:-]*(?:\s*=\s*"[^"]*"|\s*=\s*'[^']*'|\s*=\s*[^\s"'=<>`]+)?/).getRegex();
+  var _inlineLabel = /(?:\[(?:\\.|[^\[\]\\])*\]|\\.|`[^`]*`|[^\[\]\\`])*?/;
+  var link = edit(/^!?\[(label)\]\(\s*(href)(?:\s+(title))?\s*\)/).replace("label", _inlineLabel).replace("href", /<(?:\\.|[^\n<>\\])+>|[^\s\x00-\x1f]*/).replace("title", /"(?:\\"?|[^"\\])*"|'(?:\\'?|[^'\\])*'|\((?:\\\)?|[^)\\])*\)/).getRegex();
+  var reflink = edit(/^!?\[(label)\]\[(ref)\]/).replace("label", _inlineLabel).replace("ref", _blockLabel).getRegex();
+  var nolink = edit(/^!?\[(ref)\](?:\[\])?/).replace("ref", _blockLabel).getRegex();
+  var reflinkSearch = edit("reflink|nolink(?!\\()", "g").replace("reflink", reflink).replace("nolink", nolink).getRegex();
+  var inlineNormal = {
+    _backpedal: noopTest,
+    // only used for GFM url
+    anyPunctuation,
+    autolink: autolink2,
+    blockSkip,
+    br,
+    code: inlineCode,
+    del: noopTest,
+    emStrongLDelim,
+    emStrongRDelimAst,
+    emStrongRDelimUnd,
+    escape,
+    link,
+    nolink,
+    punctuation,
+    reflink,
+    reflinkSearch,
+    tag,
+    text: inlineText,
+    url: noopTest
+  };
+  var inlinePedantic = {
+    ...inlineNormal,
+    link: edit(/^!?\[(label)\]\((.*?)\)/).replace("label", _inlineLabel).getRegex(),
+    reflink: edit(/^!?\[(label)\]\s*\[([^\]]*)\]/).replace("label", _inlineLabel).getRegex()
+  };
+  var inlineGfm = {
+    ...inlineNormal,
+    escape: edit(escape).replace("])", "~|])").getRegex(),
+    url: edit(/^((?:ftp|https?):\/\/|www\.)(?:[a-zA-Z0-9\-]+\.?)+[^\s<]*|^email/, "i").replace("email", /[A-Za-z0-9._+-]+(@)[a-zA-Z0-9-_]+(?:\.[a-zA-Z0-9-_]*[a-zA-Z0-9])+(?![-_])/).getRegex(),
+    _backpedal: /(?:[^?!.,:;*_'"~()&]+|\([^)]*\)|&(?![a-zA-Z0-9]+;$)|[?!.,:;*_'"~)]+(?!$))+/,
+    del: /^(~~?)(?=[^\s~])([\s\S]*?[^\s~])\1(?=[^~]|$)/,
+    text: /^([`~]+|[^`~])(?:(?= {2,}\n)|(?=[a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-]+@)|[\s\S]*?(?:(?=[\\<!\[`*~_]|\b_|https?:\/\/|ftp:\/\/|www\.|$)|[^ ](?= {2,}\n)|[^a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-](?=[a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-]+@)))/
+  };
+  var inlineBreaks = {
+    ...inlineGfm,
+    br: edit(br).replace("{2,}", "*").getRegex(),
+    text: edit(inlineGfm.text).replace("\\b_", "\\b_| {2,}\\n").replace(/\{2,\}/g, "*").getRegex()
+  };
+  var block = {
+    normal: blockNormal,
+    gfm: blockGfm,
+    pedantic: blockPedantic
+  };
+  var inline2 = {
+    normal: inlineNormal,
+    gfm: inlineGfm,
+    breaks: inlineBreaks,
+    pedantic: inlinePedantic
+  };
+  var _Lexer = class __Lexer {
+    constructor(options2) {
+      __publicField(this, "tokens");
+      __publicField(this, "options");
+      __publicField(this, "state");
+      __publicField(this, "tokenizer");
+      __publicField(this, "inlineQueue");
+      this.tokens = [];
+      this.tokens.links = /* @__PURE__ */ Object.create(null);
+      this.options = options2 || _defaults;
+      this.options.tokenizer = this.options.tokenizer || new _Tokenizer();
+      this.tokenizer = this.options.tokenizer;
+      this.tokenizer.options = this.options;
+      this.tokenizer.lexer = this;
+      this.inlineQueue = [];
+      this.state = {
+        inLink: false,
+        inRawBlock: false,
+        top: true
+      };
+      const rules3 = {
+        block: block.normal,
+        inline: inline2.normal
+      };
+      if (this.options.pedantic) {
+        rules3.block = block.pedantic;
+        rules3.inline = inline2.pedantic;
+      } else if (this.options.gfm) {
+        rules3.block = block.gfm;
+        if (this.options.breaks) {
+          rules3.inline = inline2.breaks;
+        } else {
+          rules3.inline = inline2.gfm;
+        }
+      }
+      this.tokenizer.rules = rules3;
+    }
+    /**
+     * Expose Rules
+     */
+    static get rules() {
+      return {
+        block,
+        inline: inline2
+      };
+    }
+    /**
+     * Static Lex Method
+     */
+    static lex(src, options2) {
+      const lexer2 = new __Lexer(options2);
+      return lexer2.lex(src);
+    }
+    /**
+     * Static Lex Inline Method
+     */
+    static lexInline(src, options2) {
+      const lexer2 = new __Lexer(options2);
+      return lexer2.inlineTokens(src);
+    }
+    /**
+     * Preprocessing
+     */
+    lex(src) {
+      src = src.replace(/\r\n|\r/g, "\n");
+      this.blockTokens(src, this.tokens);
+      for (let i = 0; i < this.inlineQueue.length; i++) {
+        const next2 = this.inlineQueue[i];
+        this.inlineTokens(next2.src, next2.tokens);
+      }
+      this.inlineQueue = [];
+      return this.tokens;
+    }
+    blockTokens(src, tokens = []) {
+      if (this.options.pedantic) {
+        src = src.replace(/\t/g, "    ").replace(/^ +$/gm, "");
+      } else {
+        src = src.replace(/^( *)(\t+)/gm, (_, leading, tabs) => {
+          return leading + "    ".repeat(tabs.length);
+        });
+      }
+      let token;
+      let lastToken;
+      let cutSrc;
+      let lastParagraphClipped;
+      while (src) {
+        if (this.options.extensions && this.options.extensions.block && this.options.extensions.block.some((extTokenizer) => {
+          if (token = extTokenizer.call({ lexer: this }, src, tokens)) {
+            src = src.substring(token.raw.length);
+            tokens.push(token);
+            return true;
+          }
+          return false;
+        })) {
+          continue;
+        }
+        if (token = this.tokenizer.space(src)) {
+          src = src.substring(token.raw.length);
+          if (token.raw.length === 1 && tokens.length > 0) {
+            tokens[tokens.length - 1].raw += "\n";
+          } else {
+            tokens.push(token);
+          }
+          continue;
+        }
+        if (token = this.tokenizer.code(src)) {
+          src = src.substring(token.raw.length);
+          lastToken = tokens[tokens.length - 1];
+          if (lastToken && (lastToken.type === "paragraph" || lastToken.type === "text")) {
+            lastToken.raw += "\n" + token.raw;
+            lastToken.text += "\n" + token.text;
+            this.inlineQueue[this.inlineQueue.length - 1].src = lastToken.text;
+          } else {
+            tokens.push(token);
+          }
+          continue;
+        }
+        if (token = this.tokenizer.fences(src)) {
+          src = src.substring(token.raw.length);
+          tokens.push(token);
+          continue;
+        }
+        if (token = this.tokenizer.heading(src)) {
+          src = src.substring(token.raw.length);
+          tokens.push(token);
+          continue;
+        }
+        if (token = this.tokenizer.hr(src)) {
+          src = src.substring(token.raw.length);
+          tokens.push(token);
+          continue;
+        }
+        if (token = this.tokenizer.blockquote(src)) {
+          src = src.substring(token.raw.length);
+          tokens.push(token);
+          continue;
+        }
+        if (token = this.tokenizer.list(src)) {
+          src = src.substring(token.raw.length);
+          tokens.push(token);
+          continue;
+        }
+        if (token = this.tokenizer.html(src)) {
+          src = src.substring(token.raw.length);
+          tokens.push(token);
+          continue;
+        }
+        if (token = this.tokenizer.def(src)) {
+          src = src.substring(token.raw.length);
+          lastToken = tokens[tokens.length - 1];
+          if (lastToken && (lastToken.type === "paragraph" || lastToken.type === "text")) {
+            lastToken.raw += "\n" + token.raw;
+            lastToken.text += "\n" + token.raw;
+            this.inlineQueue[this.inlineQueue.length - 1].src = lastToken.text;
+          } else if (!this.tokens.links[token.tag]) {
+            this.tokens.links[token.tag] = {
+              href: token.href,
+              title: token.title
+            };
+          }
+          continue;
+        }
+        if (token = this.tokenizer.table(src)) {
+          src = src.substring(token.raw.length);
+          tokens.push(token);
+          continue;
+        }
+        if (token = this.tokenizer.lheading(src)) {
+          src = src.substring(token.raw.length);
+          tokens.push(token);
+          continue;
+        }
+        cutSrc = src;
+        if (this.options.extensions && this.options.extensions.startBlock) {
+          let startIndex = Infinity;
+          const tempSrc = src.slice(1);
+          let tempStart;
+          this.options.extensions.startBlock.forEach((getStartIndex) => {
+            tempStart = getStartIndex.call({ lexer: this }, tempSrc);
+            if (typeof tempStart === "number" && tempStart >= 0) {
+              startIndex = Math.min(startIndex, tempStart);
+            }
+          });
+          if (startIndex < Infinity && startIndex >= 0) {
+            cutSrc = src.substring(0, startIndex + 1);
+          }
+        }
+        if (this.state.top && (token = this.tokenizer.paragraph(cutSrc))) {
+          lastToken = tokens[tokens.length - 1];
+          if (lastParagraphClipped && lastToken.type === "paragraph") {
+            lastToken.raw += "\n" + token.raw;
+            lastToken.text += "\n" + token.text;
+            this.inlineQueue.pop();
+            this.inlineQueue[this.inlineQueue.length - 1].src = lastToken.text;
+          } else {
+            tokens.push(token);
+          }
+          lastParagraphClipped = cutSrc.length !== src.length;
+          src = src.substring(token.raw.length);
+          continue;
+        }
+        if (token = this.tokenizer.text(src)) {
+          src = src.substring(token.raw.length);
+          lastToken = tokens[tokens.length - 1];
+          if (lastToken && lastToken.type === "text") {
+            lastToken.raw += "\n" + token.raw;
+            lastToken.text += "\n" + token.text;
+            this.inlineQueue.pop();
+            this.inlineQueue[this.inlineQueue.length - 1].src = lastToken.text;
+          } else {
+            tokens.push(token);
+          }
+          continue;
+        }
+        if (src) {
+          const errMsg = "Infinite loop on byte: " + src.charCodeAt(0);
+          if (this.options.silent) {
+            console.error(errMsg);
+            break;
+          } else {
+            throw new Error(errMsg);
+          }
+        }
+      }
+      this.state.top = true;
+      return tokens;
+    }
+    inline(src, tokens = []) {
+      this.inlineQueue.push({ src, tokens });
+      return tokens;
+    }
+    /**
+     * Lexing/Compiling
+     */
+    inlineTokens(src, tokens = []) {
+      let token, lastToken, cutSrc;
+      let maskedSrc = src;
+      let match;
+      let keepPrevChar, prevChar;
+      if (this.tokens.links) {
+        const links = Object.keys(this.tokens.links);
+        if (links.length > 0) {
+          while ((match = this.tokenizer.rules.inline.reflinkSearch.exec(maskedSrc)) != null) {
+            if (links.includes(match[0].slice(match[0].lastIndexOf("[") + 1, -1))) {
+              maskedSrc = maskedSrc.slice(0, match.index) + "[" + "a".repeat(match[0].length - 2) + "]" + maskedSrc.slice(this.tokenizer.rules.inline.reflinkSearch.lastIndex);
+            }
+          }
+        }
+      }
+      while ((match = this.tokenizer.rules.inline.blockSkip.exec(maskedSrc)) != null) {
+        maskedSrc = maskedSrc.slice(0, match.index) + "[" + "a".repeat(match[0].length - 2) + "]" + maskedSrc.slice(this.tokenizer.rules.inline.blockSkip.lastIndex);
+      }
+      while ((match = this.tokenizer.rules.inline.anyPunctuation.exec(maskedSrc)) != null) {
+        maskedSrc = maskedSrc.slice(0, match.index) + "++" + maskedSrc.slice(this.tokenizer.rules.inline.anyPunctuation.lastIndex);
+      }
+      while (src) {
+        if (!keepPrevChar) {
+          prevChar = "";
+        }
+        keepPrevChar = false;
+        if (this.options.extensions && this.options.extensions.inline && this.options.extensions.inline.some((extTokenizer) => {
+          if (token = extTokenizer.call({ lexer: this }, src, tokens)) {
+            src = src.substring(token.raw.length);
+            tokens.push(token);
+            return true;
+          }
+          return false;
+        })) {
+          continue;
+        }
+        if (token = this.tokenizer.escape(src)) {
+          src = src.substring(token.raw.length);
+          tokens.push(token);
+          continue;
+        }
+        if (token = this.tokenizer.tag(src)) {
+          src = src.substring(token.raw.length);
+          lastToken = tokens[tokens.length - 1];
+          if (lastToken && token.type === "text" && lastToken.type === "text") {
+            lastToken.raw += token.raw;
+            lastToken.text += token.text;
+          } else {
+            tokens.push(token);
+          }
+          continue;
+        }
+        if (token = this.tokenizer.link(src)) {
+          src = src.substring(token.raw.length);
+          tokens.push(token);
+          continue;
+        }
+        if (token = this.tokenizer.reflink(src, this.tokens.links)) {
+          src = src.substring(token.raw.length);
+          lastToken = tokens[tokens.length - 1];
+          if (lastToken && token.type === "text" && lastToken.type === "text") {
+            lastToken.raw += token.raw;
+            lastToken.text += token.text;
+          } else {
+            tokens.push(token);
+          }
+          continue;
+        }
+        if (token = this.tokenizer.emStrong(src, maskedSrc, prevChar)) {
+          src = src.substring(token.raw.length);
+          tokens.push(token);
+          continue;
+        }
+        if (token = this.tokenizer.codespan(src)) {
+          src = src.substring(token.raw.length);
+          tokens.push(token);
+          continue;
+        }
+        if (token = this.tokenizer.br(src)) {
+          src = src.substring(token.raw.length);
+          tokens.push(token);
+          continue;
+        }
+        if (token = this.tokenizer.del(src)) {
+          src = src.substring(token.raw.length);
+          tokens.push(token);
+          continue;
+        }
+        if (token = this.tokenizer.autolink(src)) {
+          src = src.substring(token.raw.length);
+          tokens.push(token);
+          continue;
+        }
+        if (!this.state.inLink && (token = this.tokenizer.url(src))) {
+          src = src.substring(token.raw.length);
+          tokens.push(token);
+          continue;
+        }
+        cutSrc = src;
+        if (this.options.extensions && this.options.extensions.startInline) {
+          let startIndex = Infinity;
+          const tempSrc = src.slice(1);
+          let tempStart;
+          this.options.extensions.startInline.forEach((getStartIndex) => {
+            tempStart = getStartIndex.call({ lexer: this }, tempSrc);
+            if (typeof tempStart === "number" && tempStart >= 0) {
+              startIndex = Math.min(startIndex, tempStart);
+            }
+          });
+          if (startIndex < Infinity && startIndex >= 0) {
+            cutSrc = src.substring(0, startIndex + 1);
+          }
+        }
+        if (token = this.tokenizer.inlineText(cutSrc)) {
+          src = src.substring(token.raw.length);
+          if (token.raw.slice(-1) !== "_") {
+            prevChar = token.raw.slice(-1);
+          }
+          keepPrevChar = true;
+          lastToken = tokens[tokens.length - 1];
+          if (lastToken && lastToken.type === "text") {
+            lastToken.raw += token.raw;
+            lastToken.text += token.text;
+          } else {
+            tokens.push(token);
+          }
+          continue;
+        }
+        if (src) {
+          const errMsg = "Infinite loop on byte: " + src.charCodeAt(0);
+          if (this.options.silent) {
+            console.error(errMsg);
+            break;
+          } else {
+            throw new Error(errMsg);
+          }
+        }
+      }
+      return tokens;
+    }
+  };
+  var _Renderer = class {
+    constructor(options2) {
+      __publicField(this, "options");
+      this.options = options2 || _defaults;
+    }
+    code(code, infostring, escaped) {
+      var _a;
+      const lang = (_a = (infostring || "").match(/^\S*/)) == null ? void 0 : _a[0];
+      code = code.replace(/\n$/, "") + "\n";
+      if (!lang) {
+        return "<pre><code>" + (escaped ? code : escape$1(code, true)) + "</code></pre>\n";
+      }
+      return '<pre><code class="language-' + escape$1(lang) + '">' + (escaped ? code : escape$1(code, true)) + "</code></pre>\n";
+    }
+    blockquote(quote) {
+      return `<blockquote>
+${quote}</blockquote>
+`;
+    }
+    html(html2, block2) {
+      return html2;
+    }
+    heading(text, level, raw) {
+      return `<h${level}>${text}</h${level}>
+`;
+    }
+    hr() {
+      return "<hr>\n";
+    }
+    list(body, ordered, start) {
+      const type2 = ordered ? "ol" : "ul";
+      const startatt = ordered && start !== 1 ? ' start="' + start + '"' : "";
+      return "<" + type2 + startatt + ">\n" + body + "</" + type2 + ">\n";
+    }
+    listitem(text, task, checked) {
+      return `<li>${text}</li>
+`;
+    }
+    checkbox(checked) {
+      return "<input " + (checked ? 'checked="" ' : "") + 'disabled="" type="checkbox">';
+    }
+    paragraph(text) {
+      return `<p>${text}</p>
+`;
+    }
+    table(header, body) {
+      if (body)
+        body = `<tbody>${body}</tbody>`;
+      return "<table>\n<thead>\n" + header + "</thead>\n" + body + "</table>\n";
+    }
+    tablerow(content) {
+      return `<tr>
+${content}</tr>
+`;
+    }
+    tablecell(content, flags) {
+      const type2 = flags.header ? "th" : "td";
+      const tag2 = flags.align ? `<${type2} align="${flags.align}">` : `<${type2}>`;
+      return tag2 + content + `</${type2}>
+`;
+    }
+    /**
+     * span level renderer
+     */
+    strong(text) {
+      return `<strong>${text}</strong>`;
+    }
+    em(text) {
+      return `<em>${text}</em>`;
+    }
+    codespan(text) {
+      return `<code>${text}</code>`;
+    }
+    br() {
+      return "<br>";
+    }
+    del(text) {
+      return `<del>${text}</del>`;
+    }
+    link(href, title, text) {
+      const cleanHref = cleanUrl(href);
+      if (cleanHref === null) {
+        return text;
+      }
+      href = cleanHref;
+      let out = '<a href="' + href + '"';
+      if (title) {
+        out += ' title="' + title + '"';
+      }
+      out += ">" + text + "</a>";
+      return out;
+    }
+    image(href, title, text) {
+      const cleanHref = cleanUrl(href);
+      if (cleanHref === null) {
+        return text;
+      }
+      href = cleanHref;
+      let out = `<img src="${href}" alt="${text}"`;
+      if (title) {
+        out += ` title="${title}"`;
+      }
+      out += ">";
+      return out;
+    }
+    text(text) {
+      return text;
+    }
+  };
+  var _TextRenderer = class {
+    // no need for block level renderers
+    strong(text) {
+      return text;
+    }
+    em(text) {
+      return text;
+    }
+    codespan(text) {
+      return text;
+    }
+    del(text) {
+      return text;
+    }
+    html(text) {
+      return text;
+    }
+    text(text) {
+      return text;
+    }
+    link(href, title, text) {
+      return "" + text;
+    }
+    image(href, title, text) {
+      return "" + text;
+    }
+    br() {
+      return "";
+    }
+  };
+  var _Parser = class __Parser {
+    constructor(options2) {
+      __publicField(this, "options");
+      __publicField(this, "renderer");
+      __publicField(this, "textRenderer");
+      this.options = options2 || _defaults;
+      this.options.renderer = this.options.renderer || new _Renderer();
+      this.renderer = this.options.renderer;
+      this.renderer.options = this.options;
+      this.textRenderer = new _TextRenderer();
+    }
+    /**
+     * Static Parse Method
+     */
+    static parse(tokens, options2) {
+      const parser2 = new __Parser(options2);
+      return parser2.parse(tokens);
+    }
+    /**
+     * Static Parse Inline Method
+     */
+    static parseInline(tokens, options2) {
+      const parser2 = new __Parser(options2);
+      return parser2.parseInline(tokens);
+    }
+    /**
+     * Parse Loop
+     */
+    parse(tokens, top = true) {
+      let out = "";
+      for (let i = 0; i < tokens.length; i++) {
+        const token = tokens[i];
+        if (this.options.extensions && this.options.extensions.renderers && this.options.extensions.renderers[token.type]) {
+          const genericToken = token;
+          const ret = this.options.extensions.renderers[genericToken.type].call({ parser: this }, genericToken);
+          if (ret !== false || !["space", "hr", "heading", "code", "table", "blockquote", "list", "html", "paragraph", "text"].includes(genericToken.type)) {
+            out += ret || "";
+            continue;
+          }
+        }
+        switch (token.type) {
+          case "space": {
+            continue;
+          }
+          case "hr": {
+            out += this.renderer.hr();
+            continue;
+          }
+          case "heading": {
+            const headingToken = token;
+            out += this.renderer.heading(this.parseInline(headingToken.tokens), headingToken.depth, unescape2(this.parseInline(headingToken.tokens, this.textRenderer)));
+            continue;
+          }
+          case "code": {
+            const codeToken = token;
+            out += this.renderer.code(codeToken.text, codeToken.lang, !!codeToken.escaped);
+            continue;
+          }
+          case "table": {
+            const tableToken = token;
+            let header = "";
+            let cell2 = "";
+            for (let j = 0; j < tableToken.header.length; j++) {
+              cell2 += this.renderer.tablecell(this.parseInline(tableToken.header[j].tokens), { header: true, align: tableToken.align[j] });
+            }
+            header += this.renderer.tablerow(cell2);
+            let body = "";
+            for (let j = 0; j < tableToken.rows.length; j++) {
+              const row = tableToken.rows[j];
+              cell2 = "";
+              for (let k = 0; k < row.length; k++) {
+                cell2 += this.renderer.tablecell(this.parseInline(row[k].tokens), { header: false, align: tableToken.align[k] });
+              }
+              body += this.renderer.tablerow(cell2);
+            }
+            out += this.renderer.table(header, body);
+            continue;
+          }
+          case "blockquote": {
+            const blockquoteToken = token;
+            const body = this.parse(blockquoteToken.tokens);
+            out += this.renderer.blockquote(body);
+            continue;
+          }
+          case "list": {
+            const listToken = token;
+            const ordered = listToken.ordered;
+            const start = listToken.start;
+            const loose = listToken.loose;
+            let body = "";
+            for (let j = 0; j < listToken.items.length; j++) {
+              const item = listToken.items[j];
+              const checked = item.checked;
+              const task = item.task;
+              let itemBody = "";
+              if (item.task) {
+                const checkbox = this.renderer.checkbox(!!checked);
+                if (loose) {
+                  if (item.tokens.length > 0 && item.tokens[0].type === "paragraph") {
+                    item.tokens[0].text = checkbox + " " + item.tokens[0].text;
+                    if (item.tokens[0].tokens && item.tokens[0].tokens.length > 0 && item.tokens[0].tokens[0].type === "text") {
+                      item.tokens[0].tokens[0].text = checkbox + " " + item.tokens[0].tokens[0].text;
+                    }
+                  } else {
+                    item.tokens.unshift({
+                      type: "text",
+                      text: checkbox + " "
+                    });
+                  }
+                } else {
+                  itemBody += checkbox + " ";
+                }
+              }
+              itemBody += this.parse(item.tokens, loose);
+              body += this.renderer.listitem(itemBody, task, !!checked);
+            }
+            out += this.renderer.list(body, ordered, start);
+            continue;
+          }
+          case "html": {
+            const htmlToken = token;
+            out += this.renderer.html(htmlToken.text, htmlToken.block);
+            continue;
+          }
+          case "paragraph": {
+            const paragraphToken = token;
+            out += this.renderer.paragraph(this.parseInline(paragraphToken.tokens));
+            continue;
+          }
+          case "text": {
+            let textToken = token;
+            let body = textToken.tokens ? this.parseInline(textToken.tokens) : textToken.text;
+            while (i + 1 < tokens.length && tokens[i + 1].type === "text") {
+              textToken = tokens[++i];
+              body += "\n" + (textToken.tokens ? this.parseInline(textToken.tokens) : textToken.text);
+            }
+            out += top ? this.renderer.paragraph(body) : body;
+            continue;
+          }
+          default: {
+            const errMsg = 'Token with "' + token.type + '" type was not found.';
+            if (this.options.silent) {
+              console.error(errMsg);
+              return "";
+            } else {
+              throw new Error(errMsg);
+            }
+          }
+        }
+      }
+      return out;
+    }
+    /**
+     * Parse Inline Tokens
+     */
+    parseInline(tokens, renderer) {
+      renderer = renderer || this.renderer;
+      let out = "";
+      for (let i = 0; i < tokens.length; i++) {
+        const token = tokens[i];
+        if (this.options.extensions && this.options.extensions.renderers && this.options.extensions.renderers[token.type]) {
+          const ret = this.options.extensions.renderers[token.type].call({ parser: this }, token);
+          if (ret !== false || !["escape", "html", "link", "image", "strong", "em", "codespan", "br", "del", "text"].includes(token.type)) {
+            out += ret || "";
+            continue;
+          }
+        }
+        switch (token.type) {
+          case "escape": {
+            const escapeToken = token;
+            out += renderer.text(escapeToken.text);
+            break;
+          }
+          case "html": {
+            const tagToken = token;
+            out += renderer.html(tagToken.text);
+            break;
+          }
+          case "link": {
+            const linkToken = token;
+            out += renderer.link(linkToken.href, linkToken.title, this.parseInline(linkToken.tokens, renderer));
+            break;
+          }
+          case "image": {
+            const imageToken = token;
+            out += renderer.image(imageToken.href, imageToken.title, imageToken.text);
+            break;
+          }
+          case "strong": {
+            const strongToken = token;
+            out += renderer.strong(this.parseInline(strongToken.tokens, renderer));
+            break;
+          }
+          case "em": {
+            const emToken = token;
+            out += renderer.em(this.parseInline(emToken.tokens, renderer));
+            break;
+          }
+          case "codespan": {
+            const codespanToken = token;
+            out += renderer.codespan(codespanToken.text);
+            break;
+          }
+          case "br": {
+            out += renderer.br();
+            break;
+          }
+          case "del": {
+            const delToken = token;
+            out += renderer.del(this.parseInline(delToken.tokens, renderer));
+            break;
+          }
+          case "text": {
+            const textToken = token;
+            out += renderer.text(textToken.text);
+            break;
+          }
+          default: {
+            const errMsg = 'Token with "' + token.type + '" type was not found.';
+            if (this.options.silent) {
+              console.error(errMsg);
+              return "";
+            } else {
+              throw new Error(errMsg);
+            }
+          }
+        }
+      }
+      return out;
+    }
+  };
+  var _Hooks = class {
+    constructor(options2) {
+      __publicField(this, "options");
+      this.options = options2 || _defaults;
+    }
+    /**
+     * Process markdown before marked
+     */
+    preprocess(markdown) {
+      return markdown;
+    }
+    /**
+     * Process HTML after marked is finished
+     */
+    postprocess(html2) {
+      return html2;
+    }
+    /**
+     * Process all tokens before walk tokens
+     */
+    processAllTokens(tokens) {
+      return tokens;
+    }
+  };
+  __publicField(_Hooks, "passThroughHooks", /* @__PURE__ */ new Set([
+    "preprocess",
+    "postprocess",
+    "processAllTokens"
+  ]));
+  var _Marked_instances, parseMarkdown_fn, onError_fn;
+  var Marked = class {
+    constructor(...args) {
+      __privateAdd(this, _Marked_instances);
+      __publicField(this, "defaults", _getDefaults());
+      __publicField(this, "options", this.setOptions);
+      __publicField(this, "parse", __privateMethod(this, _Marked_instances, parseMarkdown_fn).call(this, _Lexer.lex, _Parser.parse));
+      __publicField(this, "parseInline", __privateMethod(this, _Marked_instances, parseMarkdown_fn).call(this, _Lexer.lexInline, _Parser.parseInline));
+      __publicField(this, "Parser", _Parser);
+      __publicField(this, "Renderer", _Renderer);
+      __publicField(this, "TextRenderer", _TextRenderer);
+      __publicField(this, "Lexer", _Lexer);
+      __publicField(this, "Tokenizer", _Tokenizer);
+      __publicField(this, "Hooks", _Hooks);
+      this.use(...args);
+    }
+    /**
+     * Run callback for every token
+     */
+    walkTokens(tokens, callback) {
+      var _a, _b;
+      let values = [];
+      for (const token of tokens) {
+        values = values.concat(callback.call(this, token));
+        switch (token.type) {
+          case "table": {
+            const tableToken = token;
+            for (const cell2 of tableToken.header) {
+              values = values.concat(this.walkTokens(cell2.tokens, callback));
+            }
+            for (const row of tableToken.rows) {
+              for (const cell2 of row) {
+                values = values.concat(this.walkTokens(cell2.tokens, callback));
+              }
+            }
+            break;
+          }
+          case "list": {
+            const listToken = token;
+            values = values.concat(this.walkTokens(listToken.items, callback));
+            break;
+          }
+          default: {
+            const genericToken = token;
+            if ((_b = (_a = this.defaults.extensions) == null ? void 0 : _a.childTokens) == null ? void 0 : _b[genericToken.type]) {
+              this.defaults.extensions.childTokens[genericToken.type].forEach((childTokens) => {
+                const tokens2 = genericToken[childTokens].flat(Infinity);
+                values = values.concat(this.walkTokens(tokens2, callback));
+              });
+            } else if (genericToken.tokens) {
+              values = values.concat(this.walkTokens(genericToken.tokens, callback));
+            }
+          }
+        }
+      }
+      return values;
+    }
+    use(...args) {
+      const extensions = this.defaults.extensions || { renderers: {}, childTokens: {} };
+      args.forEach((pack) => {
+        const opts = { ...pack };
+        opts.async = this.defaults.async || opts.async || false;
+        if (pack.extensions) {
+          pack.extensions.forEach((ext) => {
+            if (!ext.name) {
+              throw new Error("extension name required");
+            }
+            if ("renderer" in ext) {
+              const prevRenderer = extensions.renderers[ext.name];
+              if (prevRenderer) {
+                extensions.renderers[ext.name] = function(...args2) {
+                  let ret = ext.renderer.apply(this, args2);
+                  if (ret === false) {
+                    ret = prevRenderer.apply(this, args2);
+                  }
+                  return ret;
+                };
+              } else {
+                extensions.renderers[ext.name] = ext.renderer;
+              }
+            }
+            if ("tokenizer" in ext) {
+              if (!ext.level || ext.level !== "block" && ext.level !== "inline") {
+                throw new Error("extension level must be 'block' or 'inline'");
+              }
+              const extLevel = extensions[ext.level];
+              if (extLevel) {
+                extLevel.unshift(ext.tokenizer);
+              } else {
+                extensions[ext.level] = [ext.tokenizer];
+              }
+              if (ext.start) {
+                if (ext.level === "block") {
+                  if (extensions.startBlock) {
+                    extensions.startBlock.push(ext.start);
+                  } else {
+                    extensions.startBlock = [ext.start];
+                  }
+                } else if (ext.level === "inline") {
+                  if (extensions.startInline) {
+                    extensions.startInline.push(ext.start);
+                  } else {
+                    extensions.startInline = [ext.start];
+                  }
+                }
+              }
+            }
+            if ("childTokens" in ext && ext.childTokens) {
+              extensions.childTokens[ext.name] = ext.childTokens;
+            }
+          });
+          opts.extensions = extensions;
+        }
+        if (pack.renderer) {
+          const renderer = this.defaults.renderer || new _Renderer(this.defaults);
+          for (const prop in pack.renderer) {
+            if (!(prop in renderer)) {
+              throw new Error(`renderer '${prop}' does not exist`);
+            }
+            if (prop === "options") {
+              continue;
+            }
+            const rendererProp = prop;
+            const rendererFunc = pack.renderer[rendererProp];
+            const prevRenderer = renderer[rendererProp];
+            renderer[rendererProp] = (...args2) => {
+              let ret = rendererFunc.apply(renderer, args2);
+              if (ret === false) {
+                ret = prevRenderer.apply(renderer, args2);
+              }
+              return ret || "";
+            };
+          }
+          opts.renderer = renderer;
+        }
+        if (pack.tokenizer) {
+          const tokenizer = this.defaults.tokenizer || new _Tokenizer(this.defaults);
+          for (const prop in pack.tokenizer) {
+            if (!(prop in tokenizer)) {
+              throw new Error(`tokenizer '${prop}' does not exist`);
+            }
+            if (["options", "rules", "lexer"].includes(prop)) {
+              continue;
+            }
+            const tokenizerProp = prop;
+            const tokenizerFunc = pack.tokenizer[tokenizerProp];
+            const prevTokenizer = tokenizer[tokenizerProp];
+            tokenizer[tokenizerProp] = (...args2) => {
+              let ret = tokenizerFunc.apply(tokenizer, args2);
+              if (ret === false) {
+                ret = prevTokenizer.apply(tokenizer, args2);
+              }
+              return ret;
+            };
+          }
+          opts.tokenizer = tokenizer;
+        }
+        if (pack.hooks) {
+          const hooks = this.defaults.hooks || new _Hooks();
+          for (const prop in pack.hooks) {
+            if (!(prop in hooks)) {
+              throw new Error(`hook '${prop}' does not exist`);
+            }
+            if (prop === "options") {
+              continue;
+            }
+            const hooksProp = prop;
+            const hooksFunc = pack.hooks[hooksProp];
+            const prevHook = hooks[hooksProp];
+            if (_Hooks.passThroughHooks.has(prop)) {
+              hooks[hooksProp] = (arg) => {
+                if (this.defaults.async) {
+                  return Promise.resolve(hooksFunc.call(hooks, arg)).then((ret2) => {
+                    return prevHook.call(hooks, ret2);
+                  });
+                }
+                const ret = hooksFunc.call(hooks, arg);
+                return prevHook.call(hooks, ret);
+              };
+            } else {
+              hooks[hooksProp] = (...args2) => {
+                let ret = hooksFunc.apply(hooks, args2);
+                if (ret === false) {
+                  ret = prevHook.apply(hooks, args2);
+                }
+                return ret;
+              };
+            }
+          }
+          opts.hooks = hooks;
+        }
+        if (pack.walkTokens) {
+          const walkTokens2 = this.defaults.walkTokens;
+          const packWalktokens = pack.walkTokens;
+          opts.walkTokens = function(token) {
+            let values = [];
+            values.push(packWalktokens.call(this, token));
+            if (walkTokens2) {
+              values = values.concat(walkTokens2.call(this, token));
+            }
+            return values;
+          };
+        }
+        this.defaults = { ...this.defaults, ...opts };
+      });
+      return this;
+    }
+    setOptions(opt) {
+      this.defaults = { ...this.defaults, ...opt };
+      return this;
+    }
+    lexer(src, options2) {
+      return _Lexer.lex(src, options2 != null ? options2 : this.defaults);
+    }
+    parser(tokens, options2) {
+      return _Parser.parse(tokens, options2 != null ? options2 : this.defaults);
+    }
+  };
+  _Marked_instances = new WeakSet();
+  parseMarkdown_fn = function(lexer2, parser2) {
+    return (src, options2) => {
+      const origOpt = { ...options2 };
+      const opt = { ...this.defaults, ...origOpt };
+      if (this.defaults.async === true && origOpt.async === false) {
+        if (!opt.silent) {
+          console.warn("marked(): The async option was set to true by an extension. The async: false option sent to parse will be ignored.");
+        }
+        opt.async = true;
+      }
+      const throwError = __privateMethod(this, _Marked_instances, onError_fn).call(this, !!opt.silent, !!opt.async);
+      if (typeof src === "undefined" || src === null) {
+        return throwError(new Error("marked(): input parameter is undefined or null"));
+      }
+      if (typeof src !== "string") {
+        return throwError(new Error("marked(): input parameter is of type " + Object.prototype.toString.call(src) + ", string expected"));
+      }
+      if (opt.hooks) {
+        opt.hooks.options = opt;
+      }
+      if (opt.async) {
+        return Promise.resolve(opt.hooks ? opt.hooks.preprocess(src) : src).then((src2) => lexer2(src2, opt)).then((tokens) => opt.hooks ? opt.hooks.processAllTokens(tokens) : tokens).then((tokens) => opt.walkTokens ? Promise.all(this.walkTokens(tokens, opt.walkTokens)).then(() => tokens) : tokens).then((tokens) => parser2(tokens, opt)).then((html2) => opt.hooks ? opt.hooks.postprocess(html2) : html2).catch(throwError);
+      }
+      try {
+        if (opt.hooks) {
+          src = opt.hooks.preprocess(src);
+        }
+        let tokens = lexer2(src, opt);
+        if (opt.hooks) {
+          tokens = opt.hooks.processAllTokens(tokens);
+        }
+        if (opt.walkTokens) {
+          this.walkTokens(tokens, opt.walkTokens);
+        }
+        let html2 = parser2(tokens, opt);
+        if (opt.hooks) {
+          html2 = opt.hooks.postprocess(html2);
+        }
+        return html2;
+      } catch (e) {
+        return throwError(e);
+      }
+    };
+  };
+  onError_fn = function(silent, async) {
+    return (e) => {
+      e.message += "\nPlease report this to https://github.com/markedjs/marked.";
+      if (silent) {
+        const msg = "<p>An error occurred:</p><pre>" + escape$1(e.message + "", true) + "</pre>";
+        if (async) {
+          return Promise.resolve(msg);
+        }
+        return msg;
+      }
+      if (async) {
+        return Promise.reject(e);
+      }
+      throw e;
+    };
+  };
+  var markedInstance = new Marked();
+  function marked(src, opt) {
+    return markedInstance.parse(src, opt);
+  }
+  marked.options = marked.setOptions = function(options2) {
+    markedInstance.setOptions(options2);
+    marked.defaults = markedInstance.defaults;
+    changeDefaults(marked.defaults);
+    return marked;
+  };
+  marked.getDefaults = _getDefaults;
+  marked.defaults = _defaults;
+  marked.use = function(...args) {
+    markedInstance.use(...args);
+    marked.defaults = markedInstance.defaults;
+    changeDefaults(marked.defaults);
+    return marked;
+  };
+  marked.walkTokens = function(tokens, callback) {
+    return markedInstance.walkTokens(tokens, callback);
+  };
+  marked.parseInline = markedInstance.parseInline;
+  marked.Parser = _Parser;
+  marked.parser = _Parser.parse;
+  marked.Renderer = _Renderer;
+  marked.TextRenderer = _TextRenderer;
+  marked.Lexer = _Lexer;
+  marked.lexer = _Lexer.lex;
+  marked.Tokenizer = _Tokenizer;
+  marked.Hooks = _Hooks;
+  marked.parse = marked;
+  var options = marked.options;
+  var setOptions = marked.setOptions;
+  var use = marked.use;
+  var walkTokens = marked.walkTokens;
+  var parseInline = marked.parseInline;
+  var parser = _Parser.parse;
+  var lexer = _Lexer.lex;
+
+  // src/memo-editor/mermaid-node.tsx
+  init_define_process_env();
+  init_polyfills();
+
+  // src/jsx-runtime-shim.ts
+  init_define_process_env();
+  init_polyfills();
+  var React2 = window.React;
+  var createElement2 = React2 == null ? void 0 : React2.createElement;
+  var jsx = (type2, props, key) => {
+    if (!createElement2) return null;
+    if (key !== void 0) {
+      props = props ? { ...props, key } : { key };
+    }
+    return createElement2(type2, props);
+  };
+  var jsxs = (type2, props, key) => {
+    if (!createElement2) return null;
+    if (key !== void 0) {
+      props = props ? { ...props, key } : { key };
+    }
+    return createElement2(type2, props);
+  };
+  var Fragment3 = React2 == null ? void 0 : React2.Fragment;
+
+  // src/memo-editor/mermaid-node.tsx
+  var getMermaidApi = () => window.mermaid;
+  var MermaidDiagramComponent = ({ node, updateAttributes: updateAttributes2 }) => {
+    const [isEditing, setIsEditing] = react_shim_default.useState(false);
+    const [svg, setSvg] = react_shim_default.useState("");
+    const [error, setError] = react_shim_default.useState(null);
+    const [modalError, setModalError] = react_shim_default.useState(null);
+    const [lastValidCode, setLastValidCode] = react_shim_default.useState(node.attrs.code || "");
+    const [draftCode, setDraftCode] = react_shim_default.useState(node.attrs.code || "");
+    const [isLoading, setIsLoading] = react_shim_default.useState(false);
+    const [showToast, setShowToast] = react_shim_default.useState(false);
+    const containerRef = react_shim_default.useRef(null);
+    const excalidrawHostRef = react_shim_default.useRef(null);
+    const [promptInput, setPromptInput] = react_shim_default.useState("");
+    const [diagramType, setDiagramType] = react_shim_default.useState("flow");
+    const [isGenerating, setIsGenerating] = react_shim_default.useState(false);
+    const [isTypeMenuOpen, setIsTypeMenuOpen] = react_shim_default.useState(false);
+    const composerTextareaRef = react_shim_default.useRef(null);
+    const code = node.attrs.code || "";
+    const excalidrawJSON = node.attrs.excalidrawJSON || "";
+    const autoOpen = node.attrs.autoOpen === true;
+    const getAutoResizeHeight = (textarea) => {
+      textarea.style.height = "auto";
+      const scrollHeight = textarea.scrollHeight;
+      const maxHeight = 140;
+      return Math.min(scrollHeight, maxHeight) + "px";
+    };
+    const handlePromptInput = (e) => {
+      setPromptInput(e.target.value);
+      e.target.style.height = getAutoResizeHeight(e.target);
+      e.target.style.overflowY = e.target.scrollHeight > 140 ? "auto" : "hidden";
+    };
+    const diagramTypes = [
+      { id: "sequence", label: "\xC9change", promptValue: "sequenceDiagram", Icon: ArrowLeftRight },
+      { id: "flow", label: "Processus", promptValue: "flowchart", Icon: Workflow },
+      { id: "class", label: "Structure", promptValue: "classDiagram", Icon: Boxes }
+    ];
+    const getDiagramTypeFromCode = (c) => {
+      const header = getDiagramHeaderLine2(c).toLowerCase();
+      if (header.startsWith("sequencediagram")) return "sequence";
+      if (header.startsWith("classdiagram")) return "class";
+      if (header.startsWith("flowchart") || header.startsWith("graph")) return "flow";
+      return null;
+    };
+    react_shim_default.useEffect(() => {
+      const nextType = getDiagramTypeFromCode(draftCode || code);
+      if (nextType && nextType !== diagramType) {
+        setDiagramType(nextType);
+      }
+    }, [code, draftCode]);
+    const handleDrawSend = async () => {
+      var _a, _b, _c;
+      if (!promptInput.trim() || isGenerating) return;
+      setIsGenerating(true);
+      setModalError(null);
+      try {
+        const presets = (_b = (_a = window.GoToolkitChatPrompt) == null ? void 0 : _a.PRESETS) == null ? void 0 : _b.draw;
+        const template = (presets == null ? void 0 : presets.defaultPrompt) || (presets == null ? void 0 : presets.prompt) || "";
+        const selectedType = diagramTypes.find((t) => t.id === diagramType);
+        const drawTypeValue = (selectedType == null ? void 0 : selectedType.promptValue) || "flowchart";
+        const documentMarkdown = ((_c = window.getEditorMarkdown) == null ? void 0 : _c.call(window)) || "Contenu du document non disponible.";
+        const userContent = [
+          `DOCUMENT
+${documentMarkdown}`,
+          `CURRENT_CODE
+${draftCode.trim() || "Aucun diagramme actuel"}`,
+          `DRAW_TYPE
+${drawTypeValue}`,
+          `ASK
+${promptInput.trim()}`
+        ].join("\n\n");
+        const payload = {
+          model: "openai/gpt-oss-120b",
+          messages: [
+            { role: "system", content: template },
+            { role: "user", content: userContent }
+          ],
+          temperature: 0.3
+        };
+        const response = await window.GoToolkitIA.chatCompletion({
+          payload
+        });
+        const responseText = typeof response === "string" ? response : (response == null ? void 0 : response.text) || "";
+        if (responseText) {
+          let cleanCode = "";
+          try {
+            const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+            const jsonStr = jsonMatch ? jsonMatch[0] : responseText;
+            const parsed = JSON.parse(jsonStr);
+            cleanCode = parsed.mermaid || "";
+            if (!cleanCode && parsed.code) cleanCode = parsed.code;
+          } catch (e) {
+            cleanCode = responseText.trim();
+            if (cleanCode.includes("```")) {
+              const match = cleanCode.match(/```(?:mermaid)?\n?([\s\S]*?)```/);
+              if (match) cleanCode = match[1].trim();
+            }
+          }
+          if (cleanCode) {
+            const lowerCode = cleanCode.toLowerCase();
+            let newSize = "small";
+            if (lowerCode.includes("flowchart td") || lowerCode.includes("graph td")) {
+              newSize = "large";
+            }
+            const nextType = getDiagramTypeFromCode(cleanCode);
+            if (nextType) {
+              setDiagramType(nextType);
+            }
+            setDraftCode(cleanCode);
+            setPromptInput("");
+            if (composerTextareaRef.current) {
+              composerTextareaRef.current.style.height = "auto";
+            }
+            if (window.GoToolkitDrawMemo) {
+              setIsLoading(true);
+              try {
+                await window.GoToolkitDrawMemo.updateFromMermaid(cleanCode, newSize);
+                const json = window.GoToolkitDrawMemo.getSceneJSON();
+                const svgHtml = await window.GoToolkitDrawMemo.getSVG("auto");
+                updateAttributes2({
+                  code: cleanCode,
+                  size: newSize,
+                  excalidrawJSON: json || ""
+                });
+                if (svgHtml) setSvg(svgHtml);
+                setLastValidCode(cleanCode);
+                setModalError(null);
+              } catch (syncErr) {
+                setModalError(syncErr.message || "Erreur de synchronisation Excalidraw");
+              } finally {
+                setIsLoading(false);
+              }
+            }
+          }
+        }
+      } catch (err) {
+        setModalError(err.message || "Erreur de g\xE9n\xE9ration");
+      } finally {
+        setIsGenerating(false);
+      }
+    };
+    const getDiagramHeaderLine2 = (c) => {
+      const lines = (c || "").split("\n");
+      for (let i = 0; i < Math.min(lines.length, 5); i++) {
+        const line = lines[i].trim();
+        if (!line || line.startsWith("%%")) continue;
+        return line;
+      }
+      return "";
+    };
+    const getFlowchartDirection = (c) => {
+      const line = getDiagramHeaderLine2(c);
+      if (/^(flowchart|graph)\b/i.test(line)) {
+        const match = line.match(/\b(LR|TD|TB|BT|RL)\b/i);
+        return match ? match[1].toUpperCase() : null;
+      }
+      return null;
+    };
+    const setFlowchartDirection2 = (c, direction) => {
+      const lines = (c || "").split("\n");
+      let updated = false;
+      for (let i = 0; i < Math.min(lines.length, 5); i++) {
+        const rawLine = lines[i];
+        const line = rawLine.trim();
+        if (!line || line.startsWith("%%")) continue;
+        if (/^(flowchart|graph)\b/i.test(line)) {
+          const directionMatch = rawLine.match(/(flowchart|graph)\s+(LR|TD|TB|BT|RL)/i);
+          if (directionMatch) {
+            lines[i] = rawLine.replace(/(flowchart|graph)\s+(LR|TD|TB|BT|RL)/i, `$1 ${direction}`);
+          } else {
+            lines[i] = rawLine.replace(/(flowchart|graph)/i, `$1 ${direction}`);
+          }
+          updated = true;
+          break;
+        }
+      }
+      return { code: lines.join("\n"), updated };
+    };
+    const getAutoDetectedSize = (c) => {
+      const header = getDiagramHeaderLine2(c).toLowerCase();
+      if (header.startsWith("classdiagram")) return "large";
+      if (header.startsWith("sequencediagram")) return "small";
+      const direction = getFlowchartDirection(c);
+      if (direction === "TD") return "large";
+      if (direction === "LR") return "small";
+      if (header.includes("flowchart td") || header.includes("graph td")) return "large";
+      return "small";
+    };
+    const isSizeSelectorVisible = (c) => {
+      const header = getDiagramHeaderLine2(c).toLowerCase();
+      if (header.startsWith("sequencediagram") || header.startsWith("classdiagram")) return false;
+      return header.startsWith("flowchart") || header.startsWith("graph");
+    };
+    const activeCode = isEditing ? draftCode : code;
+    const directionSize = getFlowchartDirection(activeCode);
+    let size2 = directionSize ? directionSize === "TD" ? "large" : "small" : node.attrs.size || getAutoDetectedSize(activeCode);
+    if (size2 === "medium") size2 = "small";
+    const showSizeSelector = isSizeSelectorVisible(activeCode);
+    react_shim_default.useEffect(() => {
+      if (isEditing) return;
+      if (code && !excalidrawJSON && window.GoToolkitDrawMemo) {
+        const syncPreview = async () => {
+          try {
+            if (window.GoToolkitDrawMemo.renderPreview) {
+              const result = await window.GoToolkitDrawMemo.renderPreview(code, "auto", size2);
+              const json2 = result == null ? void 0 : result.json;
+              const svgHtml2 = result == null ? void 0 : result.svg;
+              if (json2) {
+                updateAttributes2({ excalidrawJSON: json2 });
+              }
+              if (svgHtml2) {
+                setSvg(svgHtml2);
+              }
+              setLastValidCode(code);
+              return;
+            }
+            const tempDiv = document.createElement("div");
+            tempDiv.style.position = "fixed";
+            tempDiv.style.left = "-10000px";
+            tempDiv.style.top = "0";
+            tempDiv.style.width = "1200px";
+            tempDiv.style.height = "800px";
+            tempDiv.style.opacity = "0";
+            tempDiv.style.pointerEvents = "none";
+            document.body.appendChild(tempDiv);
+            await window.GoToolkitDrawMemo.init(tempDiv, code, size2);
+            await new Promise((resolve) => window.requestAnimationFrame(() => resolve()));
+            await new Promise((resolve) => window.requestAnimationFrame(() => resolve()));
+            const json = window.GoToolkitDrawMemo.getSceneJSON();
+            const svgHtml = await window.GoToolkitDrawMemo.getSVG("auto");
+            updateAttributes2({ excalidrawJSON: json });
+            setSvg(svgHtml);
+            setLastValidCode(code);
+            document.body.removeChild(tempDiv);
+          } catch (e) {
+            console.warn("Immediate preview failed", e);
+          }
+        };
+        syncPreview();
+      }
+    }, [code, excalidrawJSON, isEditing, updateAttributes2, size2]);
+    const renderDiagram = react_shim_default.useCallback(async () => {
+      if (isEditing) return;
+      if (excalidrawJSON) {
+        try {
+          if (window.GoToolkitDrawMemo) {
+            if (window.GoToolkitDrawMemo.renderPreview) {
+              const result = await window.GoToolkitDrawMemo.renderPreview(excalidrawJSON, "auto", size2);
+              if (result == null ? void 0 : result.svg) {
+                setSvg(result.svg);
+                setError(null);
+                return;
+              }
+            }
+            const tempDiv = document.createElement("div");
+            tempDiv.style.position = "fixed";
+            tempDiv.style.left = "-10000px";
+            tempDiv.style.top = "0";
+            tempDiv.style.width = "1200px";
+            tempDiv.style.height = "800px";
+            tempDiv.style.opacity = "0";
+            tempDiv.style.pointerEvents = "none";
+            document.body.appendChild(tempDiv);
+            await window.GoToolkitDrawMemo.init(tempDiv, excalidrawJSON, size2);
+            await new Promise((resolve) => window.requestAnimationFrame(() => resolve()));
+            await new Promise((resolve) => window.requestAnimationFrame(() => resolve()));
+            const svgHtml = await window.GoToolkitDrawMemo.getSVG("auto");
+            setSvg(svgHtml);
+            document.body.removeChild(tempDiv);
+            setError(null);
+            return;
+          }
+        } catch (err) {
+          console.warn("Excalidraw render error, falling back to mermaid:", err);
+        }
+      }
+      if (!code.trim() && !excalidrawJSON) {
+        setSvg("");
+        setError(null);
+        return;
+      }
+      try {
+        const mermaidApi = getMermaidApi();
+        if (!mermaidApi) {
+          setError("Mermaid CDN non charg\xE9");
+          setSvg("");
+          return;
+        }
+        const id = `mermaid-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        mermaidApi.initialize({
+          startOnLoad: false,
+          theme: "default",
+          securityLevel: "loose"
+        });
+        const { svg: svg2 } = await mermaidApi.render(id, code);
+        setSvg(svg2);
+        setError(null);
+      } catch (err) {
+        console.warn("Mermaid render error:", err);
+        setError(err.message || "Invalid mermaid syntax");
+        setSvg("");
+      }
+    }, [code, excalidrawJSON, isEditing]);
+    react_shim_default.useEffect(() => {
+      renderDiagram();
+    }, [renderDiagram]);
+    react_shim_default.useEffect(() => {
+      if (!autoOpen) return;
+      setIsEditing(true);
+      setIsLoading(true);
+      setModalError(null);
+      setLastValidCode(code);
+      setDraftCode(code);
+      updateAttributes2({ autoOpen: false });
+    }, [autoOpen, code, updateAttributes2]);
+    const handleDoubleClick2 = async () => {
+      setIsEditing(true);
+      setIsLoading(true);
+      setModalError(null);
+      setLastValidCode(code);
+      setDraftCode(code);
+    };
+    react_shim_default.useEffect(() => {
+      if (isEditing && excalidrawHostRef.current) {
+        const initExcalidraw = async () => {
+          var _a, _b, _c, _d;
+          try {
+            if (window.GoToolkitDrawMemo) {
+              const initialData = excalidrawJSON || code;
+              await window.GoToolkitDrawMemo.init(excalidrawHostRef.current, initialData, size2);
+              const nudge = () => {
+                try {
+                  window.dispatchEvent(new Event("resize"));
+                } catch (e) {
+                }
+              };
+              const raf1 = window.requestAnimationFrame(() => {
+                window.requestAnimationFrame(nudge);
+              });
+              let ro = null;
+              const hostEl = excalidrawHostRef.current;
+              if (hostEl && typeof window.ResizeObserver !== "undefined") {
+                ro = new ResizeObserver(() => nudge());
+                ro.observe(hostEl);
+              }
+              try {
+                const api = (_b = (_a = window.GoToolkitDrawMemo) == null ? void 0 : _a.getApi) == null ? void 0 : _b.call(_a);
+                (_c = api == null ? void 0 : api.setActiveTool) == null ? void 0 : _c.call(api, { type: "selection" });
+                (_d = api == null ? void 0 : api.refresh) == null ? void 0 : _d.call(api);
+              } catch (e) {
+              }
+              const t1 = window.setTimeout(() => {
+                var _a2, _b2, _c2, _d2;
+                try {
+                  const api = (_b2 = (_a2 = window.GoToolkitDrawMemo) == null ? void 0 : _a2.getApi) == null ? void 0 : _b2.call(_a2);
+                  (_c2 = api == null ? void 0 : api.setActiveTool) == null ? void 0 : _c2.call(api, { type: "selection" });
+                  (_d2 = api == null ? void 0 : api.refresh) == null ? void 0 : _d2.call(api);
+                  nudge();
+                } catch (e) {
+                }
+              }, 150);
+              const t2 = window.setTimeout(() => {
+                var _a2, _b2, _c2, _d2;
+                try {
+                  const api = (_b2 = (_a2 = window.GoToolkitDrawMemo) == null ? void 0 : _a2.getApi) == null ? void 0 : _b2.call(_a2);
+                  (_c2 = api == null ? void 0 : api.setActiveTool) == null ? void 0 : _c2.call(api, { type: "selection" });
+                  (_d2 = api == null ? void 0 : api.refresh) == null ? void 0 : _d2.call(api);
+                  nudge();
+                } catch (e) {
+                }
+              }, 500);
+              return () => {
+                window.cancelAnimationFrame(raf1);
+                window.clearTimeout(t1);
+                window.clearTimeout(t2);
+                ro == null ? void 0 : ro.disconnect();
+              };
+            }
+          } catch (err) {
+            console.error("Failed to init Excalidraw", err);
+          } finally {
+            setIsLoading(false);
+          }
+        };
+        let cleanup;
+        void initExcalidraw().then((fn) => {
+          cleanup = typeof fn === "function" ? fn : void 0;
+        });
+        return () => {
+          cleanup == null ? void 0 : cleanup();
+        };
+      }
+    }, [isEditing]);
+    const handleCloseModal = async () => {
+      try {
+        if (window.GoToolkitDrawMemo) {
+          const hasError = !!modalError;
+          const finalCode = hasError ? lastValidCode : draftCode;
+          if (hasError) {
+            updateAttributes2({ code: lastValidCode });
+            try {
+              await window.GoToolkitDrawMemo.updateFromMermaid(lastValidCode, size2);
+            } catch (e) {
+              console.warn("Failed to revert Excalidraw to last valid state, continuing...", e);
+            }
+          } else {
+            updateAttributes2({ code: draftCode });
+          }
+          const json = window.GoToolkitDrawMemo.getSceneJSON();
+          const svgHtml = await window.GoToolkitDrawMemo.getSVG("auto");
+          const isExcalidrawEmpty = !json || json === '{"elements":[],"appState":{}}' || json.includes('"elements":[]');
+          const finalExcalidrawJSON = finalCode.trim() || !isExcalidrawEmpty ? json : "";
+          updateAttributes2({
+            excalidrawJSON: finalExcalidrawJSON
+          });
+          if (svgHtml && (finalCode.trim() || !isExcalidrawEmpty)) {
+            setSvg(svgHtml);
+          } else {
+            setSvg("");
+          }
+        }
+      } catch (err) {
+        console.error("Critical error during Mermaid modal close:", err);
+      } finally {
+        setIsEditing(false);
+        setModalError(null);
+      }
+    };
+    react_shim_default.useEffect(() => {
+      const handleKeyDown3 = (e) => {
+        if (e.key === "Escape" && isEditing) {
+          handleCloseModal();
+        }
+      };
+      window.addEventListener("keydown", handleKeyDown3);
+      return () => window.removeEventListener("keydown", handleKeyDown3);
+    }, [isEditing, modalError, lastValidCode]);
+    const handleCodeChange = (e) => {
+      const newCode = e.target.value;
+      setDraftCode(newCode);
+    };
+    const handleSyncFromMermaid = async () => {
+      if (!window.GoToolkitDrawMemo) return;
+      setIsLoading(true);
+      try {
+        const targetSize = !isSizeSelectorVisible(draftCode) ? getAutoDetectedSize(draftCode) : size2;
+        await window.GoToolkitDrawMemo.updateFromMermaid(draftCode, targetSize);
+        const json = window.GoToolkitDrawMemo.getSceneJSON();
+        const svgHtml = await window.GoToolkitDrawMemo.getSVG("auto");
+        updateAttributes2({
+          code: draftCode,
+          excalidrawJSON: json || "",
+          size: targetSize
+          // Persist the forced size too
+        });
+        if (svgHtml) {
+          setSvg(svgHtml);
+        }
+        setModalError(null);
+        setLastValidCode(draftCode);
+      } catch (err) {
+        if (draftCode == null ? void 0 : draftCode.trim()) {
+          setModalError(err.message || "Syntaxe Mermaid invalide");
+        } else {
+          setModalError(null);
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    const handleCopyCode = () => {
+      if (!draftCode) return;
+      navigator.clipboard.writeText(draftCode).then(() => {
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 2e3);
+      });
+    };
+    const handleClearCode = () => {
+      setDraftCode("");
+      setModalError(null);
+    };
+    const handleSizeChange = async (newSize, sourceCode) => {
+      if (newSize === size2) return;
+      setIsLoading(true);
+      let updatedCode = sourceCode || draftCode || code;
+      const headerLine = getDiagramHeaderLine2(updatedCode).toLowerCase();
+      const isFlowchart = headerLine.startsWith("flowchart") || headerLine.startsWith("graph");
+      if (isFlowchart) {
+        const direction = newSize === "large" ? "TD" : "LR";
+        const { code: nextCode, updated } = setFlowchartDirection2(updatedCode, direction);
+        if (updated) {
+          updatedCode = nextCode;
+        }
+      }
+      setDraftCode(updatedCode);
+      updateAttributes2({ size: newSize, code: updatedCode });
+      const drawMemo = window.GoToolkitDrawMemo;
+      if (drawMemo) {
+        (async () => {
+          try {
+            await drawMemo.updateFromMermaid(updatedCode, newSize);
+            const json = drawMemo.getSceneJSON();
+            const svgHtml = await drawMemo.getSVG("auto");
+            updateAttributes2({ excalidrawJSON: json });
+            if (svgHtml) setSvg(svgHtml);
+          } catch (err) {
+            console.error("Failed to update size", err);
+          } finally {
+            setIsLoading(false);
+          }
+        })();
+      } else {
+        setIsLoading(false);
+      }
+    };
+    return /* @__PURE__ */ jsxs(Fragment3, { children: [
+      /* @__PURE__ */ jsxs(NodeViewWrapper, { className: "mermaid-diagram-wrapper node-mermaidDiagram", children: [
+        /* @__PURE__ */ jsx("div", { className: "table-handle mermaid-node-handle", title: "D\xE9placer", children: "\u283F" }),
+        /* @__PURE__ */ jsx(
+          "div",
+          {
+            ref: containerRef,
+            className: "mermaid-diagram-container",
+            onDoubleClick: handleDoubleClick2,
+            title: "Double-cliquer pour modifier le diagramme",
+            style: {
+              cursor: "pointer",
+              maxHeight: size2 === "large" ? "650px" : "500px",
+              display: "flex",
+              flexDirection: "column",
+              width: "100%",
+              border: "none",
+              borderRadius: "8px",
+              visibility: "visible",
+              opacity: 1,
+              position: "relative",
+              zIndex: 1,
+              overflow: "hidden",
+              contentVisibility: "visible",
+              transform: "none",
+              minWidth: "100px"
+            },
+            children: error ? /* @__PURE__ */ jsxs("div", { className: "mermaid-error", children: [
+              /* @__PURE__ */ jsx("div", { className: "mermaid-error-icon", children: "\u26A0\uFE0E" }),
+              /* @__PURE__ */ jsx("div", { className: "mermaid-error-text", children: "Erreur de syntaxe" }),
+              /* @__PURE__ */ jsx("div", { className: "mermaid-error-hint", children: "Double-cliquez pour corriger" })
+            ] }) : svg ? /* @__PURE__ */ jsx(
+              "div",
+              {
+                className: "mermaid-svg-container",
+                dangerouslySetInnerHTML: { __html: svg }
+              }
+            ) : /* @__PURE__ */ jsxs("div", { className: "mermaid-placeholder", children: [
+              /* @__PURE__ */ jsx("div", { className: "mermaid-placeholder-icon", children: /* @__PURE__ */ jsx(Shapes, { size: 32 }) }),
+              /* @__PURE__ */ jsx("div", { className: "mermaid-placeholder-text", children: "Diagramme vide" }),
+              /* @__PURE__ */ jsx("div", { className: "mermaid-placeholder-hint", children: "Double-cliquez pour \xE9diter" })
+            ] })
+          }
+        )
+      ] }),
+      isEditing && /* @__PURE__ */ jsx("div", { className: "mermaid-modal-overlay", onClick: handleCloseModal, children: /* @__PURE__ */ jsxs("div", { className: "mermaid-modal", onClick: (e) => e.stopPropagation(), children: [
+        /* @__PURE__ */ jsx("div", { className: "mermaid-modal-header", children: /* @__PURE__ */ jsxs("div", { className: "mermaid-modal-header-actions", style: { justifyContent: "space-between", width: "100%" }, children: [
+          /* @__PURE__ */ jsx("div", { style: { display: "flex", gap: "8px", alignItems: "center" }, children: showSizeSelector && /* @__PURE__ */ jsx("div", { className: "mermaid-modal-size-selector", children: [
+            { id: "small", label: "Rectangle", Icon: RectangleHorizontal },
+            { id: "large", label: "Carr\xE9", Icon: Square }
+          ].map((s) => /* @__PURE__ */ jsx(
+            "button",
+            {
+              className: `mermaid-modal-size-btn ${size2 === s.id ? "active" : ""}`,
+              onClick: (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                handleSizeChange(s.id, draftCode);
+              },
+              title: s.label,
+              children: /* @__PURE__ */ jsx(s.Icon, { size: 14 })
+            },
+            s.id
+          )) }) }),
+          /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: "12px", alignItems: "center" }, children: [
+            isLoading && /* @__PURE__ */ jsx("span", { className: "mermaid-loading-spinner" }),
+            /* @__PURE__ */ jsx(
+              "button",
+              {
+                className: "mermaid-modal-sync btn-secondary",
+                onClick: handleSyncFromMermaid,
+                children: "G\xE9n\xE9rer"
+              }
+            ),
+            /* @__PURE__ */ jsx("button", { className: "mermaid-modal-close btn-primary", onClick: handleCloseModal })
+          ] })
+        ] }) }),
+        /* @__PURE__ */ jsxs("div", { className: "mermaid-modal-body", children: [
+          /* @__PURE__ */ jsx("div", { className: "mermaid-modal-draw-container", children: /* @__PURE__ */ jsx(
+            "div",
+            {
+              ref: excalidrawHostRef,
+              className: "mermaid-modal-excalidraw-host",
+              style: { touchAction: "none", userSelect: "none" }
+            }
+          ) }),
+          /* @__PURE__ */ jsxs("div", { className: "mermaid-modal-editor", children: [
+            /* @__PURE__ */ jsxs("div", { style: { flex: 1, display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }, children: [
+              /* @__PURE__ */ jsx(
+                "textarea",
+                {
+                  className: "mermaid-modal-textarea",
+                  value: draftCode,
+                  onChange: handleCodeChange,
+                  placeholder: "Entrez votre code Mermaid ici...",
+                  spellCheck: false
+                }
+              ),
+              /* @__PURE__ */ jsxs("div", { className: "mermaid-modal-textarea-actions", children: [
+                /* @__PURE__ */ jsx(
+                  "button",
+                  {
+                    type: "button",
+                    className: "mermaid-modal-textarea-btn",
+                    onClick: handleCopyCode,
+                    title: "Copier",
+                    children: /* @__PURE__ */ jsx(Copy, { size: 14 })
+                  }
+                ),
+                /* @__PURE__ */ jsx(
+                  "button",
+                  {
+                    type: "button",
+                    className: "mermaid-modal-textarea-btn",
+                    onClick: handleClearCode,
+                    title: "Effacer",
+                    children: /* @__PURE__ */ jsx(CircleX, { size: 14, "data-lucide": "circle-x" })
+                  }
+                )
+              ] }),
+              modalError && /* @__PURE__ */ jsx("div", { className: "mermaid-modal-error-display", children: modalError })
+            ] }),
+            /* @__PURE__ */ jsxs("div", { id: "draw-composer", className: "draw-composer chat-composer", style: { border: "none", background: "var(--bg-surface)" }, children: [
+              /* @__PURE__ */ jsx("div", { className: "chat-input-wrapper", children: /* @__PURE__ */ jsx(
+                "textarea",
+                {
+                  ref: composerTextareaRef,
+                  id: "draw-composer-input",
+                  className: "chat-input",
+                  rows: 2,
+                  value: promptInput,
+                  onChange: handlePromptInput,
+                  onKeyDown: (e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleDrawSend();
+                    }
+                  },
+                  placeholder: "D\xE9crivez votre diagramme..."
+                }
+              ) }),
+              /* @__PURE__ */ jsxs("div", { className: "chat-composer-actions", children: [
+                /* @__PURE__ */ jsx("div", { className: "chat-composer-left-actions", children: /* @__PURE__ */ jsxs("div", { className: "diagram-type-dropdown chat-prompt-dropdown", children: [
+                  /* @__PURE__ */ jsxs(
+                    "button",
+                    {
+                      type: "button",
+                      id: "diagram-type-selector",
+                      className: "btn-secondary chat-prompt-btn",
+                      onClick: () => setIsTypeMenuOpen(!isTypeMenuOpen),
+                      style: { display: "flex", alignItems: "center", gap: "4px" },
+                      children: [
+                        (() => {
+                          const current = diagramTypes.find((t) => t.id === diagramType);
+                          const Icon2 = (current == null ? void 0 : current.Icon) || Workflow;
+                          const label = (draftCode || code).trim() ? current == null ? void 0 : current.label : "\xC9diter";
+                          return /* @__PURE__ */ jsxs(Fragment3, { children: [
+                            /* @__PURE__ */ jsx(Icon2, { size: 14 }),
+                            " ",
+                            /* @__PURE__ */ jsx("span", { children: label })
+                          ] });
+                        })(),
+                        /* @__PURE__ */ jsx(ChevronUp, { size: 12, style: { transform: isTypeMenuOpen ? "rotate(180deg)" : "" } })
+                      ]
+                    }
+                  ),
+                  isTypeMenuOpen && /* @__PURE__ */ jsx("div", { id: "diagram-type-menu", className: "diagram-type-menu chat-prompt-menu open", style: { bottom: "100%", top: "auto", marginBottom: "8px" }, children: diagramTypes.map((t) => /* @__PURE__ */ jsxs(
+                    "button",
+                    {
+                      type: "button",
+                      className: "chat-prompt-menu-item",
+                      onClick: () => {
+                        setDiagramType(t.id);
+                        setIsTypeMenuOpen(false);
+                      },
+                      style: { display: "flex", alignItems: "center", gap: "8px" },
+                      children: [
+                        /* @__PURE__ */ jsx(t.Icon, { size: 14 }),
+                        /* @__PURE__ */ jsx("span", { children: t.label })
+                      ]
+                    },
+                    t.id
+                  )) })
+                ] }) }),
+                /* @__PURE__ */ jsx(
+                  "button",
+                  {
+                    type: "button",
+                    className: "btn-primary chat-send-btn",
+                    onClick: handleDrawSend,
+                    disabled: isGenerating || !promptInput.trim(),
+                    children: isGenerating ? /* @__PURE__ */ jsx(LoaderCircle, { className: "animate-spin", size: 16 }) : /* @__PURE__ */ jsx(Send, { size: 16 })
+                  }
+                )
+              ] })
+            ] })
+          ] })
+        ] })
+      ] }) }),
+      showToast && /* @__PURE__ */ jsx("div", { className: "mermaid-toast", children: "Contenu copi\xE9" })
+    ] });
+  };
+  var MermaidNode = Node3.create({
+    name: "mermaidDiagram",
+    group: "block",
+    atom: true,
+    selectable: true,
+    draggable: true,
+    addAttributes() {
+      return {
+        code: {
+          default: ""
+        },
+        excalidrawJSON: {
+          default: ""
+        },
+        size: {
+          default: "small"
+        },
+        autoOpen: {
+          default: false
+        }
+      };
+    },
+    parseHTML() {
+      return [
+        {
+          tag: "mermaid-diagram"
+        }
+      ];
+    },
+    renderHTML({ HTMLAttributes }) {
+      return ["mermaid-diagram", mergeAttributes(HTMLAttributes)];
+    },
+    addNodeView() {
+      return ReactNodeViewRenderer(MermaidDiagramComponent);
+    },
+    addInputRules() {
+      return [
+        new InputRule({
+          find: /```mermaid\s$/,
+          handler: ({ state: state2, range: range2, chain }) => {
+            const { tr: tr2 } = state2;
+            const start = range2.from;
+            const end = range2.to;
+            tr2.delete(start, end);
+            chain().insertContentAt(start, {
+              type: this.name,
+              attrs: { code: "", autoOpen: true }
+            }).run();
+          }
+        })
+      ];
+    }
+  });
+  var insertMermaidDiagram = (editor, code = "") => {
+    editor.chain().focus().insertContent({
+      type: "mermaidDiagram",
+      attrs: { code, autoOpen: true }
+    }).run();
+  };
+
+  // src/memo-editor/blockquote-node.tsx
+  init_define_process_env();
+  init_polyfills();
+  var ALERT_TYPES = [
+    { type: "default", label: "Citation", icon: Quote, color: "var(--text-muted)" },
+    { type: "NOTE", label: "Note", icon: Info, color: "var(--intent-info-border)" },
+    { type: "TIP", label: "Conseil", icon: Lightbulb, color: "var(--bg-text-yellow)" },
+    { type: "IMPORTANT", label: "Important", icon: SquareCheck, color: "var(--bg-text-green)" },
+    { type: "WARNING", label: "Alerte", icon: TriangleAlert, color: "var(--intent-warning-border)" },
+    { type: "CAUTION", label: "Attention", icon: CircleAlert, color: "var(--intent-error-border)" }
+  ];
+  var AlertComponent = ({ node, updateAttributes: updateAttributes2 }) => {
+    const type2 = node.attrs.type || "default";
+    const alertConfig = ALERT_TYPES.find((a) => a.type === type2) || ALERT_TYPES[0];
+    const Icon2 = alertConfig.icon;
+    return /* @__PURE__ */ jsx(NodeViewWrapper, { as: "blockquote", "data-type": type2, className: "alert-wrapper node-blockquote", children: /* @__PURE__ */ jsxs("div", { className: "alert-body", children: [
+      /* @__PURE__ */ jsx("div", { className: "alert-icon", contentEditable: false, children: /* @__PURE__ */ jsx(Icon2, { size: 18, style: { color: alertConfig.color } }) }),
+      /* @__PURE__ */ jsx("div", { className: "alert-content", children: /* @__PURE__ */ jsx(NodeViewContent, {}) })
+    ] }) });
+  };
+  var Alert = Node3.create({
+    name: "blockquote",
+    content: "block+",
+    group: "block",
+    defining: true,
+    addAttributes() {
+      return {
+        type: {
+          default: "default",
+          parseHTML: (element) => element.getAttribute("data-type") || "default",
+          renderHTML: (attributes) => {
+            if (attributes.type === "default") return {};
+            return { "data-type": attributes.type };
+          }
+        },
+        title: {
+          default: null,
+          parseHTML: (element) => element.getAttribute("data-title"),
+          renderHTML: (attributes) => {
+            if (!attributes.title) return {};
+            return { "data-title": attributes.title };
+          }
+        }
+      };
+    },
+    parseHTML() {
+      return [
+        { tag: "blockquote" }
+      ];
+    },
+    renderHTML({ HTMLAttributes }) {
+      return ["blockquote", mergeAttributes(HTMLAttributes), 0];
+    },
+    addCommands() {
+      return {
+        setBlockquote: () => ({ commands: commands2 }) => {
+          return commands2.wrapIn(this.name);
+        },
+        toggleBlockquote: () => ({ commands: commands2 }) => {
+          return commands2.toggleWrap(this.name);
+        },
+        unsetBlockquote: () => ({ commands: commands2 }) => {
+          return commands2.lift(this.name);
+        }
+      };
+    },
+    addNodeView() {
+      return ReactNodeViewRenderer(AlertComponent);
+    },
+    addInputRules() {
+      return [
+        // GitHub-style alerts: >[!NOTE] Title
+        wrappingInputRule({
+          find: /^> ?\[!(note|tip|important|warning|caution|alerte|attention)\](?:\s+(.*))?\s$/,
+          type: this.type,
+          getAttributes: (match) => {
+            const typeMap = {
+              "note": "NOTE",
+              "tip": "TIP",
+              "important": "IMPORTANT",
+              "warning": "WARNING",
+              "alerte": "WARNING",
+              "caution": "CAUTION",
+              "attention": "CAUTION"
+            };
+            const rawType = match[1].toLowerCase();
+            const type2 = typeMap[rawType] || "NOTE";
+            const title = match[2] || null;
+            return { type: type2, title };
+          }
+        }),
+        wrappingInputRule({
+          find: /^>note\s$/,
+          type: this.type,
+          getAttributes: () => ({ type: "NOTE" })
+        }),
+        wrappingInputRule({
+          find: /^>tip\s$/,
+          type: this.type,
+          getAttributes: () => ({ type: "TIP" })
+        }),
+        wrappingInputRule({
+          find: /^>important\s$/,
+          type: this.type,
+          getAttributes: () => ({ type: "IMPORTANT" })
+        }),
+        wrappingInputRule({
+          find: /^>alerte\s$/,
+          type: this.type,
+          getAttributes: () => ({ type: "WARNING" })
+        }),
+        wrappingInputRule({
+          find: /^>attention\s$/,
+          type: this.type,
+          getAttributes: () => ({ type: "CAUTION" })
+        }),
+        wrappingInputRule({
+          find: /^>ℹ️\s$/,
+          type: this.type,
+          getAttributes: () => ({ type: "NOTE" })
+        }),
+        wrappingInputRule({
+          find: /^>💡\s$/,
+          type: this.type,
+          getAttributes: () => ({ type: "TIP" })
+        }),
+        wrappingInputRule({
+          find: /^>✅\s$/,
+          type: this.type,
+          getAttributes: () => ({ type: "IMPORTANT" })
+        }),
+        wrappingInputRule({
+          find: /^>⚠️\s$/,
+          type: this.type,
+          getAttributes: () => ({ type: "WARNING" })
+        }),
+        wrappingInputRule({
+          find: /^>🚨\s$/,
+          type: this.type,
+          getAttributes: () => ({ type: "CAUTION" })
+        }),
+        wrappingInputRule({
+          find: /^>\.\s$/,
+          type: this.type,
+          getAttributes: () => ({ type: "default" })
+        })
+      ];
+    }
+  });
+
+  // src/memo-editor/simple-editor.tsx
+  var CustomCode = Code.extend({
+    excludes: "",
+    inclusive: false,
+    addInputRules() {
+      return [
+        markInputRule({
+          find: /(?:^|\s)(`([^`]+)`)$/,
+          type: this.type
+        })
+      ];
+    }
+  });
+  var CustomHeading = Heading.extend({
+    addAttributes() {
+      var _a;
+      return {
+        ...(_a = this.parent) == null ? void 0 : _a.call(this),
+        id: {
+          default: null,
+          parseHTML: (element) => element.getAttribute("id"),
+          renderHTML: (attributes) => ({
+            id: attributes.id
+          })
+        },
+        collapsed: {
+          default: false,
+          parseHTML: (element) => element.getAttribute("data-collapsed") === "true",
+          renderHTML: (attributes) => ({
+            "data-collapsed": attributes.collapsed
+          })
+        }
+      };
+    },
+    addProseMirrorPlugins() {
+      return [
+        new Plugin({
+          appendTransaction: (transactions, _oldState, newState) => {
+            const { tr: tr2 } = newState;
+            let modified = false;
+            if (transactions.some((transaction) => transaction.docChanged)) {
+              newState.doc.descendants((node, pos) => {
+                if (node.type.name === "heading" && !node.attrs.id) {
+                  const id = `h-${Math.random().toString(36).substr(2, 6)}`;
+                  tr2.setNodeMarkup(pos, void 0, {
+                    ...node.attrs,
+                    id
+                  });
+                  modified = true;
+                }
+              });
+            }
+            return modified ? tr2 : null;
+          }
+        }),
+        new Plugin({
+          key: new PluginKey("heading-folding"),
+          props: {
+            decorations(state2) {
+              const decorations = [];
+              state2.doc.descendants((node, pos) => {
+                if (node.type.name === "heading" && node.attrs.collapsed) {
+                  const level = node.attrs.level;
+                  const docSize = state2.doc.content.size;
+                  let end = docSize;
+                  state2.doc.nodesBetween(pos + node.nodeSize, docSize, (nextChild, nextPos) => {
+                    if (end !== docSize) return false;
+                    if (nextChild.isBlock && nextChild.type.name === "heading" && nextChild.attrs.level <= level) {
+                      end = nextPos;
+                      return false;
+                    }
+                    return true;
+                  });
+                  let currentPos = pos + node.nodeSize;
+                  while (currentPos < end) {
+                    const childNode = state2.doc.nodeAt(currentPos);
+                    if (!childNode) break;
+                    decorations.push(Decoration.node(currentPos, currentPos + childNode.nodeSize, {
+                      style: "display: none",
+                      class: "collapsed-node"
+                    }));
+                    currentPos += childNode.nodeSize;
+                  }
+                }
+              });
+              return DecorationSet.create(state2.doc, decorations);
+            }
+          }
+        })
+      ];
+    },
+    addNodeView() {
+      return ReactNodeViewRenderer(({ node, editor, getPos }) => {
+        react_shim_default.useEffect(() => {
+          var _a;
+          console.log(`[CustomHeading] mounted ("${(_a = node.textContent) == null ? void 0 : _a.substring(0, 20)}...")`);
+        }, []);
+        const level = Math.min(4, Math.max(1, node.attrs.level || 1));
+        const tag2 = `h${level}`;
+        const collapsed = node.attrs.collapsed;
+        const toggleCollapse = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (typeof getPos === "function") {
+            const pos = getPos();
+            editor.view.dispatch(editor.state.tr.setNodeMarkup(pos, void 0, {
+              ...node.attrs,
+              collapsed: !collapsed
+            }));
+          }
+        };
+        return /* @__PURE__ */ jsxs(NodeViewWrapper, { className: `node-heading-wrapper ${collapsed ? "is-collapsed" : ""}`, children: [
+          /* @__PURE__ */ jsx(
+            "button",
+            {
+              className: "heading-collapse-toggle",
+              onClick: toggleCollapse,
+              contentEditable: false,
+              children: collapsed ? "\u25B6" : "\u25E2"
+            }
+          ),
+          /* @__PURE__ */ jsx(NodeViewContent, { as: tag2, className: "node-text" })
+        ] });
+      });
+    }
+  });
+  var CustomParagraph = Paragraph.extend({
+    addAttributes() {
+      return {
+        class: {
+          default: "node-text node-paragraph",
+          renderHTML: (attributes) => {
+            return {
+              class: attributes.class
+            };
+          }
+        }
+      };
+    },
+    parseHTML() {
+      return [
+        { tag: "p" }
+      ];
+    },
+    renderHTML({ HTMLAttributes }) {
+      return ["p", mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0];
+    }
+  });
+  var hasAncestorNode = ($pos, typeName) => {
+    for (let d = $pos.depth; d > 0; d--) {
+      if ($pos.node(d).type.name === typeName) return true;
+    }
+    return false;
+  };
+  var getDiagramHeaderLine = (code) => {
+    const lines = (code || "").split("\n");
+    for (let i = 0; i < Math.min(lines.length, 5); i++) {
+      const rawLine = lines[i];
+      const line = rawLine.trim();
+      if (!line || line.startsWith("%%")) continue;
+      return line;
+    }
+    return "";
+  };
+  var isFlowchartDiagram = (code) => {
+    const header = getDiagramHeaderLine(code).toLowerCase();
+    return header.startsWith("flowchart") || header.startsWith("graph");
+  };
+  var setFlowchartDirection = (code, direction) => {
+    const lines = (code || "").split("\n");
+    let updated = false;
+    const maxLines = Math.min(lines.length, 8);
+    let targetIndex = -1;
+    for (let i = 0; i < maxLines; i++) {
+      const rawLine = lines[i];
+      const line = rawLine.trim();
+      if (!line || line.startsWith("%%")) continue;
+      if (/^(flowchart|graph)\b/i.test(line)) {
+        targetIndex = i;
+        break;
+      }
+    }
+    if (targetIndex !== -1) {
+      const rawLine = lines[targetIndex];
+      const directionMatch = rawLine.match(/(flowchart|graph)\s+(LR|TD|TB|BT|RL)/i);
+      if (directionMatch) {
+        lines[targetIndex] = rawLine.replace(/(flowchart|graph)\s+(LR|TD|TB|BT|RL)/i, `$1 ${direction}`);
+      } else {
+        lines[targetIndex] = rawLine.replace(/(flowchart|graph)/i, `$1 ${direction}`);
+      }
+      updated = true;
+    }
+    return { code: lines.join("\n"), updated };
+  };
+  var selectTableCellText = (view, pos) => {
+    const { state: state2 } = view;
+    const $pos = state2.doc.resolve(pos);
+    for (let depth = $pos.depth; depth > 0; depth--) {
+      const node = $pos.node(depth);
+      if (node.type.name === "tableCell" || node.type.name === "tableHeader") {
+        const cellPos = $pos.before(depth);
+        const from2 = cellPos + 1;
+        const to = cellPos + node.nodeSize - 1;
+        view.dispatch(state2.tr.setSelection(TextSelection.create(state2.doc, from2, to)));
+        return true;
+      }
+    }
+    return false;
+  };
+  var CustomBulletList = BulletList.extend({
+    renderHTML({ HTMLAttributes }) {
+      return ["ul", mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, { class: "node-text" }), 0];
+    }
+  });
+  var CustomOrderedList = OrderedList.extend({
+    renderHTML({ HTMLAttributes }) {
+      return ["ol", mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, { class: "node-text" }), 0];
+    }
+  });
+  var CustomCodeBlock = CodeBlock.extend({
+    renderHTML({ HTMLAttributes }) {
+      return [
+        "pre",
+        mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, { class: "node-text node-codeBlock" }),
+        ["code", {}, 0]
+      ];
+    }
+  });
+  var LinkSearchModal = ({ editor, onClose }) => {
+    const [query, setQuery] = react_shim_default.useState("");
+    const [selectedIndex, setSelectedIndex] = react_shim_default.useState(0);
+    const modalRef = react_shim_default.useRef(null);
+    react_shim_default.useEffect(() => {
+      const { view } = editor;
+      const { selection } = editor.state;
+      const { from: from2 } = selection;
+      let coords;
+      try {
+        coords = view.coordsAtPos(from2);
+      } catch (e) {
+        coords = { left: window.innerWidth / 2, top: window.innerHeight / 2 };
+      }
+      if (modalRef.current) {
+        const virtualElement = {
+          getBoundingClientRect() {
+            return new DOMRect(coords.left, coords.top, 0, 0);
+          }
+        };
+        computePosition2(virtualElement, modalRef.current, {
+          placement: "bottom-start",
+          middleware: [
+            offset2(10),
+            shift3({ padding: 10 })
+          ]
+        }).then(({ x, y, strategy }) => {
+          if (modalRef.current) {
+            Object.assign(modalRef.current.style, {
+              left: `${x}px`,
+              top: `${y}px`,
+              position: strategy,
+              display: "block"
+            });
+          }
+        });
+      }
+      const handleClickOutside = (e) => {
+        if (modalRef.current && !modalRef.current.contains(e.target)) {
+          onClose();
+        }
+      };
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [editor, onClose]);
+    const headings = window.MemoHeadings || [];
+    const getHierarchy = (index) => {
+      const current = headings[index];
+      if (!current || current.level === 1) return "";
+      let path = [];
+      let lastLevel = current.level;
+      for (let i = index - 1; i >= 0; i--) {
+        if (headings[i].level < lastLevel) {
+          path.unshift(headings[i].textContent);
+          lastLevel = headings[i].level;
+          if (lastLevel === 1) break;
+        }
+      }
+      return path.length > 0 ? path.join(" / ") : "";
+    };
+    const isUrl = (str) => {
+      const pattern = /^([\da-z.-]+)\.([a-z.]{2,6})([\/\w .-]*)*\/?$/;
+      return pattern.test(str) || str.startsWith("http");
+    };
+    const filteredHeadings = headings.map((h, i) => ({ ...h, originalIndex: i })).filter((h) => h.textContent.toLowerCase().includes(query.toLowerCase())).slice(0, 3);
+    const items = [
+      ...filteredHeadings.map((h) => ({
+        type: "heading",
+        title: h.textContent,
+        id: h.id,
+        path: getHierarchy(h.originalIndex)
+      })),
+      ...query ? [{
+        type: "url",
+        title: query,
+        isValid: isUrl(query)
+      }] : []
+    ];
+    const handleSelect = (item) => {
+      let url = item.type === "heading" ? `#${item.id}` : item.title;
+      if (item.type === "url" && !url.startsWith("http") && !url.startsWith("#")) {
+        url = "https://" + url;
+      }
+      const { from: from2, to } = editor.state.selection;
+      if (from2 !== to) {
+        editor.chain().focus().setLink({ href: url }).run();
+      } else {
+        editor.chain().focus().insertContent([
+          {
+            type: "text",
+            text: item.title,
+            marks: [{ type: "link", attrs: { href: url } }]
+          },
+          { type: "text", text: " " }
+        ]).run();
+      }
+      onClose();
+    };
+    return /* @__PURE__ */ jsxs(
+      "div",
+      {
+        ref: modalRef,
+        className: "link-search-modal",
+        style: { position: "fixed", zIndex: 2e3, display: "none" },
+        children: [
+          /* @__PURE__ */ jsx(
+            "input",
+            {
+              autoFocus: true,
+              placeholder: "Rechercher un titre ou coller un lien...",
+              value: query,
+              onChange: (e) => {
+                setQuery(e.target.value);
+                setSelectedIndex(0);
+              },
+              onKeyDown: (e) => {
+                if (e.key === "Enter" && items[selectedIndex]) {
+                  handleSelect(items[selectedIndex]);
+                } else if (e.key === "ArrowDown") {
+                  setSelectedIndex((selectedIndex + 1) % items.length);
+                  e.preventDefault();
+                } else if (e.key === "ArrowUp") {
+                  setSelectedIndex((selectedIndex - 1 + items.length) % items.length);
+                  e.preventDefault();
+                } else if (e.key === "Escape") {
+                  onClose();
+                }
+              }
+            }
+          ),
+          /* @__PURE__ */ jsxs("div", { className: "link-search-results", children: [
+            items.map((item, i) => /* @__PURE__ */ jsxs(
+              "div",
+              {
+                className: `link-search-item ${i === selectedIndex ? "selected" : ""}`,
+                onMouseEnter: () => setSelectedIndex(i),
+                onClick: () => handleSelect(item),
+                children: [
+                  /* @__PURE__ */ jsxs("div", { className: "link-search-item-info", children: [
+                    /* @__PURE__ */ jsxs("div", { className: "link-search-item-title", children: [
+                      item.type === "url" ? /* @__PURE__ */ jsx(Link2, { size: 12, style: { marginRight: 8, opacity: 0.6 } }) : null,
+                      item.title
+                    ] }),
+                    item.path && /* @__PURE__ */ jsx("div", { className: "link-search-item-path", children: item.path }),
+                    item.type === "url" && !item.isValid && /* @__PURE__ */ jsx("div", { className: "link-search-item-invalid", children: "URL incompl\xE8te?" })
+                  ] }),
+                  /* @__PURE__ */ jsx("div", { className: "link-search-item-action", children: /* @__PURE__ */ jsx(Check, { size: 14 }) })
+                ]
+              },
+              i
+            )),
+            items.length === 0 && /* @__PURE__ */ jsx("div", { className: "link-search-no-results", children: "Aucun titre trouv\xE9" })
+          ] })
+        ]
+      }
+    );
+  };
+  var TEXT_COLORS = [
+    { name: "D\xE9faut", value: "var(--bg-text-main)" },
+    { name: "Gris", value: "var(--bg-text-gray)" },
+    { name: "Marron", value: "var(--bg-text-brown)" },
+    { name: "Orange", value: "var(--bg-text-orange)" },
+    { name: "Jaune", value: "var(--bg-text-yellow)" },
+    { name: "Vert", value: "var(--bg-text-green)" },
+    { name: "Bleu", value: "var(--bg-text-blue)" },
+    { name: "Violet", value: "var(--bg-text-purple)" },
+    { name: "Rose", value: "var(--bg-text-pink)" },
+    { name: "Rouge", value: "var(--bg-text-red)" }
+  ];
+  var BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLink }) => {
+    const [position, setPosition] = react_shim_default.useState({ top: 0, left: 0, opacity: 0 });
+    const [hasMarks, setHasMarks] = react_shim_default.useState(false);
+    const [showTextColors, setShowTextColors] = react_shim_default.useState(false);
+    const menuRef = react_shim_default.useRef(null);
+    const containerRef = react_shim_default.useRef(null);
+    const pointerDownRef = react_shim_default.useRef(false);
+    const updatePosition = react_shim_default.useCallback(() => {
+      var _a, _b, _c;
+      if (!editor || !visible || pointerDownRef.current) {
+        setPosition((prev) => ({ ...prev, opacity: 0 }));
+        setShowTextColors(false);
+        return;
+      }
+      const { from: from2, to } = editor.state.selection;
+      if (from2 === to) {
+        setPosition((prev) => ({ ...prev, opacity: 0 }));
+        setShowTextColors(false);
+        return;
+      }
+      const hasHighlight = hasMarkInSelection(editor, "highlight");
+      const hasStrike = hasMarkInSelection(editor, "strike");
+      setHasMarks(hasHighlight || hasStrike);
+      try {
+        const { view } = editor;
+        const start = view.coordsAtPos(from2);
+        const end = view.coordsAtPos(to);
+        if (!start || !end) {
+          setPosition((prev) => ({ ...prev, opacity: 0 }));
+          setShowTextColors(false);
+          setShowTextColors(false);
+          return;
+        }
+        const container2 = containerRef.current;
+        const relativeParent = container2 == null ? void 0 : container2.parentElement;
+        const parentRect = (relativeParent == null ? void 0 : relativeParent.getBoundingClientRect()) || { top: 0, left: 0 };
+        const menuRect = (_a = menuRef.current) == null ? void 0 : _a.getBoundingClientRect();
+        const menuWidth = (menuRect == null ? void 0 : menuRect.width) || ((_b = menuRef.current) == null ? void 0 : _b.offsetWidth) || 250;
+        const menuHeight = (menuRect == null ? void 0 : menuRect.height) || ((_c = menuRef.current) == null ? void 0 : _c.offsetHeight) || 40;
+        const verticalOffset = 18;
+        let bubbleTop = Math.min(start.top, end.top) - parentRect.top - menuHeight - verticalOffset;
+        let bubbleLeft = (start.left + end.left) / 2 - parentRect.left - menuWidth / 2;
+        const padding = 10;
+        const parentWidth = (relativeParent == null ? void 0 : relativeParent.clientWidth) || window.innerWidth;
+        const viewportTop = bubbleTop + parentRect.top;
+        if (bubbleLeft < padding) {
+          bubbleLeft = padding;
+        } else if (bubbleLeft + menuWidth > parentWidth - padding) {
+          bubbleLeft = parentWidth - menuWidth - padding;
+        }
+        if (viewportTop < padding) {
+          bubbleTop = Math.max(start.bottom, end.bottom) - parentRect.top + verticalOffset;
+        } else if (viewportTop + menuHeight > window.innerHeight - padding) {
+          bubbleTop = window.innerHeight - padding - menuHeight - parentRect.top;
+        }
+        setPosition({
+          top: bubbleTop,
+          left: bubbleLeft,
+          opacity: 1
+        });
+      } catch (err) {
+        console.warn("BubbleMenu positioning error:", err);
+        setPosition((prev) => ({ ...prev, opacity: 0 }));
+      }
+    }, [editor, visible]);
+    react_shim_default.useEffect(() => {
+      if (!editor) return;
+      const viewDom = editor.view.dom;
+      const handlePointerDown = (event) => {
+        if (menuRef.current && menuRef.current.contains(event.target)) {
+          return;
+        }
+        pointerDownRef.current = true;
+        setPosition((prev) => ({ ...prev, opacity: 0 }));
+        setShowTextColors(false);
+      };
+      const handlePointerUp = () => {
+        if (!pointerDownRef.current) return;
+        pointerDownRef.current = false;
+        updatePosition();
+      };
+      viewDom.addEventListener("pointerdown", handlePointerDown);
+      window.addEventListener("pointerup", handlePointerUp);
+      editor.on("selectionUpdate", updatePosition);
+      editor.on("update", updatePosition);
+      updatePosition();
+      return () => {
+        viewDom.removeEventListener("pointerdown", handlePointerDown);
+        window.removeEventListener("pointerup", handlePointerUp);
+        editor.off("selectionUpdate", updatePosition);
+        editor.off("update", updatePosition);
+      };
+    }, [editor, updatePosition]);
+    if (!editor) return null;
+    return /* @__PURE__ */ jsx("div", { ref: containerRef, style: { position: "relative", display: "contents" }, children: /* @__PURE__ */ jsxs(
+      "div",
+      {
+        ref: menuRef,
+        className: "tiptap-toolbar tiptap-bubble-menu",
+        style: {
+          position: "absolute",
+          top: `${position.top}px`,
+          left: `${position.left}px`,
+          opacity: position.opacity,
+          pointerEvents: position.opacity === 0 ? "none" : "auto",
+          transition: "opacity 0.15s ease-in-out",
+          zIndex: 1e3,
+          willChange: "opacity",
+          padding: "4px 8px",
+          boxShadow: "var(--shadow-md)"
+        },
+        children: [
+          /* @__PURE__ */ jsx("div", { role: "group", className: "tiptap-toolbar-group", children: /* @__PURE__ */ jsx(
+            "button",
+            {
+              className: "tiptap-button tiptap-button--primary",
+              type: "button",
+              onClick: onAssist,
+              title: "Assist",
+              children: /* @__PURE__ */ jsx(Bot, { size: 16 })
+            }
+          ) }),
+          /* @__PURE__ */ jsx("div", { className: "tiptap-separator", "data-orientation": "vertical", role: "none" }),
+          /* @__PURE__ */ jsxs("div", { role: "group", className: "tiptap-toolbar-group", children: [
+            /* @__PURE__ */ jsx(
+              "button",
+              {
+                className: "tiptap-button",
+                type: "button",
+                onClick: () => editor.chain().focus().toggleBold().run(),
+                "data-active-state": editor.isActive("bold") ? "on" : "off",
+                title: "Gras",
+                children: /* @__PURE__ */ jsx(Bold2, { size: 14 })
+              }
+            ),
+            /* @__PURE__ */ jsx(
+              "button",
+              {
+                className: "tiptap-button",
+                type: "button",
+                onClick: () => editor.chain().focus().toggleItalic().run(),
+                "data-active-state": editor.isActive("italic") ? "on" : "off",
+                title: "Italique",
+                children: /* @__PURE__ */ jsx(Italic2, { size: 14 })
+              }
+            ),
+            /* @__PURE__ */ jsx(
+              "button",
+              {
+                className: "tiptap-button",
+                type: "button",
+                onClick: () => editor.chain().focus().toggleUnderline().run(),
+                "data-active-state": editor.isActive("underline") ? "on" : "off",
+                title: "Soulign\xE9",
+                children: /* @__PURE__ */ jsx(Underline2, { size: 14 })
+              }
+            ),
+            /* @__PURE__ */ jsxs("div", { style: { position: "relative" }, children: [
+              /* @__PURE__ */ jsx(
+                "button",
+                {
+                  className: "tiptap-button",
+                  type: "button",
+                  onMouseDown: (event) => event.preventDefault(),
+                  onClick: () => {
+                    setShowTextColors(!showTextColors);
+                  },
+                  title: "Couleur du texte",
+                  children: /* @__PURE__ */ jsx(Baseline, { size: 14 })
+                }
+              ),
+              showTextColors && /* @__PURE__ */ jsx(
+                "div",
+                {
+                  className: "table-color-grid",
+                  style: {
+                    position: "absolute",
+                    top: "100%",
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    marginTop: "8px"
+                  },
+                  children: TEXT_COLORS.map((color) => /* @__PURE__ */ jsx(
+                    "div",
+                    {
+                      className: "table-color-option",
+                      style: {
+                        backgroundColor: color.value
+                      },
+                      title: color.name,
+                      onMouseDown: (event) => event.preventDefault(),
+                      onClick: () => {
+                        editor.chain().focus().setColor(color.value).run();
+                        setShowTextColors(false);
+                      }
+                    },
+                    color.value
+                  ))
+                }
+              )
+            ] }),
+            /* @__PURE__ */ jsx("div", { className: "tiptap-separator-inline", style: { width: "1px", height: "18px", backgroundColor: "var(--border-main)", margin: "0 6px" } }),
+            /* @__PURE__ */ jsx(
+              "button",
+              {
+                className: "tiptap-button",
+                type: "button",
+                onClick: () => editor.chain().focus().toggleStrike().run(),
+                "data-active-state": editor.isActive("strike") ? "on" : "off",
+                title: "Barr\xE9",
+                children: /* @__PURE__ */ jsx(Strikethrough, { size: 14 })
+              }
+            ),
+            /* @__PURE__ */ jsx(
+              "button",
+              {
+                className: "tiptap-button",
+                type: "button",
+                onClick: () => editor.chain().focus().toggleHighlight().run(),
+                "data-active-state": editor.isActive("highlight") ? "on" : "off",
+                title: "Surlign\xE9",
+                children: /* @__PURE__ */ jsx(Highlighter, { size: 14 })
+              }
+            ),
+            /* @__PURE__ */ jsx(
+              "button",
+              {
+                className: "tiptap-button",
+                type: "button",
+                onClick: onLink,
+                "data-active-state": editor.isActive("link") ? "on" : "off",
+                title: "Lien",
+                children: /* @__PURE__ */ jsx(Link2, { size: 14 })
+              }
+            )
+          ] }),
+          hasMarks && /* @__PURE__ */ jsxs(Fragment3, { children: [
+            /* @__PURE__ */ jsx("div", { className: "tiptap-separator", "data-orientation": "vertical", role: "none" }),
+            /* @__PURE__ */ jsxs("div", { role: "group", className: "tiptap-toolbar-group", children: [
+              /* @__PURE__ */ jsx(
+                "button",
+                {
+                  className: "tiptap-button bubble-keep",
+                  type: "button",
+                  onClick: onKeep,
+                  title: "Garder",
+                  style: { color: "var(--intent-success-border)" },
+                  children: /* @__PURE__ */ jsx(Check, { size: 16 })
+                }
+              ),
+              /* @__PURE__ */ jsx(
+                "button",
+                {
+                  className: "tiptap-button bubble-reject",
+                  type: "button",
+                  onClick: onReject,
+                  title: "Annuler",
+                  style: { color: "var(--intent-error-border)" },
+                  children: /* @__PURE__ */ jsx(X, { size: 16 })
+                }
+              )
+            ] })
+          ] })
+        ]
+      }
+    ) });
+  };
+  var getTableCellInfo = (view, event) => {
+    const pos = view.posAtCoords({ left: event.clientX, top: event.clientY });
+    if (!pos) return null;
+    const $pos = view.state.doc.resolve(pos.pos);
+    let table = null;
+    let row = null;
+    let cell2 = null;
+    let tablePos = -1;
+    let rowPos = -1;
+    let cellPos = -1;
+    for (let d = $pos.depth; d > 0; d--) {
+      const node = $pos.node(d);
+      if (node.type.name === "tableCell" || node.type.name === "tableHeader") {
+        cell2 = node;
+        cellPos = $pos.before(d);
+      } else if (node.type.name === "tableRow") {
+        row = node;
+        rowPos = $pos.before(d);
+      } else if (node.type.name === "table") {
+        table = node;
+        tablePos = $pos.before(d);
+      }
+    }
+    if (!table || !row || !cell2) return null;
+    let rowIndex = -1;
+    let colIndex = -1;
+    table.forEach((_r, offset3, index) => {
+      if (offset3 === rowPos - tablePos - 1) {
+        rowIndex = index;
+        _r.forEach((_c, offsetInRow, ci) => {
+          if (offsetInRow + offset3 + tablePos + 2 === cellPos) {
+            colIndex = ci;
+          }
+        });
+      }
+    });
+    return { table, tablePos, row, rowPos, cell: cell2, cellPos, rowIndex, colIndex };
+  };
+  var getTableCellPosFromResolved = (resolvedPos) => {
+    for (let d = resolvedPos.depth; d > 0; d--) {
+      const node = resolvedPos.node(d);
+      if (node.type.name === "tableCell" || node.type.name === "tableHeader") {
+        return resolvedPos.before(d);
+      }
+    }
+    return null;
+  };
+  var moveRow = (editor, tablePos, fromRowIndex, toRowIndex) => {
+    const { tr: tr2 } = editor.state;
+    const table = editor.state.doc.nodeAt(tablePos);
+    if (!table || table.type.name !== "table") return false;
+    const rows = [];
+    table.forEach((node) => {
+      if (node.type.name === "tableRow") {
+        rows.push(node);
+      }
+    });
+    if (fromRowIndex <= 0 || toRowIndex <= 0) return false;
+    if (fromRowIndex >= rows.length || toRowIndex >= rows.length) return false;
+    const newRows = [...rows];
+    const [rowToMove] = newRows.splice(fromRowIndex, 1);
+    newRows.splice(toRowIndex, 0, rowToMove);
+    const newTable = table.type.create(table.attrs, newRows);
+    editor.view.dispatch(tr2.replaceWith(tablePos, tablePos + table.nodeSize, newTable));
+    return true;
+  };
+  var moveColumn = (editor, tablePos, fromColIndex, toColIndex) => {
+    const { tr: tr2 } = editor.state;
+    const table = editor.state.doc.nodeAt(tablePos);
+    if (!table || table.type.name !== "table") return false;
+    const newRows = [];
+    table.forEach((row) => {
+      const cells = [];
+      row.forEach((cell2) => cells.push(cell2));
+      if (fromColIndex >= 0 && fromColIndex < cells.length && toColIndex >= 0 && toColIndex < cells.length) {
+        const [cellToMove] = cells.splice(fromColIndex, 1);
+        cells.splice(toColIndex, 0, cellToMove);
+      }
+      newRows.push(row.type.create(row.attrs, cells));
+    });
+    const newTable = table.type.create(table.attrs, newRows);
+    editor.view.dispatch(tr2.replaceWith(tablePos, tablePos + table.nodeSize, newTable));
+    return true;
+  };
+  var sortColumn = (editor, tablePos, colIndex, direction) => {
+    const { tr: tr2 } = editor.state;
+    const table = editor.state.doc.nodeAt(tablePos);
+    if (!table || table.type.name !== "table") return false;
+    const rows = [];
+    table.forEach((row) => {
+      if (row.type.name === "tableRow") rows.push(row);
+    });
+    if (rows.length <= 1) return false;
+    const headerRow = rows[0];
+    const bodyRows = rows.slice(1);
+    const collator = new Intl.Collator("fr", { numeric: true, sensitivity: "base" });
+    const getCellText = (row) => {
+      const cell2 = row.childCount > colIndex ? row.child(colIndex) : null;
+      return cell2 ? cell2.textContent.trim() : "";
+    };
+    const sortedRows = bodyRows.map((row, index) => ({ row, index })).sort((a, b) => {
+      const aText = getCellText(a.row);
+      const bText = getCellText(b.row);
+      if (!aText && !bText) return 0;
+      if (!aText) return 1;
+      if (!bText) return -1;
+      const result = collator.compare(aText, bText);
+      if (result !== 0) return direction === "asc" ? result : -result;
+      return a.index - b.index;
+    }).map(({ row }) => row);
+    const newTable = table.type.create(table.attrs, [headerRow, ...sortedRows]);
+    editor.view.dispatch(tr2.replaceWith(tablePos, tablePos + table.nodeSize, newTable));
+    return true;
+  };
+  var hasMarkInSelection = (editor, markName) => {
+    if (!editor) return false;
+    const { from: from2, to } = editor.state.selection;
+    if (from2 === to) return false;
+    let hasMarked = false;
+    editor.state.doc.nodesBetween(from2, to, (node) => {
+      if (node.marks.some((m) => m.type.name === markName)) {
+        hasMarked = true;
+        return false;
+      }
+    });
+    return hasMarked;
+  };
+  var hasMarksInDocument = (editor) => {
+    if (!editor) return false;
+    let hasMarks = false;
+    editor.state.doc.descendants((node) => {
+      if (node.marks.some((m) => m.type.name === "highlight" || m.type.name === "strike")) {
+        hasMarks = true;
+        return false;
+      }
+    });
+    return hasMarks;
+  };
+  var cleanupEmptyBlocks = (tr2) => {
+    const nodesToDelete = [];
+    const emptyListItemTypes = /* @__PURE__ */ new Set(["listItem"]);
+    const emptyListTypes = /* @__PURE__ */ new Set(["bulletList", "orderedList"]);
+    tr2.doc.descendants((node, pos) => {
+      var _a, _b, _c, _d, _e, _f, _g;
+      const typeName = (_a = node.type) == null ? void 0 : _a.name;
+      if (emptyListItemTypes.has(typeName)) {
+        const hasNestedList = node.childCount > 1 && Array.from({ length: node.childCount }).some((_, idx) => {
+          var _a2, _b2;
+          const childType = (_b2 = (_a2 = node.child(idx)) == null ? void 0 : _a2.type) == null ? void 0 : _b2.name;
+          return emptyListTypes.has(childType);
+        });
+        const isSingleEmptyParagraph = node.childCount === 1 && ((_c = (_b = node.firstChild) == null ? void 0 : _b.type) == null ? void 0 : _c.name) === "paragraph" && ((_e = (_d = node.firstChild) == null ? void 0 : _d.content) == null ? void 0 : _e.size) === 0;
+        if (!hasNestedList && isSingleEmptyParagraph) {
+          nodesToDelete.push({ from: pos, to: pos + node.nodeSize });
+          return;
+        }
+      }
+      if ((typeName === "paragraph" || typeName === "heading") && node.content.size === 0) {
+        const $pos = tr2.doc.resolve(pos);
+        const parentType = (_g = (_f = $pos.parent) == null ? void 0 : _f.type) == null ? void 0 : _g.name;
+        if (emptyListItemTypes.has(parentType)) {
+          return;
+        }
+        nodesToDelete.push({ from: pos, to: pos + node.nodeSize });
+        return;
+      }
+      if (emptyListTypes.has(typeName) && node.childCount === 0) {
+        nodesToDelete.push({ from: pos, to: pos + node.nodeSize });
+      }
+    });
+    nodesToDelete.reverse().forEach(({ from: delFrom, to: delTo }) => {
+      tr2.delete(delFrom, delTo);
+    });
+  };
+  var keepSelection = (editor) => {
+    if (!editor) return;
+    const { from: from2, to } = editor.state.selection;
+    editor.chain().focus().unsetMark("highlight").run();
+    let toDelete = [];
+    editor.state.doc.nodesBetween(from2, to, (node, pos) => {
+      if (node.marks.some((m) => m.type.name === "strike")) {
+        toDelete.push({ from: pos, to: pos + node.nodeSize });
+      }
+    });
+    toDelete.reverse().forEach(({ from: delFrom, to: delTo }) => {
+      editor.chain().deleteRange({ from: delFrom, to: delTo }).run();
+    });
+    editor.chain().focus().command(({ tr: tr2 }) => {
+      cleanupEmptyBlocks(tr2);
+      return true;
+    }).run();
+  };
+  var rejectSelection = (editor) => {
+    if (!editor) return;
+    const { from: from2, to } = editor.state.selection;
+    editor.chain().focus().unsetMark("strike").run();
+    let toDelete = [];
+    editor.state.doc.nodesBetween(from2, to, (node, pos) => {
+      if (node.marks.some((m) => m.type.name === "highlight")) {
+        toDelete.push({ from: pos, to: pos + node.nodeSize });
+      }
+    });
+    toDelete.reverse().forEach(({ from: delFrom, to: delTo }) => {
+      editor.chain().deleteRange({ from: delFrom, to: delTo }).run();
+    });
+    editor.chain().focus().command(({ tr: tr2 }) => {
+      cleanupEmptyBlocks(tr2);
+      return true;
+    }).run();
+  };
+  var keepAllDocument = (editor) => {
+    if (!editor) return;
+    editor.chain().focus().command(({ tr: tr2 }) => {
+      const toDelete = [];
+      tr2.doc.descendants((node, pos) => {
+        if (node.marks.some((m) => m.type.name === "highlight")) {
+          node.marks.forEach((mark) => {
+            if (mark.type.name === "highlight") {
+              tr2.removeMark(pos, pos + node.nodeSize, mark.type);
+            }
+          });
+        }
+        if (node.marks.some((m) => m.type.name === "strike")) {
+          toDelete.push({ from: pos, to: pos + node.nodeSize });
+        }
+      });
+      toDelete.reverse().forEach(({ from: delFrom, to: delTo }) => {
+        tr2.delete(delFrom, delTo);
+      });
+      cleanupEmptyBlocks(tr2);
+      return true;
+    }).run();
+  };
+  var BlockTypeDropdown = ({ editor, onOpenChange }) => {
+    const [isOpen, setIsOpen] = react_shim_default.useState(false);
+    const dropdownRef = react_shim_default.useRef(null);
+    react_shim_default.useEffect(() => {
+      onOpenChange == null ? void 0 : onOpenChange(isOpen);
+    }, [isOpen, onOpenChange]);
+    const options2 = [
+      { label: "Texte", value: "paragraph", icon: Type, active: editor.isActive("paragraph") },
+      { label: "Titre 1", value: "h1", icon: Heading1, active: editor.isActive("heading", { level: 1 }) },
+      { label: "Titre 2", value: "h2", icon: Heading2, active: editor.isActive("heading", { level: 2 }) },
+      { label: "Titre 3", value: "h3", icon: Heading3, active: editor.isActive("heading", { level: 3 }) },
+      { label: "Titre 4", value: "h4", icon: Heading4, active: editor.isActive("heading", { level: 4 }) },
+      { label: "Liste \xE0 puces", value: "bulletList", icon: List, active: editor.isActive("bulletList") },
+      { label: "T\xE2che", value: "taskList", icon: SquareCheckBig, active: editor.isActive("taskList") },
+      { label: "Bloc de code", value: "codeBlock", icon: SquareCode, active: editor.isActive("codeBlock") }
+    ];
+    const currentOption = options2.find((o) => o.active) || options2[0];
+    react_shim_default.useEffect(() => {
+      const handleClickOutside = (event) => {
+        if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+          setIsOpen(false);
+        }
+      };
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+    const handleSelect = (value) => {
+      const chain = editor.chain().focus();
+      if (value === "paragraph") chain.setParagraph().run();
+      else if (value === "h1") chain.toggleHeading({ level: 1 }).run();
+      else if (value === "h2") chain.toggleHeading({ level: 2 }).run();
+      else if (value === "h3") chain.toggleHeading({ level: 3 }).run();
+      else if (value === "h4") chain.toggleHeading({ level: 4 }).run();
+      else if (value === "bulletList") chain.toggleBulletList().run();
+      else if (value === "taskList") chain.toggleTaskList().run();
+      else if (value === "code") chain.toggleCode().run();
+      else if (value === "codeBlock") chain.toggleCodeBlock().run();
+      setIsOpen(false);
+    };
+    return /* @__PURE__ */ jsxs("div", { className: "tiptap-dropdown", ref: dropdownRef, children: [
+      /* @__PURE__ */ jsxs(
+        "button",
+        {
+          type: "button",
+          className: "tiptap-dropdown-trigger",
+          onClick: () => setIsOpen(!isOpen),
+          children: [
+            /* @__PURE__ */ jsx(currentOption.icon, { size: 16 }),
+            /* @__PURE__ */ jsx("span", { children: currentOption.label }),
+            /* @__PURE__ */ jsx(ChevronDown, { size: 14 })
+          ]
+        }
+      ),
+      isOpen && /* @__PURE__ */ jsx("div", { className: "tiptap-dropdown-menu", children: options2.map((option) => /* @__PURE__ */ jsxs(
+        "div",
+        {
+          className: "tiptap-dropdown-item",
+          "data-active": option.active,
+          onClick: () => handleSelect(option.value),
+          children: [
+            /* @__PURE__ */ jsx(option.icon, { size: 16 }),
+            /* @__PURE__ */ jsx("span", { style: { flex: 1 }, children: option.label }),
+            option.active && /* @__PURE__ */ jsx(Check, { size: 14 })
+          ]
+        },
+        option.value
+      )) })
+    ] });
+  };
+  var QuoteTypeDropdown = ({ editor }) => {
+    const [isOpen, setIsOpen] = react_shim_default.useState(false);
+    const dropdownRef = react_shim_default.useRef(null);
+    react_shim_default.useEffect(() => {
+      const handleClickOutside = (event) => {
+        if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+          setIsOpen(false);
+        }
+      };
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+    const handleSelect = (type2) => {
+      const chain = editor.chain().focus();
+      if (editor.isActive("blockquote", { type: type2 })) {
+        chain.lift("blockquote").run();
+      } else if (editor.isActive("blockquote")) {
+        chain.updateAttributes("blockquote", { type: type2 }).run();
+      } else {
+        chain.setBlockquote().updateAttributes("blockquote", { type: type2 }).run();
+      }
+      setIsOpen(false);
+    };
+    const isAnyQuoteActive = editor.isActive("blockquote");
+    const currentQuoteType = editor.getAttributes("blockquote").type || "default";
+    const currentOption = ALERT_TYPES.find((a) => a.type === currentQuoteType) || ALERT_TYPES[0];
+    return /* @__PURE__ */ jsxs("div", { className: "tiptap-dropdown", ref: dropdownRef, children: [
+      /* @__PURE__ */ jsxs(
+        "button",
+        {
+          type: "button",
+          className: "tiptap-button",
+          onClick: () => setIsOpen(!isOpen),
+          "data-active-state": isAnyQuoteActive ? "on" : "off",
+          title: "Citation",
+          style: { width: "auto", padding: "0 4px", gap: "2px", display: "flex", alignItems: "center" },
+          children: [
+            /* @__PURE__ */ jsx(currentOption.icon, { size: 16, style: { color: isAnyQuoteActive ? currentOption.color : "inherit" } }),
+            /* @__PURE__ */ jsx(ChevronDown, { size: 14 })
+          ]
+        }
+      ),
+      isOpen && /* @__PURE__ */ jsx("div", { className: "tiptap-dropdown-menu", style: { width: "180px" }, children: ALERT_TYPES.map((alert) => /* @__PURE__ */ jsxs(
+        "div",
+        {
+          className: "tiptap-dropdown-item",
+          "data-active": editor.isActive("blockquote", { type: alert.type }),
+          onClick: () => handleSelect(alert.type),
+          children: [
+            /* @__PURE__ */ jsx(alert.icon, { size: 16, style: { color: alert.color } }),
+            /* @__PURE__ */ jsx("span", { style: { flex: 1 }, children: alert.label }),
+            editor.isActive("blockquote", { type: alert.type }) && /* @__PURE__ */ jsx(Check, { size: 14 })
+          ]
+        },
+        alert.type
+      )) })
+    ] });
+  };
+  var Toolbar = ({ editor, onDropdownToggle, onLink }) => {
+    const [, forceUpdate] = react_shim_default.useReducer((x) => x + 1, 0);
+    const [showTextColors, setShowTextColors] = react_shim_default.useState(false);
+    const toolbarRef = react_shim_default.useRef(null);
+    react_shim_default.useEffect(() => {
+      onDropdownToggle == null ? void 0 : onDropdownToggle(showTextColors);
+    }, [showTextColors, onDropdownToggle]);
+    react_shim_default.useEffect(() => {
+      if (!editor) return;
+      const updateHandler = () => forceUpdate();
+      editor.on("update", updateHandler);
+      editor.on("selectionUpdate", updateHandler);
+      const handleClickOutside = (event) => {
+        if (toolbarRef.current && !toolbarRef.current.contains(event.target)) {
+          setShowTextColors(false);
+        }
+      };
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => {
+        editor.off("update", updateHandler);
+        editor.off("selectionUpdate", updateHandler);
+        document.removeEventListener("mousedown", handleClickOutside);
+      };
+    }, [editor]);
+    if (!editor) return null;
+    return /* @__PURE__ */ jsxs("div", { ref: toolbarRef, role: "toolbar", "aria-label": "toolbar", "data-variant": "fixed", className: "tiptap-toolbar", children: [
+      /* @__PURE__ */ jsxs("div", { role: "group", className: "tiptap-toolbar-group", children: [
+        /* @__PURE__ */ jsx(
+          "button",
+          {
+            className: "tiptap-button",
+            "aria-label": "Undo",
+            type: "button",
+            onClick: () => editor.chain().focus().undo().run(),
+            disabled: !editor.can().undo(),
+            children: /* @__PURE__ */ jsx(Undo2, { size: 16 })
+          }
+        ),
+        /* @__PURE__ */ jsx(
+          "button",
+          {
+            className: "tiptap-button",
+            "aria-label": "Redo",
+            type: "button",
+            onClick: () => editor.chain().focus().redo().run(),
+            disabled: !editor.can().redo(),
+            children: /* @__PURE__ */ jsx(Redo2, { size: 16 })
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsx("div", { className: "tiptap-separator", "data-orientation": "vertical", role: "none" }),
+      /* @__PURE__ */ jsx("div", { role: "group", className: "tiptap-toolbar-group", children: /* @__PURE__ */ jsx(BlockTypeDropdown, { editor, onOpenChange: onDropdownToggle }) }),
+      /* @__PURE__ */ jsx("div", { className: "tiptap-separator", "data-orientation": "vertical", role: "none" }),
+      /* @__PURE__ */ jsxs("div", { role: "group", className: "tiptap-toolbar-group", "aria-label": "Style", children: [
+        /* @__PURE__ */ jsx(
+          "button",
+          {
+            className: "tiptap-button",
+            "aria-label": "Bold",
+            type: "button",
+            onClick: () => editor.chain().focus().toggleBold().run(),
+            "data-active-state": editor.isActive("bold") ? "on" : "off",
+            children: /* @__PURE__ */ jsx(Bold2, { size: 16 })
+          }
+        ),
+        /* @__PURE__ */ jsx(
+          "button",
+          {
+            className: "tiptap-button",
+            "aria-label": "Italic",
+            type: "button",
+            onClick: () => editor.chain().focus().toggleItalic().run(),
+            "data-active-state": editor.isActive("italic") ? "on" : "off",
+            children: /* @__PURE__ */ jsx(Italic2, { size: 16 })
+          }
+        ),
+        /* @__PURE__ */ jsx(
+          "button",
+          {
+            className: "tiptap-button",
+            "aria-label": "Underline",
+            type: "button",
+            onClick: () => editor.chain().focus().toggleUnderline().run(),
+            "data-active-state": editor.isActive("underline") ? "on" : "off",
+            children: /* @__PURE__ */ jsx(Underline2, { size: 16 })
+          }
+        ),
+        /* @__PURE__ */ jsxs("div", { style: { position: "relative" }, children: [
+          /* @__PURE__ */ jsx(
+            "button",
+            {
+              className: "tiptap-button",
+              "aria-label": "Text Color",
+              type: "button",
+              onMouseDown: (event) => event.preventDefault(),
+              onClick: () => setShowTextColors(!showTextColors),
+              title: "Couleur du texte",
+              children: /* @__PURE__ */ jsx(Baseline, { size: 16 })
+            }
+          ),
+          showTextColors && /* @__PURE__ */ jsx(
+            "div",
+            {
+              className: "table-color-grid",
+              style: {
+                position: "absolute",
+                top: "100%",
+                left: "50%",
+                transform: "translateX(-50%)",
+                marginTop: "8px"
+              },
+              children: TEXT_COLORS.map((color) => /* @__PURE__ */ jsx(
+                "div",
+                {
+                  className: "table-color-option",
+                  style: {
+                    backgroundColor: color.value
+                  },
+                  title: color.name,
+                  onMouseDown: (event) => event.preventDefault(),
+                  onClick: () => {
+                    editor.chain().focus().setColor(color.value).run();
+                    setShowTextColors(false);
+                  }
+                },
+                color.value
+              ))
+            }
+          )
+        ] })
+      ] }),
+      /* @__PURE__ */ jsx("div", { className: "tiptap-separator", "data-orientation": "vertical", role: "none" }),
+      /* @__PURE__ */ jsxs("div", { role: "group", className: "tiptap-toolbar-group", "aria-label": "Texte avanc\xE9", children: [
+        /* @__PURE__ */ jsx(
+          "button",
+          {
+            className: "tiptap-button",
+            "aria-label": "Strike",
+            type: "button",
+            onClick: () => editor.chain().focus().toggleStrike().run(),
+            "data-active-state": editor.isActive("strike") ? "on" : "off",
+            children: /* @__PURE__ */ jsx(Strikethrough, { size: 16 })
+          }
+        ),
+        /* @__PURE__ */ jsx(
+          "button",
+          {
+            className: "tiptap-button",
+            "aria-label": "Highlight",
+            type: "button",
+            onClick: () => editor.chain().focus().toggleHighlight().run(),
+            "data-active-state": editor.isActive("highlight") ? "on" : "off",
+            title: "Surligner",
+            children: /* @__PURE__ */ jsx(Highlighter, { size: 16 })
+          }
+        ),
+        /* @__PURE__ */ jsx(
+          "button",
+          {
+            className: "tiptap-button",
+            "aria-label": "Link",
+            type: "button",
+            onClick: onLink,
+            "data-active-state": editor.isActive("link") ? "on" : "off",
+            title: "Lien",
+            children: /* @__PURE__ */ jsx(Link2, { size: 16 })
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsx("div", { className: "tiptap-separator", "data-orientation": "vertical", role: "none" }),
+      /* @__PURE__ */ jsxs("div", { role: "group", className: "tiptap-toolbar-group", "aria-label": "Bloc", children: [
+        /* @__PURE__ */ jsx(
+          "button",
+          {
+            className: "tiptap-button",
+            "aria-label": "Libell\xE9",
+            type: "button",
+            onClick: () => {
+              editor.chain().focus().insertContent("`").run();
+            },
+            "data-active-state": editor.isActive("code") ? "on" : "off",
+            title: "Libell\xE9",
+            children: /* @__PURE__ */ jsx(Tag, { size: 16 })
+          }
+        ),
+        /* @__PURE__ */ jsx(QuoteTypeDropdown, { editor })
+      ] }),
+      /* @__PURE__ */ jsx("div", { className: "tiptap-separator", "data-orientation": "vertical", role: "none" }),
+      /* @__PURE__ */ jsxs("div", { role: "group", className: "tiptap-toolbar-group", "aria-label": "Insertion", children: [
+        /* @__PURE__ */ jsx(
+          "button",
+          {
+            className: "tiptap-button",
+            "aria-label": "Insert Table",
+            type: "button",
+            onClick: () => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run(),
+            children: /* @__PURE__ */ jsx(Table2, { size: 16 })
+          }
+        ),
+        /* @__PURE__ */ jsx(
+          "button",
+          {
+            className: "tiptap-button",
+            "aria-label": "Insert Mermaid Diagram",
+            type: "button",
+            onClick: () => {
+              insertMermaidDiagram(editor);
+            },
+            "data-active-state": editor.isActive("mermaidDiagram") ? "on" : "off",
+            title: "Ins\xE9rer un diagramme Mermaid",
+            children: /* @__PURE__ */ jsx(Shapes, { size: 16 })
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsx("div", { className: "tiptap-separator", "data-orientation": "vertical", role: "none" }),
+      /* @__PURE__ */ jsxs("div", { role: "group", className: "tiptap-toolbar-group", children: [
+        editor && hasMarksInDocument(editor) && /* @__PURE__ */ jsx(
+          "button",
+          {
+            className: "tiptap-button toolbar-action-btn toolbar-keep",
+            "aria-label": "Garder tout",
+            type: "button",
+            title: "Garder tout",
+            onClick: () => keepAllDocument(editor),
+            children: /* @__PURE__ */ jsx(CheckCheck, { size: 16 })
+          }
+        ),
+        /* @__PURE__ */ jsx(
+          "button",
+          {
+            className: "tiptap-button",
+            "aria-label": "Voir le code source",
+            title: "Voir le code source",
+            type: "button",
+            onClick: () => {
+              var _a;
+              (_a = window.openMemoSourceModal) == null ? void 0 : _a.call(window);
+              document.dispatchEvent(new CustomEvent("memoEditorOpenSourceModal"));
+            },
+            children: /* @__PURE__ */ jsx(CodeXml, { size: 16 })
+          }
+        )
+      ] })
+    ] });
+  };
+  var CodeList = react_shim_default.forwardRef((props, ref2) => {
+    var _a;
+    const [selectedIndex, setSelectedIndex] = react_shim_default.useState(0);
+    const selectItem = (index) => {
+      var _a2;
+      const item = (_a2 = props.items) == null ? void 0 : _a2[index];
+      if (!item) return;
+      if (typeof item === "string") {
+        props.command({ text: item });
+        return;
+      }
+      props.command({ text: item.text, marks: item.marks || [] });
+    };
+    const upHandler = () => {
+      var _a2;
+      const len = ((_a2 = props.items) == null ? void 0 : _a2.length) || 0;
+      if (!len) return;
+      setSelectedIndex((prev) => (prev + len - 1) % len);
+    };
+    const downHandler = () => {
+      var _a2;
+      const len = ((_a2 = props.items) == null ? void 0 : _a2.length) || 0;
+      if (!len) return;
+      setSelectedIndex((prev) => (prev + 1) % len);
+    };
+    const enterHandler = () => {
+      selectItem(selectedIndex);
+    };
+    react_shim_default.useEffect(() => setSelectedIndex(0), [props.items]);
+    react_shim_default.useImperativeHandle(ref2, () => {
+      return {
+        onKeyDown: (x) => {
+          var _a2;
+          if (x.event.key === "ArrowUp") {
+            upHandler();
+            return true;
+          }
+          if (x.event.key === "ArrowDown") {
+            downHandler();
+            return true;
+          }
+          if (x.event.key === "Enter") {
+            enterHandler();
+            return true;
+          }
+          if (x.event.key === "Tab") {
+            if (((_a2 = props.items) == null ? void 0 : _a2.length) > 0) {
+              selectItem(0);
+              return true;
+            }
+          }
+          return false;
+        }
+      };
+    }, [selectedIndex, props.items]);
+    if (!((_a = props.items) == null ? void 0 : _a.length)) return null;
+    return /* @__PURE__ */ jsx(
+      "div",
+      {
+        className: "code-dropdown-autocomplete",
+        style: {
+          background: "var(--bg-surface-soft)",
+          border: "1px solid var(--border-main)",
+          borderRadius: "8px",
+          boxShadow: "var(--shadow-md)",
+          padding: "4px",
+          maxHeight: "200px",
+          overflowY: "auto",
+          minWidth: "150px",
+          zIndex: 9999
+        },
+        children: props.items.map((item, index) => {
+          var _a2, _b, _c, _d;
+          const label = typeof item === "string" ? item : item.text;
+          const marks = typeof item === "string" ? [] : item.marks || [];
+          const color = (_b = (_a2 = marks.find((mark) => mark.type === "textStyle")) == null ? void 0 : _a2.attrs) == null ? void 0 : _b.color;
+          const isBold = marks.some((mark) => mark.type === "bold");
+          const isItalic = marks.some((mark) => mark.type === "italic");
+          const isUnderline = marks.some((mark) => mark.type === "underline");
+          const isStrike = marks.some((mark) => mark.type === "strike");
+          const isHighlight = marks.some((mark) => mark.type === "highlight");
+          return /* @__PURE__ */ jsx(
+            "button",
+            {
+              onMouseDown: (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                selectItem(index);
+              },
+              style: {
+                display: "block",
+                width: "100%",
+                textAlign: "left",
+                padding: "6px 8px",
+                border: "none",
+                cursor: "pointer",
+                borderRadius: "4px",
+                fontSize: "13px",
+                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                color: color || "var(--text-main)",
+                fontWeight: isBold ? 700 : 400,
+                fontStyle: isItalic ? "italic" : "normal",
+                textDecoration: `${isUnderline ? "underline" : ""}${isStrike ? " line-through" : ""}`.trim() || "none",
+                backgroundColor: isHighlight ? ((_d = (_c = marks.find((mark) => mark.type === "highlight")) == null ? void 0 : _c.attrs) == null ? void 0 : _d.color) || "var(--bg-surface)" : index === selectedIndex ? "var(--bg-surface)" : "var(--bg-surface-soft)"
+              },
+              children: label
+            },
+            index
+          );
+        })
+      }
+    );
+  });
+  var CODE_SUGGESTION_USAGE_KEY = "go-toolkit-code-suggestion-usage";
+  var CODE_SUGGESTION_STYLE_KEY = "go-toolkit-code-suggestion-styles";
+  var loadCodeSuggestionStyles = () => {
+    try {
+      const raw = localStorage.getItem(CODE_SUGGESTION_STYLE_KEY);
+      if (!raw) return {};
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch (err) {
+      return {};
+    }
+  };
+  var saveCodeSuggestionStyles = (styles) => {
+    try {
+      localStorage.setItem(CODE_SUGGESTION_STYLE_KEY, JSON.stringify(styles));
+    } catch (err) {
+    }
+  };
+  var normalizeCodeSuggestionText = (text) => (text || "").trim();
+  var extractCodeSuggestionStyle = (marks) => {
+    var _a;
+    const hasType = (type2) => marks.some((mark) => {
+      var _a2;
+      return (((_a2 = mark.type) == null ? void 0 : _a2.name) || mark.type) === type2;
+    });
+    const colorMark = marks.find((mark) => {
+      var _a2;
+      return (((_a2 = mark.type) == null ? void 0 : _a2.name) || mark.type) === "textStyle";
+    });
+    const color = (_a = colorMark == null ? void 0 : colorMark.attrs) == null ? void 0 : _a.color;
+    return {
+      bold: hasType("bold"),
+      italic: hasType("italic"),
+      color: color || void 0
+    };
+  };
+  var codeSuggestionStylesEqual = (a, b) => {
+    const normalizedA = {
+      bold: !!(a == null ? void 0 : a.bold),
+      italic: !!(a == null ? void 0 : a.italic),
+      color: (a == null ? void 0 : a.color) || ""
+    };
+    const normalizedB = {
+      bold: !!(b == null ? void 0 : b.bold),
+      italic: !!(b == null ? void 0 : b.italic),
+      color: (b == null ? void 0 : b.color) || ""
+    };
+    return normalizedA.bold === normalizedB.bold && normalizedA.italic === normalizedB.italic && normalizedA.color === normalizedB.color;
+  };
+  var buildMarksFromCodeSuggestionStyle = (style2) => {
+    const marks = [];
+    if (style2 == null ? void 0 : style2.bold) {
+      marks.push({ type: "bold" });
+    }
+    if (style2 == null ? void 0 : style2.italic) {
+      marks.push({ type: "italic" });
+    }
+    if (style2 == null ? void 0 : style2.color) {
+      marks.push({ type: "textStyle", attrs: { color: style2.color } });
+    }
+    return marks;
+  };
+  var loadCodeSuggestionUsage = () => {
+    try {
+      const raw = localStorage.getItem(CODE_SUGGESTION_USAGE_KEY);
+      if (!raw) return {};
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch (err) {
+      return {};
+    }
+  };
+  var bumpCodeSuggestionUsage = (snippet) => {
+    const key = (snippet || "").trim();
+    if (!key) return;
+    const usage = loadCodeSuggestionUsage();
+    usage[key] = (usage[key] || 0) + 1;
+    try {
+      localStorage.setItem(CODE_SUGGESTION_USAGE_KEY, JSON.stringify(usage));
+    } catch (err) {
+    }
+  };
+  var codeSuggestion = {
+    items: ({ editor, query }) => {
+      const snippets = /* @__PURE__ */ new Map();
+      const styles = loadCodeSuggestionStyles();
+      editor.state.doc.descendants((node) => {
+        if (node.isText) {
+          const codeMark = node.marks.find((m) => m.type.name === "code");
+          if (codeMark && node.text) {
+            const trimmed = normalizeCodeSuggestionText(node.text);
+            if (!trimmed) return true;
+            if (!snippets.has(trimmed)) {
+              const storedStyle = styles[trimmed];
+              const marks = storedStyle ? buildMarksFromCodeSuggestionStyle(storedStyle) : node.marks.map((mark) => ({
+                type: mark.type.name,
+                attrs: mark.attrs || {}
+              }));
+              snippets.set(trimmed, { text: trimmed, marks });
+            }
+          }
+        }
+        return true;
+      });
+      const usage = loadCodeSuggestionUsage();
+      return Array.from(snippets.values()).filter(({ text }) => text.toLowerCase().includes(query.toLowerCase())).sort((a, b) => {
+        const aCount = usage[a.text] || 0;
+        const bCount = usage[b.text] || 0;
+        if (aCount !== bCount) return bCount - aCount;
+        return a.text.localeCompare(b.text);
+      }).slice(0, 10);
+    },
+    render: () => {
+      let component;
+      function repositionComponent(clientRect2) {
+        if (!(component == null ? void 0 : component.element)) return;
+        const rect = typeof clientRect2 === "function" ? clientRect2() : clientRect2;
+        if (!rect) return;
+        const virtualElement = {
+          getBoundingClientRect() {
+            return rect;
+          }
+        };
+        computePosition2(virtualElement, component.element, {
+          placement: "bottom-start"
+        }).then((pos) => {
+          Object.assign(component.element.style, {
+            left: `${pos.x}px`,
+            top: `${pos.y}px`,
+            position: pos.strategy === "fixed" ? "fixed" : "absolute"
+          });
+        });
+      }
+      return {
+        onStart: (props) => {
+          component = new ReactRenderer(CodeList, {
+            props,
+            editor: props.editor,
+            className: "code-dropdown-autocomplete"
+          });
+          document.body.appendChild(component.element);
+          repositionComponent(props.clientRect);
+        },
+        onUpdate(props) {
+          component.updateProps(props);
+          repositionComponent(props.clientRect);
+        },
+        onKeyDown(props) {
+          var _a;
+          if (props.event.key === "Escape" || props.event.key === "`") {
+            if (document.body.contains(component.element)) {
+              document.body.removeChild(component.element);
+            }
+            component.destroy();
+            return props.event.key === "Escape";
+          }
+          return (_a = component.ref) == null ? void 0 : _a.onKeyDown(props);
+        },
+        onExit() {
+          if ((component == null ? void 0 : component.element) && document.body.contains(component.element)) {
+            document.body.removeChild(component.element);
+          }
+          component == null ? void 0 : component.destroy();
+        }
+      };
+    }
+  };
+  var CodeSuggestion = Extension.create({
+    name: "codeSuggestion",
+    addOptions() {
+      return {
+        suggestion: {
+          char: "`",
+          pluginKey: new PluginKey("codeSuggestion"),
+          allow: ({ editor }) => {
+            return !editor.isActive("codeBlock");
+          },
+          command: ({ editor, range: range2, props }) => {
+            var _a;
+            bumpCodeSuggestionUsage(props.text);
+            const activeColor = (_a = editor.getAttributes("textStyle")) == null ? void 0 : _a.color;
+            const storedMarks = editor.state.storedMarks || editor.state.selection.$from.marks();
+            const suggestionMarks = Array.isArray(props.marks) ? props.marks : [];
+            const marksMap = /* @__PURE__ */ new Map();
+            const normalizeType = (type2) => typeof type2 === "string" ? type2 : type2 == null ? void 0 : type2.name;
+            const isStyleMarkType = (type2) => type2 === "bold" || type2 === "italic" || type2 === "textStyle";
+            const addMark2 = (mark) => {
+              const key = normalizeType(mark.type);
+              if (!key) return;
+              if (key === "code") {
+                marksMap.set("code", { type: "code" });
+                return;
+              }
+              marksMap.set(key, { type: key, attrs: mark.attrs || {} });
+            };
+            addMark2({ type: "code" });
+            suggestionMarks.forEach((mark) => addMark2(mark));
+            storedMarks.forEach((mark) => {
+              const key = normalizeType(mark.type);
+              if (key && isStyleMarkType(key)) return;
+              addMark2({ type: mark.type, attrs: mark.attrs });
+            });
+            if (activeColor && !suggestionMarks.some((mark) => normalizeType(mark.type) === "textStyle")) {
+              marksMap.set("textStyle", { type: "textStyle", attrs: { color: activeColor } });
+            }
+            const finalMarks = Array.from(marksMap.values());
+            editor.chain().focus().insertContentAt(range2, [
+              {
+                type: "text",
+                text: props.text,
+                marks: finalMarks
+              },
+              {
+                type: "text",
+                text: " "
+              }
+            ]).run();
+            const nextPos = range2.from + props.text.length + 1;
+            const restoreChain = editor.chain().focus().setTextSelection(nextPos);
+            storedMarks.filter((mark) => mark.type.name !== "code").forEach((mark) => restoreChain.setMark(mark.type.name, mark.attrs || {}));
+            if (activeColor) {
+              restoreChain.setColor(activeColor);
+            }
+            restoreChain.run();
+          }
+        }
+      };
+    },
+    addProseMirrorPlugins() {
+      return [
+        new Plugin({
+          key: new PluginKey("codeSuggestionStyleSync"),
+          appendTransaction: (transactions, _oldState, newState) => {
+            if (!transactions.some((transaction) => transaction.docChanged)) {
+              return null;
+            }
+            const storedStyles = loadCodeSuggestionStyles();
+            const nextStyles = { ...storedStyles };
+            let stylesChanged = false;
+            const latestStyles = /* @__PURE__ */ new Map();
+            newState.doc.descendants((node) => {
+              if (!node.isText || !node.text) return true;
+              const hasCode = node.marks.some((mark) => mark.type.name === "code");
+              if (!hasCode) return true;
+              const key = normalizeCodeSuggestionText(node.text);
+              if (!key) return true;
+              const style2 = extractCodeSuggestionStyle(node.marks);
+              latestStyles.set(key, style2);
+              return true;
+            });
+            latestStyles.forEach((style2, key) => {
+              const existing = nextStyles[key];
+              if (!existing || !codeSuggestionStylesEqual(existing, style2)) {
+                nextStyles[key] = style2;
+                stylesChanged = true;
+              }
+            });
+            let tr2 = newState.tr;
+            let modified = false;
+            newState.doc.descendants((node, pos) => {
+              if (!node.isText || !node.text) return true;
+              const hasCode = node.marks.some((mark) => mark.type.name === "code");
+              if (!hasCode) return true;
+              const key = normalizeCodeSuggestionText(node.text);
+              if (!key) return true;
+              const desired = nextStyles[key];
+              if (!desired) return true;
+              const current = extractCodeSuggestionStyle(node.marks);
+              if (codeSuggestionStylesEqual(desired, current)) return true;
+              const end = pos + node.nodeSize;
+              const { schema } = newState;
+              if (schema.marks.bold) {
+                tr2.removeMark(pos, end, schema.marks.bold);
+              }
+              if (schema.marks.italic) {
+                tr2.removeMark(pos, end, schema.marks.italic);
+              }
+              if (schema.marks.textStyle) {
+                tr2.removeMark(pos, end, schema.marks.textStyle);
+              }
+              if (desired.bold && schema.marks.bold) {
+                tr2.addMark(pos, end, schema.marks.bold.create());
+              }
+              if (desired.italic && schema.marks.italic) {
+                tr2.addMark(pos, end, schema.marks.italic.create());
+              }
+              if (desired.color && schema.marks.textStyle) {
+                tr2.addMark(pos, end, schema.marks.textStyle.create({ color: desired.color }));
+              }
+              modified = true;
+              return true;
+            });
+            if (stylesChanged) {
+              saveCodeSuggestionStyles(nextStyles);
+            }
+            return modified ? tr2 : null;
+          }
+        }),
+        Suggestion({
+          editor: this.editor,
+          ...this.options.suggestion,
+          items: codeSuggestion.items,
+          render: codeSuggestion.render
+        })
+      ];
+    }
+  });
+  async function downloadSvgAsPng(svgElement, filename = "diagramme.png") {
+    try {
+      const svgData = new XMLSerializer().serializeToString(svgElement);
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      const img = new window.Image();
+      const rect = svgElement.getBoundingClientRect();
+      const scale = 2;
+      const width = rect.width * scale;
+      const height = rect.height * scale;
+      canvas.width = width;
+      canvas.height = height;
+      if (ctx) {
+        ctx.fillStyle = "white";
+        ctx.fillRect(0, 0, width, height);
+      }
+      const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+      const url = URL.createObjectURL(svgBlob);
+      img.onload = () => {
+        ctx == null ? void 0 : ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL("image/png");
+        const link2 = document.createElement("a");
+        link2.download = filename;
+        link2.href = dataUrl;
+        link2.click();
+        URL.revokeObjectURL(url);
+      };
+      img.src = url;
+    } catch (err) {
+      console.error("Error downloading PNG:", err);
+    }
+  }
+  var SimpleEditor = ({
+    content = "",
+    onChange,
+    editorId,
+    onReady,
+    placeholder = "Commencez \xE0 \xE9crire..."
+  }) => {
+    var _a, _b, _c, _d;
+    const mountStart = react_shim_default.useRef(performance.now());
+    const turndownRef = react_shim_default.useRef(null);
+    const containerRef = react_shim_default.useRef(null);
+    const [rowHandle, setRowHandle] = react_shim_default.useState(null);
+    const [colHandle, setColHandle] = react_shim_default.useState(null);
+    const [blockDeleteHandle, setBlockDeleteHandle] = react_shim_default.useState(null);
+    const [quoteHandle, setQuoteHandle] = react_shim_default.useState(null);
+    const [quoteMenu, setQuoteMenu] = react_shim_default.useState(null);
+    const [codeHandle, setCodeHandle] = react_shim_default.useState(null);
+    const [mermaidHandles, setMermaidHandles] = react_shim_default.useState([]);
+    const [hoveredMermaidPos, setHoveredMermaidPos] = react_shim_default.useState(null);
+    const [isDropdownOpen, setIsDropdownOpen] = react_shim_default.useState(false);
+    const [selectionData, setSelectionData] = react_shim_default.useState(null);
+    const [tableContextMenu, setTableContextMenu] = react_shim_default.useState(null);
+    const [mouseDownPoints, setMouseDownPoints] = react_shim_default.useState(null);
+    const [dragState, setDragState] = react_shim_default.useState(null);
+    const [dropIndicator, setDropIndicator] = react_shim_default.useState(null);
+    const [blockDragPending, setBlockDragPending] = react_shim_default.useState(null);
+    const [blockDragState, setBlockDragState] = react_shim_default.useState(null);
+    const [blockDropIndicator, setBlockDropIndicator] = react_shim_default.useState(null);
+    const [dragGhost, setDragGhost] = react_shim_default.useState(null);
+    const [showLinkModal, setShowLinkModal] = react_shim_default.useState(false);
+    const [isFocusWithinMemoCard, setIsFocusWithinMemoCard] = react_shim_default.useState(false);
+    const blockDragMovedRef = react_shim_default.useRef(false);
+    const editor = useEditor({
+      extensions: [
+        StarterKit.configure({
+          blockquote: false,
+          heading: false,
+          // Use our custom Heading instead to get IDs
+          code: false,
+          paragraph: false,
+          bulletList: false,
+          orderedList: false,
+          codeBlock: false
+        }),
+        CustomCode,
+        CustomHeading.configure({
+          levels: [1, 2, 3, 4]
+        }),
+        CustomParagraph,
+        CustomBulletList,
+        CustomOrderedList,
+        CustomCodeBlock,
+        Alert,
+        TextStyle,
+        Color,
+        Highlight,
+        Underline,
+        Superscript,
+        Subscript,
+        TextAlign.configure({
+          types: ["heading", "paragraph"]
+        }),
+        Link.configure({
+          openOnClick: false,
+          HTMLAttributes: {
+            class: "memo-link"
+          }
+        }),
+        Image2,
+        TableNode,
+        TableRow,
+        TableHeader,
+        CustomTableCell,
+        TaskListNode,
+        TaskItemNode,
+        MermaidNode,
+        CodeSuggestion,
+        TableOfContents.configure({
+          onUpdate(content2) {
+            const start = performance.now();
+            window.MemoHeadings = content2;
+            window.dispatchEvent(new CustomEvent("memo:headings-updated", { detail: content2 }));
+            const duration = Math.round(performance.now() - start);
+            if (duration > 10) {
+              console.warn(`[SimpleEditor] TOC onUpdate took ${duration}ms`);
+            }
+          }
+        }),
+        Placeholder.configure({
+          placeholder
+        })
+      ],
+      content,
+      onCreate: ({ editor: editor2 }) => {
+        console.log(`[SimpleEditor] created in ${Math.round(performance.now() - mountStart.current)}ms with ${editor2.state.doc.nodeSize} nodes`);
+      },
+      editorProps: {
+        handleTripleClickOn: (view, pos) => selectTableCellText(view, pos),
+        handleKeyDown: (_view, event) => {
+          var _a2, _b2;
+          if (!editor) return false;
+          const clearStoredMarks = () => {
+            const blockedMarks = /* @__PURE__ */ new Set(["code", "textStyle", "bold", "italic", "underline", "strike", "highlight"]);
+            const storedMarks = editor.state.storedMarks || editor.state.selection.$from.marks();
+            if (!(storedMarks == null ? void 0 : storedMarks.length)) return;
+            const filtered = storedMarks.filter((mark) => !blockedMarks.has(mark.type.name));
+            if (filtered.length === storedMarks.length) return;
+            const tr2 = editor.state.tr.setStoredMarks(filtered.length ? filtered : null);
+            editor.view.dispatch(tr2);
+          };
+          if (event.key === " " || event.key === "Spacebar") {
+            if (!editor.isActive("code")) return false;
+            editor.chain().focus().insertContent(" ").unsetCode().run();
+            clearStoredMarks();
+            return true;
+          }
+          if (event.key === "ArrowRight" && editor.isActive("code")) {
+            setTimeout(() => {
+              if (!editor.isActive("code")) {
+                clearStoredMarks();
+              }
+            }, 0);
+          }
+          if (event.key === "Enter") {
+            const { state: state2 } = editor;
+            const { selection } = state2;
+            const $from = selection.$from;
+            const parent = $from.parent;
+            if (((_a2 = parent == null ? void 0 : parent.type) == null ? void 0 : _a2.name) === "heading" && ((_b2 = parent.attrs) == null ? void 0 : _b2.collapsed)) {
+              const level = parent.attrs.level || 1;
+              const headingPos = $from.before($from.depth);
+              const docSize = state2.doc.content.size;
+              let insertPos = docSize;
+              state2.doc.nodesBetween(headingPos + parent.nodeSize, docSize, (node, pos) => {
+                if (insertPos !== docSize) return false;
+                if (node.type.name === "heading" && node.attrs.level <= level) {
+                  insertPos = pos;
+                  return false;
+                }
+                return true;
+              });
+              event.preventDefault();
+              const tr2 = state2.tr.insert(insertPos, state2.schema.nodes.heading.create({ level }, state2.schema.text("")));
+              const nextSelection = TextSelection.create(tr2.doc, insertPos + 1);
+              tr2.setSelection(nextSelection);
+              editor.view.dispatch(tr2);
+              return true;
+            }
+          }
+          return false;
+        },
+        handleDrop: (view, event) => {
+          if (!event || !(event instanceof DragEvent)) return false;
+          const coords = view.posAtCoords({ left: event.clientX, top: event.clientY });
+          if (!coords) return false;
+          const originCellPos = getTableCellPosFromResolved(view.state.selection.$from);
+          const targetCellPos = getTableCellPosFromResolved(view.state.doc.resolve(coords.pos));
+          if (originCellPos !== null && targetCellPos !== null && originCellPos !== targetCellPos) {
+            event.preventDefault();
+            return true;
+          }
+          const selection = view.state.selection;
+          const originIsDetailsNode = selection instanceof NodeSelection && selection.node.type.name === "details";
+          const originInDetails = originIsDetailsNode || hasAncestorNode(view.state.selection.$from, "details");
+          const targetInDetails = hasAncestorNode(view.state.doc.resolve(coords.pos), "details");
+          if (originInDetails || targetInDetails) {
+            event.preventDefault();
+            return true;
+          }
+          return false;
+        }
+      },
+      onUpdate: ({ editor: editor2 }) => {
+        const start = performance.now();
+        if (onChange) {
+          if (window._memoSaveTimeout) {
+            clearTimeout(window._memoSaveTimeout);
+          }
+          window._memoSaveTimeout = setTimeout(() => {
+            const innerStart = performance.now();
+            const html2 = editor2.getHTML();
+            onChange(html2);
+            const duration = Math.round(performance.now() - innerStart);
+            if (duration > 50) {
+              console.warn(`[SimpleEditor] debounced onChange: getHTML/onChange took ${duration}ms`);
+            }
+          }, 500);
+        }
+        const totalDuration = Math.round(performance.now() - start);
+        if (totalDuration > 10) {
+          console.log(`[SimpleEditor] onUpdate (sync part) took ${totalDuration}ms`);
+        }
+      },
+      onBlur: ({ editor: editor2 }) => {
+        if (onChange) {
+          if (window._memoSaveTimeout) {
+            clearTimeout(window._memoSaveTimeout);
+          }
+          onChange(editor2.getHTML());
+        }
+      }
+    });
+    const copyBlockHtmlAtPos = react_shim_default.useCallback((pos) => {
+      if (!editor) return;
+      try {
+        const node = editor.state.doc.nodeAt(pos);
+        if (!node) return;
+        const slice2 = editor.state.doc.slice(pos, pos + node.nodeSize);
+        const serializer = DOMSerializer.fromSchema(editor.state.schema);
+        const fragment = serializer.serializeFragment(slice2.content);
+        const tmp = document.createElement("div");
+        tmp.appendChild(fragment);
+        const html2 = tmp.innerHTML.trim();
+        if (!html2) return;
+        const text = (tmp.textContent || "").trim();
+        const write = async () => {
+          if (navigator.clipboard && typeof navigator.clipboard.write === "function" && typeof window.ClipboardItem === "function") {
+            const item = new window.ClipboardItem({
+              "text/html": new Blob([html2], { type: "text/html" }),
+              "text/plain": new Blob([text || html2], { type: "text/plain" })
+            });
+            await navigator.clipboard.write([item]);
+          } else if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+            await navigator.clipboard.writeText(text || html2);
+          }
+        };
+        write().then(() => {
+          document.dispatchEvent(new CustomEvent("copyToast", {
+            detail: { message: "Contenu copi\xE9" }
+          }));
+        });
+      } catch (err) {
+      }
+    }, [editor]);
+    react_shim_default.useEffect(() => {
+      if (!editor) return;
+      const syncTableWrappers = () => {
+        editor.view.dom.querySelectorAll(".tableWrapper").forEach((el) => {
+          el.classList.add("node-table");
+        });
+      };
+      syncTableWrappers();
+      editor.on("update", syncTableWrappers);
+      return () => {
+        editor.off("update", syncTableWrappers);
+      };
+    }, [editor]);
+    react_shim_default.useEffect(() => {
+      if (!editor) return;
+      let isAdjusting = false;
+      const clearInlineCodeCarryover = () => {
+        if (isAdjusting) return;
+        if (editor.isActive("code")) return;
+        const storedMarks = editor.state.storedMarks || editor.state.selection.$from.marks();
+        if (!(storedMarks == null ? void 0 : storedMarks.length)) return;
+        const blockedMarks = /* @__PURE__ */ new Set(["code", "textStyle", "bold", "italic", "underline", "strike", "highlight"]);
+        const filtered = storedMarks.filter((mark) => !blockedMarks.has(mark.type.name));
+        if (filtered.length === storedMarks.length) return;
+        const tr2 = editor.state.tr.setStoredMarks(filtered.length ? filtered : null);
+        isAdjusting = true;
+        editor.view.dispatch(tr2);
+        isAdjusting = false;
+      };
+      editor.on("selectionUpdate", clearInlineCodeCarryover);
+      return () => {
+        editor.off("selectionUpdate", clearInlineCodeCarryover);
+      };
+    }, [editor]);
+    react_shim_default.useEffect(() => {
+      if (!editor) return;
+      const syncDetailsState = () => {
+        editor.view.dom.querySelectorAll("details.details, .details.node-details").forEach((el) => {
+          const detailsEl = el;
+          const dataOpen = detailsEl.getAttribute("data-open");
+          const contentEl = detailsEl.querySelector('[data-type="detailsContent"]');
+          const isContentHidden = contentEl ? contentEl.hasAttribute("hidden") : false;
+          const isOpen = dataOpen !== null ? dataOpen === "true" : contentEl ? !isContentHidden : !!detailsEl.open;
+          detailsEl.classList.toggle("is-open", isOpen);
+        });
+      };
+      const handleToggle = (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLDetailsElement)) return;
+        const isOpen = target.open || target.getAttribute("data-open") === "true";
+        target.classList.toggle("is-open", isOpen);
+      };
+      syncDetailsState();
+      editor.view.dom.addEventListener("toggle", handleToggle, true);
+      editor.on("update", syncDetailsState);
+      return () => {
+        editor.view.dom.removeEventListener("toggle", handleToggle, true);
+        editor.off("update", syncDetailsState);
+      };
+    }, [editor]);
+    react_shim_default.useEffect(() => {
+      var _a2;
+      const memoCard = (_a2 = containerRef.current) == null ? void 0 : _a2.closest(".memo-card");
+      if (!memoCard) return;
+      const updateFocusState = () => {
+        const activeElement = document.activeElement;
+        setIsFocusWithinMemoCard(!!activeElement && memoCard.contains(activeElement));
+      };
+      const handleFocusOut = () => {
+        requestAnimationFrame(updateFocusState);
+      };
+      memoCard.addEventListener("focusin", updateFocusState);
+      memoCard.addEventListener("focusout", handleFocusOut);
+      updateFocusState();
+      return () => {
+        memoCard.removeEventListener("focusin", updateFocusState);
+        memoCard.removeEventListener("focusout", handleFocusOut);
+      };
+    }, []);
+    react_shim_default.useEffect(() => {
+      const handleGlobalMouseMove = (e) => {
+        if (!dragState && !mouseDownPoints) return;
+        if (!containerRef.current || !editor) return;
+        const x = e.clientX;
+        const y = e.clientY;
+        maybeAutoScroll(y);
+        if (!dragState && mouseDownPoints) {
+          const dist = Math.sqrt(Math.pow(x - mouseDownPoints.x, 2) + Math.pow(y - mouseDownPoints.y, 2));
+          if (dist > 5) {
+            setDragState({ ...mouseDownPoints, x, y });
+          }
+          return;
+        }
+        const containerRect = containerRef.current.getBoundingClientRect();
+        setDragState((prev) => prev ? { ...prev, x, y } : null);
+        if (dragState) {
+          const info = getTableCellInfo(editor.view, e);
+          if (info && info.tablePos === dragState.tablePos) {
+            const cellDOM = editor.view.nodeDOM(info.cellPos);
+            const rect = cellDOM.getBoundingClientRect();
+            const tableDOM = editor.view.nodeDOM(info.tablePos);
+            const tableRect = tableDOM.getBoundingClientRect();
+            if (dragState.type === "row") {
+              const isAfter = y > rect.top + rect.height / 2;
+              setDropIndicator({
+                top: (isAfter ? rect.bottom : rect.top) - containerRect.top,
+                left: tableRect.left - containerRect.left,
+                width: tableRect.width,
+                type: "row"
+              });
+            } else {
+              const isAfter = x > rect.left + rect.width / 2;
+              setDropIndicator({
+                top: tableRect.top - containerRect.top,
+                left: (isAfter ? rect.right : rect.left) - containerRect.left,
+                height: tableRect.height,
+                type: "col"
+              });
+            }
+          }
+        }
+      };
+      const handleGlobalMouseUp = (e) => {
+        if (dragState && editor) {
+          const info = getTableCellInfo(editor.view, e);
+          if (info && info.tablePos === dragState.tablePos) {
+            const cellDOM = editor.view.nodeDOM(info.cellPos);
+            const rect = cellDOM.getBoundingClientRect();
+            if (dragState.type === "row") {
+              const isAfter = e.clientY > rect.top + rect.height / 2;
+              let targetIndex = isAfter ? info.rowIndex + 1 : info.rowIndex;
+              if (targetIndex > dragState.index) targetIndex--;
+              if (targetIndex !== dragState.index) {
+                moveRow(editor, dragState.tablePos, dragState.index, targetIndex);
+              }
+            } else {
+              const isAfter = e.clientX > rect.left + rect.width / 2;
+              let targetIndex = isAfter ? info.colIndex + 1 : info.colIndex;
+              if (targetIndex > dragState.index) targetIndex--;
+              if (targetIndex !== dragState.index) {
+                moveColumn(editor, dragState.tablePos, dragState.index, targetIndex);
+              }
+            }
+          } else {
+            const target = getBlockTargetFromCoords(e.clientX, e.clientY);
+            if (target) {
+              const rect = getBlockRectForPos(target.pos, target.node);
+              const placeAfter = rect ? e.clientY > rect.top + rect.height / 2 : true;
+              if (target.pos !== dragState.tablePos) {
+                moveBlockNode(dragState.tablePos, target.pos, placeAfter);
+              }
+            }
+          }
+        } else if (mouseDownPoints) {
+          setTableContextMenu({
+            top: e.clientY,
+            left: e.clientX,
+            type: mouseDownPoints.type,
+            index: mouseDownPoints.index,
+            tablePos: mouseDownPoints.tablePos
+          });
+        }
+        setDragState(null);
+        setMouseDownPoints(null);
+        setDropIndicator(null);
+      };
+      if (dragState || mouseDownPoints) {
+        window.addEventListener("mousemove", handleGlobalMouseMove);
+        window.addEventListener("mouseup", handleGlobalMouseUp);
+      }
+      return () => {
+        window.removeEventListener("mousemove", handleGlobalMouseMove);
+        window.removeEventListener("mouseup", handleGlobalMouseUp);
+      };
+    }, [dragState, mouseDownPoints, editor]);
+    react_shim_default.useEffect(() => {
+      if (!editor) return;
+      if (!dragState && !blockDragState) {
+        setDragGhost(null);
+        return;
+      }
+      if (dragGhost) return;
+      if (dragState) {
+        const tableDOM = editor.view.nodeDOM(dragState.tablePos);
+        if (!tableDOM) return;
+        const ghost = dragState.type === "row" ? buildRowGhost(tableDOM, dragState.index) : buildColGhost(tableDOM, dragState.index);
+        if (!ghost) return;
+        const offsetX = dragState.x - ghost.rect.left;
+        const offsetY = dragState.y - ghost.rect.top;
+        setDragGhost({
+          html: ghost.html,
+          width: ghost.rect.width,
+          height: ghost.rect.height,
+          offsetX,
+          offsetY
+        });
+        return;
+      }
+      if (blockDragState) {
+        const node = editor.state.doc.nodeAt(blockDragState.pos);
+        if (!node) return;
+        const ghost = buildBlockGhost(blockDragState.pos, node);
+        if (!ghost) return;
+        const offsetX = blockDragState.x - ghost.rect.left;
+        const offsetY = blockDragState.y - ghost.rect.top;
+        setDragGhost({
+          html: ghost.html,
+          width: ghost.rect.width,
+          height: ghost.rect.height,
+          offsetX,
+          offsetY
+        });
+      }
+    }, [dragState, blockDragState, dragGhost, editor]);
+    const moveBlockNode = (fromPos, targetPos, placeAfter) => {
+      if (!editor) return;
+      const node = editor.state.doc.nodeAt(fromPos);
+      const targetNode = editor.state.doc.nodeAt(targetPos);
+      if (!node || !targetNode) return;
+      let insertPos = targetPos + (placeAfter ? targetNode.nodeSize : 0);
+      if (insertPos > fromPos) {
+        insertPos -= node.nodeSize;
+      }
+      if (insertPos === fromPos) return;
+      const tr2 = editor.state.tr;
+      tr2.delete(fromPos, fromPos + node.nodeSize);
+      tr2.insert(insertPos, node);
+      tr2.setSelection(NodeSelection.create(tr2.doc, insertPos));
+      editor.view.dispatch(tr2);
+    };
+    const getBlockTargetFromCoords = (x, y) => {
+      if (!editor) return null;
+      const coords = editor.view.posAtCoords({ left: x, top: y });
+      if (!coords) return null;
+      const $pos = editor.state.doc.resolve(coords.pos);
+      for (let d = $pos.depth; d > 0; d--) {
+        const node = $pos.node(d);
+        if (node.type.name === "bulletList" || node.type.name === "orderedList") {
+          return { pos: $pos.before(d), node };
+        }
+        if (node.type.name === "listItem") {
+          continue;
+        }
+        if (node.isBlock && node.type.name !== "doc") {
+          return { pos: $pos.before(d), node };
+        }
+      }
+      return null;
+    };
+    const updateMermaidHandles = react_shim_default.useCallback(() => {
+      if (!editor || !containerRef.current) return;
+      if (hoveredMermaidPos === null) {
+        setMermaidHandles([]);
+        return;
+      }
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const handles = [];
+      editor.state.doc.descendants((node, pos) => {
+        var _a2;
+        if (node.type.name !== "mermaidDiagram") return;
+        if (pos !== hoveredMermaidPos) return;
+        const dom = editor.view.nodeDOM(pos);
+        const wrapper = dom == null ? void 0 : dom.closest(".mermaid-diagram-wrapper");
+        const rect = (_a2 = wrapper || dom) == null ? void 0 : _a2.getBoundingClientRect();
+        if (!rect) return;
+        handles.push({
+          top: rect.top - containerRect.top + 10,
+          left: rect.left - containerRect.left + 5,
+          pos
+        });
+      });
+      setMermaidHandles(handles);
+    }, [editor, hoveredMermaidPos]);
+    react_shim_default.useEffect(() => {
+      if (!editor) return;
+      const handleUpdate = () => updateMermaidHandles();
+      handleUpdate();
+      editor.on("update", handleUpdate);
+      editor.on("selectionUpdate", handleUpdate);
+      window.addEventListener("resize", handleUpdate);
+      window.addEventListener("scroll", handleUpdate, true);
+      return () => {
+        editor.off("update", handleUpdate);
+        editor.off("selectionUpdate", handleUpdate);
+        window.removeEventListener("resize", handleUpdate);
+        window.removeEventListener("scroll", handleUpdate, true);
+      };
+    }, [editor, updateMermaidHandles]);
+    const getBlockRectForPos = (pos, node) => {
+      if (!editor || !containerRef.current) return null;
+      const dom = editor.view.nodeDOM(pos);
+      if (dom == null ? void 0 : dom.getBoundingClientRect) {
+        let rect = dom.getBoundingClientRect();
+        const wrapper = dom.closest(".tableWrapper, .mermaid-diagram-wrapper, .alert-wrapper");
+        if (wrapper) {
+          rect = wrapper.getBoundingClientRect();
+        }
+        return rect;
+      }
+      const start = editor.view.coordsAtPos(pos);
+      const end = editor.view.coordsAtPos(pos + node.nodeSize, -1);
+      return {
+        top: start.top,
+        bottom: end.bottom,
+        left: start.left,
+        right: end.right,
+        width: containerRef.current.getBoundingClientRect().width
+      };
+    };
+    const buildRowGhost = (tableDOM, rowIndex) => {
+      const rows = Array.from(tableDOM.querySelectorAll("tr"));
+      const row = rows[rowIndex];
+      if (!row) return null;
+      const rect = row.getBoundingClientRect();
+      const ghostTable = document.createElement("table");
+      ghostTable.className = tableDOM.className;
+      ghostTable.style.borderCollapse = "collapse";
+      const tbody = document.createElement("tbody");
+      tbody.appendChild(row.cloneNode(true));
+      ghostTable.appendChild(tbody);
+      return { html: ghostTable.outerHTML, rect };
+    };
+    const buildColGhost = (tableDOM, colIndex) => {
+      const rows = Array.from(tableDOM.querySelectorAll("tr"));
+      const ghostTable = document.createElement("table");
+      ghostTable.className = tableDOM.className;
+      ghostTable.style.borderCollapse = "collapse";
+      const tbody = document.createElement("tbody");
+      let cellRect = null;
+      rows.forEach((row) => {
+        const cell2 = row.children[colIndex];
+        if (!cell2) return;
+        if (!cellRect) cellRect = cell2.getBoundingClientRect();
+        const newRow = document.createElement("tr");
+        const cloned = cell2.cloneNode(true);
+        newRow.appendChild(cloned);
+        tbody.appendChild(newRow);
+      });
+      if (!tbody.children.length || !cellRect) return null;
+      ghostTable.appendChild(tbody);
+      const tableRect = tableDOM.getBoundingClientRect();
+      const rect = new DOMRect(cellRect.left, tableRect.top, cellRect.width, tableRect.height);
+      return { html: ghostTable.outerHTML, rect };
+    };
+    const buildBlockGhost = (pos, node) => {
+      if (!editor) return null;
+      const dom = editor.view.nodeDOM(pos);
+      const wrapper = dom == null ? void 0 : dom.closest(".tableWrapper, .mermaid-diagram-wrapper, .alert-wrapper");
+      const target = wrapper || dom;
+      if (!target) return null;
+      const rect = getBlockRectForPos(pos, node);
+      if (!rect) return null;
+      return { html: target.outerHTML, rect };
+    };
+    const maybeAutoScroll = (clientY) => {
+      const threshold = 140;
+      const maxSpeed = 24;
+      if (clientY < threshold) {
+        const speed = Math.min(maxSpeed, Math.ceil((threshold - clientY) / 6));
+        window.scrollBy(0, -speed);
+        return;
+      }
+      const distanceBottom = clientY - (window.innerHeight - threshold);
+      if (distanceBottom > 0) {
+        const speed = Math.min(maxSpeed, Math.ceil(distanceBottom / 6));
+        window.scrollBy(0, speed);
+      }
+    };
+    react_shim_default.useEffect(() => {
+      if (!editor || !blockDragPending && !blockDragState) return;
+      const handleGlobalMouseMove = (e) => {
+        if (blockDragPending && !blockDragState) {
+          const dx = Math.abs(e.clientX - blockDragPending.startX);
+          const dy = Math.abs(e.clientY - blockDragPending.startY);
+          if (dx > 4 || dy > 4) {
+            blockDragMovedRef.current = true;
+            setBlockDragState({
+              pos: blockDragPending.pos,
+              nodeSize: blockDragPending.nodeSize,
+              x: e.clientX,
+              y: e.clientY
+            });
+          } else {
+            return;
+          }
+        }
+        if (blockDragState && containerRef.current) {
+          setBlockDragState((prev) => prev ? { ...prev, x: e.clientX, y: e.clientY } : prev);
+          maybeAutoScroll(e.clientY);
+          const target = getBlockTargetFromCoords(e.clientX, e.clientY);
+          if (target) {
+            const rect = getBlockRectForPos(target.pos, target.node);
+            if (rect) {
+              const placeAfter = e.clientY > rect.top + rect.height / 2;
+              const containerRect = containerRef.current.getBoundingClientRect();
+              setBlockDropIndicator({
+                top: (placeAfter ? rect.bottom : rect.top) - containerRect.top,
+                left: rect.left - containerRect.left,
+                width: rect.width
+              });
+            } else {
+              setBlockDropIndicator(null);
+            }
+          } else {
+            setBlockDropIndicator(null);
+          }
+        }
+      };
+      const handleGlobalMouseUp = (e) => {
+        if (blockDragState && editor) {
+          const target = getBlockTargetFromCoords(e.clientX, e.clientY);
+          if (target) {
+            const rect = getBlockRectForPos(target.pos, target.node);
+            const placeAfter = rect ? e.clientY > rect.top + rect.height / 2 : true;
+            if (target.pos !== blockDragState.pos) {
+              moveBlockNode(blockDragState.pos, target.pos, placeAfter);
+            }
+          }
+        }
+        setBlockDragPending(null);
+        setBlockDragState(null);
+        setBlockDropIndicator(null);
+      };
+      window.addEventListener("mousemove", handleGlobalMouseMove);
+      window.addEventListener("mouseup", handleGlobalMouseUp);
+      return () => {
+        window.removeEventListener("mousemove", handleGlobalMouseMove);
+        window.removeEventListener("mouseup", handleGlobalMouseUp);
+      };
+    }, [blockDragPending, blockDragState, editor]);
+    const handleMouseMove2 = (e) => {
+      var _a2, _b2, _c2, _d2, _e, _f, _g, _h, _i;
+      if (!editor || dragState || blockDragState || !containerRef.current) return;
+      if (e.target.closest(".table-handle, .quote-handle, .details-handle, .mermaid-handle, .node-handle, .block-delete-button")) return;
+      const element = document.elementFromPoint(e.clientX, e.clientY);
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const tableEl = element == null ? void 0 : element.closest("table");
+      const blockquoteEl = element == null ? void 0 : element.closest(".node-blockquote");
+      const detailsEl = element == null ? void 0 : element.closest(".node-details");
+      const mermaidEl = element == null ? void 0 : element.closest(".node-mermaidDiagram, .mermaid-diagram-container");
+      const codeEl = element == null ? void 0 : element.closest(".node-codeBlock, pre");
+      const targetBlock = tableEl || blockquoteEl || detailsEl || mermaidEl || codeEl;
+      if (targetBlock && containerRef.current.contains(targetBlock)) {
+        let rect = targetBlock.getBoundingClientRect();
+        const wrapper = targetBlock.closest(".tableWrapper, .mermaid-diagram-wrapper");
+        if (wrapper) {
+          rect = wrapper.getBoundingClientRect();
+        }
+        let blockPos = -1;
+        let label = "le bloc";
+        try {
+          const pos = editor.view.posAtDOM(targetBlock, 0);
+          const $pos = editor.state.doc.resolve(pos);
+          if (tableEl) {
+            for (let d = $pos.depth; d >= 0; d--) {
+              if (((_a2 = $pos.node(d)) == null ? void 0 : _a2.type.name) === "table") {
+                blockPos = $pos.before(d);
+                label = "le tableau";
+                break;
+              }
+            }
+          } else if (detailsEl) {
+            for (let d = $pos.depth; d >= 0; d--) {
+              if (((_b2 = $pos.node(d)) == null ? void 0 : _b2.type.name) === "details") {
+                blockPos = $pos.before(d);
+                label = "le bloc d\xE9pliable";
+                break;
+              }
+            }
+          } else if (blockquoteEl) {
+            for (let d = $pos.depth; d >= 0; d--) {
+              if (((_c2 = $pos.node(d)) == null ? void 0 : _c2.type.name) === "blockquote") {
+                blockPos = $pos.before(d);
+                label = "la citation";
+                break;
+              }
+            }
+          } else if (mermaidEl) {
+            for (let d = $pos.depth; d >= 0; d--) {
+              if (((_d2 = $pos.node(d)) == null ? void 0 : _d2.type.name) === "mermaidDiagram") {
+                blockPos = $pos.before(d);
+                label = "le diagramme";
+                break;
+              }
+            }
+            if (blockPos === -1) {
+              const node = editor.state.doc.nodeAt(pos);
+              if ((node == null ? void 0 : node.type.name) === "mermaidDiagram") {
+                blockPos = pos;
+                label = "le diagramme";
+              }
+            }
+          } else if (codeEl) {
+            for (let d = $pos.depth; d >= 0; d--) {
+              if (((_e = $pos.node(d)) == null ? void 0 : _e.type.name) === "codeBlock") {
+                blockPos = $pos.before(d);
+                label = "le bloc de code";
+                break;
+              }
+            }
+          }
+        } catch (err) {
+          const coordsPos = (_f = editor.view.posAtCoords({ left: e.clientX, top: e.clientY })) == null ? void 0 : _f.pos;
+          if (coordsPos !== void 0) {
+            const $cPos = editor.state.doc.resolve(coordsPos);
+            if (mermaidEl) {
+              for (let d = $cPos.depth; d >= 0; d--) {
+                if (((_g = $cPos.node(d)) == null ? void 0 : _g.type.name) === "mermaidDiagram") {
+                  blockPos = $cPos.before(d);
+                  label = "le diagramme";
+                  break;
+                }
+              }
+            }
+          }
+        }
+        if (mermaidEl && blockPos !== -1) {
+          setHoveredMermaidPos(blockPos);
+        } else if (!mermaidEl && hoveredMermaidPos !== null) {
+          setHoveredMermaidPos(null);
+        }
+        if (blockPos !== -1) {
+          setBlockDeleteHandle({
+            top: rect.top - containerRect.top + 8,
+            left: rect.right - containerRect.left - (label === "le diagramme" ? 36 : 48),
+            pos: blockPos,
+            label
+          });
+        }
+      } else if (!e.target.closest(".block-delete-button")) {
+        setBlockDeleteHandle(null);
+      }
+      if (!mermaidEl && hoveredMermaidPos !== null) {
+        setHoveredMermaidPos(null);
+      }
+      if (codeEl && containerRef.current.contains(codeEl)) {
+        const rect = codeEl.getBoundingClientRect();
+        let codePos = -1;
+        try {
+          const domPos = editor.view.posAtDOM(codeEl, 0);
+          const $pos = editor.state.doc.resolve(domPos);
+          for (let d = $pos.depth; d > 0; d--) {
+            if ($pos.node(d).type.name === "codeBlock") {
+              codePos = $pos.before(d);
+              break;
+            }
+          }
+        } catch (err) {
+        }
+        if (codePos === -1) {
+          const pos = (_h = editor.view.posAtCoords({ left: e.clientX, top: e.clientY })) == null ? void 0 : _h.pos;
+          if (pos !== void 0) {
+            const $pos = editor.state.doc.resolve(pos);
+            for (let d = $pos.depth; d > 0; d--) {
+              if ($pos.node(d).type.name === "codeBlock") {
+                codePos = $pos.before(d);
+                break;
+              }
+            }
+          }
+        }
+        if (codePos !== -1) {
+          setCodeHandle({
+            top: rect.top - containerRect.top + 10,
+            left: rect.left - containerRect.left + 8,
+            pos: codePos
+          });
+        } else {
+          setCodeHandle(null);
+        }
+      } else if (!e.target.closest(".code-handle")) {
+        setCodeHandle(null);
+      }
+      if (blockquoteEl && containerRef.current.contains(blockquoteEl)) {
+        let quotePos = -1;
+        try {
+          const domPos = editor.view.posAtDOM(blockquoteEl, 0);
+          const $pos = editor.state.doc.resolve(domPos);
+          for (let d = $pos.depth; d > 0; d--) {
+            if ($pos.node(d).type.name === "blockquote") {
+              quotePos = $pos.before(d);
+              break;
+            }
+          }
+          if (quotePos === -1) {
+            const node = editor.state.doc.nodeAt(domPos);
+            if ((node == null ? void 0 : node.type.name) === "blockquote") quotePos = domPos;
+          }
+        } catch (err) {
+        }
+        if (quotePos === -1) {
+          const pos = (_i = editor.view.posAtCoords({ left: e.clientX, top: e.clientY })) == null ? void 0 : _i.pos;
+          if (pos !== void 0) {
+            const $pos = editor.state.doc.resolve(pos);
+            for (let d = $pos.depth; d > 0; d--) {
+              if ($pos.node(d).type.name === "blockquote") {
+                quotePos = $pos.before(d);
+                break;
+              }
+            }
+          }
+        }
+        if (quotePos !== -1) {
+          const node = editor.state.doc.nodeAt(quotePos);
+          const rect = node ? getBlockRectForPos(quotePos, node) : blockquoteEl.getBoundingClientRect();
+          if (rect) {
+            setQuoteHandle({
+              top: rect.top - containerRect.top + 10,
+              left: rect.left - containerRect.left + 5,
+              pos: quotePos,
+              type: (node == null ? void 0 : node.attrs.type) || "default"
+            });
+          } else {
+            setQuoteHandle(null);
+          }
+        } else {
+          setQuoteHandle(null);
+        }
+      } else if (!e.target.closest(".quote-handle")) {
+        setQuoteHandle(null);
+      }
+      let info = getTableCellInfo(editor.view, e.nativeEvent);
+      if (!info) {
+        const wrapper = element == null ? void 0 : element.closest(".tableWrapper");
+        if (wrapper) {
+          const table = wrapper.querySelector("table");
+          if (table) {
+            const rect = table.getBoundingClientRect();
+            const margin = 20;
+            if (e.clientX >= rect.left - margin && e.clientX <= rect.right + margin && e.clientY >= rect.top - margin && e.clientY <= rect.bottom + margin) {
+              const clampedX = Math.max(rect.left + 5, Math.min(rect.right - 5, e.clientX));
+              const clampedY = Math.max(rect.top + 5, Math.min(rect.bottom - 5, e.clientY));
+              const mockEvent = { clientX: clampedX, clientY: clampedY };
+              info = getTableCellInfo(editor.view, mockEvent);
+            }
+          }
+        }
+      }
+      if (info) {
+        const { rowIndex, colIndex, tablePos } = info;
+        const cellDOM = editor.view.nodeDOM(info.cellPos);
+        const tableDOM = editor.view.nodeDOM(tablePos);
+        if (cellDOM && tableDOM) {
+          const rect = cellDOM.getBoundingClientRect();
+          const tableRect = tableDOM.getBoundingClientRect();
+          const tableWrapper = tableDOM.closest(".tableWrapper");
+          const tableWrapperRect = tableWrapper ? tableWrapper.getBoundingClientRect() : tableRect;
+          const isInWrapper = e.clientX >= tableWrapperRect.left && e.clientX <= tableWrapperRect.right && e.clientY >= tableWrapperRect.top && e.clientY <= tableWrapperRect.bottom;
+          const isInTable2 = e.clientX >= tableRect.left && e.clientX <= tableRect.right && e.clientY >= tableRect.top && e.clientY <= tableRect.bottom;
+          if (isInWrapper) {
+            const rowHandleLeft = tableRect.left - containerRect.left;
+            setRowHandle({
+              top: rect.top - containerRect.top + rect.height / 2,
+              left: rowHandleLeft,
+              rowIndex,
+              tablePos
+            });
+          } else {
+            setRowHandle(null);
+          }
+          if (isInTable2) {
+            setColHandle({
+              top: tableRect.top - containerRect.top - 10,
+              left: rect.left - containerRect.left + rect.width / 2,
+              colIndex,
+              tablePos
+            });
+          } else {
+            setColHandle(null);
+          }
+          if (isInWrapper || isInTable2) {
+            return;
+          }
+        }
+      }
+      const mouseX = e.clientX;
+      const mouseY = e.clientY;
+      if (rowHandle) {
+        const handleX = containerRect.left + rowHandle.left;
+        const handleY = containerRect.top + rowHandle.top;
+        if (Math.sqrt(Math.pow(mouseX - handleX, 2) + Math.pow(mouseY - handleY, 2)) < 30) return;
+      }
+      if (colHandle) {
+        const handleX = containerRect.left + colHandle.left;
+        const handleY = containerRect.top + colHandle.top;
+        if (Math.sqrt(Math.pow(mouseX - handleX, 2) + Math.pow(mouseY - handleY, 2)) < 30) return;
+      }
+      setRowHandle(null);
+      setColHandle(null);
+    };
+    react_shim_default.useEffect(() => {
+      if (editor) {
+        if (!turndownRef.current) {
+          const turndown = new turndown_browser_es_default({
+            headingStyle: "atx",
+            codeBlockStyle: "fenced",
+            bulletListMarker: "-"
+          });
+          turndown.use(gfm);
+          turndown.addRule("blockquote-alerts", {
+            filter: "blockquote",
+            replacement: function(content2, node) {
+              const type2 = node.getAttribute("data-type");
+              if (!type2 || type2 === "default") return "\n\n> " + content2.trim().replace(/\n/g, "\n> ") + "\n\n";
+              const emojiMap = {
+                "NOTE": "\u2139\uFE0F",
+                "TIP": "\u{1F4A1}",
+                "IMPORTANT": "\u2705",
+                "WARNING": "\u26A0\uFE0F",
+                "CAUTION": "\u{1F6A8}"
+              };
+              const emoji2 = emojiMap[type2] || "\u2139\uFE0F";
+              const title = node.getAttribute("data-title");
+              const alertHeader = title ? `${emoji2} **${title}** ` : `${emoji2} `;
+              return "\n\n> " + alertHeader + content2.trim().replace(/\n/g, "\n> ") + "\n\n";
+            }
+          });
+          turndown.addRule("mermaid-diagram", {
+            filter: function(node) {
+              return node.nodeName === "MERMAID-DIAGRAM" || node.tagName === "MERMAID-DIAGRAM" || node.nodeName === "mermaid-diagram";
+            },
+            replacement: function(_content, node) {
+              const code = node.getAttribute("code") || node.getAttribute("data-code") || "";
+              return "\n\n```mermaid\n" + code.trim() + "\n```\n\n";
+            }
+          });
+          turndown.addRule("details", {
+            filter: "details",
+            replacement: function(content2, node) {
+              const summary = node.querySelector("summary");
+              const summaryText = summary ? summary.textContent.trim() : "D\xE9tails";
+              const contentDiv = node.querySelector(".details-content") || node.querySelector('[data-type="details-content"]');
+              let innerMarkdown = "";
+              if (contentDiv) {
+                innerMarkdown = turndownRef.current.turndown(contentDiv.innerHTML).trim();
+              } else {
+                innerMarkdown = content2.trim();
+                if (summaryText && innerMarkdown.startsWith(summaryText)) {
+                  innerMarkdown = innerMarkdown.substring(summaryText.length).trim();
+                }
+              }
+              return `
+
+<details>
+<summary>${summaryText}</summary>
+${innerMarkdown}
+</details>
+
+`;
+            }
+          });
+          turndown.addRule("taskList", {
+            filter: function(node) {
+              return node.nodeName === "LI" && node.parentNode.nodeName === "UL" && node.classList.contains("task-list-item");
+            },
+            replacement: function(content2, node) {
+              const checkbox = node.querySelector('input[type="checkbox"]');
+              const checked = checkbox && checkbox.checked ? "\u2612" : "\u2610";
+              return " " + checked + " " + content2.trim() + "\n";
+            }
+          });
+          turndownRef.current = turndown;
+        }
+        const getEditorMarkdown = () => {
+          var _a2;
+          try {
+            if (typeof editor.getHTML === "function") {
+              const html2 = editor.getHTML();
+              const parser2 = new DOMParser();
+              const doc3 = parser2.parseFromString(html2, "text/html");
+              const diagrams = doc3.querySelectorAll("mermaid-diagram");
+              diagrams.forEach((diag) => {
+                const code = diag.getAttribute("code") || diag.getAttribute("data-code") || "";
+                const pre = doc3.createElement("pre");
+                const codeElement = doc3.createElement("code");
+                codeElement.className = "language-mermaid";
+                codeElement.textContent = code.trim();
+                pre.appendChild(codeElement);
+                diag.replaceWith(pre);
+              });
+              const colgroups = doc3.querySelectorAll("colgroup");
+              colgroups.forEach((cg) => cg.remove());
+              const taskLists = doc3.querySelectorAll('ul[data-type="taskList"]');
+              taskLists.forEach((ul) => {
+                ul.querySelectorAll("li").forEach((li) => {
+                  li.classList.add("task-list-item");
+                });
+              });
+              const tables2 = doc3.querySelectorAll("table");
+              tables2.forEach((table) => {
+                table.removeAttribute("class");
+                table.removeAttribute("style");
+                table.querySelectorAll("td, th, tr").forEach((el) => {
+                  el.removeAttribute("class");
+                  el.removeAttribute("style");
+                  if (el.tagName === "TD" || el.tagName === "TH") {
+                    const paragraphs = el.querySelectorAll("p");
+                    paragraphs.forEach((p) => {
+                      const span = doc3.createElement("span");
+                      span.innerHTML = p.innerHTML;
+                      p.replaceWith(span);
+                    });
+                    el.innerHTML = el.innerHTML.replace(/\n/g, " ").trim();
+                  }
+                });
+              });
+              const processedHtml = doc3.body.innerHTML;
+              const markdown = (((_a2 = turndownRef.current) == null ? void 0 : _a2.turndown(processedHtml)) || "").toString();
+              return markdown;
+            }
+            if (typeof editor.getText === "function") {
+              return editor.getText();
+            }
+          } catch (err) {
+          }
+          return "";
+        };
+        const getMemoEditorSource = (format) => {
+          if (!editor) return "";
+          try {
+            if (format === "html" || format === "pdf") {
+              const editorHtml = editor.getHTML();
+              if (!editorHtml) return "";
+              const parser2 = new DOMParser();
+              const doc3 = parser2.parseFromString(editorHtml, "text/html");
+              if (!doc3 || !doc3.body) return editorHtml;
+              const FONT_SANS = "Arial, Helvetica, sans-serif";
+              try {
+                const diagrams = doc3.querySelectorAll("mermaid-diagram, .mermaid-diagram");
+                diagrams.forEach((diag) => {
+                  const code = (diag.getAttribute("code") || diag.getAttribute("data-code") || "").trim();
+                  const realContainers = document.querySelectorAll("mermaid-diagram, .mermaid-diagram");
+                  let foundSvg = null;
+                  for (const container2 of Array.from(realContainers)) {
+                    const cCode = (container2.getAttribute("code") || container2.getAttribute("data-code") || "").trim();
+                    if (cCode === code) {
+                      const svgEl = container2.querySelector(".mermaid-svg-container svg") || container2.querySelector("svg");
+                      if (svgEl) {
+                        foundSvg = svgEl.outerHTML;
+                        break;
+                      }
+                    }
+                  }
+                  if (foundSvg && format === "pdf") {
+                    const container2 = doc3.createElement("div");
+                    container2.style.margin = "20px 0";
+                    container2.style.textAlign = "center";
+                    container2.innerHTML = foundSvg;
+                    diag.replaceWith(container2);
+                  } else {
+                    const pre = doc3.createElement("pre");
+                    pre.style.background = "#f4f4f4";
+                    pre.style.padding = "10px";
+                    pre.style.border = "1px solid #ddd";
+                    pre.style.fontFamily = "monospace";
+                    pre.style.fontSize = "12px";
+                    pre.textContent = code;
+                    diag.replaceWith(pre);
+                  }
+                });
+              } catch (mermaidErr) {
+                console.warn("Error processing Mermaid for source:", mermaidErr);
+              }
+              const emojiMap = {
+                "NOTE": "\u2139\uFE0F",
+                "TIP": "\u{1F4A1}",
+                "IMPORTANT": "\u2705",
+                "WARNING": "\u26A0\uFE0F",
+                "CAUTION": "\u{1F6A8}"
+              };
+              const blockquotes = doc3.querySelectorAll("blockquote");
+              blockquotes.forEach((q) => {
+                const bq = q;
+                const type2 = bq.getAttribute("data-type");
+                const alertColorMap = {
+                  "NOTE": "#2563eb",
+                  "TIP": "#059669",
+                  "IMPORTANT": "#059669",
+                  "WARNING": "#d97706",
+                  "CAUTION": "#dc2626",
+                  "default": "#6b7280"
+                };
+                const color = alertColorMap[type2 || "default"] || alertColorMap.default;
+                bq.style.borderLeft = `4px solid ${color}`;
+                bq.style.padding = "12px 16px";
+                bq.style.margin = "16px 0";
+                bq.style.color = "#333333";
+                bq.style.background = "#f9fafb";
+                bq.style.fontFamily = FONT_SANS;
+                bq.style.borderRadius = "4px";
+                if (type2 && type2 !== "default") {
+                  const emoji2 = emojiMap[type2] || "\u2139\uFE0F";
+                  const title = bq.getAttribute("data-title");
+                  const header = doc3.createElement("strong");
+                  header.style.color = color;
+                  header.style.fontWeight = "bold";
+                  header.textContent = title ? `${emoji2} ${title} ` : `${emoji2} `;
+                  const firstChild = bq.firstChild;
+                  if (firstChild && firstChild.nodeType === 1 && firstChild.tagName === "P") {
+                    firstChild.insertBefore(header, firstChild.firstChild);
+                  } else {
+                    bq.insertBefore(header, bq.firstChild);
+                  }
+                }
+              });
+              const taskLists = doc3.querySelectorAll('ul[data-type="taskList"]');
+              taskLists.forEach((l) => {
+                const ul = l;
+                ul.querySelectorAll("li").forEach((it) => {
+                  var _a2;
+                  const li = it;
+                  const checked = li.getAttribute("data-checked") === "true" || li.querySelector("input[checked]") !== null;
+                  const symbol = checked ? "\u2612" : "\u2610";
+                  const p = li.querySelector("p") || doc3.createElement("p");
+                  if (!li.querySelector("p")) p.innerHTML = li.innerHTML;
+                  const symbolSpan = doc3.createElement("strong");
+                  symbolSpan.style.marginRight = "8px";
+                  symbolSpan.style.fontWeight = "bold";
+                  symbolSpan.textContent = symbol + " ";
+                  p.insertBefore(symbolSpan, p.firstChild);
+                  p.style.margin = "10px 0";
+                  (_a2 = ul.parentNode) == null ? void 0 : _a2.insertBefore(p, ul);
+                });
+                ul.remove();
+              });
+              doc3.querySelectorAll("p").forEach((p) => {
+                const el = p;
+                el.style.margin = "10px 0";
+                el.style.fontSize = "14px";
+                el.style.lineHeight = "20px";
+                el.style.color = "#333333";
+                el.style.fontFamily = FONT_SANS;
+              });
+              doc3.querySelectorAll("h1, h2, h3, h4, h5, h6").forEach((h) => {
+                const el = h;
+                const isH1 = el.tagName === "H1";
+                const isH2 = el.tagName === "H2";
+                el.style.margin = "20px 0 10px 0";
+                el.style.fontWeight = "bold";
+                el.style.color = "#111111";
+                el.style.fontFamily = FONT_SANS;
+                if (isH1) {
+                  el.style.fontSize = "24px";
+                  el.style.lineHeight = "32px";
+                } else if (isH2) {
+                  el.style.fontSize = "18px";
+                  el.style.lineHeight = "26px";
+                } else {
+                  el.style.fontSize = "16px";
+                  el.style.lineHeight = "22px";
+                }
+              });
+              doc3.querySelectorAll("strong, b").forEach((s) => {
+                s.style.fontWeight = "bold";
+              });
+              doc3.querySelectorAll("code").forEach((c) => {
+                const el = c;
+                el.style.background = "#f3f4f6";
+                el.style.padding = "2px 4px";
+                el.style.fontFamily = "monospace";
+                el.style.fontSize = "13px";
+                el.style.borderRadius = "3px";
+              });
+              doc3.querySelectorAll("table").forEach((t) => {
+                const tableEl = t;
+                tableEl.setAttribute("border", "1");
+                tableEl.setAttribute("cellspacing", "0");
+                tableEl.setAttribute("cellpadding", "10");
+                tableEl.setAttribute("width", "100%");
+                tableEl.style.borderCollapse = "collapse";
+                tableEl.style.width = "100%";
+                tableEl.style.margin = "20px 0";
+                tableEl.style.border = "1px solid #d1d5db";
+                tableEl.querySelectorAll("td, th").forEach((cell2) => {
+                  const el = cell2;
+                  el.style.border = "1px solid #d1d5db";
+                  el.style.textAlign = "left";
+                  el.style.verticalAlign = "top";
+                  el.style.fontFamily = FONT_SANS;
+                  el.style.fontSize = "14px";
+                  el.setAttribute("align", "left");
+                  el.setAttribute("valign", "top");
+                });
+                tableEl.querySelectorAll("th").forEach((th) => {
+                  const el = th;
+                  el.style.background = "#f9fafb";
+                  el.style.fontWeight = "bold";
+                });
+              });
+              doc3.querySelectorAll("ul, ol").forEach((l) => {
+                const el = l;
+                el.style.paddingLeft = "30px";
+                el.style.margin = "10px 0";
+                el.querySelectorAll("li").forEach((li) => {
+                  const liel = li;
+                  liel.style.fontSize = "14px";
+                  liel.style.lineHeight = "20px";
+                  liel.style.fontFamily = FONT_SANS;
+                  liel.style.marginBottom = "5px";
+                });
+              });
+              doc3.querySelectorAll("img").forEach((img) => {
+                const el = img;
+                el.style.display = "block";
+                el.style.maxWidth = "100%";
+                const w = el.getAttribute("width");
+                const h = el.getAttribute("height");
+                if (w) el.style.width = w.endsWith("%") ? w : w + "px";
+                if (h) el.style.height = h.endsWith("%") ? h : h + "px";
+              });
+              const content2 = doc3.body.innerHTML;
+              if (format === "pdf") {
+                return `
+<div class="pdf-export" style="font-family:${FONT_SANS}; font-size:14px; line-height:20px; color:#333333; max-width: 800px; margin: 0 auto;">
+  ${content2}
+</div>`.trim();
+              }
+              const outlookHtml = `
+<table width="100%" border="0" cellspacing="0" cellpadding="0" style="width:100% !important;">
+  <tr>
+    <td align="center" style="padding: 20px 0;">
+      <!--[if mso]>
+      <table align="center" border="0" cellspacing="0" cellpadding="0" width="600" style="width:600px;">
+      <tr>
+      <td align="left" valign="top" width="600" style="width:600px;">
+      <![endif]-->
+      <table align="center" border="0" cellspacing="0" cellpadding="0" width="100%" style="max-width:600px; width:100%;">
+        <tr>
+          <td align="left" valign="top" style="font-family:${FONT_SANS}; font-size:14px; line-height:20px; color:#333333; padding: 0 20px;">
+            ${content2}
+          </td>
+        </tr>
+      </table>
+      <!--[if mso]>
+      </td>
+      </tr>
+      </table>
+      <![endif]-->
+    </td>
+  </tr>
+</table>`.trim();
+              return outlookHtml;
+            }
+            if (format === "json") {
+              return JSON.stringify(editor.getJSON(), null, 2);
+            }
+            if (format === "text") {
+              const markdown = getEditorMarkdown();
+              return markdown.replace(/\\-/g, "-").replace(/\[([^\]]+)\]\([^\)]+\)/g, "$1").replace(/(\*\*|__)(.*?)\1/g, "$2").replace(/(\*|_)(.*?)\1/g, "$2").replace(/~~(.*?)~~/g, "$1").replace(/`(.*?)`/g, "$1").replace(/^#+\s+/gm, "").replace(/^\s*>\s*/gm, "> ").replace(/^\s*-\s+/gm, "- ").replace(/\n\n(?=\s*-)/g, "\n");
+            }
+            return getEditorMarkdown();
+          } catch (err) {
+            console.error("getMemoEditorSource error:", err);
+            return "";
+          }
+        };
+        const convertEditorMarkdownToHtml = (markdown) => {
+          if (typeof markdown !== "string") return "";
+          const markdownWithUnicodeTasks = markdown.replace(/^[ \t]*([☐☒])\s+(.*)$/gm, (_match, char, content2) => {
+            const checked = char === "\u2612";
+            return `<ul data-type="taskList"><li data-type="taskItem" data-checked="${checked}"><p>${content2}</p></li></ul>`;
+          });
+          const emojiAlertRegex = /^[ \t]*>(ℹ️|💡|✅|⚠️|🚨)\s?([^\n]*(?:\n[ \t]*>.*)*)/gm;
+          const markdownWithEmojiAlerts = markdownWithUnicodeTasks.replace(emojiAlertRegex, (_match, emoji2, content2) => {
+            const emojiMap = {
+              "\u2139\uFE0F": "NOTE",
+              "\u{1F4A1}": "TIP",
+              "\u2705": "IMPORTANT",
+              "\u26A0\uFE0F": "WARNING",
+              "\u{1F6A8}": "CAUTION"
+            };
+            const normalizedType = emojiMap[emoji2] || "NOTE";
+            const cleanContent = content2.replace(/^[ \t]*> ?/gm, "").trim();
+            return `<blockquote data-type="${normalizedType}">${cleanContent}</blockquote>`;
+          });
+          const shortAlertRegex = /^[ \t]*>(note|alerte|warning|important|conseil|tip|attention|caution|remarque)\s(.*)$/gmi;
+          const markdownWithShortAlerts = markdownWithEmojiAlerts.replace(shortAlertRegex, (_match, type2, content2) => {
+            const typeMap = {
+              "note": "NOTE",
+              "alerte": "WARNING",
+              "warning": "WARNING",
+              "important": "IMPORTANT",
+              "conseil": "TIP",
+              "tip": "TIP",
+              "attention": "CAUTION",
+              "caution": "CAUTION",
+              "remarque": "default"
+            };
+            return `<blockquote data-type="${typeMap[type2.toLowerCase()] || "NOTE"}">${content2}</blockquote>`;
+          });
+          const alertRegex = /^[ \t]*> ?\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION|ALERTE|ATTENTION)(?:\s+(.*))?\]\s*\n((?:>.*\n?)*)/gmi;
+          const markdownWithAlerts = markdownWithShortAlerts.replace(alertRegex, (_match, type2, title, content2) => {
+            const typeMap = {
+              "NOTE": "NOTE",
+              "TIP": "TIP",
+              "IMPORTANT": "IMPORTANT",
+              "WARNING": "WARNING",
+              "ALERTE": "WARNING",
+              "CAUTION": "CAUTION",
+              "ATTENTION": "CAUTION"
+            };
+            const normalizedType = typeMap[type2.toUpperCase()] || "NOTE";
+            const cleanContent = content2.replace(/^> ?/gm, "").trim();
+            const titleAttr = title ? ` data-title="${title.trim()}"` : "";
+            return `<blockquote data-type="${normalizedType}"${titleAttr}>${cleanContent}</blockquote>`;
+          });
+          const markdownWithHighlight = markdownWithAlerts.replace(
+            /==(.*?)==/g,
+            "<mark>$1</mark>"
+          );
+          const mermaidRegex = /```mermaid\n([\s\S]*?)\n```/g;
+          const processedMarkdown = markdownWithHighlight.replace(mermaidRegex, (_match, code) => {
+            const escapedCode = code.trim().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+            return `<mermaid-diagram code="${escapedCode}"></mermaid-diagram>`;
+          });
+          const html2 = marked.parse(processedMarkdown, { gfm: true });
+          const finalHtml = html2.replace(/<details>([\s\S]*?)<\/details>/g, (match, inner) => {
+            if (inner.includes('data-type="details-content"') || inner.includes('class="details-content"')) {
+              return match;
+            }
+            const summaryMatch = inner.match(/<summary>([\s\S]*?)<\/summary>/);
+            if (summaryMatch) {
+              const summary = summaryMatch[0];
+              const content2 = inner.replace(summary, "").trim();
+              return `<details>${summary}<div data-type="details-content">${content2}</div></details>`;
+            }
+            return match;
+          });
+          return finalHtml;
+        };
+        const setEditorMarkdown = (markdown) => {
+          var _a2, _b2;
+          if (typeof markdown !== "string") return;
+          try {
+            const finalHtml = convertEditorMarkdownToHtml(markdown);
+            if ((_a2 = editor == null ? void 0 : editor.commands) == null ? void 0 : _a2.clearContent) {
+              editor.commands.clearContent();
+            }
+            if ((_b2 = editor == null ? void 0 : editor.commands) == null ? void 0 : _b2.setContent) {
+              editor.commands.setContent(finalHtml);
+            }
+          } catch (err) {
+            console.warn("setEditorMarkdown failed", err);
+          }
+        };
+        const insertEditorMarkdownAtRange = (markdown, range2) => {
+          if (typeof markdown !== "string" || !range2) return;
+          try {
+            const from2 = Number(range2.from);
+            const to = Number(range2.to);
+            if (!Number.isFinite(from2) || !Number.isFinite(to)) return;
+            const finalHtml = convertEditorMarkdownToHtml(markdown);
+            if (editor) {
+              editor.chain().focus().insertContentAt({ from: from2, to }, finalHtml).run();
+            }
+          } catch (err) {
+            console.warn("insertEditorMarkdownAtRange failed", err);
+          }
+        };
+        const insertEditorMarkdownAtEnd = (markdown) => {
+          if (typeof markdown !== "string") return;
+          try {
+            const finalHtml = convertEditorMarkdownToHtml(markdown);
+            if (editor) {
+              editor.chain().focus().insertContentAt(editor.state.doc.content.size, (editor.isEmpty ? "" : "\n\n") + finalHtml).run();
+            }
+          } catch (err) {
+            console.warn("insertEditorMarkdownAtEnd failed", err);
+          }
+        };
+        const methods = {
+          getMarkdown: getEditorMarkdown,
+          setMarkdown: setEditorMarkdown,
+          insertMarkdownAtRange: insertEditorMarkdownAtRange,
+          insertMarkdownAtEnd: insertEditorMarkdownAtEnd,
+          getSource: getMemoEditorSource,
+          exportDocx: (title) => exportEditorToDocx(editor, title),
+          instance: editor
+        };
+        if (onReady) {
+          onReady(methods);
+        }
+      }
+    }, [editor, onReady]);
+    const handleAssist = () => {
+      if (selectionData) {
+        document.dispatchEvent(new CustomEvent("memoEditorSelectionChanged", {
+          detail: { ...selectionData, focus: true }
+        }));
+      }
+    };
+    react_shim_default.useEffect(() => {
+      if (!editor) return;
+      let selectionTimeout;
+      const handleSelectionChange = () => {
+        const { from: from2, to, empty: empty2 } = editor.state.selection;
+        clearTimeout(selectionTimeout);
+        if (empty2) {
+          document.dispatchEvent(new CustomEvent("memoEditorSelectionChanged", {
+            detail: { isSelected: false }
+          }));
+          setSelectionData(null);
+          return;
+        }
+        selectionTimeout = setTimeout(() => {
+          var _a2, _b2;
+          const currentSelection = editor.state.selection;
+          if (currentSelection.from === from2 && currentSelection.to === to) {
+            const selectedText = editor.state.doc.textBetween(from2, to, " ");
+            let selectionMarkdown = "";
+            try {
+              const slice2 = editor.state.selection.content();
+              const serializer = DOMSerializer.fromSchema(editor.state.schema);
+              const fragment = serializer.serializeFragment(slice2.content);
+              const tmp = document.createElement("div");
+              tmp.appendChild(fragment);
+              const html2 = tmp.innerHTML;
+              selectionMarkdown = (((_a2 = turndownRef.current) == null ? void 0 : _a2.turndown(html2)) || "").trim();
+            } catch (err) {
+              selectionMarkdown = "";
+            }
+            let blockFrom = from2;
+            let blockTo = to;
+            let blockText2 = selectedText;
+            const allowedBlockTypes = /* @__PURE__ */ new Set([
+              "paragraph",
+              "heading",
+              "codeBlock",
+              "table",
+              "listItem",
+              "blockquote",
+              "mermaidDiagram"
+            ]);
+            const isWhitespaceSelection = selectedText.trim().length === 0;
+            if (isWhitespaceSelection) {
+              const { $from, $to } = editor.state.selection;
+              const pickBlockDepth = (resolvedPos) => {
+                for (let depth = resolvedPos.depth; depth >= 0; depth--) {
+                  if (allowedBlockTypes.has(resolvedPos.node(depth).type.name)) {
+                    return depth;
+                  }
+                }
+                return -1;
+              };
+              const isEmptyTextblock = (resolvedPos) => {
+                var _a3;
+                return ((_a3 = resolvedPos.parent) == null ? void 0 : _a3.isTextblock) && resolvedPos.parent.content.size === 0;
+              };
+              const preferPos = isEmptyTextblock($to) ? $to : $from;
+              let blockDepth = pickBlockDepth(preferPos);
+              if (blockDepth < 0 && preferPos !== $from) {
+                blockDepth = pickBlockDepth($from);
+              }
+              if (blockDepth >= 0) {
+                blockFrom = preferPos.start(blockDepth);
+                blockTo = preferPos.end(blockDepth);
+              }
+            } else {
+              editor.state.doc.nodesBetween(from2, to > from2 ? to - 1 : to, (node, pos) => {
+                if (allowedBlockTypes.has(node.type.name)) {
+                  blockFrom = Math.min(blockFrom, pos);
+                  blockTo = Math.max(blockTo, pos + node.nodeSize);
+                }
+              });
+            }
+            blockText2 = editor.state.doc.textBetween(blockFrom, blockTo, "\n").trim();
+            let nodeType = "";
+            editor.state.doc.nodesBetween(from2, to > from2 ? to - 1 : to, (node) => {
+              if (node.type.name === "mermaidDiagram") nodeType = "mermaidDiagram";
+            });
+            let blockMarkdown = "";
+            try {
+              const blockSlice = editor.state.doc.slice(blockFrom, blockTo);
+              const serializer = DOMSerializer.fromSchema(editor.state.schema);
+              const fragment = serializer.serializeFragment(blockSlice.content);
+              const tmp = document.createElement("div");
+              tmp.appendChild(fragment);
+              const html2 = tmp.innerHTML;
+              blockMarkdown = (((_b2 = turndownRef.current) == null ? void 0 : _b2.turndown(html2)) || "").trim();
+            } catch (err) {
+              blockMarkdown = "";
+            }
+            try {
+              const coordsStart = editor.view.coordsAtPos(blockFrom);
+              const coordsEnd = editor.view.coordsAtPos(blockTo, -1);
+              let finalExcerpt = blockText2.substring(0, 100) + (blockText2.length > 100 ? "\u2026" : "");
+              if (!finalExcerpt.trim() && nodeType === "mermaidDiagram") {
+                finalExcerpt = "Diagramme Mermaid";
+              }
+              setSelectionData({
+                isSelected: true,
+                nodeType,
+                selectionText: selectedText,
+                selectionMarkdown,
+                blockText: blockText2,
+                blockMarkdown,
+                selectionExcerpt: finalExcerpt,
+                positionFrom: blockFrom,
+                positionTo: blockTo,
+                coords: {
+                  top: coordsEnd.bottom + 10,
+                  left: coordsStart.left,
+                  bottom: coordsEnd.bottom,
+                  right: coordsEnd.right
+                }
+              });
+            } catch (err) {
+              console.warn("Error getting selection coords:", err);
+            }
+          }
+        }, 300);
+      };
+      editor.on("update", handleSelectionChange);
+      editor.on("selectionUpdate", handleSelectionChange);
+      return () => {
+        clearTimeout(selectionTimeout);
+        editor.off("update", handleSelectionChange);
+        editor.off("selectionUpdate", handleSelectionChange);
+      };
+    }, [editor]);
+    if (!editor) {
+      return null;
+    }
+    return /* @__PURE__ */ jsxs(
+      "div",
+      {
+        className: "simple-editor",
+        ref: containerRef,
+        onMouseMove: handleMouseMove2,
+        onMouseDown: (e) => {
+          var _a2;
+          const target = e.target;
+          if (!editor || e.button !== 0) return;
+          const handle = target.closest(".mermaid-node-handle");
+          const mermaidContainer = target.closest(".mermaid-diagram-container");
+          const isMermaidDragTarget = !!handle || mermaidContainer && !target.closest(".mermaid-modal, .mermaid-modal-overlay, .mermaid-modal-editor") && !target.closest("button, input, textarea, select");
+          if (!isMermaidDragTarget) return;
+          if (handle) e.preventDefault();
+          const wrapper = (_a2 = handle || mermaidContainer) == null ? void 0 : _a2.closest(".mermaid-diagram-wrapper");
+          if (!wrapper) return;
+          try {
+            const pos = editor.view.posAtDOM(wrapper, 0);
+            const $pos = editor.state.doc.resolve(pos);
+            let mermaidPos = -1;
+            for (let d = $pos.depth; d > 0; d--) {
+              if ($pos.node(d).type.name === "mermaidDiagram") {
+                mermaidPos = $pos.before(d);
+                break;
+              }
+            }
+            if (mermaidPos === -1) return;
+            const node = editor.state.doc.nodeAt(mermaidPos);
+            if (!node) return;
+            setBlockDragPending({
+              pos: mermaidPos,
+              nodeSize: node.nodeSize,
+              startX: e.clientX,
+              startY: e.clientY
+            });
+            blockDragMovedRef.current = false;
+          } catch (err) {
+          }
+        },
+        onMouseLeave: () => {
+          setRowHandle(null);
+          setColHandle(null);
+          setQuoteHandle(null);
+          setCodeHandle(null);
+        },
+        children: [
+          /* @__PURE__ */ jsx(Toolbar, { editor, onDropdownToggle: setIsDropdownOpen, onLink: () => setShowLinkModal(true) }),
+          /* @__PURE__ */ jsx(
+            BubbleMenuComponent,
+            {
+              editor,
+              visible: !isDropdownOpen && isFocusWithinMemoCard,
+              onKeep: () => keepSelection(editor),
+              onReject: () => rejectSelection(editor),
+              onAssist: handleAssist,
+              onLink: () => setShowLinkModal(true)
+            }
+          ),
+          /* @__PURE__ */ jsx(EditorContent, { editor }),
+          showLinkModal && /* @__PURE__ */ jsx(
+            LinkSearchModal,
+            {
+              editor,
+              onClose: () => setShowLinkModal(false)
+            }
+          ),
+          rowHandle && !dragState && !blockDragState && /* @__PURE__ */ jsx(
+            "div",
+            {
+              className: "table-handle table-handle-row",
+              style: { top: rowHandle.top, left: rowHandle.left },
+              onMouseDown: (e) => {
+                e.preventDefault();
+                if (rowHandle.rowIndex === 0) {
+                  const node = editor.state.doc.nodeAt(rowHandle.tablePos);
+                  if (!node) return;
+                  setBlockDragPending({
+                    pos: rowHandle.tablePos,
+                    nodeSize: node.nodeSize,
+                    startX: e.clientX,
+                    startY: e.clientY
+                  });
+                  blockDragMovedRef.current = false;
+                  return;
+                }
+                setMouseDownPoints({
+                  type: "row",
+                  index: rowHandle.rowIndex,
+                  tablePos: rowHandle.tablePos,
+                  x: e.clientX,
+                  y: e.clientY
+                });
+              },
+              children: "\u283F"
+            }
+          ),
+          colHandle && !dragState && !blockDragState && /* @__PURE__ */ jsx(
+            "div",
+            {
+              className: "table-handle table-handle-col",
+              style: { top: colHandle.top, left: colHandle.left },
+              onMouseDown: (e) => {
+                e.preventDefault();
+                setMouseDownPoints({ type: "col", index: colHandle.colIndex, tablePos: colHandle.tablePos, x: e.clientX, y: e.clientY });
+              },
+              children: "\u283F"
+            }
+          ),
+          blockDeleteHandle && !dragState && !blockDragState && /* @__PURE__ */ jsxs(
+            "div",
+            {
+              className: "block-handle-container",
+              style: {
+                position: "absolute",
+                top: blockDeleteHandle.top,
+                left: blockDeleteHandle.left - (blockDeleteHandle.label === "le diagramme" ? 140 : 26),
+                display: "flex",
+                gap: "4px",
+                zIndex: 10
+              },
+              children: [
+                ["le bloc de code", "la citation", "le tableau", "le bloc d\xE9pliable"].includes(blockDeleteHandle.label) && /* @__PURE__ */ jsx(
+                  "button",
+                  {
+                    className: "block-delete-button",
+                    style: { position: "static", opacity: 1 },
+                    onClick: (e) => {
+                      e.stopPropagation();
+                      copyBlockHtmlAtPos(blockDeleteHandle.pos);
+                    },
+                    title: "Copier le contenu",
+                    children: /* @__PURE__ */ jsx(Copy, { size: 16 })
+                  }
+                ),
+                blockDeleteHandle.label === "le diagramme" && /* @__PURE__ */ jsxs(Fragment3, { children: [
+                  (() => {
+                    const node = editor.state.doc.nodeAt(blockDeleteHandle.pos);
+                    if (!node || node.type.name !== "mermaidDiagram") return null;
+                    const code = node.attrs.code || "";
+                    if (!code.trim() || !isFlowchartDiagram(code)) return null;
+                    const isSquare = node.attrs.size === "large";
+                    const nextSize = isSquare ? "small" : "large";
+                    const label = isSquare ? "Rectangle" : "Carr\xE9";
+                    const Icon2 = isSquare ? RectangleHorizontal : Square;
+                    return /* @__PURE__ */ jsx(
+                      "button",
+                      {
+                        className: "block-delete-button mermaid-size-toggle",
+                        style: { position: "static", opacity: 1 },
+                        onClick: (e) => {
+                          e.stopPropagation();
+                          const { code: nextCode, updated } = setFlowchartDirection(
+                            code,
+                            nextSize === "large" ? "TD" : "LR"
+                          );
+                          const updatedCode = updated ? nextCode : code;
+                          editor.chain().focus().setNodeSelection(blockDeleteHandle.pos).updateAttributes("mermaidDiagram", {
+                            size: nextSize,
+                            code: updatedCode,
+                            excalidrawJSON: null
+                          }).run();
+                          const drawMemo = window.GoToolkitDrawMemo;
+                          if (drawMemo) {
+                            (async () => {
+                              try {
+                                await drawMemo.updateFromMermaid(updatedCode, nextSize);
+                                const json = drawMemo.getSceneJSON();
+                                editor.chain().focus().setNodeSelection(blockDeleteHandle.pos).updateAttributes("mermaidDiagram", {
+                                  excalidrawJSON: json
+                                }).run();
+                              } catch (err) {
+                                console.error("Failed to update mermaid preview", err);
+                              }
+                            })();
+                          }
+                        },
+                        title: label,
+                        "aria-label": label,
+                        children: /* @__PURE__ */ jsx(Icon2, { size: 14 })
+                      }
+                    );
+                  })(),
+                  /* @__PURE__ */ jsx(
+                    "button",
+                    {
+                      className: "block-delete-button",
+                      style: { position: "static", opacity: 1 },
+                      onClick: (e) => {
+                        e.stopPropagation();
+                        const dom = editor.view.nodeDOM(blockDeleteHandle.pos);
+                        if (dom) {
+                          const container2 = dom.querySelector(".mermaid-diagram-container");
+                          if (container2) {
+                            container2.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+                          }
+                        }
+                      },
+                      title: "Modifier le diagramme",
+                      children: /* @__PURE__ */ jsx(Pencil, { size: 16 })
+                    }
+                  ),
+                  /* @__PURE__ */ jsx(
+                    "button",
+                    {
+                      className: "block-delete-button",
+                      style: { position: "static", opacity: 1 },
+                      onClick: (e) => {
+                        e.stopPropagation();
+                        copyBlockHtmlAtPos(blockDeleteHandle.pos);
+                      },
+                      title: "Copier",
+                      children: /* @__PURE__ */ jsx(Copy, { size: 16 })
+                    }
+                  ),
+                  /* @__PURE__ */ jsx(
+                    "button",
+                    {
+                      className: "block-delete-button",
+                      style: { position: "static", opacity: 1 },
+                      onClick: (e) => {
+                        e.stopPropagation();
+                        const dom = editor.view.nodeDOM(blockDeleteHandle.pos);
+                        if (dom) {
+                          const svg = dom.querySelector("svg");
+                          if (svg) {
+                            downloadSvgAsPng(svg, "diagramme.png");
+                          }
+                        }
+                      },
+                      title: "T\xE9l\xE9charger en PNG",
+                      children: /* @__PURE__ */ jsx(Image3, { size: 16 })
+                    }
+                  )
+                ] }),
+                /* @__PURE__ */ jsx(
+                  "button",
+                  {
+                    className: "block-delete-button",
+                    style: { position: "static", opacity: 1 },
+                    onClick: (e) => {
+                      e.stopPropagation();
+                      editor.chain().focus().setNodeSelection(blockDeleteHandle.pos).deleteSelection().run();
+                      setBlockDeleteHandle(null);
+                    },
+                    title: `Supprimer ${blockDeleteHandle.label}`,
+                    children: /* @__PURE__ */ jsx(Trash2, { size: 16 })
+                  }
+                )
+              ]
+            }
+          ),
+          dropIndicator && /* @__PURE__ */ jsx(
+            "div",
+            {
+              className: `table-drop-indicator table-drop-indicator-${dropIndicator.type}`,
+              style: {
+                top: dropIndicator.top,
+                left: dropIndicator.left,
+                width: dropIndicator.width,
+                height: dropIndicator.height
+              }
+            }
+          ),
+          blockDropIndicator && /* @__PURE__ */ jsx(
+            "div",
+            {
+              className: "table-drop-indicator table-drop-indicator-row",
+              style: {
+                top: blockDropIndicator.top,
+                left: blockDropIndicator.left,
+                width: blockDropIndicator.width,
+                height: 2
+              }
+            }
+          ),
+          dragGhost && (dragState || blockDragState) && /* @__PURE__ */ jsx(
+            "div",
+            {
+              className: "drag-ghost",
+              style: {
+                top: ((_b = (_a = dragState == null ? void 0 : dragState.y) != null ? _a : blockDragState == null ? void 0 : blockDragState.y) != null ? _b : 0) - dragGhost.offsetY,
+                left: ((_d = (_c = dragState == null ? void 0 : dragState.x) != null ? _c : blockDragState == null ? void 0 : blockDragState.x) != null ? _d : 0) - dragGhost.offsetX,
+                width: dragGhost.width,
+                height: dragGhost.height
+              },
+              children: /* @__PURE__ */ jsx("div", { className: "drag-ghost-content", dangerouslySetInnerHTML: { __html: dragGhost.html } })
+            }
+          ),
+          dragState && /* @__PURE__ */ jsx(
+            "div",
+            {
+              className: `table-handle ${dragState.type === "col" ? "table-handle-col" : "table-handle-row"}`,
+              style: {
+                position: "fixed",
+                top: dragState.y,
+                left: dragState.x,
+                opacity: 0.8,
+                pointerEvents: "none",
+                zIndex: 2e3,
+                boxShadow: "var(--shadow-md)",
+                transform: `translate(-50%, -50%) ${dragState.type === "col" ? "rotate(90deg)" : ""}`
+              },
+              children: "\u283F"
+            }
+          ),
+          blockDragState && /* @__PURE__ */ jsx(
+            "div",
+            {
+              className: "table-handle block-drag-handle",
+              style: {
+                position: "fixed",
+                top: blockDragState.y,
+                left: blockDragState.x,
+                opacity: 0.8,
+                pointerEvents: "none",
+                zIndex: 2e3,
+                boxShadow: "var(--shadow-md)",
+                transform: "translate(-50%, -50%)"
+              },
+              children: "\u283F"
+            }
+          ),
+          quoteHandle && !dragState && !blockDragState && /* @__PURE__ */ jsx(
+            "div",
+            {
+              className: "table-handle quote-handle",
+              style: { top: quoteHandle.top, left: quoteHandle.left },
+              onMouseDown: (e) => {
+                const node = editor.state.doc.nodeAt(quoteHandle.pos);
+                if (!node) return;
+                setBlockDragPending({
+                  pos: quoteHandle.pos,
+                  nodeSize: node.nodeSize,
+                  startX: e.clientX,
+                  startY: e.clientY
+                });
+                blockDragMovedRef.current = false;
+              },
+              onClick: (e) => {
+                if (blockDragMovedRef.current) {
+                  blockDragMovedRef.current = false;
+                  return;
+                }
+                e.stopPropagation();
+                setQuoteMenu({ top: quoteHandle.top, left: quoteHandle.left + 30, pos: quoteHandle.pos });
+              },
+              children: "\u283F"
+            }
+          ),
+          codeHandle && !dragState && !blockDragState && /* @__PURE__ */ jsx(
+            "div",
+            {
+              className: "table-handle code-handle",
+              style: { top: codeHandle.top, left: codeHandle.left },
+              onMouseDown: (e) => {
+                const node = editor.state.doc.nodeAt(codeHandle.pos);
+                if (!node) return;
+                setBlockDragPending({
+                  pos: codeHandle.pos,
+                  nodeSize: node.nodeSize,
+                  startX: e.clientX,
+                  startY: e.clientY
+                });
+                blockDragMovedRef.current = false;
+              },
+              children: "\u283F"
+            }
+          ),
+          !dragState && !blockDragState && mermaidHandles.map((handle) => /* @__PURE__ */ jsx(
+            "div",
+            {
+              className: "table-handle mermaid-handle",
+              style: { top: handle.top, left: handle.left },
+              onMouseDown: (e) => {
+                const node = editor.state.doc.nodeAt(handle.pos);
+                if (!node) return;
+                setBlockDragPending({
+                  pos: handle.pos,
+                  nodeSize: node.nodeSize,
+                  startX: e.clientX,
+                  startY: e.clientY
+                });
+                blockDragMovedRef.current = false;
+              },
+              children: "\u283F"
+            },
+            `mermaid-handle-${handle.pos}`
+          )),
+          quoteMenu && /* @__PURE__ */ jsxs(Fragment3, { children: [
+            /* @__PURE__ */ jsx("div", { style: { position: "fixed", inset: 0, zIndex: 999 }, onClick: () => setQuoteMenu(null) }),
+            /* @__PURE__ */ jsx(
+              "div",
+              {
+                className: "quote-context-menu",
+                style: { top: quoteMenu.top, left: quoteMenu.left },
+                children: ALERT_TYPES.map((alert) => {
+                  var _a2;
+                  return /* @__PURE__ */ jsxs(
+                    "div",
+                    {
+                      className: "quote-context-menu-item",
+                      "data-active": ((_a2 = editor.state.doc.nodeAt(quoteMenu.pos)) == null ? void 0 : _a2.attrs.type) === alert.type,
+                      onClick: () => {
+                        const node = editor.state.doc.nodeAt(quoteMenu.pos);
+                        if ((node == null ? void 0 : node.attrs.type) === alert.type) {
+                          editor.chain().focus().setTextSelection({ from: quoteMenu.pos + 1, to: quoteMenu.pos + 1 }).lift("blockquote").run();
+                        } else {
+                          editor.chain().focus().setNodeSelection(quoteMenu.pos).updateAttributes("blockquote", { type: alert.type }).run();
+                        }
+                        setQuoteMenu(null);
+                      },
+                      children: [
+                        /* @__PURE__ */ jsx(alert.icon, { size: 14, style: { color: alert.color } }),
+                        alert.label
+                      ]
+                    },
+                    alert.type
+                  );
+                })
+              }
+            )
+          ] }),
+          tableContextMenu && /* @__PURE__ */ jsxs(Fragment3, { children: [
+            /* @__PURE__ */ jsx("div", { style: { position: "fixed", inset: 0, zIndex: 999 }, onClick: () => setTableContextMenu(null) }),
+            /* @__PURE__ */ jsxs(
+              "div",
+              {
+                className: "table-context-menu",
+                style: { top: tableContextMenu.top, left: tableContextMenu.left },
+                children: [
+                  /* @__PURE__ */ jsxs(
+                    "div",
+                    {
+                      className: "table-context-menu-item",
+                      onClick: () => {
+                        const { type: type2, index, tablePos } = tableContextMenu;
+                        const table = editor.state.doc.nodeAt(tablePos);
+                        if (table) {
+                          let cellPos = -1;
+                          if (type2 === "row") {
+                            cellPos = tablePos + 1;
+                            for (let i = 0; i < index; i++) cellPos += table.child(i).nodeSize;
+                            cellPos += 1;
+                          } else {
+                            const row = table.child(0);
+                            cellPos = tablePos + 1 + 1;
+                            for (let i = 0; i < index; i++) cellPos += row.child(i).nodeSize;
+                          }
+                          editor.chain().focus().setNodeSelection(cellPos).run();
+                          if (type2 === "row") editor.chain().addRowBefore().run();
+                          else editor.chain().addColumnBefore().run();
+                        }
+                        setTableContextMenu(null);
+                      },
+                      children: [
+                        /* @__PURE__ */ jsx(Plus, { size: 14, style: { marginRight: 8 } }),
+                        "Ajouter"
+                      ]
+                    }
+                  ),
+                  /* @__PURE__ */ jsxs(
+                    "div",
+                    {
+                      className: "table-context-menu-item",
+                      onClick: () => {
+                        const { type: type2, index, tablePos } = tableContextMenu;
+                        const table = editor.state.doc.nodeAt(tablePos);
+                        if (table) {
+                          let cellPos = -1;
+                          if (type2 === "row") {
+                            cellPos = tablePos + 1;
+                            for (let i = 0; i < index; i++) cellPos += table.child(i).nodeSize;
+                            cellPos += 1;
+                          } else {
+                            const row = table.child(0);
+                            cellPos = tablePos + 1 + 1;
+                            for (let i = 0; i < index; i++) cellPos += row.child(i).nodeSize;
+                          }
+                          editor.chain().focus().setNodeSelection(cellPos).run();
+                          if (type2 === "row") editor.chain().deleteRow().run();
+                          else editor.chain().deleteColumn().run();
+                        }
+                        setTableContextMenu(null);
+                      },
+                      children: [
+                        /* @__PURE__ */ jsx(X, { size: 14, style: { marginRight: 8 } }),
+                        "Supprimer"
+                      ]
+                    }
+                  ),
+                  tableContextMenu.type === "col" && /* @__PURE__ */ jsxs(Fragment3, { children: [
+                    /* @__PURE__ */ jsx("div", { className: "table-context-menu-divider" }),
+                    /* @__PURE__ */ jsxs(
+                      "div",
+                      {
+                        className: "table-context-menu-item",
+                        onClick: () => {
+                          sortColumn(editor, tableContextMenu.tablePos, tableContextMenu.index, "asc");
+                          setTableContextMenu(null);
+                        },
+                        children: [
+                          /* @__PURE__ */ jsx(ArrowDownAZ, { size: 14, style: { marginRight: 8 } }),
+                          "Trier a-z"
+                        ]
+                      }
+                    ),
+                    /* @__PURE__ */ jsxs(
+                      "div",
+                      {
+                        className: "table-context-menu-item",
+                        onClick: () => {
+                          sortColumn(editor, tableContextMenu.tablePos, tableContextMenu.index, "desc");
+                          setTableContextMenu(null);
+                        },
+                        children: [
+                          /* @__PURE__ */ jsx(ArrowUpAZ, { size: 14, style: { marginRight: 8 } }),
+                          "Trier z-a"
+                        ]
+                      }
+                    )
+                  ] })
+                ]
+              }
+            )
+          ] })
+        ]
+      }
+    );
+  };
+  var simple_editor_default = SimpleEditor;
+
   // src/memo-bridge/index.tsx
   console.warn("!!! MEMO BRIDGE JS EXECUTED !!!");
   var EditorItem = react_shim_default.memo(({ editor, activeId, onChangeCb, handleEditorReady }) => {
@@ -56225,6 +56325,7 @@ ${innerMarkdown}
         window.insertEditorMarkdownAtRange = methods.insertMarkdownAtRange;
         window.insertEditorMarkdownAtEnd = methods.insertMarkdownAtEnd;
         window.getMemoEditorSource = methods.getSource;
+        window.exportMemoToDocx = methods.exportDocx;
       }
     }, [activeId, editors]);
     return /* @__PURE__ */ jsx("div", { className: "memo-card", children: /* @__PURE__ */ jsx("div", { className: "editor-wrap", children: Object.values(editors).map((editor) => /* @__PURE__ */ jsx(

@@ -45,10 +45,10 @@
     <script src="https://cdn.jsdelivr.net/npm/@excalidraw/excalidraw@0.17.6/dist/excalidraw.production.min.js"
         crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.min.js" crossorigin></script>
-    <link rel="stylesheet" href="styles/style.css?v=2026.01.21.14">
+    <link rel="stylesheet" href="styles/style.css?v=2026.01.21.15">
     <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
-    <link rel="stylesheet" href="styles/memo.css?v=2026.01.21.14">
-    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.01.21.14">
+    <link rel="stylesheet" href="styles/memo.css?v=2026.01.21.15">
+    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.01.21.15">
 </head>
 
 <body class="app-body">
@@ -88,7 +88,7 @@
                     <button id="documentExplorerToggle" class="app-home-link" type="button"
                         title="Afficher la bibliothèque" aria-expanded="false" aria-controls="documentExplorer"><i
                             data-lucide="library"></i></button>
-                    <a href="/?v=2026.01.21.14" class="nav-switch-btn" title="Accueil"
+                    <a href="/?v=2026.01.21.15" class="nav-switch-btn" title="Accueil"
                         style="text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
                         <i data-lucide="home"></i>
                     </a>
@@ -106,8 +106,35 @@
                             <div class="menu-panel">
                                 <button id="memoOpenImportBtn" type="button" class="menu-panel-btn"><i
                                         data-lucide="import"></i> Importer</button>
-                                <button id="saveDocumentBtn" type="button" class="menu-panel-btn"><i
-                                        data-lucide="download"></i> Exporter</button>
+
+                                <div class="menu-panel-item has-submenu">
+                                    <button type="button" class="menu-panel-btn"><i data-lucide="copy"></i>
+                                        Copier</button>
+                                    <div class="submenu">
+                                        <button id="fileMenuCopyText" type="button"
+                                            class="menu-panel-btn">Texte</button>
+                                        <button id="fileMenuCopyMarkdown" type="button"
+                                            class="menu-panel-btn">Markdown</button>
+                                        <button id="fileMenuCopyHtml" type="button" class="menu-panel-btn">HTML
+                                            Email</button>
+                                    </div>
+                                </div>
+
+                                <div class="menu-panel-item has-submenu">
+                                    <button type="button" class="menu-panel-btn"><i data-lucide="download"></i>
+                                        Exporter</button>
+                                    <div class="submenu">
+                                        <button id="saveDocumentBtn" type="button" class="menu-panel-btn">Word</button>
+                                        <button id="fileMenuExportPdf" type="button" class="menu-panel-btn">PDF</button>
+                                        <button id="fileMenuExportHtml" type="button"
+                                            class="menu-panel-btn">HTML</button>
+                                        <button id="fileMenuExportMarkdown" type="button"
+                                            class="menu-panel-btn">Markdown</button>
+                                        <button id="fileMenuExportText" type="button"
+                                            class="menu-panel-btn">Texte</button>
+                                    </div>
+                                </div>
+
                                 <button id="shareBtn" type="button" class="menu-panel-btn"><i data-lucide="share-2"></i>
                                     Partager</button>
                                 <button id="renameDocumentBtn" type="button" class="menu-panel-btn"><i
@@ -220,7 +247,7 @@
         <img src="img/logo.gif" alt="Logo Go-Toolkit" class="logo-light">
         <img src="img/logo_inverted.gif" alt="Logo Go-Toolkit" class="logo-dark">
         <strong>Module Mémo</strong>
-        <span>Version 2026.01.21.14</span>
+        <span>Version 2026.01.21.15</span>
         <span>Usage réservé à Savane Consulting.</span>
         <div class="info-actions">
             <button id="memoUpdateBtn" type="button" class="update-btn">Réparer</button>
@@ -287,21 +314,21 @@
         window.GO_TOOLKIT_SHARE_API_URL =
             window.GO_TOOLKIT_SHARE_API_URL || "https://share.gotoolkit.workers.dev/";
     </script>
-    <script src="js/config.js?v=2026.01.21.14"></script>
-    <script src="js/feature-visibility.js?v=2026.01.21.14"></script>
-    <script src="js/document-storage.js?v=2026.01.21.14"></script>
-    <script src="js/storage-service.js?v=2026.01.21.14"></script>
-    <script src="js/shared-ui.js?v=2026.01.21.14"></script>
-    <script src="js/cgu.js?v=2026.01.21.14"></script>
-    <script src="js/share-worker-client.js?v=2026.01.21.14"></script>
-    <script src="js/share-history.js?v=2026.01.21.14"></script>
-    <script src="js/document-api.js?v=2026.01.21.14"></script>
-    <script src="js/keywordIndex.js?v=2026.01.21.14"></script>
-    <script src="js/document-rag.js?v=2026.01.21.14"></script>
-    <script src="js/ia-config.js?v=2026.01.21.14"></script>
-    <script src="prompt.js?v=2026.01.21.14"></script>
-    <script src="js/ia-client.js?v=2026.01.21.14"></script>
-    <script src="js/document-markdown.js?v=2026.01.21.14"></script>
+    <script src="js/config.js?v=2026.01.21.15"></script>
+    <script src="js/feature-visibility.js?v=2026.01.21.15"></script>
+    <script src="js/document-storage.js?v=2026.01.21.15"></script>
+    <script src="js/storage-service.js?v=2026.01.21.15"></script>
+    <script src="js/shared-ui.js?v=2026.01.21.15"></script>
+    <script src="js/cgu.js?v=2026.01.21.15"></script>
+    <script src="js/share-worker-client.js?v=2026.01.21.15"></script>
+    <script src="js/share-history.js?v=2026.01.21.15"></script>
+    <script src="js/document-api.js?v=2026.01.21.15"></script>
+    <script src="js/keywordIndex.js?v=2026.01.21.15"></script>
+    <script src="js/document-rag.js?v=2026.01.21.15"></script>
+    <script src="js/ia-config.js?v=2026.01.21.15"></script>
+    <script src="prompt.js?v=2026.01.21.15"></script>
+    <script src="js/ia-client.js?v=2026.01.21.15"></script>
+    <script src="js/document-markdown.js?v=2026.01.21.15"></script>
     <script>
         // Initialize feedback configuration for Memo before loading feedback.js
         window.GoToolkitAppFeedbackConfig = {
@@ -320,12 +347,12 @@
             ]
         };
     </script>
-    <script src="js/feedback.js?v=2026.01.21.14"></script>
-    <script src="js/voice-video-player.js?v=2026.01.21.14"></script>
-    <script src="js/voice-audio-player.js?v=2026.01.21.14"></script>
-    <script src="js/voice.js?v=2026.01.21.14"></script>
-    <script src="js/voice-transcript.js?v=2026.01.21.14"></script>
-    <script src="js/draw-memo.js?v=2026.01.21.14"></script>
+    <script src="js/feedback.js?v=2026.01.21.15"></script>
+    <script src="js/voice-video-player.js?v=2026.01.21.15"></script>
+    <script src="js/voice-audio-player.js?v=2026.01.21.15"></script>
+    <script src="js/voice.js?v=2026.01.21.15"></script>
+    <script src="js/voice-transcript.js?v=2026.01.21.15"></script>
+    <script src="js/draw-memo.js?v=2026.01.21.15"></script>
     <script>
         // Suppress React DevTools prompt in dev builds.
         window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = window.__REACT_DEVTOOLS_GLOBAL_HOOK__ || {
@@ -335,9 +362,9 @@
             onCommitFiberUnmount: function () { }
         };
     </script>
-    <script src="js/memo.bundle.js?v=2026.01.21.14"></script>
-    <script src="js/assist.js?v=2026.01.21.14"></script>
-    <script src="js/document-panel.js?v=2026.01.21.14"></script>
+    <script src="js/memo.bundle.js?v=2026.01.21.15"></script>
+    <script src="js/assist.js?v=2026.01.21.15"></script>
+    <script src="js/document-panel.js?v=2026.01.21.15"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             setTimeout(function () {
@@ -2561,6 +2588,112 @@
                 await renameActiveDocument();
             });
 
+            // --- Menu Actions (Copy & Export) ---
+
+            // Copy listeners
+            document.getElementById('fileMenuCopyText')?.addEventListener('click', () => {
+                closeMenus();
+                const content = window.getMemoEditorSource?.('text');
+                if (content) {
+                    navigator.clipboard.writeText(content);
+                    setStatus('Contenu texte copié');
+                }
+            });
+            document.getElementById('fileMenuCopyMarkdown')?.addEventListener('click', () => {
+                closeMenus();
+                const content = window.getMemoEditorSource?.('markdown');
+                if (content) {
+                    navigator.clipboard.writeText(content);
+                    setStatus('Markdown copié');
+                }
+            });
+            document.getElementById('fileMenuCopyHtml')?.addEventListener('click', () => {
+                closeMenus();
+                const content = window.getMemoEditorSource?.('html');
+                if (content) {
+                    navigator.clipboard.writeText(content);
+                    setStatus('HTML Email copié');
+                }
+            });
+
+            // Export listeners
+            const triggerDownloadFromMenu = (format) => {
+                closeMenus();
+                const content = window.getMemoEditorSource?.(format);
+                if (!content) {
+                    setStatus("Erreur: contenu vide");
+                    return;
+                }
+
+                const title = getDocumentTitleFromState(state) || "memo";
+                const extensions = { 'html': 'html', 'markdown': 'md', 'text': 'txt' };
+                const mimes = { 'html': 'text/html', 'markdown': 'text/markdown', 'text': 'text/plain' };
+
+                const filename = `${title}-${new Date().toISOString().slice(0, 10)}.${extensions[format] || 'txt'}`;
+                const blob = new Blob([content], { type: mimes[format] || 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                a.click();
+                URL.revokeObjectURL(url);
+                setStatus(`Export ${format.toUpperCase()} terminé`);
+            };
+
+            document.getElementById('fileMenuExportHtml')?.addEventListener('click', () => triggerDownloadFromMenu('html'));
+            document.getElementById('fileMenuExportMarkdown')?.addEventListener('click', () => triggerDownloadFromMenu('markdown'));
+            document.getElementById('fileMenuExportText')?.addEventListener('click', () => triggerDownloadFromMenu('text'));
+
+            document.getElementById('fileMenuExportPdf')?.addEventListener('click', () => {
+                closeMenus();
+                const content = window.getMemoEditorSource?.('pdf');
+                if (!content) {
+                    setStatus("Erreur: contenu vide");
+                    return;
+                }
+
+                // Create a temporary window for printing
+                const title = getDocumentTitleFromState(state) || "memo";
+                const printWin = window.open('', '_blank');
+                if (!printWin) {
+                    setStatus("Erreur: fenêtre bloquée");
+                    return;
+                }
+
+                printWin.document.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>${title}</title>
+                        <style>
+                            body { margin: 0; padding: 40px; font-family: Arial, Helvetica, sans-serif; }
+                            @media print {
+                                body { padding: 0; }
+                                .no-print { display: none; }
+                            }
+                            img { max-width: 100%; display: block; }
+                            table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+                            table td, table th { border: 1px solid #d1d5db; padding: 10px; text-align: left; }
+                            blockquote { border-left: 4px solid #d1d5db; padding: 12px 16px; margin: 16px 0; background: #f9fafb; border-radius: 4px; }
+                        </style>
+                    </head>
+                    <body>
+                        ${content}
+                        <script>
+                            window.onload = function() {
+                                setTimeout(function() {
+                                    window.print();
+                                    window.close();
+                                }, 500);
+                            };
+                        <\/script>
+                    </body>
+                    </html>
+                `);
+                printWin.document.close();
+                setStatus("Export PDF lancé");
+            });
+
             publishTemplateBtn?.addEventListener("click", async () => {
                 closeMenus();
                 const tab = getActiveTab();
@@ -2639,7 +2772,8 @@
 
                 // 5. Hard refresh avec ?v= date du jour
                 const today = new Date();
-                const v = `${today.getFullYear()}.${String(today.getMonth() + 1).padStart(2, '0')}.${String(today.getDate()).padStart(2, '0')}.1`;
+                const v = `${today.getFullYear()}.${String(today.getMonth() + 1).padStart(2, '0')}.${String(today.getDate()).padStart(2,
+                    '0')}.1`;
                 window.location.href = window.location.pathname + '?v=' + v;
             });
 
@@ -2764,28 +2898,21 @@
                 const [moved] = openDocuments.splice(fromIndex, 1);
                 if (!target) {
                     const containerRect = documentTabsEl.getBoundingClientRect();
-                    if (event.clientX <= containerRect.right + EDGE_DROP_BUFFER) {
-                        openDocuments.push(moved);
-                        renderDocumentTabs();
-                    } else {
-                        openDocuments.splice(fromIndex, 0, moved);
-                    }
-                    return;
-                }
-                const targetId = target.dataset.documentId;
-                if (!targetId || targetId === draggedDocumentId) return;
-                const toIndex = openDocuments.findIndex(doc => doc.id === targetId);
-                if (fromIndex < 0 || toIndex < 0) return;
-                const rect = target.getBoundingClientRect();
-                const insertAfter = event.clientX > rect.left + rect.width / 2;
+                    if (event.clientX <= containerRect.right + EDGE_DROP_BUFFER) { openDocuments.push(moved); renderDocumentTabs(); }
+                    else { openDocuments.splice(fromIndex, 0, moved); } return;
+                } const targetId = target.dataset.documentId; if
+                    (!targetId || targetId === draggedDocumentId) return; const toIndex = openDocuments.findIndex(doc => doc.id ===
+                        targetId);
+                if (fromIndex < 0 || toIndex < 0) return; const rect = target.getBoundingClientRect(); const
+                    insertAfter = event.clientX > rect.left + rect.width / 2;
                 let nextIndex = toIndex;
                 if (insertAfter) {
                     nextIndex = toIndex + (fromIndex < toIndex ? 0 : 1);
                 } else {
-                    nextIndex = toIndex + (fromIndex < toIndex ? -1 : 0);
-                }
-                if (nextIndex < 0) nextIndex = 0;
-                if (nextIndex > openDocuments.length) nextIndex = openDocuments.length;
+                    nextIndex = toIndex + (fromIndex < toIndex ? -1
+                        : 0);
+                } if (nextIndex < 0) nextIndex = 0; if (nextIndex > openDocuments.length) nextIndex =
+                    openDocuments.length;
                 openDocuments.splice(nextIndex, 0, moved);
                 renderDocumentTabs();
             });
@@ -2814,10 +2941,9 @@
                         } else if (action === 'insert' && text) {
                             // Insert at position in content
                             const content = memoEditorApi.getValue();
-                            const textContent = content.replace(/<[^>]*>/g, '').replace(/\s+/g, ' '); // rough text
+                            const textContent = content.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ');
                             if (start <= textContent.length) {
-                                // Approximate position in HTML
-                                const htmlAtPos = start; // placeholder
+                                const htmlAtPos = start;
                                 const updated = content.slice(0, htmlAtPos) + newHtml + content.slice(htmlAtPos);
                                 memoEditorApi.setValue(updated);
                             }
@@ -2834,8 +2960,7 @@
                     console.warn("Apply operations failed", err);
                 }
             };
-        })();
-    </script>
+        })(); </script>
     <script>
         (function () {
             const chatRoot = document.getElementById("chat-root");
@@ -2979,7 +3104,7 @@
                 display: none;
                 z-index: 998;
                 border-radius: 4px;
-            `;
+                `;
             document.body.appendChild(selectionOverlay);
 
             // État
@@ -3260,11 +3385,12 @@
                         messages: [
                             {
                                 role: 'user',
-                                content: `DOCUMENT:\n${documentContent}\n\nSELECTION:\n${JSON.stringify({
+                                content: `DOCUMENT: \n${documentContent} \n\nSELECTION: \n${JSON.stringify({
                                     text: (currentSelection.blockMarkdown || currentSelection.blockText),
                                     start: selectionStartLine,
                                     end: selectionEndLine
-                                })}\n\nASK:\n${input.value}`,
+                                })
+                                    } \n\nASK: \n${input.value}`,
                             },
                         ],
                         stream: false,
@@ -3378,7 +3504,8 @@
                 <label for="memo-source-format" class="memo-source-label" style="margin-left: 20px;">Format</label>
                 <select id="memo-source-format" class="memo-source-select">
                     <option value="markdown" selected>Markdown</option>
-                    <option value="html">HTML</option>
+                    <option value="text">Texte</option>
+                    <option value="html">HTML email</option>
                     <option value="json">JSON</option>
                     <option value="ai_in">AI In</option>
                     <option value="ai_out">AI Out</option>
@@ -3438,7 +3565,7 @@
             }
 
             function getSource(format) {
-                if (format === 'markdown' || format === 'html' || format === 'json') {
+                if (format === 'markdown' || format === 'html' || format === 'json' || format === 'text') {
                     try {
                         const fn = window.getMemoEditorSource;
                         if (typeof fn === 'function') {
@@ -3532,6 +3659,7 @@
                 const format = formatEl.value;
                 const mimes = {
                     'markdown': 'text/markdown',
+                    'text': 'text/plain',
                     'html': 'text/html',
                     'json': 'application/json',
                     'ai_in': 'application/json',
@@ -3539,6 +3667,7 @@
                 };
                 const extensions = {
                     'markdown': 'md',
+                    'text': 'txt',
                     'html': 'html',
                     'json': 'json',
                     'ai_in': 'json',

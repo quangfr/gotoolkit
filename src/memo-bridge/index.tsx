@@ -173,6 +173,7 @@ const App = () => {
             (window as any).insertEditorMarkdownAtRange = methods.insertMarkdownAtRange;
             (window as any).insertEditorMarkdownAtEnd = methods.insertMarkdownAtEnd;
             (window as any).getMemoEditorSource = methods.getSource;
+            (window as any).exportMemoToDocx = methods.exportDocx;
         }
     }, [activeId, editors]);
 

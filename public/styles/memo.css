@@ -218,6 +218,67 @@
             background-color: var(--bg-surface-soft);
         }
 
+        /* Menu Submenus */
+        .menu-panel-item {
+            position: relative;
+            width: 100%;
+        }
+        
+        .has-submenu > .menu-panel-btn {
+            padding-right: 24px;
+        }
+        
+        .has-submenu::after {
+            content: '';
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            width: 5px;
+            height: 5px;
+            border-top: 1.5px solid currentColor;
+            border-right: 1.5px solid currentColor;
+            transform: translateY(-50%) rotate(45deg);
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        
+        .submenu {
+            position: absolute;
+            top: 0;
+            right: 100%;
+            margin-right: -2px; /* Slight overlap to avoid gap */
+            background: var(--bg-surface);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-md);
+            padding: 4px 0;
+            min-width: 140px;
+            display: none;
+            flex-direction: column;
+            border: 1px solid var(--border-main);
+            overflow: visible; /* Allow bridge visibility */
+            z-index: 1001;
+        }
+
+        /* Bridge to prevent sub-menu from disappearing when moving mouse */
+        .submenu::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            right: -10px;
+            width: 15px;
+            display: block;
+        }
+        
+        .menu-panel-item:hover > .submenu {
+            display: flex;
+        }
+
+        .submenu .menu-panel-btn {
+            padding: 6px 12px;
+            font-size: 13px;
+        }
+
         .document-explorer__body {
             flex: 1;
             display: flex;

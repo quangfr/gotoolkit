@@ -200,6 +200,8 @@ const CustomParagraph = Paragraph.extend({
   },
 });
 
+import { exportEditorToDocx } from './docx-export';
+
 const hasAncestorNode = ($pos: any, typeName: string) => {
   for (let d = $pos.depth; d > 0; d--) {
     if ($pos.node(d).type.name === typeName) return true;
@@ -3279,30 +3281,32 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         return '';
       };
 
-      const getMemoEditorSource = (format: 'markdown' | 'html' | 'json') => {
+      const getMemoEditorSource = (format: 'markdown' | 'html' | 'json' | 'text' | 'pdf') => {
         if (!editor) return '';
         try {
-          if (format === 'html') {
-            const html = editor.getHTML();
+          if (format === 'html' || format === 'pdf') {
+            const editorHtml = editor.getHTML();
+            if (!editorHtml) return '';
+            
             const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
+            const doc = parser.parseFromString(editorHtml, 'text/html');
+            if (!doc || !doc.body) return editorHtml;
 
-            // 1. Handle Mermaid diagrams (injecting SVG if present in the editor DOM)
+            const FONT_SANS = 'Arial, Helvetica, sans-serif';
+
+            // 1. Handle Mermaid diagrams (Outlook does not support SVG, PDF usually does better with text/images)
             try {
               const diagrams = doc.querySelectorAll('mermaid-diagram, .mermaid-diagram');
               diagrams.forEach(diag => {
                 const code = (diag.getAttribute('code') || diag.getAttribute('data-code') || '').trim();
-                if (!code) return;
-
-                // Search for the rendered SVG in the real DOM more robustly
-                // We'll look for mermaid containers and then check their code
+                
+                // For PDF, we might want to try to keep SVG if possible, but let's stick to pre for consistency with email for now
+                // UNLESS we find the SVG in the current DOM (like we did for HTML before)
                 const realContainers = document.querySelectorAll('mermaid-diagram, .mermaid-diagram');
                 let foundSvg: string | null = null;
-                
                 for (const container of Array.from(realContainers)) {
                   const cCode = (container.getAttribute('code') || container.getAttribute('data-code') || '').trim();
                   if (cCode === code) {
-                    // Try to find the SVG inside the mermaid-svg-container specifically
                     const svgEl = container.querySelector('.mermaid-svg-container svg') || container.querySelector('svg');
                     if (svgEl) {
                       foundSvg = svgEl.outerHTML;
@@ -3310,146 +3314,246 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
                     }
                   }
                 }
-                
-                if (foundSvg) {
-                  const container = doc.createElement('div');
-                  container.className = 'mermaid-rendered';
-                  container.innerHTML = foundSvg;
-                  diag.replaceWith(container);
+
+                if (foundSvg && format === 'pdf') {
+                   const container = doc.createElement('div');
+                   container.style.margin = '20px 0';
+                   container.style.textAlign = 'center';
+                   container.innerHTML = foundSvg;
+                   diag.replaceWith(container);
                 } else {
-                  // Fallback to code block
                   const pre = doc.createElement('pre');
-                  pre.className = 'mermaid';
+                  pre.style.background = '#f4f4f4';
+                  pre.style.padding = '10px';
+                  pre.style.border = '1px solid #ddd';
+                  pre.style.fontFamily = 'monospace';
+                  pre.style.fontSize = '12px';
                   pre.textContent = code;
                   diag.replaceWith(pre);
                 }
               });
             } catch (mermaidErr) {
-              console.warn('Error processing Mermaid for HTML source:', mermaidErr);
+              console.warn('Error processing Mermaid for source:', mermaidErr);
             }
 
-            // 2. Handle blockquote alerts (matching Markdown format)
+            // 2. Handle blockquote alerts
             const emojiMap: Record<string, string> = {
-              'NOTE': 'ℹ️',
-              'TIP': '💡',
-              'IMPORTANT': '✅',
-              'WARNING': '⚠️',
-              'CAUTION': '🚨',
+              'NOTE': 'ℹ️', 'TIP': '💡', 'IMPORTANT': '✅', 'WARNING': '⚠️', 'CAUTION': '🚨',
             };
 
-            const blockquotes = doc.querySelectorAll('blockquote[data-type]');
-            blockquotes.forEach(bq => {
+            const blockquotes = doc.querySelectorAll('blockquote');
+            blockquotes.forEach(q => {
+              const bq = q as HTMLElement;
               const type = bq.getAttribute('data-type');
+              const alertColorMap: Record<string, string> = {
+                'NOTE': '#2563eb', 'TIP': '#059669', 'IMPORTANT': '#059669', 'WARNING': '#d97706', 'CAUTION': '#dc2626', 'default': '#6b7280'
+              };
+              const color = alertColorMap[type || 'default'] || alertColorMap.default;
+              
+              bq.style.borderLeft = `4px solid ${color}`;
+              bq.style.padding = '12px 16px';
+              bq.style.margin = '16px 0';
+              bq.style.color = '#333333';
+              bq.style.background = '#f9fafb';
+              bq.style.fontFamily = FONT_SANS;
+              bq.style.borderRadius = '4px';
+
               if (type && type !== 'default') {
                 const emoji = emojiMap[type] || 'ℹ️';
                 const title = bq.getAttribute('data-title');
-                
-                // Construct header
                 const header = doc.createElement('strong');
+                header.style.color = color;
+                header.style.fontWeight = 'bold';
                 header.textContent = title ? `${emoji} ${title} ` : `${emoji} `;
                 
-                // Inject at start of content
                 const firstChild = bq.firstChild;
-                if (firstChild) {
-                  // If first child is a paragraph, inject inside it
-                  if (firstChild.nodeType === 1 && (firstChild as HTMLElement).tagName === 'P') {
-                    firstChild.insertBefore(header, firstChild.firstChild);
-                    firstChild.insertBefore(doc.createTextNode(' '), header.nextSibling);
-                  } else {
-                    bq.insertBefore(header, firstChild);
-                  }
+                if (firstChild && firstChild.nodeType === 1 && (firstChild as HTMLElement).tagName === 'P') {
+                  (firstChild as HTMLElement).insertBefore(header, (firstChild as HTMLElement).firstChild);
                 } else {
-                  bq.appendChild(header);
+                  bq.insertBefore(header, bq.firstChild);
                 }
               }
             });
 
-            // 3. Handle Task Lists (Unicode symbols and flatten to P tag as requested)
+            // 3. Handle Task Lists (Unicode symbols)
             const taskLists = doc.querySelectorAll('ul[data-type="taskList"]');
-            taskLists.forEach(ul => {
-              const parent = ul.parentNode;
-              if (!parent) return;
-
-              const items = ul.querySelectorAll('li');
-              items.forEach(li => {
+            taskLists.forEach(l => {
+              const ul = l as HTMLElement;
+              ul.querySelectorAll('li').forEach(it => {
+                const li = it as HTMLElement;
                 const checked = li.getAttribute('data-checked') === 'true' || li.querySelector('input[checked]') !== null;
                 const symbol = checked ? '☒' : '☐';
+                const p = (li.querySelector('p') as HTMLElement) || doc.createElement('p');
+                if (!li.querySelector('p')) p.innerHTML = li.innerHTML;
                 
-                const p = li.querySelector('p');
-                if (p) {
-                  // Create a wrapper/new paragraph or just modify the existing one
-                  const symbolSpan = doc.createElement('span');
-                  symbolSpan.style.marginRight = '8px';
-                  symbolSpan.textContent = symbol + ' ';
-                  p.insertBefore(symbolSpan, p.firstChild);
-                  ul.parentNode?.insertBefore(p, ul);
-                } else {
-                  // Fallback for items without P
-                  const newP = doc.createElement('p');
-                  newP.textContent = symbol + ' ' + li.textContent;
-                  ul.parentNode?.insertBefore(newP, ul);
-                }
+                const symbolSpan = doc.createElement('strong');
+                symbolSpan.style.marginRight = '8px';
+                symbolSpan.style.fontWeight = 'bold';
+                symbolSpan.textContent = symbol + ' ';
+                
+                p.insertBefore(symbolSpan, p.firstChild);
+                p.style.margin = '10px 0';
+                ul.parentNode?.insertBefore(p, ul);
               });
               ul.remove();
             });
 
-            // 4. Prepend Table of Contents
-            const headings = doc.querySelectorAll('h1, h2, h3');
-            if (headings.length > 0) {
-              const tocContainer = doc.createElement('div');
-              tocContainer.className = 'memo-toc';
-              tocContainer.style.marginBottom = '24px';
-              tocContainer.style.padding = '16px';
-              tocContainer.style.border = '1px solid #e2e8f0';
-              tocContainer.style.borderRadius = '8px';
-              tocContainer.style.backgroundColor = '#f8fafc';
+            // 4. Global element styling
+            doc.querySelectorAll('p').forEach(p => {
+              const el = p as HTMLElement;
+              el.style.margin = '10px 0';
+              el.style.fontSize = '14px';
+              el.style.lineHeight = '20px';
+              el.style.color = '#333333';
+              el.style.fontFamily = FONT_SANS;
+            });
 
-              const tocTitle = doc.createElement('div');
-              tocTitle.style.fontWeight = 'bold';
-              tocTitle.style.marginBottom = '12px';
-              tocTitle.style.fontSize = '14px';
-              tocTitle.textContent = 'Table des matières';
-              tocContainer.appendChild(tocTitle);
+            doc.querySelectorAll('h1, h2, h3, h4, h5, h6').forEach(h => {
+              const el = h as HTMLElement;
+              const isH1 = el.tagName === 'H1';
+              const isH2 = el.tagName === 'H2';
+              el.style.margin = '20px 0 10px 0';
+              el.style.fontWeight = 'bold';
+              el.style.color = '#111111';
+              el.style.fontFamily = FONT_SANS;
+              if (isH1) {
+                el.style.fontSize = '24px';
+                el.style.lineHeight = '32px';
+              } else if (isH2) {
+                el.style.fontSize = '18px';
+                el.style.lineHeight = '26px';
+              } else {
+                el.style.fontSize = '16px';
+                el.style.lineHeight = '22px';
+              }
+            });
 
-              const tocList = doc.createElement('ul');
-              tocList.style.listStyle = 'none';
-              tocList.style.padding = '0';
-              tocList.style.margin = '0';
+            doc.querySelectorAll('strong, b').forEach(s => {
+              (s as HTMLElement).style.fontWeight = 'bold';
+            });
 
-              headings.forEach(heading => {
-                const level = parseInt(heading.tagName[1]);
-                const id = heading.getAttribute('id') || heading.getAttribute('data-toc-id');
-                if (!id) return;
+            doc.querySelectorAll('code').forEach(c => {
+              const el = c as HTMLElement;
+              el.style.background = '#f3f4f6';
+              el.style.padding = '2px 4px';
+              el.style.fontFamily = 'monospace';
+              el.style.fontSize = '13px';
+              el.style.borderRadius = '3px';
+            });
 
-                const listItem = doc.createElement('li');
-                listItem.style.marginLeft = `${(level - 1) * 16}px`;
-                listItem.style.marginBottom = '6px';
-
-                const link = doc.createElement('a');
-                link.href = `#${id}`;
-                link.textContent = heading.textContent?.trim() || '';
-                link.style.textDecoration = 'none';
-                link.style.color = '#2563eb';
-                link.style.fontSize = '13px';
-
-                listItem.appendChild(link);
-                tocList.appendChild(listItem);
+            doc.querySelectorAll('table').forEach(t => {
+              const tableEl = t as HTMLElement;
+              tableEl.setAttribute('border', '1');
+              tableEl.setAttribute('cellspacing', '0');
+              tableEl.setAttribute('cellpadding', '10');
+              tableEl.setAttribute('width', '100%');
+              tableEl.style.borderCollapse = 'collapse';
+              tableEl.style.width = '100%';
+              tableEl.style.margin = '20px 0';
+              tableEl.style.border = '1px solid #d1d5db';
+              
+              tableEl.querySelectorAll('td, th').forEach(cell => {
+                const el = cell as HTMLElement;
+                el.style.border = '1px solid #d1d5db';
+                el.style.textAlign = 'left';
+                el.style.verticalAlign = 'top';
+                el.style.fontFamily = FONT_SANS;
+                el.style.fontSize = '14px';
+                el.setAttribute('align', 'left');
+                el.setAttribute('valign', 'top');
               });
+              tableEl.querySelectorAll('th').forEach(th => {
+                const el = th as HTMLElement;
+                el.style.background = '#f9fafb';
+                el.style.fontWeight = 'bold';
+              });
+            });
 
-              tocContainer.appendChild(tocList);
-              doc.body.insertBefore(tocContainer, doc.body.firstChild);
+            doc.querySelectorAll('ul, ol').forEach(l => {
+              const el = l as HTMLElement;
+              el.style.paddingLeft = '30px';
+              el.style.margin = '10px 0';
+              el.querySelectorAll('li').forEach(li => {
+                const liel = li as HTMLElement;
+                liel.style.fontSize = '14px';
+                liel.style.lineHeight = '20px';
+                liel.style.fontFamily = FONT_SANS;
+                liel.style.marginBottom = '5px';
+              });
+            });
+
+            doc.querySelectorAll('img').forEach(img => {
+              const el = img as HTMLElement;
+              el.style.display = 'block';
+              el.style.maxWidth = '100%';
+              const w = el.getAttribute('width');
+              const h = el.getAttribute('height');
+              if (w) el.style.width = w.endsWith('%') ? w : w + 'px';
+              if (h) el.style.height = h.endsWith('%') ? h : h + 'px';
+            });
+
+            const content = doc.body.innerHTML;
+
+            if (format === 'pdf') {
+              return `
+<div class="pdf-export" style="font-family:${FONT_SANS}; font-size:14px; line-height:20px; color:#333333; max-width: 800px; margin: 0 auto;">
+  ${content}
+</div>`.trim();
             }
 
-            return doc.body.innerHTML;
+            // 5. Wrap in Outlook-Safe Table Structure
+            const outlookHtml = `
+<table width="100%" border="0" cellspacing="0" cellpadding="0" style="width:100% !important;">
+  <tr>
+    <td align="center" style="padding: 20px 0;">
+      <!--[if mso]>
+      <table align="center" border="0" cellspacing="0" cellpadding="0" width="600" style="width:600px;">
+      <tr>
+      <td align="left" valign="top" width="600" style="width:600px;">
+      <![endif]-->
+      <table align="center" border="0" cellspacing="0" cellpadding="0" width="100%" style="max-width:600px; width:100%;">
+        <tr>
+          <td align="left" valign="top" style="font-family:${FONT_SANS}; font-size:14px; line-height:20px; color:#333333; padding: 0 20px;">
+            ${content}
+          </td>
+        </tr>
+      </table>
+      <!--[if mso]>
+      </td>
+      </tr>
+      </table>
+      <![endif]-->
+    </td>
+  </tr>
+</table>`.trim();
+
+            return outlookHtml;
           }
 
           if (format === 'json') {
             return JSON.stringify(editor.getJSON(), null, 2);
           }
 
+          if (format === 'text') {
+            const markdown = getEditorMarkdown();
+            // Simplify markdown for plain text
+            return markdown
+              .replace(/\\-/g, '-')                     // Remove escaping: \- -> -
+              .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1') // Strip links: [Text](URL) -> Text
+              .replace(/(\*\*|__)(.*?)\1/g, '$2')      // Strip bold: **Text** -> Text
+              .replace(/(\*|_)(.*?)\1/g, '$2')         // Strip italic: *Text* -> Text
+              .replace(/~~(.*?)~~/g, '$1')              // Strip strikethrough
+              .replace(/`(.*?)`/g, '$1')               // Strip inline code
+              .replace(/^#+\s+/gm, '')                 // Strip header hashes
+              .replace(/^\s*>\s*/gm, '> ')             // Clean blockquotes
+              .replace(/^\s*-\s+/gm, '- ')             // List items: ensure single space and normalize
+              .replace(/\n\n(?=\s*-)/g, '\n');          // Remove blank line between list items
+          }
+
           // Markdown
           return getEditorMarkdown();
         } catch (err) {
+          console.error('getMemoEditorSource error:', err);
           return '';
         }
       };
@@ -3458,7 +3562,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         if (typeof markdown !== 'string') return '';
 
         // Handle unicode tasks at beginning of lines, allowing optional leading whitespace
-        const markdownWithUnicodeTasks = markdown.replace(/^[ \t]*([☐☒])\s+(.*)$/gm, (match, char, content) => {
+        const markdownWithUnicodeTasks = markdown.replace(/^[ \t]*([☐☒])\s+(.*)$/gm, (_match, char, content) => {
           const checked = char === '☒';
           // Tiptap's TaskList and TaskItem expect this structure to be parsed correctly as task items
           return `<ul data-type="taskList"><li data-type="taskItem" data-checked="${checked}"><p>${content}</p></li></ul>`;
@@ -3603,6 +3707,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         insertMarkdownAtRange: insertEditorMarkdownAtRange,
         insertMarkdownAtEnd: insertEditorMarkdownAtEnd,
         getSource: getMemoEditorSource,
+        exportDocx: (title?: string) => exportEditorToDocx(editor, title),
         instance: editor
       };
 

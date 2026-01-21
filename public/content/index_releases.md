@@ -1,3 +1,6 @@
+## 2026-01-21
+- Mémo : Exporter en HTML Email, Markdown, PDF et texte
+
 ## 2026-01-18
 - Accueil : Affichage des modèles par superpouvoir
 - Mémo : Libellé avec autocomplétion, style et couleurs
@@ -22,7 +25,7 @@
 
 ## 2026-01-09
 - Mémo : Enregistrement vocale et partage d'écran avec transcription
-- Mémo : Bibliothèque en barre latérale
+- Mémo : Bibliothèque locale en barre latérale
 - Assist : Mode `↬ Demander` pour discuter sans éditer avec références 
 
 ## 2026-01-08
@@ -49,7 +52,6 @@
 - Accueil : Clarification des `CGU`
 
 ## 2025-12-24
-- Feedback : Généralisation dans tous les modules
 - Feedback : Liste des demandes de feedback (admin)
 
 ## 2025-12-20
@@ -74,4 +76,4 @@
 - Module `Accueil` avec partage des liens de document et espace en ligne
 
 ## 2025-11-22
-- Module `Canvas` (déprécié) : champs de saisie structuré
+- Module `Canvas` (déprécié) : Texte structuré
