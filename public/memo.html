@@ -3374,7 +3374,7 @@
         <div id="memo-source-modal" role="dialog" aria-modal="true" aria-label="Document source">
             <div class="memo-source-header">
                 <div class="memo-source-title">Source</div>
-                
+
                 <label for="memo-source-format" class="memo-source-label" style="margin-left: 20px;">Format</label>
                 <select id="memo-source-format" class="memo-source-select">
                     <option value="markdown" selected>Markdown</option>
@@ -3389,12 +3389,13 @@
                 <button id="memo-source-download" type="button" class="memo-source-button" title="Télécharger">
                     <i data-lucide="download"></i>
                 </button>
-                
+
                 <button id="memo-source-copy" type="button" class="memo-source-button" title="Copier">
                     <i data-lucide="copy"></i>
                 </button>
 
-                <button id="memo-source-close" type="button" class="memo-source-button" title="Fermer" style="margin-left: 10px;">
+                <button id="memo-source-close" type="button" class="memo-source-button" title="Fermer"
+                    style="margin-left: 10px;">
                     <i data-lucide="x"></i>
                 </button>
             </div>
@@ -3561,7 +3562,7 @@
 
                 // Always default to markdown as requested
                 formatEl.value = 'markdown';
-                
+
                 refresh();
                 if (window.lucide) window.lucide.createIcons();
             }

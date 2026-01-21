@@ -3302,7 +3302,8 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
                 for (const container of Array.from(realContainers)) {
                   const cCode = (container.getAttribute('code') || container.getAttribute('data-code') || '').trim();
                   if (cCode === code) {
-                    const svgEl = container.querySelector('svg');
+                    // Try to find the SVG inside the mermaid-svg-container specifically
+                    const svgEl = container.querySelector('.mermaid-svg-container svg') || container.querySelector('svg');
                     if (svgEl) {
                       foundSvg = svgEl.outerHTML;
                       break;
@@ -3363,26 +3364,33 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
               }
             });
 
-            // 3. Handle Task Lists (Unicode symbols)
-            const tasks = doc.querySelectorAll('li[data-type="taskItem"]');
-            tasks.forEach(task => {
-              const checked = task.getAttribute('data-checked') === 'true';
-              const symbol = checked ? '☒' : '☐';
-              
-              const symbolSpan = doc.createElement('span');
-              symbolSpan.textContent = symbol + ' ';
-              symbolSpan.style.marginRight = '8px';
-              
-              const p = task.querySelector('p');
-              if (p) {
-                p.insertBefore(symbolSpan, p.firstChild);
-              } else {
-                task.insertBefore(symbolSpan, task.firstChild);
-              }
-              
-              // Remove the default checkbox attributes to avoid double rendering if the viewer uses Tiptap
-              task.removeAttribute('data-checked');
-              task.removeAttribute('data-type');
+            // 3. Handle Task Lists (Unicode symbols and flatten to P tag as requested)
+            const taskLists = doc.querySelectorAll('ul[data-type="taskList"]');
+            taskLists.forEach(ul => {
+              const parent = ul.parentNode;
+              if (!parent) return;
+
+              const items = ul.querySelectorAll('li');
+              items.forEach(li => {
+                const checked = li.getAttribute('data-checked') === 'true' || li.querySelector('input[checked]') !== null;
+                const symbol = checked ? '☒' : '☐';
+                
+                const p = li.querySelector('p');
+                if (p) {
+                  // Create a wrapper/new paragraph or just modify the existing one
+                  const symbolSpan = doc.createElement('span');
+                  symbolSpan.style.marginRight = '8px';
+                  symbolSpan.textContent = symbol + ' ';
+                  p.insertBefore(symbolSpan, p.firstChild);
+                  ul.parentNode?.insertBefore(p, ul);
+                } else {
+                  // Fallback for items without P
+                  const newP = doc.createElement('p');
+                  newP.textContent = symbol + ' ' + li.textContent;
+                  ul.parentNode?.insertBefore(newP, ul);
+                }
+              });
+              ul.remove();
             });
 
             return doc.body.innerHTML;

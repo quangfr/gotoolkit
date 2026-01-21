@@ -35028,7 +35028,7 @@ ${innerMarkdown}
                   for (const container2 of Array.from(realContainers)) {
                     const cCode = (container2.getAttribute("code") || container2.getAttribute("data-code") || "").trim();
                     if (cCode === code) {
-                      const svgEl = container2.querySelector("svg");
+                      const svgEl = container2.querySelector(".mermaid-svg-container svg") || container2.querySelector("svg");
                       if (svgEl) {
                         foundSvg = svgEl.outerHTML;
                         break;
@@ -35078,21 +35078,29 @@ ${innerMarkdown}
                   }
                 }
               });
-              const tasks = doc3.querySelectorAll('li[data-type="taskItem"]');
-              tasks.forEach((task) => {
-                const checked = task.getAttribute("data-checked") === "true";
-                const symbol = checked ? "\u2612" : "\u2610";
-                const symbolSpan = doc3.createElement("span");
-                symbolSpan.textContent = symbol + " ";
-                symbolSpan.style.marginRight = "8px";
-                const p = task.querySelector("p");
-                if (p) {
-                  p.insertBefore(symbolSpan, p.firstChild);
-                } else {
-                  task.insertBefore(symbolSpan, task.firstChild);
-                }
-                task.removeAttribute("data-checked");
-                task.removeAttribute("data-type");
+              const taskLists = doc3.querySelectorAll('ul[data-type="taskList"]');
+              taskLists.forEach((ul) => {
+                const parent = ul.parentNode;
+                if (!parent) return;
+                const items = ul.querySelectorAll("li");
+                items.forEach((li) => {
+                  var _a2, _b2;
+                  const checked = li.getAttribute("data-checked") === "true" || li.querySelector("input[checked]") !== null;
+                  const symbol = checked ? "\u2612" : "\u2610";
+                  const p = li.querySelector("p");
+                  if (p) {
+                    const symbolSpan = doc3.createElement("span");
+                    symbolSpan.style.marginRight = "8px";
+                    symbolSpan.textContent = symbol + " ";
+                    p.insertBefore(symbolSpan, p.firstChild);
+                    (_a2 = ul.parentNode) == null ? void 0 : _a2.insertBefore(p, ul);
+                  } else {
+                    const newP = doc3.createElement("p");
+                    newP.textContent = symbol + " " + li.textContent;
+                    (_b2 = ul.parentNode) == null ? void 0 : _b2.insertBefore(newP, ul);
+                  }
+                });
+                ul.remove();
               });
               return doc3.body.innerHTML;
             }
