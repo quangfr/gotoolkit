@@ -9,7 +9,16 @@
     "cleanUrls": true,
     "headers": [
       {
-        "source": "{/,/**/*.html}",
+        "source": "**/*.html",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, max-age=0, must-revalidate"
+          }
+        ]
+      },
+      {
+        "source": "/",
         "headers": [
           {
             "key": "Cache-Control",
