@@ -55264,19 +55264,23 @@ ${innerMarkdown}
                 const el = h;
                 const isH1 = el.tagName === "H1";
                 const isH2 = el.tagName === "H2";
-                el.style.margin = "20px 0 10px 0";
+                const isH3 = el.tagName === "H3";
+                el.style.margin = "24px 0 12px 0";
                 el.style.fontWeight = "bold";
                 el.style.color = "#111111";
                 el.style.fontFamily = FONT_SANS;
                 if (isH1) {
+                  el.style.fontSize = "32px";
+                  el.style.lineHeight = "40px";
+                } else if (isH2) {
                   el.style.fontSize = "24px";
                   el.style.lineHeight = "32px";
-                } else if (isH2) {
-                  el.style.fontSize = "18px";
-                  el.style.lineHeight = "26px";
+                } else if (isH3) {
+                  el.style.fontSize = "20px";
+                  el.style.lineHeight = "28px";
                 } else {
-                  el.style.fontSize = "16px";
-                  el.style.lineHeight = "22px";
+                  el.style.fontSize = "18px";
+                  el.style.lineHeight = "24px";
                 }
               });
               doc3.querySelectorAll("strong, b").forEach((s) => {
