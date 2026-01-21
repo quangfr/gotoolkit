@@ -178,6 +178,14 @@
             line-height: 1.45;
         }
 
+        #memo-source-preview {
+            width: 100%;
+            height: calc(98vh - 52px);
+            overflow-y: auto;
+            background: #f3f4f6;
+            padding: 0; /* Padding is handled by the rich HTML export inside */
+        }
+
         #memo-source-toast {
             position: absolute;
             left: 50%;
