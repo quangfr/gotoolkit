@@ -32449,18 +32449,22 @@ ${promptInput.trim()}`
     return false;
   };
   var CustomBulletList = BulletList.extend({
-    addNodeView() {
-      return ReactNodeViewRenderer(() => /* @__PURE__ */ jsx(NodeViewWrapper, { className: "node-text", children: /* @__PURE__ */ jsx(NodeViewContent, { as: "ul" }) }));
+    renderHTML({ HTMLAttributes }) {
+      return ["ul", mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, { class: "node-text" }), 0];
     }
   });
   var CustomOrderedList = OrderedList.extend({
-    addNodeView() {
-      return ReactNodeViewRenderer(() => /* @__PURE__ */ jsx(NodeViewWrapper, { className: "node-text", children: /* @__PURE__ */ jsx(NodeViewContent, { as: "ol" }) }));
+    renderHTML({ HTMLAttributes }) {
+      return ["ol", mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, { class: "node-text" }), 0];
     }
   });
   var CustomCodeBlock = CodeBlock.extend({
-    addNodeView() {
-      return ReactNodeViewRenderer(() => /* @__PURE__ */ jsx(NodeViewWrapper, { className: "node-text node-codeBlock", children: /* @__PURE__ */ jsx("pre", { children: /* @__PURE__ */ jsx(NodeViewContent, { as: "code" }) }) }));
+    renderHTML({ HTMLAttributes }) {
+      return [
+        "pre",
+        mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, { class: "node-text node-codeBlock" }),
+        ["code", {}, 0]
+      ];
     }
   });
   var LinkSearchModal = ({ editor, onClose }) => {

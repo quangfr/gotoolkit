@@ -267,34 +267,24 @@ const selectTableCellText = (view: any, pos: number) => {
 };
 
 const CustomBulletList = BulletList.extend({
-  addNodeView() {
-    return ReactNodeViewRenderer(() => (
-      <NodeViewWrapper className="node-text">
-        <NodeViewContent as="ul" />
-      </NodeViewWrapper>
-    ));
+  renderHTML({ HTMLAttributes }) {
+    return ['ul', mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, { class: 'node-text' }), 0];
   },
 });
 
 const CustomOrderedList = OrderedList.extend({
-  addNodeView() {
-    return ReactNodeViewRenderer(() => (
-      <NodeViewWrapper className="node-text">
-        <NodeViewContent as="ol" />
-      </NodeViewWrapper>
-    ));
+  renderHTML({ HTMLAttributes }) {
+    return ['ol', mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, { class: 'node-text' }), 0];
   },
 });
 
 const CustomCodeBlock = CodeBlock.extend({
-  addNodeView() {
-    return ReactNodeViewRenderer(() => (
-      <NodeViewWrapper className="node-text node-codeBlock">
-        <pre>
-          <NodeViewContent as="code" />
-        </pre>
-      </NodeViewWrapper>
-    ));
+  renderHTML({ HTMLAttributes }) {
+    return [
+      'pre',
+      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, { class: 'node-text node-codeBlock' }),
+      ['code', {}, 0],
+    ];
   },
 });
 
@@ -3141,15 +3131,30 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         // Always use GFM for tables and other GitHub-flavored features
         turndown.use(gfm);
 
-        // Custom rule for GitHub-style alerts
+        // Custom rule for blockquote alerts (using emojis instead of [!TAG])
         turndown.addRule('blockquote-alerts', {
           filter: 'blockquote',
           replacement: function (content: string, node: any) {
             const type = node.getAttribute('data-type');
+            // Standard blockquote
             if (!type || type === 'default') return '\n\n> ' + content.trim().replace(/\n/g, '\n> ') + '\n\n';
+            
+            // Map types to emojis for visual export
+            const emojiMap: Record<string, string> = {
+              'NOTE': 'ℹ️',
+              'TIP': '💡',
+              'IMPORTANT': '✅',
+              'WARNING': '⚠️',
+              'CAUTION': '🚨',
+            };
+            const emoji = emojiMap[type] || 'ℹ️';
             const title = node.getAttribute('data-title');
-            const alertTag = title ? `[!${type}] ${title}` : `[!${type}]`;
-            return '\n\n> ' + alertTag + '\n> ' + content.trim().replace(/\n/g, '\n> ') + '\n\n';
+            
+            // Format: > ℹ️ [Title]
+            //         > Content
+            const alertHeader = title ? `${emoji} **${title}**` : `${emoji}`;
+            
+            return '\n\n> ' + alertHeader + '\n> ' + content.trim().replace(/\n/g, '\n> ') + '\n\n';
           }
         });
 
@@ -3189,15 +3194,16 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           }
         });
 
-        // Custom rule for Task Lists
+        // Custom rule for Task Lists (using pretty ☒/☐ symbols)
         turndown.addRule('taskList', {
           filter: function (node: any) {
             return node.nodeName === 'LI' && node.parentNode.nodeName === 'UL' && node.classList.contains('task-list-item');
           },
           replacement: function (content: string, node: any) {
             const checkbox = node.querySelector('input[type="checkbox"]');
-            const checked = checkbox && checkbox.checked ? 'x' : ' ';
-            return '- [' + checked + '] ' + content.trim() + '\n';
+            const checked = checkbox && checkbox.checked ? '☒' : '☐';
+            // Start with a space then the box as requested
+            return ' ' + checked + ' ' + content.trim() + '\n';
           }
         });
 
