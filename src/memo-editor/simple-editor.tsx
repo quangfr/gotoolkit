@@ -3282,7 +3282,92 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       const getMemoEditorSource = (format: 'markdown' | 'html' | 'json') => {
         try {
           if (format === 'html') {
-            return editor.getHTML();
+            const html = editor.getHTML();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+
+            // 1. Handle Mermaid diagrams (injecting SVG if present in the editor DOM)
+            const diagrams = doc.querySelectorAll('mermaid-diagram, .mermaid-diagram');
+            diagrams.forEach(diag => {
+              const code = diag.getAttribute('code') || diag.getAttribute('data-code') || '';
+              
+              // Search for the rendered SVG in the real DOM
+              const nodeSelector = `[code="${code.replace(/"/g, '\\"')}"] svg, [data-code="${code.replace(/"/g, '\\"')}"] svg`;
+              const renderedSvg = document.querySelector(nodeSelector);
+              
+              if (renderedSvg) {
+                const container = doc.createElement('div');
+                container.className = 'mermaid-rendered';
+                container.innerHTML = renderedSvg.outerHTML;
+                diag.replaceWith(container);
+              } else {
+                // Fallback to code block
+                const pre = doc.createElement('pre');
+                pre.className = 'mermaid';
+                pre.textContent = code;
+                diag.replaceWith(pre);
+              }
+            });
+
+            // 2. Handle blockquote alerts (matching Markdown format)
+            const emojiMap: Record<string, string> = {
+              'NOTE': 'ℹ️',
+              'TIP': '💡',
+              'IMPORTANT': '✅',
+              'WARNING': '⚠️',
+              'CAUTION': '🚨',
+            };
+
+            const blockquotes = doc.querySelectorAll('blockquote[data-type]');
+            blockquotes.forEach(bq => {
+              const type = bq.getAttribute('data-type');
+              if (type && type !== 'default') {
+                const emoji = emojiMap[type] || 'ℹ️';
+                const title = bq.getAttribute('data-title');
+                
+                // Construct header
+                const header = doc.createElement('strong');
+                header.textContent = title ? `${emoji} ${title} ` : `${emoji} `;
+                
+                // Inject at start of content
+                const firstChild = bq.firstChild;
+                if (firstChild) {
+                  // If first child is a paragraph, inject inside it
+                  if ((firstChild as HTMLElement).tagName === 'P') {
+                    firstChild.insertBefore(header, firstChild.firstChild);
+                    firstChild.insertBefore(doc.createTextNode(' '), header.nextSibling);
+                  } else {
+                    bq.insertBefore(header, firstChild);
+                  }
+                } else {
+                  bq.appendChild(header);
+                }
+              }
+            });
+
+            // 3. Handle Task Lists (Unicode symbols)
+            const tasks = doc.querySelectorAll('li[data-type="taskItem"]');
+            tasks.forEach(task => {
+              const checked = task.getAttribute('data-checked') === 'true';
+              const symbol = checked ? '☒' : '☐';
+              
+              const symbolSpan = doc.createElement('span');
+              symbolSpan.textContent = symbol + ' ';
+              symbolSpan.style.marginRight = '8px';
+              
+              const p = task.querySelector('p');
+              if (p) {
+                p.insertBefore(symbolSpan, p.firstChild);
+              } else {
+                task.insertBefore(symbolSpan, task.firstChild);
+              }
+              
+              // Remove the default checkbox attributes to avoid double rendering if the viewer uses Tiptap
+              task.removeAttribute('data-checked');
+              task.removeAttribute('data-type');
+            });
+
+            return doc.body.innerHTML;
           }
 
           if (format === 'json') {

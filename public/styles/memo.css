@@ -116,7 +116,7 @@
 
         .memo-source-title {
             font-weight: 600;
-            font-size: 13px;
+            font-size: 14px;
         }
 
         .memo-source-spacer {
@@ -129,17 +129,22 @@
         }
 
         .memo-source-select {
-            height: 28px;
+            height: 32px;
             background: var(--bg-app);
             color: var(--text-main);
             border: 1px solid var(--border-strong);
             border-radius: 8px;
-            padding: 0 8px;
+            padding: 0 10px;
             font-size: 13px;
+            outline: none;
         }
 
         .memo-source-button {
-            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 32px;
+            min-width: 32px;
             padding: 0 10px;
             background: var(--bg-app);
             color: var(--text-main);
@@ -147,6 +152,16 @@
             border-radius: 8px;
             cursor: pointer;
             font-size: 13px;
+        }
+        
+        .memo-source-button:hover {
+            background: var(--bg-hover);
+            border-color: var(--border-main);
+        }
+        
+        .memo-source-button i {
+            width: 16px;
+            height: 16px;
         }
 
         #memo-source-text {
