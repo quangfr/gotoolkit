@@ -1,6 +1,6 @@
 import React from 'react';
 import { useEditor, EditorContent, Editor, ReactRenderer, ReactNodeViewRenderer, NodeViewWrapper, NodeViewContent } from '@tiptap/react';
-import { Extension, markInputRule } from '@tiptap/core';
+import { Extension, markInputRule, mergeAttributes } from '@tiptap/core';
 import Suggestion from '@tiptap/suggestion';
 import StarterKit from '@tiptap/starter-kit';
 import Code from '@tiptap/extension-code';
@@ -142,6 +142,9 @@ const CustomHeading = Heading.extend({
   },
   addNodeView() {
     return ReactNodeViewRenderer(({ node, editor, getPos }) => {
+      React.useEffect(() => {
+        console.log(`[CustomHeading] mounted ("${node.textContent?.substring(0, 20)}...")`);
+      }, []);
       const level = Math.min(4, Math.max(1, node.attrs.level || 1));
       const tag = `h${level}` as any;
       const collapsed = node.attrs.collapsed;
@@ -175,27 +178,25 @@ const CustomHeading = Heading.extend({
 });
 
 const CustomParagraph = Paragraph.extend({
-  addNodeView() {
-    return ReactNodeViewRenderer(({ editor, getPos }) => {
-      let isListItem = false;
-      if (typeof getPos === 'function') {
-        const pos = getPos();
-        if (typeof pos === 'number') {
-          const $pos = editor.state.doc.resolve(pos);
-          for (let d = $pos.depth; d > 0; d--) {
-            if ($pos.node(d).type.name === 'listItem') {
-              isListItem = true;
-              break;
-            }
-          }
-        }
-      }
-      return (
-        <NodeViewWrapper className={isListItem ? undefined : 'node-text node-paragraph'}>
-          <NodeViewContent as="p" />
-        </NodeViewWrapper>
-      );
-    });
+  addAttributes() {
+    return {
+      class: {
+        default: 'node-text node-paragraph',
+        renderHTML: attributes => {
+          return {
+            class: attributes.class,
+          };
+        },
+      },
+    };
+  },
+  parseHTML() {
+    return [
+      { tag: 'p' },
+    ];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ['p', mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0];
   },
 });
 
@@ -2097,6 +2098,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   onReady,
   placeholder = 'Commencez à écrire...' 
 }) => {
+  const mountStart = React.useRef(performance.now());
   const turndownRef = React.useRef<any>(null);
   const containerRef = React.useRef<HTMLDivElement>(null);
   
@@ -2168,9 +2170,14 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       CodeSuggestion,
       TableOfContents.configure({
         onUpdate(content: any[]) {
+          const start = performance.now();
           (window as any).MemoHeadings = content;
           // Dispatch a custom event to notify vanilla JS code
           window.dispatchEvent(new CustomEvent('memo:headings-updated', { detail: content }));
+          const duration = Math.round(performance.now() - start);
+          if (duration > 10) {
+            console.warn(`[SimpleEditor] TOC onUpdate took ${duration}ms`);
+          }
         },
       }),
       Placeholder.configure({
@@ -2178,6 +2185,9 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       }),
     ],
     content,
+    onCreate: ({ editor }) => {
+      console.log(`[SimpleEditor] created in ${Math.round(performance.now() - mountStart.current)}ms with ${editor.state.doc.nodeSize} nodes`);
+    },
     editorProps: {
       handleTripleClickOn: (view, pos) => selectTableCellText(view, pos),
       handleKeyDown: (_view, event) => {
@@ -2259,14 +2269,25 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       },
     },
     onUpdate: ({ editor }) => {
+      const start = performance.now();
       if (onChange) {
         // Debounce the onChange call to avoid excessive saves
         if ((window as any)._memoSaveTimeout) {
           clearTimeout((window as any)._memoSaveTimeout);
         }
         (window as any)._memoSaveTimeout = setTimeout(() => {
-          onChange(editor.getHTML());
+          const innerStart = performance.now();
+          const html = editor.getHTML();
+          onChange(html);
+          const duration = Math.round(performance.now() - innerStart);
+          if (duration > 50) {
+             console.warn(`[SimpleEditor] debounced onChange: getHTML/onChange took ${duration}ms`);
+          }
         }, 500);
+      }
+      const totalDuration = Math.round(performance.now() - start);
+      if (totalDuration > 10) {
+        console.log(`[SimpleEditor] onUpdate (sync part) took ${totalDuration}ms`);
       }
     },
     onBlur: ({ editor }) => {
@@ -3413,15 +3434,17 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         }
       };
 
+      const methods = {
+        getMarkdown: getEditorMarkdown,
+        setMarkdown: setEditorMarkdown,
+        insertMarkdownAtRange: insertEditorMarkdownAtRange,
+        insertMarkdownAtEnd: insertEditorMarkdownAtEnd,
+        getSource: getMemoEditorSource,
+        instance: editor
+      };
+
       if (onReady) {
-        onReady({
-          getMarkdown: getEditorMarkdown,
-          setMarkdown: setEditorMarkdown,
-          insertMarkdownAtRange: insertEditorMarkdownAtRange,
-          insertMarkdownAtEnd: insertEditorMarkdownAtEnd,
-          getSource: getMemoEditorSource,
-          instance: editor
-        });
+        onReady(methods);
       }
     }
   }, [editor, onReady]);

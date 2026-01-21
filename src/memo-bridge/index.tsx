@@ -4,6 +4,8 @@ import { SimpleEditor } from '@/memo-editor';
 import { exportEditorToDocx } from '@/memo-editor/docx-export';
 import { EditorState } from '@tiptap/pm/state';
 
+console.warn('!!! MEMO BRIDGE JS EXECUTED !!!');
+
 // Bridge to maintain compatibility with memo.html
 interface MemoEditorApi {
     setValue: (content: string) => void;
@@ -22,22 +24,65 @@ interface EditorInstance {
     methods?: any;
 }
 
+const EditorItem = React.memo(({ editor, activeId, onChangeCb, handleEditorReady }: any) => {
+    // Stable onReady for this specific editor ID
+    const onReady = React.useCallback((methods: any) => {
+        handleEditorReady(editor.id, methods);
+    }, [editor.id, handleEditorReady]);
+
+    const onChange = React.useCallback((newContent: string, id?: string) => {
+        if (onChangeCb) onChangeCb(newContent, id);
+    }, [onChangeCb]);
+
+    return (
+        <div 
+            style={{ display: editor.id === activeId ? 'block' : 'none', height: '100%' }}
+        >
+            <SimpleEditor 
+                editorId={editor.id}
+                content={editor.content}
+                onChange={onChange}
+                onReady={onReady}
+            />
+        </div>
+    );
+});
+
 const App = () => {
     const [editors, setEditors] = useState<Record<string, EditorInstance>>({});
-    const [activeId, setActiveId] = useState<string>('default');
+    const [activeId, setActiveId] = useState<string>('');
     const [onChangeCb, setOnChangeCb] = useState<((content: string, id?: string) => void) | null>(null);
 
     // Track active instance for global functions
     const activeInstanceRef = React.useRef<any>(null);
 
+    // Stable callback to prevent render loops
+    const handleEditorReady = React.useCallback((id: string, methods: any) => {
+        setEditors(prev => {
+            // Only update if methods object is actually different
+            if (prev[id]?.methods === methods) return prev;
+            return {
+                ...prev,
+                [id]: { ...prev[id], methods }
+            };
+        });
+    }, []);
+
     useEffect(() => {
         const api: MemoEditorApi = {
             setValue: (newContent: string) => {
                 const methods = activeInstanceRef.current;
+                const contentLength = newContent?.length || 0;
+                console.log(`[MemoBridge] setValue called, length: ${contentLength}`);
+                const start = performance.now();
                 if (methods?.instance) {
                     methods.instance.commands.setContent(newContent);
                 } else if ((window as any).MemoEditor) {
                     (window as any).MemoEditor.commands.setContent(newContent);
+                }
+                const duration = Math.round(performance.now() - start);
+                if (duration > 100) {
+                   console.warn(`[MemoBridge] setContent took ${duration}ms for ${contentLength} chars`);
                 }
             },
             getValue: () => {
@@ -79,6 +124,8 @@ const App = () => {
                 }
             },
             switchTo: (id: string, initialContent?: string) => {
+                const start = performance.now();
+                console.log(`[MemoBridge] switching to ${id}`);
                 setActiveId(id);
                 setEditors(prev => {
                     if (prev[id]) return prev;
@@ -87,6 +134,9 @@ const App = () => {
                         [id]: { id, content: initialContent || '' }
                     };
                 });
+                setTimeout(() => {
+                    console.log(`[MemoBridge] switched to ${id} in ${Math.round(performance.now() - start)}ms`);
+                }, 0);
             },
             removeInstance: (id: string) => {
                 setEditors(prev => {
@@ -97,8 +147,14 @@ const App = () => {
             }
         };
 
-        // Initialize default editor
-        setEditors({ 'default': { id: 'default', content: '' } });
+        // Initialize default editor (only if no activeId is set yet)
+        setEditors(prev => {
+            if (Object.keys(prev).length === 0) {
+                return { 'default': { id: 'default', content: '' } };
+            }
+            return prev;
+        });
+        setActiveId(prev => prev || 'default');
 
         // Expose the API to the window as expected by memo.html
         (window as any).GoToolkitMemoEditorReady = Promise.resolve(api);
@@ -124,24 +180,13 @@ const App = () => {
         <div className="memo-card">
             <div className="editor-wrap">
                 {Object.values(editors).map((editor) => (
-                    <div 
-                        key={editor.id} 
-                        style={{ display: editor.id === activeId ? 'block' : 'none', height: '100%' }}
-                    >
-                        <SimpleEditor 
-                            editorId={editor.id}
-                            content={editor.content}
-                            onChange={(newContent, id) => {
-                                if (onChangeCb) onChangeCb(newContent, id);
-                            }}
-                            onReady={(methods) => {
-                                setEditors(prev => ({
-                                    ...prev,
-                                    [editor.id]: { ...prev[editor.id], methods }
-                                }));
-                            }}
-                        />
-                    </div>
+                    <EditorItem 
+                        key={editor.id}
+                        editor={editor}
+                        activeId={activeId}
+                        onChangeCb={onChangeCb}
+                        handleEditorReady={handleEditorReady}
+                    />
                 ))}
             </div>
         </div>

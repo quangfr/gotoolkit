@@ -18,7 +18,7 @@
 - `public/prompt.js` is the root for all AI system prompts and templates.
 - Keep the IndexedDB version in `public/js/assist.js` health-check/repair (`indexedDB.open`) aligned with `DB_VERSION` in `public/js/document-rag.js`.
 - When adding/editing UI, reuse colors and classes from `public/styles/style.css` before adding new CSS.
-- Each page sets `window.GO_TOOLKIT_SHARE_API_URL` (launcher `https://gotoolkit.workers.dev`, modules `https://share.gotoolkit.workers.dev/`).
+- Each page sets `window.GO_TOOLKIT_SHARE_API_URL` to `https://share.gotoolkit.workers.dev/`.
 
 ## Modules
 - **Memo** (`memos`): Rich-text editor + RAG-powered chat (`public/js/assist.js`); document management, context embeddings per memo.

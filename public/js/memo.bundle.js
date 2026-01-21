@@ -32332,6 +32332,10 @@ ${promptInput.trim()}`
     },
     addNodeView() {
       return ReactNodeViewRenderer(({ node, editor, getPos }) => {
+        react_shim_default.useEffect(() => {
+          var _a;
+          console.log(`[CustomHeading] mounted ("${(_a = node.textContent) == null ? void 0 : _a.substring(0, 20)}...")`);
+        }, []);
         const level = Math.min(4, Math.max(1, node.attrs.level || 1));
         const tag2 = `h${level}`;
         const collapsed = node.attrs.collapsed;
@@ -32362,23 +32366,25 @@ ${promptInput.trim()}`
     }
   });
   var CustomParagraph = Paragraph.extend({
-    addNodeView() {
-      return ReactNodeViewRenderer(({ editor, getPos }) => {
-        let isListItem = false;
-        if (typeof getPos === "function") {
-          const pos = getPos();
-          if (typeof pos === "number") {
-            const $pos = editor.state.doc.resolve(pos);
-            for (let d = $pos.depth; d > 0; d--) {
-              if ($pos.node(d).type.name === "listItem") {
-                isListItem = true;
-                break;
-              }
-            }
+    addAttributes() {
+      return {
+        class: {
+          default: "node-text node-paragraph",
+          renderHTML: (attributes) => {
+            return {
+              class: attributes.class
+            };
           }
         }
-        return /* @__PURE__ */ jsx(NodeViewWrapper, { className: isListItem ? void 0 : "node-text node-paragraph", children: /* @__PURE__ */ jsx(NodeViewContent, { as: "p" }) });
-      });
+      };
+    },
+    parseHTML() {
+      return [
+        { tag: "p" }
+      ];
+    },
+    renderHTML({ HTMLAttributes }) {
+      return ["p", mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0];
     }
   });
   var hasAncestorNode = ($pos, typeName) => {
@@ -33958,6 +33964,7 @@ ${promptInput.trim()}`
     placeholder = "Commencez \xE0 \xE9crire..."
   }) => {
     var _a, _b, _c, _d;
+    const mountStart = react_shim_default.useRef(performance.now());
     const turndownRef = react_shim_default.useRef(null);
     const containerRef = react_shim_default.useRef(null);
     const [rowHandle, setRowHandle] = react_shim_default.useState(null);
@@ -34028,8 +34035,13 @@ ${promptInput.trim()}`
         CodeSuggestion,
         TableOfContents.configure({
           onUpdate(content2) {
+            const start = performance.now();
             window.MemoHeadings = content2;
             window.dispatchEvent(new CustomEvent("memo:headings-updated", { detail: content2 }));
+            const duration = Math.round(performance.now() - start);
+            if (duration > 10) {
+              console.warn(`[SimpleEditor] TOC onUpdate took ${duration}ms`);
+            }
           }
         }),
         Placeholder.configure({
@@ -34037,6 +34049,9 @@ ${promptInput.trim()}`
         })
       ],
       content,
+      onCreate: ({ editor: editor2 }) => {
+        console.log(`[SimpleEditor] created in ${Math.round(performance.now() - mountStart.current)}ms with ${editor2.state.doc.nodeSize} nodes`);
+      },
       editorProps: {
         handleTripleClickOn: (view, pos) => selectTableCellText(view, pos),
         handleKeyDown: (_view, event) => {
@@ -34114,13 +34129,24 @@ ${promptInput.trim()}`
         }
       },
       onUpdate: ({ editor: editor2 }) => {
+        const start = performance.now();
         if (onChange) {
           if (window._memoSaveTimeout) {
             clearTimeout(window._memoSaveTimeout);
           }
           window._memoSaveTimeout = setTimeout(() => {
-            onChange(editor2.getHTML());
+            const innerStart = performance.now();
+            const html2 = editor2.getHTML();
+            onChange(html2);
+            const duration = Math.round(performance.now() - innerStart);
+            if (duration > 50) {
+              console.warn(`[SimpleEditor] debounced onChange: getHTML/onChange took ${duration}ms`);
+            }
           }, 500);
+        }
+        const totalDuration = Math.round(performance.now() - start);
+        if (totalDuration > 10) {
+          console.log(`[SimpleEditor] onUpdate (sync part) took ${totalDuration}ms`);
         }
       },
       onBlur: ({ editor: editor2 }) => {
@@ -35100,15 +35126,16 @@ ${innerMarkdown}
             console.warn("insertEditorMarkdownAtEnd failed", err);
           }
         };
+        const methods = {
+          getMarkdown: getEditorMarkdown,
+          setMarkdown: setEditorMarkdown,
+          insertMarkdownAtRange: insertEditorMarkdownAtRange,
+          insertMarkdownAtEnd: insertEditorMarkdownAtEnd,
+          getSource: getMemoEditorSource,
+          instance: editor
+        };
         if (onReady) {
-          onReady({
-            getMarkdown: getEditorMarkdown,
-            setMarkdown: setEditorMarkdown,
-            insertMarkdownAtRange: insertEditorMarkdownAtRange,
-            insertMarkdownAtEnd: insertEditorMarkdownAtEnd,
-            getSource: getMemoEditorSource,
-            instance: editor
-          });
+          onReady(methods);
         }
       }
     }, [editor, onReady]);
@@ -55917,19 +55944,60 @@ ${innerMarkdown}
   }
 
   // src/memo-bridge/index.tsx
+  console.warn("!!! MEMO BRIDGE JS EXECUTED !!!");
+  var EditorItem = react_shim_default.memo(({ editor, activeId, onChangeCb, handleEditorReady }) => {
+    const onReady = react_shim_default.useCallback((methods) => {
+      handleEditorReady(editor.id, methods);
+    }, [editor.id, handleEditorReady]);
+    const onChange = react_shim_default.useCallback((newContent, id) => {
+      if (onChangeCb) onChangeCb(newContent, id);
+    }, [onChangeCb]);
+    return /* @__PURE__ */ jsx(
+      "div",
+      {
+        style: { display: editor.id === activeId ? "block" : "none", height: "100%" },
+        children: /* @__PURE__ */ jsx(
+          simple_editor_default,
+          {
+            editorId: editor.id,
+            content: editor.content,
+            onChange,
+            onReady
+          }
+        )
+      }
+    );
+  });
   var App = () => {
     const [editors, setEditors] = useState({});
-    const [activeId, setActiveId] = useState("default");
+    const [activeId, setActiveId] = useState("");
     const [onChangeCb, setOnChangeCb] = useState(null);
     const activeInstanceRef = react_shim_default.useRef(null);
+    const handleEditorReady = react_shim_default.useCallback((id, methods) => {
+      setEditors((prev) => {
+        var _a;
+        if (((_a = prev[id]) == null ? void 0 : _a.methods) === methods) return prev;
+        return {
+          ...prev,
+          [id]: { ...prev[id], methods }
+        };
+      });
+    }, []);
     useEffect(() => {
       const api = {
         setValue: (newContent) => {
           const methods = activeInstanceRef.current;
+          const contentLength = (newContent == null ? void 0 : newContent.length) || 0;
+          console.log(`[MemoBridge] setValue called, length: ${contentLength}`);
+          const start = performance.now();
           if (methods == null ? void 0 : methods.instance) {
             methods.instance.commands.setContent(newContent);
           } else if (window.MemoEditor) {
             window.MemoEditor.commands.setContent(newContent);
+          }
+          const duration = Math.round(performance.now() - start);
+          if (duration > 100) {
+            console.warn(`[MemoBridge] setContent took ${duration}ms for ${contentLength} chars`);
           }
         },
         getValue: () => {
@@ -55974,6 +56042,8 @@ ${innerMarkdown}
           }
         },
         switchTo: (id, initialContent) => {
+          const start = performance.now();
+          console.log(`[MemoBridge] switching to ${id}`);
           setActiveId(id);
           setEditors((prev) => {
             if (prev[id]) return prev;
@@ -55982,6 +56052,9 @@ ${innerMarkdown}
               [id]: { id, content: initialContent || "" }
             };
           });
+          setTimeout(() => {
+            console.log(`[MemoBridge] switched to ${id} in ${Math.round(performance.now() - start)}ms`);
+          }, 0);
         },
         removeInstance: (id) => {
           setEditors((prev) => {
@@ -55991,7 +56064,13 @@ ${innerMarkdown}
           });
         }
       };
-      setEditors({ "default": { id: "default", content: "" } });
+      setEditors((prev) => {
+        if (Object.keys(prev).length === 0) {
+          return { "default": { id: "default", content: "" } };
+        }
+        return prev;
+      });
+      setActiveId((prev) => prev || "default");
       window.GoToolkitMemoEditorReady = Promise.resolve(api);
       window.GoToolkitMemoInstance = api;
     }, []);
@@ -56010,25 +56089,12 @@ ${innerMarkdown}
       }
     }, [activeId, editors]);
     return /* @__PURE__ */ jsx("div", { className: "memo-card", children: /* @__PURE__ */ jsx("div", { className: "editor-wrap", children: Object.values(editors).map((editor) => /* @__PURE__ */ jsx(
-      "div",
+      EditorItem,
       {
-        style: { display: editor.id === activeId ? "block" : "none", height: "100%" },
-        children: /* @__PURE__ */ jsx(
-          simple_editor_default,
-          {
-            editorId: editor.id,
-            content: editor.content,
-            onChange: (newContent, id) => {
-              if (onChangeCb) onChangeCb(newContent, id);
-            },
-            onReady: (methods) => {
-              setEditors((prev) => ({
-                ...prev,
-                [editor.id]: { ...prev[editor.id], methods }
-              }));
-            }
-          }
-        )
+        editor,
+        activeId,
+        onChangeCb,
+        handleEditorReady
       },
       editor.id
     )) }) });
