@@ -10,7 +10,7 @@ import { parseMermaidToExcalidraw } from "@excalidraw/mermaid-to-excalidraw";
 const MERMAID_OPTIONS = { fontSize: 20 };
 // Fix for Excalidraw assets version being undefined
 if (typeof window !== "undefined" && !(window as any).EXCALIDRAW_ASSET_PATH) {
-    (window as any).EXCALIDRAW_ASSET_PATH = "https://unpkg.com/@excalidraw/excalidraw@0.17.6/";
+    (window as any).EXCALIDRAW_ASSET_PATH = "https://cdn.jsdelivr.net/npm/@excalidraw/excalidraw@0.17.6";
 }
 const getExcalidrawLib = () => {
     const lib = (window as any).ExcalidrawLib;

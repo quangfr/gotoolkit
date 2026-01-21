@@ -15,7 +15,7 @@
         OPENAI_MODEL: "gpt-5-nano",
         CONTEXT_WINDOW: "0",
         OPENROUTER_MODEL: "openai/gpt-oss-120b",
-        OPENROUTER_OCR_MODEL: "qwen/qwen-2.5-vl-7b-instruct"
+        OPENROUTER_OCR_MODEL: "qwen/qwen2.5-vl-72b-instruct"
     };
 
     var OPENAI_MODELS = ["gpt-5-nano", "gpt-5-mini"];

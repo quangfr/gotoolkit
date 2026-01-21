@@ -4,7 +4,7 @@ test.describe("Memo template publish + fetch", () => {
   test("publishes two templates and verifies they appear in the template list", async ({ page }) => {
     test.setTimeout(90_000);
     const baseUrl = "http://127.0.0.1:5000";
-    const adminToken = "tranxq@gmail.com";
+    const adminToken = "golive";
     const templateLabelA = `E2E Template A ${Date.now()}`;
     const templateLabelB = `E2E Template B ${Date.now()}`;
 

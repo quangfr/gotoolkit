@@ -157,7 +157,7 @@
     const OCR_QUALITY_CONTRAST_THRESHOLD = 30;
     const OCR_QUALITY_BLUR_THRESHOLD = 0.8;
     const OCR_LAPLACIAN_NORM = 1000;
-    const DEFAULT_QWEN_VISION_MODEL = "qwen/qwen-2.5-vl-7b-instruct";
+    const DEFAULT_QWEN_VISION_MODEL = "qwen/qwen2.5-vl-72b-instruct";
     const QWEN_OCR_TOAST_MESSAGE = "Service OCR : Reconnaissance en cours";
     let qwenOcrToastCount = 0;
 

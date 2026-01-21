@@ -2487,8 +2487,46 @@
         if (this.isStreaming) return;
         if (!this.textarea) return;
         var value = this.textarea.value.trim();
-        var hasAttachment = this.pendingDocumentAttachments.length > 0;
+        var attachments = this.pendingDocumentAttachments || [];
+        var hasAttachment = attachments.length > 0;
         if (!value && !hasAttachment) return;
+
+        // Visual feedback immediately
+        this.setSendButtonBusy(true);
+        this.isStreaming = true;
+        this.updateComposerState();
+
+        var userMessage = createMessage("user", value);
+        if (attachments && attachments.length) {
+            userMessage.attachments = attachments.slice();
+            this.clearAttachments();
+        }
+        this.conversation.messages.push(userMessage);
+        this.appendMessage(userMessage);
+
+        var memoId = this.getActiveMemoId();
+        if (memoId && attachments && attachments.length) {
+            this.confirmMemoAttachments(memoId);
+            this.refreshMemoContextAttachments().catch(function (e) {
+                console.warn("Context refresh background", e);
+            });
+            window.GoToolkitMemoSyncContextEmbeddings?.(memoId);
+        }
+
+        this.textarea.value = "";
+        this.textarea.style.height = "auto";
+        this.scrollToBottom();
+        this.persist();
+
+        var botMessage = createMessage("bot", "...");
+        botMessage.references = [];
+        botMessage.suggestions = [];
+        // Pre-append a placeholder bubble so the user sees activity immediately.
+        var botMessageAppended = true;
+        this.conversation.messages.push(botMessage);
+        this.appendMessage(botMessage);
+        this.scrollToBottom();
+
         if (CHAT_APP_ID === "memo") {
             var activeMemoDocId = typeof global.GoToolkitMemoGetActiveDocumentId === "function"
                 ? global.GoToolkitMemoGetActiveDocumentId()
@@ -2497,12 +2535,11 @@
                 await global.GoToolkitMemoCreateAutoDocument();
             }
         }
-        // log the outgoing user content once the payload is ready
 
-        var userMessage = createMessage("user", value);
         var systemPrompt = this.getActiveSystemPrompt();
         var shouldFetchKnowledge = this.promptPresetId !== "ask" && this.promptPresetId !== "edit" && this.promptPresetId !== "suggest";
         var docInfo = null;
+
         if (this.docManager) {
             var contextParams = this.getRetrievalParamsForQuestion(value);
             var contextHits = await this.retrieveWithFallback(value, this.conversation.id, contextParams, "context");
@@ -2527,32 +2564,8 @@
             if (shouldFetchKnowledge) {
                 docInfo.knowledge = this.categorizeHits(knowledgeHits);
             }
+            botMessage.retrievalEntries = docInfo;
         }
-        var attachments = this.pendingDocumentAttachments;
-        var memoId = this.getActiveMemoId();
-        if (attachments && attachments.length) {
-            userMessage.attachments = attachments.slice();
-            this.clearAttachments();
-        }
-        this.conversation.messages.push(userMessage);
-        this.appendMessage(userMessage);
-        this.persist();
-        if (memoId && attachments && attachments.length) {
-            this.confirmMemoAttachments(memoId);
-            await this.refreshMemoContextAttachments();
-            window.GoToolkitMemoSyncContextEmbeddings?.(memoId);
-        }
-        this.textarea.value = "";
-        this.textarea.style.height = "auto";
-
-        var botMessage = createMessage("bot", "...");
-        botMessage.references = [];
-        botMessage.suggestions = [];
-        botMessage.retrievalEntries = docInfo;
-        var botMessageAppended = false;
-        this.isStreaming = true;
-        this.updateComposerState();
-        this.scrollToBottom();
 
         var controller = new AbortController();
         this.controller = controller;
@@ -2566,11 +2579,6 @@
             self.conversation.messages.push(botMessage);
             self.appendMessage(botMessage);
         };
-
-        // Pre-append a placeholder bubble so the user sees activity immediately.
-        botMessageAppended = true;
-        this.conversation.messages.push(botMessage);
-        this.appendMessage(botMessage);
 
         function extractContent(buffer) {
             var key = "\"content\"";
@@ -2628,9 +2636,6 @@
 
         var requestStart = 0;
         try {
-            // Show spinner on send button
-            this.setSendButtonBusy(true);
-
             // Calculate total payload token count and start toaster
             var totalPayloadTokens = estimatePayloadTokens(payload);
             startCharacterCounterToaster(totalPayloadTokens);

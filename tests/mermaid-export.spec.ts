@@ -49,7 +49,7 @@ test.describe("Memo Mermaid Markdown Export", () => {
     await page.waitForFunction(() => Boolean((window as any).MemoEditor));
 
     // Focus the editor and type the trigger
-    const editor = page.locator('.tiptap.ProseMirror');
+    const editor = page.locator('.tiptap.ProseMirror').first();
     await editor.evaluate(el => (el as HTMLElement).focus());
     
     // Type slowly to ensure input rules trigger
