@@ -3515,17 +3515,10 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
 </div>`.trim();
             }
 
-            // Return a rich-styled HTML document for email copy-paste
+            // Return rich HTML content (without the full grey background card for direct copy-paste)
             return `
-<div style="background-color: #f3f4f6; padding: 40px 20px; font-family: ${FONT_SANS};">
-  <div style="max-width: 650px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; border: 1px solid #e5e7eb; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); overflow: hidden;">
-    <div style="padding: 40px; color: #374151; line-height: 1.6;">
-      ${content}
-    </div>
-    <div style="padding: 20px 40px; background-color: #f9fafb; border-top: 1px solid #e5e7eb; text-align: center;">
-      <p style="margin: 0; font-size: 12px; color: #9ca3af;">Généré avec GoToolkit</p>
-    </div>
-  </div>
+<div class="html-email-export" style="font-family:${FONT_SANS}; color: #374151; line-height: 1.6; max-width: 650px;">
+  ${content}
 </div>`.trim();
           }
 

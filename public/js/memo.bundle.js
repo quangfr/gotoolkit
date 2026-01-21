@@ -55264,23 +55264,19 @@ ${innerMarkdown}
                 const el = h;
                 const isH1 = el.tagName === "H1";
                 const isH2 = el.tagName === "H2";
-                const isH3 = el.tagName === "H3";
-                el.style.margin = "24px 0 12px 0";
+                el.style.margin = "20px 0 10px 0";
                 el.style.fontWeight = "bold";
                 el.style.color = "#111111";
                 el.style.fontFamily = FONT_SANS;
                 if (isH1) {
-                  el.style.fontSize = "32px";
-                  el.style.lineHeight = "40px";
-                } else if (isH2) {
                   el.style.fontSize = "24px";
                   el.style.lineHeight = "32px";
-                } else if (isH3) {
-                  el.style.fontSize = "20px";
-                  el.style.lineHeight = "28px";
-                } else {
+                } else if (isH2) {
                   el.style.fontSize = "18px";
-                  el.style.lineHeight = "24px";
+                  el.style.lineHeight = "26px";
+                } else {
+                  el.style.fontSize = "16px";
+                  el.style.lineHeight = "22px";
                 }
               });
               doc3.querySelectorAll("strong, b").forEach((s) => {
@@ -55361,15 +55357,8 @@ ${innerMarkdown}
 </div>`.trim();
               }
               return `
-<div style="background-color: #f3f4f6; padding: 40px 20px; font-family: ${FONT_SANS};">
-  <div style="max-width: 650px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; border: 1px solid #e5e7eb; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); overflow: hidden;">
-    <div style="padding: 40px; color: #374151; line-height: 1.6;">
-      ${content2}
-    </div>
-    <div style="padding: 20px 40px; background-color: #f9fafb; border-top: 1px solid #e5e7eb; text-align: center;">
-      <p style="margin: 0; font-size: 12px; color: #9ca3af;">G\xE9n\xE9r\xE9 avec GoToolkit</p>
-    </div>
-  </div>
+<div class="html-email-export" style="font-family:${FONT_SANS}; color: #374151; line-height: 1.6; max-width: 650px;">
+  ${content2}
 </div>`.trim();
             }
             if (format === "json") {
