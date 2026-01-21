@@ -3150,11 +3150,10 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
             const emoji = emojiMap[type] || 'ℹ️';
             const title = node.getAttribute('data-title');
             
-            // Format: > ℹ️ [Title]
-            //         > Content
-            const alertHeader = title ? `${emoji} **${title}**` : `${emoji}`;
+            // Format: > ℹ️ Content (on the same line)
+            const alertHeader = title ? `${emoji} **${title}** ` : `${emoji} `;
             
-            return '\n\n> ' + alertHeader + '\n> ' + content.trim().replace(/\n/g, '\n> ') + '\n\n';
+            return '\n\n> ' + alertHeader + content.trim().replace(/\n/g, '\n> ') + '\n\n';
           }
         });
 

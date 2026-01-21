@@ -34898,9 +34898,17 @@ ${promptInput.trim()}`
             replacement: function(content2, node) {
               const type2 = node.getAttribute("data-type");
               if (!type2 || type2 === "default") return "\n\n> " + content2.trim().replace(/\n/g, "\n> ") + "\n\n";
+              const emojiMap = {
+                "NOTE": "\u2139\uFE0F",
+                "TIP": "\u{1F4A1}",
+                "IMPORTANT": "\u2705",
+                "WARNING": "\u26A0\uFE0F",
+                "CAUTION": "\u{1F6A8}"
+              };
+              const emoji2 = emojiMap[type2] || "\u2139\uFE0F";
               const title = node.getAttribute("data-title");
-              const alertTag = title ? `[!${type2}] ${title}` : `[!${type2}]`;
-              return "\n\n> " + alertTag + "\n> " + content2.trim().replace(/\n/g, "\n> ") + "\n\n";
+              const alertHeader = title ? `${emoji2} **${title}**` : `${emoji2}`;
+              return "\n\n> " + alertHeader + "\n> " + content2.trim().replace(/\n/g, "\n> ") + "\n\n";
             }
           });
           turndown.addRule("mermaid-diagram", {
@@ -34943,8 +34951,8 @@ ${innerMarkdown}
             },
             replacement: function(content2, node) {
               const checkbox = node.querySelector('input[type="checkbox"]');
-              const checked = checkbox && checkbox.checked ? "x" : " ";
-              return "- [" + checked + "] " + content2.trim() + "\n";
+              const checked = checkbox && checkbox.checked ? "\u2612" : "\u2610";
+              return " " + checked + " " + content2.trim() + "\n";
             }
           });
           turndownRef.current = turndown;
