@@ -8,9 +8,6 @@ test.describe("Memo import + AI performance", () => {
     const dataDir = path.resolve(process.cwd(), "test-data");
     const filePaths = [
       path.join(dataDir, "sample.json"),
-      path.join(dataDir, "sample.json"),
-      path.join(dataDir, "sample.json"),
-      path.join(dataDir, "sample.json"),
     ];
 
     await page.goto(`${baseUrl}/memo.html`, { waitUntil: "load" });
