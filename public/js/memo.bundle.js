@@ -35102,6 +35102,45 @@ ${innerMarkdown}
                 });
                 ul.remove();
               });
+              const headings = doc3.querySelectorAll("h1, h2, h3");
+              if (headings.length > 0) {
+                const tocContainer = doc3.createElement("div");
+                tocContainer.className = "memo-toc";
+                tocContainer.style.marginBottom = "24px";
+                tocContainer.style.padding = "16px";
+                tocContainer.style.border = "1px solid #e2e8f0";
+                tocContainer.style.borderRadius = "8px";
+                tocContainer.style.backgroundColor = "#f8fafc";
+                const tocTitle = doc3.createElement("div");
+                tocTitle.style.fontWeight = "bold";
+                tocTitle.style.marginBottom = "12px";
+                tocTitle.style.fontSize = "14px";
+                tocTitle.textContent = "Table des mati\xE8res";
+                tocContainer.appendChild(tocTitle);
+                const tocList = doc3.createElement("ul");
+                tocList.style.listStyle = "none";
+                tocList.style.padding = "0";
+                tocList.style.margin = "0";
+                headings.forEach((heading2) => {
+                  var _a2;
+                  const level = parseInt(heading2.tagName[1]);
+                  const id = heading2.getAttribute("id") || heading2.getAttribute("data-toc-id");
+                  if (!id) return;
+                  const listItem = doc3.createElement("li");
+                  listItem.style.marginLeft = `${(level - 1) * 16}px`;
+                  listItem.style.marginBottom = "6px";
+                  const link2 = doc3.createElement("a");
+                  link2.href = `#${id}`;
+                  link2.textContent = ((_a2 = heading2.textContent) == null ? void 0 : _a2.trim()) || "";
+                  link2.style.textDecoration = "none";
+                  link2.style.color = "#2563eb";
+                  link2.style.fontSize = "13px";
+                  listItem.appendChild(link2);
+                  tocList.appendChild(listItem);
+                });
+                tocContainer.appendChild(tocList);
+                doc3.body.insertBefore(tocContainer, doc3.body.firstChild);
+              }
               return doc3.body.innerHTML;
             }
             if (format === "json") {

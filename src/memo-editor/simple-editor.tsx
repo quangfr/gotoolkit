@@ -3393,6 +3393,53 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
               ul.remove();
             });
 
+            // 4. Prepend Table of Contents
+            const headings = doc.querySelectorAll('h1, h2, h3');
+            if (headings.length > 0) {
+              const tocContainer = doc.createElement('div');
+              tocContainer.className = 'memo-toc';
+              tocContainer.style.marginBottom = '24px';
+              tocContainer.style.padding = '16px';
+              tocContainer.style.border = '1px solid #e2e8f0';
+              tocContainer.style.borderRadius = '8px';
+              tocContainer.style.backgroundColor = '#f8fafc';
+
+              const tocTitle = doc.createElement('div');
+              tocTitle.style.fontWeight = 'bold';
+              tocTitle.style.marginBottom = '12px';
+              tocTitle.style.fontSize = '14px';
+              tocTitle.textContent = 'Table des matières';
+              tocContainer.appendChild(tocTitle);
+
+              const tocList = doc.createElement('ul');
+              tocList.style.listStyle = 'none';
+              tocList.style.padding = '0';
+              tocList.style.margin = '0';
+
+              headings.forEach(heading => {
+                const level = parseInt(heading.tagName[1]);
+                const id = heading.getAttribute('id') || heading.getAttribute('data-toc-id');
+                if (!id) return;
+
+                const listItem = doc.createElement('li');
+                listItem.style.marginLeft = `${(level - 1) * 16}px`;
+                listItem.style.marginBottom = '6px';
+
+                const link = doc.createElement('a');
+                link.href = `#${id}`;
+                link.textContent = heading.textContent?.trim() || '';
+                link.style.textDecoration = 'none';
+                link.style.color = '#2563eb';
+                link.style.fontSize = '13px';
+
+                listItem.appendChild(link);
+                tocList.appendChild(listItem);
+              });
+
+              tocContainer.appendChild(tocList);
+              doc.body.insertBefore(tocContainer, doc.body.firstChild);
+            }
+
             return doc.body.innerHTML;
           }
 
