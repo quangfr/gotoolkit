@@ -54235,7 +54235,7 @@ ${promptInput.trim()}`
             return false;
           }
         },
-        handleClick: (view, pos, event) => {
+        handleClick: (view, _pos, event) => {
           if (!(event instanceof MouseEvent)) return false;
           const info = getTableCellInfo(view, event);
           if (!info) return false;
@@ -54245,7 +54245,15 @@ ${promptInput.trim()}`
           const coords = view.posAtCoords({ left: event.clientX, top: event.clientY });
           if (event.detail > 1 || isSameSingleCell) {
             if (!coords) return false;
-            const tr2 = view.state.tr.setSelection(TextSelection.create(view.state.doc, coords.pos));
+            let targetPos = coords.pos;
+            const $target = view.state.doc.resolve(targetPos);
+            if ($target.parent.type.name === "table_cell" || $target.parent.type.name === "table_header") {
+              const cell2 = $target.parent;
+              if (cell2.firstChild) {
+                targetPos = $target.before($target.depth) + 2;
+              }
+            }
+            const tr2 = view.state.tr.setSelection(TextSelection.create(view.state.doc, targetPos));
             view.dispatch(tr2);
             view.focus();
             return true;

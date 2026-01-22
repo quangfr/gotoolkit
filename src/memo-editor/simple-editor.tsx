@@ -2230,7 +2230,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           return false;
         },
       },
-      handleClick: (view, pos, event) => {
+      handleClick: (view, _pos, event) => {
         if (!(event instanceof MouseEvent)) return false;
         const info = getTableCellInfo(view, event);
         if (!info) return false;
@@ -2246,7 +2246,18 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
 
         if (event.detail > 1 || isSameSingleCell) {
           if (!coords) return false;
-          const tr = view.state.tr.setSelection(TextSelection.create(view.state.doc, coords.pos));
+          // For double click, we might want to ensure we are inside a paragraph
+          let targetPos = coords.pos;
+          const $target = view.state.doc.resolve(targetPos);
+          if ($target.parent.type.name === 'table_cell' || $target.parent.type.name === 'table_header') {
+            // If clicking directly on the cell but outside a paragraph, pinpoint the first paragraph
+            const cell = $target.parent;
+            if (cell.firstChild) {
+              targetPos = $target.before($target.depth) + 2; 
+            }
+          }
+
+          const tr = view.state.tr.setSelection(TextSelection.create(view.state.doc, targetPos));
           view.dispatch(tr);
           view.focus();
           return true;
