@@ -164,7 +164,8 @@
             height: 16px;
         }
 
-        #memo-source-text {
+        #memo-source-text,
+        #memo-source-json {
             width: 100%;
             height: calc(98vh - 52px);
             padding: 12px;
@@ -176,6 +177,34 @@
             font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
             font-size: 13px;
             line-height: 1.45;
+            overflow-y: auto;
+        }
+
+        #memo-source-json {
+            padding: 0;
+        }
+
+        /* Support for \n in json viewer */
+        .json-viewer {
+            padding: 12px;
+            background: black !important;
+            color: #eee !important;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+            font-size: 13px !important;
+        }
+        .json-viewer .json-string {
+            white-space: pre-wrap !important;
+            color: #6ee7b7 !important;
+        }
+        .json-viewer .json-key {
+            color: #fb7185 !important;
+        }
+        .json-viewer .json-boolean, 
+        .json-viewer .json-number {
+            color: #93c5fd !important;
+        }
+        .json-viewer .json-null {
+            color: #94a3b8 !important;
         }
 
         #memo-source-preview {

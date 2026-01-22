@@ -7585,23 +7585,43 @@
                         ? window.getMemoEditorSource('markdown')
                         : window.getEditorMarkdown?.()) ||
                     '';
+
+                // Maintain top 20 history
+                if (!window.__memoEditorAIInHistory) window.__memoEditorAIInHistory = [];
+                window.__memoEditorAIInHistory.unshift({
+                    at: window.__memoEditorLastAIInAt,
+                    messages: requestMessages,
+                    payload: requestPayload,
+                    document: window.__memoEditorLastAIInDocumentMarkdown
+                });
+                if (window.__memoEditorAIInHistory.length > 20) window.__memoEditorAIInHistory.pop();
+
             } catch (e) {
                 // noop
             }
 
             // 2. Extraire le ASK pour afficher le message utilisateur dans le chat.
-            //    (Cherche le dernier message user qui contient ASK:)
+            //    (Cherche le dernier message user qui contient ASK:, sinon prend tout)
             let askContent = '';
             for (let i = requestMessages.length - 1; i >= 0; i--) {
                 const msg = requestMessages[i];
                 if (!msg || msg.role !== 'user' || typeof msg.content !== 'string') continue;
+
+                // On cherche "ASK:" suivi de n'importe quoi jusqu'à la fin ou une autre section
                 const match = msg.content.match(/ASK:\n([\s\S]*)$/);
                 if (match && match[1]) {
                     askContent = match[1].trim();
                     break;
                 }
-                if (!askContent) {
-                    askContent = msg.content.trim();
+            }
+            // Si pas de ASK: on prend le message brut
+            if (!askContent) {
+                for (let i = requestMessages.length - 1; i >= 0; i--) {
+                    const msg = requestMessages[i];
+                    if (msg && msg.role === 'user' && typeof msg.content === 'string') {
+                        askContent = msg.content.trim();
+                        break;
+                    }
                 }
             }
 
@@ -7687,13 +7707,25 @@
             // Expose the last AI output (for memo source modal: AI Out)
             try {
                 window.__memoEditorLastAIOutAt = new Date().toISOString();
+                let lastOut = null;
                 if (editMetadata && (editMetadata.sOutput || editMetadata.output)) {
-                    window.__memoEditorLastAIOut = editMetadata.sOutput || editMetadata.output;
+                    lastOut = editMetadata.sOutput || editMetadata.output;
                 } else if (payloadObj && typeof payloadObj === 'object') {
-                    window.__memoEditorLastAIOut = payloadObj.s_output || payloadObj.sOutput || payloadObj.output || null;
+                    lastOut = payloadObj.s_output || payloadObj.sOutput || payloadObj.output || null;
                 } else {
-                    window.__memoEditorLastAIOut = rawTextFallback || null;
+                    lastOut = rawTextFallback || null;
                 }
+                window.__memoEditorLastAIOut = lastOut;
+
+                // Maintain top 20 history
+                if (!window.__memoEditorAIOutHistory) window.__memoEditorAIOutHistory = [];
+                window.__memoEditorAIOutHistory.unshift({
+                    at: window.__memoEditorLastAIOutAt,
+                    ai_out: lastOut,
+                    full_payload: payloadObj
+                });
+                if (window.__memoEditorAIOutHistory.length > 20) window.__memoEditorAIOutHistory.pop();
+
             } catch (e) {
                 // noop
             }
