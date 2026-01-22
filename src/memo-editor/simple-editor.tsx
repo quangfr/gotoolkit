@@ -19,6 +19,7 @@ import { DOMSerializer, Node as PMNode } from '@tiptap/pm/model';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
 import { NodeSelection, TextSelection } from 'prosemirror-state';
+import { CellSelection } from 'prosemirror-tables';
 import { TableOfContents } from '@tiptap/extension-table-of-contents';
 import Heading from '@tiptap/extension-heading';
 import Paragraph from '@tiptap/extension-paragraph';
@@ -526,8 +527,10 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLi
       return;
     }
 
-    const { from, to } = editor.state.selection;
-    if (from === to) {
+    const selection = editor.state.selection;
+    const isCellSelection = selection instanceof CellSelection;
+    const { from, to } = selection;
+    if (!isCellSelection && from === to) {
       setPosition(prev => ({ ...prev, opacity: 0 }));
       setShowTextColors(false);
       return;
@@ -540,12 +543,41 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLi
 
     try {
       const { view } = editor;
-      const start = view.coordsAtPos(from);
-      const end = view.coordsAtPos(to);
-      
-      if (!start || !end) {
+      let selectionRect: DOMRect | null = null;
+
+      if (isCellSelection) {
+        let minTop = Infinity;
+        let minLeft = Infinity;
+        let maxRight = -Infinity;
+        let maxBottom = -Infinity;
+
+        selection.forEachCell((_cell, pos) => {
+          const cellDom = view.nodeDOM(pos) as HTMLElement | null;
+          if (!cellDom) return;
+          const rect = cellDom.getBoundingClientRect();
+          minTop = Math.min(minTop, rect.top);
+          minLeft = Math.min(minLeft, rect.left);
+          maxRight = Math.max(maxRight, rect.right);
+          maxBottom = Math.max(maxBottom, rect.bottom);
+        });
+
+        if (minTop !== Infinity) {
+          selectionRect = new DOMRect(minLeft, minTop, maxRight - minLeft, maxBottom - minTop);
+        }
+      } else {
+        const start = view.coordsAtPos(from);
+        const end = view.coordsAtPos(to);
+        if (start && end) {
+          const left = Math.min(start.left, end.left);
+          const right = Math.max(start.right, end.right);
+          const top = Math.min(start.top, end.top);
+          const bottom = Math.max(start.bottom, end.bottom);
+          selectionRect = new DOMRect(left, top, right - left, bottom - top);
+        }
+      }
+
+      if (!selectionRect) {
         setPosition(prev => ({ ...prev, opacity: 0 }));
-        setShowTextColors(false);
         setShowTextColors(false);
         return;
       }
@@ -555,15 +587,15 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLi
       // In this case, .simple-editor is the parent and is position: relative
       const relativeParent = container?.parentElement;
       const parentRect = relativeParent?.getBoundingClientRect() || { top: 0, left: 0 };
-      
+
       const menuRect = menuRef.current?.getBoundingClientRect();
       const menuWidth = menuRect?.width || menuRef.current?.offsetWidth || 250;
       const menuHeight = menuRect?.height || menuRef.current?.offsetHeight || 40;
-      
+
       // Target: above selection
       const verticalOffset = 18; // Gap between menu and selection
-      let bubbleTop = Math.min(start.top, end.top) - parentRect.top - menuHeight - verticalOffset;
-      let bubbleLeft = ((start.left + end.left) / 2) - parentRect.left - menuWidth / 2;
+      let bubbleTop = selectionRect.top - parentRect.top - menuHeight - verticalOffset;
+      let bubbleLeft = (selectionRect.left + selectionRect.right) / 2 - parentRect.left - menuWidth / 2;
 
       // Check bounds
       const padding = 10;
@@ -580,8 +612,8 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLi
       // 2. Clamp Vertical (Stay within screen bounds)
       // If it goes above the top of the screen, move it below the selection
       if (viewportTop < padding) {
-        bubbleTop = Math.max(start.bottom, end.bottom) - parentRect.top + verticalOffset;
-      } 
+        bubbleTop = selectionRect.bottom - parentRect.top + verticalOffset;
+      }
       // If it goes below the screen, move it back up (limit at 10px from bottom)
       else if (viewportTop + menuHeight > window.innerHeight - padding) {
         bubbleTop = window.innerHeight - padding - menuHeight - parentRect.top;
@@ -2114,6 +2146,8 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   const [dragGhost, setDragGhost] = React.useState<{ html: string, width: number, height: number, offsetX: number, offsetY: number } | null>(null);
   const [showLinkModal, setShowLinkModal] = React.useState(false);
   const [isFocusWithinMemoCard, setIsFocusWithinMemoCard] = React.useState(false);
+  const [tableSelectionBox, setTableSelectionBox] = React.useState<{ top: number, left: number, width: number, height: number } | null>(null);
+  const [tableSelectionResize, setTableSelectionResize] = React.useState<{ anchorPos: number, tablePos: number } | null>(null);
   const blockDragMovedRef = React.useRef(false);
 
   const editor = useEditor({
@@ -2182,6 +2216,74 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     },
     editorProps: {
       handleTripleClickOn: (view, pos) => selectTableCellText(view, pos),
+      handleDOMEvents: {
+        dragstart: (view, event) => {
+          const selection = view.state.selection;
+          if (selection instanceof CellSelection) {
+            event.preventDefault();
+            return true;
+          }
+          if (hasAncestorNode(selection.$from, 'table') || hasAncestorNode(selection.$to, 'table')) {
+            event.preventDefault();
+            return true;
+          }
+          return false;
+        },
+      },
+      handleClick: (view, pos, event) => {
+        if (!(event instanceof MouseEvent)) return false;
+        const info = getTableCellInfo(view, event);
+        if (!info) return false;
+
+        const selection = view.state.selection;
+        const isCellSelection = selection instanceof CellSelection;
+        const isSameSingleCell =
+          isCellSelection &&
+          selection.$anchorCell.pos === info.cellPos &&
+          selection.$headCell.pos === info.cellPos;
+
+        const coords = view.posAtCoords({ left: event.clientX, top: event.clientY });
+
+        if (event.detail > 1 || isSameSingleCell) {
+          if (!coords) return false;
+          const tr = view.state.tr.setSelection(TextSelection.create(view.state.doc, coords.pos));
+          view.dispatch(tr);
+          view.focus();
+          return true;
+        }
+
+        const $cell = view.state.doc.resolve(info.cellPos);
+        view.dispatch(view.state.tr.setSelection(new CellSelection($cell)));
+        view.focus();
+        return true;
+      },
+      handleTextInput: (view, _from, _to, text) => {
+        const selection = view.state.selection;
+        if (!(selection instanceof CellSelection)) return false;
+
+        const { tr, schema } = view.state;
+        const paragraph = schema.nodes.paragraph;
+        if (!paragraph) return false;
+
+        const cells: Array<{ pos: number; nodeSize: number }> = [];
+        selection.forEachCell((cell, pos) => {
+          cells.push({ pos, nodeSize: cell.nodeSize });
+        });
+
+        cells.sort((a, b) => b.pos - a.pos).forEach(({ pos, nodeSize }) => {
+          tr.replaceWith(pos + 1, pos + nodeSize - 1, paragraph.create(null, schema.text(text)));
+        });
+
+        const mappedAnchor = tr.mapping.map(selection.$anchorCell.pos);
+        const cellNode = tr.doc.nodeAt(mappedAnchor);
+        if (cellNode && cellNode.firstChild && cellNode.firstChild.isTextblock) {
+          const textLength = cellNode.firstChild.textContent?.length || 0;
+          const caretPos = mappedAnchor + 2 + textLength;
+          tr.setSelection(TextSelection.create(tr.doc, caretPos));
+        }
+        view.dispatch(tr);
+        return true;
+      },
       handleKeyDown: (_view, event) => {
         if (!editor) return false;
         const clearStoredMarks = () => {
@@ -2193,6 +2295,48 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           const tr = editor.state.tr.setStoredMarks(filtered.length ? filtered : null);
           editor.view.dispatch(tr);
         };
+
+        const selection = editor.state.selection;
+        if (event.key === 'Enter' && !event.shiftKey && hasAncestorNode(selection.$from, 'table')) {
+          const cellPos = getTableCellPosFromResolved(selection.$from);
+          if (cellPos !== null) {
+            event.preventDefault();
+            const $cell = editor.state.doc.resolve(cellPos);
+            editor.view.dispatch(editor.state.tr.setSelection(new CellSelection($cell)));
+            return true;
+          }
+        }
+
+        if ((event.key === 'Delete' || event.key === 'Backspace') && selection instanceof CellSelection) {
+          event.preventDefault();
+          const { tr, schema } = editor.state;
+          const paragraph = schema.nodes.paragraph;
+          if (!paragraph) return true;
+
+          const cells: Array<{ pos: number; nodeSize: number }> = [];
+          selection.forEachCell((cell, pos) => {
+            cells.push({ pos, nodeSize: cell.nodeSize });
+          });
+
+          if (cells.length === 0) return true;
+
+          // Find top-left pos before modifying doc
+          const minPos = cells.reduce((min, c) => Math.min(min, c.pos), Infinity);
+
+          // Sort DESC for safe document modification
+          cells.sort((a, b) => b.pos - a.pos).forEach(({ pos, nodeSize }) => {
+            tr.replaceWith(pos + 1, pos + nodeSize - 1, paragraph.create());
+          });
+
+          // Reset selection to a single top-left cell
+          if (minPos !== Infinity) {
+            const mappedMinPos = tr.mapping.map(minPos);
+            tr.setSelection(CellSelection.create(tr.doc, mappedMinPos));
+          }
+
+          editor.view.dispatch(tr);
+          return true;
+        }
 
         if (event.key === ' ' || event.key === 'Spacebar') {
           if (!editor.isActive('code')) return false;
@@ -2397,6 +2541,101 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       editor.off('update', syncDetailsState);
     };
   }, [editor]);
+
+  React.useEffect(() => {
+    if (!editor || !containerRef.current) return;
+
+    const updateTableSelectionBox = () => {
+      const selection = editor.state.selection;
+      const cellPositions: number[] = [];
+
+      if (selection instanceof CellSelection) {
+        selection.forEachCell((_cell, pos) => {
+          cellPositions.push(pos);
+        });
+      } else {
+        const cellPos = getTableCellPosFromResolved(selection.$from);
+        if (cellPos !== null) {
+          cellPositions.push(cellPos);
+        }
+      }
+
+      if (cellPositions.length === 0) {
+        setTableSelectionBox(null);
+        return;
+      }
+
+      let minTop = Infinity;
+      let minLeft = Infinity;
+      let maxRight = -Infinity;
+      let maxBottom = -Infinity;
+
+      cellPositions.forEach((pos) => {
+        const cellDom = editor.view.nodeDOM(pos) as HTMLElement | null;
+        if (!cellDom) return;
+        const rect = cellDom.getBoundingClientRect();
+        minTop = Math.min(minTop, rect.top);
+        minLeft = Math.min(minLeft, rect.left);
+        maxRight = Math.max(maxRight, rect.right);
+        maxBottom = Math.max(maxBottom, rect.bottom);
+      });
+
+      if (minTop === Infinity || !containerRef.current) {
+        setTableSelectionBox(null);
+        return;
+      }
+
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const nextBox = {
+        top: minTop - containerRect.top,
+        left: minLeft - containerRect.left,
+        width: maxRight - minLeft,
+        height: maxBottom - minTop,
+      };
+
+      setTableSelectionBox(prev => {
+        if (!prev || prev.top !== nextBox.top || prev.left !== nextBox.left || 
+            prev.width !== nextBox.width || prev.height !== nextBox.height) {
+          return nextBox;
+        }
+        return prev;
+      });
+    };
+
+    updateTableSelectionBox();
+    editor.on('selectionUpdate', updateTableSelectionBox);
+    editor.on('update', updateTableSelectionBox);
+    window.addEventListener('resize', updateTableSelectionBox);
+
+    return () => {
+      editor.off('selectionUpdate', updateTableSelectionBox);
+      editor.off('update', updateTableSelectionBox);
+      window.removeEventListener('resize', updateTableSelectionBox);
+    };
+  }, [editor]);
+
+  React.useEffect(() => {
+    if (!editor || !tableSelectionResize) return;
+
+    const handleMouseMove = (event: MouseEvent) => {
+      const info = getTableCellInfo(editor.view, event);
+      if (!info || info.tablePos !== tableSelectionResize.tablePos) return;
+      const nextSelection = CellSelection.create(editor.state.doc, tableSelectionResize.anchorPos, info.cellPos);
+      editor.view.dispatch(editor.state.tr.setSelection(nextSelection));
+    };
+
+    const handleMouseUp = () => {
+      setTableSelectionResize(null);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [editor, tableSelectionResize]);
 
   React.useEffect(() => {
     const memoCard = containerRef.current?.closest('.memo-card');
@@ -4160,6 +4399,49 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
             height: 2 
           }}
         />
+      )}
+
+      {tableSelectionBox && (
+        <div
+          className="table-selection-outline"
+          style={{
+            top: tableSelectionBox.top,
+            left: tableSelectionBox.left,
+            width: tableSelectionBox.width,
+            height: tableSelectionBox.height,
+          }}
+        >
+          <div
+            className="table-selection-handle"
+            onMouseDown={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              const selection = editor.state.selection;
+              let anchorPos: number | null = null;
+              let $pos = null;
+
+              if (selection instanceof CellSelection) {
+                anchorPos = selection.$anchorCell?.pos;
+                $pos = selection.$anchorCell;
+              } else {
+                anchorPos = getTableCellPosFromResolved(selection.$from);
+                if (anchorPos !== null) $pos = editor.state.doc.resolve(anchorPos);
+              }
+
+              if (typeof anchorPos !== 'number' || !$pos) return;
+              
+              let tablePos = -1;
+              for (let d = $pos.depth; d > 0; d--) {
+                if ($pos.node(d).type.name === 'table') {
+                  tablePos = $pos.before(d);
+                  break;
+                }
+              }
+              if (tablePos === -1) return;
+              setTableSelectionResize({ anchorPos, tablePos });
+            }}
+          />
+        </div>
       )}
 
       {dragGhost && (dragState || blockDragState) && (

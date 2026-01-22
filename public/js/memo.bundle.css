@@ -367,10 +367,12 @@ td .node-text.node-paragraph,
   position: relative;
   word-break: break-word;
   overflow-wrap: break-word;
+  cursor: default;
 }
 .ProseMirror td > *,
 .ProseMirror th > * {
   margin-bottom: 0;
+  cursor: default;
 }
 .ProseMirror table p {
   margin: 0;
@@ -393,9 +395,13 @@ td .node-text.node-paragraph,
   right: 0;
   top: 0;
   bottom: 0;
-  background: var(--bg);
-  opacity: 0.6;
+  background: var(--app-primary, var(--color-primary));
+  opacity: 0.08;
   pointer-events: none;
+}
+.ProseMirror td.selectedCell,
+.ProseMirror th.selectedCell {
+  cursor: default;
 }
 .ProseMirror .column-resize-handle {
   position: absolute;
@@ -486,6 +492,31 @@ td .node-text.node-paragraph,
   width: 2px;
   top: 0;
   bottom: 0;
+}
+.table-selection-outline {
+  position: absolute;
+  border: 2px solid var(--app-primary, var(--color-primary));
+  pointer-events: none;
+  box-sizing: border-box;
+  z-index: 120;
+  transition: none !important;
+  will-change:
+    top,
+    left,
+    width,
+    height;
+}
+.table-selection-handle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  right: -3px;
+  bottom: -3px;
+  background: var(--app-primary, var(--color-primary));
+  border: 1px solid #ffffff;
+  box-sizing: border-box;
+  pointer-events: auto;
+  cursor: nwse-resize;
 }
 .table-context-menu {
   position: fixed;

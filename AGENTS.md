@@ -58,6 +58,7 @@ Only `public/js` may touch `window`:
 - Dev: `npm start` serves `public/` on port 5000.
 - Excalidraw bridge: `src/draw-editor/index.tsx` forces light theme, normalizes Mermaid, exposes `window.GoToolkitExcalidraw`.
 - Memo bridge: `src/memo-bridge/index.tsx` exposes memo API to `window`.
+- When modifying memo-editor (memo) or draw-editor (connect), run an npm build for the corresponding component after changes.
 
 ## Workers env
 - `workers/openai-proxy`: `OPENAI_API_KEY` + KV `RATE_LIMIT`.

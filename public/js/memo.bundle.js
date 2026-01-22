@@ -24992,405 +24992,6 @@ img.ProseMirror-separator {
     });
   };
 
-  // node_modules/@tiptap/extension-table-of-contents/dist/index.js
-  init_define_process_env();
-  init_polyfills();
-
-  // node_modules/@tiptap/extension-table-of-contents/node_modules/uuid/dist/esm-browser/index.js
-  init_define_process_env();
-  init_polyfills();
-
-  // node_modules/@tiptap/extension-table-of-contents/node_modules/uuid/dist/esm-browser/stringify.js
-  init_define_process_env();
-  init_polyfills();
-  var byteToHex = [];
-  for (i = 0; i < 256; ++i) {
-    byteToHex.push((i + 256).toString(16).slice(1));
-  }
-  var i;
-  function unsafeStringify(arr, offset3 = 0) {
-    return (byteToHex[arr[offset3 + 0]] + byteToHex[arr[offset3 + 1]] + byteToHex[arr[offset3 + 2]] + byteToHex[arr[offset3 + 3]] + "-" + byteToHex[arr[offset3 + 4]] + byteToHex[arr[offset3 + 5]] + "-" + byteToHex[arr[offset3 + 6]] + byteToHex[arr[offset3 + 7]] + "-" + byteToHex[arr[offset3 + 8]] + byteToHex[arr[offset3 + 9]] + "-" + byteToHex[arr[offset3 + 10]] + byteToHex[arr[offset3 + 11]] + byteToHex[arr[offset3 + 12]] + byteToHex[arr[offset3 + 13]] + byteToHex[arr[offset3 + 14]] + byteToHex[arr[offset3 + 15]]).toLowerCase();
-  }
-
-  // node_modules/@tiptap/extension-table-of-contents/node_modules/uuid/dist/esm-browser/rng.js
-  init_define_process_env();
-  init_polyfills();
-  var getRandomValues;
-  var rnds8 = new Uint8Array(16);
-  function rng() {
-    if (!getRandomValues) {
-      getRandomValues = typeof crypto !== "undefined" && crypto.getRandomValues && crypto.getRandomValues.bind(crypto);
-      if (!getRandomValues) {
-        throw new Error("crypto.getRandomValues() not supported. See https://github.com/uuidjs/uuid#getrandomvalues-not-supported");
-      }
-    }
-    return getRandomValues(rnds8);
-  }
-
-  // node_modules/@tiptap/extension-table-of-contents/node_modules/uuid/dist/esm-browser/v4.js
-  init_define_process_env();
-  init_polyfills();
-
-  // node_modules/@tiptap/extension-table-of-contents/node_modules/uuid/dist/esm-browser/native.js
-  init_define_process_env();
-  init_polyfills();
-  var randomUUID = typeof crypto !== "undefined" && crypto.randomUUID && crypto.randomUUID.bind(crypto);
-  var native_default = {
-    randomUUID
-  };
-
-  // node_modules/@tiptap/extension-table-of-contents/node_modules/uuid/dist/esm-browser/v4.js
-  function v4(options2, buf, offset3) {
-    if (native_default.randomUUID && !buf && !options2) {
-      return native_default.randomUUID();
-    }
-    options2 = options2 || {};
-    var rnds = options2.random || (options2.rng || rng)();
-    rnds[6] = rnds[6] & 15 | 64;
-    rnds[8] = rnds[8] & 63 | 128;
-    if (buf) {
-      offset3 = offset3 || 0;
-      for (var i = 0; i < 16; ++i) {
-        buf[offset3 + i] = rnds[i];
-      }
-      return buf;
-    }
-    return unsafeStringify(rnds);
-  }
-  var v4_default = v4;
-
-  // node_modules/@tiptap/extension-table-of-contents/dist/index.js
-  var TableOfContentsPlugin = ({ getId, anchorTypes = ["heading"] }) => {
-    return new Plugin({
-      key: new PluginKey("tableOfContent"),
-      appendTransaction(transactions, _oldState, newState) {
-        const tr2 = newState.tr;
-        let modified = false;
-        if (transactions.some((transaction) => transaction.docChanged)) {
-          const existingIds = [];
-          newState.doc.descendants((node, pos) => {
-            const nodeId = node.attrs["data-toc-id"];
-            if (!anchorTypes.includes(node.type.name) || node.textContent.length === 0) {
-              return;
-            }
-            if (nodeId === null || nodeId === void 0 || existingIds.includes(nodeId)) {
-              let id = "";
-              if (getId) {
-                id = getId(node.textContent);
-              } else {
-                id = v4_default();
-              }
-              tr2.setNodeMarkup(pos, void 0, {
-                ...node.attrs,
-                "data-toc-id": id,
-                id
-              });
-              modified = true;
-            }
-            existingIds.push(nodeId);
-          });
-        }
-        return modified ? tr2 : null;
-      }
-    });
-  };
-  var getHeadlineLevel = (headline, previousItems) => {
-    let level = 1;
-    const previousHeadline = previousItems.at(-1);
-    const highestHeadlineAbove = [...previousItems].reverse().find((h) => h.originalLevel <= headline.node.attrs.level);
-    const highestLevelAbove = (highestHeadlineAbove === null || highestHeadlineAbove === void 0 ? void 0 : highestHeadlineAbove.level) || 1;
-    if (headline.node.attrs.level > ((previousHeadline === null || previousHeadline === void 0 ? void 0 : previousHeadline.originalLevel) || 1)) {
-      level = ((previousHeadline === null || previousHeadline === void 0 ? void 0 : previousHeadline.level) || 1) + 1;
-    } else if (headline.node.attrs.level < ((previousHeadline === null || previousHeadline === void 0 ? void 0 : previousHeadline.originalLevel) || 1)) {
-      level = highestLevelAbove;
-    } else {
-      level = (previousHeadline === null || previousHeadline === void 0 ? void 0 : previousHeadline.level) || 1;
-    }
-    return level;
-  };
-  var getLinearIndexes = (_headline, previousHeadlines) => {
-    const previousHeadline = previousHeadlines.at(-1);
-    if (!previousHeadline) {
-      return 1;
-    }
-    return ((previousHeadline === null || previousHeadline === void 0 ? void 0 : previousHeadline.itemIndex) || 1) + 1;
-  };
-  var addTocActiveStatesAndGetItems = (content, options2) => {
-    const { editor } = options2;
-    const headlines = [];
-    const scrolledOverIds = [];
-    let activeId = null;
-    if (editor.isDestroyed) {
-      return content;
-    }
-    editor.state.doc.descendants((node, pos) => {
-      var _a;
-      const isValidType = (_a = options2.anchorTypes) === null || _a === void 0 ? void 0 : _a.includes(node.type.name);
-      if (!isValidType) {
-        return;
-      }
-      headlines.push({ node, pos });
-    });
-    headlines.forEach((headline) => {
-      const domElement = editor.view.domAtPos(headline.pos + 1).node;
-      const scrolledOver = options2.storage.scrollPosition >= domElement.offsetTop;
-      if (scrolledOver) {
-        activeId = headline.node.attrs["data-toc-id"];
-        scrolledOverIds.push(headline.node.attrs["data-toc-id"]);
-      }
-    });
-    content = content.map((heading2) => ({
-      ...heading2,
-      isActive: heading2.id === activeId,
-      isScrolledOver: scrolledOverIds.includes(heading2.id)
-    }));
-    if (options2.onUpdate) {
-      const isInitialCreation = options2.storage.content.length === 0;
-      options2.onUpdate(content, isInitialCreation);
-    }
-    return content;
-  };
-  var setTocData = (options2) => {
-    const { editor, onUpdate } = options2;
-    if (editor.isDestroyed) {
-      return;
-    }
-    const headlines = [];
-    let anchors = [];
-    const anchorEls = [];
-    editor.state.doc.descendants((node, pos) => {
-      var _a;
-      const isValidType = (_a = options2.anchorTypes) === null || _a === void 0 ? void 0 : _a.includes(node.type.name);
-      if (!isValidType) {
-        return;
-      }
-      headlines.push({ node, pos });
-    });
-    headlines.forEach((headline, i) => {
-      if (headline.node.textContent.length === 0) {
-        return;
-      }
-      const domElement = editor.view.domAtPos(headline.pos + 1).node;
-      const scrolledOver = options2.storage.scrollPosition >= domElement.offsetTop;
-      anchorEls.push(domElement);
-      const originalLevel = headline.node.attrs.level;
-      const prevHeadline = headlines[i - 1];
-      const level = options2.getLevelFn(headline, anchors);
-      const itemIndex = options2.getIndexFn(headline, anchors, level);
-      if (!prevHeadline) {
-        anchors = [...anchors, {
-          itemIndex,
-          id: headline.node.attrs["data-toc-id"],
-          originalLevel,
-          level,
-          textContent: headline.node.textContent,
-          pos: headline.pos,
-          editor,
-          isActive: false,
-          isScrolledOver: scrolledOver,
-          node: headline.node,
-          dom: domElement
-        }];
-        return;
-      }
-      anchors = [...anchors, {
-        itemIndex,
-        id: headline.node.attrs["data-toc-id"],
-        originalLevel,
-        level,
-        textContent: headline.node.textContent,
-        pos: headline.pos,
-        editor,
-        isActive: false,
-        isScrolledOver: false,
-        node: headline.node,
-        dom: domElement
-      }];
-    });
-    anchors = addTocActiveStatesAndGetItems(anchors, options2);
-    if (onUpdate) {
-      const isInitialCreation = options2.storage.content.length === 0;
-      onUpdate(anchors, isInitialCreation);
-    }
-    options2.storage.anchors = anchorEls;
-    options2.storage.content = anchors;
-    editor.state.tr.setMeta("toc", anchors);
-    editor.view.dispatch(editor.state.tr);
-  };
-  var TableOfContents = Extension.create({
-    name: "tableOfContents",
-    addStorage() {
-      return {
-        content: [],
-        anchors: [],
-        scrollHandler: () => null,
-        scrollPosition: 0
-      };
-    },
-    addGlobalAttributes() {
-      return [
-        {
-          types: this.options.anchorTypes || ["headline"],
-          attributes: {
-            id: {
-              default: null,
-              renderHTML: (attributes) => {
-                return {
-                  id: attributes.id
-                };
-              },
-              parseHTML: (element) => {
-                return element.id || null;
-              }
-            },
-            "data-toc-id": {
-              default: null,
-              renderHTML: (attributes) => {
-                return {
-                  "data-toc-id": attributes["data-toc-id"]
-                };
-              },
-              parseHTML: (element) => {
-                return element.dataset.tocId || null;
-              }
-            }
-          }
-        }
-      ];
-    },
-    addOptions() {
-      const defaultScrollParent = typeof window !== "undefined" ? () => window : void 0;
-      return {
-        // eslint-disable-next-line
-        onUpdate: () => {
-        },
-        // eslint-disable-next-line
-        getId: (_textContent) => v4_default(),
-        scrollParent: defaultScrollParent,
-        anchorTypes: ["heading"]
-      };
-    },
-    addCommands() {
-      return {
-        updateTableOfContents: () => ({ dispatch }) => {
-          var _a;
-          if (dispatch) {
-            setTocData({
-              editor: this.editor,
-              storage: this.storage,
-              onUpdate: (_a = this.options.onUpdate) === null || _a === void 0 ? void 0 : _a.bind(this),
-              getIndexFn: this.options.getIndex || getLinearIndexes,
-              getLevelFn: this.options.getLevel || getHeadlineLevel,
-              anchorTypes: this.options.anchorTypes
-            });
-          }
-          return true;
-        }
-      };
-    },
-    onTransaction({ transaction }) {
-      var _a;
-      if (transaction.docChanged && !transaction.getMeta("toc")) {
-        setTocData({
-          editor: this.editor,
-          storage: this.storage,
-          onUpdate: (_a = this.options.onUpdate) === null || _a === void 0 ? void 0 : _a.bind(this),
-          getIndexFn: this.options.getIndex || getLinearIndexes,
-          getLevelFn: this.options.getLevel || getHeadlineLevel,
-          anchorTypes: this.options.anchorTypes
-        });
-      }
-    },
-    onCreate() {
-      var _a;
-      const { tr: tr2 } = this.editor.state;
-      const existingIds = [];
-      if (this.options.scrollParent && typeof this.options.scrollParent !== "function") {
-        console.warn("[Tiptap Table of Contents Deprecation Notice]: The 'scrollParent' option must now be provided as a callback function that returns the 'scrollParent' element. The ability to pass this option directly will be deprecated in future releases.");
-      }
-      this.editor.state.doc.descendants((node, pos) => {
-        var _a2;
-        const nodeId = node.attrs["data-toc-id"];
-        const isValidType = (_a2 = this.options.anchorTypes) === null || _a2 === void 0 ? void 0 : _a2.includes(node.type.name);
-        if (!isValidType || node.textContent.length === 0) {
-          return;
-        }
-        if (nodeId === null || nodeId === void 0 || existingIds.includes(nodeId)) {
-          let id = "";
-          if (this.options.getId) {
-            id = this.options.getId(node.textContent);
-          } else {
-            id = v4_default();
-          }
-          tr2.setNodeMarkup(pos, void 0, {
-            ...node.attrs,
-            "data-toc-id": id,
-            id
-          });
-        }
-        existingIds.push(nodeId);
-      });
-      this.editor.view.dispatch(tr2);
-      setTocData({
-        editor: this.editor,
-        storage: this.storage,
-        onUpdate: (_a = this.options.onUpdate) === null || _a === void 0 ? void 0 : _a.bind(this),
-        getIndexFn: this.options.getIndex || getLinearIndexes,
-        getLevelFn: this.options.getLevel || getHeadlineLevel,
-        anchorTypes: this.options.anchorTypes
-      });
-      this.storage.scrollHandler = () => {
-        var _a2;
-        if (!this.options.scrollParent) {
-          return;
-        }
-        const scrollParent2 = typeof this.options.scrollParent === "function" ? this.options.scrollParent() : this.options.scrollParent;
-        const scrollPosition = scrollParent2 instanceof HTMLElement ? scrollParent2.scrollTop : scrollParent2.scrollY;
-        this.storage.scrollPosition = scrollPosition || 0;
-        const updatedItems = addTocActiveStatesAndGetItems(this.storage.content, {
-          editor: this.editor,
-          anchorTypes: this.options.anchorTypes,
-          storage: this.storage,
-          onUpdate: (_a2 = this.options.onUpdate) === null || _a2 === void 0 ? void 0 : _a2.bind(this)
-        });
-        this.storage.content = updatedItems;
-      };
-      if (!this.options.scrollParent) {
-        return;
-      }
-      const scrollParent = typeof this.options.scrollParent === "function" ? this.options.scrollParent() : this.options.scrollParent;
-      if (scrollParent) {
-        scrollParent.addEventListener("scroll", this.storage.scrollHandler);
-      }
-    },
-    onDestroy() {
-      if (!this.options.scrollParent) {
-        return;
-      }
-      const scrollParent = typeof this.options.scrollParent === "function" ? this.options.scrollParent() : this.options.scrollParent;
-      if (scrollParent) {
-        scrollParent.removeEventListener("scroll", this.storage.scrollHandler);
-      }
-    },
-    addProseMirrorPlugins() {
-      return [
-        TableOfContentsPlugin({ getId: this.options.getId, anchorTypes: this.options.anchorTypes })
-      ];
-    }
-  });
-
-  // src/memo-editor/table-node.tsx
-  init_define_process_env();
-  init_polyfills();
-
-  // node_modules/@tiptap/extension-table/dist/index.js
-  init_define_process_env();
-  init_polyfills();
-
-  // node_modules/@tiptap/pm/tables/dist/index.js
-  init_define_process_env();
-  init_polyfills();
-
   // node_modules/prosemirror-tables/dist/index.js
   init_define_process_env();
   init_polyfills();
@@ -27116,6 +26717,405 @@ img.ProseMirror-separator {
       }
     });
   }
+
+  // node_modules/@tiptap/extension-table-of-contents/dist/index.js
+  init_define_process_env();
+  init_polyfills();
+
+  // node_modules/@tiptap/extension-table-of-contents/node_modules/uuid/dist/esm-browser/index.js
+  init_define_process_env();
+  init_polyfills();
+
+  // node_modules/@tiptap/extension-table-of-contents/node_modules/uuid/dist/esm-browser/stringify.js
+  init_define_process_env();
+  init_polyfills();
+  var byteToHex = [];
+  for (i = 0; i < 256; ++i) {
+    byteToHex.push((i + 256).toString(16).slice(1));
+  }
+  var i;
+  function unsafeStringify(arr, offset3 = 0) {
+    return (byteToHex[arr[offset3 + 0]] + byteToHex[arr[offset3 + 1]] + byteToHex[arr[offset3 + 2]] + byteToHex[arr[offset3 + 3]] + "-" + byteToHex[arr[offset3 + 4]] + byteToHex[arr[offset3 + 5]] + "-" + byteToHex[arr[offset3 + 6]] + byteToHex[arr[offset3 + 7]] + "-" + byteToHex[arr[offset3 + 8]] + byteToHex[arr[offset3 + 9]] + "-" + byteToHex[arr[offset3 + 10]] + byteToHex[arr[offset3 + 11]] + byteToHex[arr[offset3 + 12]] + byteToHex[arr[offset3 + 13]] + byteToHex[arr[offset3 + 14]] + byteToHex[arr[offset3 + 15]]).toLowerCase();
+  }
+
+  // node_modules/@tiptap/extension-table-of-contents/node_modules/uuid/dist/esm-browser/rng.js
+  init_define_process_env();
+  init_polyfills();
+  var getRandomValues;
+  var rnds8 = new Uint8Array(16);
+  function rng() {
+    if (!getRandomValues) {
+      getRandomValues = typeof crypto !== "undefined" && crypto.getRandomValues && crypto.getRandomValues.bind(crypto);
+      if (!getRandomValues) {
+        throw new Error("crypto.getRandomValues() not supported. See https://github.com/uuidjs/uuid#getrandomvalues-not-supported");
+      }
+    }
+    return getRandomValues(rnds8);
+  }
+
+  // node_modules/@tiptap/extension-table-of-contents/node_modules/uuid/dist/esm-browser/v4.js
+  init_define_process_env();
+  init_polyfills();
+
+  // node_modules/@tiptap/extension-table-of-contents/node_modules/uuid/dist/esm-browser/native.js
+  init_define_process_env();
+  init_polyfills();
+  var randomUUID = typeof crypto !== "undefined" && crypto.randomUUID && crypto.randomUUID.bind(crypto);
+  var native_default = {
+    randomUUID
+  };
+
+  // node_modules/@tiptap/extension-table-of-contents/node_modules/uuid/dist/esm-browser/v4.js
+  function v4(options2, buf, offset3) {
+    if (native_default.randomUUID && !buf && !options2) {
+      return native_default.randomUUID();
+    }
+    options2 = options2 || {};
+    var rnds = options2.random || (options2.rng || rng)();
+    rnds[6] = rnds[6] & 15 | 64;
+    rnds[8] = rnds[8] & 63 | 128;
+    if (buf) {
+      offset3 = offset3 || 0;
+      for (var i = 0; i < 16; ++i) {
+        buf[offset3 + i] = rnds[i];
+      }
+      return buf;
+    }
+    return unsafeStringify(rnds);
+  }
+  var v4_default = v4;
+
+  // node_modules/@tiptap/extension-table-of-contents/dist/index.js
+  var TableOfContentsPlugin = ({ getId, anchorTypes = ["heading"] }) => {
+    return new Plugin({
+      key: new PluginKey("tableOfContent"),
+      appendTransaction(transactions, _oldState, newState) {
+        const tr2 = newState.tr;
+        let modified = false;
+        if (transactions.some((transaction) => transaction.docChanged)) {
+          const existingIds = [];
+          newState.doc.descendants((node, pos) => {
+            const nodeId = node.attrs["data-toc-id"];
+            if (!anchorTypes.includes(node.type.name) || node.textContent.length === 0) {
+              return;
+            }
+            if (nodeId === null || nodeId === void 0 || existingIds.includes(nodeId)) {
+              let id = "";
+              if (getId) {
+                id = getId(node.textContent);
+              } else {
+                id = v4_default();
+              }
+              tr2.setNodeMarkup(pos, void 0, {
+                ...node.attrs,
+                "data-toc-id": id,
+                id
+              });
+              modified = true;
+            }
+            existingIds.push(nodeId);
+          });
+        }
+        return modified ? tr2 : null;
+      }
+    });
+  };
+  var getHeadlineLevel = (headline, previousItems) => {
+    let level = 1;
+    const previousHeadline = previousItems.at(-1);
+    const highestHeadlineAbove = [...previousItems].reverse().find((h) => h.originalLevel <= headline.node.attrs.level);
+    const highestLevelAbove = (highestHeadlineAbove === null || highestHeadlineAbove === void 0 ? void 0 : highestHeadlineAbove.level) || 1;
+    if (headline.node.attrs.level > ((previousHeadline === null || previousHeadline === void 0 ? void 0 : previousHeadline.originalLevel) || 1)) {
+      level = ((previousHeadline === null || previousHeadline === void 0 ? void 0 : previousHeadline.level) || 1) + 1;
+    } else if (headline.node.attrs.level < ((previousHeadline === null || previousHeadline === void 0 ? void 0 : previousHeadline.originalLevel) || 1)) {
+      level = highestLevelAbove;
+    } else {
+      level = (previousHeadline === null || previousHeadline === void 0 ? void 0 : previousHeadline.level) || 1;
+    }
+    return level;
+  };
+  var getLinearIndexes = (_headline, previousHeadlines) => {
+    const previousHeadline = previousHeadlines.at(-1);
+    if (!previousHeadline) {
+      return 1;
+    }
+    return ((previousHeadline === null || previousHeadline === void 0 ? void 0 : previousHeadline.itemIndex) || 1) + 1;
+  };
+  var addTocActiveStatesAndGetItems = (content, options2) => {
+    const { editor } = options2;
+    const headlines = [];
+    const scrolledOverIds = [];
+    let activeId = null;
+    if (editor.isDestroyed) {
+      return content;
+    }
+    editor.state.doc.descendants((node, pos) => {
+      var _a;
+      const isValidType = (_a = options2.anchorTypes) === null || _a === void 0 ? void 0 : _a.includes(node.type.name);
+      if (!isValidType) {
+        return;
+      }
+      headlines.push({ node, pos });
+    });
+    headlines.forEach((headline) => {
+      const domElement = editor.view.domAtPos(headline.pos + 1).node;
+      const scrolledOver = options2.storage.scrollPosition >= domElement.offsetTop;
+      if (scrolledOver) {
+        activeId = headline.node.attrs["data-toc-id"];
+        scrolledOverIds.push(headline.node.attrs["data-toc-id"]);
+      }
+    });
+    content = content.map((heading2) => ({
+      ...heading2,
+      isActive: heading2.id === activeId,
+      isScrolledOver: scrolledOverIds.includes(heading2.id)
+    }));
+    if (options2.onUpdate) {
+      const isInitialCreation = options2.storage.content.length === 0;
+      options2.onUpdate(content, isInitialCreation);
+    }
+    return content;
+  };
+  var setTocData = (options2) => {
+    const { editor, onUpdate } = options2;
+    if (editor.isDestroyed) {
+      return;
+    }
+    const headlines = [];
+    let anchors = [];
+    const anchorEls = [];
+    editor.state.doc.descendants((node, pos) => {
+      var _a;
+      const isValidType = (_a = options2.anchorTypes) === null || _a === void 0 ? void 0 : _a.includes(node.type.name);
+      if (!isValidType) {
+        return;
+      }
+      headlines.push({ node, pos });
+    });
+    headlines.forEach((headline, i) => {
+      if (headline.node.textContent.length === 0) {
+        return;
+      }
+      const domElement = editor.view.domAtPos(headline.pos + 1).node;
+      const scrolledOver = options2.storage.scrollPosition >= domElement.offsetTop;
+      anchorEls.push(domElement);
+      const originalLevel = headline.node.attrs.level;
+      const prevHeadline = headlines[i - 1];
+      const level = options2.getLevelFn(headline, anchors);
+      const itemIndex = options2.getIndexFn(headline, anchors, level);
+      if (!prevHeadline) {
+        anchors = [...anchors, {
+          itemIndex,
+          id: headline.node.attrs["data-toc-id"],
+          originalLevel,
+          level,
+          textContent: headline.node.textContent,
+          pos: headline.pos,
+          editor,
+          isActive: false,
+          isScrolledOver: scrolledOver,
+          node: headline.node,
+          dom: domElement
+        }];
+        return;
+      }
+      anchors = [...anchors, {
+        itemIndex,
+        id: headline.node.attrs["data-toc-id"],
+        originalLevel,
+        level,
+        textContent: headline.node.textContent,
+        pos: headline.pos,
+        editor,
+        isActive: false,
+        isScrolledOver: false,
+        node: headline.node,
+        dom: domElement
+      }];
+    });
+    anchors = addTocActiveStatesAndGetItems(anchors, options2);
+    if (onUpdate) {
+      const isInitialCreation = options2.storage.content.length === 0;
+      onUpdate(anchors, isInitialCreation);
+    }
+    options2.storage.anchors = anchorEls;
+    options2.storage.content = anchors;
+    editor.state.tr.setMeta("toc", anchors);
+    editor.view.dispatch(editor.state.tr);
+  };
+  var TableOfContents = Extension.create({
+    name: "tableOfContents",
+    addStorage() {
+      return {
+        content: [],
+        anchors: [],
+        scrollHandler: () => null,
+        scrollPosition: 0
+      };
+    },
+    addGlobalAttributes() {
+      return [
+        {
+          types: this.options.anchorTypes || ["headline"],
+          attributes: {
+            id: {
+              default: null,
+              renderHTML: (attributes) => {
+                return {
+                  id: attributes.id
+                };
+              },
+              parseHTML: (element) => {
+                return element.id || null;
+              }
+            },
+            "data-toc-id": {
+              default: null,
+              renderHTML: (attributes) => {
+                return {
+                  "data-toc-id": attributes["data-toc-id"]
+                };
+              },
+              parseHTML: (element) => {
+                return element.dataset.tocId || null;
+              }
+            }
+          }
+        }
+      ];
+    },
+    addOptions() {
+      const defaultScrollParent = typeof window !== "undefined" ? () => window : void 0;
+      return {
+        // eslint-disable-next-line
+        onUpdate: () => {
+        },
+        // eslint-disable-next-line
+        getId: (_textContent) => v4_default(),
+        scrollParent: defaultScrollParent,
+        anchorTypes: ["heading"]
+      };
+    },
+    addCommands() {
+      return {
+        updateTableOfContents: () => ({ dispatch }) => {
+          var _a;
+          if (dispatch) {
+            setTocData({
+              editor: this.editor,
+              storage: this.storage,
+              onUpdate: (_a = this.options.onUpdate) === null || _a === void 0 ? void 0 : _a.bind(this),
+              getIndexFn: this.options.getIndex || getLinearIndexes,
+              getLevelFn: this.options.getLevel || getHeadlineLevel,
+              anchorTypes: this.options.anchorTypes
+            });
+          }
+          return true;
+        }
+      };
+    },
+    onTransaction({ transaction }) {
+      var _a;
+      if (transaction.docChanged && !transaction.getMeta("toc")) {
+        setTocData({
+          editor: this.editor,
+          storage: this.storage,
+          onUpdate: (_a = this.options.onUpdate) === null || _a === void 0 ? void 0 : _a.bind(this),
+          getIndexFn: this.options.getIndex || getLinearIndexes,
+          getLevelFn: this.options.getLevel || getHeadlineLevel,
+          anchorTypes: this.options.anchorTypes
+        });
+      }
+    },
+    onCreate() {
+      var _a;
+      const { tr: tr2 } = this.editor.state;
+      const existingIds = [];
+      if (this.options.scrollParent && typeof this.options.scrollParent !== "function") {
+        console.warn("[Tiptap Table of Contents Deprecation Notice]: The 'scrollParent' option must now be provided as a callback function that returns the 'scrollParent' element. The ability to pass this option directly will be deprecated in future releases.");
+      }
+      this.editor.state.doc.descendants((node, pos) => {
+        var _a2;
+        const nodeId = node.attrs["data-toc-id"];
+        const isValidType = (_a2 = this.options.anchorTypes) === null || _a2 === void 0 ? void 0 : _a2.includes(node.type.name);
+        if (!isValidType || node.textContent.length === 0) {
+          return;
+        }
+        if (nodeId === null || nodeId === void 0 || existingIds.includes(nodeId)) {
+          let id = "";
+          if (this.options.getId) {
+            id = this.options.getId(node.textContent);
+          } else {
+            id = v4_default();
+          }
+          tr2.setNodeMarkup(pos, void 0, {
+            ...node.attrs,
+            "data-toc-id": id,
+            id
+          });
+        }
+        existingIds.push(nodeId);
+      });
+      this.editor.view.dispatch(tr2);
+      setTocData({
+        editor: this.editor,
+        storage: this.storage,
+        onUpdate: (_a = this.options.onUpdate) === null || _a === void 0 ? void 0 : _a.bind(this),
+        getIndexFn: this.options.getIndex || getLinearIndexes,
+        getLevelFn: this.options.getLevel || getHeadlineLevel,
+        anchorTypes: this.options.anchorTypes
+      });
+      this.storage.scrollHandler = () => {
+        var _a2;
+        if (!this.options.scrollParent) {
+          return;
+        }
+        const scrollParent2 = typeof this.options.scrollParent === "function" ? this.options.scrollParent() : this.options.scrollParent;
+        const scrollPosition = scrollParent2 instanceof HTMLElement ? scrollParent2.scrollTop : scrollParent2.scrollY;
+        this.storage.scrollPosition = scrollPosition || 0;
+        const updatedItems = addTocActiveStatesAndGetItems(this.storage.content, {
+          editor: this.editor,
+          anchorTypes: this.options.anchorTypes,
+          storage: this.storage,
+          onUpdate: (_a2 = this.options.onUpdate) === null || _a2 === void 0 ? void 0 : _a2.bind(this)
+        });
+        this.storage.content = updatedItems;
+      };
+      if (!this.options.scrollParent) {
+        return;
+      }
+      const scrollParent = typeof this.options.scrollParent === "function" ? this.options.scrollParent() : this.options.scrollParent;
+      if (scrollParent) {
+        scrollParent.addEventListener("scroll", this.storage.scrollHandler);
+      }
+    },
+    onDestroy() {
+      if (!this.options.scrollParent) {
+        return;
+      }
+      const scrollParent = typeof this.options.scrollParent === "function" ? this.options.scrollParent() : this.options.scrollParent;
+      if (scrollParent) {
+        scrollParent.removeEventListener("scroll", this.storage.scrollHandler);
+      }
+    },
+    addProseMirrorPlugins() {
+      return [
+        TableOfContentsPlugin({ getId: this.options.getId, anchorTypes: this.options.anchorTypes })
+      ];
+    }
+  });
+
+  // src/memo-editor/table-node.tsx
+  init_define_process_env();
+  init_polyfills();
+
+  // node_modules/@tiptap/extension-table/dist/index.js
+  init_define_process_env();
+  init_polyfills();
+
+  // node_modules/@tiptap/pm/tables/dist/index.js
+  init_define_process_env();
+  init_polyfills();
 
   // node_modules/@tiptap/extension-table/dist/index.js
   function getColStyleDeclaration(minWidth, width) {
@@ -52783,8 +52783,10 @@ ${promptInput.trim()}`
         setShowTextColors(false);
         return;
       }
-      const { from: from2, to } = editor.state.selection;
-      if (from2 === to) {
+      const selection = editor.state.selection;
+      const isCellSelection2 = selection instanceof CellSelection;
+      const { from: from2, to } = selection;
+      if (!isCellSelection2 && from2 === to) {
         setPosition((prev) => ({ ...prev, opacity: 0 }));
         setShowTextColors(false);
         return;
@@ -52794,11 +52796,37 @@ ${promptInput.trim()}`
       setHasMarks(hasHighlight || hasStrike);
       try {
         const { view } = editor;
-        const start = view.coordsAtPos(from2);
-        const end = view.coordsAtPos(to);
-        if (!start || !end) {
+        let selectionRect = null;
+        if (isCellSelection2) {
+          let minTop = Infinity;
+          let minLeft = Infinity;
+          let maxRight = -Infinity;
+          let maxBottom = -Infinity;
+          selection.forEachCell((_cell, pos) => {
+            const cellDom = view.nodeDOM(pos);
+            if (!cellDom) return;
+            const rect = cellDom.getBoundingClientRect();
+            minTop = Math.min(minTop, rect.top);
+            minLeft = Math.min(minLeft, rect.left);
+            maxRight = Math.max(maxRight, rect.right);
+            maxBottom = Math.max(maxBottom, rect.bottom);
+          });
+          if (minTop !== Infinity) {
+            selectionRect = new DOMRect(minLeft, minTop, maxRight - minLeft, maxBottom - minTop);
+          }
+        } else {
+          const start = view.coordsAtPos(from2);
+          const end = view.coordsAtPos(to);
+          if (start && end) {
+            const left = Math.min(start.left, end.left);
+            const right = Math.max(start.right, end.right);
+            const top = Math.min(start.top, end.top);
+            const bottom = Math.max(start.bottom, end.bottom);
+            selectionRect = new DOMRect(left, top, right - left, bottom - top);
+          }
+        }
+        if (!selectionRect) {
           setPosition((prev) => ({ ...prev, opacity: 0 }));
-          setShowTextColors(false);
           setShowTextColors(false);
           return;
         }
@@ -52809,8 +52837,8 @@ ${promptInput.trim()}`
         const menuWidth = (menuRect == null ? void 0 : menuRect.width) || ((_b = menuRef.current) == null ? void 0 : _b.offsetWidth) || 250;
         const menuHeight = (menuRect == null ? void 0 : menuRect.height) || ((_c = menuRef.current) == null ? void 0 : _c.offsetHeight) || 40;
         const verticalOffset = 18;
-        let bubbleTop = Math.min(start.top, end.top) - parentRect.top - menuHeight - verticalOffset;
-        let bubbleLeft = (start.left + end.left) / 2 - parentRect.left - menuWidth / 2;
+        let bubbleTop = selectionRect.top - parentRect.top - menuHeight - verticalOffset;
+        let bubbleLeft = (selectionRect.left + selectionRect.right) / 2 - parentRect.left - menuWidth / 2;
         const padding = 10;
         const parentWidth = (relativeParent == null ? void 0 : relativeParent.clientWidth) || window.innerWidth;
         const viewportTop = bubbleTop + parentRect.top;
@@ -52820,7 +52848,7 @@ ${promptInput.trim()}`
           bubbleLeft = parentWidth - menuWidth - padding;
         }
         if (viewportTop < padding) {
-          bubbleTop = Math.max(start.bottom, end.bottom) - parentRect.top + verticalOffset;
+          bubbleTop = selectionRect.bottom - parentRect.top + verticalOffset;
         } else if (viewportTop + menuHeight > window.innerHeight - padding) {
           bubbleTop = window.innerHeight - padding - menuHeight - parentRect.top;
         }
@@ -54124,6 +54152,8 @@ ${promptInput.trim()}`
     const [dragGhost, setDragGhost] = react_shim_default.useState(null);
     const [showLinkModal, setShowLinkModal] = react_shim_default.useState(false);
     const [isFocusWithinMemoCard, setIsFocusWithinMemoCard] = react_shim_default.useState(false);
+    const [tableSelectionBox, setTableSelectionBox] = react_shim_default.useState(null);
+    const [tableSelectionResize, setTableSelectionResize] = react_shim_default.useState(null);
     const blockDragMovedRef = react_shim_default.useRef(false);
     const editor = useEditor({
       extensions: [
@@ -54191,6 +54221,64 @@ ${promptInput.trim()}`
       },
       editorProps: {
         handleTripleClickOn: (view, pos) => selectTableCellText(view, pos),
+        handleDOMEvents: {
+          dragstart: (view, event) => {
+            const selection = view.state.selection;
+            if (selection instanceof CellSelection) {
+              event.preventDefault();
+              return true;
+            }
+            if (hasAncestorNode(selection.$from, "table") || hasAncestorNode(selection.$to, "table")) {
+              event.preventDefault();
+              return true;
+            }
+            return false;
+          }
+        },
+        handleClick: (view, pos, event) => {
+          if (!(event instanceof MouseEvent)) return false;
+          const info = getTableCellInfo(view, event);
+          if (!info) return false;
+          const selection = view.state.selection;
+          const isCellSelection2 = selection instanceof CellSelection;
+          const isSameSingleCell = isCellSelection2 && selection.$anchorCell.pos === info.cellPos && selection.$headCell.pos === info.cellPos;
+          const coords = view.posAtCoords({ left: event.clientX, top: event.clientY });
+          if (event.detail > 1 || isSameSingleCell) {
+            if (!coords) return false;
+            const tr2 = view.state.tr.setSelection(TextSelection.create(view.state.doc, coords.pos));
+            view.dispatch(tr2);
+            view.focus();
+            return true;
+          }
+          const $cell = view.state.doc.resolve(info.cellPos);
+          view.dispatch(view.state.tr.setSelection(new CellSelection($cell)));
+          view.focus();
+          return true;
+        },
+        handleTextInput: (view, _from, _to, text) => {
+          var _a2;
+          const selection = view.state.selection;
+          if (!(selection instanceof CellSelection)) return false;
+          const { tr: tr2, schema } = view.state;
+          const paragraph2 = schema.nodes.paragraph;
+          if (!paragraph2) return false;
+          const cells = [];
+          selection.forEachCell((cell2, pos) => {
+            cells.push({ pos, nodeSize: cell2.nodeSize });
+          });
+          cells.sort((a, b) => b.pos - a.pos).forEach(({ pos, nodeSize: nodeSize2 }) => {
+            tr2.replaceWith(pos + 1, pos + nodeSize2 - 1, paragraph2.create(null, schema.text(text)));
+          });
+          const mappedAnchor = tr2.mapping.map(selection.$anchorCell.pos);
+          const cellNode = tr2.doc.nodeAt(mappedAnchor);
+          if (cellNode && cellNode.firstChild && cellNode.firstChild.isTextblock) {
+            const textLength = ((_a2 = cellNode.firstChild.textContent) == null ? void 0 : _a2.length) || 0;
+            const caretPos = mappedAnchor + 2 + textLength;
+            tr2.setSelection(TextSelection.create(tr2.doc, caretPos));
+          }
+          view.dispatch(tr2);
+          return true;
+        },
         handleKeyDown: (_view, event) => {
           var _a2, _b2;
           if (!editor) return false;
@@ -54203,6 +54291,37 @@ ${promptInput.trim()}`
             const tr2 = editor.state.tr.setStoredMarks(filtered.length ? filtered : null);
             editor.view.dispatch(tr2);
           };
+          const selection = editor.state.selection;
+          if (event.key === "Enter" && !event.shiftKey && hasAncestorNode(selection.$from, "table")) {
+            const cellPos = getTableCellPosFromResolved(selection.$from);
+            if (cellPos !== null) {
+              event.preventDefault();
+              const $cell = editor.state.doc.resolve(cellPos);
+              editor.view.dispatch(editor.state.tr.setSelection(new CellSelection($cell)));
+              return true;
+            }
+          }
+          if ((event.key === "Delete" || event.key === "Backspace") && selection instanceof CellSelection) {
+            event.preventDefault();
+            const { tr: tr2, schema } = editor.state;
+            const paragraph2 = schema.nodes.paragraph;
+            if (!paragraph2) return true;
+            const cells = [];
+            selection.forEachCell((cell2, pos) => {
+              cells.push({ pos, nodeSize: cell2.nodeSize });
+            });
+            if (cells.length === 0) return true;
+            const minPos = cells.reduce((min3, c) => Math.min(min3, c.pos), Infinity);
+            cells.sort((a, b) => b.pos - a.pos).forEach(({ pos, nodeSize: nodeSize2 }) => {
+              tr2.replaceWith(pos + 1, pos + nodeSize2 - 1, paragraph2.create());
+            });
+            if (minPos !== Infinity) {
+              const mappedMinPos = tr2.mapping.map(minPos);
+              tr2.setSelection(CellSelection.create(tr2.doc, mappedMinPos));
+            }
+            editor.view.dispatch(tr2);
+            return true;
+          }
           if (event.key === " " || event.key === "Spacebar") {
             if (!editor.isActive("code")) return false;
             editor.chain().focus().insertContent(" ").unsetCode().run();
@@ -54218,8 +54337,8 @@ ${promptInput.trim()}`
           }
           if (event.key === "Enter") {
             const { state: state2 } = editor;
-            const { selection } = state2;
-            const $from = selection.$from;
+            const { selection: selection2 } = state2;
+            const $from = selection2.$from;
             const parent = $from.parent;
             if (((_a2 = parent == null ? void 0 : parent.type) == null ? void 0 : _a2.name) === "heading" && ((_b2 = parent.attrs) == null ? void 0 : _b2.collapsed)) {
               const level = parent.attrs.level || 1;
@@ -54387,6 +54506,84 @@ ${promptInput.trim()}`
         editor.off("update", syncDetailsState);
       };
     }, [editor]);
+    react_shim_default.useEffect(() => {
+      if (!editor || !containerRef.current) return;
+      const updateTableSelectionBox = () => {
+        const selection = editor.state.selection;
+        const cellPositions = [];
+        if (selection instanceof CellSelection) {
+          selection.forEachCell((_cell, pos) => {
+            cellPositions.push(pos);
+          });
+        } else {
+          const cellPos = getTableCellPosFromResolved(selection.$from);
+          if (cellPos !== null) {
+            cellPositions.push(cellPos);
+          }
+        }
+        if (cellPositions.length === 0) {
+          setTableSelectionBox(null);
+          return;
+        }
+        let minTop = Infinity;
+        let minLeft = Infinity;
+        let maxRight = -Infinity;
+        let maxBottom = -Infinity;
+        cellPositions.forEach((pos) => {
+          const cellDom = editor.view.nodeDOM(pos);
+          if (!cellDom) return;
+          const rect = cellDom.getBoundingClientRect();
+          minTop = Math.min(minTop, rect.top);
+          minLeft = Math.min(minLeft, rect.left);
+          maxRight = Math.max(maxRight, rect.right);
+          maxBottom = Math.max(maxBottom, rect.bottom);
+        });
+        if (minTop === Infinity || !containerRef.current) {
+          setTableSelectionBox(null);
+          return;
+        }
+        const containerRect = containerRef.current.getBoundingClientRect();
+        const nextBox = {
+          top: minTop - containerRect.top,
+          left: minLeft - containerRect.left,
+          width: maxRight - minLeft,
+          height: maxBottom - minTop
+        };
+        setTableSelectionBox((prev) => {
+          if (!prev || prev.top !== nextBox.top || prev.left !== nextBox.left || prev.width !== nextBox.width || prev.height !== nextBox.height) {
+            return nextBox;
+          }
+          return prev;
+        });
+      };
+      updateTableSelectionBox();
+      editor.on("selectionUpdate", updateTableSelectionBox);
+      editor.on("update", updateTableSelectionBox);
+      window.addEventListener("resize", updateTableSelectionBox);
+      return () => {
+        editor.off("selectionUpdate", updateTableSelectionBox);
+        editor.off("update", updateTableSelectionBox);
+        window.removeEventListener("resize", updateTableSelectionBox);
+      };
+    }, [editor]);
+    react_shim_default.useEffect(() => {
+      if (!editor || !tableSelectionResize) return;
+      const handleMouseMove3 = (event) => {
+        const info = getTableCellInfo(editor.view, event);
+        if (!info || info.tablePos !== tableSelectionResize.tablePos) return;
+        const nextSelection = CellSelection.create(editor.state.doc, tableSelectionResize.anchorPos, info.cellPos);
+        editor.view.dispatch(editor.state.tr.setSelection(nextSelection));
+      };
+      const handleMouseUp = () => {
+        setTableSelectionResize(null);
+      };
+      window.addEventListener("mousemove", handleMouseMove3);
+      window.addEventListener("mouseup", handleMouseUp);
+      return () => {
+        window.removeEventListener("mousemove", handleMouseMove3);
+        window.removeEventListener("mouseup", handleMouseUp);
+      };
+    }, [editor, tableSelectionResize]);
     react_shim_default.useEffect(() => {
       var _a2;
       const memoCard = (_a2 = containerRef.current) == null ? void 0 : _a2.closest(".memo-card");
@@ -55915,6 +56112,49 @@ ${innerMarkdown}
                 width: blockDropIndicator.width,
                 height: 2
               }
+            }
+          ),
+          tableSelectionBox && /* @__PURE__ */ jsx(
+            "div",
+            {
+              className: "table-selection-outline",
+              style: {
+                top: tableSelectionBox.top,
+                left: tableSelectionBox.left,
+                width: tableSelectionBox.width,
+                height: tableSelectionBox.height
+              },
+              children: /* @__PURE__ */ jsx(
+                "div",
+                {
+                  className: "table-selection-handle",
+                  onMouseDown: (event) => {
+                    var _a2;
+                    event.preventDefault();
+                    event.stopPropagation();
+                    const selection = editor.state.selection;
+                    let anchorPos = null;
+                    let $pos = null;
+                    if (selection instanceof CellSelection) {
+                      anchorPos = (_a2 = selection.$anchorCell) == null ? void 0 : _a2.pos;
+                      $pos = selection.$anchorCell;
+                    } else {
+                      anchorPos = getTableCellPosFromResolved(selection.$from);
+                      if (anchorPos !== null) $pos = editor.state.doc.resolve(anchorPos);
+                    }
+                    if (typeof anchorPos !== "number" || !$pos) return;
+                    let tablePos = -1;
+                    for (let d = $pos.depth; d > 0; d--) {
+                      if ($pos.node(d).type.name === "table") {
+                        tablePos = $pos.before(d);
+                        break;
+                      }
+                    }
+                    if (tablePos === -1) return;
+                    setTableSelectionResize({ anchorPos, tablePos });
+                  }
+                }
+              )
             }
           ),
           dragGhost && (dragState || blockDragState) && /* @__PURE__ */ jsx(
