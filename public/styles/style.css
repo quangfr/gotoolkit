@@ -2702,14 +2702,14 @@ label {
 .chat-inline-editor__input {
   width: 100%;
   min-height: 32px;
-  max-height: 80px;
+  max-height: calc(1.4em * 5 + 16px);
   padding: 8px 22px 8px 8px;
   border: none;
   border-radius: 0;
   font-family: inherit;
   font-size: 0.85rem;
   resize: none;
-  overflow-y: auto;
+  overflow-y: hidden;
   word-wrap: break-word;
   line-height: 1.4;
   background: var(--bg-surface);

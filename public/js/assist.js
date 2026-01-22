@@ -7534,7 +7534,7 @@
     // Fonction pour envoyer un message inline du memo-editor
     // Remplace SEULEMENT la sélection en cours, pas tout le document
     async function sendInlineEditToAssist(options) {
-        const { payload, selectionExcerpt, selectionPos, editor } = options;
+        const { payload, selectionExcerpt, selectionPos, editor, askText } = options;
         const assistInstance = window.GoToolkitAssistInstance;
 
         if (!assistInstance) {
@@ -7602,7 +7602,7 @@
 
             // 2. Extraire le ASK pour afficher le message utilisateur dans le chat.
             //    (Cherche le dernier message user qui contient ASK:, sinon prend tout)
-            let askContent = '';
+            let askContent = (typeof askText === 'string') ? askText.trim() : '';
             for (let i = requestMessages.length - 1; i >= 0; i--) {
                 const msg = requestMessages[i];
                 if (!msg || msg.role !== 'user' || typeof msg.content !== 'string') continue;
