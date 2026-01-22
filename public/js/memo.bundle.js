@@ -54243,7 +54243,7 @@ ${promptInput.trim()}`
           const isCellSelection2 = selection instanceof CellSelection;
           const isSameSingleCell = isCellSelection2 && selection.$anchorCell.pos === info.cellPos && selection.$headCell.pos === info.cellPos;
           const coords = view.posAtCoords({ left: event.clientX, top: event.clientY });
-          if (event.detail > 1 || isSameSingleCell) {
+          if (event.detail >= 2 || isSameSingleCell) {
             if (!coords) return false;
             let targetPos = coords.pos;
             const $target = view.state.doc.resolve(targetPos);
@@ -54254,7 +54254,8 @@ ${promptInput.trim()}`
               }
             }
             const tr2 = view.state.tr.setSelection(TextSelection.create(view.state.doc, targetPos));
-            view.dispatch(tr2);
+            view.dispatch(tr2.setMeta("addToHistory", false));
+            view.dispatch(view.state.tr.scrollIntoView());
             view.focus();
             return true;
           }

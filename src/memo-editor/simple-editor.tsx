@@ -2244,7 +2244,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
 
         const coords = view.posAtCoords({ left: event.clientX, top: event.clientY });
 
-        if (event.detail > 1 || isSameSingleCell) {
+        if (event.detail >= 2 || isSameSingleCell) {
           if (!coords) return false;
           // For double click, we might want to ensure we are inside a paragraph
           let targetPos = coords.pos;
@@ -2258,7 +2258,8 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           }
 
           const tr = view.state.tr.setSelection(TextSelection.create(view.state.doc, targetPos));
-          view.dispatch(tr);
+          view.dispatch(tr.setMeta('addToHistory', false));
+          view.dispatch(view.state.tr.scrollIntoView());
           view.focus();
           return true;
         }
