@@ -518,8 +518,14 @@
             if (typeof source?.stream !== "undefined") {
                 proxyPayload.stream = Boolean(source.stream);
             }
+            if (typeof source?.temperature !== "undefined") {
+                proxyPayload.temperature = source.temperature;
+            }
             if (typeof proxyPayload.effort === "undefined") {
                 proxyPayload.effort = "minimal";
+            }
+            if (typeof proxyPayload.temperature === "undefined") {
+                proxyPayload.temperature = 0.3;
             }
             return proxyPayload;
         }
@@ -556,21 +562,18 @@
             result.logit_bias = source.logit_bias;
         }
         if (typeof result.temperature === "undefined") {
-            result.temperature = 1;
+            result.temperature = 0.3;
         }
         if (typeof result.effort === "undefined") {
             result.effort = "minimal";
         }
 
-        const sortBy = (typeof backend?.sort === "string" && backend.sort.trim()) ? backend.sort.trim() : "price";
+        const sortBy = (typeof backend?.sort === "string" && backend.sort.trim()) ? backend.sort.trim() : "throughput";
         const provider = {
             allow_fallbacks: true,
             sort: {
                 by: sortBy,
                 partition: null
-            },
-            preferredMinThroughput: {
-                p90: 100
             },
             data_collection: "deny",
             zdr: true
