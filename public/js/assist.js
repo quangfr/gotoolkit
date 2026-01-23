@@ -6638,10 +6638,23 @@
 
     AssistSidebar.prototype.sendAIRequest = function (payload) {
         var self = this;
+
+        // Avoid sending the same payload twice in quick succession or while in-flight
+        var payloadJson = JSON.stringify(payload || {});
+        var payloadHash = payloadJson;
+        var now = Date.now();
+        if (this._inFlightPayloadHash === payloadHash ||
+            (this._lastPayloadHash === payloadHash && (now - (this._lastPayloadAt || 0)) < 1200)) {
+            console.warn("Duplicate payload skipped");
+            return;
+        }
+        this._lastPayloadHash = payloadHash;
+        this._lastPayloadAt = now;
+        this._inFlightPayloadHash = payloadHash;
+
         this.setSendButtonBusy(true);
 
         // Calculate total payload byte count and check size limit
-        var payloadJson = JSON.stringify(payload);
         var payloadBytes = new Blob([payloadJson]).size;
         var maxPayloadBytes = 2_000_000;
 
@@ -6651,6 +6664,7 @@
                 "Le document dépasse la limite de " + Math.floor(maxPayloadBytes / 1_000_000) + " Mo.\n\n" +
                 "Suggestion : Ajoutez-le à la Mémoire ou avec +";
             alert(errorMessage);
+            this._inFlightPayloadHash = null;
             return;
         }
 
@@ -6816,6 +6830,10 @@
                 if (CHAT_APP_ID === "memo") {
                     window.GoToolkitMemoToast?.("", true);
                 }
+            }
+        }).finally(function () {
+            if (self._inFlightPayloadHash === payloadHash) {
+                self._inFlightPayloadHash = null;
             }
         });
     };
@@ -7547,6 +7565,22 @@
 
         // Capturer la position du scroll avant la requête IA
         let scrollPosition = 0;
+        const logInlineEditIssue = (label, details) => {
+            try {
+                console.error("InlineEdit not applied", {
+                    label,
+                    details: details || {},
+                    ai_in: requestPayloadForLog || null,
+                    ai_out: aiOutForLog || null
+                });
+            } catch (err) {
+                // noop
+            }
+        };
+
+        let requestPayloadForLog = null;
+        let aiOutForLog = null;
+
         try {
             if (editor && editor.view && editor.view.dom && editor.view.dom.parentElement) {
                 scrollPosition = editor.view.dom.parentElement.scrollTop || 0;
@@ -7574,12 +7608,15 @@
             requestPayload.messages = requestMessages;
             // Avoid leaking non-standard field downstream.
             delete requestPayload.system;
+            requestPayloadForLog = requestPayload;
 
             // Expose the last AI input (for memo source modal: AI In)
             try {
                 window.__memoEditorLastAIInAt = new Date().toISOString();
                 window.__memoEditorLastAIInMessages = requestMessages;
-                window.__memoEditorLastAIInPayload = requestPayload;
+                var aiInPayload = Object.assign({}, requestPayload);
+                if (aiInPayload && aiInPayload.messages) delete aiInPayload.messages;
+                window.__memoEditorLastAIInPayload = aiInPayload;
                 window.__memoEditorLastAIInDocumentMarkdown =
                     (typeof window.getMemoEditorSource === 'function'
                         ? window.getMemoEditorSource('markdown')
@@ -7591,8 +7628,8 @@
                 window.__memoEditorAIInHistory.unshift({
                     at: window.__memoEditorLastAIInAt,
                     messages: requestMessages,
-                    payload: requestPayload,
-                    document: window.__memoEditorLastAIInDocumentMarkdown
+                    payload: aiInPayload,
+                    document: ''
                 });
                 if (window.__memoEditorAIInHistory.length > 20) window.__memoEditorAIInHistory.pop();
 
@@ -7659,6 +7696,7 @@
             });
 
             if (!rawResponse) {
+                logInlineEditIssue('L0/raw-response-missing', { reason: 'No response from AI client' });
                 stopCharacterCounterToaster();
                 return;
             }
@@ -7703,6 +7741,7 @@
                     editMetadata = { sOutput, output };
                 }
             }
+            aiOutForLog = payloadObj || responseText || rawTextFallback || rawResponse || null;
 
             // Expose the last AI output (for memo source modal: AI Out)
             try {
@@ -7721,7 +7760,6 @@
                 if (!window.__memoEditorAIOutHistory) window.__memoEditorAIOutHistory = [];
                 window.__memoEditorAIOutHistory.unshift({
                     at: window.__memoEditorLastAIOutAt,
-                    ai_out: lastOut,
                     full_payload: payloadObj
                 });
                 if (window.__memoEditorAIOutHistory.length > 20) window.__memoEditorAIOutHistory.pop();
@@ -7807,7 +7845,11 @@
                                 to: selectionTo
                             });
                             restoreScroll();
+                        } else {
+                            logInlineEditIssue('L1/insert-range-missing', { reason: 'insertEditorMarkdownAtRange unavailable' });
                         }
+                    } else {
+                        logInlineEditIssue('L2/selection-range-invalid', { selectionFrom, selectionTo });
                     }
                 } else if (typeof editMetadata.output === 'string' && editMetadata.output.trim()) {
                     // Cas DOCUMENT entier (Maintenant APPEND par défaut dans le mode "edit" sans sélection)
@@ -7827,7 +7869,13 @@
                             .run();
                         window.scrollMemoEditorToEnd?.();
                     }
+                } else {
+                    logInlineEditIssue('L3/edit-metadata-empty', { editMetadata });
                 }
+            } else if (!editor) {
+                logInlineEditIssue('L4/editor-missing', { reason: 'Editor instance not available' });
+            } else if (!editMetadata) {
+                logInlineEditIssue('L5/no-edit-metadata', { reason: 'AI response missing output/s_output' });
             }
 
             // 11. Persister la conversation
@@ -7836,6 +7884,7 @@
 
         } catch (error) {
             // Mettre à jour le message bot avec l'erreur
+            logInlineEditIssue('L6/exception', { error: (error && (error.stack || error.message)) || error });
             stopCharacterCounterToaster();
             if (botMessage) {
                 botMessage.content = '⚠️ Une erreur s\'est produite.';

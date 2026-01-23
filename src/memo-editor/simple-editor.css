@@ -474,6 +474,7 @@ td .node-text.node-paragraph,
   width: 4px;
   background-color: var(--intent-info-border);
   pointer-events: none;
+  cursor: col-resize;
 }
 
 /* Table Handle Styles */

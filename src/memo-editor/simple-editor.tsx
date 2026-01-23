@@ -2332,6 +2332,31 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
 
           if (cells.length === 0) return true;
 
+          // If the selection covers the entire table, delete the table node
+          const $anchor = selection.$anchorCell;
+          let tablePos = -1;
+          let tableNode: any = null;
+          for (let d = $anchor.depth; d > 0; d--) {
+            if ($anchor.node(d).type.name === 'table') {
+              tablePos = $anchor.before(d);
+              tableNode = $anchor.node(d);
+              break;
+            }
+          }
+          if (tablePos >= 0 && tableNode) {
+            const totalCellCount = tableNode.content?.childCount
+              ? tableNode.content.content.reduce((count: number, row: any) => {
+                  const rowCellCount = row?.content?.childCount || 0;
+                  return count + rowCellCount;
+                }, 0)
+              : 0;
+            if (totalCellCount > 0 && cells.length >= totalCellCount) {
+              tr.delete(tablePos, tablePos + tableNode.nodeSize);
+              editor.view.dispatch(tr.scrollIntoView());
+              return true;
+            }
+          }
+
           // Find top-left pos before modifying doc
           const minPos = cells.reduce((min, c) => Math.min(min, c.pos), Infinity);
 
@@ -3506,15 +3531,12 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
                 el.removeAttribute('style');
                 // Clean up cell content to prevent Turndown from adding extra newlines
                 if (el.tagName === 'TD' || el.tagName === 'TH') {
-                  // Tiptap often wraps cell content in <p> tags, which Turndown converts to newlines.
-                  // We strip these <p> tags and keep only the text/inline content.
-                  const paragraphs = el.querySelectorAll('p');
-                  paragraphs.forEach(p => {
-                    const span = doc.createElement('span');
-                    span.innerHTML = p.innerHTML;
-                    p.replaceWith(span);
-                  });
-                  el.innerHTML = el.innerHTML.replace(/\n/g, ' ').trim();
+                  // Convert cell HTML to markdown text to avoid any HTML tags in AI payload
+                  const rawCellHtml = el.innerHTML || '';
+                  const markdownCell = (turndownRef.current?.turndown(rawCellHtml) || el.textContent || '')
+                    .replace(/\n+/g, ' ')
+                    .trim();
+                  el.textContent = markdownCell;
                 }
               });
             });
@@ -3896,8 +3918,35 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           }
           return match;
         });
+        // Post-process tables to ensure valid Tiptap tableCell content
+        try {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(finalHtml, 'text/html');
+          if (doc && doc.body) {
+            const tables = doc.querySelectorAll('table');
+            tables.forEach(table => {
+              table.querySelectorAll('td, th').forEach(cell => {
+                const raw = (cell.innerHTML || '').trim();
+                const hasBlock = !!cell.querySelector('p, div, pre, ul, ol, blockquote, h1, h2, h3, h4, h5, h6, table');
+                if (!raw || raw === '<>') {
+                  cell.innerHTML = '<p></p>';
+                  return;
+                }
+                if (!hasBlock) {
+                  const p = doc.createElement('p');
+                  p.innerHTML = cell.innerHTML;
+                  cell.innerHTML = '';
+                  cell.appendChild(p);
+                }
+              });
+            });
+            return doc.body.innerHTML.replace(/<>/g, '');
+          }
+        } catch (err) {
+          // noop
+        }
 
-        return finalHtml;
+        return finalHtml.replace(/<>/g, '');
       };
 
       const setEditorMarkdown = (markdown: string) => {
@@ -3919,12 +3968,54 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       const insertEditorMarkdownAtRange = (markdown: string, range: { from: number; to: number }) => {
         if (typeof markdown !== 'string' || !range) return;
         try {
-          const from = Number(range.from);
-          const to = Number(range.to);
-          if (!Number.isFinite(from) || !Number.isFinite(to)) return;
+          const rawFrom = Number(range.from);
+          const rawTo = Number(range.to);
+          if (!Number.isFinite(rawFrom) || !Number.isFinite(rawTo)) return;
           const finalHtml = convertEditorMarkdownToHtml(markdown);
           if (editor) {
-            editor.chain().focus().insertContentAt({ from, to }, finalHtml).run();
+            const maxPos = editor.state.doc.content.size;
+            const clampedFrom = Math.max(0, Math.min(rawFrom, maxPos));
+            const clampedTo = Math.max(0, Math.min(rawTo, maxPos));
+            let from = Math.min(clampedFrom, clampedTo);
+            let to = Math.max(clampedFrom, clampedTo);
+
+            // If selection intersects or is inside a table, replace the whole table node range
+            let tableFrom: number | null = null;
+            let tableTo: number | null = null;
+            editor.state.doc.nodesBetween(from, to, (node, pos) => {
+              if (node.type.name === 'table') {
+                tableFrom = tableFrom === null ? pos : Math.min(tableFrom, pos);
+                tableTo = tableTo === null ? (pos + node.nodeSize) : Math.max(tableTo, pos + node.nodeSize);
+              }
+            });
+
+            const resolved = editor.state.doc.resolve(from);
+            if (tableFrom === null && getTableCellPosFromResolved(resolved) !== null) {
+              let $pos = resolved;
+              for (let d = $pos.depth; d > 0; d--) {
+                if ($pos.node(d).type.name === 'table') {
+                  tableFrom = $pos.before(d);
+                  tableTo = $pos.after(d);
+                  break;
+                }
+              }
+            }
+
+            if (tableFrom !== null && tableTo !== null) {
+              from = tableFrom;
+              to = tableTo;
+            }
+
+            const trimmedHtml = typeof finalHtml === 'string' ? finalHtml.trim() : '';
+            const safeHtml = (!trimmedHtml || trimmedHtml === '<>') ? '<p></p>' : finalHtml;
+
+            // Delete first, then insert at the mapped position to avoid invalid tableCell inserts
+            const tr = editor.state.tr.deleteRange(from, to);
+            const mappedFrom = tr.mapping.map(from);
+            editor.view.dispatch(tr);
+
+            const insertPos = Math.max(0, Math.min(mappedFrom, editor.state.doc.content.size));
+            editor.chain().focus().insertContentAt(insertPos, safeHtml).run();
           }
         } catch (err) {
           console.warn('insertEditorMarkdownAtRange failed', err);
@@ -3937,7 +4028,13 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           const finalHtml = convertEditorMarkdownToHtml(markdown);
 
           if (editor) {
-            editor.chain().focus().insertContentAt(editor.state.doc.content.size, (editor.isEmpty ? '' : '\n\n') + finalHtml).run();
+            const trimmedHtml = typeof finalHtml === 'string' ? finalHtml.trim() : '';
+            const safeHtml = (!trimmedHtml || trimmedHtml === '<>') ? '<p></p>' : finalHtml;
+            editor
+              .chain()
+              .focus()
+              .insertContentAt(editor.state.doc.content.size, (editor.isEmpty ? '' : '\n\n') + safeHtml)
+              .run();
           }
         } catch (err) {
           console.warn('insertEditorMarkdownAtEnd failed', err);
@@ -3975,6 +4072,38 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
 
     let selectionTimeout: ReturnType<typeof setTimeout>;
 
+    const sanitizeTableHtmlForMarkdown = (html: string) => {
+      try {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        if (!doc || !doc.body) return html;
+
+        const colgroups = doc.querySelectorAll('colgroup');
+        colgroups.forEach(cg => cg.remove());
+
+        const tables = doc.querySelectorAll('table');
+        tables.forEach(table => {
+          table.removeAttribute('class');
+          table.removeAttribute('style');
+          table.querySelectorAll('td, th, tr').forEach(el => {
+            el.removeAttribute('class');
+            el.removeAttribute('style');
+            if (el.tagName === 'TD' || el.tagName === 'TH') {
+              const rawCellHtml = el.innerHTML || '';
+              const markdownCell = (turndownRef.current?.turndown(rawCellHtml) || el.textContent || '')
+                .replace(/\n+/g, ' ')
+                .trim();
+              el.textContent = markdownCell;
+            }
+          });
+        });
+
+        return doc.body.innerHTML;
+      } catch (err) {
+        return html;
+      }
+    };
+
     const handleSelectionChange = () => {
       const { from, to, empty } = editor.state.selection;
       
@@ -4006,7 +4135,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
             const fragment = serializer.serializeFragment(slice.content);
             const tmp = document.createElement('div');
             tmp.appendChild(fragment);
-            const html = tmp.innerHTML;
+            const html = sanitizeTableHtmlForMarkdown(tmp.innerHTML);
             selectionMarkdown = (turndownRef.current?.turndown(html) || '').trim();
           } catch (err) {
             selectionMarkdown = '';
@@ -4076,7 +4205,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
             const fragment = serializer.serializeFragment(blockSlice.content);
             const tmp = document.createElement('div');
             tmp.appendChild(fragment);
-            const html = tmp.innerHTML;
+            const html = sanitizeTableHtmlForMarkdown(tmp.innerHTML);
             blockMarkdown = (turndownRef.current?.turndown(html) || '').trim();
           } catch (err) {
             blockMarkdown = '';

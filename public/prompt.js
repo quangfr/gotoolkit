@@ -256,7 +256,7 @@ Toujours faire un saut à la ligne entre le bloc à supprimer (~~...~~) puis le 
 
 RÈGLES SPÉCIFIQUES :
 - Pour des tâches : ☐ pour non fait, ☒ pour fait.
-- Pour ajouter ou éditer un tableau, utilise la syntaxe markdown gfm.
+- Pour générer un tableau, utilise la syntaxe markdown gfm uniquement
 - Pour créer des encadrés d'information, utilise la syntaxe suivante :
 
 >ℹ️ Contexte utile, information importante
@@ -333,7 +333,7 @@ RÈGLES DE MODIFICATION
 
 RÈGLES SPÉCIFIQUES :
 - Pour des tâches : ☐ pour non fait, ☒ pour fait.
-- Pour ajouter ou éditer un tableau, utilise la syntaxe markdown gfm.
+- Pour générer un tableau, utilise la syntaxe markdown gfm uniquement 
 - Pour créer des encadrés d'information, utilise la syntaxe suivante :
 
 >ℹ️ Contexte utile, information pratique

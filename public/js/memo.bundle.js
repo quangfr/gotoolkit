@@ -54289,7 +54289,7 @@ ${promptInput.trim()}`
           return true;
         },
         handleKeyDown: (_view, event) => {
-          var _a2, _b2;
+          var _a2, _b2, _c2;
           if (!editor) return false;
           const clearStoredMarks = () => {
             const blockedMarks = /* @__PURE__ */ new Set(["code", "textStyle", "bold", "italic", "underline", "strike", "highlight"]);
@@ -54320,6 +54320,28 @@ ${promptInput.trim()}`
               cells.push({ pos, nodeSize: cell2.nodeSize });
             });
             if (cells.length === 0) return true;
+            const $anchor = selection.$anchorCell;
+            let tablePos = -1;
+            let tableNode = null;
+            for (let d = $anchor.depth; d > 0; d--) {
+              if ($anchor.node(d).type.name === "table") {
+                tablePos = $anchor.before(d);
+                tableNode = $anchor.node(d);
+                break;
+              }
+            }
+            if (tablePos >= 0 && tableNode) {
+              const totalCellCount = ((_a2 = tableNode.content) == null ? void 0 : _a2.childCount) ? tableNode.content.content.reduce((count, row) => {
+                var _a3;
+                const rowCellCount = ((_a3 = row == null ? void 0 : row.content) == null ? void 0 : _a3.childCount) || 0;
+                return count + rowCellCount;
+              }, 0) : 0;
+              if (totalCellCount > 0 && cells.length >= totalCellCount) {
+                tr2.delete(tablePos, tablePos + tableNode.nodeSize);
+                editor.view.dispatch(tr2.scrollIntoView());
+                return true;
+              }
+            }
             const minPos = cells.reduce((min3, c) => Math.min(min3, c.pos), Infinity);
             cells.sort((a, b) => b.pos - a.pos).forEach(({ pos, nodeSize: nodeSize2 }) => {
               tr2.replaceWith(pos + 1, pos + nodeSize2 - 1, paragraph2.create());
@@ -54349,7 +54371,7 @@ ${promptInput.trim()}`
             const { selection: selection2 } = state2;
             const $from = selection2.$from;
             const parent = $from.parent;
-            if (((_a2 = parent == null ? void 0 : parent.type) == null ? void 0 : _a2.name) === "heading" && ((_b2 = parent.attrs) == null ? void 0 : _b2.collapsed)) {
+            if (((_b2 = parent == null ? void 0 : parent.type) == null ? void 0 : _b2.name) === "heading" && ((_c2 = parent.attrs) == null ? void 0 : _c2.collapsed)) {
               const level = parent.attrs.level || 1;
               const headingPos = $from.before($from.depth);
               const docSize = state2.doc.content.size;
@@ -55326,16 +55348,13 @@ ${innerMarkdown}
                 table.removeAttribute("class");
                 table.removeAttribute("style");
                 table.querySelectorAll("td, th, tr").forEach((el) => {
+                  var _a3;
                   el.removeAttribute("class");
                   el.removeAttribute("style");
                   if (el.tagName === "TD" || el.tagName === "TH") {
-                    const paragraphs = el.querySelectorAll("p");
-                    paragraphs.forEach((p) => {
-                      const span = doc3.createElement("span");
-                      span.innerHTML = p.innerHTML;
-                      p.replaceWith(span);
-                    });
-                    el.innerHTML = el.innerHTML.replace(/\n/g, " ").trim();
+                    const rawCellHtml = el.innerHTML || "";
+                    const markdownCell = (((_a3 = turndownRef.current) == null ? void 0 : _a3.turndown(rawCellHtml)) || el.textContent || "").replace(/\n+/g, " ").trim();
+                    el.textContent = markdownCell;
                   }
                 });
               });
@@ -55652,7 +55671,32 @@ ${innerMarkdown}
             }
             return match;
           });
-          return finalHtml;
+          try {
+            const parser2 = new DOMParser();
+            const doc3 = parser2.parseFromString(finalHtml, "text/html");
+            if (doc3 && doc3.body) {
+              const tables2 = doc3.querySelectorAll("table");
+              tables2.forEach((table) => {
+                table.querySelectorAll("td, th").forEach((cell2) => {
+                  const raw = (cell2.innerHTML || "").trim();
+                  const hasBlock = !!cell2.querySelector("p, div, pre, ul, ol, blockquote, h1, h2, h3, h4, h5, h6, table");
+                  if (!raw || raw === "<>") {
+                    cell2.innerHTML = "<p></p>";
+                    return;
+                  }
+                  if (!hasBlock) {
+                    const p = doc3.createElement("p");
+                    p.innerHTML = cell2.innerHTML;
+                    cell2.innerHTML = "";
+                    cell2.appendChild(p);
+                  }
+                });
+              });
+              return doc3.body.innerHTML.replace(/<>/g, "");
+            }
+          } catch (err) {
+          }
+          return finalHtml.replace(/<>/g, "");
         };
         const setEditorMarkdown = (markdown) => {
           var _a2, _b2;
@@ -55672,12 +55716,46 @@ ${innerMarkdown}
         const insertEditorMarkdownAtRange = (markdown, range2) => {
           if (typeof markdown !== "string" || !range2) return;
           try {
-            const from2 = Number(range2.from);
-            const to = Number(range2.to);
-            if (!Number.isFinite(from2) || !Number.isFinite(to)) return;
+            const rawFrom = Number(range2.from);
+            const rawTo = Number(range2.to);
+            if (!Number.isFinite(rawFrom) || !Number.isFinite(rawTo)) return;
             const finalHtml = convertEditorMarkdownToHtml(markdown);
             if (editor) {
-              editor.chain().focus().insertContentAt({ from: from2, to }, finalHtml).run();
+              const maxPos = editor.state.doc.content.size;
+              const clampedFrom = Math.max(0, Math.min(rawFrom, maxPos));
+              const clampedTo = Math.max(0, Math.min(rawTo, maxPos));
+              let from2 = Math.min(clampedFrom, clampedTo);
+              let to = Math.max(clampedFrom, clampedTo);
+              let tableFrom = null;
+              let tableTo = null;
+              editor.state.doc.nodesBetween(from2, to, (node, pos) => {
+                if (node.type.name === "table") {
+                  tableFrom = tableFrom === null ? pos : Math.min(tableFrom, pos);
+                  tableTo = tableTo === null ? pos + node.nodeSize : Math.max(tableTo, pos + node.nodeSize);
+                }
+              });
+              const resolved = editor.state.doc.resolve(from2);
+              if (tableFrom === null && getTableCellPosFromResolved(resolved) !== null) {
+                let $pos = resolved;
+                for (let d = $pos.depth; d > 0; d--) {
+                  if ($pos.node(d).type.name === "table") {
+                    tableFrom = $pos.before(d);
+                    tableTo = $pos.after(d);
+                    break;
+                  }
+                }
+              }
+              if (tableFrom !== null && tableTo !== null) {
+                from2 = tableFrom;
+                to = tableTo;
+              }
+              const trimmedHtml = typeof finalHtml === "string" ? finalHtml.trim() : "";
+              const safeHtml = !trimmedHtml || trimmedHtml === "<>" ? "<p></p>" : finalHtml;
+              const tr2 = editor.state.tr.deleteRange(from2, to);
+              const mappedFrom = tr2.mapping.map(from2);
+              editor.view.dispatch(tr2);
+              const insertPos = Math.max(0, Math.min(mappedFrom, editor.state.doc.content.size));
+              editor.chain().focus().insertContentAt(insertPos, safeHtml).run();
             }
           } catch (err) {
             console.warn("insertEditorMarkdownAtRange failed", err);
@@ -55688,7 +55766,9 @@ ${innerMarkdown}
           try {
             const finalHtml = convertEditorMarkdownToHtml(markdown);
             if (editor) {
-              editor.chain().focus().insertContentAt(editor.state.doc.content.size, (editor.isEmpty ? "" : "\n\n") + finalHtml).run();
+              const trimmedHtml = typeof finalHtml === "string" ? finalHtml.trim() : "";
+              const safeHtml = !trimmedHtml || trimmedHtml === "<>" ? "<p></p>" : finalHtml;
+              editor.chain().focus().insertContentAt(editor.state.doc.content.size, (editor.isEmpty ? "" : "\n\n") + safeHtml).run();
             }
           } catch (err) {
             console.warn("insertEditorMarkdownAtEnd failed", err);
@@ -55718,6 +55798,33 @@ ${innerMarkdown}
     react_shim_default.useEffect(() => {
       if (!editor) return;
       let selectionTimeout;
+      const sanitizeTableHtmlForMarkdown = (html2) => {
+        try {
+          const parser2 = new DOMParser();
+          const doc3 = parser2.parseFromString(html2, "text/html");
+          if (!doc3 || !doc3.body) return html2;
+          const colgroups = doc3.querySelectorAll("colgroup");
+          colgroups.forEach((cg) => cg.remove());
+          const tables2 = doc3.querySelectorAll("table");
+          tables2.forEach((table) => {
+            table.removeAttribute("class");
+            table.removeAttribute("style");
+            table.querySelectorAll("td, th, tr").forEach((el) => {
+              var _a2;
+              el.removeAttribute("class");
+              el.removeAttribute("style");
+              if (el.tagName === "TD" || el.tagName === "TH") {
+                const rawCellHtml = el.innerHTML || "";
+                const markdownCell = (((_a2 = turndownRef.current) == null ? void 0 : _a2.turndown(rawCellHtml)) || el.textContent || "").replace(/\n+/g, " ").trim();
+                el.textContent = markdownCell;
+              }
+            });
+          });
+          return doc3.body.innerHTML;
+        } catch (err) {
+          return html2;
+        }
+      };
       const handleSelectionChange = () => {
         const { from: from2, to, empty: empty2 } = editor.state.selection;
         clearTimeout(selectionTimeout);
@@ -55740,7 +55847,7 @@ ${innerMarkdown}
               const fragment = serializer.serializeFragment(slice2.content);
               const tmp = document.createElement("div");
               tmp.appendChild(fragment);
-              const html2 = tmp.innerHTML;
+              const html2 = sanitizeTableHtmlForMarkdown(tmp.innerHTML);
               selectionMarkdown = (((_a2 = turndownRef.current) == null ? void 0 : _a2.turndown(html2)) || "").trim();
             } catch (err) {
               selectionMarkdown = "";
@@ -55801,7 +55908,7 @@ ${innerMarkdown}
               const fragment = serializer.serializeFragment(blockSlice.content);
               const tmp = document.createElement("div");
               tmp.appendChild(fragment);
-              const html2 = tmp.innerHTML;
+              const html2 = sanitizeTableHtmlForMarkdown(tmp.innerHTML);
               blockMarkdown = (((_b2 = turndownRef.current) == null ? void 0 : _b2.turndown(html2)) || "").trim();
             } catch (err) {
               blockMarkdown = "";
