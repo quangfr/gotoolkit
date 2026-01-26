@@ -504,6 +504,41 @@
             color: var(--text-main);
         }
 
+        .share-card-template--filter {
+            cursor: pointer;
+            transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+        }
+
+        .share-card-template--filter:hover,
+        .share-card-template--filter:focus-visible {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.12);
+            border-color: var(--color-primary);
+            outline: none;
+        }
+
+        .share-card-template--filter[aria-pressed="true"],
+        .share-card-template--filter.is-selected {
+            background: var(--color-primary);
+            border-color: var(--color-primary);
+            color: #fff;
+        }
+
+        .share-card-template--all {
+            background: #fff;
+        }
+
+        .superpower-checkbox-label {
+            display: contents;
+        }
+
+        .superpowers-checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            align-items: center;
+        }
+
         .share-helper {
             margin: 8px 0 0;
             color: var(--text-main);

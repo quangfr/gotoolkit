@@ -532,7 +532,7 @@ td .node-text.node-paragraph,
   border: 2px solid var(--app-primary, var(--color-primary));
   pointer-events: none;
   box-sizing: border-box;
-  z-index: 120;
+  z-index: 8;
   transition: none !important;
   will-change:
     top,
@@ -555,31 +555,6 @@ td .node-text.node-paragraph,
 .ProseMirror .table-col-numeric {
   text-align: right;
   font-variant-numeric: tabular-nums;
-}
-.ProseMirror .table-cell-pinned {
-  position: sticky;
-  z-index: 6;
-  background-clip: padding-box;
-  will-change: left;
-}
-.ProseMirror th.table-cell-pinned {
-  background: var(--bg-surface-soft);
-}
-.ProseMirror td.table-cell-pinned {
-  background: var(--bg-surface);
-}
-.ProseMirror .table-cell-pinned-divider {
-  z-index: 7;
-}
-.ProseMirror .table-cell-pinned-divider::after {
-  content: "";
-  position: absolute;
-  top: -1px;
-  bottom: -1px;
-  right: -2px;
-  width: 2px;
-  background: var(--border-strong);
-  pointer-events: none;
 }
 .table-context-menu {
   position: fixed;

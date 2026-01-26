@@ -27552,31 +27552,7 @@ img.ProseMirror-separator {
 
   // src/memo-editor/table-node.tsx
   var CustomTableCell = TableCell.extend({});
-  var TableNode = Table.extend({
-    addAttributes() {
-      var _a;
-      return {
-        ...(_a = this.parent) == null ? void 0 : _a.call(this),
-        pinnedColumns: {
-          default: [],
-          parseHTML: (element) => {
-            const raw = element.getAttribute("data-pinned-columns");
-            if (!raw) return [];
-            try {
-              const parsed = JSON.parse(raw);
-              return Array.isArray(parsed) ? parsed : [];
-            } catch (e) {
-              return [];
-            }
-          },
-          renderHTML: (attributes) => {
-            if (!attributes.pinnedColumns || !attributes.pinnedColumns.length) return {};
-            return { "data-pinned-columns": JSON.stringify(attributes.pinnedColumns) };
-          }
-        }
-      };
-    }
-  }).configure({
+  var TableNode = Table.extend({}).configure({
     resizable: true
   });
 
@@ -28213,34 +28189,19 @@ img.ProseMirror-separator {
   ];
   var Pencil = createLucideIcon("pencil", __iconNode28);
 
-  // node_modules/lucide-react/dist/esm/icons/pin.js
-  init_define_process_env();
-  init_polyfills();
-  var __iconNode29 = [
-    ["path", { d: "M12 17v5", key: "bb1du9" }],
-    [
-      "path",
-      {
-        d: "M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z",
-        key: "1nkz8b"
-      }
-    ]
-  ];
-  var Pin = createLucideIcon("pin", __iconNode29);
-
   // node_modules/lucide-react/dist/esm/icons/plus.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode30 = [
+  var __iconNode29 = [
     ["path", { d: "M5 12h14", key: "1ays0h" }],
     ["path", { d: "M12 5v14", key: "s699le" }]
   ];
-  var Plus = createLucideIcon("plus", __iconNode30);
+  var Plus = createLucideIcon("plus", __iconNode29);
 
   // node_modules/lucide-react/dist/esm/icons/quote.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode31 = [
+  var __iconNode30 = [
     [
       "path",
       {
@@ -28256,29 +28217,29 @@ img.ProseMirror-separator {
       }
     ]
   ];
-  var Quote = createLucideIcon("quote", __iconNode31);
+  var Quote = createLucideIcon("quote", __iconNode30);
 
   // node_modules/lucide-react/dist/esm/icons/rectangle-horizontal.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode32 = [
+  var __iconNode31 = [
     ["rect", { width: "20", height: "12", x: "2", y: "6", rx: "2", key: "9lu3g6" }]
   ];
-  var RectangleHorizontal = createLucideIcon("rectangle-horizontal", __iconNode32);
+  var RectangleHorizontal = createLucideIcon("rectangle-horizontal", __iconNode31);
 
   // node_modules/lucide-react/dist/esm/icons/redo-2.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode33 = [
+  var __iconNode32 = [
     ["path", { d: "m15 14 5-5-5-5", key: "12vg1m" }],
     ["path", { d: "M20 9H9.5A5.5 5.5 0 0 0 4 14.5A5.5 5.5 0 0 0 9.5 20H13", key: "6uklza" }]
   ];
-  var Redo2 = createLucideIcon("redo-2", __iconNode33);
+  var Redo2 = createLucideIcon("redo-2", __iconNode32);
 
   // node_modules/lucide-react/dist/esm/icons/send.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode34 = [
+  var __iconNode33 = [
     [
       "path",
       {
@@ -28288,12 +28249,12 @@ img.ProseMirror-separator {
     ],
     ["path", { d: "m21.854 2.147-10.94 10.939", key: "12cjpa" }]
   ];
-  var Send = createLucideIcon("send", __iconNode34);
+  var Send = createLucideIcon("send", __iconNode33);
 
   // node_modules/lucide-react/dist/esm/icons/shapes.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode35 = [
+  var __iconNode34 = [
     [
       "path",
       {
@@ -28304,72 +28265,72 @@ img.ProseMirror-separator {
     ["rect", { x: "3", y: "14", width: "7", height: "7", rx: "1", key: "1bkyp8" }],
     ["circle", { cx: "17.5", cy: "17.5", r: "3.5", key: "w3z12y" }]
   ];
-  var Shapes = createLucideIcon("shapes", __iconNode35);
+  var Shapes = createLucideIcon("shapes", __iconNode34);
 
   // node_modules/lucide-react/dist/esm/icons/square-check-big.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode36 = [
+  var __iconNode35 = [
     [
       "path",
       { d: "M21 10.656V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h12.344", key: "2acyp4" }
     ],
     ["path", { d: "m9 11 3 3L22 4", key: "1pflzl" }]
   ];
-  var SquareCheckBig = createLucideIcon("square-check-big", __iconNode36);
+  var SquareCheckBig = createLucideIcon("square-check-big", __iconNode35);
 
   // node_modules/lucide-react/dist/esm/icons/square-check.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode37 = [
+  var __iconNode36 = [
     ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }],
     ["path", { d: "m9 12 2 2 4-4", key: "dzmm74" }]
   ];
-  var SquareCheck = createLucideIcon("square-check", __iconNode37);
+  var SquareCheck = createLucideIcon("square-check", __iconNode36);
 
   // node_modules/lucide-react/dist/esm/icons/square-code.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode38 = [
+  var __iconNode37 = [
     ["path", { d: "m10 9-3 3 3 3", key: "1oro0q" }],
     ["path", { d: "m14 15 3-3-3-3", key: "bz13h7" }],
     ["rect", { x: "3", y: "3", width: "18", height: "18", rx: "2", key: "h1oib" }]
   ];
-  var SquareCode = createLucideIcon("square-code", __iconNode38);
+  var SquareCode = createLucideIcon("square-code", __iconNode37);
 
   // node_modules/lucide-react/dist/esm/icons/square.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode39 = [
+  var __iconNode38 = [
     ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }]
   ];
-  var Square = createLucideIcon("square", __iconNode39);
+  var Square = createLucideIcon("square", __iconNode38);
 
   // node_modules/lucide-react/dist/esm/icons/strikethrough.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode40 = [
+  var __iconNode39 = [
     ["path", { d: "M16 4H9a3 3 0 0 0-2.83 4", key: "43sutm" }],
     ["path", { d: "M14 12a4 4 0 0 1 0 8H6", key: "nlfj13" }],
     ["line", { x1: "4", x2: "20", y1: "12", y2: "12", key: "1e0a9i" }]
   ];
-  var Strikethrough = createLucideIcon("strikethrough", __iconNode40);
+  var Strikethrough = createLucideIcon("strikethrough", __iconNode39);
 
   // node_modules/lucide-react/dist/esm/icons/table.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode41 = [
+  var __iconNode40 = [
     ["path", { d: "M12 3v18", key: "108xh3" }],
     ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }],
     ["path", { d: "M3 9h18", key: "1pudct" }],
     ["path", { d: "M3 15h18", key: "5xshup" }]
   ];
-  var Table2 = createLucideIcon("table", __iconNode41);
+  var Table2 = createLucideIcon("table", __iconNode40);
 
   // node_modules/lucide-react/dist/esm/icons/tag.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode42 = [
+  var __iconNode41 = [
     [
       "path",
       {
@@ -28379,24 +28340,24 @@ img.ProseMirror-separator {
     ],
     ["circle", { cx: "7.5", cy: "7.5", r: ".5", fill: "currentColor", key: "kqv944" }]
   ];
-  var Tag = createLucideIcon("tag", __iconNode42);
+  var Tag = createLucideIcon("tag", __iconNode41);
 
   // node_modules/lucide-react/dist/esm/icons/trash-2.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode43 = [
+  var __iconNode42 = [
     ["path", { d: "M10 11v6", key: "nco0om" }],
     ["path", { d: "M14 11v6", key: "outv1u" }],
     ["path", { d: "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6", key: "miytrc" }],
     ["path", { d: "M3 6h18", key: "d0wm0j" }],
     ["path", { d: "M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2", key: "e791ji" }]
   ];
-  var Trash2 = createLucideIcon("trash-2", __iconNode43);
+  var Trash2 = createLucideIcon("trash-2", __iconNode42);
 
   // node_modules/lucide-react/dist/esm/icons/triangle-alert.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode44 = [
+  var __iconNode43 = [
     [
       "path",
       {
@@ -28407,54 +28368,54 @@ img.ProseMirror-separator {
     ["path", { d: "M12 9v4", key: "juzpu7" }],
     ["path", { d: "M12 17h.01", key: "p32p05" }]
   ];
-  var TriangleAlert = createLucideIcon("triangle-alert", __iconNode44);
+  var TriangleAlert = createLucideIcon("triangle-alert", __iconNode43);
 
   // node_modules/lucide-react/dist/esm/icons/type.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode45 = [
+  var __iconNode44 = [
     ["path", { d: "M12 4v16", key: "1654pz" }],
     ["path", { d: "M4 7V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2", key: "e0r10z" }],
     ["path", { d: "M9 20h6", key: "s66wpe" }]
   ];
-  var Type = createLucideIcon("type", __iconNode45);
+  var Type = createLucideIcon("type", __iconNode44);
 
   // node_modules/lucide-react/dist/esm/icons/underline.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode46 = [
+  var __iconNode45 = [
     ["path", { d: "M6 4v6a6 6 0 0 0 12 0V4", key: "9kb039" }],
     ["line", { x1: "4", x2: "20", y1: "20", y2: "20", key: "nun2al" }]
   ];
-  var Underline2 = createLucideIcon("underline", __iconNode46);
+  var Underline2 = createLucideIcon("underline", __iconNode45);
 
   // node_modules/lucide-react/dist/esm/icons/undo-2.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode47 = [
+  var __iconNode46 = [
     ["path", { d: "M9 14 4 9l5-5", key: "102s5s" }],
     ["path", { d: "M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11", key: "f3b9sd" }]
   ];
-  var Undo2 = createLucideIcon("undo-2", __iconNode47);
+  var Undo2 = createLucideIcon("undo-2", __iconNode46);
 
   // node_modules/lucide-react/dist/esm/icons/workflow.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode48 = [
+  var __iconNode47 = [
     ["rect", { width: "8", height: "8", x: "3", y: "3", rx: "2", key: "by2w9f" }],
     ["path", { d: "M7 11v4a2 2 0 0 0 2 2h4", key: "xkn7yn" }],
     ["rect", { width: "8", height: "8", x: "13", y: "13", rx: "2", key: "1cgmvn" }]
   ];
-  var Workflow = createLucideIcon("workflow", __iconNode48);
+  var Workflow = createLucideIcon("workflow", __iconNode47);
 
   // node_modules/lucide-react/dist/esm/icons/x.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode49 = [
+  var __iconNode48 = [
     ["path", { d: "M18 6 6 18", key: "1bl5f8" }],
     ["path", { d: "m6 6 12 12", key: "d8bk6v" }]
   ];
-  var X = createLucideIcon("x", __iconNode49);
+  var X = createLucideIcon("x", __iconNode48);
 
   // src/memo-editor/docx-export.ts
   init_define_process_env();
@@ -53225,25 +53186,6 @@ ${promptInput.trim()}`
     if (!trimmed) return false;
     return /[0-9]/.test(trimmed) && /^[\s\d.,%+\-]+$/.test(trimmed);
   };
-  var normalizePinnedColumns = (list2, colCount) => {
-    const unique = Array.from(new Set((list2 || []).filter((index) => Number.isFinite(index))));
-    return unique.map((index) => Math.max(0, Math.min(colCount - 1, index))).filter((index) => index >= 0 && index < colCount).sort((a, b) => a - b);
-  };
-  var adjustPinnedOnMove = (list2, from2, to) => {
-    const next2 = (list2 || []).map((index) => {
-      if (index === from2) return to;
-      if (from2 < to && index > from2 && index <= to) return index - 1;
-      if (from2 > to && index >= to && index < from2) return index + 1;
-      return index;
-    });
-    return Array.from(new Set(next2)).sort((a, b) => a - b);
-  };
-  var adjustPinnedOnInsert = (list2, index) => {
-    return (list2 || []).map((value) => value >= index ? value + 1 : value);
-  };
-  var adjustPinnedOnDelete = (list2, index) => {
-    return (list2 || []).filter((value) => value !== index).map((value) => value > index ? value - 1 : value);
-  };
   var areNumberArraysEqual = (a, b) => {
     if (!a && !b) return true;
     if (!a || !b) return false;
@@ -53252,18 +53194,6 @@ ${promptInput.trim()}`
       if (a[i] !== b[i]) return false;
     }
     return true;
-  };
-  var syncPinnedColumns = (editor, tablePos, nextPinned) => {
-    var _a;
-    const table = editor.state.doc.nodeAt(tablePos);
-    if (!table) return;
-    if (areNumberArraysEqual(((_a = table.attrs) == null ? void 0 : _a.pinnedColumns) || [], nextPinned)) return;
-    editor.view.dispatch(
-      editor.state.tr.setNodeMarkup(tablePos, void 0, {
-        ...table.attrs,
-        pinnedColumns: nextPinned
-      })
-    );
   };
   var moveRow = (editor, tablePos, fromRowIndex, toRowIndex) => {
     const { tr: tr2 } = editor.state;
@@ -53285,11 +53215,9 @@ ${promptInput.trim()}`
     return true;
   };
   var moveColumn = (editor, tablePos, fromColIndex, toColIndex) => {
-    var _a;
     const { tr: tr2 } = editor.state;
     const table = editor.state.doc.nodeAt(tablePos);
     if (!table || table.type.name !== "table") return false;
-    const pinnedColumns = Array.isArray((_a = table.attrs) == null ? void 0 : _a.pinnedColumns) ? table.attrs.pinnedColumns : [];
     const newRows = [];
     table.forEach((row) => {
       const cells = [];
@@ -53300,8 +53228,7 @@ ${promptInput.trim()}`
       }
       newRows.push(row.type.create(row.attrs, cells));
     });
-    const nextPinned = adjustPinnedOnMove(pinnedColumns, fromColIndex, toColIndex);
-    const newTable = table.type.create({ ...table.attrs, pinnedColumns: nextPinned }, newRows);
+    const newTable = table.type.create(table.attrs, newRows);
     editor.view.dispatch(tr2.replaceWith(tablePos, tablePos + table.nodeSize, newTable));
     return true;
   };
@@ -54660,36 +54587,17 @@ ${promptInput.trim()}`
         }
       }
     });
-    const applyTableDomStyles = react_shim_default.useCallback((tableDom, widths, numericColumns, pinnedColumns) => {
-      const pinned = normalizePinnedColumns(pinnedColumns, widths.length);
-      const pinnedSet = new Set(pinned);
-      const pinnedOffsets = {};
-      let offset3 = 0;
-      pinned.forEach((colIndex) => {
-        pinnedOffsets[colIndex] = offset3;
-        offset3 += widths[colIndex] || TABLE_COLUMN_MIN_WIDTH;
-      });
-      const lastPinnedIndex = pinned.length ? pinned[pinned.length - 1] : -1;
-      tableDom.classList.toggle("table-has-pinned", pinned.length > 0);
+    const applyTableDomStyles = react_shim_default.useCallback((tableDom, numericColumns) => {
       Array.from(tableDom.querySelectorAll("tr")).forEach((row) => {
         let colIndex = 0;
         Array.from(row.querySelectorAll("th, td")).forEach((cell2) => {
           const span = cell2.colSpan || 1;
           const spanIndices = Array.from({ length: span }, (_v, i) => colIndex + i);
           const isNumeric = spanIndices.every((idx) => numericColumns[idx]);
-          const isPinned = spanIndices.every((idx) => pinnedSet.has(idx));
-          const isDivider = isPinned && spanIndices[spanIndices.length - 1] === lastPinnedIndex;
           cell2.classList.toggle("table-col-numeric", isNumeric);
-          cell2.classList.toggle("table-cell-pinned", isPinned);
-          cell2.classList.toggle("table-cell-pinned-divider", isDivider);
-          if (isPinned) {
-            const left = pinnedOffsets[colIndex] || 0;
-            cell2.style.left = `${left}px`;
-            cell2.style.zIndex = "3";
-          } else {
-            cell2.style.left = "";
-            cell2.style.zIndex = "";
-          }
+          cell2.classList.remove("table-cell-pinned", "table-cell-pinned-divider");
+          cell2.style.left = "";
+          cell2.style.zIndex = "";
           colIndex += span;
         });
       });
@@ -54699,6 +54607,8 @@ ${promptInput.trim()}`
       editor.view.dom.querySelectorAll(".tableWrapper").forEach((wrapper) => {
         const table = wrapper.querySelector("table");
         if (!table) return;
+        wrapper.removeAttribute("data-pinned-width");
+        wrapper.style.removeProperty("--table-pinned-width");
         let scrollbar = wrapper.querySelector(".table-scrollbar");
         if (!scrollbar) {
           scrollbar = document.createElement("div");
@@ -54738,7 +54648,6 @@ ${promptInput.trim()}`
       let tr2 = editor.state.tr;
       let modified = false;
       tables2.forEach((tableDom) => {
-        var _a2, _b2;
         const pos = view.posAtDOM(tableDom, 0);
         if (pos == null) return;
         const $pos = view.state.doc.resolve(pos);
@@ -54815,15 +54724,6 @@ ${promptInput.trim()}`
         if (availableWidth) {
           tableDom.style.width = totalWidth > availableWidth ? `${totalWidth}px` : "100%";
         }
-        const pinnedColumns = normalizePinnedColumns(((_a2 = tableNode.attrs) == null ? void 0 : _a2.pinnedColumns) || [], widths.length);
-        if (!areNumberArraysEqual(((_b2 = tableNode.attrs) == null ? void 0 : _b2.pinnedColumns) || [], pinnedColumns)) {
-          const mappedTablePos = tr2.mapping.map(tablePos);
-          tr2 = tr2.setNodeMarkup(mappedTablePos, void 0, {
-            ...tableNode.attrs,
-            pinnedColumns
-          });
-          modified = true;
-        }
         let handledFirstRow = false;
         tableNode.forEach((row, rowOffset) => {
           if (handledFirstRow || row.type.name !== "tableRow") return;
@@ -54844,7 +54744,7 @@ ${promptInput.trim()}`
           });
           handledFirstRow = true;
         });
-        applyTableDomStyles(tableDom, widths, numericColumns, pinnedColumns);
+        applyTableDomStyles(tableDom, numericColumns);
       });
       if (modified) {
         isAutoLayoutRef.current = true;
@@ -56894,7 +56794,6 @@ ${innerMarkdown}
                     {
                       className: "table-context-menu-item",
                       onClick: () => {
-                        var _a2;
                         const { type: type2, index, tablePos } = tableContextMenu;
                         const table = editor.state.doc.nodeAt(tablePos);
                         if (table) {
@@ -56913,19 +56812,6 @@ ${innerMarkdown}
                             editor.chain().addRowBefore().run();
                           } else {
                             editor.chain().addColumnBefore().run();
-                            const updatedTable = editor.state.doc.nodeAt(tablePos);
-                            if (updatedTable) {
-                              const currentPinned = Array.isArray((_a2 = updatedTable.attrs) == null ? void 0 : _a2.pinnedColumns) ? updatedTable.attrs.pinnedColumns : [];
-                              const nextPinned = adjustPinnedOnInsert(currentPinned, index);
-                              if (!areNumberArraysEqual(currentPinned, nextPinned)) {
-                                editor.view.dispatch(
-                                  editor.state.tr.setNodeMarkup(tablePos, void 0, {
-                                    ...updatedTable.attrs,
-                                    pinnedColumns: nextPinned
-                                  })
-                                );
-                              }
-                            }
                           }
                         }
                         setTableContextMenu(null);
@@ -56941,7 +56827,6 @@ ${innerMarkdown}
                     {
                       className: "table-context-menu-item",
                       onClick: () => {
-                        var _a2;
                         const { type: type2, index, tablePos } = tableContextMenu;
                         const table = editor.state.doc.nodeAt(tablePos);
                         if (table) {
@@ -56960,19 +56845,6 @@ ${innerMarkdown}
                             editor.chain().deleteRow().run();
                           } else {
                             editor.chain().deleteColumn().run();
-                            const updatedTable = editor.state.doc.nodeAt(tablePos);
-                            if (updatedTable) {
-                              const currentPinned = Array.isArray((_a2 = updatedTable.attrs) == null ? void 0 : _a2.pinnedColumns) ? updatedTable.attrs.pinnedColumns : [];
-                              const nextPinned = adjustPinnedOnDelete(currentPinned, index);
-                              if (!areNumberArraysEqual(currentPinned, nextPinned)) {
-                                editor.view.dispatch(
-                                  editor.state.tr.setNodeMarkup(tablePos, void 0, {
-                                    ...updatedTable.attrs,
-                                    pinnedColumns: nextPinned
-                                  })
-                                );
-                              }
-                            }
                           }
                         }
                         setTableContextMenu(null);
@@ -56984,59 +56856,6 @@ ${innerMarkdown}
                     }
                   ),
                   tableContextMenu.type === "col" && /* @__PURE__ */ jsxs(Fragment3, { children: [
-                    /* @__PURE__ */ jsx("div", { className: "table-context-menu-divider" }),
-                    /* @__PURE__ */ jsxs(
-                      "div",
-                      {
-                        className: "table-context-menu-item",
-                        onClick: () => {
-                          var _a2;
-                          const { tablePos, index } = tableContextMenu;
-                          const table = editor.state.doc.nodeAt(tablePos);
-                          if (!table) return;
-                          const colCount = getTableColumnCount(table);
-                          const currentPinned = normalizePinnedColumns(((_a2 = table.attrs) == null ? void 0 : _a2.pinnedColumns) || [], colCount);
-                          const isPinned = currentPinned.includes(index);
-                          const pinnedCount = currentPinned.length;
-                          if (!isPinned) {
-                            const targetIndex = Math.min(pinnedCount, colCount - 1);
-                            if (index !== targetIndex) {
-                              moveColumn(editor, tablePos, index, targetIndex);
-                            }
-                            const updatedTable = editor.state.doc.nodeAt(tablePos);
-                            const nextPinned = normalizePinnedColumns(
-                              [...currentPinned, targetIndex],
-                              getTableColumnCount(updatedTable)
-                            );
-                            syncPinnedColumns(editor, tablePos, nextPinned);
-                          } else {
-                            const nextPinned = currentPinned.filter((col) => col !== index);
-                            if (index < pinnedCount) {
-                              const targetIndex = Math.min(nextPinned.length, colCount - 1);
-                              if (index !== targetIndex) {
-                                moveColumn(editor, tablePos, index, targetIndex);
-                              }
-                            }
-                            const updatedTable = editor.state.doc.nodeAt(tablePos);
-                            const normalizedNext = normalizePinnedColumns(
-                              nextPinned,
-                              getTableColumnCount(updatedTable)
-                            );
-                            syncPinnedColumns(editor, tablePos, normalizedNext);
-                          }
-                          setTableContextMenu(null);
-                        },
-                        children: [
-                          /* @__PURE__ */ jsx(Pin, { size: 14, style: { marginRight: 8 } }),
-                          (() => {
-                            var _a2, _b2;
-                            const table = editor.state.doc.nodeAt(tableContextMenu.tablePos);
-                            const pinned = Array.isArray((_a2 = table == null ? void 0 : table.attrs) == null ? void 0 : _a2.pinnedColumns) ? (_b2 = table == null ? void 0 : table.attrs) == null ? void 0 : _b2.pinnedColumns : [];
-                            return pinned.includes(tableContextMenu.index) ? "D\xE9s\xE9pingler" : "\xC9pingler";
-                          })()
-                        ]
-                      }
-                    ),
                     /* @__PURE__ */ jsxs(
                       "div",
                       {
@@ -57328,7 +57147,6 @@ lucide-react/dist/esm/icons/link.js:
 lucide-react/dist/esm/icons/list.js:
 lucide-react/dist/esm/icons/loader-circle.js:
 lucide-react/dist/esm/icons/pencil.js:
-lucide-react/dist/esm/icons/pin.js:
 lucide-react/dist/esm/icons/plus.js:
 lucide-react/dist/esm/icons/quote.js:
 lucide-react/dist/esm/icons/rectangle-horizontal.js:

@@ -320,6 +320,15 @@
         const modalInput = modalOverlay.querySelector("#document-explorer-name-input");
         const modalDescInput = modalOverlay.querySelector("#document-explorer-description-input");
         const ownerTokenInput = modalOverlay.querySelector("#ownerToken");
+        function normalizeOwnerTokenInput(value) {
+            return String(value || "")
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, "-")
+                .replace(/^-+|-+$/g, "")
+                .trim();
+        }
         let modalResolver = null;
         let modalAllowPublish = false;
 
@@ -344,7 +353,11 @@
         function syncOwnerTokenFromStorage() {
             if (!ownerTokenInput) return;
             const stored = localStorage.getItem("feedback-admin-token") || "";
-            if (!ownerTokenInput.value && stored) ownerTokenInput.value = stored;
+            const normalized = normalizeOwnerTokenInput(stored);
+            if (!ownerTokenInput.value && normalized) ownerTokenInput.value = normalized;
+            if (normalized && stored !== normalized) {
+                localStorage.setItem("feedback-admin-token", normalized);
+            }
         }
 
         function updatePublishVisibility() {
@@ -431,24 +444,26 @@
             });
         });
         ownerTokenInput?.addEventListener("input", () => {
-            localStorage.setItem("feedback-admin-token", (ownerTokenInput.value || "").trim());
+            const normalized = normalizeOwnerTokenInput(ownerTokenInput.value || "");
+            if (ownerTokenInput.value !== normalized) ownerTokenInput.value = normalized;
+            if (normalized) {
+                localStorage.setItem("feedback-admin-token", normalized);
+            } else {
+                localStorage.removeItem("feedback-admin-token");
+            }
         });
         ownerTokenInput?.addEventListener("blur", () => {
-            localStorage.setItem("feedback-admin-token", (ownerTokenInput.value || "").trim());
+            const normalized = normalizeOwnerTokenInput(ownerTokenInput.value || "");
+            if (ownerTokenInput.value !== normalized) ownerTokenInput.value = normalized;
+            if (normalized) {
+                localStorage.setItem("feedback-admin-token", normalized);
+            } else {
+                localStorage.removeItem("feedback-admin-token");
+            }
             updatePublishVisibility();
         });
         modalEl?.addEventListener("click", event => {
             event.stopPropagation();
-        });
-        modalOverlay.addEventListener("mousedown", event => {
-            if (event.target === modalOverlay) {
-                resolveModal(null);
-            }
-        });
-        modalOverlay.addEventListener("click", event => {
-            if (event.target === modalOverlay) {
-                resolveModal(null);
-            }
         });
 
         modalInput?.addEventListener("keydown", event => {

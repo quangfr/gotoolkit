@@ -4,8 +4,11 @@
     let cloudTemplates = [];
     let superpowersMap = [];
     let selectedOwnerToken = "";
+    let hasInitializedOwnerFilter = false;
+    let selectedSuperpowerIds = [];
 
     const ownerTokenFilters = document.getElementById("templateOwnerFilters");
+    const templateSuperpowerList = document.getElementById("gtTemplateSuperpowerList");
     const templateGalleryNav = document.getElementById("templateGalleryNav");
 
     function initGalleryNav(wrapper, listEl, itemSelector) {
@@ -58,7 +61,23 @@
     }
 
     function normalizeOwnerToken(value) {
-        return String(value || "").trim();
+        return String(value || "")
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-+|-+$/g, "")
+            .trim();
+    }
+
+    function formatOwnerTokenLabel(token) {
+        const value = String(token || "").trim();
+        if (!value) return "";
+        return value
+            .split("-")
+            .filter(Boolean)
+            .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+            .join(" ");
     }
 
     function buildOwnerTokenOrder(tokens) {
@@ -86,16 +105,37 @@
             counts.set(token, (counts.get(token) || 0) + 1);
         });
         const orderedTokens = buildOwnerTokenOrder(Array.from(counts.keys()));
+        if (!hasInitializedOwnerFilter) {
+            if (counts.has("golive")) {
+                selectedOwnerToken = "golive";
+            }
+            hasInitializedOwnerFilter = true;
+        }
 
         ownerTokenFilters.innerHTML = "";
+        const allFilter = document.createElement("button");
+        allFilter.type = "button";
+        allFilter.className = "share-card-template share-card-template--filter share-card-template--all";
+        const allSelected = !selectedOwnerToken;
+        allFilter.setAttribute("aria-pressed", allSelected ? "true" : "false");
+        allFilter.classList.toggle("is-selected", allSelected);
+        allFilter.innerHTML = `<i data-lucide="user" style="width:12px;height:12px;margin-right:6px;vertical-align:middle;"></i>Tout`;
+        allFilter.addEventListener("click", () => {
+            selectedOwnerToken = "";
+            renderTemplateGallery(true);
+        });
+        ownerTokenFilters.appendChild(allFilter);
         orderedTokens.forEach(token => {
             if (!token) return;
             const count = counts.get(token) || 0;
             const filter = document.createElement("button");
             filter.type = "button";
-            filter.className = "share-card-template";
-            filter.setAttribute("aria-pressed", token === selectedOwnerToken ? "true" : "false");
-            filter.innerHTML = `<i data-lucide="user" style="width:12px;height:12px;margin-right:6px;vertical-align:middle;"></i>${escapeHtml(token)}${count ? ` (${count})` : ""}`;
+            filter.className = "share-card-template share-card-template--filter";
+            const isSelected = token === selectedOwnerToken;
+            filter.setAttribute("aria-pressed", isSelected ? "true" : "false");
+            filter.classList.toggle("is-selected", isSelected);
+            const displayToken = formatOwnerTokenLabel(token);
+            filter.innerHTML = `<i data-lucide="user" style="width:12px;height:12px;margin-right:6px;vertical-align:middle;"></i>${escapeHtml(displayToken || token)}${count ? ` (${count})` : ""}`;
             filter.addEventListener("click", () => {
                 selectedOwnerToken = selectedOwnerToken === token ? "" : token;
                 renderTemplateGallery(true);
@@ -105,8 +145,59 @@
         if (window.lucide) window.lucide.createIcons();
     }
 
+    function renderSuperpowerFilters(templates) {
+        if (!templateSuperpowerList) return;
+        const stats = new Map();
+        (templates || []).forEach(template => {
+            const sps = template.superpowers || [];
+            sps.forEach(spId => {
+                const id = parseInt(spId, 10);
+                if (!Number.isFinite(id)) return;
+                stats.set(id, (stats.get(id) || 0) + 1);
+            });
+        });
+
+        templateSuperpowerList.innerHTML = "";
+        if (!superpowersMap.length) return;
+
+        superpowersMap.forEach(sp => {
+            const count = stats.get(parseInt(sp.id, 10)) || 0;
+            if (!count) return;
+
+            const spId = parseInt(sp.id, 10);
+            const isChecked = selectedSuperpowerIds.includes(spId);
+            const label = document.createElement("label");
+            label.className = "superpower-checkbox-label";
+            label.innerHTML = `
+                <input type="checkbox" value="${spId}" ${isChecked ? "checked" : ""} style="display:none;">
+                <span class="superpower-pill ${isChecked ? "active" : ""}">
+                    <i data-lucide="${sp.icon || "zap"}" style="width:12px;height:12px;"></i>
+                    ${escapeHtml(sp.title)} (${count})
+                </span>
+            `;
+            const input = label.querySelector("input");
+            input.addEventListener("change", () => {
+                const value = parseInt(input.value, 10);
+                if (input.checked) {
+                    if (!selectedSuperpowerIds.includes(value)) {
+                        selectedSuperpowerIds.push(value);
+                    }
+                } else {
+                    selectedSuperpowerIds = selectedSuperpowerIds.filter(v => v !== value);
+                }
+                renderTemplateGallery();
+            });
+            templateSuperpowerList.appendChild(label);
+        });
+        if (window.lucide) window.lucide.createIcons();
+    }
+
+    function getAdminToken() {
+        return normalizeOwnerToken(localStorage.getItem("feedback-admin-token") || "");
+    }
+
     function isAdmin() {
-        const token = (localStorage.getItem("feedback-admin-token") || "").trim();
+        const token = getAdminToken();
         return token.length > 0;
     }
 
@@ -238,9 +329,18 @@
             return parseTemplateUpdatedAt(b.updatedAt) - parseTemplateUpdatedAt(a.updatedAt);
         });
         renderOwnerTokenFilters(sorted);
-        const toShow = selectedOwnerToken
+        const ownerFiltered = selectedOwnerToken
             ? sorted.filter(template => normalizeOwnerToken(template.ownerToken) === selectedOwnerToken)
             : sorted;
+        renderSuperpowerFilters(ownerFiltered);
+        const toShow = ownerFiltered.filter(template => {
+            const matchesSuperpowers = selectedSuperpowerIds.length === 0
+                || (template.superpowers && template.superpowers.some(spId => {
+                    const value = parseInt(spId, 10);
+                    return selectedSuperpowerIds.includes(value);
+                }));
+            return matchesSuperpowers;
+        });
         if (!toShow.length) {
             gallery.innerHTML = '<div style="padding: 20px; text-align: center; grid-column: 1 / -1; opacity: 0.7;">Aucun modèle disponible.</div>';
             hideGalleryNav(templateGalleryNav);
@@ -248,7 +348,8 @@
         }
 
         gallery.innerHTML = "";
-        const userIsAdmin = isAdmin();
+        const adminToken = getAdminToken();
+        const userIsAdmin = Boolean(adminToken);
 
         toShow.forEach(template => {
             const btn = document.createElement("button");
@@ -278,7 +379,10 @@
                 <div class="gt-template-card__meta">${escapeHtml(updatedLabel)}</div>
             `;
 
-            if (userIsAdmin) {
+            const templateOwnerToken = normalizeOwnerToken(template.ownerToken);
+            const canDeleteTemplate = userIsAdmin && adminToken && (adminToken === "golive" || templateOwnerToken === adminToken);
+
+            if (canDeleteTemplate) {
                 const deleteBtn = document.createElement("button");
                 deleteBtn.type = "button";
                 deleteBtn.className = "share-card-action share-card-delete";

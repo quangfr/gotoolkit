@@ -52,7 +52,7 @@ import {
   CheckSquare,
   Pencil, Copy, Image as ImageIcon,
   Square, RectangleHorizontal, Tag,
-  ArrowDownAZ, ArrowUpAZ, Pin
+  ArrowDownAZ, ArrowUpAZ
 } from 'lucide-react';
 
 
@@ -956,6 +956,7 @@ const getTableCellPosByIndex = (table: PMNode, tablePos: number, rowIndex: numbe
   return targetPos;
 };
 
+
 const TABLE_COLUMN_MIN_WIDTH = 120;
 const TABLE_COLUMN_MAX_WIDTH = 500;
 
@@ -969,32 +970,6 @@ const isNumericText = (value: string) => {
   return /[0-9]/.test(trimmed) && /^[\s\d.,%+\-]+$/.test(trimmed);
 };
 
-const normalizePinnedColumns = (list: number[], colCount: number) => {
-  const unique = Array.from(new Set((list || []).filter(index => Number.isFinite(index))));
-  return unique
-    .map(index => Math.max(0, Math.min(colCount - 1, index)))
-    .filter(index => index >= 0 && index < colCount)
-    .sort((a, b) => a - b);
-};
-
-const adjustPinnedOnMove = (list: number[], from: number, to: number) => {
-  const next = (list || []).map(index => {
-    if (index === from) return to;
-    if (from < to && index > from && index <= to) return index - 1;
-    if (from > to && index >= to && index < from) return index + 1;
-    return index;
-  });
-  return Array.from(new Set(next)).sort((a, b) => a - b);
-};
-
-const adjustPinnedOnInsert = (list: number[], index: number) => {
-  return (list || []).map(value => (value >= index ? value + 1 : value));
-};
-
-const adjustPinnedOnDelete = (list: number[], index: number) => {
-  return (list || []).filter(value => value !== index).map(value => (value > index ? value - 1 : value));
-};
-
 const areNumberArraysEqual = (a?: number[], b?: number[]) => {
   if (!a && !b) return true;
   if (!a || !b) return false;
@@ -1003,18 +978,6 @@ const areNumberArraysEqual = (a?: number[], b?: number[]) => {
     if (a[i] !== b[i]) return false;
   }
   return true;
-};
-
-const syncPinnedColumns = (editor: Editor, tablePos: number, nextPinned: number[]) => {
-  const table = editor.state.doc.nodeAt(tablePos);
-  if (!table) return;
-  if (areNumberArraysEqual(table.attrs?.pinnedColumns || [], nextPinned)) return;
-  editor.view.dispatch(
-    editor.state.tr.setNodeMarkup(tablePos, undefined, {
-      ...table.attrs,
-      pinnedColumns: nextPinned
-    })
-  );
 };
 
 const moveRow = (editor: Editor, tablePos: number, fromRowIndex: number, toRowIndex: number) => {
@@ -1045,7 +1008,6 @@ const moveColumn = (editor: Editor, tablePos: number, fromColIndex: number, toCo
   const { tr } = editor.state;
   const table = editor.state.doc.nodeAt(tablePos);
   if (!table || table.type.name !== 'table') return false;
-  const pinnedColumns = Array.isArray(table.attrs?.pinnedColumns) ? table.attrs.pinnedColumns : [];
 
   const newRows: PMNode[] = [];
   table.forEach((row: PMNode) => {
@@ -1059,8 +1021,7 @@ const moveColumn = (editor: Editor, tablePos: number, fromColIndex: number, toCo
     newRows.push(row.type.create(row.attrs, cells));
   });
 
-  const nextPinned = adjustPinnedOnMove(pinnedColumns, fromColIndex, toColIndex);
-  const newTable = table.type.create({ ...table.attrs, pinnedColumns: nextPinned }, newRows);
+  const newTable = table.type.create(table.attrs, newRows);
   editor.view.dispatch(tr.replaceWith(tablePos, tablePos + table.nodeSize, newTable));
   return true;
 };
@@ -2673,43 +2634,19 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
 
   const applyTableDomStyles = React.useCallback((
     tableDom: HTMLTableElement,
-    widths: number[],
-    numericColumns: boolean[],
-    pinnedColumns: number[]
+    numericColumns: boolean[]
   ) => {
-    const pinned = normalizePinnedColumns(pinnedColumns, widths.length);
-    const pinnedSet = new Set(pinned);
-    const pinnedOffsets: Record<number, number> = {};
-    let offset = 0;
-    pinned.forEach((colIndex) => {
-      pinnedOffsets[colIndex] = offset;
-      offset += widths[colIndex] || TABLE_COLUMN_MIN_WIDTH;
-    });
-    const lastPinnedIndex = pinned.length ? pinned[pinned.length - 1] : -1;
-
-    tableDom.classList.toggle('table-has-pinned', pinned.length > 0);
-
     Array.from(tableDom.querySelectorAll('tr')).forEach((row) => {
       let colIndex = 0;
       Array.from(row.querySelectorAll('th, td')).forEach((cell) => {
         const span = cell.colSpan || 1;
         const spanIndices = Array.from({ length: span }, (_v, i) => colIndex + i);
         const isNumeric = spanIndices.every(idx => numericColumns[idx]);
-        const isPinned = spanIndices.every(idx => pinnedSet.has(idx));
-        const isDivider = isPinned && spanIndices[spanIndices.length - 1] === lastPinnedIndex;
 
         cell.classList.toggle('table-col-numeric', isNumeric);
-        cell.classList.toggle('table-cell-pinned', isPinned);
-        cell.classList.toggle('table-cell-pinned-divider', isDivider);
-
-        if (isPinned) {
-          const left = pinnedOffsets[colIndex] || 0;
-          (cell as HTMLElement).style.left = `${left}px`;
-          (cell as HTMLElement).style.zIndex = '3';
-        } else {
-          (cell as HTMLElement).style.left = '';
-          (cell as HTMLElement).style.zIndex = '';
-        }
+        cell.classList.remove('table-cell-pinned', 'table-cell-pinned-divider');
+        (cell as HTMLElement).style.left = '';
+        (cell as HTMLElement).style.zIndex = '';
 
         colIndex += span;
       });
@@ -2721,6 +2658,8 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     editor.view.dom.querySelectorAll('.tableWrapper').forEach((wrapper) => {
       const table = wrapper.querySelector('table') as HTMLTableElement | null;
       if (!table) return;
+      wrapper.removeAttribute('data-pinned-width');
+      wrapper.style.removeProperty('--table-pinned-width');
       let scrollbar = wrapper.querySelector('.table-scrollbar') as HTMLDivElement | null;
       if (!scrollbar) {
         scrollbar = document.createElement('div');
@@ -2856,16 +2795,6 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         tableDom.style.width = totalWidth > availableWidth ? `${totalWidth}px` : "100%";
       }
 
-      const pinnedColumns = normalizePinnedColumns(tableNode.attrs?.pinnedColumns || [], widths.length);
-      if (!areNumberArraysEqual(tableNode.attrs?.pinnedColumns || [], pinnedColumns)) {
-        const mappedTablePos = tr.mapping.map(tablePos);
-        tr = tr.setNodeMarkup(mappedTablePos, undefined, {
-          ...tableNode.attrs,
-          pinnedColumns
-        });
-        modified = true;
-      }
-
       let handledFirstRow = false;
       tableNode.forEach((row, rowOffset) => {
         if (handledFirstRow || row.type.name !== 'tableRow') return;
@@ -2887,7 +2816,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         handledFirstRow = true;
       });
 
-      applyTableDomStyles(tableDom, widths, numericColumns, pinnedColumns);
+      applyTableDomStyles(tableDom, numericColumns);
     });
 
     if (modified) {
@@ -5251,21 +5180,6 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
                     editor.chain().addRowBefore().run();
                   } else {
                     editor.chain().addColumnBefore().run();
-                    const updatedTable = editor.state.doc.nodeAt(tablePos);
-                    if (updatedTable) {
-                      const currentPinned = Array.isArray(updatedTable.attrs?.pinnedColumns)
-                        ? updatedTable.attrs.pinnedColumns
-                        : [];
-                      const nextPinned = adjustPinnedOnInsert(currentPinned, index);
-                      if (!areNumberArraysEqual(currentPinned, nextPinned)) {
-                        editor.view.dispatch(
-                          editor.state.tr.setNodeMarkup(tablePos, undefined, {
-                            ...updatedTable.attrs,
-                            pinnedColumns: nextPinned
-                          })
-                        );
-                      }
-                    }
                   }
                 }
                 setTableContextMenu(null);
@@ -5295,21 +5209,6 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
                     editor.chain().deleteRow().run();
                   } else {
                     editor.chain().deleteColumn().run();
-                    const updatedTable = editor.state.doc.nodeAt(tablePos);
-                    if (updatedTable) {
-                      const currentPinned = Array.isArray(updatedTable.attrs?.pinnedColumns)
-                        ? updatedTable.attrs.pinnedColumns
-                        : [];
-                      const nextPinned = adjustPinnedOnDelete(currentPinned, index);
-                      if (!areNumberArraysEqual(currentPinned, nextPinned)) {
-                        editor.view.dispatch(
-                          editor.state.tr.setNodeMarkup(tablePos, undefined, {
-                            ...updatedTable.attrs,
-                            pinnedColumns: nextPinned
-                          })
-                        );
-                      }
-                    }
                   }
                 }
                 setTableContextMenu(null);
@@ -5320,57 +5219,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
             </div>
             {tableContextMenu.type === 'col' && (
               <>
-                <div className="table-context-menu-divider" />
                 <div
-                  className="table-context-menu-item"
-                  onClick={() => {
-                    const { tablePos, index } = tableContextMenu;
-                    const table = editor.state.doc.nodeAt(tablePos);
-                    if (!table) return;
-                    const colCount = getTableColumnCount(table);
-                    const currentPinned = normalizePinnedColumns(table.attrs?.pinnedColumns || [], colCount);
-                    const isPinned = currentPinned.includes(index);
-                    const pinnedCount = currentPinned.length;
-
-                    if (!isPinned) {
-                      const targetIndex = Math.min(pinnedCount, colCount - 1);
-                      if (index !== targetIndex) {
-                        moveColumn(editor, tablePos, index, targetIndex);
-                      }
-                      const updatedTable = editor.state.doc.nodeAt(tablePos);
-                      const nextPinned = normalizePinnedColumns(
-                        [...currentPinned, targetIndex],
-                        getTableColumnCount(updatedTable)
-                      );
-                      syncPinnedColumns(editor, tablePos, nextPinned);
-                    } else {
-                      const nextPinned = currentPinned.filter(col => col !== index);
-                      if (index < pinnedCount) {
-                        const targetIndex = Math.min(nextPinned.length, colCount - 1);
-                        if (index !== targetIndex) {
-                          moveColumn(editor, tablePos, index, targetIndex);
-                        }
-                      }
-                      const updatedTable = editor.state.doc.nodeAt(tablePos);
-                      const normalizedNext = normalizePinnedColumns(
-                        nextPinned,
-                        getTableColumnCount(updatedTable)
-                      );
-                      syncPinnedColumns(editor, tablePos, normalizedNext);
-                    }
-                    setTableContextMenu(null);
-                  }}
-                >
-                  <Pin size={14} style={{ marginRight: 8 }} />
-                  {(() => {
-                    const table = editor.state.doc.nodeAt(tableContextMenu.tablePos);
-                    const pinned = Array.isArray(table?.attrs?.pinnedColumns)
-                      ? table?.attrs?.pinnedColumns
-                      : [];
-                    return pinned.includes(tableContextMenu.index) ? 'Désépingler' : 'Épingler';
-                  })()}
-                </div>
-                <div 
                   className="table-context-menu-item"
                   onClick={() => {
                     sortColumn(editor, tableContextMenu.tablePos, tableContextMenu.index, 'asc');
@@ -5380,7 +5229,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
                   <ArrowDownAZ size={14} style={{ marginRight: 8 }} />
                   Trier a-z
                 </div>
-                <div 
+                <div
                   className="table-context-menu-item"
                   onClick={() => {
                     sortColumn(editor, tableContextMenu.tablePos, tableContextMenu.index, 'desc');
