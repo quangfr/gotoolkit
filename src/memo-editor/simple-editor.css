@@ -430,7 +430,7 @@ td .node-text.node-paragraph,
   width: max-content;
   min-width: 100%;
   margin: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .ProseMirror td,
@@ -641,7 +641,9 @@ td .node-text.node-paragraph,
 
 .ProseMirror .table-cell-pinned {
   position: sticky;
-  z-index: 3;
+  z-index: 6;
+  background-clip: padding-box;
+  will-change: left;
 }
 
 .ProseMirror th.table-cell-pinned {
@@ -653,7 +655,18 @@ td .node-text.node-paragraph,
 }
 
 .ProseMirror .table-cell-pinned-divider {
-  box-shadow: 2px 0 0 var(--border-strong);
+  z-index: 7;
+}
+
+.ProseMirror .table-cell-pinned-divider::after {
+  content: "";
+  position: absolute;
+  top: -1px;
+  bottom: -1px;
+  right: -2px;
+  width: 2px;
+  background: var(--border-strong);
+  pointer-events: none;
 }
 
 /* Table context menu */

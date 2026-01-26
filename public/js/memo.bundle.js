@@ -54345,7 +54345,6 @@ ${promptInput.trim()}`
           if (!info) return false;
           const selection = view.state.selection;
           const isCellSelection2 = selection instanceof CellSelection;
-          const isSameSingleCell = isCellSelection2 && selection.$anchorCell.pos === info.cellPos && selection.$headCell.pos === info.cellPos;
           if (!isCellSelection2) {
             const currentCellPos = getTableCellPosFromResolved(selection.$from);
             if (currentCellPos !== null && currentCellPos === info.cellPos) {
@@ -54353,7 +54352,7 @@ ${promptInput.trim()}`
             }
           }
           const coords = view.posAtCoords({ left: event.clientX, top: event.clientY });
-          if (event.detail >= 2 || isSameSingleCell) {
+          if (event.detail >= 2) {
             if (!coords) return false;
             let targetPos = coords.pos;
             const $target = view.state.doc.resolve(targetPos);
@@ -54565,6 +54564,7 @@ ${promptInput.trim()}`
         offset3 += widths[colIndex] || TABLE_COLUMN_MIN_WIDTH;
       });
       const lastPinnedIndex = pinned.length ? pinned[pinned.length - 1] : -1;
+      tableDom.classList.toggle("table-has-pinned", pinned.length > 0);
       Array.from(tableDom.querySelectorAll("tr")).forEach((row) => {
         let colIndex = 0;
         Array.from(row.querySelectorAll("th, td")).forEach((cell2) => {
@@ -54588,6 +54588,41 @@ ${promptInput.trim()}`
         });
       });
     }, []);
+    const syncTableScrollbars = react_shim_default.useCallback(() => {
+      if (!editor) return;
+      editor.view.dom.querySelectorAll(".tableWrapper").forEach((wrapper) => {
+        const table = wrapper.querySelector("table");
+        if (!table) return;
+        let scrollbar = wrapper.querySelector(".table-scrollbar");
+        if (!scrollbar) {
+          scrollbar = document.createElement("div");
+          scrollbar.className = "table-scrollbar";
+          scrollbar.innerHTML = '<div class="table-scrollbar__inner"></div>';
+          wrapper.insertBefore(scrollbar, wrapper.firstChild);
+        }
+        const inner = scrollbar.querySelector(".table-scrollbar__inner");
+        if (!inner) return;
+        inner.style.width = `${table.scrollWidth}px`;
+        const needsHorizontal = table.scrollWidth > wrapper.clientWidth + 2;
+        scrollbar.style.display = needsHorizontal ? "block" : "none";
+        if (!wrapper.getAttribute("data-scrollbar-init")) {
+          wrapper.setAttribute("data-scrollbar-init", "true");
+          let syncing = false;
+          wrapper.addEventListener("scroll", () => {
+            if (syncing) return;
+            syncing = true;
+            scrollbar.scrollLeft = wrapper.scrollLeft;
+            syncing = false;
+          });
+          scrollbar.addEventListener("scroll", () => {
+            if (syncing) return;
+            syncing = true;
+            wrapper.scrollLeft = scrollbar.scrollLeft;
+            syncing = false;
+          });
+        }
+      });
+    }, [editor]);
     const applySmartTableLayout = react_shim_default.useCallback(() => {
       if (!editor || isAutoLayoutRef.current) return;
       const view = editor.view;
@@ -54671,6 +54706,9 @@ ${promptInput.trim()}`
           const extra = availableWidth - totalWidth;
           widths[lastIndex] = clampWidth(widths[lastIndex] + extra);
         }
+        if (availableWidth) {
+          tableDom.style.width = totalWidth > availableWidth ? `${totalWidth}px` : "100%";
+        }
         const pinnedColumns = normalizePinnedColumns(((_a2 = tableNode.attrs) == null ? void 0 : _a2.pinnedColumns) || [], widths.length);
         if (!areNumberArraysEqual(((_b2 = tableNode.attrs) == null ? void 0 : _b2.pinnedColumns) || [], pinnedColumns)) {
           const mappedTablePos = tr2.mapping.map(tablePos);
@@ -54707,7 +54745,8 @@ ${promptInput.trim()}`
         editor.view.dispatch(tr2);
         isAutoLayoutRef.current = false;
       }
-    }, [editor, applyTableDomStyles]);
+      syncTableScrollbars();
+    }, [editor, applyTableDomStyles, syncTableScrollbars]);
     const scheduleTableLayout = react_shim_default.useCallback(() => {
       if (tableLayoutRafRef.current) {
         cancelAnimationFrame(tableLayoutRafRef.current);
@@ -54764,41 +54803,6 @@ ${promptInput.trim()}`
     }, [editor]);
     react_shim_default.useEffect(() => {
       if (!editor) return;
-      const syncTableScrollbars = () => {
-        editor.view.dom.querySelectorAll(".tableWrapper").forEach((wrapper) => {
-          const table = wrapper.querySelector("table");
-          if (!table) return;
-          let scrollbar = wrapper.querySelector(".table-scrollbar");
-          if (!scrollbar) {
-            scrollbar = document.createElement("div");
-            scrollbar.className = "table-scrollbar";
-            scrollbar.innerHTML = '<div class="table-scrollbar__inner"></div>';
-            wrapper.insertBefore(scrollbar, wrapper.firstChild);
-          }
-          const inner = scrollbar.querySelector(".table-scrollbar__inner");
-          if (!inner) return;
-          inner.style.width = `${table.scrollWidth}px`;
-          const wrapperRect = wrapper.getBoundingClientRect();
-          const needsHorizontal = table.scrollWidth > wrapper.clientWidth + 2;
-          scrollbar.style.display = needsHorizontal ? "block" : "none";
-          if (!wrapper.getAttribute("data-scrollbar-init")) {
-            wrapper.setAttribute("data-scrollbar-init", "true");
-            let syncing = false;
-            wrapper.addEventListener("scroll", () => {
-              if (syncing) return;
-              syncing = true;
-              scrollbar.scrollLeft = wrapper.scrollLeft;
-              syncing = false;
-            });
-            scrollbar.addEventListener("scroll", () => {
-              if (syncing) return;
-              syncing = true;
-              wrapper.scrollLeft = scrollbar.scrollLeft;
-              syncing = false;
-            });
-          }
-        });
-      };
       syncTableScrollbars();
       editor.on("update", syncTableScrollbars);
       window.addEventListener("resize", syncTableScrollbars);

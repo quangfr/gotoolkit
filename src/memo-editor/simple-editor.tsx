@@ -2312,10 +2312,6 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
 
         const selection = view.state.selection;
         const isCellSelection = selection instanceof CellSelection;
-        const isSameSingleCell =
-          isCellSelection &&
-          selection.$anchorCell.pos === info.cellPos &&
-          selection.$headCell.pos === info.cellPos;
 
         // If already editing text inside the same cell, allow default caret placement
         if (!isCellSelection) {
@@ -2327,7 +2323,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
 
         const coords = view.posAtCoords({ left: event.clientX, top: event.clientY });
 
-        if (event.detail >= 2 || isSameSingleCell) {
+        if (event.detail >= 2) {
           if (!coords) return false;
           // For double click, we might want to ensure we are inside a paragraph
           let targetPos = coords.pos;
@@ -2602,6 +2598,44 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     });
   }, []);
 
+  const syncTableScrollbars = React.useCallback(() => {
+    if (!editor) return;
+    editor.view.dom.querySelectorAll('.tableWrapper').forEach((wrapper) => {
+      const table = wrapper.querySelector('table') as HTMLTableElement | null;
+      if (!table) return;
+      let scrollbar = wrapper.querySelector('.table-scrollbar') as HTMLDivElement | null;
+      if (!scrollbar) {
+        scrollbar = document.createElement('div');
+        scrollbar.className = 'table-scrollbar';
+        scrollbar.innerHTML = '<div class="table-scrollbar__inner"></div>';
+        wrapper.insertBefore(scrollbar, wrapper.firstChild);
+      }
+      const inner = scrollbar.querySelector('.table-scrollbar__inner') as HTMLDivElement | null;
+      if (!inner) return;
+      inner.style.width = `${table.scrollWidth}px`;
+
+      const needsHorizontal = table.scrollWidth > wrapper.clientWidth + 2;
+      scrollbar.style.display = needsHorizontal ? 'block' : 'none';
+
+      if (!wrapper.getAttribute('data-scrollbar-init')) {
+        wrapper.setAttribute('data-scrollbar-init', 'true');
+        let syncing = false;
+        wrapper.addEventListener('scroll', () => {
+          if (syncing) return;
+          syncing = true;
+          scrollbar!.scrollLeft = wrapper.scrollLeft;
+          syncing = false;
+        });
+        scrollbar.addEventListener('scroll', () => {
+          if (syncing) return;
+          syncing = true;
+          wrapper.scrollLeft = scrollbar!.scrollLeft;
+          syncing = false;
+        });
+      }
+    });
+  }, [editor]);
+
   const applySmartTableLayout = React.useCallback(() => {
     if (!editor || isAutoLayoutRef.current) return;
     const view = editor.view;
@@ -2743,7 +2777,8 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       editor.view.dispatch(tr);
       isAutoLayoutRef.current = false;
     }
-  }, [editor, applyTableDomStyles]);
+    syncTableScrollbars();
+  }, [editor, applyTableDomStyles, syncTableScrollbars]);
 
   const scheduleTableLayout = React.useCallback(() => {
     if (tableLayoutRafRef.current) {
@@ -2805,44 +2840,6 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
 
   React.useEffect(() => {
     if (!editor) return;
-    const syncTableScrollbars = () => {
-      editor.view.dom.querySelectorAll('.tableWrapper').forEach((wrapper) => {
-        const table = wrapper.querySelector('table') as HTMLTableElement | null;
-        if (!table) return;
-        let scrollbar = wrapper.querySelector('.table-scrollbar') as HTMLDivElement | null;
-        if (!scrollbar) {
-          scrollbar = document.createElement('div');
-          scrollbar.className = 'table-scrollbar';
-          scrollbar.innerHTML = '<div class="table-scrollbar__inner"></div>';
-          wrapper.insertBefore(scrollbar, wrapper.firstChild);
-        }
-        const inner = scrollbar.querySelector('.table-scrollbar__inner') as HTMLDivElement | null;
-        if (!inner) return;
-        inner.style.width = `${table.scrollWidth}px`;
-
-        const wrapperRect = wrapper.getBoundingClientRect();
-        const needsHorizontal = table.scrollWidth > wrapper.clientWidth + 2;
-        scrollbar.style.display = needsHorizontal ? 'block' : 'none';
-
-        if (!wrapper.getAttribute('data-scrollbar-init')) {
-          wrapper.setAttribute('data-scrollbar-init', 'true');
-          let syncing = false;
-          wrapper.addEventListener('scroll', () => {
-            if (syncing) return;
-            syncing = true;
-            scrollbar!.scrollLeft = wrapper.scrollLeft;
-            syncing = false;
-          });
-          scrollbar.addEventListener('scroll', () => {
-            if (syncing) return;
-            syncing = true;
-            wrapper.scrollLeft = scrollbar!.scrollLeft;
-            syncing = false;
-          });
-        }
-      });
-    };
-
     syncTableScrollbars();
     editor.on('update', syncTableScrollbars);
     window.addEventListener('resize', syncTableScrollbars);
