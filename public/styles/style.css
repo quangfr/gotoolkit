@@ -2334,7 +2334,7 @@ label {
   width: 100%;
   border: 1px solid transparent;
   border-radius: var(--radius-md);
-  padding: 8px 10px;
+  padding: 0;
   resize: none;
   font-family: var(--font-sans);
   font-size: 14px;

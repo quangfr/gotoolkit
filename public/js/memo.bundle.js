@@ -53176,7 +53176,7 @@ ${promptInput.trim()}`
     });
     return targetPos;
   };
-  var TABLE_COLUMN_MIN_WIDTH = 120;
+  var TABLE_COLUMN_MIN_WIDTH = 80;
   var TABLE_COLUMN_MAX_WIDTH = 500;
   var clampWidth = (value, min3 = TABLE_COLUMN_MIN_WIDTH, max3 = TABLE_COLUMN_MAX_WIDTH) => {
     return Math.min(max3, Math.max(min3, value));

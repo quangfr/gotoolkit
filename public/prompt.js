@@ -144,7 +144,7 @@ ENTRÉES
 3) CONTEXT : contenu d'un ou de plusieurs documents fournis en contexte
 4) ASK : demande de conseil ou question
 5) HISTORY : liste des 4 derniers messages de l'user
-6) KNOWLEDGE : connaissances
+6) KNOWLEDGE : connaissances de la mémoire
 7) PRODUCT : connaissances générales sur la gestion de produit
 
 RÈGLES
@@ -171,7 +171,7 @@ FORMAT DE SORTIE (JSON strict)
     "suggestions": ["thème proche de ASK et HISTORY", "thème proche de ASK et HISTORY"]
 }
 
-Réponds à ASK avec un focus sur SELECTION en tenant compte de DOCUMENT, CONTEXT, KNOWLEDGE, HISTORY, et éventuellement de PRODUCT.
+Réponds à ASK sur la base de KNOWLEDGE, de CONTEXT et des connaissances PRODUCT en tenant compte de l'existant DOCUMENT et en particulier SELECTION.
 `
 
         var askChatPrompt = `SYSTEM — RAG Q&A (JSON strict)
@@ -214,7 +214,7 @@ FORMAT DE SORTIE (JSON strict)
     "suggestions": ["thème proche de ASK, SELECTION et HISTORY", "thème 2", "thème 3"]
 }
 
-Réponds à ASK avec un focus sur SELECTION en tenant compte de DOCUMENT, CONTEXT et HISTORY.
+Réponds à ASK sur la base de KNOWLEDGE, de CONTEXT et des connaissances PRODUCT en tenant compte de l'existant DOCUMENT et en particulier SELECTION.
 `
 
         var suggestChatPrompt = `SYSTEM — Éditeur Markdown (JSON)
@@ -456,14 +456,14 @@ RÈGLES DE SORTIE
         global.GoToolkitChatPrompt.PRESETS = {
             advice: {
                 id: "advice",
-                label: "Demander",
+                label: "Conseiller",
                 icon: "message-square",
                 prompt: initial,
                 defaultPrompt: adviceChatPrompt
             },
             ask: {
                 id: "ask",
-                label: "Explorer",
+                label: "Demander",
                 icon: "search",
                 prompt: initialInfo,
                 defaultPrompt: askChatPrompt

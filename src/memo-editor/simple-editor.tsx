@@ -957,7 +957,7 @@ const getTableCellPosByIndex = (table: PMNode, tablePos: number, rowIndex: numbe
 };
 
 
-const TABLE_COLUMN_MIN_WIDTH = 120;
+const TABLE_COLUMN_MIN_WIDTH = 80;
 const TABLE_COLUMN_MAX_WIDTH = 500;
 
 const clampWidth = (value: number, min = TABLE_COLUMN_MIN_WIDTH, max = TABLE_COLUMN_MAX_WIDTH) => {

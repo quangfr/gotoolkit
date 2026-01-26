@@ -1579,8 +1579,10 @@
         this.stopSpeechRecognition();
         this.speechRecognition = new SpeechRecognition();
         this.speechRecognition.lang = "fr-FR";
+        this.speechRecognition.continuous = true;
         this.speechRecognition.interimResults = true;
         this.speechRecognition.maxAlternatives = 1;
+        this.speechStopRequested = false;
         this.isListening = true;
         this.toggleListeningStyles(true);
         const self = this;
@@ -1597,11 +1599,21 @@
         };
 
         this.speechRecognition.onerror = function () {
+            if (self.speechStopRequested) return;
             self.stopSpeechRecognition();
         };
 
         this.speechRecognition.onend = function () {
-            self.stopSpeechRecognition();
+            if (self.speechStopRequested) {
+                self.stopSpeechRecognition();
+                return;
+            }
+            try {
+                self.speechRecognition.start();
+            } catch (err) {
+                console.warn("Speech recognition restart failed", err);
+                self.stopSpeechRecognition();
+            }
         };
 
         try {
@@ -1613,6 +1625,7 @@
     };
 
     AssistSidebar.prototype.stopSpeechRecognition = function () {
+        this.speechStopRequested = true;
         if (this.speechRecognition) {
             try {
                 this.speechRecognition.stop();
