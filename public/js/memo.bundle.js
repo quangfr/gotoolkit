@@ -53141,6 +53141,42 @@ ${promptInput.trim()}`
     });
     return { table, tablePos, row, rowPos, cell: cell2, cellPos, rowIndex, colIndex };
   };
+  var getTableCellInfoFromPos = (doc3, cellPos) => {
+    const $pos = doc3.resolve(Math.min(cellPos + 1, doc3.content.size));
+    let table = null;
+    let row = null;
+    let cell2 = null;
+    let tablePos = -1;
+    let rowPos = -1;
+    let resolvedCellPos = -1;
+    for (let d = $pos.depth; d > 0; d--) {
+      const node = $pos.node(d);
+      if (node.type.name === "tableCell" || node.type.name === "tableHeader") {
+        cell2 = node;
+        resolvedCellPos = $pos.before(d);
+      } else if (node.type.name === "tableRow") {
+        row = node;
+        rowPos = $pos.before(d);
+      } else if (node.type.name === "table") {
+        table = node;
+        tablePos = $pos.before(d);
+      }
+    }
+    if (!table || !row || !cell2) return null;
+    let rowIndex = -1;
+    let colIndex = -1;
+    table.forEach((_r, offset3, index) => {
+      if (offset3 === rowPos - tablePos - 1) {
+        rowIndex = index;
+        _r.forEach((_c, offsetInRow, ci) => {
+          if (offsetInRow + offset3 + tablePos + 2 === resolvedCellPos) {
+            colIndex = ci;
+          }
+        });
+      }
+    });
+    return { table, tablePos, row, rowPos, cell: cell2, cellPos: resolvedCellPos, rowIndex, colIndex };
+  };
   var getTableCellPosFromResolved = (resolvedPos) => {
     for (let d = resolvedPos.depth; d > 0; d--) {
       const node = resolvedPos.node(d);
@@ -53159,6 +53195,25 @@ ${promptInput.trim()}`
       count += ((_a = cell2.attrs) == null ? void 0 : _a.colspan) || 1;
     });
     return count;
+  };
+  var getTableCellPosByIndex = (table, tablePos, rowIndex, colIndex) => {
+    if (rowIndex < 0 || rowIndex >= table.childCount) return null;
+    let targetPos = null;
+    table.forEach((row, rowOffset, index) => {
+      if (index !== rowIndex) return;
+      let colCursor = 0;
+      row.forEach((_cell, cellOffset) => {
+        var _a;
+        if (targetPos !== null) return;
+        const colspan = ((_a = _cell.attrs) == null ? void 0 : _a.colspan) || 1;
+        if (colIndex >= colCursor && colIndex < colCursor + colspan) {
+          targetPos = tablePos + rowOffset + cellOffset + 2;
+          return;
+        }
+        colCursor += colspan;
+      });
+    });
+    return targetPos;
   };
   var TABLE_COLUMN_MIN_WIDTH = 120;
   var TABLE_COLUMN_MAX_WIDTH = 500;
@@ -54345,12 +54400,6 @@ ${promptInput.trim()}`
           if (!info) return false;
           const selection = view.state.selection;
           const isCellSelection2 = selection instanceof CellSelection;
-          if (!isCellSelection2) {
-            const currentCellPos = getTableCellPosFromResolved(selection.$from);
-            if (currentCellPos !== null && currentCellPos === info.cellPos) {
-              return false;
-            }
-          }
           const coords = view.posAtCoords({ left: event.clientX, top: event.clientY });
           if (event.detail >= 2) {
             if (!coords) return false;
@@ -54410,6 +54459,63 @@ ${promptInput.trim()}`
             editor.view.dispatch(tr2);
           };
           const selection = editor.state.selection;
+          if (!event.shiftKey && ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) {
+            if (hasAncestorNode(selection.$from, "table")) {
+              const currentCellPos = selection instanceof CellSelection ? selection.$anchorCell.pos : getTableCellPosFromResolved(selection.$from);
+              if (currentCellPos !== null) {
+                const info = getTableCellInfoFromPos(editor.state.doc, currentCellPos);
+                if (info) {
+                  let nextRow = info.rowIndex;
+                  let nextCol = info.colIndex;
+                  const colCount = getTableColumnCount(info.table);
+                  const rowCount = info.table.childCount;
+                  if (event.key === "ArrowRight") {
+                    nextCol += 1;
+                    if (nextCol >= colCount) {
+                      if (nextRow < rowCount - 1) {
+                        nextRow += 1;
+                        nextCol = 0;
+                      } else {
+                        event.preventDefault();
+                        return true;
+                      }
+                    }
+                  } else if (event.key === "ArrowLeft") {
+                    nextCol -= 1;
+                    if (nextCol < 0) {
+                      if (nextRow > 0) {
+                        nextRow -= 1;
+                        nextCol = Math.max(0, colCount - 1);
+                      } else {
+                        event.preventDefault();
+                        return true;
+                      }
+                    }
+                  } else if (event.key === "ArrowDown") {
+                    nextRow += 1;
+                    if (nextRow >= rowCount) {
+                      event.preventDefault();
+                      return true;
+                    }
+                  } else if (event.key === "ArrowUp") {
+                    nextRow -= 1;
+                    if (nextRow < 0) {
+                      event.preventDefault();
+                      return true;
+                    }
+                  }
+                  const nextPos = getTableCellPosByIndex(info.table, info.tablePos, nextRow, nextCol);
+                  if (nextPos !== null) {
+                    event.preventDefault();
+                    const $cell = editor.state.doc.resolve(nextPos);
+                    editor.view.dispatch(editor.state.tr.setSelection(new CellSelection($cell)));
+                    editor.view.focus();
+                    return true;
+                  }
+                }
+              }
+            }
+          }
           if (event.key === "Enter" && !event.shiftKey && hasAncestorNode(selection.$from, "table")) {
             const cellPos = getTableCellPosFromResolved(selection.$from);
             if (cellPos !== null) {
@@ -54862,7 +54968,8 @@ ${promptInput.trim()}`
     }, [editor]);
     react_shim_default.useEffect(() => {
       if (!editor || !containerRef.current) return;
-      const updateTableSelectionBox = () => {
+      let selectionBoxRaf = null;
+      const computeSelectionBox = () => {
         const selection = editor.state.selection;
         const cellPositions = [];
         if (selection instanceof CellSelection) {
@@ -54910,14 +55017,31 @@ ${promptInput.trim()}`
           return prev;
         });
       };
+      const updateTableSelectionBox = () => {
+        if (selectionBoxRaf) {
+          cancelAnimationFrame(selectionBoxRaf);
+        }
+        selectionBoxRaf = requestAnimationFrame(() => {
+          computeSelectionBox();
+          selectionBoxRaf = null;
+        });
+      };
       updateTableSelectionBox();
       editor.on("selectionUpdate", updateTableSelectionBox);
       editor.on("update", updateTableSelectionBox);
       window.addEventListener("resize", updateTableSelectionBox);
+      const container2 = containerRef.current;
+      container2.addEventListener("scroll", updateTableSelectionBox, { passive: true });
+      window.addEventListener("scroll", updateTableSelectionBox, { passive: true });
       return () => {
         editor.off("selectionUpdate", updateTableSelectionBox);
         editor.off("update", updateTableSelectionBox);
         window.removeEventListener("resize", updateTableSelectionBox);
+        container2.removeEventListener("scroll", updateTableSelectionBox);
+        window.removeEventListener("scroll", updateTableSelectionBox);
+        if (selectionBoxRaf) {
+          cancelAnimationFrame(selectionBoxRaf);
+        }
       };
     }, [editor]);
     react_shim_default.useEffect(() => {

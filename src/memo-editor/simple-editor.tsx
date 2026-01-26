@@ -875,6 +875,48 @@ const getTableCellInfo = (view: any, event: MouseEvent) => {
   return { table, tablePos, row, rowPos, cell, cellPos, rowIndex, colIndex };
 };
 
+const getTableCellInfoFromPos = (doc: PMNode, cellPos: number) => {
+  const $pos = doc.resolve(Math.min(cellPos + 1, doc.content.size));
+  let table = null;
+  let row = null;
+  let cell = null;
+  let tablePos = -1;
+  let rowPos = -1;
+  let resolvedCellPos = -1;
+
+  for (let d = $pos.depth; d > 0; d--) {
+    const node = $pos.node(d);
+    if (node.type.name === 'tableCell' || node.type.name === 'tableHeader') {
+      cell = node;
+      resolvedCellPos = $pos.before(d);
+    } else if (node.type.name === 'tableRow') {
+      row = node;
+      rowPos = $pos.before(d);
+    } else if (node.type.name === 'table') {
+      table = node;
+      tablePos = $pos.before(d);
+    }
+  }
+
+  if (!table || !row || !cell) return null;
+
+  let rowIndex = -1;
+  let colIndex = -1;
+
+  table.forEach((_r: PMNode, offset: number, index: number) => {
+    if (offset === rowPos - tablePos - 1) {
+      rowIndex = index;
+      _r.forEach((_c: PMNode, offsetInRow: number, ci: number) => {
+        if (offsetInRow + offset + tablePos + 2 === resolvedCellPos) {
+          colIndex = ci;
+        }
+      });
+    }
+  });
+
+  return { table, tablePos, row, rowPos, cell, cellPos: resolvedCellPos, rowIndex, colIndex };
+};
+
 const getTableCellPosFromResolved = (resolvedPos: any) => {
   for (let d = resolvedPos.depth; d > 0; d--) {
     const node = resolvedPos.node(d);
@@ -893,6 +935,25 @@ const getTableColumnCount = (table: PMNode | null) => {
     count += cell.attrs?.colspan || 1;
   });
   return count;
+};
+
+const getTableCellPosByIndex = (table: PMNode, tablePos: number, rowIndex: number, colIndex: number) => {
+  if (rowIndex < 0 || rowIndex >= table.childCount) return null;
+  let targetPos: number | null = null;
+  table.forEach((row: PMNode, rowOffset: number, index: number) => {
+    if (index !== rowIndex) return;
+    let colCursor = 0;
+    row.forEach((_cell: PMNode, cellOffset: number) => {
+      if (targetPos !== null) return;
+      const colspan = _cell.attrs?.colspan || 1;
+      if (colIndex >= colCursor && colIndex < colCursor + colspan) {
+        targetPos = tablePos + rowOffset + cellOffset + 2;
+        return;
+      }
+      colCursor += colspan;
+    });
+  });
+  return targetPos;
 };
 
 const TABLE_COLUMN_MIN_WIDTH = 120;
@@ -2313,14 +2374,6 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         const selection = view.state.selection;
         const isCellSelection = selection instanceof CellSelection;
 
-        // If already editing text inside the same cell, allow default caret placement
-        if (!isCellSelection) {
-          const currentCellPos = getTableCellPosFromResolved(selection.$from);
-          if (currentCellPos !== null && currentCellPos === info.cellPos) {
-            return false;
-          }
-        }
-
         const coords = view.posAtCoords({ left: event.clientX, top: event.clientY });
 
         if (event.detail >= 2) {
@@ -2388,6 +2441,71 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         };
 
         const selection = editor.state.selection;
+        if (
+          !event.shiftKey &&
+          ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)
+        ) {
+          if (hasAncestorNode(selection.$from, 'table')) {
+            const currentCellPos = selection instanceof CellSelection
+              ? selection.$anchorCell.pos
+              : getTableCellPosFromResolved(selection.$from);
+            if (currentCellPos !== null) {
+              const info = getTableCellInfoFromPos(editor.state.doc, currentCellPos);
+              if (info) {
+                let nextRow = info.rowIndex;
+                let nextCol = info.colIndex;
+                const colCount = getTableColumnCount(info.table);
+                const rowCount = info.table.childCount;
+
+                if (event.key === 'ArrowRight') {
+                  nextCol += 1;
+                  if (nextCol >= colCount) {
+                    if (nextRow < rowCount - 1) {
+                      nextRow += 1;
+                      nextCol = 0;
+                    } else {
+                      event.preventDefault();
+                      return true;
+                    }
+                  }
+                } else if (event.key === 'ArrowLeft') {
+                  nextCol -= 1;
+                  if (nextCol < 0) {
+                    if (nextRow > 0) {
+                      nextRow -= 1;
+                      nextCol = Math.max(0, colCount - 1);
+                    } else {
+                      event.preventDefault();
+                      return true;
+                    }
+                  }
+                } else if (event.key === 'ArrowDown') {
+                  nextRow += 1;
+                  if (nextRow >= rowCount) {
+                    event.preventDefault();
+                    return true;
+                  }
+                } else if (event.key === 'ArrowUp') {
+                  nextRow -= 1;
+                  if (nextRow < 0) {
+                    event.preventDefault();
+                    return true;
+                  }
+                }
+
+                const nextPos = getTableCellPosByIndex(info.table, info.tablePos, nextRow, nextCol);
+                if (nextPos !== null) {
+                  event.preventDefault();
+                  const $cell = editor.state.doc.resolve(nextPos);
+                  editor.view.dispatch(editor.state.tr.setSelection(new CellSelection($cell)));
+                  editor.view.focus();
+                  return true;
+                }
+              }
+            }
+          }
+        }
+
         if (event.key === 'Enter' && !event.shiftKey && hasAncestorNode(selection.$from, 'table')) {
           const cellPos = getTableCellPosFromResolved(selection.$from);
           if (cellPos !== null) {
@@ -2910,8 +3028,9 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
 
   React.useEffect(() => {
     if (!editor || !containerRef.current) return;
+    let selectionBoxRaf: number | null = null;
 
-    const updateTableSelectionBox = () => {
+    const computeSelectionBox = () => {
       const selection = editor.state.selection;
       const cellPositions: number[] = [];
 
@@ -2968,15 +3087,33 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       });
     };
 
+    const updateTableSelectionBox = () => {
+      if (selectionBoxRaf) {
+        cancelAnimationFrame(selectionBoxRaf);
+      }
+      selectionBoxRaf = requestAnimationFrame(() => {
+        computeSelectionBox();
+        selectionBoxRaf = null;
+      });
+    };
+
     updateTableSelectionBox();
     editor.on('selectionUpdate', updateTableSelectionBox);
     editor.on('update', updateTableSelectionBox);
     window.addEventListener('resize', updateTableSelectionBox);
+    const container = containerRef.current;
+    container.addEventListener('scroll', updateTableSelectionBox, { passive: true });
+    window.addEventListener('scroll', updateTableSelectionBox, { passive: true });
 
     return () => {
       editor.off('selectionUpdate', updateTableSelectionBox);
       editor.off('update', updateTableSelectionBox);
       window.removeEventListener('resize', updateTableSelectionBox);
+      container.removeEventListener('scroll', updateTableSelectionBox);
+      window.removeEventListener('scroll', updateTableSelectionBox);
+      if (selectionBoxRaf) {
+        cancelAnimationFrame(selectionBoxRaf);
+      }
     };
   }, [editor]);
 
