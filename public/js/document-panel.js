@@ -294,10 +294,19 @@
                         <label for="document-explorer-description-input">Description</label>
                         <textarea id="document-explorer-description-input" rows="3" placeholder="Description courte (optionnelle)"></textarea>
                     </div>
-                    <div class="modal-actions" style="justify-content:flex-end;">
-                        <button class="btn btn-secondary" type="button" data-cancel>Annuler</button>
-                        <button class="btn btn-secondary" type="button" data-publish style="display:none;">Publier</button>
-                        <button class="btn-primary" type="button" data-confirm>Enregistrer</button>
+                    <div class="modal-actions" style="justify-content: space-between; align-items: center;">
+                        <div style="flex: 1; max-width: 240px;">
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <i data-lucide="user" style="width:12px;height:12px;"></i>
+                                <input type="text" id="ownerToken" placeholder="Prénom"
+                                    style="width: 100%; height: 26px; font-size: 11px; border-radius: 6px; border: 1px solid var(--border-strong); background: var(--bg-surface); color: var(--text-main); padding: 0 8px; outline: none;">
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 8px; margin-left: auto;">
+                            <button class="btn btn-secondary" type="button" data-cancel>Annuler</button>
+                            <button class="btn btn-secondary" type="button" data-publish style="display:none;">Publier</button>
+                            <button class="btn-primary" type="button" data-confirm>Enregistrer</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -307,9 +316,12 @@
         const modalCancelBtn = modalOverlay.querySelector("[data-cancel]");
         const modalPublishBtn = modalOverlay.querySelector("[data-publish]");
         const modalConfirmBtn = modalOverlay.querySelector("[data-confirm]");
+        const modalEl = modalOverlay.querySelector(".modal");
         const modalInput = modalOverlay.querySelector("#document-explorer-name-input");
         const modalDescInput = modalOverlay.querySelector("#document-explorer-description-input");
+        const ownerTokenInput = modalOverlay.querySelector("#ownerToken");
         let modalResolver = null;
+        let modalAllowPublish = false;
 
         function getSelectedSuperpowers() {
             const container = modalOverlay.querySelector("#document-explorer-superpowers-container");
@@ -321,11 +333,28 @@
             modalOverlay.classList.remove("open");
             modalOverlay.style.display = "none";
             modalResolver = null;
+            modalAllowPublish = false;
         }
 
         function hasAdminToken() {
             const token = localStorage.getItem("feedback-admin-token") || "";
             return Boolean(String(token).trim());
+        }
+
+        function syncOwnerTokenFromStorage() {
+            if (!ownerTokenInput) return;
+            const stored = localStorage.getItem("feedback-admin-token") || "";
+            if (!ownerTokenInput.value && stored) ownerTokenInput.value = stored;
+        }
+
+        function updatePublishVisibility() {
+            const allowPublish = Boolean(modalAllowPublish && hasAdminToken());
+            if (modalPublishBtn) {
+                modalPublishBtn.style.display = allowPublish ? "inline-flex" : "none";
+            }
+            if (modalCancelBtn) {
+                modalCancelBtn.style.display = allowPublish ? "none" : "inline-flex";
+            }
         }
 
         async function openNameModal(defaultValue, defaultDescription, options) {
@@ -358,7 +387,9 @@
                     } catch (err) { /* noop */ }
                 }
             }
-            const allowPublish = Boolean(options && options.allowPublish && hasAdminToken());
+            syncOwnerTokenFromStorage();
+            modalAllowPublish = Boolean(options && options.allowPublish);
+            const allowPublish = Boolean(modalAllowPublish && hasAdminToken());
             if (modalPublishBtn) {
                 modalPublishBtn.style.display = allowPublish ? "inline-flex" : "none";
             }
@@ -398,6 +429,21 @@
                 superpowers: getSelectedSuperpowers(),
                 action: "confirm"
             });
+        });
+        ownerTokenInput?.addEventListener("input", () => {
+            localStorage.setItem("feedback-admin-token", (ownerTokenInput.value || "").trim());
+        });
+        ownerTokenInput?.addEventListener("blur", () => {
+            localStorage.setItem("feedback-admin-token", (ownerTokenInput.value || "").trim());
+            updatePublishVisibility();
+        });
+        modalEl?.addEventListener("click", event => {
+            event.stopPropagation();
+        });
+        modalOverlay.addEventListener("mousedown", event => {
+            if (event.target === modalOverlay) {
+                resolveModal(null);
+            }
         });
         modalOverlay.addEventListener("click", event => {
             if (event.target === modalOverlay) {

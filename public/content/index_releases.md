@@ -67,7 +67,7 @@
 - Feedback pour reccueillir les bugs et suggestions
 
 ## 2025-12-04
-- Module `Draw` : diagrammes de classe, de flux et séquentiel
+- Module `Draw` (réintégré): diagrammes de classe, de flux et séquentiel
 
 ## 2025-11-30
 - Module `Timeline` (déprécié): planning temporel de projet ou de produit 

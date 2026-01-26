@@ -395,6 +395,125 @@
         } catch (err) { /* ignore */ }
     }
 
+    var KNOWLEDGE_PROMPT_IDS = ["advice", "edit", "suggest"];
+
+    function shouldIncludeKnowledgeForPreset(presetId) {
+        return KNOWLEDGE_PROMPT_IDS.includes(presetId);
+    }
+
+    var AI_HISTORY_LIMIT = 20;
+    var AI_IN_HISTORY_KEY = "__memoEditorAIInHistory";
+    var AI_OUT_HISTORY_KEY = "__memoEditorAIOutHistory";
+
+    function readDocumentContent() {
+        try {
+            if (typeof global.getMemoActiveTabContent === "function") {
+                var memoTabContent = global.getMemoActiveTabContent();
+                if (memoTabContent) {
+                    return memoTabContent;
+                }
+            }
+        } catch (err) { /* ignore */ }
+        try {
+            if (typeof global.getEditorMarkdown === "function") {
+                var markdown = global.getEditorMarkdown();
+                if (markdown) {
+                    return markdown;
+                }
+            }
+        } catch (err) { /* ignore */ }
+        try {
+            if (typeof global.getEditorContent === "function") {
+                var content = global.getEditorContent();
+                if (content) {
+                    return content;
+                }
+            }
+        } catch (err) { /* ignore */ }
+        return "";
+    }
+
+    function cloneForHistory(value) {
+        if (value === undefined) return undefined;
+        if (value === null) return null;
+        if (typeof global.structuredClone === "function") {
+            try {
+                return global.structuredClone(value);
+            } catch (err) {
+                // fallback to JSON.stringify
+            }
+        }
+        try {
+            return JSON.parse(JSON.stringify(value));
+        } catch (err) {
+            return value;
+        }
+    }
+
+    function ensureHistoryArray(key) {
+        var list = global[key];
+        if (!Array.isArray(list)) {
+            list = [];
+            global[key] = list;
+        }
+        return list;
+    }
+
+    function trimHistory(list) {
+        while (list.length > AI_HISTORY_LIMIT) {
+            list.pop();
+        }
+    }
+
+    function pushHistoryEntry(key, entry) {
+        if (!entry) return;
+        try {
+            var list = ensureHistoryArray(key);
+            list.unshift(entry);
+            trimHistory(list);
+        } catch (err) {
+            // ignore
+        }
+    }
+
+    function recordChatAIInHistory(payload, conversationId) {
+        if (!payload || typeof payload !== "object") return;
+        try {
+            var docContent = readDocumentContent() || "";
+            var entry = {
+                at: new Date().toISOString(),
+                conversationId: conversationId || null,
+                payload: cloneForHistory(payload),
+                payload_messages: cloneForHistory(payload.messages),
+                document_markdown: docContent.trim() || null
+            };
+            pushHistoryEntry(AI_IN_HISTORY_KEY, entry);
+        } catch (err) {
+            // ignore
+        }
+    }
+
+    function recordChatAIOutHistory(details, conversationId) {
+        if (!details || typeof details !== "object") return;
+        try {
+            var clone = cloneForHistory(details);
+            var entry = Object.assign({
+                at: new Date().toISOString(),
+                conversationId: conversationId || null
+            }, clone);
+            if (!entry.full_payload && clone) {
+                if (clone.sanitizedPayload) {
+                    entry.full_payload = clone.sanitizedPayload;
+                } else if (clone.parsedResponse) {
+                    entry.full_payload = clone.parsedResponse;
+                }
+            }
+            pushHistoryEntry(AI_OUT_HISTORY_KEY, entry);
+        } catch (err) {
+            // ignore
+        }
+    }
+
     function getAllowedPromptPresetIds() {
         if (CHAT_APP_ID === "memo") return ["edit", "advice", "suggest", "import", "draw"];
         if (CHAT_APP_ID === "index") return ["advice", "ask"];
@@ -1942,10 +2061,7 @@
         var messages = [{ role: "system", content: promptContent }];
         var userContent = (userMessage?.content || "").trim();
         if (userContent) {
-            // Priority: getMemoActiveTabContent (memo app with tabs) > getEditorMarkdown (generic editor) > getEditorContent (fallback)
-            var docContent = (typeof window.getMemoActiveTabContent === "function" ? window.getMemoActiveTabContent() : "") ||
-                (window.getEditorMarkdown ? window.getEditorMarkdown() : "") ||
-                (window.getEditorContent ? window.getEditorContent() : "");
+            var docContent = readDocumentContent();
             if (docContent && docContent.trim()) {
                 userContent = "DOCUMENT\n" + docContent.trim() + "\n\nASK\n" + userContent;
             } else {
@@ -2031,7 +2147,7 @@
 
         var contextDocInfo = docInfo?.context;
         var knowledgeDocInfo = docInfo?.knowledge;
-        if (this.promptPresetId !== "ask" && hasDocEntries(knowledgeDocInfo)) {
+        if (shouldIncludeKnowledgeForPreset(this.promptPresetId) && hasDocEntries(knowledgeDocInfo)) {
             appendDocSections(knowledgeDocInfo, "KNOWLEDGE");
         }
         appendDocSections(contextDocInfo, "CONTEXT");
@@ -2537,7 +2653,7 @@
         }
 
         var systemPrompt = this.getActiveSystemPrompt();
-        var shouldFetchKnowledge = this.promptPresetId !== "ask" && this.promptPresetId !== "edit" && this.promptPresetId !== "suggest";
+        var shouldFetchKnowledge = shouldIncludeKnowledgeForPreset(this.promptPresetId);
         var docInfo = null;
 
         if (this.docManager) {
@@ -2571,6 +2687,7 @@
         this.controller = controller;
 
         var payload = this.buildPayload(systemPrompt, userMessage, docInfo);
+        recordChatAIInHistory(payload, this.conversation?.id);
         var requestTokenEstimate = estimatePayloadTokens(payload);
         var self = this;
         var appendBotMessageIfNeeded = function () {
@@ -2654,6 +2771,12 @@
             if (parsed.content === "Réponse illisible." && botMessage.content) {
                 parsed.content = botMessage.content;
             }
+            recordChatAIOutHistory({
+                rawResponse: result,
+                responseText: resultText,
+                usage: resultUsage,
+                parsedResponse: parsed
+            }, this.conversation?.id);
             botMessage.content = parsed.content;
             botMessage.references = parsed.references;
             botMessage.suggestions = parsed.suggestions;
@@ -3281,6 +3404,22 @@
         }
         fileArray = filteredFiles;
 
+        var directTextFiles = [];
+        if (CHAT_APP_ID === "memo") {
+            var remainingFiles = [];
+            fileArray.forEach(function (file) {
+                var name = (file?.name || "").toLowerCase();
+                var isMarkdown = name.endsWith(".md") || name.endsWith(".markdown");
+                var isText = name.endsWith(".txt");
+                if (isMarkdown || isText) {
+                    directTextFiles.push(file);
+                } else {
+                    remainingFiles.push(file);
+                }
+            });
+            fileArray = remainingFiles;
+        }
+
         var memoId = this.getActiveMemoId();
         var tabId = memoId || null;
         var createdImportBubble = false;
@@ -3349,6 +3488,32 @@
                 createdImportBubble = true;
 
                 // Do not create statusMessage "..." here as sendAIRequest will create its own placeholder
+            }
+
+            if (directTextFiles.length && memoId) {
+                var insertMarkdown = function (value) {
+                    if (typeof window.insertEditorMarkdownAtEnd === "function") {
+                        window.insertEditorMarkdownAtEnd(value);
+                    } else if (typeof window.GoToolkitMemoAppendText === "function") {
+                        window.GoToolkitMemoAppendText(value);
+                    }
+                };
+                for (var i = 0; i < directTextFiles.length; i++) {
+                    var textFile = directTextFiles[i];
+                    if (!textFile) continue;
+                    try {
+                        var textContent = await textFile.text();
+                        if (textContent) {
+                            insertMarkdown(textContent + "\n\n");
+                        }
+                    } catch (err) {
+                        console.warn("Failed to import text file into memo:", textFile?.name || "", err);
+                    }
+                }
+                var directLabel = directTextFiles.length === 1
+                    ? directTextFiles[0]?.name || "Document"
+                    : directTextFiles.length + " documents";
+                if (!skipEmbeddings) window.GoToolkitMemoToast?.("⤷ " + directLabel + " importé");
             }
 
             if (mediaFiles.length) {
@@ -3450,7 +3615,7 @@
                 }
                 fileArray = docFiles;
             }
-            if (!fileArray.length && !mediaIngestResults.length) {
+            if (!fileArray.length && !mediaIngestResults.length && !directTextFiles.length) {
                 this.setDocumentUploadStatus("Erreur : aucun fichier valide");
                 return;
             }
@@ -3483,6 +3648,9 @@
             }
             if (mediaIngestResults.length) {
                 results = mediaIngestResults.concat(results);
+            }
+            if (!results.length && directTextFiles.length) {
+                return;
             }
 
             var errors = results.filter(function (item) {

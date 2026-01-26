@@ -52,7 +52,7 @@ import {
   CheckSquare,
   Pencil, Copy, Image as ImageIcon,
   Square, RectangleHorizontal, Tag,
-  ArrowDownAZ, ArrowUpAZ
+  ArrowDownAZ, ArrowUpAZ, Pin
 } from 'lucide-react';
 
 
@@ -885,6 +885,77 @@ const getTableCellPosFromResolved = (resolvedPos: any) => {
   return null;
 };
 
+const getTableColumnCount = (table: PMNode | null) => {
+  if (!table || table.type.name !== 'table' || table.childCount === 0) return 0;
+  const firstRow = table.child(0);
+  let count = 0;
+  firstRow.forEach((cell: PMNode) => {
+    count += cell.attrs?.colspan || 1;
+  });
+  return count;
+};
+
+const TABLE_COLUMN_MIN_WIDTH = 120;
+const TABLE_COLUMN_MAX_WIDTH = 500;
+
+const clampWidth = (value: number, min = TABLE_COLUMN_MIN_WIDTH, max = TABLE_COLUMN_MAX_WIDTH) => {
+  return Math.min(max, Math.max(min, value));
+};
+
+const isNumericText = (value: string) => {
+  const trimmed = String(value || '').trim();
+  if (!trimmed) return false;
+  return /[0-9]/.test(trimmed) && /^[\s\d.,%+\-]+$/.test(trimmed);
+};
+
+const normalizePinnedColumns = (list: number[], colCount: number) => {
+  const unique = Array.from(new Set((list || []).filter(index => Number.isFinite(index))));
+  return unique
+    .map(index => Math.max(0, Math.min(colCount - 1, index)))
+    .filter(index => index >= 0 && index < colCount)
+    .sort((a, b) => a - b);
+};
+
+const adjustPinnedOnMove = (list: number[], from: number, to: number) => {
+  const next = (list || []).map(index => {
+    if (index === from) return to;
+    if (from < to && index > from && index <= to) return index - 1;
+    if (from > to && index >= to && index < from) return index + 1;
+    return index;
+  });
+  return Array.from(new Set(next)).sort((a, b) => a - b);
+};
+
+const adjustPinnedOnInsert = (list: number[], index: number) => {
+  return (list || []).map(value => (value >= index ? value + 1 : value));
+};
+
+const adjustPinnedOnDelete = (list: number[], index: number) => {
+  return (list || []).filter(value => value !== index).map(value => (value > index ? value - 1 : value));
+};
+
+const areNumberArraysEqual = (a?: number[], b?: number[]) => {
+  if (!a && !b) return true;
+  if (!a || !b) return false;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+};
+
+const syncPinnedColumns = (editor: Editor, tablePos: number, nextPinned: number[]) => {
+  const table = editor.state.doc.nodeAt(tablePos);
+  if (!table) return;
+  if (areNumberArraysEqual(table.attrs?.pinnedColumns || [], nextPinned)) return;
+  editor.view.dispatch(
+    editor.state.tr.setNodeMarkup(tablePos, undefined, {
+      ...table.attrs,
+      pinnedColumns: nextPinned
+    })
+  );
+};
+
 const moveRow = (editor: Editor, tablePos: number, fromRowIndex: number, toRowIndex: number) => {
   const { tr } = editor.state;
   const table = editor.state.doc.nodeAt(tablePos);
@@ -913,6 +984,7 @@ const moveColumn = (editor: Editor, tablePos: number, fromColIndex: number, toCo
   const { tr } = editor.state;
   const table = editor.state.doc.nodeAt(tablePos);
   if (!table || table.type.name !== 'table') return false;
+  const pinnedColumns = Array.isArray(table.attrs?.pinnedColumns) ? table.attrs.pinnedColumns : [];
 
   const newRows: PMNode[] = [];
   table.forEach((row: PMNode) => {
@@ -926,7 +998,8 @@ const moveColumn = (editor: Editor, tablePos: number, fromColIndex: number, toCo
     newRows.push(row.type.create(row.attrs, cells));
   });
 
-  const newTable = table.type.create(table.attrs, newRows);
+  const nextPinned = adjustPinnedOnMove(pinnedColumns, fromColIndex, toColIndex);
+  const newTable = table.type.create({ ...table.attrs, pinnedColumns: nextPinned }, newRows);
   editor.view.dispatch(tr.replaceWith(tablePos, tablePos + table.nodeSize, newTable));
   return true;
 };
@@ -2149,6 +2222,8 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   const [tableSelectionBox, setTableSelectionBox] = React.useState<{ top: number, left: number, width: number, height: number } | null>(null);
   const [tableSelectionResize, setTableSelectionResize] = React.useState<{ anchorPos: number, tablePos: number } | null>(null);
   const blockDragMovedRef = React.useRef(false);
+  const tableLayoutRafRef = React.useRef<number | null>(null);
+  const isAutoLayoutRef = React.useRef(false);
 
   const editor = useEditor({
     extensions: [
@@ -2241,6 +2316,14 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           isCellSelection &&
           selection.$anchorCell.pos === info.cellPos &&
           selection.$headCell.pos === info.cellPos;
+
+        // If already editing text inside the same cell, allow default caret placement
+        if (!isCellSelection) {
+          const currentCellPos = getTableCellPosFromResolved(selection.$from);
+          if (currentCellPos !== null && currentCellPos === info.cellPos) {
+            return false;
+          }
+        }
 
         const coords = view.posAtCoords({ left: event.clientX, top: event.clientY });
 
@@ -2474,6 +2557,204 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     },
   });
 
+  const applyTableDomStyles = React.useCallback((
+    tableDom: HTMLTableElement,
+    widths: number[],
+    numericColumns: boolean[],
+    pinnedColumns: number[]
+  ) => {
+    const pinned = normalizePinnedColumns(pinnedColumns, widths.length);
+    const pinnedSet = new Set(pinned);
+    const pinnedOffsets: Record<number, number> = {};
+    let offset = 0;
+    pinned.forEach((colIndex) => {
+      pinnedOffsets[colIndex] = offset;
+      offset += widths[colIndex] || TABLE_COLUMN_MIN_WIDTH;
+    });
+    const lastPinnedIndex = pinned.length ? pinned[pinned.length - 1] : -1;
+
+    tableDom.classList.toggle('table-has-pinned', pinned.length > 0);
+
+    Array.from(tableDom.querySelectorAll('tr')).forEach((row) => {
+      let colIndex = 0;
+      Array.from(row.querySelectorAll('th, td')).forEach((cell) => {
+        const span = cell.colSpan || 1;
+        const spanIndices = Array.from({ length: span }, (_v, i) => colIndex + i);
+        const isNumeric = spanIndices.every(idx => numericColumns[idx]);
+        const isPinned = spanIndices.every(idx => pinnedSet.has(idx));
+        const isDivider = isPinned && spanIndices[spanIndices.length - 1] === lastPinnedIndex;
+
+        cell.classList.toggle('table-col-numeric', isNumeric);
+        cell.classList.toggle('table-cell-pinned', isPinned);
+        cell.classList.toggle('table-cell-pinned-divider', isDivider);
+
+        if (isPinned) {
+          const left = pinnedOffsets[colIndex] || 0;
+          (cell as HTMLElement).style.left = `${left}px`;
+          (cell as HTMLElement).style.zIndex = '3';
+        } else {
+          (cell as HTMLElement).style.left = '';
+          (cell as HTMLElement).style.zIndex = '';
+        }
+
+        colIndex += span;
+      });
+    });
+  }, []);
+
+  const applySmartTableLayout = React.useCallback(() => {
+    if (!editor || isAutoLayoutRef.current) return;
+    const view = editor.view;
+    if (view.dom.classList.contains('resize-cursor')) return;
+
+    const tables = Array.from(view.dom.querySelectorAll('table')) as HTMLTableElement[];
+    if (!tables.length) return;
+
+    let tr = editor.state.tr;
+    let modified = false;
+
+    tables.forEach((tableDom) => {
+      const pos = view.posAtDOM(tableDom, 0);
+      if (pos == null) return;
+      const $pos = view.state.doc.resolve(pos);
+      let tablePos = -1;
+      let tableNode: PMNode | null = null;
+
+      for (let d = $pos.depth; d > 0; d--) {
+        const node = $pos.node(d);
+        if (node.type.name === 'table') {
+          tablePos = $pos.before(d);
+          tableNode = node;
+          break;
+        }
+      }
+      if (!tableNode || tablePos < 0) return;
+
+      const rows = Array.from(tableDom.querySelectorAll('tr'));
+      if (!rows.length) return;
+
+      const colCount = rows.reduce((max, row) => {
+        const count = Array.from(row.querySelectorAll('th, td'))
+          .reduce((sum, cell) => sum + (cell.colSpan || 1), 0);
+        return Math.max(max, count);
+      }, 0);
+
+      if (!colCount) return;
+
+      const numericFlags = new Array(colCount).fill(true);
+      const hasValue = new Array(colCount).fill(false);
+      const contentWidths = new Array(colCount).fill(0);
+
+      rows.forEach((row) => {
+        let colIndex = 0;
+        Array.from(row.querySelectorAll('th, td')).forEach((cell) => {
+          const span = cell.colSpan || 1;
+          const text = cell.textContent || '';
+          const numeric = isNumericText(text);
+          const hasText = Boolean(text.trim());
+          const cellWidth = (cell as HTMLElement).scrollWidth || 0;
+          const perColWidth = Math.max(1, Math.ceil(cellWidth / span));
+
+          for (let i = 0; i < span; i++) {
+            if (hasText) {
+              hasValue[colIndex + i] = true;
+              if (!numeric) numericFlags[colIndex + i] = false;
+            }
+            contentWidths[colIndex + i] = Math.max(contentWidths[colIndex + i], perColWidth);
+          }
+          colIndex += span;
+        });
+      });
+
+      const existingWidths = new Array(colCount).fill(0);
+      let firstRowProcessed = false;
+      tableNode.forEach((row) => {
+        if (firstRowProcessed || row.type.name !== 'tableRow') return;
+        let colCursor = 0;
+        row.forEach((cell) => {
+          const colspan = cell.attrs.colspan || 1;
+          const colwidthAttr = Array.isArray(cell.attrs.colwidth) ? cell.attrs.colwidth : [];
+          for (let i = 0; i < colspan; i++) {
+            const value = Number(colwidthAttr[i] || 0);
+            if (value) existingWidths[colCursor + i] = value;
+          }
+          colCursor += colspan;
+        });
+        firstRowProcessed = true;
+      });
+
+      const numericColumns = numericFlags.map((flag, idx) => flag && hasValue[idx]);
+      const widths = contentWidths.map((width, idx) => {
+        if (numericColumns[idx]) return TABLE_COLUMN_MIN_WIDTH;
+        const base = existingWidths[idx] || (width + 16);
+        return clampWidth(base);
+      });
+
+      const wrapper = tableDom.closest('.tableWrapper') as HTMLElement | null;
+      const availableWidth = wrapper ? wrapper.clientWidth : tableDom.clientWidth;
+      const totalWidth = widths.reduce((sum, value) => sum + value, 0);
+      const lastIndex = widths.length - 1;
+
+      if (availableWidth && lastIndex >= 0 && !numericColumns[lastIndex] && totalWidth < availableWidth) {
+        const extra = availableWidth - totalWidth;
+        widths[lastIndex] = clampWidth(widths[lastIndex] + extra);
+      }
+
+      if (availableWidth) {
+        tableDom.style.width = totalWidth > availableWidth ? `${totalWidth}px` : "100%";
+      }
+
+      const pinnedColumns = normalizePinnedColumns(tableNode.attrs?.pinnedColumns || [], widths.length);
+      if (!areNumberArraysEqual(tableNode.attrs?.pinnedColumns || [], pinnedColumns)) {
+        const mappedTablePos = tr.mapping.map(tablePos);
+        tr = tr.setNodeMarkup(mappedTablePos, undefined, {
+          ...tableNode.attrs,
+          pinnedColumns
+        });
+        modified = true;
+      }
+
+      let handledFirstRow = false;
+      tableNode.forEach((row, rowOffset) => {
+        if (handledFirstRow || row.type.name !== 'tableRow') return;
+        let colCursor = 0;
+        row.forEach((cell, cellOffset) => {
+          const colspan = cell.attrs.colspan || 1;
+          const colwidth = widths.slice(colCursor, colCursor + colspan);
+          const cellPos = tablePos + rowOffset + cellOffset + 2;
+          const mappedPos = tr.mapping.map(cellPos);
+          if (!areNumberArraysEqual(cell.attrs.colwidth as number[] | undefined, colwidth)) {
+            tr = tr.setNodeMarkup(mappedPos, undefined, {
+              ...cell.attrs,
+              colwidth
+            });
+            modified = true;
+          }
+          colCursor += colspan;
+        });
+        handledFirstRow = true;
+      });
+
+      applyTableDomStyles(tableDom, widths, numericColumns, pinnedColumns);
+    });
+
+    if (modified) {
+      isAutoLayoutRef.current = true;
+      editor.view.dispatch(tr);
+      isAutoLayoutRef.current = false;
+    }
+  }, [editor, applyTableDomStyles]);
+
+  const scheduleTableLayout = React.useCallback(() => {
+    if (tableLayoutRafRef.current) {
+      cancelAnimationFrame(tableLayoutRafRef.current);
+    }
+    tableLayoutRafRef.current = requestAnimationFrame(() => {
+      applySmartTableLayout();
+      tableLayoutRafRef.current = null;
+    });
+  }, [applySmartTableLayout]);
+
   const copyBlockHtmlAtPos = React.useCallback((pos: number) => {
     if (!editor) return;
     try {
@@ -2519,6 +2800,57 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     editor.on('update', syncTableWrappers);
     return () => {
       editor.off('update', syncTableWrappers);
+    };
+  }, [editor]);
+
+  React.useEffect(() => {
+    if (!editor) return;
+    const syncTableScrollbars = () => {
+      editor.view.dom.querySelectorAll('.tableWrapper').forEach((wrapper) => {
+        const table = wrapper.querySelector('table') as HTMLTableElement | null;
+        if (!table) return;
+        let scrollbar = wrapper.querySelector('.table-scrollbar') as HTMLDivElement | null;
+        if (!scrollbar) {
+          scrollbar = document.createElement('div');
+          scrollbar.className = 'table-scrollbar';
+          scrollbar.innerHTML = '<div class="table-scrollbar__inner"></div>';
+          wrapper.insertBefore(scrollbar, wrapper.firstChild);
+        }
+        const inner = scrollbar.querySelector('.table-scrollbar__inner') as HTMLDivElement | null;
+        if (!inner) return;
+        inner.style.width = `${table.scrollWidth}px`;
+
+        const wrapperRect = wrapper.getBoundingClientRect();
+        const needsHorizontal = table.scrollWidth > wrapper.clientWidth + 2;
+        scrollbar.style.display = needsHorizontal ? 'block' : 'none';
+
+        if (!wrapper.getAttribute('data-scrollbar-init')) {
+          wrapper.setAttribute('data-scrollbar-init', 'true');
+          let syncing = false;
+          wrapper.addEventListener('scroll', () => {
+            if (syncing) return;
+            syncing = true;
+            scrollbar!.scrollLeft = wrapper.scrollLeft;
+            syncing = false;
+          });
+          scrollbar.addEventListener('scroll', () => {
+            if (syncing) return;
+            syncing = true;
+            wrapper.scrollLeft = scrollbar!.scrollLeft;
+            syncing = false;
+          });
+        }
+      });
+    };
+
+    syncTableScrollbars();
+    editor.on('update', syncTableScrollbars);
+    window.addEventListener('resize', syncTableScrollbars);
+    window.addEventListener('scroll', syncTableScrollbars, { passive: true });
+    return () => {
+      editor.off('update', syncTableScrollbars);
+      window.removeEventListener('resize', syncTableScrollbars);
+      window.removeEventListener('scroll', syncTableScrollbars);
     };
   }, [editor]);
 
@@ -2650,6 +2982,21 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       window.removeEventListener('resize', updateTableSelectionBox);
     };
   }, [editor]);
+
+  React.useEffect(() => {
+    if (!editor) return;
+    scheduleTableLayout();
+    editor.on('update', scheduleTableLayout);
+    window.addEventListener('resize', scheduleTableLayout);
+    return () => {
+      editor.off('update', scheduleTableLayout);
+      window.removeEventListener('resize', scheduleTableLayout);
+      if (tableLayoutRafRef.current) {
+        cancelAnimationFrame(tableLayoutRafRef.current);
+        tableLayoutRafRef.current = null;
+      }
+    };
+  }, [editor, scheduleTableLayout]);
 
   React.useEffect(() => {
     if (!editor || !tableSelectionResize) return;
@@ -4766,8 +5113,26 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
                     for (let i = 0; i < index; i++) cellPos += row.child(i).nodeSize;
                   }
                   editor.chain().focus().setNodeSelection(cellPos).run();
-                  if (type === 'row') editor.chain().addRowBefore().run();
-                  else editor.chain().addColumnBefore().run();
+                  if (type === 'row') {
+                    editor.chain().addRowBefore().run();
+                  } else {
+                    editor.chain().addColumnBefore().run();
+                    const updatedTable = editor.state.doc.nodeAt(tablePos);
+                    if (updatedTable) {
+                      const currentPinned = Array.isArray(updatedTable.attrs?.pinnedColumns)
+                        ? updatedTable.attrs.pinnedColumns
+                        : [];
+                      const nextPinned = adjustPinnedOnInsert(currentPinned, index);
+                      if (!areNumberArraysEqual(currentPinned, nextPinned)) {
+                        editor.view.dispatch(
+                          editor.state.tr.setNodeMarkup(tablePos, undefined, {
+                            ...updatedTable.attrs,
+                            pinnedColumns: nextPinned
+                          })
+                        );
+                      }
+                    }
+                  }
                 }
                 setTableContextMenu(null);
               }}
@@ -4792,8 +5157,26 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
                     for (let i = 0; i < index; i++) cellPos += row.child(i).nodeSize;
                   }
                   editor.chain().focus().setNodeSelection(cellPos).run();
-                  if (type === 'row') editor.chain().deleteRow().run();
-                  else editor.chain().deleteColumn().run();
+                  if (type === 'row') {
+                    editor.chain().deleteRow().run();
+                  } else {
+                    editor.chain().deleteColumn().run();
+                    const updatedTable = editor.state.doc.nodeAt(tablePos);
+                    if (updatedTable) {
+                      const currentPinned = Array.isArray(updatedTable.attrs?.pinnedColumns)
+                        ? updatedTable.attrs.pinnedColumns
+                        : [];
+                      const nextPinned = adjustPinnedOnDelete(currentPinned, index);
+                      if (!areNumberArraysEqual(currentPinned, nextPinned)) {
+                        editor.view.dispatch(
+                          editor.state.tr.setNodeMarkup(tablePos, undefined, {
+                            ...updatedTable.attrs,
+                            pinnedColumns: nextPinned
+                          })
+                        );
+                      }
+                    }
+                  }
                 }
                 setTableContextMenu(null);
               }}
@@ -4804,6 +5187,55 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
             {tableContextMenu.type === 'col' && (
               <>
                 <div className="table-context-menu-divider" />
+                <div
+                  className="table-context-menu-item"
+                  onClick={() => {
+                    const { tablePos, index } = tableContextMenu;
+                    const table = editor.state.doc.nodeAt(tablePos);
+                    if (!table) return;
+                    const colCount = getTableColumnCount(table);
+                    const currentPinned = normalizePinnedColumns(table.attrs?.pinnedColumns || [], colCount);
+                    const isPinned = currentPinned.includes(index);
+                    const pinnedCount = currentPinned.length;
+
+                    if (!isPinned) {
+                      const targetIndex = Math.min(pinnedCount, colCount - 1);
+                      if (index !== targetIndex) {
+                        moveColumn(editor, tablePos, index, targetIndex);
+                      }
+                      const updatedTable = editor.state.doc.nodeAt(tablePos);
+                      const nextPinned = normalizePinnedColumns(
+                        [...currentPinned, targetIndex],
+                        getTableColumnCount(updatedTable)
+                      );
+                      syncPinnedColumns(editor, tablePos, nextPinned);
+                    } else {
+                      const nextPinned = currentPinned.filter(col => col !== index);
+                      if (index < pinnedCount) {
+                        const targetIndex = Math.min(nextPinned.length, colCount - 1);
+                        if (index !== targetIndex) {
+                          moveColumn(editor, tablePos, index, targetIndex);
+                        }
+                      }
+                      const updatedTable = editor.state.doc.nodeAt(tablePos);
+                      const normalizedNext = normalizePinnedColumns(
+                        nextPinned,
+                        getTableColumnCount(updatedTable)
+                      );
+                      syncPinnedColumns(editor, tablePos, normalizedNext);
+                    }
+                    setTableContextMenu(null);
+                  }}
+                >
+                  <Pin size={14} style={{ marginRight: 8 }} />
+                  {(() => {
+                    const table = editor.state.doc.nodeAt(tableContextMenu.tablePos);
+                    const pinned = Array.isArray(table?.attrs?.pinnedColumns)
+                      ? table?.attrs?.pinnedColumns
+                      : [];
+                    return pinned.includes(tableContextMenu.index) ? 'Désépingler' : 'Épingler';
+                  })()}
+                </div>
                 <div 
                   className="table-context-menu-item"
                   onClick={() => {

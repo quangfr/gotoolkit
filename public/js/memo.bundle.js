@@ -27552,7 +27552,31 @@ img.ProseMirror-separator {
 
   // src/memo-editor/table-node.tsx
   var CustomTableCell = TableCell.extend({});
-  var TableNode = Table.configure({
+  var TableNode = Table.extend({
+    addAttributes() {
+      var _a;
+      return {
+        ...(_a = this.parent) == null ? void 0 : _a.call(this),
+        pinnedColumns: {
+          default: [],
+          parseHTML: (element) => {
+            const raw = element.getAttribute("data-pinned-columns");
+            if (!raw) return [];
+            try {
+              const parsed = JSON.parse(raw);
+              return Array.isArray(parsed) ? parsed : [];
+            } catch (e) {
+              return [];
+            }
+          },
+          renderHTML: (attributes) => {
+            if (!attributes.pinnedColumns || !attributes.pinnedColumns.length) return {};
+            return { "data-pinned-columns": JSON.stringify(attributes.pinnedColumns) };
+          }
+        }
+      };
+    }
+  }).configure({
     resizable: true
   });
 
@@ -28189,19 +28213,34 @@ img.ProseMirror-separator {
   ];
   var Pencil = createLucideIcon("pencil", __iconNode28);
 
-  // node_modules/lucide-react/dist/esm/icons/plus.js
+  // node_modules/lucide-react/dist/esm/icons/pin.js
   init_define_process_env();
   init_polyfills();
   var __iconNode29 = [
+    ["path", { d: "M12 17v5", key: "bb1du9" }],
+    [
+      "path",
+      {
+        d: "M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z",
+        key: "1nkz8b"
+      }
+    ]
+  ];
+  var Pin = createLucideIcon("pin", __iconNode29);
+
+  // node_modules/lucide-react/dist/esm/icons/plus.js
+  init_define_process_env();
+  init_polyfills();
+  var __iconNode30 = [
     ["path", { d: "M5 12h14", key: "1ays0h" }],
     ["path", { d: "M12 5v14", key: "s699le" }]
   ];
-  var Plus = createLucideIcon("plus", __iconNode29);
+  var Plus = createLucideIcon("plus", __iconNode30);
 
   // node_modules/lucide-react/dist/esm/icons/quote.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode30 = [
+  var __iconNode31 = [
     [
       "path",
       {
@@ -28217,29 +28256,29 @@ img.ProseMirror-separator {
       }
     ]
   ];
-  var Quote = createLucideIcon("quote", __iconNode30);
+  var Quote = createLucideIcon("quote", __iconNode31);
 
   // node_modules/lucide-react/dist/esm/icons/rectangle-horizontal.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode31 = [
+  var __iconNode32 = [
     ["rect", { width: "20", height: "12", x: "2", y: "6", rx: "2", key: "9lu3g6" }]
   ];
-  var RectangleHorizontal = createLucideIcon("rectangle-horizontal", __iconNode31);
+  var RectangleHorizontal = createLucideIcon("rectangle-horizontal", __iconNode32);
 
   // node_modules/lucide-react/dist/esm/icons/redo-2.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode32 = [
+  var __iconNode33 = [
     ["path", { d: "m15 14 5-5-5-5", key: "12vg1m" }],
     ["path", { d: "M20 9H9.5A5.5 5.5 0 0 0 4 14.5A5.5 5.5 0 0 0 9.5 20H13", key: "6uklza" }]
   ];
-  var Redo2 = createLucideIcon("redo-2", __iconNode32);
+  var Redo2 = createLucideIcon("redo-2", __iconNode33);
 
   // node_modules/lucide-react/dist/esm/icons/send.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode33 = [
+  var __iconNode34 = [
     [
       "path",
       {
@@ -28249,12 +28288,12 @@ img.ProseMirror-separator {
     ],
     ["path", { d: "m21.854 2.147-10.94 10.939", key: "12cjpa" }]
   ];
-  var Send = createLucideIcon("send", __iconNode33);
+  var Send = createLucideIcon("send", __iconNode34);
 
   // node_modules/lucide-react/dist/esm/icons/shapes.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode34 = [
+  var __iconNode35 = [
     [
       "path",
       {
@@ -28265,72 +28304,72 @@ img.ProseMirror-separator {
     ["rect", { x: "3", y: "14", width: "7", height: "7", rx: "1", key: "1bkyp8" }],
     ["circle", { cx: "17.5", cy: "17.5", r: "3.5", key: "w3z12y" }]
   ];
-  var Shapes = createLucideIcon("shapes", __iconNode34);
+  var Shapes = createLucideIcon("shapes", __iconNode35);
 
   // node_modules/lucide-react/dist/esm/icons/square-check-big.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode35 = [
+  var __iconNode36 = [
     [
       "path",
       { d: "M21 10.656V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h12.344", key: "2acyp4" }
     ],
     ["path", { d: "m9 11 3 3L22 4", key: "1pflzl" }]
   ];
-  var SquareCheckBig = createLucideIcon("square-check-big", __iconNode35);
+  var SquareCheckBig = createLucideIcon("square-check-big", __iconNode36);
 
   // node_modules/lucide-react/dist/esm/icons/square-check.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode36 = [
+  var __iconNode37 = [
     ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }],
     ["path", { d: "m9 12 2 2 4-4", key: "dzmm74" }]
   ];
-  var SquareCheck = createLucideIcon("square-check", __iconNode36);
+  var SquareCheck = createLucideIcon("square-check", __iconNode37);
 
   // node_modules/lucide-react/dist/esm/icons/square-code.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode37 = [
+  var __iconNode38 = [
     ["path", { d: "m10 9-3 3 3 3", key: "1oro0q" }],
     ["path", { d: "m14 15 3-3-3-3", key: "bz13h7" }],
     ["rect", { x: "3", y: "3", width: "18", height: "18", rx: "2", key: "h1oib" }]
   ];
-  var SquareCode = createLucideIcon("square-code", __iconNode37);
+  var SquareCode = createLucideIcon("square-code", __iconNode38);
 
   // node_modules/lucide-react/dist/esm/icons/square.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode38 = [
+  var __iconNode39 = [
     ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }]
   ];
-  var Square = createLucideIcon("square", __iconNode38);
+  var Square = createLucideIcon("square", __iconNode39);
 
   // node_modules/lucide-react/dist/esm/icons/strikethrough.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode39 = [
+  var __iconNode40 = [
     ["path", { d: "M16 4H9a3 3 0 0 0-2.83 4", key: "43sutm" }],
     ["path", { d: "M14 12a4 4 0 0 1 0 8H6", key: "nlfj13" }],
     ["line", { x1: "4", x2: "20", y1: "12", y2: "12", key: "1e0a9i" }]
   ];
-  var Strikethrough = createLucideIcon("strikethrough", __iconNode39);
+  var Strikethrough = createLucideIcon("strikethrough", __iconNode40);
 
   // node_modules/lucide-react/dist/esm/icons/table.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode40 = [
+  var __iconNode41 = [
     ["path", { d: "M12 3v18", key: "108xh3" }],
     ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }],
     ["path", { d: "M3 9h18", key: "1pudct" }],
     ["path", { d: "M3 15h18", key: "5xshup" }]
   ];
-  var Table2 = createLucideIcon("table", __iconNode40);
+  var Table2 = createLucideIcon("table", __iconNode41);
 
   // node_modules/lucide-react/dist/esm/icons/tag.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode41 = [
+  var __iconNode42 = [
     [
       "path",
       {
@@ -28340,24 +28379,24 @@ img.ProseMirror-separator {
     ],
     ["circle", { cx: "7.5", cy: "7.5", r: ".5", fill: "currentColor", key: "kqv944" }]
   ];
-  var Tag = createLucideIcon("tag", __iconNode41);
+  var Tag = createLucideIcon("tag", __iconNode42);
 
   // node_modules/lucide-react/dist/esm/icons/trash-2.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode42 = [
+  var __iconNode43 = [
     ["path", { d: "M10 11v6", key: "nco0om" }],
     ["path", { d: "M14 11v6", key: "outv1u" }],
     ["path", { d: "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6", key: "miytrc" }],
     ["path", { d: "M3 6h18", key: "d0wm0j" }],
     ["path", { d: "M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2", key: "e791ji" }]
   ];
-  var Trash2 = createLucideIcon("trash-2", __iconNode42);
+  var Trash2 = createLucideIcon("trash-2", __iconNode43);
 
   // node_modules/lucide-react/dist/esm/icons/triangle-alert.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode43 = [
+  var __iconNode44 = [
     [
       "path",
       {
@@ -28368,54 +28407,54 @@ img.ProseMirror-separator {
     ["path", { d: "M12 9v4", key: "juzpu7" }],
     ["path", { d: "M12 17h.01", key: "p32p05" }]
   ];
-  var TriangleAlert = createLucideIcon("triangle-alert", __iconNode43);
+  var TriangleAlert = createLucideIcon("triangle-alert", __iconNode44);
 
   // node_modules/lucide-react/dist/esm/icons/type.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode44 = [
+  var __iconNode45 = [
     ["path", { d: "M12 4v16", key: "1654pz" }],
     ["path", { d: "M4 7V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2", key: "e0r10z" }],
     ["path", { d: "M9 20h6", key: "s66wpe" }]
   ];
-  var Type = createLucideIcon("type", __iconNode44);
+  var Type = createLucideIcon("type", __iconNode45);
 
   // node_modules/lucide-react/dist/esm/icons/underline.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode45 = [
+  var __iconNode46 = [
     ["path", { d: "M6 4v6a6 6 0 0 0 12 0V4", key: "9kb039" }],
     ["line", { x1: "4", x2: "20", y1: "20", y2: "20", key: "nun2al" }]
   ];
-  var Underline2 = createLucideIcon("underline", __iconNode45);
+  var Underline2 = createLucideIcon("underline", __iconNode46);
 
   // node_modules/lucide-react/dist/esm/icons/undo-2.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode46 = [
+  var __iconNode47 = [
     ["path", { d: "M9 14 4 9l5-5", key: "102s5s" }],
     ["path", { d: "M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11", key: "f3b9sd" }]
   ];
-  var Undo2 = createLucideIcon("undo-2", __iconNode46);
+  var Undo2 = createLucideIcon("undo-2", __iconNode47);
 
   // node_modules/lucide-react/dist/esm/icons/workflow.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode47 = [
+  var __iconNode48 = [
     ["rect", { width: "8", height: "8", x: "3", y: "3", rx: "2", key: "by2w9f" }],
     ["path", { d: "M7 11v4a2 2 0 0 0 2 2h4", key: "xkn7yn" }],
     ["rect", { width: "8", height: "8", x: "13", y: "13", rx: "2", key: "1cgmvn" }]
   ];
-  var Workflow = createLucideIcon("workflow", __iconNode47);
+  var Workflow = createLucideIcon("workflow", __iconNode48);
 
   // node_modules/lucide-react/dist/esm/icons/x.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode48 = [
+  var __iconNode49 = [
     ["path", { d: "M18 6 6 18", key: "1bl5f8" }],
     ["path", { d: "m6 6 12 12", key: "d8bk6v" }]
   ];
-  var X = createLucideIcon("x", __iconNode48);
+  var X = createLucideIcon("x", __iconNode49);
 
   // src/memo-editor/docx-export.ts
   init_define_process_env();
@@ -53111,6 +53150,66 @@ ${promptInput.trim()}`
     }
     return null;
   };
+  var getTableColumnCount = (table) => {
+    if (!table || table.type.name !== "table" || table.childCount === 0) return 0;
+    const firstRow = table.child(0);
+    let count = 0;
+    firstRow.forEach((cell2) => {
+      var _a;
+      count += ((_a = cell2.attrs) == null ? void 0 : _a.colspan) || 1;
+    });
+    return count;
+  };
+  var TABLE_COLUMN_MIN_WIDTH = 120;
+  var TABLE_COLUMN_MAX_WIDTH = 500;
+  var clampWidth = (value, min3 = TABLE_COLUMN_MIN_WIDTH, max3 = TABLE_COLUMN_MAX_WIDTH) => {
+    return Math.min(max3, Math.max(min3, value));
+  };
+  var isNumericText = (value) => {
+    const trimmed = String(value || "").trim();
+    if (!trimmed) return false;
+    return /[0-9]/.test(trimmed) && /^[\s\d.,%+\-]+$/.test(trimmed);
+  };
+  var normalizePinnedColumns = (list2, colCount) => {
+    const unique = Array.from(new Set((list2 || []).filter((index) => Number.isFinite(index))));
+    return unique.map((index) => Math.max(0, Math.min(colCount - 1, index))).filter((index) => index >= 0 && index < colCount).sort((a, b) => a - b);
+  };
+  var adjustPinnedOnMove = (list2, from2, to) => {
+    const next2 = (list2 || []).map((index) => {
+      if (index === from2) return to;
+      if (from2 < to && index > from2 && index <= to) return index - 1;
+      if (from2 > to && index >= to && index < from2) return index + 1;
+      return index;
+    });
+    return Array.from(new Set(next2)).sort((a, b) => a - b);
+  };
+  var adjustPinnedOnInsert = (list2, index) => {
+    return (list2 || []).map((value) => value >= index ? value + 1 : value);
+  };
+  var adjustPinnedOnDelete = (list2, index) => {
+    return (list2 || []).filter((value) => value !== index).map((value) => value > index ? value - 1 : value);
+  };
+  var areNumberArraysEqual = (a, b) => {
+    if (!a && !b) return true;
+    if (!a || !b) return false;
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      if (a[i] !== b[i]) return false;
+    }
+    return true;
+  };
+  var syncPinnedColumns = (editor, tablePos, nextPinned) => {
+    var _a;
+    const table = editor.state.doc.nodeAt(tablePos);
+    if (!table) return;
+    if (areNumberArraysEqual(((_a = table.attrs) == null ? void 0 : _a.pinnedColumns) || [], nextPinned)) return;
+    editor.view.dispatch(
+      editor.state.tr.setNodeMarkup(tablePos, void 0, {
+        ...table.attrs,
+        pinnedColumns: nextPinned
+      })
+    );
+  };
   var moveRow = (editor, tablePos, fromRowIndex, toRowIndex) => {
     const { tr: tr2 } = editor.state;
     const table = editor.state.doc.nodeAt(tablePos);
@@ -53131,9 +53230,11 @@ ${promptInput.trim()}`
     return true;
   };
   var moveColumn = (editor, tablePos, fromColIndex, toColIndex) => {
+    var _a;
     const { tr: tr2 } = editor.state;
     const table = editor.state.doc.nodeAt(tablePos);
     if (!table || table.type.name !== "table") return false;
+    const pinnedColumns = Array.isArray((_a = table.attrs) == null ? void 0 : _a.pinnedColumns) ? table.attrs.pinnedColumns : [];
     const newRows = [];
     table.forEach((row) => {
       const cells = [];
@@ -53144,7 +53245,8 @@ ${promptInput.trim()}`
       }
       newRows.push(row.type.create(row.attrs, cells));
     });
-    const newTable = table.type.create(table.attrs, newRows);
+    const nextPinned = adjustPinnedOnMove(pinnedColumns, fromColIndex, toColIndex);
+    const newTable = table.type.create({ ...table.attrs, pinnedColumns: nextPinned }, newRows);
     editor.view.dispatch(tr2.replaceWith(tablePos, tablePos + table.nodeSize, newTable));
     return true;
   };
@@ -54155,6 +54257,8 @@ ${promptInput.trim()}`
     const [tableSelectionBox, setTableSelectionBox] = react_shim_default.useState(null);
     const [tableSelectionResize, setTableSelectionResize] = react_shim_default.useState(null);
     const blockDragMovedRef = react_shim_default.useRef(false);
+    const tableLayoutRafRef = react_shim_default.useRef(null);
+    const isAutoLayoutRef = react_shim_default.useRef(false);
     const editor = useEditor({
       extensions: [
         StarterKit.configure({
@@ -54242,6 +54346,12 @@ ${promptInput.trim()}`
           const selection = view.state.selection;
           const isCellSelection2 = selection instanceof CellSelection;
           const isSameSingleCell = isCellSelection2 && selection.$anchorCell.pos === info.cellPos && selection.$headCell.pos === info.cellPos;
+          if (!isCellSelection2) {
+            const currentCellPos = getTableCellPosFromResolved(selection.$from);
+            if (currentCellPos !== null && currentCellPos === info.cellPos) {
+              return false;
+            }
+          }
           const coords = view.posAtCoords({ left: event.clientX, top: event.clientY });
           if (event.detail >= 2 || isSameSingleCell) {
             if (!coords) return false;
@@ -54445,6 +54555,168 @@ ${promptInput.trim()}`
         }
       }
     });
+    const applyTableDomStyles = react_shim_default.useCallback((tableDom, widths, numericColumns, pinnedColumns) => {
+      const pinned = normalizePinnedColumns(pinnedColumns, widths.length);
+      const pinnedSet = new Set(pinned);
+      const pinnedOffsets = {};
+      let offset3 = 0;
+      pinned.forEach((colIndex) => {
+        pinnedOffsets[colIndex] = offset3;
+        offset3 += widths[colIndex] || TABLE_COLUMN_MIN_WIDTH;
+      });
+      const lastPinnedIndex = pinned.length ? pinned[pinned.length - 1] : -1;
+      Array.from(tableDom.querySelectorAll("tr")).forEach((row) => {
+        let colIndex = 0;
+        Array.from(row.querySelectorAll("th, td")).forEach((cell2) => {
+          const span = cell2.colSpan || 1;
+          const spanIndices = Array.from({ length: span }, (_v, i) => colIndex + i);
+          const isNumeric = spanIndices.every((idx) => numericColumns[idx]);
+          const isPinned = spanIndices.every((idx) => pinnedSet.has(idx));
+          const isDivider = isPinned && spanIndices[spanIndices.length - 1] === lastPinnedIndex;
+          cell2.classList.toggle("table-col-numeric", isNumeric);
+          cell2.classList.toggle("table-cell-pinned", isPinned);
+          cell2.classList.toggle("table-cell-pinned-divider", isDivider);
+          if (isPinned) {
+            const left = pinnedOffsets[colIndex] || 0;
+            cell2.style.left = `${left}px`;
+            cell2.style.zIndex = "3";
+          } else {
+            cell2.style.left = "";
+            cell2.style.zIndex = "";
+          }
+          colIndex += span;
+        });
+      });
+    }, []);
+    const applySmartTableLayout = react_shim_default.useCallback(() => {
+      if (!editor || isAutoLayoutRef.current) return;
+      const view = editor.view;
+      if (view.dom.classList.contains("resize-cursor")) return;
+      const tables2 = Array.from(view.dom.querySelectorAll("table"));
+      if (!tables2.length) return;
+      let tr2 = editor.state.tr;
+      let modified = false;
+      tables2.forEach((tableDom) => {
+        var _a2, _b2;
+        const pos = view.posAtDOM(tableDom, 0);
+        if (pos == null) return;
+        const $pos = view.state.doc.resolve(pos);
+        let tablePos = -1;
+        let tableNode = null;
+        for (let d = $pos.depth; d > 0; d--) {
+          const node = $pos.node(d);
+          if (node.type.name === "table") {
+            tablePos = $pos.before(d);
+            tableNode = node;
+            break;
+          }
+        }
+        if (!tableNode || tablePos < 0) return;
+        const rows = Array.from(tableDom.querySelectorAll("tr"));
+        if (!rows.length) return;
+        const colCount = rows.reduce((max3, row) => {
+          const count = Array.from(row.querySelectorAll("th, td")).reduce((sum, cell2) => sum + (cell2.colSpan || 1), 0);
+          return Math.max(max3, count);
+        }, 0);
+        if (!colCount) return;
+        const numericFlags = new Array(colCount).fill(true);
+        const hasValue = new Array(colCount).fill(false);
+        const contentWidths = new Array(colCount).fill(0);
+        rows.forEach((row) => {
+          let colIndex = 0;
+          Array.from(row.querySelectorAll("th, td")).forEach((cell2) => {
+            const span = cell2.colSpan || 1;
+            const text = cell2.textContent || "";
+            const numeric2 = isNumericText(text);
+            const hasText = Boolean(text.trim());
+            const cellWidth = cell2.scrollWidth || 0;
+            const perColWidth = Math.max(1, Math.ceil(cellWidth / span));
+            for (let i = 0; i < span; i++) {
+              if (hasText) {
+                hasValue[colIndex + i] = true;
+                if (!numeric2) numericFlags[colIndex + i] = false;
+              }
+              contentWidths[colIndex + i] = Math.max(contentWidths[colIndex + i], perColWidth);
+            }
+            colIndex += span;
+          });
+        });
+        const existingWidths = new Array(colCount).fill(0);
+        let firstRowProcessed = false;
+        tableNode.forEach((row) => {
+          if (firstRowProcessed || row.type.name !== "tableRow") return;
+          let colCursor = 0;
+          row.forEach((cell2) => {
+            const colspan = cell2.attrs.colspan || 1;
+            const colwidthAttr = Array.isArray(cell2.attrs.colwidth) ? cell2.attrs.colwidth : [];
+            for (let i = 0; i < colspan; i++) {
+              const value = Number(colwidthAttr[i] || 0);
+              if (value) existingWidths[colCursor + i] = value;
+            }
+            colCursor += colspan;
+          });
+          firstRowProcessed = true;
+        });
+        const numericColumns = numericFlags.map((flag, idx) => flag && hasValue[idx]);
+        const widths = contentWidths.map((width, idx) => {
+          if (numericColumns[idx]) return TABLE_COLUMN_MIN_WIDTH;
+          const base2 = existingWidths[idx] || width + 16;
+          return clampWidth(base2);
+        });
+        const wrapper = tableDom.closest(".tableWrapper");
+        const availableWidth = wrapper ? wrapper.clientWidth : tableDom.clientWidth;
+        const totalWidth = widths.reduce((sum, value) => sum + value, 0);
+        const lastIndex = widths.length - 1;
+        if (availableWidth && lastIndex >= 0 && !numericColumns[lastIndex] && totalWidth < availableWidth) {
+          const extra = availableWidth - totalWidth;
+          widths[lastIndex] = clampWidth(widths[lastIndex] + extra);
+        }
+        const pinnedColumns = normalizePinnedColumns(((_a2 = tableNode.attrs) == null ? void 0 : _a2.pinnedColumns) || [], widths.length);
+        if (!areNumberArraysEqual(((_b2 = tableNode.attrs) == null ? void 0 : _b2.pinnedColumns) || [], pinnedColumns)) {
+          const mappedTablePos = tr2.mapping.map(tablePos);
+          tr2 = tr2.setNodeMarkup(mappedTablePos, void 0, {
+            ...tableNode.attrs,
+            pinnedColumns
+          });
+          modified = true;
+        }
+        let handledFirstRow = false;
+        tableNode.forEach((row, rowOffset) => {
+          if (handledFirstRow || row.type.name !== "tableRow") return;
+          let colCursor = 0;
+          row.forEach((cell2, cellOffset) => {
+            const colspan = cell2.attrs.colspan || 1;
+            const colwidth = widths.slice(colCursor, colCursor + colspan);
+            const cellPos = tablePos + rowOffset + cellOffset + 2;
+            const mappedPos = tr2.mapping.map(cellPos);
+            if (!areNumberArraysEqual(cell2.attrs.colwidth, colwidth)) {
+              tr2 = tr2.setNodeMarkup(mappedPos, void 0, {
+                ...cell2.attrs,
+                colwidth
+              });
+              modified = true;
+            }
+            colCursor += colspan;
+          });
+          handledFirstRow = true;
+        });
+        applyTableDomStyles(tableDom, widths, numericColumns, pinnedColumns);
+      });
+      if (modified) {
+        isAutoLayoutRef.current = true;
+        editor.view.dispatch(tr2);
+        isAutoLayoutRef.current = false;
+      }
+    }, [editor, applyTableDomStyles]);
+    const scheduleTableLayout = react_shim_default.useCallback(() => {
+      if (tableLayoutRafRef.current) {
+        cancelAnimationFrame(tableLayoutRafRef.current);
+      }
+      tableLayoutRafRef.current = requestAnimationFrame(() => {
+        applySmartTableLayout();
+        tableLayoutRafRef.current = null;
+      });
+    }, [applySmartTableLayout]);
     const copyBlockHtmlAtPos = react_shim_default.useCallback((pos) => {
       if (!editor) return;
       try {
@@ -54488,6 +54760,53 @@ ${promptInput.trim()}`
       editor.on("update", syncTableWrappers);
       return () => {
         editor.off("update", syncTableWrappers);
+      };
+    }, [editor]);
+    react_shim_default.useEffect(() => {
+      if (!editor) return;
+      const syncTableScrollbars = () => {
+        editor.view.dom.querySelectorAll(".tableWrapper").forEach((wrapper) => {
+          const table = wrapper.querySelector("table");
+          if (!table) return;
+          let scrollbar = wrapper.querySelector(".table-scrollbar");
+          if (!scrollbar) {
+            scrollbar = document.createElement("div");
+            scrollbar.className = "table-scrollbar";
+            scrollbar.innerHTML = '<div class="table-scrollbar__inner"></div>';
+            wrapper.insertBefore(scrollbar, wrapper.firstChild);
+          }
+          const inner = scrollbar.querySelector(".table-scrollbar__inner");
+          if (!inner) return;
+          inner.style.width = `${table.scrollWidth}px`;
+          const wrapperRect = wrapper.getBoundingClientRect();
+          const needsHorizontal = table.scrollWidth > wrapper.clientWidth + 2;
+          scrollbar.style.display = needsHorizontal ? "block" : "none";
+          if (!wrapper.getAttribute("data-scrollbar-init")) {
+            wrapper.setAttribute("data-scrollbar-init", "true");
+            let syncing = false;
+            wrapper.addEventListener("scroll", () => {
+              if (syncing) return;
+              syncing = true;
+              scrollbar.scrollLeft = wrapper.scrollLeft;
+              syncing = false;
+            });
+            scrollbar.addEventListener("scroll", () => {
+              if (syncing) return;
+              syncing = true;
+              wrapper.scrollLeft = scrollbar.scrollLeft;
+              syncing = false;
+            });
+          }
+        });
+      };
+      syncTableScrollbars();
+      editor.on("update", syncTableScrollbars);
+      window.addEventListener("resize", syncTableScrollbars);
+      window.addEventListener("scroll", syncTableScrollbars, { passive: true });
+      return () => {
+        editor.off("update", syncTableScrollbars);
+        window.removeEventListener("resize", syncTableScrollbars);
+        window.removeEventListener("scroll", syncTableScrollbars);
       };
     }, [editor]);
     react_shim_default.useEffect(() => {
@@ -54597,6 +54916,20 @@ ${promptInput.trim()}`
         window.removeEventListener("resize", updateTableSelectionBox);
       };
     }, [editor]);
+    react_shim_default.useEffect(() => {
+      if (!editor) return;
+      scheduleTableLayout();
+      editor.on("update", scheduleTableLayout);
+      window.addEventListener("resize", scheduleTableLayout);
+      return () => {
+        editor.off("update", scheduleTableLayout);
+        window.removeEventListener("resize", scheduleTableLayout);
+        if (tableLayoutRafRef.current) {
+          cancelAnimationFrame(tableLayoutRafRef.current);
+          tableLayoutRafRef.current = null;
+        }
+      };
+    }, [editor, scheduleTableLayout]);
     react_shim_default.useEffect(() => {
       if (!editor || !tableSelectionResize) return;
       const handleMouseMove3 = (event) => {
@@ -56433,6 +56766,7 @@ ${innerMarkdown}
                     {
                       className: "table-context-menu-item",
                       onClick: () => {
+                        var _a2;
                         const { type: type2, index, tablePos } = tableContextMenu;
                         const table = editor.state.doc.nodeAt(tablePos);
                         if (table) {
@@ -56447,8 +56781,24 @@ ${innerMarkdown}
                             for (let i = 0; i < index; i++) cellPos += row.child(i).nodeSize;
                           }
                           editor.chain().focus().setNodeSelection(cellPos).run();
-                          if (type2 === "row") editor.chain().addRowBefore().run();
-                          else editor.chain().addColumnBefore().run();
+                          if (type2 === "row") {
+                            editor.chain().addRowBefore().run();
+                          } else {
+                            editor.chain().addColumnBefore().run();
+                            const updatedTable = editor.state.doc.nodeAt(tablePos);
+                            if (updatedTable) {
+                              const currentPinned = Array.isArray((_a2 = updatedTable.attrs) == null ? void 0 : _a2.pinnedColumns) ? updatedTable.attrs.pinnedColumns : [];
+                              const nextPinned = adjustPinnedOnInsert(currentPinned, index);
+                              if (!areNumberArraysEqual(currentPinned, nextPinned)) {
+                                editor.view.dispatch(
+                                  editor.state.tr.setNodeMarkup(tablePos, void 0, {
+                                    ...updatedTable.attrs,
+                                    pinnedColumns: nextPinned
+                                  })
+                                );
+                              }
+                            }
+                          }
                         }
                         setTableContextMenu(null);
                       },
@@ -56463,6 +56813,7 @@ ${innerMarkdown}
                     {
                       className: "table-context-menu-item",
                       onClick: () => {
+                        var _a2;
                         const { type: type2, index, tablePos } = tableContextMenu;
                         const table = editor.state.doc.nodeAt(tablePos);
                         if (table) {
@@ -56477,8 +56828,24 @@ ${innerMarkdown}
                             for (let i = 0; i < index; i++) cellPos += row.child(i).nodeSize;
                           }
                           editor.chain().focus().setNodeSelection(cellPos).run();
-                          if (type2 === "row") editor.chain().deleteRow().run();
-                          else editor.chain().deleteColumn().run();
+                          if (type2 === "row") {
+                            editor.chain().deleteRow().run();
+                          } else {
+                            editor.chain().deleteColumn().run();
+                            const updatedTable = editor.state.doc.nodeAt(tablePos);
+                            if (updatedTable) {
+                              const currentPinned = Array.isArray((_a2 = updatedTable.attrs) == null ? void 0 : _a2.pinnedColumns) ? updatedTable.attrs.pinnedColumns : [];
+                              const nextPinned = adjustPinnedOnDelete(currentPinned, index);
+                              if (!areNumberArraysEqual(currentPinned, nextPinned)) {
+                                editor.view.dispatch(
+                                  editor.state.tr.setNodeMarkup(tablePos, void 0, {
+                                    ...updatedTable.attrs,
+                                    pinnedColumns: nextPinned
+                                  })
+                                );
+                              }
+                            }
+                          }
                         }
                         setTableContextMenu(null);
                       },
@@ -56490,6 +56857,58 @@ ${innerMarkdown}
                   ),
                   tableContextMenu.type === "col" && /* @__PURE__ */ jsxs(Fragment3, { children: [
                     /* @__PURE__ */ jsx("div", { className: "table-context-menu-divider" }),
+                    /* @__PURE__ */ jsxs(
+                      "div",
+                      {
+                        className: "table-context-menu-item",
+                        onClick: () => {
+                          var _a2;
+                          const { tablePos, index } = tableContextMenu;
+                          const table = editor.state.doc.nodeAt(tablePos);
+                          if (!table) return;
+                          const colCount = getTableColumnCount(table);
+                          const currentPinned = normalizePinnedColumns(((_a2 = table.attrs) == null ? void 0 : _a2.pinnedColumns) || [], colCount);
+                          const isPinned = currentPinned.includes(index);
+                          const pinnedCount = currentPinned.length;
+                          if (!isPinned) {
+                            const targetIndex = Math.min(pinnedCount, colCount - 1);
+                            if (index !== targetIndex) {
+                              moveColumn(editor, tablePos, index, targetIndex);
+                            }
+                            const updatedTable = editor.state.doc.nodeAt(tablePos);
+                            const nextPinned = normalizePinnedColumns(
+                              [...currentPinned, targetIndex],
+                              getTableColumnCount(updatedTable)
+                            );
+                            syncPinnedColumns(editor, tablePos, nextPinned);
+                          } else {
+                            const nextPinned = currentPinned.filter((col) => col !== index);
+                            if (index < pinnedCount) {
+                              const targetIndex = Math.min(nextPinned.length, colCount - 1);
+                              if (index !== targetIndex) {
+                                moveColumn(editor, tablePos, index, targetIndex);
+                              }
+                            }
+                            const updatedTable = editor.state.doc.nodeAt(tablePos);
+                            const normalizedNext = normalizePinnedColumns(
+                              nextPinned,
+                              getTableColumnCount(updatedTable)
+                            );
+                            syncPinnedColumns(editor, tablePos, normalizedNext);
+                          }
+                          setTableContextMenu(null);
+                        },
+                        children: [
+                          /* @__PURE__ */ jsx(Pin, { size: 14, style: { marginRight: 8 } }),
+                          (() => {
+                            var _a2, _b2;
+                            const table = editor.state.doc.nodeAt(tableContextMenu.tablePos);
+                            const pinned = Array.isArray((_a2 = table == null ? void 0 : table.attrs) == null ? void 0 : _a2.pinnedColumns) ? (_b2 = table == null ? void 0 : table.attrs) == null ? void 0 : _b2.pinnedColumns : [];
+                            return pinned.includes(tableContextMenu.index) ? "D\xE9s\xE9pingler" : "\xC9pingler";
+                          })()
+                        ]
+                      }
+                    ),
                     /* @__PURE__ */ jsxs(
                       "div",
                       {
@@ -56781,6 +57200,7 @@ lucide-react/dist/esm/icons/link.js:
 lucide-react/dist/esm/icons/list.js:
 lucide-react/dist/esm/icons/loader-circle.js:
 lucide-react/dist/esm/icons/pencil.js:
+lucide-react/dist/esm/icons/pin.js:
 lucide-react/dist/esm/icons/plus.js:
 lucide-react/dist/esm/icons/quote.js:
 lucide-react/dist/esm/icons/rectangle-horizontal.js:

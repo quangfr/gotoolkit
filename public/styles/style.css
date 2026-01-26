@@ -789,6 +789,10 @@ mark {
   gap: 8px;
 }
 
+.ai-request-counter-toaster {
+  z-index: 130000;
+}
+
 .feedback-app-button {
   border: 1px solid var(--border-main);
   background: var(--bg-app);
@@ -1188,8 +1192,8 @@ label {
 }
 
 .gt-template-modal__dialog {
-  width: min(900px, 96vw);
-  max-height: 80vh;
+  width: min(1400px, 98vw);
+  max-height: 98vh;
   display: flex;
   flex-direction: column;
   padding: 12px;
@@ -1198,6 +1202,9 @@ label {
 .gt-template-modal__list {
   display: grid;
   grid-template-columns: repeat(3, minmax(240px, 1fr));
+  --gallery-row-min: 180px;
+  grid-auto-rows: minmax(var(--gallery-row-min), auto);
+  min-height: calc((var(--gallery-row-min) * 2) + 12px);
   gap: 12px;
   margin: 0;
   overflow-y: auto;
@@ -1214,7 +1221,7 @@ label {
   gap: 10px;
   cursor: pointer;
   transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.06s ease;
-  min-height: 84px;
+  height: var(--gallery-row-min, 180px);
   width: 100%;
   text-align: left;
   font-family: inherit;
@@ -1263,7 +1270,9 @@ label {
   border-radius: 99px;
   border: 1px solid var(--border-main);
   background: var(--bg-surface);
-  font-size: 11px;
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
   color: var(--text-main);
   cursor: pointer;
   transition: all 0.2s ease;
@@ -2758,4 +2767,42 @@ label {
 .chat-inline-editor__btn:active {
   transform: none;
   opacity: 0.5;
+}
+
+.gallery-nav {
+  position: relative;
+}
+
+.gallery-nav__btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-surface);
+  color: var(--text-main);
+  cursor: pointer;
+  z-index: 2;
+}
+
+.gallery-nav__btn i {
+  width: 16px;
+  height: 16px;
+}
+
+.gallery-nav__btn:hover {
+  background: var(--bg-surface-soft);
+}
+
+.gallery-nav__prev {
+  left: -18px;
+}
+
+.gallery-nav__next {
+  right: -18px;
 }

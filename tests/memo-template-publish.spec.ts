@@ -11,7 +11,7 @@ test.describe("Memo template publish + fetch", () => {
     await page.goto(`${baseUrl}/index.html`, { waitUntil: "load" });
     await page.click("#openSettingsBtn");
     await page.waitForSelector("#settingsModal.open");
-    await page.fill("#adminTokenInput", adminToken);
+    await page.fill("#ownerToken", adminToken);
     await page.click("#saveSettingsBtn");
     await page.waitForFunction(
       token => localStorage.getItem("feedback-admin-token") === token,

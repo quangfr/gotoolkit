@@ -293,9 +293,12 @@
         }
 
         /* Launcher Template Gallery */
-        #gtTemplateModalList {
+       #gtTemplateModalList {
             display: grid;
-            grid-template-columns: repeat(5, minmax(200px, 1fr));
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            --gallery-row-min: 180px;
+            grid-auto-rows: minmax(var(--gallery-row-min), auto);
+            min-height: calc((var(--gallery-row-min) * 2) + 12px);
             gap: 12px;
             overflow-x: auto;
             padding: 4px 2px 12px;
@@ -308,6 +311,7 @@
             scroll-snap-align: start;
             min-width: 200px;
             position: relative;
+            height: var(--gallery-row-min, 180px);
         }
 
         .gt-template-card__meta {
@@ -372,6 +376,9 @@
         .share-gallery {
             display: grid;
             grid-template-columns: repeat(5, minmax(0, 1fr));
+            --gallery-row-min: 180px;
+            grid-auto-rows: minmax(var(--gallery-row-min), auto);
+            min-height: calc((var(--gallery-row-min) * 2) + 12px);
             gap: 12px;
         }
 
@@ -385,7 +392,7 @@
             background: var(--bg-surface-soft);
             text-decoration: none;
             color: var(--text-main);
-            min-height: 120px;
+            height: var(--gallery-row-min, 180px);
             transition: box-shadow 0.2s ease;
             position: relative;
             padding-bottom: 36px;
@@ -501,6 +508,10 @@
             margin: 8px 0 0;
             color: var(--text-main);
             font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
         }
 
         .share-helper[hidden] {

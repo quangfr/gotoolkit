@@ -987,6 +987,7 @@
             text-align: left;
             transition: all 0.2s ease;
             position: relative;
+            height: auto;
         }
 
         .gt-template-card h4 {
@@ -1079,7 +1080,9 @@
             border-radius: 99px;
             border: 1px solid var(--border-main);
             background: var(--bg-surface);
-            font-size: 11px;
+            font-size: 10px;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
             cursor: pointer;
             transition: all 0.2s ease;
             user-select: none;

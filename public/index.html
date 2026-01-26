@@ -99,12 +99,21 @@
                 <p class="section-label superpower-label label-link" id="superpowerToggle">
                     <i data-lucide="zap" style="width:14px;height:14px;margin-right:2px;"></i>Modèles Go-Live
                 </p>
+                <div id="templateOwnerFilters" style="display:flex; flex-wrap:wrap; gap:6px; margin-left:auto;"></div>
                 <button id="refreshTemplatesBtn" class="share-card-action refresh-templates-btn"
                     title="Rafraîchir les modèles">
                     <i data-lucide="refresh-cw" style="width:14px;height:14px;"></i>
                 </button>
             </div>
-            <div class="gt-template-modal__list" id="gtTemplateModalList"></div>
+            <div class="gallery-nav" id="templateGalleryNav">
+                <button class="gallery-nav__btn gallery-nav__prev" type="button" aria-label="Modèles précédents">
+                    <i data-lucide="chevron-left"></i>
+                </button>
+                <div class="gt-template-modal__list" id="gtTemplateModalList"></div>
+                <button class="gallery-nav__btn gallery-nav__next" type="button" aria-label="Modèles suivants">
+                    <i data-lucide="chevron-right"></i>
+                </button>
+            </div>
         </section>
 
         <section class="section">
@@ -120,7 +129,15 @@
                         style="width:14px;height:14px;margin-right:4px;"></i>Bibliothèque locale
                 </p>
             </div>
-            <div id="savedGallery" class="share-gallery" aria-live="polite"></div>
+            <div class="gallery-nav" id="savedGalleryNav">
+                <button class="gallery-nav__btn gallery-nav__prev" type="button" aria-label="Documents précédents">
+                    <i data-lucide="chevron-left"></i>
+                </button>
+                <div id="savedGallery" class="share-gallery" aria-live="polite"></div>
+                <button class="gallery-nav__btn gallery-nav__next" type="button" aria-label="Documents suivants">
+                    <i data-lucide="chevron-right"></i>
+                </button>
+            </div>
             <p id="savedEmpty" class="share-helper" hidden>Aucun document enregistré localement.</p>
 
             <div class="section-title-row" style="margin-top: 12px;">
@@ -128,7 +145,15 @@
                         style="width:14px;height:14px;margin-right:4px;"></i>Espace en ligne</p>
             </div>
 
-            <div id="shareGallery" class="share-gallery" aria-live="polite"></div>
+            <div class="gallery-nav" id="shareGalleryNav">
+                <button class="gallery-nav__btn gallery-nav__prev" type="button" aria-label="Documents en ligne précédents">
+                    <i data-lucide="chevron-left"></i>
+                </button>
+                <div id="shareGallery" class="share-gallery" aria-live="polite"></div>
+                <button class="gallery-nav__btn gallery-nav__next" type="button" aria-label="Documents en ligne suivants">
+                    <i data-lucide="chevron-right"></i>
+                </button>
+            </div>
             <p id="shareLoading" class="share-helper">Chargement des galeries...</p>
             <p id="shareEmpty" class="share-helper" hidden>Aucun document enregistré en ligne.</p>
             <p id="shareError" class="share-helper share-helper-error" hidden></p>
@@ -393,8 +418,11 @@
 
                                 <div class="field-row" style="margin-top:8px;">
                                     <label style="width:100%">
-                                        <span class="label-title">Token Admin</span>
-                                        <input id="adminTokenInput" type="text" />
+                                        <span class="label-title">Prénom</span>
+                                        <div style="display:flex; align-items:center; gap:8px;">
+                                            <i data-lucide="user" style="width:14px;height:14px;"></i>
+                                            <input id="ownerToken" type="text" />
+                                        </div>
                                     </label>
                                 </div>
                             </div>
@@ -817,6 +845,7 @@
     <script>
         (function () {
             const gallery = document.getElementById("shareGallery");
+            const shareGalleryNav = document.getElementById("shareGalleryNav");
             const pinnedGallery = document.getElementById("pinnedGallery");
             const pinnedBlock = document.getElementById("pinnedBlock");
             const loadingLabel = document.getElementById("shareLoading");
@@ -826,6 +855,7 @@
             const shareHistory = window.goToolkitShareHistory;
             const shareService = window.goToolkitShareWorker;
             const savedGallery = document.getElementById("savedGallery");
+            const savedGalleryNav = document.getElementById("savedGalleryNav");
             const savedEmpty = document.getElementById("savedEmpty");
             const documentApi = window.goToolkitDocumentApi;
 
@@ -1271,6 +1301,55 @@
                 return blob;
             }
 
+            function initGalleryNav(wrapper, listEl) {
+                if (!wrapper || !listEl) return;
+                const prevBtn = wrapper.querySelector(".gallery-nav__prev");
+                const nextBtn = wrapper.querySelector(".gallery-nav__next");
+                const pageSize = 10;
+
+                function update() {
+                    const items = Array.from(listEl.children);
+                    const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
+                    let page = parseInt(wrapper.dataset.page || "0", 10);
+                    if (!Number.isFinite(page) || page < 0) page = 0;
+                    if (page >= totalPages) page = 0;
+                    wrapper.dataset.page = String(page);
+
+                    items.forEach((item, index) => {
+                        const pageIndex = Math.floor(index / pageSize);
+                        item.style.display = totalPages <= 1 || pageIndex === page ? "" : "none";
+                    });
+
+                    const showNav = totalPages > 1;
+                    if (prevBtn) prevBtn.style.display = showNav ? "flex" : "none";
+                    if (nextBtn) nextBtn.style.display = showNav ? "flex" : "none";
+                }
+
+                if (!wrapper.dataset.navInit) {
+                    wrapper.dataset.navInit = "true";
+                    prevBtn?.addEventListener("click", () => {
+                        const page = parseInt(wrapper.dataset.page || "0", 10) || 0;
+                        wrapper.dataset.page = String(Math.max(0, page - 1));
+                        update();
+                    });
+                    nextBtn?.addEventListener("click", () => {
+                        const page = parseInt(wrapper.dataset.page || "0", 10) || 0;
+                        wrapper.dataset.page = String(page + 1);
+                        update();
+                    });
+                }
+
+                update();
+            }
+
+            function hideGalleryNav(wrapper) {
+                if (!wrapper) return;
+                wrapper.dataset.page = "0";
+                wrapper.querySelectorAll(".gallery-nav__btn").forEach(btn => {
+                    btn.style.display = "none";
+                });
+            }
+
             async function refreshSavedGallery() {
                 if (refreshSavedPromise) {
                     return refreshSavedPromise;
@@ -1282,6 +1361,7 @@
                     savedGallery.innerHTML = "";
                     if (!documentApi || typeof documentApi.getAllRecords !== "function") {
                         if (savedEmpty) savedEmpty.hidden = false;
+                        hideGalleryNav(savedGalleryNav);
                         return;
                     }
                     const records = await documentApi.getAllRecords();
@@ -1307,6 +1387,7 @@
                     }
                     if (!filtered.length) {
                         if (savedEmpty) savedEmpty.hidden = false;
+                        hideGalleryNav(savedGalleryNav);
                         return;
                     }
                     if (savedEmpty) savedEmpty.hidden = true;
@@ -1355,6 +1436,7 @@
                     regular.forEach(item => savedGallery.appendChild(item.card));
                     if (savedEmpty) savedEmpty.hidden = true; // Always show the gallery if we have the Create card
                     if (window.lucide) window.lucide.createIcons();
+                    initGalleryNav(savedGalleryNav, savedGallery);
                 })().finally(() => {
                     refreshSavedPromise = null;
                 });
@@ -1380,6 +1462,7 @@
                     const entries = await getStoredRecords();
                     if (!entries.length) {
                         setState({ loading: false, hasData: false, error: "", hasPinned: false, hasRegular: false });
+                        hideGalleryNav(shareGalleryNav);
                         return;
                     }
                     const cards = await Promise.all(entries.map(({ app, record }) => buildShareCard(app, record)));
@@ -1398,6 +1481,7 @@
                     }
                     if (!validCards.length) {
                         setState({ loading: false, hasData: false, error: "", hasPinned: false, hasRegular: false });
+                        hideGalleryNav(shareGalleryNav);
                         return;
                     }
                     const pinned = validCards
@@ -1420,6 +1504,7 @@
                     const hasRegular = regular.length > 0;
                     setState({ loading: false, hasData: hasPinned || hasRegular, hasPinned, hasRegular, error: "" });
                     if (window.lucide) window.lucide.createIcons();
+                    initGalleryNav(shareGalleryNav, gallery);
                 })().finally(() => {
                     refreshGalleryPromise = null;
                 });
@@ -1482,10 +1567,10 @@
         const saveRequestBtn = document.getElementById("saveRequestBtn");
         const deleteRequestBtn = document.getElementById("deleteRequestBtn");
         const feedbackWebsite = document.getElementById("feedbackWebsite");
-        const adminTokenInput = document.getElementById("adminTokenInput");
+        const ownerToken = document.getElementById("ownerToken");
         try {
             const storedAdmin = localStorage.getItem("feedback-admin-token");
-            if (adminTokenInput && !adminTokenInput.value && storedAdmin) adminTokenInput.value = storedAdmin;
+            if (ownerToken && !ownerToken.value && storedAdmin) ownerToken.value = storedAdmin;
         } catch (e) { /* noop */ }
         const REQUEST_STATUS_LABELS = {
             recue: "Reçue",
@@ -1497,7 +1582,7 @@
         let activeRequestId = null;
 
         function updateRequestsButtonVisibility() {
-            const token = (adminTokenInput?.value || localStorage.getItem("feedback-admin-token") || "").trim();
+            const token = (ownerToken?.value || localStorage.getItem("feedback-admin-token") || "").trim();
             const hasToken = Boolean(token);
             if (requestsBtn) requestsBtn.hidden = !hasToken;
             // Hide feedback-app-index-openBtn when admin token is filled
@@ -1725,7 +1810,7 @@
                 };
                 const headers = { "Content-Type": "application/json" };
                 try {
-                    const token = (adminTokenInput?.value || localStorage.getItem("feedback-admin-token") || "").trim();
+                    const token = (ownerToken?.value || localStorage.getItem("feedback-admin-token") || "").trim();
                     if (token) headers["Authorization"] = "Bearer " + token;
                 } catch (e) { /* noop */ }
                 const response = await fetch(endpoint, {
@@ -1765,7 +1850,7 @@
                 const endpoint = (window.GO_TOOLKIT_FEEDBACK_API_URL || "https://feedback.gotoolkit.workers.dev/v1/feedback") + "/" + encodeURIComponent(activeRequestId);
                 const headers = {};
                 try {
-                    const token = (adminTokenInput?.value || localStorage.getItem("feedback-admin-token") || "").trim();
+                    const token = (ownerToken?.value || localStorage.getItem("feedback-admin-token") || "").trim();
                     if (token) headers["Authorization"] = "Bearer " + token;
                 } catch (e) { /* noop */ }
                 const response = await fetch(endpoint, { method: "DELETE", headers });
@@ -2622,7 +2707,7 @@
             } catch (e) { /* noop */ }
             try {
                 const storedAdmin = localStorage.getItem("feedback-admin-token");
-                if (adminTokenInput && storedAdmin) adminTokenInput.value = storedAdmin;
+                if (ownerToken && storedAdmin) ownerToken.value = storedAdmin;
             } catch (e) { /* noop */ }
             loadChatPrompt();
             activateSettingsTab("servicesTab");
@@ -2881,10 +2966,10 @@
                 try { window.GoToolkitAssemblyAiKey = assemblyKeyValue; } catch (e) { /* noop */ }
                 // expose immediate selection to runtime
                 try { window.GoToolkitSelectedAIBackend = selectedBackend; } catch (e) { }
-                const adminTokenValue = (adminTokenInput?.value || "").trim();
+                const ownerTokenValue = (ownerToken?.value || "").trim();
                 try {
-                    if (adminTokenValue) {
-                        localStorage.setItem("feedback-admin-token", adminTokenValue);
+                    if (ownerTokenValue) {
+                        localStorage.setItem("feedback-admin-token", ownerTokenValue);
                     } else {
                         localStorage.removeItem("feedback-admin-token");
                     }
@@ -3073,7 +3158,7 @@
         deleteRequestBtn?.addEventListener("click", () => {
             deleteCurrentRequest();
         });
-        adminTokenInput?.addEventListener("input", () => {
+        ownerToken?.addEventListener("input", () => {
             if (updateRequestsButtonVisibility()) {
                 fetchRequests().catch(() => { /* noop */ });
             }

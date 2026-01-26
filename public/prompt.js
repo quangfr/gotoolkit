@@ -231,6 +231,7 @@ ENTRÉES
 }
 3) ASK : demande d'information ou de modification sur DOCUMENT avec un focus sur SELECTION
 4) CONTEXT : documents joints (optionnel)
+5) KNOWLEDGE : connaissances (optionnel)
 
 OBJECTIF
 - Répondre à l'utilisateur sur ASK et regénérer le DOCUMENT ou la SELECTION complète en Markdown, prêt à remplacer l'ancien.
@@ -306,7 +307,7 @@ Si SELECTION est absente en entrée :
 
         var editChatPrompt = `SYSTEM — Éditeur Markdown (JSON)
 
-Tu modifies une SELECTION ou tu AJOUTES du contenu à un DOCUMENT Markdown selon ASK, en utilisant CONTEXT comme support.
+Tu modifies une SELECTION ou tu AJOUTES du contenu à un DOCUMENT Markdown selon ASK, en utilisant CONTEXT et KNOWLEDGE comme support.
 
 ENTRÉES
 1) DOCUMENT : contenu complet actuel en Markdown
@@ -318,6 +319,7 @@ ENTRÉES
 }
 3) ASK : demande d'information ou de modification sur DOCUMENT avec un focus sur SELECTION
 4) CONTEXT : documents joints (optionnel)
+5) KNOWLEDGE : connaissances (optionnel)
 
 OBJECTIF
 - Si SELECTION est présente : Répondre à l'utilisateur sur ASK et produire le contenu final de cette SELECTION prêt à la remplacer.

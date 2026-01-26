@@ -140,7 +140,7 @@
                                 <button id="shareBtn" type="button" class="menu-panel-btn"><i data-lucide="share-2"></i>
                                     Partager</button>
                                 <button id="renameDocumentBtn" type="button" class="menu-panel-btn"><i
-                                        data-lucide="edit-3"></i> Renommer</button>
+                                        data-lucide="edit-3"></i> <span data-label>Éditer</span></button>
                                 <button id="deleteDocumentBtn" type="button" class="menu-panel-btn"><i
                                         data-lucide="trash-2"></i> Supprimer</button>
                                 <button id="infoButton" type="button" class="menu-panel-btn"><i data-lucide="info"></i>
@@ -204,16 +204,24 @@
                 <div id="gtTemplateSuperpowerList" class="superpowers-checkbox-group"
                     style="margin-top: 0; margin-bottom: 8px;"></div>
             </div>
-            <div class="gt-template-modal__list" id="gtTemplateModalList" role="radiogroup"></div>
+            <div class="gallery-nav" id="gtTemplateModalListNav">
+                <button class="gallery-nav__btn gallery-nav__prev" type="button" aria-label="Modèles précédents">
+                    <i data-lucide="chevron-left"></i>
+                </button>
+                <div class="gt-template-modal__list" id="gtTemplateModalList" role="radiogroup"></div>
+                <button class="gallery-nav__btn gallery-nav__next" type="button" aria-label="Modèles suivants">
+                    <i data-lucide="chevron-right"></i>
+                </button>
+            </div>
             <div class="gt-template-modal__actions modal-actions" style="justify-content: flex-start; gap: 8px;">
                 <button id="refreshTemplatesBtn" type="button" class="btn btn-secondary" title="Rafraîchir les modèles">
                     <i data-lucide="refresh-cw"></i>
                 </button>
                 <button id="publishTemplateBtn" type="button" class="btn btn-secondary"
-                    style="display:none; margin-left:auto;">
+                    style="display:none;">
                     Publier
                 </button>
-                <button id="gtTemplateModalApply" type="button" class="btn-primary">Utiliser</button>
+                <button id="gtTemplateModalApply" type="button" class="btn-primary" style="margin-left:auto;">Utiliser</button>
             </div>
         </div>
     </div>
@@ -254,10 +262,6 @@
         <div class="info-actions">
             <button id="memoUpdateBtn" type="button" class="update-btn">Réparer</button>
             <button type="button" class="secondary" data-open-nexus-modal>Mentions légales</button>
-        </div>
-        <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border-main);">
-            <input type="text" id="adminTokenInput" placeholder=""
-                style="width: 100%; height: 26px; font-size: 11px; border-radius: 6px; border: 1px solid var(--border-main); background: var(--bg-app); color: var(--text-main); padding: 0 8px; outline: none;">
         </div>
     </div>
 
@@ -430,7 +434,7 @@
             const renameDocumentBtn = document.getElementById("renameDocumentBtn");
             const deleteDocumentBtn = document.getElementById("deleteDocumentBtn");
             const publishTemplateBtn = document.getElementById("publishTemplateBtn");
-            const adminTokenInput = document.getElementById("adminTokenInput");
+            const ownerToken = document.getElementById("ownerToken");
             const importJsonInput = document.getElementById("importJsonInput");
             const infoButton = document.getElementById("infoButton");
             const memoInfoPopup = document.getElementById("memoInfoPopup");
@@ -447,8 +451,10 @@
             const templateModalTrigger = document.getElementById("gtTemplateModalTrigger");
             const templateModalClose = document.getElementById("gtTemplateModalClose");
             const templateModalList = document.getElementById("gtTemplateModalList");
+            const templateModalListNav = document.getElementById("gtTemplateModalListNav");
             const templateSuperpowerList = document.getElementById("gtTemplateSuperpowerList");
             let selectedTemplateSuperpowerIds = [];
+            let selectedTemplateOwnerTokens = [];
             const templateModalApply = document.getElementById("gtTemplateModalApply");
             const promptModal = document.getElementById("gtPromptModal");
             const promptModalTrigger = document.getElementById("gtPromptModalTrigger");
@@ -476,8 +482,16 @@
             let memoExplorer = null;
 
             function isUserAdmin() {
-                const token = (adminTokenInput?.value || localStorage.getItem("feedback-admin-token") || "").trim();
-                return token === "golive";
+                const token = (ownerToken?.value || localStorage.getItem("feedback-admin-token") || "").trim();
+                return Boolean(token);
+            }
+
+            function updateRenameButtonLabel() {
+                if (!renameDocumentBtn) return;
+                const label = renameDocumentBtn.querySelector("[data-label]");
+                if (!label) return;
+                const tokenValue = (ownerToken?.value || localStorage.getItem("feedback-admin-token") || "").trim();
+                label.textContent = tokenValue ? "Publier" : "Éditer";
             }
 
             function updateAdminVisibility() {
@@ -489,18 +503,29 @@
                 document.querySelectorAll(".gt-template-card__delete").forEach(btn => {
                     btn.style.display = isAdmin ? "flex" : "none";
                 });
+                updateRenameButtonLabel();
             }
 
-            if (adminTokenInput) {
-                adminTokenInput.value = localStorage.getItem("feedback-admin-token") || "";
-                adminTokenInput.addEventListener("input", () => {
-                    localStorage.setItem("feedback-admin-token", adminTokenInput.value.trim());
+            updateRenameButtonLabel();
+            window.addEventListener("storage", event => {
+                if (event.key === "feedback-admin-token") {
+                    updateAdminVisibility();
+                }
+            });
+
+            if (ownerToken) {
+                ownerToken.value = localStorage.getItem("feedback-admin-token") || "";
+                updateRenameButtonLabel();
+                ownerToken.addEventListener("input", () => {
+                    localStorage.setItem("feedback-admin-token", ownerToken.value.trim());
+                });
+                ownerToken.addEventListener("blur", () => {
                     updateAdminVisibility();
                 });
-                adminTokenInput.addEventListener("keydown", (e) => {
+                ownerToken.addEventListener("keydown", (e) => {
                     if (e.key === "Enter") {
-                        const token = adminTokenInput.value.trim();
-                        const isCorrect = token === "golive";
+                        const token = ownerToken.value.trim();
+                        const isCorrect = Boolean(token);
                         // Close info panel
                         memoInfoPopup?.classList.remove("open");
                         // Show toast
@@ -1497,12 +1522,14 @@
 
             async function publishTemplateFromTab(tab, meta) {
                 if (!tab) return;
+                const ownerTokenValue = (ownerToken?.value || localStorage.getItem("feedback-admin-token") || "").trim();
                 const payload = {
                     label: meta?.name || tab.title || "Modèle sans titre",
                     description: meta?.description || "",
                     category: meta?.category || "",
                     superpowers: meta?.superpowers || [],
                     html: tab.content || "",
+                    ownerToken: ownerTokenValue || "",
                     meta: {
                         uuid: createTemplateUuid()
                     }
@@ -1850,6 +1877,12 @@
                     .replace(/'/g, "&#39;");
             }
 
+            function formatOwnerTokenLabel(token) {
+                const value = String(token || "");
+                if (!value) return "";
+                return value.charAt(0).toUpperCase() + value.slice(1);
+            }
+
             async function getSuperpowers() {
                 if (window._superpowersCached) return window._superpowersCached;
                 try {
@@ -1910,16 +1943,62 @@
                 return `Il y a ${months} m`;
             }
 
+            function initGalleryNav(wrapper, listEl) {
+                if (!wrapper || !listEl) return;
+                const prevBtn = wrapper.querySelector(".gallery-nav__prev");
+                const nextBtn = wrapper.querySelector(".gallery-nav__next");
+                const pageSize = 10;
+
+                function update() {
+                    const items = Array.from(listEl.children);
+                    const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
+                    let page = parseInt(wrapper.dataset.page || "0", 10);
+                    if (!Number.isFinite(page) || page < 0) page = 0;
+                    if (page >= totalPages) page = 0;
+                    wrapper.dataset.page = String(page);
+
+                    items.forEach((item, index) => {
+                        const pageIndex = Math.floor(index / pageSize);
+                        item.style.display = totalPages <= 1 || pageIndex === page ? "" : "none";
+                    });
+
+                    const showNav = totalPages > 1;
+                    if (prevBtn) prevBtn.style.display = showNav ? "flex" : "none";
+                    if (nextBtn) nextBtn.style.display = showNav ? "flex" : "none";
+                }
+
+                if (!wrapper.dataset.navInit) {
+                    wrapper.dataset.navInit = "true";
+                    prevBtn?.addEventListener("click", () => {
+                        const page = parseInt(wrapper.dataset.page || "0", 10) || 0;
+                        wrapper.dataset.page = String(Math.max(0, page - 1));
+                        update();
+                    });
+                    nextBtn?.addEventListener("click", () => {
+                        const page = parseInt(wrapper.dataset.page || "0", 10) || 0;
+                        wrapper.dataset.page = String(page + 1);
+                        update();
+                    });
+                }
+
+                update();
+            }
+
             async function updateTemplateSuperpowerFilter(templates) {
                 if (!templateSuperpowerList) return;
                 const superpowersMap = await getSuperpowers();
 
                 const stats = {};
+                const ownerStats = {};
                 (templates || []).forEach(template => {
                     const sps = template.superpowers || [];
                     sps.forEach(spId => {
                         stats[spId] = (stats[spId] || 0) + 1;
                     });
+                    const token = String(template.ownerToken || "").trim();
+                    if (token) {
+                        ownerStats[token] = (ownerStats[token] || 0) + 1;
+                    }
                 });
 
                 templateSuperpowerList.innerHTML = "";
@@ -1955,6 +2034,34 @@
 
                     templateSuperpowerList.appendChild(label);
                 });
+                Object.entries(ownerStats).forEach(([token, count]) => {
+                    if (!token || count === 0) return;
+                    const isChecked = selectedTemplateOwnerTokens.includes(token);
+                    const label = document.createElement("label");
+                    label.className = "superpower-checkbox-label";
+                    const displayToken = formatOwnerTokenLabel(token);
+                    label.innerHTML = `
+                        <input type="checkbox" value="${escapeHtml(token)}" ${isChecked ? 'checked' : ''} style="display:none;">
+                        <span class="superpower-pill ${isChecked ? 'active' : ''}">
+                            <i data-lucide="user" style="width:12px;height:12px;"></i>
+                            ${escapeHtml(displayToken)} (${count})
+                        </span>
+                    `;
+                    const input = label.querySelector('input');
+                    input.addEventListener('change', () => {
+                        const value = input.value;
+                        if (input.checked) {
+                            if (!selectedTemplateOwnerTokens.includes(value)) {
+                                selectedTemplateOwnerTokens.push(value);
+                            }
+                        } else {
+                            selectedTemplateOwnerTokens = selectedTemplateOwnerTokens.filter(v => v !== value);
+                        }
+                        renderTemplateList();
+                    });
+                    templateSuperpowerList.appendChild(label);
+                });
+                initGalleryNav(templateModalListNav, templateModalList);
                 if (window.lucide) window.lucide.createIcons();
             }
 
@@ -1982,6 +2089,7 @@
                         category: doc.payload?.category || "",
                         superpowers: doc.payload?.superpowers || [],
                         html: doc.payload?.html || "",
+                        ownerToken: doc.payload?.ownerToken || "",
                         updatedAt: doc.meta?.updatedDate || doc.meta?.updatedAt || ""
                     }));
 
@@ -2006,18 +2114,32 @@
 
                 if (!cloudTemplates.length) {
                     templateModalList.innerHTML = '<div style="padding: 20px; text-align: center; opacity: 0.7;">Aucun modèle disponible.</div>';
+                    if (templateModalListNav) {
+                        templateModalListNav.querySelectorAll(".gallery-nav__btn").forEach(btn => {
+                            btn.style.display = "none";
+                        });
+                    }
                     return;
                 }
 
                 updateTemplateSuperpowerFilter(cloudTemplates);
 
                 let templatesToRender = cloudTemplates.filter(template => {
-                    if (selectedTemplateSuperpowerIds.length === 0) return true;
-                    return template.superpowers && template.superpowers.some(spId => selectedTemplateSuperpowerIds.includes(parseInt(spId)));
+                    const matchesSuperpowers = selectedTemplateSuperpowerIds.length === 0
+                        || (template.superpowers && template.superpowers.some(spId => selectedTemplateSuperpowerIds.includes(parseInt(spId))));
+                    const tokenValue = String(template.ownerToken || "").trim();
+                    const matchesOwner = selectedTemplateOwnerTokens.length === 0
+                        || (tokenValue && selectedTemplateOwnerTokens.includes(tokenValue));
+                    return matchesSuperpowers && matchesOwner;
                 });
 
                 if (!templatesToRender.length) {
                     templateModalList.innerHTML = '<div style="padding: 20px; text-align: center; opacity: 0.7;">Aucun modèle disponible.</div>';
+                    if (templateModalListNav) {
+                        templateModalListNav.querySelectorAll(".gallery-nav__btn").forEach(btn => {
+                            btn.style.display = "none";
+                        });
+                    }
                     return;
                 }
 
@@ -3464,10 +3586,6 @@
             // Événements
             btn.addEventListener('click', sendMessage);
             input.addEventListener('input', autoResizeInlineInput);
-            input.addEventListener('mousedown', (e) => {
-                e.preventDefault();
-                setTimeout(() => input.focus(), 0);
-            });
             input.addEventListener('focus', () => {
                 // Afficher l'overlay quand le textarea a le focus
                 if (currentBlockCoords) {

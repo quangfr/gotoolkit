@@ -5,15 +5,9 @@
     "updatedAt": "2026-01-06T19:17:13Z"
   },
   {
-    "name": "Guide Technique (Mémo & Assist)",
+    "name": "Guide Mémo & Assist",
     "abstract": "Documentation technique exhaustive de l'architecture (memo.html, assist.js, draw-editor) et des modes de prompt IA pour Product Owners.",
     "path": "content/toolkit_guide.md",
-    "updatedAt": "2026-01-21T10:00:00Z"
-  },
-  {
-    "name": "Pipeline RAG (Import & Indexation)",
-    "abstract": "Documentation technique du processus de RAG : ingestion, chunking, embeddings locaux (Xenova), search vectorielle et intégration IA.",
-    "path": "content/toolkit_import.md",
     "updatedAt": "2026-01-21T10:00:00Z"
   },
   {

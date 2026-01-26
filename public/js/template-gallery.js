@@ -3,6 +3,107 @@
     const TEMPLATE_SYNC_PERIOD = 24 * 60 * 60 * 1000; // 24h
     let cloudTemplates = [];
     let superpowersMap = [];
+    let selectedOwnerToken = "";
+
+    const ownerTokenFilters = document.getElementById("templateOwnerFilters");
+    const templateGalleryNav = document.getElementById("templateGalleryNav");
+
+    function initGalleryNav(wrapper, listEl, itemSelector) {
+        if (!wrapper || !listEl) return;
+        const prevBtn = wrapper.querySelector(".gallery-nav__prev");
+        const nextBtn = wrapper.querySelector(".gallery-nav__next");
+        const pageSize = 10;
+
+        function update() {
+            const items = Array.from(listEl.querySelectorAll(itemSelector));
+            const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
+            let page = parseInt(wrapper.dataset.page || "0", 10);
+            if (!Number.isFinite(page) || page < 0) page = 0;
+            if (page >= totalPages) page = 0;
+            wrapper.dataset.page = String(page);
+
+            items.forEach((item, index) => {
+                const pageIndex = Math.floor(index / pageSize);
+                item.style.display = totalPages <= 1 || pageIndex === page ? "" : "none";
+            });
+
+            const showNav = totalPages > 1;
+            if (prevBtn) prevBtn.style.display = showNav ? "flex" : "none";
+            if (nextBtn) nextBtn.style.display = showNav ? "flex" : "none";
+        }
+
+        if (!wrapper.dataset.navInit) {
+            wrapper.dataset.navInit = "true";
+            prevBtn?.addEventListener("click", () => {
+                const page = parseInt(wrapper.dataset.page || "0", 10) || 0;
+                wrapper.dataset.page = String(Math.max(0, page - 1));
+                update();
+            });
+            nextBtn?.addEventListener("click", () => {
+                const page = parseInt(wrapper.dataset.page || "0", 10) || 0;
+                wrapper.dataset.page = String(page + 1);
+                update();
+            });
+        }
+
+        update();
+    }
+
+    function hideGalleryNav(wrapper) {
+        if (!wrapper) return;
+        wrapper.dataset.page = "0";
+        wrapper.querySelectorAll(".gallery-nav__btn").forEach(btn => {
+            btn.style.display = "none";
+        });
+    }
+
+    function normalizeOwnerToken(value) {
+        return String(value || "").trim();
+    }
+
+    function buildOwnerTokenOrder(tokens) {
+        const normalized = tokens.filter(Boolean);
+        const unique = Array.from(new Set(normalized));
+        const lowerMap = new Map(unique.map(token => [token.toLowerCase(), token]));
+        const ordered = [];
+        if (lowerMap.has("golive")) {
+            ordered.push(lowerMap.get("golive"));
+            lowerMap.delete("golive");
+        } else {
+            ordered.push("golive");
+        }
+        const rest = Array.from(lowerMap.values()).sort((a, b) => a.localeCompare(b, "fr"));
+        ordered.push(...rest);
+        return ordered;
+    }
+
+    function renderOwnerTokenFilters(templates) {
+        if (!ownerTokenFilters) return;
+        const counts = new Map();
+        (templates || []).forEach(template => {
+            const token = normalizeOwnerToken(template.ownerToken);
+            if (!token) return;
+            counts.set(token, (counts.get(token) || 0) + 1);
+        });
+        const orderedTokens = buildOwnerTokenOrder(Array.from(counts.keys()));
+
+        ownerTokenFilters.innerHTML = "";
+        orderedTokens.forEach(token => {
+            if (!token) return;
+            const count = counts.get(token) || 0;
+            const filter = document.createElement("button");
+            filter.type = "button";
+            filter.className = "share-card-template";
+            filter.setAttribute("aria-pressed", token === selectedOwnerToken ? "true" : "false");
+            filter.innerHTML = `<i data-lucide="user" style="width:12px;height:12px;margin-right:6px;vertical-align:middle;"></i>${escapeHtml(token)}${count ? ` (${count})` : ""}`;
+            filter.addEventListener("click", () => {
+                selectedOwnerToken = selectedOwnerToken === token ? "" : token;
+                renderTemplateGallery(true);
+            });
+            ownerTokenFilters.appendChild(filter);
+        });
+        if (window.lucide) window.lucide.createIcons();
+    }
 
     function isAdmin() {
         const token = (localStorage.getItem("feedback-admin-token") || "").trim();
@@ -45,6 +146,7 @@
                 category: doc.payload?.category || "",
                 superpowers: doc.payload?.superpowers || [],
                 html: doc.payload?.html || "",
+                ownerToken: doc.payload?.ownerToken || "",
                 updatedAt: doc.meta?.updatedDate || doc.meta?.updatedAt || ""
             }));
             await window.goToolkitTemplateStore.clear(); await window.goToolkitTemplateStore.saveAll(mapped);
@@ -128,13 +230,22 @@
 
         if (!cloudTemplates || !cloudTemplates.length) {
             gallery.innerHTML = '<div style="padding: 20px; text-align: center; grid-column: 1 / -1; opacity: 0.7;">Aucun modèle disponible.</div>';
+            hideGalleryNav(templateGalleryNav);
             return;
         }
 
         const sorted = [...cloudTemplates].sort((a, b) => {
             return parseTemplateUpdatedAt(b.updatedAt) - parseTemplateUpdatedAt(a.updatedAt);
         });
-        const toShow = sorted;
+        renderOwnerTokenFilters(sorted);
+        const toShow = selectedOwnerToken
+            ? sorted.filter(template => normalizeOwnerToken(template.ownerToken) === selectedOwnerToken)
+            : sorted;
+        if (!toShow.length) {
+            gallery.innerHTML = '<div style="padding: 20px; text-align: center; grid-column: 1 / -1; opacity: 0.7;">Aucun modèle disponible.</div>';
+            hideGalleryNav(templateGalleryNav);
+            return;
+        }
 
         gallery.innerHTML = "";
         const userIsAdmin = isAdmin();
@@ -146,15 +257,16 @@
             btn.style.width = "100%";
 
             let superpowersHtml = "";
+            const badges = [];
             if (template.superpowers && Array.isArray(template.superpowers)) {
-                const pills = template.superpowers.map(spId => {
+                template.superpowers.forEach(spId => {
                     const sp = superpowersMap.find(s => s.id == spId);
-                    if (!sp) return "";
-                    return `<span class="share-card-template"><i data-lucide="${sp.icon || 'star'}" style="width: 12px; height: 12px; margin-right: 4px; vertical-align: middle;"></i>${escapeHtml(sp.title)}</span>`;
-                }).join("");
-                if (pills) {
-                    superpowersHtml = `<div class="gt-template-card__superpowers">${pills}</div>`;
-                }
+                    if (!sp) return;
+                    badges.push(`<span class="share-card-template"><i data-lucide="${sp.icon || 'star'}" style="width: 12px; height: 12px; margin-right: 4px; vertical-align: middle;"></i>${escapeHtml(sp.title)}</span>`);
+                });
+            }
+            if (badges.length) {
+                superpowersHtml = `<div class="gt-template-card__superpowers">${badges.join("")}</div>`;
             }
 
             const updatedLabel = formatTemplateRelativeDate(template.updatedAt);
@@ -200,6 +312,7 @@
             gallery.appendChild(btn);
         });
 
+        initGalleryNav(templateGalleryNav, gallery, ".gt-template-card");
         if (window.lucide) window.lucide.createIcons();
     }
 
