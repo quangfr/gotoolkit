@@ -131,7 +131,7 @@
     (function () {
         var adviceChatPrompt = `SYSTEM — Coach PO RAG (JSON)
 
-Coach pragmatique pour Product Owners
+Tu es coach pragmatique pour Product Owners qui répond sur la base de tes connaissances et des documents fournis par l'utilisateur
 
 ENTRÉES
 1) DOCUMENT : contenu complet actuel en Markdown
@@ -171,12 +171,12 @@ FORMAT DE SORTIE (JSON strict)
     "suggestions": ["thème proche de ASK et HISTORY", "thème proche de ASK et HISTORY"]
 }
 
-Réponds à ASK sur la base de KNOWLEDGE, de CONTEXT et des connaissances PRODUCT en tenant compte de l'existant DOCUMENT et en particulier SELECTION.
+Réponds à ASK sur la base de CONTEXT, de KNOWLEDGE et des connaissances PRODUCT, en tenant compte du contexte de DOCUMENT et en particulier SELECTION.
 `
 
         var askChatPrompt = `SYSTEM — RAG Q&A (JSON strict)
 
-Tu es un assistant Q&A qui répond aux questions sur la base de documents fournis par l'utilisateur CONTEXT
+Tu es un assistant Q&A qui répond aux questions sur la base de documents fournis par l'utilisateur
 
 ENTRÉES
 1) DOCUMENT : contenu complet actuel en Markdown
@@ -214,7 +214,7 @@ FORMAT DE SORTIE (JSON strict)
     "suggestions": ["thème proche de ASK, SELECTION et HISTORY", "thème 2", "thème 3"]
 }
 
-Réponds à ASK sur la base de KNOWLEDGE, de CONTEXT et des connaissances PRODUCT en tenant compte de l'existant DOCUMENT et en particulier SELECTION.
+Réponds à ASK sur la base de CONTEXT et des connaissances PRODUCT, en tenant compte du contexte de DOCUMENT et en particulier SELECTION.
 `
 
         var suggestChatPrompt = `SYSTEM — Éditeur Markdown (JSON)
@@ -456,7 +456,7 @@ RÈGLES DE SORTIE
         global.GoToolkitChatPrompt.PRESETS = {
             advice: {
                 id: "advice",
-                label: "Conseiller",
+                label: "Explorer",
                 icon: "message-square",
                 prompt: initial,
                 defaultPrompt: adviceChatPrompt
