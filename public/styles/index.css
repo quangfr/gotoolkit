@@ -525,7 +525,7 @@
         }
 
         .share-card-template--all {
-            background: #fff;
+            background: var(--bg-surface);
         }
 
         .superpower-checkbox-label {
