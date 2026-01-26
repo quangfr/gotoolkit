@@ -417,7 +417,7 @@
         const { onChunk: _omitOnChunk, ...restPayload } = payload || {};
         const requestPayload = toResponsesPayload(restPayload);
         if (typeof requestPayload.effort === "undefined") {
-            requestPayload.effort = "minimal";
+            requestPayload.effort = "low";
         }
         const wantsStream = hasStreamingSupport && requestPayload.stream === true;
         if (!wantsStream) {
@@ -522,7 +522,7 @@
                 proxyPayload.temperature = source.temperature;
             }
             if (typeof proxyPayload.effort === "undefined") {
-                proxyPayload.effort = "minimal";
+                proxyPayload.effort = "low";
             }
             if (typeof proxyPayload.temperature === "undefined") {
                 proxyPayload.temperature = 0.3;
@@ -565,7 +565,7 @@
             result.temperature = 0.3;
         }
         if (typeof result.effort === "undefined") {
-            result.effort = "minimal";
+            result.effort = "low";
         }
 
         const sortBy = (typeof backend?.sort === "string" && backend.sort.trim()) ? backend.sort.trim() : "throughput";
