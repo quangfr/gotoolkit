@@ -9,6 +9,7 @@
         design: { label: "DESIGN", icon: "palette" },
         data: { label: "DATA", icon: "database" },
         texte: { label: "TEXTE", icon: "text" },
+        rh: { label: "RH", icon: "id-card" },
         ia: { label: "IA", icon: "sparkles" }
     };
 
@@ -515,6 +516,62 @@
             title: "Checklist",
             category: "texte",
             content: "Transforme [procédure support] en checklist opérationnelle prête à l'emploi."
+        },
+
+        // RH (9)
+        {
+            id: "rh-recrutement",
+            title: "Recrutement",
+            category: "rh",
+            content: "Structure le recrutement pour [poste data]: besoin, compétences clés, critères d'évaluation, étapes."
+        },
+        {
+            id: "rh-fiche-poste",
+            title: "Fiche de poste",
+            category: "rh",
+            content: "Rédige une fiche de poste pour [product analyst]: mission, responsabilités, compétences, niveau attendu."
+        },
+        {
+            id: "rh-dossier-competences",
+            title: "Dossier de compétences",
+            category: "rh",
+            content: "Constitue un dossier de compétences pour [profil senior]: expériences, savoir-faire, soft skills, preuves."
+        },
+        {
+            id: "rh-formation",
+            title: "Plan de formation",
+            category: "rh",
+            content: "Propose un plan de formation pour [équipe produit]: objectifs, modules, durée, critères de réussite."
+        },
+        {
+            id: "rh-suivi",
+            title: "Suivi",
+            category: "rh",
+            content: "Construis un suivi pour [objectif individuel]: points d'étape, indicateurs, risques, actions."
+        },
+        {
+            id: "rh-bilan",
+            title: "Bilan",
+            category: "rh",
+            content: "Rédige un bilan pour [période semestre]: réalisations, impacts, axes d'amélioration, next steps."
+        },
+        {
+            id: "rh-onboarding",
+            title: "Onboarding",
+            category: "rh",
+            content: "Définis un plan d'onboarding pour [nouveau PM]: objectifs, parcours, livrables, points de contrôle."
+        },
+        {
+            id: "rh-entretien",
+            title: "Guide d'entretien",
+            category: "rh",
+            content: "Prépare un guide d'entretien pour [candidat tech]: questions, cas pratiques, grille d'évaluation."
+        },
+        {
+            id: "rh-evaluation",
+            title: "Évaluation",
+            category: "rh",
+            content: "Élabore un cadre d'évaluation pour [collaborateur]: critères, niveaux, exemples concrets, feedback."
         },
 
         // IA (9)
