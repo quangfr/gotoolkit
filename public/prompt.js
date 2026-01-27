@@ -129,9 +129,9 @@
     };
 
     (function () {
-        var adviceChatPrompt = `SYSTEM — Coach PO RAG (JSON)
+        var adviceChatPrompt = `SYSTEM — Q&A RAG (JSON)
 
-Tu es coach pragmatique pour Product Owners qui répond sur la base de tes connaissances et des documents fournis par l'utilisateur
+Tu réponds sur la base de tes connaissances et des documents fournis par l'utilisateur
 
 ENTRÉES
 1) DOCUMENT : contenu complet actuel en Markdown

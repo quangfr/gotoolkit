@@ -1020,6 +1020,161 @@
         return parts.join("\n");
     }
 
+    function isArrayOfObjects(value) {
+        if (!Array.isArray(value) || value.length === 0) return false;
+        const sampleSize = Math.min(value.length, 6);
+        for (let i = 0; i < sampleSize; i++) {
+            if (!isPlainObject(value[i])) return false;
+        }
+        return true;
+    }
+
+    function isLikelyHtml(value) {
+        if (typeof value !== "string") return false;
+        if (value.length < 40) return false;
+        return /<[^>]+>/.test(value);
+    }
+
+    function renderPrimitiveValue(value, options = {}) {
+        if (typeof value === "string") {
+            if (isLikelyHtml(value)) {
+                return "[html omitted]";
+            }
+            const maxString = options.maxStringChars || 600;
+            return `"${truncateString(value, Math.min(maxString, 220))}"`;
+        }
+        return String(value);
+    }
+
+    function pickKeyByHints(keys, hints) {
+        for (const hint of hints) {
+            const found = keys.find((key) => key.toLowerCase() === hint);
+            if (found) return found;
+        }
+        for (const hint of hints) {
+            const found = keys.find((key) => key.toLowerCase().includes(hint));
+            if (found) return found;
+        }
+        return null;
+    }
+
+    function extractTopLevelPrimitives(record) {
+        if (!isPlainObject(record)) return [];
+        const keys = Object.keys(record);
+        const entries = [];
+        for (const key of keys) {
+            const value = record[key];
+            if (isPrimitive(value)) {
+                entries.push({ key, value });
+            }
+        }
+        return entries;
+    }
+
+    function buildRecordMeta(primitives) {
+        const keys = primitives.map((entry) => entry.key);
+        const titleKey = pickKeyByHints(keys, ["title", "name", "label"]);
+        const typeKey = pickKeyByHints(keys, ["type", "kind", "category"]);
+        const idKey = pickKeyByHints(keys, ["id", "uuid", "key", "code", "reference", "ref", "number"]);
+        const lookup = (key) => primitives.find((entry) => entry.key === key)?.value;
+        return {
+            titleKey,
+            typeKey,
+            idKey,
+            titleValue: titleKey ? lookup(titleKey) : null,
+            typeValue: typeKey ? lookup(typeKey) : null,
+            idValue: idKey ? lookup(idKey) : null
+        };
+    }
+
+    function buildRecordEmbeddingText(record, path, options = {}, context = {}) {
+        const maxTotal = options.maxTotalChars || 1400;
+        const parts = [`path: ${path || "$"}`];
+        let budget = maxTotal - parts[0].length;
+        const pushLine = (line) => {
+            if (budget <= 0) return;
+            const clipped = line.length > budget ? line.slice(0, budget) : line;
+            parts.push(clipped);
+            budget -= clipped.length;
+        };
+
+        const primitives = extractTopLevelPrimitives(record);
+        const meta = buildRecordMeta(primitives);
+        if (meta.titleKey && meta.titleValue !== null) {
+            pushLine(`title: ${renderPrimitiveValue(meta.titleValue, options)}`);
+        }
+        if (meta.typeKey && meta.typeValue !== null) {
+            pushLine(`type: ${renderPrimitiveValue(meta.typeValue, options)}`);
+        }
+        if (meta.idKey && meta.idValue !== null) {
+            pushLine(`id: ${renderPrimitiveValue(meta.idValue, options)}`);
+        }
+        if (context?.parentLabel) {
+            pushLine(`parent: ${context.parentLabel}`);
+        }
+        if (context?.relation) {
+            pushLine(`relation: ${context.relation}`);
+        }
+
+        const usedKeys = new Set([meta.titleKey, meta.typeKey, meta.idKey].filter(Boolean));
+        const summaryPairs = [];
+        for (const entry of primitives) {
+            if (usedKeys.has(entry.key)) continue;
+            summaryPairs.push(`${entry.key}=${renderPrimitiveValue(entry.value, options)}`);
+            if (summaryPairs.length >= 3) break;
+        }
+        if (summaryPairs.length) {
+            pushLine(`summary: ${summaryPairs.join("; ")}`);
+        }
+
+        let added = 0;
+        for (const entry of primitives) {
+            if (usedKeys.has(entry.key)) continue;
+            pushLine(`${entry.key}: ${renderPrimitiveValue(entry.value, options)}`);
+            added += 1;
+            if (added >= 12 || budget <= 0) break;
+        }
+        return parts.join("\n");
+    }
+
+    function collectNestedArrayPaths(root, basePath, maxDepth = 4) {
+        const results = [];
+        const seen = new Set();
+        const stack = [{ value: root, path: basePath, depth: 0 }];
+        while (stack.length) {
+            const current = stack.pop();
+            if (!current) continue;
+            const { value, path, depth } = current;
+            if (depth > maxDepth) continue;
+            if (Array.isArray(value)) {
+                if (isArrayOfObjects(value)) {
+                    if (!seen.has(path)) {
+                        results.push({ path, items: value });
+                        seen.add(path);
+                    }
+                }
+                for (let i = value.length - 1; i >= 0; i--) {
+                    const item = value[i];
+                    if (isPlainObject(item) || Array.isArray(item)) {
+                        stack.push({ value: item, path: `${path}[${i}]`, depth: depth + 1 });
+                    }
+                }
+                continue;
+            }
+            if (isPlainObject(value)) {
+                const keys = Object.keys(value);
+                for (let i = keys.length - 1; i >= 0; i--) {
+                    const key = keys[i];
+                    const child = value[key];
+                    if (isPlainObject(child) || Array.isArray(child)) {
+                        stack.push({ value: child, path: joinJsonPath(path, key), depth: depth + 1 });
+                    }
+                }
+            }
+        }
+        return results;
+    }
+
     function chunkLongString(value, path, options) {
         const chunks = [];
         const maxChunkChars = options.maxStringChunkChars || 5000;
@@ -1042,6 +1197,108 @@
             });
         }
         return chunks;
+    }
+
+    function chunkRecordSections(record, recordPath, options, chunks, skipKeys = []) {
+        if (!isPlainObject(record)) return;
+        const maxChunkChars = options.maxChunkChars || 6500;
+        const keys = Object.keys(record).filter((key) => !skipKeys.includes(key));
+        let batch = {};
+        let batchKeys = [];
+        let batchSize = 2;
+        const flushBatch = () => {
+            if (!batchKeys.length) return;
+            const batchPath = batchKeys.length === 1
+                ? joinJsonPath(recordPath, batchKeys[0])
+                : `${recordPath}{${batchKeys.join(",")}}`;
+            chunks.push({
+                path: batchPath,
+                parentPath: recordPath,
+                rawChunk: { ...batch },
+                textForEmbedding: renderJsonForEmbedding(batch, batchPath, options),
+                metadata: {
+                    nodeType: "record-section",
+                    keys: batchKeys.slice()
+                }
+            });
+            batch = {};
+            batchKeys = [];
+            batchSize = 2;
+        };
+        for (const key of keys) {
+            const value = record[key];
+            const entrySize = estimateJsonSize(value, maxChunkChars + 1) + key.length + 4;
+            if (entrySize > maxChunkChars) {
+                flushBatch();
+                const childPath = joinJsonPath(recordPath, key);
+                chunkJsonNode(value, childPath, recordPath, options, chunks);
+                continue;
+            }
+            if (batchSize + entrySize > maxChunkChars) {
+                flushBatch();
+            }
+            batch[key] = value;
+            batchKeys.push(key);
+            batchSize += entrySize + 1;
+        }
+        flushBatch();
+    }
+
+    function buildCollectionChunks(collectionPath, items, options, chunks) {
+        const maxChunkChars = options.maxChunkChars || 6500;
+        for (let i = 0; i < items.length; i++) {
+            const record = items[i];
+            const recordPath = `${collectionPath}[${i}]`;
+            const primitives = extractTopLevelPrimitives(record);
+            const meta = buildRecordMeta(primitives);
+            chunks.push({
+                path: recordPath,
+                parentPath: collectionPath,
+                rawChunk: record,
+                textForEmbedding: buildRecordEmbeddingText(record, recordPath, options),
+                metadata: {
+                    nodeType: "record",
+                    recordIndex: i,
+                    collectionPath
+                }
+            });
+
+            const subRecordPaths = collectNestedArrayPaths(record, recordPath);
+            const subRecordKeys = subRecordPaths.map((entry) => {
+                const match = entry.path.match(/\.([A-Za-z0-9_]+)$/);
+                return match ? match[1] : null;
+            }).filter(Boolean);
+            subRecordPaths.forEach((entry) => {
+                const parentLabel = meta.titleValue || meta.idValue || recordPath;
+                for (let j = 0; j < entry.items.length; j++) {
+                    const child = entry.items[j];
+                    const childPath = `${entry.path}[${j}]`;
+                    const relation = entry.path.startsWith(recordPath)
+                        ? entry.path.slice(recordPath.length + 1) + `[${j}]`
+                        : `${entry.path}[${j}]`;
+                    chunks.push({
+                        path: childPath,
+                        parentPath: recordPath,
+                        rawChunk: child,
+                        textForEmbedding: buildRecordEmbeddingText(child, childPath, options, {
+                            parentLabel,
+                            relation
+                        }),
+                        metadata: {
+                            nodeType: "sub-record",
+                            recordIndex: i,
+                            subIndex: j,
+                            parentKey: relation
+                        }
+                    });
+                }
+            });
+
+            const recordSize = estimateJsonSize(record, maxChunkChars + 1);
+            if (recordSize > maxChunkChars) {
+                chunkRecordSections(record, recordPath, options, chunks, subRecordKeys);
+            }
+        }
     }
 
     function chunkJsonNode(node, path, parentPath, options, chunks) {
@@ -1164,6 +1421,21 @@
 
     function buildJsonChunks(data, options = {}) {
         const chunks = [];
+        if (isArrayOfObjects(data)) {
+            buildCollectionChunks("$", data, options, chunks);
+            return chunks;
+        }
+        if (isPlainObject(data)) {
+            const keys = Object.keys(data);
+            const collectionKeys = keys.filter((key) => isArrayOfObjects(data[key]));
+            if (collectionKeys.length) {
+                collectionKeys.forEach((key) => {
+                    const collectionPath = joinJsonPath("$", key);
+                    buildCollectionChunks(collectionPath, data[key], options, chunks);
+                });
+                return chunks;
+            }
+        }
         chunkJsonNode(data, "$", null, options, chunks);
         return chunks;
     }

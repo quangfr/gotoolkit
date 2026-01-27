@@ -1,3 +1,4 @@
+import fs from "fs";
 import path from "path";
 import { expect, test } from "@playwright/test";
 
@@ -88,6 +89,15 @@ test.describe("Memo import + AI performance", () => {
     );
 
     expect(importDurationMs).toBeGreaterThan(0);
+
+    const sampleRaw = fs.readFileSync(filePaths[0], "utf8");
+    const sampleChunk = await page.evaluate((raw) => {
+      const data = JSON.parse(raw);
+      const chunker = (window as any).GoToolkitBuildJsonChunks;
+      const chunks = typeof chunker === "function" ? chunker(data) : [];
+      return chunks[0] || null;
+    }, sampleRaw);
+    console.log("Sample chunk:", JSON.stringify(sampleChunk, null, 2));
 
     const message = "Donne-moi un resume rapide des documents importes.";
     await page.fill("textarea.chat-input", message);
