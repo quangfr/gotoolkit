@@ -45,10 +45,10 @@
     <script src="https://cdn.jsdelivr.net/npm/@excalidraw/excalidraw@0.17.6/dist/excalidraw.production.min.js"
         crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.min.js" crossorigin></script>
-    <link rel="stylesheet" href="styles/style.css?v=2026.01.27.5">
+    <link rel="stylesheet" href="styles/style.css?v=2026.01.27.6">
     <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
-    <link rel="stylesheet" href="styles/memo.css?v=2026.01.27.5">
-    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.01.27.5">
+    <link rel="stylesheet" href="styles/memo.css?v=2026.01.27.6">
+    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.01.27.6">
     <link rel="stylesheet" href="https://unpkg.com/json-viewer-js@1.1.0/dist/json-viewer.min.css">
     <script src="https://unpkg.com/json-viewer-js@1.1.0/dist/json-viewer.min.js"></script>
 </head>
@@ -90,7 +90,7 @@
                     <button id="documentExplorerToggle" class="app-home-link" type="button"
                         title="Afficher la bibliothèque" aria-expanded="false" aria-controls="documentExplorer"><i
                             data-lucide="library"></i></button>
-                    <a href="/?v=2026.01.27.5" class="nav-switch-btn" title="Accueil"
+                    <a href="/?v=2026.01.27.6" class="nav-switch-btn" title="Accueil"
                         style="text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
                         <i data-lucide="home"></i>
                     </a>
@@ -140,7 +140,7 @@
                                 <button id="shareBtn" type="button" class="menu-panel-btn"><i data-lucide="share-2"></i>
                                     Partager</button>
                                 <button id="renameDocumentBtn" type="button" class="menu-panel-btn"><i
-                                        data-lucide="edit-3"></i> <span data-label>Éditer</span></button>
+                                        data-lucide="send"></i> <span data-label>Publier</span></button>
                                 <button id="deleteDocumentBtn" type="button" class="menu-panel-btn"><i
                                         data-lucide="trash-2"></i> Supprimer</button>
                                 <button id="infoButton" type="button" class="menu-panel-btn"><i data-lucide="info"></i>
@@ -226,6 +226,22 @@
         </div>
     </div>
 
+    <div class="modal-overlay gt-template-preview-modal" id="gtTemplatePreviewModal" role="dialog" aria-modal="true"
+        aria-labelledby="gtTemplatePreviewTitle">
+        <div class="modal gt-template-preview-modal__panel">
+            <div class="modal-header gt-template-preview-modal__header">
+                <button id="gtTemplatePreviewBack" type="button" class="gt-template-preview-modal__back"
+                    aria-label="Retour aux modèles"><i data-lucide="arrow-left"></i></button>
+                <h3 id="gtTemplatePreviewTitle" class="gt-template-preview-modal__title">Prévisualisation</h3>
+                <button id="gtTemplatePreviewApply" type="button" class="btn-primary"
+                    style="margin-left:auto;">Utiliser</button>
+                <button id="gtTemplatePreviewClose" type="button" class="gt-template-preview-modal__close"
+                    aria-label="Fermer"><i data-lucide="x"></i></button>
+            </div>
+            <div class="gt-template-preview-modal__body" id="gtTemplatePreviewBody"></div>
+        </div>
+    </div>
+
     <div class="modal-overlay gt-prompt-modal" id="gtPromptModal" role="dialog" aria-modal="true"
         aria-labelledby="gtPromptModalTitle">
         <div class="modal">
@@ -236,9 +252,7 @@
             </div>
             <div class="ia-actions">
                 <div class="header-row ia-header-actions">
-                    <label for="memoPromptPresetSelect">Prompt</label>
                     <div id="memoPromptPresetSelect"></div>
-                    <label for="memoPromptEditor">Prompt markdown</label>
                     <textarea id="memoPromptEditor" rows="30"></textarea>
                 </div>
                 <div class="ia-actions-footer ia-template-footer">
@@ -257,7 +271,7 @@
         <img src="img/logo.gif" alt="Logo Go-Toolkit" class="logo-light">
         <img src="img/logo_inverted.gif" alt="Logo Go-Toolkit" class="logo-dark">
         <strong>Module Mémo</strong>
-        <span>Version 2026.01.27.5</span>
+        <span>Version 2026.01.27.6</span>
         <span>Usage réservé à Savane Consulting.</span>
         <div class="info-actions">
             <button id="memoUpdateBtn" type="button" class="update-btn">Réparer</button>
@@ -318,22 +332,22 @@
         window.GO_TOOLKIT_SHARE_API_URL =
             window.GO_TOOLKIT_SHARE_API_URL || "https://share.gotoolkit.workers.dev/";
     </script>
-    <script src="js/config.js?v=2026.01.27.5"></script>
-    <script src="js/feature-visibility.js?v=2026.01.27.5"></script>
-    <script src="js/document-storage.js?v=2026.01.27.5"></script>
-    <script src="js/storage-service.js?v=2026.01.27.5"></script>
-    <script src="js/shared-ui.js?v=2026.01.27.5"></script>
-    <script src="js/cgu.js?v=2026.01.27.5"></script>
-    <script src="js/share-worker-client.js?v=2026.01.27.5"></script>
-    <script src="js/share-history.js?v=2026.01.27.5"></script>
-    <script src="js/document-api.js?v=2026.01.27.5"></script>
-    <script src="js/keywordIndex.js?v=2026.01.27.5"></script>
-    <script src="js/document-rag.js?v=2026.01.27.5"></script>
-    <script src="js/ia-config.js?v=2026.01.27.5"></script>
-    <script src="preset.js?v=2026.01.27.5"></script>
-    <script src="prompt.js?v=2026.01.27.5"></script>
-    <script src="js/ia-client.js?v=2026.01.27.5"></script>
-    <script src="js/document-markdown.js?v=2026.01.27.5"></script>
+    <script src="js/config.js?v=2026.01.27.6"></script>
+    <script src="js/feature-visibility.js?v=2026.01.27.6"></script>
+    <script src="js/document-storage.js?v=2026.01.27.6"></script>
+    <script src="js/storage-service.js?v=2026.01.27.6"></script>
+    <script src="js/shared-ui.js?v=2026.01.27.6"></script>
+    <script src="js/cgu.js?v=2026.01.27.6"></script>
+    <script src="js/share-worker-client.js?v=2026.01.27.6"></script>
+    <script src="js/share-history.js?v=2026.01.27.6"></script>
+    <script src="js/document-api.js?v=2026.01.27.6"></script>
+    <script src="js/keywordIndex.js?v=2026.01.27.6"></script>
+    <script src="js/document-rag.js?v=2026.01.27.6"></script>
+    <script src="js/ia-config.js?v=2026.01.27.6"></script>
+    <script src="preset.js?v=2026.01.27.6"></script>
+    <script src="prompt.js?v=2026.01.27.6"></script>
+    <script src="js/ia-client.js?v=2026.01.27.6"></script>
+    <script src="js/document-markdown.js?v=2026.01.27.6"></script>
     <script>
         // Initialize feedback configuration for Memo before loading feedback.js
         window.GoToolkitAppFeedbackConfig = {
@@ -352,12 +366,12 @@
             ]
         };
     </script>
-    <script src="js/feedback.js?v=2026.01.27.5"></script>
-    <script src="js/voice-video-player.js?v=2026.01.27.5"></script>
-    <script src="js/voice-audio-player.js?v=2026.01.27.5"></script>
-    <script src="js/voice.js?v=2026.01.27.5"></script>
-    <script src="js/voice-transcript.js?v=2026.01.27.5"></script>
-    <script src="js/draw-memo.js?v=2026.01.27.5"></script>
+    <script src="js/feedback.js?v=2026.01.27.6"></script>
+    <script src="js/voice-video-player.js?v=2026.01.27.6"></script>
+    <script src="js/voice-audio-player.js?v=2026.01.27.6"></script>
+    <script src="js/voice.js?v=2026.01.27.6"></script>
+    <script src="js/voice-transcript.js?v=2026.01.27.6"></script>
+    <script src="js/draw-memo.js?v=2026.01.27.6"></script>
     <script>
         // Suppress React DevTools prompt in dev builds.
         window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = window.__REACT_DEVTOOLS_GLOBAL_HOOK__ || {
@@ -367,14 +381,14 @@
             onCommitFiberUnmount: function () { }
         };
     </script>
-    <script src="js/memo.bundle.js?v=2026.01.27.5"></script>
+    <script src="js/memo.bundle.js?v=2026.01.27.6"></script>
     <div id="aiRequestCounterToaster" class="ai-request-counter-toaster" style="display:none;"
         data-toast-aria-live="polite" data-toast-aria-atomic="true">
         <span id="aiRequestCounterText"><i data-lucide="bot" class="lucide-pulse"
                 style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i> 00:00</span>
     </div>
-    <script src="js/assist.js?v=2026.01.27.5"></script>
-    <script src="js/document-panel.js?v=2026.01.27.5"></script>
+    <script src="js/assist.js?v=2026.01.27.6"></script>
+    <script src="js/document-panel.js?v=2026.01.27.6"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             setTimeout(function () {
@@ -470,6 +484,13 @@
             let selectedTemplateSuperpowerIds = [];
             let selectedTemplateOwnerTokens = [];
             const templateModalApply = document.getElementById("gtTemplateModalApply");
+            const templatePreviewModal = document.getElementById("gtTemplatePreviewModal");
+            const templatePreviewTitle = document.getElementById("gtTemplatePreviewTitle");
+            const templatePreviewBody = document.getElementById("gtTemplatePreviewBody");
+            const templatePreviewBack = document.getElementById("gtTemplatePreviewBack");
+            const templatePreviewClose = document.getElementById("gtTemplatePreviewClose");
+            const templatePreviewApply = document.getElementById("gtTemplatePreviewApply");
+            let activeTemplatePreview = null;
             const promptModal = document.getElementById("gtPromptModal");
             const promptModalTrigger = document.getElementById("gtPromptModalTrigger");
             const promptModalClose = document.getElementById("gtPromptModalClose");
@@ -504,14 +525,13 @@
                 if (!renameDocumentBtn) return;
                 const label = renameDocumentBtn.querySelector("[data-label]");
                 if (!label) return;
-                const tokenValue = normalizeOwnerTokenInput(ownerToken?.value || localStorage.getItem("feedback-admin-token") || "");
-                label.textContent = tokenValue ? "Publier" : "Éditer";
+                label.textContent = "Publier";
             }
 
             function updateAdminVisibility() {
                 const isAdmin = isUserAdmin();
                 if (publishTemplateBtn) {
-                    publishTemplateBtn.style.display = isAdmin ? "flex" : "none";
+                    publishTemplateBtn.style.display = "flex";
                 }
                 // Also toggle delete icons in template modal
                 document.querySelectorAll(".gt-template-card__delete").forEach(btn => {
@@ -2253,12 +2273,21 @@
 
                     btn.innerHTML = `
                         <h4 class="gt-template-card__title">${recordingIcon}${escapeHtml(template.label)}</h4>
-                        <p>${escapeHtml(template.description || "")}</p>
                         ${superpowersHtml}
                         <div class="gt-template-card__meta">Màj · ${escapeHtml(updatedLabel)}</div>
                     `;
 
                     if (cloudTemplates.some(t => t.id === template.id)) {
+                        const previewBtn = document.createElement("button");
+                        previewBtn.type = "button";
+                        previewBtn.className = "gt-template-card__preview";
+                        previewBtn.innerHTML = '<i data-lucide="eye" style="width: 14px; height: 14px;"></i>';
+                        previewBtn.addEventListener("click", (e) => {
+                            e.stopPropagation();
+                            openTemplatePreview(template);
+                        });
+                        btn.appendChild(previewBtn);
+
                         const deleteBtn = document.createElement("button");
                         deleteBtn.type = "button";
                         deleteBtn.className = "gt-template-card__delete";
@@ -2281,6 +2310,16 @@
                             }
                         });
                         btn.appendChild(deleteBtn);
+                    } else {
+                        const previewBtn = document.createElement("button");
+                        previewBtn.type = "button";
+                        previewBtn.className = "gt-template-card__preview";
+                        previewBtn.innerHTML = '<i data-lucide="eye" style="width: 14px; height: 14px;"></i>';
+                        previewBtn.addEventListener("click", (e) => {
+                            e.stopPropagation();
+                            openTemplatePreview(template);
+                        });
+                        btn.appendChild(previewBtn);
                     }
 
                     btn.addEventListener("click", () => {
@@ -2312,6 +2351,101 @@
             function closeTemplateModal() {
                 templateModal?.classList.remove("open");
                 templateModal?.setAttribute("aria-hidden", "true");
+            }
+
+            function convertTemplateHtmlToMarkdown(html) {
+                if (!html) return "";
+                const container = document.createElement("div");
+                container.innerHTML = html;
+
+                function tableToMarkdown(tableEl) {
+                    const rows = Array.from(tableEl.querySelectorAll("tr"));
+                    if (!rows.length) return "";
+                    const headerCells = Array.from(rows[0].querySelectorAll("th,td"))
+                        .map(cell => (cell.textContent || "").trim());
+                    const header = `| ${headerCells.join(" | ")} |`;
+                    const separator = `| ${headerCells.map(() => "---").join(" | ")} |`;
+                    const body = rows.slice(1).map(row => {
+                        const cells = Array.from(row.querySelectorAll("td,th"))
+                            .map(cell => (cell.textContent || "").trim());
+                        return `| ${cells.join(" | ")} |`;
+                    });
+                    return [header, separator].concat(body).join("\n");
+                }
+
+                const walk = (node) => {
+                    if (!node) return "";
+                    if (node.nodeType === Node.TEXT_NODE) {
+                        return node.nodeValue || "";
+                    }
+                    if (node.nodeType !== Node.ELEMENT_NODE) return "";
+                    const tag = node.tagName.toLowerCase();
+                    const childrenText = Array.from(node.childNodes).map(walk).join("").trim();
+
+                    if (tag === "br") return "\n";
+                    if (tag === "p") return `\n${childrenText}\n`;
+                    if (/^h[1-6]$/.test(tag)) {
+                        const level = Math.min(parseInt(tag.slice(1), 10) || 2, 6);
+                        return `\n${"#".repeat(level)} ${childrenText}\n`;
+                    }
+                    if (tag === "strong" || tag === "b") return `**${childrenText}**`;
+                    if (tag === "em" || tag === "i") return `*${childrenText}*`;
+                    if (tag === "code") return `\`${childrenText}\``;
+                    if (tag === "pre") return `\n\`\`\`\n${node.textContent || ""}\n\`\`\`\n`;
+                    if (tag === "a") {
+                        const href = node.getAttribute("href") || "";
+                        return `[${childrenText}](${href})`;
+                    }
+                    if (tag === "blockquote") {
+                        const lines = childrenText.split(/\r?\n/).filter(Boolean);
+                        return `\n${lines.map(line => `> ${line}`).join("\n")}\n`;
+                    }
+                    if (tag === "table") {
+                        return `\n${tableToMarkdown(node)}\n`;
+                    }
+                    if (tag === "ul") {
+                        const items = Array.from(node.querySelectorAll(":scope > li")).map(li => `- ${walk(li).trim()}`);
+                        return `\n${items.join("\n")}\n`;
+                    }
+                    if (tag === "ol") {
+                        const items = Array.from(node.querySelectorAll(":scope > li")).map((li, idx) => `${idx + 1}. ${walk(li).trim()}`);
+                        return `\n${items.join("\n")}\n`;
+                    }
+                    if (tag === "li") return childrenText;
+                    return childrenText;
+                };
+
+                return walk(container).replace(/\n{3,}/g, "\n\n").trim();
+            }
+
+            function renderTemplatePreviewContent(template) {
+                if (!templatePreviewBody) return;
+                const markdown = convertTemplateHtmlToMarkdown(template?.html || "");
+                const renderer = window.GoToolkitMarkdown?.renderDocument;
+                const html = renderer ? renderer(markdown) : escapeHtml(markdown).replace(/\n/g, "<br>");
+                templatePreviewBody.innerHTML = html || "<p>(Aucun contenu)</p>";
+            }
+
+            function openTemplatePreview(template, options = {}) {
+                if (!template) return;
+                activeTemplatePreview = template;
+                if (templatePreviewTitle) {
+                    templatePreviewTitle.textContent = template.label || "Prévisualisation";
+                }
+                renderTemplatePreviewContent(template);
+                if (options.forceCreate) {
+                    templateInsertMode = "create";
+                }
+                templatePreviewModal?.classList.add("open");
+                templatePreviewModal?.setAttribute("aria-hidden", "false");
+                templateModal?.classList.remove("open");
+                templateModal?.setAttribute("aria-hidden", "true");
+                if (window.lucide) window.lucide.createIcons();
+            }
+
+            function closeTemplatePreview() {
+                templatePreviewModal?.classList.remove("open");
+                templatePreviewModal?.setAttribute("aria-hidden", "true");
             }
 
             function openPromptModal() {
@@ -2675,8 +2809,14 @@
             documentLoadedPromise.then(async () => {
                 // Check if we came from index.html with a template to load
                 try {
+                    const previewData = localStorage.getItem("goToolkit.memo.templateToPreview");
+                    if (previewData) {
+                        localStorage.removeItem("goToolkit.memo.templateToPreview");
+                        const template = JSON.parse(previewData);
+                        openTemplatePreview(template, { forceCreate: true });
+                    }
                     const templateData = localStorage.getItem("goToolkit.memo.templateToLoad");
-                    if (templateData) {
+                    if (templateData && !previewData) {
                         localStorage.removeItem("goToolkit.memo.templateToLoad");
                         const template = JSON.parse(templateData);
                         const autoName = await getAutoDocumentName(template.label || null);
@@ -3053,6 +3193,19 @@
                 await applyTemplateContent(template);
                 closeTemplateModal();
             });
+            templatePreviewBack?.addEventListener("click", () => {
+                closeTemplatePreview();
+                openTemplateModal("create");
+            });
+            templatePreviewClose?.addEventListener("click", () => closeTemplatePreview());
+            templatePreviewModal?.addEventListener("click", event => {
+                if (event.target === templatePreviewModal) closeTemplatePreview();
+            });
+            templatePreviewApply?.addEventListener("click", async () => {
+                if (!activeTemplatePreview) return;
+                await applyTemplateContent(activeTemplatePreview);
+                closeTemplatePreview();
+            });
 
             document.addEventListener("click", event => {
                 const trigger = event.target.closest("#gtPromptModalTrigger");
@@ -3089,6 +3242,7 @@
                 if (event.key === "Escape") {
                     closeMenus();
                     closeTemplateModal();
+                    closeTemplatePreview();
                     closePromptModal();
                     closeInfoPopup();
                 }

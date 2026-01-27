@@ -464,14 +464,14 @@ RÈGLES DE SORTIE
             ask: {
                 id: "ask",
                 label: "Demander",
-                icon: "search",
+                icon: "compass",
                 prompt: initialInfo,
                 defaultPrompt: askChatPrompt
             },
             suggest: {
                 id: "suggest",
                 label: "Suggérer",
-                icon: "sparkles",
+                icon: "wand-2",
                 prompt: suggestChatPrompt,
                 defaultPrompt: suggestChatPrompt
             },

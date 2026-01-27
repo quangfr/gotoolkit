@@ -43,3 +43,8 @@ Prioriser l’impact utilisateur avant la techno.
 ## 🗄️ Pôlène
 **Le pouvoir de concevoir des produits qui exposent leur valeur par la donnée.**  
 Anticiper APIs, événements métiers et données pivots pour polliniser l’écosystème.
+
+## ✨ Autre
+**Compétences complémentaires.**  
+Gestion de projet, support, ou toute autre expertise transverse contribuant à la réussite des initiatives.
+

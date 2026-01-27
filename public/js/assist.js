@@ -7522,6 +7522,77 @@
         return null;
     };
 
+    function convertHtmlToMarkdownForPreview(html) {
+        if (!html) return "";
+        var doc = new DOMParser().parseFromString(html, "text/html");
+        var body = doc.body;
+        if (!body) return "";
+
+        function tableToMarkdown(tableEl) {
+            var rows = Array.from(tableEl.querySelectorAll("tr"));
+            if (!rows.length) return "";
+            var headerCells = Array.from(rows[0].querySelectorAll("th,td")).map(function (cell) {
+                return (cell.textContent || "").trim();
+            });
+            var header = "| " + headerCells.join(" | ") + " |";
+            var separator = "| " + headerCells.map(function () { return "---"; }).join(" | ") + " |";
+            var bodyRows = rows.slice(1).map(function (row) {
+                var cells = Array.from(row.querySelectorAll("td,th")).map(function (cell) {
+                    return (cell.textContent || "").trim();
+                });
+                return "| " + cells.join(" | ") + " |";
+            });
+            return [header, separator].concat(bodyRows).join("\n");
+        }
+
+        function walk(node) {
+            if (!node) return "";
+            if (node.nodeType === Node.TEXT_NODE) {
+                return node.nodeValue || "";
+            }
+            if (node.nodeType !== Node.ELEMENT_NODE) return "";
+            var tag = node.tagName.toLowerCase();
+            var children = Array.from(node.childNodes).map(walk).join("").trim();
+            if (tag === "br") return "\n";
+            if (tag === "p") return "\n" + children + "\n";
+            if (/^h[1-6]$/.test(tag)) {
+                var level = Math.min(parseInt(tag.slice(1), 10) || 2, 6);
+                return "\n" + "#".repeat(level) + " " + children + "\n";
+            }
+            if (tag === "strong" || tag === "b") return "**" + children + "**";
+            if (tag === "em" || tag === "i") return "*" + children + "*";
+            if (tag === "code") return "`" + children + "`";
+            if (tag === "pre") return "\n```\n" + (node.textContent || "") + "\n```\n";
+            if (tag === "a") {
+                var href = node.getAttribute("href") || "";
+                return "[" + children + "](" + href + ")";
+            }
+            if (tag === "blockquote") {
+                var lines = children.split(/\r?\n/).filter(Boolean);
+                return "\n" + lines.map(function (line) { return "> " + line; }).join("\n") + "\n";
+            }
+            if (tag === "table") {
+                return "\n" + tableToMarkdown(node) + "\n";
+            }
+            if (tag === "ul") {
+                var items = Array.from(node.querySelectorAll(":scope > li")).map(function (li) {
+                    return "- " + walk(li).trim();
+                });
+                return "\n" + items.join("\n") + "\n";
+            }
+            if (tag === "ol") {
+                var ordered = Array.from(node.querySelectorAll(":scope > li")).map(function (li, idx) {
+                    return (idx + 1) + ". " + walk(li).trim();
+                });
+                return "\n" + ordered.join("\n") + "\n";
+            }
+            if (tag === "li") return children;
+            return children;
+        }
+
+        return walk(body).replace(/\n{3,}/g, "\n\n").trim();
+    }
+
     AssistSidebar.prototype.openKnowledgePreview = async function (entry) {
         if (!entry || !this.docManager) return;
         this.buildPreviewPanel();
@@ -7541,9 +7612,12 @@
             }
             var memoHtml = typeof entry.memoHtml === "string" ? entry.memoHtml : "";
             if (entry.source === "Mémo" && memoHtml.trim()) {
-                if (this.showHtmlPreview(memoHtml)) {
-                    return;
+                var markdown = convertHtmlToMarkdownForPreview(memoHtml);
+                var markdownHtml = renderDocumentMarkdown(markdown);
+                if (this.previewBodyEl) {
+                    this.previewBodyEl.innerHTML = markdownHtml || "<div style='color: var(--muted); font-style: italic;'>(extrait indisponible)</div>";
                 }
+                return;
             }
             if (doc?.id) {
                 var docChunks = await this.getDocumentChunks(doc.id, doc.conversationId);

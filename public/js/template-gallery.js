@@ -375,7 +375,6 @@
             btn.innerHTML = `
                 <div class="gt-template-card__title">${recordingIcon}${escapeHtml(template.label)}</div>
                 ${superpowersHtml}
-                <div class="gt-template-card__desc">${escapeHtml(template.description || "")}</div>
                 <div class="gt-template-card__meta">${escapeHtml(updatedLabel)}</div>
             `;
 
@@ -408,8 +407,8 @@
             }
 
             btn.addEventListener("click", () => {
-                // Open Mémo with this template
-                localStorage.setItem("goToolkit.memo.templateToLoad", JSON.stringify(template));
+                // Open Mémo with template preview
+                localStorage.setItem("goToolkit.memo.templateToPreview", JSON.stringify(template));
                 window.location.href = "memo.html";
             });
 

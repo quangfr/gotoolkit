@@ -71,37 +71,43 @@
     "fileSizeLimits": {
       "text": {
         "maxMB": 5,
-        "extensions": [".txt", ".md"]
+        "extensions": [".txt", ".md"],
+        "useCloudEmbeddings": false
       },
       "structuredData": {
         "maxMB": 2,
         "extensions": [".json", ".csv", ".hag"],
-        "cloudEmbeddings": true
+        "useCloudEmbeddings": true
       },
       "document": {
         "maxMB": 5,
-        "extensions": [".pdf", ".docx", ".doc", ".odt", ".rtf"]
+        "extensions": [".pdf", ".docx", ".doc", ".odt", ".rtf"],
+        "useCloudEmbeddings": false
       },
       "presentation": {
         "maxMB": 5,
-        "extensions": [".pptx"]
+        "extensions": [".pptx"],
+        "useCloudEmbeddings": false
       },
       "spreadsheet": {
         "maxMB": 5,
         "extensions": [".xlsx", ".ods"],
-        "cloudEmbeddings": true
+        "useCloudEmbeddings": true
       },
       "image": {
         "maxMB": 20,
-        "extensions": [".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp", ".tif", ".tiff"]
+        "extensions": [".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp", ".tif", ".tiff"],
+        "useCloudEmbeddings": false
       },
       "audio": {
         "maxMB": 20,
-        "extensions": [".mp3", ".wav", ".mp4", ".m4a", ".aac", ".ogg", ".webm", ".flac"]
+        "extensions": [".mp3", ".wav", ".mp4", ".m4a", ".aac", ".ogg", ".webm", ".flac"],
+        "useCloudEmbeddings": false
       },
       "media": {
         "maxMB": 100,
-        "extensions": [".mp4", ".webm", ".mov", ".avi"]
+        "extensions": [".mp4", ".webm", ".mov", ".avi"],
+        "useCloudEmbeddings": false
       }
     }
   }

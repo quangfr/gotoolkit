@@ -979,7 +979,7 @@
 
         .gt-template-card {
             font-size: 13px;
-            padding: 12px;
+            padding: 8px;
             border-radius: 8px;
             border: 1px solid var(--border-main);
             background: var(--bg-surface);
@@ -987,12 +987,13 @@
             text-align: left;
             transition: all 0.2s ease;
             position: relative;
-            height: auto;
+            height: 160px;
+            min-height: 160px;
         }
 
-        .gt-template-card h4 {
+        .gt-template-card__title {
             margin: 0 0 4px;
-            font-size: 14px;
+            font-size: 17px;
         }
 
         .gt-template-card p {
@@ -1033,7 +1034,7 @@
 
         .gt-template-card__meta {
             margin-top: 6px;
-            font-size: 11px;
+            font-size: 13px;
             color: var(--text-muted);
             display: flex;
             gap: 6px;
@@ -1042,7 +1043,7 @@
 
         .gt-template-card__delete {
             position: absolute;
-            top: 10px;
+            bottom: 10px;
             right: 10px;
             color: var(--text-main);
             border: none;
@@ -1054,6 +1055,27 @@
             align-items: center;
             justify-content: center;
             transition: all 0.2s;
+        }
+
+        .gt-template-card__preview {
+            position: absolute;
+            bottom: 10px;
+            right: 38px;
+            color: var(--text-main);
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .gt-template-card__preview:hover {
+            color: var(--color-primary);
+            background: var(--bg-surface-soft);
         }
 
         .gt-template-card__delete:hover {
@@ -1118,4 +1140,62 @@
 
         .gt-template-modal {
             --modal-width: 800px;
+        }
+
+        .gt-template-preview-modal .modal {
+            max-width: 1440px;
+            width: min(98vw, 1440px);
+            max-height: 98vh;
+            height: 98vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .gt-template-preview-modal__header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .gt-template-preview-modal__title {
+            margin: 0;
+            font-size: 1.05rem;
+        }
+
+        .gt-template-preview-modal__back,
+        .gt-template-preview-modal__close {
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .gt-template-preview-modal__back:hover,
+        .gt-template-preview-modal__close:hover {
+            background: var(--bg-surface-soft);
+            color: var(--color-primary);
+        }
+
+        .gt-template-preview-modal__body {
+            flex: 1;
+            overflow: auto;
+            padding: 6px 0;
+        }
+
+        .gt-template-preview-modal__body h1,
+        .gt-template-preview-modal__body h2,
+        .gt-template-preview-modal__body h3,
+        .gt-template-preview-modal__body h4 {
+            margin-top: 18px;
+            margin-bottom: 8px;
+        }
+
+        .gt-template-preview-modal__body p {
+            margin: 0 0 10px;
+            line-height: 1.5;
         }

@@ -293,10 +293,10 @@
         }
 
         /* Launcher Template Gallery */
-       #gtTemplateModalList {
+        #gtTemplateModalList {
             display: grid;
             grid-template-columns: repeat(5, minmax(0, 1fr));
-            --gallery-row-min: 180px;
+            --gallery-row-min: 160px;
             grid-auto-rows: minmax(var(--gallery-row-min), auto);
             min-height: calc((var(--gallery-row-min) * 2) + 12px);
             gap: 12px;
@@ -316,7 +316,7 @@
 
         .gt-template-card__meta {
             margin: 4px 0 0;
-            font-size: 0.75rem;
+            font-size: 13px;
             color: var(--text-main);
             display: flex;
             gap: 6px;
@@ -325,7 +325,7 @@
 
         .gt-template-card__title,
         .share-card-title {
-            font-size: 1rem;
+            font-size: 17px;
             font-weight: 600;
             margin: 0;
             color: var(--text-main);
@@ -350,6 +350,7 @@
         }
 
         .gt-template-card__desc {
+            display: none;
             margin: 0;
             font-size: 0.82rem;
             color: var(--text-main);
@@ -424,7 +425,7 @@
 
         .share-card-date {
             margin: 4px 0 0;
-            font-size: 0.75rem;
+            font-size: 13px;
             color: var(--text-main);
         }
 
