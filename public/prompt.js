@@ -8,6 +8,7 @@
         tech: { label: "TECH", icon: "cpu" },
         design: { label: "DESIGN", icon: "palette" },
         data: { label: "DATA", icon: "database" },
+        texte: { label: "TEXTE", icon: "text" },
         ia: { label: "IA", icon: "sparkles" }
     };
 
@@ -458,6 +459,62 @@
             title: "Mapping data",
             category: "data",
             content: "Définis un mapping entre données source et cible pour [mapping ERP]."
+        },
+
+        // TEXTE (9)
+        {
+            id: "texte-questions",
+            title: "Questions clés",
+            category: "texte",
+            content: "Génère des questions clés pour clarifier [brief client]: objectifs, contraintes, impacts, priorités."
+        },
+        {
+            id: "texte-resume",
+            title: "Résumé exécutif",
+            category: "texte",
+            content: "Résume [note projet] en 5 points: objectif, décisions, risques, actions, échéances."
+        },
+        {
+            id: "texte-developper",
+            title: "Développer",
+            category: "texte",
+            content: "Développe [idée produit] en un paragraphe structuré: contexte, valeur, faisabilité."
+        },
+        {
+            id: "texte-comparer",
+            title: "Comparer",
+            category: "texte",
+            content: "Compare [option A] et [option B] selon valeur, effort, risques, et recommandation."
+        },
+        {
+            id: "texte-reformuler",
+            title: "Reformuler",
+            category: "texte",
+            content: "Reformule [message interne] pour un ton clair, concis et orienté action."
+        },
+        {
+            id: "texte-clarifier",
+            title: "Clarifier",
+            category: "texte",
+            content: "Clarifie [compte rendu] en séparant faits, décisions, actions, questions ouvertes."
+        },
+        {
+            id: "texte-extraction",
+            title: "Extraction d'actions",
+            category: "texte",
+            content: "Extrait les actions de [discussion équipe] avec owner et échéance implicite si possible."
+        },
+        {
+            id: "texte-synthese",
+            title: "Synthèse comparative",
+            category: "texte",
+            content: "Fais une synthèse comparative de [doc A] et [doc B]: convergences, divergences, arbitrages."
+        },
+        {
+            id: "texte-checklist",
+            title: "Checklist",
+            category: "texte",
+            content: "Transforme [procédure support] en checklist opérationnelle prête à l'emploi."
         },
 
         // IA (9)
