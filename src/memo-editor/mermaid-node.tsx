@@ -68,6 +68,8 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
 
     setIsGenerating(true);
     setModalError(null);
+    const drawDuration = Math.min(45000, Math.max(15000, 15000 + Math.round(promptInput.trim().length * 30)));
+    (window as any).GoToolkitAIRequestToaster?.startIcon?.("aiRequestCounterToasterDraw", "brush", "Dessin", drawDuration);
     try {
       const presets = (window as any).GoToolkitChatPrompt?.PRESETS?.draw;
       const template = presets?.defaultPrompt || presets?.prompt || "";
@@ -170,6 +172,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
       setModalError(err.message || "Erreur de génération");
     } finally {
       setIsGenerating(false);
+      (window as any).GoToolkitAIRequestToaster?.stop?.("aiRequestCounterToasterDraw");
     }
   };
 

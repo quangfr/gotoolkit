@@ -348,7 +348,6 @@ async function transformNode(node: any, editor: any): Promise<any> {
     }
 
     default:
-      console.log("Unhandled node type", node.type);
       return null;
   }
 }

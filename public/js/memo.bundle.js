@@ -48432,7 +48432,6 @@ img.ProseMirror-separator {
         return new Paragraph2({ text: "[Diagramme Mermaid]" });
       }
       default:
-        console.log("Unhandled node type", node.type);
         return null;
     }
   }
@@ -51513,16 +51512,18 @@ ${content}</tr>
       }
     }, [code, draftCode]);
     const handleDrawSend = async () => {
-      var _a, _b, _c;
+      var _a, _b, _c, _d, _e, _f, _g;
       if (!promptInput.trim() || isGenerating) return;
       setIsGenerating(true);
       setModalError(null);
+      const drawDuration = Math.min(45e3, Math.max(15e3, 15e3 + Math.round(promptInput.trim().length * 30)));
+      (_b = (_a = window.GoToolkitAIRequestToaster) == null ? void 0 : _a.startIcon) == null ? void 0 : _b.call(_a, "aiRequestCounterToasterDraw", "brush", "Dessin", drawDuration);
       try {
-        const presets = (_b = (_a = window.GoToolkitChatPrompt) == null ? void 0 : _a.PRESETS) == null ? void 0 : _b.draw;
+        const presets = (_d = (_c = window.GoToolkitChatPrompt) == null ? void 0 : _c.PRESETS) == null ? void 0 : _d.draw;
         const template = (presets == null ? void 0 : presets.defaultPrompt) || (presets == null ? void 0 : presets.prompt) || "";
         const selectedType = diagramTypes.find((t) => t.id === diagramType);
         const drawTypeValue = (selectedType == null ? void 0 : selectedType.promptValue) || "flowchart";
-        const documentMarkdown = ((_c = window.getEditorMarkdown) == null ? void 0 : _c.call(window)) || "Contenu du document non disponible.";
+        const documentMarkdown = ((_e = window.getEditorMarkdown) == null ? void 0 : _e.call(window)) || "Contenu du document non disponible.";
         const userContent = [
           `DOCUMENT
 ${documentMarkdown}`,
@@ -51601,6 +51602,7 @@ ${promptInput.trim()}`
         setModalError(err.message || "Erreur de g\xE9n\xE9ration");
       } finally {
         setIsGenerating(false);
+        (_g = (_f = window.GoToolkitAIRequestToaster) == null ? void 0 : _f.stop) == null ? void 0 : _g.call(_f, "aiRequestCounterToasterDraw");
       }
     };
     const getDiagramHeaderLine2 = (c) => {
@@ -52498,8 +52500,6 @@ ${promptInput.trim()}`
     addNodeView() {
       return ReactNodeViewRenderer(({ node, editor, getPos }) => {
         react_shim_default.useEffect(() => {
-          var _a;
-          console.log(`[CustomHeading] mounted ("${(_a = node.textContent) == null ? void 0 : _a.substring(0, 20)}...")`);
         }, []);
         const level = Math.min(4, Math.max(1, node.attrs.level || 1));
         const tag2 = `h${level}`;
@@ -54334,8 +54334,7 @@ ${promptInput.trim()}`
         })
       ],
       content,
-      onCreate: ({ editor: editor2 }) => {
-        console.log(`[SimpleEditor] created in ${Math.round(performance.now() - mountStart.current)}ms with ${editor2.state.doc.nodeSize} nodes`);
+      onCreate: () => {
       },
       editorProps: {
         handleTripleClickOn: (view, pos) => selectTableCellText(view, pos),
@@ -54607,7 +54606,6 @@ ${promptInput.trim()}`
         }
         const totalDuration = Math.round(performance.now() - start);
         if (totalDuration > 10) {
-          console.log(`[SimpleEditor] onUpdate (sync part) took ${totalDuration}ms`);
         }
       },
       onBlur: ({ editor: editor2 }) => {
@@ -57027,7 +57025,6 @@ ${innerMarkdown}
         },
         switchTo: (id, initialContent) => {
           const start = performance.now();
-          console.log(`[MemoBridge] switching to ${id}`);
           setActiveId(id);
           setEditors((prev) => {
             if (prev[id]) return prev;
@@ -57037,7 +57034,6 @@ ${innerMarkdown}
             };
           });
           setTimeout(() => {
-            console.log(`[MemoBridge] switched to ${id} in ${Math.round(performance.now() - start)}ms`);
           }, 0);
         },
         removeInstance: (id) => {

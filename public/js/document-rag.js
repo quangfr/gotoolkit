@@ -158,8 +158,139 @@
     const OCR_QUALITY_BLUR_THRESHOLD = 0.8;
     const OCR_LAPLACIAN_NORM = 1000;
     const DEFAULT_QWEN_VISION_MODEL = "qwen/qwen2.5-vl-72b-instruct";
-    const QWEN_OCR_TOAST_MESSAGE = "Service OCR : Reconnaissance en cours";
+    const QWEN_OCR_TOAST_MESSAGE = "OCR : Reconnaissance en cours";
+    const OCR_TOAST_ID = "aiRequestCounterToasterOcr";
     let qwenOcrToastCount = 0;
+    const CLOUD_EMBEDDING_MODEL = "qwen/qwen3-embedding-8b";
+    const CLOUD_EMBEDDING_BATCH_SIZE = 64;
+
+    function getFileSizeLimitConfig(fileName) {
+        try {
+            const limits = global?.GoToolkitSiteConfig?.get?.("fileImport.fileSizeLimits", {}) || {};
+            const ext = (fileName || "").toLowerCase();
+            const lastDotIndex = ext.lastIndexOf(".");
+            if (lastDotIndex < 0) return null;
+            const suffix = ext.substring(lastDotIndex);
+            for (const typeKey in limits) {
+                const typeLimit = limits[typeKey];
+                if (!typeLimit || !Array.isArray(typeLimit.extensions)) continue;
+                if (typeLimit.extensions.includes(suffix)) {
+                    return typeLimit;
+                }
+            }
+        } catch (err) {
+            console.warn("Failed to read file size limits", err);
+        }
+        return null;
+    }
+
+    function shouldUseCloudEmbeddingsForFile(file) {
+        if (!file || !file.name || !file.size) return false;
+        const limitConfig = getFileSizeLimitConfig(file.name);
+        if (!limitConfig) return false;
+        if (limitConfig.cloudEmbeddings) return true;
+        const allowOverLimit = Boolean(global?.GoToolkitSiteConfig?.get?.("fileImport.allowOverLimitEmbeddings", false));
+        if (!allowOverLimit) return false;
+        const maxMB = Number(limitConfig.maxMB) || 0;
+        if (!maxMB) return false;
+        const limitBytes = maxMB * 1048576;
+        return file.size > limitBytes;
+    }
+
+    function canUseOpenRouterEmbeddings() {
+        const hasKey = Boolean(global.GoToolkitIAConfig?.getOpenRouterApiKey?.());
+        const hasProxy = Boolean(global.GoToolkitIAConfig?.OPENROUTER_EMBEDDINGS_PROXY_ENDPOINT);
+        return hasKey || hasProxy;
+    }
+
+    function resolveOpenRouterEmbeddingModel() {
+        return global?.GoToolkitIAConfig?.getOpenRouterEmbeddingsModel?.() || CLOUD_EMBEDDING_MODEL;
+    }
+
+    function resolveOpenRouterEmbeddingBackend() {
+        const config = global.GoToolkitIAConfig;
+        if (!config) return null;
+        const hasKey = Boolean(config.getOpenRouterApiKey?.());
+        const forceProxy = Boolean(global.GoToolkitForceOpenRouterProxy);
+        const useProxy = forceProxy || !hasKey;
+        const endpoint = useProxy
+            ? config.OPENROUTER_EMBEDDINGS_PROXY_ENDPOINT
+            : config.OPENROUTER_EMBEDDINGS_ENDPOINT;
+        if (!endpoint) return null;
+        return {
+            endpoint,
+            apiKey: useProxy ? "" : config.getOpenRouterApiKey?.() || "",
+            sort: "throughput"
+        };
+    }
+
+    function buildOpenRouterEmbeddingPayload(texts, backend) {
+        const sortBy = (typeof backend?.sort === "string" && backend.sort.trim()) ? backend.sort.trim() : "throughput";
+        return {
+            model: resolveOpenRouterEmbeddingModel(),
+            input: texts,
+            provider: {
+                allow_fallbacks: true,
+                sort: { by: sortBy, partition: null },
+                data_collection: "deny",
+                zdr: true
+            }
+        };
+    }
+
+    function buildOpenRouterEmbeddingHeaders(apiKey) {
+        const headers = {
+            "Content-Type": "application/json"
+        };
+        if (apiKey) {
+            headers.Authorization = `Bearer ${apiKey}`;
+        }
+        return headers;
+    }
+
+    function clampDuration(value, minMs, maxMs) {
+        const num = Number.isFinite(value) ? value : 0;
+        return Math.min(Math.max(num, minMs), maxMs);
+    }
+
+    function ensureAiRequestToaster(toasterId) {
+        if (typeof document === "undefined") return null;
+        const id = toasterId || OCR_TOAST_ID;
+        let toast = document.getElementById(id);
+        if (toast) return toast;
+        toast = document.createElement("div");
+        toast.id = id;
+        toast.className = "ai-request-counter-toaster";
+        toast.setAttribute("role", "status");
+        toast.setAttribute("aria-live", "polite");
+        toast.setAttribute("aria-atomic", "true");
+        toast.style.display = "none";
+        document.body.appendChild(toast);
+        return toast;
+    }
+
+    function setAiRequestToasterVisible(toasterId, iconName, message, isVisible, options = {}) {
+        if (global.GoToolkitAIRequestToaster?.startIcon && global.GoToolkitAIRequestToaster?.stop) {
+            if (isVisible) {
+                global.GoToolkitAIRequestToaster.startIcon(toasterId, iconName, message, options?.durationMs);
+            } else {
+                global.GoToolkitAIRequestToaster.stop(toasterId);
+            }
+            return;
+        }
+        const toast = ensureAiRequestToaster(toasterId);
+        if (!toast) return;
+        if (isVisible) {
+            toast.innerHTML = `<i data-lucide="${iconName}" class="lucide-pulse" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i> 00:00`;
+            toast.style.display = "block";
+            toast.classList.add("visible");
+            if (window.lucide) window.lucide.createIcons();
+            return;
+        }
+        toast.classList.remove("visible");
+        toast.style.display = "none";
+        toast.innerHTML = "";
+    }
 
     function emitDocumentsImportMessage(message, isError) {
         if (typeof document === "undefined") return;
@@ -194,36 +325,18 @@
     }
 
     function ensureQwenOcrToast() {
-        if (typeof document === "undefined") return null;
-        const existing = document.getElementById("qwenOcrToast");
-        if (existing) return existing;
-        const toast = document.createElement("div");
-        toast.id = "qwenOcrToast";
-        toast.className = "toast";
-        toast.setAttribute("role", "status");
-        toast.setAttribute("aria-live", "polite");
-        toast.setAttribute("aria-atomic", "true");
-        toast.style.display = "none";
-        document.body.appendChild(toast);
-        return toast;
+        return ensureAiRequestToaster(OCR_TOAST_ID);
     }
 
-    function setQwenOcrToastVisible(isVisible) {
-        if (typeof document === "undefined") return;
-        const toast = ensureQwenOcrToast();
-        if (!toast) return;
+    function setQwenOcrToastVisible(isVisible, durationMs) {
         if (isVisible) {
             qwenOcrToastCount += 1;
-            toast.textContent = QWEN_OCR_TOAST_MESSAGE;
-            toast.style.display = "block";
-            toast.classList.add("visible");
+            setAiRequestToasterVisible(OCR_TOAST_ID, "scan-text", QWEN_OCR_TOAST_MESSAGE, true, { durationMs });
             return;
         }
         qwenOcrToastCount = Math.max(0, qwenOcrToastCount - 1);
         if (qwenOcrToastCount === 0) {
-            toast.classList.remove("visible");
-            toast.style.display = "none";
-            toast.textContent = "";
+            setAiRequestToasterVisible(OCR_TOAST_ID, "scan-text", QWEN_OCR_TOAST_MESSAGE, false);
         }
     }
 
@@ -609,7 +722,8 @@
             messages: [{ role: "user", content }],
             usage: { include: true }
         };
-        setQwenOcrToastVisible(true);
+        const ocrDuration = clampDuration(15000 + images.length * 5000, 15000, 45000);
+        setQwenOcrToastVisible(true, ocrDuration);
         try {
             const responseText = await global.GoToolkitIAClient.chatCompletion({ payload });
             if (!responseText || typeof responseText !== "string") {
@@ -1988,6 +2102,49 @@
             return results;
         }
 
+        async embedBatchCloud(texts) {
+            if (!texts || !texts.length) return [];
+            const backend = resolveOpenRouterEmbeddingBackend();
+            if (!backend) {
+                throw new Error("OpenRouter embeddings indisponible");
+            }
+            const embeddingDuration = clampDuration(20000 + texts.length * 200, 20000, 90000);
+            setAiRequestToasterVisible("aiRequestCounterToasterEmbeddings", "search", "Embeddings cloud", true, { durationMs: embeddingDuration });
+            const results = new Array(texts.length);
+            const batchSize = Math.max(1, Math.min(CLOUD_EMBEDDING_BATCH_SIZE, texts.length));
+            try {
+                for (let i = 0; i < texts.length; i += batchSize) {
+                    const slice = texts.slice(i, i + batchSize);
+                    const payload = buildOpenRouterEmbeddingPayload(slice, backend);
+                    const response = await fetch(backend.endpoint, {
+                        method: "POST",
+                        headers: buildOpenRouterEmbeddingHeaders(backend.apiKey),
+                        body: JSON.stringify(payload)
+                    });
+                    if (!response.ok) {
+                        const body = await response.text().catch(() => "");
+                        throw new Error(body || "OpenRouter embeddings indisponible");
+                    }
+                    const data = await response.json();
+                    const rows = Array.isArray(data?.data) ? data.data : [];
+                    if (!rows.length) {
+                        throw new Error("OpenRouter embeddings: réponse invalide");
+                    }
+                    rows.sort((a, b) => (a?.index ?? 0) - (b?.index ?? 0));
+                    rows.forEach((row, idx) => {
+                        const emb = row?.embedding;
+                        if (!emb || !emb.length) {
+                            throw new Error("OpenRouter embeddings: vecteur manquant");
+                        }
+                        results[i + idx] = emb;
+                    });
+                }
+            } finally {
+                setAiRequestToasterVisible("aiRequestCounterToasterEmbeddings", "search", "Embeddings cloud", false);
+            }
+            return results;
+        }
+
         async ensureKeywordIndexReady() {
             if (!this.keywordIndex) return false;
             if (this.keywordIndex.index) return true;
@@ -2873,6 +3030,16 @@
                 });
                 const chunkTotal = chunkList.length;
                 const allTexts = chunkList.map((meta) => meta?.text || "");
+                const wantsCloudEmbeddings = shouldUseCloudEmbeddingsForFile(file);
+                const useCloudEmbeddings = wantsCloudEmbeddings && canUseOpenRouterEmbeddings();
+                try {
+                    console.log(`[DocumentIngest] ${file?.name || "document"} embeddings: ${useCloudEmbeddings ? "cloud" : "local"}`);
+                } catch (err) {
+                    // ignore
+                }
+                if (wantsCloudEmbeddings && !useCloudEmbeddings) {
+                    console.warn("Cloud embeddings unavailable, falling back to local embedder", file?.name);
+                }
                 if (skipEmbeddings) {
                     // Skip embeddings - store chunks without vector embeddings
                     onProgress?.({ type: "chunk", file: file.name, progress: 5 });
@@ -2918,7 +3085,9 @@
                     // Normal embedding flow
                     onProgress?.({ type: "chunk", file: file.name, progress: 5 });
                     const startEmbedTime = performance.now();
-                    const allEmbeddings = await this.embedBatch(allTexts);
+                    const allEmbeddings = useCloudEmbeddings
+                        ? await this.embedBatchCloud(allTexts)
+                        : await this.embedBatch(allTexts);
                     const embedDuration = performance.now() - startEmbedTime;
                     onProgress?.({ type: "chunk", file: file.name, progress: 50 });
                     const zeroEmb = new Int8Array(384);
@@ -3782,7 +3951,20 @@
             if (!query) return [];
             const convId = normalizeConversationId(conversationId);
             await this.waitReady();
-            const vector = options.vector || await this.embed(query);
+            const needsVector = !options.vector;
+            if (needsVector) {
+                const queryChars = (query || "").length;
+                const searchDuration = clampDuration(8000 + queryChars * 30, 8000, 20000);
+                setAiRequestToasterVisible("aiRequestCounterToasterSearch", "search", "Recherche", true, { durationMs: searchDuration });
+            }
+            let vector;
+            try {
+                vector = options.vector || await this.embed(query);
+            } finally {
+                if (needsVector) {
+                    setAiRequestToasterVisible("aiRequestCounterToasterSearch", "search", "Recherche", false);
+                }
+            }
             const queryVector = quantizeEmbedding(vector);
             const candidateIds = Array.isArray(options.candidateIds)
                 ? new Set(options.candidateIds.filter(Boolean))

@@ -125,7 +125,7 @@ const App = () => {
             },
             switchTo: (id: string, initialContent?: string) => {
                 const start = performance.now();
-                console.log(`[MemoBridge] switching to ${id}`);
+    // no-op
                 setActiveId(id);
                 setEditors(prev => {
                     if (prev[id]) return prev;
@@ -135,7 +135,7 @@ const App = () => {
                     };
                 });
                 setTimeout(() => {
-                    console.log(`[MemoBridge] switched to ${id} in ${Math.round(performance.now() - start)}ms`);
+                    // no-op
                 }, 0);
             },
             removeInstance: (id: string) => {

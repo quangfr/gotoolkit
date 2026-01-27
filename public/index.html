@@ -73,8 +73,8 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Sora:wght@400;500;600&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles/style.css?v=2026.01.27.4">
-    <link rel="stylesheet" href="styles/index.css?v=2026.01.27.4">
+    <link rel="stylesheet" href="styles/style.css?v=2026.01.27.5">
+    <link rel="stylesheet" href="styles/index.css?v=2026.01.27.5">
 </head>
 
 <body>
@@ -86,7 +86,7 @@
             </div>
             <h1>Go-Toolkit <span class="hero-beta">beta</span></h1>
             <p>La boîte à outils IA des Product Owners</p>
-            <span class="hero-version label-link" id="releaseNotesTrigger" tabindex="0">v2026.01.27.4</span>
+            <span class="hero-version label-link" id="releaseNotesTrigger" tabindex="0">v2026.01.27.5</span>
 
             <div class="hero-meta">
                 <button id="openSettingsBtn" class="feedback-button" type="button"><i data-lucide="settings"
@@ -281,6 +281,8 @@
                         <button type="button" class="tab-btn active" data-tab="servicesTab"><i data-lucide="cpu"
                                 style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Services
                             IA</button>
+                        <button type="button" class="tab-btn" data-tab="paramsTab"><i data-lucide="sliders"
+                                style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Paramétrages</button>
                     </div>
                     <div class="settings-tab-panels-wrapper" style="flex: 1; overflow-y: auto;">
                         <div class="settings-tab-panel" data-panel="servicesTab">
@@ -404,6 +406,13 @@
                                             placeholder="qwen/qwen-2.5-vl-7b-instruct" />
                                     </label>
                                 </div>
+                                <div class="field-row">
+                                    <label style="width:100%">
+                                        <span class="label-title">Modèle Embeddings</span>
+                                        <input id="openrouterEmbeddingsModelInput" type="text"
+                                            placeholder="qwen/qwen3-embedding-8b" />
+                                    </label>
+                                </div>
                                 <div id="openrouterExtras" style="display:none; margin-top:8px;">
                                     <div class="field-row">
                                         <label>
@@ -418,18 +427,20 @@
                                         <label>
                                     </div>
                                 </div>
-
-                                <div class="field-row" style="margin-top:8px;">
-                                    <label style="width:100%">
-                                        <span class="label-title">Prénom</span>
-                                        <div style="display:flex; align-items:center; gap:8px;">
-                                            <i data-lucide="user" style="width:14px;height:14px;"></i>
-                                            <input id="ownerToken" type="text" />
-                                        </div>
-                                    </label>
-                                </div>
                             </div>
 
+                        </div>
+
+                        <div class="settings-tab-panel" data-panel="paramsTab" hidden>
+                            <div class="field-row">
+                                <label style="width:100%">
+                                    <span class="label-title">Prénom</span>
+                                    <div style="display:flex; align-items:center; gap:8px;">
+                                        <i data-lucide="user" style="width:14px;height:14px;"></i>
+                                        <input id="ownerToken" type="text" />
+                                    </div>
+                                </label>
+                            </div>
                         </div>
 
                         <div class="settings-tab-panel" data-panel="promptTab" hidden>
@@ -502,20 +513,20 @@
         window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL =
             window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL || "https://assemblyai.gotoolkit.workers.dev/token";
     </script>
-    <script src="js/config.js?v=2026.01.27.4"></script>
-    <script src="js/feature-visibility.js?v=2026.01.27.4"></script>
-    <script src="js/document-storage.js?v=2026.01.27.4"></script>
-    <script src="js/storage-service.js?v=2026.01.27.4"></script>
-    <script src="js/shared-ui.js?v=2026.01.27.4"></script>
-    <script src="js/cgu.js?v=2026.01.27.4"></script>
-    <script src="js/share-worker-client.js?v=2026.01.27.4"></script>
-    <script src="js/share-history.js?v=2026.01.27.4"></script>
-    <script src="js/document-api.js?v=2026.01.27.4"></script>
-    <script src="js/ia-config.js?v=2026.01.27.4"></script>
-    <script src="preset.js?v=2026.01.27.4"></script>
-    <script src="prompt.js?v=2026.01.27.4"></script>
-    <script src="js/ia-client.js?v=2026.01.27.4"></script>
-    <script src="js/template-gallery.js?v=2026.01.27.4"></script>
+    <script src="js/config.js?v=2026.01.27.5"></script>
+    <script src="js/feature-visibility.js?v=2026.01.27.5"></script>
+    <script src="js/document-storage.js?v=2026.01.27.5"></script>
+    <script src="js/storage-service.js?v=2026.01.27.5"></script>
+    <script src="js/shared-ui.js?v=2026.01.27.5"></script>
+    <script src="js/cgu.js?v=2026.01.27.5"></script>
+    <script src="js/share-worker-client.js?v=2026.01.27.5"></script>
+    <script src="js/share-history.js?v=2026.01.27.5"></script>
+    <script src="js/document-api.js?v=2026.01.27.5"></script>
+    <script src="js/ia-config.js?v=2026.01.27.5"></script>
+    <script src="preset.js?v=2026.01.27.5"></script>
+    <script src="prompt.js?v=2026.01.27.5"></script>
+    <script src="js/ia-client.js?v=2026.01.27.5"></script>
+    <script src="js/template-gallery.js?v=2026.01.27.5"></script>
     <script>
         // Initialize feedback configuration before loading feedback.js
         window.GoToolkitAppFeedbackConfig = {
@@ -525,7 +536,7 @@
             primaryColor: "#2a7a57"
         };
     </script>
-    <script src="js/feedback.js?v=2026.01.27.4"></script>
+    <script src="js/feedback.js?v=2026.01.27.5"></script>
 
     <script>
         (function () {
@@ -2244,6 +2255,16 @@
             }
         }
 
+        function populateOpenrouterEmbeddingsModelInput() {
+            if (!openrouterEmbeddingsModelInput) return;
+            const stored = (window.GoToolkitIAConfig && typeof window.GoToolkitIAConfig.getOpenRouterEmbeddingsModel === "function"
+                ? window.GoToolkitIAConfig.getOpenRouterEmbeddingsModel()
+                : "") || (window.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_EMBEDDINGS_MODEL || "");
+            if (stored) {
+                openrouterEmbeddingsModelInput.value = stored;
+            }
+        }
+
         async function testOpenAiConnection({ showToasts = true } = {}) {
             var config = window.GoToolkitIAConfig;
             var apiKey = config && typeof config.getApiKey === "function" ? (config.getApiKey() || "").trim() : "";
@@ -2487,6 +2508,7 @@
         const openrouterVerifyBtn = document.getElementById("openrouterVerifyBtn");
         const openrouterModelInput = document.getElementById("openrouterModelInput");
         const openrouterOcrModelInput = document.getElementById("openrouterOcrModelInput");
+        const openrouterEmbeddingsModelInput = document.getElementById("openrouterEmbeddingsModelInput");
         const openrouterOcrModelRow = document.getElementById("openrouterOcrModelRow");
         const chatPromptTextarea = document.getElementById("chatPromptTextarea");
         const chatPromptPresetSelect = document.getElementById("chatPromptPresetSelect");
@@ -2498,6 +2520,7 @@
         const DEFAULT_AI_BACKEND = "openrouter";
         populateOpenrouterModelInput();
         populateOpenrouterOcrModelInput();
+        populateOpenrouterEmbeddingsModelInput();
         const VERSION_QUERY_PARAM = "v";
         const DATE_VERSION_PATTERN = /^\d{4}\.\d{2}\.\d{2}(?:\.\d+)?$/;
         (function ensureDefaultAIBackend() {
@@ -2597,6 +2620,7 @@
             if (val === "openrouter") {
                 populateOpenrouterModelInput();
                 populateOpenrouterOcrModelInput();
+                populateOpenrouterEmbeddingsModelInput();
             }
             window.GoToolkitSelectedAIBackend = val;
         }
@@ -2673,6 +2697,12 @@
                     (window.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_OCR_MODEL || "");
                 if (openrouterOcrModelInput && storedOpenRouterOcrModel) {
                     openrouterOcrModelInput.value = storedOpenRouterOcrModel;
+                }
+                const storedOpenRouterEmbeddingsModel =
+                    (config && typeof config.getOpenRouterEmbeddingsModel === "function" ? config.getOpenRouterEmbeddingsModel() : "") ||
+                    (window.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_EMBEDDINGS_MODEL || "");
+                if (openrouterEmbeddingsModelInput && storedOpenRouterEmbeddingsModel) {
+                    openrouterEmbeddingsModelInput.value = storedOpenRouterEmbeddingsModel;
                 }
                 const dataCollectionDefault = window.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_DATA_COLLECTION || "deny";
                 const storedOpenRouterDataCollection =
@@ -2935,6 +2965,12 @@
                     (window.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_OCR_MODEL || "");
                 if (iaConfig && typeof iaConfig.setOpenRouterOcrModel === "function") {
                     iaConfig.setOpenRouterOcrModel(openrouterOcrModelValue);
+                }
+                const openrouterEmbeddingsModelValue =
+                    (openrouterEmbeddingsModelInput?.value || "").trim() ||
+                    (window.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_EMBEDDINGS_MODEL || "");
+                if (iaConfig && typeof iaConfig.setOpenRouterEmbeddingsModel === "function") {
+                    iaConfig.setOpenRouterEmbeddingsModel(openrouterEmbeddingsModelValue);
                 }
                 const requiresOpenAi = Boolean(apiKey && apiKey.length);
                 if (requiresOpenAi && aiBackendSelect) {

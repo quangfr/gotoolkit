@@ -144,7 +144,7 @@ const CustomHeading = Heading.extend({
   addNodeView() {
     return ReactNodeViewRenderer(({ node, editor, getPos }) => {
       React.useEffect(() => {
-        console.log(`[CustomHeading] mounted ("${node.textContent?.substring(0, 20)}...")`);
+        // no-op
       }, []);
       const level = Math.min(4, Math.max(1, node.attrs.level || 1));
       const tag = `h${level}` as any;
@@ -2308,8 +2308,8 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       }),
     ],
     content,
-    onCreate: ({ editor }) => {
-      console.log(`[SimpleEditor] created in ${Math.round(performance.now() - mountStart.current)}ms with ${editor.state.doc.nodeSize} nodes`);
+    onCreate: () => {
+      // no-op
     },
     editorProps: {
       handleTripleClickOn: (view, pos) => selectTableCellText(view, pos),
@@ -2618,7 +2618,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       }
       const totalDuration = Math.round(performance.now() - start);
       if (totalDuration > 10) {
-        console.log(`[SimpleEditor] onUpdate (sync part) took ${totalDuration}ms`);
+        // no-op
       }
     },
     onBlur: ({ editor }) => {

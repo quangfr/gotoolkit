@@ -801,86 +801,150 @@
         return total;
     }
 
+    function clampDuration(value, minMs, maxMs) {
+        var num = Number.isFinite(value) ? value : 0;
+        return Math.min(Math.max(num, minMs), maxMs);
+    }
+
     // Character counter toaster functions
-    var aiCounterToasterState = {
-        isRunning: false,
-        timerId: null,
-        remaining: 0,
-        isLooping: false,
-        originalDuration: 0
-    };
+    var aiCounterToasterState = {};
+
+    function getAiCounterState(toasterId) {
+        var id = toasterId || "aiRequestCounterToaster";
+        if (!aiCounterToasterState[id]) {
+            aiCounterToasterState[id] = {
+                isRunning: false,
+                timerId: null,
+                remaining: 0,
+                isLooping: false,
+                originalDuration: 0,
+                iconName: "bot",
+                label: ""
+            };
+        }
+        return aiCounterToasterState[id];
+    }
+
+    function ensureAiRequestToaster(toasterId) {
+        if (typeof document === "undefined") return null;
+        var id = toasterId || "aiRequestCounterToaster";
+        var toasterEl = global.document?.getElementById(id);
+        if (!toasterEl) {
+            toasterEl = document.createElement("div");
+            toasterEl.id = id;
+            toasterEl.className = "ai-request-counter-toaster";
+            toasterEl.setAttribute("role", "status");
+            toasterEl.setAttribute("aria-live", "polite");
+            toasterEl.setAttribute("aria-atomic", "true");
+            toasterEl.style.display = "none";
+            var span = document.createElement("span");
+            span.id = id + "Text";
+            span.innerHTML = '<i data-lucide="bot" class="lucide-spin" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i> 00:00';
+            toasterEl.appendChild(span);
+            document.body.appendChild(toasterEl);
+        }
+        var textEl = global.document?.getElementById(id + "Text");
+        if (!textEl && id === "aiRequestCounterToaster") {
+            textEl = global.document?.getElementById("aiRequestCounterText");
+        }
+        return { toasterEl: toasterEl, textEl: textEl };
+    }
 
     function startCharacterCounterToaster(tokenCount, options = {}) {
         if (typeof tokenCount !== 'number' || tokenCount < 0) {
             tokenCount = 0;
         }
 
-        var toasterEl = global.document?.getElementById("aiRequestCounterToaster");
-        if (!toasterEl) return;
+        var toasterId = options.toasterId || "aiRequestCounterToaster";
+        var iconName = (options.iconName || "bot").toString();
+        var label = typeof options.label === "string" ? options.label : "";
+        var toastNodes = ensureAiRequestToaster(toasterId);
+        if (!toastNodes?.toasterEl) return;
 
         // Stop any existing timer
-        stopCharacterCounterToaster();
+        stopCharacterCounterToaster(toasterId);
 
         var isImport = options.isImport || false;
 
-        // Calculate duration: 15s to 90s
-        // Base: 15s for 0 tokens, up to 90s for ~30000 tokens (approx 120k chars)
-        var durationMs = 15000 + Math.round(tokenCount * 2.5);
-        durationMs = Math.min(durationMs, 90000); // Max 1m30
+        // Calculate duration: 15s to 90s (default token-based)
+        var durationMs = Number.isFinite(options.durationMs) ? Math.max(1000, options.durationMs) : 0;
+        if (!durationMs) {
+            durationMs = 15000 + Math.round(tokenCount * 2.5);
+            durationMs = Math.min(durationMs, 90000); // Max 1m30
+        }
 
-        aiCounterToasterState.isRunning = true;
-        aiCounterToasterState.remaining = durationMs;
-        aiCounterToasterState.isLooping = isImport;
-        aiCounterToasterState.originalDuration = durationMs;
+        var state = getAiCounterState(toasterId);
+        state.isRunning = true;
+        state.remaining = durationMs;
+        state.isLooping = isImport;
+        state.originalDuration = durationMs;
+        state.iconName = iconName;
+        state.label = label;
 
-        toasterEl.classList.add("visible");
-        toasterEl.style.display = "";
+        toastNodes.toasterEl.classList.add("visible");
+        toastNodes.toasterEl.style.display = "";
 
         var updateCounter = function () {
-            if (!aiCounterToasterState.isRunning) return;
+            if (!state.isRunning) return;
 
-            var secondsRemaining = Math.ceil(aiCounterToasterState.remaining / 1000);
+            var secondsRemaining = Math.ceil(state.remaining / 1000);
             var minutes = Math.floor(secondsRemaining / 60);
             var seconds = secondsRemaining % 60;
             var timeStr = (minutes < 10 ? "0" : "") + minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
 
-            var iconHtml = `<i data-lucide="loader-2" class="lucide-spin" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i>`;
-            var textEl = global.document?.getElementById("aiRequestCounterText");
+            var iconHtml = `<i data-lucide="${state.iconName}" class="lucide-pulse" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i>`;
+            var textEl = toastNodes.textEl || global.document?.getElementById(toasterId + "Text");
             if (textEl) {
-                textEl.innerHTML = iconHtml + timeStr;
+                textEl.innerHTML = iconHtml + " " + timeStr;
                 if (window.lucide) window.lucide.createIcons();
             }
 
-            aiCounterToasterState.remaining -= 1000;
+            state.remaining -= 1000;
 
-            if (aiCounterToasterState.remaining < 0) {
-                if (aiCounterToasterState.isLooping) {
-                    aiCounterToasterState.remaining = aiCounterToasterState.originalDuration;
-                    aiCounterToasterState.timerId = setTimeout(updateCounter, 1000);
+            if (state.remaining < 0) {
+                if (state.isLooping) {
+                    state.remaining = state.originalDuration;
+                    state.timerId = setTimeout(updateCounter, 1000);
                 } else {
-                    stopCharacterCounterToaster();
+                    stopCharacterCounterToaster(toasterId);
                 }
             } else {
-                aiCounterToasterState.timerId = setTimeout(updateCounter, 1000);
+                state.timerId = setTimeout(updateCounter, 1000);
             }
         };
 
         updateCounter();
     }
 
-    function stopCharacterCounterToaster() {
-        var toasterEl = global.document?.getElementById("aiRequestCounterToaster");
+    function stopCharacterCounterToaster(toasterId) {
+        var id = toasterId || "aiRequestCounterToaster";
+        var toasterEl = global.document?.getElementById(id);
         if (toasterEl) {
             toasterEl.classList.remove("visible");
         }
 
-        if (aiCounterToasterState.timerId) {
-            clearTimeout(aiCounterToasterState.timerId);
-            aiCounterToasterState.timerId = null;
+        var state = getAiCounterState(id);
+        if (state.timerId) {
+            clearTimeout(state.timerId);
+            state.timerId = null;
         }
-        aiCounterToasterState.isRunning = false;
-        aiCounterToasterState.remaining = 0;
+        state.isRunning = false;
+        state.remaining = 0;
     }
+
+    global.GoToolkitAIRequestToaster = {
+        start: startCharacterCounterToaster,
+        stop: stopCharacterCounterToaster,
+        startIcon: function (toasterId, iconName, label, durationMs) {
+            startCharacterCounterToaster(0, {
+                toasterId: toasterId,
+                iconName: iconName,
+                label: label,
+                isImport: true,
+                durationMs: durationMs
+            });
+        }
+    };
 
     function isMarkdownDocument(doc, options) {
         var config = options || {};
@@ -2988,7 +3052,7 @@
         menu.hidden = true;
 
         var presets = this.getPromptPresets();
-        var presetKeys = ["advice", "ask", "suggest", "edit"];
+        var presetKeys = ["edit", "advice", "ask", "suggest"];
         presetKeys.forEach(function (key) {
             var preset = presets[key];
             if (!preset) {
@@ -3090,8 +3154,8 @@
 
         modal.appendChild(header);
         modal.appendChild(filterBar);
-        modal.appendChild(pager);
         modal.appendChild(grid);
+        modal.appendChild(pager);
         overlay.appendChild(modal);
         overlay.addEventListener("click", function (event) {
             if (event.target === overlay) {
@@ -3586,69 +3650,90 @@
             throw new Error("Transcription indisponible");
         }
         var key = transcriptApi.getAssemblyApiKey?.() || "";
+        var durationCache = new Map();
+        var totalDurationSec = 0;
+        for (var i = 0; i < files.length; i++) {
+            var file = files[i];
+            var validation = await validateMediaFile(file);
+            durationCache.set(file, validation);
+            if (validation.ok && Number.isFinite(validation.duration)) {
+                totalDurationSec += Math.max(0, validation.duration);
+            }
+        }
+        var transcriptionDuration = clampDuration(45000 + Math.round(totalDurationSec * 250), 45000, 180000);
+        global.GoToolkitAIRequestToaster?.startIcon?.(
+            "aiRequestCounterToasterTranscription",
+            "audio-lines",
+            "Transcription",
+            transcriptionDuration
+        );
         var results = [];
         var errors = [];
-        var onTranscript = typeof options?.onTranscript === "function" ? options.onTranscript : null;
-        var concurrency = Number.isFinite(options?.concurrency) ? Math.max(1, options.concurrency) : 1;
-        this.mediaTotalCount = files.length;
-        this.mediaUploadCount = 0;
-        this.mediaTranscribedCount = 0;
-        if (!options?.skipIndicator) {
-            this.updateAttachmentIndicator();
-        }
-        var index = 0;
-        var runWorker = async function () {
-            while (index < files.length) {
-                var currentIndex = index;
-                index += 1;
-                var file = files[currentIndex];
-                var validation = await validateMediaFile(file);
-                if (!validation.ok) {
-                    errors.push({ name: file?.name || "", error: validation.error || "Fichier invalide" });
-                    continue;
-                }
-                this.setDocumentUploadStatus("Upload audio/vidéo → " + (file?.name || ""));
-                var uploadUrl = await transcriptApi.uploadAudioToAssembly(file, key);
-                this.mediaUploadCount += 1;
-                if (!options?.skipIndicator) {
-                    this.updateAttachmentIndicator();
-                }
-                var payload = transcriptApi.buildAssemblyTranscriptPayload(uploadUrl, 0);
-                var transcriptId = await transcriptApi.requestAssemblyTranscript(payload, key);
-                this.setDocumentUploadStatus("Transcription → " + (file?.name || ""));
-                var result = await transcriptApi.pollAssemblyTranscript(transcriptId, key);
-                this.mediaTranscribedCount += 1;
-                if (!options?.skipIndicator) {
-                    this.updateAttachmentIndicator();
-                }
-                try {
-                    console.log("AssemblyAI transcript response:", result);
-                } catch (err) {
-                    // ignore
-                }
-                var transcriptText = transcriptApi.buildTranscriptFromUtterances
-                    ? transcriptApi.buildTranscriptFromUtterances(result)
-                    : (result?.text || "").trim();
-                if (!transcriptText) {
-                    errors.push({ name: file?.name || "", error: "Transcription vide" });
-                    continue;
-                }
-                var vttFileName = buildTranscriptFileName(file?.name || "");
-                var txtFile = new File([transcriptText], vttFileName, { type: "text/plain" });
-                this.mediaTranscriptFileSizes?.set(txtFile.name, Number(file?.size) || 0);
-                var entry = { file: txtFile, sourceFile: file, transcriptText: transcriptText };
-                if (onTranscript) {
-                    await onTranscript(entry);
-                }
-                results.push(entry);
+        try {
+            var onTranscript = typeof options?.onTranscript === "function" ? options.onTranscript : null;
+            var concurrency = Number.isFinite(options?.concurrency) ? Math.max(1, options.concurrency) : 1;
+            this.mediaTotalCount = files.length;
+            this.mediaUploadCount = 0;
+            this.mediaTranscribedCount = 0;
+            if (!options?.skipIndicator) {
+                this.updateAttachmentIndicator();
             }
-        }.bind(this);
-        var workers = [];
-        var workerCount = Math.min(concurrency, files.length);
-        for (var w = 0; w < workerCount; w++) {
-            workers.push(runWorker());
+            var index = 0;
+            var runWorker = async function () {
+                while (index < files.length) {
+                    var currentIndex = index;
+                    index += 1;
+                    var file = files[currentIndex];
+                    var validation = durationCache.get(file) || await validateMediaFile(file);
+                    if (!validation.ok) {
+                        errors.push({ name: file?.name || "", error: validation.error || "Fichier invalide" });
+                        continue;
+                    }
+                    this.setDocumentUploadStatus("Upload audio/vidéo → " + (file?.name || ""));
+                    var uploadUrl = await transcriptApi.uploadAudioToAssembly(file, key);
+                    this.mediaUploadCount += 1;
+                    if (!options?.skipIndicator) {
+                        this.updateAttachmentIndicator();
+                    }
+                    var payload = transcriptApi.buildAssemblyTranscriptPayload(uploadUrl, 0);
+                    var transcriptId = await transcriptApi.requestAssemblyTranscript(payload, key);
+                    this.setDocumentUploadStatus("Transcription → " + (file?.name || ""));
+                    var result = await transcriptApi.pollAssemblyTranscript(transcriptId, key);
+                    this.mediaTranscribedCount += 1;
+                    if (!options?.skipIndicator) {
+                        this.updateAttachmentIndicator();
+                    }
+                    try {
+                        console.log("AssemblyAI transcript response:", result);
+                    } catch (err) {
+                        // ignore
+                    }
+                    var transcriptText = transcriptApi.buildTranscriptFromUtterances
+                        ? transcriptApi.buildTranscriptFromUtterances(result)
+                        : (result?.text || "").trim();
+                    if (!transcriptText) {
+                        errors.push({ name: file?.name || "", error: "Transcription vide" });
+                        continue;
+                    }
+                    var vttFileName = buildTranscriptFileName(file?.name || "");
+                    var txtFile = new File([transcriptText], vttFileName, { type: "text/plain" });
+                    this.mediaTranscriptFileSizes?.set(txtFile.name, Number(file?.size) || 0);
+                    var entry = { file: txtFile, sourceFile: file, transcriptText: transcriptText };
+                    if (onTranscript) {
+                        await onTranscript(entry);
+                    }
+                    results.push(entry);
+                }
+            }.bind(this);
+            var workers = [];
+            var workerCount = Math.min(concurrency, files.length);
+            for (var w = 0; w < workerCount; w++) {
+                workers.push(runWorker());
+            }
+            await Promise.all(workers);
+        } finally {
+            global.GoToolkitAIRequestToaster?.stop?.("aiRequestCounterToasterTranscription");
         }
-        await Promise.all(workers);
         return { files: results, errors: errors };
     };
 
@@ -5445,6 +5530,7 @@
     AssistSidebar.prototype.validateFileSizes = function (files) {
         var fileArray = Array.from(files);
         var errors = [];
+        var allowOverLimitEmbeddings = Boolean(globalConfig?.fileImport?.allowOverLimitEmbeddings);
         for (var i = 0; i < fileArray.length; i++) {
             var file = fileArray[i];
             var limit = this.getFileSizeLimit(file.name);
@@ -5452,7 +5538,9 @@
                 var maxBytes = limit.maxMB * 1048576;
                 if (file.size > maxBytes) {
                     var sizeMB = (file.size / 1048576).toFixed(2);
-                    errors.push(file.name + " (" + sizeMB + " MB) dépasse la limite de " + limit.maxMB + " MB.");
+                    if (!allowOverLimitEmbeddings) {
+                        errors.push(file.name + " (" + sizeMB + " MB) dépasse la limite de " + limit.maxMB + " MB.");
+                    }
                 }
             }
         }
