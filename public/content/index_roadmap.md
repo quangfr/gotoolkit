@@ -1,14 +1,9 @@
 ## Fichiers de données
 - Import et visualisation JSON
-- Export Markdown
 - Intégration Grid et import CSV, XLSX, ODS
 
-## Modèles de document
-- Vision : Go-Roadmap
-- Spécifications : Mapping de données
-
-## Interface 
-- Mode sombre
+## Édition de document
+- Ajout d'images
 
 ## Intégration tiers
 - Fichiers Sharepoint / Outlook / OneDrive 
