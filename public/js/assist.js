@@ -1321,7 +1321,6 @@
         this.previewTitleEl = null;
         this.previewBodyEl = null;
         this.previewCloseBtn = null;
-        this.previewImportBtn = null;
         this.previewIframeEl = null;
         this.previewPdfUrl = null;
         this.pendingPdfHighlight = null;
@@ -6616,14 +6615,6 @@
         }.bind(this));
         var title = document.createElement("div");
         title.className = "chat-doc-preview__title";
-        var importBtn = document.createElement("button");
-        importBtn.type = "button";
-        importBtn.className = "btn-secondary chat-doc-preview__import";
-        importBtn.textContent = "⤷ Importer";
-        importBtn.setAttribute("aria-label", "Importer le document");
-        importBtn.addEventListener("click", function () {
-            this.importDocument();
-        }.bind(this));
         var closeBtn = document.createElement("button");
         closeBtn.type = "button";
         closeBtn.className = "chat-doc-preview__close";
@@ -6631,7 +6622,6 @@
         closeBtn.addEventListener("click", this.closePreviewPanel.bind(this));
         header.appendChild(backBtn);
         header.appendChild(title);
-        header.appendChild(importBtn);
         header.appendChild(closeBtn);
 
         var body = document.createElement("div");
@@ -6645,7 +6635,6 @@
         this.previewTitleEl = title;
         this.previewBodyEl = body;
         this.previewCloseBtn = closeBtn;
-        this.previewImportBtn = importBtn;
     };
 
     AssistSidebar.prototype.clearPreviewIframe = function () {
@@ -7272,6 +7261,9 @@
 
     AssistSidebar.prototype.openReferencePreview = async function (message, reference) {
         if (!reference) return;
+        if (this.knowledgeModal && this.knowledgeModal.classList.contains("open")) {
+            this.closeKnowledgeModal(false);
+        }
         this.buildPreviewPanel();
         if (!this.previewPanel) return;
         this.previewPanel.classList.add("open");
@@ -7353,6 +7345,7 @@
                     aiSnippets: aiSnippets,
                     doc: doc
                 });
+                this.scrollPreviewToReference(reference);
                 return;
             }
         } catch (err) {
@@ -7362,12 +7355,49 @@
             var content = snippet || "(extrait indisponible)";
             this.previewBodyEl.innerHTML = this.formatPreviewText(content, reference.line);
             if (typeof reference.line === "number") {
-                var target = this.previewBodyEl.querySelector("[data-line=\"" + reference.line + "\"]");
-                if (target && typeof target.scrollIntoView === "function") {
-                    target.scrollIntoView({ block: "center" });
-                }
+                this.scrollPreviewToLine(reference.line);
             }
         }
+    };
+
+    AssistSidebar.prototype.scrollPreviewToReference = function (reference) {
+        if (!reference || !this.previewBodyEl) return;
+        if (reference.chunkId && this.scrollPreviewToChunk(reference.chunkId)) {
+            return;
+        }
+        if (typeof reference.line === "number" && this.scrollPreviewToLine(reference.line)) {
+            return;
+        }
+        var match = this.previewBodyEl.querySelector(".chat-doc-preview__text-match");
+        if (match && typeof match.scrollIntoView === "function") {
+            match.scrollIntoView({ block: "center" });
+        }
+    };
+
+    AssistSidebar.prototype.scrollPreviewToLine = function (lineNo) {
+        if (!this.previewBodyEl || !Number.isFinite(lineNo)) return false;
+        var target = this.previewBodyEl.querySelector("[data-line=\"" + lineNo + "\"]");
+        if (target && typeof target.scrollIntoView === "function") {
+            target.scrollIntoView({ block: "center" });
+            return true;
+        }
+        return false;
+    };
+
+    AssistSidebar.prototype.scrollPreviewToChunk = function (chunkId) {
+        if (!this.previewBodyEl || !chunkId) return false;
+        var nodes = this.previewBodyEl.querySelectorAll("[data-chunk]");
+        for (var i = 0; i < nodes.length; i++) {
+            var attr = nodes[i].getAttribute("data-chunk") || "";
+            var keys = attr.split(",").map(function (key) { return key.trim(); }).filter(Boolean);
+            if (keys.indexOf(chunkId) !== -1) {
+                if (typeof nodes[i].scrollIntoView === "function") {
+                    nodes[i].scrollIntoView({ block: "center" });
+                }
+                return true;
+            }
+        }
+        return false;
     };
 
     AssistSidebar.prototype.formatPreviewText = function (text, highlightLine, options) {

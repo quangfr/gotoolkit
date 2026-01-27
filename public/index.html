@@ -1144,6 +1144,9 @@
                 card.innerHTML = `
                     <p class="share-card-title"><i data-lucide="plus-circle" style="width:16px;height:16px;margin-right:8px;vertical-align:text-bottom;"></i>Créer un nouveau document</p>
                 `;
+                card.addEventListener("click", () => {
+                    queueMemoOpenRequest({ type: "edit", id: "new" });
+                });
                 return card;
             }
 

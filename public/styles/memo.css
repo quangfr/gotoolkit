@@ -910,7 +910,7 @@
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.2s ease;
-            z-index: 240;
+            z-index: 9999;
             font-family: "Menlo", "SFMono-Regular", "Consolas", "Liberation Mono", "Courier New", monospace;
             letter-spacing: 0.5px;
         }
