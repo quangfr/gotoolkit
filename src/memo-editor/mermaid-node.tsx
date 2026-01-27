@@ -1,7 +1,7 @@
 import { Node, mergeAttributes, InputRule, Editor } from '@tiptap/core';
 import { ReactNodeViewRenderer, NodeViewWrapper } from '@tiptap/react';
 import React from 'react';
-import { Shapes, RectangleHorizontal, Square, ArrowLeftRight, Workflow, Boxes, Send, Loader2, ChevronUp, Copy, CircleX } from 'lucide-react';
+import { Shapes, RectangleHorizontal, Square, ArrowLeftRight, Workflow, Boxes, Send, Loader2, ChevronUp, Copy, CircleX, Sparkles } from 'lucide-react';
 
 const getMermaidApi = () => (window as any).mermaid;
 
@@ -769,9 +769,9 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
                       placeholder="Décrivez votre diagramme..."
                     />
                   </div>
-                  <div className="chat-composer-actions">
-                    <div className="chat-composer-left-actions">
-                      <div className="diagram-type-dropdown chat-prompt-dropdown">
+                    <div className="chat-composer-actions">
+                      <div className="chat-composer-left-actions">
+                        <div className="diagram-type-dropdown chat-prompt-dropdown">
                         <button
                           type="button"
                           id="diagram-type-selector"
@@ -808,6 +808,16 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
                           </div>
                         )}
                       </div>
+                      <button
+                        type="button"
+                        className="btn-secondary chat-prompt-shortcuts-btn"
+                        title="Raccourcis Prompt"
+                        onClick={() => {
+                          (window as any).GoToolkitAssistInstance?.openPromptShortcutsModal?.(composerTextareaRef.current);
+                        }}
+                      >
+                        <Sparkles size={14} data-lucide="sparkles" />
+                      </button>
                     </div>
                     
                     <button

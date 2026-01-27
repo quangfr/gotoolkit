@@ -1329,6 +1329,22 @@
         this.promptDropdown = null;
         this.promptDropdownButton = null;
         this.promptDropdownMenu = null;
+        this.promptShortcutsButton = null;
+        this.promptShortcutsOverlay = null;
+        this.promptShortcutsModal = null;
+        this.promptShortcutsTitleEl = null;
+        this.promptShortcutsFilterEl = null;
+        this.promptShortcutsGridEl = null;
+        this.promptShortcutsCloseBtn = null;
+        this.promptShortcutsPagerEl = null;
+        this.promptShortcutsPagerLabelEl = null;
+        this.promptShortcutsPagerPrevBtn = null;
+        this.promptShortcutsPagerNextBtn = null;
+        this.promptShortcutsActiveCategory = "ALL";
+        this.promptShortcutsPageIndex = 0;
+        this.promptShortcutsPageSize = 9;
+        this.promptShortcutsTargetInput = null;
+        this.promptShortcutsPrompts = [];
         this.documentCounts = { context: 0, gallery: 0 };
         this.knowledgeConversationId = global.GoToolkitKnowledgeConversationId || "knowledge";
         this.knowledgeDocumentNames = [];
@@ -3011,6 +3027,251 @@
         return wrapper;
     };
 
+    AssistSidebar.prototype.getPromptShortcuts = function () {
+        var shortcuts = global.GoToolkitPromptShortcuts;
+        if (!shortcuts || !Array.isArray(shortcuts.prompts)) return [];
+        return shortcuts.prompts.slice();
+    };
+
+    AssistSidebar.prototype.getPromptShortcutCategories = function () {
+        var shortcuts = global.GoToolkitPromptShortcuts;
+        if (!shortcuts || !shortcuts.categories || typeof shortcuts.categories !== "object") return {};
+        return Object.assign({}, shortcuts.categories);
+    };
+
+    AssistSidebar.prototype.buildPromptShortcutsModal = function () {
+        if (this.promptShortcutsOverlay) return;
+        var overlay = document.createElement("div");
+        overlay.className = "modal-overlay chat-prompt-shortcuts-overlay";
+        overlay.setAttribute("aria-hidden", "true");
+
+        var modal = document.createElement("div");
+        modal.className = "modal chat-prompt-shortcuts-modal";
+
+        var header = document.createElement("div");
+        header.className = "modal-header chat-prompt-shortcuts__header";
+        var title = document.createElement("h3");
+        title.innerHTML = '<i data-lucide="sparkles"></i> Raccourcis Prompt';
+        var closeBtn = document.createElement("button");
+        closeBtn.type = "button";
+        closeBtn.className = "modal-close";
+        closeBtn.textContent = "✕";
+        closeBtn.addEventListener("click", this.closePromptShortcutsModal.bind(this));
+        header.appendChild(title);
+        header.appendChild(closeBtn);
+
+        var filterBar = document.createElement("div");
+        filterBar.className = "chat-prompt-shortcuts__filters";
+
+        var pager = document.createElement("div");
+        pager.className = "chat-prompt-shortcuts__pager";
+        var prevBtn = document.createElement("button");
+        prevBtn.type = "button";
+        prevBtn.className = "chat-prompt-shortcuts__pager-btn";
+        prevBtn.innerHTML = '<i data-lucide="chevron-left"></i>';
+        prevBtn.addEventListener("click", function () {
+            this.changePromptShortcutsPage(-1);
+        }.bind(this));
+        var label = document.createElement("div");
+        label.className = "chat-prompt-shortcuts__pager-label";
+        var nextBtn = document.createElement("button");
+        nextBtn.type = "button";
+        nextBtn.className = "chat-prompt-shortcuts__pager-btn";
+        nextBtn.innerHTML = '<i data-lucide="chevron-right"></i>';
+        nextBtn.addEventListener("click", function () {
+            this.changePromptShortcutsPage(1);
+        }.bind(this));
+        pager.appendChild(prevBtn);
+        pager.appendChild(label);
+        pager.appendChild(nextBtn);
+
+        var grid = document.createElement("div");
+        grid.className = "chat-prompt-shortcuts__grid";
+
+        modal.appendChild(header);
+        modal.appendChild(filterBar);
+        modal.appendChild(pager);
+        modal.appendChild(grid);
+        overlay.appendChild(modal);
+        overlay.addEventListener("click", function (event) {
+            if (event.target === overlay) {
+                this.closePromptShortcutsModal();
+            }
+        }.bind(this));
+        document.body.appendChild(overlay);
+
+        this.promptShortcutsOverlay = overlay;
+        this.promptShortcutsModal = modal;
+        this.promptShortcutsTitleEl = title;
+        this.promptShortcutsFilterEl = filterBar;
+        this.promptShortcutsGridEl = grid;
+        this.promptShortcutsCloseBtn = closeBtn;
+        this.promptShortcutsPagerEl = pager;
+        this.promptShortcutsPagerLabelEl = label;
+        this.promptShortcutsPagerPrevBtn = prevBtn;
+        this.promptShortcutsPagerNextBtn = nextBtn;
+        if (global.lucide) global.lucide.createIcons();
+    };
+
+    AssistSidebar.prototype.renderPromptShortcutsFilters = function (prompts) {
+        if (!this.promptShortcutsFilterEl) return;
+        var categoriesMeta = this.getPromptShortcutCategories();
+        var filterBar = this.promptShortcutsFilterEl;
+        filterBar.innerHTML = "";
+        var categories = new Set();
+        (prompts || []).forEach(function (prompt) {
+            var category = (prompt?.category || "").toString().trim();
+            if (category) categories.add(category.toUpperCase());
+        });
+        var active = (this.promptShortcutsActiveCategory || "ALL").toUpperCase();
+        var makeButton = function (label, value) {
+            var btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "chat-prompt-shortcuts__filter";
+            var icon = categoriesMeta?.[value.toLowerCase()]?.icon;
+            btn.innerHTML = (icon ? '<i data-lucide="' + icon + '"></i>' : "") + '<span>' + label + "</span>";
+            btn.dataset.category = value;
+            if (value === active) {
+                btn.classList.add("active");
+            }
+            btn.addEventListener("click", function () {
+                this.promptShortcutsActiveCategory = value;
+                this.promptShortcutsPageIndex = 0;
+                this.renderPromptShortcutsFilters(prompts);
+                this.renderPromptShortcutsGrid(prompts);
+            }.bind(this));
+            filterBar.appendChild(btn);
+        }.bind(this);
+
+        makeButton("TOUS", "ALL");
+        Array.from(categories).sort().forEach(function (categoryKey) {
+            var key = categoryKey.toLowerCase();
+            var meta = categoriesMeta?.[key];
+            var label = meta?.label || categoryKey;
+            makeButton(label, categoryKey);
+        });
+        if (global.lucide) global.lucide.createIcons();
+    };
+
+    AssistSidebar.prototype.renderPromptShortcutsGrid = function (prompts) {
+        if (!this.promptShortcutsGridEl) return;
+        var categoriesMeta = this.getPromptShortcutCategories();
+        var grid = this.promptShortcutsGridEl;
+        grid.innerHTML = "";
+        var active = (this.promptShortcutsActiveCategory || "ALL").toUpperCase();
+        var list = (prompts || []).filter(function (prompt) {
+            if (!prompt) return false;
+            if (active === "ALL") return true;
+            return (prompt.category || "").toString().trim().toUpperCase() === active;
+        });
+        var pageSize = Number(this.promptShortcutsPageSize) || 9;
+        var totalPages = Math.max(1, Math.ceil(list.length / pageSize));
+        var pageIndex = Math.min(Math.max(0, this.promptShortcutsPageIndex || 0), totalPages - 1);
+        this.promptShortcutsPageIndex = pageIndex;
+        var pageStart = pageIndex * pageSize;
+        var pageList = list.slice(pageStart, pageStart + pageSize);
+        this.updatePromptShortcutsPager(totalPages);
+        if (!list.length) {
+            var empty = document.createElement("div");
+            empty.className = "chat-prompt-shortcuts__empty";
+            empty.textContent = "Aucun raccourci dans cette catégorie.";
+            grid.appendChild(empty);
+            return;
+        }
+        pageList.forEach(function (prompt, index) {
+            var card = document.createElement("button");
+            card.type = "button";
+            card.className = "prompt-card";
+            card.dataset.promptIndex = String(index);
+            var categoryKey = (prompt.category || "").toString().trim().toLowerCase();
+            var metaInfo = categoriesMeta?.[categoryKey] || {};
+            var category = (metaInfo.label || categoryKey || "PROMPT").toString().toUpperCase();
+            var icon = metaInfo.icon;
+            var meta = document.createElement("div");
+            meta.className = "prompt-card__meta";
+            meta.innerHTML = (icon ? '<i data-lucide="' + icon + '"></i>' : "") + "<span>" + (category || "PROMPT") + "</span>";
+            var title = document.createElement("div");
+            title.className = "prompt-card__title";
+            title.textContent = (prompt.title || "").toString();
+            var content = document.createElement("div");
+            content.className = "prompt-card__content";
+            content.textContent = (prompt.content || "").toString();
+            card.appendChild(meta);
+            card.appendChild(title);
+            card.appendChild(content);
+            card.addEventListener("click", function () {
+                this.applyPromptShortcut(prompt);
+            }.bind(this));
+            grid.appendChild(card);
+        }, this);
+        if (global.lucide) global.lucide.createIcons();
+    };
+
+    AssistSidebar.prototype.refreshPromptShortcutsModal = function () {
+        this.promptShortcutsPrompts = this.getPromptShortcuts();
+        this.renderPromptShortcutsFilters(this.promptShortcutsPrompts);
+        this.renderPromptShortcutsGrid(this.promptShortcutsPrompts);
+    };
+
+    AssistSidebar.prototype.updatePromptShortcutsPager = function (totalPages) {
+        if (!this.promptShortcutsPagerEl) return;
+        var hasPages = totalPages > 1;
+        var pageIndex = this.promptShortcutsPageIndex || 0;
+        this.promptShortcutsPagerEl.style.display = hasPages ? "flex" : "none";
+        if (this.promptShortcutsPagerLabelEl) {
+            this.promptShortcutsPagerLabelEl.textContent = (pageIndex + 1) + " / " + totalPages;
+        }
+        if (this.promptShortcutsPagerPrevBtn) {
+            this.promptShortcutsPagerPrevBtn.disabled = pageIndex <= 0;
+        }
+        if (this.promptShortcutsPagerNextBtn) {
+            this.promptShortcutsPagerNextBtn.disabled = pageIndex >= totalPages - 1;
+        }
+    };
+
+    AssistSidebar.prototype.changePromptShortcutsPage = function (direction) {
+        var next = (this.promptShortcutsPageIndex || 0) + direction;
+        if (next < 0) next = 0;
+        this.promptShortcutsPageIndex = next;
+        this.renderPromptShortcutsGrid(this.promptShortcutsPrompts || []);
+    };
+
+    AssistSidebar.prototype.applyPromptShortcut = function (prompt) {
+        if (!prompt) return;
+        var target = this.promptShortcutsTargetInput || this.textarea;
+        if (!target) return;
+        var content = (prompt.content || "").toString();
+        if (typeof target.value === "string") {
+            target.value = content;
+        } else if (target.isContentEditable) {
+            target.textContent = content;
+        }
+        try {
+            target.dispatchEvent(new Event("input", { bubbles: true }));
+        } catch (err) { /* ignore */ }
+        try {
+            target.focus();
+        } catch (err) { /* ignore */ }
+        this.closePromptShortcutsModal();
+    };
+
+    AssistSidebar.prototype.openPromptShortcutsModal = function (targetInput) {
+        this.buildPromptShortcutsModal();
+        if (!this.promptShortcutsOverlay) return;
+        this.promptShortcutsTargetInput = targetInput || this.textarea;
+        this.promptShortcutsPageIndex = 0;
+        this.promptShortcutsOverlay.classList.add("open");
+        this.promptShortcutsOverlay.setAttribute("aria-hidden", "false");
+        this.refreshPromptShortcutsModal();
+    };
+
+    AssistSidebar.prototype.closePromptShortcutsModal = function () {
+        if (!this.promptShortcutsOverlay) return;
+        this.promptShortcutsOverlay.classList.remove("open");
+        this.promptShortcutsOverlay.setAttribute("aria-hidden", "true");
+        this.promptShortcutsTargetInput = null;
+    };
+
     AssistSidebar.prototype.buildUI = function () {
         if (!this.root) return false;
         this.page = document.getElementById("page");
@@ -3141,6 +3402,16 @@
 
         var promptDropdown = this.buildPromptDropdown();
         composerLeftActions.appendChild(promptDropdown);
+
+        this.promptShortcutsButton = document.createElement("button");
+        this.promptShortcutsButton.type = "button";
+        this.promptShortcutsButton.className = "btn-secondary chat-prompt-shortcuts-btn";
+        this.promptShortcutsButton.innerHTML = '<i data-lucide="sparkles"></i>';
+        this.promptShortcutsButton.setAttribute("title", "Raccourcis Prompt");
+        this.promptShortcutsButton.addEventListener("click", function () {
+            this.openPromptShortcutsModal(this.textarea);
+        }.bind(this));
+        composerLeftActions.appendChild(this.promptShortcutsButton);
 
         this.scrollButton = document.createElement("button");
         this.scrollButton.type = "button";

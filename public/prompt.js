@@ -1,508 +1,524 @@
 (function (global) {
-    const memoTemplates = [
-        {
-            id: "default",
-            label: "🕊️ Guide rapide",
-            description: "Aperçu des fonctionnalités avancées de GoToolkit",
-            path: "content/default_template.md"
-        }
-    ];
-
-    const gridSystemPromptDataGeneration = `Tu génères un flux NDJSON pour ** une seule grille AG Grid **.
-
-            SORTIE(1 objet JSON par ligne, aucun texte / markdown) :
-        1) Header : { "type": "header", "title": "string", "columns": [{ "field": "id", "cellDataType": "number", "editable": false }, ... ] }
-2) Rows   : { "type": "row", "data": { ... } }
-3) Fin    : {
-            "type": "done", "summary": {
-                "rows": <rowCount> } }
-
-                    Règles colonnes :
-                    - Champs : \`field\` (anglais), \`headerName\` (fr), \`title\` (2-5 mots résumé) \`cellDataType\` ∈ text|number|boolean|date|dateTime
-                    - Inclure au minimum \`id\` (number, lecture seule et unique)
-                    - date and dateTime : format ISO 8601 2024-12-22T00:00:00Z
-
-                    Règles lignes :
-                    - Objets plats, valeurs cohérentes avec \`cellDataType\`
-                    - Valeur inconnue → null`;
-
-    const gridSystemPromptTree = `Génère un schéma arborescent pour une **seule grille AG Grid**. Un unique objet JSON, sans markdown ni texte autour.
-                    - Si un script JSON existe déjà dans la conversation, utilise-le comme base et applique uniquement les modifications demandées.
-
-                    FORMAT
-                    {
-                        "title": "(2-4 mots résumé)",
-                    "rows": [
-                    {
-                        "id": "string unique [A-Za-z0-9_]",
-                    "name": "string (< 5 mots)",
-                    "path": ["racine", "niveau", "sous-niveau"],
-                    "relation": "1..1 | 0..1 | 1..n | 0..n",
-                    "type": "{{ tree_type_options }}",
-                    "format": "string (contrainte ou \"\")",
-                    "definition": "string (< 15 mots)",
-                    "sample": "string (exemple conforme, sinon \"\")",
-                    "source": "string ({{ tree_source_options }})"
-    }
-                    ]
-}
-
-                    RÈGLES
-                    - \`path\` obligatoire pour chaque ligne
-- \`array\` => relation 0..n ou 1..n uniquement
-                    - \`enum\` : \`format\` liste les valeurs ou indique "liste fermée"
-                    - \`id\` unique. Réponds uniquement avec l'objet JSON.`;
-
-    const gridSystemPromptMockData = `Tu génères un flux NDJSON pour **une seule grille AG Grid**.
-                    - Si un script NDJSON existe déjà dans la conversation, utilise-le comme base et applique uniquement les modifications demandées.
-
-                    SORTIE (1 objet JSON par ligne, aucun texte/markdown) :
-                    1) Header : {"type": "header", "title": "(2-4 mots résumé)", "columns": [ {"field": "id", "cellDataType": "number", "editable": false }, ... ] }
-                    2) Rows   : {"type": "row", "data": {... } }
-                    3) Fin    : {"type": "done", "summary": {"rows": <rowCount> } }
-
-                        Règles colonnes :
-                        - Champs : \`field\` (anglais), \`headerName\` (fr), \`cellDataType\` ∈ text|number|boolean|date|dateTime
-                        - Inclure au minimum \`id\` (number, lecture seule et unique)
-                        - date et dateTime : format ISO 8601 2024-12-22T00:00:00Z
-
-                        Règles lignes :
-                        - Objets plats, valeurs cohérentes avec \`cellDataType\`
-                        - Valeur inconnue → null`;
-
-    const gridSystemPrompts = {
-        dataGeneration: gridSystemPromptDataGeneration,
-        treeStructure: gridSystemPromptTree,
-        mockData: gridSystemPromptMockData
+    const promptCategories = {
+        strategie: { label: "STRATEGIE", icon: "target" },
+        discovery: { label: "DISCOVERY", icon: "compass" },
+        organisation: { label: "ORGANISATION", icon: "users" },
+        metrics: { label: "METRIQUES", icon: "bar-chart-3" },
+        delivery: { label: "DELIVERY", icon: "rocket" },
+        tech: { label: "TECH", icon: "cpu" },
+        design: { label: "DESIGN", icon: "palette" },
+        data: { label: "DATA", icon: "database" },
+        ia: { label: "IA", icon: "sparkles" }
     };
 
-    const gridDefaultPromptTemplate = "Génère des exemples basés sur {{ scenario_prompt }}.";
-    const gridTreePromptTemplate =
-        "Génère une arborescence structurée répondant à {{ scenario_prompt }}.";
-
-    const gridMockPromptTemplate = "Génère des données fictives basées sur {{ scenario_prompt }}.";
-    const gridPromptTemplates = {
-        dataGeneration: gridDefaultPromptTemplate,
-        treeStructure: gridTreePromptTemplate,
-        mockData: gridMockPromptTemplate
-    };
-
-    const GRID_TEMPLATES = [
+    const promptShortcuts = [
+        // STRATEGIE (9)
         {
-            id: "tree-structure",
-            label: "Structure de données",
-            description: "Schéma arborescent (Structure / Type / Format / Définition / Exemple / Source).",
-            defaultPromptTemplate: gridPromptTemplates.treeStructure || gridTreePromptTemplate,
-            defaultSystemPrompt: gridSystemPrompts.treeStructure || gridSystemPromptTree,
-            parser: "tree"
-        }
-        ,
+            id: "strat-cadrage-produit",
+            title: "Cadrage produit",
+            category: "strategie",
+            content: "Aide-moi à cadrer l'initiative [lancement CRM]. Donne: Contexte, Problème, Objectif, Hypothèses clés, KPI principaux, Hors périmètre, Risques, Questions ouvertes."
+        },
+        {
+            id: "strat-vision-succes",
+            title: "Définition du succès",
+            category: "strategie",
+            content: "Définis ce que signifie le succès pour [refonte checkout]. Propose: North Star Metric, 3 KPI secondaires, garde-fous, horizon temporel."
+        },
+        {
+            id: "strat-positionnement",
+            title: "Positionnement",
+            category: "strategie",
+            content: "Propose un positionnement clair pour [offre freemium] (problème, cible, promesse, différenciation, alternatives)."
+        },
+        {
+            id: "strat-roadmap-now-next-later",
+            title: "Roadmap Now/Next/Later",
+            category: "strategie",
+            content: "Crée une roadmap Now/Next/Later pour [portail partenaires]. Pour chaque item: objectif, livrable, dépendances, risque, métrique de validation."
+        },
+        {
+            id: "strat-rollout",
+            title: "Stratégie de rollout",
+            category: "strategie",
+            content: "Propose une stratégie de rollout progressive pour [déploiement Europe]: cohortes, critères d'éligibilité, observabilité, plan de rollback."
+        },
+        {
+            id: "strat-priorisation",
+            title: "Priorisation",
+            category: "strategie",
+            content: "Priorise [backlog Q2] avec une grille Impact/Effort (ou RICE). Donne le classement, les hypothèses et les incertitudes."
+        },
+        {
+            id: "strat-business-case",
+            title: "Business case",
+            category: "strategie",
+            content: "Construis un business case pour [business case]: valeur attendue, coûts, risques, ROI, et scénario pessimiste/réaliste/optimiste."
+        },
+        {
+            id: "strat-parties-prenantes",
+            title: "Parties prenantes",
+            category: "strategie",
+            content: "Cartographie les parties prenantes de [alignement comex]: objectifs, attentes, influence, et plan d'alignement."
+        },
+        {
+            id: "strat-objectifs-okrs",
+            title: "OKR",
+            category: "strategie",
+            content: "Propose des OKR pour [OKR trimestre]: 1 objectif clair et 3 résultats clés mesurables."
+        },
+
+        // DISCOVERY (9)
+        {
+            id: "disc-story-map",
+            title: "Story mapping",
+            category: "discovery",
+            content: "Construis une story map pour [inscription en ligne]. Donne: activités haut niveau, tâches, variations, MVP et V1."
+        },
+        {
+            id: "disc-personas",
+            title: "Personas",
+            category: "discovery",
+            content: "Définis 2-3 personas pour [prospection B2B] avec objectifs, frustrations, contexte d'usage."
+        },
+        {
+            id: "disc-jtbd",
+            title: "Jobs To Be Done",
+            category: "discovery",
+            content: "Formule les JTBD pour [support premium] (quand..., je veux..., afin de...)."
+        },
+        {
+            id: "disc-parcours-ux",
+            title: "Parcours UX",
+            category: "discovery",
+            content: "Décris le parcours UX de [parcours commande]: étapes, points de friction, microcopie, états vides, erreurs."
+        },
+        {
+            id: "disc-copy-ux",
+            title: "Microcopy",
+            category: "discovery",
+            content: "Propose la microcopy pour [écran facture]: titres, CTA, messages d'erreur, feedback succès."
+        },
+        {
+            id: "disc-hypotheses",
+            title: "Hypothèses à valider",
+            category: "discovery",
+            content: "Liste les hypothèses critiques de [hypothèse prix] et comment les valider rapidement."
+        },
+        {
+            id: "disc-pain-points",
+            title: "Pain points",
+            category: "discovery",
+            content: "Identifie les pain points principaux autour de [abandons panier] et leur impact utilisateur."
+        },
+        {
+            id: "disc-opportunites",
+            title: "Opportunités",
+            category: "discovery",
+            content: "Décris 5 opportunités produit autour de [idéation features] avec valeur et effort estimés."
+        },
+        {
+            id: "disc-interviews",
+            title: "Guide d'entretien",
+            category: "discovery",
+            content: "Prépare un guide d'entretien utilisateur pour [entretiens clients]: objectifs, questions, signaux à observer."
+        },
+
+        // ORGANISATION (9)
+        {
+            id: "org-compte-rendu",
+            title: "CR de réunion",
+            category: "organisation",
+            content: "Rédige un compte rendu pour [réunion produit] avec retranscription et partage d'écran: décisions, actions, points ouverts, risques, prochaines étapes."
+        },
+        {
+            id: "org-plan-action",
+            title: "Plan d'action",
+            category: "organisation",
+            content: "Établis un plan d'action pour [plan action]: action, owner, échéance, dépendances, critères de succès."
+        },
+        {
+            id: "org-raci",
+            title: "RACI",
+            category: "organisation",
+            content: "Crée un RACI pour [RACI programme] avec rôles et responsabilités."
+        },
+        {
+            id: "org-support-ops",
+            title: "Support & Ops",
+            category: "organisation",
+            content: "Prépare le support pour [runbook incident]: runbook, FAQ, escalade, métriques support."
+        },
+        {
+            id: "org-communication",
+            title: "Plan de communication",
+            category: "organisation",
+            content: "Propose un plan de communication pour [annonce release]: audiences, messages, canaux, calendrier, feedback attendu."
+        },
+        {
+            id: "org-rituels",
+            title: "Rituels d'équipe",
+            category: "organisation",
+            content: "Définis les rituels pour [rituels squad]: cadence, objectifs, participants, livrables."
+        },
+        {
+            id: "org-transcription",
+            title: "Retranscription vocale",
+            category: "organisation",
+            content: "Transforme [atelier roadmap] (audio + partage d'écran) en transcription structurée: points clés, décisions, actions, questions."
+        },
+        {
+            id: "org-ocr-notes",
+            title: "OCR notes",
+            category: "organisation",
+            content: "Analyse une image [photo tableau] et extrait les notes puis structure en décisions, actions, risques."
+        },
+        {
+            id: "org-ocr-process",
+            title: "OCR processus",
+            category: "organisation",
+            content: "À partir d'une capture d'écran [screenshot backlog], détecte le texte et propose un résumé opérationnel exploitable."
+        },
+
+        // METRIQUES (9)
+        {
+            id: "met-plan-experiment",
+            title: "Plan d'expérimentation",
+            category: "metrics",
+            content: "Propose un plan d'expérimentation pour [A/B test]: hypothèse, métrique primaire, population, durée, critères d'arrêt."
+        },
+        {
+            id: "met-instrumentation",
+            title: "Plan d'instrumentation",
+            category: "metrics",
+            content: "Définis un plan d'instrumentation pour [tracking événements]: événements, propriétés, funnels, dashboards, alertes."
+        },
+        {
+            id: "met-kpi-dashboard",
+            title: "Dashboard KPI",
+            category: "metrics",
+            content: "Conçois un dashboard KPI pour [dashboard exec]: 5-7 tuiles, définitions exactes, fréquence, source de vérité."
+        },
+        {
+            id: "met-risques",
+            title: "Analyse des risques",
+            category: "metrics",
+            content: "Liste les risques de [risques projet] (produit, technique, data, légal, sécurité). Pour chacun: probabilité, impact, mitigation."
+        },
+        {
+            id: "met-securite-privacy",
+            title: "Sécurité & privacy",
+            category: "metrics",
+            content: "Identifie les enjeux sécurité/privacy de [données sensibles] et propose des garde-fous mesurables."
+        },
+        {
+            id: "met-qualite",
+            title: "Qualité & SLA",
+            category: "metrics",
+            content: "Définis les métriques de qualité pour [SLA support]: SLA/SLO, seuils d'alerte, plan de monitoring."
+        },
+        {
+            id: "met-funnel",
+            title: "Funnel",
+            category: "metrics",
+            content: "Construis un funnel pour [funnel activation] avec étapes, conversion attendue, points de drop-off."
+        },
+        {
+            id: "met-cohortes",
+            title: "Cohortes",
+            category: "metrics",
+            content: "Propose une analyse de cohortes pour [cohortes nouveaux]: segmentation, métriques suivies, lecture business."
+        },
+        {
+            id: "met-alertes",
+            title: "Alertes",
+            category: "metrics",
+            content: "Définis les alertes clés pour [alertes churn]: signaux faibles, seuils, réponse opérationnelle."
+        },
+
+        // DELIVERY (9)
+        {
+            id: "del-user-story",
+            title: "User story + AC",
+            category: "delivery",
+            content: "Écris une user story pour [user story] et des critères d'acceptation en Gherkin."
+        },
+        {
+            id: "del-spec-fonctionnelle",
+            title: "Spec fonctionnelle",
+            category: "delivery",
+            content: "Rédige une spec fonctionnelle pour [spécif commande]: objectif, scope, user flows, règles métier, erreurs, permissions."
+        },
+        {
+            id: "del-plan-delivery",
+            title: "Plan de delivery",
+            category: "delivery",
+            content: "Décompose la livraison de [plan delivery]: phases, jalons, dépendances, critères de passage."
+        },
+        {
+            id: "del-release-checklist",
+            title: "Checklist release",
+            category: "delivery",
+            content: "Crée une checklist de release pour [release v1]: feature flags, migration, monitoring, rollback, doc interne."
+        },
+        {
+            id: "del-qa",
+            title: "Plan de test",
+            category: "delivery",
+            content: "Propose un plan de test pour [test régression]: cas nominaux, cas limites, non-régression."
+        },
+        {
+            id: "del-acceptance",
+            title: "Critères de passage",
+            category: "delivery",
+            content: "Définis les critères de passage pour [critères go]: qualité, perf, UX, data, support."
+        },
+        {
+            id: "del-rollout",
+            title: "Plan de déploiement",
+            category: "delivery",
+            content: "Propose un plan de déploiement pour [déploiement canary]: étapes, rollback, communication, monitoring."
+        },
+        {
+            id: "del-formation",
+            title: "Formation",
+            category: "delivery",
+            content: "Prépare la formation pour [formation interne]: audiences, supports, objectifs, évaluation."
+        },
+        {
+            id: "del-documentation",
+            title: "Documentation",
+            category: "delivery",
+            content: "Structure la documentation de [doc utilisateur]: guide utilisateur, FAQ, procédures, glossaire."
+        },
+
+        // TECH (9)
+        {
+            id: "tech-contrat-api",
+            title: "Contrat API",
+            category: "tech",
+            content: "Propose un contrat API pour [API paiement]: endpoints, payloads, erreurs, pagination, exemples."
+        },
+        {
+            id: "tech-schema-donnees",
+            title: "Modèle de données",
+            category: "tech",
+            content: "Conçois un modèle de données pour [schéma commandes]: entités, champs, relations, contraintes, index."
+        },
+        {
+            id: "tech-tradeoffs",
+            title: "Trade-offs",
+            category: "tech",
+            content: "Compare 2-3 options d'implémentation pour [option SSO] avec impacts coût, perf, maintenance."
+        },
+        {
+            id: "tech-dette",
+            title: "Dette technique",
+            category: "tech",
+            content: "Évalue la dette technique liée à [dette historique] et propose un plan de réduction."
+        },
+        {
+            id: "tech-qualite-data",
+            title: "Qualité des données",
+            category: "tech",
+            content: "Définis des contrôles de qualité data pour [qualité leads]: validations, anomalies, seuils."
+        },
+        {
+            id: "tech-archi",
+            title: "Architecture",
+            category: "tech",
+            content: "Décris l'architecture cible pour [architecture cible]: composants, flux, dépendances, contraintes."
+        },
+        {
+            id: "tech-perf",
+            title: "Performance",
+            category: "tech",
+            content: "Propose un plan d'amélioration perf pour [perf mobile]: goulots, métriques, actions."
+        },
+        {
+            id: "tech-observability",
+            title: "Observabilité",
+            category: "tech",
+            content: "Définis la stratégie d'observabilité pour [observabilité API]: logs, métriques, traces, dashboards."
+        },
+        {
+            id: "tech-securite",
+            title: "Sécurité applicative",
+            category: "tech",
+            content: "Identifie les points de sécurité pour [sécurité sessions] et les contrôles à mettre en place."
+        },
+
+        // DESIGN (9)
+        {
+            id: "design-flowchart-process",
+            title: "Flowchart processus",
+            category: "design",
+            content: "Génère un flowchart Mermaid pour [flux validation] avec étapes et décisions (oui/non)."
+        },
+        {
+            id: "design-flowchart-system",
+            title: "Flowchart système",
+            category: "design",
+            content: "Crée un flowchart Mermaid pour le flux système de [flux data] (sources, traitements, sorties)."
+        },
+        {
+            id: "design-flowchart-user",
+            title: "Flowchart parcours",
+            category: "design",
+            content: "Écris un flowchart Mermaid du parcours utilisateur pour [parcours SAV]."
+        },
+        {
+            id: "design-sequence-api",
+            title: "Sequence API",
+            category: "design",
+            content: "Génère un sequenceDiagram Mermaid pour [séquence paiement] avec client, backend, services."
+        },
+        {
+            id: "design-sequence-auth",
+            title: "Sequence authentification",
+            category: "design",
+            content: "Écris un sequenceDiagram Mermaid pour un login lié à [séquence login]."
+        },
+        {
+            id: "design-sequence-sync",
+            title: "Sequence synchronisation",
+            category: "design",
+            content: "Crée un sequenceDiagram Mermaid pour la synchronisation de [sync catalogue]."
+        },
+        {
+            id: "design-class-domain",
+            title: "Class domain",
+            category: "design",
+            content: "Génère un classDiagram Mermaid du modèle métier pour [domaine commande]."
+        },
+        {
+            id: "design-class-data",
+            title: "Class data model",
+            category: "design",
+            content: "Écris un classDiagram Mermaid pour les objets de données de [modèle articles]."
+        },
+        {
+            id: "design-class-api",
+            title: "Class API",
+            category: "design",
+            content: "Crée un classDiagram Mermaid pour les objets d'API de [API catalog]."
+        },
+
+        // DATA (9)
+        {
+            id: "data-import",
+            title: "Import de données",
+            category: "data",
+            content: "Définis le process d'import pour [import Excel]: formats (CSV/XLSX/JSON), validations, erreurs, feedback utilisateur."
+        },
+        {
+            id: "data-query",
+            title: "Interrogation",
+            category: "data",
+            content: "Propose des requêtes types pour [requêtes catalogue]: filtres, agrégations, tri, et limites attendues."
+        },
+        {
+            id: "data-analyse",
+            title: "Analyse de données",
+            category: "data",
+            content: "Décris l'analyse à mener sur [analyse ventes]: indicateurs clés, segments, insights attendus."
+        },
+        {
+            id: "data-json-schema",
+            title: "Schéma JSON",
+            category: "data",
+            content: "Propose un schéma JSON pour [schéma JSON]: champs, types, obligations, exemples."
+        },
+        {
+            id: "data-table-model",
+            title: "Modèle tableur",
+            category: "data",
+            content: "Conçois un modèle tableur pour [modèle tableur]: colonnes, types, règles de validation."
+        },
+        {
+            id: "data-quality",
+            title: "Qualité des données",
+            category: "data",
+            content: "Définis les contrôles qualité pour [qualité stocks]: anomalies, doublons, valeurs manquantes."
+        },
+        {
+            id: "data-ocr",
+            title: "OCR extraction",
+            category: "data",
+            content: "À partir d'images ou captures d'écran issues d'un partage d'écran [OCR factures], extrais le texte et structure-le en données exploitables."
+        },
+        {
+            id: "data-reporting",
+            title: "Reporting",
+            category: "data",
+            content: "Propose un reporting pour [reporting finance]: tableaux, graphiques, périodicité, audience."
+        },
         {
             id: "data-mapping",
-            label: "Mapping de données",
-            description: "Permettre le mapping entre deux systèmes dans le cadre d'une intégration.",
-            defaultPromptTemplate: gridPromptTemplates.treeStructure || gridTreePromptTemplate,
-            defaultSystemPrompt: gridSystemPrompts.treeStructure || gridSystemPromptTree,
-            parser: "tree"
-        }
-        ,
+            title: "Mapping data",
+            category: "data",
+            content: "Définis un mapping entre données source et cible pour [mapping ERP]."
+        },
+
+        // IA (9)
         {
-            id: "data-mock",
-            label: "Données fictives",
-            description: "Génère des données pour des tests ou de la conception",
-            defaultPromptTemplate: gridPromptTemplates.mockData || gridMockPromptTemplate,
-            defaultSystemPrompt: gridSystemPrompts.mockData || gridSystemPrompt,
-            parser: "flat"
+            id: "ia-usage",
+            title: "Usage IA",
+            category: "ia",
+            content: "Définis un usage IA pour [assistant support]: tâches assistées, niveau d'autonomie, garde-fous."
+        },
+        {
+            id: "ia-evaluation",
+            title: "Évaluation IA",
+            category: "ia",
+            content: "Conçois un plan d'évaluation IA pour [évaluation FAQ]: datasets, métriques, revue humaine, seuils go/no-go."
+        },
+        {
+            id: "ia-ux",
+            title: "UX IA",
+            category: "ia",
+            content: "Décris l'expérience IA pour [UX copilote]: transparence, feedback, contrôle utilisateur, fallback."
+        },
+        {
+            id: "ia-qualite",
+            title: "Qualité IA",
+            category: "ia",
+            content: "Définis les critères de qualité IA pour [qualité réponses]: précision, couverture, biais, hallucinations."
+        },
+        {
+            id: "ia-donnees",
+            title: "Données IA",
+            category: "ia",
+            content: "Planifie les données nécessaires à [données feedback]: sources, gouvernance, cycle de vie, conformité."
+        },
+        {
+            id: "ia-guardrails",
+            title: "Garde-fous",
+            category: "ia",
+            content: "Propose des garde-fous pour [garde-fous IA]: validation humaine, limites, monitoring, audit."
+        },
+        {
+            id: "ia-fallback",
+            title: "Fallback",
+            category: "ia",
+            content: "Définis le fallback pour [fallback manuel] en cas d'échec IA: parcours alternatif, message, support."
+        },
+        {
+            id: "ia-performance",
+            title: "Performance IA",
+            category: "ia",
+            content: "Optimise la performance IA de [performance IA]: latence cible, coût, cache, fréquence d'appel."
+        },
+        {
+            id: "ia-compliance",
+            title: "Conformité",
+            category: "ia",
+            content: "Vérifie la conformité IA de [conformité IA]: RGPD, consentement, traçabilité, droits."
         }
     ];
 
-    // Backward compatibility: keep previous key names
-    const gridSystemPrompt = gridSystemPromptDataGeneration;
-
-    global.GoPrompts = {
-        memoTemplates,
-        gridTemplates: GRID_TEMPLATES,
-        gridSystemPrompt,
-        gridSystemPrompts,
-        gridDefaultPromptTemplate,
-        gridPromptTemplates
+    global.GoToolkitPromptShortcuts = {
+        prompts: promptShortcuts,
+        categories: promptCategories
     };
-
-    (function () {
-        var adviceChatPrompt = `SYSTEM — Q&A RAG (JSON)
-
-Tu réponds sur la base de tes connaissances et des documents fournis par l'utilisateur
-
-ENTRÉES
-1) DOCUMENT : contenu complet actuel en Markdown
-2) SELECTION : objet JSON structuré (optionnel)
-{
-    "text": "portion ciblée pour la modification",
-    "start": <numéro de ligne de début du bloc de sélection>,
-    "end": <numéro de ligne de fin du bloc de fin de sélection>
-}
-3) CONTEXT : contenu d'un ou de plusieurs documents fournis en contexte
-4) ASK : demande de conseil ou question
-5) HISTORY : liste des 4 derniers messages de l'user
-6) KNOWLEDGE : connaissances de la mémoire
-7) PRODUCT : connaissances générales sur la gestion de produit
-
-RÈGLES
-- Pas d’info → le dire.
-- Français, ≤150 mots, tutoiement.
-- Sortie : UN SEUL JSON strict.
-- Références : 0-4 documents cités.
-- Pas d'émojis, pas de tableau en markdown.
-- Content : Syntaxe markdown autorisé gras, italique, liste, titre ###.
-- Un seul objet JSON en sortie, pas de texte avant/après
-- Les noms de clés et la structure du JSON sont figés
-
-FORMAT DE SORTIE (JSON strict)
-{
-    "answer": "Réponse fluide à l'utilisateur issue du contexte.",
-    "references": [
-        {
-            "documentId": "reprendre le uuid exact du documentId en CONTEXT ou KNOWLEDGE",
-            "abstract": "sujet du chunk en 3-5 mots",
-            "snippet": ["citation exacte dans le chunk pertinent à la réponse 1-7 mots","autre citation exacte 1-7 mots optionnelle","autre citation exacte 1-7 mots optionnelle"],
-            "chunkId": "reprendre le uuid exact du chunkId en CONTEXT ou KNOWLEDGE",
-        }
-    ],
-    "suggestions": ["thème proche de ASK et HISTORY", "thème proche de ASK et HISTORY"]
-}
-
-Réponds à ASK sur la base de CONTEXT, de KNOWLEDGE et des connaissances PRODUCT, en tenant compte du contexte de DOCUMENT et en particulier SELECTION.
-`
-
-        var askChatPrompt = `SYSTEM — RAG Q&A (JSON strict)
-
-Tu es un assistant Q&A qui répond aux questions sur la base de documents fournis par l'utilisateur
-
-ENTRÉES
-1) DOCUMENT : contenu complet actuel en Markdown
-2) SELECTION : objet JSON structuré (optionnel)
-{
-    "text": "portion ciblée de texte",
-    "start": <numéro de ligne de début du bloc de sélection>,
-    "end": <numéro de ligne de fin du bloc de fin de sélection>
-}
-3) CONTEXT : contenu de plusieurs documents fournis en contexte
-4) ASK : contexte et questions dans la demande
-5) HISTORY : liste des 4 derniers messages de l'user
-
-RÈGLES
-- Pas d’info → le dire.
-- Français, ≤400 mots, tutoiement.
-- Sortie : UN SEUL JSON strict.
-- Références : 0-4 documents cités.
-- Pas d'émojis, pas de tableau en markdown.
-- Content : Syntaxe markdown autorisé gras, italique, liste, titre ###.
-- Un seul objet JSON en sortie, pas de texte avant/après
-- Les noms de clés et la structure du JSON sont figés
-
-FORMAT DE SORTIE (JSON strict)
-{
-    "answer": "Réponse fluide à l'utilisateur issue du contexte.",
-    "references": [
-        {
-            "documentId": "reprendre le uuid exact du documentId en CONTEXT ou KNOWLEDGE",
-            "abstract": "sujet du chunk en 3-5 mots",
-            "snippet": ["citation exacte dans le chunk pertinent à la réponse 1-7 mots","autre citation exacte 1-7 mots optionnelle","autre citation exacte 1-7 mots optionnelle"],
-            "chunkId": "reprendre le uuid exact du chunkId en CONTEXT ou KNOWLEDGE",
-        }
-    ],
-    "suggestions": ["thème proche de ASK, SELECTION et HISTORY", "thème 2", "thème 3"]
-}
-
-Réponds à ASK sur la base de CONTEXT et des connaissances PRODUCT, en tenant compte du contexte de DOCUMENT et en particulier SELECTION.
-`
-
-        var suggestChatPrompt = `SYSTEM — Éditeur Markdown (JSON)
-
-Tu lis ou modifies une SELECTION ou un DOCUMENT Markdown selon ASK, en utilisant CONTEXT comme support.
-
-ENTRÉES
-1) DOCUMENT : contenu complet actuel en Markdown
-2) SELECTION : objet JSON structuré (optionnel)
-{
-    "text": "portion ciblée pour la modification",
-    "start": <numéro de ligne de début du bloc de sélection>,
-    "end": <numéro de ligne de fin du bloc de fin de sélection>
-}
-3) ASK : demande d'information ou de modification sur DOCUMENT avec un focus sur SELECTION
-4) CONTEXT : documents joints (optionnel)
-5) KNOWLEDGE : connaissances (optionnel)
-
-OBJECTIF
-- Répondre à l'utilisateur sur ASK et regénérer le DOCUMENT ou la SELECTION complète en Markdown, prêt à remplacer l'ancien.
-
-RÈGLES DE MODIFICATION
-- Préserve au maximum la structure/syntaxe Markdown existante (titres, listes, tâches, tableaux, code, liens, blocs de texte).
-- Conserve l'intégralité des liens et images entre parenthèses
-- Ajouts : applique d'abord le Markdown (##, -, etc.), puis ajoute le marqueur ==...== sur le texte : ex: ## ==Titre ajouté== ##, == liste item ==
-- Suppressions : applique d'abord le Markdown, puis barre avec ~~...~~ : ex: ##~~Titre supprimé~~##, ~~liste item~~
-- Modifications : ne remplace pas quelques caractères. Réécris en bloc :
-- une ligne (si 1 phrase),
-- un paragraphe (si plusieurs phrases),
-- un item de liste,
-- une ligne/section de tableau,
-- un bloc de texte ou de code mermaid (en gardant le même id en ##).
-En pratique : le Markdown du bloc (##, -, etc.) puis le marqueur (~~...~~ ou ==...==) sur le contenu.
-Toujours faire un saut à la ligne entre le bloc à supprimer (~~...~~) puis le bloc à ajouter (==...==).
-- Ne pas ajouter toi spontanément des émojis si ce n'est pas demandé.
-- À aucun moment "output" ou "s_output.text" ne doit contenir des éléments de discussion avec l'user. Uniquement le DOCUMENT ou la SELECTION avec les modifications.
-- Tu peux utiliser des blocs de code Mermaid (\`\`\`mermaid ... \`\`\`) si cela aide à expliquer ou structurer le contenu.
-- Réponse en français, ≤150 mots, tutoiement mais professionnel
-
-
-RÈGLES SPÉCIFIQUES :
-- Pour des tâches : ☐ pour non fait, ☒ pour fait.
-- Pour générer un tableau, utilise la syntaxe markdown gfm uniquement
-- Pour créer des encadrés d'information, utilise la syntaxe suivante :
-
->ℹ️ Contexte utile, information importante
-
->💡 Astuce ou conseil pratique
-
->✅ Synthèse, point-clé important
-
->⚠️ Vigilance, prudence
-
->🚨 Danger, attention, risque
-
-- Pour des mots-clés récurrents (état, type, priorité, statut, terminologie informatique, id), utilise le marquage inline \`code\` : 
-1/ Flowchart : explication polyvalente, processus métier
-2/ SequenceDiagram : échanges entre acteurs ou systèmes
-3/ ClassDiagram : objets et relations, structure de données
-
-
-FORMAT DE SORTIE (JSON strict)
-{
-    "answer": "Réponse en français, ≤150 mots, tutoiement",
-    "output": "DOCUMENT complet régénéré en Markdown suivi par ==ajouts== ou ~~suppressions~~",
-    "s_output": {
-        "text": "SELECTION complet régénérée en Markdown suivi par ==ajouts== ou ~~suppressions~~",
-        "start": <numéro de ligne exact envoyé en SELECTION start>,
-        "end": <numéro de ligne exact envoyé en SELECTION end>
-    }
-}
-
-RÈGLES DE SORTIE
-- Un seul objet JSON strict, sans texte avant/après
-
-Pour "answer"
-- Réponse fluide à l'utilisateur répondant à sa question
-- Confirmant les modifications effectuées (pas la technique ou la forme) s'il en a demandé
-
-Si tu n'apportes aucune modification car ce n'est pas demandé par ASK :
-- mettre "output": null et "s_output": null
-
-Si SELECTION est présente en entrée :
-- remplir SEULEMENT "s_output" (avec text, start, end),
-- "output": null
-Si SELECTION est absente en entrée :
-- remplir SEULEMENT "output"
-- "s_output": null
-`
-
-        var editChatPrompt = `SYSTEM — Éditeur Markdown (JSON)
-
-Tu modifies une SELECTION ou tu AJOUTES du contenu à un DOCUMENT Markdown selon ASK, en utilisant CONTEXT et KNOWLEDGE comme support.
-
-ENTRÉES
-1) DOCUMENT : contenu complet actuel en Markdown
-2) SELECTION : objet JSON structuré (optionnel)
-{
-    "text": "portion ciblée pour la modification",
-    "start": <numéro de ligne de début du bloc de sélection>,
-    "end": <numéro de ligne de fin du bloc de fin de sélection>
-}
-3) ASK : demande d'information ou de modification sur DOCUMENT avec un focus sur SELECTION
-4) CONTEXT : documents joints (optionnel)
-5) KNOWLEDGE : connaissances (optionnel)
-
-OBJECTIF
-- Si SELECTION est présente : Répondre à l'utilisateur sur ASK et produire le contenu final de cette SELECTION prêt à la remplacer.
-- Si SELECTION est ABSENTE : Répondre à l'utilisateur sur ASK et produire DU NOUVEAU CONTENU à ajouter à la suite (append) du DOCUMENT.
-
-RÈGLES DE MODIFICATION
-- Préserve au maximum la structure/syntaxe Markdown existante (titres, listes, tâches, tableaux, code, liens, blocs de texte).
-- Conserve l'intégralité des liens et images entre parenthèses.
-- Ne pas utiliser de marqueurs de diff (pas de ==...==, pas de ~~...~~). Le résultat doit être le texte final.
-- Ne pas ajouter toi spontanément des émojis si ce n'est pas demandé.
-- À aucun moment "output" ou "s_output.text" ne doit contenir des éléments de discussion avec l'user. Uniquement le contenu Markdown final.
-- Réponse en français, ≤150 mots, tutoiement mais professionnel
-
-RÈGLES SPÉCIFIQUES :
-- Pour des tâches : ☐ pour non fait, ☒ pour fait.
-- Pour générer un tableau, utilise la syntaxe markdown gfm uniquement 
-- Pour créer des encadrés d'information, utilise la syntaxe suivante :
-
->ℹ️ Contexte utile, information pratique
-
->💡 Astuce ou conseil pratique
-
->✅ Synthèse, point-clé important
-
->⚠️ Vigilance, prudence
-
->🚨 Danger, attention, risque
-
-> Pour un encadré classique non typé
-
-> Pour écrire sur plusieurs lignes dans tout type d'encadré.
-
-
-- Pour des mots-clés récurrents (état, type, priorité, statut, terminologie informatique, id), utilise le marquage inline \`code\` : 
-1/ Flowchart : explication polyvalente, processus métier
-2/ SequenceDiagram : échanges entre acteurs ou systèmes
-3/ ClassDiagram : objets et relations, structure de données
-
-
-FORMAT DE SORTIE (JSON strict)
-{
-    "answer": "Réponse en français, ≤150 mots, tutoiement",
-    "output": "Contenu (Markdown) à AJOUTER à la suite du DOCUMENT (si pas de SELECTION)",
-    "s_output": {
-        "text": "SELECTION complète régénérée en Markdown (si SELECTION présente)",
-        "start": <numéro de ligne exact envoyé en SELECTION start>,
-        "end": <numéro de ligne exact envoyé en SELECTION end>
-    }
-}
-
-RÈGLES DE SORTIE
-- Un seul objet JSON strict, sans texte avant/après
-- Si tu n'apportes aucune modification :
-- mettre "output": null et "s_output": null
-- Si SELECTION est présente en entrée :
-- remplir SEULEMENT "s_output" (avec text, start, end),
-- "output": null
-- Si SELECTION est ABSENTE en entrée :
-- remplir SEULEMENT "output" (qui sera ajouté à la fin du document),
-- "s_output": null
-`
-
-        var chatImportPrompt = `SYSTEM — Importer le DOCUMENT à l'identique avec Markdown adapté
-
-Tu reçois le contenu d'un DOCUMENT externe et tu dois le réadapter en conservant exactement le même contenu et la même structure.
-
-ENTRÉES
-- DOCUMENT : le contenu texte brut ou JSON du document à importer
-
-OBJECTIF
-- Importer le DOCUMENT à l'identique en le convertissant au format Markdown approprié si nécessaire.
-- Préserver toute l'information, la hiérarchie et la structure.
-- Adapter le formatage Markdown si le document est en texte brut ou d'un autre format.
-- Si plusieurs DOCUMENT sont fournis, mettre un séparateur --- entre chaque dans la sortie
-
-RÈGLES
-- Si le document est déjà en Markdown : le conserver tel quel.
-- Si le document est en texte brut : appliquer une structure Markdown cohérente.
-- Si le document est en JSON ou autre format : le convertir en Markdown lisible en préservant l'information.
-- Ne pas ajouter d'interprétation, d'édition ou de commentaire personnel.
-- Conserver tous les liens, références et détails originaux.
-
-FORMAT DE SORTIE (JSON strict)
-{
-    "answer": "Import effectué avec succès.",
-    "output": "DOCUMENT complet en Markdown adapté"
-}
-
-RÈGLES DE SORTIE
-- Un seul objet JSON strict, sans texte avant/après
-`
-
-        var drawChatPrompt = `SYSTEM — Dessinateur Mermaid (JSON)
-
-Tu génères ou modifies un diagramme Mermaid selon ASK, en utilisant DOCUMENT comme contexte métier.
-
-ENTRÉES
-1) DOCUMENT : Contenu complet actuel du mémo (contexte métier)
-2) CURRENT_CODE : Code Mermaid actuel du diagramme (si modification)
-3) ASK : Demande de l'utilisateur (description ou modification)
-4) DRAW_TYPE : Type de diagramme (flowchart, sequenceDiagram, classDiagram)
-
-OBJECTIF
-- Produire un diagramme Mermaid valide, clair et esthétique qui illustre ASK en s'appuyant sur DOCUMENT.
-
-RÈGLES
-- Produis un code strictement Mermaid.
-- Les intitulés font moins de 4 mots pour rester lisible.
-- Ajoute un titre en commentaire %% Title au début du code.
-- Pas d'introduction ni de conclusion, uniquement le JSON.
-
-FORMAT DE SORTIE (JSON strict)
-{
-    "answer": "Réponse en français, ≤150 mots, tutoiement mais professionnel",
-    "mermaid": "Code Mermaid complet"
-}
-
-RÈGLES DE SORTIE
-- Un seul objet JSON strict, sans texte avant/après
-`
-
-        var imageOcrPrompt = `Extrayez tout le texte de cette image. Soyez précis. Retournez uniquement le texte brut.`
-
-        var initial = adviceChatPrompt;
-        var initialInfo = askChatPrompt;
-
-        if (!global.GoToolkitChatPrompt) {
-            global.GoToolkitChatPrompt = {};
-        }
-        global.GoToolkitChatPrompt.SYSTEM_PROMPT = initial;
-        global.GoToolkitChatPrompt.DEFAULT_SYSTEM_PROMPT = adviceChatPrompt;
-        global.GoToolkitChatPrompt.INFO_PROMPT = initialInfo;
-        global.GoToolkitChatPrompt.DEFAULT_INFO_PROMPT = askChatPrompt;
-        global.GoToolkitChatPrompt.PRESETS = {
-            advice: {
-                id: "advice",
-                label: "Explorer",
-                icon: "message-square",
-                prompt: initial,
-                defaultPrompt: adviceChatPrompt
-            },
-            ask: {
-                id: "ask",
-                label: "Demander",
-                icon: "search",
-                prompt: initialInfo,
-                defaultPrompt: askChatPrompt
-            },
-            suggest: {
-                id: "suggest",
-                label: "Suggérer",
-                icon: "sparkles",
-                prompt: suggestChatPrompt,
-                defaultPrompt: suggestChatPrompt
-            },
-            edit: {
-                id: "edit",
-                label: "Éditer",
-                icon: "pen-line",
-                prompt: editChatPrompt,
-                defaultPrompt: editChatPrompt
-            },
-            import: {
-                id: "import",
-                label: "Importer",
-                icon: "download",
-                prompt: chatImportPrompt,
-                defaultPrompt: chatImportPrompt
-            },
-            draw: {
-                id: "draw",
-                label: "Dessiner",
-                icon: "palette",
-                prompt: drawChatPrompt,
-                defaultPrompt: drawChatPrompt
-            },
-            extract: {
-                id: "extract",
-                label: "Extraire",
-                icon: "file-text",
-                prompt: imageOcrPrompt,
-                defaultPrompt: imageOcrPrompt
-            }
-        };
-    })();
 })(window);

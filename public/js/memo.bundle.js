@@ -28267,70 +28267,87 @@ img.ProseMirror-separator {
   ];
   var Shapes = createLucideIcon("shapes", __iconNode34);
 
-  // node_modules/lucide-react/dist/esm/icons/square-check-big.js
+  // node_modules/lucide-react/dist/esm/icons/sparkles.js
   init_define_process_env();
   init_polyfills();
   var __iconNode35 = [
+    [
+      "path",
+      {
+        d: "M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z",
+        key: "1s2grr"
+      }
+    ],
+    ["path", { d: "M20 2v4", key: "1rf3ol" }],
+    ["path", { d: "M22 4h-4", key: "gwowj6" }],
+    ["circle", { cx: "4", cy: "20", r: "2", key: "6kqj1y" }]
+  ];
+  var Sparkles = createLucideIcon("sparkles", __iconNode35);
+
+  // node_modules/lucide-react/dist/esm/icons/square-check-big.js
+  init_define_process_env();
+  init_polyfills();
+  var __iconNode36 = [
     [
       "path",
       { d: "M21 10.656V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h12.344", key: "2acyp4" }
     ],
     ["path", { d: "m9 11 3 3L22 4", key: "1pflzl" }]
   ];
-  var SquareCheckBig = createLucideIcon("square-check-big", __iconNode35);
+  var SquareCheckBig = createLucideIcon("square-check-big", __iconNode36);
 
   // node_modules/lucide-react/dist/esm/icons/square-check.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode36 = [
+  var __iconNode37 = [
     ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }],
     ["path", { d: "m9 12 2 2 4-4", key: "dzmm74" }]
   ];
-  var SquareCheck = createLucideIcon("square-check", __iconNode36);
+  var SquareCheck = createLucideIcon("square-check", __iconNode37);
 
   // node_modules/lucide-react/dist/esm/icons/square-code.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode37 = [
+  var __iconNode38 = [
     ["path", { d: "m10 9-3 3 3 3", key: "1oro0q" }],
     ["path", { d: "m14 15 3-3-3-3", key: "bz13h7" }],
     ["rect", { x: "3", y: "3", width: "18", height: "18", rx: "2", key: "h1oib" }]
   ];
-  var SquareCode = createLucideIcon("square-code", __iconNode37);
+  var SquareCode = createLucideIcon("square-code", __iconNode38);
 
   // node_modules/lucide-react/dist/esm/icons/square.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode38 = [
+  var __iconNode39 = [
     ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }]
   ];
-  var Square = createLucideIcon("square", __iconNode38);
+  var Square = createLucideIcon("square", __iconNode39);
 
   // node_modules/lucide-react/dist/esm/icons/strikethrough.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode39 = [
+  var __iconNode40 = [
     ["path", { d: "M16 4H9a3 3 0 0 0-2.83 4", key: "43sutm" }],
     ["path", { d: "M14 12a4 4 0 0 1 0 8H6", key: "nlfj13" }],
     ["line", { x1: "4", x2: "20", y1: "12", y2: "12", key: "1e0a9i" }]
   ];
-  var Strikethrough = createLucideIcon("strikethrough", __iconNode39);
+  var Strikethrough = createLucideIcon("strikethrough", __iconNode40);
 
   // node_modules/lucide-react/dist/esm/icons/table.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode40 = [
+  var __iconNode41 = [
     ["path", { d: "M12 3v18", key: "108xh3" }],
     ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }],
     ["path", { d: "M3 9h18", key: "1pudct" }],
     ["path", { d: "M3 15h18", key: "5xshup" }]
   ];
-  var Table2 = createLucideIcon("table", __iconNode40);
+  var Table2 = createLucideIcon("table", __iconNode41);
 
   // node_modules/lucide-react/dist/esm/icons/tag.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode41 = [
+  var __iconNode42 = [
     [
       "path",
       {
@@ -28340,24 +28357,24 @@ img.ProseMirror-separator {
     ],
     ["circle", { cx: "7.5", cy: "7.5", r: ".5", fill: "currentColor", key: "kqv944" }]
   ];
-  var Tag = createLucideIcon("tag", __iconNode41);
+  var Tag = createLucideIcon("tag", __iconNode42);
 
   // node_modules/lucide-react/dist/esm/icons/trash-2.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode42 = [
+  var __iconNode43 = [
     ["path", { d: "M10 11v6", key: "nco0om" }],
     ["path", { d: "M14 11v6", key: "outv1u" }],
     ["path", { d: "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6", key: "miytrc" }],
     ["path", { d: "M3 6h18", key: "d0wm0j" }],
     ["path", { d: "M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2", key: "e791ji" }]
   ];
-  var Trash2 = createLucideIcon("trash-2", __iconNode42);
+  var Trash2 = createLucideIcon("trash-2", __iconNode43);
 
   // node_modules/lucide-react/dist/esm/icons/triangle-alert.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode43 = [
+  var __iconNode44 = [
     [
       "path",
       {
@@ -28368,54 +28385,54 @@ img.ProseMirror-separator {
     ["path", { d: "M12 9v4", key: "juzpu7" }],
     ["path", { d: "M12 17h.01", key: "p32p05" }]
   ];
-  var TriangleAlert = createLucideIcon("triangle-alert", __iconNode43);
+  var TriangleAlert = createLucideIcon("triangle-alert", __iconNode44);
 
   // node_modules/lucide-react/dist/esm/icons/type.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode44 = [
+  var __iconNode45 = [
     ["path", { d: "M12 4v16", key: "1654pz" }],
     ["path", { d: "M4 7V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2", key: "e0r10z" }],
     ["path", { d: "M9 20h6", key: "s66wpe" }]
   ];
-  var Type = createLucideIcon("type", __iconNode44);
+  var Type = createLucideIcon("type", __iconNode45);
 
   // node_modules/lucide-react/dist/esm/icons/underline.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode45 = [
+  var __iconNode46 = [
     ["path", { d: "M6 4v6a6 6 0 0 0 12 0V4", key: "9kb039" }],
     ["line", { x1: "4", x2: "20", y1: "20", y2: "20", key: "nun2al" }]
   ];
-  var Underline2 = createLucideIcon("underline", __iconNode45);
+  var Underline2 = createLucideIcon("underline", __iconNode46);
 
   // node_modules/lucide-react/dist/esm/icons/undo-2.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode46 = [
+  var __iconNode47 = [
     ["path", { d: "M9 14 4 9l5-5", key: "102s5s" }],
     ["path", { d: "M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11", key: "f3b9sd" }]
   ];
-  var Undo2 = createLucideIcon("undo-2", __iconNode46);
+  var Undo2 = createLucideIcon("undo-2", __iconNode47);
 
   // node_modules/lucide-react/dist/esm/icons/workflow.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode47 = [
+  var __iconNode48 = [
     ["rect", { width: "8", height: "8", x: "3", y: "3", rx: "2", key: "by2w9f" }],
     ["path", { d: "M7 11v4a2 2 0 0 0 2 2h4", key: "xkn7yn" }],
     ["rect", { width: "8", height: "8", x: "13", y: "13", rx: "2", key: "1cgmvn" }]
   ];
-  var Workflow = createLucideIcon("workflow", __iconNode47);
+  var Workflow = createLucideIcon("workflow", __iconNode48);
 
   // node_modules/lucide-react/dist/esm/icons/x.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode48 = [
+  var __iconNode49 = [
     ["path", { d: "M18 6 6 18", key: "1bl5f8" }],
     ["path", { d: "m6 6 12 12", key: "d8bk6v" }]
   ];
-  var X = createLucideIcon("x", __iconNode48);
+  var X = createLucideIcon("x", __iconNode49);
 
   // src/memo-editor/docx-export.ts
   init_define_process_env();
@@ -52102,48 +52119,63 @@ ${promptInput.trim()}`
                 }
               ) }),
               /* @__PURE__ */ jsxs("div", { className: "chat-composer-actions", children: [
-                /* @__PURE__ */ jsx("div", { className: "chat-composer-left-actions", children: /* @__PURE__ */ jsxs("div", { className: "diagram-type-dropdown chat-prompt-dropdown", children: [
-                  /* @__PURE__ */ jsxs(
-                    "button",
-                    {
-                      type: "button",
-                      id: "diagram-type-selector",
-                      className: "btn-secondary chat-prompt-btn",
-                      onClick: () => setIsTypeMenuOpen(!isTypeMenuOpen),
-                      style: { display: "flex", alignItems: "center", gap: "4px" },
-                      children: [
-                        (() => {
-                          const current = diagramTypes.find((t) => t.id === diagramType);
-                          const Icon2 = (current == null ? void 0 : current.Icon) || Workflow;
-                          const label = (draftCode || code).trim() ? current == null ? void 0 : current.label : "\xC9diter";
-                          return /* @__PURE__ */ jsxs(Fragment3, { children: [
-                            /* @__PURE__ */ jsx(Icon2, { size: 14 }),
-                            " ",
-                            /* @__PURE__ */ jsx("span", { children: label })
-                          ] });
-                        })(),
-                        /* @__PURE__ */ jsx(ChevronUp, { size: 12, style: { transform: isTypeMenuOpen ? "rotate(180deg)" : "" } })
-                      ]
-                    }
-                  ),
-                  isTypeMenuOpen && /* @__PURE__ */ jsx("div", { id: "diagram-type-menu", className: "diagram-type-menu chat-prompt-menu open", style: { bottom: "100%", top: "auto", marginBottom: "8px" }, children: diagramTypes.map((t) => /* @__PURE__ */ jsxs(
-                    "button",
-                    {
-                      type: "button",
-                      className: "chat-prompt-menu-item",
-                      onClick: () => {
-                        setDiagramType(t.id);
-                        setIsTypeMenuOpen(false);
+                /* @__PURE__ */ jsxs("div", { className: "chat-composer-left-actions", children: [
+                  /* @__PURE__ */ jsxs("div", { className: "diagram-type-dropdown chat-prompt-dropdown", children: [
+                    /* @__PURE__ */ jsxs(
+                      "button",
+                      {
+                        type: "button",
+                        id: "diagram-type-selector",
+                        className: "btn-secondary chat-prompt-btn",
+                        onClick: () => setIsTypeMenuOpen(!isTypeMenuOpen),
+                        style: { display: "flex", alignItems: "center", gap: "4px" },
+                        children: [
+                          (() => {
+                            const current = diagramTypes.find((t) => t.id === diagramType);
+                            const Icon2 = (current == null ? void 0 : current.Icon) || Workflow;
+                            const label = (draftCode || code).trim() ? current == null ? void 0 : current.label : "\xC9diter";
+                            return /* @__PURE__ */ jsxs(Fragment3, { children: [
+                              /* @__PURE__ */ jsx(Icon2, { size: 14 }),
+                              " ",
+                              /* @__PURE__ */ jsx("span", { children: label })
+                            ] });
+                          })(),
+                          /* @__PURE__ */ jsx(ChevronUp, { size: 12, style: { transform: isTypeMenuOpen ? "rotate(180deg)" : "" } })
+                        ]
+                      }
+                    ),
+                    isTypeMenuOpen && /* @__PURE__ */ jsx("div", { id: "diagram-type-menu", className: "diagram-type-menu chat-prompt-menu open", style: { bottom: "100%", top: "auto", marginBottom: "8px" }, children: diagramTypes.map((t) => /* @__PURE__ */ jsxs(
+                      "button",
+                      {
+                        type: "button",
+                        className: "chat-prompt-menu-item",
+                        onClick: () => {
+                          setDiagramType(t.id);
+                          setIsTypeMenuOpen(false);
+                        },
+                        style: { display: "flex", alignItems: "center", gap: "8px" },
+                        children: [
+                          /* @__PURE__ */ jsx(t.Icon, { size: 14 }),
+                          /* @__PURE__ */ jsx("span", { children: t.label })
+                        ]
                       },
-                      style: { display: "flex", alignItems: "center", gap: "8px" },
-                      children: [
-                        /* @__PURE__ */ jsx(t.Icon, { size: 14 }),
-                        /* @__PURE__ */ jsx("span", { children: t.label })
-                      ]
-                    },
-                    t.id
-                  )) })
-                ] }) }),
+                      t.id
+                    )) })
+                  ] }),
+                  /* @__PURE__ */ jsx(
+                    "button",
+                    {
+                      type: "button",
+                      className: "btn-secondary chat-prompt-shortcuts-btn",
+                      title: "Raccourcis Prompt",
+                      onClick: () => {
+                        var _a, _b;
+                        (_b = (_a = window.GoToolkitAssistInstance) == null ? void 0 : _a.openPromptShortcutsModal) == null ? void 0 : _b.call(_a, composerTextareaRef.current);
+                      },
+                      children: /* @__PURE__ */ jsx(Sparkles, { size: 14, "data-lucide": "sparkles" })
+                    }
+                  )
+                ] }),
                 /* @__PURE__ */ jsx(
                   "button",
                   {
@@ -57153,6 +57185,7 @@ lucide-react/dist/esm/icons/rectangle-horizontal.js:
 lucide-react/dist/esm/icons/redo-2.js:
 lucide-react/dist/esm/icons/send.js:
 lucide-react/dist/esm/icons/shapes.js:
+lucide-react/dist/esm/icons/sparkles.js:
 lucide-react/dist/esm/icons/square-check-big.js:
 lucide-react/dist/esm/icons/square-check.js:
 lucide-react/dist/esm/icons/square-code.js:
