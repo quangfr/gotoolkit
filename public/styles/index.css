@@ -17,7 +17,7 @@
 
         .page {
             width: 100%;
-            max-width: 1180px;
+            max-width: 1480px;
             display: flex;
             flex-direction: column;
             gap: 8px;
@@ -296,7 +296,7 @@
         #gtTemplateModalList {
             display: grid;
             grid-template-columns: repeat(5, minmax(0, 1fr));
-            --gallery-row-min: 160px;
+            --gallery-row-min: 120px;
             grid-auto-rows: minmax(var(--gallery-row-min), auto);
             min-height: calc((var(--gallery-row-min) * 2) + 12px);
             gap: 12px;
@@ -311,15 +311,15 @@
             scroll-snap-align: start;
             min-width: 200px;
             position: relative;
-            height: var(--gallery-row-min, 180px);
+            height: var(--gallery-row-min, 120px);
         }
 
         .gt-template-card__meta {
-            margin: 4px 0 0;
+            margin: 0 0;
             font-size: 13px;
             color: var(--text-main);
             display: flex;
-            gap: 6px;
+            gap: 2px;
             align-items: center;
         }
 
@@ -341,7 +341,7 @@
             display: flex;
             flex-wrap: wrap;
             gap: 4px;
-            margin: 4px 0 6px;
+            margin: 0px 0px;
         }
 
         .gt-template-card__superpowers .share-card-template {
@@ -377,7 +377,7 @@
         .share-gallery {
             display: grid;
             grid-template-columns: repeat(5, minmax(0, 1fr));
-            --gallery-row-min: 180px;
+            --gallery-row-min: 200px;
             grid-auto-rows: minmax(var(--gallery-row-min), auto);
             min-height: calc((var(--gallery-row-min) * 2) + 12px);
             gap: 12px;
@@ -393,7 +393,7 @@
             background: var(--bg-surface-soft);
             text-decoration: none;
             color: var(--text-main);
-            height: var(--gallery-row-min, 180px);
+            height: var(--gallery-row-min, 200px);
             transition: box-shadow 0.2s ease;
             position: relative;
             padding-bottom: 36px;
@@ -415,7 +415,7 @@
             margin: 0;
             color: var(--text-main);
             line-height: 1.4;
-            font-size: 0.82rem;
+            font-size: 13px;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             line-clamp: 2;

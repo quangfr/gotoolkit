@@ -1460,9 +1460,11 @@
     };
 
     AssistSidebar.prototype.setWidth = function (value) {
-        this.sidebarWidth = clampWidth(value);
+        var viewportWidth = window.innerWidth || this.sidebarWidth;
+        var isMobile = viewportWidth <= 900;
+        this.sidebarWidth = isMobile ? viewportWidth : clampWidth(value);
         if (this.sidebar) {
-            this.sidebar.style.width = this.sidebarWidth + "px";
+            this.sidebar.style.width = isMobile ? "100%" : this.sidebarWidth + "px";
         }
         if (this.isOpen) {
             this.applyPagePadding();
@@ -1472,7 +1474,13 @@
 
     AssistSidebar.prototype.applyPagePadding = function () {
         if (!this.page) return;
-        var isDrawer = window.innerWidth < 1200;
+        var viewportWidth = window.innerWidth || 0;
+        if (viewportWidth <= 900) {
+            this.page.style.marginRight = "";
+            this.page.style.paddingRight = "";
+            return;
+        }
+        var isDrawer = viewportWidth < 1200;
         var offset = Math.max(0, this.sidebarWidth);
         this.page.style.marginRight = (this.isOpen && !isDrawer) ? offset + "px" : "";
         this.page.style.paddingRight = "";
@@ -3097,6 +3105,67 @@
         return shortcuts.prompts.slice();
     };
 
+    AssistSidebar.prototype.getPromptShortcutsRecentStorageKey = function () {
+        return "go-toolkit-prompt-shortcuts-recent";
+    };
+
+    AssistSidebar.prototype.getPromptShortcutsRecentIds = function () {
+        try {
+            var raw = localStorage.getItem(this.getPromptShortcutsRecentStorageKey());
+            if (!raw) return [];
+            var parsed = JSON.parse(raw);
+            if (!Array.isArray(parsed)) return [];
+            return parsed.filter(function (item) {
+                return typeof item === "string" && item.trim().length > 0;
+            });
+        } catch (err) {
+            return [];
+        }
+    };
+
+    AssistSidebar.prototype.savePromptShortcutsRecentIds = function (ids) {
+        try {
+            localStorage.setItem(this.getPromptShortcutsRecentStorageKey(), JSON.stringify(ids || []));
+        } catch (err) { /* ignore */ }
+    };
+
+    AssistSidebar.prototype.trackPromptShortcutRecent = function (prompt) {
+        if (!prompt || !prompt.id) return;
+        var id = String(prompt.id);
+        var existing = this.getPromptShortcutsRecentIds();
+        var next = [id].concat(existing.filter(function (item) { return item !== id; })).slice(0, 9);
+        this.savePromptShortcutsRecentIds(next);
+    };
+
+    AssistSidebar.prototype.getPromptShortcutsRecentList = function (prompts) {
+        var ids = this.getPromptShortcutsRecentIds();
+        if (!ids.length) return [];
+        var byId = new Map();
+        (prompts || []).forEach(function (prompt) {
+            if (prompt && prompt.id) {
+                byId.set(String(prompt.id), prompt);
+            }
+        });
+        return ids.map(function (id) {
+            return byId.get(id);
+        }).filter(Boolean);
+    };
+
+    AssistSidebar.prototype.getPromptShortcutsSearchQuery = function () {
+        return (this.promptShortcutsSearchQuery || "").toString().trim().toLowerCase();
+    };
+
+    AssistSidebar.prototype.filterPromptShortcutsByQuery = function (prompts) {
+        var query = this.getPromptShortcutsSearchQuery();
+        if (!query) return (prompts || []).slice();
+        return (prompts || []).filter(function (prompt) {
+            if (!prompt) return false;
+            var title = (prompt.title || "").toString().toLowerCase();
+            var content = (prompt.content || "").toString().toLowerCase();
+            return title.indexOf(query) !== -1 || content.indexOf(query) !== -1;
+        });
+    };
+
     AssistSidebar.prototype.getPromptShortcutCategories = function () {
         var shortcuts = global.GoToolkitPromptShortcuts;
         if (!shortcuts || !shortcuts.categories || typeof shortcuts.categories !== "object") return {};
@@ -3123,6 +3192,21 @@
         closeBtn.addEventListener("click", this.closePromptShortcutsModal.bind(this));
         header.appendChild(title);
         header.appendChild(closeBtn);
+
+        var searchRow = document.createElement("div");
+        searchRow.className = "chat-prompt-shortcuts__search";
+        var searchInput = document.createElement("input");
+        searchInput.type = "search";
+        searchInput.className = "chat-prompt-shortcuts__search-input";
+        searchInput.placeholder = "Rechercher un prompt...";
+        searchInput.setAttribute("aria-label", "Rechercher un prompt");
+        searchInput.addEventListener("input", function (event) {
+            this.promptShortcutsSearchQuery = (event?.target?.value || "").toString();
+            this.promptShortcutsPageIndex = 0;
+            this.renderPromptShortcutsFilters(this.promptShortcutsPrompts || []);
+            this.renderPromptShortcutsGrid(this.promptShortcutsPrompts || []);
+        }.bind(this));
+        searchRow.appendChild(searchInput);
 
         var filterBar = document.createElement("div");
         filterBar.className = "chat-prompt-shortcuts__filters";
@@ -3153,6 +3237,7 @@
         grid.className = "chat-prompt-shortcuts__grid";
 
         modal.appendChild(header);
+        modal.appendChild(searchRow);
         modal.appendChild(filterBar);
         modal.appendChild(grid);
         modal.appendChild(pager);
@@ -3174,6 +3259,7 @@
         this.promptShortcutsPagerLabelEl = label;
         this.promptShortcutsPagerPrevBtn = prevBtn;
         this.promptShortcutsPagerNextBtn = nextBtn;
+        this.promptShortcutsSearchInput = searchInput;
         if (global.lucide) global.lucide.createIcons();
     };
 
@@ -3182,17 +3268,24 @@
         var categoriesMeta = this.getPromptShortcutCategories();
         var filterBar = this.promptShortcutsFilterEl;
         filterBar.innerHTML = "";
+        var recentList = this.getPromptShortcutsRecentList(prompts || []);
+        var hasRecent = recentList.length > 0;
         var categories = new Set();
         (prompts || []).forEach(function (prompt) {
             var category = (prompt?.category || "").toString().trim();
             if (category) categories.add(category.toUpperCase());
         });
-        var active = (this.promptShortcutsActiveCategory || "ALL").toUpperCase();
-        var makeButton = function (label, value) {
+        var defaultCategory = hasRecent ? "RECENT" : "ALL";
+        var active = (this.promptShortcutsActiveCategory || defaultCategory).toUpperCase();
+        if (active === "RECENT" && !hasRecent) {
+            active = "ALL";
+            this.promptShortcutsActiveCategory = "ALL";
+        }
+        var makeButton = function (label, value, iconOverride) {
             var btn = document.createElement("button");
             btn.type = "button";
             btn.className = "chat-prompt-shortcuts__filter";
-            var icon = categoriesMeta?.[value.toLowerCase()]?.icon;
+            var icon = iconOverride || categoriesMeta?.[value.toLowerCase()]?.icon;
             btn.innerHTML = (icon ? '<i data-lucide="' + icon + '"></i>' : "") + '<span>' + label + "</span>";
             btn.dataset.category = value;
             if (value === active) {
@@ -3207,7 +3300,10 @@
             filterBar.appendChild(btn);
         }.bind(this);
 
-        makeButton("TOUS", "ALL");
+        makeButton("TOUS", "ALL", "layout-grid");
+        if (hasRecent) {
+            makeButton("RÉCENT", "RECENT", "history");
+        }
         Array.from(categories).sort().forEach(function (categoryKey) {
             var key = categoryKey.toLowerCase();
             var meta = categoriesMeta?.[key];
@@ -3222,10 +3318,20 @@
         var categoriesMeta = this.getPromptShortcutCategories();
         var grid = this.promptShortcutsGridEl;
         grid.innerHTML = "";
-        var active = (this.promptShortcutsActiveCategory || "ALL").toUpperCase();
-        var list = (prompts || []).filter(function (prompt) {
+        var recentList = this.getPromptShortcutsRecentList(prompts || []);
+        var hasRecent = recentList.length > 0;
+        var active = (this.promptShortcutsActiveCategory || (hasRecent ? "RECENT" : "ALL")).toUpperCase();
+        if (active === "RECENT" && !hasRecent) {
+            active = "ALL";
+            this.promptShortcutsActiveCategory = "ALL";
+        }
+        var baseList = prompts || [];
+        if (active === "RECENT") {
+            baseList = recentList;
+        }
+        var list = this.filterPromptShortcutsByQuery(baseList).filter(function (prompt) {
             if (!prompt) return false;
-            if (active === "ALL") return true;
+            if (active === "ALL" || active === "RECENT") return true;
             return (prompt.category || "").toString().trim().toUpperCase() === active;
         });
         var pageSize = Number(this.promptShortcutsPageSize) || 9;
@@ -3238,7 +3344,9 @@
         if (!list.length) {
             var empty = document.createElement("div");
             empty.className = "chat-prompt-shortcuts__empty";
-            empty.textContent = "Aucun raccourci dans cette catégorie.";
+            empty.textContent = this.getPromptShortcutsSearchQuery()
+                ? "Aucun raccourci ne correspond à votre recherche."
+                : "Aucun raccourci dans cette catégorie.";
             grid.appendChild(empty);
             return;
         }
@@ -3316,6 +3424,7 @@
         try {
             target.focus();
         } catch (err) { /* ignore */ }
+        this.trackPromptShortcutRecent(prompt);
         this.closePromptShortcutsModal();
     };
 
@@ -3324,6 +3433,12 @@
         if (!this.promptShortcutsOverlay) return;
         this.promptShortcutsTargetInput = targetInput || this.textarea;
         this.promptShortcutsPageIndex = 0;
+        this.promptShortcutsSearchQuery = "";
+        if (this.promptShortcutsSearchInput) {
+            this.promptShortcutsSearchInput.value = "";
+        }
+        var hasRecent = this.getPromptShortcutsRecentIds().length > 0;
+        this.promptShortcutsActiveCategory = hasRecent ? "RECENT" : "ALL";
         this.promptShortcutsOverlay.classList.add("open");
         this.promptShortcutsOverlay.setAttribute("aria-hidden", "false");
         this.refreshPromptShortcutsModal();
