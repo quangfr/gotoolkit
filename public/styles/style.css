@@ -1688,6 +1688,7 @@ label {
 .chat-restore-redo-btn {
   opacity: 0;
   pointer-events: none;
+  cursor: pointer;
   align-self: center;
   border: 1px solid var(--border-main);
   background: var(--bg-surface);

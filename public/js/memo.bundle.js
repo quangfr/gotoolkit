@@ -27778,16 +27778,19 @@ img.ProseMirror-separator {
     const prevWidth = cell2.style.width;
     const prevMaxWidth = cell2.style.maxWidth;
     const prevDisplay = cell2.style.display;
+    const computed = window.getComputedStyle(cell2);
+    const padding = Number.parseFloat(computed.paddingLeft || "0") + Number.parseFloat(computed.paddingRight || "0");
+    const border = Number.parseFloat(computed.borderLeftWidth || "0") + Number.parseFloat(computed.borderRightWidth || "0");
     cell2.style.whiteSpace = "nowrap";
     cell2.style.width = "auto";
     cell2.style.maxWidth = "none";
     cell2.style.display = "inline-block";
-    const width = Math.ceil(cell2.scrollWidth || cell2.getBoundingClientRect().width || 0);
+    const rawWidth = Math.ceil(cell2.scrollWidth || cell2.getBoundingClientRect().width || 0);
     cell2.style.whiteSpace = prevWhiteSpace;
     cell2.style.width = prevWidth;
     cell2.style.maxWidth = prevMaxWidth;
     cell2.style.display = prevDisplay;
-    return width;
+    return Math.max(0, rawWidth - padding - border);
   };
   var getAutoColumnWidth = (view, cellPos) => {
     const $cell = view.state.doc.resolve(cellPos);
@@ -27796,6 +27799,7 @@ img.ProseMirror-separator {
     const start = $cell.start(-1);
     const col = map2.colCount($cell.pos - start) + $cell.nodeAfter.attrs.colspan - 1;
     let maxWidth = 0;
+    let headerText = "";
     for (let row = 0; row < map2.height; row++) {
       const mapIndex = row * map2.width + col;
       if (row && map2.map[mapIndex] === map2.map[mapIndex - map2.width]) continue;
@@ -27806,11 +27810,19 @@ img.ProseMirror-separator {
       const dom = view.nodeDOM(start + cellOffset);
       const cellEl = dom && (dom.nodeName === "TD" || dom.nodeName === "TH") ? dom : dom == null ? void 0 : dom.closest("td, th");
       if (!cellEl) continue;
+      if (!headerText && cellEl.tagName === "TH") {
+        headerText = (cellEl.textContent || "").trim();
+      }
       const measured = measureCellContentWidth(cellEl);
       const perCol = Math.max(1, Math.ceil(measured / span));
       maxWidth = Math.max(maxWidth, perCol);
     }
-    return clampTableColumnWidth(maxWidth + 10, TABLE_COLUMN_MIN_WIDTH, TABLE_COLUMN_AUTO_MAX_WIDTH);
+    const clamped = clampTableColumnWidth(maxWidth + 10, TABLE_COLUMN_MIN_WIDTH, TABLE_COLUMN_AUTO_MAX_WIDTH);
+    if (!headerText) {
+      headerText = `Column ${col + 1}`;
+    }
+    console.log(`[MemoTable] Auto-resize`, { header: headerText, width: clamped });
+    return clamped;
   };
   var columnResizingWithMax = ({
     handleWidth = 5,

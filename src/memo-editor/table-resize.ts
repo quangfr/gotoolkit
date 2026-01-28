@@ -270,16 +270,23 @@ const measureCellContentWidth = (cell: HTMLElement) => {
   const prevWidth = cell.style.width;
   const prevMaxWidth = cell.style.maxWidth;
   const prevDisplay = cell.style.display;
+  const computed = window.getComputedStyle(cell);
+  const padding =
+    Number.parseFloat(computed.paddingLeft || '0') +
+    Number.parseFloat(computed.paddingRight || '0');
+  const border =
+    Number.parseFloat(computed.borderLeftWidth || '0') +
+    Number.parseFloat(computed.borderRightWidth || '0');
   cell.style.whiteSpace = 'nowrap';
   cell.style.width = 'auto';
   cell.style.maxWidth = 'none';
   cell.style.display = 'inline-block';
-  const width = Math.ceil(cell.scrollWidth || cell.getBoundingClientRect().width || 0);
+  const rawWidth = Math.ceil(cell.scrollWidth || cell.getBoundingClientRect().width || 0);
   cell.style.whiteSpace = prevWhiteSpace;
   cell.style.width = prevWidth;
   cell.style.maxWidth = prevMaxWidth;
   cell.style.display = prevDisplay;
-  return width;
+  return Math.max(0, rawWidth - padding - border);
 };
 
 const getAutoColumnWidth = (view: EditorView, cellPos: number) => {
@@ -289,6 +296,7 @@ const getAutoColumnWidth = (view: EditorView, cellPos: number) => {
   const start = $cell.start(-1);
   const col = map.colCount($cell.pos - start) + $cell.nodeAfter.attrs.colspan - 1;
   let maxWidth = 0;
+  let headerText = "";
 
   for (let row = 0; row < map.height; row++) {
     const mapIndex = row * map.width + col;
@@ -300,12 +308,20 @@ const getAutoColumnWidth = (view: EditorView, cellPos: number) => {
     const dom = view.nodeDOM(start + cellOffset) as HTMLElement | null;
     const cellEl = dom && (dom.nodeName === 'TD' || dom.nodeName === 'TH') ? dom : dom?.closest('td, th');
     if (!cellEl) continue;
+    if (!headerText && cellEl.tagName === 'TH') {
+      headerText = (cellEl.textContent || '').trim();
+    }
     const measured = measureCellContentWidth(cellEl);
     const perCol = Math.max(1, Math.ceil(measured / span));
     maxWidth = Math.max(maxWidth, perCol);
   }
 
-  return clampTableColumnWidth(maxWidth + 10, TABLE_COLUMN_MIN_WIDTH, TABLE_COLUMN_AUTO_MAX_WIDTH);
+  const clamped = clampTableColumnWidth(maxWidth + 10, TABLE_COLUMN_MIN_WIDTH, TABLE_COLUMN_AUTO_MAX_WIDTH);
+  if (!headerText) {
+    headerText = `Column ${col + 1}`;
+  }
+  console.log(`[MemoTable] Auto-resize`, { header: headerText, width: clamped });
+  return clamped;
 };
 
 export const columnResizingWithMax = ({

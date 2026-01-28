@@ -1880,6 +1880,7 @@
                     var redoBtn = document.createElement("button");
                     redoBtn.type = "button";
                     redoBtn.className = "chat-restore-redo-btn";
+                    redoBtn.style.cursor = "pointer";
                     redoBtn.innerHTML = '<i data-lucide="redo"></i>';
                     redoBtn.setAttribute("title", "Rétablir");
                     redoBtn.addEventListener("click", function (event) {
@@ -1892,6 +1893,7 @@
                 var editBtn = document.createElement("button");
                 editBtn.type = "button";
                 editBtn.className = "chat-edit-btn";
+                editBtn.style.cursor = "pointer";
                 editBtn.innerHTML = '<i data-lucide="pen"></i>';
                 editBtn.setAttribute("title", "Modifier le prompt");
                 editBtn.addEventListener("click", function (event) {
@@ -1903,6 +1905,7 @@
                 var undoBtn = document.createElement("button");
                 undoBtn.type = "button";
                 undoBtn.className = "chat-undo-btn";
+                undoBtn.style.cursor = "pointer";
                 undoBtn.innerHTML = '<i data-lucide="undo"></i>';
                 undoBtn.setAttribute("title", "Restaurer le document");
                 undoBtn.addEventListener("click", function (event) {
