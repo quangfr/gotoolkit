@@ -88,22 +88,33 @@ test.describe("Inline list replacement", () => {
       const target = listItems[2];
       editor.commands.setTextSelection({ from: target.from + 2, to: target.from + 2 });
 
+      let listContainer: { from: number; to: number } | null = null;
+      doc.descendants((node: any, pos: number) => {
+        if (node.type?.name !== "bulletList") return;
+        const end = pos + node.nodeSize;
+        if (pos <= target.from && end >= target.to) {
+          listContainer = { from: pos, to: end };
+        }
+      });
+
       return {
         selectionText: doc.textBetween(target.from, target.to, " "),
-        range: target
+        range: target,
+        listContainer
       };
     });
 
     await page.evaluate((info) => {
       const output = "- one\n- two\n- three\n- four\n- five\n- six\n- seven";
+      const targetRange = info.listContainer || info.range;
       if (typeof (window as any).insertEditorMarkdownAtRange === "function") {
         (window as any).insertEditorMarkdownAtRange(output, {
-          from: info.range.from,
-          to: info.range.to
+          from: targetRange.from,
+          to: targetRange.to
         });
       } else if ((window as any).memoEditor) {
         const editor = (window as any).memoEditor;
-        editor.chain().focus().insertContentAt(info.range.from, output).run();
+        editor.chain().focus().insertContentAt(targetRange.from, output).run();
       }
     }, selectionInfo);
 

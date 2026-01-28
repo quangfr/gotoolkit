@@ -45,7 +45,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
-    <link rel="stylesheet" href="styles/style.css?v=2026.01.28.9">
+    <link rel="stylesheet" href="styles/style.css?v=2026.01.28.10">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-grid.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-theme-quartz.css">
     <script
@@ -1111,18 +1111,18 @@
 <body class="app-body">
     <div class="app">
         <header class="app-header">
-            <a class="app-home-link" href="/?v=2026.01.28.9" title="Revenir à l'accueil"><i data-lucide="home"
+            <a class="app-home-link" href="/?v=2026.01.28.10" title="Revenir à l'accueil"><i data-lucide="home"
                     style="width:16px;height:16px;"></i></a>
             <div class="nav-switch">
                 <button id="navSwitcherBtn" class="nav-switch-btn" type="button"><i data-lucide="grid-3x3"
                         style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i>Grid <i
                         data-lucide="chevron-down" style="width:12px;height:12px;vertical-align:middle;"></i></button>
                 <div id="navSwitcherMenu" class="nav-switch-menu">
-                    <a class="nav-switch-link" href="/?v=2026.01.28.9"><i data-lucide="home"
+                    <a class="nav-switch-link" href="/?v=2026.01.28.10"><i data-lucide="home"
                             style="width:14px;height:14px;vertical-align:middle;margin-right:6px;"></i>Accueil</a>
-                    <a class="nav-switch-link" href="memo.html?v=2026.01.28.9" data-app="memo"><i data-lucide="zap"
+                    <a class="nav-switch-link" href="memo.html?v=2026.01.28.10" data-app="memo"><i data-lucide="zap"
                             style="width:14px;height:14px;vertical-align:middle;margin-right:6px;"></i>Mémo</a>
-                    <a class="nav-switch-link" href="old/timeline.html?v=2026.01.28.9" data-app="timeline"><i
+                    <a class="nav-switch-link" href="old/timeline.html?v=2026.01.28.10" data-app="timeline"><i
                             data-lucide="layout-list"
                             style="width:14px;height:14px;vertical-align:middle;margin-right:6px;"></i>Timeline</a>
                 </div>
@@ -1168,7 +1168,7 @@
                             <button id="capsuleJsonExportBtn" type="button" class="menu-panel-btn">🡇
                                 Télécharger</button>
                             <button id="capsuleDownloadBtn" type="button" class="menu-panel-btn">🡇 CSV</button>
-                            <button id="infoButton" type="button" class="menu-panel-btn">⎉ À propos</button>
+                            <button id="infoButton" type="button" class="menu-panel-btn">❔ Aide</button>
                             <div class="menu-separator"></div>
                             <div style="padding: 10px 14px;">
                                 <div
@@ -1187,10 +1187,13 @@
                         <img src="img/logo.gif" alt="Logo Go-Toolkit" class="logo-light">
                         <img src="img/logo_inverted.gif" alt="Logo Go-Toolkit" class="logo-dark">
                         <strong>Module Grid (Le Cardinal)</strong>
-                        <span>Version 2026.01.28.9</span>
-                        <div class="info-actions">
+                        <span>Version 2026.01.28.10</span>
+                        <div class="info-actions info-actions--stacked">
+                            <div class="info-actions-row">
+                                <button id="gridDocsBtn" type="button" class="secondary">Documentation</button>
+                                <button type="button" class="secondary" data-open-nexus-modal>Mentions légales</button>
+                            </div>
                             <button id="updateAppBtn" type="button" class="update-btn">Réparer</button>
-                            <button type="button" class="secondary" data-open-nexus-modal>Mentions légales</button>
                         </div>
                     </div>
                 </div>
@@ -1382,19 +1385,19 @@
         </div>
     </div>
 
-    <script src="preset.js?v=2026.01.28.9"></script>
-    <script src="prompt.js?v=2026.01.28.9"></script>
-    <script src="js/ia-config.js?v=2026.01.28.9"></script>
-    <script src="js/ia-client.js?v=2026.01.28.9"></script>
-    <script src="js/config.js?v=2026.01.28.9"></script>
-    <script src="js/feature-visibility.js?v=2026.01.28.9"></script>
-    <script src="js/document-storage.js?v=2026.01.28.9"></script>
-    <script src="js/storage-service.js?v=2026.01.28.9"></script>
-    <script src="js/shared-ui.js?v=2026.01.28.9"></script>
-    <script src="js/cgu.js?v=2026.01.28.9"></script>
-    <script src="js/share-worker-client.js?v=2026.01.28.9"></script>
-    <script src="js/share-history.js?v=2026.01.28.9"></script>
-    <script src="js/document-api.js?v=2026.01.28.9"></script>
+    <script src="preset.js?v=2026.01.28.10"></script>
+    <script src="prompt.js?v=2026.01.28.10"></script>
+    <script src="js/ia-config.js?v=2026.01.28.10"></script>
+    <script src="js/ia-client.js?v=2026.01.28.10"></script>
+    <script src="js/config.js?v=2026.01.28.10"></script>
+    <script src="js/feature-visibility.js?v=2026.01.28.10"></script>
+    <script src="js/document-storage.js?v=2026.01.28.10"></script>
+    <script src="js/storage-service.js?v=2026.01.28.10"></script>
+    <script src="js/shared-ui.js?v=2026.01.28.10"></script>
+    <script src="js/cgu.js?v=2026.01.28.10"></script>
+    <script src="js/share-worker-client.js?v=2026.01.28.10"></script>
+    <script src="js/share-history.js?v=2026.01.28.10"></script>
+    <script src="js/document-api.js?v=2026.01.28.10"></script>
     <script src="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/dist/ag-grid-community.min.noStyle.js"></script>
     <script>
         (() => {
@@ -1536,6 +1539,7 @@
             const infoButton = document.getElementById("infoButton");
             const infoPopup = document.getElementById("infoPopup");
             const updateAppBtn = document.getElementById("updateAppBtn");
+            const gridDocsBtn = document.getElementById("gridDocsBtn");
             const APP_VERSION = "2026.01.08.1";
             const VERSION_QUERY_PARAM = "v";
             const gridRestoreTargets = new Map();
@@ -8922,6 +8926,13 @@
                     window.location.href = window.location.pathname + '?v=' + v;
                 });
             }
+            if (gridDocsBtn) {
+                gridDocsBtn.addEventListener("click", event => {
+                    event.stopPropagation();
+                    infoPopup?.classList.remove("open");
+                    window.GoToolkitAssistInstance?.openKnowledgeModalWithSourceFilter?.("Web");
+                });
+            }
             document.addEventListener("click", event => {
                 if (affichageMenu && !affichageMenu.contains(event.target) && event.target !== affichageBtn) {
                     affichageMenu.classList.remove("open");
@@ -9390,7 +9401,7 @@
             })
         };
     </script>
-    <script src="js/feedback.js?v=2026.01.28.9"></script>
+    <script src="js/feedback.js?v=2026.01.28.10"></script>
     <script>
         (function () {
             const templateTrigger = document.getElementById("gtTemplateModalTrigger");

@@ -15,5 +15,11 @@
     "abstract": "Guide des compétences essentielles : modélisation, sémantique, facilitation graphique et prototypage.",
     "path": "content/superpowers.md",
     "updatedAt": "2026-01-21T11:00:00Z"
+  },
+  {
+    "name": "Guide Édition Mémo",
+    "abstract": "Guide complet des fonctionnalités d'édition : mise en forme, listes, tableaux et raccourcis Markdown.",
+    "path": "content/memo_guide.md",
+    "updatedAt": "2026-01-28T14:40:00Z"
   }
 ]

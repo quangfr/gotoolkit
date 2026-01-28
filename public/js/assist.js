@@ -1508,6 +1508,7 @@
         this.knowledgeLocalDocRefs = new Map();
         this.knowledgeChatDocRefs = new Map();
         this.knowledgeMemoDocRefs = new Map();
+        this.knowledgeModalSourceFilter = null;
         this.mediaTranscriptionActive = false;
         this.deferSendButtonRestoreUntilAI = false;
         this.sendButtonSpinnerTimer = null;
@@ -4436,6 +4437,14 @@
             }
         }.bind(this));
         this.textarea.addEventListener("focus", function () {
+            if (!window.memoEditor?.state || !window.memoEditor?.view) {
+                this.memoSelection = null;
+                this.memoSelectionBlockCoords = null;
+                if (this.memoSelectionOverlay) {
+                    this.memoSelectionOverlay.style.display = "none";
+                }
+                return;
+            }
             if (this.memoSelectionDetail && this.memoSelectionDetail.isSelected) {
                 this.memoSelection = {
                     text: this.memoSelectionDetail.selectionText,
@@ -4533,6 +4542,9 @@
                         } catch (err) {
                             // ignore
                         }
+                    } else {
+                        this.memoSelection = null;
+                        this.memoSelectionBlockCoords = null;
                     }
                 } catch (err) {
                     // ignore
@@ -4556,6 +4568,8 @@
                 }
                 this.updateMemoSelectionOverlayPosition();
                 this.memoSelectionOverlay.style.display = "block";
+            } else if (this.memoSelectionOverlay) {
+                this.memoSelectionOverlay.style.display = "none";
             }
         }.bind(this));
         this.textarea.addEventListener("blur", function () {
@@ -6865,7 +6879,13 @@
         this.refreshDocumentStats();
     };
 
-    AssistSidebar.prototype.openKnowledgeModal = function (persist) {
+    AssistSidebar.prototype.openKnowledgeModal = function (persist, options) {
+        if (options && Object.prototype.hasOwnProperty.call(options, "sourceFilter")) {
+            var nextFilter = (options.sourceFilter || "").toString().trim();
+            this.knowledgeModalSourceFilter = nextFilter || null;
+        } else {
+            this.knowledgeModalSourceFilter = null;
+        }
         this.buildKnowledgeModal();
         if (!this.knowledgeModal) return;
         if (this.previewPanel && this.previewPanel.classList.contains("open")) {
@@ -6877,6 +6897,10 @@
             persistKnowledgeModalOpenState(true);
         }
         this.refreshKnowledgeModal();
+    };
+
+    AssistSidebar.prototype.openKnowledgeModalWithSourceFilter = function (source) {
+        this.openKnowledgeModal(true, { sourceFilter: source });
     };
 
     AssistSidebar.prototype.closeKnowledgeModal = function (persist) {
@@ -6892,6 +6916,10 @@
     AssistSidebar.prototype.refreshKnowledgeModal = async function (options) {
         options = options || {};
         if (!this.knowledgeModalListEl) return;
+        if (Object.prototype.hasOwnProperty.call(options, "sourceFilter")) {
+            var nextFilter = (options.sourceFilter || "").toString().trim();
+            this.knowledgeModalSourceFilter = nextFilter || null;
+        }
         var manifest = await this.loadKnowledgeManifest();
         var webEntries = Array.isArray(manifest) ? manifest : [];
         var webMap = new Map();
@@ -7093,7 +7121,13 @@
                 if (key) selectionSet.add(key);
             }.bind(this));
         }
-        this.renderKnowledgeModalList(this.knowledgeManifestEntries, selectionSet);
+        var entriesToRender = this.knowledgeManifestEntries;
+        if (this.knowledgeModalSourceFilter) {
+            entriesToRender = entriesToRender.filter(function (entry) {
+                return (entry?.source || "").toString() === this.knowledgeModalSourceFilter;
+            }.bind(this));
+        }
+        this.renderKnowledgeModalList(entriesToRender, selectionSet);
         if (newEntries.length && options.autoReindex === true && selectionSet.size > 0) {
             await this.reindexKnowledgeSelection(this.knowledgeManifestEntries, selectionSet);
         }
@@ -9350,15 +9384,17 @@
             if (typeof text !== "string") return false;
             const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
             if (!lines.length) return false;
-            let matchCount = 0;
+            const listLineRe = /^([-*+]|\\d+[.)])\\s+\\S+/;
+            let listLines = 0;
+            let nonListLines = 0;
             for (let i = 0; i < lines.length; i++) {
-                if (/^([-*+]|\\d+[.)])\\s+\\S+/.test(lines[i])) {
-                    matchCount += 1;
-                    continue;
+                if (listLineRe.test(lines[i])) {
+                    listLines += 1;
+                } else {
+                    nonListLines += 1;
                 }
-                return false;
             }
-            return matchCount > 0;
+            return listLines >= 2 && listLines >= nonListLines;
         };
         const getListRangeFromSelection = (editorInstance, selectionFrom, selectionTo) => {
             if (!editorInstance || !editorInstance.state || !editorInstance.state.doc) return null;
