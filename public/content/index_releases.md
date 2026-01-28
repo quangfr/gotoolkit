@@ -1,8 +1,11 @@
+## 2026-01-28
+- IA : Éditer un prompt et restaurer une version
+- IA : Commande vocale et sélection automatique
+
 ## 2026-01-27
 - IA : Raccourcis Prompts
 - Accueil : Propriétaire des modèles
-- IA : Éditer un prompt et restaurer une version
-- IA : Commande vocale
+- Document : Vectorisation des données structurées avec `qwen/qwen3-embedding-8b`
 
 ## 2026-01-21
 - Mémo : Exporter en HTML Email, Markdown, PDF et texte

@@ -221,57 +221,18 @@
         state.toast._timer = setTimeout(() => state.toast.classList.remove("visible"), 2400);
     }
 
-    // Spinner frames for transcription toaster (same as chat send-btn)
-    const transcriptionSpinnerFrames = ["◴", "◷", "◶", "◵"];
-    let transcriptionToastTimer = null;
-
     function showTranscriptionToast(durationSeconds, remainingSeconds) {
-        if (!state.toast) {
-            state.toast = document.createElement("div");
-            state.toast.className = "go-toolkit-voice-toast";
-            document.body.appendChild(state.toast);
-        }
-
-        // Clear any existing timer
-        if (transcriptionToastTimer) {
-            clearInterval(transcriptionToastTimer);
-            transcriptionToastTimer = null;
-        }
-
-        let frameIndex = 0;
-        const updateToast = () => {
-            const frame = transcriptionSpinnerFrames[frameIndex % 4];
-            frameIndex++;
-
-            const mins = Math.floor(remainingSeconds / 60);
-            const secs = remainingSeconds % 60;
-            const timeStr = (mins < 10 ? "0" : "") + mins + ":" + (secs < 10 ? "0" : "") + secs;
-
-            state.toast.innerHTML = frame + " Transcription en cours (" + timeStr + ")";
-            state.toast.style.background = "var(--bg-surface)";
-            state.toast.classList.add("visible");
-        };
-
-        updateToast();
-
-        transcriptionToastTimer = setInterval(() => {
-            remainingSeconds--;
-            if (remainingSeconds <= 0) {
-                // Reset countdown when it reaches 0
-                remainingSeconds = Math.max(15, Math.round(durationSeconds / 12));
-            }
-            updateToast();
-        }, 1000);
+        const durationMs = Math.max(1000, Math.round((remainingSeconds || 0) * 1000));
+        window.GoToolkitAIRequestToaster?.startIcon?.(
+            "aiRequestCounterToasterTranscription",
+            "activity",
+            "",
+            durationMs
+        );
     }
 
     function hideTranscriptionToast() {
-        if (transcriptionToastTimer) {
-            clearInterval(transcriptionToastTimer);
-            transcriptionToastTimer = null;
-        }
-        if (state.toast) {
-            state.toast.classList.remove("visible");
-        }
+        window.GoToolkitAIRequestToaster?.stop?.("aiRequestCounterToasterTranscription");
     }
 
     function formatDuration(seconds) {
@@ -929,9 +890,20 @@
                 videoVtt = await fetchAssemblyTranscriptVtt(transcriptId, assemblyKey);
                 videoSentences = videoVtt ? parseVttTranscript(videoVtt) : [];
             }
+            if (memoId && audioText) {
+                if (typeof window.setMemoActiveTab === "function") {
+                    window.setMemoActiveTab(memoId);
+                }
+                if (typeof window.GoToolkitMemoAppendText === "function") {
+                    setTimeout(() => {
+                        window.GoToolkitMemoAppendText(audioText);
+                        window.scrollMemoEditorToEnd?.();
+                    }, 0);
+                }
+            }
             try {
                 await navigator.clipboard.writeText(audioText || "");
-                showToast("Transcription copiée");
+                showToast("Transcription réussie");
             } catch (err) {
                 showToast("Erreur lors de la copie", true);
             }

@@ -31,7 +31,7 @@
                 position: relative;
                 width: min(92vw, 600px);
                 height: min(92vh, 900px);
-                background: var(--white);
+                background: var(--bg-surface);
                 border-radius: 20px;
                 padding: 20px;
                 box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
@@ -82,7 +82,21 @@
                 align-items: center;
                 justify-content: center;
             }
+            .voice-audio-player-download {
+                border: none;
+                background: transparent;
+                font-size: 13px;
+                color: var(--text-main);
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
             .voice-audio-player-delete svg {
+                width: 16px;
+                height: 16px;
+            }
+            .voice-audio-player-download svg {
                 width: 16px;
                 height: 16px;
             }
@@ -104,7 +118,7 @@
             .voice-audio-player-speed {
                 border: 1px solid var(--border-strong);
                 border-radius: 999px;
-                background: var(--white);
+                background: var(--bg-surface);
                 color: var(--text-main);
                 font-size: 13px;
                 padding: 0 8px;
@@ -177,6 +191,7 @@
         constructor() {
             this.onTranscriptChange = null;
             this.onPlaybackRateChange = null;
+            this.audioBlob = null;
             this.audioBlobUrl = "";
             ensureStyles();
             this._buildDom();
@@ -194,6 +209,7 @@
                     <div class="voice-audio-player-header">
                         <div class="voice-audio-player-header-row">
                             <div class="voice-audio-player-title">Transcription audio</div>
+                            <button type="button" class="voice-audio-player-download btn btn-secondary" aria-label="Télécharger l'audio"><i data-lucide="download"></i></button>
                             <button type="button" class="voice-audio-player-delete btn btn-secondary"><i data-lucide="trash-2"></i></button>
                         </div>
                         <div class="voice-audio-player-subtitle"></div>
@@ -219,6 +235,7 @@
             this.textarea = this.overlay.querySelector(".voice-audio-player-textarea");
             this.subtitle = this.overlay.querySelector(".voice-audio-player-subtitle");
             this.deleteButton = this.overlay.querySelector(".voice-audio-player-delete");
+            this.downloadButton = this.overlay.querySelector(".voice-audio-player-download");
             if (this.speedSelect) {
                 [0.75, 1, 1.25, 1.5, 2].forEach(rate => {
                     const option = document.createElement("option");
@@ -261,6 +278,18 @@
                 if (!this.onDelete) return;
                 this.onDelete();
             });
+            this.downloadButton?.addEventListener("click", () => {
+                if (!this.audioBlob) return;
+                const url = URL.createObjectURL(this.audioBlob);
+                const anchor = document.createElement("a");
+                anchor.href = url;
+                const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+                anchor.download = `recording-${stamp}.webm`;
+                document.body.appendChild(anchor);
+                anchor.click();
+                anchor.remove();
+                setTimeout(() => URL.revokeObjectURL(url), 0);
+            });
             document.addEventListener("keydown", event => {
                 if (!this.overlay?.classList?.contains("voice-audio-player-modal--open")) return;
                 if (event.key === "Escape") {
@@ -302,6 +331,7 @@
 
         _applyAudioBlob(blob) {
             if (!this.audioEl || !blob) return;
+            this.audioBlob = blob;
             if (this.audioBlobUrl) {
                 URL.revokeObjectURL(this.audioBlobUrl);
                 this.audioBlobUrl = "";
@@ -343,6 +373,7 @@
                 URL.revokeObjectURL(this.audioBlobUrl);
                 this.audioBlobUrl = "";
             }
+            this.audioBlob = null;
         }
     }
 

@@ -9346,6 +9346,61 @@
 
         // Capturer la position du scroll avant la requête IA
         let scrollPosition = 0;
+        const isListText = (text) => {
+            if (typeof text !== "string") return false;
+            const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+            if (!lines.length) return false;
+            let matchCount = 0;
+            for (let i = 0; i < lines.length; i++) {
+                if (/^([-*+]|\\d+[.)])\\s+\\S+/.test(lines[i])) {
+                    matchCount += 1;
+                    continue;
+                }
+                return false;
+            }
+            return matchCount > 0;
+        };
+        const getListRangeFromSelection = (editorInstance, selectionFrom, selectionTo) => {
+            if (!editorInstance || !editorInstance.state || !editorInstance.state.doc) return null;
+            if (!Number.isFinite(selectionFrom) || !Number.isFinite(selectionTo)) return null;
+            const safeFrom = Math.min(selectionFrom, selectionTo);
+            const safeTo = Math.max(selectionFrom, selectionTo);
+            const listItemType = { listItem: true };
+            const listTypes = { bulletList: true, orderedList: true, taskList: true };
+            let listRange = null;
+            try {
+                editorInstance.state.doc.nodesBetween(safeFrom, safeTo, (node, pos) => {
+                    if (listRange) return false;
+                    if (node && listItemType[node.type?.name]) {
+                        listRange = { from: pos, to: pos + node.nodeSize };
+                        return false;
+                    }
+                    if (node && listTypes[node.type?.name]) {
+                        listRange = { from: pos, to: pos + node.nodeSize };
+                        return false;
+                    }
+                    return;
+                });
+            } catch (err) {
+                listRange = null;
+            }
+            if (listRange) return listRange;
+            try {
+                const resolved = editorInstance.state.doc.resolve(safeFrom);
+                for (let depth = resolved.depth; depth >= 0; depth--) {
+                    const node = resolved.node(depth);
+                    if (node && (listItemType[node.type?.name] || listTypes[node.type?.name])) {
+                        return {
+                            from: resolved.before(depth),
+                            to: resolved.after(depth)
+                        };
+                    }
+                }
+            } catch (err) {
+                return null;
+            }
+            return null;
+        };
         const logInlineEditIssue = (label, details) => {
             try {
                 console.error("InlineEdit not applied", {
@@ -9637,10 +9692,12 @@
                     const selectionTo = Number(selectionPos?.to);
                     if (Number.isFinite(selectionFrom) && Number.isFinite(selectionTo) && selectionFrom >= 0 && selectionTo >= selectionFrom) {
                         if (typeof window.insertEditorMarkdownAtRange === 'function') {
-                            window.insertEditorMarkdownAtRange(editMetadata.sOutput.text, {
-                                from: selectionFrom,
-                                to: selectionTo
-                            });
+                            let targetRange = { from: selectionFrom, to: selectionTo };
+                            const listRange = getListRangeFromSelection(editor, selectionFrom, selectionTo);
+                            if (listRange && isListText(editMetadata.sOutput.text)) {
+                                targetRange = listRange;
+                            }
+                            window.insertEditorMarkdownAtRange(editMetadata.sOutput.text, targetRange);
                             restoreScroll();
                         } else {
                             logInlineEditIssue('L1/insert-range-missing', { reason: 'insertEditorMarkdownAtRange unavailable' });
