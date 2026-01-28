@@ -35,7 +35,7 @@
           - button "Masquer les documents" [expanded] [ref=e42] [cursor=pointer]:
             - img [ref=e43]
           - link "Accueil" [ref=e46] [cursor=pointer]:
-            - /url: /?v=2026.01.28.7
+            - /url: /?v=2026.01.28.9
             - img [ref=e47]
           - generic [ref=e51]:
             - button "Doc 1 Fermer le document" [ref=e52]:
@@ -176,7 +176,6 @@
         - button [disabled] [ref=e247] [cursor=pointer]:
           - img [ref=e248]
   - status [ref=e251]
-  - generic: "Browsersync: connected"
   - generic [ref=e253]:
     - button [ref=e254] [cursor=pointer]: ←
     - button [ref=e255] [cursor=pointer]: ✕
@@ -227,4 +226,5 @@
         - generic [ref=e316]: Web
         - generic [ref=e317]: Brief de missions et de projets IT chez Safran
         - generic [ref=e318]: 21 j
+  - generic: "Browsersync: connected"
 ```

@@ -56612,14 +56612,22 @@ ${innerMarkdown}
             const rawFrom = Number(range2.from);
             const rawTo = Number(range2.to);
             if (!Number.isFinite(rawFrom) || !Number.isFinite(rawTo)) return;
+            let listReplaceRange = null;
             const isListMarkdown = (text) => {
               if (typeof text !== "string") return false;
               const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
               if (!lines.length) return false;
+              const listLineRe = /^([-*+]|\\d+[.)])\\s+\\S+/;
+              let listLines = 0;
+              let nonListLines = 0;
               for (let i = 0; i < lines.length; i += 1) {
-                if (!/^([-*+]|\\d+[.)])\\s+\\S+/.test(lines[i])) return false;
+                if (listLineRe.test(lines[i])) {
+                  listLines += 1;
+                } else {
+                  nonListLines += 1;
+                }
               }
-              return true;
+              return listLines >= 2 && listLines >= nonListLines;
             };
             const finalHtml = convertEditorMarkdownToHtml(markdown);
             if (editor) {
@@ -56658,16 +56666,18 @@ ${innerMarkdown}
                   return name.includes("list") && name !== "listitem";
                 };
                 let listContainerRange = null;
-                editor.state.doc.nodesBetween(from2, to, (node, pos) => {
-                  if (listContainerRange) return false;
-                  if (isListContainer(node)) {
-                    listContainerRange = { from: pos, to: pos + node.nodeSize };
-                    return false;
+                let listItemRange = null;
+                editor.state.doc.descendants((node, pos) => {
+                  var _a2;
+                  if (((_a2 = node.type) == null ? void 0 : _a2.name) === "listItem") {
+                    const end = pos + node.nodeSize;
+                    if (pos <= from2 && end >= to) {
+                      listItemRange = { from: pos, to: end };
+                    }
                   }
-                  return;
                 });
-                if (!listContainerRange) {
-                  const probePos = Math.min(from2 + 1, editor.state.doc.content.size);
+                if (listItemRange) {
+                  const probePos = Math.min(listItemRange.from + 1, editor.state.doc.content.size);
                   const resolved2 = editor.state.doc.resolve(probePos);
                   for (let depth = resolved2.depth; depth >= 0; depth -= 1) {
                     const node = resolved2.node(depth);
@@ -56677,13 +56687,35 @@ ${innerMarkdown}
                     }
                   }
                 }
+                if (!listContainerRange) {
+                  editor.state.doc.descendants((node, pos) => {
+                    if (!isListContainer(node)) return;
+                    const end = pos + node.nodeSize;
+                    if (pos <= from2 && end >= to) {
+                      const size2 = end - pos;
+                      const currentSize = listContainerRange ? listContainerRange.to - listContainerRange.from : Infinity;
+                      if (size2 < currentSize) {
+                        listContainerRange = { from: pos, to: end };
+                      }
+                    }
+                  });
+                }
                 if (listContainerRange) {
                   from2 = listContainerRange.from;
                   to = listContainerRange.to;
+                  listReplaceRange = listContainerRange;
+                } else if (listItemRange) {
+                  from2 = listItemRange.from;
+                  to = listItemRange.to;
+                  listReplaceRange = listItemRange;
                 }
               }
               const trimmedHtml = typeof finalHtml === "string" ? finalHtml.trim() : "";
               const safeHtml = !trimmedHtml || trimmedHtml === "<>" ? "<p></p>" : finalHtml;
+              if (listReplaceRange) {
+                editor.chain().focus().insertContentAt({ from: from2, to }, safeHtml).run();
+                return;
+              }
               const tr2 = editor.state.tr.deleteRange(from2, to);
               const mappedFrom = tr2.mapping.map(from2);
               editor.view.dispatch(tr2);

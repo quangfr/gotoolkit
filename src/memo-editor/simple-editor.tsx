@@ -4408,14 +4408,22 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           const rawFrom = Number(range.from);
           const rawTo = Number(range.to);
           if (!Number.isFinite(rawFrom) || !Number.isFinite(rawTo)) return;
+          let listReplaceRange: { from: number; to: number } | null = null;
           const isListMarkdown = (text: string) => {
             if (typeof text !== 'string') return false;
             const lines = text.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
             if (!lines.length) return false;
+            const listLineRe = /^([-*+]|\\d+[.)])\\s+\\S+/;
+            let listLines = 0;
+            let nonListLines = 0;
             for (let i = 0; i < lines.length; i += 1) {
-              if (!/^([-*+]|\\d+[.)])\\s+\\S+/.test(lines[i])) return false;
+              if (listLineRe.test(lines[i])) {
+                listLines += 1;
+              } else {
+                nonListLines += 1;
+              }
             }
-            return true;
+            return listLines >= 2 && listLines >= nonListLines;
           };
           const finalHtml = convertEditorMarkdownToHtml(markdown);
           if (editor) {
@@ -4458,16 +4466,17 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
                 return name.includes('list') && name !== 'listitem';
               };
               let listContainerRange: { from: number; to: number } | null = null;
-              editor.state.doc.nodesBetween(from, to, (node, pos) => {
-                if (listContainerRange) return false;
-                if (isListContainer(node)) {
-                  listContainerRange = { from: pos, to: pos + node.nodeSize };
-                  return false;
+              let listItemRange: { from: number; to: number } | null = null;
+              editor.state.doc.descendants((node, pos) => {
+                if (node.type?.name === 'listItem') {
+                  const end = pos + node.nodeSize;
+                  if (pos <= from && end >= to) {
+                    listItemRange = { from: pos, to: end };
+                  }
                 }
-                return;
               });
-              if (!listContainerRange) {
-                const probePos = Math.min(from + 1, editor.state.doc.content.size);
+              if (listItemRange) {
+                const probePos = Math.min(listItemRange.from + 1, editor.state.doc.content.size);
                 const resolved = editor.state.doc.resolve(probePos);
                 for (let depth = resolved.depth; depth >= 0; depth -= 1) {
                   const node = resolved.node(depth);
@@ -4477,14 +4486,37 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
                   }
                 }
               }
+              if (!listContainerRange) {
+                editor.state.doc.descendants((node, pos) => {
+                  if (!isListContainer(node)) return;
+                  const end = pos + node.nodeSize;
+                  if (pos <= from && end >= to) {
+                    const size = end - pos;
+                    const currentSize = listContainerRange ? (listContainerRange.to - listContainerRange.from) : Infinity;
+                    if (size < currentSize) {
+                      listContainerRange = { from: pos, to: end };
+                    }
+                  }
+                });
+              }
               if (listContainerRange) {
                 from = listContainerRange.from;
                 to = listContainerRange.to;
+                listReplaceRange = listContainerRange;
+              } else if (listItemRange) {
+                from = listItemRange.from;
+                to = listItemRange.to;
+                listReplaceRange = listItemRange;
               }
             }
 
             const trimmedHtml = typeof finalHtml === 'string' ? finalHtml.trim() : '';
             const safeHtml = (!trimmedHtml || trimmedHtml === '<>') ? '<p></p>' : finalHtml;
+
+            if (listReplaceRange) {
+              editor.chain().focus().insertContentAt({ from, to }, safeHtml).run();
+              return;
+            }
 
             // Delete first, then insert at the mapped position to avoid invalid tableCell inserts
             const tr = editor.state.tr.deleteRange(from, to);
