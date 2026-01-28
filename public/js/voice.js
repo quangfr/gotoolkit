@@ -1084,7 +1084,7 @@
         if (state.voiceButton) return;
         const btn = document.createElement("button");
         btn.type = "button";
-        btn.className = "feedback-app-button go-toolkit-voice-button";
+        btn.className = "feedback-app-button btn btn-secondary app-header-btn go-toolkit-voice-button";
         btn.title = "Enregistrer une conversation";
         btn.textContent = "◉";
         btn.addEventListener("click", handleButtonClick);

@@ -28,6 +28,7 @@ import OrderedList from '@tiptap/extension-ordered-list';
 import CodeBlock from '@tiptap/extension-code-block';
 
 import { TableNode, TableRow, TableHeader, CustomTableCell } from './table-node';
+import { columnResizingWithMaxPluginKey } from './table-resize';
 import { TaskListNode, TaskItemNode } from './task-node';
 
 
@@ -959,13 +960,6 @@ const getTableCellPosByIndex = (table: PMNode, tablePos: number, rowIndex: numbe
 };
 
 
-const TABLE_COLUMN_MIN_WIDTH = 80;
-const TABLE_COLUMN_MAX_WIDTH = 500;
-
-const clampWidth = (value: number, min = TABLE_COLUMN_MIN_WIDTH, max = TABLE_COLUMN_MAX_WIDTH) => {
-  return Math.min(max, Math.max(min, value));
-};
-
 const isNumericText = (value: string) => {
   const trimmed = String(value || '').trim();
   if (!trimmed) return false;
@@ -1093,6 +1087,66 @@ const hasMarksInDocument = (editor: Editor | null): boolean => {
     }
   });
   return hasMarks;
+};
+
+const getTableItemsFromSelection = (editor: Editor): string[] => {
+  const { selection, doc } = editor.state;
+  if (selection.empty) return [];
+  const items: string[] = [];
+  doc.nodesBetween(selection.from, selection.to, (node, pos) => {
+    if (node.type.name === 'listItem') {
+      const text = node.textContent.trim();
+      if (text) items.push(text);
+      return false;
+    }
+    if (node.type.name === 'paragraph') {
+      const $pos = doc.resolve(pos);
+      let inListItem = false;
+      for (let d = $pos.depth; d > 0; d--) {
+        if ($pos.node(d).type.name === 'listItem') {
+          inListItem = true;
+          break;
+        }
+      }
+      if (!inListItem) {
+        const text = node.textContent.trim();
+        if (text) items.push(text);
+      }
+      return false;
+    }
+    return true;
+  });
+  return items;
+};
+
+const buildTableNodeFromItems = (editor: Editor, items: string[], cols = 2) => {
+  const { schema } = editor.state;
+  const tableType = schema.nodes.table;
+  const rowType = schema.nodes.tableRow;
+  const cellType = schema.nodes.tableCell;
+  const paragraphType = schema.nodes.paragraph;
+  if (!tableType || !rowType || !cellType || !paragraphType) return null;
+
+  const rowsCount = items.length + 1;
+  const rows: PMNode[] = [];
+
+  for (let rowIndex = 0; rowIndex < rowsCount; rowIndex++) {
+    const cells: PMNode[] = [];
+    for (let colIndex = 0; colIndex < cols; colIndex++) {
+      let paragraph = paragraphType.createAndFill();
+      if (colIndex === 0 && rowIndex < items.length) {
+        const textValue = items[rowIndex] || '';
+        paragraph = paragraphType.create(null, textValue ? schema.text(textValue) : null);
+      }
+      if (!paragraph) {
+        paragraph = paragraphType.create();
+      }
+      cells.push(cellType.createChecked(null, paragraph));
+    }
+    rows.push(rowType.createChecked(null, cells));
+  }
+
+  return tableType.createChecked(null, rows);
 };
 
 const cleanupEmptyBlocks = (tr: any) => {
@@ -1574,7 +1628,20 @@ const Toolbar = ({ editor, onDropdownToggle, onLink }: {
           className="tiptap-button"
           aria-label="Insert Table"
           type="button"
-          onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
+          onClick={() => {
+            const selectedItems = getTableItemsFromSelection(editor);
+            if (selectedItems.length) {
+              const tableNode = buildTableNodeFromItems(editor, selectedItems, 2);
+              if (tableNode) {
+                const tr = editor.state.tr.replaceSelectionWith(tableNode).scrollIntoView();
+                const selectionPos = tr.selection.from + 1;
+                tr.setSelection(TextSelection.near(tr.doc.resolve(selectionPos)));
+                editor.view.dispatch(tr);
+                return;
+              }
+            }
+            editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
+          }}
         >
           <TableIcon size={16} />
         </button>
@@ -2250,6 +2317,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   const tableLayoutRafRef = React.useRef<number | null>(null);
   const isAutoLayoutRef = React.useRef(false);
 
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -2338,27 +2406,60 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
 
         const selection = view.state.selection;
         const isCellSelection = selection instanceof CellSelection;
-
         const coords = view.posAtCoords({ left: event.clientX, top: event.clientY });
+        const clickCellPos = info.cellPos;
+        const selectionCellPos = selection instanceof TextSelection
+          ? getTableCellPosFromResolved(selection.$from)
+          : null;
+        const isTextSelectionInCell = selection instanceof TextSelection && selectionCellPos !== null;
+        let clickedCellSelected = false;
+        if (isCellSelection) {
+          selection.forEachCell((_cell, pos) => {
+            if (pos === clickCellPos) clickedCellSelected = true;
+          });
+        }
 
-        if (event.detail >= 2) {
+        const setCaretAtClick = () => {
           if (!coords) return false;
-          // For double click, we might want to ensure we are inside a paragraph
           let targetPos = coords.pos;
           const $target = view.state.doc.resolve(targetPos);
           if ($target.parent.type.name === 'table_cell' || $target.parent.type.name === 'table_header') {
-            // If clicking directly on the cell but outside a paragraph, pinpoint the first paragraph
             const cell = $target.parent;
             if (cell.firstChild) {
-              targetPos = $target.before($target.depth) + 2; 
+              targetPos = $target.before($target.depth) + 2;
             }
           }
-
           const tr = view.state.tr.setSelection(TextSelection.create(view.state.doc, targetPos));
           view.dispatch(tr.setMeta('addToHistory', false));
           view.dispatch(view.state.tr.scrollIntoView());
           view.focus();
           return true;
+        };
+
+        const selectAllCellText = () => {
+          const cellNode = view.state.doc.nodeAt(clickCellPos);
+          if (!cellNode) return false;
+          const from = clickCellPos + 1;
+          const to = clickCellPos + cellNode.nodeSize - 1;
+          const tr = view.state.tr.setSelection(TextSelection.create(view.state.doc, from, to));
+          view.dispatch(tr);
+          view.focus();
+          return true;
+        };
+
+        if (event.detail >= 2) {
+          if (isTextSelectionInCell && selectionCellPos === clickCellPos) {
+            return selectAllCellText();
+          }
+          return setCaretAtClick();
+        }
+
+        if (isTextSelectionInCell && selectionCellPos === clickCellPos) {
+          return setCaretAtClick();
+        }
+
+        if (isCellSelection && clickedCellSelected) {
+          return setCaretAtClick();
         }
 
         const $cell = view.state.doc.resolve(info.cellPos);
@@ -2706,30 +2807,13 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     if (!editor || isAutoLayoutRef.current) return;
     const view = editor.view;
     if (view.dom.classList.contains('resize-cursor')) return;
+    const resizeState = columnResizingWithMaxPluginKey.getState(view.state);
+    if (resizeState?.dragging) return;
 
     const tables = Array.from(view.dom.querySelectorAll('table')) as HTMLTableElement[];
     if (!tables.length) return;
 
-    let tr = editor.state.tr;
-    let modified = false;
-
     tables.forEach((tableDom) => {
-      const pos = view.posAtDOM(tableDom, 0);
-      if (pos == null) return;
-      const $pos = view.state.doc.resolve(pos);
-      let tablePos = -1;
-      let tableNode: PMNode | null = null;
-
-      for (let d = $pos.depth; d > 0; d--) {
-        const node = $pos.node(d);
-        if (node.type.name === 'table') {
-          tablePos = $pos.before(d);
-          tableNode = node;
-          break;
-        }
-      }
-      if (!tableNode || tablePos < 0) return;
-
       const rows = Array.from(tableDom.querySelectorAll('tr'));
       if (!rows.length) return;
 
@@ -2743,7 +2827,6 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
 
       const numericFlags = new Array(colCount).fill(true);
       const hasValue = new Array(colCount).fill(false);
-      const contentWidths = new Array(colCount).fill(0);
 
       rows.forEach((row) => {
         let colIndex = 0;
@@ -2752,87 +2835,22 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           const text = cell.textContent || '';
           const numeric = isNumericText(text);
           const hasText = Boolean(text.trim());
-          const cellWidth = (cell as HTMLElement).scrollWidth || 0;
-          const perColWidth = Math.max(1, Math.ceil(cellWidth / span));
 
           for (let i = 0; i < span; i++) {
             if (hasText) {
               hasValue[colIndex + i] = true;
               if (!numeric) numericFlags[colIndex + i] = false;
             }
-            contentWidths[colIndex + i] = Math.max(contentWidths[colIndex + i], perColWidth);
           }
           colIndex += span;
         });
       });
 
-      const existingWidths = new Array(colCount).fill(0);
-      let firstRowProcessed = false;
-      tableNode.forEach((row) => {
-        if (firstRowProcessed || row.type.name !== 'tableRow') return;
-        let colCursor = 0;
-        row.forEach((cell) => {
-          const colspan = cell.attrs.colspan || 1;
-          const colwidthAttr = Array.isArray(cell.attrs.colwidth) ? cell.attrs.colwidth : [];
-          for (let i = 0; i < colspan; i++) {
-            const value = Number(colwidthAttr[i] || 0);
-            if (value) existingWidths[colCursor + i] = value;
-          }
-          colCursor += colspan;
-        });
-        firstRowProcessed = true;
-      });
-
       const numericColumns = numericFlags.map((flag, idx) => flag && hasValue[idx]);
-      const widths = contentWidths.map((width, idx) => {
-        if (numericColumns[idx]) return TABLE_COLUMN_MIN_WIDTH;
-        const base = existingWidths[idx] || (width + 16);
-        return clampWidth(base);
-      });
-
-      const wrapper = tableDom.closest('.tableWrapper') as HTMLElement | null;
-      const availableWidth = wrapper ? wrapper.clientWidth : tableDom.clientWidth;
-      const totalWidth = widths.reduce((sum, value) => sum + value, 0);
-      const lastIndex = widths.length - 1;
-
-      if (availableWidth && lastIndex >= 0 && !numericColumns[lastIndex] && totalWidth < availableWidth) {
-        const extra = availableWidth - totalWidth;
-        widths[lastIndex] = clampWidth(widths[lastIndex] + extra);
-      }
-
-      if (availableWidth) {
-        tableDom.style.width = totalWidth > availableWidth ? `${totalWidth}px` : "100%";
-      }
-
-      let handledFirstRow = false;
-      tableNode.forEach((row, rowOffset) => {
-        if (handledFirstRow || row.type.name !== 'tableRow') return;
-        let colCursor = 0;
-        row.forEach((cell, cellOffset) => {
-          const colspan = cell.attrs.colspan || 1;
-          const colwidth = widths.slice(colCursor, colCursor + colspan);
-          const cellPos = tablePos + rowOffset + cellOffset + 2;
-          const mappedPos = tr.mapping.map(cellPos);
-          if (!areNumberArraysEqual(cell.attrs.colwidth as number[] | undefined, colwidth)) {
-            tr = tr.setNodeMarkup(mappedPos, undefined, {
-              ...cell.attrs,
-              colwidth
-            });
-            modified = true;
-          }
-          colCursor += colspan;
-        });
-        handledFirstRow = true;
-      });
 
       applyTableDomStyles(tableDom, numericColumns);
     });
 
-    if (modified) {
-      isAutoLayoutRef.current = true;
-      editor.view.dispatch(tr);
-      isAutoLayoutRef.current = false;
-    }
     syncTableScrollbars();
   }, [editor, applyTableDomStyles, syncTableScrollbars]);
 

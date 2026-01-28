@@ -54,7 +54,7 @@
         if (!button) {
             button = document.createElement("button");
             button.type = "button";
-            button.className = "feedback-app-button go-toolkit-voice-button";
+            button.className = "feedback-app-button btn btn-secondary app-header-btn go-toolkit-voice-button";
             button.title = "Enregistrer une conversation";
             button.textContent = "◉";
             button.dataset.voiceLoader = "true";

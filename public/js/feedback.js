@@ -18,11 +18,14 @@
         { value: "suggestion", label: "Suggestion" }
     ];
 
+    const launcherRow = document.createElement("div");
+    launcherRow.className = "feedback-app-launcher-row";
+    launcherRow.innerHTML = `
+        <button id="${prefix}-openBtn" class="${prefix}-open-btn feedback-app-button btn btn-secondary app-header-btn" type="button" title="Envoyer un feedback"><i data-lucide="message-square-plus"></i></button>
+    `;
+
     const container = document.createElement("div");
     container.innerHTML = `
-        <div class="feedback-app-launcher-row">
-            <button id="${prefix}-openBtn" class="${prefix}-open-btn feedback-app-button" type="button" title="Envoyer un feedback"><i data-lucide="message-square-plus"></i></button>
-        </div>
         <div id="${prefix}-backdrop" class="${prefix}-backdrop feedback-app-backdrop" aria-hidden="true" role="dialog">
             <div class="${prefix}-dialog feedback-app-dialog">
                 <header>
@@ -70,7 +73,20 @@
         </div>
         <div id="${prefix}-toast" class="${prefix}-toast feedback-app-toast" role="status" aria-live="polite"></div>
     `;
+    const globalActions = document.querySelector(".global-actions");
+    if (globalActions) {
+        launcherRow.classList.add("feedback-app-launcher-row--inline");
+        const assistBtn = document.getElementById("assistLauncherBtn");
+        if (assistBtn && assistBtn.parentNode === globalActions) {
+            globalActions.insertBefore(launcherRow, assistBtn);
+        } else {
+            globalActions.appendChild(launcherRow);
+        }
+    } else {
+        document.body.appendChild(launcherRow);
+    }
     document.body.appendChild(container);
+
 
     const openBtn = document.getElementById(`${prefix}-openBtn`);
     const backdrop = document.getElementById(`${prefix}-backdrop`);

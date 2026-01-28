@@ -1162,6 +1162,11 @@
             opacity: 0.8;
         }
 
+        .gt-template-modal .modal {
+            height: auto;
+            max-height: 98vh;
+        }
+
         .gt-template-modal {
             --modal-width: 800px;
         }
@@ -1170,7 +1175,7 @@
             max-width: 1440px;
             width: min(98vw, 1440px);
             max-height: 98vh;
-            height: 98vh;
+            height: auto;
             display: flex;
             flex-direction: column;
         }

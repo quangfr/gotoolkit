@@ -27550,10 +27550,484 @@ img.ProseMirror-separator {
     }
   });
 
+  // src/memo-editor/table-resize.ts
+  init_define_process_env();
+  init_polyfills();
+
+  // src/memo-editor/table-constants.ts
+  init_define_process_env();
+  init_polyfills();
+  var TABLE_COLUMN_DEFAULT_WIDTH = 120;
+  var TABLE_COLUMN_MIN_WIDTH = 60;
+  var TABLE_COLUMN_MAX_WIDTH = 600;
+  var TABLE_COLUMN_AUTO_MAX_WIDTH = 450;
+  var clampTableColumnWidth = (value, min3 = TABLE_COLUMN_MIN_WIDTH, max3 = TABLE_COLUMN_MAX_WIDTH) => {
+    return Math.min(max3, Math.max(min3, value));
+  };
+
+  // src/memo-editor/table-resize.ts
+  var columnResizingWithMaxPluginKey = new PluginKey("tableColumnResizingWithMax");
+  var isValidWidth = (value) => typeof value === "number" && value > 0;
+  var activeResizeView = null;
+  var ResizeState3 = class _ResizeState {
+    constructor(activeHandle, dragging) {
+      __publicField(this, "activeHandle");
+      __publicField(this, "dragging");
+      this.activeHandle = activeHandle;
+      this.dragging = dragging;
+    }
+    apply(tr2) {
+      const action = tr2.getMeta(columnResizingWithMaxPluginKey);
+      if (action && action.setHandle != null) {
+        return new _ResizeState(action.setHandle, false);
+      }
+      if (action && action.setDragging !== void 0) {
+        return new _ResizeState(this.activeHandle, action.setDragging);
+      }
+      if (this.activeHandle > -1 && tr2.docChanged) {
+        let handle = tr2.mapping.map(this.activeHandle, -1);
+        if (!pointsAtCell(tr2.doc.resolve(handle))) handle = -1;
+        return new _ResizeState(handle, this.dragging);
+      }
+      return this;
+    }
+  };
+  var domCellAround2 = (target) => {
+    let current = target;
+    while (current && current.nodeName !== "TD" && current.nodeName !== "TH") {
+      if (current.classList && current.classList.contains("ProseMirror")) return null;
+      current = current.parentNode;
+    }
+    return current;
+  };
+  var edgeCell2 = (view, event, side, handleWidth) => {
+    const offset3 = side === "right" ? -handleWidth : handleWidth;
+    const found2 = view.posAtCoords({ left: event.clientX + offset3, top: event.clientY });
+    if (!found2) return -1;
+    const $cell = cellAround(view.state.doc.resolve(found2.pos));
+    if (!$cell) return -1;
+    if (side === "right") return $cell.pos;
+    const map2 = TableMap.get($cell.node(-1));
+    const start = $cell.start(-1);
+    const index = map2.map.indexOf($cell.pos - start);
+    return index % map2.width === 0 ? -1 : start + map2.map[index - 1];
+  };
+  var currentColWidth2 = (view, cellPos, { colspan, colwidth }) => {
+    const width = colwidth && colwidth[colwidth.length - 1];
+    if (width) return width;
+    const dom = view.domAtPos(cellPos);
+    let domWidth = dom.node.childNodes[dom.offset].offsetWidth;
+    let parts = colspan;
+    if (colwidth) {
+      for (let i = 0; i < colspan; i++) {
+        if (colwidth[i]) {
+          domWidth -= colwidth[i];
+          parts--;
+        }
+      }
+    }
+    return domWidth / parts;
+  };
+  var updateHandle2 = (view, value) => {
+    view.dispatch(view.state.tr.setMeta(columnResizingWithMaxPluginKey, { setHandle: value }));
+  };
+  var zeroes2 = (count) => Array(count).fill(0);
+  var updateColumnsOnResizeWithDefaults = (node, colgroup, table, defaultCellMinWidth, overrideCol, overrideValue) => {
+    var _a;
+    const row = node.firstChild;
+    if (!row) return;
+    const map2 = TableMap.get(node);
+    const colCount = map2.width;
+    const colWidths = new Array(colCount).fill(defaultCellMinWidth);
+    const colHasWidth = new Array(colCount).fill(false);
+    let col = 0;
+    for (let i = 0; i < row.childCount && col < colCount; i++) {
+      const cell2 = row.child(i);
+      const colspan = cell2.attrs.colspan || 1;
+      const colwidth = Array.isArray(cell2.attrs.colwidth) ? cell2.attrs.colwidth : [];
+      for (let j = 0; j < colspan && col < colCount; j++, col++) {
+        const width = overrideCol === col ? overrideValue : Number(colwidth[j] || 0);
+        if (isValidWidth(width)) {
+          colWidths[col] = width;
+          colHasWidth[col] = true;
+        }
+      }
+    }
+    const lastCol = colCount - 1;
+    let nextDOM = colgroup.firstChild;
+    for (let i = 0; i < colCount; i++) {
+      const isLast = i === lastCol;
+      const shouldSetWidth = !isLast || colHasWidth[i];
+      const cssWidth = shouldSetWidth ? `${colWidths[i]}px` : "";
+      if (!nextDOM) {
+        const colEl = document.createElement("col");
+        colEl.style.width = cssWidth;
+        colgroup.appendChild(colEl);
+      } else {
+        const colEl = nextDOM;
+        if (colEl.style.width !== cssWidth) colEl.style.width = cssWidth;
+        nextDOM = nextDOM.nextSibling;
+      }
+    }
+    while (nextDOM) {
+      const after = nextDOM.nextSibling;
+      (_a = nextDOM.parentNode) == null ? void 0 : _a.removeChild(nextDOM);
+      nextDOM = after;
+    }
+    const totalWidth = colWidths.reduce((sum, width) => sum + width, 0);
+    const fixedWidth = colHasWidth.every(Boolean);
+    if (fixedWidth) {
+      table.style.width = `${totalWidth}px`;
+      table.style.minWidth = "";
+    } else {
+      table.style.width = "";
+      table.style.minWidth = `${totalWidth}px`;
+    }
+  };
+  var updateColumnWidth2 = (view, cell2, width, minWidth, maxWidth) => {
+    const clampedWidth = clampTableColumnWidth(width, minWidth, maxWidth);
+    const $cell = view.state.doc.resolve(cell2);
+    const table = $cell.node(-1);
+    const map2 = TableMap.get(table);
+    const start = $cell.start(-1);
+    const col = map2.colCount($cell.pos - start) + $cell.nodeAfter.attrs.colspan - 1;
+    const tr2 = view.state.tr;
+    for (let row = 0; row < map2.height; row++) {
+      const mapIndex = row * map2.width + col;
+      if (row && map2.map[mapIndex] === map2.map[mapIndex - map2.width]) continue;
+      const pos = map2.map[mapIndex];
+      const attrs = table.nodeAt(pos).attrs;
+      const index = attrs.colspan === 1 ? 0 : col - map2.colCount(pos);
+      if (attrs.colwidth && attrs.colwidth[index] === clampedWidth) continue;
+      const colwidth = attrs.colwidth ? attrs.colwidth.slice() : zeroes2(attrs.colspan);
+      colwidth[index] = clampedWidth;
+      tr2.setNodeMarkup(start + pos, null, { ...attrs, colwidth });
+    }
+    if (tr2.docChanged) view.dispatch(tr2);
+  };
+  var displayColumnWidth2 = (view, cell2, width, defaultCellMinWidth, minWidth, maxWidth) => {
+    const clampedWidth = clampTableColumnWidth(width, minWidth, maxWidth);
+    const $cell = view.state.doc.resolve(cell2);
+    const table = $cell.node(-1);
+    const start = $cell.start(-1);
+    const col = TableMap.get(table).colCount($cell.pos - start) + $cell.nodeAfter.attrs.colspan - 1;
+    let dom = view.domAtPos($cell.start(-1)).node;
+    while (dom && dom.nodeName !== "TABLE") dom = dom.parentNode;
+    if (!dom) return;
+    updateColumnsOnResizeWithDefaults(
+      table,
+      dom.firstChild,
+      dom,
+      defaultCellMinWidth,
+      col,
+      clampedWidth
+    );
+  };
+  var draggedWidth2 = (dragging, event, minWidth, maxWidth) => {
+    const offset3 = event.clientX - dragging.startX;
+    return clampTableColumnWidth(dragging.startWidth + offset3, minWidth, maxWidth);
+  };
+  var handleDecorations2 = (state2, cell2) => {
+    const decorations = [];
+    const $cell = state2.doc.resolve(cell2);
+    const table = $cell.node(-1);
+    if (!table) return DecorationSet.empty;
+    const map2 = TableMap.get(table);
+    const start = $cell.start(-1);
+    const col = map2.colCount($cell.pos - start) + $cell.nodeAfter.attrs.colspan - 1;
+    for (let row = 0; row < map2.height; row++) {
+      const index = col + row * map2.width;
+      if ((col === map2.width - 1 || map2.map[index] !== map2.map[index + 1]) && (row === 0 || map2.map[index] !== map2.map[index - map2.width])) {
+        const cellPos = map2.map[index];
+        const pos = start + cellPos + table.nodeAt(cellPos).nodeSize - 1;
+        const dom = document.createElement("div");
+        dom.className = "column-resize-handle";
+        dom.addEventListener("dblclick", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          if (!activeResizeView) return;
+          const autoWidth = getAutoColumnWidth(activeResizeView, start + cellPos);
+          updateColumnWidth2(activeResizeView, start + cellPos, autoWidth, TABLE_COLUMN_MIN_WIDTH, TABLE_COLUMN_AUTO_MAX_WIDTH);
+        });
+        const pluginState = columnResizingWithMaxPluginKey.getState(state2);
+        if (pluginState == null ? void 0 : pluginState.dragging) {
+          decorations.push(Decoration.node(start + cellPos, start + cellPos + table.nodeAt(cellPos).nodeSize, {
+            class: "column-resize-dragging"
+          }));
+        }
+        decorations.push(Decoration.widget(pos, dom));
+      }
+    }
+    return DecorationSet.create(state2.doc, decorations);
+  };
+  var MemoTableView = class extends TableView {
+    constructor(node, defaultCellMinWidth, _view) {
+      super(node, defaultCellMinWidth);
+      this.table.style.setProperty("--default-cell-min-width", `${defaultCellMinWidth}px`);
+      updateColumnsOnResizeWithDefaults(node, this.colgroup, this.table, defaultCellMinWidth);
+    }
+    update(node) {
+      if (node.type != this.node.type) return false;
+      this.node = node;
+      updateColumnsOnResizeWithDefaults(node, this.colgroup, this.table, this.defaultCellMinWidth);
+      return true;
+    }
+  };
+  var measureCellContentWidth = (cell2) => {
+    const prevWhiteSpace = cell2.style.whiteSpace;
+    const prevWidth = cell2.style.width;
+    const prevMaxWidth = cell2.style.maxWidth;
+    const prevDisplay = cell2.style.display;
+    cell2.style.whiteSpace = "nowrap";
+    cell2.style.width = "auto";
+    cell2.style.maxWidth = "none";
+    cell2.style.display = "inline-block";
+    const width = Math.ceil(cell2.scrollWidth || cell2.getBoundingClientRect().width || 0);
+    cell2.style.whiteSpace = prevWhiteSpace;
+    cell2.style.width = prevWidth;
+    cell2.style.maxWidth = prevMaxWidth;
+    cell2.style.display = prevDisplay;
+    return width;
+  };
+  var getAutoColumnWidth = (view, cellPos) => {
+    const $cell = view.state.doc.resolve(cellPos);
+    const table = $cell.node(-1);
+    const map2 = TableMap.get(table);
+    const start = $cell.start(-1);
+    const col = map2.colCount($cell.pos - start) + $cell.nodeAfter.attrs.colspan - 1;
+    let maxWidth = 0;
+    for (let row = 0; row < map2.height; row++) {
+      const mapIndex = row * map2.width + col;
+      if (row && map2.map[mapIndex] === map2.map[mapIndex - map2.width]) continue;
+      const cellOffset = map2.map[mapIndex];
+      const cellNode = table.nodeAt(cellOffset);
+      if (!cellNode) continue;
+      const span = cellNode.attrs.colspan || 1;
+      const dom = view.nodeDOM(start + cellOffset);
+      const cellEl = dom && (dom.nodeName === "TD" || dom.nodeName === "TH") ? dom : dom == null ? void 0 : dom.closest("td, th");
+      if (!cellEl) continue;
+      const measured = measureCellContentWidth(cellEl);
+      const perCol = Math.max(1, Math.ceil(measured / span));
+      maxWidth = Math.max(maxWidth, perCol);
+    }
+    return clampTableColumnWidth(maxWidth + 10, TABLE_COLUMN_MIN_WIDTH, TABLE_COLUMN_AUTO_MAX_WIDTH);
+  };
+  var columnResizingWithMax = ({
+    handleWidth = 5,
+    cellMinWidth = TABLE_COLUMN_MIN_WIDTH,
+    defaultCellMinWidth = TABLE_COLUMN_DEFAULT_WIDTH,
+    View = MemoTableView,
+    lastColumnResizable = true,
+    cellMaxWidth = TABLE_COLUMN_MAX_WIDTH
+  } = {}) => {
+    const plugin = new Plugin({
+      key: columnResizingWithMaxPluginKey,
+      view: (view) => {
+        const onDblClick = (event) => {
+          var _a, _b;
+          if (!view.editable) return;
+          let cell2 = -1;
+          const handleTarget = (_b = (_a = event.target) == null ? void 0 : _a.closest) == null ? void 0 : _b.call(_a, ".column-resize-handle");
+          if (handleTarget) {
+            const cellEl = handleTarget.closest("td, th");
+            if (cellEl) {
+              const pos = view.posAtDOM(cellEl, 0);
+              if (pos != null) cell2 = pos;
+            }
+          } else {
+            const target = domCellAround2(event.target);
+            if (target) {
+              const { left, right } = target.getBoundingClientRect();
+              if (event.clientX - left <= handleWidth) {
+                cell2 = edgeCell2(view, event, "left", handleWidth);
+              } else if (right - event.clientX <= handleWidth) {
+                cell2 = edgeCell2(view, event, "right", handleWidth);
+              }
+            }
+          }
+          if (cell2 === -1) return;
+          const autoWidth = getAutoColumnWidth(view, cell2);
+          updateColumnWidth2(view, cell2, autoWidth, TABLE_COLUMN_MIN_WIDTH, TABLE_COLUMN_AUTO_MAX_WIDTH);
+          event.preventDefault();
+          event.stopPropagation();
+        };
+        activeResizeView = view;
+        view.dom.addEventListener("dblclick", onDblClick, true);
+        return {
+          update: (nextView) => {
+            activeResizeView = nextView;
+          },
+          destroy: () => {
+            view.dom.removeEventListener("dblclick", onDblClick, true);
+            if (activeResizeView === view) activeResizeView = null;
+          }
+        };
+      },
+      state: {
+        init(_, state2) {
+          var _a;
+          const nodeViews = (_a = plugin.spec.props) == null ? void 0 : _a.nodeViews;
+          const tableName = tableNodeTypes(state2.schema).table.name;
+          if (View && nodeViews) {
+            nodeViews[tableName] = (node, view) => new View(node, defaultCellMinWidth, view);
+          }
+          return new ResizeState3(-1, false);
+        },
+        apply(tr2, prev) {
+          return prev.apply(tr2);
+        }
+      },
+      props: {
+        attributes: (state2) => {
+          const pluginState = columnResizingWithMaxPluginKey.getState(state2);
+          return pluginState && pluginState.activeHandle > -1 ? { class: "resize-cursor" } : {};
+        },
+        handleDOMEvents: {
+          mousemove: (view, event) => {
+            if (!view.editable) return;
+            const pluginState = columnResizingWithMaxPluginKey.getState(view.state);
+            if (!pluginState) return;
+            if (!pluginState.dragging) {
+              const target = domCellAround2(event.target);
+              let cell2 = -1;
+              if (target) {
+                const { left, right } = target.getBoundingClientRect();
+                if (event.clientX - left <= handleWidth) {
+                  cell2 = edgeCell2(view, event, "left", handleWidth);
+                } else if (right - event.clientX <= handleWidth) {
+                  cell2 = edgeCell2(view, event, "right", handleWidth);
+                }
+              }
+              if (cell2 !== pluginState.activeHandle) {
+                if (!lastColumnResizable && cell2 !== -1) {
+                  const $cell = view.state.doc.resolve(cell2);
+                  const table = $cell.node(-1);
+                  const map2 = TableMap.get(table);
+                  const tableStart = $cell.start(-1);
+                  if (map2.colCount($cell.pos - tableStart) + $cell.nodeAfter.attrs.colspan - 1 === map2.width - 1) {
+                    return;
+                  }
+                }
+                updateHandle2(view, cell2);
+              }
+            }
+          },
+          mouseleave: (view) => {
+            if (!view.editable) return;
+            const pluginState = columnResizingWithMaxPluginKey.getState(view.state);
+            if (pluginState && pluginState.activeHandle > -1 && !pluginState.dragging) {
+              updateHandle2(view, -1);
+            }
+          },
+          mousedown: (view, event) => {
+            if (!view.editable) return false;
+            const win = view.dom.ownerDocument.defaultView || window;
+            const pluginState = columnResizingWithMaxPluginKey.getState(view.state);
+            if (!pluginState || pluginState.activeHandle === -1 || pluginState.dragging) return false;
+            const cell2 = view.state.doc.nodeAt(pluginState.activeHandle);
+            if (!cell2) return false;
+            const width = currentColWidth2(view, pluginState.activeHandle, cell2.attrs);
+            view.dispatch(view.state.tr.setMeta(columnResizingWithMaxPluginKey, {
+              setDragging: { startX: event.clientX, startWidth: width }
+            }));
+            const body = win.document.body;
+            body == null ? void 0 : body.classList.add("table-resize-cursor");
+            let hasMoved = false;
+            const finish = (eventUp) => {
+              win.removeEventListener("mouseup", finish);
+              win.removeEventListener("mousemove", move);
+              body == null ? void 0 : body.classList.remove("table-resize-cursor");
+              const nextState = columnResizingWithMaxPluginKey.getState(view.state);
+              if (nextState == null ? void 0 : nextState.dragging) {
+                if (!hasMoved && nextState.dragging.startWidth > cellMaxWidth) {
+                  view.dispatch(view.state.tr.setMeta(columnResizingWithMaxPluginKey, { setDragging: null }));
+                  return;
+                }
+                updateColumnWidth2(
+                  view,
+                  nextState.activeHandle,
+                  draggedWidth2(nextState.dragging, eventUp, cellMinWidth, cellMaxWidth),
+                  cellMinWidth,
+                  cellMaxWidth
+                );
+                view.dispatch(view.state.tr.setMeta(columnResizingWithMaxPluginKey, { setDragging: null }));
+              }
+            };
+            const move = (eventMove) => {
+              if (!eventMove.which) return finish(eventMove);
+              const nextState = columnResizingWithMaxPluginKey.getState(view.state);
+              if (!(nextState == null ? void 0 : nextState.dragging)) return;
+              hasMoved = true;
+              const dragged = draggedWidth2(nextState.dragging, eventMove, cellMinWidth, cellMaxWidth);
+              displayColumnWidth2(view, nextState.activeHandle, dragged, defaultCellMinWidth, cellMinWidth, cellMaxWidth);
+            };
+            if (width <= cellMaxWidth) {
+              displayColumnWidth2(view, pluginState.activeHandle, width, defaultCellMinWidth, cellMinWidth, cellMaxWidth);
+            }
+            win.addEventListener("mouseup", finish);
+            win.addEventListener("mousemove", move);
+            event.preventDefault();
+            return true;
+          },
+          dblclick: (view, event) => {
+            if (!view.editable) return false;
+            const pluginState = columnResizingWithMaxPluginKey.getState(view.state);
+            if (!pluginState) return false;
+            let cell2 = pluginState.activeHandle;
+            if (cell2 === -1) {
+              const target = domCellAround2(event.target);
+              if (target) {
+                const { left, right } = target.getBoundingClientRect();
+                if (event.clientX - left <= handleWidth) {
+                  cell2 = edgeCell2(view, event, "left", handleWidth);
+                } else if (right - event.clientX <= handleWidth) {
+                  cell2 = edgeCell2(view, event, "right", handleWidth);
+                }
+              }
+            }
+            if (cell2 === -1) return false;
+            const autoWidth = getAutoColumnWidth(view, cell2);
+            updateColumnWidth2(view, cell2, autoWidth, TABLE_COLUMN_MIN_WIDTH, TABLE_COLUMN_AUTO_MAX_WIDTH);
+            event.preventDefault();
+            return true;
+          }
+        },
+        decorations: (state2) => {
+          const pluginState = columnResizingWithMaxPluginKey.getState(state2);
+          if (pluginState && pluginState.activeHandle > -1) {
+            return handleDecorations2(state2, pluginState.activeHandle);
+          }
+          return null;
+        },
+        nodeViews: {}
+      }
+    });
+    return plugin;
+  };
+
   // src/memo-editor/table-node.tsx
   var CustomTableCell = TableCell.extend({});
-  var TableNode = Table.extend({}).configure({
-    resizable: true
+  var TableNode = Table.extend({
+    addProseMirrorPlugins() {
+      const isResizable = this.options.resizable && this.editor.isEditable;
+      return [
+        ...isResizable ? [columnResizingWithMax({
+          handleWidth: this.options.handleWidth,
+          cellMinWidth: TABLE_COLUMN_MIN_WIDTH,
+          defaultCellMinWidth: TABLE_COLUMN_DEFAULT_WIDTH,
+          View: this.options.View || MemoTableView,
+          lastColumnResizable: this.options.lastColumnResizable,
+          cellMaxWidth: TABLE_COLUMN_MAX_WIDTH
+        })] : [],
+        tableEditing({
+          allowTableNodeSelection: this.options.allowTableNodeSelection
+        })
+      ];
+    }
+  }).configure({
+    resizable: true,
+    cellMinWidth: TABLE_COLUMN_DEFAULT_WIDTH,
+    View: MemoTableView
   });
 
   // src/memo-editor/task-node.tsx
@@ -53208,24 +53682,10 @@ ${promptInput.trim()}`
     });
     return targetPos;
   };
-  var TABLE_COLUMN_MIN_WIDTH = 80;
-  var TABLE_COLUMN_MAX_WIDTH = 500;
-  var clampWidth = (value, min3 = TABLE_COLUMN_MIN_WIDTH, max3 = TABLE_COLUMN_MAX_WIDTH) => {
-    return Math.min(max3, Math.max(min3, value));
-  };
   var isNumericText = (value) => {
     const trimmed = String(value || "").trim();
     if (!trimmed) return false;
     return /[0-9]/.test(trimmed) && /^[\s\d.,%+\-]+$/.test(trimmed);
-  };
-  var areNumberArraysEqual = (a, b) => {
-    if (!a && !b) return true;
-    if (!a || !b) return false;
-    if (a.length !== b.length) return false;
-    for (let i = 0; i < a.length; i++) {
-      if (a[i] !== b[i]) return false;
-    }
-    return true;
   };
   var moveRow = (editor, tablePos, fromRowIndex, toRowIndex) => {
     const { tr: tr2 } = editor.state;
@@ -53317,6 +53777,61 @@ ${promptInput.trim()}`
       }
     });
     return hasMarks;
+  };
+  var getTableItemsFromSelection = (editor) => {
+    const { selection, doc: doc3 } = editor.state;
+    if (selection.empty) return [];
+    const items = [];
+    doc3.nodesBetween(selection.from, selection.to, (node, pos) => {
+      if (node.type.name === "listItem") {
+        const text = node.textContent.trim();
+        if (text) items.push(text);
+        return false;
+      }
+      if (node.type.name === "paragraph") {
+        const $pos = doc3.resolve(pos);
+        let inListItem = false;
+        for (let d = $pos.depth; d > 0; d--) {
+          if ($pos.node(d).type.name === "listItem") {
+            inListItem = true;
+            break;
+          }
+        }
+        if (!inListItem) {
+          const text = node.textContent.trim();
+          if (text) items.push(text);
+        }
+        return false;
+      }
+      return true;
+    });
+    return items;
+  };
+  var buildTableNodeFromItems = (editor, items, cols = 2) => {
+    const { schema } = editor.state;
+    const tableType = schema.nodes.table;
+    const rowType = schema.nodes.tableRow;
+    const cellType = schema.nodes.tableCell;
+    const paragraphType = schema.nodes.paragraph;
+    if (!tableType || !rowType || !cellType || !paragraphType) return null;
+    const rowsCount = items.length + 1;
+    const rows = [];
+    for (let rowIndex = 0; rowIndex < rowsCount; rowIndex++) {
+      const cells = [];
+      for (let colIndex = 0; colIndex < cols; colIndex++) {
+        let paragraph2 = paragraphType.createAndFill();
+        if (colIndex === 0 && rowIndex < items.length) {
+          const textValue = items[rowIndex] || "";
+          paragraph2 = paragraphType.create(null, textValue ? schema.text(textValue) : null);
+        }
+        if (!paragraph2) {
+          paragraph2 = paragraphType.create();
+        }
+        cells.push(cellType.createChecked(null, paragraph2));
+      }
+      rows.push(rowType.createChecked(null, cells));
+    }
+    return tableType.createChecked(null, rows);
   };
   var cleanupEmptyBlocks = (tr2) => {
     const nodesToDelete = [];
@@ -53735,7 +54250,20 @@ ${promptInput.trim()}`
             className: "tiptap-button",
             "aria-label": "Insert Table",
             type: "button",
-            onClick: () => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run(),
+            onClick: () => {
+              const selectedItems = getTableItemsFromSelection(editor);
+              if (selectedItems.length) {
+                const tableNode = buildTableNodeFromItems(editor, selectedItems, 2);
+                if (tableNode) {
+                  const tr2 = editor.state.tr.replaceSelectionWith(tableNode).scrollIntoView();
+                  const selectionPos = tr2.selection.from + 1;
+                  tr2.setSelection(TextSelection.near(tr2.doc.resolve(selectionPos)));
+                  editor.view.dispatch(tr2);
+                  return;
+                }
+              }
+              editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
+            },
             children: /* @__PURE__ */ jsx(Table2, { size: 16 })
           }
         ),
@@ -54361,7 +54889,16 @@ ${promptInput.trim()}`
           const selection = view.state.selection;
           const isCellSelection2 = selection instanceof CellSelection;
           const coords = view.posAtCoords({ left: event.clientX, top: event.clientY });
-          if (event.detail >= 2) {
+          const clickCellPos = info.cellPos;
+          const selectionCellPos = selection instanceof TextSelection ? getTableCellPosFromResolved(selection.$from) : null;
+          const isTextSelectionInCell = selection instanceof TextSelection && selectionCellPos !== null;
+          let clickedCellSelected = false;
+          if (isCellSelection2) {
+            selection.forEachCell((_cell, pos) => {
+              if (pos === clickCellPos) clickedCellSelected = true;
+            });
+          }
+          const setCaretAtClick = () => {
             if (!coords) return false;
             let targetPos = coords.pos;
             const $target = view.state.doc.resolve(targetPos);
@@ -54376,6 +54913,28 @@ ${promptInput.trim()}`
             view.dispatch(view.state.tr.scrollIntoView());
             view.focus();
             return true;
+          };
+          const selectAllCellText = () => {
+            const cellNode = view.state.doc.nodeAt(clickCellPos);
+            if (!cellNode) return false;
+            const from2 = clickCellPos + 1;
+            const to = clickCellPos + cellNode.nodeSize - 1;
+            const tr2 = view.state.tr.setSelection(TextSelection.create(view.state.doc, from2, to));
+            view.dispatch(tr2);
+            view.focus();
+            return true;
+          };
+          if (event.detail >= 2) {
+            if (isTextSelectionInCell && selectionCellPos === clickCellPos) {
+              return selectAllCellText();
+            }
+            return setCaretAtClick();
+          }
+          if (isTextSelectionInCell && selectionCellPos === clickCellPos) {
+            return setCaretAtClick();
+          }
+          if (isCellSelection2 && clickedCellSelected) {
+            return setCaretAtClick();
           }
           const $cell = view.state.doc.resolve(info.cellPos);
           view.dispatch(view.state.tr.setSelection(new CellSelection($cell)));
@@ -54679,25 +55238,11 @@ ${promptInput.trim()}`
       if (!editor || isAutoLayoutRef.current) return;
       const view = editor.view;
       if (view.dom.classList.contains("resize-cursor")) return;
+      const resizeState = columnResizingWithMaxPluginKey.getState(view.state);
+      if (resizeState == null ? void 0 : resizeState.dragging) return;
       const tables2 = Array.from(view.dom.querySelectorAll("table"));
       if (!tables2.length) return;
-      let tr2 = editor.state.tr;
-      let modified = false;
       tables2.forEach((tableDom) => {
-        const pos = view.posAtDOM(tableDom, 0);
-        if (pos == null) return;
-        const $pos = view.state.doc.resolve(pos);
-        let tablePos = -1;
-        let tableNode = null;
-        for (let d = $pos.depth; d > 0; d--) {
-          const node = $pos.node(d);
-          if (node.type.name === "table") {
-            tablePos = $pos.before(d);
-            tableNode = node;
-            break;
-          }
-        }
-        if (!tableNode || tablePos < 0) return;
         const rows = Array.from(tableDom.querySelectorAll("tr"));
         if (!rows.length) return;
         const colCount = rows.reduce((max3, row) => {
@@ -54707,7 +55252,6 @@ ${promptInput.trim()}`
         if (!colCount) return;
         const numericFlags = new Array(colCount).fill(true);
         const hasValue = new Array(colCount).fill(false);
-        const contentWidths = new Array(colCount).fill(0);
         rows.forEach((row) => {
           let colIndex = 0;
           Array.from(row.querySelectorAll("th, td")).forEach((cell2) => {
@@ -54715,78 +55259,18 @@ ${promptInput.trim()}`
             const text = cell2.textContent || "";
             const numeric2 = isNumericText(text);
             const hasText = Boolean(text.trim());
-            const cellWidth = cell2.scrollWidth || 0;
-            const perColWidth = Math.max(1, Math.ceil(cellWidth / span));
             for (let i = 0; i < span; i++) {
               if (hasText) {
                 hasValue[colIndex + i] = true;
                 if (!numeric2) numericFlags[colIndex + i] = false;
               }
-              contentWidths[colIndex + i] = Math.max(contentWidths[colIndex + i], perColWidth);
             }
             colIndex += span;
           });
         });
-        const existingWidths = new Array(colCount).fill(0);
-        let firstRowProcessed = false;
-        tableNode.forEach((row) => {
-          if (firstRowProcessed || row.type.name !== "tableRow") return;
-          let colCursor = 0;
-          row.forEach((cell2) => {
-            const colspan = cell2.attrs.colspan || 1;
-            const colwidthAttr = Array.isArray(cell2.attrs.colwidth) ? cell2.attrs.colwidth : [];
-            for (let i = 0; i < colspan; i++) {
-              const value = Number(colwidthAttr[i] || 0);
-              if (value) existingWidths[colCursor + i] = value;
-            }
-            colCursor += colspan;
-          });
-          firstRowProcessed = true;
-        });
         const numericColumns = numericFlags.map((flag, idx) => flag && hasValue[idx]);
-        const widths = contentWidths.map((width, idx) => {
-          if (numericColumns[idx]) return TABLE_COLUMN_MIN_WIDTH;
-          const base2 = existingWidths[idx] || width + 16;
-          return clampWidth(base2);
-        });
-        const wrapper = tableDom.closest(".tableWrapper");
-        const availableWidth = wrapper ? wrapper.clientWidth : tableDom.clientWidth;
-        const totalWidth = widths.reduce((sum, value) => sum + value, 0);
-        const lastIndex = widths.length - 1;
-        if (availableWidth && lastIndex >= 0 && !numericColumns[lastIndex] && totalWidth < availableWidth) {
-          const extra = availableWidth - totalWidth;
-          widths[lastIndex] = clampWidth(widths[lastIndex] + extra);
-        }
-        if (availableWidth) {
-          tableDom.style.width = totalWidth > availableWidth ? `${totalWidth}px` : "100%";
-        }
-        let handledFirstRow = false;
-        tableNode.forEach((row, rowOffset) => {
-          if (handledFirstRow || row.type.name !== "tableRow") return;
-          let colCursor = 0;
-          row.forEach((cell2, cellOffset) => {
-            const colspan = cell2.attrs.colspan || 1;
-            const colwidth = widths.slice(colCursor, colCursor + colspan);
-            const cellPos = tablePos + rowOffset + cellOffset + 2;
-            const mappedPos = tr2.mapping.map(cellPos);
-            if (!areNumberArraysEqual(cell2.attrs.colwidth, colwidth)) {
-              tr2 = tr2.setNodeMarkup(mappedPos, void 0, {
-                ...cell2.attrs,
-                colwidth
-              });
-              modified = true;
-            }
-            colCursor += colspan;
-          });
-          handledFirstRow = true;
-        });
         applyTableDomStyles(tableDom, numericColumns);
       });
-      if (modified) {
-        isAutoLayoutRef.current = true;
-        editor.view.dispatch(tr2);
-        isAutoLayoutRef.current = false;
-      }
       syncTableScrollbars();
     }, [editor, applyTableDomStyles, syncTableScrollbars]);
     const scheduleTableLayout = react_shim_default.useCallback(() => {
