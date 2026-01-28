@@ -2805,6 +2805,11 @@ label {
   background: var(--bg-surface);
 }
 
+.chat-speech-btn.active {
+  color: var(--intent-error-border);
+  box-shadow: 0 0 12px rgba(177, 18, 38, 0.35);
+}
+
 .chat-docs-indicator {
   min-width: 32px;
   margin-right: 4px;

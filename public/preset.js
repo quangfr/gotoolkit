@@ -174,49 +174,6 @@ FORMAT DE SORTIE (JSON strict)
 Réponds à ASK sur la base de CONTEXT, de KNOWLEDGE et des connaissances PRODUCT, en tenant compte du contexte de DOCUMENT et en particulier SELECTION.
 `
 
-        var askChatPrompt = `SYSTEM — RAG Q&A (JSON strict)
-
-Tu es un assistant Q&A qui répond aux questions sur la base de documents fournis par l'utilisateur
-
-ENTRÉES
-1) DOCUMENT : contenu complet actuel en Markdown
-2) SELECTION : objet JSON structuré (optionnel)
-{
-    "text": "portion ciblée de texte",
-    "start": <numéro de ligne de début du bloc de sélection>,
-    "end": <numéro de ligne de fin du bloc de fin de sélection>
-}
-3) CONTEXT : contenu de plusieurs documents fournis en contexte
-4) ASK : contexte et questions dans la demande
-5) HISTORY : liste des 4 derniers messages de l'user
-
-RÈGLES
-- Pas d’info → le dire.
-- Français, ≤400 mots, tutoiement.
-- Sortie : UN SEUL JSON strict.
-- Références : 0-4 documents cités.
-- Pas d'émojis, pas de tableau en markdown.
-- Content : Syntaxe markdown autorisé gras, italique, liste, titre ###.
-- Un seul objet JSON en sortie, pas de texte avant/après
-- Les noms de clés et la structure du JSON sont figés
-
-FORMAT DE SORTIE (JSON strict)
-{
-    "answer": "Réponse fluide à l'utilisateur issue du contexte.",
-    "references": [
-        {
-            "documentId": "reprendre le uuid exact du documentId en CONTEXT ou KNOWLEDGE",
-            "abstract": "sujet du chunk en 3-5 mots",
-            "snippet": ["citation exacte dans le chunk pertinent à la réponse 1-7 mots","autre citation exacte 1-7 mots optionnelle","autre citation exacte 1-7 mots optionnelle"],
-            "chunkId": "reprendre le uuid exact du chunkId en CONTEXT ou KNOWLEDGE",
-        }
-    ],
-    "suggestions": ["thème proche de ASK, SELECTION et HISTORY", "thème 2", "thème 3"]
-}
-
-Réponds à ASK sur la base de CONTEXT et des connaissances PRODUCT, en tenant compte du contexte de DOCUMENT et en particulier SELECTION.
-`
-
         var suggestChatPrompt = `SYSTEM — Éditeur Markdown (JSON)
 
 Tu lis ou modifies une SELECTION ou un DOCUMENT Markdown selon ASK, en utilisant CONTEXT comme support.
@@ -444,7 +401,7 @@ RÈGLES DE SORTIE
         var imageOcrPrompt = `Extrayez tout le texte de cette image. Soyez précis. Retournez uniquement le texte brut.`
 
         var initial = adviceChatPrompt;
-        var initialInfo = askChatPrompt;
+        var initialInfo = adviceChatPrompt;
 
         if (!global.GoToolkitChatPrompt) {
             global.GoToolkitChatPrompt = {};
@@ -452,7 +409,7 @@ RÈGLES DE SORTIE
         global.GoToolkitChatPrompt.SYSTEM_PROMPT = initial;
         global.GoToolkitChatPrompt.DEFAULT_SYSTEM_PROMPT = adviceChatPrompt;
         global.GoToolkitChatPrompt.INFO_PROMPT = initialInfo;
-        global.GoToolkitChatPrompt.DEFAULT_INFO_PROMPT = askChatPrompt;
+        global.GoToolkitChatPrompt.DEFAULT_INFO_PROMPT = adviceChatPrompt;
         global.GoToolkitChatPrompt.PRESETS = {
             advice: {
                 id: "advice",
@@ -460,13 +417,6 @@ RÈGLES DE SORTIE
                 icon: "message-square",
                 prompt: initial,
                 defaultPrompt: adviceChatPrompt
-            },
-            ask: {
-                id: "ask",
-                label: "Demander",
-                icon: "compass",
-                prompt: initialInfo,
-                defaultPrompt: askChatPrompt
             },
             suggest: {
                 id: "suggest",

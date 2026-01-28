@@ -1708,6 +1708,13 @@
         if (this.speechButton) {
             this.speechButton.classList.toggle("active", Boolean(listening));
         }
+        if (this.textarea) {
+            if (listening) {
+                this.textarea.placeholder = "go envoie, go annule, go efface";
+            } else {
+                this.updateInputPlaceholder();
+            }
+        }
     };
 
     AssistSidebar.prototype.handleSpeechToggle = function () {
@@ -1732,17 +1739,77 @@
         this.speechRecognition.maxAlternatives = 1;
         this.speechStopRequested = false;
         this.isListening = true;
+        this.lastSpeechHeardAt = Date.now();
+        this.speechResultStartIndex = 0;
         this.toggleListeningStyles(true);
         const self = this;
 
         this.speechRecognition.onresult = function (event) {
-            const transcript = Array.from(event.results)
+            const results = Array.from(event.results);
+            const startIndex = Math.max(0, self.speechResultStartIndex || 0);
+            const transcript = results
+                .slice(startIndex)
                 .map(result => (result[0] ? result[0].transcript : ""))
                 .join("");
+            const finalTranscript = results
+                .slice(startIndex)
+                .filter(result => result.isFinal)
+                .map(result => (result[0] ? result[0].transcript : ""))
+                .join("");
+            self.lastSpeechHeardAt = Date.now();
+            const commandPattern = /\bgo\s+(live|envoie|efface|annule)\s*$/i;
+            const match = transcript.match(commandPattern);
+            const finalMatch = finalTranscript.match(commandPattern);
+            const command = (match && match[1]) ? match[1].toLowerCase() : null;
+            const cleanedTranscript = transcript.replace(commandPattern, "").replace(/\s+/g, " ").trim();
+            if (self.speechClearRequested && !command) {
+                self.speechClearRequested = false;
+                if (self.textarea) {
+                    self.textarea.value = "";
+                    self.handleInputResize();
+                    self.updateComposerState();
+                }
+                return;
+            }
             if (self.textarea) {
-                self.textarea.value = transcript.trim();
+                self.textarea.value = cleanedTranscript;
                 self.handleInputResize();
                 self.updateComposerState();
+            }
+            if (command && finalMatch) {
+                if (command === "live" || command === "envoie") {
+                    self.speechClearRequested = true;
+                    self.handleSend({ value: cleanedTranscript });
+                    self.speechResultStartIndex = results.length;
+                    try {
+                        self.speechRecognition?.start?.();
+                    } catch (err) { /* ignore */ }
+                } else if (command === "efface") {
+                    self.speechClearRequested = true;
+                    if (self.textarea) {
+                        self.textarea.value = "";
+                        self.handleInputResize();
+                        self.updateComposerState();
+                    }
+                    self.speechResultStartIndex = results.length;
+                    try {
+                        self.speechRecognition?.start?.();
+                    } catch (err) { /* ignore */ }
+                } else if (command === "annule") {
+                    self.speechClearRequested = true;
+                    const lastUserMessage = self.conversation?.messages
+                        ? [...self.conversation.messages].reverse().find(function (message) {
+                            return message && message.role === "user" && !message.isDocRestore;
+                        })
+                        : null;
+                    if (lastUserMessage) {
+                        self.handleUndoDocument(lastUserMessage);
+                    }
+                    self.speechResultStartIndex = results.length;
+                    try {
+                        self.speechRecognition?.start?.();
+                    } catch (err) { /* ignore */ }
+                }
             }
         };
 
@@ -2534,7 +2601,7 @@
             'import': 'Que veux-tu importer ?',
             'extract': 'Que veux-tu extraire ?'
         };
-        this.textarea.placeholder = placeholders[this.promptPresetId] || 'Que veux-tu faire ?';
+        this.textarea.placeholder = placeholders[this.promptPresetId] || 'go envoie, go annule, go efface';
     };
 
     AssistSidebar.prototype.initMemoSelectionTracking = function () {
@@ -3314,6 +3381,10 @@
         if (!this.textarea && !options.editMessage) return;
         var rawValue = (typeof options.value === "string" ? options.value : this.textarea?.value || "");
         var value = rawValue.trim();
+        if (this.isListening) {
+            this.speechResultStartIndex = 0;
+            this.speechClearRequested = false;
+        }
         var isInlineEdit = Boolean(options.editMessage);
         var attachments = isInlineEdit ? [] : (this.pendingDocumentAttachments || []);
         var hasAttachment = attachments.length > 0;
@@ -4541,10 +4612,10 @@
 
         this.speechButton = document.createElement("button");
         this.speechButton.type = "button";
-        this.speechButton.className = "speech-button";
+        this.speechButton.className = "btn-secondary chat-speech-btn";
         this.speechButton.innerHTML = '<i data-lucide="mic"></i>';
         this.speechButton.addEventListener("click", this.handleSpeechToggle.bind(this));
-        textareaWrapper.appendChild(this.speechButton);
+        composerLeftActions.appendChild(this.speechButton);
         this.sidebar.appendChild(composer);
         if (window.lucide) window.lucide.createIcons();
 
