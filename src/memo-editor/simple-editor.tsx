@@ -4408,6 +4408,15 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           const rawFrom = Number(range.from);
           const rawTo = Number(range.to);
           if (!Number.isFinite(rawFrom) || !Number.isFinite(rawTo)) return;
+          const isListMarkdown = (text: string) => {
+            if (typeof text !== 'string') return false;
+            const lines = text.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+            if (!lines.length) return false;
+            for (let i = 0; i < lines.length; i += 1) {
+              if (!/^([-*+]|\\d+[.)])\\s+\\S+/.test(lines[i])) return false;
+            }
+            return true;
+          };
           const finalHtml = convertEditorMarkdownToHtml(markdown);
           if (editor) {
             const maxPos = editor.state.doc.content.size;
@@ -4441,6 +4450,37 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
             if (tableFrom !== null && tableTo !== null) {
               from = tableFrom;
               to = tableTo;
+            }
+
+            if (isListMarkdown(markdown)) {
+              const isListContainer = (node: any) => {
+                const name = (node?.type?.name || '').toString().toLowerCase();
+                return name.includes('list') && name !== 'listitem';
+              };
+              let listContainerRange: { from: number; to: number } | null = null;
+              editor.state.doc.nodesBetween(from, to, (node, pos) => {
+                if (listContainerRange) return false;
+                if (isListContainer(node)) {
+                  listContainerRange = { from: pos, to: pos + node.nodeSize };
+                  return false;
+                }
+                return;
+              });
+              if (!listContainerRange) {
+                const probePos = Math.min(from + 1, editor.state.doc.content.size);
+                const resolved = editor.state.doc.resolve(probePos);
+                for (let depth = resolved.depth; depth >= 0; depth -= 1) {
+                  const node = resolved.node(depth);
+                  if (node && isListContainer(node)) {
+                    listContainerRange = { from: resolved.before(depth), to: resolved.after(depth) };
+                    break;
+                  }
+                }
+              }
+              if (listContainerRange) {
+                from = listContainerRange.from;
+                to = listContainerRange.to;
+              }
             }
 
             const trimmedHtml = typeof finalHtml === 'string' ? finalHtml.trim() : '';

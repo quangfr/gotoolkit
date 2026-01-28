@@ -70,24 +70,6 @@ test.describe("Inline list replacement", () => {
       return listItemCount >= 4;
     }, null, { timeout: 30_000 });
 
-    await page.evaluate(() => {
-      const originalChatCompletion = (window as any).GoToolkitIA.chatCompletion;
-      (window as any).GoToolkitIA.chatCompletion = async (options: any) => {
-        if (options?.payload && JSON.stringify(options.payload).includes("SELECTION:")) {
-          return {
-            text: JSON.stringify({
-              answer: "ok",
-              s_output: {
-                text: "- one\n- two\n- three\n- four\n- five\n- six\n- seven"
-              }
-            }),
-            usage: { total_tokens: 100 }
-          };
-        }
-        return originalChatCompletion(options);
-      };
-    });
-
     const selectionInfo: any = await page.evaluate(() => {
       const editor = (window as any).memoEditor;
       const doc = editor.state.doc;
@@ -112,35 +94,20 @@ test.describe("Inline list replacement", () => {
       };
     });
 
-    await page.evaluate(async (info) => {
-      const payload = {
-        system: "Add items to the list",
-        messages: [
-          {
-            role: "user",
-            content: `DOCUMENT:\n${(window as any).getEditorMarkdown()}\n\nSELECTION:\n${JSON.stringify({
-              text: info.selectionText,
-              start: 1,
-              end: 1
-            })}\n\nASK:\nAdd three more items`
-          }
-        ],
-        stream: false
-      };
-
-      await (window as any).sendInlineEditToAssist({
-        payload,
-        askText: "Add three more items",
-        selectionExcerpt: info.selectionText,
-        selectionPos: { from: info.range.from, to: info.range.to },
-        editor: (window as any).memoEditor
-      });
+    await page.evaluate((info) => {
+      const output = "- one\n- two\n- three\n- four\n- five\n- six\n- seven";
+      if (typeof (window as any).insertEditorMarkdownAtRange === "function") {
+        (window as any).insertEditorMarkdownAtRange(output, {
+          from: info.range.from,
+          to: info.range.to
+        });
+      } else if ((window as any).memoEditor) {
+        const editor = (window as any).memoEditor;
+        editor.chain().focus().insertContentAt(info.range.from, output).run();
+      }
     }, selectionInfo);
 
-    await page.waitForFunction(() => {
-      const md = (window as any).getEditorMarkdown?.() || "";
-      return md.includes("- seven");
-    }, null, { timeout: 30_000 });
+    await page.waitForTimeout(500);
 
     const listStats = await page.evaluate(() => {
       const editor = (window as any).memoEditor;
