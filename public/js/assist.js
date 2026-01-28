@@ -1458,6 +1458,12 @@
         this.promptShortcutsPagerEl = null;
         this.promptShortcutsPagerLabelEl = null;
         this.promptShortcutsPagerPrevBtn = null;
+        this.memoSelection = null;
+        this.memoSelectionDetail = null;
+        this.memoSelectionCoords = null;
+        this.memoSelectionBlockCoords = null;
+        this.memoSelectionOverlay = null;
+        this.memoSelectionTrackingInit = false;
         this.promptShortcutsPagerNextBtn = null;
         this.promptShortcutsActiveCategory = "ALL";
         this.promptShortcutsPageIndex = 0;
@@ -2531,6 +2537,171 @@
         this.textarea.placeholder = placeholders[this.promptPresetId] || 'Que veux-tu faire ?';
     };
 
+    AssistSidebar.prototype.initMemoSelectionTracking = function () {
+        if (this.memoSelectionTrackingInit) return;
+        this.memoSelectionTrackingInit = true;
+
+        var overlay = document.getElementById("chat-selection-overlay");
+        if (!overlay) {
+            overlay = document.createElement("div");
+            overlay.id = "chat-selection-overlay";
+            overlay.style.cssText = [
+                "position: fixed",
+                "background: rgba(245, 158, 11, 0.15)",
+                "border: 1px solid rgba(245, 158, 11, 0.3)",
+                "pointer-events: none",
+                "display: none",
+                "z-index: 998",
+                "border-radius: 4px"
+            ].join(";");
+            document.body.appendChild(overlay);
+        }
+        this.memoSelectionOverlay = overlay;
+
+        document.addEventListener("memoEditorSelectionChanged", function (event) {
+            var detail = event?.detail || {};
+            this.memoSelectionDetail = detail;
+            if (!detail.isSelected) {
+                this.memoSelection = null;
+                this.memoSelectionDetail = detail;
+                this.memoSelectionCoords = null;
+                this.memoSelectionBlockCoords = null;
+                if (this.memoSelectionOverlay) {
+                    this.memoSelectionOverlay.style.display = "none";
+                }
+                return;
+            }
+
+            this.memoSelection = {
+                text: detail.selectionText,
+                blockText: detail.blockText || detail.selectionText,
+                blockMarkdown: detail.blockMarkdown || detail.blockText || detail.selectionText,
+                excerpt: detail.selectionExcerpt,
+                from: detail.positionFrom,
+                to: detail.positionTo
+            };
+            this.memoSelectionCoords = detail.coords || null;
+
+            try {
+                var editorInstance = window.memoEditor;
+                if (editorInstance && Number.isFinite(detail.positionFrom) && Number.isFinite(detail.positionTo)) {
+                    var blockStart = editorInstance.view.coordsAtPos(detail.positionFrom);
+                    var blockEnd = editorInstance.view.coordsAtPos(detail.positionTo);
+                    this.memoSelectionBlockCoords = {
+                        top: blockStart.top,
+                        left: blockStart.left,
+                        width: blockEnd.right - blockStart.left,
+                        height: blockEnd.bottom - blockStart.top
+                    };
+                }
+            } catch (err) {
+                this.memoSelectionBlockCoords = null;
+            }
+            if (this.memoSelectionOverlay && this.memoSelectionOverlay.style.display !== "none") {
+                this.updateMemoSelectionOverlayPosition();
+            }
+        }.bind(this));
+
+        var editorWrap = document.querySelector(".editor-wrap");
+        if (editorWrap) {
+            editorWrap.addEventListener("scroll", function () {
+                if (!this.memoSelection || !window.memoEditor) return;
+                try {
+                    var view = window.memoEditor.view;
+                    var coordsStart = view.coordsAtPos(this.memoSelection.from);
+                    var coordsEnd = view.coordsAtPos(this.memoSelection.to);
+                    this.memoSelectionCoords = {
+                        top: coordsEnd.bottom + 10,
+                        left: coordsStart.left,
+                        bottom: coordsEnd.bottom,
+                        right: coordsEnd.right
+                    };
+                    this.memoSelectionBlockCoords = {
+                        top: coordsStart.top,
+                        left: coordsStart.left,
+                        width: coordsEnd.right - coordsStart.left,
+                        height: coordsEnd.bottom - coordsStart.top
+                    };
+                    if (this.memoSelectionOverlay && this.memoSelectionOverlay.style.display !== "none") {
+                        this.updateMemoSelectionOverlayPosition();
+                    }
+                } catch (err) {
+                    // ignore
+                }
+            }.bind(this), { passive: true });
+        }
+
+        window.addEventListener("blur", function () {
+            if (this.memoSelectionOverlay) {
+                this.memoSelectionOverlay.style.display = "none";
+            }
+        }.bind(this));
+    };
+
+    AssistSidebar.prototype.updateMemoSelectionOverlayPosition = function () {
+        if (!this.memoSelectionOverlay || !this.memoSelectionBlockCoords) return;
+        this.memoSelectionOverlay.style.position = "fixed";
+        this.memoSelectionOverlay.style.top = this.memoSelectionBlockCoords.top + "px";
+        this.memoSelectionOverlay.style.left = this.memoSelectionBlockCoords.left + "px";
+        this.memoSelectionOverlay.style.width = Math.max(this.memoSelectionBlockCoords.width, 100) + "px";
+        this.memoSelectionOverlay.style.height = Math.max(this.memoSelectionBlockCoords.height, 20) + "px";
+    };
+
+    AssistSidebar.prototype.getMemoSelectionPayload = function (documentMarkdown, documentContent) {
+        if (!this.memoSelection) return null;
+        var selectionBlockMarkdown = (this.memoSelection.blockMarkdown || "").toString().trim();
+        var selectionBlockText = (this.memoSelection.blockText || this.memoSelection.text || "").toString();
+        var selectionText = (this.memoSelection.text || "").toString();
+        var selectionStartLine = 0;
+        var selectionEndLine = 0;
+
+        if (documentMarkdown && selectionBlockMarkdown) {
+            var idx = documentMarkdown.indexOf(selectionBlockMarkdown);
+            if (idx >= 0) {
+                selectionStartLine = documentMarkdown.slice(0, idx).split("\n").length - 1;
+                selectionEndLine = selectionStartLine + selectionBlockMarkdown.split("\n").length;
+            }
+        }
+
+        if (!Number.isFinite(selectionEndLine) || selectionEndLine <= selectionStartLine) {
+            var lines = (documentContent || "").split("\n");
+            var isWhitespaceSelection = selectionText.trim().length === 0 && selectionBlockText.trim().length === 0;
+            var anchorFrom = isWhitespaceSelection ? this.memoSelection.to : this.memoSelection.from;
+            var anchorTo = isWhitespaceSelection ? this.memoSelection.to : this.memoSelection.to;
+            var charCount = 0;
+
+            for (var i = 0; i < lines.length; i++) {
+                var lineLength = lines[i].length + 1;
+                if (charCount + lineLength > anchorFrom) {
+                    selectionStartLine = i;
+                    break;
+                }
+                charCount += lineLength;
+            }
+
+            charCount = 0;
+            selectionEndLine = lines.length;
+            for (var j = 0; j < lines.length; j++) {
+                var lineLength2 = lines[j].length + 1;
+                if (charCount + lineLength2 > anchorTo) {
+                    selectionEndLine = j + 1;
+                    break;
+                }
+                charCount += lineLength2;
+            }
+
+            if (isWhitespaceSelection && selectionEndLine <= selectionStartLine) {
+                selectionEndLine = selectionStartLine + 1;
+            }
+        }
+
+        return {
+            text: selectionBlockMarkdown || selectionBlockText,
+            start: selectionStartLine,
+            end: selectionEndLine
+        };
+    };
+
     AssistSidebar.prototype.getActiveSystemPrompt = function () {
         if (this.promptPresetId === "ask") {
             var persisted = getPersistedPromptOrEmpty("goToolkit.chat.prompt.info");
@@ -2587,14 +2758,23 @@
         var promptContent = (systemPrompt && systemPrompt.trim()) ? systemPrompt : getSystemPrompt();
         var messages = [{ role: "system", content: promptContent }];
         var userContent = (userMessage?.content || "").trim();
+        var selectionContext = userMessage?.selectionContext || null;
         if (userContent) {
             var docContent = (typeof userMessage?.docSnapshotContent === "string")
                 ? userMessage.docSnapshotContent
                 : readDocumentContent();
             if (docContent && docContent.trim()) {
-                userContent = "DOCUMENT\n" + docContent.trim() + "\n\nASK\n" + userContent;
+                if (selectionContext) {
+                    userContent = "DOCUMENT:\n" + docContent.trim() + "\n\nSELECTION:\n" + JSON.stringify(selectionContext) + "\n\nASK:\n" + userContent;
+                } else {
+                    userContent = "DOCUMENT\n" + docContent.trim() + "\n\nASK\n" + userContent;
+                }
             } else {
-                userContent = "ASK\n" + userContent;
+                if (selectionContext) {
+                    userContent = "SELECTION:\n" + JSON.stringify(selectionContext) + "\n\nASK:\n" + userContent;
+                } else {
+                    userContent = "ASK\n" + userContent;
+                }
             }
         }
         if (userMessage) {
@@ -3139,12 +3319,74 @@
         var hasAttachment = attachments.length > 0;
         if (!value && !hasAttachment) return;
 
+        if (!isInlineEdit && !hasAttachment && this.memoSelection && window.sendInlineEditToAssist && window.memoEditor) {
+            try {
+                var askText = value;
+                var documentMarkdown = (typeof window.getEditorMarkdown === "function"
+                    ? window.getEditorMarkdown()
+                    : (typeof window.getMemoEditorSource === "function" ? window.getMemoEditorSource("markdown") : "")) || "";
+                var documentContent = documentMarkdown
+                    || readDocumentContent()
+                    || window.memoEditor.getHTML?.()
+                    || "";
+                var selectionPayload = this.getMemoSelectionPayload(documentMarkdown, documentContent);
+                if (selectionPayload) {
+                    var systemPromptInline = this.getActiveSystemPrompt();
+                    var payloadInline = {
+                        system: systemPromptInline,
+                        messages: [
+                            {
+                                role: "user",
+                                content: "DOCUMENT: \n" + documentContent + " \n\nSELECTION: \n" + JSON.stringify(selectionPayload) + " \n\nASK: \n" + askText
+                            }
+                        ],
+                        stream: false
+                    };
+
+                    var savedExcerptInline = this.memoSelection.excerpt || null;
+                    var savedPosInline = { from: this.memoSelection.from, to: this.memoSelection.to };
+                    if (this.textarea) {
+                        this.textarea.value = "";
+                        this.textarea.style.height = "auto";
+                    }
+                    if (this.memoSelectionOverlay) {
+                        this.memoSelectionOverlay.style.display = "none";
+                    }
+
+                    window.sendInlineEditToAssist({
+                        payload: payloadInline,
+                        askText: askText,
+                        selectionExcerpt: savedExcerptInline,
+                        selectionPos: savedPosInline,
+                        editor: window.memoEditor,
+                        docSnapshotId: window.getMemoActiveTabId?.() || null,
+                        docSnapshotContent: documentContent || ""
+                    });
+                    return;
+                }
+            } catch (err) {
+                console.warn("Assist inline selection send failed", err);
+            }
+        }
+
         // Visual feedback immediately
         this.setSendButtonBusy(true);
         this.isStreaming = true;
         this.updateComposerState();
 
         var userMessage = isInlineEdit ? options.editMessage : createMessage("user", value);
+        var selectionExcerpt = null;
+        if (!isInlineEdit && this.memoSelection) {
+            var documentMarkdown = (typeof window.getEditorMarkdown === "function"
+                ? window.getEditorMarkdown()
+                : (typeof window.getMemoEditorSource === "function" ? window.getMemoEditorSource("markdown") : "")) || "";
+            var documentContent = documentMarkdown || readDocumentContent() || "";
+            var selectionPayload = this.getMemoSelectionPayload(documentMarkdown, documentContent);
+            if (selectionPayload) {
+                userMessage.selectionContext = selectionPayload;
+                selectionExcerpt = this.memoSelection.excerpt || null;
+            }
+        }
         if (userMessage) {
             userMessage.content = value;
         }
@@ -3154,7 +3396,7 @@
         }
         if (!isInlineEdit) {
             this.conversation.messages.push(userMessage);
-            this.appendMessage(userMessage);
+            this.appendMessage(userMessage, { selectionExcerpt: selectionExcerpt });
         }
 
         if (userMessage) {
@@ -4119,6 +4361,119 @@
                 this.handleSend();
             }
         }.bind(this));
+        this.textarea.addEventListener("focus", function () {
+            if (this.memoSelectionDetail && this.memoSelectionDetail.isSelected) {
+                this.memoSelection = {
+                    text: this.memoSelectionDetail.selectionText,
+                    blockText: this.memoSelectionDetail.blockText || this.memoSelectionDetail.selectionText,
+                    blockMarkdown: this.memoSelectionDetail.blockMarkdown
+                        || this.memoSelectionDetail.blockText
+                        || this.memoSelectionDetail.selectionText,
+                    excerpt: this.memoSelectionDetail.selectionExcerpt,
+                    from: this.memoSelectionDetail.positionFrom,
+                    to: this.memoSelectionDetail.positionTo
+                };
+            }
+            if (!this.memoSelection && window.memoEditor?.state && window.memoEditor?.view) {
+                try {
+                    var selection = window.memoEditor.state.selection;
+                    var resolveBlockRange = function ($pos) {
+                        var allowedBlockTypes = {
+                            paragraph: true,
+                            heading: true,
+                            codeBlock: true,
+                            table: true,
+                            listItem: true,
+                            blockquote: true,
+                            mermaidDiagram: true
+                        };
+                        for (var depth = $pos.depth; depth >= 0; depth--) {
+                            var node = $pos.node(depth);
+                            if (node && allowedBlockTypes[node.type.name]) {
+                                return {
+                                    from: $pos.start(depth),
+                                    to: $pos.end(depth)
+                                };
+                            }
+                        }
+                        return null;
+                    };
+                    if (selection && !selection.empty) {
+                        var from = selection.from;
+                        var to = selection.to;
+                        var blockRange = null;
+                        if (selection.$from) {
+                            blockRange = resolveBlockRange(selection.$from);
+                        }
+                        if (selection.$to) {
+                            var blockRangeTo = resolveBlockRange(selection.$to);
+                            if (blockRangeTo) {
+                                if (!blockRange) {
+                                    blockRange = blockRangeTo;
+                                } else {
+                                    blockRange = {
+                                        from: Math.min(blockRange.from, blockRangeTo.from),
+                                        to: Math.max(blockRange.to, blockRangeTo.to)
+                                    };
+                                }
+                            }
+                        }
+                        if (blockRange) {
+                            from = blockRange.from;
+                            to = blockRange.to;
+                        }
+                        var selectedText = window.memoEditor.state.doc.textBetween(from, to, " ");
+                        this.memoSelection = {
+                            text: selectedText,
+                            blockText: selectedText,
+                            blockMarkdown: selectedText,
+                            excerpt: selectedText ? selectedText.substring(0, 100) + (selectedText.length > 100 ? "…" : "") : "",
+                            from: from,
+                            to: to
+                        };
+                        try {
+                            var view = window.memoEditor.view;
+                            var coordsStart = view.coordsAtPos(from);
+                            var coordsEnd = view.coordsAtPos(to);
+                            this.memoSelectionBlockCoords = {
+                                top: coordsStart.top,
+                                left: coordsStart.left,
+                                width: coordsEnd.right - coordsStart.left,
+                                height: coordsEnd.bottom - coordsStart.top
+                            };
+                        } catch (err) {
+                            // ignore
+                        }
+                    }
+                } catch (err) {
+                    // ignore
+                }
+            }
+            if (this.memoSelection && this.memoSelectionOverlay) {
+                if (!this.memoSelectionBlockCoords && window.memoEditor) {
+                    try {
+                        var view = window.memoEditor.view;
+                        var coordsStart = view.coordsAtPos(this.memoSelection.from);
+                        var coordsEnd = view.coordsAtPos(this.memoSelection.to);
+                        this.memoSelectionBlockCoords = {
+                            top: coordsStart.top,
+                            left: coordsStart.left,
+                            width: coordsEnd.right - coordsStart.left,
+                            height: coordsEnd.bottom - coordsStart.top
+                        };
+                    } catch (err) {
+                        // ignore
+                    }
+                }
+                this.updateMemoSelectionOverlayPosition();
+                this.memoSelectionOverlay.style.display = "block";
+            }
+        }.bind(this));
+        this.textarea.addEventListener("blur", function () {
+            if (this.memoSelectionOverlay) {
+                this.memoSelectionOverlay.style.display = "none";
+            }
+        }.bind(this));
         var textareaWrapper = document.createElement("div");
         textareaWrapper.className = "chat-input-wrapper";
         textareaWrapper.appendChild(this.textarea);
@@ -4197,6 +4552,7 @@
         this.mountResizer(resizer);
         this.createDocumentPickers();
         this.buildPreviewPanel();
+        this.initMemoSelectionTracking();
         this.prefetchKnowledgeModalList();
         return true;
     };

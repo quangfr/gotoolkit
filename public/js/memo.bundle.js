@@ -53832,8 +53832,8 @@ ${promptInput.trim()}`
       const cells = [];
       for (let colIndex = 0; colIndex < cols; colIndex++) {
         let paragraph2 = paragraphType.createAndFill();
-        if (colIndex === 0 && rowIndex < items.length) {
-          const textValue = items[rowIndex] || "";
+        if (colIndex === 0 && rowIndex > 0 && rowIndex - 1 < items.length) {
+          const textValue = items[rowIndex - 1] || "";
           paragraph2 = paragraphType.create(null, textValue ? schema.text(textValue) : null);
         }
         if (!paragraph2) {

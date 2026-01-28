@@ -1134,8 +1134,8 @@ const buildTableNodeFromItems = (editor: Editor, items: string[], cols = 2) => {
     const cells: PMNode[] = [];
     for (let colIndex = 0; colIndex < cols; colIndex++) {
       let paragraph = paragraphType.createAndFill();
-      if (colIndex === 0 && rowIndex < items.length) {
-        const textValue = items[rowIndex] || '';
+      if (colIndex === 0 && rowIndex > 0 && rowIndex - 1 < items.length) {
+        const textValue = items[rowIndex - 1] || '';
         paragraph = paragraphType.create(null, textValue ? schema.text(textValue) : null);
       }
       if (!paragraph) {
