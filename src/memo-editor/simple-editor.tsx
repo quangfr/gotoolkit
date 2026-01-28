@@ -493,12 +493,14 @@ interface SimpleEditorProps {
   content?: string;
   onChange?: (content: string, id?: string) => void;
   editorId?: string;
+  editable?: boolean;
   onReady?: (methods: {
     getMarkdown: () => string;
     setMarkdown: (md: string) => void;
     insertMarkdownAtRange: (md: string, range: { from: number; to: number }) => void;
     insertMarkdownAtEnd: (md: string) => void;
     getSource: (format: 'markdown' | 'html' | 'json') => string;
+    setEditable: (editable: boolean) => void;
     instance: any;
   }) => void;
   placeholder?: string;
@@ -2215,6 +2217,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   onChange, 
   editorId,
   onReady,
+  editable = true,
   placeholder = 'Commencez à écrire...' 
 }) => {
   const mountStart = React.useRef(performance.now());
@@ -2308,6 +2311,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       }),
     ],
     content,
+    editable,
     onCreate: () => {
       // no-op
     },
@@ -2631,6 +2635,11 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       }
     },
   });
+
+  React.useEffect(() => {
+    if (!editor) return;
+    editor.setEditable(Boolean(editable));
+  }, [editor, editable]);
 
   const applyTableDomStyles = React.useCallback((
     tableDom: HTMLTableElement,
@@ -4458,6 +4467,9 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         insertMarkdownAtEnd: insertEditorMarkdownAtEnd,
         getSource: getMemoEditorSource,
         exportDocx: (title?: string) => exportEditorToDocx(editor, title),
+        setEditable: (nextEditable: boolean) => {
+          editor?.setEditable(Boolean(nextEditable));
+        },
         instance: editor
       };
 

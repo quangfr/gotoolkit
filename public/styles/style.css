@@ -1663,6 +1663,55 @@ label {
   align-items: flex-start;
 }
 
+.chat-bubble-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 6px;
+  width: 100%;
+}
+
+.chat-message--bot .chat-bubble-row {
+  justify-content: flex-start;
+}
+
+.chat-edit-btn,
+.chat-undo-btn,
+.chat-restore-redo-btn {
+  opacity: 0;
+  pointer-events: none;
+  align-self: center;
+  border: 1px solid var(--border-main);
+  background: var(--bg-surface);
+  color: var(--text-main);
+  border-radius: 999px;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+}
+
+.chat-message--user:hover .chat-edit-btn,
+.chat-message--user:hover .chat-undo-btn {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(-1px);
+}
+
+.chat-edit-btn:hover,
+.chat-undo-btn:hover,
+.chat-restore-redo-btn:hover {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.chat-restore-redo-btn {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 .chat-prepend {
   font-size: 13px;
   color: var(--text-main);
@@ -2314,6 +2363,11 @@ label {
   gap: 6px;
   transition: border 0.15s ease;
   position: relative;
+}
+
+.chat-composer--inline {
+  flex: 1;
+  width: 100%;
 }
 
 .chat-composer-attachments {

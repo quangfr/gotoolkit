@@ -22,6 +22,27 @@
         }
     }
 
+    function getCacheBuster() {
+        try {
+            const script = document.currentScript;
+            if (script && script.src) {
+                const url = new URL(script.src, global.location.href);
+                return url.searchParams.get("v") || "";
+            }
+        } catch (err) {
+            // ignore
+        }
+        return "";
+    }
+
+    function appendCacheBuster(path, cacheBuster) {
+        if (!cacheBuster) return path;
+        if (path.includes("?")) {
+            return `${path}&v=${cacheBuster}`;
+        }
+        return `${path}?v=${cacheBuster}`;
+    }
+
     function setConfig(value) {
         cachedConfig = normalizeConfig(value);
         return cachedConfig;
@@ -33,7 +54,9 @@
             configPromise = Promise.resolve(setConfig(cachedConfig));
             return configPromise;
         }
-        configPromise = fetch(resolveUrl(configPath), { cache: "no-store" })
+        const cacheBuster = getCacheBuster();
+        const resolvedPath = resolveUrl(appendCacheBuster(configPath, cacheBuster));
+        configPromise = fetch(resolvedPath, { cache: "no-store" })
             .then(response => {
                 if (!response.ok) {
                     throw new Error("Config fetch failed");

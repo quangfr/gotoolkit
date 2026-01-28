@@ -188,7 +188,7 @@
         if (!file || !file.name || !file.size) return false;
         const limitConfig = getFileSizeLimitConfig(file.name);
         if (!limitConfig) return false;
-        if (limitConfig.cloudEmbeddings) return true;
+        if (limitConfig.useCloudEmbeddings || limitConfig.cloudEmbeddings) return true;
         const allowOverLimit = Boolean(global?.GoToolkitSiteConfig?.get?.("fileImport.allowOverLimitEmbeddings", false));
         if (!allowOverLimit) return false;
         const maxMB = Number(limitConfig.maxMB) || 0;

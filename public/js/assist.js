@@ -9,9 +9,29 @@
         return globalConfig;
     }
 
+    function resolveConfigCacheBuster() {
+        try {
+            var script = document.currentScript;
+            if (script && script.src) {
+                var url = new URL(script.src, global.location.href);
+                return url.searchParams.get("v") || "";
+            }
+        } catch (err) {
+            // ignore
+        }
+        return "";
+    }
+
+    function buildConfigUrl() {
+        var base = (global.GoToolkitSiteConfigPath || "config.json").trim();
+        var cacheBuster = resolveConfigCacheBuster();
+        if (!cacheBuster) return base;
+        return base + (base.indexOf("?") >= 0 ? "&" : "?") + "v=" + cacheBuster;
+    }
+
     async function loadGlobalConfig() {
         try {
-            var response = await fetch("config.json");
+            var response = await fetch(buildConfigUrl(), { cache: "no-store" });
             if (response.ok) {
                 var json = await response.json();
                 storeGlobalConfig(json);
@@ -433,6 +453,35 @@
         return "";
     }
 
+    function getMemoTabContentById(tabId) {
+        if (!tabId) return null;
+        var state = window.__memoState;
+        if (!state || !Array.isArray(state.tabs)) return null;
+        var match = state.tabs.find(function (tab) {
+            return tab && tab.id === tabId;
+        });
+        if (!match) return null;
+        return typeof match.content === "string" ? match.content : "";
+    }
+
+    function extractInlineDocumentSnapshot(messages) {
+        if (!Array.isArray(messages)) return "";
+        for (var i = messages.length - 1; i >= 0; i--) {
+            var msg = messages[i];
+            if (!msg || msg.role !== "user" || typeof msg.content !== "string") continue;
+            var content = msg.content;
+            var docMatch = content.match(/DOCUMENT:\s*\n([\s\S]*?)(\n\nSELECTION:|\n\nASK:|$)/);
+            if (docMatch && typeof docMatch[1] === "string") {
+                return docMatch[1].trim();
+            }
+            var docMatchAlt = content.match(/DOCUMENT\s*\n([\s\S]*?)(\n\nSELECTION:|\n\nASK:|$)/);
+            if (docMatchAlt && typeof docMatchAlt[1] === "string") {
+                return docMatchAlt[1].trim();
+            }
+        }
+        return "";
+    }
+
     function cloneForHistory(value) {
         if (value === undefined) return undefined;
         if (value === null) return null;
@@ -587,6 +636,8 @@
             role: role,
             createdAt: Date.now(),
             content: content || "",
+            docSnapshotId: null,
+            docSnapshotContent: null,
             sources: []
         };
     }
@@ -1390,6 +1441,10 @@
         this.pendingPdfHighlight = null;
         this.currentPreviewDoc = null;
         this.promptPresetId = readPromptPreset();
+        this.undoState = null;
+        this.latestRestoreMessageId = null;
+        this.inlinePromptDropdownButton = null;
+        this.inlinePromptDropdownMenu = null;
         this.promptDropdown = null;
         this.promptDropdownButton = null;
         this.promptDropdownMenu = null;
@@ -1790,6 +1845,11 @@
     AssistSidebar.prototype.appendMessage = function (message, options) {
         options = options || {};
         if (!this.messagesEl) return;
+        if (this.latestRestoreMessageId && message.id !== this.latestRestoreMessageId) {
+            this.removeRestoreRedoButton(this.latestRestoreMessageId);
+            this.latestRestoreMessageId = null;
+            this.undoState = null;
+        }
         var wrapper = document.createElement("div");
         wrapper.className = "chat-message chat-message--" + message.role;
 
@@ -1811,9 +1871,52 @@
             if (window.lucide) window.lucide.createIcons({ props: { size: 12 } });
         }
 
+        var bubbleRow = document.createElement("div");
+        bubbleRow.className = "chat-bubble-row";
+
+        if (message.role === "user") {
+            if (message.isDocRestore) {
+                if (message.id === this.latestRestoreMessageId && this.undoState) {
+                    var redoBtn = document.createElement("button");
+                    redoBtn.type = "button";
+                    redoBtn.className = "chat-restore-redo-btn";
+                    redoBtn.innerHTML = '<i data-lucide="redo"></i>';
+                    redoBtn.setAttribute("title", "Rétablir");
+                    redoBtn.addEventListener("click", function (event) {
+                        event.stopPropagation();
+                        this.handleRedoUndo(message);
+                    }.bind(this));
+                    bubbleRow.appendChild(redoBtn);
+                }
+            } else {
+                var editBtn = document.createElement("button");
+                editBtn.type = "button";
+                editBtn.className = "chat-edit-btn";
+                editBtn.innerHTML = '<i data-lucide="pen"></i>';
+                editBtn.setAttribute("title", "Modifier le prompt");
+                editBtn.addEventListener("click", function (event) {
+                    event.stopPropagation();
+                    this.handleEditPrompt(message);
+                }.bind(this));
+                bubbleRow.appendChild(editBtn);
+
+                var undoBtn = document.createElement("button");
+                undoBtn.type = "button";
+                undoBtn.className = "chat-undo-btn";
+                undoBtn.innerHTML = '<i data-lucide="undo"></i>';
+                undoBtn.setAttribute("title", "Restaurer le document");
+                undoBtn.addEventListener("click", function (event) {
+                    event.stopPropagation();
+                    this.handleUndoDocument(message);
+                }.bind(this));
+                bubbleRow.appendChild(undoBtn);
+            }
+        }
+
         var bubble = document.createElement("div");
         bubble.className = "chat-bubble";
-        contentWrapper.appendChild(bubble);
+        bubbleRow.appendChild(bubble);
+        contentWrapper.appendChild(bubbleRow);
         wrapper.appendChild(contentWrapper);
 
         var content = document.createElement("div");
@@ -1846,6 +1949,7 @@
         this.messagesEl.appendChild(wrapper);
         var entry = {
             wrapper: wrapper,
+            contentWrapper: contentWrapper,
             contentEl: content,
             refsEl: null,
             suggestionsEl: null
@@ -1891,7 +1995,326 @@
             this.syncBotExtras(entry, message);
         }
         this.messageNodes[message.id] = entry;
+        if (message.role === "user" && window.lucide) {
+            window.lucide.createIcons({ props: { size: 14 } });
+        }
         this.scrollToBottom();
+    };
+
+    AssistSidebar.prototype.removeRestoreRedoButton = function (messageId) {
+        if (!messageId) return;
+        var entry = this.messageNodes[messageId];
+        var wrapper = entry?.wrapper;
+        if (!wrapper) return;
+        var redoBtn = wrapper.querySelector(".chat-restore-redo-btn");
+        if (redoBtn) {
+            redoBtn.remove();
+        }
+    };
+
+    AssistSidebar.prototype.handleUndoDocument = function (message) {
+        if (!message || message.role !== "user") return;
+        var docId = message.docSnapshotId
+            || (typeof global.getMemoActiveTabId === "function" ? global.getMemoActiveTabId() : null)
+            || window.__memoState?.activeTabId
+            || null;
+        var snapshotContent = (typeof message.docSnapshotContent === "string") ? message.docSnapshotContent : "";
+        if (!snapshotContent) {
+            snapshotContent = getMemoTabContentById(docId) || "";
+        }
+        var activeTabId = (typeof global.getMemoActiveTabId === "function" ? global.getMemoActiveTabId() : null)
+            || window.__memoState?.activeTabId
+            || null;
+        var activeTabContent = readDocumentContent() || "";
+
+        if (this.latestRestoreMessageId) {
+            this.removeRestoreRedoButton(this.latestRestoreMessageId);
+        }
+
+        this.undoState = {
+            messages: cloneForHistory(this.conversation.messages) || [],
+            activeTabId: activeTabId,
+            activeTabContent: activeTabContent
+        };
+
+        var msgIndex = this.conversation.messages.findIndex(function (msg) {
+            return msg && msg.id === message.id;
+        });
+        if (msgIndex >= 0) {
+            this.conversation.messages.splice(msgIndex, 1);
+        }
+        var entry = this.messageNodes[message.id];
+        if (entry?.wrapper) {
+            entry.wrapper.remove();
+        }
+        delete this.messageNodes[message.id];
+
+        if (docId && typeof global.setMemoActiveTab === "function") {
+            global.setMemoActiveTab(docId);
+        }
+        if (typeof global.setEditorMarkdown === "function" && snapshotContent) {
+            global.setEditorMarkdown(snapshotContent);
+        }
+        if (docId && typeof global.setMemoReadOnly === "function") {
+            global.setMemoReadOnly(docId, false);
+        }
+
+        var restoreMessage = createMessage("user", "Document restauré");
+        restoreMessage.isDocRestore = true;
+        restoreMessage.docSnapshotId = docId || null;
+        restoreMessage.docSnapshotContent = snapshotContent || "";
+        this.conversation.messages.push(restoreMessage);
+        this.latestRestoreMessageId = restoreMessage.id;
+        this.appendMessage(restoreMessage);
+        this.persist();
+    };
+
+    AssistSidebar.prototype.handleRedoUndo = function (message) {
+        if (!message || message.id !== this.latestRestoreMessageId) return;
+        if (!this.undoState) return;
+        var undoState = this.undoState;
+        var restoreMessages = cloneForHistory(undoState.messages) || [];
+        this.conversation.messages = restoreMessages;
+        this.latestRestoreMessageId = null;
+        this.undoState = null;
+        if (this.messagesEl) {
+            this.messagesEl.innerHTML = "";
+        }
+        this.messageNodes = {};
+        this.renderInitialMessages();
+
+        var activeTabId = undoState.activeTabId;
+        var activeTabContent = undoState.activeTabContent;
+        if (activeTabId && typeof global.setMemoActiveTab === "function") {
+            global.setMemoActiveTab(activeTabId);
+        }
+        if (typeof global.setEditorMarkdown === "function" && typeof activeTabContent === "string") {
+            global.setEditorMarkdown(activeTabContent);
+        }
+        this.persist();
+    };
+
+    AssistSidebar.prototype.handleEditPrompt = function (message) {
+        if (!message || message.role !== "user") return;
+        if (this.isStreaming) {
+            this.abortStream?.();
+        }
+        if (this.activeEdit && this.activeEdit.message?.id !== message.id) {
+            this.cancelEditPrompt();
+        }
+        if (this.activeEdit && this.activeEdit.message?.id === message.id) return;
+        var entry = this.messageNodes[message.id];
+        if (!entry || !entry.wrapper) return;
+        var contentWrapper = entry.contentWrapper || entry.wrapper.querySelector(".chat-content-wrapper");
+        if (!contentWrapper) return;
+
+        var index = this.conversation.messages.findIndex(function (msg) {
+            return msg.id === message.id;
+        });
+        var removed = [];
+        if (index >= 0) {
+            removed = this.conversation.messages.splice(index + 1);
+            removed.forEach(function (msg) {
+                var node = this.messageNodes[msg.id];
+                if (node?.wrapper) {
+                    node.wrapper.remove();
+                }
+                delete this.messageNodes[msg.id];
+            }.bind(this));
+        }
+        this.persist();
+
+        var docId = message.docSnapshotId
+            || (typeof global.getMemoActiveTabId === "function" ? global.getMemoActiveTabId() : null)
+            || window.__memoState?.activeTabId
+            || null;
+        var activeTabId = (typeof global.getMemoActiveTabId === "function" ? global.getMemoActiveTabId() : null)
+            || window.__memoState?.activeTabId
+            || null;
+        var activeTabContent = readDocumentContent() || "";
+        var snapshotDocContent = (typeof message.docSnapshotContent === "string") ? message.docSnapshotContent : null;
+        var snapshotLatestContent = getMemoTabContentById(docId);
+        if (docId && typeof global.setMemoActiveTab === "function") {
+            global.setMemoActiveTab(docId);
+        }
+        if (docId && typeof global.setMemoReadOnly === "function") {
+            global.setMemoReadOnly(docId, true);
+        }
+        if (docId && typeof global.setEditorMarkdown === "function" && typeof snapshotDocContent === "string") {
+            global.setEditorMarkdown(snapshotDocContent);
+        }
+
+        var inline = this.buildInlineComposer(message);
+        entry.wrapper.replaceChild(inline.composer, contentWrapper);
+        this.activeEdit = {
+            message: message,
+            entry: entry,
+            originalContentWrapper: contentWrapper,
+            originalContent: message.content || "",
+            composer: inline.composer,
+            textarea: inline.textarea,
+            docId: docId,
+            removedMessages: removed,
+            restoreState: {
+                activeTabId: activeTabId,
+                activeTabContent: activeTabContent,
+                snapshotDocId: docId,
+                snapshotLatestContent: snapshotLatestContent
+            }
+        };
+
+        inline.cancelBtn.addEventListener("click", this.cancelEditPrompt.bind(this));
+        inline.sendBtn.addEventListener("click", this.submitEditPrompt.bind(this));
+        inline.textarea.addEventListener("keydown", function (event) {
+            if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                this.submitEditPrompt();
+            }
+        }.bind(this));
+        inline.textarea.focus();
+        if (window.lucide) window.lucide.createIcons({ props: { size: 14 } });
+    };
+
+    AssistSidebar.prototype.buildInlineComposer = function (message) {
+        var composer = document.createElement("div");
+        composer.className = "chat-composer chat-composer--inline";
+
+        var textareaWrapper = document.createElement("div");
+        textareaWrapper.className = "chat-input-wrapper";
+        var textarea = document.createElement("textarea");
+        textarea.className = "chat-input";
+        textarea.rows = 2;
+        textarea.value = message?.content || "";
+        textareaWrapper.appendChild(textarea);
+        composer.appendChild(textareaWrapper);
+
+        var actions = document.createElement("div");
+        actions.className = "chat-composer-actions";
+        var leftActions = document.createElement("div");
+        leftActions.className = "chat-composer-left-actions";
+        var cancelBtn = document.createElement("button");
+        cancelBtn.type = "button";
+        cancelBtn.className = "btn-secondary chat-edit-cancel-btn";
+        cancelBtn.innerHTML = '<i data-lucide="x"></i>';
+        cancelBtn.setAttribute("title", "Annuler");
+        leftActions.appendChild(cancelBtn);
+        var inlinePromptDropdown = this.buildInlinePromptDropdown();
+        leftActions.appendChild(inlinePromptDropdown);
+
+        var promptShortcutsBtn = document.createElement("button");
+        promptShortcutsBtn.type = "button";
+        promptShortcutsBtn.className = "btn-secondary chat-prompt-shortcuts-btn";
+        promptShortcutsBtn.innerHTML = '<i data-lucide="sparkles"></i>';
+        promptShortcutsBtn.setAttribute("title", "Raccourcis Prompt");
+        promptShortcutsBtn.addEventListener("click", function () {
+            this.openPromptShortcutsModal(textarea);
+        }.bind(this));
+        leftActions.appendChild(promptShortcutsBtn);
+
+        var attachFilesBtn = document.createElement("button");
+        attachFilesBtn.type = "button";
+        attachFilesBtn.className = "btn-secondary chat-attach-files-btn chat-scroll-btn";
+        attachFilesBtn.innerHTML = '<i data-lucide="paperclip"></i>';
+        attachFilesBtn.addEventListener("click", this.openDocumentSelector.bind(this));
+        leftActions.appendChild(attachFilesBtn);
+        actions.appendChild(leftActions);
+
+        var sendBtn = document.createElement("button");
+        sendBtn.type = "button";
+        sendBtn.className = "btn-primary chat-send-btn";
+        sendBtn.innerHTML = '<i data-lucide="send"></i>';
+        actions.appendChild(sendBtn);
+        composer.appendChild(actions);
+
+        var resize = function () {
+            textarea.style.height = "auto";
+            textarea.style.height = Math.min(textarea.scrollHeight, 220) + "px";
+        };
+        textarea.addEventListener("input", resize);
+        resize();
+
+        return { composer: composer, textarea: textarea, sendBtn: sendBtn, cancelBtn: cancelBtn };
+    };
+
+    AssistSidebar.prototype.cancelEditPrompt = function () {
+        this.finishEditPrompt("cancel");
+    };
+
+    AssistSidebar.prototype.submitEditPrompt = function () {
+        var edit = this.activeEdit;
+        if (!edit) return;
+        var value = edit.textarea?.value || "";
+        this.finishEditPrompt("send", value);
+    };
+
+    AssistSidebar.prototype.finishEditPrompt = function (action, value) {
+        var edit = this.activeEdit;
+        if (!edit) return;
+        var entry = edit.entry;
+        if (edit.composer?.parentNode && edit.originalContentWrapper) {
+            edit.composer.parentNode.replaceChild(edit.originalContentWrapper, edit.composer);
+        }
+        if (entry && edit.originalContentWrapper) {
+            entry.contentWrapper = edit.originalContentWrapper;
+            entry.contentEl = edit.originalContentWrapper.querySelector(".chat-content");
+        }
+        if (edit.docId && typeof global.setMemoReadOnly === "function") {
+            global.setMemoReadOnly(edit.docId, false);
+        }
+        this.activeEdit = null;
+
+        if (action === "send") {
+            var trimmed = String(value || "").trim();
+            if (!trimmed) {
+                var msgIndex = this.conversation.messages.findIndex(function (msg) {
+                    return msg && edit.message && msg.id === edit.message.id;
+                });
+                if (msgIndex >= 0) {
+                    this.conversation.messages.splice(msgIndex, 1);
+                }
+                if (entry?.wrapper) {
+                    entry.wrapper.remove();
+                }
+                if (edit.message?.id) {
+                    delete this.messageNodes[edit.message.id];
+                }
+                this.persist();
+                return;
+            }
+            edit.message.content = trimmed;
+            if (entry?.contentEl) {
+                entry.contentEl.innerHTML = escapeHtml(edit.message.content || "").replace(/\n/g, "<br>");
+            }
+            this.persist();
+            this.handleSend({ value: trimmed, editMessage: edit.message, fromInline: true });
+            return;
+        }
+        if (action === "cancel") {
+            var restore = edit.restoreState || {};
+            var snapshotDocId = restore.snapshotDocId;
+            var snapshotLatestContent = restore.snapshotLatestContent;
+            var activeTabId = restore.activeTabId;
+            var activeTabContent = restore.activeTabContent;
+            if (snapshotDocId && typeof global.setMemoActiveTab === "function" && typeof global.setEditorMarkdown === "function") {
+                global.setMemoActiveTab(snapshotDocId);
+                if (typeof snapshotLatestContent === "string") {
+                    global.setEditorMarkdown(snapshotLatestContent);
+                }
+            }
+            if (activeTabId && typeof global.setMemoActiveTab === "function" && typeof global.setEditorMarkdown === "function") {
+                global.setMemoActiveTab(activeTabId);
+                if (typeof activeTabContent === "string") {
+                    global.setEditorMarkdown(activeTabContent);
+                }
+            }
+            if (Array.isArray(edit.removedMessages) && edit.removedMessages.length) {
+                edit.removedMessages.forEach(function (msg) {
+                    this.conversation.messages.push(msg);
+                    this.appendMessage(msg);
+                }.bind(this));
+            }
+        }
+        this.persist();
     };
 
     AssistSidebar.prototype.renderBotContent = function (message) {
@@ -2084,6 +2507,7 @@
             this.closeKnowledgeModal(false);
         }
         this.updatePromptDropdownLabel();
+        this.updateInlinePromptDropdownLabel();
         this.updateInputPlaceholder();
         this.updateHeaderDocumentCount();
         this.refreshDocumentStats();
@@ -2161,7 +2585,9 @@
         var messages = [{ role: "system", content: promptContent }];
         var userContent = (userMessage?.content || "").trim();
         if (userContent) {
-            var docContent = readDocumentContent();
+            var docContent = (typeof userMessage?.docSnapshotContent === "string")
+                ? userMessage.docSnapshotContent
+                : readDocumentContent();
             if (docContent && docContent.trim()) {
                 userContent = "DOCUMENT\n" + docContent.trim() + "\n\nASK\n" + userContent;
             } else {
@@ -2699,11 +3125,14 @@
         return hits;
     };
 
-    AssistSidebar.prototype.handleSend = async function () {
+    AssistSidebar.prototype.handleSend = async function (options) {
+        options = options || {};
         if (this.isStreaming) return;
-        if (!this.textarea) return;
-        var value = this.textarea.value.trim();
-        var attachments = this.pendingDocumentAttachments || [];
+        if (!this.textarea && !options.editMessage) return;
+        var rawValue = (typeof options.value === "string" ? options.value : this.textarea?.value || "");
+        var value = rawValue.trim();
+        var isInlineEdit = Boolean(options.editMessage);
+        var attachments = isInlineEdit ? [] : (this.pendingDocumentAttachments || []);
         var hasAttachment = attachments.length > 0;
         if (!value && !hasAttachment) return;
 
@@ -2712,16 +3141,34 @@
         this.isStreaming = true;
         this.updateComposerState();
 
-        var userMessage = createMessage("user", value);
-        if (attachments && attachments.length) {
+        var userMessage = isInlineEdit ? options.editMessage : createMessage("user", value);
+        if (userMessage) {
+            userMessage.content = value;
+        }
+        if (!isInlineEdit && attachments && attachments.length) {
             userMessage.attachments = attachments.slice();
             this.clearAttachments();
         }
-        this.conversation.messages.push(userMessage);
-        this.appendMessage(userMessage);
+        if (!isInlineEdit) {
+            this.conversation.messages.push(userMessage);
+            this.appendMessage(userMessage);
+        }
+
+        if (userMessage) {
+            if (!userMessage.docSnapshotId) {
+                var activeSnapshotId = (typeof global.getMemoActiveTabId === "function" ? global.getMemoActiveTabId() : null)
+                    || this.getActiveMemoId?.()
+                    || window.__memoState?.activeTabId
+                    || null;
+                userMessage.docSnapshotId = activeSnapshotId || null;
+            }
+            if (typeof userMessage.docSnapshotContent !== "string") {
+                userMessage.docSnapshotContent = readDocumentContent() || "";
+            }
+        }
 
         var memoId = this.getActiveMemoId();
-        if (memoId && attachments && attachments.length) {
+        if (!isInlineEdit && memoId && attachments && attachments.length) {
             this.confirmMemoAttachments(memoId);
             this.refreshMemoContextAttachments().catch(function (e) {
                 console.warn("Context refresh background", e);
@@ -2729,8 +3176,10 @@
             window.GoToolkitMemoSyncContextEmbeddings?.(memoId);
         }
 
-        this.textarea.value = "";
-        this.textarea.style.height = "auto";
+        if (!isInlineEdit && this.textarea) {
+            this.textarea.value = "";
+            this.textarea.style.height = "auto";
+        }
         this.scrollToBottom();
         this.persist();
 
@@ -2814,7 +3263,19 @@
             return tail.slice(0, closing);
         }
 
+        var snapshotDocId = userMessage?.docSnapshotId;
+        var didActivateSnapshot = false;
+
         function handleChunk(chunk) {
+            if (!didActivateSnapshot && snapshotDocId && typeof global.setMemoActiveTab === "function") {
+                var activeId = (typeof global.getMemoActiveTabId === "function" ? global.getMemoActiveTabId() : null)
+                    || window.__memoState?.activeTabId
+                    || null;
+                if (activeId !== snapshotDocId) {
+                    global.setMemoActiveTab(snapshotDocId);
+                }
+                didActivateSnapshot = true;
+            }
             botMessage._jsonBuffer = (botMessage._jsonBuffer || "") + chunk;
             var parsed = null;
             try {
@@ -3025,6 +3486,23 @@
         }
     };
 
+    AssistSidebar.prototype.updateInlinePromptDropdownLabel = function () {
+        if (this.inlinePromptDropdownButton) {
+            var presets = this.getPromptPresets();
+            var activePreset = presets && presets[this.promptPresetId];
+            var label = activePreset?.label || ("/" + this.promptPresetId);
+            this.inlinePromptDropdownButton.innerHTML = label + ' <i data-lucide="chevron-down" style="width:12px;height:12px;margin-left:2px"></i>';
+            this.inlinePromptDropdownButton.title = "Mode: " + label;
+            if (global.lucide) global.lucide.createIcons();
+        }
+        if (this.inlinePromptDropdownMenu) {
+            var buttons = this.inlinePromptDropdownMenu.querySelectorAll("[data-preset]");
+            buttons.forEach(function (btn) {
+                btn.classList.toggle("active", btn.dataset.preset === this.promptPresetId);
+            }, this);
+        }
+    };
+
     AssistSidebar.prototype.closePromptDropdown = function () {
         if (!this.promptDropdownMenu) return;
         this.promptDropdownMenu.classList.remove("open");
@@ -3095,6 +3573,76 @@
             if (wrapper.contains(event.target)) return;
             this.closePromptDropdown();
         }.bind(this));
+
+        return wrapper;
+    };
+
+    AssistSidebar.prototype.buildInlinePromptDropdown = function () {
+        var wrapper = document.createElement("div");
+        wrapper.className = "chat-prompt-dropdown";
+
+        var button = document.createElement("button");
+        button.type = "button";
+        button.className = "btn-secondary chat-prompt-btn";
+        button.addEventListener("click", function (event) {
+            event.stopPropagation();
+            var menu = this.inlinePromptDropdownMenu;
+            if (!menu) return;
+            var willOpen = menu.hidden;
+            if (willOpen) {
+                menu.hidden = false;
+                menu.classList.add("open");
+            } else {
+                menu.classList.remove("open");
+                menu.hidden = true;
+            }
+        }.bind(this));
+
+        var menu = document.createElement("div");
+        menu.className = "chat-prompt-menu";
+        menu.hidden = true;
+
+        var presets = this.getPromptPresets();
+        var presetKeys = ["edit", "advice", "ask", "suggest"];
+        presetKeys.forEach(function (key) {
+            var preset = presets[key];
+            if (!preset) {
+                return;
+            }
+            var item = document.createElement("button");
+            item.type = "button";
+            item.className = "chat-prompt-menu-item";
+            item.dataset.preset = preset.id;
+
+            var label = preset.label || ("/" + preset.id);
+            item.innerHTML = label;
+
+            item.addEventListener("click", function (event) {
+                event.stopPropagation();
+                this.setPromptPreset(preset.id, { source: "dropdown" });
+                menu.classList.remove("open");
+                menu.hidden = true;
+            }.bind(this));
+            menu.appendChild(item);
+        }, this);
+
+        wrapper.appendChild(button);
+        wrapper.appendChild(menu);
+
+        this.inlinePromptDropdownButton = button;
+        this.inlinePromptDropdownMenu = menu;
+        this.updateInlinePromptDropdownLabel();
+
+        var closeOnClick = function (event) {
+            if (!wrapper.isConnected) {
+                document.removeEventListener("click", closeOnClick);
+                return;
+            }
+            if (wrapper.contains(event.target)) return;
+            menu.classList.remove("open");
+            menu.hidden = true;
+        };
+        document.addEventListener("click", closeOnClick);
 
         return wrapper;
     };
@@ -8423,6 +8971,22 @@
 
             // 3. Afficher le message utilisateur dans le chat
             const userMessage = createMessage('user', askContent);
+            if (!userMessage.docSnapshotId) {
+                var inlineDocId = (typeof options?.docSnapshotId === "string" && options.docSnapshotId)
+                    || (typeof global.getMemoActiveTabId === "function" ? global.getMemoActiveTabId() : null)
+                    || window.__memoState?.activeTabId
+                    || null;
+                userMessage.docSnapshotId = inlineDocId || null;
+            }
+            if (typeof userMessage.docSnapshotContent !== "string") {
+                var inlineSnapshot = (typeof options?.docSnapshotContent === "string" && options.docSnapshotContent.trim())
+                    ? options.docSnapshotContent
+                    : "";
+                if (!inlineSnapshot) {
+                    inlineSnapshot = extractInlineDocumentSnapshot(requestMessages);
+                }
+                userMessage.docSnapshotContent = inlineSnapshot || readDocumentContent() || "";
+            }
             assistInstance.conversation.messages.push(userMessage);
             assistInstance.appendMessage(userMessage, {
                 selectionExcerpt: selectionExcerpt

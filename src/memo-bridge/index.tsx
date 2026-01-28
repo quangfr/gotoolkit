@@ -14,6 +14,7 @@ interface MemoEditorApi {
     exportDocx: (title?: string) => Promise<Blob | null>;
     getEditorState: () => any;
     setEditorState: (state: any) => void;
+    setEditable: (editable: boolean) => void;
     switchTo: (id: string, initialContent?: string) => void;
     removeInstance: (id: string) => void;
 }
@@ -121,6 +122,17 @@ const App = () => {
                     editor.view.updateState(nextState);
                 } catch (err) {
                     console.warn('setEditorState failed', err);
+                }
+            },
+            setEditable: (editable: boolean) => {
+                const methods = activeInstanceRef.current;
+                if (methods?.setEditable) {
+                    methods.setEditable(editable);
+                    return;
+                }
+                const editor = methods?.instance || (window as any).MemoEditor;
+                if (editor?.setEditable) {
+                    editor.setEditable(Boolean(editable));
                 }
             },
             switchTo: (id: string, initialContent?: string) => {

@@ -54242,6 +54242,7 @@ ${promptInput.trim()}`
     onChange,
     editorId,
     onReady,
+    editable = true,
     placeholder = "Commencez \xE0 \xE9crire..."
   }) => {
     var _a, _b, _c, _d;
@@ -54334,6 +54335,7 @@ ${promptInput.trim()}`
         })
       ],
       content,
+      editable,
       onCreate: () => {
       },
       editorProps: {
@@ -54617,6 +54619,10 @@ ${promptInput.trim()}`
         }
       }
     });
+    react_shim_default.useEffect(() => {
+      if (!editor) return;
+      editor.setEditable(Boolean(editable));
+    }, [editor, editable]);
     const applyTableDomStyles = react_shim_default.useCallback((tableDom, numericColumns) => {
       Array.from(tableDom.querySelectorAll("tr")).forEach((row) => {
         let colIndex = 0;
@@ -56172,6 +56178,9 @@ ${innerMarkdown}
           insertMarkdownAtEnd: insertEditorMarkdownAtEnd,
           getSource: getMemoEditorSource,
           exportDocx: (title) => exportEditorToDocx(editor, title),
+          setEditable: (nextEditable) => {
+            editor == null ? void 0 : editor.setEditable(Boolean(nextEditable));
+          },
           instance: editor
         };
         if (onReady) {
@@ -57021,6 +57030,17 @@ ${innerMarkdown}
             editor.view.updateState(nextState);
           } catch (err) {
             console.warn("setEditorState failed", err);
+          }
+        },
+        setEditable: (editable) => {
+          const methods = activeInstanceRef.current;
+          if (methods == null ? void 0 : methods.setEditable) {
+            methods.setEditable(editable);
+            return;
+          }
+          const editor = (methods == null ? void 0 : methods.instance) || window.MemoEditor;
+          if (editor == null ? void 0 : editor.setEditable) {
+            editor.setEditable(Boolean(editable));
           }
         },
         switchTo: (id, initialContent) => {

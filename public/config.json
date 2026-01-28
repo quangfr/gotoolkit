@@ -75,7 +75,7 @@
         "useCloudEmbeddings": false
       },
       "structuredData": {
-        "maxMB": 2,
+        "maxMB": 5,
         "extensions": [".json", ".csv", ".hag"],
         "useCloudEmbeddings": true
       },

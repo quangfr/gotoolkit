@@ -1,7 +1,7 @@
 ## 2026-01-27
 - IA : Raccourcis Prompts
 - Accueil : Propriétaire des modèles
--  
+- IA : Éditer un prompt et restaurer une version
 
 ## 2026-01-21
 - Mémo : Exporter en HTML Email, Markdown, PDF et texte
