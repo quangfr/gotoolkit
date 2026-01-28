@@ -1464,6 +1464,9 @@
         this.memoSelectionBlockCoords = null;
         this.memoSelectionOverlay = null;
         this.memoSelectionTrackingInit = false;
+        this.memoSelectionFollowActive = true;
+        this.memoSelectionFollowButton = null;
+        this.memoSelectionIgnoreBlur = false;
         this.promptShortcutsPagerNextBtn = null;
         this.promptShortcutsActiveCategory = "ALL";
         this.promptShortcutsPageIndex = 0;
@@ -1710,7 +1713,7 @@
         }
         if (this.textarea) {
             if (listening) {
-                this.textarea.placeholder = "go envoie, go annule, go efface";
+                this.textarea.placeholder = "ok go, ok annule, ok efface";
             } else {
                 this.updateInputPlaceholder();
             }
@@ -1757,7 +1760,7 @@
                 .map(result => (result[0] ? result[0].transcript : ""))
                 .join("");
             self.lastSpeechHeardAt = Date.now();
-            const commandPattern = /\bgo\s+(live|envoie|efface|annule)\s*$/i;
+            const commandPattern = /\bok\s+(go|efface|annule)\s*$/i;
             const match = transcript.match(commandPattern);
             const finalMatch = finalTranscript.match(commandPattern);
             const command = (match && match[1]) ? match[1].toLowerCase() : null;
@@ -1777,7 +1780,7 @@
                 self.updateComposerState();
             }
             if (command && finalMatch) {
-                if (command === "live" || command === "envoie") {
+                if (command === "go") {
                     self.speechClearRequested = true;
                     self.handleSend({ value: cleanedTranscript });
                     self.speechResultStartIndex = results.length;
@@ -2601,7 +2604,7 @@
             'import': 'Que veux-tu importer ?',
             'extract': 'Que veux-tu extraire ?'
         };
-        this.textarea.placeholder = placeholders[this.promptPresetId] || 'go envoie, go annule, go efface';
+        this.textarea.placeholder = placeholders[this.promptPresetId] || 'ok go, ok annule, ok efface';
     };
 
     AssistSidebar.prototype.initMemoSelectionTracking = function () {
@@ -4448,6 +4451,7 @@
             if (!this.memoSelection && window.memoEditor?.state && window.memoEditor?.view) {
                 try {
                     var selection = window.memoEditor.state.selection;
+                    var allowCaretBlock = Boolean(this.memoSelectionFollowActive);
                     var resolveBlockRange = function ($pos) {
                         var allowedBlockTypes = {
                             paragraph: true,
@@ -4458,6 +4462,20 @@
                             blockquote: true,
                             mermaidDiagram: true
                         };
+                        var tableDepth = -1;
+                        for (var depth = $pos.depth; depth >= 0; depth--) {
+                            var node = $pos.node(depth);
+                            if (node && node.type && node.type.name === "table") {
+                                tableDepth = depth;
+                                break;
+                            }
+                        }
+                        if (tableDepth >= 0) {
+                            return {
+                                from: $pos.start(tableDepth),
+                                to: $pos.end(tableDepth)
+                            };
+                        }
                         for (var depth = $pos.depth; depth >= 0; depth--) {
                             var node = $pos.node(depth);
                             if (node && allowedBlockTypes[node.type.name]) {
@@ -4469,7 +4487,7 @@
                         }
                         return null;
                     };
-                    if (selection && !selection.empty) {
+                    if (selection && (!selection.empty || allowCaretBlock)) {
                         var from = selection.from;
                         var to = selection.to;
                         var blockRange = null;
@@ -4541,6 +4559,13 @@
             }
         }.bind(this));
         this.textarea.addEventListener("blur", function () {
+            if (this.memoSelectionIgnoreBlur) {
+                this.memoSelectionIgnoreBlur = false;
+                if (this.memoSelectionOverlay) {
+                    this.memoSelectionOverlay.style.display = "block";
+                }
+                return;
+            }
             if (this.memoSelectionOverlay) {
                 this.memoSelectionOverlay.style.display = "none";
             }
@@ -4614,8 +4639,27 @@
         this.speechButton.type = "button";
         this.speechButton.className = "btn-secondary chat-speech-btn";
         this.speechButton.innerHTML = '<i data-lucide="mic"></i>';
+        this.speechButton.addEventListener("mousedown", function () {
+            this.memoSelectionIgnoreBlur = true;
+        }.bind(this));
         this.speechButton.addEventListener("click", this.handleSpeechToggle.bind(this));
         composerLeftActions.appendChild(this.speechButton);
+
+        this.memoSelectionFollowButton = document.createElement("button");
+        this.memoSelectionFollowButton.type = "button";
+        this.memoSelectionFollowButton.className = "btn-secondary chat-selection-follow-btn active";
+        this.memoSelectionFollowButton.innerHTML = '<i data-lucide="mouse-pointer-click"></i>';
+        this.memoSelectionFollowButton.setAttribute("title", "Sélection automatique");
+        this.memoSelectionFollowButton.setAttribute("aria-pressed", "true");
+        this.memoSelectionFollowButton.addEventListener("click", function () {
+            this.memoSelectionFollowActive = !this.memoSelectionFollowActive;
+            this.memoSelectionFollowButton.classList.toggle("active", this.memoSelectionFollowActive);
+            this.memoSelectionFollowButton.setAttribute("aria-pressed", String(this.memoSelectionFollowActive));
+            if (this.memoSelectionFollowActive && document.activeElement === this.textarea) {
+                this.textarea.dispatchEvent(new Event("focus"));
+            }
+        }.bind(this));
+        composerLeftActions.appendChild(this.memoSelectionFollowButton);
         this.sidebar.appendChild(composer);
         if (window.lucide) window.lucide.createIcons();
 

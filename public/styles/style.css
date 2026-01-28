@@ -2810,6 +2810,11 @@ label {
   box-shadow: 0 0 12px rgba(177, 18, 38, 0.35);
 }
 
+.chat-selection-follow-btn.active {
+  color: var(--color-primary);
+  box-shadow: 0 0 10px rgba(41, 74, 190, 0.2);
+}
+
 .chat-docs-indicator {
   min-width: 32px;
   margin-right: 4px;
