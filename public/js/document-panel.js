@@ -746,9 +746,9 @@
                 label.className = "document-explorer__item-title";
                 const payloadRecordingId = item?.payload?.tabs?.find(tab => typeof tab?.voiceRecordingId === "string" && tab.voiceRecordingId)?.voiceRecordingId || null;
                 if (item.voiceRecordingId || payloadRecordingId) {
-                    label.innerHTML = `<i data-lucide="circle-play" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.8;"></i>${item.title || "Mémo sans titre"}`;
+                    label.innerHTML = `<i data-lucide="circle-play" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.8;"></i>${item.title || "Docs sans titre"}`;
                 } else {
-                    label.textContent = item.title || "Mémo sans titre";
+                    label.textContent = item.title || "Docs sans titre";
                 }
                 button.appendChild(label);
 

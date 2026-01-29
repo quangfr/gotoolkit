@@ -4,7 +4,7 @@ test.describe("AI Markdown Parsing", () => {
   test("should parse emoji alerts and unicode tasks from AI response", async ({ page }) => {
     const baseUrl = "http://127.0.0.1:5000";
     
-    await page.goto(`${baseUrl}/memo.html`);
+    await page.goto(`${baseUrl}/docs.html`);
 
     // Create a document
     await page.evaluate(async () => {

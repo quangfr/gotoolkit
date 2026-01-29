@@ -4,7 +4,7 @@ test.describe("Memo table column auto-resize", () => {
   const baseUrl = "http://127.0.0.1:5000";
 
   const setupMemo = async (page: any) => {
-    await page.goto(`${baseUrl}/memo.html`, { waitUntil: "load" });
+    await page.goto(`${baseUrl}/docs.html`, { waitUntil: "load" });
 
     await page.waitForFunction(
       () => Boolean((window as any).memoEditor && (window as any).GoToolkitAssistInstance),

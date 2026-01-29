@@ -5,7 +5,7 @@ test.describe("Table Migration Non-Regression", () => {
     test.setTimeout(60_000);
     const baseUrl = "http://127.0.0.1:5000";
 
-    await page.goto(`${baseUrl}/memo.html`, { waitUntil: "load" });
+    await page.goto(`${baseUrl}/docs.html`, { waitUntil: "load" });
     
     // Wait for Assist to be ready
     await page.waitForFunction(

@@ -11,7 +11,7 @@ test.describe("Memo import + AI performance", () => {
       path.join(dataDir, "sample.json"),
     ];
 
-    await page.goto(`${baseUrl}/memo.html`, { waitUntil: "load" });
+    await page.goto(`${baseUrl}/docs.html`, { waitUntil: "load" });
     await page.waitForFunction(
       () => Boolean((window as any).GoToolkitAssistInstance),
       null,

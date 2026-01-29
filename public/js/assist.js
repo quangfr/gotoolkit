@@ -300,6 +300,7 @@
             if (!lower || lower === "/") return "index";
             if (lower.endsWith("/index.html")) return "index";
             if (lower.endsWith("/memo.html")) return "memo";
+            if (lower.endsWith("/docs.html")) return "memo";
             var last = lower.split("/").filter(Boolean).slice(-1)[0] || "index";
             return last.replace(/\.html?$/, "") || "index";
         } catch (err) {
@@ -6343,12 +6344,12 @@
             if (payload && Array.isArray(payload.tabs) && payload.tabs[0]) {
                 tab = payload.tabs[0];
             } else if (typeof payload === "string") {
-                tab = { title: record.title || "Mémo", content: payload };
+                tab = { title: record.title || "Docs", content: payload };
             }
             if (!tab) return;
             var title = (typeof tab.title === "string" && tab.title.trim())
                 ? tab.title.trim()
-                : (record.title || "Mémo");
+                : (record.title || "Docs");
             var rawHtml = typeof tab.content === "string" ? tab.content : "";
             var plainText = this.stripHtmlText(rawHtml);
             var abstract = this.getFirstNonEmptyLine(plainText);
@@ -8360,7 +8361,7 @@
 
         if (payloadBytes > maxPayloadBytes) {
             console.error("Payload size exceeds limit:", payloadBytes, "bytes");
-            var errorMessage = "Document trop volumineux pour Mémo\n\n" +
+            var errorMessage = "Document trop volumineux pour Docs\n\n" +
                 "Le document dépasse la limite de " + Math.floor(maxPayloadBytes / 1_000_000) + " Mo.\n\n" +
                 "Suggestion : Ajoutez-le à la Mémoire ou avec +";
             alert(errorMessage);

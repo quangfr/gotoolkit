@@ -4,7 +4,7 @@ Boîte à outils 100 % navigateur conçue pour les consultants. GoToolkit combin
 
 ## 🚀 Modules Principaux
 
-- **Mémo** : Espace de rédaction Markdown enrichi. Supporte les diagrammes Mermaid (IA assistée), l'édition par sélection et le RAG (Retrieval-Augmented Generation) pour discuter avec vos propres documents.
+- **Docs** : Espace de rédaction Markdown enrichi. Supporte les diagrammes Mermaid (IA assistée), l'édition par sélection et le RAG (Retrieval-Augmented Generation) pour discuter avec vos propres documents.
 - **Grid** : Générateur de tableaux structurés (AG Grid). Idéal pour les mappings de données, les structures d'APIs et la génération de jeux de données fictifs via l'IA.
 
 ## 🧠 L'Assistant (Assist)
@@ -28,7 +28,7 @@ GoToolkit n'est pas qu'un éditeur, c'est un levier méthodologique pour :
 
 ## 🏗 Structure du Projet
 - **Frontend** : Site statique dans `public/`. HTML/JS/CSS natif pour une performance maximale et une portabilité totale.
-- **Bridges React** : Ponts spécialisés dans `src/` (Excalidraw pour les schémas, Tiptap pour le Mémo) bundlés via esbuild.
+- **Bridges React** : Ponts spécialisés dans `src/` (Excalidraw pour les schémas, Tiptap pour Docs) bundlés via esbuild.
 - **Workers Cloudflare** : Proxies légers dans `workers/` pour la gestion des clés API, le partage de documents et le feedback.
 
 ## 🚦 Démarrage Rapide
@@ -55,4 +55,3 @@ npm run build
 
 ---
 _GoToolkit est un projet "Browser-only" — Vos données vous appartiennent._
-

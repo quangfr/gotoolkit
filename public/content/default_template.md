@@ -1,6 +1,6 @@
 # Guide rapide
 
-Bienvenue dans l'éditeur Mémo. Voici un aperçu des fonctionnalités pour structurer vos documents (spécifications, comptes-rendus)
+Bienvenue dans l'éditeur Docs. Voici un aperçu des fonctionnalités pour structurer vos documents (spécifications, comptes-rendus)
 
 ## 📝 Mise en forme & Styles
 

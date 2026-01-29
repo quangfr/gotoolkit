@@ -766,7 +766,7 @@
             this._renderSentences();
             this._applyVideoBlob(videoBlob);
             if (this.transcriptSubtitle) {
-                this.transcriptSubtitle.textContent = memoName ? `Mémo: ${memoName}` : "";
+                this.transcriptSubtitle.textContent = memoName ? `Docs: ${memoName}` : "";
             }
             this.overlay.classList.add("voice-video-player-modal--open");
             this.overlay.setAttribute("aria-hidden", "false");

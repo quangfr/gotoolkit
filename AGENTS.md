@@ -5,15 +5,15 @@
 - Workers live in `workers/` (OpenAI proxy, sharing, feedback, AssemblyAI, OpenRouter proxy).
 
 ## Navigation + cache
-- `public/index.html` links: `grid.html` and `memo.html`.
+- `public/index.html` links: `grid.html` and `docs.html`.
 - Version format: `YYYY.MM.DD.N` (N is an increment number for the day).
 - **Bump the version systematically ONLY when the user asks for a "bump", "commit", or "push".**
 - **Automated Versioning**: Run `npm run bump` to automatically increment the version in `package.json`, update cache-busters `?v=...` in HTML files, and update version labels.
 - **Commits and Push**: When asked to "commit" or "push", always run `npm run bump` first, then commit with a descriptive message and push. If multiple changes were made, provide a detailed bulleted list in the commit description (e.g., `git commit -m "title" -m "detailed list of changes"`).
 - **Manual Bumping checklist** (if `npm run bump` is not used):
   1. Increment `version` in `package.json`.
-  2. Search and replace all `?v=...` cache-busters in `public/index.html`, `public/memo.html`, and `public/grid.html`.
-  3. Update the version label in `public/index.html` (`hero-version`), `public/memo.html` (info panel), and `public/grid.html` (info panel).
+  2. Search and replace all `?v=...` cache-busters in `public/index.html`, `public/docs.html`, and `public/grid.html`.
+  3. Update the version label in `public/index.html` (`hero-version`), `public/docs.html` (info panel), and `public/grid.html` (info panel).
   4. Sync version in `AGENTS.md` example.
 - `public/prompt.js` is the root for all AI system prompts and templates.
 - Keep the IndexedDB version in `public/js/assist.js` health-check/repair (`indexedDB.open`) aligned with `DB_VERSION` in `public/js/document-rag.js`.
@@ -21,7 +21,7 @@
 - Each page sets `window.GO_TOOLKIT_SHARE_API_URL` to `https://share.gotoolkit.workers.dev/`.
 
 ## Modules
-- **Memo** (`memos`): Rich-text editor + RAG-powered chat (`public/js/assist.js`); document management, context embeddings per memo.
+- **Docs** (`memos`): Rich-text editor + RAG-powered chat (`public/js/assist.js`); document management, context embeddings per memo.
 - **Grid** (`grids`): AG Grid, CSV/JSON export, template/criteria modal `public/js/template-criteria.js`, covered by Playwright.
 - **Templates**: System for sharing and reusing memo structures via `template-memos`.
 
@@ -53,11 +53,11 @@ Only `public/js` may touch `window`:
 ## Build + runtime
 - Build: `npm install` → `npm run build`. This runs drawing and memo bundles in parallel using `esbuild`. 
 - Production: Build is automated via GitHub Actions (`npm run build:prod`). Local result files are ignored by Git. 
-- Heavy Libraries: React, ReactDOM, Excalidraw, and Mermaid are loaded via CDN (see `memo.html`).
+- Heavy Libraries: React, ReactDOM, Excalidraw, and Mermaid are loaded via CDN (see `docs.html`).
 - Shims: Build aliases in `package.json` map module imports (e.g., `react`, `react-dom`, `excalidraw`, `mermaid`) to `window` globals via `src/*-shim.ts` files (react-shim, react-dom-shim, etc.) to keep bundles small and fast.
 - Dev: `npm start` serves `public/` on port 5000.
 - Excalidraw bridge: `src/draw-editor/index.tsx` forces light theme, normalizes Mermaid, exposes `window.GoToolkitExcalidraw`.
-- Memo bridge: `src/memo-bridge/index.tsx` exposes memo API to `window`.
+- Docs bridge: `src/memo-bridge/index.tsx` exposes the Docs editor API to `window`.
 - When modifying memo-editor (memo) or draw-editor (connect), run an npm build for the corresponding component after changes.
 
 ## Workers env

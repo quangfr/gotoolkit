@@ -350,7 +350,7 @@
             this.onDelete = typeof onDelete === "function" ? onDelete : null;
             if (this.textarea) this.textarea.value = transcriptText || "";
             if (this.subtitle) {
-                this.subtitle.textContent = memoName ? `Mémo: ${memoName}` : "";
+        this.subtitle.textContent = memoName ? `Docs: ${memoName}` : "";
             }
             this._applyAudioBlob(audioBlob);
             this.overlay.classList.add("voice-audio-player-modal--open");

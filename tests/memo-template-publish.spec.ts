@@ -18,7 +18,7 @@ test.describe("Memo template publish + fetch", () => {
       adminToken
     );
 
-    await page.goto(`${baseUrl}/memo.html`, { waitUntil: "load" });
+    await page.goto(`${baseUrl}/docs.html`, { waitUntil: "load" });
     await page.waitForFunction(() => Boolean((window as any).GoToolkitMemoCreateAutoDocument));
     await page.evaluate(async () => {
       await (window as any).GoToolkitMemoCreateAutoDocument?.();

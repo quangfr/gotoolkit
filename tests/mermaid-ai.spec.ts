@@ -4,7 +4,7 @@ test.describe("Mermaid Diagram AI Composer", () => {
   test("should generate mermaid diagram via AI composer", async ({ page }) => {
     const baseUrl = "http://127.0.0.1:5000";
     
-    await page.goto(`${baseUrl}/memo.html`);
+    await page.goto(`${baseUrl}/docs.html`);
 
     // Create a document to ensure the editor is visible
     await page.evaluate(async () => {

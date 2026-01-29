@@ -11,7 +11,7 @@ test.describe("Assist audio import (AssemblyAI)", () => {
       path.join(dataDir, "sample.wav"),
     ];
 
-    await page.goto(`${baseUrl}/memo.html`, { waitUntil: "load" });
+    await page.goto(`${baseUrl}/docs.html`, { waitUntil: "load" });
     await page.waitForFunction(
       () => Boolean((window as any).GoToolkitAssistInstance),
       null,

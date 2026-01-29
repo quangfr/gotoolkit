@@ -6,7 +6,7 @@ import { EditorState } from '@tiptap/pm/state';
 
 console.warn('!!! MEMO BRIDGE JS EXECUTED !!!');
 
-// Bridge to maintain compatibility with memo.html
+// Bridge to maintain compatibility with docs.html
 interface MemoEditorApi {
     setValue: (content: string) => void;
     getValue: () => string;
@@ -168,7 +168,7 @@ const App = () => {
         });
         setActiveId(prev => prev || 'default');
 
-        // Expose the API to the window as expected by memo.html
+        // Expose the API to the window as expected by docs.html
         (window as any).GoToolkitMemoEditorReady = Promise.resolve(api);
         (window as any).GoToolkitMemoInstance = api;
     }, []);

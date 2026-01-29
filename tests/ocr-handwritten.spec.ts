@@ -8,7 +8,7 @@ test.describe("Assist OCR handwritten image", () => {
     const dataDir = path.resolve(process.cwd(), "test-data");
     const filePath = path.join(dataDir, "sample_handwritten.webp");
 
-    await page.goto(`${baseUrl}/memo.html`, { waitUntil: "load" });
+    await page.goto(`${baseUrl}/docs.html`, { waitUntil: "load" });
     await page.waitForFunction(
       () => Boolean((window as any).GoToolkitAssistInstance?.docManager),
       null,

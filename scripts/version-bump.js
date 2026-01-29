@@ -4,7 +4,7 @@ const path = require('path');
 const packageJsonPath = path.join(__dirname, '..', 'package.json');
 const htmlFiles = [
     path.join(__dirname, '..', 'public', 'index.html'),
-    path.join(__dirname, '..', 'public', 'memo.html'),
+    path.join(__dirname, '..', 'public', 'docs.html'),
     path.join(__dirname, '..', 'public', 'grid.html'),
 ];
 
@@ -45,7 +45,7 @@ htmlFiles.forEach(filePath => {
     if (filePath.endsWith('index.html')) {
         // <span class="hero-version ...">v...</span>
         content = content.replace(/<span class="hero-version[^>]*>v[0-9.]+<\/span>/, `<span class="hero-version label-link" id="releaseNotesTrigger" tabindex="0">v${newVersion}</span>`);
-    } else if (filePath.endsWith('memo.html')) {
+    } else if (filePath.endsWith('docs.html')) {
         // <span>Version ...</span>
         content = content.replace(/<span>Version [0-9.]+<\/span>/, `<span>Version ${newVersion}</span>`);
     } else if (filePath.endsWith('grid.html')) {

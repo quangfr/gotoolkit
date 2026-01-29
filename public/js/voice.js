@@ -649,7 +649,7 @@
             return;
         }
         if (!memoId) {
-            showToast("Mémo introuvable.", true);
+            showToast("Docs introuvable.", true);
             return;
         }
         state.recordingMemoId = memoId;

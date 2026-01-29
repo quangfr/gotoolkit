@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 test.describe("Memo Mermaid Markdown Export", () => {
   test("should export mermaid diagram as markdown code block", async ({ page }) => {
     const baseUrl = "http://127.0.0.1:5000";
-    await page.goto(`${baseUrl}/memo.html`, { waitUntil: "networkidle" });
+    await page.goto(`${baseUrl}/docs.html`, { waitUntil: "networkidle" });
 
     // Wait for the editor to be ready
     await page.waitForFunction(() => Boolean((window as any).MemoEditor));
@@ -43,7 +43,7 @@ test.describe("Memo Mermaid Markdown Export", () => {
 
   test("should convert typing ```mermaid space into a diagram block", async ({ page }) => {
     const baseUrl = "http://127.0.0.1:5000";
-    await page.goto(`${baseUrl}/memo.html`, { waitUntil: "networkidle" });
+    await page.goto(`${baseUrl}/docs.html`, { waitUntil: "networkidle" });
 
     // Wait for the editor to be ready
     await page.waitForFunction(() => Boolean((window as any).MemoEditor));
@@ -74,7 +74,7 @@ test.describe("Memo Mermaid Markdown Export", () => {
 
   test("should convert pasted mermaid code block into a diagram block", async ({ page }) => {
     const baseUrl = "http://127.0.0.1:5000";
-    await page.goto(`${baseUrl}/memo.html`, { waitUntil: "networkidle" });
+    await page.goto(`${baseUrl}/docs.html`, { waitUntil: "networkidle" });
 
     // Wait for the editor to be ready
     await page.waitForFunction(() => Boolean((window as any).MemoEditor));

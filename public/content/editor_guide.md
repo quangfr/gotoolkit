@@ -1,6 +1,6 @@
-# **Guide Édition Mémo ✏️**
+# **Guide Édition Docs ✏️**
 
-Bienvenue dans l'éditeur Mémo. Voici un aperçu des fonctionnalités pour structurer vos documents (spécifications, comptes-rendus)
+Bienvenue dans l'éditeur Docs. Voici un aperçu des fonctionnalités pour structurer vos documents (spécifications, comptes-rendus)
 
 ## **🔤 Mise en forme & Styles**
 
@@ -166,7 +166,7 @@ L'assistance IA puissante.
     
 -   **Éditer** : Permet de modifier le document avec ou sans sélection. Sans sélection, les changements sont ajoutés à la fin du document.
     
--   **Importer** : Convertit un fichier (media, audio, texte) en texte mis en forme dans Mémo.
+-   **Importer** : Convertit un fichier (media, audio, texte) en texte mis en forme dans Docs.
     
 -   **Dessiner** : Crée des diagrammes visuels et puissants via Mermaid ou d’autres outils.
     

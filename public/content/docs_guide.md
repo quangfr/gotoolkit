@@ -6,7 +6,7 @@ Ce guide est ton compagnon pour devenir un **Product Owner augmenté**. Ici, pas
 
 ## 1. Démarrage Express (3 min) ⚡
 
-1.  **Ouvre Mémo** : C’est ton bureau de rédaction.
+1.  **Ouvre Docs** : C’est ton bureau de rédaction.
 2.  **Choisis un Modèle** : Ne pars jamais d’une page blanche. Utilise un "Modèle Go-Live" pour structurer tes idées.
 3.  **Lance Assist** : C’est ton copilote IA. Il est là pour rédiger, résumer ou corriger à ta place.
 
@@ -14,7 +14,7 @@ Ce guide est ton compagnon pour devenir un **Product Owner augmenté**. Ici, pas
 
 ## 2. Tes Outils Magiques 🪄
 
-### 📝 Mémo : L’éditeur fluide
+### 📝 Docs : L’éditeur fluide
 *   **Bibliothèque locale** : Tous tes documents sont rangés ici, au chaud dans ton navigateur. 📂
 *   **Multi-onglets** : Travaille sur ta note de cadrage et tes user stories en même temps.
 *   **Export facile** : Un clic et hop ! Ton travail est prêt en Word, PDF ou Markdown. 📤
@@ -40,7 +40,7 @@ Importe tes fichiers (PDF, Word, Excel, Images, Audios) pour qu’Assist apprenn
 ## 3. Super-pouvoirs & Astuces de pro 💡
 
 *   **🎙️ Commandes Vocales** : Gagne du temps, dicte tes instructions directement à Assist.
-*   **🎯 Sélection Auto** : Sélectionne un bloc dans Mémo, Assist est déjà prêt à travailler dessus.
+*   **🎯 Sélection Auto** : Sélectionne un bloc dans Docs, Assist est déjà prêt à travailler dessus.
 *   **🔄 Undo & Edit** : Une réponse ne te plaît pas ? Annule-la d’un clic ou modifie ta demande pour essayer une autre approche.
 *   **🗩 Mode Explorer** : C’est le mode "Cerveau". Assist utilise uniquement **tes** documents pour répondre. Idéal pour ne pas inventer d’informations.
 
@@ -83,4 +83,4 @@ Chez Go-Toolkit, on ne plaisante pas avec tes données :
 
 ---
 
-**Prêt à décoller ?** Retourne sur l’accueil et crée ton premier Mémo ! 🎈
+**Prêt à décoller ?** Retourne sur l’accueil et crée ton premier Docs ! 🎈
