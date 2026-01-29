@@ -2882,6 +2882,20 @@ label {
   opacity: 1;
 }
 
+.chat-attached-files-indicator.ai-request-counter-toaster {
+  cursor: pointer;
+}
+
+.chat-attached-files-indicator__delete {
+  margin-left: 6px;
+  font-weight: 700;
+  opacity: 0.8;
+}
+
+.chat-attached-files-indicator__delete:hover {
+  opacity: 1;
+}
+
 .chat-send-btn {
   min-width: 36px;
   padding: 6px 0px;

@@ -566,8 +566,8 @@
 
     function getAllowedPromptPresetIds() {
         if (CHAT_APP_ID === "memo") return ["edit", "advice", "suggest", "import", "draw"];
-        if (CHAT_APP_ID === "index") return ["advice", "ask"];
-        return ["advice", "ask"];
+        if (CHAT_APP_ID === "index") return ["edit", "advice", "suggest"];
+        return ["edit", "advice", "suggest"];
     }
 
     function readPromptPreset() {
@@ -575,10 +575,21 @@
         try {
             var stored = global.localStorage.getItem(PROMPT_PRESET_KEY);
             if (stored && allowed.includes(stored)) {
+                if (stored === "ask" || stored === "advice") {
+                    if (allowed.includes("edit")) {
+                        persistPromptPreset("edit");
+                        return "edit";
+                    }
+                    return stored;
+                }
                 return stored;
             }
         } catch (err) {
             console.warn("Chat prompt preset read failed", err);
+        }
+        if (allowed.includes("edit")) {
+            persistPromptPreset("edit");
+            return "edit";
         }
         return allowed[0] || "advice";
     }
@@ -1417,6 +1428,7 @@
         this.documentChunkCount = 0;
         this.documentUploadStatus = "";
         this.pendingDocumentAttachments = [];
+        this.pendingExcludedAttachments = new Set();
         this.attachmentsCompletedCount = 0;
         this.attachmentsCompletedSize = 0;
         this.attachmentsTotalSize = 0;
@@ -1428,6 +1440,8 @@
         this.memoContextAttachments = [];
         this.memoContextAttachmentRow = null;
         this.memoContextAttachmentList = null;
+        this.pendingAttachmentRow = null;
+        this.pendingAttachmentList = null;
         this.memoPendingAttachmentMemos = new Set();
         this.memoConfirmedAttachmentMemos = new Set();
         this.headerDocCountEl = null;
@@ -1442,6 +1456,10 @@
         this.pendingPdfHighlight = null;
         this.currentPreviewDoc = null;
         this.promptPresetId = readPromptPreset();
+        if (getAllowedPromptPresetIds().includes("edit")) {
+            this.promptPresetId = "edit";
+            persistPromptPreset("edit");
+        }
         this.undoState = null;
         this.latestRestoreMessageId = null;
         this.inlinePromptDropdownButton = null;
@@ -1518,11 +1536,27 @@
         this.mediaTranscribedCount = 0;
         this.mediaTotalCount = 0;
         this.mainApp = null;
+        var restoredAttachments = this.conversation?.attachments;
+        if (restoredAttachments && Array.isArray(restoredAttachments.names)) {
+            this.pendingDocumentAttachments = restoredAttachments.names.filter(Boolean);
+            if (Array.isArray(restoredAttachments.excluded)) {
+                this.pendingExcludedAttachments = new Set(restoredAttachments.excluded.filter(Boolean));
+            }
+        }
     }
 
     AssistSidebar.prototype.persist = function () {
         this.conversation.updatedAt = Date.now();
         persistConversation(this.conversation);
+    };
+
+    AssistSidebar.prototype.persistPendingAttachments = function () {
+        if (!this.conversation) return;
+        this.conversation.attachments = {
+            names: (this.pendingDocumentAttachments || []).filter(Boolean),
+            excluded: Array.from(this.pendingExcludedAttachments || [])
+        };
+        this.persist();
     };
 
     AssistSidebar.prototype.setWidth = function (value) {
@@ -1655,7 +1689,7 @@
         this.persist();
         clearKnowledgeModalOpenPreference();
         this.updateComposerState();
-        this.setPromptPreset(this.promptPresetId);
+        this.setPromptPreset(getAllowedPromptPresetIds().includes("edit") ? "edit" : this.promptPresetId);
     };
 
     AssistSidebar.prototype.updateComposerState = function () {
@@ -1673,6 +1707,7 @@
 
     AssistSidebar.prototype.clearAttachments = function () {
         this.pendingDocumentAttachments = [];
+        this.pendingExcludedAttachments = new Set();
         this.attachmentsTotalCount = 0;
         this.attachmentsParsedCount = 0;
         this.attachmentsCompletedCount = 0;
@@ -1683,6 +1718,23 @@
         this.attachmentsFileSizes = new Map();
         this.mediaTranscriptFileSizes = new Map();
         this.updateAttachmentIndicator();
+        this.renderPendingDocumentAttachments();
+        this.updateComposerState();
+        this.persistPendingAttachments();
+    };
+
+    AssistSidebar.prototype.clearAttachmentProgress = function () {
+        this.attachmentsTotalCount = 0;
+        this.attachmentsParsedCount = 0;
+        this.attachmentsCompletedCount = 0;
+        this.attachmentsCompletedSize = 0;
+        this.attachmentsTotalSize = 0;
+        this.attachmentsCompletedFiles = new Set();
+        this.attachmentsFailedFiles = new Set();
+        this.attachmentsFileSizes = new Map();
+        this.mediaTranscriptFileSizes = new Map();
+        this.updateAttachmentIndicator();
+        this.renderPendingDocumentAttachments();
         this.updateComposerState();
     };
 
@@ -2489,11 +2541,6 @@
         var allowed = getAllowedPromptPresetIds();
 
         var advicePrompt = getSystemPrompt();
-        var askPersisted = getPersistedPromptOrEmpty("goToolkit.chat.prompt.info");
-        var askPrompt = askPersisted
-            || global.GoToolkitChatPrompt?.INFO_PROMPT
-            || global.GoToolkitChatPrompt?.DEFAULT_INFO_PROMPT
-            || "";
 
         var editPersisted = getPersistedPromptOrEmpty("goToolkit.chat.prompt.edit");
         var editPrompt = editPersisted
@@ -2531,11 +2578,6 @@
                 label: storePresets?.advice?.label || "Demander",
                 prompt: advicePrompt
             },
-            ask: {
-                id: "ask",
-                label: storePresets?.ask?.label || "Explorer",
-                prompt: askPrompt
-            },
             suggest: {
                 id: "suggest",
                 label: storePresets?.suggest?.label || "Suggérer",
@@ -2567,6 +2609,9 @@
         allowed.forEach(function (id) {
             if (all[id]) filtered[id] = all[id];
         });
+        if (!filtered.edit && all.edit) {
+            filtered.edit = all.edit;
+        }
         return filtered;
     };
 
@@ -2725,6 +2770,47 @@
         this.memoSelectionOverlay.style.left = this.memoSelectionBlockCoords.left + "px";
         this.memoSelectionOverlay.style.width = Math.max(this.memoSelectionBlockCoords.width, 100) + "px";
         this.memoSelectionOverlay.style.height = Math.max(this.memoSelectionBlockCoords.height, 20) + "px";
+    };
+
+    AssistSidebar.prototype.refreshMemoSelectionFromEditorSelection = function (editor) {
+        if (!editor || !editor.view || !editor.state) return;
+        try {
+            var selection = editor.state.selection;
+            if (!selection || selection.empty) {
+                this.memoSelection = null;
+                this.memoSelectionBlockCoords = null;
+                this.memoSelectionCoords = null;
+                if (this.memoSelectionOverlay) {
+                    this.memoSelectionOverlay.style.display = "none";
+                }
+                return;
+            }
+            var from = selection.from;
+            var to = selection.to;
+            var selectedText = editor.state.doc.textBetween(from, to, " ");
+            this.memoSelection = {
+                text: selectedText,
+                blockText: selectedText,
+                blockMarkdown: selectedText,
+                excerpt: selectedText ? selectedText.substring(0, 100) + (selectedText.length > 100 ? "…" : "") : "",
+                from: from,
+                to: to
+            };
+            var coordsStart = editor.view.coordsAtPos(from);
+            var coordsEnd = editor.view.coordsAtPos(to);
+            this.memoSelectionBlockCoords = {
+                top: coordsStart.top,
+                left: coordsStart.left,
+                width: coordsEnd.right - coordsStart.left,
+                height: coordsEnd.bottom - coordsStart.top
+            };
+            if (this.memoSelectionOverlay) {
+                this.memoSelectionOverlay.style.display = "block";
+                this.updateMemoSelectionOverlayPosition();
+            }
+        } catch (err) {
+            // ignore
+        }
     };
 
     AssistSidebar.prototype.getMemoSelectionPayload = function (documentMarkdown, documentContent) {
@@ -3399,7 +3485,9 @@
             this.speechClearRequested = false;
         }
         var isInlineEdit = Boolean(options.editMessage);
-        var attachments = isInlineEdit ? [] : (this.pendingDocumentAttachments || []);
+        var attachments = isInlineEdit ? [] : (this.pendingDocumentAttachments || []).filter(function (name) {
+            return name && !this.pendingExcludedAttachments?.has?.(name);
+        }.bind(this));
         var hasAttachment = attachments.length > 0;
         if (!value && !hasAttachment) return;
 
@@ -3476,7 +3564,7 @@
         }
         if (!isInlineEdit && attachments && attachments.length) {
             userMessage.attachments = attachments.slice();
-            this.clearAttachments();
+            this.clearAttachmentProgress();
         }
         if (!isInlineEdit) {
             this.conversation.messages.push(userMessage);
@@ -3867,7 +3955,7 @@
         menu.hidden = true;
 
         var presets = this.getPromptPresets();
-        var presetKeys = ["edit", "advice", "ask", "suggest"];
+        var presetKeys = ["edit", "advice", "suggest"];
         presetKeys.forEach(function (key) {
             var preset = presets[key];
             if (!preset) {
@@ -3932,7 +4020,7 @@
         menu.hidden = true;
 
         var presets = this.getPromptPresets();
-        var presetKeys = ["edit", "advice", "ask", "suggest"];
+        var presetKeys = ["edit", "advice", "suggest"];
         presetKeys.forEach(function (key) {
             var preset = presets[key];
             if (!preset) {
@@ -4425,6 +4513,14 @@
         var composer = document.createElement("div");
         composer.className = "chat-composer";
         this.composer = composer;
+        var pendingAttachmentRow = document.createElement("div");
+        pendingAttachmentRow.className = "chat-composer-attachments chat-composer-attachments--pending";
+        pendingAttachmentRow.style.display = "none";
+        this.pendingAttachmentRow = pendingAttachmentRow;
+        this.pendingAttachmentList = document.createElement("div");
+        this.pendingAttachmentList.className = "chat-composer-attachments__list";
+        pendingAttachmentRow.appendChild(this.pendingAttachmentList);
+        this.sidebar.appendChild(pendingAttachmentRow);
         var memoAttachmentRow = document.createElement("div");
         memoAttachmentRow.className = "chat-composer-attachments";
         memoAttachmentRow.style.display = "none";
@@ -4631,7 +4727,7 @@
         this.docsIndicatorButton = document.createElement("button");
         this.docsIndicatorButton.type = "button";
         this.docsIndicatorButton.id = "chatAttachedFilesIndicatorBtn";
-        this.docsIndicatorButton.className = "btn-secondary chat-attached-files-indicator chat-docs-indicator";
+        this.docsIndicatorButton.className = "chat-attached-files-indicator ai-request-counter-toaster";
         this.docsIndicatorButton.hidden = true;
         this.docsIndicatorButton.style.display = "none";
         this.docsIndicatorButton.addEventListener("click", this.openDocumentSelector.bind(this));
@@ -4639,7 +4735,7 @@
         this.docsIndicatorLabelEl.className = "chat-attached-files-indicator__label chat-docs-indicator__label";
         this.docsIndicatorButton.appendChild(this.docsIndicatorLabelEl);
         this.docsIndicatorDeleteEl = document.createElement("span");
-        this.docsIndicatorDeleteEl.className = "chat-delete chat-attached-files-indicator__delete chat-docs-indicator__delete";
+        this.docsIndicatorDeleteEl.className = "chat-delete chat-attached-files-indicator__delete";
         this.docsIndicatorDeleteEl.textContent = "×";
         this.docsIndicatorDeleteEl.setAttribute("aria-label", "Supprimer les documents");
         this.docsIndicatorDeleteEl.addEventListener("click", function (event) {
@@ -4648,7 +4744,7 @@
         }.bind(this));
         this.docsIndicatorDeleteEl.style.marginLeft = "4px";
         this.docsIndicatorButton.appendChild(this.docsIndicatorDeleteEl);
-        composerLeftActions.appendChild(this.docsIndicatorButton);
+        document.body.appendChild(this.docsIndicatorButton);
 
         composerActions.appendChild(composerLeftActions);
 
@@ -4695,6 +4791,7 @@
         this.buildPreviewPanel();
         this.initMemoSelectionTracking();
         this.prefetchKnowledgeModalList();
+        this.renderPendingDocumentAttachments();
         return true;
     };
 
@@ -5469,8 +5566,21 @@
         this.docsIndicatorButton.title = parts.join("\n");
     };
 
-    AssistSidebar.prototype.setPendingDocumentAttachments = function (names) {
-        this.pendingDocumentAttachments = (names || []).filter(Boolean);
+    AssistSidebar.prototype.setPendingDocumentAttachments = function (names, options) {
+        options = options || {};
+        var nextNames = (names || []).filter(Boolean);
+        if (options.preserveExcluded) {
+            var nextExcluded = new Set();
+            (this.pendingExcludedAttachments || new Set()).forEach(function (name) {
+                if (nextNames.includes(name)) {
+                    nextExcluded.add(name);
+                }
+            });
+            this.pendingExcludedAttachments = nextExcluded;
+        } else {
+            this.pendingExcludedAttachments = new Set();
+        }
+        this.pendingDocumentAttachments = nextNames;
         this.attachmentsParsedCount = this.pendingDocumentAttachments.length;
         this.attachmentsTotalCount = 0;
         this.attachmentsCharsTotal = 0;
@@ -5482,7 +5592,92 @@
         this.attachmentsChunkTotalsByFile = {};
         this.attachmentsChunkExtByFile = {};
         this.updateAttachmentIndicator();
+        this.renderPendingDocumentAttachments();
         this.syncDocumentIndicatorTitle(this.documentChunkCount);
+        this.persistPendingAttachments();
+    };
+
+    AssistSidebar.prototype.renderPendingDocumentAttachments = function () {
+        if (!this.pendingAttachmentRow || !this.pendingAttachmentList) return;
+        var names = Array.isArray(this.pendingDocumentAttachments)
+            ? this.pendingDocumentAttachments.filter(Boolean)
+            : [];
+        var showList = names.length > 0 && !this.mediaTranscriptionActive;
+        if (!showList) {
+            this.pendingAttachmentRow.style.display = "none";
+            this.pendingAttachmentList.innerHTML = "";
+            return;
+        }
+        this.pendingAttachmentRow.style.display = "flex";
+        this.pendingAttachmentList.innerHTML = "";
+        names.forEach(function (name) {
+            var isEnabled = !this.pendingExcludedAttachments?.has?.(name);
+            var item = document.createElement("span");
+            item.className = "chat-composer-attachment";
+            item.dataset.enabled = isEnabled ? "true" : "false";
+            var label = document.createElement("span");
+            label.className = "chat-composer-attachment__name";
+            label.textContent = truncateFilename(name);
+            label.setAttribute("role", "button");
+            label.setAttribute("tabindex", "0");
+            label.setAttribute("aria-pressed", isEnabled ? "true" : "false");
+            label.addEventListener("click", function (event) {
+                event.stopPropagation();
+                this.togglePendingAttachment(name);
+            }.bind(this));
+            label.addEventListener("keydown", function (event) {
+                if (event.key !== "Enter" && event.key !== " ") return;
+                event.preventDefault();
+                this.togglePendingAttachment(name);
+            }.bind(this));
+            item.appendChild(label);
+            var removeBtn = document.createElement("button");
+            removeBtn.type = "button";
+            removeBtn.className = "chat-composer-attachment__remove";
+            removeBtn.setAttribute("aria-label", "Supprimer la pièce jointe");
+            removeBtn.innerHTML = '<i data-lucide="x" style="width:12px;height:12px;"></i>';
+            removeBtn.addEventListener("click", function (event) {
+                event.stopPropagation();
+                this.handleRemovePendingAttachment(name);
+            }.bind(this));
+            item.appendChild(removeBtn);
+            this.pendingAttachmentList.appendChild(item);
+        }.bind(this));
+        if (window.lucide) window.lucide.createIcons();
+    };
+
+    AssistSidebar.prototype.togglePendingAttachment = function (name) {
+        if (!name) return;
+        if (this.pendingExcludedAttachments?.has?.(name)) {
+            this.pendingExcludedAttachments.delete(name);
+        } else {
+            this.pendingExcludedAttachments.add(name);
+        }
+        this.renderPendingDocumentAttachments();
+        this.updateAttachmentIndicator();
+        this.persistPendingAttachments();
+    };
+
+    AssistSidebar.prototype.handleRemovePendingAttachment = function (name) {
+        if (!name) return;
+        this.pendingExcludedAttachments?.delete?.(name);
+        this.pendingDocumentAttachments = (this.pendingDocumentAttachments || []).filter(function (item) {
+            return item !== name;
+        });
+        this.renderPendingDocumentAttachments();
+        this.updateAttachmentIndicator();
+        this.updateComposerState();
+        this.persistPendingAttachments();
+        if (this.docManager) {
+            this.docManager.deleteDocumentsByNames(this.conversation.id, [name])
+                .then(function () {
+                    this.refreshDocumentStats();
+                    this.refreshMemoContextAttachments().catch(function () { /* ignore */ });
+                }.bind(this))
+                .catch(function (err) {
+                    console.warn("Failed to remove attached document", err);
+                });
+        }
     };
 
     AssistSidebar.prototype.getActiveMemoId = function () {
@@ -5642,6 +5837,7 @@
         if (this.mediaTranscriptionActive && this.mediaTotalCount > 0) {
             this.docsIndicatorButton.hidden = false;
             this.docsIndicatorButton.style.display = "";
+            this.docsIndicatorButton.classList.add("visible");
             if (this.docsIndicatorLabelEl) {
                 var uploadedTotal = this.mediaUploadCount || 0;
                 this.docsIndicatorLabelEl.textContent = "♫ " + this.mediaTranscribedCount + "/" + uploadedTotal + " fichiers";
@@ -5651,10 +5847,10 @@
             }
             return;
         }
-        var label = this.computeDocsIndicatorLabel();
-        if (!label) {
+        if (this.attachmentsTotalCount <= 0) {
             this.docsIndicatorButton.hidden = true;
             this.docsIndicatorButton.style.display = "none";
+            this.docsIndicatorButton.classList.remove("visible");
             if (this.docsIndicatorLabelEl) {
                 this.docsIndicatorLabelEl.textContent = "";
             }
@@ -5663,8 +5859,10 @@
             }
             return;
         }
+        var label = this.computeDocsIndicatorLabel();
         this.docsIndicatorButton.hidden = false;
         this.docsIndicatorButton.style.display = "";
+        this.docsIndicatorButton.classList.add("visible");
         if (this.docsIndicatorLabelEl) {
             this.docsIndicatorLabelEl.textContent = label;
         }
@@ -5712,7 +5910,11 @@
         var total = Number(this.attachmentsTotalCount) || 0;
         var completedSize = Number(this.attachmentsCompletedSize) || 0;
         var totalSize = Number(this.attachmentsTotalSize) || 0;
-        var pendingCount = Array.isArray(this.pendingDocumentAttachments) ? this.pendingDocumentAttachments.length : 0;
+        var pendingCount = Array.isArray(this.pendingDocumentAttachments)
+            ? this.pendingDocumentAttachments.filter(function (name) {
+                return name && !this.pendingExcludedAttachments?.has?.(name);
+            }.bind(this)).length
+            : 0;
 
         // During import: show overall percent only
         if (total > 0) {
@@ -5859,15 +6061,20 @@
         this.attachmentsEmbedProgressByFile = {};
         this.attachmentsChunkTotalsByFile = {};
         this.attachmentsChunkExtByFile = {};
-        this.pendingDocumentAttachments = fileArray.map(function (file) {
+        var existingPending = Array.isArray(this.pendingDocumentAttachments)
+            ? this.pendingDocumentAttachments.slice()
+            : [];
+        var incomingNames = fileArray.map(function (file) {
             return file.name;
         });
+        this.pendingDocumentAttachments = Array.from(new Set(existingPending.concat(incomingNames)));
         fileArray.forEach(function (file) {
             var name = file?.name || "";
             if (!name) return;
             this.attachmentsChunkExtByFile[name] = getFileExtension(name);
         }, this);
         this.updateAttachmentIndicator();
+        this.renderPendingDocumentAttachments();
         this.updateComposerState();
         this.setDocumentUploadStatus("Indexation en cours…");
         var memoId = this.getActiveMemoId();
@@ -5930,11 +6137,12 @@
             }
             var readyDocs = results
                 .filter(function (item) {
-                    return item.success;
+                    return item && (item.success || item.duplicate);
                 })
                 .map(function (item) {
                     return item.name;
-                });
+                })
+                .filter(Boolean);
             console.log("Ready docs to display:", readyDocs);
             try {
                 document.dispatchEvent(new CustomEvent("goToolkitDocumentsDbStatus", {
@@ -5943,7 +6151,8 @@
             } catch (err) {
                 // ignore
             }
-            this.setPendingDocumentAttachments(readyDocs);
+            var mergedReadyDocs = Array.from(new Set((this.pendingDocumentAttachments || []).concat(readyDocs)));
+            this.setPendingDocumentAttachments(mergedReadyDocs, { preserveExcluded: true });
             if (memoId) {
                 if (readyDocs.length) {
                     this.markMemoAttachmentsPending(memoId);
@@ -5953,7 +6162,7 @@
                 window.GoToolkitMemoSyncContextEmbeddings?.(memoId);
             }
             if (!errors.length) {
-                this.clearAttachments();
+                this.clearAttachmentProgress();
             }
         } catch (error) {
             console.error("Document ingestion exception:", error);
@@ -9747,6 +9956,9 @@
                             }
                             window.insertEditorMarkdownAtRange(editMetadata.sOutput.text, targetRange);
                             restoreScroll();
+                            setTimeout(function () {
+                                assistInstance.refreshMemoSelectionFromEditorSelection(editor);
+                            }, 0);
                         } else {
                             logInlineEditIssue('L1/insert-range-missing', { reason: 'insertEditorMarkdownAtRange unavailable' });
                         }

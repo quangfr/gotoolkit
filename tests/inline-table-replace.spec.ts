@@ -49,6 +49,15 @@
 
       await page.waitForFunction(() => Boolean((window as any).memoEditor?.state), null, { timeout: 30_000 });
 
+      await page.evaluate(() => {
+        (window as any).GoToolkitAssistInstance?.open?.();
+      });
+      const selectionFollowBtn = page.locator("#assistSidebar .chat-selection-follow-btn");
+      await selectionFollowBtn.waitFor({ state: "visible" });
+      if ((await selectionFollowBtn.getAttribute("aria-pressed")) !== "true") {
+        await selectionFollowBtn.click();
+      }
+
       const initialMarkdown = [
         "Line 1 before",
         "",
