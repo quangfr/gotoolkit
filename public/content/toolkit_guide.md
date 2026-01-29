@@ -18,12 +18,14 @@ Ce guide est ton compagnon pour devenir un **Product Owner augmenté**. Ici, pas
 *   **Bibliothèque locale** : Tous tes documents sont rangés ici, au chaud dans ton navigateur. 📂
 *   **Multi-onglets** : Travaille sur ta note de cadrage et tes user stories en même temps.
 *   **Export facile** : Un clic et hop ! Ton travail est prêt en Word, PDF ou Markdown. 📤
+*   **Partager & publier** : Génére un lien pour partager ou publier ton document comme modèle en un clic.
 
 ### 🦾 Assist : Ton copilote IA
 Assist ne se contente pas de discuter, il **agit** sur ton document :
 *   **Éditer** : Sélectionne un texte brouillon, demande-lui de le rendre "pro et clair". 
 *   **Suggérer** : Il continue ta phrase ou propose la structure de ta prochaine section.
 *   **Explorer** : Pose-lui des questions sur tes propres documents importés. Il te répond avec les sources ! 
+*   **Personnaliser le prompt** : Ajuste le contexte, le ton et les consignes pour des réponses sur‑mesure.
 
 ### 🎙️ Enregistrer une conversation
 Capture une démo, un atelier ou un brief en **partage d’écran + micro** :
@@ -34,22 +36,27 @@ Capture une démo, un atelier ou un brief en **partage d’écran + micro** :
 ### 📊 Draw : Les schémas sans effort
 Marre de passer des heures sur des carrés et des flèches ?
 *   Décris ton flux (ex: "Processus de validation") et Assist génère le **diagramme Mermaid** instantanément. 
+*   **3 types de diagrammes** :
+	*   **Flux** : parcours ou processus métier (étapes, décisions, branches).
+	*   **Séquentiel** : interactions entre acteurs/systèmes dans le temps.
+	*   **Classe** : structure d’objets, entités et relations.
 *   Modifie le texte, le schéma se met à jour tout seul. Magique. 🪄
 
 ### 🧠 Mémoire : Ta base de connaissances
 Importe tes fichiers (PDF, Word, Excel, Images, Audios) pour qu’Assist apprenne ton projet.
 *   **OCR** : Il lit le texte sur tes photos de tableau blanc. 📸
 *   **Transcription** : Il transforme tes réunions enregistrées en texte exploitable. 🎙️
+*   **Fichiers joints 📄** : Ajoute des fichiers pour la conversation en cours uniquement.
 
 ### 📲 Capture depuis le mobile
 Besoin d’envoyer un scan ou un audio depuis ton smartphone :
 *   Scanne le **QR Code** ou saisis le **code session** depuis le **Hub** sur mobile.
 *   Envoie tes photos ou ton enregistrement : le texte OCR arrive dans Docs en un clic sur **Récupérer**.
 
-### 💡 Super‑pouvoirs & astuces de pro
+### 💡 Astuces avancées
 *   **🎙️ Commandes Vocales** : Gagne du temps, dicte tes instructions directement à Assist.
 *   **🎯 Sélection Auto** : Si un bloc est sélectionné, Assist travaille dessus. **Sans sélection**, le texte généré par l’IA est **ajouté à la fin du document**.
-*   **🔄 Annuler & modifier** : Une réponse ne te plaît pas ? Annule-la d’un clic ou modifie ta demande pour essayer une autre approche.
+*   **🔄 Modifier le prompt & restaurer** : Une réponse ne te plaît pas ? Annule-la d’un clic ou modifie ta demande pour essayer une autre approche.
 ---
 
 ## 3. 10 Idées pour booster ton quotidien 🚀
@@ -65,11 +72,7 @@ Besoin d’envoyer un scan ou un audio depuis ton smartphone :
 9.  **Release note pour email** : "Rédige un email de release avec nouveautés, bénéfices et actions attendues".
 10. **Recherche & synthèse sourcée** : "Interroge mes documents importés, réponds avec une synthèse et cite les sources".
 
-**Besoin d'un coup de pouce ?** Explore la bibliothèque de **Raccourcis (✨)**. C'est une mine d'or de prompts experts prêts à l'emploi, classés par thématiques pour t'aider dans toutes tes missions :
-*   **Vision** : Stratégie, Discovery et Design
-*   **Management** : Organisation, Delivery et Support.
-*   **Opérationnel** : UX/UI, Tech, Data et IA.
-*   **Transverse** : KPIs, Texte, Communication et RH.
+**Besoin d'un coup de pouce ?** Explore la bibliothèque de **Raccourcis (✨)**. C'est une mine d'or de prompts experts prêts à l'emploi, classés par thématiques pour t'aider dans toutes tes missions.
 
 ---
 
@@ -84,6 +87,7 @@ Chez Go-Toolkit, on ne plaisante pas avec tes données :
 ## 6. Un petit souci ? 🛠️
 
 *  Le Toolkit est encore en **beta**. Si quelque chose ne fonctionne pas, utilise le bouton **Réparer** dans **Document 📄> Aide**. Attention : cela réinitialise l'application et **efface tes données locales** !
+*  **Donner un feedback** : Utilise l’option **Feedback** pour signaler un bug ou proposer une amélioration.
 ---
 
-**Prêt à décoller ?** Retourne sur l’accueil et crée ton premier Docs ! 🎈
+**Prêt à décoller ?** Retourne sur l’accueil et crée ton premier Doc ! 🎈
