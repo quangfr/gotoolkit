@@ -77,6 +77,8 @@
         if (!app) {
             return null;
         }
+        const hasVoiceRecordingId = Object.prototype.hasOwnProperty.call(value, "voiceRecordingId");
+        const hasHandoffId = Object.prototype.hasOwnProperty.call(value, "handoffId");
         return {
             id,
             app,
@@ -88,7 +90,8 @@
             updatedAt: value.updatedAt || new Date().toISOString(),
             lastOpenedAt: value.lastOpenedAt || "",
             pinned: Boolean(value.pinned),
-            voiceRecordingId: value.voiceRecordingId || null
+            voiceRecordingId: hasVoiceRecordingId ? (value.voiceRecordingId || null) : undefined,
+            handoffId: hasHandoffId ? (typeof value.handoffId === "string" ? value.handoffId : null) : undefined
         };
     }
 
@@ -122,6 +125,8 @@
         }
         const stored = await readRecords();
         const existing = normalizeRecord(stored[normalized.id]);
+        const hasVoiceRecordingId = Object.prototype.hasOwnProperty.call(record, "voiceRecordingId");
+        const hasHandoffId = Object.prototype.hasOwnProperty.call(record, "handoffId");
         const next = {
             id: normalized.id,
             app: normalized.app,
@@ -137,6 +142,16 @@
                     ? record.pinned
                     : (existing && existing.pinned) || false
         };
+        if (hasVoiceRecordingId) {
+            next.voiceRecordingId = normalized.voiceRecordingId || null;
+        } else if (existing && Object.prototype.hasOwnProperty.call(existing, "voiceRecordingId")) {
+            next.voiceRecordingId = existing.voiceRecordingId;
+        }
+        if (hasHandoffId) {
+            next.handoffId = normalized.handoffId === undefined ? null : normalized.handoffId;
+        } else if (existing && Object.prototype.hasOwnProperty.call(existing, "handoffId")) {
+            next.handoffId = existing.handoffId;
+        }
         stored[next.id] = next;
         await writeRecords(stored);
         return next;

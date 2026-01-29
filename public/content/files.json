@@ -7,7 +7,7 @@
   {
     "name": "Guide Docs & Assist",
     "abstract": "Documentation technique exhaustive de l'architecture (docs.html, assist.js, draw-editor) et des modes de prompt IA pour Product Owners.",
-    "path": "content/docs_guide.md",
+    "path": "content/toolkit_guide.md",
     "updatedAt": "2026-01-21T10:00:00Z"
   },
   {

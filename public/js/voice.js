@@ -225,7 +225,7 @@
         const durationMs = Math.max(1000, Math.round((remainingSeconds || 0) * 1000));
         window.GoToolkitAIRequestToaster?.startIcon?.(
             "aiRequestCounterToasterTranscription",
-            "activity",
+            "audio-lines",
             "",
             durationMs
         );
@@ -469,25 +469,29 @@
     }
 
     function buildButtonLabel() {
+        const hasRecordingForCurrentMemo = Boolean(
+            state.currentRecordingId && state.currentMemoId && state.recordingMemoId === state.currentMemoId
+        );
+        const badge = hasRecordingForCurrentMemo ? '<span class="chat-header-badge"></span>' : "";
         if (state.isTranscribing) {
-            return `<i data-lucide="loader-2" class="lucide-spin" style="width:14px;height:14px;"></i>`;
+            return `<i data-lucide="loader-2" class="lucide-spin" style="width:14px;height:14px;"></i>${badge}`;
         }
         if (state.isRecording) {
             const duration = Math.floor((Date.now() - state.recordingStartTime) / 1000);
             const timeLabel = formatDuration(duration);
             if (state.currentMemoId && state.recordingMemoId && state.currentMemoId !== state.recordingMemoId) {
                 const memoLabel = state.recordingMemoName ? ` (${state.recordingMemoName})` : "";
-                return `■ ${timeLabel}${memoLabel}`;
+                return `■ ${timeLabel}${memoLabel}${badge}`;
             }
-            return `■ ${timeLabel}`;
+            return `■ ${timeLabel}${badge}`;
         }
         if (state.currentRecordingId) {
             if (state.currentMemoId && state.recordingMemoId && state.currentMemoId === state.recordingMemoId) {
-                return '<i data-lucide="circle-play"></i>';
+                return `<i data-lucide="audio-lines"></i>${badge}`;
             }
-            return '<i data-lucide="mic"></i>';
+            return `<i data-lucide="audio-lines"></i>${badge}`;
         }
-        return '<i data-lucide="mic"></i>';
+        return `<i data-lucide="audio-lines"></i>${badge}`;
     }
 
     function updateButton() {
@@ -1052,15 +1056,24 @@
 
     function ensureVoiceButton() {
         const launcher = document.querySelector(".feedback-app-launcher-row");
-        if (!launcher) return;
+        const globalActions = document.querySelector(".global-actions");
+        if (!launcher && !globalActions) return;
         if (state.voiceButton) return;
         const btn = document.createElement("button");
         btn.type = "button";
-        btn.className = "feedback-app-button btn btn-secondary app-header-btn go-toolkit-voice-button";
+        btn.className = "feedback-app-button btn btn-secondary app-header-btn chat-header-btn go-toolkit-voice-button";
         btn.title = "Enregistrer une conversation";
         btn.textContent = "◉";
         btn.addEventListener("click", handleButtonClick);
-        launcher.appendChild(btn);
+        const handoffBtn = document.getElementById("handoffFocusBtn");
+        const themeMenuTrigger = document.getElementById("themeMenuTrigger");
+        if (globalActions && handoffBtn && handoffBtn.parentNode === globalActions) {
+            globalActions.insertBefore(btn, handoffBtn.nextSibling);
+        } else if (globalActions && themeMenuTrigger && themeMenuTrigger.parentNode === globalActions) {
+            globalActions.insertBefore(btn, themeMenuTrigger);
+        } else if (launcher) {
+            launcher.appendChild(btn);
+        }
         state.voiceButton = btn;
         updateButton();
     }

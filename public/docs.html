@@ -46,10 +46,10 @@
         crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.min.js" crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.min.js" crossorigin></script>
-    <link rel="stylesheet" href="styles/style.css?v=2026.01.29.10">
+    <link rel="stylesheet" href="styles/style.css?v=2026.01.29.11">
     <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
-    <link rel="stylesheet" href="styles/memo.css?v=2026.01.29.10">
-    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.01.29.10">
+    <link rel="stylesheet" href="styles/memo.css?v=2026.01.29.11">
+    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.01.29.11">
     <link rel="stylesheet" href="https://unpkg.com/json-viewer-js@1.1.0/dist/json-viewer.min.css">
     <script src="https://unpkg.com/json-viewer-js@1.1.0/dist/json-viewer.min.js"></script>
 </head>
@@ -91,7 +91,7 @@
                     <button id="documentExplorerToggle" class="app-home-link" type="button"
                         title="Afficher la bibliothèque" aria-expanded="false" aria-controls="documentExplorer"><i
                             data-lucide="library"></i></button>
-                    <a href="/?v=2026.01.29.10" class="nav-switch-btn" title="Accueil"
+                    <a href="/?v=2026.01.29.11" class="nav-switch-btn" title="Accueil"
                         style="text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
                         <i data-lucide="home"></i>
                     </a>
@@ -155,9 +155,10 @@
                         title="Modèles">
                         <i data-lucide="zap"></i>
                     </button>
-                    <button id="handoffFocusBtn" class="btn btn-secondary app-header-btn" type="button"
+                    <button id="handoffFocusBtn" class="btn btn-secondary app-header-btn chat-header-btn" type="button"
                         title="Handoff OCR">
                         <i data-lucide="scan-text"></i>
+                        <span id="handoffBadge" class="chat-header-badge" style="display:none;"></span>
                     </button>
                     <div class="menu-trigger" id="themeMenuTrigger">
                         <button id="themeBtn" class="btn btn-secondary app-header-btn" type="button" title="Thème">
@@ -307,7 +308,8 @@
                 </div>
                 <div id="handoffStatus" style="font-size: 13px; opacity: 0.8;"></div>
                 <div class="modal-actions" style="justify-content: flex-end; gap: 8px;">
-                    <button id="handoffCancelBtn" type="button" class="btn btn-secondary">Annuler</button>
+                    <button id="handoffCancelBtn" type="button" class="btn btn-secondary"
+                        style="margin-right:auto;">Supprimer</button>
                     <button id="handoffRetrieveBtn" type="button" class="btn-primary">Récupérer</button>
                 </div>
             </div>
@@ -318,7 +320,7 @@
         <img src="img/logo.gif" alt="Logo Go-Toolkit" class="logo-light">
         <img src="img/logo_inverted.gif" alt="Logo Go-Toolkit" class="logo-dark">
         <strong>Go-Toolkit</strong>
-        <span>Version 2026.01.29.10</span>
+        <span>Version 2026.01.29.11</span>
         <span>Usage réservé à Savane Consulting.</span>
         <div class="info-actions info-actions--stacked">
             <div class="info-actions-row">
@@ -382,22 +384,22 @@
         window.GO_TOOLKIT_SHARE_API_URL =
             window.GO_TOOLKIT_SHARE_API_URL || "https://share.gotoolkit.workers.dev/";
     </script>
-    <script src="js/config.js?v=2026.01.29.10"></script>
-    <script src="js/feature-visibility.js?v=2026.01.29.10"></script>
-    <script src="js/document-storage.js?v=2026.01.29.10"></script>
-    <script src="js/storage-service.js?v=2026.01.29.10"></script>
-    <script src="js/shared-ui.js?v=2026.01.29.10"></script>
-    <script src="js/cgu.js?v=2026.01.29.10"></script>
-    <script src="js/share-worker-client.js?v=2026.01.29.10"></script>
-    <script src="js/share-history.js?v=2026.01.29.10"></script>
-    <script src="js/document-api.js?v=2026.01.29.10"></script>
-    <script src="js/keywordIndex.js?v=2026.01.29.10"></script>
-    <script src="js/document-rag.js?v=2026.01.29.10"></script>
-    <script src="js/ia-config.js?v=2026.01.29.10"></script>
-    <script src="preset.js?v=2026.01.29.10"></script>
-    <script src="prompt.js?v=2026.01.29.10"></script>
-    <script src="js/ia-client.js?v=2026.01.29.10"></script>
-    <script src="js/document-markdown.js?v=2026.01.29.10"></script>
+    <script src="js/config.js?v=2026.01.29.11"></script>
+    <script src="js/feature-visibility.js?v=2026.01.29.11"></script>
+    <script src="js/document-storage.js?v=2026.01.29.11"></script>
+    <script src="js/storage-service.js?v=2026.01.29.11"></script>
+    <script src="js/shared-ui.js?v=2026.01.29.11"></script>
+    <script src="js/cgu.js?v=2026.01.29.11"></script>
+    <script src="js/share-worker-client.js?v=2026.01.29.11"></script>
+    <script src="js/share-history.js?v=2026.01.29.11"></script>
+    <script src="js/document-api.js?v=2026.01.29.11"></script>
+    <script src="js/keywordIndex.js?v=2026.01.29.11"></script>
+    <script src="js/document-rag.js?v=2026.01.29.11"></script>
+    <script src="js/ia-config.js?v=2026.01.29.11"></script>
+    <script src="preset.js?v=2026.01.29.11"></script>
+    <script src="prompt.js?v=2026.01.29.11"></script>
+    <script src="js/ia-client.js?v=2026.01.29.11"></script>
+    <script src="js/document-markdown.js?v=2026.01.29.11"></script>
     <script>
         // Initialize feedback configuration for Docs before loading feedback.js
         window.GoToolkitAppFeedbackConfig = {
@@ -416,12 +418,12 @@
             ]
         };
     </script>
-    <script src="js/feedback.js?v=2026.01.29.10"></script>
-    <script src="js/voice-video-player.js?v=2026.01.29.10"></script>
-    <script src="js/voice-audio-player.js?v=2026.01.29.10"></script>
-    <script src="js/voice.js?v=2026.01.29.10"></script>
-    <script src="js/voice-transcript.js?v=2026.01.29.10"></script>
-    <script src="js/draw-memo.js?v=2026.01.29.10"></script>
+    <script src="js/feedback.js?v=2026.01.29.11"></script>
+    <script src="js/voice-video-player.js?v=2026.01.29.11"></script>
+    <script src="js/voice-audio-player.js?v=2026.01.29.11"></script>
+    <script src="js/voice.js?v=2026.01.29.11"></script>
+    <script src="js/voice-transcript.js?v=2026.01.29.11"></script>
+    <script src="js/draw-memo.js?v=2026.01.29.11"></script>
     <script>
         // Suppress React DevTools prompt in dev builds.
         window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = window.__REACT_DEVTOOLS_GLOBAL_HOOK__ || {
@@ -431,14 +433,14 @@
             onCommitFiberUnmount: function () { }
         };
     </script>
-    <script src="js/memo.bundle.js?v=2026.01.29.10"></script>
+    <script src="js/memo.bundle.js?v=2026.01.29.11"></script>
     <div id="aiRequestCounterToaster" class="ai-request-counter-toaster" style="display:none;"
         data-toast-aria-live="polite" data-toast-aria-atomic="true">
         <span id="aiRequestCounterText"><i data-lucide="bot" class="lucide-pulse"
                 style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i> 00:00</span>
     </div>
-    <script src="js/assist.js?v=2026.01.29.10"></script>
-    <script src="js/document-panel.js?v=2026.01.29.10"></script>
+    <script src="js/assist.js?v=2026.01.29.11"></script>
+    <script src="js/document-panel.js?v=2026.01.29.11"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             setTimeout(function () {
@@ -551,6 +553,7 @@
             const handoffCopyCode = document.getElementById("handoffCopyCode");
             const handoffTitle = document.getElementById("handoffTitle");
             const handoffStatus = document.getElementById("handoffStatus");
+            const handoffBadge = document.getElementById("handoffBadge");
             let activeTemplatePreview = null;
             const promptModal = document.getElementById("gtPromptModal");
             const promptModalTrigger = document.getElementById("gtPromptModalTrigger");
@@ -706,6 +709,79 @@
                 }
             }
 
+            function resolveHandoffId(docId, handoffId) {
+                if (handoffId === null) return null;
+                if (typeof handoffId === "string" && handoffId) return handoffId;
+                return docId || null;
+            }
+
+            function setHandoffBadgeVisible(visible) {
+                if (!handoffBadge) return;
+                handoffBadge.style.display = visible ? "flex" : "none";
+            }
+
+            let handoffBadgeNonce = 0;
+            async function refreshHandoffBadge(docId) {
+                if (!docId || !shareWorker?.fetchSharePayload) {
+                    setHandoffBadgeVisible(false);
+                    return;
+                }
+                const nonce = ++handoffBadgeNonce;
+                try {
+                    const result = await shareWorker.fetchSharePayload("handoffs", docId);
+                    if (nonce !== handoffBadgeNonce) return;
+                    const text = (result?.payload?.text || "").trim();
+                    setHandoffBadgeVisible(Boolean(text));
+                } catch (err) {
+                    if (nonce !== handoffBadgeNonce) return;
+                    setHandoffBadgeVisible(false);
+                }
+            }
+
+            async function ensureHandoffRecord(docId, title) {
+                if (!docId || !shareWorker?.fetchSharePayload || !shareWorker?.saveSharePayload) return;
+                try {
+                    const existing = await shareWorker.fetchSharePayload("handoffs", docId);
+                    if (existing?.payload) return;
+                } catch (err) {
+                    // Continue with creation when record is missing or fetch fails.
+                }
+                try {
+                    await shareWorker.saveSharePayload("handoffs", docId, {
+                        text: "",
+                        title: title || "Document",
+                        timestamp: new Date().toISOString()
+                    });
+                } catch (err) {
+                    console.warn("Handoff init failed", err);
+                }
+            }
+
+            async function updateDocumentHandoffId(docId, handoffId) {
+                if (!docId) return;
+                const resolved = resolveHandoffId(docId, handoffId);
+                const openDoc = openDocuments.find(item => item.id === docId);
+                if (openDoc) {
+                    openDoc.handoffId = resolved;
+                }
+                const activeTab = getActiveTab();
+                if (docId === activeDocumentId && activeTab) {
+                    activeTab.handoffId = resolved;
+                }
+                if (documentApi?.getRecord && documentApi?.upsertRecord) {
+                    const record = await documentApi.getRecord(docId);
+                    if (record) {
+                        await documentApi.upsertRecord({
+                            ...record,
+                            handoffId: resolved,
+                            updatedAt: record.updatedAt || new Date().toISOString()
+                        });
+                    }
+                }
+                renderDocumentTabs();
+                memoExplorer?.refresh?.();
+            }
+
             async function openHandoffModal() {
                 if (!activeDocumentId) {
                     setStatus("Aucun document actif");
@@ -718,6 +794,8 @@
                 const link = new URL("hub.html", window.location.origin);
                 link.searchParams.set("id", activeDocumentId);
                 activeHandoff = { docId: activeDocumentId, title, shortCode, link: link.toString() };
+                await updateDocumentHandoffId(activeDocumentId, activeDocumentId);
+                await ensureHandoffRecord(activeDocumentId, title);
                 if (handoffTitle) handoffTitle.textContent = title;
                 if (handoffShortCode) handoffShortCode.textContent = shortCode;
                 if (handoffQrCanvas) {
@@ -763,6 +841,7 @@
                         setHandoffStatus("Mapping code indisponible");
                     }
                 }
+                refreshHandoffBadge(activeDocumentId);
                 handoffModal.classList.add("open");
             }
 
@@ -794,6 +873,15 @@
                 }
             }
 
+            async function deleteHandoffRecord(docId) {
+                if (!docId || !shareWorker?.deleteSharePayload) return;
+                try {
+                    await shareWorker.deleteSharePayload("handoffs", docId);
+                } catch (err) {
+                    console.warn("Handoff delete failed", err);
+                }
+            }
+
             function createDefaultState() {
                 const id = createId();
                 const lastPromptPreset = getLastSavedPromptPreset();
@@ -808,7 +896,8 @@
                             category: "",
                             content: "",
                             contextEmbeddings: [],
-                            voiceRecordingId: null
+                            voiceRecordingId: null,
+                            handoffId: null
                         }
                     ],
                     activeTabId: id,
@@ -835,7 +924,8 @@
                         ? tab.contextEmbeddings.filter(Boolean)
                         : [];
                     const voiceRecordingId = typeof tab.voiceRecordingId === "string" ? tab.voiceRecordingId : null;
-                    return { id, title, description, category, superpowers, content, contextEmbeddings, voiceRecordingId };
+                    const handoffId = typeof tab.handoffId === "string" ? tab.handoffId : null;
+                    return { id, title, description, category, superpowers, content, contextEmbeddings, voiceRecordingId, handoffId };
                 });
                 const activeId = normalizedTabs.some(tab => tab.id === raw.activeTabId)
                     ? raw.activeTabId
@@ -872,6 +962,7 @@
                     superpowers: doc.superpowers || [],
                     payload: doc.payload,
                     voiceRecordingId: doc.voiceRecordingId || null,
+                    handoffId: resolveHandoffId(doc.id, doc.handoffId),
                     updatedAt: doc.updatedAt || new Date().toISOString()
                 });
             }
@@ -895,8 +986,19 @@
 
                     const label = document.createElement("span");
                     const recordingId = doc.voiceRecordingId || getVoiceRecordingIdFromPayload(doc.payload);
-                    if (recordingId) {
-                        label.innerHTML = `<i data-lucide="circle-play" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.8;"></i>${escapeHtml(doc.title || "Docs")}`;
+                    const hasRecording = !!recordingId;
+                    const resolvedHandoffId = resolveHandoffId(doc.id, doc.handoffId);
+                    const hasHandoff = resolvedHandoffId !== null;
+
+                    if (hasHandoff || hasRecording) {
+                        let icons = "";
+                        if (hasHandoff) {
+                            icons += '<i data-lucide="scan-text" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.8;"></i>';
+                        }
+                        if (hasRecording) {
+                            icons += '<i data-lucide="audio-lines" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.8;"></i>';
+                        }
+                        label.innerHTML = `${icons}${escapeHtml(doc.title || "Docs")}`;
                     } else {
                         label.textContent = doc.title || "Docs";
                     }
@@ -957,6 +1059,8 @@
                     payload
                 });
                 renderDocumentTabs();
+                updateDocumentHandoffId(fallbackId, fallbackId);
+                refreshHandoffBadge(fallbackId);
             }
 
             function syncActiveDocumentPayload() {
@@ -988,6 +1092,10 @@
                 const description = doc.description || existing?.description || "";
                 const superpowers = doc.superpowers || existing?.superpowers || [];
                 const voiceRecordingId = doc.voiceRecordingId || existing?.voiceRecordingId || getVoiceRecordingIdFromPayload(payload);
+                const hasDocHandoff = Object.prototype.hasOwnProperty.call(doc, "handoffId");
+                const hasExistingHandoff = existing && Object.prototype.hasOwnProperty.call(existing, "handoffId");
+                const handoffSource = hasDocHandoff ? doc.handoffId : (hasExistingHandoff ? existing.handoffId : doc.id);
+                const handoffId = resolveHandoffId(doc.id, handoffSource);
                 const record = await documentApi.upsertRecord({
                     id: doc.id,
                     app: "memo",
@@ -996,6 +1104,7 @@
                     description,
                     superpowers,
                     voiceRecordingId,
+                    handoffId,
                     updatedAt,
                     lastOpenedAt: now
                 });
@@ -1007,6 +1116,7 @@
                         superpowers: record.superpowers || superpowers,
                         payload,
                         voiceRecordingId: record.voiceRecordingId || voiceRecordingId,
+                        handoffId: record.handoffId || handoffId,
                         updatedAt: record.updatedAt || updatedAt,
                         lastOpenedAt: now
                     });
@@ -1028,6 +1138,8 @@
                 syncAssistPresetFromState();
                 renderDocumentTabs();
                 markDocumentOpened(target);
+                updateDocumentHandoffId(target.id, target.handoffId);
+                refreshHandoffBadge(target.id);
             }
 
             function closeDocumentTab(docId) {
@@ -1939,6 +2051,7 @@
                         }
                     }
                 }
+                await deleteHandoffRecord(docId);
                 if (documentApi) {
                     await documentApi.removeRecord(docId);
                 }
@@ -1969,6 +2082,10 @@
                     }
                     state = nextState;
                     activeDocumentId = (documentApi?.generateId && documentApi.generateId()) || createId();
+                    const activeTab = getActiveTab();
+                    if (activeTab) {
+                        activeTab.handoffId = resolveHandoffId(activeDocumentId, activeTab.handoffId);
+                    }
                     renderTabs();
                     setActiveTab(state.activeTabId);
                     syncAssistPresetFromState();
@@ -2120,6 +2237,7 @@
                         description: options?.description !== undefined ? options.description : preview.description,
                         superpowers: superpowers,
                         voiceRecordingId: activeTab?.voiceRecordingId || null,
+                        handoffId: resolveHandoffId(id, activeTab?.handoffId),
                         updatedAt: now
                     });
                     if (record) {
@@ -2134,6 +2252,7 @@
                             superpowers: superpowers,
                             payload,
                             voiceRecordingId: record.voiceRecordingId || activeTab?.voiceRecordingId || null,
+                            handoffId: resolveHandoffId(id, record.handoffId !== undefined ? record.handoffId : activeTab?.handoffId),
                             updatedAt: now
                         });
                         renderDocumentTabs();
@@ -2445,7 +2564,7 @@
                     btn.dataset.templateId = template.id;
 
                     const updatedLabel = formatTemplateRelativeDate(template.updatedAt);
-                    const recordingIcon = template.voiceRecordingId ? `<i data-lucide="circle-play" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.8;"></i>` : "";
+                    const recordingIcon = template.voiceRecordingId ? `<i data-lucide="audio-lines" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.8;"></i>` : "";
                     let superpowersHtml = "";
                     if (template.superpowers && Array.isArray(template.superpowers)) {
                         const pills = template.superpowers.map(spId => {
@@ -2910,11 +3029,11 @@
                 const payload = nextState;
                 const now = new Date().toISOString();
                 const id = (documentApi.generateId && documentApi.generateId()) || createId();
-                    const record = await documentApi.upsertRecord({
-                        id,
-                        app: "memo",
-                        payload,
-                        title: nextState.tabs?.[0]?.title || "Docs 1",
+                const record = await documentApi.upsertRecord({
+                    id,
+                    app: "memo",
+                    payload,
+                    title: nextState.tabs?.[0]?.title || "Docs 1",
                     description: "",
                     updatedAt: now
                 });
@@ -3375,12 +3494,22 @@
             });
             handoffModalClose?.addEventListener("click", () => closeHandoffModal());
             handoffCancelBtn?.addEventListener("click", async () => {
-                await clearHandoffContent();
-                await flushHandoffCodeMap();
+                if (activeHandoff?.docId) {
+                    await deleteHandoffRecord(activeHandoff.docId);
+                    await flushHandoffCodeMap();
+                    await updateDocumentHandoffId(activeHandoff.docId, null);
+                    setHandoffBadgeVisible(false);
+                }
                 closeHandoffModal();
             });
             handoffModal?.addEventListener("click", event => {
                 if (event.target === handoffModal) closeHandoffModal();
+            });
+            document.addEventListener("keydown", event => {
+                if (event.key !== "Escape") return;
+                if (handoffModal?.classList.contains("open")) {
+                    closeHandoffModal();
+                }
             });
             handoffCopyCode?.addEventListener("click", async () => {
                 if (!activeHandoff?.shortCode) return;
@@ -3408,8 +3537,15 @@
                     } else if (typeof window.GoToolkitMemoAppendText === "function") {
                         window.GoToolkitMemoAppendText(text);
                     }
+
+                    const activeTab = getActiveTab();
+                    if (activeTab) {
+                        activeTab.handoffId = activeHandoff.docId;
+                    }
+
                     await clearHandoffContent();
                     await flushHandoffCodeMap();
+                    setHandoffBadgeVisible(false);
                     setHandoffStatus("Contenu inséré");
                     closeHandoffModal();
                 } catch (err) {

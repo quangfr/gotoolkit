@@ -25,6 +25,12 @@ Assist ne se contente pas de discuter, il **agit** sur ton document :
 *   **Suggérer** : Il continue ta phrase ou propose la structure de ta prochaine section.
 *   **Explorer** : Pose-lui des questions sur tes propres documents importés. Il te répond avec les sources ! 
 
+### 🎙️ Enregistrer une conversation
+Capture une démo, un atelier ou un brief en **partage d’écran + micro** :
+*   **Capture live** : Enregistre ton écran et ta voix pour documenter un processus ou une démo produit.
+*   **Transcription utile** : Récupère un texte exploitable (points clés, décisions, actions) directement dans Docs.
+*   **Script assisté** : Demande à Assist une trame avant la conversation ou la présentation orale pour rester clair et impactant.
+
 ### 📊 Draw : Les schémas sans effort
 Marre de passer des heures sur des carrés et des flèches ?
 *   Décris ton flux (ex: "Processus de validation") et Assist génère le **diagramme Mermaid** instantanément. 
@@ -35,29 +41,29 @@ Importe tes fichiers (PDF, Word, Excel, Images, Audios) pour qu’Assist apprenn
 *   **OCR** : Il lit le texte sur tes photos de tableau blanc. 📸
 *   **Transcription** : Il transforme tes réunions enregistrées en texte exploitable. 🎙️
 
----
+### 📲 Capture depuis le mobile
+Besoin d’envoyer un scan ou un audio depuis ton smartphone :
+*   Scanne le **QR Code** ou saisis le **code session** depuis le **Hub** sur mobile.
+*   Envoie tes photos ou ton enregistrement : le texte OCR arrive dans Docs en un clic sur **Récupérer**.
 
-## 3. Super-pouvoirs & Astuces de pro 💡
-
+### 💡 Super‑pouvoirs & astuces de pro
 *   **🎙️ Commandes Vocales** : Gagne du temps, dicte tes instructions directement à Assist.
-*   **🎯 Sélection Auto** : Sélectionne un bloc dans Docs, Assist est déjà prêt à travailler dessus.
-*   **🔄 Undo & Edit** : Une réponse ne te plaît pas ? Annule-la d’un clic ou modifie ta demande pour essayer une autre approche.
-*   **🗩 Mode Explorer** : C’est le mode "Cerveau". Assist utilise uniquement **tes** documents pour répondre. Idéal pour ne pas inventer d’informations.
-
+*   **🎯 Sélection Auto** : Si un bloc est sélectionné, Assist travaille dessus. **Sans sélection**, le texte généré par l’IA est **ajouté à la fin du document**.
+*   **🔄 Annuler & modifier** : Une réponse ne te plaît pas ? Annule-la d’un clic ou modifie ta demande pour essayer une autre approche.
 ---
 
-## 4. 10 Idées pour booster ton quotidien 🚀
+## 3. 10 Idées pour booster ton quotidien 🚀
 
-1.  **Réunions au top** : Importe l’audio de ton atelier → Assist en fait un compte-rendu structuré.
-2.  **User Stories éclair** : "Écris 5 user stories pour la fonction Panier avec critères d’acceptation".
-3.  **Docs techniques** : Importe un schéma technique et demande une explication simple pour le métier.
-4.  **Tests rapides** : "Génère les cas de test limites pour ce formulaire".
-5.  **Nettoyage de texte** : Copie tes notes en vrac → Assist les transforme en liste à puces propre.
-6.  **Spécifications API** : Décris un flux de données, Assist rédige la spec technique.
-7.  **Flash Decisions** : "Quelles étaient les 3 décisions clés prises dans le document importé hier ?"
-8.  **Reformulation** : Transforme un email un peu sec en message diplomatique et constructif.
-9.  **Matrices NFR** : "Propose une matrice de critères de performance et sécurité pour ce projet".
-10. **Diagrammes de flux** : Visualise instantanément un parcours utilisateur complexe.
+1.  **CR de réunion enregistrée** : "À partir de cet enregistrement, fais un compte‑rendu structuré (décisions, actions, risques, prochaines étapes)".
+2.  **US + diagramme de flux** : "Rédige une user story complète puis génère un diagramme de flux Mermaid du processus métier associé".
+3.  **Analyse d’un fichier de données** : "Importe ce CSV/Excel, détecte les anomalies, propose des insights et un résumé métier".
+4.  **Démo enregistrée avec script** : "Écris un script de démo en 5 minutes, puis enregistre écran + micro pour livrer la vidéo".
+5.  **Notes manuscrites de brainstorming** : "Reconnais le contenu du tableau blanc et transforme‑le en plan d’action".
+6.  **Tableau de priorisation multi‑critères** : "Génère une matrice pondérée (valeur, effort, risque, impact) pour classer les features".
+7.  **Documentation API** : "À partir de ces endpoints, rédige une doc claire (auth, erreurs, exemples)".
+8.  **Cas de test complets** : "Crée les scénarios de test (happy path, edge cases, non‑régression) pour cette fonctionnalité".
+9.  **Release note pour email** : "Rédige un email de release avec nouveautés, bénéfices et actions attendues".
+10. **Recherche & synthèse sourcée** : "Interroge mes documents importés, réponds avec une synthèse et cite les sources".
 
 **Besoin d'un coup de pouce ?** Explore la bibliothèque de **Raccourcis (✨)**. C'est une mine d'or de prompts experts prêts à l'emploi, classés par thématiques pour t'aider dans toutes tes missions :
 *   **Vision** : Stratégie, Discovery et Design

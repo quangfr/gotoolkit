@@ -745,8 +745,19 @@
                 const label = document.createElement("span");
                 label.className = "document-explorer__item-title";
                 const payloadRecordingId = item?.payload?.tabs?.find(tab => typeof tab?.voiceRecordingId === "string" && tab.voiceRecordingId)?.voiceRecordingId || null;
-                if (item.voiceRecordingId || payloadRecordingId) {
-                    label.innerHTML = `<i data-lucide="circle-play" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.8;"></i>${item.title || "Docs sans titre"}`;
+                const hasRecording = !!(item.voiceRecordingId || payloadRecordingId);
+                const resolvedHandoffId = item.handoffId === null ? null : (item.handoffId || item.id);
+                const hasHandoff = resolvedHandoffId !== null;
+
+                if (hasHandoff || hasRecording) {
+                    let icons = "";
+                    if (hasHandoff) {
+                        icons += '<i data-lucide="scan-text" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.8;"></i>';
+                    }
+                    if (hasRecording) {
+                        icons += '<i data-lucide="audio-lines" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.8;"></i>';
+                    }
+                    label.innerHTML = `${icons}${item.title || "Docs sans titre"}`;
                 } else {
                     label.textContent = item.title || "Docs sans titre";
                 }
@@ -837,8 +848,19 @@
                 label.className = "document-explorer__item-title";
                 // Show title or use token as fallback
                 const sharePayloadRecordingId = item?.payload?.tabs?.find(tab => typeof tab?.voiceRecordingId === "string" && tab.voiceRecordingId)?.voiceRecordingId || null;
-                if (item.voiceRecordingId || sharePayloadRecordingId) {
-                    label.innerHTML = `<i data-lucide="circle-play" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.8;"></i>${item.title || "Document partagé"}`;
+                const hasRecording = !!(item.voiceRecordingId || sharePayloadRecordingId);
+                const resolvedHandoffId = item.handoffId === null ? null : (item.handoffId || item.id);
+                const hasHandoff = resolvedHandoffId !== null;
+
+                if (hasHandoff || hasRecording) {
+                    let icons = "";
+                    if (hasHandoff) {
+                        icons += '<i data-lucide="scan-text" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.8;"></i>';
+                    }
+                    if (hasRecording) {
+                        icons += '<i data-lucide="audio-lines" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.8;"></i>';
+                    }
+                    label.innerHTML = `${icons}${item.title || "Document partagé"}`;
                 } else {
                     label.textContent = item.title || "Document partagé";
                 }
