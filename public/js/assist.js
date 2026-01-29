@@ -2685,17 +2685,24 @@
 
         document.addEventListener("memoEditorSelectionChanged", function (event) {
             var detail = event?.detail || {};
-            this.memoSelectionDetail = detail;
+            var keepSelection = !detail.isSelected
+                && this.memoSelectionFollowActive
+                && document.activeElement === this.textarea
+                && this.memoSelection;
             if (!detail.isSelected) {
-                this.memoSelection = null;
-                this.memoSelectionDetail = detail;
-                this.memoSelectionCoords = null;
-                this.memoSelectionBlockCoords = null;
-                if (this.memoSelectionOverlay) {
-                    this.memoSelectionOverlay.style.display = "none";
+                if (!keepSelection) {
+                    this.memoSelection = null;
+                    this.memoSelectionDetail = detail;
+                    this.memoSelectionCoords = null;
+                    this.memoSelectionBlockCoords = null;
+                    if (this.memoSelectionOverlay) {
+                        this.memoSelectionOverlay.style.display = "none";
+                    }
                 }
                 return;
             }
+
+            this.memoSelectionDetail = detail;
 
             this.memoSelection = {
                 text: detail.selectionText,
@@ -9843,11 +9850,52 @@
                 }
             }
 
+            const normalizeSelectionOutput = (value) => {
+                if (typeof value === 'string') {
+                    return { text: value };
+                }
+                if (value && typeof value === 'object') {
+                    if (typeof value.text === 'string') return value;
+                    if (typeof value.markdown === 'string') return { text: value.markdown };
+                    if (typeof value.content === 'string') return { text: value.content };
+                }
+                return null;
+            };
+
+            const extractEditPayload = (obj) => {
+                if (!obj || typeof obj !== 'object') return { sOutput: null, output: null };
+                let sOutput = obj.s_output || obj.sOutput || null;
+                let output = obj.output || null;
+
+                if (!sOutput && !output && obj.answer) {
+                    if (typeof obj.answer === 'object' && obj.answer !== null) {
+                        sOutput = obj.answer.s_output || obj.answer.sOutput || null;
+                        output = obj.answer.output || null;
+                        if (!sOutput && !output && typeof obj.answer.content === 'string') {
+                            const parsedAnswer = tryParseJsonString(obj.answer.content.trim());
+                            if (parsedAnswer && typeof parsedAnswer === 'object') {
+                                sOutput = parsedAnswer.s_output || parsedAnswer.sOutput || null;
+                                output = parsedAnswer.output || null;
+                            }
+                        }
+                    } else if (typeof obj.answer === 'string') {
+                        const parsedAnswer = tryParseJsonString(obj.answer.trim());
+                        if (parsedAnswer && typeof parsedAnswer === 'object') {
+                            sOutput = parsedAnswer.s_output || parsedAnswer.sOutput || null;
+                            output = parsedAnswer.output || null;
+                        }
+                    }
+                }
+
+                return { sOutput, output };
+            };
+
             if (payloadObj && typeof payloadObj === 'object') {
-                const sOutput = payloadObj.s_output || payloadObj.sOutput || null;
-                const output = payloadObj.output || null;
-                if (sOutput || output) {
-                    editMetadata = { sOutput, output };
+                const extracted = extractEditPayload(payloadObj);
+                const normalizedSOutput = normalizeSelectionOutput(extracted.sOutput);
+                const output = extracted.output || null;
+                if (normalizedSOutput || output) {
+                    editMetadata = { sOutput: normalizedSOutput, output };
                 }
             }
             aiOutForLog = payloadObj || responseText || rawTextFallback || rawResponse || null;
