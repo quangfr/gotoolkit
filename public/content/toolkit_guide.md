@@ -83,10 +83,7 @@ Chez Go-Toolkit, on ne plaisante pas avec tes données :
 
 ## 6. Un petit souci ? 🛠️
 
-*   **L’IA ne cite pas ses sources ?** Vérifie que tu es bien en mode **Explorer** et que tes fichiers sont bien dans la **Mémoire**.
-*   **Un bug ou un blocage ?** Le Toolkit est encore en **beta**. Si quelque chose ne fonctionne pas, utilise le bouton **Réparer** dans **Document 📄> Aide**. Attention : cela réinitialise l'application et **efface tes données locales** !
-*   **Export Word/PDF échoue ?** Pense à enregistrer ton document (icône disquette) avant de l’exporter.
-
+*  Le Toolkit est encore en **beta**. Si quelque chose ne fonctionne pas, utilise le bouton **Réparer** dans **Document 📄> Aide**. Attention : cela réinitialise l'application et **efface tes données locales** !
 ---
 
 **Prêt à décoller ?** Retourne sur l’accueil et crée ton premier Docs ! 🎈
