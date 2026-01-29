@@ -11,7 +11,7 @@
     </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Memo OCR Mobile | Go-Toolkit</title>
+    <title>Go-Toolkit Hub | Go-Toolkit</title>
     <link rel="stylesheet" href="styles/style.css?v=2026.01.28.10">
     <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
     <style>
@@ -40,6 +40,9 @@
         .scan-title h1 {
             margin: 0;
             font-size: 22px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .scan-title span {
@@ -83,6 +86,7 @@
             display: flex;
             gap: 8px;
             justify-content: flex-end;
+            margin-left: auto;
         }
 
         .handoff-card__footer {
@@ -152,6 +156,11 @@
             display: flex;
         }
 
+        #captureStep2 {
+            flex: 1;
+            min-height: 0;
+        }
+
         .capture-preview {
             width: 100%;
             flex: 1;
@@ -177,6 +186,32 @@
             display: flex;
         }
 
+        .capture-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        #captureCameraBtn,
+        #captureAudioBtn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 18px 16px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        #captureCameraBtn svg,
+        #captureAudioBtn svg {
+            width: 42px;
+            height: 42px;
+        }
+
         .qr-modal {
             width: min(420px, 92vw);
         }
@@ -192,6 +227,16 @@
             .handoff-grid {
                 grid-template-columns: 1fr;
             }
+
+            .capture-actions {
+                width: 100%;
+            }
+
+            #captureCameraBtn,
+            #captureAudioBtn {
+                flex: 1 1 0;
+                max-width: 50%;
+            }
         }
     </style>
 </head>
@@ -200,8 +245,8 @@
     <div class="scan-shell">
         <header class="scan-header">
             <div class="scan-title">
-                <h1>Memo OCR Mobile</h1>
-                <span>Capturez et transférez vos scans vers Mémo.</span>
+                <h1><i data-lucide="scan-text"></i>Go-Toolkit Hub</h1>
+                <span>Envoie tes scans et audios dans ton document sur PC</span>
             </div>
             <div class="scan-actions">
                 <button id="scanQrBtn" class="btn btn-secondary" type="button" title="Scanner un QR">
@@ -219,27 +264,35 @@
     <div class="modal-overlay" id="captureModal" role="dialog" aria-modal="true" aria-labelledby="captureModalTitle">
         <div class="modal capture-modal">
             <div class="modal-header">
-                <h3 id="captureModalTitle" title="Capture OCR"><i data-lucide="scan"
-                        style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Capture OCR</h3>
+                <h3 id="captureModalTitle" title="Capture Mobile"><i data-lucide="scan-text"
+                        style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Capture Mobile</h3>
                 <button class="modal-close" id="captureModalClose" type="button" aria-label="Fermer"><i
                         data-lucide="x"></i></button>
             </div>
             <div class="capture-body">
                 <div>
                     <strong id="captureDocTitle">Document</strong>
-                    <div style="font-size: 12px; opacity: 0.7;" id="captureDocMeta"></div>
-                </div>
-                <div class="capture-instruction">
-                    Cliquez sur “Récupérer” côté PC pour importer votre scan.
                 </div>
                 <div id="captureStep1" class="capture-step active">
                     <input id="captureInput" type="file" accept="image/*" capture="environment" multiple hidden>
-                    <button id="captureCameraBtn" type="button" class="btn btn-secondary">Prendre une photo</button>
-                    <button id="captureMoreBtn" type="button" class="btn btn-secondary">Un autre scan ?</button>
+                    <input id="captureAudioInput" type="file" accept="audio/*" hidden>
+                    <div class="capture-actions">
+                        <button id="captureCameraBtn" type="button" class="btn btn-secondary">
+                            <i data-lucide="image-up"></i>
+                            <span>Scan</span>
+                        </button>
+                        <button id="captureAudioBtn" type="button" class="btn btn-secondary">
+                            <i data-lucide="audio-lines"></i>
+                            <span>Enregistrement</span>
+                        </button>
+                    </div>
                 </div>
                 <div id="captureStep2" class="capture-step">
                     <div class="capture-loader" id="captureLoader"><i data-lucide="image-up"></i><span>OCR en
                             cours...</span>
+                    </div>
+                    <div class="capture-instruction">
+                        Cliquez sur “Récupérer” côté PC pour importer votre scan.
                     </div>
                     <textarea id="capturePreview" class="capture-preview"
                         placeholder="Le texte OCR apparaîtra ici..."></textarea>
@@ -301,6 +354,7 @@
     <script src="js/ia-config.js?v=2026.01.28.10"></script>
     <script src="js/ia-client.js?v=2026.01.28.10"></script>
     <script src="js/share-worker-client.js?v=2026.01.28.10"></script>
+    <script src="js/voice-transcript.js?v=2026.01.28.10"></script>
     <script src="js/scan.js?v=2026.01.28.10"></script>
     <script>
         if (typeof lucide !== 'undefined') {

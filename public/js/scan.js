@@ -12,14 +12,16 @@
   const scanCodeBtn = document.getElementById("scanCodeBtn");
   const captureModal = document.getElementById("captureModal");
   const captureModalClose = document.getElementById("captureModalClose");
+  const captureModalTitle = document.getElementById("captureModalTitle");
   const captureCancelBtn = document.getElementById("captureCancelBtn");
   const captureInput = document.getElementById("captureInput");
+  const captureAudioInput = document.getElementById("captureAudioInput");
   const capturePreview = document.getElementById("capturePreview");
   const captureLoader = document.getElementById("captureLoader");
   const captureStep1 = document.getElementById("captureStep1");
   const captureStep2 = document.getElementById("captureStep2");
-  const captureMoreBtn = document.getElementById("captureMoreBtn");
   const captureCameraBtn = document.getElementById("captureCameraBtn");
+  const captureAudioBtn = document.getElementById("captureAudioBtn");
   const captureDeleteBtn = document.getElementById("captureDeleteBtn");
   const captureDocTitle = document.getElementById("captureDocTitle");
   const captureDocMeta = document.getElementById("captureDocMeta");
@@ -181,6 +183,7 @@
     if (captureDocTitle) captureDocTitle.textContent = doc.title || "Document";
     if (captureDocMeta) captureDocMeta.textContent = `ID: ${docId}`;
     setCaptureStep(doc.hasContent ? 2 : 1);
+    setCaptureTitle(doc.hasContent ? "scan" : "mobile");
     captureModal.classList.add("open");
     if (doc.hasContent && shareWorker?.fetchSharePayload) {
       setLoaderActive(true);
@@ -222,6 +225,18 @@
   function setCaptureStep(step) {
     if (captureStep1) captureStep1.classList.toggle("active", step === 1);
     if (captureStep2) captureStep2.classList.toggle("active", step === 2);
+  }
+
+  function setCaptureTitle(mode) {
+    if (!captureModalTitle) return;
+    let title = "Capture Mobile";
+    if (mode === "scan") title = "Capture Scan";
+    if (mode === "audio") title = "Capture Audio";
+    captureModalTitle.innerHTML = `<i data-lucide="scan-text" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>${title}`;
+    captureModalTitle.title = title;
+    if (typeof lucide !== "undefined" && typeof lucide.createIcons === "function") {
+      lucide.createIcons();
+    }
   }
 
   function openCodeModal() {
@@ -390,10 +405,18 @@
     return "";
   }
 
-  function setLoaderActive(active) {
+  function setLoaderActive(active, mode = "scan") {
     if (!captureLoader) return;
     if (active) {
+      if (mode === "audio") {
+        captureLoader.innerHTML = "<i data-lucide=\"audio-lines\"></i><span>Transcription en cours...</span>";
+      } else {
+        captureLoader.innerHTML = "<i data-lucide=\"image-up\"></i><span>OCR en cours...</span>";
+      }
       captureLoader.classList.add("active");
+      if (typeof lucide !== "undefined" && typeof lucide.createIcons === "function") {
+        lucide.createIcons();
+      }
     } else {
       captureLoader.classList.remove("active");
     }
@@ -409,7 +432,8 @@
       return;
     }
     setCaptureStep(2);
-    setLoaderActive(true);
+    setCaptureTitle("scan");
+    setLoaderActive(true, "scan");
     try {
       const prompt =
         "Extrayez tout le texte de ces images. Soyez précis. Retournez uniquement le texte brut. " +
@@ -452,6 +476,38 @@
     } catch (err) {
       console.error(err);
       setStatus("OCR échoué");
+    } finally {
+      setLoaderActive(false);
+    }
+  }
+
+  async function runAudioTranscription(file) {
+    if (!file) return;
+    const transcriptApi = window.GoToolkitVoiceTranscript;
+    if (!transcriptApi) {
+      setStatus("Transcription indisponible");
+      return;
+    }
+    setCaptureStep(2);
+    setCaptureTitle("audio");
+    setLoaderActive(true, "audio");
+    try {
+      const key = transcriptApi.getAssemblyApiKey?.() || "";
+      const uploadUrl = await transcriptApi.uploadAudioToAssembly(file, key);
+      const payload = transcriptApi.buildAssemblyTranscriptPayload(uploadUrl, 0);
+      const transcriptId = await transcriptApi.requestAssemblyTranscript(payload, key);
+      const result = await transcriptApi.pollAssemblyTranscript(transcriptId, key);
+      const transcript =
+        transcriptApi.buildTranscriptFromUtterances(result) || result?.text || "";
+      if (!transcript) {
+        throw new Error("Transcription vide");
+      }
+      if (capturePreview) capturePreview.value = transcript;
+      await sendHandoff(transcript);
+      setStatus("Transcription terminée");
+    } catch (err) {
+      console.error(err);
+      setStatus("Transcription échouée");
     } finally {
       setLoaderActive(false);
     }
@@ -657,26 +713,35 @@
     captureCanvases = [];
     if (capturePreview) capturePreview.value = "";
     if (captureInput) captureInput.value = "";
+    if (captureAudioInput) captureAudioInput.value = "";
     setCaptureStep(1);
+    setCaptureTitle("mobile");
     setStatus("Prêt pour un nouveau scan");
-  });
-  captureMoreBtn?.addEventListener("click", () => {
-    captureCanvases = [];
-    if (capturePreview) capturePreview.value = "";
-    if (captureInput) captureInput.value = "";
-    setCaptureStep(1);
-    captureInput?.click();
   });
   captureCameraBtn?.addEventListener("click", () => {
     captureCanvases = [];
     if (capturePreview) capturePreview.value = "";
     if (captureInput) captureInput.value = "";
+    if (captureAudioInput) captureAudioInput.value = "";
     setCaptureStep(1);
     captureInput?.click();
+  });
+  captureAudioBtn?.addEventListener("click", () => {
+    captureCanvases = [];
+    if (capturePreview) capturePreview.value = "";
+    if (captureInput) captureInput.value = "";
+    if (captureAudioInput) captureAudioInput.value = "";
+    setCaptureStep(1);
+    captureAudioInput?.click();
   });
   captureInput?.addEventListener("change", event => {
     const files = Array.from(event.target?.files || []);
     handleCaptureFiles(files);
+  });
+  captureAudioInput?.addEventListener("change", event => {
+    const file = event.target?.files?.[0] || null;
+    if (!file) return;
+    runAudioTranscription(file);
   });
 
   codeModalClose?.addEventListener("click", () => closeCodeModal());
