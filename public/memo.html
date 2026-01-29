@@ -45,10 +45,11 @@
     <script src="https://cdn.jsdelivr.net/npm/@excalidraw/excalidraw@0.17.6/dist/excalidraw.production.min.js"
         crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.min.js" crossorigin></script>
-    <link rel="stylesheet" href="styles/style.css?v=2026.01.28.10">
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.min.js" crossorigin></script>
+    <link rel="stylesheet" href="styles/style.css?v=2026.01.29.1">
     <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
-    <link rel="stylesheet" href="styles/memo.css?v=2026.01.28.10">
-    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.01.28.10">
+    <link rel="stylesheet" href="styles/memo.css?v=2026.01.29.1">
+    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.01.29.1">
     <link rel="stylesheet" href="https://unpkg.com/json-viewer-js@1.1.0/dist/json-viewer.min.css">
     <script src="https://unpkg.com/json-viewer-js@1.1.0/dist/json-viewer.min.js"></script>
 </head>
@@ -90,7 +91,7 @@
                     <button id="documentExplorerToggle" class="app-home-link" type="button"
                         title="Afficher la bibliothèque" aria-expanded="false" aria-controls="documentExplorer"><i
                             data-lucide="library"></i></button>
-                    <a href="/?v=2026.01.28.10" class="nav-switch-btn" title="Accueil"
+                    <a href="/?v=2026.01.29.1" class="nav-switch-btn" title="Accueil"
                         style="text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
                         <i data-lucide="home"></i>
                     </a>
@@ -143,7 +144,8 @@
                                         data-lucide="send"></i> <span data-label>Publier</span></button>
                                 <button id="deleteDocumentBtn" type="button" class="menu-panel-btn"><i
                                         data-lucide="trash-2"></i> Supprimer</button>
-                                <button id="infoButton" type="button" class="menu-panel-btn"><i data-lucide="help-circle"></i>
+                                <button id="infoButton" type="button" class="menu-panel-btn"><i
+                                        data-lucide="help-circle"></i>
                                     Aide</button>
                             </div>
                         </div>
@@ -152,6 +154,10 @@
                     <button id="gtTemplateModalTrigger" class="btn btn-secondary app-header-btn" type="button"
                         title="Modèles">
                         <i data-lucide="zap"></i>
+                    </button>
+                    <button id="handoffFocusBtn" class="btn btn-secondary app-header-btn" type="button"
+                        title="Handoff OCR">
+                        <i data-lucide="focus"></i>
                     </button>
                     <div class="menu-trigger" id="themeMenuTrigger">
                         <button id="themeBtn" class="btn btn-secondary app-header-btn" type="button" title="Thème">
@@ -268,11 +274,49 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="handoffModal" role="dialog" aria-modal="true" aria-labelledby="handoffModalTitle">
+        <div class="modal" style="max-width: 520px; width: min(520px, 94vw);">
+            <div class="modal-header" style="align-items: center;">
+                <h3 id="handoffModalTitle" title="Handoff OCR"><i data-lucide="focus"
+                        style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Handoff OCR</h3>
+                <button class="modal-close" id="handoffModalClose" type="button" aria-label="Fermer"><i
+                        data-lucide="x"></i></button>
+            </div>
+            <div class="ia-actions" style="gap: 16px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: center;">
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <strong id="handoffTitle">Document actif</strong>
+                        <span style="opacity: 0.7; font-size: 13px;">Scannez le QR Code ou utilisez le code
+                            session.</span>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span
+                                style="padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border-main); background: var(--bg-surface); font-weight: 600; letter-spacing: 0.08em;"
+                                id="handoffShortCode">----</span>
+                            <button id="handoffCopyCode" type="button" class="btn btn-secondary">Copier</button>
+                        </div>
+                        <input id="handoffLink" type="text" readonly
+                            style="width: 100%; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border-main); background: var(--bg-surface); font-size: 12px;" />
+                    </div>
+                    <div
+                        style="display: flex; align-items: center; justify-content: center; background: var(--bg-surface); border-radius: 16px; border: 1px solid var(--border-main); padding: 12px;">
+                        <canvas id="handoffQrCanvas" width="180" height="180"
+                            style="width: 180px; height: 180px;"></canvas>
+                    </div>
+                </div>
+                <div id="handoffStatus" style="font-size: 13px; opacity: 0.8;"></div>
+                <div class="modal-actions" style="justify-content: flex-end; gap: 8px;">
+                    <button id="handoffCancelBtn" type="button" class="btn btn-secondary">Annuler</button>
+                    <button id="handoffRetrieveBtn" type="button" class="btn-primary">Récupérer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="memoInfoPopup" class="info-popup" role="dialog" aria-live="polite">
         <img src="img/logo.gif" alt="Logo Go-Toolkit" class="logo-light">
         <img src="img/logo_inverted.gif" alt="Logo Go-Toolkit" class="logo-dark">
         <strong>Module Mémo</strong>
-        <span>Version 2026.01.28.10</span>
+        <span>Version 2026.01.29.1</span>
         <span>Usage réservé à Savane Consulting.</span>
         <div class="info-actions info-actions--stacked">
             <div class="info-actions-row">
@@ -336,22 +380,22 @@
         window.GO_TOOLKIT_SHARE_API_URL =
             window.GO_TOOLKIT_SHARE_API_URL || "https://share.gotoolkit.workers.dev/";
     </script>
-    <script src="js/config.js?v=2026.01.28.10"></script>
-    <script src="js/feature-visibility.js?v=2026.01.28.10"></script>
-    <script src="js/document-storage.js?v=2026.01.28.10"></script>
-    <script src="js/storage-service.js?v=2026.01.28.10"></script>
-    <script src="js/shared-ui.js?v=2026.01.28.10"></script>
-    <script src="js/cgu.js?v=2026.01.28.10"></script>
-    <script src="js/share-worker-client.js?v=2026.01.28.10"></script>
-    <script src="js/share-history.js?v=2026.01.28.10"></script>
-    <script src="js/document-api.js?v=2026.01.28.10"></script>
-    <script src="js/keywordIndex.js?v=2026.01.28.10"></script>
-    <script src="js/document-rag.js?v=2026.01.28.10"></script>
-    <script src="js/ia-config.js?v=2026.01.28.10"></script>
-    <script src="preset.js?v=2026.01.28.10"></script>
-    <script src="prompt.js?v=2026.01.28.10"></script>
-    <script src="js/ia-client.js?v=2026.01.28.10"></script>
-    <script src="js/document-markdown.js?v=2026.01.28.10"></script>
+    <script src="js/config.js?v=2026.01.29.1"></script>
+    <script src="js/feature-visibility.js?v=2026.01.29.1"></script>
+    <script src="js/document-storage.js?v=2026.01.29.1"></script>
+    <script src="js/storage-service.js?v=2026.01.29.1"></script>
+    <script src="js/shared-ui.js?v=2026.01.29.1"></script>
+    <script src="js/cgu.js?v=2026.01.29.1"></script>
+    <script src="js/share-worker-client.js?v=2026.01.29.1"></script>
+    <script src="js/share-history.js?v=2026.01.29.1"></script>
+    <script src="js/document-api.js?v=2026.01.29.1"></script>
+    <script src="js/keywordIndex.js?v=2026.01.29.1"></script>
+    <script src="js/document-rag.js?v=2026.01.29.1"></script>
+    <script src="js/ia-config.js?v=2026.01.29.1"></script>
+    <script src="preset.js?v=2026.01.29.1"></script>
+    <script src="prompt.js?v=2026.01.29.1"></script>
+    <script src="js/ia-client.js?v=2026.01.29.1"></script>
+    <script src="js/document-markdown.js?v=2026.01.29.1"></script>
     <script>
         // Initialize feedback configuration for Memo before loading feedback.js
         window.GoToolkitAppFeedbackConfig = {
@@ -370,12 +414,12 @@
             ]
         };
     </script>
-    <script src="js/feedback.js?v=2026.01.28.10"></script>
-    <script src="js/voice-video-player.js?v=2026.01.28.10"></script>
-    <script src="js/voice-audio-player.js?v=2026.01.28.10"></script>
-    <script src="js/voice.js?v=2026.01.28.10"></script>
-    <script src="js/voice-transcript.js?v=2026.01.28.10"></script>
-    <script src="js/draw-memo.js?v=2026.01.28.10"></script>
+    <script src="js/feedback.js?v=2026.01.29.1"></script>
+    <script src="js/voice-video-player.js?v=2026.01.29.1"></script>
+    <script src="js/voice-audio-player.js?v=2026.01.29.1"></script>
+    <script src="js/voice.js?v=2026.01.29.1"></script>
+    <script src="js/voice-transcript.js?v=2026.01.29.1"></script>
+    <script src="js/draw-memo.js?v=2026.01.29.1"></script>
     <script>
         // Suppress React DevTools prompt in dev builds.
         window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = window.__REACT_DEVTOOLS_GLOBAL_HOOK__ || {
@@ -385,14 +429,14 @@
             onCommitFiberUnmount: function () { }
         };
     </script>
-    <script src="js/memo.bundle.js?v=2026.01.28.10"></script>
+    <script src="js/memo.bundle.js?v=2026.01.29.1"></script>
     <div id="aiRequestCounterToaster" class="ai-request-counter-toaster" style="display:none;"
         data-toast-aria-live="polite" data-toast-aria-atomic="true">
         <span id="aiRequestCounterText"><i data-lucide="bot" class="lucide-pulse"
                 style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i> 00:00</span>
     </div>
-    <script src="js/assist.js?v=2026.01.28.10"></script>
-    <script src="js/document-panel.js?v=2026.01.28.10"></script>
+    <script src="js/assist.js?v=2026.01.29.1"></script>
+    <script src="js/document-panel.js?v=2026.01.29.1"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             setTimeout(function () {
@@ -495,6 +539,17 @@
             const templatePreviewBack = document.getElementById("gtTemplatePreviewBack");
             const templatePreviewClose = document.getElementById("gtTemplatePreviewClose");
             const templatePreviewApply = document.getElementById("gtTemplatePreviewApply");
+            const handoffFocusBtn = document.getElementById("handoffFocusBtn");
+            const handoffModal = document.getElementById("handoffModal");
+            const handoffModalClose = document.getElementById("handoffModalClose");
+            const handoffCancelBtn = document.getElementById("handoffCancelBtn");
+            const handoffRetrieveBtn = document.getElementById("handoffRetrieveBtn");
+            const handoffQrCanvas = document.getElementById("handoffQrCanvas");
+            const handoffShortCode = document.getElementById("handoffShortCode");
+            const handoffCopyCode = document.getElementById("handoffCopyCode");
+            const handoffTitle = document.getElementById("handoffTitle");
+            const handoffLink = document.getElementById("handoffLink");
+            const handoffStatus = document.getElementById("handoffStatus");
             let activeTemplatePreview = null;
             const promptModal = document.getElementById("gtPromptModal");
             const promptModalTrigger = document.getElementById("gtPromptModalTrigger");
@@ -520,6 +575,7 @@
             let isDocumentSaving = false;
             let autoSaveTimer = null;
             let memoExplorer = null;
+            let activeHandoff = null;
 
             function isUserAdmin() {
                 const token = normalizeOwnerTokenInput(ownerToken?.value || localStorage.getItem("feedback-admin-token") || "");
@@ -603,6 +659,9 @@
                 if (templateModalTrigger) {
                     templateModalTrigger.style.display = "";
                 }
+                if (handoffFocusBtn) {
+                    handoffFocusBtn.style.display = hasOpenDoc ? "" : "none";
+                }
                 if (fileMenuTrigger) {
                     fileMenuTrigger.style.display = hasOpenDoc ? "" : "none";
                 }
@@ -629,6 +688,88 @@
                     return crypto.randomUUID();
                 }
                 return "template-" + Math.random().toString(16).slice(2);
+            }
+
+            function createShortCode() {
+                const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+                let code = "";
+                for (let i = 0; i < 4; i += 1) {
+                    code += alphabet[Math.floor(Math.random() * alphabet.length)];
+                }
+                return code;
+            }
+
+            function setHandoffStatus(message) {
+                if (handoffStatus) {
+                    handoffStatus.textContent = message || "";
+                }
+            }
+
+            async function openHandoffModal() {
+                if (!activeDocumentId) {
+                    setStatus("Aucun document actif");
+                    return;
+                }
+                if (!handoffModal) return;
+                const record = documentApi?.getRecord ? await documentApi.getRecord(activeDocumentId) : null;
+                const title = record?.title || "Document actif";
+                const shortCode = createShortCode();
+                const link = new URL("scan.html", window.location.origin);
+                link.searchParams.set("id", activeDocumentId);
+                activeHandoff = { docId: activeDocumentId, title, shortCode, link: link.toString() };
+                if (handoffTitle) handoffTitle.textContent = title;
+                if (handoffShortCode) handoffShortCode.textContent = shortCode;
+                if (handoffLink) handoffLink.value = link.toString();
+                if (handoffQrCanvas) {
+                    if (window.QRCode?.toCanvas) {
+                        window.QRCode.toCanvas(
+                            handoffQrCanvas,
+                            link.toString(),
+                            { width: 180, margin: 1 },
+                            () => { }
+                        );
+                    } else if (window.qrcode) {
+                        try {
+                            const qr = window.qrcode(0, 'M');
+                            qr.addData(link.toString());
+                            qr.make();
+                            const dataUrl = qr.createDataURL(6, 0);
+                            const ctx = handoffQrCanvas.getContext('2d');
+                            const img = new Image();
+                            img.onload = () => {
+                                handoffQrCanvas.width = img.width;
+                                handoffQrCanvas.height = img.height;
+                                if (ctx) {
+                                    ctx.clearRect(0, 0, img.width, img.height);
+                                    ctx.drawImage(img, 0, 0);
+                                }
+                            };
+                            img.src = dataUrl;
+                        } catch (err) {
+                            console.warn('QR code generation failed', err);
+                        }
+                    }
+                }
+                setHandoffStatus("Session prête");
+                if (shareWorker?.saveSharePayload) {
+                    try {
+                        await shareWorker.saveSharePayload("codes_map", shortCode, {
+                            docId: activeDocumentId,
+                            title,
+                            timestamp: new Date().toISOString()
+                        });
+                    } catch (err) {
+                        console.warn("Handoff code mapping failed", err);
+                        setHandoffStatus("Mapping code indisponible");
+                    }
+                }
+                handoffModal.classList.add("open");
+            }
+
+            function closeHandoffModal() {
+                if (!handoffModal) return;
+                handoffModal.classList.remove("open");
+                activeHandoff = null;
             }
 
             function createDefaultState() {
@@ -3203,6 +3344,53 @@
                 if (!activeTemplatePreview) return;
                 await applyTemplateContent(activeTemplatePreview);
                 closeTemplatePreview();
+            });
+
+            handoffFocusBtn?.addEventListener("click", event => {
+                event.preventDefault();
+                closeMenus();
+                openHandoffModal();
+            });
+            handoffModalClose?.addEventListener("click", () => closeHandoffModal());
+            handoffCancelBtn?.addEventListener("click", () => closeHandoffModal());
+            handoffModal?.addEventListener("click", event => {
+                if (event.target === handoffModal) closeHandoffModal();
+            });
+            handoffCopyCode?.addEventListener("click", async () => {
+                if (!activeHandoff?.shortCode) return;
+                try {
+                    await navigator.clipboard.writeText(activeHandoff.shortCode);
+                    setHandoffStatus("Code copié");
+                } catch (err) {
+                    setHandoffStatus("Copie impossible");
+                }
+            });
+            handoffRetrieveBtn?.addEventListener("click", async () => {
+                if (!activeHandoff?.docId || !shareWorker?.fetchSharePayload) return;
+                setHandoffStatus("Récupération en cours...");
+                try {
+                    const result = await shareWorker.fetchSharePayload("handoffs", activeHandoff.docId);
+                    const payload = result?.payload;
+                    const text = payload?.text;
+                    if (!text) {
+                        setHandoffStatus("Aucun contenu disponible");
+                        return;
+                    }
+                    const memoBridge = window.goToolkitMemoBridge || window.GoToolkitMemoBridge;
+                    if (memoBridge?.insertContent) {
+                        memoBridge.insertContent(text);
+                    } else if (typeof window.GoToolkitMemoAppendText === "function") {
+                        window.GoToolkitMemoAppendText(text);
+                    }
+                    await shareWorker.deleteSharePayload("handoffs", activeHandoff.docId);
+                    if (activeHandoff.shortCode) {
+                        await shareWorker.deleteSharePayload("codes_map", activeHandoff.shortCode);
+                    }
+                    setHandoffStatus("Contenu inséré");
+                } catch (err) {
+                    console.error(err);
+                    setHandoffStatus("Récupération échouée");
+                }
             });
 
             document.addEventListener("click", event => {

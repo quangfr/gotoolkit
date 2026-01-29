@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <script>
+        (function () {
+            const storedTheme = localStorage.getItem('go-toolkit-theme');
+            const theme = storedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'cream');
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Scan OCR | Go-Toolkit</title>
+    <link rel="stylesheet" href="styles/style.css?v=2026.01.28.10">
+    <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
+    <style>
+        .scan-shell {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            padding: 20px;
+            background: linear-gradient(160deg, rgba(25, 118, 210, 0.08), rgba(0, 0, 0, 0));
+        }
+
+        .scan-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .scan-title {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .scan-title h1 {
+            margin: 0;
+            font-size: 22px;
+        }
+
+        .scan-title span {
+            font-size: 13px;
+            opacity: 0.7;
+        }
+
+        .scan-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .handoff-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .handoff-card {
+            border-radius: 16px;
+            border: 1px solid var(--border-main);
+            background: var(--bg-surface);
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-height: 140px;
+        }
+
+        .handoff-card h3 {
+            margin: 0;
+            font-size: 15px;
+        }
+
+        .handoff-card span {
+            font-size: 12px;
+            opacity: 0.7;
+        }
+
+        .handoff-card__actions {
+            margin-top: auto;
+            display: flex;
+            gap: 8px;
+        }
+
+        .handoff-empty {
+            grid-column: 1 / -1;
+            border: 1px dashed var(--border-main);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            font-size: 13px;
+            opacity: 0.7;
+        }
+
+        .capture-modal {
+            width: min(640px, 96vw);
+        }
+
+        .capture-body {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .capture-preview {
+            min-height: 160px;
+            width: 100%;
+            border-radius: 12px;
+            border: 1px solid var(--border-main);
+            background: var(--bg-surface);
+            padding: 10px;
+            font-family: "JetBrains Mono", monospace;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .capture-loader {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+        }
+
+        .capture-loader.active {
+            display: flex;
+        }
+
+        .qr-modal {
+            width: min(420px, 92vw);
+        }
+
+        .qr-video {
+            width: 100%;
+            border-radius: 16px;
+            border: 1px solid var(--border-main);
+            background: #000;
+        }
+
+        @media (max-width: 640px) {
+            .handoff-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body class="app-body">
+    <div class="scan-shell">
+        <header class="scan-header">
+            <div class="scan-title">
+                <h1>Hub OCR Mobile</h1>
+                <span>Capturez et transférez vos scans vers Mémo.</span>
+            </div>
+            <div class="scan-actions">
+                <button id="scanQrBtn" class="btn btn-secondary" type="button" title="Scanner un QR">
+                    <i data-lucide="qr-code"></i>
+                </button>
+                <button id="scanCodeBtn" class="btn btn-secondary" type="button" title="Entrer un code">
+                    <i data-lucide="keyboard"></i>
+                </button>
+            </div>
+        </header>
+
+        <section id="handoffGrid" class="handoff-grid"></section>
+        <div id="handoffStatus" style="font-size: 13px; opacity: 0.7;"></div>
+    </div>
+
+    <div class="modal-overlay" id="captureModal" role="dialog" aria-modal="true"
+        aria-labelledby="captureModalTitle">
+        <div class="modal capture-modal">
+            <div class="modal-header">
+                <h3 id="captureModalTitle" title="Capture OCR"><i data-lucide="scan"
+                        style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Capture OCR</h3>
+                <button class="modal-close" id="captureModalClose" type="button" aria-label="Fermer"><i
+                        data-lucide="x"></i></button>
+            </div>
+            <div class="capture-body">
+                <div>
+                    <strong id="captureDocTitle">Document</strong>
+                    <div style="font-size: 12px; opacity: 0.7;" id="captureDocMeta"></div>
+                </div>
+                <input id="captureInput" type="file" accept="image/*" capture="environment" multiple>
+                <div class="capture-loader" id="captureLoader"><i data-lucide="image-up"></i><span>OCR en cours...</span>
+                </div>
+                <textarea id="capturePreview" class="capture-preview"
+                    placeholder="Le texte OCR apparaîtra ici..."></textarea>
+                <div class="modal-actions" style="justify-content: space-between;">
+                    <button id="captureExtractBtn" type="button" class="btn btn-secondary">Extraire</button>
+                    <div style="display:flex; gap:8px;">
+                        <button id="captureCancelBtn" type="button" class="btn btn-secondary">Annuler</button>
+                        <button id="captureSendBtn" type="button" class="btn-primary">Envoyer</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="codeModal" role="dialog" aria-modal="true" aria-labelledby="codeModalTitle">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="codeModalTitle" title="Code session"><i data-lucide="keyboard"
+                        style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Code session</h3>
+                <button class="modal-close" id="codeModalClose" type="button" aria-label="Fermer"><i
+                        data-lucide="x"></i></button>
+            </div>
+            <div class="ia-actions" style="gap: 12px;">
+                <span style="font-size: 13px; opacity: 0.7;">Entrez le code à 4 caractères affiché sur votre Mémo.</span>
+                <input id="codeInput" type="text" maxlength="4"
+                    style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid var(--border-main); background: var(--bg-surface); text-transform: uppercase; letter-spacing: 0.2em; text-align: center; font-weight: 600;">
+                <div class="modal-actions" style="justify-content: flex-end; gap: 8px;">
+                    <button id="codeCancelBtn" type="button" class="btn btn-secondary">Annuler</button>
+                    <button id="codeSubmitBtn" type="button" class="btn-primary">Valider</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="qrModal" role="dialog" aria-modal="true" aria-labelledby="qrModalTitle">
+        <div class="modal qr-modal">
+            <div class="modal-header">
+                <h3 id="qrModalTitle" title="Scanner"><i data-lucide="qr-code"
+                        style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Scanner</h3>
+                <button class="modal-close" id="qrModalClose" type="button" aria-label="Fermer"><i
+                        data-lucide="x"></i></button>
+            </div>
+            <div class="ia-actions" style="gap: 12px;">
+                <video id="qrVideo" class="qr-video" autoplay playsinline muted></video>
+                <span style="font-size: 12px; opacity: 0.7;">Centrez le QR Code dans le cadre.</span>
+                <div class="modal-actions" style="justify-content: flex-end; gap: 8px;">
+                    <button id="qrCancelBtn" type="button" class="btn btn-secondary">Annuler</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        window.GO_TOOLKIT_SHARE_API_URL =
+            window.GO_TOOLKIT_SHARE_API_URL || "https://share.gotoolkit.workers.dev/";
+    </script>
+    <script src="js/config.js?v=2026.01.28.10"></script>
+    <script src="prompt.js?v=2026.01.28.10"></script>
+    <script src="js/ia-config.js?v=2026.01.28.10"></script>
+    <script src="js/ia-client.js?v=2026.01.28.10"></script>
+    <script src="js/share-worker-client.js?v=2026.01.28.10"></script>
+    <script src="js/scan.js?v=2026.01.28.10"></script>
+    <script>
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    </script>
+</body>
+
+</html>

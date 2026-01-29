@@ -3,7 +3,9 @@ const SHARES_SEGMENT = "shares";
 const VALID_COLLECTIONS = new Set([
   "grids",
   "memos",
-  "template-memos"
+  "template-memos",
+  "handoffs",
+  "codes_map"
 ]);
 const FIRESTORE_SCOPE = "https://www.googleapis.com/auth/datastore";
 const FIREBASE_TOKEN_URL = "https://oauth2.googleapis.com/token";
