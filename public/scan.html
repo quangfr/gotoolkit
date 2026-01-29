@@ -11,7 +11,7 @@
     </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Scan OCR | Go-Toolkit</title>
+    <title>Memo OCR Mobile | Go-Toolkit</title>
     <link rel="stylesheet" href="styles/style.css?v=2026.01.28.10">
     <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
     <style>
@@ -66,7 +66,7 @@
             display: flex;
             flex-direction: column;
             gap: 8px;
-            min-height: 140px;
+            min-height: 110px;
         }
 
         .handoff-card h3 {
@@ -80,9 +80,31 @@
         }
 
         .handoff-card__actions {
-            margin-top: auto;
             display: flex;
             gap: 8px;
+            justify-content: flex-end;
+        }
+
+        .handoff-card__footer {
+            margin-top: auto;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .handoff-card__meta {
+            font-size: 11px;
+            opacity: 0.6;
+        }
+
+        .handoff-card__desc {
+            font-size: 12px;
+            opacity: 0.75;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            word-break: break-word;
         }
 
         .handoff-empty {
@@ -96,25 +118,52 @@
         }
 
         .capture-modal {
-            width: min(640px, 96vw);
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            border-radius: 0;
+        }
+
+        #captureModal.modal-overlay {
+            padding: 0;
         }
 
         .capture-body {
             display: flex;
             flex-direction: column;
             gap: 12px;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .capture-instruction {
+            font-size: 12px;
+            opacity: 0.7;
+        }
+
+        .capture-step {
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .capture-step.active {
+            display: flex;
         }
 
         .capture-preview {
-            min-height: 160px;
             width: 100%;
+            flex: 1;
             border-radius: 12px;
             border: 1px solid var(--border-main);
             background: var(--bg-surface);
-            padding: 10px;
+            padding: 6px 8px;
             font-family: "JetBrains Mono", monospace;
             font-size: 12px;
             line-height: 1.4;
+            resize: none;
+            overflow: auto;
         }
 
         .capture-loader {
@@ -151,7 +200,7 @@
     <div class="scan-shell">
         <header class="scan-header">
             <div class="scan-title">
-                <h1>Hub OCR Mobile</h1>
+                <h1>Memo OCR Mobile</h1>
                 <span>Capturez et transférez vos scans vers Mémo.</span>
             </div>
             <div class="scan-actions">
@@ -165,11 +214,9 @@
         </header>
 
         <section id="handoffGrid" class="handoff-grid"></section>
-        <div id="handoffStatus" style="font-size: 13px; opacity: 0.7;"></div>
     </div>
 
-    <div class="modal-overlay" id="captureModal" role="dialog" aria-modal="true"
-        aria-labelledby="captureModalTitle">
+    <div class="modal-overlay" id="captureModal" role="dialog" aria-modal="true" aria-labelledby="captureModalTitle">
         <div class="modal capture-modal">
             <div class="modal-header">
                 <h3 id="captureModalTitle" title="Capture OCR"><i data-lucide="scan"
@@ -182,17 +229,25 @@
                     <strong id="captureDocTitle">Document</strong>
                     <div style="font-size: 12px; opacity: 0.7;" id="captureDocMeta"></div>
                 </div>
-                <input id="captureInput" type="file" accept="image/*" capture="environment" multiple>
-                <div class="capture-loader" id="captureLoader"><i data-lucide="image-up"></i><span>OCR en cours...</span>
+                <div class="capture-instruction">
+                    Cliquez sur “Récupérer” côté PC pour importer votre scan.
                 </div>
-                <textarea id="capturePreview" class="capture-preview"
-                    placeholder="Le texte OCR apparaîtra ici..."></textarea>
-                <div class="modal-actions" style="justify-content: space-between;">
-                    <button id="captureExtractBtn" type="button" class="btn btn-secondary">Extraire</button>
-                    <div style="display:flex; gap:8px;">
-                        <button id="captureCancelBtn" type="button" class="btn btn-secondary">Annuler</button>
-                        <button id="captureSendBtn" type="button" class="btn-primary">Envoyer</button>
+                <div id="captureStep1" class="capture-step active">
+                    <input id="captureInput" type="file" accept="image/*" capture="environment" multiple hidden>
+                    <button id="captureCameraBtn" type="button" class="btn btn-secondary">Prendre une photo</button>
+                    <button id="captureMoreBtn" type="button" class="btn btn-secondary">Un autre scan ?</button>
+                </div>
+                <div id="captureStep2" class="capture-step">
+                    <div class="capture-loader" id="captureLoader"><i data-lucide="image-up"></i><span>OCR en
+                            cours...</span>
                     </div>
+                    <textarea id="capturePreview" class="capture-preview"
+                        placeholder="Le texte OCR apparaîtra ici..."></textarea>
+                </div>
+                <div class="modal-actions" style="justify-content: flex-end; gap: 8px;">
+                    <button id="captureDeleteBtn" type="button" class="btn btn-secondary"
+                        style="margin-left: auto;">Recommencer</button>
+                    <button id="captureCancelBtn" type="button" class="btn btn-primary">Fermer</button>
                 </div>
             </div>
         </div>
@@ -207,7 +262,8 @@
                         data-lucide="x"></i></button>
             </div>
             <div class="ia-actions" style="gap: 12px;">
-                <span style="font-size: 13px; opacity: 0.7;">Entrez le code à 4 caractères affiché sur votre Mémo.</span>
+                <span style="font-size: 13px; opacity: 0.7;">Entrez le code à 4 caractères affiché sur votre
+                    Mémo.</span>
                 <input id="codeInput" type="text" maxlength="4"
                     style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid var(--border-main); background: var(--bg-surface); text-transform: uppercase; letter-spacing: 0.2em; text-align: center; font-weight: 600;">
                 <div class="modal-actions" style="justify-content: flex-end; gap: 8px;">

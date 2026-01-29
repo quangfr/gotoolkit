@@ -16,8 +16,11 @@
   const captureInput = document.getElementById("captureInput");
   const capturePreview = document.getElementById("capturePreview");
   const captureLoader = document.getElementById("captureLoader");
-  const captureExtractBtn = document.getElementById("captureExtractBtn");
-  const captureSendBtn = document.getElementById("captureSendBtn");
+  const captureStep1 = document.getElementById("captureStep1");
+  const captureStep2 = document.getElementById("captureStep2");
+  const captureMoreBtn = document.getElementById("captureMoreBtn");
+  const captureCameraBtn = document.getElementById("captureCameraBtn");
+  const captureDeleteBtn = document.getElementById("captureDeleteBtn");
   const captureDocTitle = document.getElementById("captureDocTitle");
   const captureDocMeta = document.getElementById("captureDocMeta");
   const codeModal = document.getElementById("codeModal");
@@ -36,6 +39,7 @@
   let qrStream = null;
   let qrScanActive = false;
   let openCvPromise = null;
+  const isAutomation = typeof navigator !== "undefined" && navigator.webdriver === true;
 
   function setStatus(message) {
     if (handoffStatus) {
@@ -68,7 +72,10 @@
     const normalized = {
       id: doc.id,
       title: doc.title || "Document",
-      updatedAt: doc.updatedAt || new Date().toISOString()
+      updatedAt: doc.updatedAt || new Date().toISOString(),
+      hasContent: Boolean(doc.hasContent),
+      lastContent: typeof doc.lastContent === "string" ? doc.lastContent : undefined,
+      lastCapturedAt: doc.lastCapturedAt || undefined
     };
     const index = handoffDocs.findIndex(item => item.id === normalized.id);
     if (index >= 0) {
@@ -79,8 +86,30 @@
     saveDocuments();
   }
 
+  function removeDocument(id) {
+    if (!id) return;
+    handoffDocs = handoffDocs.filter(item => item.id !== id);
+    saveDocuments();
+  }
+
   function getDocumentById(id) {
     return handoffDocs.find(item => item.id === id) || null;
+  }
+
+  function formatRelativeTime(isoDate) {
+    if (!isoDate) return "";
+    const date = new Date(isoDate);
+    if (Number.isNaN(date.getTime())) return "";
+    const diffMs = Date.now() - date.getTime();
+    const diffMinutes = Math.floor(diffMs / 60000);
+    if (diffMinutes < 1) return "À l'instant";
+    if (diffMinutes < 60) return `Il y a ${diffMinutes} mn`;
+    const diffHours = Math.floor(diffMinutes / 60);
+    if (diffHours < 24) return `Il y a ${diffHours} h`;
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 7) return `Il y a ${diffDays} j`;
+    const diffWeeks = Math.floor(diffDays / 7);
+    return `Il y a ${diffWeeks} sem`;
   }
 
   function renderGrid() {
@@ -98,21 +127,48 @@
       card.className = "handoff-card";
       const title = document.createElement("h3");
       title.textContent = doc.title || "Document";
+      const desc = document.createElement("div");
+      desc.className = "handoff-card__desc";
+      desc.textContent = doc.lastContent || "";
+      const footer = document.createElement("div");
+      footer.className = "handoff-card__footer";
       const meta = document.createElement("span");
-      meta.textContent = `ID: ${doc.id.slice(0, 8)}…`;
+      meta.className = "handoff-card__meta";
+      meta.textContent = formatRelativeTime(doc.lastCapturedAt);
       const actions = document.createElement("div");
       actions.className = "handoff-card__actions";
       const openBtn = document.createElement("button");
       openBtn.type = "button";
       openBtn.className = "btn btn-secondary";
-      openBtn.textContent = "Capturer";
+      if (doc.hasContent) {
+        openBtn.innerHTML = "<i data-lucide=\"pen\"></i>";
+      } else {
+        openBtn.innerHTML = "<i data-lucide=\"captions\"></i>";
+      }
       openBtn.addEventListener("click", () => openCaptureModal(doc.id));
+      const removeBtn = document.createElement("button");
+      removeBtn.type = "button";
+      removeBtn.className = "btn btn-secondary";
+      removeBtn.innerHTML = "<i data-lucide=\"trash-2\"></i>";
+      removeBtn.addEventListener("click", () => {
+        removeDocument(doc.id);
+        renderGrid();
+        setStatus("Document retiré");
+      });
       actions.appendChild(openBtn);
+      actions.appendChild(removeBtn);
       card.appendChild(title);
-      card.appendChild(meta);
-      card.appendChild(actions);
+      if (doc.lastContent) {
+        card.appendChild(desc);
+      }
+      footer.appendChild(meta);
+      footer.appendChild(actions);
+      card.appendChild(footer);
       handoffGrid.appendChild(card);
     });
+    if (typeof lucide !== "undefined" && typeof lucide.createIcons === "function") {
+      lucide.createIcons();
+    }
   }
 
   function openCaptureModal(docId) {
@@ -124,8 +180,35 @@
     if (captureInput) captureInput.value = "";
     if (captureDocTitle) captureDocTitle.textContent = doc.title || "Document";
     if (captureDocMeta) captureDocMeta.textContent = `ID: ${docId}`;
+    setCaptureStep(doc.hasContent ? 2 : 1);
     captureModal.classList.add("open");
-    ensureOpenCvLoaded();
+    if (doc.hasContent && shareWorker?.fetchSharePayload) {
+      setLoaderActive(true);
+      shareWorker
+        .fetchSharePayload(HANDOFF_COLLECTION, docId)
+        .then(result => {
+          const text = result?.payload?.text || "";
+          const timestamp = result?.payload?.timestamp || result?.meta?.updatedAt || new Date().toISOString();
+          if (capturePreview) capturePreview.value = text;
+          if (text) {
+            upsertDocument({
+              id: docId,
+              title: doc.title,
+              hasContent: true,
+              lastContent: text,
+              lastCapturedAt: timestamp
+            });
+            renderGrid();
+          }
+        })
+        .catch(err => {
+          console.error(err);
+          setStatus("Chargement échoué");
+        })
+        .finally(() => {
+          setLoaderActive(false);
+        });
+    }
   }
 
   function closeCaptureModal() {
@@ -133,6 +216,12 @@
     captureModal.classList.remove("open");
     activeDocId = null;
     captureCanvases = [];
+    setCaptureStep(1);
+  }
+
+  function setCaptureStep(step) {
+    if (captureStep1) captureStep1.classList.toggle("active", step === 1);
+    if (captureStep2) captureStep2.classList.toggle("active", step === 2);
   }
 
   function openCodeModal() {
@@ -315,10 +404,11 @@
       setStatus("Ajoutez des photos avant d'extraire");
       return;
     }
-    if (!window.GoToolkitIAClient?.chatCompletion) {
+    if (!window.GoToolkitIA?.chatCompletion) {
       setStatus("Service OCR indisponible");
       return;
     }
+    setCaptureStep(2);
     setLoaderActive(true);
     try {
       const prompt =
@@ -340,7 +430,8 @@
         messages: [{ role: "user", content }],
         usage: { include: true }
       };
-      const responseText = await window.GoToolkitIAClient.chatCompletion({ payload });
+      const result = await window.GoToolkitIA.chatCompletion({ payload });
+      const responseText = typeof result === "string" ? result : (result?.text || "");
       if (!responseText || typeof responseText !== "string") {
         throw new Error("Réponse OCR invalide");
       }
@@ -356,7 +447,8 @@
       if (capturePreview) {
         capturePreview.value = combined;
       }
-      setStatus("Extraction terminée");
+      await sendHandoff(combined);
+      setStatus("Texte envoyé");
     } catch (err) {
       console.error(err);
       setStatus("OCR échoué");
@@ -365,10 +457,10 @@
     }
   }
 
-  async function sendHandoff() {
+  async function sendHandoff(textOverride) {
     if (!activeDocId) return;
     const doc = getDocumentById(activeDocId);
-    const text = (capturePreview?.value || "").trim();
+    const text = (textOverride || capturePreview?.value || "").trim();
     if (!text) {
       setStatus("Aucun texte à envoyer");
       return;
@@ -383,11 +475,72 @@
         title: doc?.title || "Document",
         timestamp: new Date().toISOString()
       });
-      setStatus("Texte envoyé");
-      closeCaptureModal();
+      upsertDocument({
+        id: activeDocId,
+        title: doc?.title,
+        hasContent: true,
+        lastContent: text,
+        lastCapturedAt: new Date().toISOString()
+      });
+      renderGrid();
     } catch (err) {
       console.error(err);
       setStatus("Envoi échoué");
+    }
+  }
+
+  async function updateHandoffContent() {
+    if (!activeDocId) return;
+    const text = (capturePreview?.value || "").trim();
+    if (!text) {
+      setStatus("Aucun texte à envoyer");
+      return;
+    }
+    if (!shareWorker?.saveSharePayload) {
+      setStatus("Service de partage indisponible");
+      return;
+    }
+    try {
+      await shareWorker.saveSharePayload(HANDOFF_COLLECTION, activeDocId, {
+        text,
+        title: getDocumentById(activeDocId)?.title || "Document",
+        timestamp: new Date().toISOString()
+      });
+      upsertDocument({
+        id: activeDocId,
+        title: getDocumentById(activeDocId)?.title,
+        hasContent: true,
+        lastContent: text,
+        lastCapturedAt: new Date().toISOString()
+      });
+      renderGrid();
+      setStatus("Contenu mis à jour");
+    } catch (err) {
+      console.error(err);
+      setStatus("Mise à jour échouée");
+    }
+  }
+
+  async function deleteHandoffContent() {
+    if (!activeDocId) return;
+    if (!shareWorker?.deleteSharePayload) {
+      setStatus("Service de partage indisponible");
+      return;
+    }
+    try {
+      await shareWorker.deleteSharePayload(HANDOFF_COLLECTION, activeDocId);
+      upsertDocument({
+        id: activeDocId,
+        title: getDocumentById(activeDocId)?.title,
+        hasContent: false,
+        lastContent: "",
+        lastCapturedAt: ""
+      });
+      renderGrid();
+      setStatus("Contenu supprimé");
+    } catch (err) {
+      console.error(err);
+      setStatus("Suppression échouée");
     }
   }
 
@@ -428,14 +581,17 @@
     for (const file of files) {
       const canvas = await fileToCanvas(file);
       if (!canvas) continue;
-      try {
-        await preprocessCanvasWithOpenCv(canvas);
-      } catch (err) {
-        console.warn("OpenCV preprocessing failed", err);
+      if (!isAutomation) {
+        try {
+          await preprocessCanvasWithOpenCv(canvas);
+        } catch (err) {
+          console.warn("OpenCV preprocessing failed", err);
+        }
       }
       captureCanvases.push(canvas);
     }
-    setStatus("Photos prêtes");
+    setStatus("Photos reçues");
+    await runOcr();
   }
 
   async function startQrScanner() {
@@ -496,8 +652,28 @@
   captureModal?.addEventListener("click", event => {
     if (event.target === captureModal) closeCaptureModal();
   });
-  captureExtractBtn?.addEventListener("click", () => runOcr());
-  captureSendBtn?.addEventListener("click", () => sendHandoff());
+  captureDeleteBtn?.addEventListener("click", async () => {
+    await deleteHandoffContent();
+    captureCanvases = [];
+    if (capturePreview) capturePreview.value = "";
+    if (captureInput) captureInput.value = "";
+    setCaptureStep(1);
+    setStatus("Prêt pour un nouveau scan");
+  });
+  captureMoreBtn?.addEventListener("click", () => {
+    captureCanvases = [];
+    if (capturePreview) capturePreview.value = "";
+    if (captureInput) captureInput.value = "";
+    setCaptureStep(1);
+    captureInput?.click();
+  });
+  captureCameraBtn?.addEventListener("click", () => {
+    captureCanvases = [];
+    if (capturePreview) capturePreview.value = "";
+    if (captureInput) captureInput.value = "";
+    setCaptureStep(1);
+    captureInput?.click();
+  });
   captureInput?.addEventListener("change", event => {
     const files = Array.from(event.target?.files || []);
     handleCaptureFiles(files);
