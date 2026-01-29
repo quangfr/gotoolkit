@@ -1,18 +1,18 @@
 ## 2026-01-28
 - IA : Éditer un prompt et restaurer une version
 - IA : Commande vocale et sélection automatique
-- Document : Capture scan et audio depuis mobile
+- Docs : Capture scan et audio depuis mobile
 
 ## 2026-01-27
 - IA : Raccourcis Prompts
-- Accueil : Propriétaire des modèles
-- Document : Vectorisation des données structurées avec `qwen/qwen3-embedding-8b`
+- Home : Propriétaire des modèles
+- Files : Vectorisation des données structurées avec `qwen/qwen3-embedding-8b`
 
 ## 2026-01-21
 - Docs : Exporter en HTML Email, Markdown, PDF et texte
 
 ## 2026-01-18
-- Accueil : Affichage des modèles par superpouvoir
+- Home : Affichage des modèles par superpouvoir
 - Docs : Libellé avec autocomplétion, style et couleurs
 - Docs : Sommaire et entêtes dépliables
 
@@ -28,9 +28,9 @@
 
 ## 2026-01-12
 - IA : Reconnaissance texte OCR avec `qwen-2.5-vl-7b-instruct` 
-- Document : Extraction du texte des images, PDF, DOCX et PPTX mixtes
-- Document : Import des médias avec transcription
-- Document : Ajout des fichiers JSON
+- Files : Extraction du texte des images, PDF, DOCX et PPTX mixtes
+- Files : Import des médias avec transcription
+- Files : Ajout des fichiers JSON
 - Docs : Ouverture de documents en barre latérale
 
 ## 2026-01-09
@@ -43,7 +43,7 @@
 - Docs : Édition avec sélection du texte
 
 ## 2026-01-06
-- Module `Go-Toolkit` pour la création de notes assistée IA
+- Module `Docs` pour la création de notes assistée IA
 - Docs : Mode `✂ Éditer` en direct ou `✦ Suggérer` avec annotation
 
 ## 2026-01-04
@@ -83,7 +83,7 @@
 - Module `Timeline` (déprécié): planning temporel de projet ou de produit 
 
 ## 2025-11-24
-- Module `Accueil` avec partage des liens de document et espace en ligne
+- Module `Home` avec partage des liens de document et espace en ligne
 
 ## 2025-11-22
 - Module `Canvas` (déprécié) : Texte structuré
