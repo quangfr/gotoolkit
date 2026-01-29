@@ -173,6 +173,28 @@
     }
   }
 
+  async function pruneMissingHandoffs() {
+    if (!shareWorker?.fetchSharePayload) return;
+    const candidates = handoffDocs.filter(doc => doc?.id && doc.hasContent);
+    if (!candidates.length) return;
+    const missingIds = [];
+    for (const doc of candidates) {
+      try {
+        const result = await shareWorker.fetchSharePayload(HANDOFF_COLLECTION, doc.id);
+        if (!result) {
+          missingIds.push(doc.id);
+        }
+      } catch (err) {
+        console.warn("Vérification handoff échouée", doc.id, err);
+      }
+    }
+    if (!missingIds.length) return;
+    handoffDocs = handoffDocs.filter(doc => !missingIds.includes(doc.id));
+    saveDocuments();
+    renderGrid();
+    setStatus("Certains documents ne sont plus disponibles.");
+  }
+
   function openCaptureModal(docId) {
     const doc = getDocumentById(docId);
     if (!doc || !captureModal) return;
@@ -783,4 +805,5 @@
   } else {
     renderGrid();
   }
+  pruneMissingHandoffs().catch(err => console.error("Vérification handoff globale échouée", err));
 })();

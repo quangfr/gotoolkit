@@ -35,6 +35,16 @@
           }
         ]
       }
+    ],
+    "rewrites": [
+      {
+        "source": "/hub",
+        "destination": "/hub.html"
+      },
+      {
+        "source": "/docs",
+        "destination": "/docs.html"
+      }
     ]
   },
   "firestore": {
