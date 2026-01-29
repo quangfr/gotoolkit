@@ -2630,6 +2630,14 @@
         }
         this.memoSelectionOverlay = overlay;
 
+        var self = this;
+        this._lastFocusedEditor = null;
+        document.addEventListener("focusin", function (e) {
+            if (window.memoEditor?.view?.dom && window.memoEditor.view.dom.contains(e.target)) {
+                self._lastFocusedEditor = window.memoEditor;
+            }
+        });
+
         document.addEventListener("memoEditorSelectionChanged", function (event) {
             var detail = event?.detail || {};
             this.memoSelectionDetail = detail;
@@ -4438,7 +4446,10 @@
             }
         }.bind(this));
         this.textarea.addEventListener("focus", function () {
-            if (!window.memoEditor?.state || !window.memoEditor?.view) {
+            var emptyEl = document.getElementById("memoEmptyState");
+            var noOpenedDoc = emptyEl && (emptyEl.style.display !== "none");
+
+            if (!window.memoEditor?.state || !window.memoEditor?.view || noOpenedDoc) {
                 this.memoSelection = null;
                 this.memoSelectionBlockCoords = null;
                 if (this.memoSelectionOverlay) {
@@ -4461,7 +4472,7 @@
             if (!this.memoSelection && window.memoEditor?.state && window.memoEditor?.view) {
                 try {
                     var selection = window.memoEditor.state.selection;
-                    var allowCaretBlock = Boolean(this.memoSelectionFollowActive);
+                    var allowCaretBlock = Boolean(this.memoSelectionFollowActive) && (this._lastFocusedEditor === window.memoEditor);
                     var resolveBlockRange = function ($pos) {
                         var allowedBlockTypes = {
                             paragraph: true,
