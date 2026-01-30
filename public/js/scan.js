@@ -2,8 +2,8 @@
   const STORAGE_KEY = "goToolkit.handoff.documents";
   const HANDOFF_COLLECTION = "handoffs";
   const CODE_COLLECTION = "codes_map";
-  const OPENCV_URL = "https://cdn.jsdelivr.net/npm/opencv.js@1.2.1/opencv.js";
   const OCR_MODEL = "qwen/qwen2.5-vl-72b-instruct";
+  const MAX_IMAGE_DIM = 2048;
 
   const shareWorker = window.goToolkitShareWorker;
   const handoffGrid = document.getElementById("handoffGrid");
@@ -16,6 +16,7 @@
   const captureSendBtn = document.getElementById("captureSendBtn");
   const captureSaveBtn = document.getElementById("captureSaveBtn");
   const captureInput = document.getElementById("captureInput");
+  const captureGalleryInput = document.getElementById("captureGalleryInput");
   const captureAudioInput = document.getElementById("captureAudioInput");
   const captureTextBtn = document.getElementById("captureTextBtn");
   const capturePreview = document.getElementById("capturePreview");
@@ -24,6 +25,7 @@
   const captureStep1 = document.getElementById("captureStep1");
   const captureStep2 = document.getElementById("captureStep2");
   const captureCameraBtn = document.getElementById("captureCameraBtn");
+  const captureGalleryBtn = document.getElementById("captureGalleryBtn");
   const captureAudioBtn = document.getElementById("captureAudioBtn");
   const captureDeleteBtn = document.getElementById("captureDeleteBtn");
   const captureDocTitle = document.getElementById("captureDocTitle");
@@ -53,7 +55,6 @@
   let captureCanvases = [];
   let qrStream = null;
   let qrScanActive = false;
-  let openCvPromise = null;
   const isAutomation = typeof navigator !== "undefined" && navigator.webdriver === true;
 
   function setStatus(message) {
@@ -300,6 +301,8 @@
 
     if (capturePreview) capturePreview.value = doc.isDraft ? (doc.lastContent || "") : "";
     if (captureInput) captureInput.value = "";
+    if (captureGalleryInput) captureGalleryInput.value = "";
+    if (captureAudioInput) captureAudioInput.value = "";
     if (captureDocTitle) {
       const span = captureDocTitle.querySelector("span");
       if (span) span.textContent = doc.title || "Document";
@@ -364,7 +367,8 @@
     const icon = captureDocTitle.querySelector("i");
     if (icon) {
       let iconName = "tablet-smartphone";
-      if (mode === "scan") iconName = "image-up";
+      if (mode === "scan") iconName = "camera";
+      if (mode === "gallery") iconName = "image";
       if (mode === "audio") iconName = "audio-lines";
       if (mode === "text") iconName = "text";
       icon.setAttribute("data-lucide", iconName);
@@ -465,64 +469,24 @@
     openCaptureModal(docId);
   }
 
-  async function ensureOpenCvLoaded() {
-    if (openCvPromise) return openCvPromise;
-    openCvPromise = new Promise((resolve, reject) => {
-      if (window.cv && typeof window.cv.Mat === "function") {
-        resolve(window.cv);
-        return;
-      }
-      const script = document.createElement("script");
-      script.src = OPENCV_URL;
-      script.async = true;
-      script.onload = () => {
-        if (window.cv?.Mat) {
-          resolve(window.cv);
-          return;
-        }
-        if (window.cv) {
-          window.cv.onRuntimeInitialized = () => resolve(window.cv);
-          return;
-        }
-        reject(new Error("OpenCV introuvable"));
-      };
-      script.onerror = () => reject(new Error("Chargement OpenCV échoué"));
-      document.head.appendChild(script);
-    });
-    return openCvPromise;
-  }
-
-  async function preprocessCanvasWithOpenCv(canvas) {
-    const cv = await ensureOpenCvLoaded();
-    if (!cv || typeof cv.imread !== "function") {
-      throw new Error("OpenCV indisponible");
-    }
-    const src = cv.imread(canvas);
-    const gray = new cv.Mat();
-    const dst = new cv.Mat();
-    try {
-      cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
-      cv.equalizeHist(gray, gray);
-      cv.adaptiveThreshold(gray, dst, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 31, 2);
-      cv.imshow(canvas, dst);
-    } finally {
-      src.delete();
-      gray.delete();
-      dst.delete();
-    }
-  }
-
   async function fileToCanvas(file) {
     if (!file) return null;
     try {
       if (typeof createImageBitmap === "function") {
         const bitmap = await createImageBitmap(file);
+        let w = bitmap.width;
+        let h = bitmap.height;
+        if (w > MAX_IMAGE_DIM || h > MAX_IMAGE_DIM) {
+          const ratio = Math.min(MAX_IMAGE_DIM / w, MAX_IMAGE_DIM / h);
+          w = Math.floor(w * ratio);
+          h = Math.floor(h * ratio);
+        }
         const canvas = document.createElement("canvas");
-        canvas.width = bitmap.width;
-        canvas.height = bitmap.height;
+        canvas.width = w;
+        canvas.height = h;
         const ctx = canvas.getContext("2d", { willReadFrequently: true });
         if (ctx) {
-          ctx.drawImage(bitmap, 0, 0);
+          ctx.drawImage(bitmap, 0, 0, w, h);
         }
         if (typeof bitmap.close === "function") {
           bitmap.close();
@@ -538,12 +502,19 @@
       reader.onload = () => {
         const img = new Image();
         img.onload = () => {
+          let w = img.naturalWidth || img.width;
+          let h = img.naturalHeight || img.height;
+          if (w > MAX_IMAGE_DIM || h > MAX_IMAGE_DIM) {
+            const ratio = Math.min(MAX_IMAGE_DIM / w, MAX_IMAGE_DIM / h);
+            w = Math.floor(w * ratio);
+            h = Math.floor(h * ratio);
+          }
           const canvas = document.createElement("canvas");
-          canvas.width = img.naturalWidth || img.width;
-          canvas.height = img.naturalHeight || img.height;
+          canvas.width = w;
+          canvas.height = h;
           const ctx = canvas.getContext("2d", { willReadFrequently: true });
           if (ctx) {
-            ctx.drawImage(img, 0, 0);
+            ctx.drawImage(img, 0, 0, w, h);
           }
           resolve(canvas);
         };
@@ -590,15 +561,17 @@
   async function runOcr() {
     if (!captureCanvases.length) {
       setStatus("Ajoutez des photos avant d'extraire");
+      setCaptureStep(1);
+      setLoaderActive(false);
       return;
     }
     if (!window.GoToolkitIA?.chatCompletion) {
       setStatus("Service OCR indisponible");
+      setCaptureStep(1);
+      setLoaderActive(false);
       return;
     }
-    setCaptureStep(2);
-    setCaptureTitle("scan");
-    setLoaderActive(true, "scan");
+
     try {
       const prompt =
         "Extrayez tout le texte de ces images. Soyez précis. Retournez uniquement le texte brut. " +
@@ -798,21 +771,21 @@
   }
 
   async function handleCaptureFiles(files) {
-    captureCanvases = [];
     if (!files || !files.length) return;
+
+    // Show loader and step 2 immediately while we process images
+    setCaptureStep(2);
+    setCaptureTitle("scan");
+    setLoaderActive(true, "scan");
+
+    captureCanvases = [];
     if (captureDocMeta) {
       captureDocMeta.textContent = `${files.length} photo(s) sélectionnée(s)`;
     }
     for (const file of files) {
       const canvas = await fileToCanvas(file);
       if (!canvas) continue;
-      if (!isAutomation) {
-        try {
-          await preprocessCanvasWithOpenCv(canvas);
-        } catch (err) {
-          console.warn("OpenCV preprocessing failed", err);
-        }
-      }
+      // Skip OpenCV - Qwen VL handles raw images better than pre-processed ones
       captureCanvases.push(canvas);
     }
     setStatus("Photos reçues");
@@ -962,6 +935,7 @@
       captureCanvases = [];
       if (capturePreview) capturePreview.value = "";
       if (captureInput) captureInput.value = "";
+      if (captureGalleryInput) captureGalleryInput.value = "";
       if (captureAudioInput) captureAudioInput.value = "";
       setCaptureStep(1);
       setCaptureTitle("mobile");
@@ -972,6 +946,9 @@
     captureTextBtn?.addEventListener("click", () => {
       captureCanvases = [];
       if (capturePreview) capturePreview.value = "";
+      if (captureInput) captureInput.value = "";
+      if (captureGalleryInput) captureGalleryInput.value = "";
+      if (captureAudioInput) captureAudioInput.value = "";
       setCaptureStep(2);
       setCaptureTitle("text");
       capturePreview?.focus();
@@ -982,9 +959,21 @@
       captureCanvases = [];
       if (capturePreview) capturePreview.value = "";
       if (captureInput) captureInput.value = "";
+      if (captureGalleryInput) captureGalleryInput.value = "";
       if (captureAudioInput) captureAudioInput.value = "";
       setCaptureStep(1);
       captureInput?.click();
+      updateUIState();
+    });
+
+    captureGalleryBtn?.addEventListener("click", () => {
+      captureCanvases = [];
+      if (capturePreview) capturePreview.value = "";
+      if (captureInput) captureInput.value = "";
+      if (captureGalleryInput) captureGalleryInput.value = "";
+      if (captureAudioInput) captureAudioInput.value = "";
+      setCaptureStep(1);
+      captureGalleryInput?.click();
       updateUIState();
     });
 
@@ -992,6 +981,7 @@
       captureCanvases = [];
       if (capturePreview) capturePreview.value = "";
       if (captureInput) captureInput.value = "";
+      if (captureGalleryInput) captureGalleryInput.value = "";
       if (captureAudioInput) captureAudioInput.value = "";
       setCaptureStep(1);
       captureAudioInput?.click();
@@ -999,6 +989,11 @@
     });
 
     captureInput?.addEventListener("change", event => {
+      const files = Array.from(event.target?.files || []);
+      handleCaptureFiles(files);
+    });
+
+    captureGalleryInput?.addEventListener("change", event => {
       const files = Array.from(event.target?.files || []);
       handleCaptureFiles(files);
     });

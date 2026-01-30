@@ -52,6 +52,9 @@ htmlFiles.forEach(filePath => {
     } else if (filePath.endsWith('grid.html')) {
         // <span>Version ...</span>
         content = content.replace(/<span>Version [0-9.]+<\/span>/, `<span>Version ${newVersion}</span>`);
+    } else if (filePath.endsWith('hub.html')) {
+        // <span class="hero-version ...">v...</span>
+        content = content.replace(/<span class="hero-version[^>]*>v[0-9.]+<\/span>/, `<span class="hero-version" style="font-size: 10px; opacity: 0.5;">v${newVersion}</span>`);
     }
 
     fs.writeFileSync(filePath, content);
