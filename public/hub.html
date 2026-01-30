@@ -128,6 +128,8 @@
             display: flex;
             flex-direction: column;
             border-radius: 0;
+            padding: 12px;
+            gap: 6px;
         }
 
         #captureModal.modal-overlay {
@@ -137,7 +139,7 @@
         .capture-body {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 6px;
             flex: 1;
             overflow: hidden;
         }
@@ -150,7 +152,7 @@
         .capture-step {
             display: none;
             flex-direction: column;
-            gap: 12px;
+            gap: 6px;
         }
 
         .capture-step.active {
@@ -170,7 +172,7 @@
             background: var(--bg-surface);
             padding: 6px 8px;
             font-family: "JetBrains Mono", monospace;
-            font-size: 12px;
+            font-size: 13px;
             line-height: 1.4;
             resize: none;
             overflow: auto;
@@ -189,7 +191,7 @@
 
         .capture-actions {
             display: flex;
-            gap: 12px;
+            gap: 6px;
             align-items: center;
             justify-content: center;
             flex-wrap: wrap;
@@ -250,7 +252,6 @@
         <header class="scan-header">
             <div class="scan-title">
                 <h1><i data-lucide="tablet-smartphone"></i>Go-Toolkit Hub</h1>
-                <span>Edite et envoie ta note, ton scan ou ton audio sur PC</span>
             </div>
             <div class="scan-actions">
                 <a href="index.html" class="btn btn-secondary" title="Accueil"
@@ -272,18 +273,17 @@
         <section id="handoffGrid" class="handoff-grid"></section>
     </div>
 
-    <div class="modal-overlay" id="captureModal" role="dialog" aria-modal="true" aria-labelledby="captureModalTitle">
+    <div class="modal-overlay" id="captureModal" role="dialog" aria-modal="true" aria-labelledby="captureDocTitle">
         <div class="modal capture-modal">
             <div class="modal-header">
-                <h3 id="captureModalTitle" title="Capture Mobile"><i data-lucide="tablet-smartphone"
-                        style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Capture Mobile</h3>
+                <h3 id="captureDocTitle" style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                    <i data-lucide="tablet-smartphone" style="width:16px;height:16px;"></i>
+                    <span>Document</span>
+                </h3>
                 <button class="modal-close" id="captureModalClose" type="button" aria-label="Fermer"><i
                         data-lucide="x"></i></button>
             </div>
             <div class="capture-body">
-                <div>
-                    <strong id="captureDocTitle">Document</strong>
-                </div>
                 <div id="captureStep1" class="capture-step active">
                     <input id="captureInput" type="file" accept="image/*" capture="environment" multiple hidden>
                     <input id="captureAudioInput" type="file" accept="audio/*" hidden>
@@ -306,13 +306,12 @@
                     <div class="capture-loader" id="captureLoader"><i data-lucide="image-up"></i><span>OCR en
                             cours...</span>
                     </div>
-                    <textarea id="capturePreview" class="capture-preview"
-                        placeholder="Le texte OCR apparaîtra ici..."></textarea>
+                    <textarea id="capturePreview" class="capture-preview" placeholder="Écrire..."></textarea>
                 </div>
                 <div class="capture-instruction" id="captureInstruction">
                     Cliquez sur “Récupérer” côté PC pour importer votre scan.
                 </div>
-                <div class="modal-actions" style="justify-content: flex-end; gap: 8px;">
+                <div class="modal-actions" style="justify-content: flex-end; gap: 6px;">
                     <button id="captureDeleteBtn" type="button" class="btn btn-secondary"
                         style="margin-right: auto;">Réinitialiser</button>
                     <button id="captureSaveBtn" type="button" class="btn btn-secondary"

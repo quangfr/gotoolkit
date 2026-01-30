@@ -13,7 +13,6 @@
   const newHandoffBtn = document.getElementById("newHandoffBtn");
   const captureModal = document.getElementById("captureModal");
   const captureModalClose = document.getElementById("captureModalClose");
-  const captureModalTitle = document.getElementById("captureModalTitle");
   const captureSendBtn = document.getElementById("captureSendBtn");
   const captureSaveBtn = document.getElementById("captureSaveBtn");
   const captureInput = document.getElementById("captureInput");
@@ -135,7 +134,10 @@
 
     // 3. Update UI
     activeDocId = linkDocId;
-    if (captureDocTitle) captureDocTitle.textContent = linkTitle || "Document";
+    if (captureDocTitle) {
+      const span = captureDocTitle.querySelector("span");
+      if (span) span.textContent = linkTitle || "Document";
+    }
     if (captureInstruction) captureInstruction.style.display = "block";
     if (captureDocMeta) captureDocMeta.textContent = `ID: ${linkDocId}`;
 
@@ -266,7 +268,10 @@
     captureCanvases = [];
     if (capturePreview) capturePreview.value = doc.isDraft ? (doc.lastContent || "") : "";
     if (captureInput) captureInput.value = "";
-    if (captureDocTitle) captureDocTitle.textContent = doc.title || "Document";
+    if (captureDocTitle) {
+      const span = captureDocTitle.querySelector("span");
+      if (span) span.textContent = doc.title || "Document";
+    }
     if (captureDocMeta) captureDocMeta.textContent = doc.isDraft ? "" : `ID: ${docId}`;
 
     if (captureInstruction) {
@@ -321,13 +326,15 @@
   }
 
   function setCaptureTitle(mode) {
-    if (!captureModalTitle) return;
-    let title = "Capture Mobile";
-    if (mode === "scan") title = "Capture Scan";
-    if (mode === "audio") title = "Capture Audio";
-    if (mode === "text") title = "Capture Note";
-    captureModalTitle.innerHTML = `<i data-lucide="${mode === 'text' ? 'text' : 'tablet-smartphone'}" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>${title}`;
-    captureModalTitle.title = title;
+    if (!captureDocTitle) return;
+    const icon = captureDocTitle.querySelector("i");
+    if (icon) {
+      let iconName = "tablet-smartphone";
+      if (mode === "scan") iconName = "image-up";
+      if (mode === "audio") iconName = "audio-lines";
+      if (mode === "text") iconName = "text";
+      icon.setAttribute("data-lucide", iconName);
+    }
     if (typeof lucide !== "undefined" && typeof lucide.createIcons === "function") {
       lucide.createIcons();
     }
@@ -850,6 +857,22 @@
 
   scanCodeBtn?.addEventListener("click", () => openCodeModal());
   newHandoffBtn?.addEventListener("click", () => createNewDraftHandoff());
+
+  captureDocTitle?.addEventListener("click", () => {
+    if (!activeDocId) return;
+    const doc = getDocumentById(activeDocId);
+    if (!doc) return;
+    const newTitle = prompt("Nouveau nom du document :", doc.title);
+    if (newTitle && newTitle.trim()) {
+      upsertDocument({ ...doc, title: newTitle.trim() });
+      if (captureDocTitle) {
+        const span = captureDocTitle.querySelector("span");
+        if (span) span.textContent = newTitle.trim();
+      }
+      renderGrid();
+      setStatus("Document renommé");
+    }
+  });
 
   captureModalClose?.addEventListener("click", () => closeCaptureModal());
   captureSendBtn?.addEventListener("click", () => {
