@@ -9,6 +9,33 @@
             document.documentElement.setAttribute('data-theme', theme);
         })();
     </script>
+    <script>
+        // Global Polyfill for missing browser APIs
+        (function () {
+            var g = typeof globalThis !== 'undefined' ? globalThis : window;
+            function ensure(name) {
+                try {
+                    if (typeof g[name] === 'undefined' || !g[name]) {
+                        var F = function () { };
+                        F.prototype = {};
+                        g[name] = F;
+                    }
+                    if (g[name] && !g[name].prototype) g[name].prototype = {};
+                } catch (e) { }
+            }
+            ensure('Element');
+            ensure('Path2D');
+            ensure('SVGPathSeg');
+            if (typeof Array.prototype.at !== 'function') {
+                Array.prototype.at = function (n) {
+                    n = Math.trunc(n) || 0;
+                    if (n < 0) n += this.length;
+                    if (n < 0 || n >= this.length) return undefined;
+                    return this[n];
+                };
+            }
+        })();
+    </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#1976d2" />
@@ -17,7 +44,7 @@
     <link rel="apple-touch-icon" href="img/logo.png" />
     <link rel="manifest" href="manifest.json" />
     <title>Go-Toolkit Hub | Go-Toolkit</title>
-    <link rel="stylesheet" href="styles/style.css?v=2026.01.29.8">
+    <link rel="stylesheet" href="styles/style.css?v=2026.01.30.13">
     <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
     <style>
         .scan-shell {
@@ -261,7 +288,8 @@
     <div class="scan-shell">
         <header class="scan-header">
             <div class="scan-title">
-                <h1><i data-lucide="tablet-smartphone"></i>Go-Toolkit Hub</h1>
+                <h1><i data-lucide="tablet-smartphone"></i>Go-Toolkit Hub <span class="hero-version"
+                        style="font-size: 10px; opacity: 0.5;">v2026.01.30.12</span></h1>
             </div>
             <div class="scan-actions">
                 <a href="index.html" class="btn btn-secondary" title="Accueil"
@@ -421,13 +449,13 @@
         window.GO_TOOLKIT_SHARE_API_URL =
             window.GO_TOOLKIT_SHARE_API_URL || "https://share.gotoolkit.workers.dev/";
     </script>
-    <script src="js/config.js?v=2026.01.28.10"></script>
-    <script src="prompt.js?v=2026.01.28.10"></script>
-    <script src="js/ia-config.js?v=2026.01.28.10"></script>
-    <script src="js/ia-client.js?v=2026.01.28.10"></script>
-    <script src="js/share-worker-client.js?v=2026.01.28.10"></script>
-    <script src="js/voice-transcript.js?v=2026.01.28.10"></script>
-    <script src="js/scan.js?v=2026.01.28.10"></script>
+    <script src="js/config.js?v=2026.01.30.13"></script>
+    <script src="prompt.js?v=2026.01.30.13"></script>
+    <script src="js/ia-config.js?v=2026.01.30.13"></script>
+    <script src="js/ia-client.js?v=2026.01.30.13"></script>
+    <script src="js/share-worker-client.js?v=2026.01.30.13"></script>
+    <script src="js/voice-transcript.js?v=2026.01.30.13"></script>
+    <script src="js/scan.js?v=2026.01.30.13"></script>
     <script>
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();

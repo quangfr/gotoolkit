@@ -863,197 +863,211 @@
     }
   }
 
-  scanQrBtn?.addEventListener("click", () => {
-    if (typeof BarcodeDetector === "undefined") {
-      fallbackQrPrompt();
-      return;
-    }
-    openQrModal();
-  });
+  function init() {
+    renderGrid();
+    setupListeners();
+    
+    pruneMissingHandoffs().catch(err => console.error("Vérification handoff globale échouée", err));
 
-  scanCodeBtn?.addEventListener("click", () => openCodeModal());
-  newHandoffBtn?.addEventListener("click", () => createNewDraftHandoff());
-
-  captureDocTitle?.addEventListener("click", () => {
-    if (!activeDocId) return;
-    const doc = getDocumentById(activeDocId);
-    if (!doc) return;
-    openRenameModal(doc.title);
-  });
-
-  renameModalClose?.addEventListener("click", () => closeRenameModal());
-  renameCancelBtn?.addEventListener("click", () => closeRenameModal());
-  renameSubmitBtn?.addEventListener("click", () => {
-    if (!activeDocId) return;
-    const doc = getDocumentById(activeDocId);
-    if (!doc) return;
-    const newTitle = (renameInput?.value || "").trim();
-    if (newTitle) {
-      upsertDocument({ ...doc, title: newTitle });
-      if (captureDocTitle) {
-        const span = captureDocTitle.querySelector("span");
-        if (span) span.textContent = newTitle;
-      }
-      renderGrid();
-      setStatus("Document renommé");
-      closeRenameModal();
-    }
-  });
-
-  renameInput?.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-      renameSubmitBtn?.click();
-    }
-  });
-
-  captureModalClose?.addEventListener("click", () => closeCaptureModal());
-  captureSendBtn?.addEventListener("click", () => {
-    const doc = getDocumentById(activeDocId);
-    if (doc?.isDraft) {
-      openSendMethodModal();
-    } else {
-      sendHandoff();
-    }
-  });
-
-  captureSaveBtn?.addEventListener("click", () => {
-    closeCaptureModal();
-  });
-
-  captureModal?.addEventListener("click", event => {
-    if (event.target === captureModal) closeCaptureModal();
-  });
-
-  captureDeleteBtn?.addEventListener("click", async () => {
-    const doc = getDocumentById(activeDocId);
-    if (doc?.isDraft) {
+    const params = new URLSearchParams(window.location.search);
+    const incomingId = params.get("id");
+    const incomingTitle = params.get("title");
+    if (incomingId) {
       upsertDocument({
-        id: activeDocId,
-        title: doc.title,
-        isDraft: true,
-        hasContent: false,
-        lastContent: "",
-        lastCapturedAt: ""
+        id: incomingId,
+        title: incomingTitle || `Document ${incomingId.slice(0, 4).toUpperCase()}`
       });
       renderGrid();
-    } else {
-      await deleteHandoffContent();
+      openCaptureModal(incomingId);
     }
-    captureCanvases = [];
-    if (capturePreview) capturePreview.value = "";
-    if (captureInput) captureInput.value = "";
-    if (captureAudioInput) captureAudioInput.value = "";
-    setCaptureStep(1);
-    setCaptureTitle("mobile");
-    updateUIState();
-    setStatus("Prêt pour une nouvelle capture");
-  });
-
-  captureTextBtn?.addEventListener("click", () => {
-    captureCanvases = [];
-    if (capturePreview) capturePreview.value = "";
-    setCaptureStep(2);
-    setCaptureTitle("text");
-    capturePreview?.focus();
-    updateUIState();
-  });
-
-  captureCameraBtn?.addEventListener("click", () => {
-    captureCanvases = [];
-    if (capturePreview) capturePreview.value = "";
-    if (captureInput) captureInput.value = "";
-    if (captureAudioInput) captureAudioInput.value = "";
-    setCaptureStep(1);
-    captureInput?.click();
-    updateUIState();
-  });
-
-  captureAudioBtn?.addEventListener("click", () => {
-    captureCanvases = [];
-    if (capturePreview) capturePreview.value = "";
-    if (captureInput) captureInput.value = "";
-    if (captureAudioInput) captureAudioInput.value = "";
-    setCaptureStep(1);
-    captureAudioInput?.click();
-    updateUIState();
-  });
-
-  captureInput?.addEventListener("change", event => {
-    const files = Array.from(event.target?.files || []);
-    handleCaptureFiles(files);
-  });
-
-  captureAudioInput?.addEventListener("change", event => {
-    const file = event.target?.files?.[0] || null;
-    if (!file) return;
-    runAudioTranscription(file);
-  });
-
-  capturePreview?.addEventListener("input", () => {
-    updateHandoffContent();
-  });
-
-  codeModalClose?.addEventListener("click", () => closeCodeModal());
-  codeCancelBtn?.addEventListener("click", () => closeCodeModal());
-  codeModal?.addEventListener("click", event => {
-    if (event.target === codeModal) closeCodeModal();
-  });
-  codeSubmitBtn?.addEventListener("click", () => handleCodeSubmit());
-  codeInput?.addEventListener("input", () => {
-    if (codeInput.value.length === 4) {
-      handleCodeSubmit();
-    }
-  });
-  codeInput?.addEventListener("keydown", event => {
-    if (event.key === "Enter") {
-      handleCodeSubmit();
-    }
-  });
-
-  sendMethodModalClose?.addEventListener("click", () => closeSendMethodModal());
-  sendViaQrBtn?.addEventListener("click", () => {
-    closeSendMethodModal();
-    if (typeof BarcodeDetector === "undefined") {
-      fallbackQrPrompt();
-      return;
-    }
-    openQrModal();
-  });
-  sendViaCodeBtn?.addEventListener("click", () => {
-    closeSendMethodModal();
-    openCodeModal();
-  });
-  sendMethodModal?.addEventListener("click", event => {
-    if (event.target === sendMethodModal) closeSendMethodModal();
-  });
-
-  qrModalClose?.addEventListener("click", () => closeQrModal());
-  qrCancelBtn?.addEventListener("click", () => closeQrModal());
-  qrModal?.addEventListener("click", event => {
-    if (event.target === qrModal) closeQrModal();
-  });
-
-  document.addEventListener("keydown", event => {
-    if (event.key === "Escape") {
-      if (captureModal?.classList.contains("open")) closeCaptureModal();
-      if (codeModal?.classList.contains("open")) closeCodeModal();
-      if (qrModal?.classList.contains("open")) closeQrModal();
-      if (sendMethodModal?.classList.contains("open")) closeSendMethodModal();
-    }
-  });
-
-  const params = new URLSearchParams(window.location.search);
-  const incomingId = params.get("id");
-  const incomingTitle = params.get("title");
-  if (incomingId) {
-    upsertDocument({
-      id: incomingId,
-      title: incomingTitle || `Document ${incomingId.slice(0, 4).toUpperCase()}`
-    });
-    renderGrid();
-    openCaptureModal(incomingId);
-  } else {
-    renderGrid();
   }
-  pruneMissingHandoffs().catch(err => console.error("Vérification handoff globale échouée", err));
+
+  function setupListeners() {
+    scanQrBtn?.addEventListener("click", () => {
+      if (typeof BarcodeDetector === "undefined") {
+        fallbackQrPrompt();
+        return;
+      }
+      openQrModal();
+    });
+
+    scanCodeBtn?.addEventListener("click", () => openCodeModal());
+    newHandoffBtn?.addEventListener("click", () => createNewDraftHandoff());
+
+    captureDocTitle?.addEventListener("click", () => {
+      if (!activeDocId) return;
+      const doc = getDocumentById(activeDocId);
+      if (!doc) return;
+      openRenameModal(doc.title);
+    });
+
+    renameModalClose?.addEventListener("click", () => closeRenameModal());
+    renameCancelBtn?.addEventListener("click", () => closeRenameModal());
+    renameSubmitBtn?.addEventListener("click", () => {
+      if (!activeDocId) return;
+      const doc = getDocumentById(activeDocId);
+      if (!doc) return;
+      const newTitle = (renameInput?.value || "").trim();
+      if (newTitle) {
+        upsertDocument({ ...doc, title: newTitle });
+        if (captureDocTitle) {
+          const span = captureDocTitle.querySelector("span");
+          if (span) span.textContent = newTitle;
+        }
+        renderGrid();
+        setStatus("Document renommé");
+        closeRenameModal();
+      }
+    });
+
+    renameInput?.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        renameSubmitBtn?.click();
+      }
+    });
+
+    captureModalClose?.addEventListener("click", () => closeCaptureModal());
+    captureSendBtn?.addEventListener("click", () => {
+      const doc = getDocumentById(activeDocId);
+      if (doc?.isDraft) {
+        openSendMethodModal();
+      } else {
+        sendHandoff();
+      }
+    });
+
+    captureSaveBtn?.addEventListener("click", () => {
+      closeCaptureModal();
+    });
+
+    captureModal?.addEventListener("click", event => {
+      if (event.target === captureModal) closeCaptureModal();
+    });
+
+    captureDeleteBtn?.addEventListener("click", async () => {
+      const doc = getDocumentById(activeDocId);
+      if (doc?.isDraft) {
+        upsertDocument({
+          id: activeDocId,
+          title: doc.title,
+          isDraft: true,
+          hasContent: false,
+          lastContent: "",
+          lastCapturedAt: ""
+        });
+        renderGrid();
+      } else {
+        await deleteHandoffContent();
+      }
+      captureCanvases = [];
+      if (capturePreview) capturePreview.value = "";
+      if (captureInput) captureInput.value = "";
+      if (captureAudioInput) captureAudioInput.value = "";
+      setCaptureStep(1);
+      setCaptureTitle("mobile");
+      updateUIState();
+      setStatus("Prêt pour une nouvelle capture");
+    });
+
+    captureTextBtn?.addEventListener("click", () => {
+      captureCanvases = [];
+      if (capturePreview) capturePreview.value = "";
+      setCaptureStep(2);
+      setCaptureTitle("text");
+      capturePreview?.focus();
+      updateUIState();
+    });
+
+    captureCameraBtn?.addEventListener("click", () => {
+      captureCanvases = [];
+      if (capturePreview) capturePreview.value = "";
+      if (captureInput) captureInput.value = "";
+      if (captureAudioInput) captureAudioInput.value = "";
+      setCaptureStep(1);
+      captureInput?.click();
+      updateUIState();
+    });
+
+    captureAudioBtn?.addEventListener("click", () => {
+      captureCanvases = [];
+      if (capturePreview) capturePreview.value = "";
+      if (captureInput) captureInput.value = "";
+      if (captureAudioInput) captureAudioInput.value = "";
+      setCaptureStep(1);
+      captureAudioInput?.click();
+      updateUIState();
+    });
+
+    captureInput?.addEventListener("change", event => {
+      const files = Array.from(event.target?.files || []);
+      handleCaptureFiles(files);
+    });
+
+    captureAudioInput?.addEventListener("change", event => {
+      const file = event.target?.files?.[0] || null;
+      if (!file) return;
+      runAudioTranscription(file);
+    });
+
+    capturePreview?.addEventListener("input", () => {
+      updateHandoffContent();
+    });
+
+    codeModalClose?.addEventListener("click", () => closeCodeModal());
+    codeCancelBtn?.addEventListener("click", () => closeCodeModal());
+    codeModal?.addEventListener("click", event => {
+      if (event.target === codeModal) closeCodeModal();
+    });
+    codeSubmitBtn?.addEventListener("click", () => handleCodeSubmit());
+    codeInput?.addEventListener("input", () => {
+      if (codeInput.value.length === 4) {
+        handleCodeSubmit();
+      }
+    });
+    codeInput?.addEventListener("keydown", event => {
+      if (event.key === "Enter") {
+        handleCodeSubmit();
+      }
+    });
+
+    sendMethodModalClose?.addEventListener("click", () => closeSendMethodModal());
+    sendViaQrBtn?.addEventListener("click", () => {
+      closeSendMethodModal();
+      if (typeof BarcodeDetector === "undefined") {
+        fallbackQrPrompt();
+        return;
+      }
+      openQrModal();
+    });
+    sendViaCodeBtn?.addEventListener("click", () => {
+      closeSendMethodModal();
+      openCodeModal();
+    });
+    sendMethodModal?.addEventListener("click", event => {
+      if (event.target === sendMethodModal) closeSendMethodModal();
+    });
+
+    qrModalClose?.addEventListener("click", () => closeQrModal());
+    qrCancelBtn?.addEventListener("click", () => closeQrModal());
+    qrModal?.addEventListener("click", event => {
+      if (event.target === qrModal) closeQrModal();
+    });
+
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape") {
+        if (captureModal?.classList.contains("open")) closeCaptureModal();
+        if (codeModal?.classList.contains("open")) closeCodeModal();
+        if (qrModal?.classList.contains("open")) closeQrModal();
+        if (sendMethodModal?.classList.contains("open")) closeSendMethodModal();
+      }
+    });
+  }
+
+  // Final check for DOM readiness
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
+})();
 })();

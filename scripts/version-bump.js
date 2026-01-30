@@ -6,6 +6,7 @@ const htmlFiles = [
     path.join(__dirname, '..', 'public', 'index.html'),
     path.join(__dirname, '..', 'public', 'docs.html'),
     path.join(__dirname, '..', 'public', 'grid.html'),
+    path.join(__dirname, '..', 'public', 'hub.html'),
 ];
 
 // 1. Get current version from package.json
