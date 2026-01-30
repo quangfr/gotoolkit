@@ -866,7 +866,7 @@
   function init() {
     renderGrid();
     setupListeners();
-    
+
     pruneMissingHandoffs().catch(err => console.error("Vérification handoff globale échouée", err));
 
     const params = new URLSearchParams(window.location.search);
@@ -1070,4 +1070,4 @@
     init();
   }
 })();
-})();
+}) ();
