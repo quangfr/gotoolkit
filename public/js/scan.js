@@ -49,7 +49,7 @@
 
   let handoffDocs = loadDocuments();
   let activeDocId = null;
-  let syncedContent = ""; 
+  let syncedContent = "";
   let captureCanvases = [];
   let qrStream = null;
   let qrScanActive = false;

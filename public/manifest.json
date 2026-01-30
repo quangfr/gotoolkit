@@ -1,0 +1,21 @@
+{
+  "name": "Go-Toolkit Hub",
+  "short_name": "GT Hub",
+  "description": "Capture de notes, scans et enregistrements pour Go-Toolkit",
+  "start_url": "hub.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1976d2",
+  "icons": [
+    {
+      "src": "img/logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "img/logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
