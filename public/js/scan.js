@@ -49,6 +49,7 @@
 
   let handoffDocs = loadDocuments();
   let activeDocId = null;
+  let syncedContent = ""; 
   let captureCanvases = [];
   let qrStream = null;
   let qrScanActive = false;
@@ -58,6 +59,29 @@
   function setStatus(message) {
     if (handoffStatus) {
       handoffStatus.textContent = message || "";
+    }
+  }
+
+  function updateUIState() {
+    if (!activeDocId) return;
+    const doc = getDocumentById(activeDocId);
+    const currentContent = (capturePreview?.value || "").trim();
+    const isLinked = doc && !doc.isDraft;
+    const isModified = currentContent !== syncedContent;
+
+    // Toggle Buttons
+    if (!isLinked || isModified) {
+      if (captureSendBtn) captureSendBtn.style.display = "flex";
+      if (captureSaveBtn) captureSaveBtn.style.display = "none";
+    } else {
+      if (captureSendBtn) captureSendBtn.style.display = "none";
+      if (captureSaveBtn) captureSaveBtn.style.display = "flex";
+    }
+
+    // Toggle Instructions
+    if (captureInstruction) {
+      const showInstruction = isLinked && syncedContent.length > 0 && !isModified;
+      captureInstruction.style.display = showInstruction ? "block" : "none";
     }
   }
 
@@ -143,7 +167,6 @@
       const span = captureDocTitle.querySelector("span");
       if (span) span.textContent = linkTitle || "Document";
     }
-    if (captureInstruction) captureInstruction.style.display = "block";
     if (captureDocMeta) captureDocMeta.textContent = `ID: ${linkDocId}`;
 
     // 4. Send to Firestore
@@ -153,9 +176,11 @@
         title: linkTitle || "Document",
         timestamp: new Date().toISOString()
       });
+      syncedContent = content;
     }
 
     renderGrid();
+    updateUIState();
     setStatus("Document lié et envoyé");
   }
 
@@ -271,6 +296,8 @@
     if (!doc || !captureModal) return;
     activeDocId = docId;
     captureCanvases = [];
+    syncedContent = "";
+
     if (capturePreview) capturePreview.value = doc.isDraft ? (doc.lastContent || "") : "";
     if (captureInput) captureInput.value = "";
     if (captureDocTitle) {
@@ -279,31 +306,30 @@
     }
     if (captureDocMeta) captureDocMeta.textContent = doc.isDraft ? "" : `ID: ${docId}`;
 
-    if (captureInstruction) {
-      captureInstruction.style.display = doc.isDraft ? "none" : "block";
-    }
-
     setCaptureStep(doc.hasContent ? 2 : 1);
     setCaptureTitle(doc.hasContent ? "scan" : "mobile");
     captureModal.classList.add("open");
 
-    if (!doc.isDraft && doc.hasContent && shareWorker?.fetchSharePayload) {
+    if (!doc.isDraft && shareWorker?.fetchSharePayload) {
       setLoaderActive(true);
       shareWorker
         .fetchSharePayload(HANDOFF_COLLECTION, docId)
         .then(result => {
           const text = result?.payload?.text || "";
-          const timestamp = result?.payload?.timestamp || result?.meta?.updatedAt || new Date().toISOString();
+          syncedContent = text;
           if (capturePreview) capturePreview.value = text;
           if (text) {
+            setCaptureStep(2);
             upsertDocument({
               id: docId,
               title: doc.title,
               hasContent: true,
               lastContent: text,
-              lastCapturedAt: timestamp
+              lastCapturedAt: result?.meta?.updatedAt || new Date().toISOString()
             });
             renderGrid();
+          } else {
+            setCaptureStep(1);
           }
         })
         .catch(err => {
@@ -312,7 +338,10 @@
         })
         .finally(() => {
           setLoaderActive(false);
+          updateUIState();
         });
+    } else {
+      updateUIState();
     }
   }
 
@@ -653,21 +682,18 @@
     if (!activeDocId) return;
     const doc = getDocumentById(activeDocId);
     const text = (textOverride || capturePreview?.value || "").trim();
-    if (!text && !doc?.isDraft) {
-      setStatus("Aucun texte à envoyer");
-      return;
-    }
 
     if (doc?.isDraft) {
       upsertDocument({
         id: activeDocId,
         title: doc.title,
         isDraft: true,
-        hasContent: true,
+        hasContent: text.length > 0,
         lastContent: text,
         lastCapturedAt: new Date().toISOString()
       });
       renderGrid();
+      updateUIState();
       return;
     }
 
@@ -681,14 +707,17 @@
         title: doc?.title || "Document",
         timestamp: new Date().toISOString()
       });
+      syncedContent = text;
       upsertDocument({
         id: activeDocId,
         title: doc?.title,
-        hasContent: true,
+        hasContent: text.length > 0,
         lastContent: text,
         lastCapturedAt: new Date().toISOString()
       });
       renderGrid();
+      setStatus("Contenu envoyé");
+      updateUIState();
     } catch (err) {
       console.error(err);
       setStatus("Envoi échoué");
@@ -700,46 +729,14 @@
     const doc = getDocumentById(activeDocId);
     const text = (capturePreview?.value || "").trim();
 
-    if (doc?.isDraft) {
-      upsertDocument({
-        id: activeDocId,
-        title: doc.title,
-        isDraft: true,
-        hasContent: true,
-        lastContent: text,
-        lastCapturedAt: new Date().toISOString()
-      });
-      renderGrid();
-      return;
-    }
-
-    if (!text) {
-      setStatus("Aucun texte à envoyer");
-      return;
-    }
-    if (!shareWorker?.saveSharePayload) {
-      setStatus("Service de partage indisponible");
-      return;
-    }
-    try {
-      await shareWorker.saveSharePayload(HANDOFF_COLLECTION, activeDocId, {
-        text,
-        title: getDocumentById(activeDocId)?.title || "Document",
-        timestamp: new Date().toISOString()
-      });
-      upsertDocument({
-        id: activeDocId,
-        title: getDocumentById(activeDocId)?.title,
-        hasContent: true,
-        lastContent: text,
-        lastCapturedAt: new Date().toISOString()
-      });
-      renderGrid();
-      setStatus("Contenu mis à jour");
-    } catch (err) {
-      console.error(err);
-      setStatus("Mise à jour échouée");
-    }
+    upsertDocument({
+      ...doc,
+      hasContent: text.length > 0 || doc.hasContent,
+      lastContent: text,
+      updatedAt: new Date().toISOString()
+    });
+    renderGrid();
+    updateUIState();
   }
 
   async function deleteHandoffContent() {
@@ -750,6 +747,7 @@
     }
     try {
       await shareWorker.deleteSharePayload(HANDOFF_COLLECTION, activeDocId);
+      syncedContent = "";
       upsertDocument({
         id: activeDocId,
         title: getDocumentById(activeDocId)?.title,
@@ -759,6 +757,7 @@
       });
       renderGrid();
       setStatus("Contenu supprimé");
+      updateUIState();
     } catch (err) {
       console.error(err);
       setStatus("Suppression échouée");
@@ -913,12 +912,11 @@
     if (doc?.isDraft) {
       openSendMethodModal();
     } else {
-      closeCaptureModal();
+      sendHandoff();
     }
   });
 
   captureSaveBtn?.addEventListener("click", () => {
-    updateHandoffContent();
     closeCaptureModal();
   });
 
@@ -947,6 +945,7 @@
     if (captureAudioInput) captureAudioInput.value = "";
     setCaptureStep(1);
     setCaptureTitle("mobile");
+    updateUIState();
     setStatus("Prêt pour une nouvelle capture");
   });
 
@@ -956,6 +955,7 @@
     setCaptureStep(2);
     setCaptureTitle("text");
     capturePreview?.focus();
+    updateUIState();
   });
 
   captureCameraBtn?.addEventListener("click", () => {
@@ -965,6 +965,7 @@
     if (captureAudioInput) captureAudioInput.value = "";
     setCaptureStep(1);
     captureInput?.click();
+    updateUIState();
   });
 
   captureAudioBtn?.addEventListener("click", () => {
@@ -974,6 +975,7 @@
     if (captureAudioInput) captureAudioInput.value = "";
     setCaptureStep(1);
     captureAudioInput?.click();
+    updateUIState();
   });
 
   captureInput?.addEventListener("change", event => {
