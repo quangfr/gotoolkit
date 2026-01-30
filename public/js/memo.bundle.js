@@ -52474,7 +52474,7 @@ ${promptInput.trim()}`
             ref: containerRef,
             className: "mermaid-diagram-container",
             onDoubleClick: handleDoubleClick2,
-            title: "Double-cliquer pour modifier le diagramme",
+            title: "Modifier",
             style: {
               cursor: "pointer",
               maxHeight: size2 === "large" ? "650px" : "500px",
@@ -52524,7 +52524,7 @@ ${promptInput.trim()}`
                 e.preventDefault();
                 handleSizeChange(s.id, draftCode);
               },
-              title: s.label,
+              title: "Orientation",
               children: /* @__PURE__ */ jsx(s.Icon, { size: 14 })
             },
             s.id
@@ -52536,10 +52536,11 @@ ${promptInput.trim()}`
               {
                 className: "mermaid-modal-sync btn-secondary",
                 onClick: handleSyncFromMermaid,
+                title: "G\xE9n\xE9rer",
                 children: "G\xE9n\xE9rer"
               }
             ),
-            /* @__PURE__ */ jsx("button", { className: "mermaid-modal-close btn-primary", onClick: handleCloseModal })
+            /* @__PURE__ */ jsx("button", { className: "mermaid-modal-close btn-primary", onClick: handleCloseModal, title: "Fermer" })
           ] })
         ] }) }),
         /* @__PURE__ */ jsxs("div", { className: "mermaid-modal-body", children: [
@@ -52655,7 +52656,7 @@ ${promptInput.trim()}`
                     {
                       type: "button",
                       className: "btn-secondary chat-prompt-shortcuts-btn",
-                      title: "Raccourcis Prompt",
+                      title: "Raccourcis",
                       onClick: () => {
                         var _a, _b;
                         (_b = (_a = window.GoToolkitAssistInstance) == null ? void 0 : _a.openPromptShortcutsModal) == null ? void 0 : _b.call(_a, composerTextareaRef.current);
@@ -52671,6 +52672,7 @@ ${promptInput.trim()}`
                     className: "btn-primary chat-send-btn",
                     onClick: handleDrawSend,
                     disabled: isGenerating || !promptInput.trim(),
+                    title: "Envoyer",
                     children: isGenerating ? /* @__PURE__ */ jsx(LoaderCircle, { className: "animate-spin", size: 16 }) : /* @__PURE__ */ jsx(Send, { size: 16 })
                   }
                 )
@@ -53008,6 +53010,7 @@ ${promptInput.trim()}`
               className: "heading-collapse-toggle",
               onClick: toggleCollapse,
               contentEditable: false,
+              title: collapsed ? "D\xE9plier" : "R\xE9duire",
               children: collapsed ? "\u25B6" : "\u25E2"
             }
           ),
@@ -53433,7 +53436,7 @@ ${promptInput.trim()}`
               className: "tiptap-button tiptap-button--primary",
               type: "button",
               onClick: onAssist,
-              title: "Assist",
+              title: "Assistant",
               children: /* @__PURE__ */ jsx(Bot, { size: 16 })
             }
           ) }),
@@ -53482,7 +53485,7 @@ ${promptInput.trim()}`
                   onClick: () => {
                     setShowTextColors(!showTextColors);
                   },
-                  title: "Couleur du texte",
+                  title: "Couleur",
                   children: /* @__PURE__ */ jsx(Baseline, { size: 14 })
                 }
               ),
@@ -53560,7 +53563,7 @@ ${promptInput.trim()}`
                   className: "tiptap-button bubble-keep",
                   type: "button",
                   onClick: onKeep,
-                  title: "Garder",
+                  title: "Approuver",
                   style: { color: "var(--intent-success-border)" },
                   children: /* @__PURE__ */ jsx(Check, { size: 16 })
                 }
@@ -53986,6 +53989,7 @@ ${promptInput.trim()}`
           type: "button",
           className: "tiptap-dropdown-trigger",
           onClick: () => setIsOpen(!isOpen),
+          title: "Format",
           children: [
             /* @__PURE__ */ jsx(currentOption.icon, { size: 16 }),
             /* @__PURE__ */ jsx("span", { children: currentOption.label }),
@@ -54099,6 +54103,7 @@ ${promptInput.trim()}`
           {
             className: "tiptap-button",
             "aria-label": "Undo",
+            title: "Annuler",
             type: "button",
             onClick: () => editor.chain().focus().undo().run(),
             disabled: !editor.can().undo(),
@@ -54110,6 +54115,7 @@ ${promptInput.trim()}`
           {
             className: "tiptap-button",
             "aria-label": "Redo",
+            title: "R\xE9tablir",
             type: "button",
             onClick: () => editor.chain().focus().redo().run(),
             disabled: !editor.can().redo(),
@@ -54126,6 +54132,7 @@ ${promptInput.trim()}`
           {
             className: "tiptap-button",
             "aria-label": "Bold",
+            title: "Gras",
             type: "button",
             onClick: () => editor.chain().focus().toggleBold().run(),
             "data-active-state": editor.isActive("bold") ? "on" : "off",
@@ -54137,6 +54144,7 @@ ${promptInput.trim()}`
           {
             className: "tiptap-button",
             "aria-label": "Italic",
+            title: "Italique",
             type: "button",
             onClick: () => editor.chain().focus().toggleItalic().run(),
             "data-active-state": editor.isActive("italic") ? "on" : "off",
@@ -54148,6 +54156,7 @@ ${promptInput.trim()}`
           {
             className: "tiptap-button",
             "aria-label": "Underline",
+            title: "Soulign\xE9",
             type: "button",
             onClick: () => editor.chain().focus().toggleUnderline().run(),
             "data-active-state": editor.isActive("underline") ? "on" : "off",
@@ -54163,7 +54172,7 @@ ${promptInput.trim()}`
               type: "button",
               onMouseDown: (event) => event.preventDefault(),
               onClick: () => setShowTextColors(!showTextColors),
-              title: "Couleur du texte",
+              title: "Couleur",
               children: /* @__PURE__ */ jsx(Baseline, { size: 16 })
             }
           ),
@@ -54205,6 +54214,7 @@ ${promptInput.trim()}`
           {
             className: "tiptap-button",
             "aria-label": "Strike",
+            title: "Barr\xE9",
             type: "button",
             onClick: () => editor.chain().focus().toggleStrike().run(),
             "data-active-state": editor.isActive("strike") ? "on" : "off",
@@ -54219,7 +54229,7 @@ ${promptInput.trim()}`
             type: "button",
             onClick: () => editor.chain().focus().toggleHighlight().run(),
             "data-active-state": editor.isActive("highlight") ? "on" : "off",
-            title: "Surligner",
+            title: "Surlign\xE9",
             children: /* @__PURE__ */ jsx(Highlighter, { size: 16 })
           }
         ),
@@ -54261,6 +54271,7 @@ ${promptInput.trim()}`
           {
             className: "tiptap-button",
             "aria-label": "Insert Table",
+            title: "Tableau",
             type: "button",
             onClick: () => {
               const selectedItems = getTableItemsFromSelection(editor);
@@ -54289,7 +54300,7 @@ ${promptInput.trim()}`
               insertMermaidDiagram(editor);
             },
             "data-active-state": editor.isActive("mermaidDiagram") ? "on" : "off",
-            title: "Ins\xE9rer un diagramme Mermaid",
+            title: "Diagramme",
             children: /* @__PURE__ */ jsx(Shapes, { size: 16 })
           }
         )
@@ -54302,7 +54313,7 @@ ${promptInput.trim()}`
             className: "tiptap-button toolbar-action-btn toolbar-keep",
             "aria-label": "Garder tout",
             type: "button",
-            title: "Garder tout",
+            title: "Approuver tout",
             onClick: () => keepAllDocument(editor),
             children: /* @__PURE__ */ jsx(CheckCheck, { size: 16 })
           }
@@ -54312,7 +54323,7 @@ ${promptInput.trim()}`
           {
             className: "tiptap-button",
             "aria-label": "Voir le code source",
-            title: "Voir le code source",
+            title: "Source",
             type: "button",
             onClick: () => {
               var _a;
@@ -57053,7 +57064,7 @@ ${innerMarkdown}
                       e.stopPropagation();
                       copyBlockHtmlAtPos(blockDeleteHandle.pos);
                     },
-                    title: "Copier le contenu",
+                    title: "Copier",
                     children: /* @__PURE__ */ jsx(Copy, { size: 16 })
                   }
                 ),
@@ -57099,7 +57110,7 @@ ${innerMarkdown}
                             })();
                           }
                         },
-                        title: label,
+                        title: "Orientation",
                         "aria-label": label,
                         children: /* @__PURE__ */ jsx(Icon2, { size: 14 })
                       }
@@ -57120,7 +57131,7 @@ ${innerMarkdown}
                           }
                         }
                       },
-                      title: "Modifier le diagramme",
+                      title: "Modifier",
                       children: /* @__PURE__ */ jsx(Pencil, { size: 16 })
                     }
                   ),
@@ -57152,7 +57163,7 @@ ${innerMarkdown}
                           }
                         }
                       },
-                      title: "T\xE9l\xE9charger en PNG",
+                      title: "Image",
                       children: /* @__PURE__ */ jsx(Image3, { size: 16 })
                     }
                   )
@@ -57167,7 +57178,7 @@ ${innerMarkdown}
                       editor.chain().focus().setNodeSelection(blockDeleteHandle.pos).deleteSelection().run();
                       setBlockDeleteHandle(null);
                     },
-                    title: `Supprimer ${blockDeleteHandle.label}`,
+                    title: "Supprimer",
                     children: /* @__PURE__ */ jsx(Trash2, { size: 16 })
                   }
                 )
