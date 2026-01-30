@@ -1,4 +1,4 @@
-const CACHE_NAME = 'go-toolkit-hub-v3';
+const CACHE_NAME = 'go-toolkit-hub-v5';
 const ASSETS = [
     './hub',
     './styles/style.css',
