@@ -2,7 +2,7 @@
   "name": "Go-Toolkit Hub",
   "short_name": "Go-Toolkit",
   "description": "Capture de notes, scans et enregistrements pour Go-Toolkit",
-  "start_url": "./hub.html",
+  "start_url": "./hub",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#1976d2",

@@ -1,6 +1,6 @@
-const CACHE_NAME = 'go-toolkit-hub-v2';
+const CACHE_NAME = 'go-toolkit-hub-v3';
 const ASSETS = [
-    './hub.html',
+    './hub',
     './styles/style.css',
     './js/scan.js',
     './js/config.js',
@@ -47,10 +47,10 @@ self.addEventListener('fetch', (event) => {
         caches.match(event.request).then((response) => {
             return response || fetch(event.request).catch(() => {
                 // Fallback or just let it fail if offline and not in cache
-                if (event.request.mode === 'navigate') {
-                    return caches.match('./hub.html');
-                }
-            });
+        if (event.request.mode === 'navigate') {
+            return caches.match('./hub');
+        }
+    });
         })
     );
 });
