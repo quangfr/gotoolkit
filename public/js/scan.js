@@ -41,6 +41,11 @@
   const qrModalClose = document.getElementById("qrModalClose");
   const qrCancelBtn = document.getElementById("qrCancelBtn");
   const qrVideo = document.getElementById("qrVideo");
+  const renameModal = document.getElementById("renameModal");
+  const renameModalClose = document.getElementById("renameModalClose");
+  const renameCancelBtn = document.getElementById("renameCancelBtn");
+  const renameSubmitBtn = document.getElementById("renameSubmitBtn");
+  const renameInput = document.getElementById("renameInput");
 
   let handoffDocs = loadDocuments();
   let activeDocId = null;
@@ -376,6 +381,18 @@
     if (!qrModal) return;
     qrModal.classList.remove("open");
     stopQrScanner();
+  }
+
+  function openRenameModal(initialTitle) {
+    if (!renameModal) return;
+    if (renameInput) renameInput.value = initialTitle || "";
+    renameModal.classList.add("open");
+    renameInput?.focus();
+  }
+
+  function closeRenameModal() {
+    if (!renameModal) return;
+    renameModal.classList.remove("open");
   }
 
   function fallbackQrPrompt() {
@@ -862,15 +879,31 @@
     if (!activeDocId) return;
     const doc = getDocumentById(activeDocId);
     if (!doc) return;
-    const newTitle = prompt("Nouveau nom du document :", doc.title);
-    if (newTitle && newTitle.trim()) {
-      upsertDocument({ ...doc, title: newTitle.trim() });
+    openRenameModal(doc.title);
+  });
+
+  renameModalClose?.addEventListener("click", () => closeRenameModal());
+  renameCancelBtn?.addEventListener("click", () => closeRenameModal());
+  renameSubmitBtn?.addEventListener("click", () => {
+    if (!activeDocId) return;
+    const doc = getDocumentById(activeDocId);
+    if (!doc) return;
+    const newTitle = (renameInput?.value || "").trim();
+    if (newTitle) {
+      upsertDocument({ ...doc, title: newTitle });
       if (captureDocTitle) {
         const span = captureDocTitle.querySelector("span");
-        if (span) span.textContent = newTitle.trim();
+        if (span) span.textContent = newTitle;
       }
       renderGrid();
       setStatus("Document renommé");
+      closeRenameModal();
+    }
+  });
+
+  renameInput?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      renameSubmitBtn?.click();
     }
   });
 
