@@ -752,7 +752,7 @@
                 if (hasHandoff || hasRecording) {
                     let icons = "";
                     if (hasHandoff) {
-                        icons += '<i data-lucide="scan-text" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.8;"></i>';
+                        icons += '<i data-lucide="tablet-smartphone" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.8;"></i>';
                     }
                     if (hasRecording) {
                         icons += '<i data-lucide="audio-lines" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.8;"></i>';
@@ -855,7 +855,7 @@
                 if (hasHandoff || hasRecording) {
                     let icons = "";
                     if (hasHandoff) {
-                        icons += '<i data-lucide="scan-text" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.8;"></i>';
+                        icons += '<i data-lucide="tablet-smartphone" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.8;"></i>';
                     }
                     if (hasRecording) {
                         icons += '<i data-lucide="audio-lines" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.8;"></i>';

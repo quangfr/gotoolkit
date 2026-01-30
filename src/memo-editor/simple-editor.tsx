@@ -169,6 +169,7 @@ const CustomHeading = Heading.extend({
             className="heading-collapse-toggle" 
             onClick={toggleCollapse}
             contentEditable={false}
+            title={collapsed ? "Déplier" : "Réduire"}
           >
             {collapsed ? '▶' : '◢'}
           </button>
@@ -691,7 +692,7 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLi
             className="tiptap-button tiptap-button--primary"
             type="button"
             onClick={onAssist}
-            title="Assist"
+            title="Assistant"
           >
             <Bot size={16} />
           </button>
@@ -736,7 +737,7 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLi
               onClick={() => {
                 setShowTextColors(!showTextColors);
               }}
-              title="Couleur du texte"
+              title="Couleur"
             >
               <Baseline size={14} />
             </button>
@@ -810,7 +811,7 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLi
                 className="tiptap-button bubble-keep"
                 type="button"
                 onClick={onKeep}
-                title="Garder"
+                title="Approuver"
                 style={{ color: 'var(--intent-success-border)' }}
               >
                 <Check size={16} />
@@ -1337,6 +1338,7 @@ const BlockTypeDropdown = ({ editor, onOpenChange }: { editor: Editor, onOpenCha
         type="button"
         className="tiptap-dropdown-trigger" 
         onClick={() => setIsOpen(!isOpen)}
+        title="Format"
       >
         <currentOption.icon size={16} />
         <span>{currentOption.label}</span>
@@ -1472,6 +1474,7 @@ const Toolbar = ({ editor, onDropdownToggle, onLink }: {
         <button
           className="tiptap-button"
           aria-label="Undo"
+          title="Annuler"
           type="button"
           onClick={() => editor.chain().focus().undo().run()}
           disabled={!editor.can().undo()}
@@ -1481,6 +1484,7 @@ const Toolbar = ({ editor, onDropdownToggle, onLink }: {
         <button
           className="tiptap-button"
           aria-label="Redo"
+          title="Rétablir"
           type="button"
           onClick={() => editor.chain().focus().redo().run()}
           disabled={!editor.can().redo()}
@@ -1501,6 +1505,7 @@ const Toolbar = ({ editor, onDropdownToggle, onLink }: {
         <button
           className="tiptap-button"
           aria-label="Bold"
+          title="Gras"
           type="button"
           onClick={() => editor.chain().focus().toggleBold().run()}
           data-active-state={editor.isActive('bold') ? 'on' : 'off'}
@@ -1510,6 +1515,7 @@ const Toolbar = ({ editor, onDropdownToggle, onLink }: {
         <button
           className="tiptap-button"
           aria-label="Italic"
+          title="Italique"
           type="button"
           onClick={() => editor.chain().focus().toggleItalic().run()}
           data-active-state={editor.isActive('italic') ? 'on' : 'off'}
@@ -1519,6 +1525,7 @@ const Toolbar = ({ editor, onDropdownToggle, onLink }: {
         <button
           className="tiptap-button"
           aria-label="Underline"
+          title="Souligné"
           type="button"
           onClick={() => editor.chain().focus().toggleUnderline().run()}
           data-active-state={editor.isActive('underline') ? 'on' : 'off'}
@@ -1533,7 +1540,7 @@ const Toolbar = ({ editor, onDropdownToggle, onLink }: {
             type="button"
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => setShowTextColors(!showTextColors)}
-            title="Couleur du texte"
+            title="Couleur"
           >
             <Baseline size={16} />
           </button>
@@ -1575,6 +1582,7 @@ const Toolbar = ({ editor, onDropdownToggle, onLink }: {
         <button
           className="tiptap-button"
           aria-label="Strike"
+          title="Barré"
           type="button"
           onClick={() => editor.chain().focus().toggleStrike().run()}
           data-active-state={editor.isActive('strike') ? 'on' : 'off'}
@@ -1587,7 +1595,7 @@ const Toolbar = ({ editor, onDropdownToggle, onLink }: {
           type="button"
           onClick={() => editor.chain().focus().toggleHighlight().run()}
           data-active-state={editor.isActive('highlight') ? 'on' : 'off'}
-          title="Surligner"
+          title="Surligné"
         >
           <Highlighter size={16} />
         </button>
@@ -1627,6 +1635,7 @@ const Toolbar = ({ editor, onDropdownToggle, onLink }: {
         <button
           className="tiptap-button"
           aria-label="Insert Table"
+          title="Tableau"
           type="button"
           onClick={() => {
             const selectedItems = getTableItemsFromSelection(editor);
@@ -1653,7 +1662,7 @@ const Toolbar = ({ editor, onDropdownToggle, onLink }: {
             insertMermaidDiagram(editor);
           }}
           data-active-state={editor.isActive('mermaidDiagram') ? 'on' : 'off'}
-          title="Insérer un diagramme Mermaid"
+          title="Diagramme"
         >
           <Shapes size={16} />
         </button>
@@ -1667,7 +1676,7 @@ const Toolbar = ({ editor, onDropdownToggle, onLink }: {
             className="tiptap-button toolbar-action-btn toolbar-keep"
             aria-label="Garder tout"
             type="button"
-            title="Garder tout"
+            title="Approuver tout"
             onClick={() => keepAllDocument(editor)}
           >
             <CheckCheck size={16} />
@@ -1676,7 +1685,7 @@ const Toolbar = ({ editor, onDropdownToggle, onLink }: {
         <button
           className="tiptap-button"
           aria-label="Voir le code source"
-          title="Voir le code source"
+          title="Source"
           type="button"
           onClick={() => {
             (window as any).openMemoSourceModal?.();
@@ -4904,7 +4913,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
               e.stopPropagation();
               copyBlockHtmlAtPos(blockDeleteHandle.pos);
             }}
-            title="Copier le contenu"
+            title="Copier"
           >
             <Copy size={16} />
           </button>
@@ -4960,7 +4969,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
                       })();
                     }
                   }}
-                  title={label}
+                  title="Orientation"
                   aria-label={label}
                 >
                   <Icon size={14} />
@@ -4980,7 +4989,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
                   }
                 }
               }}
-              title="Modifier le diagramme"
+              title="Modifier"
             >
               <Pencil size={16} />
             </button>
@@ -5008,7 +5017,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
                   }
                 }
               }}
-              title="Télécharger en PNG"
+              title="Image"
             >
               <ImageIcon size={16} />
             </button>
@@ -5023,7 +5032,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
               editor.chain().focus().setNodeSelection(blockDeleteHandle.pos).deleteSelection().run();
               setBlockDeleteHandle(null);
             }}
-            title={`Supprimer ${blockDeleteHandle.label}`}
+            title="Supprimer"
           >
             <Trash2 size={16} />
           </button>

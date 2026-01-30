@@ -400,14 +400,14 @@ RÈGLES DE SORTIE
 
         var imageOcrPrompt = `Extrayez tout le texte de cette image. Soyez précis. Retournez uniquement le texte brut.`
 
-        var initial = adviceChatPrompt;
+        var initial = editChatPrompt;
         var initialInfo = adviceChatPrompt;
 
         if (!global.GoToolkitChatPrompt) {
             global.GoToolkitChatPrompt = {};
         }
         global.GoToolkitChatPrompt.SYSTEM_PROMPT = initial;
-        global.GoToolkitChatPrompt.DEFAULT_SYSTEM_PROMPT = adviceChatPrompt;
+        global.GoToolkitChatPrompt.DEFAULT_SYSTEM_PROMPT = editChatPrompt;
         global.GoToolkitChatPrompt.INFO_PROMPT = initialInfo;
         global.GoToolkitChatPrompt.DEFAULT_INFO_PROMPT = adviceChatPrompt;
         global.GoToolkitChatPrompt.PRESETS = {

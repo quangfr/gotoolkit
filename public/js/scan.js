@@ -10,14 +10,18 @@
   const handoffStatus = document.getElementById("handoffStatus");
   const scanQrBtn = document.getElementById("scanQrBtn");
   const scanCodeBtn = document.getElementById("scanCodeBtn");
+  const newHandoffBtn = document.getElementById("newHandoffBtn");
   const captureModal = document.getElementById("captureModal");
   const captureModalClose = document.getElementById("captureModalClose");
   const captureModalTitle = document.getElementById("captureModalTitle");
-  const captureCancelBtn = document.getElementById("captureCancelBtn");
+  const captureSendBtn = document.getElementById("captureSendBtn");
+  const captureSaveBtn = document.getElementById("captureSaveBtn");
   const captureInput = document.getElementById("captureInput");
   const captureAudioInput = document.getElementById("captureAudioInput");
+  const captureTextBtn = document.getElementById("captureTextBtn");
   const capturePreview = document.getElementById("capturePreview");
   const captureLoader = document.getElementById("captureLoader");
+  const captureInstruction = document.getElementById("captureInstruction");
   const captureStep1 = document.getElementById("captureStep1");
   const captureStep2 = document.getElementById("captureStep2");
   const captureCameraBtn = document.getElementById("captureCameraBtn");
@@ -30,6 +34,10 @@
   const codeCancelBtn = document.getElementById("codeCancelBtn");
   const codeSubmitBtn = document.getElementById("codeSubmitBtn");
   const codeInput = document.getElementById("codeInput");
+  const sendMethodModal = document.getElementById("sendMethodModal");
+  const sendMethodModalClose = document.getElementById("sendMethodModalClose");
+  const sendViaQrBtn = document.getElementById("sendViaQrBtn");
+  const sendViaCodeBtn = document.getElementById("sendViaCodeBtn");
   const qrModal = document.getElementById("qrModal");
   const qrModalClose = document.getElementById("qrModalClose");
   const qrCancelBtn = document.getElementById("qrCancelBtn");
@@ -77,7 +85,8 @@
       updatedAt: doc.updatedAt || new Date().toISOString(),
       hasContent: Boolean(doc.hasContent),
       lastContent: typeof doc.lastContent === "string" ? doc.lastContent : undefined,
-      lastCapturedAt: doc.lastCapturedAt || undefined
+      lastCapturedAt: doc.lastCapturedAt || undefined,
+      isDraft: Boolean(doc.isDraft)
     };
     const index = handoffDocs.findIndex(item => item.id === normalized.id);
     if (index >= 0) {
@@ -86,6 +95,61 @@
       handoffDocs.unshift(normalized);
     }
     saveDocuments();
+  }
+
+  function createNewDraftHandoff() {
+    const id = "draft-" + Math.random().toString(36).substr(2, 9);
+    const drafts = handoffDocs.filter(d => d.isDraft);
+    const draftTitle = `Brouillon ${drafts.length + 1}`;
+    const doc = {
+      id,
+      title: draftTitle,
+      isDraft: true,
+      hasContent: false,
+      updatedAt: new Date().toISOString()
+    };
+    handoffDocs.unshift(doc);
+    saveDocuments();
+    renderGrid();
+    openCaptureModal(id);
+  }
+
+  async function linkDraftToDoc(linkDocId, linkTitle) {
+    const draftDoc = getDocumentById(activeDocId);
+    if (!draftDoc || !draftDoc.isDraft) return;
+
+    const content = (capturePreview?.value || "").trim();
+
+    // 1. Remove draft
+    removeDocument(activeDocId);
+
+    // 2. Add as real doc
+    upsertDocument({
+      id: linkDocId,
+      title: linkTitle || "Document",
+      isDraft: false,
+      hasContent: Boolean(content),
+      lastContent: content,
+      lastCapturedAt: new Date().toISOString()
+    });
+
+    // 3. Update UI
+    activeDocId = linkDocId;
+    if (captureDocTitle) captureDocTitle.textContent = linkTitle || "Document";
+    if (captureInstruction) captureInstruction.style.display = "block";
+    if (captureDocMeta) captureDocMeta.textContent = `ID: ${linkDocId}`;
+
+    // 4. Send to Firestore
+    if (content && shareWorker?.saveSharePayload) {
+      await shareWorker.saveSharePayload(HANDOFF_COLLECTION, linkDocId, {
+        text: content,
+        title: linkTitle || "Document",
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    renderGrid();
+    setStatus("Document lié et envoyé");
   }
 
   function removeDocument(id) {
@@ -145,7 +209,7 @@
       if (doc.hasContent) {
         openBtn.innerHTML = "<i data-lucide=\"pen\"></i>";
       } else {
-        openBtn.innerHTML = "<i data-lucide=\"captions\"></i>";
+        openBtn.innerHTML = "<i data-lucide=\"text-select\"></i>";
       }
       openBtn.addEventListener("click", () => openCaptureModal(doc.id));
       const removeBtn = document.createElement("button");
@@ -175,7 +239,7 @@
 
   async function pruneMissingHandoffs() {
     if (!shareWorker?.fetchSharePayload) return;
-    const candidates = handoffDocs.filter(doc => doc?.id && doc.hasContent);
+    const candidates = handoffDocs.filter(doc => doc?.id && doc.hasContent && !doc.isDraft);
     if (!candidates.length) return;
     const missingIds = [];
     for (const doc of candidates) {
@@ -200,14 +264,20 @@
     if (!doc || !captureModal) return;
     activeDocId = docId;
     captureCanvases = [];
-    if (capturePreview) capturePreview.value = "";
+    if (capturePreview) capturePreview.value = doc.isDraft ? (doc.lastContent || "") : "";
     if (captureInput) captureInput.value = "";
     if (captureDocTitle) captureDocTitle.textContent = doc.title || "Document";
-    if (captureDocMeta) captureDocMeta.textContent = `ID: ${docId}`;
+    if (captureDocMeta) captureDocMeta.textContent = doc.isDraft ? "" : `ID: ${docId}`;
+
+    if (captureInstruction) {
+      captureInstruction.style.display = doc.isDraft ? "none" : "block";
+    }
+
     setCaptureStep(doc.hasContent ? 2 : 1);
     setCaptureTitle(doc.hasContent ? "scan" : "mobile");
     captureModal.classList.add("open");
-    if (doc.hasContent && shareWorker?.fetchSharePayload) {
+
+    if (!doc.isDraft && doc.hasContent && shareWorker?.fetchSharePayload) {
       setLoaderActive(true);
       shareWorker
         .fetchSharePayload(HANDOFF_COLLECTION, docId)
@@ -242,6 +312,7 @@
     activeDocId = null;
     captureCanvases = [];
     setCaptureStep(1);
+    closeSendMethodModal();
   }
 
   function setCaptureStep(step) {
@@ -254,11 +325,22 @@
     let title = "Capture Mobile";
     if (mode === "scan") title = "Capture Scan";
     if (mode === "audio") title = "Capture Audio";
-    captureModalTitle.innerHTML = `<i data-lucide="scan-text" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>${title}`;
+    if (mode === "text") title = "Capture Note";
+    captureModalTitle.innerHTML = `<i data-lucide="${mode === 'text' ? 'text' : 'tablet-smartphone'}" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>${title}`;
     captureModalTitle.title = title;
     if (typeof lucide !== "undefined" && typeof lucide.createIcons === "function") {
       lucide.createIcons();
     }
+  }
+
+  function openSendMethodModal() {
+    if (!sendMethodModal) return;
+    sendMethodModal.classList.add("open");
+  }
+
+  function closeSendMethodModal() {
+    if (!sendMethodModal) return;
+    sendMethodModal.classList.remove("open");
   }
 
   function openCodeModal() {
@@ -313,6 +395,14 @@
     const docId = parseDocId(input);
     if (!docId) {
       setStatus("Lien invalide");
+      return;
+    }
+    const currentDoc = getDocumentById(activeDocId);
+    if (activeDocId && currentDoc?.isDraft) {
+      linkDraftToDoc(docId, `Document ${docId.slice(0, 4).toUpperCase()}`).catch(err => {
+        console.error(err);
+        setStatus("Liaison échouée");
+      });
       return;
     }
     const title = `Document ${docId.slice(0, 4).toUpperCase()}`;
@@ -539,10 +629,24 @@
     if (!activeDocId) return;
     const doc = getDocumentById(activeDocId);
     const text = (textOverride || capturePreview?.value || "").trim();
-    if (!text) {
+    if (!text && !doc?.isDraft) {
       setStatus("Aucun texte à envoyer");
       return;
     }
+
+    if (doc?.isDraft) {
+      upsertDocument({
+        id: activeDocId,
+        title: doc.title,
+        isDraft: true,
+        hasContent: true,
+        lastContent: text,
+        lastCapturedAt: new Date().toISOString()
+      });
+      renderGrid();
+      return;
+    }
+
     if (!shareWorker?.saveSharePayload) {
       setStatus("Service de partage indisponible");
       return;
@@ -569,7 +673,22 @@
 
   async function updateHandoffContent() {
     if (!activeDocId) return;
+    const doc = getDocumentById(activeDocId);
     const text = (capturePreview?.value || "").trim();
+
+    if (doc?.isDraft) {
+      upsertDocument({
+        id: activeDocId,
+        title: doc.title,
+        isDraft: true,
+        hasContent: true,
+        lastContent: text,
+        lastCapturedAt: new Date().toISOString()
+      });
+      renderGrid();
+      return;
+    }
+
     if (!text) {
       setStatus("Aucun texte à envoyer");
       return;
@@ -625,7 +744,7 @@
   async function handleCodeSubmit() {
     const code = (codeInput?.value || "").trim().toUpperCase();
     if (!code || code.length !== 4) {
-      setStatus("Code invalide");
+      if (code.length === 4) setStatus("Code invalide");
       return;
     }
     if (!shareWorker?.fetchSharePayload) {
@@ -638,12 +757,17 @@
         setStatus("Code introuvable");
         return;
       }
-      upsertDocument({ id: result.payload.docId, title: result.payload.title || "Document" });
-      renderGrid();
+      const currentDoc = getDocumentById(activeDocId);
+      if (activeDocId && currentDoc?.isDraft) {
+        await linkDraftToDoc(result.payload.docId, result.payload.title || "Document");
+      } else {
+        upsertDocument({ id: result.payload.docId, title: result.payload.title || "Document" });
+        renderGrid();
+        openCaptureModal(result.payload.docId);
+      }
       await shareWorker.deleteSharePayload(CODE_COLLECTION, code);
       closeCodeModal();
       setStatus("Document ajouté");
-      openCaptureModal(result.payload.docId);
     } catch (err) {
       console.error(err);
       setStatus("Code invalide");
@@ -725,21 +849,59 @@
   });
 
   scanCodeBtn?.addEventListener("click", () => openCodeModal());
+  newHandoffBtn?.addEventListener("click", () => createNewDraftHandoff());
+
   captureModalClose?.addEventListener("click", () => closeCaptureModal());
-  captureCancelBtn?.addEventListener("click", () => closeCaptureModal());
+  captureSendBtn?.addEventListener("click", () => {
+    const doc = getDocumentById(activeDocId);
+    if (doc?.isDraft) {
+      openSendMethodModal();
+    } else {
+      closeCaptureModal();
+    }
+  });
+
+  captureSaveBtn?.addEventListener("click", () => {
+    updateHandoffContent();
+    closeCaptureModal();
+  });
+
   captureModal?.addEventListener("click", event => {
     if (event.target === captureModal) closeCaptureModal();
   });
+
   captureDeleteBtn?.addEventListener("click", async () => {
-    await deleteHandoffContent();
+    const doc = getDocumentById(activeDocId);
+    if (doc?.isDraft) {
+      upsertDocument({
+        id: activeDocId,
+        title: doc.title,
+        isDraft: true,
+        hasContent: false,
+        lastContent: "",
+        lastCapturedAt: ""
+      });
+      renderGrid();
+    } else {
+      await deleteHandoffContent();
+    }
     captureCanvases = [];
     if (capturePreview) capturePreview.value = "";
     if (captureInput) captureInput.value = "";
     if (captureAudioInput) captureAudioInput.value = "";
     setCaptureStep(1);
     setCaptureTitle("mobile");
-    setStatus("Prêt pour un nouveau scan");
+    setStatus("Prêt pour une nouvelle capture");
   });
+
+  captureTextBtn?.addEventListener("click", () => {
+    captureCanvases = [];
+    if (capturePreview) capturePreview.value = "";
+    setCaptureStep(2);
+    setCaptureTitle("text");
+    capturePreview?.focus();
+  });
+
   captureCameraBtn?.addEventListener("click", () => {
     captureCanvases = [];
     if (capturePreview) capturePreview.value = "";
@@ -748,6 +910,7 @@
     setCaptureStep(1);
     captureInput?.click();
   });
+
   captureAudioBtn?.addEventListener("click", () => {
     captureCanvases = [];
     if (capturePreview) capturePreview.value = "";
@@ -756,14 +919,20 @@
     setCaptureStep(1);
     captureAudioInput?.click();
   });
+
   captureInput?.addEventListener("change", event => {
     const files = Array.from(event.target?.files || []);
     handleCaptureFiles(files);
   });
+
   captureAudioInput?.addEventListener("change", event => {
     const file = event.target?.files?.[0] || null;
     if (!file) return;
     runAudioTranscription(file);
+  });
+
+  capturePreview?.addEventListener("input", () => {
+    updateHandoffContent();
   });
 
   codeModalClose?.addEventListener("click", () => closeCodeModal());
@@ -772,10 +941,32 @@
     if (event.target === codeModal) closeCodeModal();
   });
   codeSubmitBtn?.addEventListener("click", () => handleCodeSubmit());
+  codeInput?.addEventListener("input", () => {
+    if (codeInput.value.length === 4) {
+      handleCodeSubmit();
+    }
+  });
   codeInput?.addEventListener("keydown", event => {
     if (event.key === "Enter") {
       handleCodeSubmit();
     }
+  });
+
+  sendMethodModalClose?.addEventListener("click", () => closeSendMethodModal());
+  sendViaQrBtn?.addEventListener("click", () => {
+    closeSendMethodModal();
+    if (typeof BarcodeDetector === "undefined") {
+      fallbackQrPrompt();
+      return;
+    }
+    openQrModal();
+  });
+  sendViaCodeBtn?.addEventListener("click", () => {
+    closeSendMethodModal();
+    openCodeModal();
+  });
+  sendMethodModal?.addEventListener("click", event => {
+    if (event.target === sendMethodModal) closeSendMethodModal();
   });
 
   qrModalClose?.addEventListener("click", () => closeQrModal());
@@ -789,6 +980,7 @@
       if (captureModal?.classList.contains("open")) closeCaptureModal();
       if (codeModal?.classList.contains("open")) closeCodeModal();
       if (qrModal?.classList.contains("open")) closeQrModal();
+      if (sendMethodModal?.classList.contains("open")) closeSendMethodModal();
     }
   });
 

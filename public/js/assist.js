@@ -323,7 +323,7 @@
     var MIN_WIDTH = 200;
     var MAX_WIDTH = 800;
     var MAX_WIDTH_RATIO = 0.6;
-    var PROMPT_PRESET_KEY = "goToolkit.chat.prompt.preset";
+    var PROMPT_PRESET_KEY = scopedKey("goToolkit.chat.prompt.preset");
     // Hybrid retrieval tuning knobs (kwCandidateLimit / topK_kw / contextLimit).
     // KEYWORD_CANDIDATE_LIMIT and KEYWORD_RETRY_LIMIT keep the keyword pre-filter bucket manageable,
     // getRetrievalParamsForQuestion controls the vector topK (topK_kw), and CONTEXT_LIMIT_MIN/MAX cap the merged hits.
@@ -572,26 +572,16 @@
 
     function readPromptPreset() {
         var allowed = getAllowedPromptPresetIds();
+        var defaultPreset = allowed.includes("edit") ? "edit" : (allowed[0] || "advice");
         try {
             var stored = global.localStorage.getItem(PROMPT_PRESET_KEY);
             if (stored && allowed.includes(stored)) {
-                if (stored === "ask" || stored === "advice") {
-                    if (allowed.includes("edit")) {
-                        persistPromptPreset("edit");
-                        return "edit";
-                    }
-                    return stored;
-                }
                 return stored;
             }
         } catch (err) {
             console.warn("Chat prompt preset read failed", err);
         }
-        if (allowed.includes("edit")) {
-            persistPromptPreset("edit");
-            return "edit";
-        }
-        return allowed[0] || "advice";
+        return defaultPreset;
     }
 
     function persistPromptPreset(value) {
@@ -724,6 +714,7 @@
             btn.type = "button";
             btn.className = "chat-pre-copy-btn";
             btn.setAttribute("aria-label", "Copier");
+            btn.setAttribute("title", "Copier");
             btn.innerHTML = '<i data-lucide="copy" style="width:12px;height:12px;"></i>';
             btn.addEventListener("click", function (event) {
                 event.preventDefault();
@@ -1446,7 +1437,7 @@
         this.memoConfirmedAttachmentMemos = new Set();
         this.headerDocCountEl = null;
         this.knowledgeDocumentNames = [];
-        this.headerDocCountTooltipDefault = "Base de connaissances";
+        this.headerDocCountTooltipDefault = "Mémoire";
         this.previewPanel = null;
         this.previewTitleEl = null;
         this.previewBodyEl = null;
@@ -1456,10 +1447,6 @@
         this.pendingPdfHighlight = null;
         this.currentPreviewDoc = null;
         this.promptPresetId = readPromptPreset();
-        if (getAllowedPromptPresetIds().includes("edit")) {
-            this.promptPresetId = "edit";
-            persistPromptPreset("edit");
-        }
         this.undoState = null;
         this.latestRestoreMessageId = null;
         this.inlinePromptDropdownButton = null;
@@ -2025,7 +2012,7 @@
                 editBtn.className = "chat-edit-btn";
                 editBtn.style.cursor = "pointer";
                 editBtn.innerHTML = '<i data-lucide="pen"></i>';
-                editBtn.setAttribute("title", "Modifier le prompt");
+                editBtn.setAttribute("title", "Modifier");
                 editBtn.addEventListener("click", function (event) {
                     event.stopPropagation();
                     this.handleEditPrompt(message);
@@ -2037,7 +2024,7 @@
                 undoBtn.className = "chat-undo-btn";
                 undoBtn.style.cursor = "pointer";
                 undoBtn.innerHTML = '<i data-lucide="undo"></i>';
-                undoBtn.setAttribute("title", "Restaurer le document");
+                undoBtn.setAttribute("title", "Annuler");
                 undoBtn.addEventListener("click", function (event) {
                     event.stopPropagation();
                     this.handleUndoDocument(message);
@@ -2644,7 +2631,7 @@
         if (!this.textarea) return;
         var placeholders = {
             'edit': 'Que veux-tu modifier ?',
-            'advice': 'Que veux-tu demander ?',
+            'advice': 'Que veux-tu demander ou explorer ?',
             'draw': 'Que veux-tu dessiner ?',
             'suggest': 'Que veux-tu corriger ?',
             'ask': 'Que veux-tu explorer ?',
@@ -4161,6 +4148,7 @@
         closeBtn.type = "button";
         closeBtn.className = "modal-close";
         closeBtn.textContent = "✕";
+        closeBtn.setAttribute("title", "Fermer");
         closeBtn.addEventListener("click", this.closePromptShortcutsModal.bind(this));
         header.appendChild(title);
         header.appendChild(closeBtn);
@@ -4189,6 +4177,7 @@
         prevBtn.type = "button";
         prevBtn.className = "chat-prompt-shortcuts__pager-btn";
         prevBtn.innerHTML = '<i data-lucide="chevron-left"></i>';
+        prevBtn.setAttribute("title", "Précédent");
         prevBtn.addEventListener("click", function () {
             this.changePromptShortcutsPage(-1);
         }.bind(this));
@@ -4198,6 +4187,7 @@
         nextBtn.type = "button";
         nextBtn.className = "chat-prompt-shortcuts__pager-btn";
         nextBtn.innerHTML = '<i data-lucide="chevron-right"></i>';
+        nextBtn.setAttribute("title", "Suivant");
         nextBtn.addEventListener("click", function () {
             this.changePromptShortcutsPage(1);
         }.bind(this));
@@ -4474,7 +4464,7 @@
         this.headerDocCountEl.type = "button";
         this.headerDocCountEl.className = "btn-secondary chat-header-btn";
         this.headerDocCountEl.innerHTML = '<i data-lucide="brain"></i>';
-        this.headerDocCountEl.setAttribute("title", this.headerDocCountTooltipDefault);
+        this.headerDocCountEl.setAttribute("title", "Mémoire");
         this.headerDocCountEl.addEventListener("click", this.handleHeaderDocCountClick.bind(this));
         this.headerDocCountEl.addEventListener("keydown", function (event) {
             if (event.key === "Enter" || event.key === " ") {
@@ -4496,6 +4486,7 @@
         this.clearButton.type = "button";
         this.clearButton.className = "btn-secondary chat-header-btn";
         this.clearButton.innerHTML = '<i data-lucide="message-circle-x"></i>';
+        this.clearButton.setAttribute("title", "Effacer");
         this.clearButton.addEventListener("click", this.clearConversation.bind(this));
         headerActions.appendChild(this.clearButton);
 
@@ -4717,7 +4708,7 @@
         this.promptShortcutsButton.type = "button";
         this.promptShortcutsButton.className = "btn-secondary chat-prompt-shortcuts-btn";
         this.promptShortcutsButton.innerHTML = '<i data-lucide="sparkles"></i>';
-        this.promptShortcutsButton.setAttribute("title", "Raccourcis Prompt");
+        this.promptShortcutsButton.setAttribute("title", "Raccourcis");
         this.promptShortcutsButton.addEventListener("click", function () {
             this.openPromptShortcutsModal(this.textarea);
         }.bind(this));
@@ -4728,6 +4719,7 @@
         this.scrollButton.id = "chatAttachFilesBtn";
         this.scrollButton.className = "btn-secondary chat-attach-files-btn chat-scroll-btn";
         this.scrollButton.innerHTML = '<i data-lucide="paperclip"></i>';
+        this.scrollButton.setAttribute("title", "Fichiers");
         this.scrollButton.addEventListener("click", this.openDocumentSelector.bind(this));
         composerLeftActions.appendChild(this.scrollButton);
 
@@ -4744,7 +4736,8 @@
         this.docsIndicatorDeleteEl = document.createElement("span");
         this.docsIndicatorDeleteEl.className = "chat-delete chat-attached-files-indicator__delete";
         this.docsIndicatorDeleteEl.textContent = "×";
-        this.docsIndicatorDeleteEl.setAttribute("aria-label", "Supprimer les documents");
+        this.docsIndicatorDeleteEl.setAttribute("aria-label", "Supprimer");
+        this.docsIndicatorDeleteEl.setAttribute("title", "Supprimer");
         this.docsIndicatorDeleteEl.addEventListener("click", function (event) {
             event.stopPropagation();
             this.handleRemoveAttachedDocuments();
@@ -4759,6 +4752,7 @@
         this.sendButton.type = "button";
         this.sendButton.className = "btn-primary chat-send-btn";
         this.sendButton.innerHTML = '<i data-lucide="send"></i>';
+        this.sendButton.setAttribute("title", "Envoyer");
         this.sendButton.addEventListener("click", this.handleSend.bind(this));
         composerActions.appendChild(this.sendButton);
 
@@ -4768,6 +4762,7 @@
         this.speechButton.type = "button";
         this.speechButton.className = "btn-secondary chat-speech-btn";
         this.speechButton.innerHTML = '<i data-lucide="mic"></i>';
+        this.speechButton.setAttribute("title", "Dictée");
         this.speechButton.addEventListener("mousedown", function () {
             this.memoSelectionIgnoreBlur = true;
         }.bind(this));
@@ -4778,7 +4773,7 @@
         this.memoSelectionFollowButton.type = "button";
         this.memoSelectionFollowButton.className = "btn-secondary chat-selection-follow-btn active";
         this.memoSelectionFollowButton.innerHTML = '<i data-lucide="mouse-pointer-click"></i>';
-        this.memoSelectionFollowButton.setAttribute("title", "Sélection automatique");
+        this.memoSelectionFollowButton.setAttribute("title", "Auto");
         this.memoSelectionFollowButton.setAttribute("aria-pressed", "true");
         this.memoSelectionFollowButton.addEventListener("click", function () {
             this.memoSelectionFollowActive = !this.memoSelectionFollowActive;
@@ -6761,11 +6756,13 @@
         addBtn.type = "button";
         addBtn.className = "chat-knowledge-modal__add";
         addBtn.textContent = "+ Ajouter";
+        addBtn.setAttribute("title", "Ajouter");
         addBtn.addEventListener("click", this.openKnowledgeFilePicker.bind(this));
         var closeBtn = document.createElement("button");
         closeBtn.type = "button";
         closeBtn.className = "chat-knowledge-modal__close";
         closeBtn.textContent = "✕";
+        closeBtn.setAttribute("title", "Fermer");
         closeBtn.addEventListener("click", this.closeKnowledgeModal.bind(this));
         actions.appendChild(addBtn);
         actions.appendChild(closeBtn);
@@ -6773,6 +6770,7 @@
         resetBtn.type = "button";
         resetBtn.className = "chat-knowledge-modal__reset";
         resetBtn.textContent = "↺ Réinitialiser";
+        resetBtn.setAttribute("title", "Réinitialiser");
         resetBtn.addEventListener("click", this.handleKnowledgeResetClick.bind(this));
         actions.appendChild(addBtn);
         actions.appendChild(resetBtn);
@@ -6998,6 +6996,7 @@
         closeBtn.type = "button";
         closeBtn.className = "modal-close";
         closeBtn.textContent = "✕";
+        closeBtn.setAttribute("title", "Fermer");
         closeBtn.addEventListener("click", this.closeKnowledgeEditModal.bind(this));
         header.appendChild(title);
         header.appendChild(closeBtn);
@@ -7411,9 +7410,9 @@
                 "<div class=\"chat-knowledge-modal__row\" data-key=\"" + escapeHtml(key) + "\">" +
                 "<div><input type=\"checkbox\" class=\"chat-knowledge-modal__checkbox\" data-key=\"" + escapeHtml(key) + "\" " + (checked ? "checked" : "") + " " + (disableCheckboxes ? "disabled" : "") + "></div>" +
                 "<div class=\"chat-knowledge-modal__name-cell\">" +
-                "<button type=\"button\" class=\"chat-knowledge-modal__edit\" data-key=\"" + escapeHtml(key) + "\" aria-label=\"Modifier\">✐</button>" +
+                "<button type=\"button\" class=\"chat-knowledge-modal__edit\" data-key=\"" + escapeHtml(key) + "\" aria-label=\"Modifier\" title=\"Modifier\">✐</button>" +
                 (needsReindex
-                    ? "<button type=\"button\" class=\"chat-knowledge-modal__reindex\" data-key=\"" + escapeHtml(key) + "\" aria-label=\"Réindexer\">↺</button>"
+                    ? "<button type=\"button\" class=\"chat-knowledge-modal__reindex\" data-key=\"" + escapeHtml(key) + "\" aria-label=\"Réindexer\" title=\"Réindexer\">↺</button>"
                     : "") +
                 "<button type=\"button\" class=\"chat-knowledge-modal__name\" data-key=\"" + escapeHtml(key) + "\" title=\"" + escapeHtml(fullName) + "\">" + escapeHtml(truncatedName) + "</button>" +
                 "</div>" +
@@ -8366,7 +8365,8 @@
         backBtn.type = "button";
         backBtn.className = "chat-doc-preview__back";
         backBtn.textContent = "←";
-        backBtn.setAttribute("aria-label", "Retour à la base de connaissances");
+        backBtn.setAttribute("aria-label", "Retour");
+        backBtn.setAttribute("title", "Retour");
         backBtn.addEventListener("click", function () {
             this.closePreviewPanel();
             this.openKnowledgeModal();
@@ -8377,6 +8377,7 @@
         closeBtn.type = "button";
         closeBtn.className = "chat-doc-preview__close";
         closeBtn.textContent = "✕";
+        closeBtn.setAttribute("title", "Fermer");
         closeBtn.addEventListener("click", this.closePreviewPanel.bind(this));
         header.appendChild(backBtn);
         header.appendChild(title);

@@ -630,7 +630,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
           ref={containerRef}
           className="mermaid-diagram-container"
           onDoubleClick={handleDoubleClick}
-          title="Double-cliquer pour modifier le diagramme"
+          title="Modifier"
           style={{ 
             cursor: 'pointer', 
             maxHeight: size === 'large' ? '650px' : '500px',
@@ -691,7 +691,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
                             e.preventDefault();
                             handleSizeChange(s.id, draftCode);
                           }}
-                          title={s.label}
+                          title="Orientation"
                         >
                           <s.Icon size={14} />
                         </button>
@@ -704,10 +704,11 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
                   <button 
                     className="mermaid-modal-sync btn-secondary" 
                     onClick={handleSyncFromMermaid}
+                    title="Générer"
                   >
                     Générer
                   </button>
-                  <button className="mermaid-modal-close btn-primary" onClick={handleCloseModal}></button>
+                  <button className="mermaid-modal-close btn-primary" onClick={handleCloseModal} title="Fermer"></button>
                 </div>
               </div>
             </div>
@@ -814,7 +815,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
                       <button
                         type="button"
                         className="btn-secondary chat-prompt-shortcuts-btn"
-                        title="Raccourcis Prompt"
+                        title="Raccourcis"
                         onClick={() => {
                           (window as any).GoToolkitAssistInstance?.openPromptShortcutsModal?.(composerTextareaRef.current);
                         }}
@@ -828,6 +829,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
                       className="btn-primary chat-send-btn"
                       onClick={handleDrawSend}
                       disabled={isGenerating || !promptInput.trim()}
+                      title="Envoyer"
                     >
                       {isGenerating ? (
                         <Loader2 className="animate-spin" size={16} />

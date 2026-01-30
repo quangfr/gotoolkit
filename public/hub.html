@@ -124,6 +124,7 @@
         .capture-modal {
             width: 100vw;
             height: 100vh;
+            max-height: 100%;
             display: flex;
             flex-direction: column;
             border-radius: 0;
@@ -195,7 +196,8 @@
         }
 
         #captureCameraBtn,
-        #captureAudioBtn {
+        #captureAudioBtn,
+        #captureTextBtn {
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -207,7 +209,8 @@
         }
 
         #captureCameraBtn svg,
-        #captureAudioBtn svg {
+        #captureAudioBtn svg,
+        #captureTextBtn svg {
             width: 42px;
             height: 42px;
         }
@@ -233,7 +236,8 @@
             }
 
             #captureCameraBtn,
-            #captureAudioBtn {
+            #captureAudioBtn,
+            #captureTextBtn {
                 flex: 1 1 0;
                 max-width: 50%;
             }
@@ -245,18 +249,21 @@
     <div class="scan-shell">
         <header class="scan-header">
             <div class="scan-title">
-                <h1><i data-lucide="scan-text"></i>Go-Toolkit Hub</h1>
-                <span>Envoie tes scans et audios dans ton document sur PC</span>
+                <h1><i data-lucide="tablet-smartphone"></i>Go-Toolkit Hub</h1>
+                <span>Edite et envoie ta note, ton scan ou ton audio sur PC</span>
             </div>
             <div class="scan-actions">
                 <a href="index.html" class="btn btn-secondary" title="Accueil"
                     style="display: inline-flex; align-items: center; text-decoration: none;">
                     <i data-lucide="house"></i>
                 </a>
-                <button id="scanQrBtn" class="btn btn-secondary" type="button" title="Scanner un QR">
+                <button id="newHandoffBtn" class="btn btn-secondary" type="button" title="Nouveau handoff">
+                    <i data-lucide="plus"></i>
+                </button>
+                <button id="scanQrBtn" class="btn btn-secondary" type="button" title="Scanner" style="display: none;">
                     <i data-lucide="qr-code"></i>
                 </button>
-                <button id="scanCodeBtn" class="btn btn-secondary" type="button" title="Entrer un code">
+                <button id="scanCodeBtn" class="btn btn-secondary" type="button" title="Code" style="display: none;">
                     <i data-lucide="keyboard"></i>
                 </button>
             </div>
@@ -268,7 +275,7 @@
     <div class="modal-overlay" id="captureModal" role="dialog" aria-modal="true" aria-labelledby="captureModalTitle">
         <div class="modal capture-modal">
             <div class="modal-header">
-                <h3 id="captureModalTitle" title="Capture Mobile"><i data-lucide="scan-text"
+                <h3 id="captureModalTitle" title="Capture Mobile"><i data-lucide="tablet-smartphone"
                         style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Capture Mobile</h3>
                 <button class="modal-close" id="captureModalClose" type="button" aria-label="Fermer"><i
                         data-lucide="x"></i></button>
@@ -281,6 +288,10 @@
                     <input id="captureInput" type="file" accept="image/*" capture="environment" multiple hidden>
                     <input id="captureAudioInput" type="file" accept="audio/*" hidden>
                     <div class="capture-actions">
+                        <button id="captureTextBtn" type="button" class="btn btn-secondary">
+                            <i data-lucide="text"></i>
+                            <span>Note</span>
+                        </button>
                         <button id="captureCameraBtn" type="button" class="btn btn-secondary">
                             <i data-lucide="image-up"></i>
                             <span>Scan</span>
@@ -295,16 +306,18 @@
                     <div class="capture-loader" id="captureLoader"><i data-lucide="image-up"></i><span>OCR en
                             cours...</span>
                     </div>
-                    <div class="capture-instruction">
-                        Cliquez sur “Récupérer” côté PC pour importer votre scan.
-                    </div>
                     <textarea id="capturePreview" class="capture-preview"
                         placeholder="Le texte OCR apparaîtra ici..."></textarea>
                 </div>
+                <div class="capture-instruction" id="captureInstruction">
+                    Cliquez sur “Récupérer” côté PC pour importer votre scan.
+                </div>
                 <div class="modal-actions" style="justify-content: flex-end; gap: 8px;">
                     <button id="captureDeleteBtn" type="button" class="btn btn-secondary"
-                        style="margin-left: auto;">Recommencer</button>
-                    <button id="captureCancelBtn" type="button" class="btn btn-primary">Fermer</button>
+                        style="margin-right: auto;">Réinitialiser</button>
+                    <button id="captureSaveBtn" type="button" class="btn btn-secondary"
+                        style="margin-left: auto;">Enregistrer</button>
+                    <button id="captureSendBtn" type="button" class="btn btn-primary">Envoyer</button>
                 </div>
             </div>
         </div>
@@ -313,8 +326,8 @@
     <div class="modal-overlay" id="codeModal" role="dialog" aria-modal="true" aria-labelledby="codeModalTitle">
         <div class="modal">
             <div class="modal-header">
-                <h3 id="codeModalTitle" title="Code session"><i data-lucide="keyboard"
-                        style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Code session</h3>
+                <h3 id="codeModalTitle" title="Code d'accès"><i data-lucide="keyboard"
+                        style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Code d'accès</h3>
                 <button class="modal-close" id="codeModalClose" type="button" aria-label="Fermer"><i
                         data-lucide="x"></i></button>
             </div>
@@ -322,10 +335,37 @@
                 <span style="font-size: 13px; opacity: 0.7;">Entrez le code à 4 caractères affiché sur votre
                     Docs.</span>
                 <input id="codeInput" type="text" maxlength="4"
-                    style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid var(--border-main); background: var(--bg-surface); text-transform: uppercase; letter-spacing: 0.2em; text-align: center; font-weight: 600;">
+                    style="width: 100%; padding: 15px; border-radius: 12px; border: 1px solid var(--border-main); background: var(--bg-surface); text-transform: uppercase; letter-spacing: 0.5em; text-align: center; font-weight: 700; font-size: 24px;">
                 <div class="modal-actions" style="justify-content: flex-end; gap: 8px;">
                     <button id="codeCancelBtn" type="button" class="btn btn-secondary">Annuler</button>
-                    <button id="codeSubmitBtn" type="button" class="btn-primary">Valider</button>
+                    <button id="codeSubmitBtn" type="button" class="btn btn-primary">Valider</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="sendMethodModal" role="dialog" aria-modal="true"
+        aria-labelledby="sendMethodModalTitle">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="sendMethodModalTitle">Envoyer vers le document</h3>
+                <button class="modal-close" id="sendMethodModalClose" type="button" aria-label="Fermer"><i
+                        data-lucide="x"></i></button>
+            </div>
+            <div class="ia-actions" style="gap: 12px; padding: 20px 0;">
+                <p style="font-size: 13px; opacity: 0.8; margin-bottom: 20px; text-align: center;">Choisissez comment
+                    lier ce brouillon à votre document.</p>
+                <div class="capture-actions" style="justify-content: center;">
+                    <button id="sendViaQrBtn" class="btn btn-secondary"
+                        style="flex-direction: column; padding: 20px; min-width: 120px;">
+                        <i data-lucide="qr-code" style="width: 32px; height: 32px; margin-bottom: 8px;"></i>
+                        <span>QR Code</span>
+                    </button>
+                    <button id="sendViaCodeBtn" class="btn btn-secondary"
+                        style="flex-direction: column; padding: 20px; min-width: 120px;">
+                        <i data-lucide="keyboard" style="width: 32px; height: 32px; margin-bottom: 8px;"></i>
+                        <span>Code d'accès</span>
+                    </button>
                 </div>
             </div>
         </div>

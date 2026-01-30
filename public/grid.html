@@ -45,7 +45,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
-    <link rel="stylesheet" href="styles/style.css?v=2026.01.29.14">
+    <link rel="stylesheet" href="styles/style.css?v=2026.01.30.1">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-grid.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-theme-quartz.css">
     <script
@@ -1111,18 +1111,18 @@
 <body class="app-body">
     <div class="app">
         <header class="app-header">
-            <a class="app-home-link" href="/?v=2026.01.29.14" title="Revenir à l'accueil"><i data-lucide="home"
+            <a class="app-home-link" href="/?v=2026.01.30.1" title="Accueil"><i data-lucide="home"
                     style="width:16px;height:16px;"></i></a>
             <div class="nav-switch">
                 <button id="navSwitcherBtn" class="nav-switch-btn" type="button"><i data-lucide="grid-3x3"
                         style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i>Grid <i
                         data-lucide="chevron-down" style="width:12px;height:12px;vertical-align:middle;"></i></button>
                 <div id="navSwitcherMenu" class="nav-switch-menu">
-                    <a class="nav-switch-link" href="/?v=2026.01.29.14"><i data-lucide="home"
+                    <a class="nav-switch-link" href="/?v=2026.01.30.1"><i data-lucide="home"
                             style="width:14px;height:14px;vertical-align:middle;margin-right:6px;"></i>Accueil</a>
-                    <a class="nav-switch-link" href="docs.html?v=2026.01.29.14" data-app="memo"><i data-lucide="zap"
+                    <a class="nav-switch-link" href="docs.html?v=2026.01.30.1" data-app="memo"><i data-lucide="zap"
                             style="width:14px;height:14px;vertical-align:middle;margin-right:6px;"></i>Docs</a>
-                    <a class="nav-switch-link" href="old/timeline.html?v=2026.01.29.14" data-app="timeline"><i
+                    <a class="nav-switch-link" href="old/timeline.html?v=2026.01.30.1" data-app="timeline"><i
                             data-lucide="layout-list"
                             style="width:14px;height:14px;vertical-align:middle;margin-right:6px;"></i>Timeline</a>
                 </div>
@@ -1130,9 +1130,9 @@
 
             <div class="tabs-actions">
                 <div id="pageTabs" class="tabs"></div>
-                <button id="addPageBtn" class="tab-action" title="Ajouter une page"><i data-lucide="plus"
+                <button id="addPageBtn" class="tab-action" title="Ajouter"><i data-lucide="plus"
                         style="width:14px;height:14px;"></i></button>
-                <button id="deletePageBtn" class="tab-action" title="Supprimer la page"><i data-lucide="trash-2"
+                <button id="deletePageBtn" class="tab-action" title="Supprimer"><i data-lucide="trash-2"
                         style="width:14px;height:14px;"></i></button>
             </div>
             <div class="global-actions">
@@ -1187,7 +1187,7 @@
                         <img src="img/logo.gif" alt="Logo Go-Toolkit" class="logo-light">
                         <img src="img/logo_inverted.gif" alt="Logo Go-Toolkit" class="logo-dark">
                         <strong>Module Grid (Le Cardinal)</strong>
-                        <span>Version 2026.01.29.14</span>
+                        <span>Version 2026.01.30.1</span>
                         <div class="info-actions info-actions--stacked">
                             <div class="info-actions-row">
                                 <button id="gridDocsBtn" type="button" class="secondary">Documentation</button>
@@ -1201,7 +1201,7 @@
 
                 <div class="share-menu-wrapper">
                     <button id="shareBtn" class="btn btn-secondary" type="button" aria-label="Partager"
-                        title="Lien de partage">☍ Partage</button>
+                        title="Partage">☍ Partage</button>
                     <div data-share-menu-slot></div>
                 </div>
 
@@ -1228,7 +1228,7 @@
             </section>
 
             <section class="connect-left">
-                <div id="gtContextModalResizer" class="context-resizer" aria-hidden="true"></div>
+                <div id="gtContextModalResizer" class="context-resizer" title="Redimensionner" aria-hidden="true"></div>
                 <div class="context-panels">
                     <div class="prompt-input-card command-panel" id="prompt-input-card">
                         <div class="card-title-row">
@@ -1251,7 +1251,7 @@
                                 <textarea id="promptInput" rows="5"
                                     placeholder="Décris le contexte des données attendues (acteur, périmètre, règles)..."></textarea>
                                 <button class="speech-button" type="button" data-speech-target="promptInput"
-                                    title="Dictée vocale" aria-label="Activer la dictée vocale"><i
+                                    title="Dictée" aria-label="Activer la dictée vocale"><i
                                         data-lucide="mic"></i></button>
                                 <div id="promptFileRow" class="prompt-file-row" aria-hidden="true">
                                     <div id="promptFileList" class="prompt-file-list"></div>
@@ -1259,7 +1259,7 @@
                                         <input id="promptFileInput" type="file" multiple style="display: none;"
                                             aria-hidden="true">
                                         <button id="promptFileBtn" class="prompt-file-btn" type="button"
-                                            title="Ajouter des fichiers" aria-label="Ajouter des fichiers"><i
+                                            title="Fichiers" aria-label="Ajouter des fichiers"><i
                                                 data-lucide="folder-plus"></i></button>
                                     </div>
                                 </div>
@@ -1267,8 +1267,8 @@
                         </div>
                     </div>
                     <div id="gtContextModalVerticalResizer" class="context-vertical-resizer" role="separator"
-                        tabindex="0" aria-orientation="horizontal"
-                        aria-label="Ajuster la hauteur des panneaux Commande et Script"></div>
+                        tabindex="0" title="Redimensionner" aria-orientation="horizontal" aria-label="Redimensionner">
+                    </div>
                     <div class="mermaid-output-card script-panel">
                         <div class="card-title-row">
                             <label class="gt-context-label">
@@ -1385,19 +1385,19 @@
         </div>
     </div>
 
-    <script src="preset.js?v=2026.01.29.14"></script>
-    <script src="prompt.js?v=2026.01.29.14"></script>
-    <script src="js/ia-config.js?v=2026.01.29.14"></script>
-    <script src="js/ia-client.js?v=2026.01.29.14"></script>
-    <script src="js/config.js?v=2026.01.29.14"></script>
-    <script src="js/feature-visibility.js?v=2026.01.29.14"></script>
-    <script src="js/document-storage.js?v=2026.01.29.14"></script>
-    <script src="js/storage-service.js?v=2026.01.29.14"></script>
-    <script src="js/shared-ui.js?v=2026.01.29.14"></script>
-    <script src="js/cgu.js?v=2026.01.29.14"></script>
-    <script src="js/share-worker-client.js?v=2026.01.29.14"></script>
-    <script src="js/share-history.js?v=2026.01.29.14"></script>
-    <script src="js/document-api.js?v=2026.01.29.14"></script>
+    <script src="preset.js?v=2026.01.30.1"></script>
+    <script src="prompt.js?v=2026.01.30.1"></script>
+    <script src="js/ia-config.js?v=2026.01.30.1"></script>
+    <script src="js/ia-client.js?v=2026.01.30.1"></script>
+    <script src="js/config.js?v=2026.01.30.1"></script>
+    <script src="js/feature-visibility.js?v=2026.01.30.1"></script>
+    <script src="js/document-storage.js?v=2026.01.30.1"></script>
+    <script src="js/storage-service.js?v=2026.01.30.1"></script>
+    <script src="js/shared-ui.js?v=2026.01.30.1"></script>
+    <script src="js/cgu.js?v=2026.01.30.1"></script>
+    <script src="js/share-worker-client.js?v=2026.01.30.1"></script>
+    <script src="js/share-history.js?v=2026.01.30.1"></script>
+    <script src="js/document-api.js?v=2026.01.30.1"></script>
     <script src="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/dist/ag-grid-community.min.noStyle.js"></script>
     <script>
         (() => {
@@ -9401,7 +9401,7 @@
             })
         };
     </script>
-    <script src="js/feedback.js?v=2026.01.29.14"></script>
+    <script src="js/feedback.js?v=2026.01.30.1"></script>
     <script>
         (function () {
             const templateTrigger = document.getElementById("gtTemplateModalTrigger");

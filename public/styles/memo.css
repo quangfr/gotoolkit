@@ -243,7 +243,7 @@
         .document-explorer__tab-btn {
             border: none;
             background: var(--bg-surface);
-            color: var(--text-main);
+            color: var(--text-muted);
             padding: 4px;
             border-radius: 4px;
             cursor: pointer;
@@ -259,7 +259,7 @@
         }
 
         .document-explorer__tab-btn.active {
-            color: var(--color-primary);
+            color: var(--text-main);
             background-color: var(--bg-surface-soft);
         }
 

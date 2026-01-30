@@ -357,9 +357,9 @@
                     <div class="voice-video-player-header">
                         <div class="voice-video-player-title">Lecteur vidéo</div>
                         <div class="voice-video-player-header-actions">
-                            <button type="button" class="voice-video-player-delete btn btn-secondary" title="Copier le transcript audio"><i data-lucide="captions"></i> Audio</button>
-                            <button type="button" class="voice-video-player-delete btn btn-secondary" title="Copier le transcript vidéo"><i data-lucide="captions"></i> Vidéo</button>
-                            <button type="button" class="voice-video-player-delete btn btn-secondary"><i data-lucide="trash-2"></i></button>
+                            <button type="button" class="voice-video-player-copy-audio btn btn-secondary" title="Transcript audio"><i data-lucide="captions"></i> Audio</button>
+                            <button type="button" class="voice-video-player-copy-video btn btn-secondary" title="Transcript vidéo"><i data-lucide="captions"></i> Vidéo</button>
+                            <button type="button" class="voice-video-player-delete btn btn-secondary" title="Supprimer"><i data-lucide="trash-2"></i></button>
                         </div>
                     </div>
                     <div class="voice-video-player-body">
@@ -369,8 +369,8 @@
                             </div>
                             <div class="voice-video-player-controls">
                                 <select class="voice-video-player-speed" aria-label="Vitesse de lecture"></select>
-                                <button type="button" class="voice-video-player-download" aria-label="Télécharger"><i data-lucide="download"></i></button>
-                                <button type="button" class="voice-video-player-play-toggle" aria-label="Lecture">▶</button>
+                                <button type="button" class="voice-video-player-download" title="Télécharger" aria-label="Télécharger"><i data-lucide="download"></i></button>
+                                <button type="button" class="voice-video-player-play-toggle" title="Lecture" aria-label="Lecture">▶</button>
                                 <input type="range" min="0" max="1" step="0.001" value="0" class="voice-video-player-progress">
                                 <span class="voice-video-player-time">00:00 / 00:00</span>
                             </div>
@@ -387,7 +387,7 @@
             (document.body || document.documentElement).appendChild(this.overlay);
             this.dialog = this.overlay.querySelector(".voice-video-player-dialog");
             this.closeButton = this.overlay.querySelector(".voice-video-player-close");
-            const actionButtons = Array.from(this.overlay.querySelectorAll(".voice-video-player-header-actions .voice-video-player-delete"));
+            const actionButtons = Array.from(this.overlay.querySelectorAll(".voice-video-player-header-actions button"));
             this.copyButtons = actionButtons.slice(0, 2);
             this.deleteButton = actionButtons[2];
             this.videoEl = this.overlay.querySelector("video");
@@ -506,7 +506,10 @@
 
         _updatePlayButton() {
             if (!this.videoEl || !this.playToggle) return;
-            this.playToggle.textContent = this.videoEl.paused ? "▶" : "⏸";
+            const isPaused = this.videoEl.paused;
+            this.playToggle.textContent = isPaused ? "▶" : "⏸";
+            this.playToggle.title = isPaused ? "Lecture" : "Pause";
+            this.playToggle.setAttribute("aria-label", isPaused ? "Lecture" : "Pause");
         }
 
         _populateSpeedOptions() {

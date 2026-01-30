@@ -209,14 +209,14 @@
                     <div class="voice-audio-player-header">
                         <div class="voice-audio-player-header-row">
                             <div class="voice-audio-player-title">Transcription audio</div>
-                            <button type="button" class="voice-audio-player-download btn btn-secondary" aria-label="Télécharger l'audio"><i data-lucide="download"></i></button>
-                            <button type="button" class="voice-audio-player-delete btn btn-secondary"><i data-lucide="trash-2"></i></button>
+                            <button type="button" class="voice-audio-player-download btn btn-secondary" title="Télécharger" aria-label="Télécharger l'audio"><i data-lucide="download"></i></button>
+                            <button type="button" class="voice-audio-player-delete btn btn-secondary" title="Supprimer"><i data-lucide="trash-2"></i></button>
                         </div>
                         <div class="voice-audio-player-subtitle"></div>
                     </div>
                     <div class="voice-audio-player-controls">
                         <select class="voice-audio-player-speed" aria-label="Vitesse de lecture"></select>
-                        <button type="button" class="voice-audio-player-play-toggle" aria-label="Lecture">▶</button>
+                        <button type="button" class="voice-audio-player-play-toggle" title="Lecture" aria-label="Lecture">▶</button>
                         <input type="range" min="0" max="1" step="0.001" value="0" class="voice-audio-player-progress">
                         <span class="voice-audio-player-time">00:00 / 00:00</span>
                     </div>
@@ -309,7 +309,10 @@
 
         _updatePlayButton() {
             if (!this.playToggle || !this.audioEl) return;
-            this.playToggle.textContent = this.audioEl.paused ? "▶" : "❚❚";
+            const isPaused = this.audioEl.paused;
+            this.playToggle.textContent = isPaused ? "▶" : "⏸";
+            this.playToggle.title = isPaused ? "Lecture" : "Pause";
+            this.playToggle.setAttribute("aria-label", isPaused ? "Lecture" : "Pause");
         }
 
         _updateProgress(reset = false) {
@@ -350,7 +353,7 @@
             this.onDelete = typeof onDelete === "function" ? onDelete : null;
             if (this.textarea) this.textarea.value = transcriptText || "";
             if (this.subtitle) {
-        this.subtitle.textContent = memoName ? `Docs: ${memoName}` : "";
+                this.subtitle.textContent = memoName ? `Docs: ${memoName}` : "";
             }
             this._applyAudioBlob(audioBlob);
             this.overlay.classList.add("voice-audio-player-modal--open");
