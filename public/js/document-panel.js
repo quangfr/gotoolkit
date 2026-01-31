@@ -956,12 +956,9 @@
             isCreating = true;
             createBtn.disabled = true;
             try {
-                const baseName = uniqueName(`Doc ${cachedItems.length + 1}`, cachedItems, Array.from(pendingNames));
-                const result = await openNameModal(baseName);
-                if (!result) return;
-                const name = uniqueName(result.name, cachedItems, Array.from(pendingNames));
+                const name = uniqueName(`Doc ${cachedItems.length + 1}`, cachedItems, Array.from(pendingNames));
                 pendingNames.add(name);
-                await Promise.resolve(onCreate(name, result.description, result.superpowers));
+                await Promise.resolve(onCreate(name, "", []));
             } finally {
                 isCreating = false;
                 createBtn.disabled = false;
@@ -1010,9 +1007,7 @@
         ensureDefaultTab();
 
         window.addEventListener("resize", () => {
-            if (window.innerWidth < 900 && isOpen) {
-                applyOpen(false);
-            }
+            // Keep state on resize (persistence)
         });
 
         return {

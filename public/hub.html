@@ -44,7 +44,7 @@
     <link rel="apple-touch-icon" href="img/logo.png" />
     <link rel="manifest" href="manifest.json" />
     <title>Go-Toolkit Hub | Go-Toolkit</title>
-    <link rel="stylesheet" href="styles/style.css?v=2026.01.30.24">
+    <link rel="stylesheet" href="styles/style.css?v=2026.01.31.1">
     <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
     <style>
         .scan-shell {
@@ -153,15 +153,14 @@
             opacity: 0.7;
         }
 
-        .capture-modal {
-            width: 100vw;
-            height: 100vh;
-            max-height: 100%;
-            display: flex;
-            flex-direction: column;
-            border-radius: 0;
-            padding: 12px;
-            gap: 6px;
+        .capture-modal .modal-header {
+            height: auto;
+            min-height: 32px;
+        }
+
+        .capture-modal input,
+        .capture-modal textarea {
+            border: none;
         }
 
         #captureModal.modal-overlay {
@@ -200,14 +199,18 @@
             width: 100%;
             flex: 1;
             border-radius: 12px;
-            border: 1px solid var(--border-main);
+            border: none;
             background: var(--bg-surface);
             padding: 6px 8px;
             font-family: "JetBrains Mono", monospace;
-            font-size: 13px;
+            font-size: 14px;
             line-height: 1.4;
             resize: none;
             overflow: auto;
+        }
+
+        #sendMethodModal .modal {
+            padding: 0;
         }
 
         .capture-loader {
@@ -262,9 +265,24 @@
             background: #000;
         }
 
-        #captureDocTitle:active {
+        #captureReadAloudBtn {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 4px;
+            border-radius: 8px;
+            color: var(--text-main);
+            background: transparent;
+            border: none;
+            cursor: pointer;
+        }
+
+        #captureReadAloudBtn:hover {
             background: var(--bg-surface-strong);
-            opacity: 0.8;
+        }
+
+        #captureReadAloudBtn.active {
+            display: flex;
         }
 
         @media (max-width: 640px) {
@@ -291,7 +309,7 @@
     <div class="scan-shell">
         <header class="scan-header">
             <div class="scan-title">
-                <h1><i data-lucide="tablet-smartphone"></i>Go-Toolkit Hub <span class="hero-version" style="font-size: 10px; opacity: 0.5;">v2026.01.30.24</span></h1>
+                <h1>Go-Toolkit Hub <span class="hero-version" style="font-size: 10px; opacity: 0.5;">v2026.01.31.1</span></h1>
             </div>
             <div class="scan-actions">
                 <a href="index.html" class="btn btn-secondary" title="Accueil"
@@ -318,11 +336,16 @@
             <div class="modal-header">
                 <h3 id="captureDocTitle"
                     style="cursor: pointer; display: flex; align-items: center; gap: 8px; padding: 4px 8px; margin-left: -8px; border-radius: 8px; transition: background 0.2s;">
-                    <i data-lucide="tablet-smartphone" style="width:16px;height:16px;"></i>
                     <span>Document</span>
                 </h3>
-                <button class="modal-close" id="captureModalClose" type="button" aria-label="Fermer"><i
-                        data-lucide="x"></i></button>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <button class="modal-close" id="captureModalClose" type="button" aria-label="Fermer">
+                        <i data-lucide="x" style="width: 20px; height: 20px;"></i>
+                    </button>
+                    <button id="captureReadAloudBtn" class="modal-close" type="button" title="Lire le texte">
+                        <i data-lucide="volume-2" style="width: 20px; height: 20px;"></i>
+                    </button>
+                </div>
             </div>
             <div class="capture-body">
                 <div id="captureStep1" class="capture-step active">
@@ -341,7 +364,7 @@
                         </button>
                         <button id="captureGalleryBtn" type="button" class="btn btn-secondary">
                             <i data-lucide="image"></i>
-                            <span>Galerie</span>
+                            <span>Scan</span>
                         </button>
                         <button id="captureAudioBtn" type="button" class="btn btn-secondary">
                             <i data-lucide="audio-lines"></i>
@@ -354,16 +377,16 @@
                             cours...</span>
                     </div>
                     <textarea id="capturePreview" class="capture-preview" placeholder="Écrire..."></textarea>
-                </div>
-                <div class="capture-instruction" id="captureInstruction">
-                    Envoyé ! Cliquez sur “Récupérer” côté PC.
-                </div>
-                <div class="modal-actions" style="justify-content: flex-end; gap: 6px;">
-                    <button id="captureDeleteBtn" type="button" class="btn btn-secondary"
-                        style="margin-right: auto;">Réinitialiser</button>
-                    <button id="captureSaveBtn" type="button" class="btn btn-secondary"
-                        style="margin-left: auto; display: none;">Terminer</button>
-                    <button id="captureSendBtn" type="button" class="btn btn-primary">Envoyer</button>
+                    <div class="capture-instruction" id="captureInstruction">
+                        Cliquer sur “Récupérer” côté PC
+                    </div>
+                    <div class="modal-actions" id="captureModalActions" style="justify-content: flex-end; gap: 6px;">
+                        <button id="captureDeleteBtn" type="button" class="btn btn-secondary"
+                            style="margin-right: auto;">Supprimer</button>
+                        <button id="captureSaveBtn" type="button" class="btn btn-secondary"
+                            style="margin-left: auto; display: none;">Terminer</button>
+                        <button id="captureSendBtn" type="button" class="btn btn-primary">Envoyer</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -436,7 +459,7 @@
     </div>
 
     <div class="modal-overlay" id="renameModal" role="dialog" aria-modal="true" aria-labelledby="renameModalTitle">
-        <div class="modal">
+        <div class="modal" style="height: auto;">
             <div class="modal-header">
                 <h3 id="renameModalTitle">Renommer le document</h3>
                 <button class="modal-close" id="renameModalClose" type="button" aria-label="Fermer"><i
@@ -457,13 +480,13 @@
         window.GO_TOOLKIT_SHARE_API_URL =
             window.GO_TOOLKIT_SHARE_API_URL || "https://share.gotoolkit.workers.dev/";
     </script>
-    <script src="js/config.js?v=2026.01.30.24"></script>
-    <script src="prompt.js?v=2026.01.30.24"></script>
-    <script src="js/ia-config.js?v=2026.01.30.24"></script>
-    <script src="js/ia-client.js?v=2026.01.30.24"></script>
-    <script src="js/share-worker-client.js?v=2026.01.30.24"></script>
-    <script src="js/voice-transcript.js?v=2026.01.30.24"></script>
-    <script src="js/scan.js?v=2026.01.30.24"></script>
+    <script src="js/config.js?v=2026.01.31.1"></script>
+    <script src="prompt.js?v=2026.01.31.1"></script>
+    <script src="js/ia-config.js?v=2026.01.31.1"></script>
+    <script src="js/ia-client.js?v=2026.01.31.1"></script>
+    <script src="js/share-worker-client.js?v=2026.01.31.1"></script>
+    <script src="js/voice-transcript.js?v=2026.01.31.1"></script>
+    <script src="js/scan.js?v=2026.01.31.1"></script>
     <script>
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();

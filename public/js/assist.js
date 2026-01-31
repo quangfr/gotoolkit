@@ -9575,11 +9575,8 @@
             this.open();
         }
         window.addEventListener("resize", () => {
-            if (window.innerWidth < 1200 && this.isOpen) {
-                this.close();
-            } else {
-                this.applyPagePadding();
-            }
+            this.applyPagePadding();
+            this.updateSidebarWidthVar();
         });
         this.ensureKnowledgeIndexWarm();
     };

@@ -28,6 +28,7 @@
   const captureGalleryBtn = document.getElementById("captureGalleryBtn");
   const captureAudioBtn = document.getElementById("captureAudioBtn");
   const captureDeleteBtn = document.getElementById("captureDeleteBtn");
+  const captureReadAloudBtn = document.getElementById("captureReadAloudBtn");
   const captureDocTitle = document.getElementById("captureDocTitle");
   const captureDocMeta = document.getElementById("captureDocMeta");
   const codeModal = document.getElementById("codeModal");
@@ -108,13 +109,14 @@
   }
 
   function upsertDocument(doc) {
+    const now = new Date().toISOString();
     const normalized = {
       id: doc.id,
       title: doc.title || "Document",
-      updatedAt: doc.updatedAt || new Date().toISOString(),
+      updatedAt: now,
       hasContent: Boolean(doc.hasContent),
       lastContent: typeof doc.lastContent === "string" ? doc.lastContent : undefined,
-      lastCapturedAt: doc.lastCapturedAt || undefined,
+      lastCapturedAt: doc.lastCapturedAt || now,
       isDraft: Boolean(doc.isDraft)
     };
     const index = handoffDocs.findIndex(item => item.id === normalized.id);
@@ -130,12 +132,14 @@
     const id = "draft-" + Math.random().toString(36).substr(2, 9);
     const drafts = handoffDocs.filter(d => d.isDraft);
     const draftTitle = `Brouillon ${drafts.length + 1}`;
+    const now = new Date().toISOString();
     const doc = {
       id,
       title: draftTitle,
       isDraft: true,
       hasContent: false,
-      updatedAt: new Date().toISOString()
+      updatedAt: now,
+      lastCapturedAt: now
     };
     handoffDocs.unshift(doc);
     saveDocuments();
@@ -233,7 +237,7 @@
       footer.className = "handoff-card__footer";
       const meta = document.createElement("span");
       meta.className = "handoff-card__meta";
-      meta.textContent = formatRelativeTime(doc.lastCapturedAt);
+      meta.textContent = formatRelativeTime(doc.lastCapturedAt || doc.updatedAt);
       const actions = document.createElement("div");
       actions.className = "handoff-card__actions";
       const openBtn = document.createElement("button");
@@ -244,16 +248,27 @@
       } else {
         openBtn.innerHTML = "<i data-lucide=\"text-select\"></i>";
       }
-      openBtn.addEventListener("click", () => openCaptureModal(doc.id));
       const removeBtn = document.createElement("button");
       removeBtn.type = "button";
       removeBtn.className = "btn btn-secondary";
       removeBtn.innerHTML = "<i data-lucide=\"trash-2\"></i>";
-      removeBtn.addEventListener("click", () => {
+      removeBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
         removeDocument(doc.id);
         renderGrid();
         setStatus("Document retiré");
       });
+
+      openBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        openCaptureModal(doc.id);
+      });
+
+      card.addEventListener("click", () => {
+        activeDocId = doc.id;
+        openRenameModal(doc.title);
+      });
+
       actions.appendChild(openBtn);
       actions.appendChild(removeBtn);
       card.appendChild(title);
@@ -360,6 +375,19 @@
   function setCaptureStep(step) {
     if (captureStep1) captureStep1.classList.toggle("active", step === 1);
     if (captureStep2) captureStep2.classList.toggle("active", step === 2);
+    const actions = document.getElementById("captureModalActions");
+    if (actions) actions.style.display = (step === 2) ? "flex" : "none";
+    if (captureReadAloudBtn) {
+      if (step === 2) {
+        captureReadAloudBtn.classList.add("active");
+      } else {
+        captureReadAloudBtn.classList.remove("active");
+        if (typeof window.speechSynthesis !== 'undefined') window.speechSynthesis.cancel();
+      }
+    }
+    if (typeof lucide !== "undefined" && typeof lucide.createIcons === "function") {
+      setTimeout(() => lucide.createIcons(), 0);
+    }
   }
 
   function setCaptureTitle(mode) {
@@ -911,6 +939,18 @@
 
     captureSaveBtn?.addEventListener("click", () => {
       closeCaptureModal();
+    });
+
+    captureReadAloudBtn?.addEventListener("click", () => {
+      const text = (capturePreview?.value || "").trim();
+      if (!text) return;
+      if (window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+        return;
+      }
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "fr-FR";
+      window.speechSynthesis.speak(utterance);
     });
 
     captureModal?.addEventListener("click", event => {
