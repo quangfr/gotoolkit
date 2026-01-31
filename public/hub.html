@@ -44,7 +44,7 @@
     <link rel="apple-touch-icon" href="img/logo.png" />
     <link rel="manifest" href="manifest.json" />
     <title>Go-Toolkit Hub | Go-Toolkit</title>
-    <link rel="stylesheet" href="styles/style.css?v=2026.01.31.1">
+    <link rel="stylesheet" href="styles/style.css?v=2026.01.31.2">
     <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
     <style>
         .scan-shell {
@@ -153,6 +153,16 @@
             opacity: 0.7;
         }
 
+        .capture-modal {
+            width: 100%;
+            height: 100%;
+            max-width: none;
+            max-height: none;
+            border-radius: 0;
+            border: none;
+            padding: 12px;
+        }
+
         .capture-modal .modal-header {
             height: auto;
             min-height: 32px;
@@ -188,6 +198,7 @@
 
         .capture-step.active {
             display: flex;
+            flex: 1;
         }
 
         #captureStep2 {
@@ -285,6 +296,25 @@
             display: flex;
         }
 
+        #captureReadAloudBtn.speaking {
+            animation: pulse-green 2s infinite;
+            color: var(--color-primary);
+        }
+
+        @keyframes pulse-green {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
         @media (max-width: 640px) {
             .handoff-grid {
                 grid-template-columns: 1fr;
@@ -309,8 +339,7 @@
     <div class="scan-shell">
         <header class="scan-header">
             <div class="scan-title">
-                <h1>Go-Toolkit Hub <span class="hero-version"
-                        style="font-size: 10px; opacity: 0.5;">v2026.01.31.1</span></h1>
+                <h1>Go-Toolkit Hub <span class="hero-version" style="font-size: 10px; opacity: 0.5;">v2026.01.31.2</span></h1>
             </div>
             <div class="scan-actions">
                 <a href="index.html" class="btn btn-secondary" title="Accueil"
@@ -340,11 +369,11 @@
                     <span>Document</span>
                 </h3>
                 <div style="display: flex; gap: 8px; align-items: center;">
-                    <button class="modal-close" id="captureModalClose" type="button" aria-label="Fermer">
-                        <i data-lucide="x" style="width: 20px; height: 20px;"></i>
-                    </button>
                     <button id="captureReadAloudBtn" class="modal-close" type="button" title="Lire le texte">
                         <i data-lucide="volume-2" style="width: 20px; height: 20px;"></i>
+                    </button>
+                    <button class="modal-close" id="captureModalClose" type="button" aria-label="Fermer">
+                        <i data-lucide="x" style="width: 20px; height: 20px;"></i>
                     </button>
                 </div>
             </div>
@@ -481,13 +510,13 @@
         window.GO_TOOLKIT_SHARE_API_URL =
             window.GO_TOOLKIT_SHARE_API_URL || "https://share.gotoolkit.workers.dev/";
     </script>
-    <script src="js/config.js?v=2026.01.31.1"></script>
-    <script src="prompt.js?v=2026.01.31.1"></script>
-    <script src="js/ia-config.js?v=2026.01.31.1"></script>
-    <script src="js/ia-client.js?v=2026.01.31.1"></script>
-    <script src="js/share-worker-client.js?v=2026.01.31.1"></script>
-    <script src="js/voice-transcript.js?v=2026.01.31.1"></script>
-    <script src="js/scan.js?v=2026.01.31.1"></script>
+    <script src="js/config.js?v=2026.01.31.2"></script>
+    <script src="prompt.js?v=2026.01.31.2"></script>
+    <script src="js/ia-config.js?v=2026.01.31.2"></script>
+    <script src="js/ia-client.js?v=2026.01.31.2"></script>
+    <script src="js/share-worker-client.js?v=2026.01.31.2"></script>
+    <script src="js/voice-transcript.js?v=2026.01.31.2"></script>
+    <script src="js/scan.js?v=2026.01.31.2"></script>
     <script>
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();

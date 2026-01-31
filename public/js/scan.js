@@ -942,14 +942,50 @@
     });
 
     captureReadAloudBtn?.addEventListener("click", () => {
-      const text = (capturePreview?.value || "").trim();
-      if (!text) return;
+      // Always get the latest value from the preview textarea
+      const textarea = document.getElementById("capturePreview");
+      const text = (textarea?.value || "").trim();
+      
+      if (!text) {
+        console.warn("No text to read in capturePreview");
+        return;
+      }
+
       if (window.speechSynthesis.speaking) {
         window.speechSynthesis.cancel();
         return;
       }
+
+      // Important for Chrome/Safari: resume context
+      if (window.speechSynthesis.paused) {
+        window.speechSynthesis.resume();
+      }
+
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = "fr-FR";
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+
+      // Choose a better voice if available
+      const voices = window.speechSynthesis.getVoices();
+      if (voices.length > 0) {
+        const frVoice = voices.find(v => v.lang.startsWith("fr-FR") || v.lang.startsWith("fr"));
+        if (frVoice) utterance.voice = frVoice;
+      }
+
+      utterance.onstart = () => {
+        captureReadAloudBtn.classList.add("speaking");
+      };
+      
+      utterance.onend = () => {
+        captureReadAloudBtn.classList.remove("speaking");
+      };
+
+      utterance.onerror = (event) => {
+        console.error("SpeechSynthesisUtterance error", event);
+        captureReadAloudBtn.classList.remove("speaking");
+      };
+
       window.speechSynthesis.speak(utterance);
     });
 
