@@ -63,101 +63,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
     }
   }, [code, draftCode]);
 
-  React.useEffect(() => {
-    if (!isEditing) return;
 
-    const logContainer = (label: string) => {
-      const container = document.querySelector('.mermaid-modal-draw-container') as HTMLElement | null;
-      if (!container) {
-        console.warn('[mermaid-modal]', label, 'draw container not found');
-        return;
-      }
-      const style = window.getComputedStyle(container);
-      const rect = container.getBoundingClientRect();
-      console.log('[mermaid-modal]', label, 'draw container', {
-        display: style.display,
-        visibility: style.visibility,
-        opacity: style.opacity,
-        position: style.position,
-        width: rect.width,
-        height: rect.height,
-        overflow: style.overflow
-      });
-    };
-
-    const logHost = (label: string) => {
-      const host = excalidrawHostRef.current;
-      if (!host) {
-        console.warn('[mermaid-modal]', label, 'excalidraw host not found');
-        return;
-      }
-      const style = window.getComputedStyle(host);
-      const rect = host.getBoundingClientRect();
-      console.log('[mermaid-modal]', label, 'excalidraw host', {
-        display: style.display,
-        visibility: style.visibility,
-        opacity: style.opacity,
-        position: style.position,
-        width: rect.width,
-        height: rect.height,
-        overflow: style.overflow
-      });
-    };
-
-    const logLib = (label: string) => {
-      const lib = (window as any).GoToolkitExcalidraw;
-      console.log('[mermaid-modal]', label, 'GoToolkitExcalidraw loaded', {
-        present: !!lib,
-        hasInit: typeof lib?.initialize === 'function',
-        hasConvert: typeof lib?.convertMermaid === 'function'
-      });
-    };
-
-    const logScene = (label: string) => {
-      try {
-        const api = (window as any).GoToolkitDrawMemo?.getApi?.();
-        const elements = api?.getSceneElements?.() || [];
-        console.log('[mermaid-modal]', label, 'scene elements', {
-          count: elements.length
-        });
-      } catch (error) {
-        console.warn('[mermaid-modal]', label, 'scene log failed', error);
-      }
-    };
-
-    const logMermaidInputs = (label: string) => {
-      console.log('[mermaid-modal]', label, 'mermaid inputs', {
-        codeLength: (draftCode || code || '').length,
-        size
-      });
-    };
-
-    const logAll = (label: string) => {
-      logContainer(label);
-      logHost(label);
-      logLib(label);
-      logMermaidInputs(label);
-      logScene(label);
-    };
-
-    const frame = window.requestAnimationFrame(() => logAll('open:rAF'));
-    const timer = window.setTimeout(() => logAll('open:300ms'), 300);
-    const timer2 = window.setTimeout(() => logAll('open:1200ms'), 1200);
-
-    let resizeObserver: ResizeObserver | null = null;
-    const container = document.querySelector('.mermaid-modal-draw-container') as HTMLElement | null;
-    if (container && 'ResizeObserver' in window) {
-      resizeObserver = new ResizeObserver(() => logContainer('resize'));
-      resizeObserver.observe(container);
-    }
-
-    return () => {
-      window.cancelAnimationFrame(frame);
-      window.clearTimeout(timer);
-      window.clearTimeout(timer2);
-      resizeObserver?.disconnect();
-    };
-  }, [isEditing, draftCode, code, size]);
 
   const handleDrawSend = async () => {
     if (!promptInput.trim() || isGenerating) return;
@@ -334,6 +240,102 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
   let size = directionSize ? (directionSize === 'TD' ? 'large' : 'small') : node.attrs.size || getAutoDetectedSize(activeCode);
   if (size === 'medium') size = 'small'; 
   const showSizeSelector = isSizeSelectorVisible(activeCode);
+
+  React.useEffect(() => {
+    if (!isEditing) return;
+
+    const logContainer = (label: string) => {
+      const container = document.querySelector('.mermaid-modal-draw-container') as HTMLElement | null;
+      if (!container) {
+        console.warn('[mermaid-modal]', label, 'draw container not found');
+        return;
+      }
+      const style = window.getComputedStyle(container);
+      const rect = container.getBoundingClientRect();
+      console.log('[mermaid-modal]', label, 'draw container', {
+        display: style.display,
+        visibility: style.visibility,
+        opacity: style.opacity,
+        position: style.position,
+        width: rect.width,
+        height: rect.height,
+        overflow: style.overflow
+      });
+    };
+
+    const logHost = (label: string) => {
+      const host = excalidrawHostRef.current;
+      if (!host) {
+        console.warn('[mermaid-modal]', label, 'excalidraw host not found');
+        return;
+      }
+      const style = window.getComputedStyle(host);
+      const rect = host.getBoundingClientRect();
+      console.log('[mermaid-modal]', label, 'excalidraw host', {
+        display: style.display,
+        visibility: style.visibility,
+        opacity: style.opacity,
+        position: style.position,
+        width: rect.width,
+        height: rect.height,
+        overflow: style.overflow
+      });
+    };
+
+    const logLib = (label: string) => {
+      const lib = (window as any).GoToolkitExcalidraw;
+      console.log('[mermaid-modal]', label, 'GoToolkitExcalidraw loaded', {
+        present: !!lib,
+        hasInit: typeof lib?.initialize === 'function',
+        hasConvert: typeof lib?.convertMermaid === 'function'
+      });
+    };
+
+    const logScene = (label: string) => {
+      try {
+        const api = (window as any).GoToolkitDrawMemo?.getApi?.();
+        const elements = api?.getSceneElements?.() || [];
+        console.log('[mermaid-modal]', label, 'scene elements', {
+          count: elements.length
+        });
+      } catch (error) {
+        console.warn('[mermaid-modal]', label, 'scene log failed', error);
+      }
+    };
+
+    const logMermaidInputs = (label: string) => {
+      console.log('[mermaid-modal]', label, 'mermaid inputs', {
+        codeLength: (draftCode || code || '').length,
+        size
+      });
+    };
+
+    const logAll = (label: string) => {
+      logContainer(label);
+      logHost(label);
+      logLib(label);
+      logMermaidInputs(label);
+      logScene(label);
+    };
+
+    const frame = window.requestAnimationFrame(() => logAll('open:rAF'));
+    const timer = window.setTimeout(() => logAll('open:300ms'), 300);
+    const timer2 = window.setTimeout(() => logAll('open:1200ms'), 1200);
+
+    let resizeObserver: ResizeObserver | null = null;
+    const container = document.querySelector('.mermaid-modal-draw-container') as HTMLElement | null;
+    if (container && 'ResizeObserver' in window) {
+      resizeObserver = new ResizeObserver(() => logContainer('resize'));
+      resizeObserver.observe(container);
+    }
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(timer);
+      window.clearTimeout(timer2);
+      resizeObserver?.disconnect();
+    };
+  }, [isEditing, draftCode, code, size]);
 
   // Immediate preview on paste/init if excalidrawJSON is missing but code exists
   React.useEffect(() => {
