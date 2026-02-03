@@ -945,7 +945,7 @@
       // Always get the latest value from the preview textarea
       const textarea = document.getElementById("capturePreview");
       const text = (textarea?.value || "").trim();
-      
+
       if (!text) {
         console.warn("No text to read in capturePreview");
         return;
@@ -976,7 +976,7 @@
       utterance.onstart = () => {
         captureReadAloudBtn.classList.add("speaking");
       };
-      
+
       utterance.onend = () => {
         captureReadAloudBtn.classList.remove("speaking");
       };
