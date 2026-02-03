@@ -4822,8 +4822,27 @@
       if (!normalizedElements.length) {
         return null;
       }
+      const arrowNormalizedElements = isFlowchart ? normalizedElements.map((element) => {
+        const linear = element.type === "line" || element.type === "arrow";
+        if (!linear) return element;
+        const hasArrowHead = element.endArrowhead != null || element.startArrowhead != null;
+        if (element.type === "line") {
+          return {
+            ...element,
+            type: "arrow",
+            endArrowhead: hasArrowHead ? element.endArrowhead : "arrow"
+          };
+        }
+        if (element.type === "arrow" && !hasArrowHead) {
+          return {
+            ...element,
+            endArrowhead: "arrow"
+          };
+        }
+        return element;
+      }) : normalizedElements;
       const normalizedFiles = (parsed == null ? void 0 : parsed.files) || null;
-      const sharpElements = applyMermaidDefaults(normalizedElements, options);
+      const sharpElements = applyMermaidDefaults(arrowNormalizedElements, options);
       return {
         elements: sharpElements,
         files: normalizedFiles || void 0

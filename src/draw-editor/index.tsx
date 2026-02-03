@@ -551,8 +551,30 @@ class ExcalidrawBridge {
         if (!normalizedElements.length) {
             return null;
         }
+        const arrowNormalizedElements = isFlowchart
+            ? normalizedElements.map(element => {
+                  const linear = element.type === "line" || element.type === "arrow";
+                  if (!linear) return element;
+                  const hasArrowHead =
+                      (element as any).endArrowhead != null || (element as any).startArrowhead != null;
+                  if (element.type === "line") {
+                      return {
+                          ...element,
+                          type: "arrow",
+                          endArrowhead: hasArrowHead ? (element as any).endArrowhead : "arrow"
+                      } as ExcalidrawElement;
+                  }
+                  if (element.type === "arrow" && !hasArrowHead) {
+                      return {
+                          ...element,
+                          endArrowhead: "arrow"
+                      } as ExcalidrawElement;
+                  }
+                  return element;
+              })
+            : normalizedElements;
         const normalizedFiles = parsed?.files || null;
-        const sharpElements = applyMermaidDefaults(normalizedElements as readonly ExcalidrawElement[], options);
+        const sharpElements = applyMermaidDefaults(arrowNormalizedElements as readonly ExcalidrawElement[], options);
         return {
             elements: sharpElements as readonly ExcalidrawElement[],
             files: normalizedFiles || undefined
