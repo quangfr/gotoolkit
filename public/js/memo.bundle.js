@@ -51997,6 +51997,93 @@ ${content}</tr>
         setDiagramType(nextType);
       }
     }, [code, draftCode]);
+    react_shim_default.useEffect(() => {
+      if (!isEditing) return;
+      const logContainer = (label) => {
+        const container3 = document.querySelector(".mermaid-modal-draw-container");
+        if (!container3) {
+          console.warn("[mermaid-modal]", label, "draw container not found");
+          return;
+        }
+        const style2 = window.getComputedStyle(container3);
+        const rect = container3.getBoundingClientRect();
+        console.log("[mermaid-modal]", label, "draw container", {
+          display: style2.display,
+          visibility: style2.visibility,
+          opacity: style2.opacity,
+          position: style2.position,
+          width: rect.width,
+          height: rect.height,
+          overflow: style2.overflow
+        });
+      };
+      const logHost = (label) => {
+        const host = excalidrawHostRef.current;
+        if (!host) {
+          console.warn("[mermaid-modal]", label, "excalidraw host not found");
+          return;
+        }
+        const style2 = window.getComputedStyle(host);
+        const rect = host.getBoundingClientRect();
+        console.log("[mermaid-modal]", label, "excalidraw host", {
+          display: style2.display,
+          visibility: style2.visibility,
+          opacity: style2.opacity,
+          position: style2.position,
+          width: rect.width,
+          height: rect.height,
+          overflow: style2.overflow
+        });
+      };
+      const logLib = (label) => {
+        const lib2 = window.GoToolkitExcalidraw;
+        console.log("[mermaid-modal]", label, "GoToolkitExcalidraw loaded", {
+          present: !!lib2,
+          hasInit: typeof (lib2 == null ? void 0 : lib2.initialize) === "function",
+          hasConvert: typeof (lib2 == null ? void 0 : lib2.convertMermaid) === "function"
+        });
+      };
+      const logScene = (label) => {
+        var _a, _b, _c;
+        try {
+          const api = (_b = (_a = window.GoToolkitDrawMemo) == null ? void 0 : _a.getApi) == null ? void 0 : _b.call(_a);
+          const elements = ((_c = api == null ? void 0 : api.getSceneElements) == null ? void 0 : _c.call(api)) || [];
+          console.log("[mermaid-modal]", label, "scene elements", {
+            count: elements.length
+          });
+        } catch (error2) {
+          console.warn("[mermaid-modal]", label, "scene log failed", error2);
+        }
+      };
+      const logMermaidInputs = (label) => {
+        console.log("[mermaid-modal]", label, "mermaid inputs", {
+          codeLength: (draftCode || code || "").length,
+          size: size2
+        });
+      };
+      const logAll = (label) => {
+        logContainer(label);
+        logHost(label);
+        logLib(label);
+        logMermaidInputs(label);
+        logScene(label);
+      };
+      const frame = window.requestAnimationFrame(() => logAll("open:rAF"));
+      const timer = window.setTimeout(() => logAll("open:300ms"), 300);
+      const timer2 = window.setTimeout(() => logAll("open:1200ms"), 1200);
+      let resizeObserver = null;
+      const container2 = document.querySelector(".mermaid-modal-draw-container");
+      if (container2 && "ResizeObserver" in window) {
+        resizeObserver = new ResizeObserver(() => logContainer("resize"));
+        resizeObserver.observe(container2);
+      }
+      return () => {
+        window.cancelAnimationFrame(frame);
+        window.clearTimeout(timer);
+        window.clearTimeout(timer2);
+        resizeObserver == null ? void 0 : resizeObserver.disconnect();
+      };
+    }, [isEditing, draftCode, code, size2]);
     const handleDrawSend = async () => {
       var _a, _b, _c, _d, _e, _f, _g;
       if (!promptInput.trim() || isGenerating) return;
