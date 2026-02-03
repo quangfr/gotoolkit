@@ -479,21 +479,12 @@ class ExcalidrawBridge {
         };
 
         const parsed = await parseMermaidToExcalidraw(trimmed, mermaidConfig);
-        const skeleton = Array.isArray(parsed?.elements) ? parsed?.elements : [];
-        if (!skeleton.length) {
+        const baseSkeleton = Array.isArray(parsed?.elements) ? parsed?.elements : [];
+        if (!baseSkeleton.length) {
             return null;
         }
-        const { convertToExcalidrawElements } = getExcalidrawExports();
-        const converted = convertToExcalidrawElements(skeleton as any);
-        const normalizedElements = Array.isArray(converted)
-            ? converted
-            : Array.isArray((converted as any)?.elements)
-            ? (converted as any).elements
-            : [];
-        if (!normalizedElements.length) {
-            return null;
-        }
-        const hasLineElements = normalizedElements.some(
+        const skeleton = [...baseSkeleton];
+        const hasLineElements = skeleton.some(
             (el: any) => el?.type === "line" || el?.type === "arrow"
         );
         if (isFlowchart && !hasLineElements) {
@@ -535,7 +526,6 @@ class ExcalidrawBridge {
                                 ? 4
                                 : 2;
                             return {
-                                id: pathEl.getAttribute("id") || `edge-path-${index}`,
                                 type: "arrow",
                                 x: start.x,
                                 y: start.y,
@@ -548,14 +538,20 @@ class ExcalidrawBridge {
                         })
                         .filter(Boolean);
                     if (fallbackArrows.length) {
-                        normalizedElements.push(...(fallbackArrows as any));
+                        skeleton.push(...(fallbackArrows as any));
                     }
                 }
             } catch (error) {
                 console.warn("[GoToolkit][Mermaid->Excalidraw] svg edge fallback failed", error);
             }
         }
-        const normalizedFiles = (!Array.isArray(converted) && (converted as any)?.files) || parsed?.files || null;
+        const { convertToExcalidrawElements } = getExcalidrawExports();
+        const converted = convertToExcalidrawElements(skeleton as any);
+        const normalizedElements = Array.isArray(converted) ? converted : [];
+        if (!normalizedElements.length) {
+            return null;
+        }
+        const normalizedFiles = parsed?.files || null;
         const sharpElements = applyMermaidDefaults(normalizedElements as readonly ExcalidrawElement[], options);
         return {
             elements: sharpElements as readonly ExcalidrawElement[],

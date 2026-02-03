@@ -4757,17 +4757,12 @@
         class: (_k = options == null ? void 0 : options.class) != null ? _k : {}
       };
       const parsed = await parseMermaidToExcalidraw(trimmed, mermaidConfig);
-      const skeleton = Array.isArray(parsed == null ? void 0 : parsed.elements) ? parsed == null ? void 0 : parsed.elements : [];
-      if (!skeleton.length) {
+      const baseSkeleton = Array.isArray(parsed == null ? void 0 : parsed.elements) ? parsed == null ? void 0 : parsed.elements : [];
+      if (!baseSkeleton.length) {
         return null;
       }
-      const { convertToExcalidrawElements } = getExcalidrawExports();
-      const converted = convertToExcalidrawElements(skeleton);
-      const normalizedElements = Array.isArray(converted) ? converted : Array.isArray(converted == null ? void 0 : converted.elements) ? converted.elements : [];
-      if (!normalizedElements.length) {
-        return null;
-      }
-      const hasLineElements = normalizedElements.some(
+      const skeleton = [...baseSkeleton];
+      const hasLineElements = skeleton.some(
         (el) => (el == null ? void 0 : el.type) === "line" || (el == null ? void 0 : el.type) === "arrow"
       );
       if (isFlowchart && !hasLineElements) {
@@ -4803,7 +4798,6 @@
                 (token) => token.includes("edge-thickness-thick")
               ) ? 4 : 2;
               return {
-                id: pathEl.getAttribute("id") || `edge-path-${index}`,
                 type: "arrow",
                 x: start.x,
                 y: start.y,
@@ -4815,14 +4809,20 @@
               };
             }).filter(Boolean);
             if (fallbackArrows.length) {
-              normalizedElements.push(...fallbackArrows);
+              skeleton.push(...fallbackArrows);
             }
           }
         } catch (error) {
           console.warn("[GoToolkit][Mermaid->Excalidraw] svg edge fallback failed", error);
         }
       }
-      const normalizedFiles = !Array.isArray(converted) && (converted == null ? void 0 : converted.files) || (parsed == null ? void 0 : parsed.files) || null;
+      const { convertToExcalidrawElements } = getExcalidrawExports();
+      const converted = convertToExcalidrawElements(skeleton);
+      const normalizedElements = Array.isArray(converted) ? converted : [];
+      if (!normalizedElements.length) {
+        return null;
+      }
+      const normalizedFiles = (parsed == null ? void 0 : parsed.files) || null;
       const sharpElements = applyMermaidDefaults(normalizedElements, options);
       return {
         elements: sharpElements,
@@ -4928,4 +4928,3 @@ buffer/index.js:
    * @license  MIT
    *)
 */
-//# sourceMappingURL=draw.bundle.js.map
