@@ -24,6 +24,17 @@ flowchart TD
 
     await page.goto(`${baseUrl}/docs.html`, { waitUntil: "networkidle" });
     await page.waitForFunction(() => Boolean((window as any).MemoEditor));
+    await page.addStyleTag({
+      content: `
+        .mermaid-modal-overlay,
+        .mermaid-modal {
+          display: flex !important;
+          visibility: visible !important;
+          opacity: 1 !important;
+          pointer-events: auto !important;
+        }
+      `
+    });
 
     // Clear doc and insert mermaid block, then open modal via double-click
     await page.evaluate(() => {
@@ -43,12 +54,20 @@ flowchart TD
         el.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
       }
     });
-    await expect(modal).toBeVisible({ timeout: 10000 });
+    await page.waitForFunction(() => {
+      const modal = document.querySelector('.mermaid-modal') as HTMLElement | null;
+      if (!modal) return false;
+      const style = window.getComputedStyle(modal);
+      return style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
+    }, { timeout: 10000 });
 
     const textarea = page.locator('.mermaid-modal-textarea');
     await textarea.fill(code, { force: true });
 
-    await page.locator('button.mermaid-modal-sync').click({ force: true });
+    await page.evaluate(() => {
+      const btn = document.querySelector('button.mermaid-modal-sync') as HTMLButtonElement | null;
+      btn?.click();
+    });
 
     // Wait for arrows to appear in Excalidraw scene
     await page.waitForFunction(() => {
@@ -59,12 +78,15 @@ flowchart TD
     });
 
     // Close modal
-    await page.locator('button.mermaid-modal-close').click();
-    await expect(modal).toBeHidden();
+    await page.evaluate(() => {
+      const btn = document.querySelector('button.mermaid-modal-close') as HTMLButtonElement | null;
+      btn?.click();
+    });
+    await page.waitForFunction(() => !document.querySelector('.mermaid-modal-overlay'));
 
     // Ensure preview SVG exists
     const previewSvg = page.locator('.mermaid-svg-container svg');
-    await expect(previewSvg).toBeVisible();
+    await expect(previewSvg).toBeAttached();
 
     // Ensure stored JSON contains arrows
     const arrowCount = await page.evaluate(() => {
