@@ -562,6 +562,22 @@ class ExcalidrawBridge {
                                 point.x - start.x,
                                 point.y - start.y
                             ]);
+                            if (relPoints.length >= 2) {
+                                const minTail = 22;
+                                const tailIndex = relPoints.length - 2;
+                                const headIndex = relPoints.length - 1;
+                                const [tailX, tailY] = relPoints[tailIndex];
+                                const [headX, headY] = relPoints[headIndex];
+                                const dx = headX - tailX;
+                                const dy = headY - tailY;
+                                const dist = Math.hypot(dx, dy);
+                                if (dist > 0 && dist < minTail) {
+                                    const scale = minTail / dist;
+                                    relPoints[headIndex] = [tailX + dx * scale, tailY + dy * scale];
+                                } else if (dist === 0) {
+                                    relPoints[headIndex] = [tailX + minTail, tailY];
+                                }
+                            }
                             const classList = Array.from(pathEl.classList);
                             const strokeStyle = classList.some(token =>
                                 token.includes("edge-pattern-dotted") ||
