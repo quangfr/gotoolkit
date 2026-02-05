@@ -490,9 +490,9 @@ class ExcalidrawBridge {
             },
             flowchart: {
                 curve: "linear",
-                padding: options?.flowchart?.padding ?? 15,
-                nodeSpacing: options?.flowchart?.nodeSpacing ?? 50,
-                rankSpacing: options?.flowchart?.rankSpacing ?? 50,
+                padding: options?.flowchart?.padding ?? 24,
+                nodeSpacing: options?.flowchart?.nodeSpacing ?? 80,
+                rankSpacing: options?.flowchart?.rankSpacing ?? 80,
                 htmlLabels: options?.flowchart?.htmlLabels ?? true
             },
             sequence: options?.sequence ?? {},
@@ -563,7 +563,8 @@ class ExcalidrawBridge {
                                 point.y - start.y
                             ]);
                             if (relPoints.length >= 2) {
-                                const minTail = 22;
+                                const minTail = 36;
+                                const inset = 18;
                                 const tailIndex = relPoints.length - 2;
                                 const headIndex = relPoints.length - 1;
                                 const [tailX, tailY] = relPoints[tailIndex];
@@ -571,10 +572,13 @@ class ExcalidrawBridge {
                                 const dx = headX - tailX;
                                 const dy = headY - tailY;
                                 const dist = Math.hypot(dx, dy);
-                                if (dist > 0 && dist < minTail) {
-                                    const scale = minTail / dist;
-                                    relPoints[headIndex] = [tailX + dx * scale, tailY + dy * scale];
-                                } else if (dist === 0) {
+                                if (dist > 0) {
+                                    const target = Math.min(dist, Math.max(dist - inset, minTail));
+                                    if (target !== dist) {
+                                        const scale = target / dist;
+                                        relPoints[headIndex] = [tailX + dx * scale, tailY + dy * scale];
+                                    }
+                                } else {
                                     relPoints[headIndex] = [tailX + minTail, tailY];
                                 }
                             }

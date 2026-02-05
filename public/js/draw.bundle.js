@@ -4772,9 +4772,9 @@
         },
         flowchart: {
           curve: "linear",
-          padding: (_c = (_b = options == null ? void 0 : options.flowchart) == null ? void 0 : _b.padding) != null ? _c : 15,
-          nodeSpacing: (_e = (_d = options == null ? void 0 : options.flowchart) == null ? void 0 : _d.nodeSpacing) != null ? _e : 50,
-          rankSpacing: (_g = (_f = options == null ? void 0 : options.flowchart) == null ? void 0 : _f.rankSpacing) != null ? _g : 50,
+          padding: (_c = (_b = options == null ? void 0 : options.flowchart) == null ? void 0 : _b.padding) != null ? _c : 24,
+          nodeSpacing: (_e = (_d = options == null ? void 0 : options.flowchart) == null ? void 0 : _d.nodeSpacing) != null ? _e : 80,
+          rankSpacing: (_g = (_f = options == null ? void 0 : options.flowchart) == null ? void 0 : _f.rankSpacing) != null ? _g : 80,
           htmlLabels: (_i = (_h = options == null ? void 0 : options.flowchart) == null ? void 0 : _h.htmlLabels) != null ? _i : true
         },
         sequence: (_j = options == null ? void 0 : options.sequence) != null ? _j : {},
@@ -4842,7 +4842,8 @@
                 point.y - start.y
               ]);
               if (relPoints.length >= 2) {
-                const minTail = 22;
+                const minTail = 36;
+                const inset = 18;
                 const tailIndex = relPoints.length - 2;
                 const headIndex = relPoints.length - 1;
                 const [tailX, tailY] = relPoints[tailIndex];
@@ -4850,10 +4851,13 @@
                 const dx = headX - tailX;
                 const dy = headY - tailY;
                 const dist = Math.hypot(dx, dy);
-                if (dist > 0 && dist < minTail) {
-                  const scale = minTail / dist;
-                  relPoints[headIndex] = [tailX + dx * scale, tailY + dy * scale];
-                } else if (dist === 0) {
+                if (dist > 0) {
+                  const target = Math.min(dist, Math.max(dist - inset, minTail));
+                  if (target !== dist) {
+                    const scale = target / dist;
+                    relPoints[headIndex] = [tailX + dx * scale, tailY + dy * scale];
+                  }
+                } else {
                   relPoints[headIndex] = [tailX + minTail, tailY];
                 }
               }
