@@ -52166,17 +52166,6 @@ ${promptInput.trim()}`
           console.warn("[mermaid-modal]", label, "draw container not found");
           return;
         }
-        const style2 = window.getComputedStyle(container3);
-        const rect = container3.getBoundingClientRect();
-        console.log("[mermaid-modal]", label, "draw container", {
-          display: style2.display,
-          visibility: style2.visibility,
-          opacity: style2.opacity,
-          position: style2.position,
-          width: rect.width,
-          height: rect.height,
-          overflow: style2.overflow
-        });
       };
       const logHost = (label) => {
         const host = excalidrawHostRef.current;
@@ -52184,49 +52173,29 @@ ${promptInput.trim()}`
           console.warn("[mermaid-modal]", label, "excalidraw host not found");
           return;
         }
-        const style2 = window.getComputedStyle(host);
-        const rect = host.getBoundingClientRect();
-        console.log("[mermaid-modal]", label, "excalidraw host", {
-          display: style2.display,
-          visibility: style2.visibility,
-          opacity: style2.opacity,
-          position: style2.position,
-          width: rect.width,
-          height: rect.height,
-          overflow: style2.overflow
-        });
       };
       const logLib = (label) => {
         const lib2 = window.GoToolkitExcalidraw;
-        console.log("[mermaid-modal]", label, "GoToolkitExcalidraw loaded", {
-          present: !!lib2,
-          hasInit: typeof (lib2 == null ? void 0 : lib2.initialize) === "function",
-          hasConvert: typeof (lib2 == null ? void 0 : lib2.convertMermaid) === "function"
-        });
+        if (!lib2) {
+          console.warn("[mermaid-modal]", label, "GoToolkitExcalidraw missing");
+          return;
+        }
+        if (typeof (lib2 == null ? void 0 : lib2.convertMermaid) !== "function") {
+          console.warn("[mermaid-modal]", label, "GoToolkitExcalidraw missing convertMermaid");
+        }
       };
       const logScene = (label) => {
-        var _a, _b, _c;
+        var _a, _b;
         try {
-          const api = (_b = (_a = window.GoToolkitDrawMemo) == null ? void 0 : _a.getApi) == null ? void 0 : _b.call(_a);
-          const elements = ((_c = api == null ? void 0 : api.getSceneElements) == null ? void 0 : _c.call(api)) || [];
-          console.log("[mermaid-modal]", label, "scene elements", {
-            count: elements.length
-          });
+          (_b = (_a = window.GoToolkitDrawMemo) == null ? void 0 : _a.getApi) == null ? void 0 : _b.call(_a);
         } catch (error2) {
           console.warn("[mermaid-modal]", label, "scene log failed", error2);
         }
-      };
-      const logMermaidInputs = (label) => {
-        console.log("[mermaid-modal]", label, "mermaid inputs", {
-          codeLength: (draftCode || code || "").length,
-          size: size2
-        });
       };
       const logAll = (label) => {
         logContainer(label);
         logHost(label);
         logLib(label);
-        logMermaidInputs(label);
         logScene(label);
       };
       const frame = window.requestAnimationFrame(() => logAll("open:rAF"));

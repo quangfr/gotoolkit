@@ -260,17 +260,6 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
         console.warn('[mermaid-modal]', label, 'draw container not found');
         return;
       }
-      const style = window.getComputedStyle(container);
-      const rect = container.getBoundingClientRect();
-      console.log('[mermaid-modal]', label, 'draw container', {
-        display: style.display,
-        visibility: style.visibility,
-        opacity: style.opacity,
-        position: style.position,
-        width: rect.width,
-        height: rect.height,
-        overflow: style.overflow
-      });
     };
 
     const logHost = (label: string) => {
@@ -279,52 +268,31 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
         console.warn('[mermaid-modal]', label, 'excalidraw host not found');
         return;
       }
-      const style = window.getComputedStyle(host);
-      const rect = host.getBoundingClientRect();
-      console.log('[mermaid-modal]', label, 'excalidraw host', {
-        display: style.display,
-        visibility: style.visibility,
-        opacity: style.opacity,
-        position: style.position,
-        width: rect.width,
-        height: rect.height,
-        overflow: style.overflow
-      });
     };
 
     const logLib = (label: string) => {
       const lib = (window as any).GoToolkitExcalidraw;
-      console.log('[mermaid-modal]', label, 'GoToolkitExcalidraw loaded', {
-        present: !!lib,
-        hasInit: typeof lib?.initialize === 'function',
-        hasConvert: typeof lib?.convertMermaid === 'function'
-      });
+      if (!lib) {
+        console.warn('[mermaid-modal]', label, 'GoToolkitExcalidraw missing');
+        return;
+      }
+      if (typeof lib?.convertMermaid !== 'function') {
+        console.warn('[mermaid-modal]', label, 'GoToolkitExcalidraw missing convertMermaid');
+      }
     };
 
     const logScene = (label: string) => {
       try {
-        const api = (window as any).GoToolkitDrawMemo?.getApi?.();
-        const elements = api?.getSceneElements?.() || [];
-        console.log('[mermaid-modal]', label, 'scene elements', {
-          count: elements.length
-        });
+        (window as any).GoToolkitDrawMemo?.getApi?.();
       } catch (error) {
         console.warn('[mermaid-modal]', label, 'scene log failed', error);
       }
-    };
-
-    const logMermaidInputs = (label: string) => {
-      console.log('[mermaid-modal]', label, 'mermaid inputs', {
-        codeLength: (draftCode || code || '').length,
-        size
-      });
     };
 
     const logAll = (label: string) => {
       logContainer(label);
       logHost(label);
       logLib(label);
-      logMermaidInputs(label);
       logScene(label);
     };
 
