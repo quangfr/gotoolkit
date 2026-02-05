@@ -4837,7 +4837,7 @@
       }
     }
     async convertMermaid(code, options) {
-      var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t;
+      var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t, _u;
       const trimmed = code == null ? void 0 : code.trim();
       if (!trimmed) {
         return null;
@@ -4863,12 +4863,25 @@
       };
       try {
         const mermaidApi = window.mermaid;
-        if (typeof ((_l = mermaidApi == null ? void 0 : mermaidApi.mermaidAPI) == null ? void 0 : _l.setConfig) === "function") {
-          mermaidApi.mermaidAPI.setConfig(mermaidConfig);
+        const siteConfig = {
+          ...mermaidConfig,
+          flowchart: {
+            ...mermaidConfig.flowchart,
+            curve: "basis",
+            nodeSpacing: 50,
+            rankSpacing: 50,
+            padding: 15
+          }
+        };
+        if (typeof ((_l = mermaidApi == null ? void 0 : mermaidApi.mermaidAPI) == null ? void 0 : _l.updateSiteConfig) === "function") {
+          mermaidApi.mermaidAPI.updateSiteConfig(siteConfig);
+        }
+        if (typeof ((_m = mermaidApi == null ? void 0 : mermaidApi.mermaidAPI) == null ? void 0 : _m.setConfig) === "function") {
+          mermaidApi.mermaidAPI.setConfig(siteConfig);
         } else if (typeof (mermaidApi == null ? void 0 : mermaidApi.initialize) === "function") {
           mermaidApi.initialize({
             startOnLoad: false,
-            ...mermaidConfig
+            ...siteConfig
           });
         }
       } catch (e) {
@@ -4878,9 +4891,9 @@
           const mermaidInfo = getMermaidRuntimeInfo();
           const headerLine = getMermaidHeaderLine(trimmed);
           const mermaidApi = window.mermaid;
-          const getDiagramType = typeof ((_m = mermaidApi == null ? void 0 : mermaidApi.mermaidAPI) == null ? void 0 : _m.getDiagramFromText);
+          const getDiagramType = typeof ((_n = mermaidApi == null ? void 0 : mermaidApi.mermaidAPI) == null ? void 0 : _n.getDiagramFromText);
           const hasGetDiagram = getDiagramType === "function";
-          const mermaidApiVersion = (mermaidApi == null ? void 0 : mermaidApi.version) || ((_n = mermaidApi == null ? void 0 : mermaidApi.mermaidAPI) == null ? void 0 : _n.version) || ((_o = mermaidApi == null ? void 0 : mermaidApi.default) == null ? void 0 : _o.version) || null;
+          const mermaidApiVersion = (mermaidApi == null ? void 0 : mermaidApi.version) || ((_o = mermaidApi == null ? void 0 : mermaidApi.mermaidAPI) == null ? void 0 : _o.version) || ((_p = mermaidApi == null ? void 0 : mermaidApi.default) == null ? void 0 : _p.version) || null;
           let detectType = null;
           try {
             if (typeof (mermaidApi == null ? void 0 : mermaidApi.detectType) === "function") {
@@ -4912,8 +4925,8 @@
               fontSize: (_n2 = (_m2 = cfg.themeVariables) == null ? void 0 : _m2.fontSize) != null ? _n2 : null
             };
           };
-          const apiConfig = typeof ((_p = mermaidApi == null ? void 0 : mermaidApi.mermaidAPI) == null ? void 0 : _p.getConfig) === "function" ? mermaidApi.mermaidAPI.getConfig() : null;
-          const siteConfig = typeof ((_q = mermaidApi == null ? void 0 : mermaidApi.mermaidAPI) == null ? void 0 : _q.getSiteConfig) === "function" ? mermaidApi.mermaidAPI.getSiteConfig() : null;
+          const apiConfig = typeof ((_q = mermaidApi == null ? void 0 : mermaidApi.mermaidAPI) == null ? void 0 : _q.getConfig) === "function" ? mermaidApi.mermaidAPI.getConfig() : null;
+          const siteConfig = typeof ((_r = mermaidApi == null ? void 0 : mermaidApi.mermaidAPI) == null ? void 0 : _r.getSiteConfig) === "function" ? mermaidApi.mermaidAPI.getSiteConfig() : null;
           console.log("[GoToolkit][MermaidDiagnostics] pre-parse", {
             drawBundleVersion: getDrawBundleVersion(),
             isFlowchart,
@@ -4941,10 +4954,10 @@
       if (isMermaidDiagnosticsEnabled()) {
         try {
           const mermaidApi = window.mermaid;
-          const getDiagramFromText = (_r = mermaidApi == null ? void 0 : mermaidApi.mermaidAPI) == null ? void 0 : _r.getDiagramFromText;
+          const getDiagramFromText = (_s = mermaidApi == null ? void 0 : mermaidApi.mermaidAPI) == null ? void 0 : _s.getDiagramFromText;
           if (typeof getDiagramFromText === "function") {
             const diagram = await getDiagramFromText(trimmed);
-            const db = (_s = diagram == null ? void 0 : diagram.db) != null ? _s : null;
+            const db = (_t = diagram == null ? void 0 : diagram.db) != null ? _t : null;
             const edgesData = typeof (db == null ? void 0 : db.getEdges) === "function" ? db.getEdges() : null;
             const verticesData = typeof (db == null ? void 0 : db.getVertices) === "function" ? db.getVertices() : null;
             const edges = Array.isArray(edgesData) ? edgesData : [];
@@ -4973,7 +4986,7 @@
             dbEdgesCount = edges.length;
             dbVerticesCount = verticesCount;
             console.log("[GoToolkit][MermaidDiagnostics] pre-parse db", {
-              diagramType: (_t = diagram == null ? void 0 : diagram.type) != null ? _t : null,
+              diagramType: (_u = diagram == null ? void 0 : diagram.type) != null ? _u : null,
               hasDb: Boolean(db),
               edgesCount: edges.length,
               edgesMissingId,

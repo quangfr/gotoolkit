@@ -605,12 +605,25 @@ class ExcalidrawBridge {
 
         try {
             const mermaidApi = (window as any).mermaid;
+            const siteConfig = {
+                ...mermaidConfig,
+                flowchart: {
+                    ...mermaidConfig.flowchart,
+                    curve: "basis",
+                    nodeSpacing: 50,
+                    rankSpacing: 50,
+                    padding: 15
+                }
+            };
+            if (typeof mermaidApi?.mermaidAPI?.updateSiteConfig === "function") {
+                mermaidApi.mermaidAPI.updateSiteConfig(siteConfig);
+            }
             if (typeof mermaidApi?.mermaidAPI?.setConfig === "function") {
-                mermaidApi.mermaidAPI.setConfig(mermaidConfig);
+                mermaidApi.mermaidAPI.setConfig(siteConfig);
             } else if (typeof mermaidApi?.initialize === "function") {
                 mermaidApi.initialize({
                     startOnLoad: false,
-                    ...mermaidConfig
+                    ...siteConfig
                 });
             }
         } catch {
