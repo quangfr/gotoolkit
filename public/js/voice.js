@@ -32,15 +32,29 @@
         overlayMic: true,
         overlayWebcam: false,
         overlayScreen: false,
+        overlaySystemAudio: false,
         overlayStreams: {
             audio: null,
             webcam: null,
-            screen: null
+            screen: null,
+            systemAudio: null
         },
+        audioContext: null,
+        audioMixStream: null,
+        meterContext: null,
+        meterRafId: null,
+        micAnalyser: null,
+        systemAnalyser: null,
+        micAnalyserStream: null,
+        systemAnalyserStream: null,
+        micWavePhase: 0,
+        systemWavePhase: 0,
+        meterLastTs: 0,
         permissionsGranted: {
             audio: false,
             webcam: false,
-            screen: false
+            screen: false,
+            systemAudio: false
         },
         toast: null,
         voiceButton: null,
@@ -142,15 +156,33 @@
                 width: 100%;
                 height: 100%;
                 object-fit: cover;
+                z-index: 0;
             }
             .voice-overlay__tile-label {
                 position: relative;
-                z-index: 2;
+                z-index: 3;
                 padding: 8px 10px;
                 backdrop-filter: blur(4px);
                 background: rgba(0, 0, 0, 0.35);
                 border-radius: 10px;
                 font-size: 18px;
+            }
+            .voice-overlay__tile-meter {
+                position: absolute;
+                left: 18px;
+                right: 18px;
+                top: 50%;
+                transform: translateY(-50%);
+                height: 200px;
+                border-radius: 0;
+                background: transparent;
+                overflow: hidden;
+                z-index: 1;
+            }
+            .voice-overlay__tile-meter-canvas {
+                width: 100%;
+                height: 100%;
+                display: block;
             }
             .voice-overlay__tile-label:empty {
                 display: none;
@@ -520,6 +552,7 @@
             clearInterval(state.timerId);
             state.timerId = null;
         }
+        stopAudioMix();
         stopOverlayStreams();
         updateButton();
     }
@@ -528,6 +561,7 @@
         if (state.overlay) {
             state.overlay.classList.remove("visible");
         }
+        stopMetering();
     }
 
     function ensureOverlay() {
@@ -541,6 +575,15 @@
             <div class="voice-overlay__tiles">
                 <div class="voice-overlay__tile" data-kind="mic">
                     <div class="voice-overlay__tile-label">Microphone</div>
+                    <div class="voice-overlay__tile-meter" aria-hidden="true">
+                        <canvas class="voice-overlay__tile-meter-canvas"></canvas>
+                    </div>
+                </div>
+                <div class="voice-overlay__tile" data-kind="system-audio">
+                    <div class="voice-overlay__tile-label">Son du PC</div>
+                    <div class="voice-overlay__tile-meter" aria-hidden="true">
+                        <canvas class="voice-overlay__tile-meter-canvas"></canvas>
+                    </div>
                 </div>
                 <div class="voice-overlay__tile" data-kind="webcam">
                     <video playsinline muted></video>
@@ -558,16 +601,18 @@
         const closeBtn = state.overlay.querySelector(".voice-overlay__close");
         closeBtn?.addEventListener("click", closeOverlay);
         state.overlayTiles.forEach(tile => {
-            tile.addEventListener("click", () => {
+            tile.addEventListener("click", async () => {
                 const kind = tile.dataset.kind;
                 if (kind === "webcam" && voiceConfigState.disableCamera) {
                     showToast("Caméra désactivée dans la configuration.", true);
                     return;
                 }
-                if (kind === "mic") state.overlayMic = !state.overlayMic;
-                if (kind === "webcam") state.overlayWebcam = !state.overlayWebcam;
-                if (kind === "screen") state.overlayScreen = !state.overlayScreen;
+                if (kind === "mic") await toggleMicPermission();
+                if (kind === "system-audio") await toggleSystemAudioPermission();
+                if (kind === "webcam") await toggleWebcamPermission();
+                if (kind === "screen") await toggleScreenPermission();
                 syncOverlayTiles();
+                attachOverlayStreams();
             });
         });
         state.overlayReady?.addEventListener("click", async () => {
@@ -589,9 +634,16 @@
             }
             tile.style.display = "";
             const active = (kind === "mic" && state.overlayMic)
+                || (kind === "system-audio" && state.overlaySystemAudio)
                 || (kind === "webcam" && state.overlayWebcam)
                 || (kind === "screen" && state.overlayScreen);
             tile.classList.toggle("voice-overlay__tile--active", active);
+            const label = tile.querySelector(".voice-overlay__tile-label");
+            if (label) {
+                const enabled = isTileEnabled(kind);
+                const labelText = getTileLabel(kind);
+                label.textContent = `${labelText} ${enabled ? "activé" : "désactivé"}`;
+            }
         });
     }
 
@@ -607,11 +659,13 @@
             screenTile.srcObject = state.overlayStreams.screen;
             screenTile.play().catch(() => { });
         }
+        ensureMetering();
     }
 
     function openOverlay() {
         ensureOverlay();
         attachOverlayStreams();
+        syncOverlayTiles();
         state.overlay?.classList.add("visible");
         // Add ESC key listener
         const handleEsc = (e) => {
@@ -643,6 +697,28 @@
         }
     }
 
+    function buildAudioStream({ micStream, systemStream }) {
+        stopAudioMix();
+        const micTracks = micStream?.getAudioTracks?.() || [];
+        const systemTracks = systemStream?.getAudioTracks?.() || [];
+        if (micTracks.length && systemTracks.length) {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const destination = audioContext.createMediaStreamDestination();
+            audioContext.createMediaStreamSource(micStream).connect(destination);
+            audioContext.createMediaStreamSource(systemStream).connect(destination);
+            state.audioContext = audioContext;
+            state.audioMixStream = destination.stream;
+            return destination.stream;
+        }
+        if (systemTracks.length) {
+            return new MediaStream(systemTracks);
+        }
+        if (micTracks.length) {
+            return micStream;
+        }
+        return null;
+    }
+
     async function startRecording(memoId, memoName) {
         if (state.isRecording || state.currentRecordingId || state.isTranscribing) {
             if (state.isTranscribing) {
@@ -664,12 +740,12 @@
         state.videoBlob = null;
         state.recordingStartTime = Date.now();
         try {
-            let audioStream = state.overlayStreams.audio;
+            let micStream = state.overlayMic ? state.overlayStreams.audio : null;
             let webcamStream = state.overlayStreams.webcam;
             let screenStream = state.overlayStreams.screen;
-            if (!audioStream) {
-                audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                state.overlayStreams.audio = audioStream;
+            if (state.overlayMic && !micStream) {
+                micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                state.overlayStreams.audio = micStream;
             }
             let videoStream = null;
             if (state.overlayScreen) {
@@ -697,8 +773,29 @@
                     }
                 }
             }
+            let systemAudioStream = null;
+            if (state.overlaySystemAudio) {
+                if (state.overlayScreen && screenStream?.getAudioTracks?.().length) {
+                    systemAudioStream = screenStream;
+                } else if (state.overlayStreams.systemAudio) {
+                    systemAudioStream = state.overlayStreams.systemAudio;
+                } else {
+                    try {
+                        const displayStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+                        displayStream.getVideoTracks().forEach(track => {
+                            try { track.stop(); } catch (err) { /* noop */ }
+                        });
+                        state.overlayStreams.systemAudio = displayStream;
+                        systemAudioStream = displayStream;
+                    } catch {
+                        showToast("Audio système indisponible.", true);
+                    }
+                }
+            }
+
+            const audioStream = buildAudioStream({ micStream, systemStream: systemAudioStream });
             if (!audioStream) {
-                showToast("Microphone indisponible.", true);
+                showToast("Aucune source audio sélectionnée.", true);
                 return;
             }
             state.audioRecorder = new MediaRecorder(audioStream);
@@ -760,8 +857,331 @@
         }
     }
 
+    function getMeterCanvas(kind) {
+        if (!state.overlay) return null;
+        return state.overlay.querySelector(`.voice-overlay__tile[data-kind="${kind}"] .voice-overlay__tile-meter-canvas`);
+    }
+
+    function shouldShowMeter(kind) {
+        if (kind === "mic") {
+            return Boolean(state.overlayMic && state.overlayStreams.audio);
+        }
+        if (kind === "system-audio") {
+            if (!state.overlaySystemAudio) return false;
+            return Boolean(state.overlayStreams.systemAudio || isStreamWithAudio(state.overlayStreams.screen));
+        }
+        return false;
+    }
+
+    function drawWave(kind, analyser) {
+        const canvas = getMeterCanvas(kind);
+        if (!canvas) return;
+        const rect = canvas.getBoundingClientRect();
+        if (!rect.width || !rect.height) return;
+        if (canvas.width !== Math.floor(rect.width) || canvas.height !== Math.floor(rect.height)) {
+            canvas.width = Math.floor(rect.width);
+            canvas.height = Math.floor(rect.height);
+        }
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+        const w = canvas.width;
+        const h = canvas.height;
+        ctx.clearRect(0, 0, w, h);
+        const midY = h / 2;
+
+        if (!shouldShowMeter(kind)) {
+            ctx.clearRect(0, 0, w, h);
+            return;
+        }
+
+        const bufferLength = analyser?.fftSize || 512;
+        const data = new Uint8Array(bufferLength);
+        if (analyser) {
+            analyser.getByteTimeDomainData(data);
+        } else {
+            data.fill(128);
+        }
+        const smoothData = smoothWaveData(data);
+
+        ctx.lineWidth = 3.5;
+        ctx.strokeStyle = "#ffd466";
+        ctx.shadowColor = "rgba(255, 212, 102, 0.85)";
+        ctx.shadowBlur = 16;
+        let phase = 0;
+        if (kind === "mic") phase = state.micWavePhase;
+        if (kind === "system-audio") phase = state.systemWavePhase;
+        ctx.beginPath();
+        const step = 2;
+        for (let i = 0; i < bufferLength; i += step) {
+            const index = (i + Math.floor(phase)) % bufferLength;
+            const x = (i / (bufferLength - 1)) * w;
+            const v = (smoothData[index] - 128) / 128;
+            const y = midY + v * (h * 1.9);
+            if (i === 0) {
+                ctx.moveTo(x, y);
+            } else {
+                ctx.lineTo(x, y);
+            }
+        }
+        ctx.stroke();
+    }
+
+    function readAnalyserLevel(analyser) {
+        if (!analyser) return 0;
+        const bufferLength = analyser.fftSize;
+        const data = new Uint8Array(bufferLength);
+        analyser.getByteTimeDomainData(data);
+        let sum = 0;
+        for (let i = 0; i < bufferLength; i += 1) {
+            const v = (data[i] - 128) / 128;
+            sum += v * v;
+        }
+        return Math.sqrt(sum / bufferLength);
+    }
+
+    function smoothWaveData(data) {
+        const n = data.length;
+        if (n < 5) return data;
+        const out = new Uint8Array(n);
+        const k0 = 0.061;
+        const k1 = 0.244;
+        const k2 = 0.39;
+        const k3 = 0.244;
+        const k4 = 0.061;
+        for (let i = 0; i < n; i += 1) {
+            const i0 = (i - 2 + n) % n;
+            const i1 = (i - 1 + n) % n;
+            const i2 = i;
+            const i3 = (i + 1) % n;
+            const i4 = (i + 2) % n;
+            const v = data[i0] * k0
+                + data[i1] * k1
+                + data[i2] * k2
+                + data[i3] * k3
+                + data[i4] * k4;
+            out[i] = Math.max(0, Math.min(255, Math.round(v)));
+        }
+        return out;
+    }
+
+    function stopMetering() {
+        if (state.meterRafId) {
+            cancelAnimationFrame(state.meterRafId);
+            state.meterRafId = null;
+        }
+        state.micAnalyser = null;
+        state.systemAnalyser = null;
+        state.micAnalyserStream = null;
+        state.systemAnalyserStream = null;
+        state.micWavePhase = 0;
+        state.systemWavePhase = 0;
+        if (state.meterContext) {
+            try { state.meterContext.close(); } catch (err) { /* noop */ }
+            state.meterContext = null;
+        }
+        state.meterLastTs = 0;
+        drawWave("mic", null);
+        drawWave("system-audio", null);
+    }
+
+    function ensureMetering() {
+        if (!state.overlay) return;
+        const context = state.meterContext || new (window.AudioContext || window.webkitAudioContext)();
+        state.meterContext = context;
+
+        const micStream = state.overlayStreams.audio || null;
+        if (micStream !== state.micAnalyserStream) {
+            state.micAnalyser = null;
+            state.micAnalyserStream = micStream;
+            if (micStream) {
+                const source = context.createMediaStreamSource(micStream);
+                const analyser = context.createAnalyser();
+                analyser.fftSize = 512;
+                source.connect(analyser);
+                state.micAnalyser = analyser;
+            }
+        }
+
+        let systemStream = state.overlayStreams.systemAudio || null;
+        if (!systemStream && state.overlaySystemAudio && isStreamWithAudio(state.overlayStreams.screen)) {
+            systemStream = state.overlayStreams.screen;
+        }
+        if (systemStream !== state.systemAnalyserStream) {
+            state.systemAnalyser = null;
+            state.systemAnalyserStream = systemStream;
+            if (systemStream) {
+                const source = context.createMediaStreamSource(systemStream);
+                const analyser = context.createAnalyser();
+                analyser.fftSize = 512;
+                source.connect(analyser);
+                state.systemAnalyser = analyser;
+            }
+        }
+
+        if (!state.meterRafId) {
+            const tick = (ts) => {
+                if (!state.meterLastTs) state.meterLastTs = ts;
+                const dt = Math.max(0, ts - state.meterLastTs);
+                state.meterLastTs = ts;
+                const maxPhase = state.micAnalyser?.fftSize || 512;
+                const phaseSpeed = maxPhase * (dt / 2000);
+                state.micWavePhase = (state.micWavePhase + phaseSpeed) % maxPhase;
+                state.systemWavePhase = (state.systemWavePhase + phaseSpeed) % maxPhase;
+                drawWave("mic", state.micAnalyser);
+                drawWave("system-audio", state.systemAnalyser);
+                state.meterRafId = requestAnimationFrame(tick);
+            };
+            state.meterRafId = requestAnimationFrame(tick);
+        }
+    }
+
+    function getTileLabel(kind) {
+        if (kind === "mic") return "Microphone";
+        if (kind === "system-audio") return "Son du PC";
+        if (kind === "webcam") return "Webcam";
+        if (kind === "screen") return "Écran";
+        return "";
+    }
+
+    function isStreamWithAudio(stream) {
+        return Boolean(stream && stream.getAudioTracks && stream.getAudioTracks().length);
+    }
+
+    function isTileEnabled(kind) {
+        if (kind === "mic") return Boolean(state.overlayStreams.audio);
+        if (kind === "webcam") return Boolean(state.overlayStreams.webcam);
+        if (kind === "screen") return Boolean(state.overlayStreams.screen);
+        if (kind === "system-audio") {
+            if (!state.overlaySystemAudio) return false;
+            return Boolean(state.overlayStreams.systemAudio || isStreamWithAudio(state.overlayStreams.screen));
+        }
+        return false;
+    }
+
+    function stopStream(key) {
+        const stream = state.overlayStreams[key];
+        if (!stream) return;
+        stream.getTracks().forEach(track => {
+            try { track.stop(); } catch (err) { /* noop */ }
+        });
+        state.overlayStreams[key] = null;
+        if (key === "webcam") clearVideoTile("webcam");
+        if (key === "screen") clearVideoTile("screen");
+    }
+
+    async function toggleMicPermission() {
+        if (state.overlayStreams.audio) {
+            stopStream("audio");
+            state.permissionsGranted.audio = false;
+            state.overlayMic = false;
+            return;
+        }
+        try {
+            const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            state.overlayStreams.audio = audioStream || null;
+            state.permissionsGranted.audio = Boolean(audioStream);
+            state.overlayMic = Boolean(state.overlayStreams.audio);
+        } catch (err) {
+            console.error("Microphone permission failed", err);
+            showToast("Microphone indisponible.", true);
+            state.overlayStreams.audio = null;
+            state.permissionsGranted.audio = false;
+            state.overlayMic = false;
+        }
+    }
+
+    async function toggleWebcamPermission() {
+        if (state.overlayStreams.webcam) {
+            stopStream("webcam");
+            state.permissionsGranted.webcam = false;
+            state.overlayWebcam = false;
+            return;
+        }
+        try {
+            const webcamStream = await navigator.mediaDevices.getUserMedia({ video: true });
+            state.overlayStreams.webcam = webcamStream || null;
+            state.permissionsGranted.webcam = Boolean(webcamStream);
+            state.overlayWebcam = Boolean(state.overlayStreams.webcam);
+        } catch (err) {
+            console.error("Webcam permission failed", err);
+            showToast("Webcam indisponible.", true);
+            state.overlayStreams.webcam = null;
+            state.permissionsGranted.webcam = false;
+            state.overlayWebcam = false;
+        }
+    }
+
+    async function toggleScreenPermission() {
+        if (state.overlayStreams.screen) {
+            if (state.overlaySystemAudio && state.overlayStreams.systemAudio === state.overlayStreams.screen) {
+                state.overlayStreams.screen.getVideoTracks().forEach(track => {
+                    try { track.stop(); } catch (err) { /* noop */ }
+                });
+                state.overlayStreams.screen = null;
+                state.permissionsGranted.screen = false;
+                state.overlayScreen = false;
+                return;
+            }
+            stopStream("screen");
+            state.permissionsGranted.screen = false;
+            state.overlayScreen = false;
+            return;
+        }
+        try {
+            const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+            state.overlayStreams.screen = screenStream || null;
+            state.permissionsGranted.screen = Boolean(screenStream);
+            state.overlayScreen = Boolean(state.overlayStreams.screen);
+        } catch (err) {
+            console.error("Screen permission failed", err);
+            showToast("Capture d'écran indisponible.", true);
+            state.overlayStreams.screen = null;
+            state.permissionsGranted.screen = false;
+            state.overlayScreen = false;
+        }
+    }
+
+    async function toggleSystemAudioPermission() {
+        if (state.overlaySystemAudio) {
+            if (state.overlayStreams.systemAudio && state.overlayStreams.systemAudio === state.overlayStreams.screen) {
+                state.overlayStreams.screen.getAudioTracks().forEach(track => {
+                    try { track.stop(); } catch (err) { /* noop */ }
+                });
+                state.overlayStreams.systemAudio = null;
+                state.permissionsGranted.systemAudio = false;
+                state.overlaySystemAudio = false;
+                return;
+            }
+            stopStream("systemAudio");
+            state.permissionsGranted.systemAudio = false;
+            state.overlaySystemAudio = false;
+            return;
+        }
+        if (isStreamWithAudio(state.overlayStreams.screen)) {
+            state.overlaySystemAudio = true;
+            state.permissionsGranted.systemAudio = true;
+            return;
+        }
+        try {
+            const displayStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+            displayStream.getVideoTracks().forEach(track => {
+                try { track.stop(); } catch (err) { /* noop */ }
+            });
+            state.overlayStreams.systemAudio = displayStream || null;
+            state.permissionsGranted.systemAudio = Boolean(displayStream);
+            state.overlaySystemAudio = Boolean(state.overlayStreams.systemAudio);
+        } catch (err) {
+            console.error("System audio permission failed", err);
+            showToast("Audio système indisponible.", true);
+            state.overlayStreams.systemAudio = null;
+            state.permissionsGranted.systemAudio = false;
+            state.overlaySystemAudio = false;
+        }
+    }
+
     function stopOverlayStreams() {
-        ["audio", "webcam", "screen"].forEach(key => {
+        stopMetering();
+        ["audio", "webcam", "screen", "systemAudio"].forEach(key => {
             const stream = state.overlayStreams[key];
             if (!stream) return;
             stream.getTracks().forEach(track => {
@@ -771,6 +1191,19 @@
         });
         clearVideoTile("webcam");
         clearVideoTile("screen");
+    }
+
+    function stopAudioMix() {
+        if (state.audioMixStream) {
+            state.audioMixStream.getTracks().forEach(track => {
+                try { track.stop(); } catch (err) { /* noop */ }
+            });
+            state.audioMixStream = null;
+        }
+        if (state.audioContext) {
+            try { state.audioContext.close(); } catch (err) { /* noop */ }
+            state.audioContext = null;
+        }
     }
 
     function stopWebcamPreviewStream() {
@@ -1079,31 +1512,52 @@
     }
 
     async function requestPermissionsThenOverlay() {
-        if (state.overlayStreams.audio) {
-            openOverlay();
-            return;
-        }
         try {
             const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
             state.overlayStreams.audio = audioStream || null;
-            state.overlayStreams.webcam = state.overlayStreams.webcam || null;
-            state.overlayStreams.screen = state.overlayStreams.screen || null;
             state.permissionsGranted.audio = Boolean(audioStream);
             state.overlayMic = Boolean(state.overlayStreams.audio);
-            state.overlayWebcam = Boolean(state.overlayStreams.webcam);
-            state.overlayScreen = Boolean(state.overlayStreams.screen);
-            if (!state.overlayStreams.audio) {
-                showToast("Microphone indisponible.", true);
-                return;
-            }
-            if (voiceConfigState.disableCamera && enforceWebcamLock()) {
-                syncOverlayTiles();
-            }
-            openOverlay();
         } catch (err) {
-            console.error("Permissions failed", err);
-            showToast("Autorisation refusée.", true);
+            console.error("Microphone permission failed", err);
+            state.overlayStreams.audio = null;
+            state.permissionsGranted.audio = false;
+            state.overlayMic = false;
+            showToast("Microphone indisponible.", true);
         }
+
+        if (!state.overlayStreams.screen && !state.overlayStreams.systemAudio) {
+            try {
+                const displayStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+                state.overlayStreams.screen = displayStream || null;
+                state.permissionsGranted.screen = Boolean(displayStream);
+                state.overlayScreen = Boolean(state.overlayStreams.screen);
+                if (isStreamWithAudio(displayStream)) {
+                    state.overlayStreams.systemAudio = displayStream;
+                    state.permissionsGranted.systemAudio = true;
+                    state.overlaySystemAudio = true;
+                } else {
+                    state.overlayStreams.systemAudio = null;
+                    state.permissionsGranted.systemAudio = false;
+                    state.overlaySystemAudio = false;
+                }
+            } catch (err) {
+                console.error("Display media permission failed", err);
+                state.overlayStreams.screen = null;
+                state.overlayStreams.systemAudio = null;
+                state.permissionsGranted.screen = false;
+                state.permissionsGranted.systemAudio = false;
+                state.overlayScreen = false;
+                state.overlaySystemAudio = false;
+                showToast("Capture d'écran indisponible.", true);
+            }
+        }
+
+        state.overlayStreams.webcam = state.overlayStreams.webcam || null;
+        state.overlayWebcam = Boolean(state.overlayStreams.webcam);
+        if (voiceConfigState.disableCamera && enforceWebcamLock()) {
+            syncOverlayTiles();
+        }
+        openOverlay();
     }
 
     function init() {
