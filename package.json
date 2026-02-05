@@ -1,10 +1,10 @@
 {
   "name": "gotoolkit",
-  "version": "2026.02.05.2",
+  "version": "2026.02.05.3",
   "description": "Go-Toolkit combine deux expériences pensées pour les consultants : **Go-Slides** (pour créer des planches claires et structurées) et **Go-Timeline** (pour visualiser et ajuster un planning). Chaque outil s’utilise en ouvrant directement son fichier dans un navigateur, avec des assistants IA, des exports réactifs et des modèles prêts à l’emploi.",
   "main": "index.js",
   "scripts": {
-    "start": "browser-sync start --server 'public' --files 'public/**/*' --port 5000",
+    "start": "browser-sync start --server 'public' --files 'public/**/*' --port 5000 --startPath index.html",
     "start:legacy": "npx serve public -l 5000",
     "dev": "concurrently \"npm run dev:connect\" \"npm run dev:memo\" \"npm run start\"",
     "dev:legacy": "npm run dev:connect & npm run dev:memo",

@@ -52150,11 +52150,11 @@ ${promptInput.trim()}`
     const showSizeSelector = isSizeSelectorVisible(activeCode);
     const isMermaidDiagnosticsEnabled = () => {
       try {
-        if (window.GoToolkitMermaidDiagnostics) return true;
-        if (localStorage.getItem("goToolkit.mermaidDiagnostics") === "1") return true;
-        return new URLSearchParams(window.location.search).get("mermaidDiagnostics") === "1";
+        if (localStorage.getItem("goToolkit.mermaidDiagnostics") === "0") return false;
+        if (window.GoToolkitMermaidDiagnostics === false) return false;
+        return true;
       } catch (e) {
-        return false;
+        return true;
       }
     };
     react_shim_default.useEffect(() => {
