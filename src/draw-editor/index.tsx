@@ -55,6 +55,17 @@ const isMermaidDiagnosticsEnabled = (): boolean => {
         return true;
     }
 };
+const isMermaidSvgFallbackEnabled = (): boolean => {
+    try {
+        if (localStorage.getItem("goToolkit.mermaidSvgFallback") === "1") return true;
+        if ((window as any).GoToolkitMermaidSvgFallback === true) return true;
+        if (localStorage.getItem("goToolkit.mermaidSvgFallback") === "0") return false;
+        if ((window as any).GoToolkitMermaidSvgFallback === false) return false;
+        return false;
+    } catch {
+        return false;
+    }
+};
 const getMermaidRuntimeInfo = () => {
     try {
         const mermaid = (window as any).mermaid;
@@ -76,6 +87,44 @@ const getMermaidRuntimeInfo = () => {
     } catch (error) {
         return { loaded: false, error };
     }
+};
+const getMermaidRawInfo = () => {
+    try {
+        const mermaid = (window as any).mermaid;
+        if (!mermaid) return { loaded: false };
+        return {
+            loaded: true,
+            keys: Object.keys(mermaid || {}),
+            mermaidAPIKeys: Object.keys(mermaid?.mermaidAPI || {}),
+            hasDefault: typeof mermaid?.default === "object",
+            defaultKeys: mermaid?.default ? Object.keys(mermaid.default) : []
+        };
+    } catch (error) {
+        return { loaded: false, error };
+    }
+};
+const getMermaidHeaderLine = (code: string): string => {
+    const lines = code.split(/\r?\n/);
+    for (const rawLine of lines) {
+        const line = rawLine.trim();
+        if (!line) continue;
+        if (line.startsWith("%%{") && line.endsWith("}%%")) continue;
+        if (line.startsWith("%%")) continue;
+        return line;
+    }
+    return "";
+};
+const detectMermaidDiagramType = (code: string): string => {
+    const header = getMermaidHeaderLine(code).toLowerCase();
+    if (header.startsWith("flowchart") || header.startsWith("graph")) return "flowchart";
+    if (header.startsWith("sequencediagram")) return "sequence";
+    if (header.startsWith("classdiagram")) return "class";
+    if (header.startsWith("erdiagram")) return "er";
+    if (header.startsWith("statediagram")) return "state";
+    if (header.startsWith("gantt")) return "gantt";
+    if (header.startsWith("journey")) return "journey";
+    if (header.startsWith("pie")) return "pie";
+    return "unknown";
 };
 const parseSvgPathPoints = (d: string): Array<{ x: number; y: number }> => {
     const commands = d.match(/[MLCQ][^MLCQ]*/gi) || [];
@@ -502,8 +551,8 @@ class ExcalidrawBridge {
         }
 
         const fontSize = options?.fontSize ?? MERMAID_OPTIONS.fontSize;
-        const isFlowchart =
-            trimmed.toLowerCase().startsWith("flowchart") || trimmed.toLowerCase().startsWith("graph");
+        const diagramType = detectMermaidDiagramType(trimmed);
+        const isFlowchart = diagramType === "flowchart";
         
         // Build the bridge-compatible config
         const mermaidConfig: any = {
@@ -528,10 +577,15 @@ class ExcalidrawBridge {
                 const elements = Array.isArray(parsed?.elements) ? parsed.elements : [];
                 const arrowLike = elements.filter((el: any) => el?.type === "arrow" || el?.type === "line");
                 const mermaidInfo = getMermaidRuntimeInfo();
+                const mermaidRaw = getMermaidRawInfo();
+                const headerLine = getMermaidHeaderLine(trimmed);
                 console.log("[GoToolkit][MermaidDiagnostics]", {
                     drawBundleVersion: bundleVersion,
                     isFlowchart,
+                    diagramType,
+                    headerLine,
                     mermaid: mermaidInfo,
+                    mermaidRaw,
                     mermaidConfig,
                     parsedKeys: parsed ? Object.keys(parsed) : [],
                     elements: elements.length,
@@ -550,7 +604,7 @@ class ExcalidrawBridge {
         const hasLineElements = skeleton.some(
             (el: any) => el?.type === "line" || el?.type === "arrow"
         );
-        if (!hasLineElements) {
+        if (!hasLineElements && isMermaidSvgFallbackEnabled()) {
             try {
                 const mermaidApi = (window as any).mermaid;
                 if (mermaidApi?.render) {

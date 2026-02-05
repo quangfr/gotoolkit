@@ -4382,6 +4382,17 @@
       return true;
     }
   };
+  var isMermaidSvgFallbackEnabled = () => {
+    try {
+      if (localStorage.getItem("goToolkit.mermaidSvgFallback") === "1") return true;
+      if (window.GoToolkitMermaidSvgFallback === true) return true;
+      if (localStorage.getItem("goToolkit.mermaidSvgFallback") === "0") return false;
+      if (window.GoToolkitMermaidSvgFallback === false) return false;
+      return false;
+    } catch (e) {
+      return false;
+    }
+  };
   var getMermaidRuntimeInfo = () => {
     var _a, _b;
     try {
@@ -4400,6 +4411,44 @@
     } catch (error) {
       return { loaded: false, error };
     }
+  };
+  var getMermaidRawInfo = () => {
+    try {
+      const mermaid2 = window.mermaid;
+      if (!mermaid2) return { loaded: false };
+      return {
+        loaded: true,
+        keys: Object.keys(mermaid2 || {}),
+        mermaidAPIKeys: Object.keys((mermaid2 == null ? void 0 : mermaid2.mermaidAPI) || {}),
+        hasDefault: typeof (mermaid2 == null ? void 0 : mermaid2.default) === "object",
+        defaultKeys: (mermaid2 == null ? void 0 : mermaid2.default) ? Object.keys(mermaid2.default) : []
+      };
+    } catch (error) {
+      return { loaded: false, error };
+    }
+  };
+  var getMermaidHeaderLine = (code) => {
+    const lines = code.split(/\r?\n/);
+    for (const rawLine of lines) {
+      const line = rawLine.trim();
+      if (!line) continue;
+      if (line.startsWith("%%{") && line.endsWith("}%%")) continue;
+      if (line.startsWith("%%")) continue;
+      return line;
+    }
+    return "";
+  };
+  var detectMermaidDiagramType = (code) => {
+    const header = getMermaidHeaderLine(code).toLowerCase();
+    if (header.startsWith("flowchart") || header.startsWith("graph")) return "flowchart";
+    if (header.startsWith("sequencediagram")) return "sequence";
+    if (header.startsWith("classdiagram")) return "class";
+    if (header.startsWith("erdiagram")) return "er";
+    if (header.startsWith("statediagram")) return "state";
+    if (header.startsWith("gantt")) return "gantt";
+    if (header.startsWith("journey")) return "journey";
+    if (header.startsWith("pie")) return "pie";
+    return "unknown";
   };
   var parseSvgPathPoints = (d) => {
     const commands = d.match(/[MLCQ][^MLCQ]*/gi) || [];
@@ -4784,7 +4833,8 @@
         return null;
       }
       const fontSize = (_a = options == null ? void 0 : options.fontSize) != null ? _a : MERMAID_OPTIONS.fontSize;
-      const isFlowchart = trimmed.toLowerCase().startsWith("flowchart") || trimmed.toLowerCase().startsWith("graph");
+      const diagramType = detectMermaidDiagramType(trimmed);
+      const isFlowchart = diagramType === "flowchart";
       const mermaidConfig = {
         themeVariables: {
           fontSize: `${fontSize}px`
@@ -4806,10 +4856,15 @@
           const elements = Array.isArray(parsed == null ? void 0 : parsed.elements) ? parsed.elements : [];
           const arrowLike = elements.filter((el) => (el == null ? void 0 : el.type) === "arrow" || (el == null ? void 0 : el.type) === "line");
           const mermaidInfo = getMermaidRuntimeInfo();
+          const mermaidRaw = getMermaidRawInfo();
+          const headerLine = getMermaidHeaderLine(trimmed);
           console.log("[GoToolkit][MermaidDiagnostics]", {
             drawBundleVersion: bundleVersion,
             isFlowchart,
+            diagramType,
+            headerLine,
             mermaid: mermaidInfo,
+            mermaidRaw,
             mermaidConfig,
             parsedKeys: parsed ? Object.keys(parsed) : [],
             elements: elements.length,
@@ -4828,7 +4883,7 @@
       const hasLineElements = skeleton.some(
         (el) => (el == null ? void 0 : el.type) === "line" || (el == null ? void 0 : el.type) === "arrow"
       );
-      if (!hasLineElements) {
+      if (!hasLineElements && isMermaidSvgFallbackEnabled()) {
         try {
           const mermaidApi = window.mermaid;
           if (mermaidApi == null ? void 0 : mermaidApi.render) {
