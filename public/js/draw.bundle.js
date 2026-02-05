@@ -4852,7 +4852,7 @@
       }
     }
     async convertMermaid(code, options) {
-      var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p;
+      var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r;
       const trimmed = code == null ? void 0 : code.trim();
       if (!trimmed) {
         return null;
@@ -4909,34 +4909,37 @@
       if (isMermaidDiagnosticsEnabled()) {
         try {
           const mermaidApi = window.mermaid;
-          if (mermaidApi == null ? void 0 : mermaidApi.render) {
-            const id = `mermaid-preflight-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-            const { svg } = await mermaidApi.render(id, trimmed);
-            const container = document.createElement("div");
-            container.innerHTML = svg;
-            const edgePaths = Array.from(
-              container.querySelectorAll(
-                "path.flowchart-link, g.edgePath path, path.edgePath, path.edge-path, path.link, path[marker-end], path[marker-start]"
-              )
-            );
-            const classBuckets = {};
-            edgePaths.slice(0, 6).forEach((pathEl) => {
-              const classes = Array.from(pathEl.classList || []);
-              classes.forEach((token) => {
-                classBuckets[token] = (classBuckets[token] || 0) + 1;
-              });
-            });
-            console.log("[GoToolkit][MermaidDiagnostics] pre-parse svg", {
-              svgLength: (_o = svg == null ? void 0 : svg.length) != null ? _o : 0,
-              edgePaths: edgePaths.length,
-              markerCount: container.querySelectorAll("marker").length,
-              markerEndCount: container.querySelectorAll("[marker-end]").length,
-              markerStartCount: container.querySelectorAll("[marker-start]").length,
-              edgeClassSample: classBuckets
+          const getDiagramFromText = (_o = mermaidApi == null ? void 0 : mermaidApi.mermaidAPI) == null ? void 0 : _o.getDiagramFromText;
+          if (typeof getDiagramFromText === "function") {
+            const diagram = await getDiagramFromText(trimmed);
+            const db = (_p = diagram == null ? void 0 : diagram.db) != null ? _p : null;
+            const edgesData = typeof (db == null ? void 0 : db.getEdges) === "function" ? db.getEdges() : null;
+            const verticesData = typeof (db == null ? void 0 : db.getVertices) === "function" ? db.getVertices() : null;
+            const edges = Array.isArray(edgesData) ? edgesData : [];
+            let verticesCount = 0;
+            if (verticesData instanceof Map) {
+              verticesCount = verticesData.size;
+            } else if (verticesData && typeof verticesData === "object") {
+              verticesCount = Object.keys(verticesData).length;
+            }
+            console.log("[GoToolkit][MermaidDiagnostics] pre-parse db", {
+              diagramType: (_q = diagram == null ? void 0 : diagram.type) != null ? _q : null,
+              hasDb: Boolean(db),
+              edgesCount: edges.length,
+              verticesCount,
+              edgesSample: edges.slice(0, 5).map((edge) => {
+                var _a2, _b2, _c2, _d2;
+                return {
+                  id: (_a2 = edge == null ? void 0 : edge.id) != null ? _a2 : null,
+                  start: (_b2 = edge == null ? void 0 : edge.start) != null ? _b2 : null,
+                  end: (_c2 = edge == null ? void 0 : edge.end) != null ? _c2 : null,
+                  type: (_d2 = edge == null ? void 0 : edge.type) != null ? _d2 : null
+                };
+              })
             });
           }
         } catch (error) {
-          console.warn("[GoToolkit][MermaidDiagnostics] pre-parse svg failed", error);
+          console.warn("[GoToolkit][MermaidDiagnostics] pre-parse db failed", error);
         }
       }
       const parsed = await parseMermaidToExcalidraw(trimmed, mermaidConfig);
@@ -5007,7 +5010,7 @@
                   markerCount,
                   markerEndCount,
                   markerStartCount,
-                  svgLength: (_p = svg == null ? void 0 : svg.length) != null ? _p : 0
+                  svgLength: (_r = svg == null ? void 0 : svg.length) != null ? _r : 0
                 });
               } catch (e) {
               }

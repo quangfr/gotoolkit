@@ -640,34 +640,34 @@ class ExcalidrawBridge {
         if (isMermaidDiagnosticsEnabled()) {
             try {
                 const mermaidApi = (window as any).mermaid;
-                if (mermaidApi?.render) {
-                    const id = `mermaid-preflight-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-                    const { svg } = await mermaidApi.render(id, trimmed);
-                    const container = document.createElement("div");
-                    container.innerHTML = svg;
-                    const edgePaths = Array.from(
-                        container.querySelectorAll(
-                            "path.flowchart-link, g.edgePath path, path.edgePath, path.edge-path, path.link, path[marker-end], path[marker-start]"
-                        )
-                    );
-                    const classBuckets: Record<string, number> = {};
-                    edgePaths.slice(0, 6).forEach(pathEl => {
-                        const classes = Array.from(pathEl.classList || []);
-                        classes.forEach(token => {
-                            classBuckets[token] = (classBuckets[token] || 0) + 1;
-                        });
-                    });
-                    console.log("[GoToolkit][MermaidDiagnostics] pre-parse svg", {
-                        svgLength: svg?.length ?? 0,
-                        edgePaths: edgePaths.length,
-                        markerCount: container.querySelectorAll("marker").length,
-                        markerEndCount: container.querySelectorAll("[marker-end]").length,
-                        markerStartCount: container.querySelectorAll("[marker-start]").length,
-                        edgeClassSample: classBuckets
+                const getDiagramFromText = mermaidApi?.mermaidAPI?.getDiagramFromText;
+                if (typeof getDiagramFromText === "function") {
+                    const diagram = await getDiagramFromText(trimmed);
+                    const db: any = diagram?.db ?? null;
+                    const edgesData = typeof db?.getEdges === "function" ? db.getEdges() : null;
+                    const verticesData = typeof db?.getVertices === "function" ? db.getVertices() : null;
+                    const edges = Array.isArray(edgesData) ? edgesData : [];
+                    let verticesCount = 0;
+                    if (verticesData instanceof Map) {
+                        verticesCount = verticesData.size;
+                    } else if (verticesData && typeof verticesData === "object") {
+                        verticesCount = Object.keys(verticesData).length;
+                    }
+                    console.log("[GoToolkit][MermaidDiagnostics] pre-parse db", {
+                        diagramType: diagram?.type ?? null,
+                        hasDb: Boolean(db),
+                        edgesCount: edges.length,
+                        verticesCount,
+                        edgesSample: edges.slice(0, 5).map((edge: any) => ({
+                            id: edge?.id ?? null,
+                            start: edge?.start ?? null,
+                            end: edge?.end ?? null,
+                            type: edge?.type ?? null
+                        }))
                     });
                 }
             } catch (error) {
-                console.warn("[GoToolkit][MermaidDiagnostics] pre-parse svg failed", error);
+                console.warn("[GoToolkit][MermaidDiagnostics] pre-parse db failed", error);
             }
         }
         const parsed = await parseMermaidToExcalidraw(trimmed, mermaidConfig);
