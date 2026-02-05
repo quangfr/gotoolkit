@@ -4759,7 +4759,7 @@
       }
     }
     async convertMermaid(code, options) {
-      var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k;
+      var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l;
       const trimmed = code == null ? void 0 : code.trim();
       if (!trimmed) {
         return null;
@@ -4805,7 +4805,7 @@
       const hasLineElements = skeleton.some(
         (el) => (el == null ? void 0 : el.type) === "line" || (el == null ? void 0 : el.type) === "arrow"
       );
-      if (isFlowchart && !hasLineElements) {
+      if (!hasLineElements) {
         try {
           const mermaidApi = window.mermaid;
           if (mermaidApi == null ? void 0 : mermaidApi.render) {
@@ -4814,9 +4814,20 @@
             const container = document.createElement("div");
             container.innerHTML = svg;
             const edgePaths = Array.from(
-              container.querySelectorAll("path.flowchart-link")
+              container.querySelectorAll(
+                "path.flowchart-link, g.edgePath path, path.edgePath, path.edge-path, path.link, path[marker-end], path[marker-start]"
+              )
             );
-            const fallbackArrows = edgePaths.map((pathEl, index) => {
+            if (isMermaidDiagnosticsEnabled()) {
+              try {
+                console.log("[GoToolkit][MermaidDiagnostics] svg fallback", {
+                  edgePaths: edgePaths.length,
+                  svgLength: (_l = svg == null ? void 0 : svg.length) != null ? _l : 0
+                });
+              } catch (e) {
+              }
+            }
+            const fallbackArrows = edgePaths.map((pathEl) => {
               const dAttr = pathEl.getAttribute("d");
               if (!dAttr) {
                 return null;
@@ -4850,6 +4861,19 @@
             }).filter(Boolean);
             if (fallbackArrows.length) {
               skeleton.push(...fallbackArrows);
+              if (isMermaidDiagnosticsEnabled()) {
+                try {
+                  console.log("[GoToolkit][MermaidDiagnostics] svg fallback appended", {
+                    added: fallbackArrows.length
+                  });
+                } catch (e) {
+                }
+              }
+            } else if (isMermaidDiagnosticsEnabled()) {
+              try {
+                console.log("[GoToolkit][MermaidDiagnostics] svg fallback found no arrows");
+              } catch (e) {
+              }
             }
           }
         } catch (error) {
@@ -4987,4 +5011,3 @@ buffer/index.js:
    * @license  MIT
    *)
 */
-//# sourceMappingURL=draw.bundle.js.map

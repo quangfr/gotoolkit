@@ -524,7 +524,7 @@ class ExcalidrawBridge {
         const hasLineElements = skeleton.some(
             (el: any) => el?.type === "line" || el?.type === "arrow"
         );
-        if (isFlowchart && !hasLineElements) {
+        if (!hasLineElements) {
             try {
                 const mermaidApi = (window as any).mermaid;
                 if (mermaidApi?.render) {
@@ -533,10 +533,22 @@ class ExcalidrawBridge {
                     const container = document.createElement("div");
                     container.innerHTML = svg;
                     const edgePaths = Array.from(
-                        container.querySelectorAll("path.flowchart-link")
+                        container.querySelectorAll(
+                            "path.flowchart-link, g.edgePath path, path.edgePath, path.edge-path, path.link, path[marker-end], path[marker-start]"
+                        )
                     );
+                    if (isMermaidDiagnosticsEnabled()) {
+                        try {
+                            console.log("[GoToolkit][MermaidDiagnostics] svg fallback", {
+                                edgePaths: edgePaths.length,
+                                svgLength: svg?.length ?? 0
+                            });
+                        } catch {
+                            // no-op
+                        }
+                    }
                     const fallbackArrows = edgePaths
-                        .map((pathEl, index) => {
+                        .map(pathEl => {
                             const dAttr = pathEl.getAttribute("d");
                             if (!dAttr) {
                                 return null;
@@ -576,6 +588,21 @@ class ExcalidrawBridge {
                         .filter(Boolean);
                     if (fallbackArrows.length) {
                         skeleton.push(...(fallbackArrows as any));
+                        if (isMermaidDiagnosticsEnabled()) {
+                            try {
+                                console.log("[GoToolkit][MermaidDiagnostics] svg fallback appended", {
+                                    added: fallbackArrows.length
+                                });
+                            } catch {
+                                // no-op
+                            }
+                        }
+                    } else if (isMermaidDiagnosticsEnabled()) {
+                        try {
+                            console.log("[GoToolkit][MermaidDiagnostics] svg fallback found no arrows");
+                        } catch {
+                            // no-op
+                        }
                     }
                 }
             } catch (error) {
