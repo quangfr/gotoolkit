@@ -34,13 +34,25 @@ const MERMAID_ELEMENT_STYLE_DEFAULTS = {
     roughness: 0,
     roundness: null
 };
+const getDrawBundleVersion = (): string | null => {
+    try {
+        const scripts = Array.from(document.querySelectorAll("script[src]"));
+        const match = scripts.find(script => script.getAttribute("src")?.includes("draw.bundle.js"));
+        const src = match?.getAttribute("src") || "";
+        const params = src.split("?")[1] || "";
+        const vParam = params.split("&").find(part => part.startsWith("v="));
+        return vParam ? vParam.replace("v=", "") : null;
+    } catch {
+        return null;
+    }
+};
 const isMermaidDiagnosticsEnabled = (): boolean => {
     try {
-        if ((window as any).GoToolkitMermaidDiagnostics) return true;
-        if (localStorage.getItem("goToolkit.mermaidDiagnostics") === "1") return true;
-        return new URLSearchParams(window.location.search).get("mermaidDiagnostics") === "1";
+        if (localStorage.getItem("goToolkit.mermaidDiagnostics") === "0") return false;
+        if ((window as any).GoToolkitMermaidDiagnostics === false) return false;
+        return true;
     } catch {
-        return false;
+        return true;
     }
 };
 const parseSvgPathPoints = (d: string): Array<{ x: number; y: number }> => {
@@ -490,9 +502,11 @@ class ExcalidrawBridge {
         const parsed = await parseMermaidToExcalidraw(trimmed, mermaidConfig);
         if (isMermaidDiagnosticsEnabled()) {
             try {
+                const bundleVersion = getDrawBundleVersion();
                 const elements = Array.isArray(parsed?.elements) ? parsed.elements : [];
                 const arrowLike = elements.filter((el: any) => el?.type === "arrow" || el?.type === "line");
                 console.log("[GoToolkit][MermaidDiagnostics]", {
+                    drawBundleVersion: bundleVersion,
                     isFlowchart,
                     elements: elements.length,
                     arrowLike: arrowLike.length,

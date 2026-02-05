@@ -242,11 +242,11 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
   const showSizeSelector = isSizeSelectorVisible(activeCode);
   const isMermaidDiagnosticsEnabled = () => {
     try {
-      if ((window as any).GoToolkitMermaidDiagnostics) return true;
-      if (localStorage.getItem('goToolkit.mermaidDiagnostics') === '1') return true;
-      return new URLSearchParams(window.location.search).get('mermaidDiagnostics') === '1';
+      if (localStorage.getItem('goToolkit.mermaidDiagnostics') === '0') return false;
+      if ((window as any).GoToolkitMermaidDiagnostics === false) return false;
+      return true;
     } catch {
-      return false;
+      return true;
     }
   };
 

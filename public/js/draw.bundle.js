@@ -4358,13 +4358,28 @@
     roughness: 0,
     roundness: null
   };
+  var getDrawBundleVersion = () => {
+    try {
+      const scripts = Array.from(document.querySelectorAll("script[src]"));
+      const match = scripts.find((script) => {
+        var _a;
+        return (_a = script.getAttribute("src")) == null ? void 0 : _a.includes("draw.bundle.js");
+      });
+      const src = (match == null ? void 0 : match.getAttribute("src")) || "";
+      const params = src.split("?")[1] || "";
+      const vParam = params.split("&").find((part) => part.startsWith("v="));
+      return vParam ? vParam.replace("v=", "") : null;
+    } catch (e) {
+      return null;
+    }
+  };
   var isMermaidDiagnosticsEnabled = () => {
     try {
-      if (window.GoToolkitMermaidDiagnostics) return true;
-      if (localStorage.getItem("goToolkit.mermaidDiagnostics") === "1") return true;
-      return new URLSearchParams(window.location.search).get("mermaidDiagnostics") === "1";
+      if (localStorage.getItem("goToolkit.mermaidDiagnostics") === "0") return false;
+      if (window.GoToolkitMermaidDiagnostics === false) return false;
+      return true;
     } catch (e) {
-      return false;
+      return true;
     }
   };
   var parseSvgPathPoints = (d) => {
@@ -4768,9 +4783,11 @@
       const parsed = await parseMermaidToExcalidraw(trimmed, mermaidConfig);
       if (isMermaidDiagnosticsEnabled()) {
         try {
+          const bundleVersion = getDrawBundleVersion();
           const elements = Array.isArray(parsed == null ? void 0 : parsed.elements) ? parsed.elements : [];
           const arrowLike = elements.filter((el) => (el == null ? void 0 : el.type) === "arrow" || (el == null ? void 0 : el.type) === "line");
           console.log("[GoToolkit][MermaidDiagnostics]", {
+            drawBundleVersion: bundleVersion,
             isFlowchart,
             elements: elements.length,
             arrowLike: arrowLike.length,
