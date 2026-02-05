@@ -63,7 +63,25 @@
         if (!trimmed) return [];
         if (trimmed.startsWith("|")) trimmed = trimmed.slice(1);
         if (trimmed.endsWith("|")) trimmed = trimmed.slice(0, -1);
-        return trimmed.split("|").map(function (cell) { return cell.trim(); });
+        var cells = [];
+        var current = "";
+        var inCode = false;
+        for (var i = 0; i < trimmed.length; i++) {
+            var ch = trimmed[i];
+            if (ch === "`") {
+                inCode = !inCode;
+                current += ch;
+                continue;
+            }
+            if (ch === "|" && !inCode) {
+                cells.push(current.trim());
+                current = "";
+                continue;
+            }
+            current += ch;
+        }
+        cells.push(current.trim());
+        return cells;
     }
 
     function renderTable(headerLine, separatorLine, bodyLines) {

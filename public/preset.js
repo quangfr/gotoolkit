@@ -214,7 +214,13 @@ Toujours faire un saut à la ligne entre le bloc à supprimer (~~...~~) puis le 
 
 RÈGLES SPÉCIFIQUES :
 - Pour des tâches : ☐ pour non fait, ☒ pour fait.
-- Pour générer un tableau, utilise la syntaxe markdown gfm uniquement
+- Pour générer un tableau, utilise la syntaxe markdown gfm suivante
+
+| Header 1 | Header 2 | Header 3 |
+|----------|----------|----------|
+| Row 1   | Row 1    | Row 1    |
+| Row 2   | Row 2    | Row 2    |
+
 - Pour créer des encadrés d'information, utilise la syntaxe suivante :
 
 >ℹ️ Contexte utile, information importante
@@ -292,7 +298,13 @@ RÈGLES DE MODIFICATION
 
 RÈGLES SPÉCIFIQUES :
 - Pour des tâches : ☐ pour non fait, ☒ pour fait.
-- Pour générer un tableau, utilise la syntaxe markdown gfm uniquement 
+- Pour générer un tableau, utilise la syntaxe markdown gfm suivante
+
+| Header 1 | Header 2 | Header 3 |
+|----------|----------|----------|
+| Row 1   | Row 1    | Row 1    |
+| Row 2   | Row 2    | Row 2    |
+
 - Pour créer des encadrés d'information, utilise la syntaxe suivante :
 
 >ℹ️ Contexte utile, information pratique
