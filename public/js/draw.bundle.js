@@ -4483,6 +4483,31 @@
     });
     return points;
   };
+  var summarizeMermaidElements = (elements, maxSamples = 3) => {
+    var _a, _b, _c, _d, _e, _f;
+    const byType = {};
+    const linearSamples = [];
+    const hasLineLike = (el) => (el == null ? void 0 : el.type) === "line" || (el == null ? void 0 : el.type) === "arrow";
+    for (const el of elements || []) {
+      const type = (_a = el == null ? void 0 : el.type) != null ? _a : "unknown";
+      byType[type] = (byType[type] || 0) + 1;
+      if (hasLineLike(el) && linearSamples.length < maxSamples) {
+        linearSamples.push({
+          type,
+          points: Array.isArray(el == null ? void 0 : el.points) ? el.points.length : 0,
+          startArrowhead: (_b = el == null ? void 0 : el.startArrowhead) != null ? _b : null,
+          endArrowhead: (_c = el == null ? void 0 : el.endArrowhead) != null ? _c : null,
+          strokeWidth: (_d = el == null ? void 0 : el.strokeWidth) != null ? _d : null,
+          strokeStyle: (_e = el == null ? void 0 : el.strokeStyle) != null ? _e : null
+        });
+      }
+    }
+    return {
+      total: (_f = elements == null ? void 0 : elements.length) != null ? _f : 0,
+      byType,
+      linearSamples
+    };
+  };
   var EDGE_HOST_CLASS = "go-excalidraw-edge";
   var EDGE_STYLE_ID = "go-excalidraw-edge-style";
   var EDGE_STYLE_CONTENT = `.${EDGE_HOST_CLASS} .excalidraw .App-bottom-bar {
@@ -4849,6 +4874,27 @@
         sequence: (_j = options == null ? void 0 : options.sequence) != null ? _j : {},
         class: (_k = options == null ? void 0 : options.class) != null ? _k : {}
       };
+      if (isMermaidDiagnosticsEnabled()) {
+        try {
+          const mermaidInfo = getMermaidRuntimeInfo();
+          const mermaidRaw = getMermaidRawInfo();
+          const headerLine = getMermaidHeaderLine(trimmed);
+          const preview = trimmed.split(/\r?\n/).slice(0, 6).join("\n");
+          console.log("[GoToolkit][MermaidDiagnostics] pre-parse", {
+            drawBundleVersion: getDrawBundleVersion(),
+            isFlowchart,
+            diagramType,
+            headerLine,
+            codeLength: trimmed.length,
+            codePreview: preview,
+            mermaid: mermaidInfo,
+            mermaidRaw,
+            mermaidConfig
+          });
+        } catch (error) {
+          console.warn("[GoToolkit][MermaidDiagnostics] pre-parse log failed", error);
+        }
+      }
       const parsed = await parseMermaidToExcalidraw(trimmed, mermaidConfig);
       if (isMermaidDiagnosticsEnabled()) {
         try {
@@ -4867,6 +4913,7 @@
             mermaidRaw,
             mermaidConfig,
             parsedKeys: parsed ? Object.keys(parsed) : [],
+            parsedSummary: summarizeMermaidElements(elements),
             elements: elements.length,
             arrowLike: arrowLike.length,
             hasLineElements: arrowLike.length > 0
@@ -4883,6 +4930,16 @@
       const hasLineElements = skeleton.some(
         (el) => (el == null ? void 0 : el.type) === "line" || (el == null ? void 0 : el.type) === "arrow"
       );
+      if (isMermaidDiagnosticsEnabled()) {
+        try {
+          console.log("[GoToolkit][MermaidDiagnostics] skeleton summary", {
+            hasLineElements,
+            fallbackEnabled: isMermaidSvgFallbackEnabled(),
+            skeletonSummary: summarizeMermaidElements(skeleton)
+          });
+        } catch (e) {
+        }
+      }
       if (!hasLineElements && isMermaidSvgFallbackEnabled()) {
         try {
           const mermaidApi = window.mermaid;
@@ -4968,7 +5025,8 @@
               if (isMermaidDiagnosticsEnabled()) {
                 try {
                   console.log("[GoToolkit][MermaidDiagnostics] svg fallback appended", {
-                    added: fallbackArrows.length
+                    added: fallbackArrows.length,
+                    fallbackSummary: summarizeMermaidElements(fallbackArrows)
                   });
                 } catch (e) {
                 }
@@ -4990,6 +5048,14 @@
       if (!normalizedElements.length) {
         return null;
       }
+      if (isMermaidDiagnosticsEnabled()) {
+        try {
+          console.log("[GoToolkit][MermaidDiagnostics] converted summary", {
+            convertedSummary: summarizeMermaidElements(normalizedElements)
+          });
+        } catch (e) {
+        }
+      }
       const arrowNormalizedElements = isFlowchart ? normalizedElements.map((element) => {
         const linear = element.type === "line" || element.type === "arrow";
         if (!linear) return element;
@@ -5009,8 +5075,24 @@
         }
         return element;
       }) : normalizedElements;
+      if (isMermaidDiagnosticsEnabled()) {
+        try {
+          console.log("[GoToolkit][MermaidDiagnostics] arrow normalization summary", {
+            arrowNormalizedSummary: summarizeMermaidElements(arrowNormalizedElements)
+          });
+        } catch (e) {
+        }
+      }
       const normalizedFiles = (parsed == null ? void 0 : parsed.files) || null;
       const sharpElements = applyMermaidDefaults(arrowNormalizedElements, options);
+      if (isMermaidDiagnosticsEnabled()) {
+        try {
+          console.log("[GoToolkit][MermaidDiagnostics] final summary", {
+            finalSummary: summarizeMermaidElements(sharpElements)
+          });
+        } catch (e) {
+        }
+      }
       return {
         elements: sharpElements,
         files: normalizedFiles || void 0

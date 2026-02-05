@@ -162,6 +162,37 @@ const parseSvgPathPoints = (d: string): Array<{ x: number; y: number }> => {
     });
     return points;
 };
+const summarizeMermaidElements = (elements: any[], maxSamples: number = 3) => {
+    const byType: Record<string, number> = {};
+    const linearSamples: Array<{
+        type: string;
+        points: number;
+        startArrowhead: any;
+        endArrowhead: any;
+        strokeWidth: any;
+        strokeStyle: any;
+    }> = [];
+    const hasLineLike = (el: any) => el?.type === "line" || el?.type === "arrow";
+    for (const el of elements || []) {
+        const type = el?.type ?? "unknown";
+        byType[type] = (byType[type] || 0) + 1;
+        if (hasLineLike(el) && linearSamples.length < maxSamples) {
+            linearSamples.push({
+                type,
+                points: Array.isArray(el?.points) ? el.points.length : 0,
+                startArrowhead: (el as any)?.startArrowhead ?? null,
+                endArrowhead: (el as any)?.endArrowhead ?? null,
+                strokeWidth: (el as any)?.strokeWidth ?? null,
+                strokeStyle: (el as any)?.strokeStyle ?? null
+            });
+        }
+    }
+    return {
+        total: elements?.length ?? 0,
+        byType,
+        linearSamples
+    };
+};
 
 export type MermaidConvertOptions = {
     fontSize?: number;
@@ -570,6 +601,27 @@ class ExcalidrawBridge {
             class: options?.class ?? {}
         };
 
+        if (isMermaidDiagnosticsEnabled()) {
+            try {
+                const mermaidInfo = getMermaidRuntimeInfo();
+                const mermaidRaw = getMermaidRawInfo();
+                const headerLine = getMermaidHeaderLine(trimmed);
+                const preview = trimmed.split(/\r?\n/).slice(0, 6).join("\n");
+                console.log("[GoToolkit][MermaidDiagnostics] pre-parse", {
+                    drawBundleVersion: getDrawBundleVersion(),
+                    isFlowchart,
+                    diagramType,
+                    headerLine,
+                    codeLength: trimmed.length,
+                    codePreview: preview,
+                    mermaid: mermaidInfo,
+                    mermaidRaw,
+                    mermaidConfig
+                });
+            } catch (error) {
+                console.warn("[GoToolkit][MermaidDiagnostics] pre-parse log failed", error);
+            }
+        }
         const parsed = await parseMermaidToExcalidraw(trimmed, mermaidConfig);
         if (isMermaidDiagnosticsEnabled()) {
             try {
@@ -588,6 +640,7 @@ class ExcalidrawBridge {
                     mermaidRaw,
                     mermaidConfig,
                     parsedKeys: parsed ? Object.keys(parsed) : [],
+                    parsedSummary: summarizeMermaidElements(elements),
                     elements: elements.length,
                     arrowLike: arrowLike.length,
                     hasLineElements: arrowLike.length > 0
@@ -604,6 +657,17 @@ class ExcalidrawBridge {
         const hasLineElements = skeleton.some(
             (el: any) => el?.type === "line" || el?.type === "arrow"
         );
+        if (isMermaidDiagnosticsEnabled()) {
+            try {
+                console.log("[GoToolkit][MermaidDiagnostics] skeleton summary", {
+                    hasLineElements,
+                    fallbackEnabled: isMermaidSvgFallbackEnabled(),
+                    skeletonSummary: summarizeMermaidElements(skeleton)
+                });
+            } catch {
+                // no-op
+            }
+        }
         if (!hasLineElements && isMermaidSvgFallbackEnabled()) {
             try {
                 const mermaidApi = (window as any).mermaid;
@@ -697,7 +761,8 @@ class ExcalidrawBridge {
                         if (isMermaidDiagnosticsEnabled()) {
                             try {
                                 console.log("[GoToolkit][MermaidDiagnostics] svg fallback appended", {
-                                    added: fallbackArrows.length
+                                    added: fallbackArrows.length,
+                                    fallbackSummary: summarizeMermaidElements(fallbackArrows as any[])
                                 });
                             } catch {
                                 // no-op
@@ -721,6 +786,15 @@ class ExcalidrawBridge {
         if (!normalizedElements.length) {
             return null;
         }
+        if (isMermaidDiagnosticsEnabled()) {
+            try {
+                console.log("[GoToolkit][MermaidDiagnostics] converted summary", {
+                    convertedSummary: summarizeMermaidElements(normalizedElements)
+                });
+            } catch {
+                // no-op
+            }
+        }
         const arrowNormalizedElements = isFlowchart
             ? normalizedElements.map(element => {
                   const linear = element.type === "line" || element.type === "arrow";
@@ -743,8 +817,26 @@ class ExcalidrawBridge {
                   return element;
               })
             : normalizedElements;
+        if (isMermaidDiagnosticsEnabled()) {
+            try {
+                console.log("[GoToolkit][MermaidDiagnostics] arrow normalization summary", {
+                    arrowNormalizedSummary: summarizeMermaidElements(arrowNormalizedElements as any[])
+                });
+            } catch {
+                // no-op
+            }
+        }
         const normalizedFiles = parsed?.files || null;
         const sharpElements = applyMermaidDefaults(arrowNormalizedElements as readonly ExcalidrawElement[], options);
+        if (isMermaidDiagnosticsEnabled()) {
+            try {
+                console.log("[GoToolkit][MermaidDiagnostics] final summary", {
+                    finalSummary: summarizeMermaidElements(sharpElements as any[])
+                });
+            } catch {
+                // no-op
+            }
+        }
         return {
             elements: sharpElements as readonly ExcalidrawElement[],
             files: normalizedFiles || undefined
