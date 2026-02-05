@@ -607,6 +607,14 @@ class ExcalidrawBridge {
                 const mermaidRaw = getMermaidRawInfo();
                 const headerLine = getMermaidHeaderLine(trimmed);
                 const preview = trimmed.split(/\r?\n/).slice(0, 6).join("\n");
+                const mermaidApi = (window as any).mermaid;
+                const getDiagramType = typeof mermaidApi?.mermaidAPI?.getDiagramFromText;
+                const hasGetDiagram = getDiagramType === "function";
+                const mermaidApiVersion =
+                    mermaidApi?.version ||
+                    mermaidApi?.mermaidAPI?.version ||
+                    mermaidApi?.default?.version ||
+                    null;
                 console.log("[GoToolkit][MermaidDiagnostics] pre-parse", {
                     drawBundleVersion: getDrawBundleVersion(),
                     isFlowchart,
@@ -616,10 +624,50 @@ class ExcalidrawBridge {
                     codePreview: preview,
                     mermaid: mermaidInfo,
                     mermaidRaw,
+                    mermaidApi: {
+                        version: mermaidApiVersion,
+                        mermaidAPIKeys: Object.keys(mermaidApi?.mermaidAPI || {}),
+                        getDiagramFromTextType: getDiagramType,
+                        hasGetDiagramFromText: hasGetDiagram,
+                        hasRender: typeof mermaidApi?.render === "function"
+                    },
                     mermaidConfig
                 });
             } catch (error) {
                 console.warn("[GoToolkit][MermaidDiagnostics] pre-parse log failed", error);
+            }
+        }
+        if (isMermaidDiagnosticsEnabled()) {
+            try {
+                const mermaidApi = (window as any).mermaid;
+                if (mermaidApi?.render) {
+                    const id = `mermaid-preflight-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+                    const { svg } = await mermaidApi.render(id, trimmed);
+                    const container = document.createElement("div");
+                    container.innerHTML = svg;
+                    const edgePaths = Array.from(
+                        container.querySelectorAll(
+                            "path.flowchart-link, g.edgePath path, path.edgePath, path.edge-path, path.link, path[marker-end], path[marker-start]"
+                        )
+                    );
+                    const classBuckets: Record<string, number> = {};
+                    edgePaths.slice(0, 6).forEach(pathEl => {
+                        const classes = Array.from(pathEl.classList || []);
+                        classes.forEach(token => {
+                            classBuckets[token] = (classBuckets[token] || 0) + 1;
+                        });
+                    });
+                    console.log("[GoToolkit][MermaidDiagnostics] pre-parse svg", {
+                        svgLength: svg?.length ?? 0,
+                        edgePaths: edgePaths.length,
+                        markerCount: container.querySelectorAll("marker").length,
+                        markerEndCount: container.querySelectorAll("[marker-end]").length,
+                        markerStartCount: container.querySelectorAll("[marker-start]").length,
+                        edgeClassSample: classBuckets
+                    });
+                }
+            } catch (error) {
+                console.warn("[GoToolkit][MermaidDiagnostics] pre-parse svg failed", error);
             }
         }
         const parsed = await parseMermaidToExcalidraw(trimmed, mermaidConfig);
