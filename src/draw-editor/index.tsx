@@ -615,6 +615,9 @@ class ExcalidrawBridge {
                     padding: 15
                 }
             };
+            if (typeof mermaidApi?.mermaidAPI?.reset === "function") {
+                mermaidApi.mermaidAPI.reset();
+            }
             if (typeof mermaidApi?.mermaidAPI?.updateSiteConfig === "function") {
                 mermaidApi.mermaidAPI.updateSiteConfig(siteConfig);
             }
@@ -629,6 +632,9 @@ class ExcalidrawBridge {
         } catch {
             // no-op
         }
+
+        await Promise.resolve();
+        await new Promise<void>(resolve => window.requestAnimationFrame(() => resolve()));
 
         if (isMermaidDiagnosticsEnabled()) {
             try {
@@ -766,7 +772,7 @@ class ExcalidrawBridge {
                 console.warn("[GoToolkit][MermaidDiagnostics] pre-parse db failed", error);
             }
         }
-        const parsed = await parseMermaidToExcalidraw(trimmed, mermaidConfig);
+        let parsed = await parseMermaidToExcalidraw(trimmed, mermaidConfig);
         if (isMermaidDiagnosticsEnabled()) {
             try {
                 const bundleVersion = getDrawBundleVersion();
@@ -794,6 +800,25 @@ class ExcalidrawBridge {
                         dbVerticesCount,
                         parsedElements: elements.length
                     });
+                    try {
+                        const mermaidApi = (window as any).mermaid;
+                        if (typeof mermaidApi?.mermaidAPI?.reset === "function") {
+                            mermaidApi.mermaidAPI.reset();
+                        }
+                        if (typeof mermaidApi?.initialize === "function") {
+                            mermaidApi.initialize({
+                                startOnLoad: false,
+                                ...mermaidConfig
+                            });
+                        }
+                        await Promise.resolve();
+                        await new Promise<void>(resolve =>
+                            window.requestAnimationFrame(() => resolve())
+                        );
+                        parsed = await parseMermaidToExcalidraw(trimmed, mermaidConfig);
+                    } catch {
+                        // no-op
+                    }
                 }
             } catch (error) {
                 console.warn("[GoToolkit][MermaidDiagnostics] parse log failed", error);
