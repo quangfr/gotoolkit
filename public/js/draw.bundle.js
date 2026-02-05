@@ -4382,6 +4382,25 @@
       return true;
     }
   };
+  var getMermaidRuntimeInfo = () => {
+    var _a, _b;
+    try {
+      const mermaid2 = window.mermaid;
+      if (!mermaid2) {
+        return { loaded: false };
+      }
+      const version2 = mermaid2.version || ((_a = mermaid2 == null ? void 0 : mermaid2.default) == null ? void 0 : _a.version) || ((_b = mermaid2 == null ? void 0 : mermaid2.mermaidAPI) == null ? void 0 : _b.version) || null;
+      const config = typeof mermaid2.getConfig === "function" ? mermaid2.getConfig() : null;
+      return {
+        loaded: true,
+        version: version2,
+        hasRender: typeof mermaid2.render === "function",
+        config
+      };
+    } catch (error) {
+      return { loaded: false, error };
+    }
+  };
   var parseSvgPathPoints = (d) => {
     const commands = d.match(/[MLCQ][^MLCQ]*/gi) || [];
     const points = [];
@@ -4786,9 +4805,13 @@
           const bundleVersion = getDrawBundleVersion();
           const elements = Array.isArray(parsed == null ? void 0 : parsed.elements) ? parsed.elements : [];
           const arrowLike = elements.filter((el) => (el == null ? void 0 : el.type) === "arrow" || (el == null ? void 0 : el.type) === "line");
+          const mermaidInfo = getMermaidRuntimeInfo();
           console.log("[GoToolkit][MermaidDiagnostics]", {
             drawBundleVersion: bundleVersion,
             isFlowchart,
+            mermaid: mermaidInfo,
+            mermaidConfig,
+            parsedKeys: parsed ? Object.keys(parsed) : [],
             elements: elements.length,
             arrowLike: arrowLike.length,
             hasLineElements: arrowLike.length > 0
@@ -4813,6 +4836,9 @@
             const { svg } = await mermaidApi.render(id, trimmed);
             const container = document.createElement("div");
             container.innerHTML = svg;
+            const markerCount = container.querySelectorAll("marker").length;
+            const markerEndCount = container.querySelectorAll("[marker-end]").length;
+            const markerStartCount = container.querySelectorAll("[marker-start]").length;
             const edgePaths = Array.from(
               container.querySelectorAll(
                 "path.flowchart-link, g.edgePath path, path.edgePath, path.edge-path, path.link, path[marker-end], path[marker-start]"
@@ -4822,6 +4848,9 @@
               try {
                 console.log("[GoToolkit][MermaidDiagnostics] svg fallback", {
                   edgePaths: edgePaths.length,
+                  markerCount,
+                  markerEndCount,
+                  markerStartCount,
                   svgLength: (_l = svg == null ? void 0 : svg.length) != null ? _l : 0
                 });
               } catch (e) {

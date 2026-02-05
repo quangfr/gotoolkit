@@ -55,6 +55,28 @@ const isMermaidDiagnosticsEnabled = (): boolean => {
         return true;
     }
 };
+const getMermaidRuntimeInfo = () => {
+    try {
+        const mermaid = (window as any).mermaid;
+        if (!mermaid) {
+            return { loaded: false };
+        }
+        const version =
+            mermaid.version ||
+            mermaid?.default?.version ||
+            mermaid?.mermaidAPI?.version ||
+            null;
+        const config = typeof mermaid.getConfig === "function" ? mermaid.getConfig() : null;
+        return {
+            loaded: true,
+            version,
+            hasRender: typeof mermaid.render === "function",
+            config
+        };
+    } catch (error) {
+        return { loaded: false, error };
+    }
+};
 const parseSvgPathPoints = (d: string): Array<{ x: number; y: number }> => {
     const commands = d.match(/[MLCQ][^MLCQ]*/gi) || [];
     const points: Array<{ x: number; y: number }> = [];
@@ -505,9 +527,13 @@ class ExcalidrawBridge {
                 const bundleVersion = getDrawBundleVersion();
                 const elements = Array.isArray(parsed?.elements) ? parsed.elements : [];
                 const arrowLike = elements.filter((el: any) => el?.type === "arrow" || el?.type === "line");
+                const mermaidInfo = getMermaidRuntimeInfo();
                 console.log("[GoToolkit][MermaidDiagnostics]", {
                     drawBundleVersion: bundleVersion,
                     isFlowchart,
+                    mermaid: mermaidInfo,
+                    mermaidConfig,
+                    parsedKeys: parsed ? Object.keys(parsed) : [],
                     elements: elements.length,
                     arrowLike: arrowLike.length,
                     hasLineElements: arrowLike.length > 0
@@ -532,6 +558,9 @@ class ExcalidrawBridge {
                     const { svg } = await mermaidApi.render(id, trimmed);
                     const container = document.createElement("div");
                     container.innerHTML = svg;
+                    const markerCount = container.querySelectorAll("marker").length;
+                    const markerEndCount = container.querySelectorAll("[marker-end]").length;
+                    const markerStartCount = container.querySelectorAll("[marker-start]").length;
                     const edgePaths = Array.from(
                         container.querySelectorAll(
                             "path.flowchart-link, g.edgePath path, path.edgePath, path.edge-path, path.link, path[marker-end], path[marker-start]"
@@ -541,6 +570,9 @@ class ExcalidrawBridge {
                         try {
                             console.log("[GoToolkit][MermaidDiagnostics] svg fallback", {
                                 edgePaths: edgePaths.length,
+                                markerCount,
+                                markerEndCount,
+                                markerStartCount,
                                 svgLength: svg?.length ?? 0
                             });
                         } catch {
