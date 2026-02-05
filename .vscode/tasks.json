@@ -4,7 +4,7 @@
 		{
 			"label": "Dev",
 			"type": "shell",
-			"command": "npm run dev:legacy",
+			"command": "npm run dev",
 			"isBackground": true,
 			"problemMatcher": {
 				"pattern": {
@@ -28,7 +28,7 @@
 		{
 			"label": "Serve public",
 			"type": "shell",
-			"command": "npm run start:legacy",
+			"command": "npm run start",
 			"isBackground": true,
 			"problemMatcher": {
 				"pattern": {
