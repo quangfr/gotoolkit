@@ -240,9 +240,19 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
   let size = directionSize ? (directionSize === 'TD' ? 'large' : 'small') : node.attrs.size || getAutoDetectedSize(activeCode);
   if (size === 'medium') size = 'small'; 
   const showSizeSelector = isSizeSelectorVisible(activeCode);
+  const isMermaidDiagnosticsEnabled = () => {
+    try {
+      if ((window as any).GoToolkitMermaidDiagnostics) return true;
+      if (localStorage.getItem('goToolkit.mermaidDiagnostics') === '1') return true;
+      return new URLSearchParams(window.location.search).get('mermaidDiagnostics') === '1';
+    } catch {
+      return false;
+    }
+  };
 
   React.useEffect(() => {
     if (!isEditing) return;
+    if (!isMermaidDiagnosticsEnabled()) return;
 
     const logContainer = (label: string) => {
       const container = document.querySelector('.mermaid-modal-draw-container') as HTMLElement | null;

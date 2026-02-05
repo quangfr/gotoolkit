@@ -52148,8 +52148,18 @@ ${promptInput.trim()}`
     let size2 = directionSize ? directionSize === "TD" ? "large" : "small" : node.attrs.size || getAutoDetectedSize(activeCode);
     if (size2 === "medium") size2 = "small";
     const showSizeSelector = isSizeSelectorVisible(activeCode);
+    const isMermaidDiagnosticsEnabled = () => {
+      try {
+        if (window.GoToolkitMermaidDiagnostics) return true;
+        if (localStorage.getItem("goToolkit.mermaidDiagnostics") === "1") return true;
+        return new URLSearchParams(window.location.search).get("mermaidDiagnostics") === "1";
+      } catch (e) {
+        return false;
+      }
+    };
     react_shim_default.useEffect(() => {
       if (!isEditing) return;
+      if (!isMermaidDiagnosticsEnabled()) return;
       const logContainer = (label) => {
         const container3 = document.querySelector(".mermaid-modal-draw-container");
         if (!container3) {

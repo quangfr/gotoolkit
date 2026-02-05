@@ -34,6 +34,15 @@ const MERMAID_ELEMENT_STYLE_DEFAULTS = {
     roughness: 0,
     roundness: null
 };
+const isMermaidDiagnosticsEnabled = (): boolean => {
+    try {
+        if ((window as any).GoToolkitMermaidDiagnostics) return true;
+        if (localStorage.getItem("goToolkit.mermaidDiagnostics") === "1") return true;
+        return new URLSearchParams(window.location.search).get("mermaidDiagnostics") === "1";
+    } catch {
+        return false;
+    }
+};
 const parseSvgPathPoints = (d: string): Array<{ x: number; y: number }> => {
     const commands = d.match(/[MLCQ][^MLCQ]*/gi) || [];
     const points: Array<{ x: number; y: number }> = [];
@@ -479,6 +488,20 @@ class ExcalidrawBridge {
         };
 
         const parsed = await parseMermaidToExcalidraw(trimmed, mermaidConfig);
+        if (isMermaidDiagnosticsEnabled()) {
+            try {
+                const elements = Array.isArray(parsed?.elements) ? parsed.elements : [];
+                const arrowLike = elements.filter((el: any) => el?.type === "arrow" || el?.type === "line");
+                console.log("[GoToolkit][MermaidDiagnostics]", {
+                    isFlowchart,
+                    elements: elements.length,
+                    arrowLike: arrowLike.length,
+                    hasLineElements: arrowLike.length > 0
+                });
+            } catch (error) {
+                console.warn("[GoToolkit][MermaidDiagnostics] parse log failed", error);
+            }
+        }
         const baseSkeleton = Array.isArray(parsed?.elements) ? parsed?.elements : [];
         if (!baseSkeleton.length) {
             return null;

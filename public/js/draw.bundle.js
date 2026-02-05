@@ -4358,6 +4358,15 @@
     roughness: 0,
     roundness: null
   };
+  var isMermaidDiagnosticsEnabled = () => {
+    try {
+      if (window.GoToolkitMermaidDiagnostics) return true;
+      if (localStorage.getItem("goToolkit.mermaidDiagnostics") === "1") return true;
+      return new URLSearchParams(window.location.search).get("mermaidDiagnostics") === "1";
+    } catch (e) {
+      return false;
+    }
+  };
   var parseSvgPathPoints = (d) => {
     const commands = d.match(/[MLCQ][^MLCQ]*/gi) || [];
     const points = [];
@@ -4757,6 +4766,20 @@
         class: (_k = options == null ? void 0 : options.class) != null ? _k : {}
       };
       const parsed = await parseMermaidToExcalidraw(trimmed, mermaidConfig);
+      if (isMermaidDiagnosticsEnabled()) {
+        try {
+          const elements = Array.isArray(parsed == null ? void 0 : parsed.elements) ? parsed.elements : [];
+          const arrowLike = elements.filter((el) => (el == null ? void 0 : el.type) === "arrow" || (el == null ? void 0 : el.type) === "line");
+          console.log("[GoToolkit][MermaidDiagnostics]", {
+            isFlowchart,
+            elements: elements.length,
+            arrowLike: arrowLike.length,
+            hasLineElements: arrowLike.length > 0
+          });
+        } catch (error) {
+          console.warn("[GoToolkit][MermaidDiagnostics] parse log failed", error);
+        }
+      }
       const baseSkeleton = Array.isArray(parsed == null ? void 0 : parsed.elements) ? parsed == null ? void 0 : parsed.elements : [];
       if (!baseSkeleton.length) {
         return null;
