@@ -126,6 +126,141 @@ const detectMermaidDiagramType = (code: string): string => {
     if (header.startsWith("pie")) return "pie";
     return "unknown";
 };
+const getMermaidAstDiagnostics = async (code: string) => {
+    try {
+        const mermaidApi = (window as any).mermaid?.mermaidAPI;
+        if (!mermaidApi?.getDiagramFromText) {
+            return { available: false };
+        }
+        const diagram = await mermaidApi.getDiagramFromText(code);
+        const parser = diagram?.parser?.yy;
+        const edges = parser?.getEdges?.() ?? null;
+        const vertices = parser?.getVertices?.() ?? null;
+        const edgesSample = Array.isArray(edges) && edges.length ? edges[0] : null;
+        const verticesKeys = vertices && typeof vertices === "object" ? Object.keys(vertices) : [];
+        const vertexSampleKey = verticesKeys.length ? verticesKeys[0] : null;
+        const vertexSample = vertexSampleKey ? vertices[vertexSampleKey] : null;
+        return {
+            available: true,
+            diagramType: diagram?.type ?? null,
+            edgesCount: Array.isArray(edges) ? edges.length : null,
+            verticesCount: vertices && typeof vertices === "object" ? Object.keys(vertices).length : null,
+            edgeKeys: edgesSample ? Object.keys(edgesSample) : [],
+            vertexKeys: vertexSample ? Object.keys(vertexSample) : []
+        };
+    } catch (error) {
+        return { available: false, error };
+    }
+};
+const getPointFromVertex = (vertex: any): { x: number; y: number } | null => {
+    if (!vertex || typeof vertex !== "object") return null;
+    const x = Number(vertex.x ?? vertex.cx ?? vertex.position?.x);
+    const y = Number(vertex.y ?? vertex.cy ?? vertex.position?.y);
+    const width = Number(vertex.width ?? vertex.w ?? vertex.size?.width);
+    const height = Number(vertex.height ?? vertex.h ?? vertex.size?.height);
+    if (Number.isFinite(x) && Number.isFinite(y)) {
+        if (Number.isFinite(width) && Number.isFinite(height)) {
+            return { x: x + width / 2, y: y + height / 2 };
+        }
+        return { x, y };
+    }
+    return null;
+};
+const getVertexById = (vertices: any, id: any): any | null => {
+    if (!vertices || id == null) return null;
+    if (typeof id === "string" || typeof id === "number") {
+        return vertices[id] ?? null;
+    }
+    if (typeof id === "object") {
+        return id;
+    }
+    return null;
+};
+const getEdgeEndpointPoint = (edge: any, vertices: any, key: string): { x: number; y: number } | null => {
+    const value = edge?.[key];
+    if (!value) return null;
+    if (typeof value === "object" && (value.x != null || value.y != null)) {
+        return getPointFromVertex(value);
+    }
+    const vertex = getVertexById(vertices, value);
+    return getPointFromVertex(vertex);
+};
+const normalizeEdgePoints = (edge: any, vertices: any): Array<{ x: number; y: number }> => {
+    if (!edge || typeof edge !== "object") return [];
+    const rawPoints = edge.points || edge.path || edge?.label?.points;
+    if (Array.isArray(rawPoints) && rawPoints.length) {
+        const points = rawPoints
+            .map((pt: any) => {
+                if (Array.isArray(pt) && pt.length >= 2) {
+                    const [x, y] = pt;
+                    if (Number.isFinite(x) && Number.isFinite(y)) return { x, y };
+                }
+                if (pt && typeof pt === "object") {
+                    const x = Number(pt.x ?? pt[0]);
+                    const y = Number(pt.y ?? pt[1]);
+                    if (Number.isFinite(x) && Number.isFinite(y)) return { x, y };
+                }
+                return null;
+            })
+            .filter(Boolean) as Array<{ x: number; y: number }>;
+        if (points.length >= 2) return points;
+    }
+    const start =
+        getEdgeEndpointPoint(edge, vertices, "start") ||
+        getEdgeEndpointPoint(edge, vertices, "from") ||
+        getEdgeEndpointPoint(edge, vertices, "source") ||
+        getEdgeEndpointPoint(edge, vertices, "v") ||
+        getEdgeEndpointPoint(edge, vertices, "id1");
+    const end =
+        getEdgeEndpointPoint(edge, vertices, "end") ||
+        getEdgeEndpointPoint(edge, vertices, "to") ||
+        getEdgeEndpointPoint(edge, vertices, "target") ||
+        getEdgeEndpointPoint(edge, vertices, "w") ||
+        getEdgeEndpointPoint(edge, vertices, "id2");
+    if (start && end) {
+        return [start, end];
+    }
+    return [];
+};
+const buildMermaidAstArrows = async (code: string) => {
+    try {
+        const mermaidApi = (window as any).mermaid?.mermaidAPI;
+        if (!mermaidApi?.getDiagramFromText) {
+            return { arrows: [], reason: "no-mermaid-api" };
+        }
+        const diagram = await mermaidApi.getDiagramFromText(code);
+        const parser = diagram?.parser?.yy;
+        const edges = parser?.getEdges?.() ?? [];
+        const vertices = parser?.getVertices?.() ?? null;
+        if (!Array.isArray(edges) || !edges.length || !vertices) {
+            return { arrows: [], reason: "no-edges" };
+        }
+        const arrows = edges
+            .map(edge => {
+                const points = normalizeEdgePoints(edge, vertices);
+                if (points.length < 2) return null;
+                const start = points[0];
+                const relPoints: [number, number][] = points.map(point => [
+                    point.x - start.x,
+                    point.y - start.y
+                ]);
+                return {
+                    type: "arrow",
+                    x: start.x,
+                    y: start.y,
+                    points: relPoints,
+                    strokeWidth: 2,
+                    strokeStyle: "solid",
+                    roundness: { type: 2 },
+                    endArrowhead: "arrow"
+                };
+            })
+            .filter(Boolean);
+        return { arrows: arrows as any[], reason: "ok" };
+    } catch (error) {
+        return { arrows: [], reason: "error", error };
+    }
+};
 const parseSvgPathPoints = (d: string): Array<{ x: number; y: number }> => {
     const commands = d.match(/[MLCQ][^MLCQ]*/gi) || [];
     const points: Array<{ x: number; y: number }> = [];
@@ -579,6 +714,7 @@ class ExcalidrawBridge {
                 const mermaidInfo = getMermaidRuntimeInfo();
                 const mermaidRaw = getMermaidRawInfo();
                 const headerLine = getMermaidHeaderLine(trimmed);
+                const astDiagnostics = await getMermaidAstDiagnostics(trimmed);
                 console.log("[GoToolkit][MermaidDiagnostics]", {
                     drawBundleVersion: bundleVersion,
                     isFlowchart,
@@ -586,6 +722,7 @@ class ExcalidrawBridge {
                     headerLine,
                     mermaid: mermaidInfo,
                     mermaidRaw,
+                    mermaidAst: astDiagnostics,
                     mermaidConfig,
                     parsedKeys: parsed ? Object.keys(parsed) : [],
                     elements: elements.length,
@@ -604,6 +741,30 @@ class ExcalidrawBridge {
         const hasLineElements = skeleton.some(
             (el: any) => el?.type === "line" || el?.type === "arrow"
         );
+        if (!hasLineElements && isFlowchart) {
+            const { arrows, reason } = await buildMermaidAstArrows(trimmed);
+            if (arrows.length) {
+                skeleton.push(...arrows);
+                if (isMermaidDiagnosticsEnabled()) {
+                    try {
+                        console.log("[GoToolkit][MermaidDiagnostics] ast fallback appended", {
+                            added: arrows.length,
+                            reason
+                        });
+                    } catch {
+                        // no-op
+                    }
+                }
+            } else if (isMermaidDiagnosticsEnabled()) {
+                try {
+                    console.log("[GoToolkit][MermaidDiagnostics] ast fallback found no arrows", {
+                        reason
+                    });
+                } catch {
+                    // no-op
+                }
+            }
+        }
         if (!hasLineElements && isMermaidSvgFallbackEnabled()) {
             try {
                 const mermaidApi = (window as any).mermaid;

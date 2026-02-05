@@ -4450,6 +4450,133 @@
     if (header.startsWith("pie")) return "pie";
     return "unknown";
   };
+  var getMermaidAstDiagnostics = async (code) => {
+    var _a, _b, _c, _d, _e, _f, _g;
+    try {
+      const mermaidApi = (_a = window.mermaid) == null ? void 0 : _a.mermaidAPI;
+      if (!(mermaidApi == null ? void 0 : mermaidApi.getDiagramFromText)) {
+        return { available: false };
+      }
+      const diagram = await mermaidApi.getDiagramFromText(code);
+      const parser = (_b = diagram == null ? void 0 : diagram.parser) == null ? void 0 : _b.yy;
+      const edges = (_d = (_c = parser == null ? void 0 : parser.getEdges) == null ? void 0 : _c.call(parser)) != null ? _d : null;
+      const vertices = (_f = (_e = parser == null ? void 0 : parser.getVertices) == null ? void 0 : _e.call(parser)) != null ? _f : null;
+      const edgesSample = Array.isArray(edges) && edges.length ? edges[0] : null;
+      const verticesKeys = vertices && typeof vertices === "object" ? Object.keys(vertices) : [];
+      const vertexSampleKey = verticesKeys.length ? verticesKeys[0] : null;
+      const vertexSample = vertexSampleKey ? vertices[vertexSampleKey] : null;
+      return {
+        available: true,
+        diagramType: (_g = diagram == null ? void 0 : diagram.type) != null ? _g : null,
+        edgesCount: Array.isArray(edges) ? edges.length : null,
+        verticesCount: vertices && typeof vertices === "object" ? Object.keys(vertices).length : null,
+        edgeKeys: edgesSample ? Object.keys(edgesSample) : [],
+        vertexKeys: vertexSample ? Object.keys(vertexSample) : []
+      };
+    } catch (error) {
+      return { available: false, error };
+    }
+  };
+  var getPointFromVertex = (vertex) => {
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l;
+    if (!vertex || typeof vertex !== "object") return null;
+    const x = Number((_c = (_a = vertex.x) != null ? _a : vertex.cx) != null ? _c : (_b = vertex.position) == null ? void 0 : _b.x);
+    const y = Number((_f = (_d = vertex.y) != null ? _d : vertex.cy) != null ? _f : (_e = vertex.position) == null ? void 0 : _e.y);
+    const width = Number((_i = (_g = vertex.width) != null ? _g : vertex.w) != null ? _i : (_h = vertex.size) == null ? void 0 : _h.width);
+    const height = Number((_l = (_j = vertex.height) != null ? _j : vertex.h) != null ? _l : (_k = vertex.size) == null ? void 0 : _k.height);
+    if (Number.isFinite(x) && Number.isFinite(y)) {
+      if (Number.isFinite(width) && Number.isFinite(height)) {
+        return { x: x + width / 2, y: y + height / 2 };
+      }
+      return { x, y };
+    }
+    return null;
+  };
+  var getVertexById = (vertices, id) => {
+    var _a;
+    if (!vertices || id == null) return null;
+    if (typeof id === "string" || typeof id === "number") {
+      return (_a = vertices[id]) != null ? _a : null;
+    }
+    if (typeof id === "object") {
+      return id;
+    }
+    return null;
+  };
+  var getEdgeEndpointPoint = (edge, vertices, key) => {
+    const value = edge == null ? void 0 : edge[key];
+    if (!value) return null;
+    if (typeof value === "object" && (value.x != null || value.y != null)) {
+      return getPointFromVertex(value);
+    }
+    const vertex = getVertexById(vertices, value);
+    return getPointFromVertex(vertex);
+  };
+  var normalizeEdgePoints = (edge, vertices) => {
+    var _a;
+    if (!edge || typeof edge !== "object") return [];
+    const rawPoints = edge.points || edge.path || ((_a = edge == null ? void 0 : edge.label) == null ? void 0 : _a.points);
+    if (Array.isArray(rawPoints) && rawPoints.length) {
+      const points = rawPoints.map((pt) => {
+        var _a2, _b;
+        if (Array.isArray(pt) && pt.length >= 2) {
+          const [x, y] = pt;
+          if (Number.isFinite(x) && Number.isFinite(y)) return { x, y };
+        }
+        if (pt && typeof pt === "object") {
+          const x = Number((_a2 = pt.x) != null ? _a2 : pt[0]);
+          const y = Number((_b = pt.y) != null ? _b : pt[1]);
+          if (Number.isFinite(x) && Number.isFinite(y)) return { x, y };
+        }
+        return null;
+      }).filter(Boolean);
+      if (points.length >= 2) return points;
+    }
+    const start = getEdgeEndpointPoint(edge, vertices, "start") || getEdgeEndpointPoint(edge, vertices, "from") || getEdgeEndpointPoint(edge, vertices, "source") || getEdgeEndpointPoint(edge, vertices, "v") || getEdgeEndpointPoint(edge, vertices, "id1");
+    const end = getEdgeEndpointPoint(edge, vertices, "end") || getEdgeEndpointPoint(edge, vertices, "to") || getEdgeEndpointPoint(edge, vertices, "target") || getEdgeEndpointPoint(edge, vertices, "w") || getEdgeEndpointPoint(edge, vertices, "id2");
+    if (start && end) {
+      return [start, end];
+    }
+    return [];
+  };
+  var buildMermaidAstArrows = async (code) => {
+    var _a, _b, _c, _d, _e, _f;
+    try {
+      const mermaidApi = (_a = window.mermaid) == null ? void 0 : _a.mermaidAPI;
+      if (!(mermaidApi == null ? void 0 : mermaidApi.getDiagramFromText)) {
+        return { arrows: [], reason: "no-mermaid-api" };
+      }
+      const diagram = await mermaidApi.getDiagramFromText(code);
+      const parser = (_b = diagram == null ? void 0 : diagram.parser) == null ? void 0 : _b.yy;
+      const edges = (_d = (_c = parser == null ? void 0 : parser.getEdges) == null ? void 0 : _c.call(parser)) != null ? _d : [];
+      const vertices = (_f = (_e = parser == null ? void 0 : parser.getVertices) == null ? void 0 : _e.call(parser)) != null ? _f : null;
+      if (!Array.isArray(edges) || !edges.length || !vertices) {
+        return { arrows: [], reason: "no-edges" };
+      }
+      const arrows = edges.map((edge) => {
+        const points = normalizeEdgePoints(edge, vertices);
+        if (points.length < 2) return null;
+        const start = points[0];
+        const relPoints = points.map((point) => [
+          point.x - start.x,
+          point.y - start.y
+        ]);
+        return {
+          type: "arrow",
+          x: start.x,
+          y: start.y,
+          points: relPoints,
+          strokeWidth: 2,
+          strokeStyle: "solid",
+          roundness: { type: 2 },
+          endArrowhead: "arrow"
+        };
+      }).filter(Boolean);
+      return { arrows, reason: "ok" };
+    } catch (error) {
+      return { arrows: [], reason: "error", error };
+    }
+  };
   var parseSvgPathPoints = (d) => {
     const commands = d.match(/[MLCQ][^MLCQ]*/gi) || [];
     const points = [];
@@ -4858,6 +4985,7 @@
           const mermaidInfo = getMermaidRuntimeInfo();
           const mermaidRaw = getMermaidRawInfo();
           const headerLine = getMermaidHeaderLine(trimmed);
+          const astDiagnostics = await getMermaidAstDiagnostics(trimmed);
           console.log("[GoToolkit][MermaidDiagnostics]", {
             drawBundleVersion: bundleVersion,
             isFlowchart,
@@ -4865,6 +4993,7 @@
             headerLine,
             mermaid: mermaidInfo,
             mermaidRaw,
+            mermaidAst: astDiagnostics,
             mermaidConfig,
             parsedKeys: parsed ? Object.keys(parsed) : [],
             elements: elements.length,
@@ -4883,6 +5012,28 @@
       const hasLineElements = skeleton.some(
         (el) => (el == null ? void 0 : el.type) === "line" || (el == null ? void 0 : el.type) === "arrow"
       );
+      if (!hasLineElements && isFlowchart) {
+        const { arrows, reason } = await buildMermaidAstArrows(trimmed);
+        if (arrows.length) {
+          skeleton.push(...arrows);
+          if (isMermaidDiagnosticsEnabled()) {
+            try {
+              console.log("[GoToolkit][MermaidDiagnostics] ast fallback appended", {
+                added: arrows.length,
+                reason
+              });
+            } catch (e) {
+            }
+          }
+        } else if (isMermaidDiagnosticsEnabled()) {
+          try {
+            console.log("[GoToolkit][MermaidDiagnostics] ast fallback found no arrows", {
+              reason
+            });
+          } catch (e) {
+          }
+        }
+      }
       if (!hasLineElements && isMermaidSvgFallbackEnabled()) {
         try {
           const mermaidApi = window.mermaid;
