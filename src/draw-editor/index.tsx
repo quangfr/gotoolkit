@@ -603,6 +603,20 @@ class ExcalidrawBridge {
             class: options?.class ?? {}
         };
 
+        try {
+            const mermaidApi = (window as any).mermaid;
+            if (typeof mermaidApi?.mermaidAPI?.setConfig === "function") {
+                mermaidApi.mermaidAPI.setConfig(mermaidConfig);
+            } else if (typeof mermaidApi?.initialize === "function") {
+                mermaidApi.initialize({
+                    startOnLoad: false,
+                    ...mermaidConfig
+                });
+            }
+        } catch {
+            // no-op
+        }
+
         if (isMermaidDiagnosticsEnabled()) {
             try {
                 const mermaidInfo = getMermaidRuntimeInfo();
