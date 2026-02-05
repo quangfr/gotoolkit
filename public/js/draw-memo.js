@@ -62,6 +62,27 @@ window.GoToolkitDrawMemo = (function () {
         });
     }
 
+    function resolveCacheVersion() {
+        if (window.GO_TOOLKIT_VERSION) return window.GO_TOOLKIT_VERSION;
+
+        const extractVersion = (src) => {
+            if (!src) return null;
+            try {
+                const url = new URL(src, window.location.href);
+                return url.searchParams.get("v");
+            } catch (err) {
+                return null;
+            }
+        };
+
+        const script = document.querySelector('script[src*="draw-memo.js"]') || document.currentScript;
+        const scriptVersion = extractVersion(script?.src);
+        if (scriptVersion) return scriptVersion;
+
+        const pageVersion = extractVersion(window.location.href);
+        return pageVersion || null;
+    }
+
     async function loadExcalidraw() {
         if (window.GoToolkitExcalidraw) return true;
 
@@ -78,9 +99,8 @@ window.GoToolkitDrawMemo = (function () {
 
         return new Promise((resolve, reject) => {
             const script = document.createElement('script');
-            // Use the version from the page if available, otherwise fallback
-            const version = window.GO_TOOLKIT_VERSION || '2026.01.17.7';
-            script.src = `js/draw.bundle.js?v=${version}`;
+            const version = resolveCacheVersion();
+            script.src = version ? `js/draw.bundle.js?v=${version}` : 'js/draw.bundle.js';
             script.onload = () => {
                 isLoaded = true;
                 resolve(true);
