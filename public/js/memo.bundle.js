@@ -51949,7 +51949,7 @@ ${content}</tr>
 
   // src/memo-editor/mermaid-node.tsx
   var getMermaidApi = () => window.mermaid;
-  var MermaidDiagramComponent = ({ node, updateAttributes: updateAttributes2 }) => {
+  var MermaidDiagramComponent = ({ node, updateAttributes: updateAttributes2, editor }) => {
     const [isEditing, setIsEditing] = react_shim_default.useState(false);
     const [svg, setSvg] = react_shim_default.useState("");
     const [error, setError] = react_shim_default.useState(null);
@@ -51960,6 +51960,7 @@ ${content}</tr>
     const [showToast, setShowToast] = react_shim_default.useState(false);
     const containerRef = react_shim_default.useRef(null);
     const excalidrawHostRef = react_shim_default.useRef(null);
+    const prevEditableRef = react_shim_default.useRef(null);
     const [promptInput, setPromptInput] = react_shim_default.useState("");
     const [diagramType, setDiagramType] = react_shim_default.useState("flow");
     const [isGenerating, setIsGenerating] = react_shim_default.useState(false);
@@ -52453,6 +52454,33 @@ ${promptInput.trim()}`
       window.addEventListener("keydown", handleKeyDown3);
       return () => window.removeEventListener("keydown", handleKeyDown3);
     }, [isEditing, modalError, lastValidCode]);
+    react_shim_default.useEffect(() => {
+      if (!editor) return;
+      if (isEditing) {
+        if (prevEditableRef.current === null) {
+          prevEditableRef.current = editor.isEditable;
+        }
+        try {
+          editor.setEditable(false);
+        } catch (err) {
+        }
+      } else if (prevEditableRef.current !== null) {
+        try {
+          editor.setEditable(prevEditableRef.current);
+        } catch (err) {
+        } finally {
+          prevEditableRef.current = null;
+        }
+      }
+    }, [editor, isEditing]);
+    react_shim_default.useEffect(() => {
+      if (!isEditing) return;
+      const raf = requestAnimationFrame(() => {
+        var _a;
+        (_a = excalidrawHostRef.current) == null ? void 0 : _a.focus();
+      });
+      return () => cancelAnimationFrame(raf);
+    }, [isEditing]);
     const handleCodeChange = (e) => {
       const newCode = e.target.value;
       setDraftCode(newCode);
@@ -52615,7 +52643,12 @@ ${promptInput.trim()}`
             {
               ref: excalidrawHostRef,
               className: "mermaid-modal-excalidraw-host",
-              style: { touchAction: "none", userSelect: "none" }
+              style: { touchAction: "none", userSelect: "none" },
+              tabIndex: 0,
+              onMouseDown: () => {
+                var _a;
+                return (_a = excalidrawHostRef.current) == null ? void 0 : _a.focus();
+              }
             }
           ) }),
           /* @__PURE__ */ jsxs("div", { className: "mermaid-modal-editor", children: [

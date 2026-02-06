@@ -6,7 +6,7 @@ import { Shapes, RectangleHorizontal, Square, ArrowLeftRight, Workflow, Boxes, S
 const getMermaidApi = () => (window as any).mermaid;
 
 // Mermaid Diagram Component that shows only the diagram
-const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
+const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
   const [isEditing, setIsEditing] = React.useState(false);
   const [svg, setSvg] = React.useState('');
   const [error, setError] = React.useState<string | null>(null);
@@ -17,6 +17,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
   const [showToast, setShowToast] = React.useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
   const excalidrawHostRef = React.useRef<HTMLDivElement>(null);
+  const prevEditableRef = React.useRef<boolean | null>(null);
 
   // AI Generation States
   const [promptInput, setPromptInput] = React.useState('');
@@ -604,6 +605,37 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isEditing, modalError, lastValidCode]);
 
+  React.useEffect(() => {
+    if (!editor) return;
+
+    if (isEditing) {
+      if (prevEditableRef.current === null) {
+        prevEditableRef.current = editor.isEditable;
+      }
+      try {
+        editor.setEditable(false);
+      } catch (err) {
+        // Best-effort: avoid blocking the modal if editor can't be toggled.
+      }
+    } else if (prevEditableRef.current !== null) {
+      try {
+        editor.setEditable(prevEditableRef.current);
+      } catch (err) {
+        // Best-effort restore.
+      } finally {
+        prevEditableRef.current = null;
+      }
+    }
+  }, [editor, isEditing]);
+
+  React.useEffect(() => {
+    if (!isEditing) return;
+    const raf = requestAnimationFrame(() => {
+      excalidrawHostRef.current?.focus();
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [isEditing]);
+
   const handleCodeChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newCode = e.target.value;
     setDraftCode(newCode);
@@ -794,6 +826,8 @@ const MermaidDiagramComponent = ({ node, updateAttributes }: any) => {
                   ref={excalidrawHostRef}
                   className="mermaid-modal-excalidraw-host"
                   style={{ touchAction: 'none', userSelect: 'none' }}
+                  tabIndex={0}
+                  onMouseDown={() => excalidrawHostRef.current?.focus()}
                 />
               </div>
               <div className="mermaid-modal-editor">
