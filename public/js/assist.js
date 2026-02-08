@@ -301,6 +301,8 @@
             if (lower.endsWith("/index.html")) return "index";
             if (lower.endsWith("/memo.html")) return "memo";
             if (lower.endsWith("/docs.html")) return "memo";
+            if (lower.endsWith("/memo")) return "memo";
+            if (lower.endsWith("/docs")) return "memo";
             var last = lower.split("/").filter(Boolean).slice(-1)[0] || "index";
             return last.replace(/\.html?$/, "") || "index";
         } catch (err) {
@@ -309,13 +311,13 @@
     }
 
     var CHAT_APP_ID = resolveChatAppId();
-    var CONVERSATION_ID = "chat:" + CHAT_APP_ID;
+    var DEFAULT_CONVERSATION_SCOPE = "default";
 
     function scopedKey(base) {
         return base + "." + CHAT_APP_ID;
     }
 
-    var STORAGE_KEY = scopedKey("goToolkit.chat.conversation");
+    var STORAGE_KEY = scopedKey("goToolkit.chat.conversations");
     var WIDTH_KEY = "goToolkit.chat.sidebarWidth";
     var OPEN_KEY = scopedKey("goToolkit.chat.sidebarOpen");
     var KNOWLEDGE_MODAL_OPEN_KEY = scopedKey("goToolkit.chat.knowledgeModalOpen");
@@ -357,10 +359,39 @@
         }
     }
 
-    function safeParseConversation(raw) {
+    function getConversationScopeId() {
+        if (CHAT_APP_ID !== "memo") return DEFAULT_CONVERSATION_SCOPE;
+        try {
+            var docId = (typeof global.GoToolkitMemoGetActiveDocumentId === "function"
+                ? global.GoToolkitMemoGetActiveDocumentId()
+                : null)
+                || null;
+            if (!docId) {
+                docId = (global.__memoActiveDocumentId || "").toString().trim() || null;
+            }
+            if (docId) return "doc:" + docId;
+        } catch (err) {
+            // ignore
+        }
+        return DEFAULT_CONVERSATION_SCOPE;
+    }
+
+    function getConversationScopeIdForDocument(documentId) {
+        if (CHAT_APP_ID !== "memo") return DEFAULT_CONVERSATION_SCOPE;
+        var docId = (documentId || "").toString().trim();
+        if (!docId) return getConversationScopeId();
+        return "doc:" + docId;
+    }
+
+    function buildConversationId(scopeId) {
+        var normalizedScope = (scopeId || DEFAULT_CONVERSATION_SCOPE).toString().trim() || DEFAULT_CONVERSATION_SCOPE;
+        return "chat:" + CHAT_APP_ID + ":" + normalizedScope;
+    }
+
+    function safeParseConversation(raw, expectedId) {
         try {
             var parsed = JSON.parse(raw);
-            if (parsed && parsed.id === CONVERSATION_ID && Array.isArray(parsed.messages)) {
+            if (parsed && parsed.id === expectedId && Array.isArray(parsed.messages)) {
                 return parsed;
             }
         } catch (err) {
@@ -369,19 +400,53 @@
         return null;
     }
 
-    function loadConversation() {
+    function safeParseConversationStore(raw) {
+        if (!raw) return {};
+        try {
+            var parsed = JSON.parse(raw);
+            if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+            return parsed;
+        } catch (err) {
+            return {};
+        }
+    }
+
+    function loadConversationStore() {
         try {
             var stored = global.localStorage.getItem(STORAGE_KEY);
-            var parsed = safeParseConversation(stored);
-            if (parsed) return parsed;
+            var parsed = safeParseConversationStore(stored);
+            var keys = Object.keys(parsed || {});
+            if (keys.length > 0) return parsed;
+            // Backward compatibility: old single conversation payload.
+            var legacy = safeParseConversation(stored, "chat:" + CHAT_APP_ID);
+            if (legacy) {
+                var migrated = {};
+                migrated[DEFAULT_CONVERSATION_SCOPE] = legacy;
+                return migrated;
+            }
         } catch (err) {
             console.warn("Chat conversation read failed", err);
         }
+        return {};
+    }
+
+    function createEmptyConversation(scopeId) {
         return {
-            id: CONVERSATION_ID,
+            id: buildConversationId(scopeId),
             updatedAt: Date.now(),
             messages: []
         };
+    }
+
+    function loadConversation(scopeId) {
+        var scoped = (scopeId || DEFAULT_CONVERSATION_SCOPE).toString();
+        var store = loadConversationStore();
+        var fromStore = store?.[scoped];
+        if (fromStore && Array.isArray(fromStore.messages)) {
+            if (!fromStore.id) fromStore.id = buildConversationId(scoped);
+            return fromStore;
+        }
+        return createEmptyConversation(scoped);
     }
 
     function loadOpenState() {
@@ -570,13 +635,23 @@
         return ["edit", "advice", "suggest"];
     }
 
-    function readPromptPreset() {
+    function readPromptPreset(scopeId) {
         var allowed = getAllowedPromptPresetIds();
         var defaultPreset = allowed.includes("edit") ? "edit" : (allowed[0] || "advice");
+        var scoped = (scopeId || DEFAULT_CONVERSATION_SCOPE).toString();
         try {
-            var stored = global.localStorage.getItem(PROMPT_PRESET_KEY);
-            if (stored && allowed.includes(stored)) {
-                return stored;
+            if (CHAT_APP_ID === "memo") {
+                var rawStore = global.localStorage.getItem(PROMPT_PRESET_KEY);
+                var parsedStore = safeParseConversationStore(rawStore);
+                var scopedValue = parsedStore?.[scoped];
+                if (scopedValue && allowed.includes(scopedValue)) {
+                    return scopedValue;
+                }
+            } else {
+                var stored = global.localStorage.getItem(PROMPT_PRESET_KEY);
+                if (stored && allowed.includes(stored)) {
+                    return stored;
+                }
             }
         } catch (err) {
             console.warn("Chat prompt preset read failed", err);
@@ -584,9 +659,17 @@
         return defaultPreset;
     }
 
-    function persistPromptPreset(value) {
+    function persistPromptPreset(value, scopeId) {
+        var scoped = (scopeId || DEFAULT_CONVERSATION_SCOPE).toString();
         try {
-            global.localStorage.setItem(PROMPT_PRESET_KEY, value);
+            if (CHAT_APP_ID === "memo") {
+                var rawStore = global.localStorage.getItem(PROMPT_PRESET_KEY);
+                var parsedStore = safeParseConversationStore(rawStore);
+                parsedStore[scoped] = value;
+                global.localStorage.setItem(PROMPT_PRESET_KEY, JSON.stringify(parsedStore));
+            } else {
+                global.localStorage.setItem(PROMPT_PRESET_KEY, value);
+            }
         } catch (err) {
             console.warn("Chat prompt preset save failed", err);
         }
@@ -604,9 +687,12 @@
         return (safeReadLocalStorage(key) || "").trim();
     }
 
-    function persistConversation(conversation) {
+    function persistConversation(conversation, scopeId) {
+        var scoped = (scopeId || DEFAULT_CONVERSATION_SCOPE).toString();
         try {
-            var payload = JSON.stringify(conversation);
+            var store = loadConversationStore();
+            store[scoped] = conversation;
+            var payload = JSON.stringify(store);
             global.localStorage.setItem(STORAGE_KEY, payload);
         } catch (err) {
             console.warn("Chat conversation save failed", err);
@@ -1404,7 +1490,8 @@
         this.scrollButton = null;
         this.page = null;
         this.sidebarWidth = readWidth();
-        this.conversation = loadConversation();
+        this.currentConversationScopeId = getConversationScopeId();
+        this.conversation = loadConversation(this.currentConversationScopeId);
         this.isOpen = loadOpenState();
         this.isStreaming = false;
         this.controller = null;
@@ -1446,7 +1533,7 @@
         this.previewPdfUrl = null;
         this.pendingPdfHighlight = null;
         this.currentPreviewDoc = null;
-        this.promptPresetId = readPromptPreset();
+        this.promptPresetId = readPromptPreset(this.currentConversationScopeId);
         this.undoState = null;
         this.latestRestoreMessageId = null;
         this.inlinePromptDropdownButton = null;
@@ -1534,7 +1621,47 @@
 
     AssistSidebar.prototype.persist = function () {
         this.conversation.updatedAt = Date.now();
-        persistConversation(this.conversation);
+        persistConversation(this.conversation, this.currentConversationScopeId);
+    };
+
+    AssistSidebar.prototype.syncScopeFromActiveDocument = function (options) {
+        var opts = options || {};
+        var nextScopeId = getConversationScopeIdForDocument(opts.documentId);
+        if (!opts.force && nextScopeId === this.currentConversationScopeId) {
+            return false;
+        }
+
+        this.currentConversationScopeId = nextScopeId;
+        this.conversation = loadConversation(this.currentConversationScopeId);
+        this.promptPresetId = readPromptPreset(this.currentConversationScopeId);
+        this.messageNodes = {};
+        this.activeEdit = null;
+        this.latestRestoreMessageId = null;
+        this.undoState = null;
+
+        var restoredAttachments = this.conversation?.attachments;
+        this.pendingDocumentAttachments = Array.isArray(restoredAttachments?.names)
+            ? restoredAttachments.names.filter(Boolean)
+            : [];
+        this.pendingExcludedAttachments = new Set(
+            Array.isArray(restoredAttachments?.excluded)
+                ? restoredAttachments.excluded.filter(Boolean)
+                : []
+        );
+        this.clearAttachmentProgress();
+
+        if (this.messagesEl) {
+            this.messagesEl.innerHTML = "";
+            this.renderInitialMessages();
+        }
+        this.updatePromptDropdownLabel();
+        this.updateInlinePromptDropdownLabel();
+        this.updateInputPlaceholder();
+        this.updateComposerState();
+        this.updateHeaderDocumentCount();
+        this.refreshDocumentStats();
+        this.renderPendingDocumentAttachments();
+        return true;
     };
 
     AssistSidebar.prototype.persistPendingAttachments = function () {
@@ -1663,11 +1790,7 @@
         if (this.docManager) {
             this.docManager.deleteDocumentsBySourceTypes(this.conversation.id, ["context"]).catch(function () { /* ignore */ });
         }
-        this.conversation = {
-            id: CONVERSATION_ID,
-            updatedAt: Date.now(),
-            messages: []
-        };
+        this.conversation = createEmptyConversation(this.currentConversationScopeId);
         this.messageNodes = {};
         this.setPendingDocumentAttachments([]);
         if (this.messagesEl) {
@@ -2608,7 +2731,7 @@
         var prevPreset = this.promptPresetId;
         var next = allowed.includes(presetId) ? presetId : (allowed[0] || "advice");
         this.promptPresetId = next;
-        persistPromptPreset(next);
+        persistPromptPreset(next, this.currentConversationScopeId);
         try {
             if (global.document && typeof global.CustomEvent === "function") {
                 global.document.dispatchEvent(new global.CustomEvent("goToolkitChatPromptPresetChanged", {
@@ -3470,6 +3593,7 @@
 
     AssistSidebar.prototype.handleSend = async function (options) {
         options = options || {};
+        this.syncScopeFromActiveDocument();
         if (this.isStreaming) return;
         if (!this.textarea && !options.editMessage) return;
         var rawValue = (typeof options.value === "string" ? options.value : this.textarea?.value || "");
@@ -3647,14 +3771,28 @@
         this.controller = controller;
 
         var payload = this.buildPayload(systemPrompt, userMessage, docInfo);
-        recordChatAIInHistory(payload, this.conversation?.id);
-        var requestTokenEstimate = estimatePayloadTokens(payload);
         var self = this;
+        var conversationScopeId = this.currentConversationScopeId;
+        var conversationRef = this.conversation;
+        var conversationId = conversationRef?.id || null;
+        var persistScoped = function () {
+            if (!conversationRef) return;
+            conversationRef.updatedAt = Date.now();
+            persistConversation(conversationRef, conversationScopeId);
+        };
+        var throttledPersistScoped = throttle(persistScoped, 500);
+        var isActiveScope = function () {
+            return self.currentConversationScopeId === conversationScopeId;
+        };
+        recordChatAIInHistory(payload, conversationId);
+        var requestTokenEstimate = estimatePayloadTokens(payload);
         var appendBotMessageIfNeeded = function () {
             if (botMessageAppended) return;
             botMessageAppended = true;
-            self.conversation.messages.push(botMessage);
-            self.appendMessage(botMessage);
+            conversationRef?.messages?.push(botMessage);
+            if (isActiveScope()) {
+                self.appendMessage(botMessage);
+            }
         };
 
         function extractContent(buffer) {
@@ -3714,13 +3852,15 @@
                     botMessage.content = partial;
                 }
             }
-            self.updateBotMessage(botMessage);
-            var liveEntry = self.messageNodes[botMessage.id];
-            if (liveEntry && liveEntry.contentEl) {
-                liveEntry.contentEl.innerHTML = renderBotMarkdown(botMessage.content || "");
-                addCopyButtonsToChatContent(liveEntry.contentEl);
+            if (isActiveScope()) {
+                self.updateBotMessage(botMessage);
+                var liveEntry = self.messageNodes[botMessage.id];
+                if (liveEntry && liveEntry.contentEl) {
+                    liveEntry.contentEl.innerHTML = renderBotMarkdown(botMessage.content || "");
+                    addCopyButtonsToChatContent(liveEntry.contentEl);
+                }
             }
-            self.throttledPersist();
+            throttledPersistScoped();
         }
 
         var requestStart = 0;
@@ -3748,7 +3888,7 @@
                 responseText: resultText,
                 usage: resultUsage,
                 parsedResponse: parsed
-            }, this.conversation?.id);
+            }, conversationId);
             botMessage.content = parsed.content;
             botMessage.references = parsed.references;
             botMessage.suggestions = parsed.suggestions;
@@ -3796,8 +3936,10 @@
                     botMessage.content += " [Document régénéré.]";
                 }
             }
-            this.updateBotMessage(botMessage);
-            this.persist();
+            if (isActiveScope()) {
+                this.updateBotMessage(botMessage);
+            }
+            persistScoped();
         } catch (err) {
             var isAbort = err?.name === "AbortError";
             var responseMs = Math.round(performance.now() - (requestStart || performance.now()));
@@ -3818,8 +3960,10 @@
                 responseTokens: estimateTokenCount(botMessage.content || "")
             };
             appendBotMessageIfNeeded();
-            this.updateBotMessage(botMessage);
-            this.persist();
+            if (isActiveScope()) {
+                this.updateBotMessage(botMessage);
+            }
+            persistScoped();
         } finally {
             stopCharacterCounterToaster();
             this.isStreaming = false;
@@ -3834,7 +3978,9 @@
                 }
             }
             if (botMessage) {
-                this.updateBotMessage(botMessage);
+                if (isActiveScope()) {
+                    this.updateBotMessage(botMessage);
+                }
             }
         }
     };
@@ -9563,7 +9709,7 @@
             return;
         }
         if (!this.buildUI()) return;
-        this.renderInitialMessages();
+        this.syncScopeFromActiveDocument({ force: true });
         this.updateComposerState();
         this.refreshMemoContextAttachments();
         if (this.docManager) {
@@ -9578,6 +9724,10 @@
             this.applyPagePadding();
             this.updateSidebarWidthVar();
         });
+        document.addEventListener("goToolkitMemoActiveDocumentChanged", function (event) {
+            var docId = event?.detail?.documentId || null;
+            this.syncScopeFromActiveDocument({ documentId: docId });
+        }.bind(this));
         this.ensureKnowledgeIndexWarm();
     };
 
