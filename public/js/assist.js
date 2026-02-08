@@ -959,7 +959,8 @@
                 isLooping: false,
                 originalDuration: 0,
                 iconName: "bot",
-                label: ""
+                label: "",
+                scopeId: null
             };
         }
         return aiCounterToasterState[id];
@@ -1020,12 +1021,26 @@
         state.originalDuration = durationMs;
         state.iconName = iconName;
         state.label = label;
+        state.scopeId = options.scopeId || null;
 
         toastNodes.toasterEl.classList.add("visible");
         toastNodes.toasterEl.style.display = "";
 
         var updateCounter = function () {
             if (!state.isRunning) return;
+
+            // Visibility check: only show if the toaster's scope is currently active
+            var currentScopeId = window.GoToolkitAssistInstance?.currentConversationScopeId;
+            var isVisible = !state.scopeId || !currentScopeId || state.scopeId === currentScopeId;
+            if (toastNodes.toasterEl) {
+                if (isVisible) {
+                    toastNodes.toasterEl.style.display = "";
+                    toastNodes.toasterEl.classList.add("visible");
+                } else {
+                    toastNodes.toasterEl.style.display = "none";
+                    toastNodes.toasterEl.classList.remove("visible");
+                }
+            }
 
             var secondsRemaining = Math.ceil(state.remaining / 1000);
             var minutes = Math.floor(secondsRemaining / 60);
@@ -1070,6 +1085,7 @@
         }
         state.isRunning = false;
         state.remaining = 0;
+        state.scopeId = null;
     }
 
     global.GoToolkitAIRequestToaster = {
@@ -1495,6 +1511,7 @@
         this.isOpen = loadOpenState();
         this.isStreaming = false;
         this.controller = null;
+        this.scopeRuntimeState = new Map();
         this.messageNodes = {};
         this.throttledPersist = throttle(this.persist.bind(this), 500);
         this.docManager = global.GoToolkitDocumentManager;
@@ -1661,7 +1678,29 @@
         this.updateHeaderDocumentCount();
         this.refreshDocumentStats();
         this.renderPendingDocumentAttachments();
+        this.refreshAiRequestToaster?.();
         return true;
+    };
+
+    AssistSidebar.prototype.refreshAiRequestToaster = function () {
+        if (typeof aiCounterToasterState === "undefined") return;
+        for (var id in aiCounterToasterState) {
+            var toasterState = aiCounterToasterState[id];
+            if (toasterState.isRunning) {
+                var toastNodes = ensureAiRequestToaster(id);
+                var currentScopeId = this.currentConversationScopeId;
+                var isVisible = !toasterState.scopeId || !currentScopeId || toasterState.scopeId === currentScopeId;
+                if (toastNodes?.toasterEl) {
+                    if (isVisible) {
+                        toastNodes.toasterEl.style.display = "";
+                        toastNodes.toasterEl.classList.add("visible");
+                    } else {
+                        toastNodes.toasterEl.style.display = "none";
+                        toastNodes.toasterEl.classList.remove("visible");
+                    }
+                }
+            }
+        }
     };
 
     AssistSidebar.prototype.persistPendingAttachments = function () {
@@ -1774,14 +1813,54 @@
         if (global.lucide) global.lucide.createIcons();
     };
 
-    AssistSidebar.prototype.abortStream = function () {
-        if (this.controller) {
-            try {
-                this.controller.abort();
-            } catch (err) { /* ignore */ }
-            this.controller = null;
+    AssistSidebar.prototype.getScopeRuntimeState = function (scopeId) {
+        var normalizedScope = (scopeId || DEFAULT_CONVERSATION_SCOPE).toString();
+        if (!this.scopeRuntimeState.has(normalizedScope)) {
+            this.scopeRuntimeState.set(normalizedScope, {
+                isStreaming: false,
+                isSendBusy: false,
+                controller: null
+            });
         }
-        this.isStreaming = false;
+        return this.scopeRuntimeState.get(normalizedScope);
+    };
+
+    AssistSidebar.prototype.refreshLegacyStreamingPointers = function () {
+        var scopeId = this.currentConversationScopeId || getConversationScopeId();
+        var state = this.getScopeRuntimeState(scopeId);
+        this.isStreaming = Boolean(state.isStreaming);
+        this.controller = state.controller || null;
+    };
+
+    AssistSidebar.prototype.setScopeStreamingState = function (scopeId, nextStreaming, nextController) {
+        var state = this.getScopeRuntimeState(scopeId);
+        state.isStreaming = Boolean(nextStreaming);
+        if (state.isStreaming) {
+            state.controller = nextController || state.controller || null;
+        } else {
+            state.controller = null;
+        }
+        this.refreshLegacyStreamingPointers();
+    };
+
+    AssistSidebar.prototype.setScopeSendBusyState = function (scopeId, nextBusy) {
+        var state = this.getScopeRuntimeState(scopeId);
+        state.isSendBusy = Boolean(nextBusy);
+        this.refreshLegacyStreamingPointers();
+    };
+
+    AssistSidebar.prototype.abortStream = function () {
+        var scopeId = this.currentConversationScopeId || getConversationScopeId();
+        var state = this.getScopeRuntimeState(scopeId);
+        if (state.controller) {
+            try {
+                state.controller.abort();
+            } catch (err) { /* ignore */ }
+            state.controller = null;
+        }
+        state.isStreaming = false;
+        state.isSendBusy = false;
+        this.refreshLegacyStreamingPointers();
         this.updateComposerState();
     };
 
@@ -1804,15 +1883,27 @@
 
     AssistSidebar.prototype.updateComposerState = function () {
         var hasText = Boolean(this.textarea && this.textarea.value.trim());
+        var scopeId = this.currentConversationScopeId || getConversationScopeId();
+        var state = this.getScopeRuntimeState(scopeId);
+        var isStreaming = Boolean(state.isStreaming);
+        var isSendBusy = Boolean(state.isSendBusy);
+        var shouldShowBusyIcon = isStreaming || isSendBusy;
+        var isInputBlocked = isStreaming || isSendBusy;
+
         if (this.sendButton) {
-            this.sendButton.disabled = this.isStreaming || !hasText;
+            this.sendButton.innerHTML = shouldShowBusyIcon
+                ? `<i data-lucide="loader-2" class="lucide-spin" style="width:16px;height:16px;"></i>`
+                : (this.sendButtonBaseLabel || `<i data-lucide="send" style="width:16px;height:16px;"></i>`);
+            this.sendButton.disabled = isInputBlocked || !hasText;
         }
         if (this.textarea) {
-            this.textarea.readOnly = this.isStreaming;
+            this.textarea.readOnly = isInputBlocked;
         }
         if (this.clearButton) {
-            this.clearButton.disabled = this.isStreaming;
+            this.clearButton.disabled = isInputBlocked;
         }
+        this.refreshLegacyStreamingPointers();
+        if (window.lucide) window.lucide.createIcons();
     };
 
     AssistSidebar.prototype.clearAttachments = function () {
@@ -2034,7 +2125,7 @@
             entry = this.messageNodes[message.id];
         }
         if (!entry || !entry.contentEl) return;
-        if (this.isStreaming) {
+        if (message?._isStreaming) {
             entry.contentEl.textContent = message.content || "";
         } else {
             entry.contentEl.innerHTML = this.renderBotContent(message);
@@ -2339,7 +2430,8 @@
 
     AssistSidebar.prototype.handleEditPrompt = function (message) {
         if (!message || message.role !== "user") return;
-        if (this.isStreaming) {
+        var scopeId = this.currentConversationScopeId || getConversationScopeId();
+        if (this.getScopeRuntimeState(scopeId).isStreaming) {
             this.abortStream?.();
         }
         if (this.activeEdit && this.activeEdit.message?.id !== message.id) {
@@ -2632,7 +2724,8 @@
 
     AssistSidebar.prototype.handleSuggestionClick = function (text) {
         if (!text || !this.textarea) return;
-        if (this.isStreaming) return;
+        var scopeId = this.currentConversationScopeId || getConversationScopeId();
+        if (this.getScopeRuntimeState(scopeId).isStreaming) return;
         this.textarea.value = text;
         this.handleInputResize();
         this.updateComposerState();
@@ -3594,7 +3687,8 @@
     AssistSidebar.prototype.handleSend = async function (options) {
         options = options || {};
         this.syncScopeFromActiveDocument();
-        if (this.isStreaming) return;
+        var conversationScopeId = this.currentConversationScopeId || getConversationScopeId();
+        if (this.getScopeRuntimeState(conversationScopeId).isStreaming) return;
         if (!this.textarea && !options.editMessage) return;
         var rawValue = (typeof options.value === "string" ? options.value : this.textarea?.value || "");
         var value = rawValue.trim();
@@ -3660,8 +3754,8 @@
         }
 
         // Visual feedback immediately
-        this.setSendButtonBusy(true);
-        this.isStreaming = true;
+        this.setScopeSendBusyState(conversationScopeId, true);
+        this.setScopeStreamingState(conversationScopeId, true, null);
         this.updateComposerState();
 
         var userMessage = isInlineEdit ? options.editMessage : createMessage("user", value);
@@ -3719,6 +3813,7 @@
         this.persist();
 
         var botMessage = createMessage("bot", "...");
+        botMessage._isStreaming = true;
         botMessage.references = [];
         botMessage.suggestions = [];
         // Pre-append a placeholder bubble so the user sees activity immediately.
@@ -3736,8 +3831,9 @@
             }
         }
 
+        var requestPromptPresetId = this.promptPresetId;
         var systemPrompt = this.getActiveSystemPrompt();
-        var shouldFetchKnowledge = shouldIncludeKnowledgeForPreset(this.promptPresetId);
+        var shouldFetchKnowledge = shouldIncludeKnowledgeForPreset(requestPromptPresetId);
         var docInfo = null;
 
         if (this.docManager) {
@@ -3768,11 +3864,10 @@
         }
 
         var controller = new AbortController();
-        this.controller = controller;
+        this.setScopeStreamingState(conversationScopeId, true, controller);
 
         var payload = this.buildPayload(systemPrompt, userMessage, docInfo);
         var self = this;
-        var conversationScopeId = this.currentConversationScopeId;
         var conversationRef = this.conversation;
         var conversationId = conversationRef?.id || null;
         var persistScoped = function () {
@@ -3812,19 +3907,8 @@
             return tail.slice(0, closing);
         }
 
-        var snapshotDocId = userMessage?.docSnapshotId;
-        var didActivateSnapshot = false;
-
         function handleChunk(chunk) {
-            if (!didActivateSnapshot && snapshotDocId && typeof global.setMemoActiveTab === "function") {
-                var activeId = (typeof global.getMemoActiveTabId === "function" ? global.getMemoActiveTabId() : null)
-                    || window.__memoState?.activeTabId
-                    || null;
-                if (activeId !== snapshotDocId) {
-                    global.setMemoActiveTab(snapshotDocId);
-                }
-                didActivateSnapshot = true;
-            }
+            botMessage._isStreaming = true;
             botMessage._jsonBuffer = (botMessage._jsonBuffer || "") + chunk;
             var parsed = null;
             try {
@@ -3867,7 +3951,7 @@
         try {
             // Calculate total payload token count and start toaster
             var totalPayloadTokens = estimatePayloadTokens(payload);
-            startCharacterCounterToaster(totalPayloadTokens);
+            startCharacterCounterToaster(totalPayloadTokens, { scopeId: conversationScopeId });
 
             requestStart = performance.now();
             var result = await global.GoToolkitIA.chatCompletion({
@@ -3898,20 +3982,49 @@
                 responseTokens: resultUsage?.completion_tokens || estimateTokenCount(parsed.content || botMessage.content || ""),
                 cost: resultUsage?.cost
             };
-            if (this.promptPresetId === "edit" || this.promptPresetId === "suggest") {
+            botMessage._isStreaming = false;
+            if (requestPromptPresetId === "edit" || requestPromptPresetId === "suggest") {
                 var applied = false;
                 if (parsed.output) {
-                    if (this.promptPresetId === "edit" && typeof window.insertEditorMarkdownAtEnd === "function") {
-                        window.insertEditorMarkdownAtEnd(parsed.output);
-                        applied = true;
-                    } else if (typeof window.setEditorMarkdown === "function") {
-                        window.setEditorMarkdown(parsed.output);
-                        applied = true;
-                    } else if (typeof window.setEditorContent === "function") {
+                    if (requestPromptPresetId === "edit") {
+                        if (isActiveScope()) {
+                            if (typeof window.insertEditorMarkdownAtEnd === "function") {
+                                window.insertEditorMarkdownAtEnd(parsed.output);
+                                applied = true;
+                            }
+                        } else {
+                            var targetDocId = conversationScopeId.startsWith("doc:") ? conversationScopeId.substring(4) : null;
+                            var targetTabId = null;
+                            if (targetDocId && typeof window.GoToolkitMemoGetDocumentActiveTabId === "function") {
+                                targetTabId = window.GoToolkitMemoGetDocumentActiveTabId(targetDocId);
+                            }
+                            if (targetTabId && window.GoToolkitMemoInstance?.applyOutputTo) {
+                                window.GoToolkitMemoInstance.applyOutputTo(targetTabId, parsed.output, "edit");
+                                applied = true;
+                            }
+                        }
+                    } else if (requestPromptPresetId === "suggest") {
+                        if (isActiveScope()) {
+                            if (typeof window.setEditorMarkdown === "function") {
+                                window.setEditorMarkdown(parsed.output);
+                                applied = true;
+                            }
+                        } else {
+                            var targetDocId = conversationScopeId.startsWith("doc:") ? conversationScopeId.substring(4) : null;
+                            var targetTabId = null;
+                            if (targetDocId && typeof window.GoToolkitMemoGetDocumentActiveTabId === "function") {
+                                targetTabId = window.GoToolkitMemoGetDocumentActiveTabId(targetDocId);
+                            }
+                            if (targetTabId && window.GoToolkitMemoInstance?.applyOutputTo) {
+                                window.GoToolkitMemoInstance.applyOutputTo(targetTabId, parsed.output, "suggest");
+                                applied = true;
+                            }
+                        }
+                    } else if (typeof window.setEditorContent === "function" && isActiveScope()) {
                         window.setEditorContent(parsed.output);
                         applied = true;
                     }
-                } else if (parsed.operations && parsed.operations.length && typeof window.setEditorContent === "function") {
+                } else if (parsed.operations && parsed.operations.length && typeof window.setEditorContent === "function" && isActiveScope()) {
                     // Backward compatibility: apply legacy character-index operations.
                     var currentContent = window.getEditorContent();
                     var reversedOps = parsed.operations.slice().reverse();
@@ -3959,6 +4072,7 @@
                 requestTokens: requestTokenEstimate,
                 responseTokens: estimateTokenCount(botMessage.content || "")
             };
+            botMessage._isStreaming = false;
             appendBotMessageIfNeeded();
             if (isActiveScope()) {
                 this.updateBotMessage(botMessage);
@@ -3966,11 +4080,10 @@
             persistScoped();
         } finally {
             stopCharacterCounterToaster();
-            this.isStreaming = false;
-            this.controller = null;
+            botMessage._isStreaming = false;
+            this.setScopeStreamingState(conversationScopeId, false, null);
+            this.setScopeSendBusyState(conversationScopeId, false);
             this.updateComposerState();
-            // Always restore send button after AI response
-            this.setSendButtonBusy(false);
             if (this.importInProgress) {
                 this.importInProgress = false;
                 if (CHAT_APP_ID === "memo") {
@@ -5198,6 +5311,7 @@
 
         var memoId = this.getActiveMemoId();
         var tabId = memoId || null;
+        var uiScopeId = this.currentConversationScopeId || getConversationScopeId();
         var createdImportBubble = false;
         var hadMediaTranscription = false;
         var didSendAI = false;
@@ -5229,7 +5343,7 @@
 
         try {
             this.importInProgress = true;
-            this.setSendButtonBusy(true);
+            this.setSendButtonBusy(true, { scopeId: uiScopeId });
 
             // Hide generic toast for memo import (skipEmbeddings)
             if (CHAT_APP_ID === "memo" && !skipEmbeddings) {
@@ -5295,7 +5409,7 @@
             if (mediaFiles.length) {
                 hadMediaTranscription = true;
                 this.deferSendButtonRestoreUntilAI = true;
-                this.setTranscriptionUiState(true);
+                this.setTranscriptionUiState(true, { scopeId: uiScopeId });
                 var mediaNames = mediaFiles.map(function (file) { return file?.name || ""; }).filter(Boolean);
 
                 if (!skipEmbeddings) {
@@ -5657,11 +5771,11 @@
         } finally {
             if (hadMediaTranscription && !didSendAI) {
                 this.deferSendButtonRestoreUntilAI = false;
-                this.setTranscriptionUiState(false);
+                this.setTranscriptionUiState(false, { scopeId: uiScopeId });
             }
             if (this.importInProgress && !didSendAI) {
                 this.importInProgress = false;
-                this.setSendButtonBusy(false);
+                this.setSendButtonBusy(false, { scopeId: uiScopeId });
                 if (CHAT_APP_ID === "memo") {
                     window.GoToolkitMemoToast?.("");
                 }
@@ -6089,27 +6203,20 @@
         return "";
     };
 
-    AssistSidebar.prototype.setSendButtonBusy = function (isBusy) {
-        if (!this.sendButton) return;
-        if (isBusy) {
-            this.sendButton.disabled = true;
-            this.sendButton.innerHTML = `<i data-lucide="loader-2" class="lucide-spin" style="width:16px;height:16px;"></i>`;
-            if (window.lucide) window.lucide.createIcons();
-            return;
-        }
-        this.sendButton.innerHTML = this.sendButtonBaseLabel || `<i data-lucide="send" style="width:16px;height:16px;"></i>`;
+    AssistSidebar.prototype.setSendButtonBusy = function (isBusy, options) {
+        var scopeId = options?.scopeId || this.currentConversationScopeId || getConversationScopeId();
+        this.setScopeSendBusyState(scopeId, Boolean(isBusy));
         this.updateComposerState();
-        if (window.lucide) window.lucide.createIcons();
     };
 
-    AssistSidebar.prototype.setTranscriptionUiState = function (active) {
+    AssistSidebar.prototype.setTranscriptionUiState = function (active, options) {
         this.mediaTranscriptionActive = Boolean(active);
         if (!active) {
             this.mediaUploadCount = 0;
             this.mediaTranscribedCount = 0;
             this.mediaTotalCount = 0;
         }
-        this.setSendButtonBusy(Boolean(active));
+        this.setSendButtonBusy(Boolean(active), options);
     };
 
     AssistSidebar.prototype.handleDocumentFilesSelected = function (event) {
@@ -6124,7 +6231,8 @@
             this.setDocumentUploadStatus("Gestion des documents indisponible.");
             return;
         }
-        this.setSendButtonBusy(true);
+        var uiScopeId = this.currentConversationScopeId || getConversationScopeId();
+        this.setSendButtonBusy(true, { scopeId: uiScopeId });
         var fileArray = Array.from(files);
         if (!fileArray.length) return;
         var originalFiles = fileArray.slice();
@@ -6157,7 +6265,7 @@
         });
         if (mediaFiles.length) {
             hadMediaTranscription = true;
-            this.setTranscriptionUiState(true);
+            this.setTranscriptionUiState(true, { scopeId: uiScopeId });
             this.setDocumentUploadStatus("Transcription audio/vidéo en cours…");
             try {
                 var transcriptResult = await this.prepareMediaTranscripts(mediaFiles, {
@@ -6319,10 +6427,10 @@
             this.setPendingDocumentAttachments([]);
         } finally {
             if (hadMediaTranscription) {
-                this.setTranscriptionUiState(false);
+                this.setTranscriptionUiState(false, { scopeId: uiScopeId });
             }
             if (this.documentsFileInput) this.documentsFileInput.disabled = false;
-            this.setSendButtonBusy(false);
+            this.setSendButtonBusy(false, { scopeId: uiScopeId });
         }
     };
 
@@ -8713,6 +8821,7 @@
 
     AssistSidebar.prototype.sendAIRequest = function (payload) {
         var self = this;
+        var requestScopeId = this.currentConversationScopeId || getConversationScopeId();
 
         // Avoid sending the same payload twice in quick succession or while in-flight
         var payloadJson = JSON.stringify(payload || {});
@@ -8727,7 +8836,7 @@
         this._lastPayloadAt = now;
         this._inFlightPayloadHash = payloadHash;
 
-        this.setSendButtonBusy(true);
+        this.setSendButtonBusy(true, { scopeId: requestScopeId });
 
         // Calculate total payload byte count and check size limit
         var payloadBytes = new Blob([payloadJson]).size;
@@ -8755,7 +8864,7 @@
 
         // Determine if it's an import to enable looping and custom duration
         var isImportRequest = payload.system && payload.system.includes("Importer le DOCUMENT");
-        startCharacterCounterToaster(totalPayloadChars / 4, { isImport: isImportRequest });
+        startCharacterCounterToaster(totalPayloadChars / 4, { isImport: isImportRequest, scopeId: requestScopeId });
 
         // Créer un message bot provisoire pour la réponse
         var botMessage = {
@@ -8871,10 +8980,10 @@
             self.scrollToBottom();
             self.persist();
             stopCharacterCounterToaster();
-            self.setSendButtonBusy(false);
+            self.setSendButtonBusy(false, { scopeId: requestScopeId });
             if (self.deferSendButtonRestoreUntilAI) {
                 self.deferSendButtonRestoreUntilAI = false;
-                self.setTranscriptionUiState(false);
+                self.setTranscriptionUiState(false, { scopeId: requestScopeId });
             }
             if (self.importInProgress) {
                 self.importInProgress = false;
@@ -8895,10 +9004,10 @@
                 self.syncBotExtras?.(messageEntry, botMessage);
             }
             stopCharacterCounterToaster();
-            self.setSendButtonBusy(false);
+            self.setSendButtonBusy(false, { scopeId: requestScopeId });
             if (self.deferSendButtonRestoreUntilAI) {
                 self.deferSendButtonRestoreUntilAI = false;
-                self.setTranscriptionUiState(false);
+                self.setTranscriptionUiState(false, { scopeId: requestScopeId });
             }
             if (self.importInProgress) {
                 self.importInProgress = false;
@@ -9750,7 +9859,8 @@
             return;
         }
 
-        assistInstance.setSendButtonBusy(true);
+        const inlineScopeId = assistInstance.currentConversationScopeId || getConversationScopeId();
+        assistInstance.setSendButtonBusy(true, { scopeId: inlineScopeId });
 
         let botMessage = null;
 
@@ -9951,7 +10061,7 @@
                     }
                 });
             }
-            startCharacterCounterToaster(totalPayloadChars);
+            startCharacterCounterToaster(totalPayloadChars, { scopeId: inlineScopeId });
 
             // 5. Appeler l'IA
             const rawResponse = await window.GoToolkitIA?.chatCompletion({
@@ -10203,7 +10313,7 @@
                 }
             }
         } finally {
-            assistInstance.setSendButtonBusy(false);
+            assistInstance.setSendButtonBusy(false, { scopeId: inlineScopeId });
         }
     }
 

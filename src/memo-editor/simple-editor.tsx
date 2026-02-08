@@ -2723,7 +2723,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         (window as any)._memoSaveTimeout = setTimeout(() => {
           const innerStart = performance.now();
           const html = editor.getHTML();
-          onChange(html);
+          onChange(html, editorId);
           const duration = Math.round(performance.now() - innerStart);
           if (duration > 50) {
              console.warn(`[SimpleEditor] debounced onChange: getHTML/onChange took ${duration}ms`);

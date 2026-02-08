@@ -55280,7 +55280,7 @@ ${promptInput.trim()}`
           window._memoSaveTimeout = setTimeout(() => {
             const innerStart = performance.now();
             const html2 = editor2.getHTML();
-            onChange(html2);
+            onChange(html2, editorId);
             const duration = Math.round(performance.now() - innerStart);
             if (duration > 50) {
               console.warn(`[SimpleEditor] debounced onChange: getHTML/onChange took ${duration}ms`);
@@ -57619,8 +57619,8 @@ ${innerMarkdown}
       handleEditorReady(editor.id, methods);
     }, [editor.id, handleEditorReady]);
     const onChange = react_shim_default.useCallback((newContent, id) => {
-      if (onChangeCb) onChangeCb(newContent, id);
-    }, [onChangeCb]);
+      if (onChangeCb) onChangeCb(newContent, id || editor.id);
+    }, [editor.id, onChangeCb]);
     return /* @__PURE__ */ jsx(
       "div",
       {
@@ -57739,6 +57739,19 @@ ${innerMarkdown}
             const next2 = { ...prev };
             delete next2[id];
             return next2;
+          });
+        },
+        applyOutputTo: (id, output, mode) => {
+          setEditors((prev) => {
+            const editor = prev[id];
+            if (editor && editor.methods) {
+              if (mode === "edit" && typeof editor.methods.insertMarkdownAtEnd === "function") {
+                editor.methods.insertMarkdownAtEnd(output);
+              } else if (mode === "suggest" && typeof editor.methods.setMarkdown === "function") {
+                editor.methods.setMarkdown(output);
+              }
+            }
+            return { ...prev };
           });
         }
       };
@@ -57912,3 +57925,4 @@ docx/dist/index.mjs:
    *)
   (*! http://mths.be/fromcodepoint v0.1.0 by @mathias *)
 */
+//# sourceMappingURL=memo.bundle.js.map

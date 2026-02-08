@@ -59,6 +59,12 @@ Only `public/js` may touch `window`:
 - Excalidraw bridge: `src/draw-editor/index.tsx` forces light theme, normalizes Mermaid, exposes `window.GoToolkitExcalidraw`.
 - Docs bridge: `src/memo-bridge/index.tsx` exposes the Docs editor API to `window`.
 - When modifying memo-editor (memo) or draw-editor (connect), run an npm build for the corresponding component after changes.
+- **Playwright (WSL anti-hang)**:
+  - If Playwright hangs on startup in WSL (`playwright --version` or tests), run tests from Linux FS (e.g. `~/work/gotoolkit`), not `/mnt/c/...`.
+  - Sync repo to Linux FS: `rsync -a --delete --exclude node_modules --exclude .git /mnt/c/Users/<you>/Documents/Github/gotoolkit/ ~/work/gotoolkit/`
+  - Install deps in Linux FS copy: `cd ~/work/gotoolkit && npm ci`
+  - Run Playwright with local binary (avoid `npx`): `./node_modules/.bin/playwright test <spec> --workers=1 --reporter=line`
+  - Keep server startup simple: `npm start` should use `serve` directly (no `npx serve ...`) to avoid WSL process stalls.
 
 ## Workers env
 - `workers/openai-proxy`: `OPENAI_API_KEY` + KV `RATE_LIMIT`.

@@ -26,6 +26,20 @@ test.describe("Assist OCR handwritten image", () => {
     await page.setInputFiles("#ocrTestInput", filePath);
 
     const metrics = await page.evaluate(async () => {
+      const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> => {
+        let timer: ReturnType<typeof setTimeout> | null = null;
+        try {
+          return await Promise.race([
+            promise,
+            new Promise<T>((_, reject) => {
+              timer = setTimeout(() => reject(new Error(`${label} timeout after ${timeoutMs}ms`)), timeoutMs);
+            })
+          ]);
+        } finally {
+          if (timer) clearTimeout(timer);
+        }
+      };
+
       const estimateTokens = (text: string) => {
         const raw = (text || "").toString();
         if (!raw) return 0;
@@ -43,7 +57,7 @@ test.describe("Assist OCR handwritten image", () => {
 
       (window as any).__ocrMetrics = {};
       const start = performance.now();
-      const result = await docManager.extractText(file);
+      const result = await withTimeout(docManager.extractText(file), 45_000, "offline-ocr");
       const end = performance.now();
       const tesseractText = (result?.text || "").trim();
 
@@ -53,6 +67,7 @@ test.describe("Assist OCR handwritten image", () => {
 
       let qwenText = "";
       let qwenMetrics = null;
+      let qwenError = "";
       if (hasOpenRouter && client?.chatCompletion) {
         const dataUrl = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
@@ -79,31 +94,39 @@ test.describe("Assist OCR handwritten image", () => {
         };
         const inputTokens = estimateTokens(prompt);
         const qwenStart = performance.now();
-        const qwenResponse = await client.chatCompletion({ payload });
-        const qwenEnd = performance.now();
-        const extractText = (response: any) => {
-          if (!response) return "";
-          if (typeof response === "string") return response;
-          const content = response?.choices?.[0]?.message?.content;
-          if (typeof content === "string") return content;
-          if (Array.isArray(content)) {
-            const parts = content
-              .map((entry: any) => entry?.text)
-              .filter((value: any) => typeof value === "string" && value.trim());
-            if (parts.length) {
-              return parts.join("\n");
+        try {
+          const qwenResponse = await withTimeout(
+            client.chatCompletion({ payload }),
+            30_000,
+            "openrouter-ocr"
+          );
+          const qwenEnd = performance.now();
+          const extractText = (response: any) => {
+            if (!response) return "";
+            if (typeof response === "string") return response;
+            const content = response?.choices?.[0]?.message?.content;
+            if (typeof content === "string") return content;
+            if (Array.isArray(content)) {
+              const parts = content
+                .map((entry: any) => entry?.text)
+                .filter((value: any) => typeof value === "string" && value.trim());
+              if (parts.length) {
+                return parts.join("\n");
+              }
             }
-          }
-          if (typeof response?.text === "string") return response.text;
-          if (typeof response?.content === "string") return response.content;
-          return "";
-        };
-        qwenText = extractText(qwenResponse).trim();
-        qwenMetrics = {
-          durationMs: qwenEnd - qwenStart,
-          inputTokens,
-          outputTokens: estimateTokens(qwenText),
-        };
+            if (typeof response?.text === "string") return response.text;
+            if (typeof response?.content === "string") return response.content;
+            return "";
+          };
+          qwenText = extractText(qwenResponse).trim();
+          qwenMetrics = {
+            durationMs: qwenEnd - qwenStart,
+            inputTokens,
+            outputTokens: estimateTokens(qwenText),
+          };
+        } catch (err: any) {
+          qwenError = (err && err.message) ? String(err.message) : "openrouter-ocr-failed";
+        }
       }
 
       const diffStats = qwenText
@@ -125,6 +148,7 @@ test.describe("Assist OCR handwritten image", () => {
         tesseractText,
         qwenText,
         qwenMetrics,
+        qwenError,
         hasOpenRouter,
         diffStats,
       };
@@ -134,7 +158,7 @@ test.describe("Assist OCR handwritten image", () => {
 
     console.log("OCR metrics:", metrics);
     expect(metrics?.tesseractText?.length || 0).toBeGreaterThan(0);
-    if (metrics?.hasOpenRouter) {
+    if (metrics?.hasOpenRouter && !metrics?.qwenError) {
       expect(metrics?.qwenText?.length || 0).toBeGreaterThan(0);
     }
   });

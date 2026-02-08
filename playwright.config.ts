@@ -11,9 +11,9 @@ export default defineConfig({
     navigationTimeout: 30 * 1000
   },
   webServer: {
-    command: process.env.CI ? "npm run start:legacy" : "npm start",
+    command: "npm start",
     port: 5000,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: true,
     timeout: 60_000
   }
 });

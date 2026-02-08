@@ -17,6 +17,7 @@ interface MemoEditorApi {
     setEditable: (editable: boolean) => void;
     switchTo: (id: string, initialContent?: string) => void;
     removeInstance: (id: string) => void;
+    applyOutputTo: (id: string, output: string, mode: 'edit' | 'suggest') => void;
 }
 
 interface EditorInstance {
@@ -32,8 +33,8 @@ const EditorItem = React.memo(({ editor, activeId, onChangeCb, handleEditorReady
     }, [editor.id, handleEditorReady]);
 
     const onChange = React.useCallback((newContent: string, id?: string) => {
-        if (onChangeCb) onChangeCb(newContent, id);
-    }, [onChangeCb]);
+        if (onChangeCb) onChangeCb(newContent, id || editor.id);
+    }, [editor.id, onChangeCb]);
 
     return (
         <div 
@@ -155,6 +156,19 @@ const App = () => {
                     const next = { ...prev };
                     delete next[id];
                     return next;
+                });
+            },
+            applyOutputTo: (id: string, output: string, mode: "edit" | "suggest") => {
+                setEditors(prev => {
+                    const editor = prev[id];
+                    if (editor && editor.methods) {
+                        if (mode === "edit" && typeof editor.methods.insertMarkdownAtEnd === "function") {
+                            editor.methods.insertMarkdownAtEnd(output);
+                        } else if (mode === "suggest" && typeof editor.methods.setMarkdown === "function") {
+                            editor.methods.setMarkdown(output);
+                        }
+                    }
+                    return { ...prev };
                 });
             }
         };
