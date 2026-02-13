@@ -1620,7 +1620,7 @@
             showTranscriptionToast(durationSeconds, countdownSeconds);
 
             const transcriptId = await requestAssemblyTranscript(payload, assemblyKey);
-            await pollAssemblyTranscript(transcriptId, assemblyKey);
+            const transcriptResult = await pollAssemblyTranscript(transcriptId, assemblyKey);
 
             // Hide transcription toast when done
             hideTranscriptionToast();
@@ -1654,6 +1654,7 @@
                 duration,
                 recordingDate: now,
                 assemblyTranscriptId: transcriptId,
+                assemblyLanguageCode: (transcriptResult?.language_code || transcriptResult?.language || "fr"),
                 participants: [],
                 subjects: [],
                 createdAt: now,
@@ -1736,6 +1737,30 @@
                 onTranscriptChange: state.videoModal.onTranscriptChange,
                 onCopyAudio: () => copyToClipboard(recording.audioTranscript || ""),
                 onCopyVideo: text => copyToClipboard(text || ""),
+                onPublish: async ({ videoBlob, vtt }) => {
+                    try {
+                        const publisher = window.GoToolkitYouTubePublish;
+                        if (!publisher?.publishVideo) {
+                            throw new Error("Module YouTube indisponible");
+                        }
+                        const result = await publisher.publishVideo({
+                            videoBlob,
+                            vtt: vtt || "",
+                            title: memoName || state.currentMemoName || "Document",
+                            language: recording.assemblyLanguageCode || "fr"
+                        });
+                        const url = result?.videoUrl || "";
+                        if (url) {
+                            await navigator.clipboard.writeText(url);
+                            showToast("Video publiee (URL copiee)");
+                        } else {
+                            showToast("Video publiee");
+                        }
+                    } catch (err) {
+                        const message = err?.message ? String(err.message) : "Publication YouTube impossible";
+                        showToast(message, true);
+                    }
+                },
                 onDelete: async () => {
                     await handleDelete();
                     state.videoModal?.close();

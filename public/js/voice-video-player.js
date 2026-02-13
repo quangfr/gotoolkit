@@ -69,6 +69,21 @@
                 justify-content: center;
                 gap: 6px;
             }
+            .voice-video-player-publish {
+                border: none;
+                background: transparent;
+                font-size: 13px;
+                color: var(--text-main);
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 6px;
+            }
+            .voice-video-player-publish[disabled] {
+                cursor: not-allowed;
+                opacity: 0.6;
+            }
             .voice-video-player-delete svg {
                 width: 16px;
                 height: 16px;
@@ -359,6 +374,7 @@
                         <div class="voice-video-player-header-actions">
                             <button type="button" class="voice-video-player-copy-audio btn btn-secondary" title="Transcript audio"><i data-lucide="captions"></i> Audio</button>
                             <button type="button" class="voice-video-player-copy-video btn btn-secondary" title="Transcript vidéo"><i data-lucide="captions"></i> Vidéo</button>
+                            <button type="button" class="voice-video-player-publish btn btn-secondary" title="Publier sur YouTube"><i data-lucide="cloud-upload"></i> Publier</button>
                             <button type="button" class="voice-video-player-delete btn btn-secondary" title="Supprimer"><i data-lucide="trash-2"></i></button>
                         </div>
                     </div>
@@ -387,9 +403,13 @@
             (document.body || document.documentElement).appendChild(this.overlay);
             this.dialog = this.overlay.querySelector(".voice-video-player-dialog");
             this.closeButton = this.overlay.querySelector(".voice-video-player-close");
-            const actionButtons = Array.from(this.overlay.querySelectorAll(".voice-video-player-header-actions button"));
-            this.copyButtons = actionButtons.slice(0, 2);
-            this.deleteButton = actionButtons[2];
+            this.copyButtons = [
+                this.overlay.querySelector(".voice-video-player-copy-audio"),
+                this.overlay.querySelector(".voice-video-player-copy-video")
+            ];
+            this.publishButton = this.overlay.querySelector(".voice-video-player-publish");
+            this.deleteButton = this.overlay.querySelector(".voice-video-player-delete");
+            this._defaultPublishLabel = this.publishButton?.innerHTML || "Publier";
             this.videoEl = this.overlay.querySelector("video");
             this.downloadButton = this.overlay.querySelector(".voice-video-player-download");
             this.playToggle = this.overlay.querySelector(".voice-video-player-play-toggle");
@@ -433,6 +453,7 @@
                 if (!this.onDelete) return;
                 this.onDelete();
             });
+            this.publishButton?.addEventListener("click", () => this._handlePublish());
             this.downloadButton?.addEventListener("click", () => {
                 if (!this.videoBlobUrl) return;
                 const a = document.createElement("a");
@@ -491,6 +512,27 @@
             if (!this.onTranscriptSaved) return;
             const snapshot = this.sentences.map(sentence => ({ ...sentence }));
             this.onTranscriptSaved(snapshot);
+        }
+
+        async _handlePublish() {
+            if (typeof this.onPublish !== "function" || !this.videoBlobOriginal) return;
+            if (!this.publishButton) return;
+            this.publishButton.disabled = true;
+            this.publishButton.innerHTML = `<i data-lucide="loader-2" class="lucide-spin"></i> Publication...`;
+            if (window.lucide) lucide.createIcons();
+            try {
+                const snapshot = this.sentences.map(sentence => ({ ...sentence }));
+                const vtt = this._buildVttFromSentences();
+                await this.onPublish({
+                    videoBlob: this.videoBlobOriginal,
+                    sentences: snapshot,
+                    vtt
+                });
+            } finally {
+                this.publishButton.disabled = false;
+                this.publishButton.innerHTML = this._defaultPublishLabel;
+                if (window.lucide) lucide.createIcons();
+            }
         }
 
         _updateProgress(force = false) {
@@ -744,6 +786,7 @@
 
         _applyVideoBlob(blob) {
             if (!this.videoEl) return;
+            this.videoBlobOriginal = blob;
             if (this.videoBlobUrl) {
                 URL.revokeObjectURL(this.videoBlobUrl);
                 this.videoBlobUrl = "";
@@ -758,13 +801,17 @@
         }
 
         open(options = {}) {
-            const { videoBlob, sentences = [], onTranscriptChange, onTranscriptSaved, memoName = "", onDelete, onCopyAudio, onCopyVideo } = options;
+            const { videoBlob, sentences = [], onTranscriptChange, onTranscriptSaved, memoName = "", onDelete, onCopyAudio, onCopyVideo, onPublish = null } = options;
             if (!videoBlob) return;
             this.onTranscriptChange = typeof onTranscriptChange === "function" ? onTranscriptChange : null;
             this.onTranscriptSaved = typeof onTranscriptSaved === "function" ? onTranscriptSaved : null;
             this.onDelete = typeof onDelete === "function" ? onDelete : null;
             this.onCopyAudio = typeof onCopyAudio === "function" ? onCopyAudio : null;
             this.onCopyVideo = typeof onCopyVideo === "function" ? onCopyVideo : null;
+            this.onPublish = typeof onPublish === "function" ? onPublish : null;
+            if (this.publishButton) {
+                this.publishButton.style.display = this.onPublish ? "" : "none";
+            }
             this._normalizeSentences(sentences);
             this._renderSentences();
             this._applyVideoBlob(videoBlob);
@@ -794,6 +841,7 @@
                 URL.revokeObjectURL(this.videoBlobUrl);
                 this.videoBlobUrl = "";
             }
+            this.videoBlobOriginal = null;
             this._revokeTextTrackUrl();
         }
     }

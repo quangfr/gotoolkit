@@ -5,6 +5,7 @@
         "js/voice-transcript.js",
         "js/voice-audio-player.js",
         "js/voice-video-player.js",
+        "js/youtube-publish.js",
         "js/voice.js"
     ];
 
