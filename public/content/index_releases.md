@@ -1,3 +1,7 @@
+## 2026-02-13
+- Voice : Publier un enregistrement sur Youtube
+- Voice : Transcription texte en temps réel
+
 ## 2026-01-28
 - IA : Éditer un prompt et restaurer une version
 - IA : Commande vocale et sélection automatique
@@ -22,7 +26,7 @@
 - Docs : Catalogue de modèles de document
 
 ## 2026-01-14
-- Docs : Visualiser et éditer un diagramme `Draw` 
+- Draw : Visualiser et éditer un diagramme dans un document
 - Docs : Couleur de texte, lien 
 - Docs : Blocs tableau, code et encadrés 
 
@@ -34,7 +38,8 @@
 - Docs : Ouverture de documents en barre latérale
 
 ## 2026-01-09
-- Docs : Enregistrement vocale et partage d'écran avec transcription
+- Voice : Enregistrement vocale et partage d'écran
+- Voice : Transcription texte en différé
 - Docs : Bibliothèque locale en barre latérale
 - Assist : Mode `↬ Demander` pour discuter sans éditer avec références 
 
