@@ -385,8 +385,8 @@
                         <div class="voice-video-player-header-actions">
                             <button type="button" class="voice-video-player-copy-audio btn btn-secondary" title="Transcript audio"><i data-lucide="captions"></i> Audio</button>
                             <button type="button" class="voice-video-player-copy-video btn btn-secondary" title="Transcript vidéo"><i data-lucide="captions"></i> Vidéo</button>
-                            <button type="button" class="voice-video-player-publish btn btn-secondary" title="Publier sur YouTube"><i data-lucide="cloud-upload"></i> Publier</button>
-                            <button type="button" class="voice-video-player-link btn btn-secondary" title="Ouvrir le lien YouTube"><i data-lucide="link"></i> Lien Youtube</button>
+                            <button type="button" class="voice-video-player-publish btn btn-secondary" title="Publier sur YouTube"><i data-lucide="youtube"></i> Publier</button>
+                            <button type="button" class="voice-video-player-link btn btn-secondary" title="Ouvrir le lien YouTube"><i data-lucide="youtube"></i> Lien Youtube</button>
                             <button type="button" class="voice-video-player-delete btn btn-secondary" title="Supprimer"><i data-lucide="trash-2"></i></button>
                         </div>
                     </div>

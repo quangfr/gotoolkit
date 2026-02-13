@@ -109,8 +109,8 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Sora:wght@400;500;600&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles/style.css?v=2026.02.13.6">
-    <link rel="stylesheet" href="styles/index.css?v=2026.02.13.6">
+    <link rel="stylesheet" href="styles/style.css?v=2026.02.13.7">
+    <link rel="stylesheet" href="styles/index.css?v=2026.02.13.7">
 </head>
 
 <body>
@@ -122,7 +122,7 @@
             </div>
             <h1>Go-Toolkit <span class="hero-beta">beta</span></h1>
             <p>La boîte à outils IA des Product Owners</p>
-            <span class="hero-version label-link" id="releaseNotesTrigger" tabindex="0">v2026.02.13.6</span>
+            <span class="hero-version label-link" id="releaseNotesTrigger" tabindex="0">v2026.02.13.7</span>
 
             <div class="hero-meta">
                 <button id="openSettingsBtn" class="feedback-button" type="button" title="Paramètres">
@@ -553,21 +553,21 @@
         window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL =
             window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL || "https://assemblyai.gotoolkit.workers.dev/token";
     </script>
-    <script src="js/config.js?v=2026.02.13.6"></script>
-    <script src="js/feature-visibility.js?v=2026.02.13.6"></script>
-    <script src="js/document-storage.js?v=2026.02.13.6"></script>
-    <script src="js/storage-service.js?v=2026.02.13.6"></script>
-    <script src="js/shared-ui.js?v=2026.02.13.6"></script>
-    <script src="js/cgu.js?v=2026.02.13.6"></script>
-    <script src="js/privacy.js?v=2026.02.13.6"></script>
-    <script src="js/share-worker-client.js?v=2026.02.13.6"></script>
-    <script src="js/share-history.js?v=2026.02.13.6"></script>
-    <script src="js/document-api.js?v=2026.02.13.6"></script>
-    <script src="js/ia-config.js?v=2026.02.13.6"></script>
-    <script src="preset.js?v=2026.02.13.6"></script>
-    <script src="prompt.js?v=2026.02.13.6"></script>
-    <script src="js/ia-client.js?v=2026.02.13.6"></script>
-    <script src="js/template-gallery.js?v=2026.02.13.6"></script>
+    <script src="js/config.js?v=2026.02.13.7"></script>
+    <script src="js/feature-visibility.js?v=2026.02.13.7"></script>
+    <script src="js/document-storage.js?v=2026.02.13.7"></script>
+    <script src="js/storage-service.js?v=2026.02.13.7"></script>
+    <script src="js/shared-ui.js?v=2026.02.13.7"></script>
+    <script src="js/cgu.js?v=2026.02.13.7"></script>
+    <script src="js/privacy.js?v=2026.02.13.7"></script>
+    <script src="js/share-worker-client.js?v=2026.02.13.7"></script>
+    <script src="js/share-history.js?v=2026.02.13.7"></script>
+    <script src="js/document-api.js?v=2026.02.13.7"></script>
+    <script src="js/ia-config.js?v=2026.02.13.7"></script>
+    <script src="preset.js?v=2026.02.13.7"></script>
+    <script src="prompt.js?v=2026.02.13.7"></script>
+    <script src="js/ia-client.js?v=2026.02.13.7"></script>
+    <script src="js/template-gallery.js?v=2026.02.13.7"></script>
     <script>
         // Initialize feedback configuration before loading feedback.js
         window.GoToolkitAppFeedbackConfig = {
@@ -577,7 +577,7 @@
             primaryColor: "#2a7a57"
         };
     </script>
-    <script src="js/feedback.js?v=2026.02.13.6"></script>
+    <script src="js/feedback.js?v=2026.02.13.7"></script>
 
     <script>
         (function () {
@@ -1117,7 +1117,27 @@
                 }
             }
 
-            function createShareCardElement(cardInfo, target = "_self") {
+            const voiceRecordingsStore = window.goToolkitDocStore?.createStore?.("voice-recordings") || null;
+            const recordingIconCache = new Map();
+            async function resolveRecordingIcon(recordingId) {
+                if (!recordingId) return "";
+                if (recordingIconCache.has(recordingId)) {
+                    return recordingIconCache.get(recordingId);
+                }
+                let icon = "audio-lines";
+                try {
+                    const recording = await voiceRecordingsStore?.get?.(recordingId);
+                    if (recording?.videoBlob) {
+                        icon = "monitor-play";
+                    }
+                } catch (err) {
+                    icon = "audio-lines";
+                }
+                recordingIconCache.set(recordingId, icon);
+                return icon;
+            }
+
+            async function createShareCardElement(cardInfo, target = "_self") {
                 const { definition, preview, formattedDate, href, app, record, superpowerHtml } = cardInfo;
                 const card = document.createElement("a");
                 card.className = "share-card";
@@ -1126,7 +1146,9 @@
                 card.rel = "noopener";
                 card.setAttribute("data-app", app);
                 const metaHtml = buildMetaBadge(preview.templateLabel);
-                const recordingIcon = preview.hasRecording ? `<i data-lucide="audio-lines" style="width:14px;height:14px;margin-right:8px;vertical-align:text-bottom;opacity:0.8;"></i>` : "";
+                const payloadRecordingId = record?.payload?.tabs?.find(tab => typeof tab?.voiceRecordingId === "string" && tab.voiceRecordingId)?.voiceRecordingId || null;
+                const iconName = await resolveRecordingIcon(record?.voiceRecordingId || payloadRecordingId || null);
+                const recordingIcon = preview.hasRecording ? `<i data-lucide="${iconName}" style="width:14px;height:14px;margin-right:8px;vertical-align:text-bottom;opacity:0.8;"></i>` : "";
                 card.innerHTML = `
                     <p class="share-card-title">${recordingIcon}${preview.tabName}</p>
                     ${superpowerHtml || ""}
@@ -1185,7 +1207,7 @@
                 const superpowers = normalizeSuperpowers(record.superpowers, record.category);
                 const superpowerHtml = buildSuperpowerBadges(superpowers, catalog);
                 const cardInfo = { app, definition, record, preview, formattedDate, href, superpowerHtml, isPinned: false };
-                const card = createShareCardElement(cardInfo);
+                const card = await createShareCardElement(cardInfo);
                 return { ...cardInfo, card, updatedAt, isPinned: false };
             }
 
@@ -1203,7 +1225,7 @@
                 return card;
             }
 
-            function buildSavedCard(record, catalog) {
+            async function buildSavedCard(record, catalog) {
                 if (!record || !documentApi) {
                     return null;
                 }
@@ -1227,7 +1249,9 @@
                 const metaHtml = buildMetaBadge(preview.templateLabel);
                 const superpowers = normalizeSuperpowers(record.superpowers, record.category);
                 const superpowerHtml = buildSuperpowerBadges(superpowers, catalog);
-                const recordingIcon = (preview.hasRecording || record.voiceRecordingId) ? `<i data-lucide="audio-lines" style="width:14px;height:14px;margin-right:8px;vertical-align:text-bottom;opacity:0.8;"></i>` : "";
+                const payloadRecordingId = record?.payload?.tabs?.find(tab => typeof tab?.voiceRecordingId === "string" && tab.voiceRecordingId)?.voiceRecordingId || null;
+                const iconName = await resolveRecordingIcon(record.voiceRecordingId || payloadRecordingId || null);
+                const recordingIcon = (preview.hasRecording || record.voiceRecordingId) ? `<i data-lucide="${iconName}" style="width:14px;height:14px;margin-right:8px;vertical-align:text-bottom;opacity:0.8;"></i>` : "";
                 card.innerHTML = `
                     <p class="share-card-title">${recordingIcon}${preview.tabName}</p>
                     ${superpowerHtml}
@@ -1439,8 +1463,8 @@
                     // Deduplicate both against shared and within saved
                     const seenSavedKeys = new Set();
                     const catalog = await getSuperpowersCatalog();
-                    const cards = filtered
-                        .map(record => buildSavedCard(record, catalog))
+                    const cards = (await Promise.all(filtered
+                        .map(record => buildSavedCard(record, catalog))))
                         .filter(Boolean)
                         .filter(item => {
                             try {

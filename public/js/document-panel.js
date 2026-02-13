@@ -3,6 +3,8 @@
     const MIN_WIDTH = 100;
     const MAX_WIDTH = 520;
     const DEFAULT_TITLE = "Documents";
+    const voiceRecordingsStore = window.goToolkitDocStore?.createStore?.("voice-recordings") || null;
+    const recordingIconCache = new Map();
 
     let superpowersCatalog = null;
     let currentModalSelectedIds = [];
@@ -26,6 +28,20 @@
         const normalized = Array.isArray(list) ? list.filter(Boolean) : [];
         if (normalized.length) return normalized;
         return category ? [category] : [];
+    }
+
+    async function resolveRecordingIcon(recordingId) {
+        if (!recordingId) return "";
+        if (recordingIconCache.has(recordingId)) return recordingIconCache.get(recordingId);
+        let icon = "audio-lines";
+        try {
+            const recording = await voiceRecordingsStore?.get?.(recordingId);
+            if (recording?.videoBlob) icon = "monitor-play";
+        } catch (err) {
+            icon = "audio-lines";
+        }
+        recordingIconCache.set(recordingId, icon);
+        return icon;
     }
 
     async function populateSuperpowerCheckboxes(selectedIds = []) {
@@ -728,7 +744,7 @@
             const openIds = Array.isArray(getOpenIds?.()) ? getOpenIds() : [];
             const activeId = typeof getActiveId?.() === "string" ? getActiveId() : "";
             const openSet = new Set(openIds.filter(Boolean));
-            items.forEach(item => {
+            for (const item of items) {
                 const button = document.createElement("button");
                 button.type = "button";
                 button.className = "document-explorer__item";
@@ -746,7 +762,9 @@
                 label.className = "document-explorer__item-title";
                 const payloadRecordingId = item?.payload?.tabs?.find(tab => typeof tab?.voiceRecordingId === "string" && tab.voiceRecordingId)?.voiceRecordingId || null;
                 const hasRecording = !!(item.voiceRecordingId || payloadRecordingId);
-                const resolvedHandoffId = item.handoffId === null ? null : (item.handoffId || item.id);
+                const recordingId = item.voiceRecordingId || payloadRecordingId;
+                const recordingIconName = await resolveRecordingIcon(recordingId);
+                const resolvedHandoffId = (typeof item.handoffId === "string" && item.handoffId) ? item.handoffId : null;
                 const hasHandoff = resolvedHandoffId !== null;
 
                 if (hasHandoff || hasRecording) {
@@ -755,7 +773,7 @@
                         icons += '<i data-lucide="tablet-smartphone" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.8;"></i>';
                     }
                     if (hasRecording) {
-                        icons += '<i data-lucide="audio-lines" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.8;"></i>';
+                        icons += `<i data-lucide="${recordingIconName}" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.8;"></i>`;
                     }
                     label.innerHTML = `${icons}${item.title || "Docs sans titre"}`;
                 } else {
@@ -813,7 +831,7 @@
 
                 button.appendChild(actions);
                 listEl.appendChild(button);
-            });
+            }
 
             if (window.lucide) window.lucide.createIcons();
         }
@@ -838,7 +856,7 @@
                 return;
             }
 
-            records.forEach(item => {
+            for (const item of records) {
                 const button = document.createElement("button");
                 button.type = "button";
                 button.className = "document-explorer__item document-explorer__item--non-clickable";
@@ -849,7 +867,9 @@
                 // Show title or use token as fallback
                 const sharePayloadRecordingId = item?.payload?.tabs?.find(tab => typeof tab?.voiceRecordingId === "string" && tab.voiceRecordingId)?.voiceRecordingId || null;
                 const hasRecording = !!(item.voiceRecordingId || sharePayloadRecordingId);
-                const resolvedHandoffId = item.handoffId === null ? null : (item.handoffId || item.id);
+                const recordingId = item.voiceRecordingId || sharePayloadRecordingId;
+                const recordingIconName = await resolveRecordingIcon(recordingId);
+                const resolvedHandoffId = (typeof item.handoffId === "string" && item.handoffId) ? item.handoffId : null;
                 const hasHandoff = resolvedHandoffId !== null;
 
                 if (hasHandoff || hasRecording) {
@@ -858,7 +878,7 @@
                         icons += '<i data-lucide="tablet-smartphone" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.8;"></i>';
                     }
                     if (hasRecording) {
-                        icons += '<i data-lucide="audio-lines" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.8;"></i>';
+                        icons += `<i data-lucide="${recordingIconName}" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.8;"></i>`;
                     }
                     label.innerHTML = `${icons}${item.title || "Document partagé"}`;
                 } else {
@@ -920,7 +940,7 @@
 
                 button.appendChild(actions);
                 shareListEl.appendChild(button);
-            });
+            }
 
             if (window.lucide) window.lucide.createIcons();
         }

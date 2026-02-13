@@ -14,6 +14,7 @@
         recordingMemoId: null,
         recordingMemoName: "",
         currentRecordingId: null,
+        currentRecordingHasVideo: false,
         isRecording: false,
         recordingStartTime: 0,
         timerId: null,
@@ -811,12 +812,13 @@
             return `■ ${timeLabel}${badge}`;
         }
         if (state.currentRecordingId) {
+            const recordingIcon = state.currentRecordingHasVideo ? "monitor-play" : "audio-lines";
             if (state.currentMemoId && state.recordingMemoId && state.currentMemoId === state.recordingMemoId) {
-                return `<i data-lucide="audio-lines"></i>${badge}`;
+                return `<i data-lucide="${recordingIcon}"></i>${badge}`;
             }
-            return `<i data-lucide="audio-lines"></i>${badge}`;
+            return `<i data-lucide="${recordingIcon}"></i>${badge}`;
         }
-        return `<i data-lucide="audio-lines"></i>${badge}`;
+        return `<i data-lucide="video"></i>${badge}`;
     }
 
     function updateButton() {
@@ -832,6 +834,7 @@
 
     function resetSessionState() {
         state.currentRecordingId = null;
+        state.currentRecordingHasVideo = false;
         state.recordingMemoId = null;
         state.recordingMemoName = "";
         state.isRecording = false;
@@ -1664,6 +1667,7 @@
                 await RECORDINGS_STORE.set(recordId, recording);
             }
             state.currentRecordingId = recordId;
+            state.currentRecordingHasVideo = Boolean(state.videoBlob);
             setRecordingForMemo(memoId, recordId);
             state.recordingMemoId = memoId;
             state.recordingMemoName = memoName || "";
@@ -1693,6 +1697,7 @@
             showToast("Enregistrement introuvable.", true);
             return;
         }
+        state.currentRecordingHasVideo = Boolean(recording.videoBlob);
         const memoName = state.recordingMemoName || "";
         const handleDelete = async () => {
             if (!confirm("Supprimer cet enregistrement ?")) return;
@@ -1705,6 +1710,7 @@
                 setRecordingForMemo(state.recordingMemoId, null);
             }
             state.currentRecordingId = null;
+            state.currentRecordingHasVideo = false;
             state.recordingMemoId = null;
             state.recordingMemoName = "";
             updateButton();
@@ -1916,10 +1922,12 @@
             getRecordingForMemo(memoId).then(recording => {
                 if (recording) {
                     state.currentRecordingId = recording.id;
+                    state.currentRecordingHasVideo = Boolean(recording.videoBlob);
                     state.recordingMemoId = memoId;
                     state.recordingMemoName = memoName || "";
                 } else {
                     state.currentRecordingId = null;
+                    state.currentRecordingHasVideo = false;
                     state.recordingMemoId = null;
                     state.recordingMemoName = "";
                 }
