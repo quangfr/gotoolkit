@@ -8,30 +8,30 @@
         return `
         <div class="requests-modal" style="max-width: 760px;">
             <header style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-                <h3 id="privacyModalTitle" style="margin:0;font-size:1rem;">Politique de confidentialite</h3>
+                <h3 id="privacyModalTitle" style="margin:0;font-size:1rem;">Politique de confidentialité</h3>
                 <button class="btn-secondary" type="button" aria-label="Fermer" ${CLOSE_ATTR}><i data-lucide="x" style="width:16px;height:16px;"></i></button>
             </header>
             <div class="requests-body" style="display:block; max-height: 70vh; overflow:auto;">
-                <p>Go-Toolkit est un outil professionnel developpe par Savane Go Live.</p>
-                <p><strong>Donnees locales</strong><br>
-                    Par defaut, les donnees restent dans votre navigateur et servent uniquement au fonctionnement du service.</p>
+                <p>Go-Toolkit est un outil professionnel développé par Savane Go Live.</p>
+                <p><strong>Données locales</strong><br>
+                    Par défaut, les données restent dans votre navigateur et servent uniquement au fonctionnement du service.</p>
                 <p><strong>Cookies et traceurs</strong><br>
-                    Aucun cookie ou traceur tiers n'est depose sur votre navigateur.</p>
-                <p><strong>Fonctionnalites IA</strong><br>
-                    Certaines fonctions impliquent l'envoi de donnees strictement necessaires a des fournisseurs tiers.
-                    N'y transmettez pas de donnees confidentielles.</p>
-                <p><strong>Dictee et transcription</strong><br>
-                    L'audio peut etre traite par un fournisseur tiers. Informez les participants et recueillez leur
-                    consentement si necessaire.</p>
+                    Aucun cookie ou traceur tiers n'est déposé sur votre navigateur.</p>
+                <p><strong>Fonctionnalités IA</strong><br>
+                    Certaines fonctions impliquent l'envoi de données strictement nécessaires à des fournisseurs tiers.
+                    N'y transmettez pas de données confidentielles.</p>
+                <p><strong>Dictée et transcription</strong><br>
+                    L'audio peut être traité par un fournisseur tiers. Informez les participants et recueillez leur
+                    consentement si nécessaire.</p>
                 <p><strong>Partage cloud</strong><br>
-                    Les contenus partages sont accessibles aux detenteurs du lien et supprimables par leur createur.
+                    Les contenus partagés sont accessibles aux détenteurs du lien et supprimables par leur créateur.
                     Aucune sauvegarde n'est garantie.</p>
                 <p><strong>Publication YouTube</strong><br>
-                    L'utilisation de YouTube via OAuth permet la publication de videos sur votre chaine. Seules les informations minimales pour l'upload sont utilisees et aucune donnee personnelle de votre compte Google n'est stockee par Go-Toolkit.</p>
+                    L'utilisation de YouTube via OAuth permet la publication de vidéos sur votre chaîne. Seules les informations minimales pour l'upload sont utilisées et aucune donnée personnelle de votre compte Google n'est stockée par Go-Toolkit.</p>
                 <p style="margin-top:14px;font-size:0.85em;opacity:0.85;">
                     Responsable de la publication : Savane Go Live (909 865 214)
                     - Contact : Oliver THOLANCE - oliver.tholance@savane-group.com
-                    - Hebergement : Google (France/UE)
+                    - Hébergement : Google (France/UE)
                 </p>
             </div>
         </div>
