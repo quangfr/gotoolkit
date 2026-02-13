@@ -1734,6 +1734,7 @@
                 videoBlob: recording.videoBlob,
                 sentences: recording.videoTranscriptSentences || [],
                 memoName,
+                youtubeUrl: recording.youtubeVideoUrl || "",
                 onTranscriptChange: state.videoModal.onTranscriptChange,
                 onCopyAudio: () => copyToClipboard(recording.audioTranscript || ""),
                 onCopyVideo: text => copyToClipboard(text || ""),
@@ -1750,6 +1751,16 @@
                             language: recording.assemblyLanguageCode || "fr"
                         });
                         const url = result?.videoUrl || "";
+                        const updated = {
+                            ...recording,
+                            youtubeVideoUrl: url || "",
+                            updatedAt: Date.now()
+                        };
+                        await RECORDINGS_STORE?.set?.(recording.id, updated);
+                        recording.youtubeVideoUrl = url || "";
+                        if (url) {
+                            state.videoModal?.setYoutubeUrl?.(url);
+                        }
                         if (url) {
                             await navigator.clipboard.writeText(url);
                             showToast("Video publiee (URL copiee)");

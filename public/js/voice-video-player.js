@@ -80,6 +80,17 @@
                 justify-content: center;
                 gap: 6px;
             }
+            .voice-video-player-link {
+                border: none;
+                background: transparent;
+                font-size: 13px;
+                color: var(--text-main);
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 6px;
+            }
             .voice-video-player-publish[disabled] {
                 cursor: not-allowed;
                 opacity: 0.6;
@@ -375,6 +386,7 @@
                             <button type="button" class="voice-video-player-copy-audio btn btn-secondary" title="Transcript audio"><i data-lucide="captions"></i> Audio</button>
                             <button type="button" class="voice-video-player-copy-video btn btn-secondary" title="Transcript vidéo"><i data-lucide="captions"></i> Vidéo</button>
                             <button type="button" class="voice-video-player-publish btn btn-secondary" title="Publier sur YouTube"><i data-lucide="cloud-upload"></i> Publier</button>
+                            <button type="button" class="voice-video-player-link btn btn-secondary" title="Ouvrir le lien YouTube"><i data-lucide="link"></i> Lien Youtube</button>
                             <button type="button" class="voice-video-player-delete btn btn-secondary" title="Supprimer"><i data-lucide="trash-2"></i></button>
                         </div>
                     </div>
@@ -408,8 +420,10 @@
                 this.overlay.querySelector(".voice-video-player-copy-video")
             ];
             this.publishButton = this.overlay.querySelector(".voice-video-player-publish");
+            this.youtubeLinkButton = this.overlay.querySelector(".voice-video-player-link");
             this.deleteButton = this.overlay.querySelector(".voice-video-player-delete");
             this._defaultPublishLabel = this.publishButton?.innerHTML || "Publier";
+            this.youtubeUrl = "";
             this.videoEl = this.overlay.querySelector("video");
             this.downloadButton = this.overlay.querySelector(".voice-video-player-download");
             this.playToggle = this.overlay.querySelector(".voice-video-player-play-toggle");
@@ -454,6 +468,10 @@
                 this.onDelete();
             });
             this.publishButton?.addEventListener("click", () => this._handlePublish());
+            this.youtubeLinkButton?.addEventListener("click", () => {
+                if (!this.youtubeUrl) return;
+                window.open(this.youtubeUrl, "_blank", "noopener,noreferrer");
+            });
             this.downloadButton?.addEventListener("click", () => {
                 if (!this.videoBlobUrl) return;
                 const a = document.createElement("a");
@@ -532,6 +550,22 @@
                 this.publishButton.disabled = false;
                 this.publishButton.innerHTML = this._defaultPublishLabel;
                 if (window.lucide) lucide.createIcons();
+            }
+        }
+
+        setYoutubeUrl(url = "") {
+            this.youtubeUrl = String(url || "").trim();
+            this._syncYouTubeButtons();
+            if (window.lucide) lucide.createIcons();
+        }
+
+        _syncYouTubeButtons() {
+            const hasLink = Boolean(this.youtubeUrl);
+            if (this.publishButton) {
+                this.publishButton.style.display = hasLink ? "none" : (this.onPublish ? "" : "none");
+            }
+            if (this.youtubeLinkButton) {
+                this.youtubeLinkButton.style.display = hasLink ? "" : "none";
             }
         }
 
@@ -801,7 +835,7 @@
         }
 
         open(options = {}) {
-            const { videoBlob, sentences = [], onTranscriptChange, onTranscriptSaved, memoName = "", onDelete, onCopyAudio, onCopyVideo, onPublish = null } = options;
+            const { videoBlob, sentences = [], onTranscriptChange, onTranscriptSaved, memoName = "", onDelete, onCopyAudio, onCopyVideo, onPublish = null, youtubeUrl = "" } = options;
             if (!videoBlob) return;
             this.onTranscriptChange = typeof onTranscriptChange === "function" ? onTranscriptChange : null;
             this.onTranscriptSaved = typeof onTranscriptSaved === "function" ? onTranscriptSaved : null;
@@ -809,9 +843,7 @@
             this.onCopyAudio = typeof onCopyAudio === "function" ? onCopyAudio : null;
             this.onCopyVideo = typeof onCopyVideo === "function" ? onCopyVideo : null;
             this.onPublish = typeof onPublish === "function" ? onPublish : null;
-            if (this.publishButton) {
-                this.publishButton.style.display = this.onPublish ? "" : "none";
-            }
+            this.setYoutubeUrl(youtubeUrl);
             this._normalizeSentences(sentences);
             this._renderSentences();
             this._applyVideoBlob(videoBlob);
