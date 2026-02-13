@@ -1807,7 +1807,7 @@
         if (!this.toggleButton) return;
         var icon = this.toggleButton.querySelector("i[data-lucide]");
         if (!icon) return;
-        var nextIcon = this.isOpen ? "panel-right-close" : "panel-right-open";
+        var nextIcon = this.isOpen ? "bot-off" : "bot";
         if (icon.getAttribute("data-lucide") === nextIcon) return;
         icon.setAttribute("data-lucide", nextIcon);
         if (global.lucide) global.lucide.createIcons();

@@ -33,8 +33,8 @@ Ne transmettez pas de données confidentielles. Les données transmises ne sont 
 La dictée et la transcription peuvent impliquer un traitement de l’audio par un fournisseur tiers. Les données audio et les transcriptions peuvent être conservées à des fins d’amélioration des services.
 Informez les participants et recueillez leur consentement si nécessaire.</p>
 
-<p><strong>▷ Publication YouTube</strong><br>
-La publication de vidéos sur YouTube utilise l'authentification OAuth pour accéder à votre compte. Go-Toolkit n'accède qu'aux données strictement nécessaires à l'envoi de la vidéo et ne stocke aucune information personnelle issue de votre compte Google.</p>
+<p><strong>▷ Intégrations tierces</strong><br>
+Lorsque vous connectez un service externe pour lire ou publier des documents ou des vidéos, seules les permissions nécessaires sont utilisées. Vos données restent entre vous et le service concerné : elles ne sont ni envoyées ni partagées avec Go-Toolkit.</p>
 
 <p><strong>⟐ Accès privé ou partagé avec quota</strong><br>
 Vous pouvez choisir entre l'accès privé (sans rétention de données avec vos propres clés API) ou l'accès partagé par défaut (gratuit limité). Dans ce dernier cas, le fournisseur tiers pourra utiliser vos données pour améliorer ses services dont l'entrainement de ses modèles IA.</p>

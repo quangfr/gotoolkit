@@ -26,8 +26,8 @@
                 <p><strong>Partage cloud</strong><br>
                     Les contenus partagés sont accessibles aux détenteurs du lien et supprimables par leur créateur.
                     Aucune sauvegarde n'est garantie.</p>
-                <p><strong>Publication YouTube</strong><br>
-                    L'utilisation de YouTube via OAuth permet la publication de vidéos sur votre chaîne. Seules les informations minimales pour l'upload sont utilisées et aucune donnée personnelle de votre compte Google n'est stockée par Go-Toolkit.</p>
+                <p><strong>Intégrations tierces</strong><br>
+                    Lorsque vous connectez un service externe pour lire ou publier des documents ou des vidéos, seules les permissions nécessaires sont utilisées. Vos données restent entre vous et le service concerné : elles ne sont ni envoyées ni partagées avec Go-Toolkit.</p>
                 <p style="margin-top:14px;font-size:0.85em;opacity:0.85;">
                     Responsable de la publication : Savane Go Live (909 865 214)
                     - Contact : Oliver THOLANCE - oliver.tholance@savane-group.com
