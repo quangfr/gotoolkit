@@ -46,10 +46,10 @@
         crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.min.js" crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.min.js" crossorigin></script>
-    <link rel="stylesheet" href="styles/style.css?v=2026.02.08.3">
+    <link rel="stylesheet" href="styles/style.css?v=2026.02.13.1">
     <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
-    <link rel="stylesheet" href="styles/memo.css?v=2026.02.08.3">
-    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.08.3">
+    <link rel="stylesheet" href="styles/memo.css?v=2026.02.13.1">
+    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.13.1">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.css">
     <script src="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.js"></script>
 </head>
@@ -90,7 +90,7 @@
                 <div class="tabs-actions">
                     <button id="documentExplorerToggle" class="app-home-link" type="button" title="Bibliothèque"
                         aria-expanded="false" aria-controls="documentExplorer"><i data-lucide="library"></i></button>
-                    <a href="/?v=2026.02.08.3" class="nav-switch-btn" title="Accueil"
+                    <a href="/?v=2026.02.13.1" class="nav-switch-btn" title="Accueil"
                         style="text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
                         <i data-lucide="home"></i>
                     </a>
@@ -108,6 +108,17 @@
                             <div class="menu-panel">
                                 <button id="memoOpenImportBtn" type="button" class="menu-panel-btn"><i
                                         data-lucide="import"></i> Importer</button>
+
+                                <button id="handoffFocusBtn" type="button" class="menu-panel-btn" title="Capturer"
+                                    style="position: relative;">
+                                    <i data-lucide="tablet-smartphone"></i> Capturer
+                                    <span id="handoffBadge" class="chat-header-badge" style="display:none;"></span>
+                                </button>
+
+                                <button id="gtTemplateModalTrigger" type="button" class="menu-panel-btn"
+                                    title="Modèles">
+                                    <i data-lucide="zap"></i> Modèles
+                                </button>
 
                                 <div class="menu-panel-item has-submenu">
                                     <button type="button" class="menu-panel-btn"><i data-lucide="copy"></i>
@@ -150,15 +161,6 @@
                         </div>
                         <div data-share-menu-slot></div>
                     </div>
-                    <button id="gtTemplateModalTrigger" class="btn btn-secondary app-header-btn" type="button"
-                        title="Modèles">
-                        <i data-lucide="zap"></i>
-                    </button>
-                    <button id="handoffFocusBtn" class="btn btn-secondary app-header-btn chat-header-btn" type="button"
-                        title="Capture mobile">
-                        <i data-lucide="tablet-smartphone"></i>
-                        <span id="handoffBadge" class="chat-header-badge" style="display:none;"></span>
-                    </button>
                     <div class="menu-trigger" id="themeMenuTrigger">
                         <button id="themeBtn" class="btn btn-secondary app-header-btn" type="button" title="Thème">
                             <i data-lucide="palette"></i>
@@ -318,14 +320,18 @@
         <img src="img/logo.gif" alt="Logo Go-Toolkit" class="logo-light">
         <img src="img/logo_inverted.gif" alt="Logo Go-Toolkit" class="logo-dark">
         <strong>Go-Toolkit</strong>
-        <span>Version 2026.02.08.3</span>
+        <span>Version 2026.02.13.1</span>
         <span>Usage réservé à Savane Consulting.</span>
         <div class="info-actions info-actions--stacked">
             <div class="info-actions-row">
                 <button id="memoDocsBtn" type="button" class="secondary">Documentation</button>
                 <button type="button" class="secondary" data-open-nexus-modal>Mentions légales</button>
             </div>
-            <button id="memoUpdateBtn" type="button" class="update-btn">Réparer</button>
+            <div class="info-actions-row" style="margin-top: 4px;">
+                <div id="feedback-app-memo-inline-container" style="flex: 1; display: flex;"></div>
+                <button id="memoUpdateBtn" type="button" class="update-btn"
+                    style="flex: 1; margin: 0; width: auto;">Réparer</button>
+            </div>
         </div>
     </div>
 
@@ -381,22 +387,22 @@
         window.GO_TOOLKIT_SHARE_API_URL =
             window.GO_TOOLKIT_SHARE_API_URL || "https://share.gotoolkit.workers.dev/";
     </script>
-    <script src="js/config.js?v=2026.02.08.3"></script>
-    <script src="js/feature-visibility.js?v=2026.02.08.3"></script>
-    <script src="js/document-storage.js?v=2026.02.08.3"></script>
-    <script src="js/storage-service.js?v=2026.02.08.3"></script>
-    <script src="js/shared-ui.js?v=2026.02.08.3"></script>
-    <script src="js/cgu.js?v=2026.02.08.3"></script>
-    <script src="js/share-worker-client.js?v=2026.02.08.3"></script>
-    <script src="js/share-history.js?v=2026.02.08.3"></script>
-    <script src="js/document-api.js?v=2026.02.08.3"></script>
-    <script src="js/keywordIndex.js?v=2026.02.08.3"></script>
-    <script src="js/document-rag.js?v=2026.02.08.3"></script>
-    <script src="js/ia-config.js?v=2026.02.08.3"></script>
-    <script src="preset.js?v=2026.02.08.3"></script>
-    <script src="prompt.js?v=2026.02.08.3"></script>
-    <script src="js/ia-client.js?v=2026.02.08.3"></script>
-    <script src="js/document-markdown.js?v=2026.02.08.3"></script>
+    <script src="js/config.js?v=2026.02.13.1"></script>
+    <script src="js/feature-visibility.js?v=2026.02.13.1"></script>
+    <script src="js/document-storage.js?v=2026.02.13.1"></script>
+    <script src="js/storage-service.js?v=2026.02.13.1"></script>
+    <script src="js/shared-ui.js?v=2026.02.13.1"></script>
+    <script src="js/cgu.js?v=2026.02.13.1"></script>
+    <script src="js/share-worker-client.js?v=2026.02.13.1"></script>
+    <script src="js/share-history.js?v=2026.02.13.1"></script>
+    <script src="js/document-api.js?v=2026.02.13.1"></script>
+    <script src="js/keywordIndex.js?v=2026.02.13.1"></script>
+    <script src="js/document-rag.js?v=2026.02.13.1"></script>
+    <script src="js/ia-config.js?v=2026.02.13.1"></script>
+    <script src="preset.js?v=2026.02.13.1"></script>
+    <script src="prompt.js?v=2026.02.13.1"></script>
+    <script src="js/ia-client.js?v=2026.02.13.1"></script>
+    <script src="js/document-markdown.js?v=2026.02.13.1"></script>
     <script>
         // Initialize feedback configuration for Docs before loading feedback.js
         window.GoToolkitAppFeedbackConfig = {
@@ -415,12 +421,12 @@
             ]
         };
     </script>
-    <script src="js/feedback.js?v=2026.02.08.3"></script>
-    <script src="js/voice-video-player.js?v=2026.02.08.3"></script>
-    <script src="js/voice-audio-player.js?v=2026.02.08.3"></script>
-    <script src="js/voice.js?v=2026.02.08.3"></script>
-    <script src="js/voice-transcript.js?v=2026.02.08.3"></script>
-    <script src="js/draw-memo.js?v=2026.02.08.3"></script>
+    <script src="js/feedback.js?v=2026.02.13.1"></script>
+    <script src="js/voice-video-player.js?v=2026.02.13.1"></script>
+    <script src="js/voice-audio-player.js?v=2026.02.13.1"></script>
+    <script src="js/voice.js?v=2026.02.13.1"></script>
+    <script src="js/voice-transcript.js?v=2026.02.13.1"></script>
+    <script src="js/draw-memo.js?v=2026.02.13.1"></script>
     <script>
         // Suppress React DevTools prompt in dev builds.
         window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = window.__REACT_DEVTOOLS_GLOBAL_HOOK__ || {
@@ -430,14 +436,14 @@
             onCommitFiberUnmount: function () { }
         };
     </script>
-    <script src="js/memo.bundle.js?v=2026.02.08.3"></script>
+    <script src="js/memo.bundle.js?v=2026.02.13.1"></script>
     <div id="aiRequestCounterToaster" class="ai-request-counter-toaster" style="display:none;"
         data-toast-aria-live="polite" data-toast-aria-atomic="true">
         <span id="aiRequestCounterText"><i data-lucide="bot" class="lucide-pulse"
                 style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i> 00:00</span>
     </div>
-    <script src="js/assist.js?v=2026.02.08.3"></script>
-    <script src="js/document-panel.js?v=2026.02.08.3"></script>
+    <script src="js/assist.js?v=2026.02.13.1"></script>
+    <script src="js/document-panel.js?v=2026.02.13.1"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             setTimeout(function () {
@@ -1556,7 +1562,28 @@
                 updateActiveTabContent(combined);
             }
 
+            function insertTextAtActiveCaret(nextContent) {
+                const text = typeof nextContent === "string" ? nextContent : "";
+                if (!text) return false;
+                const editor = window.MemoEditor || window.memoEditor;
+                if (
+                    editor
+                    && editor.state?.selection
+                    && editor.commands
+                    && typeof editor.commands.insertContent === "function"
+                ) {
+                    editor.chain().focus().insertContent(text).run();
+                    if (memoEditorApi && typeof memoEditorApi.getValue === "function") {
+                        updateActiveTabContent(memoEditorApi.getValue());
+                    }
+                    return true;
+                }
+                appendToActiveTab(text);
+                return false;
+            }
+
             window.GoToolkitMemoAppendText = appendToActiveTab;
+            window.GoToolkitMemoInsertTextAtCaret = insertTextAtActiveCaret;
             window.scrollMemoEditorToEnd = function () {
                 const editorWrap = document.querySelector('.editor-wrap');
                 if (!editorWrap) return;

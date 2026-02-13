@@ -20,9 +20,21 @@
 
     const launcherRow = document.createElement("div");
     launcherRow.className = "feedback-app-launcher-row";
-    launcherRow.innerHTML = `
-        <button id="${prefix}-openBtn" class="${prefix}-open-btn feedback-app-button btn btn-secondary app-header-btn" type="button" title="Envoyer un feedback"><i data-lucide="message-square-plus"></i></button>
-    `;
+
+    const inlineContainer = document.getElementById(`${prefix}-inline-container`);
+    if (inlineContainer) {
+        launcherRow.innerHTML = `
+            <button id="${prefix}-openBtn" class="${prefix}-open-btn secondary" type="button" title="Envoyer un feedback" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px;">
+                <i data-lucide="message-square-plus" style="width: 16px; height: 16px;"></i> Feedback
+            </button>
+        `;
+        launcherRow.style.flex = "1";
+        launcherRow.style.display = "flex";
+    } else {
+        launcherRow.innerHTML = `
+            <button id="${prefix}-openBtn" class="${prefix}-open-btn feedback-app-button btn btn-secondary app-header-btn" type="button" title="Envoyer un feedback"><i data-lucide="message-square-plus"></i></button>
+        `;
+    }
 
     const container = document.createElement("div");
     container.innerHTML = `
@@ -73,17 +85,22 @@
         </div>
         <div id="${prefix}-toast" class="${prefix}-toast feedback-app-toast" role="status" aria-live="polite"></div>
     `;
-    const globalActions = document.querySelector(".global-actions");
-    if (globalActions) {
+    if (inlineContainer) {
         launcherRow.classList.add("feedback-app-launcher-row--inline");
-        const assistBtn = document.getElementById("assistLauncherBtn");
-        if (assistBtn && assistBtn.parentNode === globalActions) {
-            globalActions.insertBefore(launcherRow, assistBtn);
-        } else {
-            globalActions.appendChild(launcherRow);
-        }
+        inlineContainer.appendChild(launcherRow);
     } else {
-        document.body.appendChild(launcherRow);
+        const globalActions = document.querySelector(".global-actions");
+        if (globalActions) {
+            launcherRow.classList.add("feedback-app-launcher-row--inline");
+            const assistBtn = document.getElementById("assistLauncherBtn");
+            if (assistBtn && assistBtn.parentNode === globalActions) {
+                globalActions.insertBefore(launcherRow, assistBtn);
+            } else {
+                globalActions.appendChild(launcherRow);
+            }
+        } else {
+            document.body.appendChild(launcherRow);
+        }
     }
     document.body.appendChild(container);
 

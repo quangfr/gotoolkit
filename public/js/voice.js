@@ -47,6 +47,15 @@
         systemAnalyser: null,
         micAnalyserStream: null,
         systemAnalyserStream: null,
+        liveSocket: null,
+        liveAudioContext: null,
+        liveAudioSource: null,
+        liveProcessor: null,
+        liveMuteGain: null,
+        liveInsertedByTurn: {},
+        liveInsertedOnce: false,
+        liveLastInsertedChar: "",
+        hadLiveTranscriptInSession: false,
         micWavePhase: 0,
         systemWavePhase: 0,
         meterLastTs: 0,
@@ -370,6 +379,290 @@
         return `${ASSEMBLY_PROXY_BASE_URL}/${normalized}`;
     }
 
+    function downsampleTo16k(input, inputSampleRate) {
+        if (!input || !input.length) return new Int16Array(0);
+        const targetSampleRate = 16000;
+        if (!inputSampleRate || inputSampleRate <= 0) {
+            const out = new Int16Array(input.length);
+            for (let i = 0; i < input.length; i += 1) {
+                const s = Math.max(-1, Math.min(1, input[i]));
+                out[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+            }
+            return out;
+        }
+        if (inputSampleRate === targetSampleRate) {
+            const out = new Int16Array(input.length);
+            for (let i = 0; i < input.length; i += 1) {
+                const s = Math.max(-1, Math.min(1, input[i]));
+                out[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+            }
+            return out;
+        }
+        const ratio = inputSampleRate / targetSampleRate;
+        const length = Math.max(1, Math.floor(input.length / ratio));
+        const output = new Int16Array(length);
+        let offsetResult = 0;
+        let offsetBuffer = 0;
+        while (offsetResult < output.length) {
+            const nextOffsetBuffer = Math.min(input.length, Math.round((offsetResult + 1) * ratio));
+            let accum = 0;
+            let count = 0;
+            for (let i = offsetBuffer; i < nextOffsetBuffer; i += 1) {
+                accum += input[i];
+                count += 1;
+            }
+            const sample = count > 0 ? accum / count : 0;
+            const clipped = Math.max(-1, Math.min(1, sample));
+            output[offsetResult] = clipped < 0 ? clipped * 0x8000 : clipped * 0x7fff;
+            offsetResult += 1;
+            offsetBuffer = nextOffsetBuffer;
+        }
+        return output;
+    }
+
+    function getLiveInsertPrefix(nextChunk) {
+        if (!state.liveInsertedOnce) {
+            state.liveInsertedOnce = true;
+            return "";
+        }
+        const prev = String(state.liveLastInsertedChar || "");
+        const nextFirst = String(nextChunk || "").charAt(0);
+        if (prev && /[-'’/(]$/.test(prev)) {
+            return "";
+        }
+        if (nextFirst && /^[,.;:!?)}\]-]/.test(nextFirst)) {
+            return "";
+        }
+        return " ";
+    }
+
+    function normalizeStreamingInsertText(text) {
+        return String(text || "")
+            .replace(/[\u00A0\u202F]/g, " ")
+            .replace(/\s+([-\u2010-\u2015])\s+/g, "$1")
+            .replace(/\s+([-\u2010-\u2015])$/g, "$1")
+            .replace(/^([-\u2010-\u2015])\s+/g, "$1")
+            .replace(/([^\s-])\s*-\s*([^\s-])/g, "$1-$2")
+            .trim();
+    }
+
+    function insertLiveTextAtCaret(text, memoId) {
+        const chunk = normalizeStreamingInsertText(text);
+        if (!chunk) return;
+        state.hadLiveTranscriptInSession = true;
+        if (memoId && typeof window.setMemoActiveTab === "function") {
+            window.setMemoActiveTab(memoId);
+        }
+        const payload = `${getLiveInsertPrefix(chunk)}${chunk}`;
+        state.liveLastInsertedChar = payload.slice(-1) || state.liveLastInsertedChar;
+        if (typeof window.GoToolkitMemoInsertTextAtCaret === "function") {
+            window.GoToolkitMemoInsertTextAtCaret(payload);
+            return;
+        }
+        if (typeof window.GoToolkitMemoAppendText === "function") {
+            window.GoToolkitMemoAppendText(payload);
+        }
+    }
+
+    function resetLiveTranscriptionState() {
+        state.liveInsertedByTurn = {};
+        state.liveInsertedOnce = false;
+        state.liveLastInsertedChar = "";
+    }
+
+    function stopLiveTranscription() {
+        const ws = state.liveSocket;
+        state.liveSocket = null;
+        if (ws) {
+            try {
+                if (ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ type: "Terminate" }));
+                }
+            } catch (err) { /* noop */ }
+            try { ws.close(); } catch (err) { /* noop */ }
+        }
+        if (state.liveProcessor) {
+            try { state.liveProcessor.disconnect(); } catch (err) { /* noop */ }
+            state.liveProcessor.onaudioprocess = null;
+            state.liveProcessor = null;
+        }
+        if (state.liveAudioSource) {
+            try { state.liveAudioSource.disconnect(); } catch (err) { /* noop */ }
+            state.liveAudioSource = null;
+        }
+        if (state.liveMuteGain) {
+            try { state.liveMuteGain.disconnect(); } catch (err) { /* noop */ }
+            state.liveMuteGain = null;
+        }
+        if (state.liveAudioContext) {
+            try { state.liveAudioContext.close(); } catch (err) { /* noop */ }
+            state.liveAudioContext = null;
+        }
+        resetLiveTranscriptionState();
+    }
+
+    async function fetchAssemblyStreamingToken(key) {
+        const rawUrl = ASSEMBLY_PROXY_TOKEN_URL || getAssemblyProxyUrl("token");
+        if (!rawUrl) throw new Error("Token streaming indisponible");
+        const tokenUrl = new URL(rawUrl, window.location.origin);
+        if (!tokenUrl.searchParams.has("expires_in_seconds")) {
+            tokenUrl.searchParams.set("expires_in_seconds", "60");
+        }
+        console.log("[GoToolkitVoiceLive] fetching token", { url: tokenUrl.toString(), hasKey: Boolean(key) });
+        const response = await fetch(tokenUrl.toString(), {
+            method: "GET",
+            headers: key ? { "X-AssemblyAI-Key": key } : {}
+        });
+        const raw = await response.text();
+        console.log("[GoToolkitVoiceLive] token response", {
+            status: response.status,
+            ok: response.ok,
+            preview: String(raw || "").slice(0, 240)
+        });
+        if (!response.ok) {
+            throw new Error(`Token streaming échoué (${response.status})`);
+        }
+        let data = null;
+        try {
+            data = raw ? JSON.parse(raw) : null;
+        } catch (err) {
+            data = null;
+        }
+        const token = data?.token || data?.temp_token || data?.access_token || "";
+        if (!token) {
+            throw new Error("Token streaming manquant");
+        }
+        return token;
+    }
+
+    function handleAssemblyLiveMessage(message, memoId) {
+        if (!message || typeof message !== "object") return;
+        const type = String(message.type || "");
+        if (type !== "Turn" && type !== "FinalTranscript") return;
+        const turnOrder = Number.isFinite(Number(message.turn_order)) ? Number(message.turn_order) : 0;
+        const transcript = String(message.transcript || message.text || "").trim();
+        if (!transcript) return;
+        const previous = String(state.liveInsertedByTurn[turnOrder] || "");
+        if (transcript === previous) return;
+        let delta = transcript;
+        if (previous && transcript.startsWith(previous)) {
+            delta = transcript.slice(previous.length);
+        } else if (previous) {
+            delta = ` ${transcript}`;
+        }
+        const next = String(delta || "").trim();
+        if (!next) return;
+        state.liveInsertedByTurn[turnOrder] = transcript;
+        insertLiveTextAtCaret(next, memoId);
+    }
+
+    async function startLiveTranscription(audioStream, memoId) {
+        if (!audioStream) return;
+        stopLiveTranscription();
+        try {
+            const assemblyKey = getAssemblyApiKey();
+            const token = await fetchAssemblyStreamingToken(assemblyKey);
+            const wsUrl = new URL("wss://streaming.assemblyai.com/v3/ws");
+            wsUrl.searchParams.set("sample_rate", "16000");
+            wsUrl.searchParams.set("token", token);
+            wsUrl.searchParams.set("encoding", "pcm_s16le");
+            wsUrl.searchParams.set("speech_model", "universal-streaming-multilingual");
+            wsUrl.searchParams.set("language_detection", "true");
+            wsUrl.searchParams.set("formatted_finals", "false");
+            wsUrl.searchParams.set("format_turns", "false");
+            wsUrl.searchParams.set("end_of_turn_confidence_threshold", "0.6");
+            console.log("[GoToolkitVoiceLive] opening websocket", { wsUrl: wsUrl.toString(), memoId });
+
+            const ws = new WebSocket(wsUrl.toString());
+            ws.binaryType = "arraybuffer";
+            state.liveSocket = ws;
+            let sentFrames = 0;
+            let sentBytes = 0;
+
+            ws.onmessage = event => {
+                try {
+                    const data = JSON.parse(event.data);
+                    console.log("[GoToolkitVoiceLive] websocket message", {
+                        type: data?.type,
+                        turn_order: data?.turn_order,
+                        end_of_turn: data?.end_of_turn,
+                        transcript_preview: String(data?.transcript || "").slice(0, 120)
+                    });
+                    handleAssemblyLiveMessage(data, memoId);
+                } catch (err) {
+                    console.warn("Live transcription parse failed", err);
+                }
+            };
+            ws.onerror = err => {
+                console.warn("Live transcription websocket error", err);
+            };
+            ws.onclose = event => {
+                console.log("[GoToolkitVoiceLive] websocket closed", {
+                    code: event?.code,
+                    reason: event?.reason,
+                    wasClean: event?.wasClean,
+                    sentFrames,
+                    sentBytes
+                });
+                if (state.liveSocket === ws) {
+                    state.liveSocket = null;
+                }
+            };
+
+            await new Promise((resolve, reject) => {
+                const timeout = setTimeout(() => reject(new Error("Timeout websocket transcription")), 12000);
+                ws.onopen = () => {
+                    clearTimeout(timeout);
+                    console.log("[GoToolkitVoiceLive] websocket opened");
+                    resolve();
+                };
+                ws.onerror = err => {
+                    clearTimeout(timeout);
+                    reject(err || new Error("WebSocket transcription indisponible"));
+                };
+            });
+
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            state.liveAudioContext = audioContext;
+            const source = audioContext.createMediaStreamSource(audioStream);
+            const processor = audioContext.createScriptProcessor(4096, 1, 1);
+            const muteGain = audioContext.createGain();
+            muteGain.gain.value = 0;
+            source.connect(processor);
+            processor.connect(muteGain);
+            muteGain.connect(audioContext.destination);
+            state.liveAudioSource = source;
+            state.liveProcessor = processor;
+            state.liveMuteGain = muteGain;
+            resetLiveTranscriptionState();
+            console.log("[GoToolkitVoiceLive] audio pipeline ready", {
+                sampleRate: audioContext.sampleRate,
+                hasTracks: audioStream.getAudioTracks?.().length || 0
+            });
+
+            processor.onaudioprocess = event => {
+                const socket = state.liveSocket;
+                if (!socket || socket.readyState !== WebSocket.OPEN) return;
+                const inputData = event.inputBuffer.getChannelData(0);
+                const pcm16 = downsampleTo16k(inputData, audioContext.sampleRate);
+                if (!pcm16.length) return;
+                const chunk = pcm16.buffer.slice(0);
+                socket.send(chunk);
+                sentFrames += 1;
+                sentBytes += chunk.byteLength || 0;
+                if (sentFrames % 20 === 0) {
+                    console.log("[GoToolkitVoiceLive] audio frames sent", {
+                        sentFrames,
+                        sentBytes
+                    });
+                }
+            };
+        } catch (err) {
+            console.warn("Live transcription start failed", err);
+            stopLiveTranscription();
+        }
+    }
+
     async function uploadAudioToAssembly(blob, key) {
         if (!blob) throw new Error("Audio absent");
         const url = getAssemblyProxyUrl("upload");
@@ -544,6 +837,7 @@
         state.isRecording = false;
         state.isTranscribing = false;
         state.recordingStartTime = 0;
+        state.hadLiveTranscriptInSession = false;
         if (state.transcriptionCountdownTimer) {
             clearInterval(state.transcriptionCountdownTimer);
             state.transcriptionCountdownTimer = null;
@@ -552,6 +846,7 @@
             clearInterval(state.timerId);
             state.timerId = null;
         }
+        stopLiveTranscription();
         stopAudioMix();
         stopOverlayStreams();
         updateButton();
@@ -738,6 +1033,7 @@
         state.videoChunks = [];
         state.audioBlob = null;
         state.videoBlob = null;
+        state.hadLiveTranscriptInSession = false;
         state.recordingStartTime = Date.now();
         try {
             let micStream = state.overlayMic ? state.overlayStreams.audio : null;
@@ -805,6 +1101,7 @@
                 }
             };
             state.audioRecorder.start();
+            startLiveTranscription(audioStream, memoId);
             if (videoStream) {
                 const combinedTracks = [
                     ...(videoStream.getVideoTracks() || []),
@@ -1189,6 +1486,14 @@
             });
             state.overlayStreams[key] = null;
         });
+        state.overlayMic = false;
+        state.overlayWebcam = false;
+        state.overlayScreen = false;
+        state.overlaySystemAudio = false;
+        state.permissionsGranted.audio = false;
+        state.permissionsGranted.webcam = false;
+        state.permissionsGranted.screen = false;
+        state.permissionsGranted.systemAudio = false;
         clearVideoTile("webcam");
         clearVideoTile("screen");
     }
@@ -1254,6 +1559,7 @@
             clearInterval(state.timerId);
             state.timerId = null;
         }
+        stopLiveTranscription();
         await stopRecorder(state.audioRecorder);
         await stopRecorder(state.videoRecorder);
         stopTracks(state.audioRecorder);
@@ -1326,17 +1632,6 @@
             if (state.videoBlob) {
                 videoVtt = await fetchAssemblyTranscriptVtt(transcriptId, assemblyKey);
                 videoSentences = videoVtt ? parseVttTranscript(videoVtt) : [];
-            }
-            if (memoId && audioText) {
-                if (typeof window.setMemoActiveTab === "function") {
-                    window.setMemoActiveTab(memoId);
-                }
-                if (typeof window.GoToolkitMemoAppendText === "function") {
-                    setTimeout(() => {
-                        window.GoToolkitMemoAppendText(audioText);
-                        window.scrollMemoEditorToEnd?.();
-                    }, 0);
-                }
             }
             try {
                 await navigator.clipboard.writeText(audioText || "");
