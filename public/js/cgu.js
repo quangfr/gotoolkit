@@ -27,17 +27,20 @@ au fonctionnement du service. Elles peuvent être perdues en cas de nettoyage ou
 <p><strong>⌘ Intelligence Artificielle</strong><br>
 Certaines fonctionnalités d'intelligence artificielle reposent sur l'envoi de données à un fournisseur tiers.
 Lorsque vous les déclenchez, seules les données strictement nécessaires sont transmises.
-Ne transmettez pas de données confidentielles. Les données transmisesne sont pas conservées par le fournisseur.</p>
+Ne transmettez pas de données confidentielles. Les données transmises ne sont pas conservées par le fournisseur.</p>
 
-<p><strong>◉ Reconnaissance et transcription vocale</strong><br>
+<p><strong>◉ Enregistrement vocal et vidéo</strong><br>
 La dictée et la transcription peuvent impliquer un traitement de l’audio par un fournisseur tiers. Les données audio et les transcriptions peuvent être conservées à des fins d’amélioration des services.
 Informez les participants et recueillez leur consentement si nécessaire.</p>
+
+<p><strong>▷ Publication YouTube</strong><br>
+La publication de vidéos sur YouTube utilise l'authentification OAuth pour accéder à votre compte. Go-Toolkit n'accède qu'aux données strictement nécessaires à l'envoi de la vidéo et ne stocke aucune information personnelle issue de votre compte Google.</p>
 
 <p><strong>⟐ Accès privé ou partagé avec quota</strong><br>
 Vous pouvez choisir entre l'accès privé (sans rétention de données avec vos propres clés API) ou l'accès partagé par défaut (gratuit limité). Dans ce dernier cas, le fournisseur tiers pourra utiliser vos données pour améliorer ses services dont l'entrainement de ses modèles IA.</p>
 
 <p><strong>⧉ Partage et cloud</strong><br>
-Les contenus peuvent être partagés via des liens et stockés dans le cloud.
+Les contenus peuvent être partagés et publiés via des liens et stockés dans le cloud.
 Ils sont modifiables par les détenteurs du lien et supprimables par leur créateur.
 Aucune sauvegarde n’est garantie.</p>
 
