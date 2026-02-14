@@ -1,94 +1,246 @@
-;(function (global) {
+; (function (global) {
     const doc = global.document;
     if (!doc) return;
-    const SHARED_SETTINGS_TABS_HTML = `
-        <button type="button" class="tab-btn active" data-tab="paramsTab">
-            <i data-lucide="sliders" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Paramétrages
-        </button>
-        <button type="button" class="tab-btn" data-tab="integrationsTab">
-            <i data-lucide="plug-zap" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Intégrations
-        </button>
-    `;
-    const SHARED_SETTINGS_PANELS_HTML = `
-        <div class="settings-tab-panel" data-panel="paramsTab">
-            <div class="field-row">
-                <label style="width:100%">
-                    <span class="label-title">Id Go-Toolkit</span>
-                    <div style="position:relative; width:100%;">
-                        <i data-lucide="user" style="width:14px;height:14px;position:absolute;left:10px;top:50%;transform:translateY(-50%);opacity:0.7;pointer-events:none;"></i>
-                        <input id="ownerToken" type="text" style="padding-left:34px;" />
+    const SHARED_SETTINGS_MODAL_HTML = `
+        <div class="modal settings-modal" style="max-height: 98vh; overflow-y: auto; display: flex; flex-direction: column; max-width: 640px; width: min(640px, 94vw);">
+            <header style="flex-shrink: 0;">
+                <h3><i data-lucide="settings" style="width:20px;height:20px;vertical-align:middle;margin-right:8px;"></i>Paramètres</h3>
+                <button id="closeSettingsBtn" class="btn-secondary" type="button" aria-label="Fermer"><i data-lucide="x" style="width:16px;height:16px;"></i></button>
+            </header>
+            <form class="feedback-form" onsubmit="return false;" style="flex: 1; overflow-y: auto;">
+                <div class="settings-tabs tabs">
+                    <button type="button" class="tab-btn active" data-tab="servicesTab"><i data-lucide="cpu" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Services IA</button>
+                    <button type="button" class="tab-btn" data-tab="paramsTab"><i data-lucide="sliders" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Paramétrages</button>
+                    <button type="button" class="tab-btn" data-tab="integrationsTab"><i data-lucide="plug-zap" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Intégrations</button>
+                </div>
+                <div class="settings-tab-panels-wrapper" style="flex: 1; overflow-y: auto;">
+                    <div class="settings-tab-panel" data-panel="servicesTab">
+                        <div class="field-row">
+                            <label style="width:100%">
+                                <div style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem;">
+                                    <div>
+                                        <a class="label-title dashed-link" href="https://www.assemblyai.com/dashboard/api-keys" target="_blank" rel="noopener noreferrer">Clé AssemblyAI</a>
+                                        <span class="ia-status" id="assemblyAiStatus" aria-hidden="true"></span>
+                                    </div>
+                                    <div style="display:flex; gap:0.35rem;">
+                                        <button id="assemblyAiVerifyBtn" type="button" class="btn-secondary">Vérifier</button>
+                                    </div>
+                                </div>
+                                <span class="label-subtitle">Accès partagé avec rétention des données. Accès privé (~15ct/h. Crédit offert de 50€ à l'inscription)</span>
+                                <input id="assemblyAiKeyInput" type="text" placeholder="sk-..." />
+                            </label>
+                        </div>
+                        <div class="field-row">
+                            <label>
+                                <span class="label-title">Moteur IA</span>
+                                <select id="aiBackendSelect">
+                                    <option value="openrouter" selected>OpenRouter (recommandé)</option>
+                                    <option value="openai">OpenAI</option>
+                                </select>
+                            </label>
+                        </div>
+                        <div id="openaiSettings">
+                            <div class="field-row">
+                                <label style="width:100%">
+                                    <div style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem;">
+                                        <div>
+                                            <span class="label-subtitle">Accès privé (~1ct/100 requêtes)</span>
+                                            <br>
+                                            <a href="https://platform.openai.com/settings/organization/api-keys" class="label-title dashed-link" target="_blank" rel="noopener noreferrer">Clé OpenAI</a>
+                                            <span class="ia-status" id="openaiStatus" aria-hidden="true"></span>
+                                        </div>
+                                        <div style="display:flex; gap:0.35rem;">
+                                            <button id="openaiVerifyBtn" type="button" class="btn-secondary">Vérifier</button>
+                                        </div>
+                                    </div>
+                                    <input id="iaApiKeyInput" type="text" placeholder="sk-..." />
+                                </label>
+                            </div>
+                            <div class="field-row">
+                                <label>
+                                    <span class="label-title">Modèle OpenAI</span>
+                                    <select id="openaiModelSelect">
+                                        <option value="gpt-5-nano">gpt-5-nano</option>
+                                        <option value="gpt-5-mini">gpt-5-mini</option>
+                                    </select>
+                                </label>
+                            </div>
+                            <div class="field-row">
+                                <label>
+                                    <span class="label-title">Effort de raisonnement OpenAI</span>
+                                    <select id="reasoningEffortSelect">
+                                        <option value="minimal">Minimal</option>
+                                        <option value="low">Faible</option>
+                                        <option value="medium">Moyen</option>
+                                        <option value="high">Élevé</option>
+                                    </select>
+                                </label>
+                            </div>
+                        </div>
+                        <div id="openrouterSettings" style="display:none;">
+                            <div class="field-row">
+                                <label style="width:100%">
+                                    <div style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem;">
+                                        <div>
+                                            <span class="label-subtitle">Accès partagé sans rétention des données. Accès privé (~1ct/100 requêtes)</span>
+                                            <br>
+                                            <a class="label-title" href="https://openrouter.ai/settings/keys" target="_blank" rel="noopener noreferrer">Clé OpenRouter</a>
+                                            <span class="ia-status" id="openrouterStatus" aria-hidden="true"></span>
+                                            <span class="ia-model-label" id="openrouterModelLabel" aria-live="polite"></span><br>
+                                        </div>
+                                        <div style="display:flex; gap:0.35rem;">
+                                            <button id="openrouterVerifyBtn" type="button" class="btn-secondary">Vérifier</button>
+                                        </div>
+                                    </div>
+                                    <input id="openrouterApiKeyInput" type="text" placeholder="or-..." />
+                                </label>
+                            </div>
+                            <div class="field-row">
+                                <label style="width:100%">
+                                    <span class="label-title">Modèle IA</span>
+                                    <input id="openrouterModelInput" type="text" placeholder="@preset/gotoolkit ou openai/gpt-oss-120b" />
+                                </label>
+                            </div>
+                            <div class="field-row" id="openrouterOcrModelRow">
+                                <label style="width:100%">
+                                    <span class="label-title">Modèle OCR</span>
+                                    <input id="openrouterOcrModelInput" type="text" placeholder="qwen/qwen-2.5-vl-7b-instruct" />
+                                </label>
+                            </div>
+                            <div class="field-row">
+                                <label style="width:100%">
+                                    <span class="label-title">Modèle Embeddings</span>
+                                    <input id="openrouterEmbeddingsModelInput" type="text" placeholder="qwen/qwen3-embedding-8b" />
+                                </label>
+                            </div>
+                            <div id="openrouterExtras" style="display:none; margin-top:8px;">
+                                <div class="field-row">
+                                    <label>
+                                        <span class="label-title">Collecte et rétention des données</span>
+                                        <select id="openrouterDataCollectionSelect">
+                                            <option value="deny-zdr">Non</option>
+                                            <option value="allow">Oui</option>
+                                        </select>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </label>
-            </div>
-            <div class="field-row">
-                <label style="width:100%">
-                    <span class="label-title">Thème</span>
-                    <select id="themeSelectMemo">
-                        <option value="cream">Clair</option>
-                        <option value="dark">Sombre</option>
-                        <option value="auto" selected>Auto</option>
-                    </select>
-                </label>
-            </div>
-        </div>
-        <div class="settings-tab-panel" data-panel="integrationsTab" hidden>
-            <div class="field-row">
-                <label style="width:100%">
-                    <span class="label-title">Notion</span>
-                    <a id="notionAuthLink" class="label-title dashed-link" href="#" style="margin-left:8px;">Se connecter</a>
-                </label>
-            </div>
-            <div class="field-row" id="notionWorkspaceRow" style="display:none;">
-                <label style="width:100%">
-                    <span class="label-title">Workspace</span>
-                    <select id="notionWorkspaceSelect" disabled>
-                        <option value="">Aucun workspace</option>
-                    </select>
-                </label>
-            </div>
-            <div class="field-row" id="notionDefaultPathRow" style="display:none;">
-                <label style="width:100%">
-                    <span class="label-title">Chemin par défaut</span>
-                    <input id="notionDefaultPathInput" type="text" placeholder="/Espace/Projet" />
-                </label>
-            </div>
-            <hr style="width:100%; border:none; border-top:1px solid var(--border-main); margin:8px 0;">
-            <div class="field-row">
-                <label style="width:100%">
-                    <span class="label-title">YouTube</span>
-                    <a id="youtubeAuthLink" class="label-title dashed-link" href="#" style="margin-left:8px;">Se connecter</a>
-                </label>
-            </div>
-            <div class="field-row" id="youtubeChannelRow" style="display:none;">
-                <label style="width:100%">
-                    <span class="label-title">Chaîne</span>
-                    <select id="youtubeChannelSelect" disabled>
-                        <option value="">Aucune chaîne</option>
-                    </select>
-                </label>
-            </div>
-            <div class="field-row" id="youtubeNoChannelRow" style="display:none;">
-                <label style="width:100%">
-                    <span class="label-subtitle">Aucune chaîne trouvée sur ce compte.</span>
-                    <a id="youtubeChannelSwitcherLink" class="label-title dashed-link"
-                        href="https://www.youtube.com/channel_switcher" target="_blank"
-                        rel="noopener noreferrer">Créer ou sélectionner une chaîne YouTube</a>
-                </label>
-            </div>
-            <hr style="width:100%; border:none; border-top:1px solid var(--border-main); margin:8px 0;">
-            <div class="field-row">
-                <label style="width:100%">
-                    <span class="label-title">Outlook</span>
-                    <a id="microsoftAuthLink" class="label-title dashed-link" href="#" style="margin-left:8px;">Se connecter</a>
-                </label>
-            </div>
-            <hr style="width:100%; border:none; border-top:1px solid var(--border-main); margin:8px 0;">
-            <div class="field-row">
-                <label style="width:100%">
-                    <span class="label-title">Gmail</span>
-                    <a id="gmailAuthLink" class="label-title dashed-link" href="#" style="margin-left:8px;">Se connecter</a>
-                </label>
-            </div>
+                    <div class="settings-tab-panel" data-panel="paramsTab" hidden>
+                        <div class="field-row">
+                            <label style="width:100%">
+                                <span class="label-title">Prénom</span>
+                                <div style="position:relative; width:100%;">
+                                    <i data-lucide="user" style="width:14px;height:14px;position:absolute;left:10px;top:50%;transform:translateY(-50%);opacity:0.7;pointer-events:none;"></i>
+                                    <input id="ownerToken" type="text" style="padding-left:34px;" />
+                                </div>
+                            </label>
+                        </div>
+                        <div class="field-row">
+                            <label style="width:100%">
+                                <span class="label-title">Thème</span>
+                                <select id="themeSelectMemo">
+                                    <option value="cream">Clair</option>
+                                    <option value="dark">Sombre</option>
+                                    <option value="auto" selected>Auto</option>
+                                </select>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="settings-tab-panel" data-panel="integrationsTab" hidden>
+                        <div class="field-row">
+                            <label style="width:100%">
+                                <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%;">
+                                    <span class="label-title">Notion</span>
+                                    <a id="notionAuthLink" class="label-title dashed-link" href="#">Se connecter</a>
+                                </div>
+                            </label>
+                        </div>
+                        <div class="field-row" id="notionWorkspaceRow" style="display:none;">
+                            <label style="width:100%">
+                                <span class="label-title">Workspace</span>
+                                <select id="notionWorkspaceSelect" disabled>
+                                    <option value="">Aucun workspace</option>
+                                </select>
+                            </label>
+                        </div>
+                        <div class="field-row" id="notionDefaultPathRow" style="display:none;">
+                            <label style="width:100%">
+                                <span class="label-title">Chemin par défaut</span>
+                                <input id="notionDefaultPathInput" type="text" placeholder="/Espace/Projet" />
+                            </label>
+                        </div>
+                        <hr style="width:100%; border:none; border-top:1px solid var(--border-main); margin:8px 0;">
+                        <div class="field-row">
+                            <label style="width:100%">
+                                <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%;">
+                                    <span class="label-title">YouTube</span>
+                                    <a id="youtubeAuthLink" class="label-title dashed-link" href="#">Se connecter</a>
+                                </div>
+                            </label>
+                        </div>
+                        <div class="field-row" id="youtubeChannelRow" style="display:none;">
+                            <label style="width:100%">
+                                <span class="label-title">Chaîne</span>
+                                <select id="youtubeChannelSelect" disabled>
+                                    <option value="">Aucune chaîne</option>
+                                </select>
+                            </label>
+                        </div>
+                        <div class="field-row" id="youtubeNoChannelRow" style="display:none;">
+                            <label style="width:100%">
+                                <span class="label-subtitle">Aucune chaîne trouvée sur ce compte.</span>
+                                <a id="youtubeChannelSwitcherLink" class="label-title dashed-link"
+                                    href="https://www.youtube.com/channel_switcher" target="_blank"
+                                    rel="noopener noreferrer">Créer ou sélectionner une chaîne YouTube</a>
+                            </label>
+                        </div>
+                        <hr style="width:100%; border:none; border-top:1px solid var(--border-main); margin:8px 0;">
+                        <div class="field-row">
+                            <label style="width:100%">
+                                <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%;">
+                                    <span class="label-title">Outlook</span>
+                                    <a id="microsoftAuthLink" class="label-title dashed-link" href="#">Se connecter</a>
+                                </div>
+                            </label>
+                        </div>
+                        <hr style="width:100%; border:none; border-top:1px solid var(--border-main); margin:8px 0;">
+                        <div class="field-row">
+                            <label style="width:100%">
+                                <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%;">
+                                    <span class="label-title">Gmail</span>
+                                    <a id="gmailAuthLink" class="label-title dashed-link" href="#">Se connecter</a>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="settings-tab-panel" data-panel="promptTab" hidden>
+                        <div class="field-row">
+                            <label>
+                                <span class="label-title">Preset</span>
+                                <select id="chatPromptPresetSelect">
+                                    <option value="advice">Conseiller</option>
+                                    <option value="ask">Explorer</option>
+                                    <option value="suggest">Suggérer</option>
+                                    <option value="edit">Éditer</option>
+                                </select>
+                            </label>
+                        </div>
+                        <div class="field-row">
+                            <label>
+                                <span class="label-title">Prompt</span>
+                                <textarea id="chatPromptTextarea" rows="15" placeholder="Entrez le prompt personnalisé..."></textarea>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="feedback-actions">
+                    <button id="refreshCacheBtn" type="button" class="btn-secondary" title="Réparer">Réparer</button>
+                    <div style="flex: 1;"></div>
+                    <button id="resetChatPromptBtn" type="button" class="btn-secondary" hidden>Réinitialiser</button>
+                    <button id="saveSettingsBtn" type="button" class="btn-primary" style="margin-left:auto;">Sauvegarder</button>
+                </div>
+            </form>
         </div>
     `;
 
@@ -117,6 +269,398 @@
         modal.setAttribute("aria-hidden", "true");
     }
 
+    function populateOpenrouterModelInput() {
+        const input = doc.getElementById("openrouterModelInput");
+        if (!input) return;
+        const stored = (
+            (global.GoToolkitIAConfig && typeof global.GoToolkitIAConfig.getOpenRouterModel === "function"
+                ? global.GoToolkitIAConfig.getOpenRouterModel()
+                : "") ||
+            (global.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_MODEL || "")
+        );
+        if (stored) input.value = stored;
+    }
+
+    function populateOpenrouterOcrModelInput() {
+        const input = doc.getElementById("openrouterOcrModelInput");
+        if (!input) return;
+        const stored = (
+            (global.GoToolkitIAConfig && typeof global.GoToolkitIAConfig.getOpenRouterOcrModel === "function"
+                ? global.GoToolkitIAConfig.getOpenRouterOcrModel()
+                : "") ||
+            (global.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_OCR_MODEL || "")
+        );
+        if (stored) input.value = stored;
+    }
+
+    function populateOpenrouterEmbeddingsModelInput() {
+        const input = doc.getElementById("openrouterEmbeddingsModelInput");
+        if (!input) return;
+        const stored = (
+            (global.GoToolkitIAConfig && typeof global.GoToolkitIAConfig.getOpenRouterEmbeddingsModel === "function"
+                ? global.GoToolkitIAConfig.getOpenRouterEmbeddingsModel()
+                : "") ||
+            (global.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_EMBEDDINGS_MODEL || "")
+        );
+        if (stored) input.value = stored;
+    }
+
+    async function performFullReset() {
+        try {
+            const databases = ["go-toolkit", "gotoolkit-documents"];
+            databases.forEach(dbName => {
+                try { indexedDB.deleteDatabase(dbName); } catch (err) { /* noop */ }
+            });
+        } catch (err) { /* noop */ }
+
+        try { localStorage.clear(); } catch (err) { /* noop */ }
+        try { sessionStorage.clear(); } catch (err) { /* noop */ }
+
+        try {
+            doc.cookie.split(";").forEach(function (cookie) {
+                const eqPos = cookie.indexOf("=");
+                const name = eqPos > -1 ? cookie.substring(0, eqPos).trim() : cookie.trim();
+                if (!name) return;
+                doc.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/";
+            });
+        } catch (err) { /* noop */ }
+
+        const today = new Date();
+        const version = `${today.getFullYear()}.${String(today.getMonth() + 1).padStart(2, "0")}.${String(today.getDate()).padStart(2, "0")}.1`;
+        const targetUrl = "/?v=" + version;
+        if ("caches" in global) {
+            try {
+                const names = await caches.keys();
+                await Promise.all(names.map(name => caches.delete(name)));
+            } catch (err) { /* noop */ }
+        }
+        global.location.href = targetUrl;
+    }
+
+    function bindRepairButton() {
+        const repairBtn = doc.getElementById("refreshCacheBtn");
+        if (!repairBtn || repairBtn.dataset.repairBound === "1") return;
+        repairBtn.addEventListener("click", function () {
+            const confirmed = global.confirm("ATTENTION : Cette action va supprimer TOUTES vos données locales et réinitialiser l'application. Voulez-vous continuer ?");
+            if (confirmed) {
+                performFullReset();
+            }
+        });
+        repairBtn.dataset.repairBound = "1";
+    }
+
+    function getTimestampMs() {
+        if (typeof performance === "object" && typeof performance.now === "function") {
+            return performance.now();
+        }
+        return Date.now();
+    }
+
+    function formatLatencyMs(value) {
+        const num = Number(value);
+        if (!Number.isFinite(num)) return null;
+        const rounded = Math.round(Math.max(0, num));
+        return rounded.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+    }
+
+    function appendLatencyToLabel(label, latencyMs) {
+        if (!label || latencyMs == null) return label;
+        const formatted = formatLatencyMs(latencyMs);
+        if (!formatted) return label;
+        return `${label} (${formatted} ms)`;
+    }
+
+    function getRateLimitRemaining(headers) {
+        if (!headers || typeof headers.get !== "function") return null;
+        const value = headers.get("X-RateLimit-Remaining");
+        if (!value) return null;
+        const trimmed = value.trim();
+        return trimmed || null;
+    }
+
+    function setStatus(el, { state = null, label = "" } = {}) {
+        if (!el) return;
+        if (state === "verifying") {
+            el.innerHTML = '<i data-lucide="loader-circle" class="lucide-spin" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i>' + (label || "Vérification...");
+            el.classList.remove("ia-status--error");
+            global.lucide?.createIcons?.();
+            return;
+        }
+        const iconByState = {
+            ready: "circle-check",
+            warning: "triangle-alert",
+            error: "circle-alert"
+        };
+        const icon = iconByState[state] || null;
+        el.innerHTML = (icon ? `<i data-lucide="${icon}" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i>` : "") + (label || "");
+        if (state === "error") {
+            el.classList.add("ia-status--error");
+        } else {
+            el.classList.remove("ia-status--error");
+        }
+        global.lucide?.createIcons?.();
+    }
+
+    function persistModalAiSettings() {
+        const cfg = global.GoToolkitIAConfig;
+        const apiKeyInput = doc.getElementById("iaApiKeyInput");
+        const openaiModelSelect = doc.getElementById("openaiModelSelect");
+        const aiBackendSelect = doc.getElementById("aiBackendSelect");
+        const openrouterApiKeyInput = doc.getElementById("openrouterApiKeyInput");
+        const openrouterDataCollectionSelect = doc.getElementById("openrouterDataCollectionSelect");
+        const openrouterModelInput = doc.getElementById("openrouterModelInput");
+        const openrouterOcrModelInput = doc.getElementById("openrouterOcrModelInput");
+        const openrouterEmbeddingsModelInput = doc.getElementById("openrouterEmbeddingsModelInput");
+
+        const openAiKey = (apiKeyInput?.value || "").trim();
+        const openAiModel = (openaiModelSelect?.value || "").trim();
+        const backend = (aiBackendSelect?.value || "openrouter").trim();
+        const openRouterKey = (openrouterApiKeyInput?.value || "").trim();
+        const openRouterData = (openrouterDataCollectionSelect?.value || cfg?.DEFAULTS?.OPENROUTER_DATA_COLLECTION || "deny").trim();
+        const openRouterModel = (openrouterModelInput?.value || "").trim() || (cfg?.DEFAULTS?.OPENROUTER_MODEL || "");
+        const openRouterOcrModel = (openrouterOcrModelInput?.value || "").trim() || (cfg?.DEFAULTS?.OPENROUTER_OCR_MODEL || "");
+        const openRouterEmbModel = (openrouterEmbeddingsModelInput?.value || "").trim() || (cfg?.DEFAULTS?.OPENROUTER_EMBEDDINGS_MODEL || "");
+
+        try {
+            if (cfg?.setApiKey) cfg.setApiKey(openAiKey);
+            if (cfg?.setOpenAiModel && openAiModel) cfg.setOpenAiModel(openAiModel);
+            if (cfg?.setBackend) cfg.setBackend(backend);
+            if (cfg?.setOpenRouterApiKey) cfg.setOpenRouterApiKey(openRouterKey);
+            if (cfg?.setOpenRouterDataCollection) cfg.setOpenRouterDataCollection(openRouterData);
+            if (cfg?.setOpenRouterModel) cfg.setOpenRouterModel(openRouterModel);
+            if (cfg?.setOpenRouterOcrModel) cfg.setOpenRouterOcrModel(openRouterOcrModel);
+            if (cfg?.setOpenRouterEmbeddingsModel) cfg.setOpenRouterEmbeddingsModel(openRouterEmbModel);
+        } catch (err) { /* noop */ }
+        try {
+            localStorage.setItem("go-toolkit-ai-backend", backend || "openrouter");
+        } catch (err) { /* noop */ }
+    }
+
+    async function testOpenAiConnection() {
+        persistModalAiSettings();
+        const statusEl = doc.getElementById("openaiStatus");
+        const cfg = global.GoToolkitIAConfig;
+        const endpoint = (cfg?.PROXY_ENDPOINTS?.responses) || "https://openai.gotoolkit.workers.dev/v1/responses";
+        const model = (cfg?.getOpenAiModel?.() || cfg?.DEFAULTS?.OPENAI_MODEL || "gpt-5-nano");
+        const apiKey = (cfg?.getApiKey?.() || "").trim();
+        setStatus(statusEl, { state: "verifying", label: "Vérification..." });
+        if (apiKey) {
+            try {
+                const start = getTimestampMs();
+                const response = await fetch("https://api.openai.com/v1/models", {
+                    method: "GET",
+                    headers: { Authorization: "Bearer " + apiKey }
+                });
+                if (!response.ok) throw new Error("HTTP " + response.status);
+                const latency = Math.max(0, getTimestampMs() - start);
+                const remain = getRateLimitRemaining(response.headers);
+                let label = appendLatencyToLabel("Accès privé", latency);
+                if (remain) label += ` • Disponible : ${remain}`;
+                setStatus(statusEl, { state: "ready", label });
+                return true;
+            } catch (err) {
+                // fallback to proxy below
+            }
+        }
+        try {
+            const start = getTimestampMs();
+            const response = await fetch(endpoint, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    model,
+                    input: [{ role: "user", content: [{ type: "input_text", text: "Vérification" }] }],
+                    stream: false
+                })
+            });
+            if (!response.ok) throw new Error("HTTP " + response.status);
+            const latency = Math.max(0, getTimestampMs() - start);
+            setStatus(statusEl, { state: "ready", label: appendLatencyToLabel("Accès partagé", latency) });
+            return true;
+        } catch (err) {
+            setStatus(statusEl, { state: "warning", label: "Clé invalide" });
+            return false;
+        }
+    }
+
+    async function testAssemblyAiConnection() {
+        persistModalAiSettings();
+        const statusEl = doc.getElementById("assemblyAiStatus");
+        const input = doc.getElementById("assemblyAiKeyInput");
+        const key = (input?.value || "").trim();
+        if (!key) {
+            setStatus(statusEl, { state: "warning", label: "Clé invalide" });
+            return false;
+        }
+        setStatus(statusEl, { state: "verifying", label: "Vérification..." });
+        try {
+            const response = await fetch("https://api.assemblyai.com/v2/transcript", {
+                method: "GET",
+                headers: { Authorization: key }
+            });
+            if (!response.ok) throw new Error("HTTP " + response.status);
+            setStatus(statusEl, { state: "ready", label: "Accès privé" });
+            return true;
+        } catch (err) {
+            const proxyBase = (global.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL || "https://assemblyai.gotoolkit.workers.dev/token").replace(/\/token$/, "");
+            try {
+                const proxyResponse = await fetch(proxyBase + "/transcript", {
+                    method: "GET",
+                    headers: { Authorization: key }
+                });
+                if (!proxyResponse.ok) throw new Error("HTTP " + proxyResponse.status);
+                setStatus(statusEl, { state: "warning", label: "Clé invalide" });
+                return true;
+            } catch (proxyErr) {
+                setStatus(statusEl, { state: "warning", label: "Clé invalide" });
+                return false;
+            }
+        }
+    }
+
+    async function testOpenRouterConnection() {
+        persistModalAiSettings();
+        const statusEl = doc.getElementById("openrouterStatus");
+        const modelLabelEl = doc.getElementById("openrouterModelLabel");
+        const cfg = global.GoToolkitIAConfig;
+        const model = (cfg?.getOpenRouterModel?.() || cfg?.DEFAULTS?.OPENROUTER_MODEL || "openrouter/auto").trim();
+        const apiKey = (cfg?.getOpenRouterApiKey?.() || "").trim();
+        setStatus(statusEl, { state: "verifying", label: "Vérification..." });
+
+        async function tryEndpoint(url, useKey) {
+            const headers = { "Content-Type": "application/json" };
+            if (useKey && apiKey) headers.Authorization = "Bearer " + apiKey;
+            const start = getTimestampMs();
+            const response = await fetch(url, {
+                method: "POST",
+                headers,
+                body: JSON.stringify({
+                    model,
+                    messages: [{ role: "user", content: "Vérification" }],
+                    stream: false
+                }),
+                cache: "no-cache"
+            });
+            if (!response.ok) throw new Error("HTTP " + response.status);
+            const latencyMs = Math.max(0, getTimestampMs() - start);
+            return {
+                rateLimitRemaining: getRateLimitRemaining(response.headers),
+                latencyMs
+            };
+        }
+
+        if (apiKey) {
+            try {
+                const result = await tryEndpoint("https://openrouter.ai/api/v1/chat/completions", true);
+                setStatus(statusEl, { state: "ready", label: "Accès privé" });
+                if (modelLabelEl) {
+                    let label = appendLatencyToLabel("Accès privé", result.latencyMs);
+                    if (result.rateLimitRemaining) label += ` • Disponible : ${result.rateLimitRemaining}`;
+                    modelLabelEl.textContent = `${label} · ${model}`;
+                }
+                return true;
+            } catch (err) {
+                // fallback to shared access
+            }
+        }
+        try {
+            const result = await tryEndpoint("https://openrouter.gotoolkit.workers.dev/api/v1/chat/completions", false);
+            setStatus(statusEl, { state: "warning", label: "" });
+            if (modelLabelEl) {
+                let label = appendLatencyToLabel("Clé invalide.", result.latencyMs);
+                if (result.rateLimitRemaining) label += ` • Disponible : ${result.rateLimitRemaining}`;
+                modelLabelEl.textContent = `${label} · ${model}`;
+            }
+            return true;
+        } catch (err) {
+            setStatus(statusEl, { state: "error", label: "Accès partagé indisponible" });
+            if (modelLabelEl) modelLabelEl.textContent = "Accès partagé indisponible";
+            return false;
+        }
+    }
+
+    function bindVerifyButtons() {
+        const openaiVerifyBtn = doc.getElementById("openaiVerifyBtn");
+        const assemblyAiVerifyBtn = doc.getElementById("assemblyAiVerifyBtn");
+        const openrouterVerifyBtn = doc.getElementById("openrouterVerifyBtn");
+
+        if (openaiVerifyBtn && openaiVerifyBtn.dataset.verifyBound !== "1") {
+            openaiVerifyBtn.addEventListener("click", async function () {
+                try {
+                    const handlers = global.GoToolkitSettingsModalHandlers || {};
+                    if (typeof handlers.onVerifyOpenAi === "function") {
+                        await handlers.onVerifyOpenAi();
+                    } else {
+                        await testOpenAiConnection();
+                    }
+                } catch (err) { /* noop */ }
+            });
+            openaiVerifyBtn.dataset.verifyBound = "1";
+        }
+
+        if (assemblyAiVerifyBtn && assemblyAiVerifyBtn.dataset.verifyBound !== "1") {
+            assemblyAiVerifyBtn.addEventListener("click", async function () {
+                try {
+                    const handlers = global.GoToolkitSettingsModalHandlers || {};
+                    if (typeof handlers.onVerifyAssemblyAi === "function") {
+                        await handlers.onVerifyAssemblyAi();
+                    } else {
+                        await testAssemblyAiConnection();
+                    }
+                } catch (err) { /* noop */ }
+            });
+            assemblyAiVerifyBtn.dataset.verifyBound = "1";
+        }
+
+        if (openrouterVerifyBtn && openrouterVerifyBtn.dataset.verifyBound !== "1") {
+            openrouterVerifyBtn.addEventListener("click", async function () {
+                try {
+                    const handlers = global.GoToolkitSettingsModalHandlers || {};
+                    if (typeof handlers.onVerifyOpenRouter === "function") {
+                        await handlers.onVerifyOpenRouter();
+                    } else {
+                        await testOpenRouterConnection();
+                    }
+                } catch (err) { /* noop */ }
+            });
+            openrouterVerifyBtn.dataset.verifyBound = "1";
+        }
+    }
+
+    function syncBackendSettingsVisibility() {
+        const aiBackendSelect = doc.getElementById("aiBackendSelect");
+        const openaiSettingsEl = doc.getElementById("openaiSettings");
+        const openrouterSettingsEl = doc.getElementById("openrouterSettings");
+        if (!aiBackendSelect) return;
+        const value = (aiBackendSelect.value || "openrouter").toLowerCase();
+        if (openaiSettingsEl) openaiSettingsEl.style.display = value === "openai" ? "" : "none";
+        if (openrouterSettingsEl) openrouterSettingsEl.style.display = value === "openrouter" ? "" : "none";
+        if (value === "openrouter") {
+            populateOpenrouterModelInput();
+            populateOpenrouterOcrModelInput();
+            populateOpenrouterEmbeddingsModelInput();
+        }
+    }
+
+    function bindBackendSelector() {
+        const aiBackendSelect = doc.getElementById("aiBackendSelect");
+        if (!aiBackendSelect || aiBackendSelect.dataset.backendBound === "1") return;
+        try {
+            const stored = localStorage.getItem("go-toolkit-ai-backend");
+            if (stored && !aiBackendSelect.value) {
+                aiBackendSelect.value = stored;
+            }
+        } catch (err) { /* noop */ }
+        aiBackendSelect.addEventListener("change", function () {
+            try {
+                localStorage.setItem("go-toolkit-ai-backend", aiBackendSelect.value || "openrouter");
+            } catch (err) { /* noop */ }
+            syncBackendSettingsVisibility();
+        });
+        aiBackendSelect.dataset.backendBound = "1";
+        syncBackendSettingsVisibility();
+    }
+
     function bind(options = {}) {
         const modal = doc.getElementById(options.modalId || "settingsModal");
         if (!modal) return null;
@@ -132,6 +676,8 @@
         const api = {
             open: function () {
                 if (onOpen) onOpen();
+                bindBackendSelector();
+                syncBackendSettingsVisibility();
                 open(modal);
             },
             close: function () {
@@ -171,30 +717,32 @@
     }
 
     global.GoToolkitSettingsModal = {
-        bind
+        bind,
+        performFullReset,
+        populateOpenrouterModelInput,
+        populateOpenrouterOcrModelInput,
+        populateOpenrouterEmbeddingsModelInput,
+        formatLatencyMs,
+        appendLatencyToLabel,
+        testOpenAiConnection,
+        testAssemblyAiConnection,
+        testOpenRouterConnection
     };
 
-    function ensureSharedSettingsModalTabs() {
+    function ensureSharedSettingsModalStructure() {
         const modal = doc.getElementById("settingsModal");
         if (!modal) return;
-
-        const tabsRow = modal.querySelector(".settings-tabs");
-        if (!tabsRow) return;
-        let panelContainer = modal.querySelector(".settings-tab-panels-wrapper");
-        if (!panelContainer) {
-            const parent = modal.querySelector(".ia-actions, .feedback-form");
-            if (!parent) return;
-            panelContainer = doc.createElement("div");
-            panelContainer.className = "settings-tab-panels-wrapper";
-            parent.appendChild(panelContainer);
+        if (!modal.querySelector(".settings-modal")) {
+            modal.innerHTML = SHARED_SETTINGS_MODAL_HTML;
         }
-        Array.from(tabsRow.querySelectorAll('[data-tab="paramsTab"], [data-tab="integrationsTab"]')).forEach(el => el.remove());
-        Array.from(modal.querySelectorAll('.settings-tab-panel[data-panel="paramsTab"], .settings-tab-panel[data-panel="integrationsTab"]')).forEach(el => el.remove());
-        tabsRow.insertAdjacentHTML("beforeend", SHARED_SETTINGS_TABS_HTML);
-        panelContainer.insertAdjacentHTML("beforeend", SHARED_SETTINGS_PANELS_HTML);
+        bindBackendSelector();
+        syncBackendSettingsVisibility();
+        bindRepairButton();
+        bindVerifyButtons();
     }
 
-    ensureSharedSettingsModalTabs();
+    ensureSharedSettingsModalStructure();
+    global.GoToolkitResetApp = performFullReset;
 
     global.GoToolkitSettingsModal.setIntegrationConnected = function (anchorEl, connected) {
         if (!anchorEl || !anchorEl.parentElement) return;

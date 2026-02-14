@@ -46,10 +46,10 @@
         crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.min.js" crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.min.js" crossorigin></script>
-    <link rel="stylesheet" href="styles/style.css?v=2026.02.14.16">
+    <link rel="stylesheet" href="styles/style.css?v=2026.02.14.17">
     <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
-    <link rel="stylesheet" href="styles/memo.css?v=2026.02.14.16">
-    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.14.16">
+    <link rel="stylesheet" href="styles/memo.css?v=2026.02.14.17">
+    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.14.17">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.css">
     <script src="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.js"></script>
 </head>
@@ -90,7 +90,7 @@
                 <div class="tabs-actions">
                     <button id="documentExplorerToggle" class="app-home-link" type="button" title="Bibliothèque"
                         aria-expanded="false" aria-controls="documentExplorer"><i data-lucide="library"></i></button>
-                    <a href="/?v=2026.02.14.16" class="nav-switch-btn" title="Accueil"
+                    <a href="/?v=2026.02.14.17" class="nav-switch-btn" title="Accueil"
                         style="text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
                         <i data-lucide="home"></i>
                     </a>
@@ -304,119 +304,13 @@
         </div>
     </div>
 
-    <div id="settingsModal" class="modal-overlay" role="dialog" aria-modal="true" aria-hidden="true">
-        <div class="modal settings-modal" style="max-width: 640px; width: min(640px, 94vw);">
-            <div class="modal-header">
-                <h3><i data-lucide="settings"
-                        style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Paramètres</h3>
-                <button class="modal-close" id="closeSettingsBtn" type="button" title="Fermer" aria-label="Fermer"><i
-                        data-lucide="x"></i></button>
-            </div>
-            <div class="ia-actions" style="gap: 14px;">
-                <div class="settings-tabs tabs">
-                    <button type="button" class="tab-btn active" data-tab="paramsTab">
-                        <i data-lucide="sliders"
-                            style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Paramétrages
-                    </button>
-                    <button type="button" class="tab-btn" data-tab="integrationsTab">
-                        <i data-lucide="plug-zap"
-                            style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Intégrations
-                    </button>
-                </div>
-                <div class="settings-tab-panel" data-panel="paramsTab">
-                    <div class="field-row">
-                        <label style="width:100%">
-                            <span class="label-title">Id Go-Toolkit</span>
-                            <div style="position:relative; width:100%;">
-                                <i data-lucide="user"
-                                    style="width:14px;height:14px;position:absolute;left:10px;top:50%;transform:translateY(-50%);opacity:0.7;pointer-events:none;"></i>
-                                <input id="ownerToken" type="text" style="padding-left:34px;" />
-                            </div>
-                        </label>
-                    </div>
-                    <div class="field-row">
-                        <label>
-                            <span class="label-title">Thème</span>
-                            <select id="themeSelectMemo">
-                                <option value="cream">Clair</option>
-                                <option value="dark">Sombre</option>
-                                <option value="auto" selected>Auto</option>
-                            </select>
-                        </label>
-                    </div>
-                </div>
-                <div class="settings-tab-panel" data-panel="integrationsTab" hidden>
-                    <div class="field-row">
-                        <label style="width:100%">
-                            <span class="label-title">Notion</span>
-                            <a id="notionAuthLink" class="label-title dashed-link"
-                                href="#" style="margin-left:8px;">Se connecter</a>
-                        </label>
-                    </div>
-                    <div class="field-row" id="notionWorkspaceRow" style="display:none;">
-                        <label style="width:100%">
-                            <span class="label-title">Workspace</span>
-                            <select id="notionWorkspaceSelect" disabled>
-                                <option value="">Aucun workspace</option>
-                            </select>
-                        </label>
-                    </div>
-                    <div class="field-row" id="notionDefaultPathRow" style="display:none;">
-                        <label style="width:100%">
-                            <span class="label-title">Chemin par défaut</span>
-                            <input id="notionDefaultPathInput" type="text" placeholder="/Espace/Projet" />
-                        </label>
-                    </div>
-                    <hr style="width:100%; border:none; border-top:1px solid var(--border-main); margin:8px 0;">
-                    <div class="field-row">
-                        <label style="width:100%">
-                            <span class="label-title">YouTube</span>
-                            <a id="youtubeAuthLink" class="label-title dashed-link"
-                                href="#" style="margin-left:8px;">Se connecter</a>
-                        </label>
-                    </div>
-                    <div class="field-row" id="youtubeChannelRow" style="display:none;">
-                        <label style="width:100%">
-                            <span class="label-title">Chaîne</span>
-                            <select id="youtubeChannelSelect" disabled>
-                                <option value="">Aucune chaîne</option>
-                            </select>
-                        </label>
-                    </div>
-                    <div class="field-row" id="youtubeNoChannelRow" style="display:none;">
-                        <label style="width:100%">
-                            <span class="label-subtitle">Aucune chaîne trouvée sur ce compte.</span>
-                            <a id="youtubeChannelSwitcherLink" class="label-title dashed-link"
-                                href="https://www.youtube.com/channel_switcher" target="_blank"
-                                rel="noopener noreferrer">Créer ou sélectionner une chaîne YouTube</a>
-                        </label>
-                    </div>
-                    <hr style="width:100%; border:none; border-top:1px solid var(--border-main); margin:8px 0;">
-                    <div class="field-row">
-                        <label style="width:100%">
-                            <span class="label-title">Outlook</span>
-                            <a id="microsoftAuthLink" class="label-title dashed-link"
-                                href="#" style="margin-left:8px;">Se connecter</a>
-                        </label>
-                    </div>
-                    <hr style="width:100%; border:none; border-top:1px solid var(--border-main); margin:8px 0;">
-                    <div class="field-row">
-                        <label style="width:100%">
-                            <span class="label-title">Gmail</span>
-                            <a id="gmailAuthLink" class="label-title dashed-link"
-                                href="#" style="margin-left:8px;">Se connecter</a>
-                        </label>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    <div id="settingsModal" class="modal-overlay" role="dialog" aria-modal="true" aria-hidden="true"></div>
 
     <div id="memoInfoPopup" class="info-popup" role="dialog" aria-live="polite">
         <img src="img/logo.gif" alt="Logo Go-Toolkit" class="logo-light">
         <img src="img/logo_inverted.gif" alt="Logo Go-Toolkit" class="logo-dark">
         <strong>Go-Toolkit</strong>
-        <span>Version 2026.02.14.16</span>
+        <span>Version 2026.02.14.17</span>
         <span>Usage réservé à Savane Consulting.</span>
         <div class="info-actions info-actions--stacked">
             <div class="info-actions-row">
@@ -491,22 +385,22 @@
         window.GO_TOOLKIT_GMAIL_API_URL =
             window.GO_TOOLKIT_GMAIL_API_URL || "https://gmail.gotoolkit.workers.dev";
     </script>
-    <script src="js/config.js?v=2026.02.14.16"></script>
-    <script src="js/config-modal.js?v=2026.02.14.16"></script>
-    <script src="js/feature-visibility.js?v=2026.02.14.16"></script>
-    <script src="js/document-storage.js?v=2026.02.14.16"></script>
-    <script src="js/storage-service.js?v=2026.02.14.16"></script>
-    <script src="js/shared-ui.js?v=2026.02.14.16"></script>
-    <script src="js/share-worker-client.js?v=2026.02.14.16"></script>
-    <script src="js/share-history.js?v=2026.02.14.16"></script>
-    <script src="js/document-api.js?v=2026.02.14.16"></script>
-    <script src="js/keywordIndex.js?v=2026.02.14.16"></script>
-    <script src="js/document-rag.js?v=2026.02.14.16"></script>
-    <script src="js/ia-config.js?v=2026.02.14.16"></script>
-    <script src="preset.js?v=2026.02.14.16"></script>
-    <script src="prompt.js?v=2026.02.14.16"></script>
-    <script src="js/ia-client.js?v=2026.02.14.16"></script>
-    <script src="js/document-markdown.js?v=2026.02.14.16"></script>
+    <script src="js/config.js?v=2026.02.14.17"></script>
+    <script src="js/config-modal.js?v=2026.02.14.17"></script>
+    <script src="js/feature-visibility.js?v=2026.02.14.17"></script>
+    <script src="js/document-storage.js?v=2026.02.14.17"></script>
+    <script src="js/storage-service.js?v=2026.02.14.17"></script>
+    <script src="js/shared-ui.js?v=2026.02.14.17"></script>
+    <script src="js/share-worker-client.js?v=2026.02.14.17"></script>
+    <script src="js/share-history.js?v=2026.02.14.17"></script>
+    <script src="js/document-api.js?v=2026.02.14.17"></script>
+    <script src="js/keywordIndex.js?v=2026.02.14.17"></script>
+    <script src="js/document-rag.js?v=2026.02.14.17"></script>
+    <script src="js/ia-config.js?v=2026.02.14.17"></script>
+    <script src="preset.js?v=2026.02.14.17"></script>
+    <script src="prompt.js?v=2026.02.14.17"></script>
+    <script src="js/ia-client.js?v=2026.02.14.17"></script>
+    <script src="js/document-markdown.js?v=2026.02.14.17"></script>
     <script>
         document.addEventListener("click", function (event) {
             const legalTrigger = event.target?.closest?.("[data-open-nexus-modal]");
@@ -540,13 +434,13 @@
             ]
         };
     </script>
-    <script src="js/feedback.js?v=2026.02.14.16"></script>
-    <script src="js/voice-video-player.js?v=2026.02.14.16"></script>
-    <script src="js/voice-audio-player.js?v=2026.02.14.16"></script>
-    <script src="js/youtube-publish.js?v=2026.02.14.16"></script>
-    <script src="js/voice.js?v=2026.02.14.16"></script>
-    <script src="js/voice-transcript.js?v=2026.02.14.16"></script>
-    <script src="js/draw-memo.js?v=2026.02.14.16"></script>
+    <script src="js/feedback.js?v=2026.02.14.17"></script>
+    <script src="js/voice-video-player.js?v=2026.02.14.17"></script>
+    <script src="js/voice-audio-player.js?v=2026.02.14.17"></script>
+    <script src="js/youtube-publish.js?v=2026.02.14.17"></script>
+    <script src="js/voice.js?v=2026.02.14.17"></script>
+    <script src="js/voice-transcript.js?v=2026.02.14.17"></script>
+    <script src="js/draw-memo.js?v=2026.02.14.17"></script>
     <script>
         // Suppress React DevTools prompt in dev builds.
         window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = window.__REACT_DEVTOOLS_GLOBAL_HOOK__ || {
@@ -556,9 +450,9 @@
             onCommitFiberUnmount: function () { }
         };
     </script>
-    <script src="js/memo.bundle.js?v=2026.02.14.16"></script>
-    <script src="js/assist.js?v=2026.02.14.16"></script>
-    <script src="js/document-panel.js?v=2026.02.14.16"></script>
+    <script src="js/memo.bundle.js?v=2026.02.14.17"></script>
+    <script src="js/assist.js?v=2026.02.14.17"></script>
+    <script src="js/document-panel.js?v=2026.02.14.17"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             setTimeout(function () {
@@ -3872,7 +3766,7 @@
                     if (notionDefaultPathInput) {
                         notionDefaultPathInput.value = localStorage.getItem(NOTION_PATH_STORAGE_KEY) || "";
                     }
-                    activateSettingsTab("paramsTab");
+                    activateSettingsTab("integrationsTab");
                     refreshNotionIntegration(false).catch(() => { /* noop */ });
                     refreshYoutubeIntegration(false).catch(() => { /* noop */ });
                     refreshMicrosoftIntegration(false).catch(() => { /* noop */ });
