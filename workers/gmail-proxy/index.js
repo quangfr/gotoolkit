@@ -435,10 +435,11 @@ export default {
         const draft = await createGmailDraft(token.access_token, {
           message: { raw: base64UrlEncode(rawMime) }
         });
-        const draftId = String(draft?.id || draft?.message?.id || "").trim();
-        const draftUrl = draftId
-          ? `https://mail.google.com/mail/u/0/#drafts?compose=${encodeURIComponent(draftId)}`
-          : "https://mail.google.com/mail/u/0/#drafts";
+        const draftId = String(draft?.id || "").trim();
+        if (!draftId) {
+          return errorResponse(cors.headers, 502, "ID de brouillon Gmail introuvable");
+        }
+        const draftUrl = `https://mail.google.com/mail/u/0/#drafts?compose=${encodeURIComponent(draftId)}`;
         return jsonResponse(cors.headers, {
           ok: true,
           draftId,
