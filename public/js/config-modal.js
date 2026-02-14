@@ -158,16 +158,9 @@
                         </div>
                         <div class="field-row" id="notionWorkspaceRow" style="display:none;">
                             <label style="width:100%">
-                                <span class="label-title">Workspace</span>
                                 <select id="notionWorkspaceSelect" disabled>
                                     <option value="">Aucun workspace</option>
                                 </select>
-                            </label>
-                        </div>
-                        <div class="field-row" id="notionDefaultPathRow" style="display:none;">
-                            <label style="width:100%">
-                                <span class="label-title">Chemin par défaut</span>
-                                <input id="notionDefaultPathInput" type="text" placeholder="/Espace/Projet" />
                             </label>
                         </div>
                         <hr style="width:100%; border:none; border-top:1px solid var(--border-main); margin:8px 0;">
@@ -181,7 +174,6 @@
                         </div>
                         <div class="field-row" id="youtubeChannelRow" style="display:none;">
                             <label style="width:100%">
-                                <span class="label-title">Chaîne</span>
                                 <select id="youtubeChannelSelect" disabled>
                                     <option value="">Aucune chaîne</option>
                                 </select>
@@ -748,7 +740,11 @@
         if (!anchorEl || !anchorEl.parentElement) return;
         const label = anchorEl.parentElement.querySelector(".label-title");
         if (!label) return;
-        let indicator = anchorEl.parentElement.querySelector('[data-integration-connected]');
+        const legacyIndicator = anchorEl.parentElement.querySelector('[data-integration-connected]');
+        if (legacyIndicator && !label.contains(legacyIndicator)) {
+            legacyIndicator.remove();
+        }
+        let indicator = label.querySelector('[data-integration-connected]');
         if (!connected) {
             indicator?.remove();
             return;
@@ -761,7 +757,7 @@
             indicator.style.height = "14px";
             indicator.style.verticalAlign = "middle";
             indicator.style.marginLeft = "6px";
-            label.insertAdjacentElement("afterend", indicator);
+            label.appendChild(indicator);
         }
         if (global.lucide?.createIcons) {
             global.lucide.createIcons();

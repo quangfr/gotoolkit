@@ -46,10 +46,10 @@
         crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.min.js" crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.min.js" crossorigin></script>
-    <link rel="stylesheet" href="styles/style.css?v=2026.02.14.17">
+    <link rel="stylesheet" href="styles/style.css?v=2026.02.14.18">
     <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
-    <link rel="stylesheet" href="styles/memo.css?v=2026.02.14.17">
-    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.14.17">
+    <link rel="stylesheet" href="styles/memo.css?v=2026.02.14.18">
+    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.14.18">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.css">
     <script src="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.js"></script>
 </head>
@@ -90,7 +90,7 @@
                 <div class="tabs-actions">
                     <button id="documentExplorerToggle" class="app-home-link" type="button" title="Bibliothèque"
                         aria-expanded="false" aria-controls="documentExplorer"><i data-lucide="library"></i></button>
-                    <a href="/?v=2026.02.14.17" class="nav-switch-btn" title="Accueil"
+                    <a href="/?v=2026.02.14.18" class="nav-switch-btn" title="Accueil"
                         style="text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
                         <i data-lucide="home"></i>
                     </a>
@@ -132,8 +132,15 @@
                                             Email</button>
                                     </div>
                                 </div>
-                                <button id="fileMenuSendBtn" type="button" class="menu-panel-btn"><i
-                                        data-lucide="send"></i> Envoyer</button>
+                                <div class="menu-panel-item has-submenu">
+                                    <button type="button" class="menu-panel-btn"><i data-lucide="send"></i>
+                                        Envoyer</button>
+                                    <div class="submenu">
+                                        <button id="fileMenuSendGmail" type="button" class="menu-panel-btn">Gmail</button>
+                                        <button id="fileMenuSendOutlook" type="button" class="menu-panel-btn">Outlook</button>
+                                        <button id="fileMenuSendMailto" type="button" class="menu-panel-btn">Mailto</button>
+                                    </div>
+                                </div>
 
                                 <div class="menu-panel-item has-submenu">
                                     <button type="button" class="menu-panel-btn"><i data-lucide="download"></i>
@@ -152,8 +159,14 @@
 
                                 <button id="shareBtn" type="button" class="menu-panel-btn"><i data-lucide="share-2"></i>
                                     Partager</button>
-                                <button id="renameDocumentBtn" type="button" class="menu-panel-btn"><i
-                                        data-lucide="cloud-upload"></i> <span data-label>Publier</span></button>
+                                <div class="menu-panel-item has-submenu">
+                                    <button type="button" class="menu-panel-btn"><i data-lucide="cloud-upload"></i>
+                                        Publier</button>
+                                    <div class="submenu">
+                                        <button id="publishGoLiveBtn" type="button" class="menu-panel-btn">Go-Live</button>
+                                        <button id="publishNotionBtn" type="button" class="menu-panel-btn">Notion</button>
+                                    </div>
+                                </div>
                                 <button id="deleteDocumentBtn" type="button" class="menu-panel-btn"><i
                                         data-lucide="trash-2"></i> Supprimer</button>
                                 <button id="infoButton" type="button" class="menu-panel-btn"><i
@@ -310,12 +323,12 @@
         <img src="img/logo.gif" alt="Logo Go-Toolkit" class="logo-light">
         <img src="img/logo_inverted.gif" alt="Logo Go-Toolkit" class="logo-dark">
         <strong>Go-Toolkit</strong>
-        <span>Version 2026.02.14.17</span>
+        <span>Version 2026.02.14.18</span>
         <span>Usage réservé à Savane Consulting.</span>
         <div class="info-actions info-actions--stacked">
             <div class="info-actions-row">
                 <button id="memoDocsBtn" type="button" class="secondary">Documentation</button>
-                <a href="legal.html#tos" class="secondary" style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center;">Mentions légales</a>
+                <button id="memoLegalBtn" type="button" class="secondary">Mentions légales</button>
             </div>
             <div class="info-actions-row" style="margin-top: 4px;">
                 <div id="feedback-app-memo-inline-container" style="flex: 1; display: flex;"></div>
@@ -385,22 +398,22 @@
         window.GO_TOOLKIT_GMAIL_API_URL =
             window.GO_TOOLKIT_GMAIL_API_URL || "https://gmail.gotoolkit.workers.dev";
     </script>
-    <script src="js/config.js?v=2026.02.14.17"></script>
-    <script src="js/config-modal.js?v=2026.02.14.17"></script>
-    <script src="js/feature-visibility.js?v=2026.02.14.17"></script>
-    <script src="js/document-storage.js?v=2026.02.14.17"></script>
-    <script src="js/storage-service.js?v=2026.02.14.17"></script>
-    <script src="js/shared-ui.js?v=2026.02.14.17"></script>
-    <script src="js/share-worker-client.js?v=2026.02.14.17"></script>
-    <script src="js/share-history.js?v=2026.02.14.17"></script>
-    <script src="js/document-api.js?v=2026.02.14.17"></script>
-    <script src="js/keywordIndex.js?v=2026.02.14.17"></script>
-    <script src="js/document-rag.js?v=2026.02.14.17"></script>
-    <script src="js/ia-config.js?v=2026.02.14.17"></script>
-    <script src="preset.js?v=2026.02.14.17"></script>
-    <script src="prompt.js?v=2026.02.14.17"></script>
-    <script src="js/ia-client.js?v=2026.02.14.17"></script>
-    <script src="js/document-markdown.js?v=2026.02.14.17"></script>
+    <script src="js/config.js?v=2026.02.14.18"></script>
+    <script src="js/config-modal.js?v=2026.02.14.18"></script>
+    <script src="js/feature-visibility.js?v=2026.02.14.18"></script>
+    <script src="js/document-storage.js?v=2026.02.14.18"></script>
+    <script src="js/storage-service.js?v=2026.02.14.18"></script>
+    <script src="js/shared-ui.js?v=2026.02.14.18"></script>
+    <script src="js/share-worker-client.js?v=2026.02.14.18"></script>
+    <script src="js/share-history.js?v=2026.02.14.18"></script>
+    <script src="js/document-api.js?v=2026.02.14.18"></script>
+    <script src="js/keywordIndex.js?v=2026.02.14.18"></script>
+    <script src="js/document-rag.js?v=2026.02.14.18"></script>
+    <script src="js/ia-config.js?v=2026.02.14.18"></script>
+    <script src="preset.js?v=2026.02.14.18"></script>
+    <script src="prompt.js?v=2026.02.14.18"></script>
+    <script src="js/ia-client.js?v=2026.02.14.18"></script>
+    <script src="js/document-markdown.js?v=2026.02.14.18"></script>
     <script>
         document.addEventListener("click", function (event) {
             const legalTrigger = event.target?.closest?.("[data-open-nexus-modal]");
@@ -434,13 +447,13 @@
             ]
         };
     </script>
-    <script src="js/feedback.js?v=2026.02.14.17"></script>
-    <script src="js/voice-video-player.js?v=2026.02.14.17"></script>
-    <script src="js/voice-audio-player.js?v=2026.02.14.17"></script>
-    <script src="js/youtube-publish.js?v=2026.02.14.17"></script>
-    <script src="js/voice.js?v=2026.02.14.17"></script>
-    <script src="js/voice-transcript.js?v=2026.02.14.17"></script>
-    <script src="js/draw-memo.js?v=2026.02.14.17"></script>
+    <script src="js/feedback.js?v=2026.02.14.18"></script>
+    <script src="js/voice-video-player.js?v=2026.02.14.18"></script>
+    <script src="js/voice-audio-player.js?v=2026.02.14.18"></script>
+    <script src="js/youtube-publish.js?v=2026.02.14.18"></script>
+    <script src="js/voice.js?v=2026.02.14.18"></script>
+    <script src="js/voice-transcript.js?v=2026.02.14.18"></script>
+    <script src="js/draw-memo.js?v=2026.02.14.18"></script>
     <script>
         // Suppress React DevTools prompt in dev builds.
         window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = window.__REACT_DEVTOOLS_GLOBAL_HOOK__ || {
@@ -450,9 +463,9 @@
             onCommitFiberUnmount: function () { }
         };
     </script>
-    <script src="js/memo.bundle.js?v=2026.02.14.17"></script>
-    <script src="js/assist.js?v=2026.02.14.17"></script>
-    <script src="js/document-panel.js?v=2026.02.14.17"></script>
+    <script src="js/memo.bundle.js?v=2026.02.14.18"></script>
+    <script src="js/assist.js?v=2026.02.14.18"></script>
+    <script src="js/document-panel.js?v=2026.02.14.18"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             setTimeout(function () {
@@ -734,7 +747,8 @@
             const fileMenuTrigger = document.getElementById("fileMenuTrigger");
             const memoOpenImportBtn = document.getElementById("memoOpenImportBtn");
             const saveDocumentBtn = document.getElementById("saveDocumentBtn");
-            const renameDocumentBtn = document.getElementById("renameDocumentBtn");
+            const publishGoLiveBtn = document.getElementById("publishGoLiveBtn");
+            const publishNotionBtn = document.getElementById("publishNotionBtn");
             const deleteDocumentBtn = document.getElementById("deleteDocumentBtn");
             const publishTemplateBtn = document.getElementById("publishTemplateBtn");
             const ownerToken = document.getElementById("ownerToken");
@@ -752,6 +766,7 @@
             const memoInfoPopup = document.getElementById("memoInfoPopup");
             const memoUpdateBtn = document.getElementById("memoUpdateBtn");
             const memoDocsBtn = document.getElementById("memoDocsBtn");
+            const memoLegalBtn = document.getElementById("memoLegalBtn");
             const shareBtn = document.getElementById("shareBtn");
             const shareMenu = document.getElementById("shareMenu");
             const shareLinkField = document.getElementById("shareLinkField");
@@ -812,6 +827,7 @@
             let autoSaveTimer = null;
             let memoExplorer = null;
             let activeHandoff = null;
+            let documentTabsRenderToken = 0;
             if (notionDefaultPathInput) {
                 notionDefaultPathInput.value = localStorage.getItem(NOTION_PATH_STORAGE_KEY) || "";
             }
@@ -819,13 +835,6 @@
             function isUserAdmin() {
                 const token = normalizeOwnerTokenInput(ownerToken?.value || localStorage.getItem("feedback-admin-token") || "");
                 return Boolean(token);
-            }
-
-            function updateRenameButtonLabel() {
-                if (!renameDocumentBtn) return;
-                const label = renameDocumentBtn.querySelector("[data-label]");
-                if (!label) return;
-                label.textContent = "Publier";
             }
 
             function updateAdminVisibility() {
@@ -837,10 +846,8 @@
                 document.querySelectorAll(".gt-template-card__delete").forEach(btn => {
                     btn.style.display = isAdmin ? "flex" : "none";
                 });
-                updateRenameButtonLabel();
             }
 
-            updateRenameButtonLabel();
             window.addEventListener("storage", event => {
                 if (event.key === "feedback-admin-token") {
                     updateAdminVisibility();
@@ -854,7 +861,6 @@
                 if (normalizedAdmin && storedAdmin !== normalizedAdmin) {
                     localStorage.setItem("feedback-admin-token", normalizedAdmin);
                 }
-                updateRenameButtonLabel();
                 ownerToken.addEventListener("input", () => {
                     const normalized = normalizeOwnerTokenInput(ownerToken.value || "");
                     if (ownerToken.value !== normalized) ownerToken.value = normalized;
@@ -1245,8 +1251,10 @@
 
             async function renderDocumentTabs() {
                 if (!documentTabsEl) return;
+                const renderToken = ++documentTabsRenderToken;
                 documentTabsEl.innerHTML = "";
                 for (const doc of openDocuments) {
+                    if (renderToken !== documentTabsRenderToken) return;
                     const btn = document.createElement("button");
                     btn.type = "button";
                     btn.className = "tab document-tab" + (doc.id === activeDocumentId ? " active" : "");
@@ -1260,6 +1268,7 @@
                     const resolvedHandoffId = resolveHandoffId(doc.id, doc.handoffId);
                     const hasHandoff = resolvedHandoffId !== null;
                     const recordingIconName = await resolveRecordingIcon(recordingId);
+                    if (renderToken !== documentTabsRenderToken) return;
 
                     const hasNotion = hasNotionLink(doc);
                     if (hasHandoff || hasRecording || hasNotion) {
@@ -1306,6 +1315,7 @@
                     });
                     documentTabsEl.appendChild(btn);
                 }
+                if (renderToken !== documentTabsRenderToken) return;
                 const createBtn = document.createElement("button");
                 createBtn.type = "button";
                 createBtn.className = "tab document-tab document-tab--create";
@@ -2559,6 +2569,20 @@
                 if (!activeDocumentId) return;
                 const tab = state.tabs[0];
                 await renameDocument(activeDocumentId, tab?.title || "", tab?.description || "", tab?.superpowers || []);
+            }
+
+            async function publishActiveDocumentToNotionDirect() {
+                if (!activeDocumentId) return;
+                const activeDoc = openDocuments.find(item => item.id === activeDocumentId);
+                const tab = state?.tabs?.[0] || {};
+                await publishDocumentToNotion(activeDocumentId, {
+                    name: tab?.title || activeDoc?.title || "Document",
+                    description: tab?.description || activeDoc?.description || "",
+                    superpowers: Array.isArray(tab?.superpowers) ? tab.superpowers : (activeDoc?.superpowers || []),
+                    notionPath: String(activeDoc?.notionPath || localStorage.getItem(NOTION_PATH_STORAGE_KEY) || "").trim(),
+                    notionPageId: String(activeDoc?.notionPageId || "").trim(),
+                    notionWorkspaceId: String(activeDoc?.notionWorkspaceId || "").trim()
+                });
             }
 
             async function deleteDocument(docId) {
@@ -4033,9 +4057,14 @@
                 }
             });
 
-            renameDocumentBtn?.addEventListener("click", async () => {
+            publishGoLiveBtn?.addEventListener("click", async () => {
                 closeMenus();
                 await renameActiveDocument();
+            });
+
+            publishNotionBtn?.addEventListener("click", async () => {
+                closeMenus();
+                await publishActiveDocumentToNotionDirect();
             });
 
             // --- Menu Actions (Copy & Export) ---
@@ -4081,65 +4110,87 @@
                     }
                 }
             });
-            document.getElementById('fileMenuSendBtn')?.addEventListener('click', async () => {
-                closeMenus();
-                const gmailPublisher = window.GoToolkitGmailPublish;
-                const outlookPublisher = window.GoToolkitMicrosoftPublish;
+            function getEmailComposePayload() {
                 const title = getDocumentTitleFromState(state) || "Document";
                 const html = window.getMemoEditorSource?.('html');
-                const text = window.getMemoEditorSource?.('text') || "";
-                const fallbackToMailto = () => {
-                    const mailtoUrl = `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(String(text || "").trim())}`;
-                    window.open(mailtoUrl, "_blank", "noopener,noreferrer");
-                    setStatus("Gmail/Outlook non configurés: brouillon mailto ouvert");
-                };
+                const text = String(window.getMemoEditorSource?.('text') || "").trim();
+                return { title, html, text };
+            }
 
-                let gmailConnected = false;
-                let outlookConnected = false;
+            function openMailtoFallback() {
+                const { title, text } = getEmailComposePayload();
+                const mailtoUrl = `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(text)}`;
+                window.open(mailtoUrl, "_blank", "noopener,noreferrer");
+                setStatus("Brouillon mailto ouvert");
+            }
+
+            function openGmailWebFallback() {
+                const { text } = getEmailComposePayload();
+                const url = `https://mail.google.com/mail/?view=cm&body=${encodeURIComponent(text)}`;
+                window.open(url, "_blank", "noopener,noreferrer");
+                setStatus("Rédaction Gmail web ouverte");
+            }
+
+            function openOutlookWebFallback() {
+                const { text } = getEmailComposePayload();
+                const url = `https://outlook.office.com/mail/deeplink/compose?body=${encodeURIComponent(text)}`;
+                window.open(url, "_blank", "noopener,noreferrer");
+                setStatus("Rédaction Outlook web ouverte");
+            }
+
+            document.getElementById('fileMenuSendMailto')?.addEventListener('click', () => {
+                closeMenus();
+                openMailtoFallback();
+            });
+
+            document.getElementById('fileMenuSendGmail')?.addEventListener('click', async () => {
+                closeMenus();
+                const gmailPublisher = window.GoToolkitGmailPublish;
+                const { title, html, text } = getEmailComposePayload();
+                let connected = false;
                 try {
                     if (gmailPublisher?.getAuthStatus) {
-                        const gmailStatus = await gmailPublisher.getAuthStatus();
-                        gmailConnected = Boolean(gmailStatus?.connected);
+                        const status = await gmailPublisher.getAuthStatus();
+                        connected = Boolean(status?.connected);
                     }
                 } catch (err) {
-                    gmailConnected = false;
+                    connected = false;
                 }
-                try {
-                    if (outlookPublisher?.getAuthStatus) {
-                        const outlookStatus = await outlookPublisher.getAuthStatus();
-                        outlookConnected = Boolean(outlookStatus?.connected);
-                    }
-                } catch (err) {
-                    outlookConnected = false;
-                }
-
-                if (!gmailConnected && !outlookConnected) {
-                    fallbackToMailto();
+                if (!connected || !gmailPublisher?.createDraft) {
+                    openGmailWebFallback();
                     return;
                 }
-
-                if (gmailConnected && gmailPublisher?.createDraft) {
-                    if (!String(html || "").trim()) {
-                        setStatus("HTML Email vide");
-                        return;
-                    }
-                    try {
-                        setStatus("Création du brouillon...");
-                        const payload = await gmailPublisher.createDraft({ subject: title, html, text });
-                        const draftUrl = String(payload?.draftUrl || payload?.webUrl || "").trim();
-                        if (!draftUrl) {
-                            throw new Error("URL de brouillon Gmail indisponible");
-                        }
-                        window.open(draftUrl, "_blank", "noopener,noreferrer");
-                        setStatus("Brouillon Gmail ouvert");
-                        return;
-                    } catch (err) {
-                        setStatus(err?.message || "Création du brouillon Gmail impossible");
-                    }
+                if (!String(html || "").trim()) {
+                    setStatus("HTML Email vide");
+                    return;
                 }
+                try {
+                    setStatus("Création du brouillon...");
+                    const payload = await gmailPublisher.createDraft({ subject: title, html, text });
+                    const draftUrl = String(payload?.draftUrl || payload?.webUrl || "").trim();
+                    if (!draftUrl) throw new Error("URL de brouillon Gmail indisponible");
+                    window.open(draftUrl, "_blank", "noopener,noreferrer");
+                    setStatus("Brouillon Gmail ouvert");
+                } catch (err) {
+                    openGmailWebFallback();
+                }
+            });
 
-                if (!outlookConnected || !outlookPublisher?.createDraft) {
-                    fallbackToMailto();
+            document.getElementById('fileMenuSendOutlook')?.addEventListener('click', async () => {
+                closeMenus();
+                const outlookPublisher = window.GoToolkitMicrosoftPublish;
+                const { title, html, text } = getEmailComposePayload();
+                let connected = false;
+                try {
+                    if (outlookPublisher?.getAuthStatus) {
+                        const status = await outlookPublisher.getAuthStatus();
+                        connected = Boolean(status?.connected);
+                    }
+                } catch (err) {
+                    connected = false;
+                }
+                if (!connected || !outlookPublisher?.createDraft) {
+                    openOutlookWebFallback();
                     return;
                 }
                 if (!String(html || "").trim()) {
@@ -4150,13 +4201,11 @@
                     setStatus("Création du brouillon...");
                     const payload = await outlookPublisher.createDraft({ subject: title, html, text });
                     const draftUrl = String(payload?.draftUrl || payload?.webUrl || "").trim();
-                    if (!draftUrl) {
-                        throw new Error("URL de brouillon Outlook indisponible");
-                    }
+                    if (!draftUrl) throw new Error("URL de brouillon Outlook indisponible");
                     window.open(draftUrl, "_blank", "noopener,noreferrer");
                     setStatus("Brouillon Outlook ouvert");
                 } catch (err) {
-                    setStatus(err?.message || "Création du brouillon Outlook impossible");
+                    openOutlookWebFallback();
                 }
             });
 
@@ -4293,6 +4342,12 @@
                 event.stopPropagation();
                 memoInfoPopup?.classList.remove("open");
                 window.GoToolkitAssistInstance?.openKnowledgeModalWithSourceFilter?.("Web");
+            });
+
+            memoLegalBtn?.addEventListener("click", event => {
+                event.stopPropagation();
+                memoInfoPopup?.classList.remove("open");
+                window.location.href = "legal.html#tos";
             });
 
             shareBtn?.addEventListener("click", event => {

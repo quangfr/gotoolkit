@@ -316,7 +316,7 @@
                         <div style="display:flex; align-items:center; gap:8px; flex: 1; max-width: 560px;">
                             <select id="publishTargetSelect"
                                 style="width: 140px; height: 26px; font-size: 11px; border-radius: 6px; border: 1px solid var(--border-strong); background: var(--bg-surface); color: var(--text-main); padding: 0 8px; outline: none;">
-                                <option value="gotoolkit"><i data-lucide="zap"></i> Modèles Go-Live</option>
+                                <option value="gotoolkit"><i data-lucide="zap"></i> Go-Live</option>
                                 <option value="notion"><i data-lucide="notebook"></i> Notion</option>
                             </select>
                             <div id="notionPathContainer" style="display:none; position:relative; flex:1;">
@@ -410,15 +410,6 @@
             }
         }
 
-        function getSavedPublishTarget() {
-            try {
-                const saved = String(localStorage.getItem(PUBLISH_TARGET_STORAGE_KEY) || "").trim().toLowerCase();
-                return saved === "notion" ? "notion" : "gotoolkit";
-            } catch (err) {
-                return "gotoolkit";
-            }
-        }
-
         function getSavedNotionPath() {
             try {
                 return String(localStorage.getItem(NOTION_PATH_STORAGE_KEY) || "").trim();
@@ -470,7 +461,7 @@
             }
             syncOwnerTokenFromStorage();
             if (publishTargetSelect) {
-                publishTargetSelect.value = getSavedPublishTarget();
+                publishTargetSelect.value = "gotoolkit";
             }
             if (notionPathInput) {
                 notionPathInput.value = "";

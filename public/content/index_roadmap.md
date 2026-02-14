@@ -5,8 +5,8 @@
 - Ajout d'images
 
 ## Intégration tiers
-- Fichiers Sharepoint / Outlook / OneDrive 
-- Fichiers Gmail / Google Drive 
+- Sharepoint / OneDrive 
+- Google Drive 
 - Jira / Confluence
 
 ## Fichiers de données
