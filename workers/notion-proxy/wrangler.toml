@@ -1,0 +1,13 @@
+name = "notion"
+main = "index.js"
+compatibility_date = "2024-12-01"
+workers_dev = true
+preview_urls = true
+
+[[kv_namespaces]]
+binding = "NOTION_OAUTH"
+id = "ca4aadddc2e74c66a06843673aa0a669"
+
+[observability]
+enabled = false
+head_sampling_rate = 1

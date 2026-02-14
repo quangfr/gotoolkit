@@ -46,10 +46,10 @@
         crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.min.js" crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.min.js" crossorigin></script>
-    <link rel="stylesheet" href="styles/style.css?v=2026.02.14.2">
+    <link rel="stylesheet" href="styles/style.css?v=2026.02.14.3">
     <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
-    <link rel="stylesheet" href="styles/memo.css?v=2026.02.14.2">
-    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.14.2">
+    <link rel="stylesheet" href="styles/memo.css?v=2026.02.14.3">
+    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.14.3">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.css">
     <script src="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.js"></script>
 </head>
@@ -90,7 +90,7 @@
                 <div class="tabs-actions">
                     <button id="documentExplorerToggle" class="app-home-link" type="button" title="Bibliothèque"
                         aria-expanded="false" aria-controls="documentExplorer"><i data-lucide="library"></i></button>
-                    <a href="/?v=2026.02.14.2" class="nav-switch-btn" title="Accueil"
+                    <a href="/?v=2026.02.14.3" class="nav-switch-btn" title="Accueil"
                         style="text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
                         <i data-lucide="home"></i>
                     </a>
@@ -336,17 +336,42 @@
                 <div class="settings-tab-panel" data-panel="integrationsTab" hidden>
                     <div class="field-row">
                         <label style="width:100%">
-                            <span class="label-title">YouTube</span>
-                            <span class="label-subtitle" id="youtubeIntegrationStatus">Non connecté</span>
+                            <span class="label-title">Notion</span>
+                            <span class="label-subtitle" id="notionIntegrationStatus">Non connecté</span>
                         </label>
                     </div>
                     <div class="field-row">
                         <label style="width:100%">
-                            <span class="label-title">Chaîne de publication</span>
-                            <select id="youtubeChannelSelect" disabled>
-                                <option value="">Aucune chaîne</option>
+                            <span class="label-title">Workspace</span>
+                            <select id="notionWorkspaceSelect" disabled>
+                                <option value="">Aucun workspace</option>
                             </select>
                         </label>
+                    </div>
+                    <div class="field-row">
+                        <label style="width:100%">
+                            <span class="label-title">Chemin par défaut</span>
+                            <input id="notionDefaultPathInput" type="text" placeholder="/Espace/Projet" />
+                        </label>
+                    </div>
+                    <div class="field-row" style="display:flex; gap:8px; align-items:center;">
+                        <button id="notionConnectBtn" type="button" class="btn-secondary">Connecter</button>
+                        <button id="notionDisconnectBtn" type="button" class="btn-secondary" disabled>Déconnecter</button>
+                        <button id="notionRefreshBtn" type="button" class="btn-secondary" disabled>Rafraîchir</button>
+                    </div>
+                    <hr style="width:100%; border:none; border-top:1px solid var(--border-main); margin:8px 0;">
+                    <div class="field-row">
+                        <label style="width:100%">
+                            <span class="label-title">YouTube</span>
+                            <span class="label-subtitle" id="youtubeIntegrationStatus">Non connecté</span>
+                            <a id="youtubeAuthLink" class="label-title dashed-link"
+                                href="#" style="margin-left:8px;">Se connecter</a>
+                        </label>
+                    </div>
+                    <div class="field-row" id="youtubeChannelRow" style="display:none;">
+                        <select id="youtubeChannelSelect" disabled>
+                            <option value="">Aucune chaîne</option>
+                        </select>
                     </div>
                     <div class="field-row" id="youtubeNoChannelRow" style="display:none;">
                         <label style="width:100%">
@@ -355,11 +380,6 @@
                                 href="https://www.youtube.com/channel_switcher" target="_blank"
                                 rel="noopener noreferrer">Créer ou sélectionner une chaîne YouTube</a>
                         </label>
-                    </div>
-                    <div class="field-row" style="display:flex; gap:8px; align-items:center;">
-                        <button id="youtubeConnectBtn" type="button" class="btn-secondary">Connecter</button>
-                        <button id="youtubeDisconnectBtn" type="button" class="btn-secondary" disabled>Déconnecter</button>
-                        <button id="youtubeRefreshChannelsBtn" type="button" class="btn-secondary" disabled>Rafraîchir</button>
                     </div>
                 </div>
             </div>
@@ -370,7 +390,7 @@
         <img src="img/logo.gif" alt="Logo Go-Toolkit" class="logo-light">
         <img src="img/logo_inverted.gif" alt="Logo Go-Toolkit" class="logo-dark">
         <strong>Go-Toolkit</strong>
-        <span>Version 2026.02.14.2</span>
+        <span>Version 2026.02.14.3</span>
         <span>Usage réservé à Savane Consulting.</span>
         <div class="info-actions info-actions--stacked">
             <div class="info-actions-row">
@@ -438,24 +458,26 @@
             window.GO_TOOLKIT_SHARE_API_URL || "https://share.gotoolkit.workers.dev/";
         window.GO_TOOLKIT_YOUTUBE_API_URL =
             window.GO_TOOLKIT_YOUTUBE_API_URL || "https://youtube.gotoolkit.workers.dev";
+        window.GO_TOOLKIT_NOTION_API_URL =
+            window.GO_TOOLKIT_NOTION_API_URL || "https://notion.gotoolkit.workers.dev";
     </script>
-    <script src="js/config.js?v=2026.02.14.2"></script>
-    <script src="js/config-modal.js?v=2026.02.14.2"></script>
-    <script src="js/feature-visibility.js?v=2026.02.14.2"></script>
-    <script src="js/document-storage.js?v=2026.02.14.2"></script>
-    <script src="js/storage-service.js?v=2026.02.14.2"></script>
-    <script src="js/shared-ui.js?v=2026.02.14.2"></script>
-    <script src="js/cgu.js?v=2026.02.14.2"></script>
-    <script src="js/share-worker-client.js?v=2026.02.14.2"></script>
-    <script src="js/share-history.js?v=2026.02.14.2"></script>
-    <script src="js/document-api.js?v=2026.02.14.2"></script>
-    <script src="js/keywordIndex.js?v=2026.02.14.2"></script>
-    <script src="js/document-rag.js?v=2026.02.14.2"></script>
-    <script src="js/ia-config.js?v=2026.02.14.2"></script>
-    <script src="preset.js?v=2026.02.14.2"></script>
-    <script src="prompt.js?v=2026.02.14.2"></script>
-    <script src="js/ia-client.js?v=2026.02.14.2"></script>
-    <script src="js/document-markdown.js?v=2026.02.14.2"></script>
+    <script src="js/config.js?v=2026.02.14.3"></script>
+    <script src="js/config-modal.js?v=2026.02.14.3"></script>
+    <script src="js/feature-visibility.js?v=2026.02.14.3"></script>
+    <script src="js/document-storage.js?v=2026.02.14.3"></script>
+    <script src="js/storage-service.js?v=2026.02.14.3"></script>
+    <script src="js/shared-ui.js?v=2026.02.14.3"></script>
+    <script src="js/cgu.js?v=2026.02.14.3"></script>
+    <script src="js/share-worker-client.js?v=2026.02.14.3"></script>
+    <script src="js/share-history.js?v=2026.02.14.3"></script>
+    <script src="js/document-api.js?v=2026.02.14.3"></script>
+    <script src="js/keywordIndex.js?v=2026.02.14.3"></script>
+    <script src="js/document-rag.js?v=2026.02.14.3"></script>
+    <script src="js/ia-config.js?v=2026.02.14.3"></script>
+    <script src="preset.js?v=2026.02.14.3"></script>
+    <script src="prompt.js?v=2026.02.14.3"></script>
+    <script src="js/ia-client.js?v=2026.02.14.3"></script>
+    <script src="js/document-markdown.js?v=2026.02.14.3"></script>
     <script>
         // Initialize feedback configuration for Docs before loading feedback.js
         window.GoToolkitAppFeedbackConfig = {
@@ -474,13 +496,13 @@
             ]
         };
     </script>
-    <script src="js/feedback.js?v=2026.02.14.2"></script>
-    <script src="js/voice-video-player.js?v=2026.02.14.2"></script>
-    <script src="js/voice-audio-player.js?v=2026.02.14.2"></script>
-    <script src="js/youtube-publish.js?v=2026.02.14.2"></script>
-    <script src="js/voice.js?v=2026.02.14.2"></script>
-    <script src="js/voice-transcript.js?v=2026.02.14.2"></script>
-    <script src="js/draw-memo.js?v=2026.02.14.2"></script>
+    <script src="js/feedback.js?v=2026.02.14.3"></script>
+    <script src="js/voice-video-player.js?v=2026.02.14.3"></script>
+    <script src="js/voice-audio-player.js?v=2026.02.14.3"></script>
+    <script src="js/youtube-publish.js?v=2026.02.14.3"></script>
+    <script src="js/voice.js?v=2026.02.14.3"></script>
+    <script src="js/voice-transcript.js?v=2026.02.14.3"></script>
+    <script src="js/draw-memo.js?v=2026.02.14.3"></script>
     <script>
         // Suppress React DevTools prompt in dev builds.
         window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = window.__REACT_DEVTOOLS_GLOBAL_HOOK__ || {
@@ -490,14 +512,14 @@
             onCommitFiberUnmount: function () { }
         };
     </script>
-    <script src="js/memo.bundle.js?v=2026.02.14.2"></script>
+    <script src="js/memo.bundle.js?v=2026.02.14.3"></script>
     <div id="aiRequestCounterToaster" class="ai-request-counter-toaster" style="display:none;"
         data-toast-aria-live="polite" data-toast-aria-atomic="true">
         <span id="aiRequestCounterText"><i data-lucide="bot" class="lucide-pulse"
                 style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i> 00:00</span>
     </div>
-    <script src="js/assist.js?v=2026.02.14.2"></script>
-    <script src="js/document-panel.js?v=2026.02.14.2"></script>
+    <script src="js/assist.js?v=2026.02.14.3"></script>
+    <script src="js/document-panel.js?v=2026.02.14.3"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             setTimeout(function () {
@@ -514,6 +536,7 @@
             const CONTEXT_EMBEDDINGS_MIGRATION_KEY = "goToolkit.memo.contextEmbeddings.migrated";
             const PROMPT_PRESET_STORAGE_KEY = "goToolkit.memo.promptPreset";
             const DOCUMENT_OPEN_REQUEST_KEY = "goToolkit.memo.documentToOpen";
+            const NOTION_PATH_STORAGE_KEY = "goToolkit.memo.notionPath";
             const SHARE_QUERY_PARAM = "share";
             const FIRESTORE_COLLECTION = "memos";
             const TEMPLATES_COLLECTION = "template-memos";
@@ -561,10 +584,75 @@
             }
 
             function setYoutubeIntegrationBusy(isBusy) {
-                if (youtubeConnectBtn) youtubeConnectBtn.disabled = isBusy;
-                if (youtubeDisconnectBtn) youtubeDisconnectBtn.disabled = isBusy;
-                if (youtubeRefreshChannelsBtn) youtubeRefreshChannelsBtn.disabled = isBusy;
                 if (youtubeChannelSelect) youtubeChannelSelect.disabled = isBusy || !youtubeChannelSelect.options.length;
+                if (youtubeAuthLink) {
+                    youtubeAuthLink.style.pointerEvents = isBusy ? "none" : "";
+                    youtubeAuthLink.style.opacity = isBusy ? "0.6" : "";
+                }
+            }
+
+            function setNotionIntegrationBusy(isBusy) {
+                if (notionConnectBtn) notionConnectBtn.disabled = isBusy;
+                if (notionDisconnectBtn) notionDisconnectBtn.disabled = isBusy;
+                if (notionRefreshBtn) notionRefreshBtn.disabled = isBusy;
+                if (notionWorkspaceSelect) notionWorkspaceSelect.disabled = isBusy || !notionWorkspaceSelect.options.length;
+            }
+
+            function updateNotionWorkspacesUI(payload) {
+                const connected = Boolean(payload?.connected);
+                const workspaces = Array.isArray(payload?.workspaces) ? payload.workspaces : [];
+                const selectedWorkspaceId = String(payload?.selectedWorkspaceId || "").trim();
+                if (notionIntegrationStatus) {
+                    notionIntegrationStatus.textContent = connected ? "Connecté" : "Non connecté";
+                }
+                if (notionConnectBtn) notionConnectBtn.disabled = connected;
+                if (notionDisconnectBtn) notionDisconnectBtn.disabled = !connected;
+                if (notionRefreshBtn) notionRefreshBtn.disabled = !connected;
+                if (notionWorkspaceSelect) {
+                    notionWorkspaceSelect.innerHTML = "";
+                    if (!connected || !workspaces.length) {
+                        const option = document.createElement("option");
+                        option.value = "";
+                        option.textContent = connected ? "Aucun workspace disponible" : "Connectez-vous à Notion";
+                        notionWorkspaceSelect.appendChild(option);
+                        notionWorkspaceSelect.disabled = true;
+                    } else {
+                        workspaces.forEach(workspace => {
+                            const option = document.createElement("option");
+                            option.value = String(workspace?.id || "").trim();
+                            option.textContent = String(workspace?.name || workspace?.id || "Workspace").trim();
+                            notionWorkspaceSelect.appendChild(option);
+                        });
+                        notionWorkspaceSelect.value = selectedWorkspaceId || workspaces[0].id;
+                        notionWorkspaceSelect.disabled = false;
+                    }
+                }
+            }
+
+            async function refreshNotionIntegration(showToastOnError = false) {
+                const notion = window.GoToolkitNotionPublish;
+                if (!notion?.getAuthStatus) return;
+                setNotionIntegrationBusy(true);
+                try {
+                    const status = await notion.getAuthStatus();
+                    let notionPayload = status || {};
+                    if (status?.connected && notion.getWorkspaces) {
+                        const workspacePayload = await notion.getWorkspaces();
+                        notionPayload = {
+                            ...status,
+                            workspaces: Array.isArray(workspacePayload?.workspaces) ? workspacePayload.workspaces : [],
+                            selectedWorkspaceId: workspacePayload?.selectedWorkspaceId || status?.selectedWorkspaceId || ""
+                        };
+                    }
+                    updateNotionWorkspacesUI(notionPayload || {});
+                } catch (err) {
+                    updateNotionWorkspacesUI({ connected: false, workspaces: [], selectedWorkspaceId: "" });
+                    if (showToastOnError) {
+                        setStatus(err?.message || "Etat Notion indisponible");
+                    }
+                } finally {
+                    setNotionIntegrationBusy(false);
+                }
             }
 
             function updateYoutubeChannelsUI(payload) {
@@ -577,9 +665,12 @@
                         ? (hasChannel ? "Connecté" : "Connecté, aucune chaîne trouvée")
                         : "Non connecté";
                 }
-                if (youtubeConnectBtn) youtubeConnectBtn.disabled = connected;
-                if (youtubeDisconnectBtn) youtubeDisconnectBtn.disabled = !connected;
-                if (youtubeRefreshChannelsBtn) youtubeRefreshChannelsBtn.disabled = !connected;
+                if (youtubeAuthLink) {
+                    youtubeAuthLink.textContent = connected ? "Se déconnecter" : "Se connecter";
+                }
+                if (youtubeChannelRow) {
+                    youtubeChannelRow.style.display = connected ? "" : "none";
+                }
                 if (youtubeChannelSelect) {
                     youtubeChannelSelect.innerHTML = "";
                     if (!hasChannel) {
@@ -635,12 +726,17 @@
             const closeSettingsBtn = document.getElementById("closeSettingsBtn");
             const themeSelectMemo = document.getElementById("themeSelectMemo");
             const youtubeIntegrationStatus = document.getElementById("youtubeIntegrationStatus");
+            const youtubeAuthLink = document.getElementById("youtubeAuthLink");
             const youtubeChannelSelect = document.getElementById("youtubeChannelSelect");
+            const youtubeChannelRow = document.getElementById("youtubeChannelRow");
             const youtubeNoChannelRow = document.getElementById("youtubeNoChannelRow");
-            const youtubeConnectBtn = document.getElementById("youtubeConnectBtn");
-            const youtubeDisconnectBtn = document.getElementById("youtubeDisconnectBtn");
-            const youtubeRefreshChannelsBtn = document.getElementById("youtubeRefreshChannelsBtn");
             const youtubeChannelSwitcherLink = document.getElementById("youtubeChannelSwitcherLink");
+            const notionIntegrationStatus = document.getElementById("notionIntegrationStatus");
+            const notionWorkspaceSelect = document.getElementById("notionWorkspaceSelect");
+            const notionDefaultPathInput = document.getElementById("notionDefaultPathInput");
+            const notionConnectBtn = document.getElementById("notionConnectBtn");
+            const notionDisconnectBtn = document.getElementById("notionDisconnectBtn");
+            const notionRefreshBtn = document.getElementById("notionRefreshBtn");
             const settingsTabButtons = Array.from(document.querySelectorAll("#settingsModal .settings-tabs .tab-btn"));
             const settingsTabPanels = Array.from(document.querySelectorAll("#settingsModal .settings-tab-panel"));
             const fileMenuTrigger = document.getElementById("fileMenuTrigger");
@@ -724,6 +820,9 @@
             let autoSaveTimer = null;
             let memoExplorer = null;
             let activeHandoff = null;
+            if (notionDefaultPathInput) {
+                notionDefaultPathInput.value = localStorage.getItem(NOTION_PATH_STORAGE_KEY) || "";
+            }
 
             function isUserAdmin() {
                 const token = normalizeOwnerTokenInput(ownerToken?.value || localStorage.getItem("feedback-admin-token") || "");
@@ -2193,6 +2292,46 @@
                 }
             }
 
+            async function publishDocumentToNotion(docId, meta) {
+                const notion = window.GoToolkitNotionPublish;
+                if (!notion?.publishPage || !notion?.ensureConnected || !notion?.getAuthStatus) {
+                    setStatus("Service Notion indisponible", true);
+                    return;
+                }
+                const doc = openDocuments.find(item => item.id === docId);
+                const activeTab = docId === activeDocumentId ? getActiveTab() : null;
+                const sourceTab = activeTab || doc?.payload?.tabs?.[0] || null;
+                const title = meta?.name || sourceTab?.title || "Document";
+                const content = sourceTab?.content || "";
+                const notionPath = String(meta?.notionPath || localStorage.getItem(NOTION_PATH_STORAGE_KEY) || "").trim();
+                if (notionDefaultPathInput) {
+                    notionDefaultPathInput.value = notionPath;
+                }
+                localStorage.setItem(NOTION_PATH_STORAGE_KEY, notionPath);
+                try {
+                    setStatus("Connexion Notion...");
+                    await notion.ensureConnected();
+                    const status = await notion.getAuthStatus();
+                    const workspaceId = String(status?.selectedWorkspaceId || "").trim();
+                    if (!workspaceId) {
+                        setStatus("Sélectionnez un workspace Notion dans Intégrations", true);
+                        await refreshNotionIntegration(false);
+                        return;
+                    }
+                    setStatus("Publication vers Notion...");
+                    await notion.publishPage({
+                        workspaceId,
+                        title,
+                        content,
+                        path: notionPath,
+                        format: "html"
+                    });
+                    setStatus("Le document a été publié sur Notion");
+                } catch (err) {
+                    setStatus(err?.message || "Publication Notion échouée", true);
+                }
+            }
+
             async function applyDocumentRename(docId, nextName, nextDescription, nextSuperpowers) {
                 if (!docId || !nextName) return;
                 const doc = openDocuments.find(item => item.id === docId);
@@ -2258,6 +2397,16 @@
                 await applyDocumentRename(docId, finalName, result.description, result.superpowers);
                 if (result.action !== "publish") {
                     setStatus("Le document a été enregistré");
+                }
+
+                if (result.action === "publish" && result.publishTarget === "notion") {
+                    await publishDocumentToNotion(docId, {
+                        name: finalName,
+                        description: result.description,
+                        superpowers: result.superpowers,
+                        notionPath: result.notionPath
+                    });
+                    return;
                 }
 
                 if (result.action === "publish") {
@@ -2449,13 +2598,22 @@
                             setStatus("Le document a été enregistré");
                         }
                     }
-                    if (result.action === "publish" && item.id === activeDocumentId) {
-                        const tab = getActiveTab();
-                        publishTemplateFromTab(tab, {
-                            name: result.name,
-                            description: result.description,
-                            superpowers: result.superpowers
-                        });
+                    if (result.action === "publish") {
+                        if (result.publishTarget === "notion") {
+                            await publishDocumentToNotion(item.id, {
+                                name: result.name,
+                                description: result.description,
+                                superpowers: result.superpowers,
+                                notionPath: result.notionPath
+                            });
+                        } else if (item.id === activeDocumentId) {
+                            const tab = getActiveTab();
+                            publishTemplateFromTab(tab, {
+                                name: result.name,
+                                description: result.description,
+                                superpowers: result.superpowers
+                            });
+                        }
                     }
                 },
                 onDelete: item => {
@@ -3453,7 +3611,11 @@
                 onOpen: function () {
                     const currentTheme = localStorage.getItem(THEME_STORAGE_KEY) || "auto";
                     if (themeSelectMemo) themeSelectMemo.value = currentTheme;
+                    if (notionDefaultPathInput) {
+                        notionDefaultPathInput.value = localStorage.getItem(NOTION_PATH_STORAGE_KEY) || "";
+                    }
                     activateSettingsTab("paramsTab");
+                    refreshNotionIntegration(false).catch(() => { /* noop */ });
                     refreshYoutubeIntegration(false).catch(() => { /* noop */ });
                 }
             });
@@ -3470,6 +3632,7 @@
                 button.addEventListener("click", () => {
                     activateSettingsTab(button.dataset.tab || "paramsTab");
                     if ((button.dataset.tab || "") === "integrationsTab") {
+                        refreshNotionIntegration(false).catch(() => { /* noop */ });
                         refreshYoutubeIntegration(false).catch(() => { /* noop */ });
                     }
                 });
@@ -3487,65 +3650,104 @@
                 applyTheme(theme);
             });
 
-            youtubeConnectBtn?.addEventListener("click", async () => {
+            notionDefaultPathInput?.addEventListener("input", () => {
+                localStorage.setItem(NOTION_PATH_STORAGE_KEY, notionDefaultPathInput.value || "");
+            });
+
+            notionConnectBtn?.addEventListener("click", async () => {
+                const notion = window.GoToolkitNotionPublish;
+                if (!notion?.ensureConnected) {
+                    setStatus("Service Notion indisponible");
+                    return;
+                }
+                setNotionIntegrationBusy(true);
+                try {
+                    await notion.ensureConnected();
+                    await refreshNotionIntegration(false);
+                    setStatus("Connexion Notion établie");
+                } catch (err) {
+                    setStatus(err?.message || "Connexion Notion échouée");
+                } finally {
+                    setNotionIntegrationBusy(false);
+                }
+            });
+
+            notionDisconnectBtn?.addEventListener("click", async () => {
+                const notion = window.GoToolkitNotionPublish;
+                if (!notion?.disconnect) {
+                    setStatus("Déconnexion Notion indisponible");
+                    return;
+                }
+                setNotionIntegrationBusy(true);
+                try {
+                    await notion.disconnect();
+                    updateNotionWorkspacesUI({ connected: false, workspaces: [], selectedWorkspaceId: "" });
+                    setStatus("Notion déconnecté");
+                } catch (err) {
+                    setStatus(err?.message || "Déconnexion Notion échouée");
+                } finally {
+                    setNotionIntegrationBusy(false);
+                }
+            });
+
+            notionRefreshBtn?.addEventListener("click", async () => {
+                await refreshNotionIntegration(true);
+            });
+
+            notionWorkspaceSelect?.addEventListener("change", async () => {
+                const notion = window.GoToolkitNotionPublish;
+                const workspaceId = (notionWorkspaceSelect.value || "").trim();
+                if (!workspaceId || !notion?.selectWorkspace) return;
+                setNotionIntegrationBusy(true);
+                try {
+                    await notion.selectWorkspace(workspaceId);
+                    await refreshNotionIntegration(false);
+                    setStatus("Workspace Notion sélectionné");
+                } catch (err) {
+                    setStatus(err?.message || "Sélection du workspace impossible");
+                    await refreshNotionIntegration(false);
+                } finally {
+                    setNotionIntegrationBusy(false);
+                }
+            });
+
+            youtubeAuthLink?.addEventListener("click", async event => {
+                event.preventDefault();
                 const publisher = window.GoToolkitYouTubePublish;
-                if (!publisher?.ensureConnected) {
+                if (!publisher?.getAuthStatus) {
                     setStatus("Service YouTube indisponible");
                     return;
                 }
                 setYoutubeIntegrationBusy(true);
                 try {
-                    await publisher.ensureConnected();
-                    if (publisher.getChannels) {
-                        const payload = await publisher.getChannels();
-                        updateYoutubeChannelsUI(payload || {});
-                        if (!payload?.hasChannel) {
-                            window.open("https://www.youtube.com/channel_switcher", "_blank", "noopener,noreferrer");
+                    const status = await publisher.getAuthStatus();
+                    if (status?.connected) {
+                        if (!publisher.disconnect) {
+                            setStatus("Déconnexion YouTube indisponible");
+                            return;
                         }
+                        await publisher.disconnect();
+                        updateYoutubeChannelsUI({ connected: false, hasChannel: false, channels: [], selectedChannelId: "" });
+                        setStatus("YouTube déconnecté");
                     } else {
-                        await refreshYoutubeIntegration(false);
-                    }
-                    setStatus("Connexion YouTube établie");
-                } catch (err) {
-                    setStatus(err?.message || "Connexion YouTube échouée");
-                } finally {
-                    setYoutubeIntegrationBusy(false);
-                }
-            });
-
-            youtubeDisconnectBtn?.addEventListener("click", async () => {
-                const publisher = window.GoToolkitYouTubePublish;
-                if (!publisher?.disconnect) {
-                    setStatus("Déconnexion YouTube indisponible");
-                    return;
-                }
-                setYoutubeIntegrationBusy(true);
-                try {
-                    await publisher.disconnect();
-                    updateYoutubeChannelsUI({ connected: false, hasChannel: false, channels: [], selectedChannelId: "" });
-                    setStatus("YouTube déconnecté");
-                } catch (err) {
-                    setStatus(err?.message || "Déconnexion YouTube échouée");
-                } finally {
-                    setYoutubeIntegrationBusy(false);
-                }
-            });
-
-            youtubeRefreshChannelsBtn?.addEventListener("click", async () => {
-                const publisher = window.GoToolkitYouTubePublish;
-                if (!publisher?.getChannels) {
-                    await refreshYoutubeIntegration(true);
-                    return;
-                }
-                setYoutubeIntegrationBusy(true);
-                try {
-                    const payload = await publisher.getChannels();
-                    updateYoutubeChannelsUI(payload || {});
-                    if (!payload?.hasChannel) {
-                        window.open("https://www.youtube.com/channel_switcher", "_blank", "noopener,noreferrer");
+                        if (!publisher.ensureConnected) {
+                            setStatus("Service YouTube indisponible");
+                            return;
+                        }
+                        await publisher.ensureConnected();
+                        if (publisher.getChannels) {
+                            const payload = await publisher.getChannels();
+                            updateYoutubeChannelsUI(payload || {});
+                            if (!payload?.hasChannel) {
+                                window.open("https://www.youtube.com/channel_switcher", "_blank", "noopener,noreferrer");
+                            }
+                        } else {
+                            await refreshYoutubeIntegration(false);
+                        }
+                        setStatus("Connexion YouTube établie");
                     }
                 } catch (err) {
-                    setStatus(err?.message || "Impossible de rafraîchir les chaînes");
+                    setStatus(err?.message || "Action YouTube impossible");
                 } finally {
                     setYoutubeIntegrationBusy(false);
                 }

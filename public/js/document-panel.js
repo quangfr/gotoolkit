@@ -3,6 +3,8 @@
     const MIN_WIDTH = 100;
     const MAX_WIDTH = 520;
     const DEFAULT_TITLE = "Documents";
+    const PUBLISH_TARGET_STORAGE_KEY = "goToolkit.memo.publishTarget";
+    const NOTION_PATH_STORAGE_KEY = "goToolkit.memo.notionPath";
     const voiceRecordingsStore = window.goToolkitDocStore?.createStore?.("voice-recordings") || null;
     const recordingIconCache = new Map();
 
@@ -311,8 +313,15 @@
                         <textarea id="document-explorer-description-input" rows="3" placeholder="Description courte (optionnelle)"></textarea>
                     </div>
                     <div class="modal-actions" style="justify-content: space-between; align-items: center;">
-                        <div style="flex: 1; max-width: 240px;">
-                            <div style="display:flex; align-items:center; gap:6px;">
+                        <div style="display:flex; align-items:center; gap:8px; flex: 1; max-width: 440px;">
+                            <input type="text" id="notionPathInput" placeholder="/Espace/Projet"
+                                style="display:none; width: 170px; height: 26px; font-size: 11px; border-radius: 6px; border: 1px solid var(--border-strong); background: var(--bg-surface); color: var(--text-main); padding: 0 8px; outline: none;">
+                            <select id="publishTargetSelect"
+                                style="width: 140px; height: 26px; font-size: 11px; border-radius: 6px; border: 1px solid var(--border-strong); background: var(--bg-surface); color: var(--text-main); padding: 0 8px; outline: none;">
+                                <option value="gotoolkit">Go-Toolkit</option>
+                                <option value="notion">Notion</option>
+                            </select>
+                            <div id="ownerTokenContainer" style="display:flex; align-items:center; gap:6px; flex: 1;">
                                 <i data-lucide="user" style="width:12px;height:12px;"></i>
                                 <input type="text" id="ownerToken" placeholder="Prénom"
                                     style="width: 100%; height: 26px; font-size: 11px; border-radius: 6px; border: 1px solid var(--border-strong); background: var(--bg-surface); color: var(--text-main); padding: 0 8px; outline: none;">
@@ -336,6 +345,9 @@
         const modalInput = modalOverlay.querySelector("#document-explorer-name-input");
         const modalDescInput = modalOverlay.querySelector("#document-explorer-description-input");
         const ownerTokenInput = modalOverlay.querySelector("#ownerToken");
+        const ownerTokenContainer = modalOverlay.querySelector("#ownerTokenContainer");
+        const publishTargetSelect = modalOverlay.querySelector("#publishTargetSelect");
+        const notionPathInput = modalOverlay.querySelector("#notionPathInput");
         function normalizeOwnerTokenInput(value) {
             return String(value || "")
                 .normalize("NFD")
@@ -377,13 +389,37 @@
         }
 
         function updatePublishVisibility() {
-            const allowPublish = Boolean(modalAllowPublish && hasAdminToken());
+            const isNotion = (publishTargetSelect?.value || "gotoolkit") === "notion";
+            const allowPublish = Boolean(modalAllowPublish && (isNotion || hasAdminToken()));
             if (modalPublishBtn) {
                 modalPublishBtn.style.display = allowPublish ? "inline-flex" : "none";
             }
             if (modalCancelBtn) {
                 modalCancelBtn.style.display = allowPublish ? "none" : "inline-flex";
             }
+        }
+
+        function getSavedPublishTarget() {
+            try {
+                const saved = String(localStorage.getItem(PUBLISH_TARGET_STORAGE_KEY) || "").trim().toLowerCase();
+                return saved === "notion" ? "notion" : "gotoolkit";
+            } catch (err) {
+                return "gotoolkit";
+            }
+        }
+
+        function getSavedNotionPath() {
+            try {
+                return String(localStorage.getItem(NOTION_PATH_STORAGE_KEY) || "").trim();
+            } catch (err) {
+                return "";
+            }
+        }
+
+        function updatePublishTargetUI() {
+            const isNotion = (publishTargetSelect?.value || "gotoolkit") === "notion";
+            if (ownerTokenContainer) ownerTokenContainer.style.display = isNotion ? "none" : "flex";
+            if (notionPathInput) notionPathInput.style.display = isNotion ? "block" : "none";
         }
 
         async function openNameModal(defaultValue, defaultDescription, options) {
@@ -417,14 +453,15 @@
                 }
             }
             syncOwnerTokenFromStorage();
+            if (publishTargetSelect) {
+                publishTargetSelect.value = getSavedPublishTarget();
+            }
+            if (notionPathInput) {
+                notionPathInput.value = getSavedNotionPath();
+            }
+            updatePublishTargetUI();
             modalAllowPublish = Boolean(options && options.allowPublish);
-            const allowPublish = Boolean(modalAllowPublish && hasAdminToken());
-            if (modalPublishBtn) {
-                modalPublishBtn.style.display = allowPublish ? "inline-flex" : "none";
-            }
-            if (modalCancelBtn) {
-                modalCancelBtn.style.display = allowPublish ? "none" : "inline-flex";
-            }
+            updatePublishVisibility();
             requestAnimationFrame(() => {
                 modalInput.focus();
                 modalInput.select();
@@ -448,7 +485,9 @@
                 name: modalInput?.value || "",
                 description: modalDescInput?.value || "",
                 superpowers: getSelectedSuperpowers(),
-                action: "publish"
+                action: "publish",
+                publishTarget: publishTargetSelect?.value || "gotoolkit",
+                notionPath: notionPathInput?.value || ""
             });
         });
         modalConfirmBtn?.addEventListener("click", () => {
@@ -477,6 +516,15 @@
                 localStorage.removeItem("feedback-admin-token");
             }
             updatePublishVisibility();
+        });
+        publishTargetSelect?.addEventListener("change", () => {
+            const value = (publishTargetSelect.value || "gotoolkit").toLowerCase();
+            localStorage.setItem(PUBLISH_TARGET_STORAGE_KEY, value === "notion" ? "notion" : "gotoolkit");
+            updatePublishTargetUI();
+            updatePublishVisibility();
+        });
+        notionPathInput?.addEventListener("input", () => {
+            localStorage.setItem(NOTION_PATH_STORAGE_KEY, String(notionPathInput.value || "").trim());
         });
         modalEl?.addEventListener("click", event => {
             event.stopPropagation();
