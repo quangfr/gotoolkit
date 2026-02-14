@@ -191,10 +191,21 @@
             deviceId: getNotionDeviceId(),
             workspaceId: String(options?.workspaceId || "").trim(),
             parentId: String(options?.parentId || "").trim(),
+            pageId: String(options?.pageId || "").trim(),
+            eraseContent: Boolean(options?.eraseContent),
             path: String(options?.path || "").trim(),
             title: String(options?.title || "Document").trim() || "Document",
             content: String(options?.content || ""),
-            format: String(options?.format || "markdown").trim() || "markdown"
+            format: String(options?.format || "markdown").trim() || "markdown",
+            hasRecording: Boolean(options?.hasRecording)
+        });
+    }
+
+    async function notionGetPageContent(options) {
+        return notionJsonPost("/pages/content", {
+            deviceId: getNotionDeviceId(),
+            workspaceId: String(options?.workspaceId || "").trim(),
+            pageId: String(options?.pageId || "").trim()
         });
     }
 
@@ -206,6 +217,7 @@
         ensureConnected: notionEnsureConnected,
         disconnect: notionDisconnect,
         listPages: notionListPages,
-        publishPage: notionPublishPage
+        publishPage: notionPublishPage,
+        getPageContent: notionGetPageContent
     };
 })(window);

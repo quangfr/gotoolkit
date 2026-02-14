@@ -46,10 +46,10 @@
         crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.min.js" crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.min.js" crossorigin></script>
-    <link rel="stylesheet" href="styles/style.css?v=2026.02.14.4">
+    <link rel="stylesheet" href="styles/style.css?v=2026.02.14.5">
     <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
-    <link rel="stylesheet" href="styles/memo.css?v=2026.02.14.4">
-    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.14.4">
+    <link rel="stylesheet" href="styles/memo.css?v=2026.02.14.5">
+    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.14.5">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.css">
     <script src="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.js"></script>
 </head>
@@ -90,7 +90,7 @@
                 <div class="tabs-actions">
                     <button id="documentExplorerToggle" class="app-home-link" type="button" title="Bibliothèque"
                         aria-expanded="false" aria-controls="documentExplorer"><i data-lucide="library"></i></button>
-                    <a href="/?v=2026.02.14.4" class="nav-switch-btn" title="Accueil"
+                    <a href="/?v=2026.02.14.5" class="nav-switch-btn" title="Accueil"
                         style="text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
                         <i data-lucide="home"></i>
                     </a>
@@ -373,9 +373,12 @@
                         </label>
                     </div>
                     <div class="field-row" id="youtubeChannelRow" style="display:none;">
-                        <select id="youtubeChannelSelect" disabled>
-                            <option value="">Aucune chaîne</option>
-                        </select>
+                        <label style="width:100%">
+                            <span class="label-title">Chaîne</span>
+                            <select id="youtubeChannelSelect" disabled>
+                                <option value="">Aucune chaîne</option>
+                            </select>
+                        </label>
                     </div>
                     <div class="field-row" id="youtubeNoChannelRow" style="display:none;">
                         <label style="width:100%">
@@ -394,7 +397,7 @@
         <img src="img/logo.gif" alt="Logo Go-Toolkit" class="logo-light">
         <img src="img/logo_inverted.gif" alt="Logo Go-Toolkit" class="logo-dark">
         <strong>Go-Toolkit</strong>
-        <span>Version 2026.02.14.4</span>
+        <span>Version 2026.02.14.5</span>
         <span>Usage réservé à Savane Consulting.</span>
         <div class="info-actions info-actions--stacked">
             <div class="info-actions-row">
@@ -465,23 +468,23 @@
         window.GO_TOOLKIT_NOTION_API_URL =
             window.GO_TOOLKIT_NOTION_API_URL || "https://notion.gotoolkit.workers.dev";
     </script>
-    <script src="js/config.js?v=2026.02.14.4"></script>
-    <script src="js/config-modal.js?v=2026.02.14.4"></script>
-    <script src="js/feature-visibility.js?v=2026.02.14.4"></script>
-    <script src="js/document-storage.js?v=2026.02.14.4"></script>
-    <script src="js/storage-service.js?v=2026.02.14.4"></script>
-    <script src="js/shared-ui.js?v=2026.02.14.4"></script>
-    <script src="js/cgu.js?v=2026.02.14.4"></script>
-    <script src="js/share-worker-client.js?v=2026.02.14.4"></script>
-    <script src="js/share-history.js?v=2026.02.14.4"></script>
-    <script src="js/document-api.js?v=2026.02.14.4"></script>
-    <script src="js/keywordIndex.js?v=2026.02.14.4"></script>
-    <script src="js/document-rag.js?v=2026.02.14.4"></script>
-    <script src="js/ia-config.js?v=2026.02.14.4"></script>
-    <script src="preset.js?v=2026.02.14.4"></script>
-    <script src="prompt.js?v=2026.02.14.4"></script>
-    <script src="js/ia-client.js?v=2026.02.14.4"></script>
-    <script src="js/document-markdown.js?v=2026.02.14.4"></script>
+    <script src="js/config.js?v=2026.02.14.5"></script>
+    <script src="js/config-modal.js?v=2026.02.14.5"></script>
+    <script src="js/feature-visibility.js?v=2026.02.14.5"></script>
+    <script src="js/document-storage.js?v=2026.02.14.5"></script>
+    <script src="js/storage-service.js?v=2026.02.14.5"></script>
+    <script src="js/shared-ui.js?v=2026.02.14.5"></script>
+    <script src="js/cgu.js?v=2026.02.14.5"></script>
+    <script src="js/share-worker-client.js?v=2026.02.14.5"></script>
+    <script src="js/share-history.js?v=2026.02.14.5"></script>
+    <script src="js/document-api.js?v=2026.02.14.5"></script>
+    <script src="js/keywordIndex.js?v=2026.02.14.5"></script>
+    <script src="js/document-rag.js?v=2026.02.14.5"></script>
+    <script src="js/ia-config.js?v=2026.02.14.5"></script>
+    <script src="preset.js?v=2026.02.14.5"></script>
+    <script src="prompt.js?v=2026.02.14.5"></script>
+    <script src="js/ia-client.js?v=2026.02.14.5"></script>
+    <script src="js/document-markdown.js?v=2026.02.14.5"></script>
     <script>
         // Initialize feedback configuration for Docs before loading feedback.js
         window.GoToolkitAppFeedbackConfig = {
@@ -500,13 +503,13 @@
             ]
         };
     </script>
-    <script src="js/feedback.js?v=2026.02.14.4"></script>
-    <script src="js/voice-video-player.js?v=2026.02.14.4"></script>
-    <script src="js/voice-audio-player.js?v=2026.02.14.4"></script>
-    <script src="js/youtube-publish.js?v=2026.02.14.4"></script>
-    <script src="js/voice.js?v=2026.02.14.4"></script>
-    <script src="js/voice-transcript.js?v=2026.02.14.4"></script>
-    <script src="js/draw-memo.js?v=2026.02.14.4"></script>
+    <script src="js/feedback.js?v=2026.02.14.5"></script>
+    <script src="js/voice-video-player.js?v=2026.02.14.5"></script>
+    <script src="js/voice-audio-player.js?v=2026.02.14.5"></script>
+    <script src="js/youtube-publish.js?v=2026.02.14.5"></script>
+    <script src="js/voice.js?v=2026.02.14.5"></script>
+    <script src="js/voice-transcript.js?v=2026.02.14.5"></script>
+    <script src="js/draw-memo.js?v=2026.02.14.5"></script>
     <script>
         // Suppress React DevTools prompt in dev builds.
         window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = window.__REACT_DEVTOOLS_GLOBAL_HOOK__ || {
@@ -516,14 +519,14 @@
             onCommitFiberUnmount: function () { }
         };
     </script>
-    <script src="js/memo.bundle.js?v=2026.02.14.4"></script>
+    <script src="js/memo.bundle.js?v=2026.02.14.5"></script>
     <div id="aiRequestCounterToaster" class="ai-request-counter-toaster" style="display:none;"
         data-toast-aria-live="polite" data-toast-aria-atomic="true">
         <span id="aiRequestCounterText"><i data-lucide="bot" class="lucide-pulse"
                 style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i> 00:00</span>
     </div>
-    <script src="js/assist.js?v=2026.02.14.4"></script>
-    <script src="js/document-panel.js?v=2026.02.14.4"></script>
+    <script src="js/assist.js?v=2026.02.14.5"></script>
+    <script src="js/document-panel.js?v=2026.02.14.5"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             setTimeout(function () {
@@ -1212,8 +1215,16 @@
                     payload: doc.payload,
                     voiceRecordingId: doc.voiceRecordingId || null,
                     handoffId: resolveHandoffId(doc.id, doc.handoffId),
+                    notionPageId: String(doc.notionPageId || "").trim(),
+                    notionPageUrl: String(doc.notionPageUrl || "").trim(),
+                    notionPath: String(doc.notionPath || "").trim(),
+                    notionWorkspaceId: String(doc.notionWorkspaceId || "").trim(),
                     updatedAt: doc.updatedAt || new Date().toISOString()
                 });
+            }
+
+            function hasNotionLink(doc) {
+                return Boolean(String(doc?.notionPageId || "").trim());
             }
 
             function getVoiceRecordingIdFromPayload(payload) {
@@ -1256,8 +1267,12 @@
                     const hasHandoff = resolvedHandoffId !== null;
                     const recordingIconName = await resolveRecordingIcon(recordingId);
 
-                    if (hasHandoff || hasRecording) {
+                    const hasNotion = hasNotionLink(doc);
+                    if (hasHandoff || hasRecording || hasNotion) {
                         let icons = "";
+                        if (hasNotion) {
+                            icons += '<i data-lucide="notebook" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.85;"></i>';
+                        }
                         if (hasHandoff) {
                             icons += '<i data-lucide="tablet-smartphone" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.8;"></i>';
                         }
@@ -1358,6 +1373,10 @@
                 const description = doc.description || existing?.description || "";
                 const superpowers = doc.superpowers || existing?.superpowers || [];
                 const voiceRecordingId = doc.voiceRecordingId || existing?.voiceRecordingId || getVoiceRecordingIdFromPayload(payload);
+                const notionPageId = String(doc.notionPageId || existing?.notionPageId || "").trim();
+                const notionPageUrl = String(doc.notionPageUrl || existing?.notionPageUrl || "").trim();
+                const notionPath = String(doc.notionPath || existing?.notionPath || "").trim();
+                const notionWorkspaceId = String(doc.notionWorkspaceId || existing?.notionWorkspaceId || "").trim();
                 const hasDocHandoff = Object.prototype.hasOwnProperty.call(doc, "handoffId");
                 const hasExistingHandoff = existing && Object.prototype.hasOwnProperty.call(existing, "handoffId");
                 const handoffSource = hasDocHandoff ? doc.handoffId : (hasExistingHandoff ? existing.handoffId : null);
@@ -1370,6 +1389,10 @@
                     description,
                     superpowers,
                     voiceRecordingId,
+                    notionPageId,
+                    notionPageUrl,
+                    notionPath,
+                    notionWorkspaceId,
                     handoffId,
                     updatedAt,
                     lastOpenedAt: now
@@ -1383,6 +1406,10 @@
                         payload,
                         voiceRecordingId: record.voiceRecordingId || voiceRecordingId,
                         handoffId: record.handoffId || handoffId,
+                        notionPageId: record.notionPageId || notionPageId,
+                        notionPageUrl: record.notionPageUrl || notionPageUrl,
+                        notionPath: record.notionPath || notionPath,
+                        notionWorkspaceId: record.notionWorkspaceId || notionWorkspaceId,
                         updatedAt: record.updatedAt || updatedAt,
                         lastOpenedAt: now
                     });
@@ -1390,10 +1417,20 @@
                 }
             }
 
-            function setActiveDocument(docId) {
+            async function setActiveDocument(docId) {
                 if (!docId || docId === activeDocumentId) return;
-                const target = openDocuments.find(item => item.id === docId);
+                let target = openDocuments.find(item => item.id === docId);
                 if (!target) return;
+                if (hasNotionLink(target)) {
+                    const refreshed = await hydrateRecordFromNotion(target);
+                    if (refreshed) {
+                        target = {
+                            ...target,
+                            ...refreshed
+                        };
+                        upsertOpenDocument(target);
+                    }
+                }
                 syncActiveDocumentPayload();
                 const loaded = normalizeState(target.payload);
                 if (!loaded) return;
@@ -2184,35 +2221,44 @@
 
             async function openDocumentFromRecord(record) {
                 if (!record || !record.payload) return;
+                const hydratedRecord = await hydrateRecordFromNotion(record);
                 const loaded = normalizeState(
-                    record.payload.tabs
-                        ? record.payload
-                        : { tabs: [{ id: createId(), title: "Doc 1", content: record.payload }] }
+                    hydratedRecord.payload.tabs
+                        ? hydratedRecord.payload
+                        : { tabs: [{ id: createId(), title: "Doc 1", content: hydratedRecord.payload }] }
                 );
                 if (!loaded) return;
                 syncActiveDocumentPayload();
                 state = loaded;
-                activeDocumentId = record.id;
+                activeDocumentId = hydratedRecord.id;
                 renderTabs();
                 setActiveTab(state.activeTabId);
                 syncAssistPresetFromState();
                 upsertOpenDocument({
-                    id: record.id,
-                    title: record.title || getDocumentTitleFromState(state),
-                    description: record.description || "",
-                    superpowers: record.superpowers || [],
+                    id: hydratedRecord.id,
+                    title: hydratedRecord.title || getDocumentTitleFromState(state),
+                    description: hydratedRecord.description || "",
+                    superpowers: hydratedRecord.superpowers || [],
                     payload: buildSharePayload(),
-                    updatedAt: record.updatedAt || new Date().toISOString()
+                    notionPageId: hydratedRecord.notionPageId || "",
+                    notionPageUrl: hydratedRecord.notionPageUrl || "",
+                    notionPath: hydratedRecord.notionPath || "",
+                    notionWorkspaceId: hydratedRecord.notionWorkspaceId || "",
+                    updatedAt: hydratedRecord.updatedAt || new Date().toISOString()
                 });
                 renderDocumentTabs();
                 markDocumentOpened({
-                    id: record.id,
-                    title: record.title || getDocumentTitleFromState(state),
-                    description: record.description || "",
-                    superpowers: record.superpowers || [],
+                    id: hydratedRecord.id,
+                    title: hydratedRecord.title || getDocumentTitleFromState(state),
+                    description: hydratedRecord.description || "",
+                    superpowers: hydratedRecord.superpowers || [],
                     payload: buildSharePayload(),
-                    updatedAt: record.updatedAt || new Date().toISOString()
-                }, record);
+                    notionPageId: hydratedRecord.notionPageId || "",
+                    notionPageUrl: hydratedRecord.notionPageUrl || "",
+                    notionPath: hydratedRecord.notionPath || "",
+                    notionWorkspaceId: hydratedRecord.notionWorkspaceId || "",
+                    updatedAt: hydratedRecord.updatedAt || new Date().toISOString()
+                }, hydratedRecord);
                 hydrateMemoContextEmbeddings();
             }
 
@@ -2227,6 +2273,41 @@
                     console.warn("Failed to open memo document", err);
                 } finally {
                     isOpeningDocument = false;
+                }
+            }
+
+            async function hydrateRecordFromNotion(record) {
+                if (!record?.id || !record?.payload?.tabs?.length) return record;
+                const notionPageId = String(record?.notionPageId || "").trim();
+                if (!notionPageId) return record;
+                const notion = window.GoToolkitNotionPublish;
+                if (!notion?.getPageContent) return record;
+                try {
+                    const payload = await notion.getPageContent({
+                        workspaceId: String(record?.notionWorkspaceId || "").trim(),
+                        pageId: notionPageId
+                    });
+                    const notionContent = String(payload?.content || "").trim();
+                    if (!notionContent) return record;
+                    const nextPayload = normalizeState(record.payload) || normalizeState(buildSharePayload()) || record.payload;
+                    if (!nextPayload?.tabs?.length) return record;
+                    nextPayload.tabs[0].content = notionContent;
+                    const pageTitle = String(payload?.title || "").trim();
+                    if (pageTitle) {
+                        nextPayload.tabs[0].title = pageTitle;
+                    }
+                    const nextRecord = {
+                        ...record,
+                        title: pageTitle || record.title || getDocumentTitleFromState(nextPayload),
+                        payload: nextPayload,
+                        notionPageUrl: String(payload?.url || record.notionPageUrl || "").trim(),
+                        updatedAt: new Date().toISOString()
+                    };
+                    await documentApi?.upsertRecord?.(nextRecord);
+                    return nextRecord;
+                } catch (err) {
+                    console.warn("Notion content sync failed", err);
+                    return record;
                 }
             }
 
@@ -2298,7 +2379,8 @@
                 const sourceTab = activeTab || doc?.payload?.tabs?.[0] || null;
                 const title = meta?.name || sourceTab?.title || "Document";
                 const content = sourceTab?.content || "";
-                const notionPath = String(meta?.notionPath || localStorage.getItem(NOTION_PATH_STORAGE_KEY) || "").trim();
+                const linkedPageId = String(meta?.notionPageId || doc?.notionPageId || "").trim();
+                const notionPath = String(meta?.notionPath || doc?.notionPath || localStorage.getItem(NOTION_PATH_STORAGE_KEY) || "").trim();
                 if (notionDefaultPathInput) {
                     notionDefaultPathInput.value = notionPath;
                 }
@@ -2314,13 +2396,43 @@
                         return;
                     }
                     setStatus("Publication vers Notion...");
-                    await notion.publishPage({
+                    const hasRecording = Boolean(
+                        doc?.voiceRecordingId
+                        || sourceTab?.voiceRecordingId
+                        || getVoiceRecordingIdFromPayload(doc?.payload)
+                    );
+                    const result = await notion.publishPage({
                         workspaceId,
+                        pageId: linkedPageId,
+                        eraseContent: Boolean(linkedPageId),
                         title,
                         content,
                         path: notionPath,
-                        format: "html"
+                        format: "markdown",
+                        hasRecording
                     });
+                    const nextMeta = {
+                        notionPageId: String(result?.pageId || linkedPageId || "").trim(),
+                        notionPageUrl: String(result?.url || "").trim(),
+                        notionPath: notionPath,
+                        notionWorkspaceId: workspaceId
+                    };
+                    await documentApi?.upsertRecord?.({
+                        id: docId,
+                        app: "memo",
+                        notionPageId: nextMeta.notionPageId,
+                        notionPageUrl: nextMeta.notionPageUrl,
+                        notionPath: nextMeta.notionPath,
+                        notionWorkspaceId: nextMeta.notionWorkspaceId,
+                        updatedAt: new Date().toISOString()
+                    });
+                    upsertOpenDocument({
+                        id: docId,
+                        ...nextMeta,
+                        updatedAt: new Date().toISOString()
+                    });
+                    renderDocumentTabs();
+                    memoExplorer?.refresh?.();
                     setStatus("Le document a été publié sur Notion");
                 } catch (err) {
                     setStatus(err?.message || "Publication Notion échouée", true);
@@ -2375,6 +2487,29 @@
                 getExplorer()?.refresh?.();
             }
 
+            async function unlinkDocumentFromNotion(docId) {
+                if (!docId) return;
+                await documentApi?.upsertRecord?.({
+                    id: docId,
+                    app: "memo",
+                    notionPageId: "",
+                    notionPageUrl: "",
+                    notionPath: "",
+                    notionWorkspaceId: "",
+                    updatedAt: new Date().toISOString()
+                });
+                upsertOpenDocument({
+                    id: docId,
+                    notionPageId: "",
+                    notionPageUrl: "",
+                    notionPath: "",
+                    notionWorkspaceId: "",
+                    updatedAt: new Date().toISOString()
+                });
+                renderDocumentTabs();
+                memoExplorer?.refresh?.();
+            }
+
             async function renameDocument(docId, currentTitle, currentDescription, currentSuperpowers) {
                 const explorer = getExplorer();
                 const activeContent = state?.tabs?.[0]?.content || "";
@@ -2390,6 +2525,9 @@
                 if (!result) return;
                 const finalName = explorer?.uniqueName?.(result.name, docId) || result.name;
                 await applyDocumentRename(docId, finalName, result.description, result.superpowers);
+                if (result.unlinkNotion) {
+                    await unlinkDocumentFromNotion(docId);
+                }
                 if (result.action !== "publish") {
                     setStatus("Le document a été enregistré");
                 }
@@ -2399,7 +2537,9 @@
                         name: finalName,
                         description: result.description,
                         superpowers: result.superpowers,
-                        notionPath: result.notionPath
+                        notionPath: result.notionPath,
+                        notionPageId: result.notionPageId,
+                        notionWorkspaceId: result.notionWorkspaceId
                     });
                     return;
                 }
@@ -2586,6 +2726,9 @@
                 onRename: async (item, result) => {
                     if (!item || !result || !result.name) return;
                     await applyDocumentRename(item.id, result.name, result.description, result.superpowers);
+                    if (result.unlinkNotion) {
+                        await unlinkDocumentFromNotion(item.id);
+                    }
                     if (result.action !== "publish") {
                         if (typeof showToast === "function") {
                             showToast("Le document a été enregistré");
@@ -2599,7 +2742,9 @@
                                 name: result.name,
                                 description: result.description,
                                 superpowers: result.superpowers,
-                                notionPath: result.notionPath
+                                notionPath: result.notionPath,
+                                notionPageId: result.notionPageId,
+                                notionWorkspaceId: result.notionWorkspaceId
                             });
                         } else if (item.id === activeDocumentId) {
                             const tab = getActiveTab();
@@ -3470,6 +3615,10 @@
                             description: record.description || "",
                             superpowers: record.superpowers || [],
                             payload: record.payload,
+                            notionPageId: record.notionPageId || "",
+                            notionPageUrl: record.notionPageUrl || "",
+                            notionPath: record.notionPath || "",
+                            notionWorkspaceId: record.notionWorkspaceId || "",
                             updatedAt: record.updatedAt || new Date().toISOString()
                         });
                     } catch (err) {
@@ -3479,7 +3628,9 @@
                 if (!restoredDocs.length) return false;
                 openDocuments = restoredDocs;
                 const preferred = stored.activeDocumentId;
-                const active = restoredDocs.find(doc => doc.id === preferred) || restoredDocs[0];
+                const selected = restoredDocs.find(doc => doc.id === preferred) || restoredDocs[0];
+                const active = await hydrateRecordFromNotion(selected);
+                upsertOpenDocument(active);
                 const loaded = normalizeState(active.payload);
                 if (loaded) {
                     state = loaded;
@@ -3495,7 +3646,8 @@
                     const memoDocs = (all || []).filter(item => item && item.app === "memo");
                     if (!memoDocs.length) return false;
                     memoDocs.sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
-                    const record = memoDocs[0];
+                    const baseRecord = memoDocs[0];
+                    const record = await hydrateRecordFromNotion(baseRecord);
                     if (!record || !record.payload) return false;
                     const loaded = normalizeState(record.payload);
                     if (!loaded) return false;
@@ -3507,6 +3659,10 @@
                         description: record.description || "",
                         superpowers: record.superpowers || [],
                         payload: record.payload,
+                        notionPageId: record.notionPageId || "",
+                        notionPageUrl: record.notionPageUrl || "",
+                        notionPath: record.notionPath || "",
+                        notionWorkspaceId: record.notionWorkspaceId || "",
                         updatedAt: record.updatedAt || new Date().toISOString()
                     });
                     return true;

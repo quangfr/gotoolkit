@@ -302,33 +302,161 @@ async function handleOAuthCallback(request, env) {
   }
 }
 
-function splitTextToParagraphBlocks(text, maxBlocks = 100) {
-  const lines = String(text || "")
-    .replace(/\r\n/g, "\n")
-    .split("\n")
-    .map(line => line.trim())
-    .filter(Boolean);
+function normalizeText(input) {
+  return String(input || "")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|div|h[1-6]|li|tr)>/gi, "\n")
+    .replace(/<[^>]*>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
+}
 
+function toRichText(content) {
+  const value = String(content || "").slice(0, 1900);
+  return value
+    ? [{ type: "text", text: { content: value } }]
+    : [];
+}
+
+function parseTableLine(line) {
+  const raw = String(line || "").trim();
+  if (!raw.startsWith("|") || !raw.endsWith("|")) return null;
+  return raw.slice(1, -1).split("|").map(part => part.trim());
+}
+
+function isTableSeparator(cells) {
+  if (!cells || !cells.length) return false;
+  return cells.every(cell => /^:?-{3,}:?$/.test(cell || ""));
+}
+
+function splitTextToBlocks(text, options = {}) {
+  const hasRecording = Boolean(options?.hasRecording);
+  const lines = normalizeText(text).replace(/\r\n/g, "\n").split("\n");
   const blocks = [];
-  for (let i = 0; i < lines.length && blocks.length < maxBlocks; i += 1) {
+  let i = 0;
+
+  while (i < lines.length && blocks.length < 100) {
+    const rawLine = lines[i] || "";
+    const line = rawLine.trim();
+    if (!line) {
+      i += 1;
+      continue;
+    }
+
+    const headingMatch = line.match(/^(#{1,3})\s+(.+)$/);
+    if (headingMatch) {
+      const level = headingMatch[1].length;
+      const type = level === 1 ? "heading_1" : level === 2 ? "heading_2" : "heading_3";
+      blocks.push({
+        object: "block",
+        type,
+        [type]: { rich_text: toRichText(headingMatch[2]) }
+      });
+      i += 1;
+      continue;
+    }
+
+    if (line.startsWith(">")) {
+      blocks.push({
+        object: "block",
+        type: "quote",
+        quote: { rich_text: toRichText(line.replace(/^>\s?/, "")) }
+      });
+      i += 1;
+      continue;
+    }
+
+    const bulletMatch = line.match(/^[-*]\s+(.+)$/);
+    if (bulletMatch) {
+      blocks.push({
+        object: "block",
+        type: "bulleted_list_item",
+        bulleted_list_item: { rich_text: toRichText(bulletMatch[1]) }
+      });
+      i += 1;
+      continue;
+    }
+
+    const numberedMatch = line.match(/^\d+\.\s+(.+)$/);
+    if (numberedMatch) {
+      blocks.push({
+        object: "block",
+        type: "numbered_list_item",
+        numbered_list_item: { rich_text: toRichText(numberedMatch[1]) }
+      });
+      i += 1;
+      continue;
+    }
+
+    const tableHeader = parseTableLine(line);
+    const tableSep = parseTableLine(lines[i + 1] || "");
+    if (tableHeader && tableSep && isTableSeparator(tableSep)) {
+      const rows = [];
+      i += 2;
+      while (i < lines.length) {
+        const row = parseTableLine(lines[i] || "");
+        if (!row) break;
+        rows.push(row);
+        i += 1;
+      }
+      const headerCols = tableHeader.length;
+      const children = [];
+      children.push({
+        object: "block",
+        type: "table_row",
+        table_row: {
+          cells: tableHeader.map(cell => toRichText(cell))
+        }
+      });
+      rows.forEach(row => {
+        const padded = row.slice(0, headerCols);
+        while (padded.length < headerCols) padded.push("");
+        children.push({
+          object: "block",
+          type: "table_row",
+          table_row: {
+            cells: padded.map(cell => toRichText(cell))
+          }
+        });
+      });
+      blocks.push({
+        object: "block",
+        type: "table",
+        table: {
+          table_width: headerCols,
+          has_column_header: true,
+          has_row_header: false,
+          children: children.slice(0, 100)
+        }
+      });
+      continue;
+    }
+
     blocks.push({
       object: "block",
       type: "paragraph",
-      paragraph: {
-        rich_text: [{ type: "text", text: { content: lines[i].slice(0, 1900) } }]
-      }
+      paragraph: { rich_text: toRichText(line) }
     });
+    i += 1;
   }
+
   if (!blocks.length) {
     blocks.push({
       object: "block",
       type: "paragraph",
-      paragraph: {
-        rich_text: [{ type: "text", text: { content: "Document vide" } }]
-      }
+      paragraph: { rich_text: toRichText("Document vide") }
     });
   }
-  return blocks;
+  if (hasRecording && blocks.length < 100) {
+    blocks.push({
+      object: "block",
+      type: "quote",
+      quote: { rich_text: toRichText("Ce document contient un enregistrement audio/vidéo associé.") }
+    });
+  }
+  return blocks.slice(0, 100);
 }
 
 async function getPageInfo(token, pageId) {
@@ -483,6 +611,64 @@ async function listPages(token, parentId) {
   }).filter(item => item.id);
 }
 
+async function appendBlockChildren(token, blockId, children) {
+  const list = Array.isArray(children) ? children : [];
+  for (let i = 0; i < list.length; i += 100) {
+    const chunk = list.slice(i, i + 100);
+    if (!chunk.length) continue;
+    await notionApiFetch(token, `/blocks/${encodeURIComponent(blockId)}/children`, {
+      method: "PATCH",
+      body: { children: chunk }
+    });
+  }
+}
+
+async function listAllBlockChildren(token, blockId) {
+  const all = [];
+  let cursor = "";
+  while (true) {
+    const suffix = cursor ? `?page_size=100&start_cursor=${encodeURIComponent(cursor)}` : "?page_size=100";
+    const payload = await notionApiFetch(token, `/blocks/${encodeURIComponent(blockId)}/children${suffix}`);
+    const results = Array.isArray(payload?.results) ? payload.results : [];
+    all.push(...results);
+    if (!payload?.has_more || !payload?.next_cursor) break;
+    cursor = String(payload.next_cursor || "");
+  }
+  return all;
+}
+
+async function clearPageChildren(token, pageId) {
+  const children = await listAllBlockChildren(token, pageId);
+  for (const block of children) {
+    const id = String(block?.id || "").trim();
+    if (!id) continue;
+    await notionApiFetch(token, `/blocks/${encodeURIComponent(id)}`, { method: "DELETE" });
+  }
+}
+
+function richTextToPlain(parts) {
+  if (!Array.isArray(parts)) return "";
+  return parts.map(p => String(p?.plain_text || p?.text?.content || "")).join("");
+}
+
+function blockToMarkdown(block) {
+  const type = String(block?.type || "");
+  if (!type) return "";
+  if (type === "paragraph") return richTextToPlain(block?.paragraph?.rich_text || []);
+  if (type === "heading_1") return `# ${richTextToPlain(block?.heading_1?.rich_text || [])}`;
+  if (type === "heading_2") return `## ${richTextToPlain(block?.heading_2?.rich_text || [])}`;
+  if (type === "heading_3") return `### ${richTextToPlain(block?.heading_3?.rich_text || [])}`;
+  if (type === "bulleted_list_item") return `- ${richTextToPlain(block?.bulleted_list_item?.rich_text || [])}`;
+  if (type === "numbered_list_item") return `1. ${richTextToPlain(block?.numbered_list_item?.rich_text || [])}`;
+  if (type === "quote") return `> ${richTextToPlain(block?.quote?.rich_text || [])}`;
+  if (type === "child_page") return `# ${String(block?.child_page?.title || "").trim()}`;
+  if (type === "table_row") {
+    const cells = Array.isArray(block?.table_row?.cells) ? block.table_row.cells : [];
+    return `| ${cells.map(c => richTextToPlain(c)).join(" | ")} |`;
+  }
+  return "";
+}
+
 export default {
   async fetch(request, env) {
     const cors = corsMeta(request);
@@ -606,47 +792,128 @@ export default {
       const deviceId = String(body?.deviceId || "").trim();
       const workspaceId = String(body?.workspaceId || "").trim();
       const parentId = String(body?.parentId || "").trim();
+      const pageId = String(body?.pageId || "").trim();
+      const eraseContent = Boolean(body?.eraseContent);
       const pathInput = String(body?.path || "").trim();
       const title = String(body?.title || "Document").trim() || "Document";
       const content = String(body?.content || "");
+      const hasRecording = Boolean(body?.hasRecording);
 
       if (!deviceId) return errorResponse(cors.headers, 400, "deviceId requis");
       const auth = await getWorkspaceToken(env, deviceId, workspaceId).catch(() => null);
       if (!auth?.token) return errorResponse(cors.headers, 401, "Connexion Notion requise");
 
       try {
-        let parent = null;
-        if (parentId) {
-          parent = { page_id: parentId };
-        } else if (pathInput) {
-          const resolved = await ensurePathParent(auth.token, auth.selectedWorkspaceId, pathInput);
-          parent = resolved.parent;
-        } else {
-          parent = { workspace: true };
-        }
+        const children = splitTextToBlocks(content, { hasRecording });
+        let finalPageId = "";
+        let finalUrl = "";
 
-        const children = splitTextToParagraphBlocks(content, 100);
-        const created = await notionApiFetch(auth.token, "/pages", {
-          method: "POST",
-          body: {
-            parent,
-            properties: {
-              title: {
-                title: [{ type: "text", text: { content: title.slice(0, 200) } }]
+        if (pageId) {
+          await notionApiFetch(auth.token, `/pages/${encodeURIComponent(pageId)}`, {
+            method: "PATCH",
+            body: {
+              properties: {
+                title: {
+                  title: [{ type: "text", text: { content: title.slice(0, 200) } }]
+                }
               }
-            },
-            children
+            }
+          });
+          if (eraseContent) {
+            await clearPageChildren(auth.token, pageId);
           }
-        });
+          await appendBlockChildren(auth.token, pageId, children);
+          const page = await getPageInfo(auth.token, pageId).catch(() => ({}));
+          finalPageId = pageId;
+          finalUrl = String(page?.url || "").trim();
+        } else {
+          let parent = null;
+          if (parentId) {
+            parent = { page_id: parentId };
+          } else if (pathInput) {
+            const resolved = await ensurePathParent(auth.token, auth.selectedWorkspaceId, pathInput);
+            parent = resolved.parent;
+          } else {
+            parent = { workspace: true };
+          }
+
+          const created = await notionApiFetch(auth.token, "/pages", {
+            method: "POST",
+            body: {
+              parent,
+              properties: {
+                title: {
+                  title: [{ type: "text", text: { content: title.slice(0, 200) } }]
+                }
+              }
+            }
+          });
+          finalPageId = String(created?.id || "").trim();
+          finalUrl = String(created?.url || "").trim();
+          if (finalPageId) {
+            await appendBlockChildren(auth.token, finalPageId, children);
+          }
+        }
 
         return jsonResponse(cors.headers, {
           ok: true,
-          pageId: String(created?.id || "").trim(),
-          url: String(created?.url || "").trim(),
+          pageId: finalPageId,
+          url: finalUrl,
           selectedWorkspaceId: auth.selectedWorkspaceId
         });
       } catch (err) {
         return errorResponse(cors.headers, 502, err?.message || "Publication Notion impossible");
+      }
+    }
+
+    if (request.method === "POST" && path === "/pages/content") {
+      const body = await request.json().catch(() => ({}));
+      const deviceId = String(body?.deviceId || "").trim();
+      const workspaceId = String(body?.workspaceId || "").trim();
+      const pageId = String(body?.pageId || "").trim();
+      if (!deviceId) return errorResponse(cors.headers, 400, "deviceId requis");
+      if (!pageId) return errorResponse(cors.headers, 400, "pageId requis");
+      const auth = await getWorkspaceToken(env, deviceId, workspaceId).catch(() => null);
+      if (!auth?.token) return errorResponse(cors.headers, 401, "Connexion Notion requise");
+      try {
+        const page = await getPageInfo(auth.token, pageId);
+        const blocks = await listAllBlockChildren(auth.token, pageId);
+        const lines = [];
+        for (const block of blocks) {
+          if (block?.type === "table") {
+            const tableRows = await listAllBlockChildren(auth.token, String(block?.id || "").trim()).catch(() => []);
+            let headerDone = false;
+            tableRows.forEach(row => {
+              if (row?.type !== "table_row") return;
+              const line = blockToMarkdown(row);
+              if (!line) return;
+              lines.push(line);
+              if (!headerDone) {
+                const cols = (Array.isArray(row?.table_row?.cells) ? row.table_row.cells.length : 0) || 1;
+                lines.push(`| ${Array.from({ length: cols }).map(() => "---").join(" | ")} |`);
+                headerDone = true;
+              }
+            });
+            continue;
+          }
+          const line = blockToMarkdown(block);
+          if (line) lines.push(line);
+        }
+        const props = page?.properties || {};
+        const titleProp = Object.values(props).find(p => p?.type === "title");
+        const title = Array.isArray(titleProp?.title)
+          ? titleProp.title.map(item => item?.plain_text || "").join("").trim()
+          : "";
+        return jsonResponse(cors.headers, {
+          ok: true,
+          pageId,
+          title: title || "Document",
+          content: lines.join("\n\n").trim(),
+          url: String(page?.url || "").trim(),
+          selectedWorkspaceId: auth.selectedWorkspaceId
+        });
+      } catch (err) {
+        return errorResponse(cors.headers, 502, err?.message || "Lecture Notion impossible");
       }
     }
 

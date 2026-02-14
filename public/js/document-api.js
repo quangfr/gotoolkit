@@ -79,6 +79,10 @@
         }
         const hasVoiceRecordingId = Object.prototype.hasOwnProperty.call(value, "voiceRecordingId");
         const hasHandoffId = Object.prototype.hasOwnProperty.call(value, "handoffId");
+        const hasNotionPageId = Object.prototype.hasOwnProperty.call(value, "notionPageId");
+        const hasNotionPageUrl = Object.prototype.hasOwnProperty.call(value, "notionPageUrl");
+        const hasNotionPath = Object.prototype.hasOwnProperty.call(value, "notionPath");
+        const hasNotionWorkspaceId = Object.prototype.hasOwnProperty.call(value, "notionWorkspaceId");
         return {
             id,
             app,
@@ -91,7 +95,11 @@
             lastOpenedAt: value.lastOpenedAt || "",
             pinned: Boolean(value.pinned),
             voiceRecordingId: hasVoiceRecordingId ? (value.voiceRecordingId || null) : undefined,
-            handoffId: hasHandoffId ? (typeof value.handoffId === "string" ? value.handoffId : null) : undefined
+            handoffId: hasHandoffId ? (typeof value.handoffId === "string" ? value.handoffId : null) : undefined,
+            notionPageId: hasNotionPageId ? String(value.notionPageId || "").trim() : undefined,
+            notionPageUrl: hasNotionPageUrl ? String(value.notionPageUrl || "").trim() : undefined,
+            notionPath: hasNotionPath ? String(value.notionPath || "").trim() : undefined,
+            notionWorkspaceId: hasNotionWorkspaceId ? String(value.notionWorkspaceId || "").trim() : undefined
         };
     }
 
@@ -127,6 +135,10 @@
         const existing = normalizeRecord(stored[normalized.id]);
         const hasVoiceRecordingId = Object.prototype.hasOwnProperty.call(record, "voiceRecordingId");
         const hasHandoffId = Object.prototype.hasOwnProperty.call(record, "handoffId");
+        const hasNotionPageId = Object.prototype.hasOwnProperty.call(record, "notionPageId");
+        const hasNotionPageUrl = Object.prototype.hasOwnProperty.call(record, "notionPageUrl");
+        const hasNotionPath = Object.prototype.hasOwnProperty.call(record, "notionPath");
+        const hasNotionWorkspaceId = Object.prototype.hasOwnProperty.call(record, "notionWorkspaceId");
         const next = {
             id: normalized.id,
             app: normalized.app,
@@ -151,6 +163,26 @@
             next.handoffId = normalized.handoffId === undefined ? null : normalized.handoffId;
         } else if (existing && Object.prototype.hasOwnProperty.call(existing, "handoffId")) {
             next.handoffId = existing.handoffId;
+        }
+        if (hasNotionPageId) {
+            next.notionPageId = normalized.notionPageId || "";
+        } else if (existing && Object.prototype.hasOwnProperty.call(existing, "notionPageId")) {
+            next.notionPageId = existing.notionPageId || "";
+        }
+        if (hasNotionPageUrl) {
+            next.notionPageUrl = normalized.notionPageUrl || "";
+        } else if (existing && Object.prototype.hasOwnProperty.call(existing, "notionPageUrl")) {
+            next.notionPageUrl = existing.notionPageUrl || "";
+        }
+        if (hasNotionPath) {
+            next.notionPath = normalized.notionPath || "";
+        } else if (existing && Object.prototype.hasOwnProperty.call(existing, "notionPath")) {
+            next.notionPath = existing.notionPath || "";
+        }
+        if (hasNotionWorkspaceId) {
+            next.notionWorkspaceId = normalized.notionWorkspaceId || "";
+        } else if (existing && Object.prototype.hasOwnProperty.call(existing, "notionWorkspaceId")) {
+            next.notionWorkspaceId = existing.notionWorkspaceId || "";
         }
         stored[next.id] = next;
         await writeRecords(stored);
