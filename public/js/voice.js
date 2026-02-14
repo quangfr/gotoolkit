@@ -1768,10 +1768,10 @@
                             state.videoModal?.setYoutubeUrl?.(url);
                         }
                         if (url) {
-                            await navigator.clipboard.writeText(url);
-                            showToast("Video publiee (URL copiee)");
+                            window.open(url, "_blank", "noopener,noreferrer");
+                            showToast("La vidéo a été publiée sur Youtube (non listée)");
                         } else {
-                            showToast("Video publiee");
+                            showToast("La vidéo a été publiée sur Youtube (non listée)");
                         }
                     } catch (err) {
                         const message = err?.message ? String(err.message) : "Publication YouTube impossible";

@@ -3,7 +3,7 @@
 - Voice : Transcription texte en temps réel
 - Intégration : Publier un document sur Notion
 - IA : Fil d'attente de commandes
-- Intégration : Envoyer en mail sur Outlook / Gmail
+- Intégration : Envoyer un document sur Outlook / Gmail
 
 ## 2026-01-28
 - IA : Éditer un prompt et restaurer une version

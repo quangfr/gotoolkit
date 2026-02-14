@@ -1,17 +1,92 @@
 ;(function (global) {
     const doc = global.document;
     if (!doc) return;
-    const SERVICES_TAB_BUTTON_HTML = `
-        <button type="button" class="tab-btn" data-tab="servicesTab">
-            <i data-lucide="cpu" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Services IA
+    const SHARED_SETTINGS_TABS_HTML = `
+        <button type="button" class="tab-btn active" data-tab="paramsTab">
+            <i data-lucide="sliders" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Paramétrages
+        </button>
+        <button type="button" class="tab-btn" data-tab="integrationsTab">
+            <i data-lucide="plug-zap" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Intégrations
         </button>
     `;
-    const SERVICES_TAB_PANEL_HTML = `
-        <div class="settings-tab-panel" data-panel="servicesTab" hidden>
+    const SHARED_SETTINGS_PANELS_HTML = `
+        <div class="settings-tab-panel" data-panel="paramsTab">
             <div class="field-row">
                 <label style="width:100%">
-                    <span class="label-title">Services IA</span>
-                    <span class="label-subtitle">Configure les services IA avancés depuis l'accueil (Go-Toolkit).</span>
+                    <span class="label-title">Id Go-Toolkit</span>
+                    <div style="position:relative; width:100%;">
+                        <i data-lucide="user" style="width:14px;height:14px;position:absolute;left:10px;top:50%;transform:translateY(-50%);opacity:0.7;pointer-events:none;"></i>
+                        <input id="ownerToken" type="text" style="padding-left:34px;" />
+                    </div>
+                </label>
+            </div>
+            <div class="field-row">
+                <label style="width:100%">
+                    <span class="label-title">Thème</span>
+                    <select id="themeSelectMemo">
+                        <option value="cream">Clair</option>
+                        <option value="dark">Sombre</option>
+                        <option value="auto" selected>Auto</option>
+                    </select>
+                </label>
+            </div>
+        </div>
+        <div class="settings-tab-panel" data-panel="integrationsTab" hidden>
+            <div class="field-row">
+                <label style="width:100%">
+                    <span class="label-title">Notion</span>
+                    <a id="notionAuthLink" class="label-title dashed-link" href="#" style="margin-left:8px;">Se connecter</a>
+                </label>
+            </div>
+            <div class="field-row" id="notionWorkspaceRow" style="display:none;">
+                <label style="width:100%">
+                    <span class="label-title">Workspace</span>
+                    <select id="notionWorkspaceSelect" disabled>
+                        <option value="">Aucun workspace</option>
+                    </select>
+                </label>
+            </div>
+            <div class="field-row" id="notionDefaultPathRow" style="display:none;">
+                <label style="width:100%">
+                    <span class="label-title">Chemin par défaut</span>
+                    <input id="notionDefaultPathInput" type="text" placeholder="/Espace/Projet" />
+                </label>
+            </div>
+            <hr style="width:100%; border:none; border-top:1px solid var(--border-main); margin:8px 0;">
+            <div class="field-row">
+                <label style="width:100%">
+                    <span class="label-title">YouTube</span>
+                    <a id="youtubeAuthLink" class="label-title dashed-link" href="#" style="margin-left:8px;">Se connecter</a>
+                </label>
+            </div>
+            <div class="field-row" id="youtubeChannelRow" style="display:none;">
+                <label style="width:100%">
+                    <span class="label-title">Chaîne</span>
+                    <select id="youtubeChannelSelect" disabled>
+                        <option value="">Aucune chaîne</option>
+                    </select>
+                </label>
+            </div>
+            <div class="field-row" id="youtubeNoChannelRow" style="display:none;">
+                <label style="width:100%">
+                    <span class="label-subtitle">Aucune chaîne trouvée sur ce compte.</span>
+                    <a id="youtubeChannelSwitcherLink" class="label-title dashed-link"
+                        href="https://www.youtube.com/channel_switcher" target="_blank"
+                        rel="noopener noreferrer">Créer ou sélectionner une chaîne YouTube</a>
+                </label>
+            </div>
+            <hr style="width:100%; border:none; border-top:1px solid var(--border-main); margin:8px 0;">
+            <div class="field-row">
+                <label style="width:100%">
+                    <span class="label-title">Outlook</span>
+                    <a id="microsoftAuthLink" class="label-title dashed-link" href="#" style="margin-left:8px;">Se connecter</a>
+                </label>
+            </div>
+            <hr style="width:100%; border:none; border-top:1px solid var(--border-main); margin:8px 0;">
+            <div class="field-row">
+                <label style="width:100%">
+                    <span class="label-title">Gmail</span>
+                    <a id="gmailAuthLink" class="label-title dashed-link" href="#" style="margin-left:8px;">Se connecter</a>
                 </label>
             </div>
         </div>
@@ -104,31 +179,46 @@
         if (!modal) return;
 
         const tabsRow = modal.querySelector(".settings-tabs");
-        const panelContainer = modal.querySelector(".ia-actions, .feedback-form, .settings-tab-panels-wrapper");
-        if (!tabsRow || !panelContainer) return;
-
-        const hasServicesTab = Boolean(tabsRow.querySelector('[data-tab="servicesTab"]'));
-        if (!hasServicesTab) {
-            const paramsBtn = tabsRow.querySelector('[data-tab="paramsTab"]');
-            if (paramsBtn) {
-                paramsBtn.insertAdjacentHTML("beforebegin", SERVICES_TAB_BUTTON_HTML);
-            } else {
-                tabsRow.insertAdjacentHTML("afterbegin", SERVICES_TAB_BUTTON_HTML);
-            }
+        if (!tabsRow) return;
+        let panelContainer = modal.querySelector(".settings-tab-panels-wrapper");
+        if (!panelContainer) {
+            const parent = modal.querySelector(".ia-actions, .feedback-form");
+            if (!parent) return;
+            panelContainer = doc.createElement("div");
+            panelContainer.className = "settings-tab-panels-wrapper";
+            parent.appendChild(panelContainer);
         }
-
-        const hasServicesPanel = Boolean(modal.querySelector('.settings-tab-panel[data-panel="servicesTab"]'));
-        if (!hasServicesPanel) {
-            const paramsPanel = modal.querySelector('.settings-tab-panel[data-panel="paramsTab"]');
-            if (paramsPanel) {
-                paramsPanel.insertAdjacentHTML("beforebegin", SERVICES_TAB_PANEL_HTML);
-            } else {
-                panelContainer.insertAdjacentHTML("beforeend", SERVICES_TAB_PANEL_HTML);
-            }
-        }
+        Array.from(tabsRow.querySelectorAll('[data-tab="paramsTab"], [data-tab="integrationsTab"]')).forEach(el => el.remove());
+        Array.from(modal.querySelectorAll('.settings-tab-panel[data-panel="paramsTab"], .settings-tab-panel[data-panel="integrationsTab"]')).forEach(el => el.remove());
+        tabsRow.insertAdjacentHTML("beforeend", SHARED_SETTINGS_TABS_HTML);
+        panelContainer.insertAdjacentHTML("beforeend", SHARED_SETTINGS_PANELS_HTML);
     }
 
     ensureSharedSettingsModalTabs();
+
+    global.GoToolkitSettingsModal.setIntegrationConnected = function (anchorEl, connected) {
+        if (!anchorEl || !anchorEl.parentElement) return;
+        const label = anchorEl.parentElement.querySelector(".label-title");
+        if (!label) return;
+        let indicator = anchorEl.parentElement.querySelector('[data-integration-connected]');
+        if (!connected) {
+            indicator?.remove();
+            return;
+        }
+        if (!indicator) {
+            indicator = doc.createElement("i");
+            indicator.setAttribute("data-integration-connected", "1");
+            indicator.setAttribute("data-lucide", "circle-check");
+            indicator.style.width = "14px";
+            indicator.style.height = "14px";
+            indicator.style.verticalAlign = "middle";
+            indicator.style.marginLeft = "6px";
+            label.insertAdjacentElement("afterend", indicator);
+        }
+        if (global.lucide?.createIcons) {
+            global.lucide.createIcons();
+        }
+    };
 
     const NOTION_STORAGE_DEVICE_KEY = "go-toolkit-notion-device-id";
     const DEFAULT_NOTION_API_BASE = (global.GO_TOOLKIT_NOTION_API_URL || "https://notion.gotoolkit.workers.dev").replace(/\/$/, "");
