@@ -1602,6 +1602,12 @@
 
     AssistSidebar.prototype.open = function () {
         if (!this.sidebar) return;
+        if ((window.innerWidth || 0) < 900) {
+            var memoExplorer = window.GoToolkitMemoDocumentExplorer;
+            if (memoExplorer && typeof memoExplorer.close === "function") {
+                memoExplorer.close();
+            }
+        }
         this.isOpen = true;
         this.sidebar.classList.add("chat-sidebar--open");
         this.applyPagePadding();

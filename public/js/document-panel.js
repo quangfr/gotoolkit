@@ -1,5 +1,5 @@
 (() => {
-    const DEFAULT_WIDTH = 200;
+    const DEFAULT_WIDTH = 300;
     const MIN_WIDTH = 100;
     const MAX_WIDTH = 520;
     const DEFAULT_TITLE = "Documents";
@@ -611,6 +611,12 @@
 
         function applyOpen(nextOpen) {
             isOpen = Boolean(nextOpen);
+            if (isOpen && window.innerWidth < 900) {
+                const assist = window.GoToolkitAssistInstance;
+                if (assist?.isOpen && typeof assist.close === "function") {
+                    assist.close();
+                }
+            }
             sidebar.classList.toggle("document-explorer--collapsed", !isOpen);
             if (resizer) {
                 resizer.classList.toggle("is-hidden", !isOpen);
@@ -1058,6 +1064,17 @@
             });
         }
 
+        const handleOutsideClose = event => {
+            if (!isOpen || window.innerWidth >= 900) return;
+            const target = event.target;
+            if (!(target instanceof Node)) return;
+            if (sidebar.contains(target)) return;
+            if (toggleBtn?.contains?.(target)) return;
+            applyOpen(false);
+        };
+        document.addEventListener("mousedown", handleOutsideClose);
+        document.addEventListener("touchstart", handleOutsideClose, { passive: true });
+
         let isCreating = false;
         const pendingNames = new Set();
 
@@ -1119,6 +1136,9 @@
 
         window.addEventListener("resize", () => {
             // Keep state on resize (persistence)
+            if (window.innerWidth < 900 && isOpen) {
+                applyOpen(false);
+            }
         });
 
         return {
