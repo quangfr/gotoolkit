@@ -501,6 +501,7 @@ interface SimpleEditorProps {
     setMarkdown: (md: string) => void;
     insertMarkdownAtRange: (md: string, range: { from: number; to: number }) => void;
     insertMarkdownAtEnd: (md: string) => void;
+    applyStructuredOps: (ops: Array<{ action?: string; type?: string; start?: number; end?: number; text?: string; content?: string }>) => void;
     getSource: (format: 'markdown' | 'html' | 'json') => string;
     setEditable: (editable: boolean) => void;
     instance: any;
@@ -4559,11 +4560,54 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         }
       };
 
+      const applyStructuredOps = (ops: Array<{ action?: string; type?: string; start?: number; end?: number; text?: string; content?: string }>) => {
+        if (!Array.isArray(ops) || !ops.length) return;
+        try {
+          const current = getEditorMarkdown();
+          if (typeof current !== 'string') return;
+          const normalized = ops
+            .map((raw) => {
+              const action = String(raw?.action || raw?.type || '').toLowerCase();
+              const start = Number(raw?.start);
+              const endRaw = Number(raw?.end);
+              const text = typeof raw?.text === 'string'
+                ? raw.text
+                : (typeof raw?.content === 'string' ? raw.content : '');
+              const safeStart = Number.isFinite(start) ? Math.max(0, Math.floor(start)) : 0;
+              const safeEnd = Number.isFinite(endRaw) ? Math.max(safeStart, Math.floor(endRaw)) : safeStart;
+              if (!action) return null;
+              if (action !== 'insert' && action !== 'replace' && action !== 'delete') return null;
+              return { action, start: safeStart, end: safeEnd, text };
+            })
+            .filter(Boolean) as Array<{ action: string; start: number; end: number; text: string }>;
+          if (!normalized.length) return;
+
+          // Apply from the end of the document to keep indices stable.
+          normalized.sort((a, b) => b.start - a.start);
+          let next = current;
+          normalized.forEach((op) => {
+            const boundedStart = Math.max(0, Math.min(op.start, next.length));
+            const boundedEnd = Math.max(boundedStart, Math.min(op.end, next.length));
+            if (op.action === 'insert') {
+              next = next.slice(0, boundedStart) + op.text + next.slice(boundedStart);
+            } else if (op.action === 'replace') {
+              next = next.slice(0, boundedStart) + op.text + next.slice(boundedEnd);
+            } else if (op.action === 'delete') {
+              next = next.slice(0, boundedStart) + next.slice(boundedEnd);
+            }
+          });
+          setEditorMarkdown(next);
+        } catch (err) {
+          console.warn('applyStructuredOps failed', err);
+        }
+      };
+
       const methods = {
         getMarkdown: getEditorMarkdown,
         setMarkdown: setEditorMarkdown,
         insertMarkdownAtRange: insertEditorMarkdownAtRange,
         insertMarkdownAtEnd: insertEditorMarkdownAtEnd,
+        applyStructuredOps,
         getSource: getMemoEditorSource,
         exportDocx: (title?: string) => exportEditorToDocx(editor, title),
         setEditable: (nextEditable: boolean) => {

@@ -18,6 +18,7 @@ interface MemoEditorApi {
     switchTo: (id: string, initialContent?: string) => void;
     removeInstance: (id: string) => void;
     applyOutputTo: (id: string, output: string, mode: 'edit' | 'suggest') => void;
+    applyStructuredOpsTo: (id: string, ops: Array<{ action?: string; type?: string; start?: number; end?: number; text?: string; content?: string }>) => void;
 }
 
 interface EditorInstance {
@@ -170,6 +171,15 @@ const App = () => {
                     }
                     return { ...prev };
                 });
+            },
+            applyStructuredOpsTo: (id: string, ops: Array<{ action?: string; type?: string; start?: number; end?: number; text?: string; content?: string }>) => {
+                setEditors(prev => {
+                    const editor = prev[id];
+                    if (editor && editor.methods && typeof editor.methods.applyStructuredOps === "function") {
+                        editor.methods.applyStructuredOps(ops);
+                    }
+                    return { ...prev };
+                });
             }
         };
 
@@ -198,6 +208,7 @@ const App = () => {
             (window as any).setEditorMarkdown = methods.setMarkdown;
             (window as any).insertEditorMarkdownAtRange = methods.insertMarkdownAtRange;
             (window as any).insertEditorMarkdownAtEnd = methods.insertMarkdownAtEnd;
+            (window as any).applyEditorStructuredOps = methods.applyStructuredOps;
             (window as any).getMemoEditorSource = methods.getSource;
             (window as any).exportMemoToDocx = methods.exportDocx;
         }

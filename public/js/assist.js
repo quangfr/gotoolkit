@@ -3796,9 +3796,114 @@
             return tail.slice(0, closing);
         }
 
+        var isEditPreset = requestPromptPresetId === "edit" || requestPromptPresetId === "suggest";
+        var streamOpsBuffer = [];
+        var streamOpsLineBuffer = "";
+        var streamOpsFlushTimer = null;
+        var streamLockApplied = false;
+        var streamFinalApplied = false;
+
+        function normalizeStructuredOp(rawOp) {
+            if (!rawOp || typeof rawOp !== "object") return null;
+            var action = String(rawOp.action || rawOp.type || "").toLowerCase();
+            if (action === "replace_range") action = "replace";
+            if (action !== "replace" && action !== "insert" && action !== "delete") return null;
+            var start = Number(rawOp.start);
+            var end = Number(rawOp.end);
+            var text = typeof rawOp.text === "string"
+                ? rawOp.text
+                : (typeof rawOp.content === "string" ? rawOp.content : "");
+            if (!Number.isFinite(start)) start = 0;
+            if (!Number.isFinite(end)) end = start;
+            start = Math.max(0, Math.floor(start));
+            end = Math.max(start, Math.floor(end));
+            return { action: action, start: start, end: end, text: text };
+        }
+
+        function applyStructuredOpsToTarget(ops) {
+            if (!Array.isArray(ops) || !ops.length) return false;
+            var normalizedOps = ops.map(normalizeStructuredOp).filter(Boolean);
+            if (!normalizedOps.length) return false;
+            if (isActiveScope()) {
+                if (typeof window.applyEditorStructuredOps === "function") {
+                    window.applyEditorStructuredOps(normalizedOps);
+                    return true;
+                }
+                return false;
+            }
+            var targetDocId = conversationScopeId.startsWith("doc:") ? conversationScopeId.substring(4) : null;
+            var targetTabId = null;
+            if (targetDocId && typeof window.GoToolkitMemoGetDocumentActiveTabId === "function") {
+                targetTabId = window.GoToolkitMemoGetDocumentActiveTabId(targetDocId);
+            }
+            if (targetTabId && window.GoToolkitMemoInstance?.applyStructuredOpsTo) {
+                window.GoToolkitMemoInstance.applyStructuredOpsTo(targetTabId, normalizedOps);
+                return true;
+            }
+            return false;
+        }
+
+        function setStreamEditLock(locked) {
+            if (!isEditPreset || !isActiveScope()) return;
+            if (typeof window.GoToolkitMemoInstance?.setEditable === "function") {
+                try {
+                    window.GoToolkitMemoInstance.setEditable(!locked);
+                    streamLockApplied = Boolean(locked);
+                } catch (err) {
+                    // noop
+                }
+            }
+        }
+
+        function flushStreamOps() {
+            if (!streamOpsBuffer.length) return false;
+            var opsToApply = streamOpsBuffer.splice(0, streamOpsBuffer.length);
+            var applied = applyStructuredOpsToTarget(opsToApply);
+            if (applied) {
+                throttledPersistScoped();
+            }
+            return applied;
+        }
+
+        function queueStreamOpsFlush() {
+            if (!isEditPreset || streamFinalApplied) return;
+            if (streamOpsFlushTimer) return;
+            streamOpsFlushTimer = setTimeout(function () {
+                streamOpsFlushTimer = null;
+                flushStreamOps();
+            }, 150);
+        }
+
+        function ingestStructuredOpsChunk(chunk) {
+            if (!isEditPreset || typeof chunk !== "string" || !chunk) return;
+            streamOpsLineBuffer += chunk;
+            var parts = streamOpsLineBuffer.split(/\r?\n/);
+            streamOpsLineBuffer = parts.pop() || "";
+            for (var i = 0; i < parts.length; i++) {
+                var line = (parts[i] || "").trim();
+                if (!line) continue;
+                try {
+                    var payloadLine = JSON.parse(line);
+                    if (payloadLine?.t === "operation") {
+                        var op = payloadLine.op || payloadLine.operation || payloadLine;
+                        var normalized = normalizeStructuredOp(op);
+                        if (normalized) {
+                            streamOpsBuffer.push(normalized);
+                        }
+                    }
+                } catch (err) {
+                    // ignore non-json lines
+                }
+            }
+            if (streamOpsBuffer.length) {
+                queueStreamOpsFlush();
+            }
+        }
+
         function handleChunk(chunk) {
             botMessage._isStreaming = true;
             botMessage._jsonBuffer = (botMessage._jsonBuffer || "") + chunk;
+            ingestStructuredOpsChunk(chunk);
             var parsed = null;
             try {
                 parsed = JSON.parse(botMessage._jsonBuffer);
@@ -3843,6 +3948,7 @@
             startCharacterCounterToaster(totalPayloadTokens, { scopeId: conversationScopeId });
 
             requestStart = performance.now();
+            setStreamEditLock(true);
             var result = await global.GoToolkitIA.chatCompletion({
                 payload: payload,
                 endpointType: "responses",
@@ -3874,7 +3980,70 @@
             botMessage._isStreaming = false;
             if (requestPromptPresetId === "edit" || requestPromptPresetId === "suggest") {
                 var applied = false;
-                if (parsed.output) {
+                if (streamOpsFlushTimer) {
+                    clearTimeout(streamOpsFlushTimer);
+                    streamOpsFlushTimer = null;
+                }
+                if (streamOpsLineBuffer && streamOpsLineBuffer.trim()) {
+                    try {
+                        var finalLinePayload = JSON.parse(streamOpsLineBuffer.trim());
+                        if (finalLinePayload?.t === "operation") {
+                            var finalOp = finalLinePayload.op || finalLinePayload.operation || finalLinePayload;
+                            var normalizedFinalOp = normalizeStructuredOp(finalOp);
+                            if (normalizedFinalOp) {
+                                streamOpsBuffer.push(normalizedFinalOp);
+                            }
+                        }
+                    } catch (err) {
+                        // noop
+                    }
+                }
+                if (streamOpsBuffer.length && flushStreamOps()) {
+                    applied = true;
+                }
+                streamFinalApplied = true;
+
+                var rawPayloadObj = null;
+                try {
+                    rawPayloadObj = JSON.parse((resultText || "").trim());
+                    if (rawPayloadObj?.content && typeof rawPayloadObj.content === "string") {
+                        var embeddedPayload = tryParseJsonString(rawPayloadObj.content.trim());
+                        if (embeddedPayload && typeof embeddedPayload === "object") {
+                            rawPayloadObj = embeddedPayload;
+                        }
+                    } else if (rawPayloadObj?.content && typeof rawPayloadObj.content === "object") {
+                        rawPayloadObj = rawPayloadObj.content;
+                    }
+                } catch (err) {
+                    rawPayloadObj = null;
+                }
+
+                var finalOps = Array.isArray(parsed.operations)
+                    ? parsed.operations
+                    : (Array.isArray(rawPayloadObj?.operations) ? rawPayloadObj.operations : []);
+                if (finalOps.length && applyStructuredOpsToTarget(finalOps)) {
+                    applied = true;
+                }
+
+                var finalSelectionOutput = rawPayloadObj?.s_output || rawPayloadObj?.sOutput || rawPayloadObj?.answer?.s_output || rawPayloadObj?.answer?.sOutput || null;
+                var selectionText = null;
+                if (typeof finalSelectionOutput === "string") {
+                    selectionText = finalSelectionOutput;
+                } else if (finalSelectionOutput && typeof finalSelectionOutput.text === "string") {
+                    selectionText = finalSelectionOutput.text;
+                }
+                if (!applied && selectionText && selectionText.trim()) {
+                    var selectionFrom = Number(this.memoSelectionDetail?.positionFrom ?? this.memoSelection?.from);
+                    var selectionTo = Number(this.memoSelectionDetail?.positionTo ?? this.memoSelection?.to);
+                    if (isActiveScope() && Number.isFinite(selectionFrom) && Number.isFinite(selectionTo) && selectionTo >= selectionFrom) {
+                        if (typeof window.insertEditorMarkdownAtRange === "function") {
+                            window.insertEditorMarkdownAtRange(selectionText, { from: selectionFrom, to: selectionTo });
+                            applied = true;
+                        }
+                    }
+                }
+
+                if (!applied && parsed.output) {
                     if (requestPromptPresetId === "edit") {
                         if (isActiveScope()) {
                             if (typeof window.insertEditorMarkdownAtEnd === "function") {
@@ -3913,26 +4082,6 @@
                         window.setEditorContent(parsed.output);
                         applied = true;
                     }
-                } else if (parsed.operations && parsed.operations.length && typeof window.setEditorContent === "function" && isActiveScope()) {
-                    // Backward compatibility: apply legacy character-index operations.
-                    var currentContent = window.getEditorContent();
-                    var reversedOps = parsed.operations.slice().reverse();
-                    for (var i = 0; i < reversedOps.length; i++) {
-                        var op = reversedOps[i];
-                        var action = op.action;
-                        var start = op.start;
-                        var end = op.end;
-                        var text = op.text || "";
-                        if (action === "replace") {
-                            currentContent = currentContent.slice(0, start) + text + currentContent.slice(end);
-                        } else if (action === "insert") {
-                            currentContent = currentContent.slice(0, start) + text + currentContent.slice(start);
-                        } else if (action === "delete") {
-                            currentContent = currentContent.slice(0, start) + currentContent.slice(end);
-                        }
-                    }
-                    window.setEditorContent(currentContent);
-                    applied = true;
                 }
                 if (applied) {
                     botMessage.content += " [Document régénéré.]";
@@ -3968,6 +4117,15 @@
             }
             persistScoped();
         } finally {
+            if (streamOpsFlushTimer) {
+                clearTimeout(streamOpsFlushTimer);
+                streamOpsFlushTimer = null;
+            }
+            streamOpsBuffer = [];
+            streamOpsLineBuffer = "";
+            if (streamLockApplied) {
+                setStreamEditLock(false);
+            }
             stopCharacterCounterToaster();
             botMessage._isStreaming = false;
             this.setScopeStreamingState(conversationScopeId, false, null);

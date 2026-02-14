@@ -56849,11 +56849,47 @@ ${innerMarkdown}
             console.warn("insertEditorMarkdownAtEnd failed", err);
           }
         };
+        const applyStructuredOps = (ops) => {
+          if (!Array.isArray(ops) || !ops.length) return;
+          try {
+            const current = getEditorMarkdown();
+            if (typeof current !== "string") return;
+            const normalized = ops.map((raw) => {
+              const action = String((raw == null ? void 0 : raw.action) || (raw == null ? void 0 : raw.type) || "").toLowerCase();
+              const start = Number(raw == null ? void 0 : raw.start);
+              const endRaw = Number(raw == null ? void 0 : raw.end);
+              const text = typeof (raw == null ? void 0 : raw.text) === "string" ? raw.text : typeof (raw == null ? void 0 : raw.content) === "string" ? raw.content : "";
+              const safeStart = Number.isFinite(start) ? Math.max(0, Math.floor(start)) : 0;
+              const safeEnd = Number.isFinite(endRaw) ? Math.max(safeStart, Math.floor(endRaw)) : safeStart;
+              if (!action) return null;
+              if (action !== "insert" && action !== "replace" && action !== "delete") return null;
+              return { action, start: safeStart, end: safeEnd, text };
+            }).filter(Boolean);
+            if (!normalized.length) return;
+            normalized.sort((a, b) => b.start - a.start);
+            let next2 = current;
+            normalized.forEach((op) => {
+              const boundedStart = Math.max(0, Math.min(op.start, next2.length));
+              const boundedEnd = Math.max(boundedStart, Math.min(op.end, next2.length));
+              if (op.action === "insert") {
+                next2 = next2.slice(0, boundedStart) + op.text + next2.slice(boundedStart);
+              } else if (op.action === "replace") {
+                next2 = next2.slice(0, boundedStart) + op.text + next2.slice(boundedEnd);
+              } else if (op.action === "delete") {
+                next2 = next2.slice(0, boundedStart) + next2.slice(boundedEnd);
+              }
+            });
+            setEditorMarkdown(next2);
+          } catch (err) {
+            console.warn("applyStructuredOps failed", err);
+          }
+        };
         const methods = {
           getMarkdown: getEditorMarkdown,
           setMarkdown: setEditorMarkdown,
           insertMarkdownAtRange: insertEditorMarkdownAtRange,
           insertMarkdownAtEnd: insertEditorMarkdownAtEnd,
+          applyStructuredOps,
           getSource: getMemoEditorSource,
           exportDocx: (title) => exportEditorToDocx(editor, title),
           setEditable: (nextEditable) => {
@@ -57753,6 +57789,15 @@ ${innerMarkdown}
             }
             return { ...prev };
           });
+        },
+        applyStructuredOpsTo: (id, ops) => {
+          setEditors((prev) => {
+            const editor = prev[id];
+            if (editor && editor.methods && typeof editor.methods.applyStructuredOps === "function") {
+              editor.methods.applyStructuredOps(ops);
+            }
+            return { ...prev };
+          });
         }
       };
       setEditors((prev) => {
@@ -57776,6 +57821,7 @@ ${innerMarkdown}
         window.setEditorMarkdown = methods.setMarkdown;
         window.insertEditorMarkdownAtRange = methods.insertMarkdownAtRange;
         window.insertEditorMarkdownAtEnd = methods.insertMarkdownAtEnd;
+        window.applyEditorStructuredOps = methods.applyStructuredOps;
         window.getMemoEditorSource = methods.getSource;
         window.exportMemoToDocx = methods.exportDocx;
       }

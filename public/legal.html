@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mentions légales | Go-Toolkit</title>
+    <script>
+        (function () {
+            const storedTheme = localStorage.getItem('go-toolkit-theme');
+            const theme = storedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'cream');
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+    <link rel="stylesheet" href="styles/style.css?v=2026.02.14.6">
+    <style>
+        .legal-page {
+            max-width: 920px;
+            margin: 0 auto;
+            padding: 24px 16px 48px;
+        }
+
+        .legal-nav {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 18px;
+        }
+
+        .legal-nav a {
+            text-decoration: none;
+            padding: 6px 10px;
+            border-radius: 8px;
+            background: var(--bg-surface-soft);
+            color: var(--text-primary);
+        }
+
+        .legal-section {
+            margin-bottom: 28px;
+            scroll-margin-top: 12px;
+        }
+
+        .legal-section h2 {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <main class="legal-page">
+        <p><a href="./">← Retour à l'accueil</a></p>
+        <h1>Mentions légales</h1>
+        <div class="legal-nav">
+            <a href="#tos">Terms of Use</a>
+            <a href="#privacy">Confidentiality</a>
+        </div>
+
+        <section id="tos" class="legal-section">
+            <h2>Conditions d'utilisation</h2>
+            <p>Go-Toolkit est un outil professionnel destiné à l’animation d’ateliers, au cadrage, à la documentation
+                et à la collaboration produit.</p>
+            <p><strong>1. Acceptation</strong><br>L’accès et l’utilisation de Go-Toolkit impliquent l’acceptation des
+                présentes conditions. En cas de désaccord, vous ne devez pas utiliser le service.</p>
+            <p><strong>2. Usage autorisé</strong><br>Vous vous engagez à utiliser l’outil de manière licite, conforme
+                aux droits des tiers et à la réglementation applicable. Vous êtes seul responsable des contenus,
+                instructions et publications réalisés via l’outil.</p>
+            <p><strong>3. Comptes et accès</strong><br>Certaines fonctionnalités sont accessibles sans compte. D’autres
+                intégrations peuvent nécessiter une authentification auprès de services tiers soumis à leurs propres
+                conditions.</p>
+            <p><strong>4. Services tiers et IA</strong><br>Go-Toolkit peut s’interfacer avec des services tiers (IA,
+                transcription, publication, partage). Leur disponibilité, leurs performances et leurs conditions
+                contractuelles relèvent de ces fournisseurs.</p>
+            <p><strong>5. Partage et publication</strong><br>Les liens de partage donnent accès aux contenus aux
+                détenteurs du lien. Vous devez vérifier le périmètre de diffusion avant tout partage ou publication.
+            </p>
+            <p><strong>6. Propriété intellectuelle</strong><br>Les droits sur les contenus que vous créez ou importez
+                vous appartiennent ou appartiennent à leurs titulaires légitimes. Vous garantissez disposer des droits
+                nécessaires pour leur utilisation dans Go-Toolkit.</p>
+            <p><strong>7. Disponibilité et évolution</strong><br>Le service est fourni « en l’état ». Il peut évoluer,
+                être modifié, suspendu ou interrompu, en tout ou partie, sans garantie de continuité.</p>
+            <p><strong>8. Limitation de responsabilité</strong><br>Dans les limites permises par la loi, Savane Go Live
+                ne saurait être responsable des dommages indirects, pertes d’exploitation, pertes de données ou
+                conséquences liées à l’usage de services tiers.</p>
+            <p><strong>9. Hiérarchie documentaire</strong><br>Les règles relatives à la protection des données
+                personnelles sont décrites à la section <a href="#privacy">Confidentialité</a>.</p>
+        </section>
+
+        <section id="privacy" class="legal-section">
+            <h2>Confidentialité</h2>
+            <p><strong>1. Responsable du traitement</strong><br>Le responsable du traitement est Savane Go Live. Les
+                coordonnées de contact figurent en bas de cette page.</p>
+            <p><strong>2. Catégories de données traitées</strong><br>Selon les fonctionnalités utilisées, les données
+                peuvent inclure : contenus saisis/importés (documents, messages, prompts), métadonnées techniques
+                nécessaires au fonctionnement, historiques de partage, et, sur action de l’utilisateur, flux audio ou
+                transcriptions.</p>
+            <p><strong>3. Finalités et bases légales (RGPD)</strong><br>Les traitements sont réalisés pour : (i)
+                exécuter le service demandé (base contractuelle), (ii) assurer la sécurité, la maintenance et la
+                prévention des abus (intérêt légitime), (iii) gérer les retours utilisateurs (intérêt légitime), (iv)
+                traiter des flux audio/IA et publier vers des services tiers sur instruction explicite de l’utilisateur
+                (exécution du service et, selon les cas, consentement).</p>
+            <p><strong>4. Stockage local et absence de cookies publicitaires</strong><br>Une part importante des données
+                est stockée localement dans votre navigateur (IndexedDB/localStorage) pour le fonctionnement de
+                l’application. Aucun cookie publicitaire tiers n’est déposé par défaut.</p>
+            <p><strong>5. Destinataires et sous-traitants</strong><br>Des données peuvent être transmises, uniquement
+                lorsque nécessaire à la fonctionnalité déclenchée, à des prestataires techniques (ex. IA, transcription
+                vocale, hébergement cloud, publication vidéo, connecteurs externes). Chaque service tiers applique ses
+                propres conditions et politiques.</p>
+            <p><strong>6. Transferts hors UE</strong><br>Certaines opérations peuvent impliquer des transferts de
+                données en dehors de l’Union européenne via des fournisseurs tiers. Le cas échéant, ces transferts
+                reposent sur les mécanismes juridiques appropriés prévus par le RGPD (ex. clauses contractuelles
+                types), sous réserve des engagements du fournisseur concerné.</p>
+            <p><strong>7. Durées de conservation</strong><br>Les données locales sont conservées jusqu’à suppression par
+                l’utilisateur (ou nettoyage navigateur). Les contenus partagés en ligne sont conservés jusqu’à
+                suppression via l’outil ou selon les règles du service tiers concerné. Les journaux techniques sont
+                conservés pour une durée proportionnée aux besoins de sécurité et d’exploitation.</p>
+            <p><strong>8. Vos droits</strong><br>Conformément au RGPD, vous disposez des droits d’accès, rectification,
+                effacement, limitation, opposition et portabilité, selon les conditions légales applicables. Vous
+                pouvez également introduire une réclamation auprès de la CNIL.</p>
+            <p><strong>9. Sécurité</strong><br>Des mesures techniques et organisationnelles raisonnables sont mises en
+                œuvre pour protéger les données. Compte tenu de la nature d’Internet, une sécurité absolue ne peut être
+                garantie.</p>
+            <p><strong>10. Données de tiers</strong><br>Si vous traitez des données personnelles de tiers (notamment via
+                dictée, transcription, partage ou publication), vous devez vous assurer de disposer d’une base légale
+                et, lorsque nécessaire, d’avoir informé les personnes concernées.</p>
+            <p><strong>11. Mises à jour</strong><br>La présente section peut évoluer pour refléter les changements
+                réglementaires, techniques ou fonctionnels.</p>
+        </section>
+        <p style="margin-top:14px;font-size:0.85em;opacity:0.85;">Responsable de la publication : Savane Go Live
+            (909 865 214) – Contact : Oliver THOLANCE - oliver.tholance@savane-group.com – Hébergement : Google
+            (France/UE)
+        </p>
+    </main>
+</body>
+
+</html>
