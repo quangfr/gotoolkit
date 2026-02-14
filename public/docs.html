@@ -46,10 +46,10 @@
         crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.min.js" crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.min.js" crossorigin></script>
-    <link rel="stylesheet" href="styles/style.css?v=2026.02.14.13">
+    <link rel="stylesheet" href="styles/style.css?v=2026.02.14.14">
     <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
-    <link rel="stylesheet" href="styles/memo.css?v=2026.02.14.13">
-    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.14.13">
+    <link rel="stylesheet" href="styles/memo.css?v=2026.02.14.14">
+    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.14.14">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.css">
     <script src="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.js"></script>
 </head>
@@ -90,7 +90,7 @@
                 <div class="tabs-actions">
                     <button id="documentExplorerToggle" class="app-home-link" type="button" title="Bibliothèque"
                         aria-expanded="false" aria-controls="documentExplorer"><i data-lucide="library"></i></button>
-                    <a href="/?v=2026.02.14.13" class="nav-switch-btn" title="Accueil"
+                    <a href="/?v=2026.02.14.14" class="nav-switch-btn" title="Accueil"
                         style="text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
                         <i data-lucide="home"></i>
                     </a>
@@ -399,6 +399,14 @@
                                 href="#" style="margin-left:8px;">Se connecter</a>
                         </label>
                     </div>
+                    <hr style="width:100%; border:none; border-top:1px solid var(--border-main); margin:8px 0;">
+                    <div class="field-row">
+                        <label style="width:100%">
+                            <span class="label-title">Gmail</span>
+                            <a id="gmailAuthLink" class="label-title dashed-link"
+                                href="#" style="margin-left:8px;">Se connecter</a>
+                        </label>
+                    </div>
                 </div>
             </div>
         </div>
@@ -408,7 +416,7 @@
         <img src="img/logo.gif" alt="Logo Go-Toolkit" class="logo-light">
         <img src="img/logo_inverted.gif" alt="Logo Go-Toolkit" class="logo-dark">
         <strong>Go-Toolkit</strong>
-        <span>Version 2026.02.14.13</span>
+        <span>Version 2026.02.14.14</span>
         <span>Usage réservé à Savane Consulting.</span>
         <div class="info-actions info-actions--stacked">
             <div class="info-actions-row">
@@ -480,23 +488,25 @@
             window.GO_TOOLKIT_NOTION_API_URL || "https://notion.gotoolkit.workers.dev";
         window.GO_TOOLKIT_MICROSOFT_API_URL =
             window.GO_TOOLKIT_MICROSOFT_API_URL || "https://ms.gotoolkit.workers.dev";
+        window.GO_TOOLKIT_GMAIL_API_URL =
+            window.GO_TOOLKIT_GMAIL_API_URL || "https://gmail.gotoolkit.workers.dev";
     </script>
-    <script src="js/config.js?v=2026.02.14.13"></script>
-    <script src="js/config-modal.js?v=2026.02.14.13"></script>
-    <script src="js/feature-visibility.js?v=2026.02.14.13"></script>
-    <script src="js/document-storage.js?v=2026.02.14.13"></script>
-    <script src="js/storage-service.js?v=2026.02.14.13"></script>
-    <script src="js/shared-ui.js?v=2026.02.14.13"></script>
-    <script src="js/share-worker-client.js?v=2026.02.14.13"></script>
-    <script src="js/share-history.js?v=2026.02.14.13"></script>
-    <script src="js/document-api.js?v=2026.02.14.13"></script>
-    <script src="js/keywordIndex.js?v=2026.02.14.13"></script>
-    <script src="js/document-rag.js?v=2026.02.14.13"></script>
-    <script src="js/ia-config.js?v=2026.02.14.13"></script>
-    <script src="preset.js?v=2026.02.14.13"></script>
-    <script src="prompt.js?v=2026.02.14.13"></script>
-    <script src="js/ia-client.js?v=2026.02.14.13"></script>
-    <script src="js/document-markdown.js?v=2026.02.14.13"></script>
+    <script src="js/config.js?v=2026.02.14.14"></script>
+    <script src="js/config-modal.js?v=2026.02.14.14"></script>
+    <script src="js/feature-visibility.js?v=2026.02.14.14"></script>
+    <script src="js/document-storage.js?v=2026.02.14.14"></script>
+    <script src="js/storage-service.js?v=2026.02.14.14"></script>
+    <script src="js/shared-ui.js?v=2026.02.14.14"></script>
+    <script src="js/share-worker-client.js?v=2026.02.14.14"></script>
+    <script src="js/share-history.js?v=2026.02.14.14"></script>
+    <script src="js/document-api.js?v=2026.02.14.14"></script>
+    <script src="js/keywordIndex.js?v=2026.02.14.14"></script>
+    <script src="js/document-rag.js?v=2026.02.14.14"></script>
+    <script src="js/ia-config.js?v=2026.02.14.14"></script>
+    <script src="preset.js?v=2026.02.14.14"></script>
+    <script src="prompt.js?v=2026.02.14.14"></script>
+    <script src="js/ia-client.js?v=2026.02.14.14"></script>
+    <script src="js/document-markdown.js?v=2026.02.14.14"></script>
     <script>
         document.addEventListener("click", function (event) {
             const legalTrigger = event.target?.closest?.("[data-open-nexus-modal]");
@@ -530,13 +540,13 @@
             ]
         };
     </script>
-    <script src="js/feedback.js?v=2026.02.14.13"></script>
-    <script src="js/voice-video-player.js?v=2026.02.14.13"></script>
-    <script src="js/voice-audio-player.js?v=2026.02.14.13"></script>
-    <script src="js/youtube-publish.js?v=2026.02.14.13"></script>
-    <script src="js/voice.js?v=2026.02.14.13"></script>
-    <script src="js/voice-transcript.js?v=2026.02.14.13"></script>
-    <script src="js/draw-memo.js?v=2026.02.14.13"></script>
+    <script src="js/feedback.js?v=2026.02.14.14"></script>
+    <script src="js/voice-video-player.js?v=2026.02.14.14"></script>
+    <script src="js/voice-audio-player.js?v=2026.02.14.14"></script>
+    <script src="js/youtube-publish.js?v=2026.02.14.14"></script>
+    <script src="js/voice.js?v=2026.02.14.14"></script>
+    <script src="js/voice-transcript.js?v=2026.02.14.14"></script>
+    <script src="js/draw-memo.js?v=2026.02.14.14"></script>
     <script>
         // Suppress React DevTools prompt in dev builds.
         window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = window.__REACT_DEVTOOLS_GLOBAL_HOOK__ || {
@@ -546,9 +556,9 @@
             onCommitFiberUnmount: function () { }
         };
     </script>
-    <script src="js/memo.bundle.js?v=2026.02.14.13"></script>
-    <script src="js/assist.js?v=2026.02.14.13"></script>
-    <script src="js/document-panel.js?v=2026.02.14.13"></script>
+    <script src="js/memo.bundle.js?v=2026.02.14.14"></script>
+    <script src="js/assist.js?v=2026.02.14.14"></script>
+    <script src="js/document-panel.js?v=2026.02.14.14"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             setTimeout(function () {
@@ -632,6 +642,13 @@
                 if (microsoftAuthLink) {
                     microsoftAuthLink.style.pointerEvents = isBusy ? "none" : "";
                     microsoftAuthLink.style.opacity = isBusy ? "0.6" : "";
+                }
+            }
+
+            function setGmailIntegrationBusy(isBusy) {
+                if (gmailAuthLink) {
+                    gmailAuthLink.style.pointerEvents = isBusy ? "none" : "";
+                    gmailAuthLink.style.opacity = isBusy ? "0.6" : "";
                 }
             }
 
@@ -771,6 +788,30 @@
                 }
             }
 
+            function updateGmailIntegrationUI(payload) {
+                const connected = Boolean(payload?.connected);
+                if (gmailAuthLink) {
+                    gmailAuthLink.textContent = connected ? "Se déconnecter" : "Se connecter";
+                }
+            }
+
+            async function refreshGmailIntegration(showToastOnError = false) {
+                const publisher = window.GoToolkitGmailPublish;
+                if (!publisher?.getAuthStatus) return;
+                setGmailIntegrationBusy(true);
+                try {
+                    const status = await publisher.getAuthStatus();
+                    updateGmailIntegrationUI(status || {});
+                } catch (err) {
+                    updateGmailIntegrationUI({ connected: false });
+                    if (showToastOnError) {
+                        setStatus(err?.message || "Etat Gmail indisponible");
+                    }
+                } finally {
+                    setGmailIntegrationBusy(false);
+                }
+            }
+
             const documentTabsEl = document.getElementById("document-tabs");
             const fileMenuBtn = document.getElementById("fileMenuBtn");
             const fileMenu = document.getElementById("fileMenu");
@@ -789,6 +830,7 @@
             const notionDefaultPathRow = document.getElementById("notionDefaultPathRow");
             const notionDefaultPathInput = document.getElementById("notionDefaultPathInput");
             const microsoftAuthLink = document.getElementById("microsoftAuthLink");
+            const gmailAuthLink = document.getElementById("gmailAuthLink");
             const settingsTabButtons = Array.from(document.querySelectorAll("#settingsModal .settings-tabs .tab-btn"));
             const settingsTabPanels = Array.from(document.querySelectorAll("#settingsModal .settings-tab-panel"));
             const fileMenuTrigger = document.getElementById("fileMenuTrigger");
@@ -3827,6 +3869,7 @@
                     refreshNotionIntegration(false).catch(() => { /* noop */ });
                     refreshYoutubeIntegration(false).catch(() => { /* noop */ });
                     refreshMicrosoftIntegration(false).catch(() => { /* noop */ });
+                    refreshGmailIntegration(false).catch(() => { /* noop */ });
                 }
             });
 
@@ -3845,6 +3888,7 @@
                         refreshNotionIntegration(false).catch(() => { /* noop */ });
                         refreshYoutubeIntegration(false).catch(() => { /* noop */ });
                         refreshMicrosoftIntegration(false).catch(() => { /* noop */ });
+                        refreshGmailIntegration(false).catch(() => { /* noop */ });
                     }
                 });
             });
@@ -4009,6 +4053,40 @@
                 }
             });
 
+            gmailAuthLink?.addEventListener("click", async event => {
+                event.preventDefault();
+                const publisher = window.GoToolkitGmailPublish;
+                if (!publisher?.getAuthStatus) {
+                    setStatus("Service Gmail indisponible");
+                    return;
+                }
+                setGmailIntegrationBusy(true);
+                try {
+                    const status = await publisher.getAuthStatus();
+                    if (status?.connected) {
+                        if (!publisher.disconnect) {
+                            setStatus("Déconnexion Gmail indisponible");
+                            return;
+                        }
+                        await publisher.disconnect();
+                        updateGmailIntegrationUI({ connected: false });
+                        setStatus("Gmail déconnecté");
+                    } else {
+                        if (!publisher.ensureConnected) {
+                            setStatus("Service Gmail indisponible");
+                            return;
+                        }
+                        await publisher.ensureConnected();
+                        await refreshGmailIntegration(false);
+                        setStatus("Connexion Gmail établie");
+                    }
+                } catch (err) {
+                    setStatus(err?.message || "Action Gmail impossible");
+                } finally {
+                    setGmailIntegrationBusy(false);
+                }
+            });
+
             window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function () {
                 const current = localStorage.getItem(THEME_STORAGE_KEY) || "auto";
                 if (current === "auto") {
@@ -4104,27 +4182,52 @@
             });
             document.getElementById('fileMenuSendBtn')?.addEventListener('click', async () => {
                 closeMenus();
-                const publisher = window.GoToolkitMicrosoftPublish;
-                if (!publisher?.createDraft || !publisher?.ensureConnected) {
+                const gmailPublisher = window.GoToolkitGmailPublish;
+                const outlookPublisher = window.GoToolkitMicrosoftPublish;
+                const title = getDocumentTitleFromState(state) || "Document";
+                const html = window.getMemoEditorSource?.('html');
+                const text = window.getMemoEditorSource?.('text') || "";
+
+                if (gmailPublisher?.createDraft && gmailPublisher?.ensureConnected) {
+                    if (!String(html || "").trim()) {
+                        setStatus("HTML Email vide");
+                        return;
+                    }
+                    try {
+                        setStatus("Connexion Gmail...");
+                        await gmailPublisher.ensureConnected();
+                        setStatus("Création du brouillon...");
+                        const payload = await gmailPublisher.createDraft({ subject: title, html, text });
+                        const draftUrl = String(payload?.draftUrl || payload?.webUrl || "").trim();
+                        if (!draftUrl) {
+                            throw new Error("URL de brouillon Gmail indisponible");
+                        }
+                        window.open(draftUrl, "_blank", "noopener,noreferrer");
+                        setStatus("Brouillon Gmail ouvert");
+                        return;
+                    } catch (err) {
+                        setStatus(err?.message || "Création du brouillon Gmail impossible");
+                        return;
+                    }
+                }
+
+                if (!outlookPublisher?.createDraft || !outlookPublisher?.ensureConnected) {
                     const title = getDocumentTitleFromState(state) || "Document";
                     const text = String(window.getMemoEditorSource?.('text') || "").trim();
                     const mailtoUrl = `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(text)}`;
                     window.open(mailtoUrl, "_blank", "noopener,noreferrer");
-                    setStatus("Outlook indisponible: brouillon mailto ouvert");
+                    setStatus("Gmail/Outlook indisponibles: brouillon mailto ouvert");
                     return;
                 }
-                const html = window.getMemoEditorSource?.('html');
                 if (!String(html || "").trim()) {
                     setStatus("HTML Email vide");
                     return;
                 }
                 try {
                     setStatus("Connexion Outlook...");
-                    await publisher.ensureConnected();
+                    await outlookPublisher.ensureConnected();
                     setStatus("Création du brouillon...");
-                    const title = getDocumentTitleFromState(state) || "Document";
-                    const text = window.getMemoEditorSource?.('text') || "";
-                    const payload = await publisher.createDraft({ subject: title, html, text });
+                    const payload = await outlookPublisher.createDraft({ subject: title, html, text });
                     const draftUrl = String(payload?.draftUrl || payload?.webUrl || "").trim();
                     if (!draftUrl) {
                         throw new Error("URL de brouillon Outlook indisponible");

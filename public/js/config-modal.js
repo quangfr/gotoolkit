@@ -366,4 +366,104 @@
         disconnect: microsoftDisconnect,
         createDraft: microsoftCreateDraft
     };
+
+    const GMAIL_STORAGE_DEVICE_KEY = "go-toolkit-gmail-device-id";
+    const DEFAULT_GMAIL_API_BASE = (global.GO_TOOLKIT_GMAIL_API_URL || "https://gmail.gotoolkit.workers.dev").replace(/\/$/, "");
+
+    function getGmailApiBaseUrl() {
+        return (global.GO_TOOLKIT_GMAIL_API_URL || DEFAULT_GMAIL_API_BASE).replace(/\/$/, "");
+    }
+
+    function getGmailDeviceId() {
+        try {
+            const existing = (localStorage.getItem(GMAIL_STORAGE_DEVICE_KEY) || "").trim();
+            if (existing) return existing;
+            const next = (crypto?.randomUUID?.() || `gmail-${Date.now()}-${Math.random().toString(16).slice(2)}`).trim();
+            localStorage.setItem(GMAIL_STORAGE_DEVICE_KEY, next);
+            return next;
+        } catch (err) {
+            return `gmail-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+        }
+    }
+
+    async function gmailJsonPost(path, body) {
+        const response = await fetch(`${getGmailApiBaseUrl()}${path}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body || {})
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(payload?.error?.message || `Erreur Gmail (${response.status})`);
+        }
+        return payload;
+    }
+
+    function openGmailOAuthPopup() {
+        const deviceId = getGmailDeviceId();
+        const origin = global.location.origin;
+        const api = getGmailApiBaseUrl();
+        const url = `${api}/oauth/start?deviceId=${encodeURIComponent(deviceId)}&origin=${encodeURIComponent(origin)}`;
+        const popup = global.open(url, "gotoolkit-gmail-oauth", "width=560,height=700");
+        if (!popup) {
+            return Promise.reject(new Error("Popup OAuth bloquee"));
+        }
+        return new Promise((resolve, reject) => {
+            let closedTimer = null;
+            const onMessage = event => {
+                if (event.origin !== api) return;
+                if (event.data?.source !== "gotoolkit-gmail-oauth") return;
+                cleanup();
+                if (event.data?.ok) {
+                    resolve(event.data);
+                    return;
+                }
+                reject(new Error(event.data?.error || "Connexion Gmail refusee"));
+            };
+            function cleanup() {
+                global.removeEventListener("message", onMessage);
+                if (closedTimer) clearInterval(closedTimer);
+                try { popup.close(); } catch (err) { /* noop */ }
+            }
+            global.addEventListener("message", onMessage);
+            closedTimer = setInterval(() => {
+                if (!popup || popup.closed) {
+                    cleanup();
+                    reject(new Error("Connexion Gmail annulee"));
+                }
+            }, 300);
+        });
+    }
+
+    async function gmailGetAuthStatus() {
+        return gmailJsonPost("/auth/status", { deviceId: getGmailDeviceId() });
+    }
+
+    async function gmailDisconnect() {
+        return gmailJsonPost("/auth/disconnect", { deviceId: getGmailDeviceId() });
+    }
+
+    async function gmailEnsureConnected() {
+        const status = await gmailGetAuthStatus();
+        if (status?.connected) return true;
+        await openGmailOAuthPopup();
+        return true;
+    }
+
+    async function gmailCreateDraft(options = {}) {
+        return gmailJsonPost("/mail/draft/create", {
+            deviceId: getGmailDeviceId(),
+            subject: String(options?.subject || "Document").trim() || "Document",
+            html: String(options?.html || ""),
+            text: String(options?.text || "")
+        });
+    }
+
+    global.GoToolkitGmailPublish = {
+        getDeviceId: getGmailDeviceId,
+        getAuthStatus: gmailGetAuthStatus,
+        ensureConnected: gmailEnsureConnected,
+        disconnect: gmailDisconnect,
+        createDraft: gmailCreateDraft
+    };
 })(window);
