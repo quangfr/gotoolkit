@@ -111,8 +111,8 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Sora:wght@400;500;600&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles/style.css?v=2026.02.14.8">
-    <link rel="stylesheet" href="styles/index.css?v=2026.02.14.8">
+    <link rel="stylesheet" href="styles/style.css?v=2026.02.14.9">
+    <link rel="stylesheet" href="styles/index.css?v=2026.02.14.9">
 </head>
 
 <body>
@@ -124,7 +124,7 @@
             </div>
             <h1>Go-Toolkit <span class="hero-beta">beta</span></h1>
             <p>La boîte à outils IA des Product Owners</p>
-            <span class="hero-version label-link" id="releaseNotesTrigger" tabindex="0">v2026.02.14.8</span>
+            <span class="hero-version label-link" id="releaseNotesTrigger" tabindex="0">v2026.02.14.9</span>
 
             <div class="hero-meta">
                 <button id="openSettingsBtn" class="feedback-button" type="button" title="Paramètres">
@@ -188,23 +188,25 @@
                 </button>
             </div>
 
-            <div class="section-title-row" style="margin-top: 12px;">
-                <p class="section-label nexus-label label-link" data-open-nexus-modal><i data-lucide="cloud"
-                        style="width:14px;height:14px;margin-right:4px;"></i>Espace en ligne</p>
-            </div>
-            <p id="shareEmpty" class="share-helper" hidden>Aucun document enregistré en ligne.</p>
+            <div id="onlineBlock">
+                <div class="section-title-row" style="margin-top: 12px;">
+                    <p class="section-label nexus-label label-link" data-open-nexus-modal><i data-lucide="cloud"
+                            style="width:14px;height:14px;margin-right:4px;"></i>Espace en ligne</p>
+                </div>
+                <p id="shareEmpty" class="share-helper" hidden>Aucun document enregistré en ligne.</p>
 
-            <div class="gallery-nav" id="shareGalleryNav">
-                <button class="gallery-nav__btn gallery-nav__prev" type="button" aria-label="Précédent">
-                    <i data-lucide="chevron-left"></i>
-                </button>
-                <div id="shareGallery" class="share-gallery" aria-live="polite"></div>
-                <button class="gallery-nav__btn gallery-nav__next" type="button" aria-label="Suivant">
-                    <i data-lucide="chevron-right"></i>
-                </button>
+                <div class="gallery-nav" id="shareGalleryNav">
+                    <button class="gallery-nav__btn gallery-nav__prev" type="button" aria-label="Précédent">
+                        <i data-lucide="chevron-left"></i>
+                    </button>
+                    <div id="shareGallery" class="share-gallery" aria-live="polite"></div>
+                    <button class="gallery-nav__btn gallery-nav__next" type="button" aria-label="Suivant">
+                        <i data-lucide="chevron-right"></i>
+                    </button>
+                </div>
+                <p id="shareLoading" class="share-helper">Chargement des galeries...</p>
+                <p id="shareError" class="share-helper share-helper-error" hidden></p>
             </div>
-            <p id="shareLoading" class="share-helper">Chargement des galeries...</p>
-            <p id="shareError" class="share-helper share-helper-error" hidden></p>
         </section>
 
         <div id="requestsModal" class="feedback-modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
@@ -581,7 +583,7 @@
         <div class="legal-footer">
             Savane Go Live © 2025
             <a href="legal.html#tos">Conditions</a>
-            <a href="legal.html#privacy">Confidentialité</a>
+            <a href="legal.html#privacy">Politique de confidentialité</a>
         </div>
     </div>
     <div id="chat-root"></div>
@@ -615,20 +617,20 @@
         window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL =
             window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL || "https://assemblyai.gotoolkit.workers.dev/token";
     </script>
-    <script src="js/config.js?v=2026.02.14.8"></script>
-    <script src="js/config-modal.js?v=2026.02.14.8"></script>
-    <script src="js/feature-visibility.js?v=2026.02.14.8"></script>
-    <script src="js/document-storage.js?v=2026.02.14.8"></script>
-    <script src="js/storage-service.js?v=2026.02.14.8"></script>
-    <script src="js/shared-ui.js?v=2026.02.14.8"></script>
-    <script src="js/share-worker-client.js?v=2026.02.14.8"></script>
-    <script src="js/share-history.js?v=2026.02.14.8"></script>
-    <script src="js/document-api.js?v=2026.02.14.8"></script>
-    <script src="js/ia-config.js?v=2026.02.14.8"></script>
-    <script src="preset.js?v=2026.02.14.8"></script>
-    <script src="prompt.js?v=2026.02.14.8"></script>
-    <script src="js/ia-client.js?v=2026.02.14.8"></script>
-    <script src="js/template-gallery.js?v=2026.02.14.8"></script>
+    <script src="js/config.js?v=2026.02.14.9"></script>
+    <script src="js/config-modal.js?v=2026.02.14.9"></script>
+    <script src="js/feature-visibility.js?v=2026.02.14.9"></script>
+    <script src="js/document-storage.js?v=2026.02.14.9"></script>
+    <script src="js/storage-service.js?v=2026.02.14.9"></script>
+    <script src="js/shared-ui.js?v=2026.02.14.9"></script>
+    <script src="js/share-worker-client.js?v=2026.02.14.9"></script>
+    <script src="js/share-history.js?v=2026.02.14.9"></script>
+    <script src="js/document-api.js?v=2026.02.14.9"></script>
+    <script src="js/ia-config.js?v=2026.02.14.9"></script>
+    <script src="preset.js?v=2026.02.14.9"></script>
+    <script src="prompt.js?v=2026.02.14.9"></script>
+    <script src="js/ia-client.js?v=2026.02.14.9"></script>
+    <script src="js/template-gallery.js?v=2026.02.14.9"></script>
     <script>
         document.addEventListener("click", function (event) {
             const legalTrigger = event.target?.closest?.("[data-open-nexus-modal]");
@@ -653,8 +655,8 @@
             primaryColor: "#2a7a57"
         };
     </script>
-    <script src="js/feedback.js?v=2026.02.14.8"></script>
-    <script src="js/youtube-publish.js?v=2026.02.14.8"></script>
+    <script src="js/feedback.js?v=2026.02.14.9"></script>
+    <script src="js/youtube-publish.js?v=2026.02.14.9"></script>
 
     <script>
         (function () {
@@ -979,6 +981,7 @@
         (function () {
             const gallery = document.getElementById("shareGallery");
             const shareGalleryNav = document.getElementById("shareGalleryNav");
+            const onlineBlock = document.getElementById("onlineBlock");
             const pinnedGallery = document.getElementById("pinnedGallery");
             const pinnedBlock = document.getElementById("pinnedBlock");
             const loadingLabel = document.getElementById("shareLoading");
@@ -1006,6 +1009,10 @@
             let refreshSavedPromise = null;
 
             function setState({ loading = false, hasData = false, hasPinned = false, hasRegular = false, error = "" }) {
+                const hasOnlineDocuments = hasData || hasPinned || hasRegular;
+                if (onlineBlock) {
+                    onlineBlock.hidden = !loading && !error && !hasOnlineDocuments;
+                }
                 if (loadingLabel) {
                     loadingLabel.hidden = !loading;
                 }
