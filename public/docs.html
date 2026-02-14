@@ -46,10 +46,10 @@
         crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.min.js" crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.min.js" crossorigin></script>
-    <link rel="stylesheet" href="styles/style.css?v=2026.02.14.3">
+    <link rel="stylesheet" href="styles/style.css?v=2026.02.14.4">
     <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
-    <link rel="stylesheet" href="styles/memo.css?v=2026.02.14.3">
-    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.14.3">
+    <link rel="stylesheet" href="styles/memo.css?v=2026.02.14.4">
+    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.14.4">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.css">
     <script src="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.js"></script>
 </head>
@@ -90,7 +90,7 @@
                 <div class="tabs-actions">
                     <button id="documentExplorerToggle" class="app-home-link" type="button" title="Bibliothèque"
                         aria-expanded="false" aria-controls="documentExplorer"><i data-lucide="library"></i></button>
-                    <a href="/?v=2026.02.14.3" class="nav-switch-btn" title="Accueil"
+                    <a href="/?v=2026.02.14.4" class="nav-switch-btn" title="Accueil"
                         style="text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
                         <i data-lucide="home"></i>
                     </a>
@@ -323,6 +323,15 @@
                 </div>
                 <div class="settings-tab-panel" data-panel="paramsTab">
                     <div class="field-row">
+                        <label style="width:100%">
+                            <span class="label-title">Prénom</span>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <i data-lucide="user" style="width:14px;height:14px;"></i>
+                                <input id="ownerToken" type="text" />
+                            </div>
+                        </label>
+                    </div>
+                    <div class="field-row">
                         <label>
                             <span class="label-title">Thème</span>
                             <select id="themeSelectMemo">
@@ -337,10 +346,11 @@
                     <div class="field-row">
                         <label style="width:100%">
                             <span class="label-title">Notion</span>
-                            <span class="label-subtitle" id="notionIntegrationStatus">Non connecté</span>
+                            <a id="notionAuthLink" class="label-title dashed-link"
+                                href="#" style="margin-left:8px;">Se connecter</a>
                         </label>
                     </div>
-                    <div class="field-row">
+                    <div class="field-row" id="notionWorkspaceRow" style="display:none;">
                         <label style="width:100%">
                             <span class="label-title">Workspace</span>
                             <select id="notionWorkspaceSelect" disabled>
@@ -348,22 +358,16 @@
                             </select>
                         </label>
                     </div>
-                    <div class="field-row">
+                    <div class="field-row" id="notionDefaultPathRow" style="display:none;">
                         <label style="width:100%">
                             <span class="label-title">Chemin par défaut</span>
                             <input id="notionDefaultPathInput" type="text" placeholder="/Espace/Projet" />
                         </label>
                     </div>
-                    <div class="field-row" style="display:flex; gap:8px; align-items:center;">
-                        <button id="notionConnectBtn" type="button" class="btn-secondary">Connecter</button>
-                        <button id="notionDisconnectBtn" type="button" class="btn-secondary" disabled>Déconnecter</button>
-                        <button id="notionRefreshBtn" type="button" class="btn-secondary" disabled>Rafraîchir</button>
-                    </div>
                     <hr style="width:100%; border:none; border-top:1px solid var(--border-main); margin:8px 0;">
                     <div class="field-row">
                         <label style="width:100%">
                             <span class="label-title">YouTube</span>
-                            <span class="label-subtitle" id="youtubeIntegrationStatus">Non connecté</span>
                             <a id="youtubeAuthLink" class="label-title dashed-link"
                                 href="#" style="margin-left:8px;">Se connecter</a>
                         </label>
@@ -390,7 +394,7 @@
         <img src="img/logo.gif" alt="Logo Go-Toolkit" class="logo-light">
         <img src="img/logo_inverted.gif" alt="Logo Go-Toolkit" class="logo-dark">
         <strong>Go-Toolkit</strong>
-        <span>Version 2026.02.14.3</span>
+        <span>Version 2026.02.14.4</span>
         <span>Usage réservé à Savane Consulting.</span>
         <div class="info-actions info-actions--stacked">
             <div class="info-actions-row">
@@ -461,23 +465,23 @@
         window.GO_TOOLKIT_NOTION_API_URL =
             window.GO_TOOLKIT_NOTION_API_URL || "https://notion.gotoolkit.workers.dev";
     </script>
-    <script src="js/config.js?v=2026.02.14.3"></script>
-    <script src="js/config-modal.js?v=2026.02.14.3"></script>
-    <script src="js/feature-visibility.js?v=2026.02.14.3"></script>
-    <script src="js/document-storage.js?v=2026.02.14.3"></script>
-    <script src="js/storage-service.js?v=2026.02.14.3"></script>
-    <script src="js/shared-ui.js?v=2026.02.14.3"></script>
-    <script src="js/cgu.js?v=2026.02.14.3"></script>
-    <script src="js/share-worker-client.js?v=2026.02.14.3"></script>
-    <script src="js/share-history.js?v=2026.02.14.3"></script>
-    <script src="js/document-api.js?v=2026.02.14.3"></script>
-    <script src="js/keywordIndex.js?v=2026.02.14.3"></script>
-    <script src="js/document-rag.js?v=2026.02.14.3"></script>
-    <script src="js/ia-config.js?v=2026.02.14.3"></script>
-    <script src="preset.js?v=2026.02.14.3"></script>
-    <script src="prompt.js?v=2026.02.14.3"></script>
-    <script src="js/ia-client.js?v=2026.02.14.3"></script>
-    <script src="js/document-markdown.js?v=2026.02.14.3"></script>
+    <script src="js/config.js?v=2026.02.14.4"></script>
+    <script src="js/config-modal.js?v=2026.02.14.4"></script>
+    <script src="js/feature-visibility.js?v=2026.02.14.4"></script>
+    <script src="js/document-storage.js?v=2026.02.14.4"></script>
+    <script src="js/storage-service.js?v=2026.02.14.4"></script>
+    <script src="js/shared-ui.js?v=2026.02.14.4"></script>
+    <script src="js/cgu.js?v=2026.02.14.4"></script>
+    <script src="js/share-worker-client.js?v=2026.02.14.4"></script>
+    <script src="js/share-history.js?v=2026.02.14.4"></script>
+    <script src="js/document-api.js?v=2026.02.14.4"></script>
+    <script src="js/keywordIndex.js?v=2026.02.14.4"></script>
+    <script src="js/document-rag.js?v=2026.02.14.4"></script>
+    <script src="js/ia-config.js?v=2026.02.14.4"></script>
+    <script src="preset.js?v=2026.02.14.4"></script>
+    <script src="prompt.js?v=2026.02.14.4"></script>
+    <script src="js/ia-client.js?v=2026.02.14.4"></script>
+    <script src="js/document-markdown.js?v=2026.02.14.4"></script>
     <script>
         // Initialize feedback configuration for Docs before loading feedback.js
         window.GoToolkitAppFeedbackConfig = {
@@ -496,13 +500,13 @@
             ]
         };
     </script>
-    <script src="js/feedback.js?v=2026.02.14.3"></script>
-    <script src="js/voice-video-player.js?v=2026.02.14.3"></script>
-    <script src="js/voice-audio-player.js?v=2026.02.14.3"></script>
-    <script src="js/youtube-publish.js?v=2026.02.14.3"></script>
-    <script src="js/voice.js?v=2026.02.14.3"></script>
-    <script src="js/voice-transcript.js?v=2026.02.14.3"></script>
-    <script src="js/draw-memo.js?v=2026.02.14.3"></script>
+    <script src="js/feedback.js?v=2026.02.14.4"></script>
+    <script src="js/voice-video-player.js?v=2026.02.14.4"></script>
+    <script src="js/voice-audio-player.js?v=2026.02.14.4"></script>
+    <script src="js/youtube-publish.js?v=2026.02.14.4"></script>
+    <script src="js/voice.js?v=2026.02.14.4"></script>
+    <script src="js/voice-transcript.js?v=2026.02.14.4"></script>
+    <script src="js/draw-memo.js?v=2026.02.14.4"></script>
     <script>
         // Suppress React DevTools prompt in dev builds.
         window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = window.__REACT_DEVTOOLS_GLOBAL_HOOK__ || {
@@ -512,14 +516,14 @@
             onCommitFiberUnmount: function () { }
         };
     </script>
-    <script src="js/memo.bundle.js?v=2026.02.14.3"></script>
+    <script src="js/memo.bundle.js?v=2026.02.14.4"></script>
     <div id="aiRequestCounterToaster" class="ai-request-counter-toaster" style="display:none;"
         data-toast-aria-live="polite" data-toast-aria-atomic="true">
         <span id="aiRequestCounterText"><i data-lucide="bot" class="lucide-pulse"
                 style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i> 00:00</span>
     </div>
-    <script src="js/assist.js?v=2026.02.14.3"></script>
-    <script src="js/document-panel.js?v=2026.02.14.3"></script>
+    <script src="js/assist.js?v=2026.02.14.4"></script>
+    <script src="js/document-panel.js?v=2026.02.14.4"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             setTimeout(function () {
@@ -592,22 +596,20 @@
             }
 
             function setNotionIntegrationBusy(isBusy) {
-                if (notionConnectBtn) notionConnectBtn.disabled = isBusy;
-                if (notionDisconnectBtn) notionDisconnectBtn.disabled = isBusy;
-                if (notionRefreshBtn) notionRefreshBtn.disabled = isBusy;
                 if (notionWorkspaceSelect) notionWorkspaceSelect.disabled = isBusy || !notionWorkspaceSelect.options.length;
+                if (notionAuthLink) {
+                    notionAuthLink.style.pointerEvents = isBusy ? "none" : "";
+                    notionAuthLink.style.opacity = isBusy ? "0.6" : "";
+                }
             }
 
             function updateNotionWorkspacesUI(payload) {
                 const connected = Boolean(payload?.connected);
                 const workspaces = Array.isArray(payload?.workspaces) ? payload.workspaces : [];
                 const selectedWorkspaceId = String(payload?.selectedWorkspaceId || "").trim();
-                if (notionIntegrationStatus) {
-                    notionIntegrationStatus.textContent = connected ? "Connecté" : "Non connecté";
-                }
-                if (notionConnectBtn) notionConnectBtn.disabled = connected;
-                if (notionDisconnectBtn) notionDisconnectBtn.disabled = !connected;
-                if (notionRefreshBtn) notionRefreshBtn.disabled = !connected;
+                if (notionAuthLink) notionAuthLink.textContent = connected ? "Se déconnecter" : "Se connecter";
+                if (notionWorkspaceRow) notionWorkspaceRow.style.display = connected ? "" : "none";
+                if (notionDefaultPathRow) notionDefaultPathRow.style.display = connected ? "" : "none";
                 if (notionWorkspaceSelect) {
                     notionWorkspaceSelect.innerHTML = "";
                     if (!connected || !workspaces.length) {
@@ -660,11 +662,6 @@
                 const channels = Array.isArray(payload?.channels) ? payload.channels : [];
                 const hasChannel = Boolean(payload?.hasChannel) && channels.length > 0;
                 const selectedChannelId = String(payload?.selectedChannelId || "").trim();
-                if (youtubeIntegrationStatus) {
-                    youtubeIntegrationStatus.textContent = connected
-                        ? (hasChannel ? "Connecté" : "Connecté, aucune chaîne trouvée")
-                        : "Non connecté";
-                }
                 if (youtubeAuthLink) {
                     youtubeAuthLink.textContent = connected ? "Se déconnecter" : "Se connecter";
                 }
@@ -725,18 +722,16 @@
             const settingsModal = document.getElementById("settingsModal");
             const closeSettingsBtn = document.getElementById("closeSettingsBtn");
             const themeSelectMemo = document.getElementById("themeSelectMemo");
-            const youtubeIntegrationStatus = document.getElementById("youtubeIntegrationStatus");
             const youtubeAuthLink = document.getElementById("youtubeAuthLink");
             const youtubeChannelSelect = document.getElementById("youtubeChannelSelect");
             const youtubeChannelRow = document.getElementById("youtubeChannelRow");
             const youtubeNoChannelRow = document.getElementById("youtubeNoChannelRow");
             const youtubeChannelSwitcherLink = document.getElementById("youtubeChannelSwitcherLink");
-            const notionIntegrationStatus = document.getElementById("notionIntegrationStatus");
+            const notionAuthLink = document.getElementById("notionAuthLink");
+            const notionWorkspaceRow = document.getElementById("notionWorkspaceRow");
             const notionWorkspaceSelect = document.getElementById("notionWorkspaceSelect");
+            const notionDefaultPathRow = document.getElementById("notionDefaultPathRow");
             const notionDefaultPathInput = document.getElementById("notionDefaultPathInput");
-            const notionConnectBtn = document.getElementById("notionConnectBtn");
-            const notionDisconnectBtn = document.getElementById("notionDisconnectBtn");
-            const notionRefreshBtn = document.getElementById("notionRefreshBtn");
             const settingsTabButtons = Array.from(document.querySelectorAll("#settingsModal .settings-tabs .tab-btn"));
             const settingsTabPanels = Array.from(document.querySelectorAll("#settingsModal .settings-tab-panel"));
             const fileMenuTrigger = document.getElementById("fileMenuTrigger");
@@ -3654,44 +3649,38 @@
                 localStorage.setItem(NOTION_PATH_STORAGE_KEY, notionDefaultPathInput.value || "");
             });
 
-            notionConnectBtn?.addEventListener("click", async () => {
+            notionAuthLink?.addEventListener("click", async event => {
+                event.preventDefault();
                 const notion = window.GoToolkitNotionPublish;
-                if (!notion?.ensureConnected) {
+                if (!notion?.getAuthStatus) {
                     setStatus("Service Notion indisponible");
                     return;
                 }
                 setNotionIntegrationBusy(true);
                 try {
-                    await notion.ensureConnected();
-                    await refreshNotionIntegration(false);
-                    setStatus("Connexion Notion établie");
+                    const status = await notion.getAuthStatus();
+                    if (status?.connected) {
+                        if (!notion.disconnect) {
+                            setStatus("Déconnexion Notion indisponible");
+                            return;
+                        }
+                        await notion.disconnect();
+                        updateNotionWorkspacesUI({ connected: false, workspaces: [], selectedWorkspaceId: "" });
+                        setStatus("Notion déconnecté");
+                    } else {
+                        if (!notion.ensureConnected) {
+                            setStatus("Service Notion indisponible");
+                            return;
+                        }
+                        await notion.ensureConnected();
+                        await refreshNotionIntegration(false);
+                        setStatus("Connexion Notion établie");
+                    }
                 } catch (err) {
-                    setStatus(err?.message || "Connexion Notion échouée");
+                    setStatus(err?.message || "Action Notion impossible");
                 } finally {
                     setNotionIntegrationBusy(false);
                 }
-            });
-
-            notionDisconnectBtn?.addEventListener("click", async () => {
-                const notion = window.GoToolkitNotionPublish;
-                if (!notion?.disconnect) {
-                    setStatus("Déconnexion Notion indisponible");
-                    return;
-                }
-                setNotionIntegrationBusy(true);
-                try {
-                    await notion.disconnect();
-                    updateNotionWorkspacesUI({ connected: false, workspaces: [], selectedWorkspaceId: "" });
-                    setStatus("Notion déconnecté");
-                } catch (err) {
-                    setStatus(err?.message || "Déconnexion Notion échouée");
-                } finally {
-                    setNotionIntegrationBusy(false);
-                }
-            });
-
-            notionRefreshBtn?.addEventListener("click", async () => {
-                await refreshNotionIntegration(true);
             });
 
             notionWorkspaceSelect?.addEventListener("change", async () => {
