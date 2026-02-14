@@ -812,7 +812,7 @@
             return `■ ${timeLabel}${badge}`;
         }
         if (state.currentRecordingId) {
-            const recordingIcon = state.currentRecordingHasVideo ? "monitor-play" : "audio-lines";
+            const recordingIcon = state.currentRecordingHasVideo ? "video" : "cassette-tape";
             if (state.currentMemoId && state.recordingMemoId && state.currentMemoId === state.recordingMemoId) {
                 return `<i data-lucide="${recordingIcon}"></i>${badge}`;
             }
