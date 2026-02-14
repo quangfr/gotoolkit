@@ -1658,7 +1658,8 @@ label {
   border: 1px solid transparent;
   border-radius: var(--radius-md);
   background: transparent;
-  padding: 5px 4px;
+  padding: 5px 10px 5px 4px;
+  margin-right: -6px;
   display: flex;
   flex-direction: column;
   gap: 5px;
@@ -2418,6 +2419,59 @@ label {
   flex-wrap: wrap;
   gap: 6px;
   align-items: center;
+}
+
+.chat-composer-queue {
+  display: flex;
+  width: 100%;
+  background: var(--bg-surface-soft);
+  border: 1px solid var(--border-main);
+  border-radius: var(--radius-md);
+  padding: 4px;
+}
+
+.chat-composer-queue__list {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 2px;
+}
+
+.chat-composer-queue__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+  padding: 2px 4px;
+  border-radius: var(--radius-md);
+  background: var(--bg-surface-soft);
+}
+
+.chat-composer-queue__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--text-main);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat-composer-queue__remove {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  line-height: 1;
+  color: var(--text-main);
+  padding: 0;
+  flex: 0 0 auto;
+}
+
+.chat-composer-queue__remove:hover,
+.chat-composer-queue__remove:focus-visible {
+  color: var(--text-main);
+  outline: none;
 }
 
 .chat-composer-attachment {

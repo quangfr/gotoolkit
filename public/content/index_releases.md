@@ -1,6 +1,8 @@
 ## 2026-02-13
-- Voice : Publier un enregistrement sur Youtube
+- Intégration : Publier un enregistrement sur Youtube
 - Voice : Transcription texte en temps réel
+- Intégration : Publier un document sur Notion
+- IA : Fil d'attente de commandes
 
 ## 2026-01-28
 - IA : Éditer un prompt et restaurer une version

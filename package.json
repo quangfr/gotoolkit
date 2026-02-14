@@ -1,10 +1,10 @@
 {
   "name": "gotoolkit",
-  "version": "2026.02.14.5",
+  "version": "2026.02.14.6",
   "description": "Go-Toolkit combine deux expériences pensées pour les consultants : **Go-Slides** (pour créer des planches claires et structurées) et **Go-Timeline** (pour visualiser et ajuster un planning). Chaque outil s’utilise en ouvrant directement son fichier dans un navigateur, avec des assistants IA, des exports réactifs et des modèles prêts à l’emploi.",
   "main": "index.js",
   "scripts": {
-    "start": "serve ./public -l 3000",
+    "start": "serve ./public -l 5000 --config serve.json",
     "dev": "concurrently \"npm run dev:connect\" \"npm run dev:memo\" \"npm run start\"",
     "dev:connect": "esbuild src/draw-editor/index.tsx --bundle --format=iife --platform=browser --target=es2018 --sourcemap --define:process.env.NODE_ENV=\"'development'\" --define:process.env=\"{}\" --define:global=\"window\" --inject:src/polyfills.ts --alias:react=./src/react-shim.ts --alias:react/jsx-runtime=./src/jsx-runtime-shim.ts --alias:react-dom=./src/react-dom-shim.ts --alias:react-dom/client=./src/react-dom-shim.ts --alias:mermaid=./src/mermaid-shim.ts --alias:@excalidraw/excalidraw=./src/excalidraw-shim.ts --outdir=public/js --entry-names=draw.bundle --asset-names=assets/[name]-[hash] --loader:.css=text --loader:.woff=file --loader:.woff2=file --loader:.ttf=file --loader:.svg=file --loader:.png=file --watch",
     "dev:memo": "esbuild src/memo-bridge/index.tsx --bundle --format=iife --platform=browser --target=es2018 --sourcemap --define:process.env.NODE_ENV=\"'development'\" --define:process.env=\"{}\" --define:global=\"window\" --inject:src/polyfills.ts --alias:react=./src/react-shim.ts --alias:react/jsx-runtime=./src/jsx-runtime-shim.ts --alias:react-dom=./src/react-dom-shim.ts --alias:react-dom/client=./src/react-dom-shim.ts --alias:mermaid=./src/mermaid-shim.ts --alias:@excalidraw/excalidraw=./src/excalidraw-shim.ts --outdir=public/js --entry-names=memo.bundle --asset-names=assets/[name]-[hash] --alias:@=./src --watch",

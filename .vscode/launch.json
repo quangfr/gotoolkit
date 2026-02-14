@@ -5,7 +5,7 @@
       "name": "Launch Chrome (Serve public)",
       "type": "chrome",
       "request": "launch",
-      "url": "http://localhost:3000/index.html",
+      "url": "http://localhost:5000/index.html",
       "webRoot": "${workspaceFolder}/public",
       "preLaunchTask": "Dev + Serve public",
       "runtimeArgs": [

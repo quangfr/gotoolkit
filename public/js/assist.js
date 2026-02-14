@@ -946,147 +946,10 @@
         return Math.min(Math.max(num, minMs), maxMs);
     }
 
-    // Character counter toaster functions
+    // Disabled by request: AI request/transcription counter toaster.
     var aiCounterToasterState = {};
-
-    function getAiCounterState(toasterId) {
-        var id = toasterId || "aiRequestCounterToaster";
-        if (!aiCounterToasterState[id]) {
-            aiCounterToasterState[id] = {
-                isRunning: false,
-                timerId: null,
-                remaining: 0,
-                isLooping: false,
-                originalDuration: 0,
-                iconName: "bot",
-                label: "",
-                scopeId: null
-            };
-        }
-        return aiCounterToasterState[id];
-    }
-
-    function ensureAiRequestToaster(toasterId) {
-        if (typeof document === "undefined") return null;
-        var id = toasterId || "aiRequestCounterToaster";
-        var toasterEl = global.document?.getElementById(id);
-        if (!toasterEl) {
-            toasterEl = document.createElement("div");
-            toasterEl.id = id;
-            toasterEl.className = "ai-request-counter-toaster";
-            toasterEl.setAttribute("role", "status");
-            toasterEl.setAttribute("aria-live", "polite");
-            toasterEl.setAttribute("aria-atomic", "true");
-            toasterEl.style.display = "none";
-            var span = document.createElement("span");
-            span.id = id + "Text";
-            span.innerHTML = '<i data-lucide="bot" class="lucide-spin" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i> 00:00';
-            toasterEl.appendChild(span);
-            document.body.appendChild(toasterEl);
-        }
-        var textEl = global.document?.getElementById(id + "Text");
-        if (!textEl && id === "aiRequestCounterToaster") {
-            textEl = global.document?.getElementById("aiRequestCounterText");
-        }
-        return { toasterEl: toasterEl, textEl: textEl };
-    }
-
-    function startCharacterCounterToaster(tokenCount, options = {}) {
-        if (typeof tokenCount !== 'number' || tokenCount < 0) {
-            tokenCount = 0;
-        }
-
-        var toasterId = options.toasterId || "aiRequestCounterToaster";
-        var iconName = (options.iconName || "bot").toString();
-        var label = typeof options.label === "string" ? options.label : "";
-        var toastNodes = ensureAiRequestToaster(toasterId);
-        if (!toastNodes?.toasterEl) return;
-
-        // Stop any existing timer
-        stopCharacterCounterToaster(toasterId);
-
-        var isImport = options.isImport || false;
-
-        // Calculate duration: 15s to 90s (default token-based)
-        var durationMs = Number.isFinite(options.durationMs) ? Math.max(1000, options.durationMs) : 0;
-        if (!durationMs) {
-            durationMs = 15000 + Math.round(tokenCount * 2.5);
-            durationMs = Math.min(durationMs, 90000); // Max 1m30
-        }
-
-        var state = getAiCounterState(toasterId);
-        state.isRunning = true;
-        state.remaining = durationMs;
-        state.isLooping = isImport;
-        state.originalDuration = durationMs;
-        state.iconName = iconName;
-        state.label = label;
-        state.scopeId = options.scopeId || null;
-
-        toastNodes.toasterEl.classList.add("visible");
-        toastNodes.toasterEl.style.display = "";
-
-        var updateCounter = function () {
-            if (!state.isRunning) return;
-
-            // Visibility check: only show if the toaster's scope is currently active
-            var currentScopeId = window.GoToolkitAssistInstance?.currentConversationScopeId;
-            var isVisible = !state.scopeId || !currentScopeId || state.scopeId === currentScopeId;
-            if (toastNodes.toasterEl) {
-                if (isVisible) {
-                    toastNodes.toasterEl.style.display = "";
-                    toastNodes.toasterEl.classList.add("visible");
-                } else {
-                    toastNodes.toasterEl.style.display = "none";
-                    toastNodes.toasterEl.classList.remove("visible");
-                }
-            }
-
-            var secondsRemaining = Math.ceil(state.remaining / 1000);
-            var minutes = Math.floor(secondsRemaining / 60);
-            var seconds = secondsRemaining % 60;
-            var timeStr = (minutes < 10 ? "0" : "") + minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
-
-            var iconHtml = `<i data-lucide="${state.iconName}" class="lucide-pulse" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i>`;
-            var textEl = toastNodes.textEl || global.document?.getElementById(toasterId + "Text");
-            if (textEl) {
-                textEl.innerHTML = iconHtml + " " + timeStr;
-                if (window.lucide) window.lucide.createIcons();
-            }
-
-            state.remaining -= 1000;
-
-            if (state.remaining < 0) {
-                if (state.isLooping) {
-                    state.remaining = state.originalDuration;
-                    state.timerId = setTimeout(updateCounter, 1000);
-                } else {
-                    stopCharacterCounterToaster(toasterId);
-                }
-            } else {
-                state.timerId = setTimeout(updateCounter, 1000);
-            }
-        };
-
-        updateCounter();
-    }
-
-    function stopCharacterCounterToaster(toasterId) {
-        var id = toasterId || "aiRequestCounterToaster";
-        var toasterEl = global.document?.getElementById(id);
-        if (toasterEl) {
-            toasterEl.classList.remove("visible");
-        }
-
-        var state = getAiCounterState(id);
-        if (state.timerId) {
-            clearTimeout(state.timerId);
-            state.timerId = null;
-        }
-        state.isRunning = false;
-        state.remaining = 0;
-        state.scopeId = null;
-    }
+    function startCharacterCounterToaster() { /* no-op */ }
+    function stopCharacterCounterToaster() { /* no-op */ }
 
     global.GoToolkitAIRequestToaster = {
         start: startCharacterCounterToaster,
@@ -1537,6 +1400,14 @@
         this.memoContextAttachmentList = null;
         this.pendingAttachmentRow = null;
         this.pendingAttachmentList = null;
+        this.queuedMessageRow = null;
+        this.queuedMessageList = null;
+        this.queuedMessagesByScope = new Map();
+        this.speechResultStartIndex = 0;
+        this.speechLastResultsLength = 0;
+        this.speechClearRequested = false;
+        this.speechBaseText = "";
+        this.isListening = false;
         this.memoPendingAttachmentMemos = new Set();
         this.memoConfirmedAttachmentMemos = new Set();
         this.headerDocCountEl = null;
@@ -1678,29 +1549,13 @@
         this.updateHeaderDocumentCount();
         this.refreshDocumentStats();
         this.renderPendingDocumentAttachments();
+        this.renderQueuedMessages();
         this.refreshAiRequestToaster?.();
         return true;
     };
 
     AssistSidebar.prototype.refreshAiRequestToaster = function () {
-        if (typeof aiCounterToasterState === "undefined") return;
-        for (var id in aiCounterToasterState) {
-            var toasterState = aiCounterToasterState[id];
-            if (toasterState.isRunning) {
-                var toastNodes = ensureAiRequestToaster(id);
-                var currentScopeId = this.currentConversationScopeId;
-                var isVisible = !toasterState.scopeId || !currentScopeId || toasterState.scopeId === currentScopeId;
-                if (toastNodes?.toasterEl) {
-                    if (isVisible) {
-                        toastNodes.toasterEl.style.display = "";
-                        toastNodes.toasterEl.classList.add("visible");
-                    } else {
-                        toastNodes.toasterEl.style.display = "none";
-                        toastNodes.toasterEl.classList.remove("visible");
-                    }
-                }
-            }
-        }
+        return;
     };
 
     AssistSidebar.prototype.persistPendingAttachments = function () {
@@ -1871,10 +1726,12 @@
         }
         this.conversation = createEmptyConversation(this.currentConversationScopeId);
         this.messageNodes = {};
+        this.queuedMessagesByScope.set(this.currentConversationScopeId, []);
         this.setPendingDocumentAttachments([]);
         if (this.messagesEl) {
             this.messagesEl.innerHTML = "";
         }
+        this.renderQueuedMessages();
         this.persist();
         clearKnowledgeModalOpenPreference();
         this.updateComposerState();
@@ -1888,7 +1745,7 @@
         var isStreaming = Boolean(state.isStreaming);
         var isSendBusy = Boolean(state.isSendBusy);
         var shouldShowBusyIcon = isStreaming || isSendBusy;
-        var isInputBlocked = isStreaming || isSendBusy;
+        var isInputBlocked = isSendBusy && !isStreaming;
 
         if (this.sendButton) {
             this.sendButton.innerHTML = shouldShowBusyIcon
@@ -1983,6 +1840,13 @@
         this.startSpeechRecognition();
     };
 
+    AssistSidebar.prototype.handleComposerManualInput = function () {
+        if (!this.isListening || !this.textarea) return;
+        this.speechBaseText = this.textarea.value || "";
+        this.speechResultStartIndex = Math.max(0, this.speechLastResultsLength || 0);
+        this.speechClearRequested = false;
+    };
+
     AssistSidebar.prototype.startSpeechRecognition = function () {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
@@ -1999,12 +1863,15 @@
         this.isListening = true;
         this.lastSpeechHeardAt = Date.now();
         this.speechResultStartIndex = 0;
+        this.speechLastResultsLength = 0;
+        this.speechBaseText = this.textarea ? (this.textarea.value || "") : "";
         this.toggleListeningStyles(true);
         const self = this;
 
         this.speechRecognition.onresult = function (event) {
             const results = Array.from(event.results);
             const startIndex = Math.max(0, self.speechResultStartIndex || 0);
+            self.speechLastResultsLength = results.length;
             const transcript = results
                 .slice(startIndex)
                 .map(result => (result[0] ? result[0].transcript : ""))
@@ -2020,6 +1887,8 @@
             const finalMatch = finalTranscript.match(commandPattern);
             const command = (match && match[1]) ? match[1].toLowerCase() : null;
             const cleanedTranscript = transcript.replace(commandPattern, "").replace(/\s+/g, " ").trim();
+            const baseText = (self.speechBaseText || "").trim();
+            const mergedTranscript = [baseText, cleanedTranscript].filter(Boolean).join(" ").trim();
             if (self.speechClearRequested && !command) {
                 self.speechClearRequested = false;
                 if (self.textarea) {
@@ -2030,15 +1899,17 @@
                 return;
             }
             if (self.textarea) {
-                self.textarea.value = cleanedTranscript;
+                self.textarea.value = mergedTranscript;
                 self.handleInputResize();
                 self.updateComposerState();
             }
             if (command && finalMatch) {
                 if (command === "go") {
                     self.speechClearRequested = true;
-                    self.handleSend({ value: cleanedTranscript });
+                    self.handleSend({ value: self.textarea ? self.textarea.value : mergedTranscript });
                     self.speechResultStartIndex = results.length;
+                    self.speechLastResultsLength = results.length;
+                    self.speechBaseText = "";
                     try {
                         self.speechRecognition?.start?.();
                     } catch (err) { /* ignore */ }
@@ -2050,6 +1921,8 @@
                         self.updateComposerState();
                     }
                     self.speechResultStartIndex = results.length;
+                    self.speechLastResultsLength = results.length;
+                    self.speechBaseText = "";
                     try {
                         self.speechRecognition?.start?.();
                     } catch (err) { /* ignore */ }
@@ -2064,6 +1937,8 @@
                         self.handleUndoDocument(lastUserMessage);
                     }
                     self.speechResultStartIndex = results.length;
+                    self.speechLastResultsLength = results.length;
+                    self.speechBaseText = self.textarea ? (self.textarea.value || "") : "";
                     try {
                         self.speechRecognition?.start?.();
                     } catch (err) { /* ignore */ }
@@ -2106,6 +1981,7 @@
             this.speechRecognition = null;
         }
         this.isListening = false;
+        this.speechBaseText = "";
         this.toggleListeningStyles(false);
         this.updateComposerState();
     };
@@ -2724,8 +2600,6 @@
 
     AssistSidebar.prototype.handleSuggestionClick = function (text) {
         if (!text || !this.textarea) return;
-        var scopeId = this.currentConversationScopeId || getConversationScopeId();
-        if (this.getScopeRuntimeState(scopeId).isStreaming) return;
         this.textarea.value = text;
         this.handleInputResize();
         this.updateComposerState();
@@ -3686,9 +3560,14 @@
 
     AssistSidebar.prototype.handleSend = async function (options) {
         options = options || {};
-        this.syncScopeFromActiveDocument();
+        if (!options.scopeId) {
+            this.syncScopeFromActiveDocument();
+        }
         var conversationScopeId = this.currentConversationScopeId || getConversationScopeId();
-        if (this.getScopeRuntimeState(conversationScopeId).isStreaming) return;
+        if (typeof options.scopeId === "string" && options.scopeId) {
+            conversationScopeId = options.scopeId;
+        }
+        var scopeState = this.getScopeRuntimeState(conversationScopeId);
         if (!this.textarea && !options.editMessage) return;
         var rawValue = (typeof options.value === "string" ? options.value : this.textarea?.value || "");
         var value = rawValue.trim();
@@ -3701,6 +3580,16 @@
             return name && !this.pendingExcludedAttachments?.has?.(name);
         }.bind(this));
         var hasAttachment = attachments.length > 0;
+        if (!isInlineEdit && scopeState.isStreaming && !options.fromQueue) {
+            if (!value) return;
+            this.enqueueQueuedMessage(value, conversationScopeId);
+            if (this.textarea) {
+                this.textarea.value = "";
+                this.textarea.style.height = "auto";
+                this.updateComposerState();
+            }
+            return;
+        }
         if (!value && !hasAttachment) return;
 
         if (!isInlineEdit && !hasAttachment && this.memoSelection && window.sendInlineEditToAssist && window.memoEditor) {
@@ -4095,6 +3984,7 @@
                     this.updateBotMessage(botMessage);
                 }
             }
+            this.processNextQueuedMessage(conversationScopeId);
         }
     };
 
@@ -4786,16 +4676,34 @@
         this.memoContextAttachmentList.className = "chat-composer-attachments__list";
         memoAttachmentRow.appendChild(this.memoContextAttachmentList);
         this.sidebar.appendChild(memoAttachmentRow);
+        var queuedMessageRow = document.createElement("div");
+        queuedMessageRow.className = "chat-composer-queue";
+        queuedMessageRow.style.display = "none";
+        this.queuedMessageRow = queuedMessageRow;
+        this.queuedMessageList = document.createElement("div");
+        this.queuedMessageList.className = "chat-composer-queue__list";
+        queuedMessageRow.appendChild(this.queuedMessageList);
+        this.sidebar.appendChild(queuedMessageRow);
         this.textarea = document.createElement("textarea");
         this.textarea.className = "chat-input";
         this.textarea.rows = 2;
         this.updateInputPlaceholder();
         this.textarea.addEventListener("input", this.handleInputResize.bind(this));
         this.textarea.addEventListener("input", this.updateComposerState.bind(this));
+        this.textarea.addEventListener("input", this.handleComposerManualInput.bind(this));
         this.textarea.addEventListener("keydown", function (event) {
             if (event.key === "Enter" && !event.shiftKey) {
                 event.preventDefault();
                 this.handleSend();
+                if (this.textarea) {
+                    requestAnimationFrame(function () {
+                        try {
+                            this.textarea.focus({ preventScroll: true });
+                        } catch (err) {
+                            this.textarea.focus();
+                        }
+                    }.bind(this));
+                }
             }
         }.bind(this));
         this.textarea.addEventListener("focus", function () {
@@ -5053,6 +4961,7 @@
         this.initMemoSelectionTracking();
         this.prefetchKnowledgeModalList();
         this.renderPendingDocumentAttachments();
+        this.renderQueuedMessages();
         return true;
     };
 
@@ -5906,6 +5815,85 @@
             this.pendingAttachmentList.appendChild(item);
         }.bind(this));
         if (window.lucide) window.lucide.createIcons();
+    };
+
+    AssistSidebar.prototype.getQueuedMessages = function (scopeId) {
+        var id = scopeId || this.currentConversationScopeId || getConversationScopeId();
+        var queue = this.queuedMessagesByScope.get(id);
+        if (!Array.isArray(queue)) {
+            queue = [];
+            this.queuedMessagesByScope.set(id, queue);
+        }
+        return queue;
+    };
+
+    AssistSidebar.prototype.enqueueQueuedMessage = function (text, scopeId) {
+        var trimmed = (text || "").toString().trim();
+        if (!trimmed) return;
+        var queue = this.getQueuedMessages(scopeId);
+        queue.push({
+            id: "queued-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7),
+            text: trimmed
+        });
+        this.renderQueuedMessages();
+    };
+
+    AssistSidebar.prototype.removeQueuedMessage = function (id, scopeId) {
+        if (!id) return;
+        var queue = this.getQueuedMessages(scopeId);
+        var nextQueue = queue.filter(function (entry) {
+            return entry && entry.id !== id;
+        });
+        this.queuedMessagesByScope.set(scopeId || this.currentConversationScopeId || getConversationScopeId(), nextQueue);
+        this.renderQueuedMessages();
+    };
+
+    AssistSidebar.prototype.renderQueuedMessages = function () {
+        if (!this.queuedMessageRow || !this.queuedMessageList) return;
+        var scopeId = this.currentConversationScopeId || getConversationScopeId();
+        var queue = this.getQueuedMessages(scopeId);
+        if (!queue.length) {
+            this.queuedMessageRow.style.display = "none";
+            this.queuedMessageList.innerHTML = "";
+            return;
+        }
+        this.queuedMessageRow.style.display = "flex";
+        this.queuedMessageList.innerHTML = "";
+        queue.forEach(function (entry) {
+            if (!entry?.text) return;
+            var item = document.createElement("span");
+            item.className = "chat-composer-queue__item";
+            var label = document.createElement("span");
+            label.className = "chat-composer-queue__name";
+            label.textContent = entry.text;
+            label.title = entry.text;
+            item.appendChild(label);
+            var removeBtn = document.createElement("button");
+            removeBtn.type = "button";
+            removeBtn.className = "chat-composer-queue__remove";
+            removeBtn.setAttribute("aria-label", "Supprimer de la file d'attente");
+            removeBtn.innerHTML = '<i data-lucide="trash-2" style="width:12px;height:12px;"></i>';
+            removeBtn.addEventListener("click", function (event) {
+                event.stopPropagation();
+                this.removeQueuedMessage(entry.id, scopeId);
+            }.bind(this));
+            item.appendChild(removeBtn);
+            this.queuedMessageList.appendChild(item);
+        }.bind(this));
+        if (window.lucide) window.lucide.createIcons();
+    };
+
+    AssistSidebar.prototype.processNextQueuedMessage = function (scopeId) {
+        var id = scopeId || this.currentConversationScopeId || getConversationScopeId();
+        var state = this.getScopeRuntimeState(id);
+        if (state.isStreaming || state.isSendBusy) return;
+        if (id !== (this.currentConversationScopeId || getConversationScopeId())) return;
+        var queue = this.getQueuedMessages(id);
+        if (!queue.length) return;
+        var next = queue.shift();
+        this.renderQueuedMessages();
+        if (!next?.text) return;
+        this.handleSend({ value: next.text, fromQueue: true, scopeId: id });
     };
 
     AssistSidebar.prototype.togglePendingAttachment = function (name) {

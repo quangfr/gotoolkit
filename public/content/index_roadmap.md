@@ -1,10 +1,13 @@
+## Assistance IA
+- Réponse au fil de l'eau (streaming)
+
 ## Édition de document
 - Ajout d'images
 
 ## Intégration tiers
 - Fichiers Sharepoint / Outlook / OneDrive 
 - Fichiers Gmail / Google Drive 
-- Jira / Confluence / Notion
+- Jira / Confluence
 
 ## Fichiers de données
 - Import et visualisation JSON
