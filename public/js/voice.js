@@ -1829,22 +1829,37 @@
         const globalActions = document.querySelector(".global-actions");
         if (!launcher && !globalActions) return;
         if (state.voiceButton) return;
+        let existingButton = document.querySelector(".go-toolkit-voice-button");
+        if (existingButton) {
+            state.voiceButton = existingButton;
+            updateButton();
+            return;
+        }
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = "feedback-app-button btn btn-secondary app-header-btn chat-header-btn go-toolkit-voice-button";
         btn.title = "Enregistrer une conversation";
-        btn.textContent = "◉";
+        btn.dataset.app = "voice";
+        btn.innerHTML = '<i data-lucide="disc-3"></i><span>Enregistrer une conversation</span>';
         btn.addEventListener("click", handleButtonClick);
         const handoffBtn = document.getElementById("handoffFocusBtn");
         const themeMenuTrigger = document.getElementById("themeMenuTrigger");
-        if (globalActions && handoffBtn && handoffBtn.parentNode === globalActions) {
+        const globalActionsExtras = document.getElementById("globalActionsExtras");
+        if (globalActionsExtras) {
+            globalActionsExtras.appendChild(btn);
+        } else if (globalActions && handoffBtn && handoffBtn.parentNode === globalActions) {
             globalActions.insertBefore(btn, handoffBtn.nextSibling);
         } else if (globalActions && themeMenuTrigger && themeMenuTrigger.parentNode === globalActions) {
             globalActions.insertBefore(btn, themeMenuTrigger);
         } else if (launcher) {
             launcher.appendChild(btn);
+        } else if (globalActions) {
+            globalActions.appendChild(btn);
         }
         state.voiceButton = btn;
+        if (window.lucide?.createIcons) {
+            window.lucide.createIcons();
+        }
         updateButton();
     }
 

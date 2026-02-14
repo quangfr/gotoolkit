@@ -63,6 +63,10 @@ function getTokenKey(deviceId) {
   return `yt-device:${deviceId}`;
 }
 
+function getSelectedChannelKey(deviceId) {
+  return `yt-channel:${deviceId}`;
+}
+
 function normalizeLanguage(raw) {
   const value = String(raw || "").trim().toLowerCase().replace("_", "-");
   const root = value.split("-")[0];
@@ -83,6 +87,51 @@ async function getStoredToken(env, deviceId) {
 async function storeToken(env, deviceId, token) {
   if (!env?.YOUTUBE_OAUTH || !deviceId || !token) return;
   await env.YOUTUBE_OAUTH.put(getTokenKey(deviceId), JSON.stringify(token));
+}
+
+async function clearToken(env, deviceId) {
+  if (!env?.YOUTUBE_OAUTH || !deviceId) return;
+  await env.YOUTUBE_OAUTH.delete(getTokenKey(deviceId));
+}
+
+async function getSelectedChannelId(env, deviceId) {
+  if (!env?.YOUTUBE_OAUTH || !deviceId) return "";
+  return String((await env.YOUTUBE_OAUTH.get(getSelectedChannelKey(deviceId))) || "").trim();
+}
+
+async function setSelectedChannelId(env, deviceId, channelId) {
+  if (!env?.YOUTUBE_OAUTH || !deviceId) return;
+  const normalized = String(channelId || "").trim();
+  if (!normalized) {
+    await env.YOUTUBE_OAUTH.delete(getSelectedChannelKey(deviceId));
+    return;
+  }
+  await env.YOUTUBE_OAUTH.put(getSelectedChannelKey(deviceId), normalized);
+}
+
+async function listOwnedChannels(accessToken) {
+  const url = new URL("https://www.googleapis.com/youtube/v3/channels");
+  url.searchParams.set("part", "id,snippet");
+  url.searchParams.set("mine", "true");
+  url.searchParams.set("maxResults", "50");
+  const response = await fetch(url.toString(), {
+    headers: { Authorization: `Bearer ${accessToken}` }
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const message = payload?.error?.message || `Channels fetch failed (${response.status})`;
+    throw new Error(message);
+  }
+  const items = Array.isArray(payload?.items) ? payload.items : [];
+  return items.map(item => ({
+    id: String(item?.id || "").trim(),
+    title: String(item?.snippet?.title || "").trim(),
+    thumbnailUrl:
+      item?.snippet?.thumbnails?.default?.url
+      || item?.snippet?.thumbnails?.medium?.url
+      || item?.snippet?.thumbnails?.high?.url
+      || ""
+  })).filter(ch => ch.id);
 }
 
 async function exchangeCodeForToken(request, env, code) {
@@ -357,7 +406,91 @@ export default {
       const deviceId = String(body?.deviceId || "").trim();
       if (!deviceId) return errorResponse(cors.headers, 400, "deviceId requis");
       const accessToken = await getValidAccessToken(request, env, deviceId).catch(() => null);
-      return jsonResponse(cors.headers, { connected: Boolean(accessToken) });
+      if (!accessToken) {
+        await setSelectedChannelId(env, deviceId, "");
+        return jsonResponse(cors.headers, {
+          connected: false,
+          hasChannel: false,
+          channels: [],
+          selectedChannelId: ""
+        });
+      }
+      const channels = await listOwnedChannels(accessToken).catch(() => []);
+      let selectedChannelId = await getSelectedChannelId(env, deviceId);
+      if (selectedChannelId && !channels.some(ch => ch.id === selectedChannelId)) {
+        selectedChannelId = "";
+      }
+      if (!selectedChannelId && channels.length) {
+        selectedChannelId = channels[0].id;
+      }
+      await setSelectedChannelId(env, deviceId, selectedChannelId);
+      return jsonResponse(cors.headers, {
+        connected: true,
+        hasChannel: channels.length > 0,
+        channels,
+        selectedChannelId
+      });
+    }
+
+    if (request.method === "POST" && path === "/auth/channels") {
+      const body = await request.json().catch(() => ({}));
+      const deviceId = String(body?.deviceId || "").trim();
+      if (!deviceId) return errorResponse(cors.headers, 400, "deviceId requis");
+      const accessToken = await getValidAccessToken(request, env, deviceId).catch(() => null);
+      if (!accessToken) {
+        await setSelectedChannelId(env, deviceId, "");
+        return jsonResponse(cors.headers, {
+          connected: false,
+          hasChannel: false,
+          channels: [],
+          selectedChannelId: ""
+        });
+      }
+      const channels = await listOwnedChannels(accessToken).catch(() => []);
+      let selectedChannelId = await getSelectedChannelId(env, deviceId);
+      if (selectedChannelId && !channels.some(ch => ch.id === selectedChannelId)) {
+        selectedChannelId = "";
+      }
+      if (!selectedChannelId && channels.length) {
+        selectedChannelId = channels[0].id;
+      }
+      await setSelectedChannelId(env, deviceId, selectedChannelId);
+      return jsonResponse(cors.headers, {
+        connected: true,
+        hasChannel: channels.length > 0,
+        channels,
+        selectedChannelId
+      });
+    }
+
+    if (request.method === "POST" && path === "/auth/channel/select") {
+      const body = await request.json().catch(() => ({}));
+      const deviceId = String(body?.deviceId || "").trim();
+      const channelId = String(body?.channelId || "").trim();
+      if (!deviceId) return errorResponse(cors.headers, 400, "deviceId requis");
+      if (!channelId) return errorResponse(cors.headers, 400, "channelId requis");
+      const accessToken = await getValidAccessToken(request, env, deviceId).catch(() => null);
+      if (!accessToken) return errorResponse(cors.headers, 401, "Connexion YouTube requise");
+      const channels = await listOwnedChannels(accessToken);
+      if (!channels.some(ch => ch.id === channelId)) {
+        return errorResponse(cors.headers, 400, "Chaîne invalide pour cet utilisateur");
+      }
+      await setSelectedChannelId(env, deviceId, channelId);
+      return jsonResponse(cors.headers, {
+        connected: true,
+        hasChannel: channels.length > 0,
+        channels,
+        selectedChannelId: channelId
+      });
+    }
+
+    if (request.method === "POST" && path === "/auth/disconnect") {
+      const body = await request.json().catch(() => ({}));
+      const deviceId = String(body?.deviceId || "").trim();
+      if (!deviceId) return errorResponse(cors.headers, 400, "deviceId requis");
+      await clearToken(env, deviceId);
+      await setSelectedChannelId(env, deviceId, "");
+      return jsonResponse(cors.headers, { connected: false });
     }
 
     if (request.method === "POST" && path === "/videos/upload") {
@@ -367,6 +500,14 @@ export default {
       if (!deviceId) return errorResponse(cors.headers, 400, "deviceId requis");
       const accessToken = await getValidAccessToken(request, env, deviceId).catch(() => null);
       if (!accessToken) return errorResponse(cors.headers, 401, "Connexion YouTube requise");
+      const channels = await listOwnedChannels(accessToken).catch(() => []);
+      if (!channels.length) {
+        return errorResponse(cors.headers, 400, "Aucune chaîne YouTube disponible");
+      }
+      const selectedChannelId = (String(form.get("channelId") || "").trim() || await getSelectedChannelId(env, deviceId));
+      if (selectedChannelId && !channels.some(ch => ch.id === selectedChannelId)) {
+        return errorResponse(cors.headers, 400, "Chaîne YouTube non disponible");
+      }
       const videoFile = form.get("video");
       if (!videoFile || typeof videoFile.arrayBuffer !== "function") {
         return errorResponse(cors.headers, 400, "Video manquante");

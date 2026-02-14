@@ -42,6 +42,45 @@
         return payload;
     }
 
+    async function getChannels() {
+        const response = await fetch(`${getApiBaseUrl()}/auth/channels`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ deviceId: getDeviceId() })
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(payload?.error?.message || `Erreur YouTube (${response.status})`);
+        }
+        return payload;
+    }
+
+    async function selectChannel(channelId) {
+        const response = await fetch(`${getApiBaseUrl()}/auth/channel/select`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ deviceId: getDeviceId(), channelId: String(channelId || "").trim() })
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(payload?.error?.message || `Selection chaîne impossible (${response.status})`);
+        }
+        return payload;
+    }
+
+    async function disconnect() {
+        const response = await fetch(`${getApiBaseUrl()}/auth/disconnect`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ deviceId: getDeviceId() })
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(payload?.error?.message || `Deconnexion impossible (${response.status})`);
+        }
+        return payload;
+    }
+
     function openOAuthPopup() {
         const deviceId = getDeviceId();
         const origin = window.location.origin;
@@ -104,6 +143,15 @@
         form.append("madeForKids", "true");
         form.append("categoryId", "28");
         form.append("language", normalizeLanguage(language));
+        const status = await getAuthStatus();
+        const selectedChannelId = String(status?.selectedChannelId || "").trim();
+        const hasChannel = Boolean(status?.hasChannel || (Array.isArray(status?.channels) && status.channels.length));
+        if (!hasChannel) {
+            throw new Error("Aucune chaîne YouTube disponible. Ouvrez le sélecteur YouTube.");
+        }
+        if (selectedChannelId) {
+            form.append("channelId", selectedChannelId);
+        }
         const videoType = videoBlob.type || "video/webm";
         const extension = videoType.includes("mp4") ? "mp4" : videoType.includes("webm") ? "webm" : "bin";
         form.append("video", new File([videoBlob], `${safeTitle}.${extension}`, { type: videoType }));
@@ -125,7 +173,10 @@
     window.GoToolkitYouTubePublish = {
         getDeviceId,
         getAuthStatus,
+        getChannels,
+        selectChannel,
         ensureConnected,
+        disconnect,
         publishVideo
     };
 })();
