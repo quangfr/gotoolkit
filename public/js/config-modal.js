@@ -1,6 +1,21 @@
 ;(function (global) {
     const doc = global.document;
     if (!doc) return;
+    const SERVICES_TAB_BUTTON_HTML = `
+        <button type="button" class="tab-btn" data-tab="servicesTab">
+            <i data-lucide="cpu" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Services IA
+        </button>
+    `;
+    const SERVICES_TAB_PANEL_HTML = `
+        <div class="settings-tab-panel" data-panel="servicesTab" hidden>
+            <div class="field-row">
+                <label style="width:100%">
+                    <span class="label-title">Services IA</span>
+                    <span class="label-subtitle">Configure les services IA avancés depuis l'accueil (Go-Toolkit).</span>
+                </label>
+            </div>
+        </div>
+    `;
 
     function normalizeBackdrop(modal) {
         if (!modal) return;
@@ -83,6 +98,37 @@
     global.GoToolkitSettingsModal = {
         bind
     };
+
+    function ensureSharedSettingsModalTabs() {
+        const modal = doc.getElementById("settingsModal");
+        if (!modal) return;
+
+        const tabsRow = modal.querySelector(".settings-tabs");
+        const panelContainer = modal.querySelector(".ia-actions, .feedback-form, .settings-tab-panels-wrapper");
+        if (!tabsRow || !panelContainer) return;
+
+        const hasServicesTab = Boolean(tabsRow.querySelector('[data-tab="servicesTab"]'));
+        if (!hasServicesTab) {
+            const paramsBtn = tabsRow.querySelector('[data-tab="paramsTab"]');
+            if (paramsBtn) {
+                paramsBtn.insertAdjacentHTML("beforebegin", SERVICES_TAB_BUTTON_HTML);
+            } else {
+                tabsRow.insertAdjacentHTML("afterbegin", SERVICES_TAB_BUTTON_HTML);
+            }
+        }
+
+        const hasServicesPanel = Boolean(modal.querySelector('.settings-tab-panel[data-panel="servicesTab"]'));
+        if (!hasServicesPanel) {
+            const paramsPanel = modal.querySelector('.settings-tab-panel[data-panel="paramsTab"]');
+            if (paramsPanel) {
+                paramsPanel.insertAdjacentHTML("beforebegin", SERVICES_TAB_PANEL_HTML);
+            } else {
+                panelContainer.insertAdjacentHTML("beforeend", SERVICES_TAB_PANEL_HTML);
+            }
+        }
+    }
+
+    ensureSharedSettingsModalTabs();
 
     const NOTION_STORAGE_DEVICE_KEY = "go-toolkit-notion-device-id";
     const DEFAULT_NOTION_API_BASE = (global.GO_TOOLKIT_NOTION_API_URL || "https://notion.gotoolkit.workers.dev").replace(/\/$/, "");

@@ -1,8 +1,8 @@
 export default {
   async fetch(request, env) {
     const allowedOrigins = [
-      "https://gotoolkit.web.app",
-      "https://sherpa-5938b.firebaseapp.com"
+      "https://gotoolkit.fr",
+      "https://gotoolkit.workers.dev"
     ];
 
     const origin = request.headers.get("Origin") || "";

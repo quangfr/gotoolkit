@@ -1,7 +1,6 @@
 const ALLOWED_ORIGINS = [
-  "https://gotoolkit.web.app",
-  "https://gotoolkit.workers.dev",
-  "https://sherpa-5938b.firebaseapp.com"
+  "https://gotoolkit.fr",
+  "https://gotoolkit.workers.dev"
 ];
 
 function normalizeClientIp(request) {
