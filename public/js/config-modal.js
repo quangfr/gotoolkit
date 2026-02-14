@@ -220,4 +220,104 @@
         publishPage: notionPublishPage,
         getPageContent: notionGetPageContent
     };
+
+    const MICROSOFT_STORAGE_DEVICE_KEY = "go-toolkit-microsoft-device-id";
+    const DEFAULT_MICROSOFT_API_BASE = (global.GO_TOOLKIT_MICROSOFT_API_URL || "https://ms.gotoolkit.workers.dev").replace(/\/$/, "");
+
+    function getMicrosoftApiBaseUrl() {
+        return (global.GO_TOOLKIT_MICROSOFT_API_URL || DEFAULT_MICROSOFT_API_BASE).replace(/\/$/, "");
+    }
+
+    function getMicrosoftDeviceId() {
+        try {
+            const existing = (localStorage.getItem(MICROSOFT_STORAGE_DEVICE_KEY) || "").trim();
+            if (existing) return existing;
+            const next = (crypto?.randomUUID?.() || `ms-${Date.now()}-${Math.random().toString(16).slice(2)}`).trim();
+            localStorage.setItem(MICROSOFT_STORAGE_DEVICE_KEY, next);
+            return next;
+        } catch (err) {
+            return `ms-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+        }
+    }
+
+    async function microsoftJsonPost(path, body) {
+        const response = await fetch(`${getMicrosoftApiBaseUrl()}${path}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body || {})
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(payload?.error?.message || `Erreur Microsoft (${response.status})`);
+        }
+        return payload;
+    }
+
+    function openMicrosoftOAuthPopup() {
+        const deviceId = getMicrosoftDeviceId();
+        const origin = global.location.origin;
+        const api = getMicrosoftApiBaseUrl();
+        const url = `${api}/oauth/start?deviceId=${encodeURIComponent(deviceId)}&origin=${encodeURIComponent(origin)}`;
+        const popup = global.open(url, "gotoolkit-microsoft-oauth", "width=560,height=700");
+        if (!popup) {
+            return Promise.reject(new Error("Popup OAuth bloquee"));
+        }
+        return new Promise((resolve, reject) => {
+            let closedTimer = null;
+            const onMessage = event => {
+                if (event.origin !== api) return;
+                if (event.data?.source !== "gotoolkit-microsoft-oauth") return;
+                cleanup();
+                if (event.data?.ok) {
+                    resolve(event.data);
+                    return;
+                }
+                reject(new Error(event.data?.error || "Connexion Outlook refusee"));
+            };
+            function cleanup() {
+                global.removeEventListener("message", onMessage);
+                if (closedTimer) clearInterval(closedTimer);
+                try { popup.close(); } catch (err) { /* noop */ }
+            }
+            global.addEventListener("message", onMessage);
+            closedTimer = setInterval(() => {
+                if (!popup || popup.closed) {
+                    cleanup();
+                    reject(new Error("Connexion Outlook annulee"));
+                }
+            }, 300);
+        });
+    }
+
+    async function microsoftGetAuthStatus() {
+        return microsoftJsonPost("/auth/status", { deviceId: getMicrosoftDeviceId() });
+    }
+
+    async function microsoftDisconnect() {
+        return microsoftJsonPost("/auth/disconnect", { deviceId: getMicrosoftDeviceId() });
+    }
+
+    async function microsoftEnsureConnected() {
+        const status = await microsoftGetAuthStatus();
+        if (status?.connected) return true;
+        await openMicrosoftOAuthPopup();
+        return true;
+    }
+
+    async function microsoftCreateDraft(options = {}) {
+        return microsoftJsonPost("/mail/draft/create", {
+            deviceId: getMicrosoftDeviceId(),
+            subject: String(options?.subject || "Document").trim() || "Document",
+            html: String(options?.html || ""),
+            text: String(options?.text || "")
+        });
+    }
+
+    global.GoToolkitMicrosoftPublish = {
+        getDeviceId: getMicrosoftDeviceId,
+        getAuthStatus: microsoftGetAuthStatus,
+        ensureConnected: microsoftEnsureConnected,
+        disconnect: microsoftDisconnect,
+        createDraft: microsoftCreateDraft
+    };
 })(window);

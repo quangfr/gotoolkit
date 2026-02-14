@@ -79,6 +79,8 @@
             window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL || "https://assemblyai.gotoolkit.workers.dev/token";
         window.GO_TOOLKIT_YOUTUBE_API_URL =
             window.GO_TOOLKIT_YOUTUBE_API_URL || "https://youtube.gotoolkit.workers.dev";
+        window.GO_TOOLKIT_MICROSOFT_API_URL =
+            window.GO_TOOLKIT_MICROSOFT_API_URL || "https://ms.gotoolkit.workers.dev";
     </script>
     <script>
         (function () {
@@ -111,8 +113,13 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Sora:wght@400;500;600&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles/style.css?v=2026.02.14.11">
-    <link rel="stylesheet" href="styles/index.css?v=2026.02.14.11">
+    <link rel="stylesheet" href="styles/style.css?v=2026.02.14.12">
+    <link rel="stylesheet" href="styles/index.css?v=2026.02.14.12">
+    <style>
+        .feedback-app-launcher-row {
+            display: none !important;
+        }
+    </style>
 </head>
 
 <body>
@@ -124,7 +131,7 @@
             </div>
             <h1>Go-Toolkit <span class="hero-beta">beta</span></h1>
             <p>La boîte à outils IA des Product Owners</p>
-            <span class="hero-version label-link" id="releaseNotesTrigger" tabindex="0">v2026.02.14.11</span>
+            <span class="hero-version label-link" id="releaseNotesTrigger" tabindex="0">v2026.02.14.12</span>
 
             <div class="hero-meta">
                 <button id="openSettingsBtn" class="feedback-button" type="button" title="Paramètres">
@@ -544,6 +551,14 @@
                                         rel="noopener noreferrer">Créer ou sélectionner une chaîne YouTube</a>
                                 </label>
                             </div>
+                            <hr style="width:100%; border:none; border-top:1px solid var(--border-main); margin:8px 0;">
+                            <div class="field-row">
+                                <label style="width:100%">
+                                    <span class="label-title">Outlook</span>
+                                    <a id="microsoftAuthLink" class="label-title dashed-link" href="#"
+                                        style="margin-left:8px;">Se connecter</a>
+                                </label>
+                            </div>
                         </div>
 
                         <div class="settings-tab-panel" data-panel="promptTab" hidden>
@@ -617,20 +632,20 @@
         window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL =
             window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL || "https://assemblyai.gotoolkit.workers.dev/token";
     </script>
-    <script src="js/config.js?v=2026.02.14.11"></script>
-    <script src="js/config-modal.js?v=2026.02.14.11"></script>
-    <script src="js/feature-visibility.js?v=2026.02.14.11"></script>
-    <script src="js/document-storage.js?v=2026.02.14.11"></script>
-    <script src="js/storage-service.js?v=2026.02.14.11"></script>
-    <script src="js/shared-ui.js?v=2026.02.14.11"></script>
-    <script src="js/share-worker-client.js?v=2026.02.14.11"></script>
-    <script src="js/share-history.js?v=2026.02.14.11"></script>
-    <script src="js/document-api.js?v=2026.02.14.11"></script>
-    <script src="js/ia-config.js?v=2026.02.14.11"></script>
-    <script src="preset.js?v=2026.02.14.11"></script>
-    <script src="prompt.js?v=2026.02.14.11"></script>
-    <script src="js/ia-client.js?v=2026.02.14.11"></script>
-    <script src="js/template-gallery.js?v=2026.02.14.11"></script>
+    <script src="js/config.js?v=2026.02.14.12"></script>
+    <script src="js/config-modal.js?v=2026.02.14.12"></script>
+    <script src="js/feature-visibility.js?v=2026.02.14.12"></script>
+    <script src="js/document-storage.js?v=2026.02.14.12"></script>
+    <script src="js/storage-service.js?v=2026.02.14.12"></script>
+    <script src="js/shared-ui.js?v=2026.02.14.12"></script>
+    <script src="js/share-worker-client.js?v=2026.02.14.12"></script>
+    <script src="js/share-history.js?v=2026.02.14.12"></script>
+    <script src="js/document-api.js?v=2026.02.14.12"></script>
+    <script src="js/ia-config.js?v=2026.02.14.12"></script>
+    <script src="preset.js?v=2026.02.14.12"></script>
+    <script src="prompt.js?v=2026.02.14.12"></script>
+    <script src="js/ia-client.js?v=2026.02.14.12"></script>
+    <script src="js/template-gallery.js?v=2026.02.14.12"></script>
     <script>
         document.addEventListener("click", function (event) {
             const legalTrigger = event.target?.closest?.("[data-open-nexus-modal]");
@@ -655,8 +670,8 @@
             primaryColor: "#2a7a57"
         };
     </script>
-    <script src="js/feedback.js?v=2026.02.14.11"></script>
-    <script src="js/youtube-publish.js?v=2026.02.14.11"></script>
+    <script src="js/feedback.js?v=2026.02.14.12"></script>
+    <script src="js/youtube-publish.js?v=2026.02.14.12"></script>
 
     <script>
         (function () {
@@ -2672,6 +2687,7 @@
         const notionWorkspaceSelect = document.getElementById("notionWorkspaceSelect");
         const notionDefaultPathRow = document.getElementById("notionDefaultPathRow");
         const notionDefaultPathInput = document.getElementById("notionDefaultPathInput");
+        const microsoftAuthLink = document.getElementById("microsoftAuthLink");
         const chatPromptTextarea = document.getElementById("chatPromptTextarea");
         const chatPromptPresetSelect = document.getElementById("chatPromptPresetSelect");
         const CHAT_PROMPT_STORAGE_KEY = "goToolkit.chat.prompt";
@@ -2832,6 +2848,13 @@
             }
         }
 
+        function setMicrosoftIntegrationBusy(isBusy) {
+            if (microsoftAuthLink) {
+                microsoftAuthLink.style.pointerEvents = isBusy ? "none" : "";
+                microsoftAuthLink.style.opacity = isBusy ? "0.6" : "";
+            }
+        }
+
         function updateNotionWorkspacesUI(payload) {
             const connected = Boolean(payload?.connected);
             const workspaces = Array.isArray(payload?.workspaces) ? payload.workspaces : [];
@@ -2943,6 +2966,30 @@
             }
         }
 
+        function updateMicrosoftIntegrationUI(payload) {
+            const connected = Boolean(payload?.connected);
+            if (microsoftAuthLink) {
+                microsoftAuthLink.textContent = connected ? "Se déconnecter" : "Se connecter";
+            }
+        }
+
+        async function refreshMicrosoftIntegration(showToastOnError = false) {
+            const publisher = window.GoToolkitMicrosoftPublish;
+            if (!publisher?.getAuthStatus) return;
+            setMicrosoftIntegrationBusy(true);
+            try {
+                const status = await publisher.getAuthStatus();
+                updateMicrosoftIntegrationUI(status || {});
+            } catch (err) {
+                updateMicrosoftIntegrationUI({ connected: false });
+                if (showToastOnError) {
+                    showToast(err?.message || "Etat Outlook indisponible", true);
+                }
+            } finally {
+                setMicrosoftIntegrationBusy(false);
+            }
+        }
+
         // Listen for OS theme changes if on auto
         window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function () {
             const current = localStorage.getItem(THEME_STORAGE_KEY) || "auto";
@@ -3035,6 +3082,7 @@
             }
             refreshNotionIntegration(false).catch(() => { /* noop */ });
             refreshYoutubeIntegration(false).catch(() => { /* noop */ });
+            refreshMicrosoftIntegration(false).catch(() => { /* noop */ });
             settingsModal.classList.add("open");
             settingsModal.setAttribute("aria-hidden", "false");
             if (typeof syncSettingsTabHeights === "function") {
@@ -3102,6 +3150,7 @@
                 if ((button.dataset.tab || "") === "integrationsTab") {
                     refreshNotionIntegration(false).catch(() => { /* noop */ });
                     refreshYoutubeIntegration(false).catch(() => { /* noop */ });
+                    refreshMicrosoftIntegration(false).catch(() => { /* noop */ });
                 }
             });
         });
@@ -3465,6 +3514,39 @@
                 }
             });
         }
+        microsoftAuthLink?.addEventListener("click", async event => {
+            event.preventDefault();
+            const publisher = window.GoToolkitMicrosoftPublish;
+            if (!publisher?.getAuthStatus) {
+                showToast("Service Outlook indisponible", true);
+                return;
+            }
+            setMicrosoftIntegrationBusy(true);
+            try {
+                const status = await publisher.getAuthStatus();
+                if (status?.connected) {
+                    if (!publisher.disconnect) {
+                        showToast("Déconnexion Outlook indisponible", true);
+                        return;
+                    }
+                    await publisher.disconnect();
+                    updateMicrosoftIntegrationUI({ connected: false });
+                    showToast("Outlook déconnecté");
+                } else {
+                    if (!publisher.ensureConnected) {
+                        showToast("Service Outlook indisponible", true);
+                        return;
+                    }
+                    await publisher.ensureConnected();
+                    await refreshMicrosoftIntegration(false);
+                    showToast("Connexion Outlook établie");
+                }
+            } catch (err) {
+                showToast(err?.message || "Action Outlook impossible", true);
+            } finally {
+                setMicrosoftIntegrationBusy(false);
+            }
+        });
         if (resetChatPromptBtn) {
             resetChatPromptBtn.addEventListener("click", event => {
                 event.preventDefault();

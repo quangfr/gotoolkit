@@ -2,7 +2,7 @@
 
 ## Structure
 - Static HTML modules in `public/`.
-- Workers live in `workers/` (OpenAI proxy, sharing, feedback, AssemblyAI, OpenRouter proxy).
+- Workers live in `workers/` (OpenAI proxy, OpenRouter proxy, sharing, feedback, AssemblyAI, Notion proxy, YouTube proxy).
 
 ## Navigation + cache
 - `public/index.html` links: `grid.html` and `docs.html`.
@@ -72,11 +72,12 @@ Only `public/js` may touch `window`:
 - `workers/feedback-proxy`: same secrets as share.
 - `workers/assemblyai-proxy`: forwards streaming token; browser sends `X-AssemblyAI-Key` (no secret stored).
 - `workers/openrouter-proxy`: `OPENROUTER_API_KEY` for fallback LLM routing.
+- `workers/notion-proxy`: `NOTION_CLIENT_ID`, `NOTION_CLIENT_SECRET`, optional `NOTION_ALLOWED_ORIGINS`, KV `NOTION_OAUTH` (stores OAuth tokens/workspace selection per device).
+- `workers/youtube-proxy`: `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET`, optional `YOUTUBE_ALLOWED_ORIGINS`, KV `YOUTUBE_OAUTH` (stores OAuth tokens/channel selection per device).
 
 ## Debug + docs
 - Inspect `window.GoToolkit*`; local state in `localStorage` (`go-toolkit-*`) and IndexedDB (`go-toolkit`, `gotoolkit-documents`).
 - RAG state: IndexedDB stores `documents`, `chunks`, `memo_context_embeddings` (see `public/content/toolkit_import.md` for schema).
 - Assist state: `window.GoToolkitAssistInstance` exposes sidebar + chat API.
-- New module steps: `CONTRIBUTE.md`.
 - Do not edit `public/content/index_releases.md` or `public/content/index_roadmap.md` unless explicitly asked.
 - Always use Context7 MCP when I need library/API documentation, code generation, setup or configuration steps without me having to explicitly ask.
