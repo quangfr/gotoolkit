@@ -1,6 +1,6 @@
 const CACHE_NAME = 'go-toolkit-hub-v5';
 const ASSETS = [
-    './hub',
+    './mobile',
     './styles/style.css',
     './js/scan.js',
     './js/config.js',
@@ -48,7 +48,7 @@ self.addEventListener('fetch', (event) => {
             if (response) return response;
             return fetch(event.request).catch(() => {
                 if (event.request.mode === 'navigate') {
-                    return caches.match('./hub');
+                    return caches.match('./mobile');
                 }
                 return new Response('', { status: 504 });
             });

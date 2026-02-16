@@ -1,5 +1,17 @@
 {
   "projects": {
     "default": "gotoolkit"
+  },
+  "targets": {
+    "gotoolkit": {
+      "hosting": {
+        "main": [
+          "gotoolkit"
+        ],
+        "mobile": [
+          "gotoolkit-mobile"
+        ]
+      }
+    }
   }
 }

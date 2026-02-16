@@ -2,18 +2,18 @@
     const doc = global.document;
     if (!doc) return;
     const SHARED_SETTINGS_MODAL_HTML = `
-        <div class="modal settings-modal" style="max-height: 98vh; overflow-y: auto; display: flex; flex-direction: column; max-width: 640px; width: min(640px, 94vw);">
+        <div class="modal settings-modal" style="max-height: 98vh; overflow-y: auto; display: flex; flex-direction: column; max-width: 640px; width: min(640px, 94vw); min-width: min(100vw, 520px); min-height: min(100vh, 720px); padding: 12px; margin-right: -8px;">
             <header style="flex-shrink: 0;">
                 <h3><i data-lucide="settings" style="width:20px;height:20px;vertical-align:middle;margin-right:8px;"></i>Paramètres</h3>
                 <button id="closeSettingsBtn" class="btn-secondary" type="button" aria-label="Fermer"><i data-lucide="x" style="width:16px;height:16px;"></i></button>
             </header>
-            <form class="feedback-form" onsubmit="return false;" style="flex: 1; overflow-y: auto;">
+            <form class="feedback-form" onsubmit="return false;" style="flex: 1; overflow-y: auto; padding-right: 8px; margin-right: -8px;">
                 <div class="settings-tabs tabs">
                     <button type="button" class="tab-btn active" data-tab="servicesTab"><i data-lucide="cpu" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Services IA</button>
                     <button type="button" class="tab-btn" data-tab="paramsTab"><i data-lucide="sliders" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Paramétrages</button>
                     <button type="button" class="tab-btn" data-tab="integrationsTab"><i data-lucide="plug-zap" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Intégrations</button>
                 </div>
-                <div class="settings-tab-panels-wrapper" style="flex: 1; overflow-y: auto;">
+                <div class="settings-tab-panels-wrapper" style="flex: 1; overflow-y: auto; padding-right: 8px; margin-right: -8px;">
                     <div class="settings-tab-panel" data-panel="servicesTab">
                         <div class="field-row">
                             <label style="width:100%">

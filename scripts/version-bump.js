@@ -6,7 +6,7 @@ const htmlFiles = [
     path.join(__dirname, '..', 'public', 'index.html'),
     path.join(__dirname, '..', 'public', 'docs.html'),
     path.join(__dirname, '..', 'public', 'grid.html'),
-    path.join(__dirname, '..', 'public', 'hub.html'),
+    path.join(__dirname, '..', 'public', 'mobile.html'),
 ];
 
 // 1. Get current version from package.json
@@ -52,7 +52,7 @@ htmlFiles.forEach(filePath => {
     } else if (filePath.endsWith('grid.html')) {
         // <span>Version ...</span>
         content = content.replace(/<span>Version [0-9.]+<\/span>/, `<span>Version ${newVersion}</span>`);
-    } else if (filePath.endsWith('hub.html')) {
+    } else if (filePath.endsWith('mobile.html')) {
         // <span class="hero-version ...">v...</span>
         content = content.replace(/<span class="hero-version[^>]*>v[0-9.]+<\/span>/, `<span class="hero-version" style="font-size: 10px; opacity: 0.5;">v${newVersion}</span>`);
     }

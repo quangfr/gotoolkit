@@ -41,7 +41,7 @@
         <div id="${prefix}-backdrop" class="${prefix}-backdrop feedback-app-backdrop" aria-hidden="true" role="dialog">
             <div class="${prefix}-dialog feedback-app-dialog">
                 <header>
-                    <h3><i data-lucide="message-square-plus"></i> Feedback · ${config.appName || "Go-Toolkit"}</h3>
+                    <h3><i data-lucide="message-square-plus"></i> Feedback · ${config.appName || "GoToolkit"}</h3>
                     <button id="${prefix}-closeBtn" class="btn-secondary feedback-app-close-btn" type="button" aria-label="Fermer">✕</button>
                 </header>
                 <form id="${prefix}-form" class="${prefix}-form feedback-app-form">

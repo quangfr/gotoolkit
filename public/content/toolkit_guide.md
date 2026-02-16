@@ -1,4 +1,4 @@
-# Bienvenue dans Go-Toolkit ! 🚀
+# Bienvenue dans GoToolkit ! 🚀
 
 Ce guide est ton compagnon pour devenir un **Product Owner augmenté**. Ici, pas de jargon compliqué, juste l’essentiel pour produire des livrables de haute qualité en un temps record. ⏱️
 
@@ -78,7 +78,7 @@ Besoin d’envoyer un scan ou un audio depuis ton smartphone :
 
 ## 5. Confidentialité : Zéro stress 🔒
 
-Chez Go-Toolkit, on ne plaisante pas avec tes données :
+Chez GoToolkit, on ne plaisante pas avec tes données :
 *   **Local-first** : Tes documents restent **chez toi**, dans ton navigateur. Rien n’est envoyé sur un serveur central pour être stocké. 🏠
 *   **ZDR (Zero Data Retention)** : Quand tu parles à l’IA, tes données passent par des tuyaux sécurisés qui ne gardent **rien**. Tes secrets de projets sont bien gardés et ne servent jamais à entraîner d’autres IA. 🤫
 

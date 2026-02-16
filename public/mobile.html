@@ -42,8 +42,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="apple-touch-icon" href="img/logo.png" />
-    <title>Go-Toolkit Hub | Go-Toolkit</title>
-    <link rel="stylesheet" href="styles/style.css?v=2026.02.16.6">
+    <title>GoToolkit Mobile | GoToolkit</title>
+    <link rel="stylesheet" href="styles/style.css?v=2026.02.16.8">
     <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
     <style>
         .scan-shell {
@@ -84,6 +84,11 @@
         .scan-actions {
             display: flex;
             gap: 8px;
+        }
+
+        .scan-actions .btn.btn-secondary {
+            font-size: 12px;
+            padding: 4px 7px;
         }
 
         .handoff-grid {
@@ -221,7 +226,7 @@
         }
 
         #sendMethodModal .modal {
-            padding: 0;
+            padding: 12px;
         }
 
         .capture-loader {
@@ -317,11 +322,9 @@
         }
 
         .mobile-bot-modal {
-            width: min(680px, 96vw);
-            height: min(92vh, 760px);
-            min-width: 360px;
-            min-height: 720px;
-            padding: 0;
+            width: min(680px, 100vw);
+            height: min(100vh, 760px);
+            padding: 12px;
             display: flex;
             flex-direction: column;
             gap: 10px;
@@ -494,13 +497,16 @@
     <div class="scan-shell">
         <header class="scan-header">
             <div class="scan-title">
-                <h1>Go-Toolkit Hub <span class="hero-version" style="font-size: 10px; opacity: 0.5;">v2026.02.16.6</span></h1>
+                <h1>GoToolkit Mobile <span class="hero-version" style="font-size: 10px; opacity: 0.5;">v2026.02.16.8</span></h1>
             </div>
             <div class="scan-actions">
                 <a href="index.html" class="btn btn-secondary" title="Accueil"
                     style="display: inline-flex; align-items: center; text-decoration: none;">
                     <i data-lucide="house"></i>
                 </a>
+                <button id="openSettingsBtn" class="btn btn-secondary" type="button" title="Paramètres">
+                    <i data-lucide="settings"></i>
+                </button>
                 <button id="newHandoffBtn" class="btn btn-secondary" type="button" title="Nouveau handoff">
                     <i data-lucide="plus"></i>
                 </button>
@@ -573,8 +579,8 @@
                             style="margin-right: auto;" title="Supprimer le contenu"><i data-lucide="trash-2"></i></button>
                         <button id="captureUndoBtn" type="button" class="btn btn-secondary"
                             title="Revenir à la version précédente"><i data-lucide="undo"></i></button>
-                        <button id="captureHistoryClearBtn" type="button" class="btn btn-secondary"
-                            title="Supprimer l'historique"><i data-lucide="trash-2"></i></button>
+                        <button id="captureRedoBtn" type="button" class="btn btn-secondary"
+                            title="Rétablir la version suivante"><i data-lucide="redo"></i></button>
                         <button id="captureSaveBtn" type="button" class="btn btn-secondary"
                             style="margin-left: auto; display: none;">Terminer</button>
                         <button id="captureSendBtn" type="button" class="btn btn-primary">Envoyer</button>
@@ -633,8 +639,8 @@
                         data-lucide="x"></i></button>
             </div>
             <div class="ia-actions" style="gap: 12px; padding: 20px 0;">
-                <p style="font-size: 13px; opacity: 0.8; margin-bottom: 20px; text-align: center;">Choisissez comment
-                    lier ce brouillon à votre document.</p>
+                <p style="font-size: 13px; opacity: 0.8; margin-bottom: 20px; text-align: center;">Copier dans un
+                    document GoToolkit</p>
                 <div class="capture-actions" style="justify-content: center;">
                     <button id="sendViaQrBtn" class="btn btn-secondary"
                         style="flex-direction: column; padding: 20px; min-width: 120px;">
@@ -646,6 +652,13 @@
                         <i data-lucide="keyboard" style="width: 32px; height: 32px; margin-bottom: 8px;"></i>
                         <span>Code d'accès</span>
                     </button>
+                </div>
+                <div style="width: 100%; height: 1px; background: var(--border-main); margin: 8px 0 2px;"></div>
+                <p style="font-size: 13px; opacity: 0.8; margin: 0; text-align: center;">Copier dans un mail</p>
+                <div class="capture-actions" style="justify-content: center;">
+                    <button id="sendViaMailtoBtn" class="btn btn-secondary" type="button">Messagerie</button>
+                    <button id="sendViaGmailBtn" class="btn btn-secondary" type="button">Gmail</button>
+                    <button id="sendViaOutlookBtn" class="btn btn-secondary" type="button">Outlook</button>
                 </div>
             </div>
         </div>
@@ -686,6 +699,7 @@
             </div>
         </div>
     </div>
+    <div id="settingsModal" class="modal-overlay" role="dialog" aria-modal="true" aria-hidden="true"></div>
 
     <script>
         window.GO_TOOLKIT_SHARE_API_URL =
@@ -693,14 +707,15 @@
         window.GO_TOOLKIT_GOOGLE_TTS_API_URL =
             window.GO_TOOLKIT_GOOGLE_TTS_API_URL || "https://googletts.gotoolkit.workers.dev";
     </script>
-    <script src="js/config.js?v=2026.02.16.6"></script>
-    <script src="prompt.js?v=2026.02.16.6"></script>
-    <script src="js/ia-config.js?v=2026.02.16.6"></script>
-    <script src="js/ia-client.js?v=2026.02.16.6"></script>
-    <script src="js/share-worker-client.js?v=2026.02.16.6"></script>
-    <script src="js/voice-transcript.js?v=2026.02.16.6"></script>
-    <script src="js/googletts.js?v=2026.02.16.6"></script>
-    <script src="js/scan.js?v=2026.02.16.6"></script>
+    <script src="js/config.js?v=2026.02.16.8"></script>
+    <script src="prompt.js?v=2026.02.16.8"></script>
+    <script src="js/config-modal.js?v=2026.02.16.8"></script>
+    <script src="js/ia-config.js?v=2026.02.16.8"></script>
+    <script src="js/ia-client.js?v=2026.02.16.8"></script>
+    <script src="js/share-worker-client.js?v=2026.02.16.8"></script>
+    <script src="js/voice-transcript.js?v=2026.02.16.8"></script>
+    <script src="js/googletts.js?v=2026.02.16.8"></script>
+    <script src="js/scan.js?v=2026.02.16.8"></script>
     <script>
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();

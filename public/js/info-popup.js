@@ -4,11 +4,11 @@
     const DEFAULT_CONFIG = {
         triggerSelector: "#infoButton",
         popupId: "infoPopup",
-        moduleLabel: "Go-Toolkit",
+        moduleLabel: "GoToolkit",
         description: "Usage réservé à Savane Consulting.",
         version: "2026.01.16.7",
         logoSrc: "img/logo.gif",
-        logoAlt: "Logo Go-Toolkit",
+        logoAlt: "Logo GoToolkit",
         versionQueryParam: "v",
         updateButtonLabel: "Mettre à jour",
         legalButtonLabel: "Mentions légales",

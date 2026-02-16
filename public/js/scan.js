@@ -9,6 +9,8 @@
     "Tu modifies le HANDOFF selon ASK. Ne pas ajouter toi spontanément des émojis si ce n'est pas demandé. Renvoyer uniquement l'intégralité du contenu modifié en texte sans aucun élément de discussion. Accepter uniquement du texte brut, sans Markdown.";
   const MOBILE_CHAT_HISTORY_KEY = "goToolkit.hub.mobileChatHistory";
   const HANDOFF_HISTORY_KEY = "goToolkit.handoff.history";
+  const HANDOFF_HISTORY_LIMIT = 30;
+  const HANDOFF_HISTORY_INPUT_DEBOUNCE_MS = 450;
   const MOBILE_CHAT_DISMISSED_DEFAULTS_KEY = "goToolkit.hub.mobileChatDismissedDefaults";
   const MOBILE_CHAT_DEFAULT_SUGGESTIONS = [
     "Faire le compte-rendu",
@@ -23,6 +25,7 @@
   const scanQrBtn = document.getElementById("scanQrBtn");
   const scanCodeBtn = document.getElementById("scanCodeBtn");
   const newHandoffBtn = document.getElementById("newHandoffBtn");
+  const openSettingsBtn = document.getElementById("openSettingsBtn");
   const captureModal = document.getElementById("captureModal");
   const captureModalClose = document.getElementById("captureModalClose");
   const captureSendBtn = document.getElementById("captureSendBtn");
@@ -41,7 +44,7 @@
   const captureAudioBtn = document.getElementById("captureAudioBtn");
   const captureDeleteBtn = document.getElementById("captureDeleteBtn");
   const captureUndoBtn = document.getElementById("captureUndoBtn");
-  const captureHistoryClearBtn = document.getElementById("captureHistoryClearBtn");
+  const captureRedoBtn = document.getElementById("captureRedoBtn");
   const captureReadAloudBtn = document.getElementById("captureReadAloudBtn");
   const captureBotBtn = document.getElementById("captureBotBtn");
   const captureDocTitle = document.getElementById("captureDocTitle");
@@ -61,6 +64,9 @@
   const sendMethodModalClose = document.getElementById("sendMethodModalClose");
   const sendViaQrBtn = document.getElementById("sendViaQrBtn");
   const sendViaCodeBtn = document.getElementById("sendViaCodeBtn");
+  const sendViaMailtoBtn = document.getElementById("sendViaMailtoBtn");
+  const sendViaGmailBtn = document.getElementById("sendViaGmailBtn");
+  const sendViaOutlookBtn = document.getElementById("sendViaOutlookBtn");
   const qrModal = document.getElementById("qrModal");
   const qrModalClose = document.getElementById("qrModalClose");
   const qrCancelBtn = document.getElementById("qrCancelBtn");
@@ -70,6 +76,12 @@
   const renameCancelBtn = document.getElementById("renameCancelBtn");
   const renameSubmitBtn = document.getElementById("renameSubmitBtn");
   const renameInput = document.getElementById("renameInput");
+  const settingsModal = document.getElementById("settingsModal");
+  const settingsModalApi = window.GoToolkitSettingsModal?.bind?.({
+    modalId: "settingsModal",
+    closeBtnId: "closeSettingsBtn",
+    triggerIds: []
+  });
 
   let handoffDocs = loadDocuments();
   let activeDocId = null;
@@ -80,6 +92,8 @@
   let googleTtsController = null;
   let mobileEditLoading = false;
   let toastTimer = null;
+  let captureHistoryBufferTimer = null;
+  let skipCapturePreviewHistorySync = false;
   const isAutomation = typeof navigator !== "undefined" && navigator.webdriver === true;
 
   function setStatus(message) {
@@ -196,43 +210,154 @@
     }
   }
 
-  function getHandoffHistory(docId) {
-    if (!docId) return [];
-    const map = loadHandoffHistoryMap();
-    const list = map[docId];
-    if (!Array.isArray(list)) return [];
-    return list.map(item => String(item || "")).filter(Boolean);
+  function normalizeHistoryArray(input) {
+    if (!Array.isArray(input)) return [];
+    return input.map(item => String(item || "")).slice(-HANDOFF_HISTORY_LIMIT);
   }
 
-  function pushHandoffHistory(docId, content) {
-    const id = String(docId || "").trim();
-    const text = String(content || "").trim();
-    if (!id || !text) return;
-    const map = loadHandoffHistoryMap();
-    const current = Array.isArray(map[id]) ? map[id].map(item => String(item || "").trim()).filter(Boolean) : [];
-    if (current[0] === text) return;
-    current.unshift(text);
-    map[id] = current.slice(0, 50);
-    saveHandoffHistoryMap(map);
+  function normalizeHandoffHistoryState(value) {
+    if (Array.isArray(value)) {
+      const history = normalizeHistoryArray(value);
+      return {
+        past: history.slice(0, -1),
+        present: history[history.length - 1] || "",
+        future: []
+      };
+    }
+    if (!value || typeof value !== "object") {
+      return { past: [], present: "", future: [] };
+    }
+    const past = normalizeHistoryArray(value.past || value.undo);
+    const future = normalizeHistoryArray(value.future || value.redo).reverse();
+    return {
+      past,
+      present: String(value.present || ""),
+      future
+    };
   }
 
-  function popHandoffHistory(docId) {
-    const id = String(docId || "").trim();
-    if (!id) return "";
+  function getHandoffHistoryState(docId) {
+    if (!docId) return { past: [], present: "", future: [] };
     const map = loadHandoffHistoryMap();
-    const current = Array.isArray(map[id]) ? map[id].map(item => String(item || "")) : [];
-    const previous = current.shift() || "";
-    map[id] = current;
-    saveHandoffHistoryMap(map);
-    return String(previous || "").trim();
+    return normalizeHandoffHistoryState(map[docId]);
   }
 
-  function clearHandoffHistory(docId) {
+  function saveHandoffHistoryState(docId, state) {
     const id = String(docId || "").trim();
     if (!id) return;
     const map = loadHandoffHistoryMap();
-    delete map[id];
+    map[id] = {
+      past: normalizeHistoryArray(state?.past),
+      present: String(state?.present || ""),
+      future: normalizeHistoryArray(state?.future).reverse()
+    };
     saveHandoffHistoryMap(map);
+  }
+
+  function ensureHandoffHistoryState(docId, initialValue) {
+    const id = String(docId || "").trim();
+    if (!id) return;
+    const state = getHandoffHistoryState(id);
+    if (!state.present && !state.past.length && !state.future.length) {
+      saveHandoffHistoryState(id, {
+        past: [],
+        present: String(initialValue || ""),
+        future: []
+      });
+    }
+  }
+
+  function recordHandoffOperation(docId, value, clearFuture = true) {
+    const id = String(docId || "").trim();
+    if (!id) return;
+    const nextValue = String(value || "");
+    const state = getHandoffHistoryState(id);
+    if (state.present === nextValue) return;
+    const nextPast = state.past.concat(state.present).slice(-HANDOFF_HISTORY_LIMIT);
+    saveHandoffHistoryState(id, {
+      past: nextPast,
+      present: nextValue,
+      future: clearFuture ? [] : state.future
+    });
+  }
+
+  function undoHandoffOperation(docId) {
+    const id = String(docId || "").trim();
+    if (!id) return { ok: false, value: "" };
+    const state = getHandoffHistoryState(id);
+    if (!state.past.length) return { ok: false, value: state.present };
+    const previous = state.past[state.past.length - 1];
+    const nextPast = state.past.slice(0, -1);
+    const nextFuture = [state.present, ...state.future].slice(0, HANDOFF_HISTORY_LIMIT);
+    saveHandoffHistoryState(id, {
+      past: nextPast,
+      present: previous,
+      future: nextFuture
+    });
+    return { ok: true, value: previous };
+  }
+
+  function redoHandoffOperation(docId) {
+    const id = String(docId || "").trim();
+    if (!id) return { ok: false, value: "" };
+    const state = getHandoffHistoryState(id);
+    if (!state.future.length) return { ok: false, value: state.present };
+    const next = state.future[0];
+    const nextFuture = state.future.slice(1);
+    const nextPast = state.past.concat(state.present).slice(-HANDOFF_HISTORY_LIMIT);
+    saveHandoffHistoryState(id, {
+      past: nextPast,
+      present: next,
+      future: nextFuture
+    });
+    return { ok: true, value: next };
+  }
+
+  function canUndoHandoffOperation(docId) {
+    return getHandoffHistoryState(docId).past.length > 0;
+  }
+
+  function canRedoHandoffOperation(docId) {
+    return getHandoffHistoryState(docId).future.length > 0;
+  }
+
+  function flushCaptureHistoryBuffer() {
+    if (captureHistoryBufferTimer) {
+      clearTimeout(captureHistoryBufferTimer);
+      captureHistoryBufferTimer = null;
+    }
+    if (!activeDocId || !capturePreview) return;
+    recordHandoffOperation(activeDocId, capturePreview.value || "", true);
+    updateHistoryButtons();
+  }
+
+  function scheduleCaptureHistoryCommit() {
+    if (captureHistoryBufferTimer) {
+      clearTimeout(captureHistoryBufferTimer);
+    }
+    captureHistoryBufferTimer = setTimeout(() => {
+      captureHistoryBufferTimer = null;
+      if (!activeDocId || !capturePreview) return;
+      recordHandoffOperation(activeDocId, capturePreview.value || "", true);
+      updateHistoryButtons();
+    }, HANDOFF_HISTORY_INPUT_DEBOUNCE_MS);
+  }
+
+  function setCapturePreviewValue(value) {
+    if (!capturePreview) return;
+    skipCapturePreviewHistorySync = true;
+    capturePreview.value = String(value || "");
+    skipCapturePreviewHistorySync = false;
+  }
+
+  function updateHistoryButtons() {
+    const hasActive = Boolean(activeDocId);
+    if (captureUndoBtn) {
+      captureUndoBtn.disabled = !hasActive || !canUndoHandoffOperation(activeDocId);
+    }
+    if (captureRedoBtn) {
+      captureRedoBtn.disabled = !hasActive || !canRedoHandoffOperation(activeDocId);
+    }
   }
 
   function autoResizeMobileChatInput() {
@@ -353,6 +478,7 @@
       const showInstruction = isLinked && syncedContent.length > 0 && !isModified;
       captureInstruction.style.display = showInstruction ? "block" : "none";
     }
+    updateHistoryButtons();
   }
 
   function loadDocuments() {
@@ -582,7 +708,7 @@
     captureCanvases = [];
     syncedContent = "";
 
-    if (capturePreview) capturePreview.value = doc.isDraft ? (doc.lastContent || "") : "";
+    setCapturePreviewValue(doc.isDraft ? (doc.lastContent || "") : "");
     if (captureInput) captureInput.value = "";
     if (captureGalleryInput) captureGalleryInput.value = "";
     if (captureAudioInput) captureAudioInput.value = "";
@@ -591,6 +717,8 @@
       if (span) span.textContent = doc.title || "Document";
     }
     if (captureDocMeta) captureDocMeta.textContent = doc.isDraft ? "" : `ID: ${docId}`;
+    ensureHandoffHistoryState(docId, capturePreview?.value || "");
+    updateHistoryButtons();
 
     setCaptureStep(doc.hasContent ? 2 : 1);
     setCaptureTitle(doc.hasContent ? "scan" : "mobile");
@@ -603,7 +731,8 @@
         .then(result => {
           const text = result?.payload?.text || "";
           syncedContent = text;
-          if (capturePreview) capturePreview.value = text;
+          setCapturePreviewValue(text);
+          ensureHandoffHistoryState(docId, text);
           if (text) {
             setCaptureStep(2);
             upsertDocument({
@@ -628,6 +757,7 @@
         });
     } else {
       updateUIState();
+      updateHistoryButtons();
     }
   }
 
@@ -636,9 +766,14 @@
     captureModal.classList.remove("open");
     closeMobileBotModal();
     activeDocId = null;
+    if (captureHistoryBufferTimer) {
+      clearTimeout(captureHistoryBufferTimer);
+      captureHistoryBufferTimer = null;
+    }
     captureCanvases = [];
     setCaptureStep(1);
     closeSendMethodModal();
+    updateHistoryButtons();
   }
 
   function setCaptureStep(step) {
@@ -737,6 +872,34 @@
     const input = prompt("Scanner QR indisponible. Collez le lien ou l'ID du document :");
     if (!input) return;
     handleIncomingDocInput(input);
+  }
+
+  function getEmailComposePayload() {
+    const doc = getDocumentById(activeDocId);
+    const title = String(doc?.title || "Document").trim() || "Document";
+    const text = String(capturePreview?.value || "").trim();
+    return { title, text };
+  }
+
+  function openMailtoFallback() {
+    const { title, text } = getEmailComposePayload();
+    const mailtoUrl = `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(text)}`;
+    window.open(mailtoUrl, "_blank", "noopener,noreferrer");
+    setStatus("Brouillon messagerie ouvert");
+  }
+
+  function openGmailWebFallback() {
+    const { text } = getEmailComposePayload();
+    const url = `https://mail.google.com/mail/?view=cm&body=${encodeURIComponent(text)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+    setStatus("Rédaction Gmail web ouverte");
+  }
+
+  function openOutlookWebFallback() {
+    const { text } = getEmailComposePayload();
+    const url = `https://outlook.office.com/mail/deeplink/compose?body=${encodeURIComponent(text)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+    setStatus("Rédaction Outlook web ouverte");
   }
 
   function parseDocId(value) {
@@ -911,9 +1074,9 @@
         }
       }
       const combined = parts.map(part => part.trim()).filter(Boolean).join("\n\n");
-      if (capturePreview) {
-        capturePreview.value = combined;
-      }
+      setCapturePreviewValue(combined);
+      recordHandoffOperation(activeDocId, combined, true);
+      updateHistoryButtons();
       await sendHandoff(combined);
       setStatus("Texte envoyé");
     } catch (err) {
@@ -945,7 +1108,9 @@
       if (!transcript) {
         throw new Error("Transcription vide");
       }
-      if (capturePreview) capturePreview.value = transcript;
+      setCapturePreviewValue(transcript);
+      recordHandoffOperation(activeDocId, transcript, true);
+      updateHistoryButtons();
       await sendHandoff(transcript);
       setStatus("Transcription terminée");
     } catch (err) {
@@ -976,7 +1141,6 @@
     setMobileChatLoading(true);
     setStatus("Modification IA...");
     try {
-      pushHandoffHistory(activeDocId, handoffText);
       const payload = {
         model: MOBILE_EDIT_MODEL,
         temperature: MOBILE_EDIT_TEMPERATURE,
@@ -998,9 +1162,9 @@
         throw new Error("Réponse vide");
       }
 
-      if (capturePreview) {
-        capturePreview.value = nextContent;
-      }
+      setCapturePreviewValue(nextContent);
+      recordHandoffOperation(activeDocId, nextContent, true);
+      updateHistoryButtons();
       const doc = getDocumentById(activeDocId);
       upsertDocument({
         ...doc,
@@ -1243,6 +1407,11 @@
 
     scanCodeBtn?.addEventListener("click", () => openCodeModal());
     newHandoffBtn?.addEventListener("click", () => createNewDraftHandoff());
+    openSettingsBtn?.addEventListener("click", event => {
+      event.preventDefault();
+      event.stopPropagation();
+      settingsModalApi?.open?.();
+    });
 
     captureDocTitle?.addEventListener("click", () => {
       if (!activeDocId) return;
@@ -1278,6 +1447,7 @@
 
     captureModalClose?.addEventListener("click", () => closeCaptureModal());
     captureSendBtn?.addEventListener("click", () => {
+      flushCaptureHistoryBuffer();
       const doc = getDocumentById(activeDocId);
       if (doc?.isDraft) {
         openSendMethodModal();
@@ -1362,6 +1532,7 @@
     });
 
     captureDeleteBtn?.addEventListener("click", async () => {
+      flushCaptureHistoryBuffer();
       const doc = getDocumentById(activeDocId);
       if (doc?.isDraft) {
         upsertDocument({
@@ -1377,38 +1548,52 @@
         await deleteHandoffContent();
       }
       captureCanvases = [];
-      if (capturePreview) capturePreview.value = "";
+      setCapturePreviewValue("");
+      recordHandoffOperation(activeDocId, "", true);
       if (captureInput) captureInput.value = "";
       if (captureGalleryInput) captureGalleryInput.value = "";
       if (captureAudioInput) captureAudioInput.value = "";
       setCaptureStep(1);
       setCaptureTitle("mobile");
       updateUIState();
+      updateHistoryButtons();
       setStatus("Prêt pour une nouvelle capture");
     });
 
     captureUndoBtn?.addEventListener("click", async () => {
       if (!activeDocId) return;
-      const previous = popHandoffHistory(activeDocId);
-      if (!previous) {
+      flushCaptureHistoryBuffer();
+      const previous = undoHandoffOperation(activeDocId);
+      if (!previous.ok) {
         setStatus("Aucune version précédente");
         return;
       }
-      if (capturePreview) capturePreview.value = previous;
+      setCapturePreviewValue(previous.value);
       autoResizeMobileChatInput();
-      await sendHandoff(previous);
+      updateHistoryButtons();
+      await sendHandoff(previous.value);
       setStatus("Version précédente restaurée");
     });
 
-    captureHistoryClearBtn?.addEventListener("click", () => {
+    captureRedoBtn?.addEventListener("click", async () => {
       if (!activeDocId) return;
-      clearHandoffHistory(activeDocId);
-      setStatus("Historique supprimé");
+      flushCaptureHistoryBuffer();
+      const next = redoHandoffOperation(activeDocId);
+      if (!next.ok) {
+        setStatus("Aucune version à rétablir");
+        return;
+      }
+      setCapturePreviewValue(next.value);
+      autoResizeMobileChatInput();
+      updateHistoryButtons();
+      await sendHandoff(next.value);
+      setStatus("Version suivante rétablie");
     });
 
     captureTextBtn?.addEventListener("click", () => {
       captureCanvases = [];
-      if (capturePreview) capturePreview.value = "";
+      setCapturePreviewValue("");
+      recordHandoffOperation(activeDocId, "", true);
       if (captureInput) captureInput.value = "";
       if (captureGalleryInput) captureGalleryInput.value = "";
       if (captureAudioInput) captureAudioInput.value = "";
@@ -1416,39 +1601,46 @@
       setCaptureTitle("text");
       capturePreview?.focus();
       updateUIState();
+      updateHistoryButtons();
     });
 
     captureCameraBtn?.addEventListener("click", () => {
       captureCanvases = [];
-      if (capturePreview) capturePreview.value = "";
+      setCapturePreviewValue("");
+      recordHandoffOperation(activeDocId, "", true);
       if (captureInput) captureInput.value = "";
       if (captureGalleryInput) captureGalleryInput.value = "";
       if (captureAudioInput) captureAudioInput.value = "";
       setCaptureStep(1);
       captureInput?.click();
       updateUIState();
+      updateHistoryButtons();
     });
 
     captureGalleryBtn?.addEventListener("click", () => {
       captureCanvases = [];
-      if (capturePreview) capturePreview.value = "";
+      setCapturePreviewValue("");
+      recordHandoffOperation(activeDocId, "", true);
       if (captureInput) captureInput.value = "";
       if (captureGalleryInput) captureGalleryInput.value = "";
       if (captureAudioInput) captureAudioInput.value = "";
       setCaptureStep(1);
       captureGalleryInput?.click();
       updateUIState();
+      updateHistoryButtons();
     });
 
     captureAudioBtn?.addEventListener("click", () => {
       captureCanvases = [];
-      if (capturePreview) capturePreview.value = "";
+      setCapturePreviewValue("");
+      recordHandoffOperation(activeDocId, "", true);
       if (captureInput) captureInput.value = "";
       if (captureGalleryInput) captureGalleryInput.value = "";
       if (captureAudioInput) captureAudioInput.value = "";
       setCaptureStep(1);
       captureAudioInput?.click();
       updateUIState();
+      updateHistoryButtons();
     });
 
     captureInput?.addEventListener("change", event => {
@@ -1468,6 +1660,8 @@
     });
 
     capturePreview?.addEventListener("input", () => {
+      if (skipCapturePreviewHistorySync) return;
+      scheduleCaptureHistoryCommit();
       updateHandoffContent();
     });
 
@@ -1501,6 +1695,18 @@
       closeSendMethodModal();
       openCodeModal();
     });
+    sendViaMailtoBtn?.addEventListener("click", () => {
+      closeSendMethodModal();
+      openMailtoFallback();
+    });
+    sendViaGmailBtn?.addEventListener("click", () => {
+      closeSendMethodModal();
+      openGmailWebFallback();
+    });
+    sendViaOutlookBtn?.addEventListener("click", () => {
+      closeSendMethodModal();
+      openOutlookWebFallback();
+    });
     sendMethodModal?.addEventListener("click", event => {
       if (event.target === sendMethodModal) closeSendMethodModal();
     });
@@ -1517,6 +1723,7 @@
         if (codeModal?.classList.contains("open")) closeCodeModal();
         if (qrModal?.classList.contains("open")) closeQrModal();
         if (sendMethodModal?.classList.contains("open")) closeSendMethodModal();
+        if (settingsModal?.classList.contains("open")) settingsModalApi?.close?.();
       }
     });
   }
