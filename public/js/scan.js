@@ -56,6 +56,7 @@
   let captureCanvases = [];
   let qrStream = null;
   let qrScanActive = false;
+  let googleTtsController = null;
   const isAutomation = typeof navigator !== "undefined" && navigator.webdriver === true;
 
   function setStatus(message) {
@@ -884,6 +885,10 @@
   }
 
   function setupListeners() {
+    if (window.GoToolkitGoogleTTS?.createController) {
+      googleTtsController = window.GoToolkitGoogleTTS.createController();
+    }
+
     scanQrBtn?.addEventListener("click", () => {
       if (typeof BarcodeDetector === "undefined") {
         fallbackQrPrompt();
@@ -951,6 +956,38 @@
         return;
       }
 
+      if (googleTtsController?.isSpeaking?.()) {
+        googleTtsController.stop();
+        captureReadAloudBtn.classList.remove("speaking");
+        return;
+      }
+
+      if (googleTtsController) {
+        captureReadAloudBtn.classList.add("speaking");
+        googleTtsController.speak(text, {
+          languageCode: window.GoToolkitGoogleTTS.detectLanguage(text),
+          onEnd: () => {
+            captureReadAloudBtn.classList.remove("speaking");
+          },
+          onError: () => {
+            captureReadAloudBtn.classList.remove("speaking");
+          }
+        }).then((result) => {
+          if (result?.ok) return;
+          captureReadAloudBtn.classList.remove("speaking");
+          console.warn("Google TTS unavailable, fallback to Web Speech API", result?.reason || result);
+          speakWithWebSpeech(text);
+        }).catch(() => {
+          captureReadAloudBtn.classList.remove("speaking");
+          speakWithWebSpeech(text);
+        });
+        return;
+      }
+
+      speakWithWebSpeech(text);
+    });
+
+    function speakWithWebSpeech(text) {
       if (window.speechSynthesis.speaking) {
         window.speechSynthesis.cancel();
         return;
@@ -987,7 +1024,7 @@
       };
 
       window.speechSynthesis.speak(utterance);
-    });
+    }
 
     captureModal?.addEventListener("click", event => {
       if (event.target === captureModal) closeCaptureModal();

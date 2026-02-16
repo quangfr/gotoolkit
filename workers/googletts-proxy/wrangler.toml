@@ -1,0 +1,40 @@
+name = "googletts"
+main = "index.js"
+compatibility_date = "2024-12-01"
+workers_dev = true
+preview_urls = true
+
+# Required secret (recommended auth mode):
+# wrangler secret put GOOGLE_TTS_SERVICE_ACCOUNT_JSON
+#
+# Optional:
+# wrangler secret put GOOGLE_CLOUD_PROJECT_ID
+# wrangler secret put GOOGLE_TTS_VOICES_JSON
+# wrangler secret put GOOGLE_TTS_CHAR_LIMIT
+#
+# Alternative auth mode (not used by default in code):
+# GOOGLE_OAUTH_CLIENT_ID / GOOGLE_OAUTH_CLIENT_SECRET / GOOGLE_OAUTH_REFRESH_TOKEN
+
+[[kv_namespaces]]
+binding = "USAGE_KV"
+id = "a76dbe364f3b430788699667bc26c9fa"
+
+[[ratelimits]]
+name = "MY_RATE_LIMITER"
+namespace_id = "1005"
+simple = { limit = 10, period = 60 }
+
+[observability]
+enabled = false
+head_sampling_rate = 1
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+persist = true
+invocation_logs = true
+
+[observability.traces]
+enabled = false
+persist = true
+head_sampling_rate = 1
