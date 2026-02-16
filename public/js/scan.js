@@ -973,17 +973,33 @@
             captureReadAloudBtn.classList.remove("speaking");
           }
         }).then((result) => {
-          if (result?.ok) return;
+          if (result?.ok) {
+            const ttsMeta = result?.payload?.meta || {};
+            console.info(
+              "[Hub Read Aloud] Google TTS selected:",
+              ttsMeta?.voiceType || "unknown",
+              {
+                voiceName: ttsMeta?.voiceName || "",
+                languageCode: ttsMeta?.languageCode || "",
+                tierCharLimit: ttsMeta?.tierCharLimit || 0,
+                chars: ttsMeta?.chars || 0
+              }
+            );
+            return;
+          }
           captureReadAloudBtn.classList.remove("speaking");
           console.warn("Google TTS unavailable, fallback to Web Speech API", result?.reason || result);
+          console.info("[Hub Read Aloud] Using Web Speech API fallback");
           speakWithWebSpeech(text);
         }).catch(() => {
           captureReadAloudBtn.classList.remove("speaking");
+          console.info("[Hub Read Aloud] Google TTS request failed, using Web Speech API fallback");
           speakWithWebSpeech(text);
         });
         return;
       }
 
+      console.info("[Hub Read Aloud] Google TTS controller unavailable, using Web Speech API fallback");
       speakWithWebSpeech(text);
     });
 

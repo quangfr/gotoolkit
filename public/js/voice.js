@@ -13,6 +13,8 @@
         currentMemoName: "",
         recordingMemoId: null,
         recordingMemoName: "",
+        currentMemoRecordingId: null,
+        currentMemoRecordingHasVideo: false,
         currentRecordingId: null,
         currentRecordingHasVideo: false,
         isRecording: false,
@@ -795,27 +797,28 @@
     }
 
     function buildButtonLabel() {
-        const hasRecordingForCurrentMemo = Boolean(
-            state.currentRecordingId && state.currentMemoId && state.recordingMemoId === state.currentMemoId
-        );
+        const hasRecordingForCurrentMemo = Boolean(state.currentMemoRecordingId);
         const badge = hasRecordingForCurrentMemo ? '<span class="chat-header-badge"></span>' : "";
         if (state.isTranscribing) {
             return `<i data-lucide="loader-2" class="lucide-spin" style="width:14px;height:14px;"></i>${badge}`;
         }
         if (state.isRecording) {
+            const isRecordingCurrentMemo = Boolean(
+                state.currentMemoId && state.recordingMemoId && state.currentMemoId === state.recordingMemoId
+            );
+            if (!isRecordingCurrentMemo) {
+                if (state.currentMemoRecordingId) {
+                    const recordingIcon = state.currentMemoRecordingHasVideo ? "video" : "cassette-tape";
+                    return `<i data-lucide="${recordingIcon}"></i>${badge}`;
+                }
+                return `<i data-lucide="video"></i>`;
+            }
             const duration = Math.floor((Date.now() - state.recordingStartTime) / 1000);
             const timeLabel = formatDuration(duration);
-            if (state.currentMemoId && state.recordingMemoId && state.currentMemoId !== state.recordingMemoId) {
-                const memoLabel = state.recordingMemoName ? ` (${state.recordingMemoName})` : "";
-                return `■ ${timeLabel}${memoLabel}${badge}`;
-            }
             return `■ ${timeLabel}${badge}`;
         }
-        if (state.currentRecordingId) {
-            const recordingIcon = state.currentRecordingHasVideo ? "video" : "cassette-tape";
-            if (state.currentMemoId && state.recordingMemoId && state.currentMemoId === state.recordingMemoId) {
-                return `<i data-lucide="${recordingIcon}"></i>${badge}`;
-            }
+        if (state.currentMemoRecordingId) {
+            const recordingIcon = state.currentMemoRecordingHasVideo ? "video" : "cassette-tape";
             return `<i data-lucide="${recordingIcon}"></i>${badge}`;
         }
         return `<i data-lucide="video"></i>${badge}`;
@@ -824,7 +827,10 @@
     function updateButton() {
         if (!state.voiceButton) return;
         state.voiceButton.innerHTML = buildButtonLabel();
-        state.voiceButton.classList.toggle("is-recording", state.isRecording);
+        const isRecordingCurrentMemo = Boolean(
+            state.isRecording && state.currentMemoId && state.recordingMemoId && state.currentMemoId === state.recordingMemoId
+        );
+        state.voiceButton.classList.toggle("is-recording", isRecordingCurrentMemo);
         if (window.lucide) lucide.createIcons();
     }
 
@@ -835,6 +841,8 @@
     function resetSessionState() {
         state.currentRecordingId = null;
         state.currentRecordingHasVideo = false;
+        state.currentMemoRecordingId = null;
+        state.currentMemoRecordingHasVideo = false;
         state.recordingMemoId = null;
         state.recordingMemoName = "";
         state.isRecording = false;
@@ -1668,6 +1676,10 @@
             }
             state.currentRecordingId = recordId;
             state.currentRecordingHasVideo = Boolean(state.videoBlob);
+            if (state.currentMemoId && state.currentMemoId === memoId) {
+                state.currentMemoRecordingId = recordId;
+                state.currentMemoRecordingHasVideo = Boolean(state.videoBlob);
+            }
             setRecordingForMemo(memoId, recordId);
             state.recordingMemoId = memoId;
             state.recordingMemoName = memoName || "";
@@ -1691,14 +1703,17 @@
     }
 
     async function openRecordingPlayer() {
-        if (!state.currentRecordingId || !RECORDINGS_STORE) return;
-        const recording = await RECORDINGS_STORE.get(state.currentRecordingId);
+        const recordingId = state.currentMemoRecordingId || state.currentRecordingId;
+        if (!recordingId || !RECORDINGS_STORE) return;
+        const recording = await RECORDINGS_STORE.get(recordingId);
         if (!recording) {
             showToast("Enregistrement introuvable.", true);
             return;
         }
+        state.currentMemoRecordingHasVideo = Boolean(recording.videoBlob);
+        state.currentRecordingId = recording.id;
         state.currentRecordingHasVideo = Boolean(recording.videoBlob);
-        const memoName = state.recordingMemoName || "";
+        const memoName = state.currentMemoName || state.recordingMemoName || "";
         const handleDelete = async () => {
             if (!confirm("Supprimer cet enregistrement ?")) return;
             try {
@@ -1706,13 +1721,15 @@
             } catch (err) {
                 console.warn("Recording delete failed", err);
             }
-            if (state.recordingMemoId) {
-                setRecordingForMemo(state.recordingMemoId, null);
+            if (state.currentMemoId) {
+                setRecordingForMemo(state.currentMemoId, null);
             }
-            state.currentRecordingId = null;
-            state.currentRecordingHasVideo = false;
-            state.recordingMemoId = null;
-            state.recordingMemoName = "";
+            state.currentMemoRecordingId = null;
+            state.currentMemoRecordingHasVideo = false;
+            if (!state.isRecording || state.currentMemoId === state.recordingMemoId) {
+                state.currentRecordingId = null;
+                state.currentRecordingHasVideo = false;
+            }
             updateButton();
         };
         const copyToClipboard = async text => {
@@ -1813,12 +1830,20 @@
     }
 
     function handleButtonClick() {
-        if (state.isRecording) {
+        const isRecordingCurrentMemo = Boolean(
+            state.isRecording && state.currentMemoId && state.recordingMemoId && state.currentMemoId === state.recordingMemoId
+        );
+        if (isRecordingCurrentMemo) {
             stopRecording();
             return;
         }
-        if (state.currentRecordingId && state.currentMemoId && state.recordingMemoId === state.currentMemoId) {
+        if (state.currentMemoRecordingId) {
             openRecordingPlayer();
+            return;
+        }
+        if (state.isRecording) {
+            const memoLabel = state.recordingMemoName ? ` (${state.recordingMemoName})` : "";
+            showToast(`Enregistrement actif${memoLabel}.`, true);
             return;
         }
         requestPermissionsThenOverlay();
@@ -1933,22 +1958,33 @@
     function setCurrentMemo(memoName, memoId) {
         state.currentMemoId = memoId || null;
         state.currentMemoName = memoName || "";
-        if (!state.isRecording && memoId) {
+        state.currentMemoRecordingId = null;
+        state.currentMemoRecordingHasVideo = false;
+        if (memoId) {
             getRecordingForMemo(memoId).then(recording => {
+                if (!state.currentMemoId || state.currentMemoId !== memoId) return;
                 if (recording) {
-                    state.currentRecordingId = recording.id;
-                    state.currentRecordingHasVideo = Boolean(recording.videoBlob);
-                    state.recordingMemoId = memoId;
-                    state.recordingMemoName = memoName || "";
+                    state.currentMemoRecordingId = recording.id;
+                    state.currentMemoRecordingHasVideo = Boolean(recording.videoBlob);
+                    if (!state.isRecording || memoId === state.recordingMemoId) {
+                        state.currentRecordingId = recording.id;
+                        state.currentRecordingHasVideo = Boolean(recording.videoBlob);
+                    }
                 } else {
-                    state.currentRecordingId = null;
-                    state.currentRecordingHasVideo = false;
-                    state.recordingMemoId = null;
-                    state.recordingMemoName = "";
+                    state.currentMemoRecordingId = null;
+                    state.currentMemoRecordingHasVideo = false;
+                    if (!state.isRecording || memoId === state.recordingMemoId) {
+                        state.currentRecordingId = null;
+                        state.currentRecordingHasVideo = false;
+                    }
                 }
                 updateButton();
             });
             return;
+        }
+        if (!state.isRecording) {
+            state.currentRecordingId = null;
+            state.currentRecordingHasVideo = false;
         }
         updateButton();
     }

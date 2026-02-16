@@ -4,6 +4,14 @@ const ALLOWED_ORIGINS = [
 ];
 
 const DEFAULT_CHAR_LIMIT = 950000;
+const DEFAULT_CHAR_LIMITS = {
+  chirp3_hd: 1000000,
+  studio: 1000000,
+  polyglot: 1000000,
+  neural2: 1000000,
+  wavenet: 4000000,
+  standard: 4000000
+};
 const CUSTOM_METRIC_TYPE = "custom.googleapis.com/gotoolkit/googletts/characters";
 const TOKEN_AUDIENCE = "https://oauth2.googleapis.com/token";
 const TOKEN_SCOPE = [
@@ -15,13 +23,19 @@ const TOKEN_SCOPE = [
 const VOICE_TYPES = [
   { key: "chirp3_hd", label: "Chirp 3 HD" },
   { key: "studio", label: "Studio" },
-  { key: "neural2", label: "Neural2" }
+  { key: "polyglot", label: "Polyglot" },
+  { key: "neural2", label: "Neural2" },
+  { key: "wavenet", label: "WaveNet" },
+  { key: "standard", label: "Standard" }
 ];
 
 const DEFAULT_VOICES = {
   chirp3_hd: { "fr-FR": "", "en-US": "" },
   studio: { "fr-FR": "", "en-US": "" },
-  neural2: { "fr-FR": "fr-FR-Neural2-A", "en-US": "en-US-Neural2-F" }
+  polyglot: { "fr-FR": "", "en-US": "" },
+  neural2: { "fr-FR": "fr-FR-Neural2-A", "en-US": "en-US-Neural2-F" },
+  wavenet: { "fr-FR": "fr-FR-Wavenet-A", "en-US": "en-US-Wavenet-F" },
+  standard: { "fr-FR": "fr-FR-Standard-A", "en-US": "en-US-Standard-F" }
 };
 
 let cachedToken = { token: "", expiresAt: 0 };
@@ -81,6 +95,11 @@ function jsonError(corsHeaders, status, code, message, extra) {
       }
     }
   );
+}
+
+function formatErrorDetails(error) {
+  const raw = String(error?.message || error || "unknown_error");
+  return raw.slice(0, 400);
 }
 
 function toBase64Url(input) {
@@ -208,7 +227,7 @@ function monthBoundsIso(now = new Date()) {
 }
 
 async function getKvUsage(env, monthKey) {
-  const usage = { chirp3_hd: 0, studio: 0, neural2: 0 };
+  const usage = Object.fromEntries(VOICE_TYPES.map((tier) => [tier.key, 0]));
   if (!env.USAGE_KV || typeof env.USAGE_KV.get !== "function") return usage;
   const key = `usage:${monthKey}`;
   const raw = await env.USAGE_KV.get(key, "json");
@@ -223,11 +242,9 @@ async function addKvUsage(env, monthKey, tier, chars) {
   if (!env.USAGE_KV || typeof env.USAGE_KV.get !== "function" || typeof env.USAGE_KV.put !== "function") return;
   const key = `usage:${monthKey}`;
   const existing = (await env.USAGE_KV.get(key, "json")) || {};
-  const next = {
-    chirp3_hd: Number(existing.chirp3_hd || 0),
-    studio: Number(existing.studio || 0),
-    neural2: Number(existing.neural2 || 0)
-  };
+  const next = Object.fromEntries(
+    VOICE_TYPES.map((voiceType) => [voiceType.key, Number(existing[voiceType.key] || 0)])
+  );
   next[tier] = next[tier] + Number(chars || 0);
   await env.USAGE_KV.put(key, JSON.stringify(next));
 }
@@ -272,7 +289,7 @@ async function writeMonitoringUsage(token, projectId, chars, tier, lang) {
 }
 
 async function getMonitoringUsage(token, projectId, startIso, endIso) {
-  const usage = { chirp3_hd: 0, studio: 0, neural2: 0 };
+  const usage = Object.fromEntries(VOICE_TYPES.map((tier) => [tier.key, 0]));
   const filter = [
     `metric.type="${CUSTOM_METRIC_TYPE}"`,
     `resource.type="global"`
@@ -312,10 +329,33 @@ async function getMonitoringUsage(token, projectId, startIso, endIso) {
   return usage;
 }
 
-function chooseTier(usage, charLimit, voiceMap, languageCode) {
+function resolveCharLimits(env) {
+  const limits = { ...DEFAULT_CHAR_LIMITS };
+  const legacyLimit = Number(env.GOOGLE_TTS_CHAR_LIMIT || 0);
+  if (legacyLimit > 0) {
+    for (const tier of VOICE_TYPES) limits[tier.key] = legacyLimit;
+  }
+  try {
+    const raw = env.GOOGLE_TTS_CHAR_LIMITS_JSON || "";
+    if (raw) {
+      const custom = JSON.parse(raw);
+      for (const tier of VOICE_TYPES) {
+        const value = Number(custom?.[tier.key] || 0);
+        if (value > 0) limits[tier.key] = value;
+      }
+    }
+  } catch (err) {
+    // ignore invalid override
+  }
+  return limits;
+}
+
+function chooseTier(usage, charLimits, voiceMap, languageCode) {
   for (const tier of VOICE_TYPES) {
     const voiceName = voiceMap?.[tier.key]?.[languageCode] || "";
+    const charLimit = Number(charLimits?.[tier.key] || 0);
     if (!voiceName) continue;
+    if (!charLimit) continue;
     if (Number(usage[tier.key] || 0) < charLimit) {
       return { tier: tier.key, voiceName };
     }
@@ -391,23 +431,40 @@ export default {
       if (!projectId) {
         return jsonError(corsMeta.headers, 500, "MISSING_PROJECT_ID", "Google Cloud project id missing.");
       }
-      const token = await getGoogleAccessToken(env);
+      let token;
+      try {
+        token = await getGoogleAccessToken(env);
+      } catch (error) {
+        return jsonError(
+          corsMeta.headers,
+          500,
+          "GOOGLE_AUTH_FAILED",
+          "Unable to authenticate to Google APIs.",
+          { details: formatErrorDetails(error) }
+        );
+      }
       const { startIso, endIso, monthKey } = monthBoundsIso(new Date());
       const monitoring = await getMonitoringUsage(token, projectId, startIso, endIso).catch(() => ({
         chirp3_hd: 0,
         studio: 0,
-        neural2: 0
+        polyglot: 0,
+        neural2: 0,
+        wavenet: 0,
+        standard: 0
       }));
       const kv = await getKvUsage(env, monthKey);
-      const merged = {
-        chirp3_hd: Math.max(Number(monitoring.chirp3_hd || 0), Number(kv.chirp3_hd || 0)),
-        studio: Math.max(Number(monitoring.studio || 0), Number(kv.studio || 0)),
-        neural2: Math.max(Number(monitoring.neural2 || 0), Number(kv.neural2 || 0))
-      };
+      const merged = Object.fromEntries(
+        VOICE_TYPES.map((tier) => [
+          tier.key,
+          Math.max(Number(monitoring[tier.key] || 0), Number(kv[tier.key] || 0))
+        ])
+      );
+      const charLimits = resolveCharLimits(env);
       return new Response(
         JSON.stringify({
           month: monthKey,
           charLimit: Number(env.GOOGLE_TTS_CHAR_LIMIT || DEFAULT_CHAR_LIMIT),
+          charLimits,
           usage: merged,
           sources: { monitoring, kv }
         }),
@@ -452,6 +509,7 @@ export default {
     }
 
     const charLimit = Number(env.GOOGLE_TTS_CHAR_LIMIT || DEFAULT_CHAR_LIMIT);
+    const charLimits = resolveCharLimits(env);
     const voiceMap = resolveVoiceMap(env);
     const { startIso, endIso, monthKey } = monthBoundsIso(new Date());
 
@@ -459,22 +517,32 @@ export default {
     try {
       token = await getGoogleAccessToken(env);
     } catch (error) {
-      return jsonError(corsMeta.headers, 500, "GOOGLE_AUTH_FAILED", "Unable to authenticate to Google TTS.");
+      return jsonError(
+        corsMeta.headers,
+        500,
+        "GOOGLE_AUTH_FAILED",
+        "Unable to authenticate to Google TTS.",
+        { details: formatErrorDetails(error) }
+      );
     }
 
     const monitoringUsage = await getMonitoringUsage(token, projectId, startIso, endIso).catch(() => ({
       chirp3_hd: 0,
       studio: 0,
-      neural2: 0
+      polyglot: 0,
+      neural2: 0,
+      wavenet: 0,
+      standard: 0
     }));
     const kvUsage = await getKvUsage(env, monthKey);
-    const mergedUsage = {
-      chirp3_hd: Math.max(Number(monitoringUsage.chirp3_hd || 0), Number(kvUsage.chirp3_hd || 0)),
-      studio: Math.max(Number(monitoringUsage.studio || 0), Number(kvUsage.studio || 0)),
-      neural2: Math.max(Number(monitoringUsage.neural2 || 0), Number(kvUsage.neural2 || 0))
-    };
+    const mergedUsage = Object.fromEntries(
+      VOICE_TYPES.map((tier) => [
+        tier.key,
+        Math.max(Number(monitoringUsage[tier.key] || 0), Number(kvUsage[tier.key] || 0))
+      ])
+    );
 
-    let tierSelection = chooseTier(mergedUsage, charLimit, voiceMap, languageCode);
+    let tierSelection = chooseTier(mergedUsage, charLimits, voiceMap, languageCode);
     if (!tierSelection) {
       return jsonError(
         corsMeta.headers,
@@ -493,8 +561,8 @@ export default {
         synthesisData = await synthesize(token, text, languageCode, tierSelection.voiceName);
       } catch (error) {
         lastError = String(error?.message || error);
-        mergedUsage[tierSelection.tier] = charLimit;
-        tierSelection = chooseTier(mergedUsage, charLimit, voiceMap, languageCode);
+        mergedUsage[tierSelection.tier] = Number(charLimits[tierSelection.tier] || 0);
+        tierSelection = chooseTier(mergedUsage, charLimits, voiceMap, languageCode);
       }
     }
 
@@ -508,7 +576,7 @@ export default {
       );
     }
 
-    const selectedTier = tierSelection?.tier || Array.from(attemptedTiers).pop() || "neural2";
+    const selectedTier = tierSelection?.tier || Array.from(attemptedTiers).pop() || "standard";
     await addKvUsage(env, monthKey, selectedTier, text.length);
     await writeMonitoringUsage(token, projectId, text.length, selectedTier, languageCode).catch(() => {});
 
@@ -519,9 +587,13 @@ export default {
         meta: {
           languageCode,
           voiceType: selectedTier,
+          voiceName: tierSelection?.voiceName || "",
+          attemptedVoiceTypes: Array.from(attemptedTiers),
+          configuredVoiceOrder: VOICE_TYPES.map((tier) => tier.key),
           chars: text.length,
           month: monthKey,
-          charLimit
+          charLimit,
+          tierCharLimit: Number(charLimits[selectedTier] || 0)
         }
       }),
       {
