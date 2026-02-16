@@ -43,7 +43,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="apple-touch-icon" href="img/logo.png" />
     <title>Go-Toolkit Hub | Go-Toolkit</title>
-    <link rel="stylesheet" href="styles/style.css?v=2026.02.16.5">
+    <link rel="stylesheet" href="styles/style.css?v=2026.02.16.6">
     <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
     <style>
         .scan-shell {
@@ -319,7 +319,9 @@
         .mobile-bot-modal {
             width: min(680px, 96vw);
             height: min(92vh, 760px);
-            padding: 12px;
+            min-width: 360px;
+            min-height: 720px;
+            padding: 0;
             display: flex;
             flex-direction: column;
             gap: 10px;
@@ -397,7 +399,7 @@
             overflow-y: auto;
             font-size: 14px;
             line-height: 1.4;
-            font-family: "JetBrains Mono", monospace;
+            font-family: var(--font-sans);
         }
 
         #mobileChatSendBtn {
@@ -492,7 +494,7 @@
     <div class="scan-shell">
         <header class="scan-header">
             <div class="scan-title">
-                <h1>Go-Toolkit Hub <span class="hero-version" style="font-size: 10px; opacity: 0.5;">v2026.02.16.5</span></h1>
+                <h1>Go-Toolkit Hub <span class="hero-version" style="font-size: 10px; opacity: 0.5;">v2026.02.16.6</span></h1>
             </div>
             <div class="scan-actions">
                 <a href="index.html" class="btn btn-secondary" title="Accueil"
@@ -568,7 +570,11 @@
                     </div>
                     <div class="modal-actions" id="captureModalActions" style="justify-content: flex-end; gap: 6px;">
                         <button id="captureDeleteBtn" type="button" class="btn btn-secondary"
-                            style="margin-right: auto;">Supprimer</button>
+                            style="margin-right: auto;" title="Supprimer le contenu"><i data-lucide="trash-2"></i></button>
+                        <button id="captureUndoBtn" type="button" class="btn btn-secondary"
+                            title="Revenir à la version précédente"><i data-lucide="undo"></i></button>
+                        <button id="captureHistoryClearBtn" type="button" class="btn btn-secondary"
+                            title="Supprimer l'historique"><i data-lucide="trash-2"></i></button>
                         <button id="captureSaveBtn" type="button" class="btn btn-secondary"
                             style="margin-left: auto; display: none;">Terminer</button>
                         <button id="captureSendBtn" type="button" class="btn btn-primary">Envoyer</button>
@@ -602,7 +608,7 @@
     <div class="modal-overlay" id="mobileBotModal" role="dialog" aria-modal="true" aria-labelledby="mobileBotModalTitle">
         <div class="modal mobile-bot-modal">
             <div class="modal-header">
-                <h3 id="mobileBotModalTitle">Assistant de rédaction</h3>
+                <h3 id="mobileBotModalTitle"><i data-lucide="bot" style="width:16px;height:16px;"></i></h3>
                 <button class="modal-close" id="mobileBotModalClose" type="button" aria-label="Fermer"><i
                         data-lucide="x"></i></button>
             </div>
@@ -687,14 +693,14 @@
         window.GO_TOOLKIT_GOOGLE_TTS_API_URL =
             window.GO_TOOLKIT_GOOGLE_TTS_API_URL || "https://googletts.gotoolkit.workers.dev";
     </script>
-    <script src="js/config.js?v=2026.02.16.5"></script>
-    <script src="prompt.js?v=2026.02.16.5"></script>
-    <script src="js/ia-config.js?v=2026.02.16.5"></script>
-    <script src="js/ia-client.js?v=2026.02.16.5"></script>
-    <script src="js/share-worker-client.js?v=2026.02.16.5"></script>
-    <script src="js/voice-transcript.js?v=2026.02.16.5"></script>
-    <script src="js/googletts.js?v=2026.02.16.5"></script>
-    <script src="js/scan.js?v=2026.02.16.5"></script>
+    <script src="js/config.js?v=2026.02.16.6"></script>
+    <script src="prompt.js?v=2026.02.16.6"></script>
+    <script src="js/ia-config.js?v=2026.02.16.6"></script>
+    <script src="js/ia-client.js?v=2026.02.16.6"></script>
+    <script src="js/share-worker-client.js?v=2026.02.16.6"></script>
+    <script src="js/voice-transcript.js?v=2026.02.16.6"></script>
+    <script src="js/googletts.js?v=2026.02.16.6"></script>
+    <script src="js/scan.js?v=2026.02.16.6"></script>
     <script>
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();

@@ -411,7 +411,7 @@ RÈGLES DE SORTIE
 `
 
         var imageOcrPrompt = `Extrayez tout le texte de cette image. Soyez précis. Retournez uniquement le texte brut.`
-        var mobileEditPrompt = `Tu modifies le HANDOFF selon ASK. Ne pas ajouter toi spontanément des émojis si ce n'est pas demandé. Renvoyer uniquement l'intégralité du contenu modifié en texte sans aucun élément de discussion.`
+        var mobileEditPrompt = `Tu modifies le HANDOFF selon ASK. Ne pas ajouter toi spontanément des émojis si ce n'est pas demandé. Renvoyer uniquement l'intégralité du contenu modifié en texte sans aucun élément de discussion. Accepter uniquement du texte brut, sans Markdown.`
 
         var initial = editChatPrompt;
         var initialInfo = adviceChatPrompt;

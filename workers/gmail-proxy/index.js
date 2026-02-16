@@ -365,6 +365,19 @@ async function createGmailDraft(accessToken, payload = {}) {
   return body;
 }
 
+function buildGmailDraftUrls(draft = {}) {
+  const draftId = String(draft?.id || "").trim();
+  const draftMessageId = String(draft?.message?.id || "").trim();
+  const composeCandidates = [draftMessageId, draftId].filter(Boolean);
+  const urls = composeCandidates.map((value) => `https://mail.google.com/mail/u/0/#drafts?compose=${encodeURIComponent(value)}`);
+  return {
+    draftId,
+    draftMessageId,
+    draftUrl: urls[0] || "",
+    draftUrls: urls
+  };
+}
+
 export default {
   async fetch(request, env) {
     const cors = corsMeta(request);
@@ -435,16 +448,17 @@ export default {
         const draft = await createGmailDraft(token.access_token, {
           message: { raw: base64UrlEncode(rawMime) }
         });
-        const draftId = String(draft?.id || "").trim();
-        if (!draftId) {
+        const draftLinks = buildGmailDraftUrls(draft);
+        if (!draftLinks.draftId && !draftLinks.draftMessageId) {
           return errorResponse(cors.headers, 502, "ID de brouillon Gmail introuvable");
         }
-        const draftUrl = `https://mail.google.com/mail/u/0/#drafts?compose=${encodeURIComponent(draftId)}`;
         return jsonResponse(cors.headers, {
           ok: true,
-          draftId,
-          draftUrl,
-          webUrl: draftUrl
+          draftId: draftLinks.draftId,
+          draftMessageId: draftLinks.draftMessageId,
+          draftUrl: draftLinks.draftUrl,
+          draftUrls: draftLinks.draftUrls,
+          webUrl: draftLinks.draftUrl
         });
       } catch (err) {
         return errorResponse(cors.headers, 502, err?.message || "Création du brouillon Gmail impossible");

@@ -6,8 +6,10 @@
   const MOBILE_EDIT_MODEL = "openai/gpt-oss-120b";
   const MOBILE_EDIT_TEMPERATURE = 0.3;
   const MOBILE_EDIT_PRESET_FALLBACK =
-    "Tu modifies le HANDOFF selon ASK. Ne pas ajouter toi spontanément des émojis si ce n'est pas demandé. Renvoyer uniquement l'intégralité du contenu modifié en texte sans aucun élément de discussion.";
+    "Tu modifies le HANDOFF selon ASK. Ne pas ajouter toi spontanément des émojis si ce n'est pas demandé. Renvoyer uniquement l'intégralité du contenu modifié en texte sans aucun élément de discussion. Accepter uniquement du texte brut, sans Markdown.";
   const MOBILE_CHAT_HISTORY_KEY = "goToolkit.hub.mobileChatHistory";
+  const HANDOFF_HISTORY_KEY = "goToolkit.handoff.history";
+  const MOBILE_CHAT_DISMISSED_DEFAULTS_KEY = "goToolkit.hub.mobileChatDismissedDefaults";
   const MOBILE_CHAT_DEFAULT_SUGGESTIONS = [
     "Faire le compte-rendu",
     "Résumer en 3 lignes",
@@ -38,6 +40,8 @@
   const captureGalleryBtn = document.getElementById("captureGalleryBtn");
   const captureAudioBtn = document.getElementById("captureAudioBtn");
   const captureDeleteBtn = document.getElementById("captureDeleteBtn");
+  const captureUndoBtn = document.getElementById("captureUndoBtn");
+  const captureHistoryClearBtn = document.getElementById("captureHistoryClearBtn");
   const captureReadAloudBtn = document.getElementById("captureReadAloudBtn");
   const captureBotBtn = document.getElementById("captureBotBtn");
   const captureDocTitle = document.getElementById("captureDocTitle");
@@ -120,6 +124,28 @@
     }
   }
 
+  function loadDismissedDefaultSuggestions() {
+    try {
+      const raw = localStorage.getItem(MOBILE_CHAT_DISMISSED_DEFAULTS_KEY);
+      const parsed = JSON.parse(raw || "[]");
+      if (!Array.isArray(parsed)) return [];
+      return parsed.map(item => String(item || "").trim()).filter(Boolean);
+    } catch (err) {
+      return [];
+    }
+  }
+
+  function saveDismissedDefaultSuggestions(list) {
+    try {
+      localStorage.setItem(
+        MOBILE_CHAT_DISMISSED_DEFAULTS_KEY,
+        JSON.stringify((list || []).map(item => String(item || "").trim()).filter(Boolean))
+      );
+    } catch (err) {
+      // ignore
+    }
+  }
+
   function saveMobileChatHistory(list) {
     try {
       localStorage.setItem(MOBILE_CHAT_HISTORY_KEY, JSON.stringify((list || []).slice(0, 20)));
@@ -143,6 +169,72 @@
     saveMobileChatHistory(next);
   }
 
+  function removeDefaultSuggestion(text) {
+    const normalized = String(text || "").trim();
+    if (!normalized) return;
+    const next = loadDismissedDefaultSuggestions().filter(item => item !== normalized);
+    next.push(normalized);
+    saveDismissedDefaultSuggestions(next);
+  }
+
+  function loadHandoffHistoryMap() {
+    try {
+      const raw = localStorage.getItem(HANDOFF_HISTORY_KEY);
+      const parsed = JSON.parse(raw || "{}");
+      if (!parsed || typeof parsed !== "object") return {};
+      return parsed;
+    } catch (err) {
+      return {};
+    }
+  }
+
+  function saveHandoffHistoryMap(map) {
+    try {
+      localStorage.setItem(HANDOFF_HISTORY_KEY, JSON.stringify(map || {}));
+    } catch (err) {
+      // ignore
+    }
+  }
+
+  function getHandoffHistory(docId) {
+    if (!docId) return [];
+    const map = loadHandoffHistoryMap();
+    const list = map[docId];
+    if (!Array.isArray(list)) return [];
+    return list.map(item => String(item || "")).filter(Boolean);
+  }
+
+  function pushHandoffHistory(docId, content) {
+    const id = String(docId || "").trim();
+    const text = String(content || "").trim();
+    if (!id || !text) return;
+    const map = loadHandoffHistoryMap();
+    const current = Array.isArray(map[id]) ? map[id].map(item => String(item || "").trim()).filter(Boolean) : [];
+    if (current[0] === text) return;
+    current.unshift(text);
+    map[id] = current.slice(0, 50);
+    saveHandoffHistoryMap(map);
+  }
+
+  function popHandoffHistory(docId) {
+    const id = String(docId || "").trim();
+    if (!id) return "";
+    const map = loadHandoffHistoryMap();
+    const current = Array.isArray(map[id]) ? map[id].map(item => String(item || "")) : [];
+    const previous = current.shift() || "";
+    map[id] = current;
+    saveHandoffHistoryMap(map);
+    return String(previous || "").trim();
+  }
+
+  function clearHandoffHistory(docId) {
+    const id = String(docId || "").trim();
+    if (!id) return;
+    const map = loadHandoffHistoryMap();
+    delete map[id];
+    saveHandoffHistoryMap(map);
+  }
+
   function autoResizeMobileChatInput() {
     if (!mobileChatTextarea) return;
     mobileChatTextarea.style.height = "auto";
@@ -161,8 +253,13 @@
   function renderMobileBotSuggestions() {
     if (!mobileBotSuggestions) return;
     const history = loadMobileChatHistory();
+    const dismissedDefaults = new Set(loadDismissedDefaultSuggestions());
     const entries = history.map(text => ({ text, isHistory: true }))
-      .concat(MOBILE_CHAT_DEFAULT_SUGGESTIONS.map(text => ({ text, isHistory: false })));
+      .concat(
+        MOBILE_CHAT_DEFAULT_SUGGESTIONS
+          .filter(text => !dismissedDefaults.has(text))
+          .map(text => ({ text, isHistory: false }))
+      );
     mobileBotSuggestions.innerHTML = "";
 
     entries.forEach(entry => {
@@ -183,7 +280,11 @@
         clearBtn.innerHTML = "<i data-lucide=\"x\" style=\"width:14px;height:14px;\"></i>";
         clearBtn.addEventListener("click", event => {
           event.stopPropagation();
-          removeMobileChatSuggestion(entry.text);
+          if (entry.isHistory) {
+            removeMobileChatSuggestion(entry.text);
+          } else {
+            removeDefaultSuggestion(entry.text);
+          }
           renderMobileBotSuggestions();
         });
         row.appendChild(clearBtn);
@@ -875,6 +976,7 @@
     setMobileChatLoading(true);
     setStatus("Modification IA...");
     try {
+      pushHandoffHistory(activeDocId, handoffText);
       const payload = {
         model: MOBILE_EDIT_MODEL,
         temperature: MOBILE_EDIT_TEMPERATURE,
@@ -1283,6 +1385,25 @@
       setCaptureTitle("mobile");
       updateUIState();
       setStatus("Prêt pour une nouvelle capture");
+    });
+
+    captureUndoBtn?.addEventListener("click", async () => {
+      if (!activeDocId) return;
+      const previous = popHandoffHistory(activeDocId);
+      if (!previous) {
+        setStatus("Aucune version précédente");
+        return;
+      }
+      if (capturePreview) capturePreview.value = previous;
+      autoResizeMobileChatInput();
+      await sendHandoff(previous);
+      setStatus("Version précédente restaurée");
+    });
+
+    captureHistoryClearBtn?.addEventListener("click", () => {
+      if (!activeDocId) return;
+      clearHandoffHistory(activeDocId);
+      setStatus("Historique supprimé");
     });
 
     captureTextBtn?.addEventListener("click", () => {
