@@ -6,7 +6,7 @@
   const MOBILE_EDIT_MODEL = "openai/gpt-oss-120b";
   const MOBILE_EDIT_TEMPERATURE = 0.3;
   const MOBILE_EDIT_PRESET_FALLBACK =
-    "Tu modifies le HANDOFF selon ASK. Ne pas ajouter toi spontanément des émojis si ce n'est pas demandé. Renvoyer uniquement l'intégralité du contenu modifié en texte sans aucun élément de discussion. Accepter uniquement du texte brut, sans Markdown.";
+    "Tu modifies le HANDOFF selon ASK. Réponds uniquement avec un objet JSON strict: {\"title\":\"résumé 2-3 mots\",\"content\":\"contenu final complet\"}. Ne pas ajouter spontanément des émojis si ce n'est pas demandé. Pas de tableau. Pas de Markdown.";
   const MOBILE_CHAT_HISTORY_KEY = "goToolkit.hub.mobileChatHistory";
   const HANDOFF_HISTORY_KEY = "goToolkit.handoff.history";
   const HANDOFF_HISTORY_LIMIT = 30;
@@ -184,6 +184,48 @@
       window.GoToolkitChatPrompt?.PRESETS?.["mobile-edit"]?.prompt ||
       MOBILE_EDIT_PRESET_FALLBACK
     );
+  }
+
+  function parseMobileEditJsonResponse(rawText) {
+    const raw = String(rawText || "").trim();
+    if (!raw) return { ok: false, reason: "EMPTY_RESPONSE" };
+
+    let candidate = raw;
+    const fencedMatch = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    if (fencedMatch && fencedMatch[1]) {
+      candidate = fencedMatch[1].trim();
+    }
+
+    let parsed = null;
+    try {
+      parsed = JSON.parse(candidate);
+    } catch (err) {
+      const firstBrace = candidate.indexOf("{");
+      const lastBrace = candidate.lastIndexOf("}");
+      if (firstBrace >= 0 && lastBrace > firstBrace) {
+        try {
+          parsed = JSON.parse(candidate.slice(firstBrace, lastBrace + 1));
+        } catch (innerErr) {
+          parsed = null;
+        }
+      }
+    }
+
+    if (!parsed || typeof parsed !== "object") {
+      return { ok: false, reason: "INVALID_JSON" };
+    }
+
+    const title = String(parsed.title || "").trim();
+    const content = String(parsed.content || "").trim();
+    if (!content) {
+      return { ok: false, reason: "MISSING_CONTENT" };
+    }
+
+    return {
+      ok: true,
+      title: title || "Document",
+      content
+    };
   }
 
   function loadMobileChatHistory() {
@@ -1217,10 +1259,12 @@
 
       const result = await window.GoToolkitIA.chatCompletion({ payload });
       const responseText = typeof result === "string" ? result : (result?.text || "");
-      const nextContent = String(responseText || "").trim();
-      if (!nextContent) {
-        throw new Error("Réponse vide");
+      const parsed = parseMobileEditJsonResponse(responseText);
+      if (!parsed.ok) {
+        throw new Error(`Réponse IA invalide: ${parsed.reason}`);
       }
+      const nextTitle = parsed.title;
+      const nextContent = parsed.content;
 
       setCapturePreviewValue(nextContent);
       recordHandoffOperation(activeDocId, nextContent, true);
@@ -1229,11 +1273,15 @@
       upsertDocument({
         ...doc,
         id: activeDocId,
-        title: doc?.title || "Document",
+        title: nextTitle,
         hasContent: true,
         lastContent: nextContent,
         lastCapturedAt: new Date().toISOString()
       });
+      if (captureDocTitle) {
+        const span = captureDocTitle.querySelector("span");
+        if (span) span.textContent = nextTitle;
+      }
       renderGrid();
       updateUIState();
       addMobileChatSuggestion(askText);
