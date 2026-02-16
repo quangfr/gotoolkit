@@ -52,51 +52,6 @@
           "destination": "/docs.html"
         }
       ]
-    },
-    {
-      "target": "mobile",
-      "public": "public",
-      "ignore": [
-        "firebase.json",
-        "**/.*",
-        "**/node_modules/**"
-      ],
-      "cleanUrls": true,
-      "headers": [
-        {
-          "source": "**/*.html",
-          "headers": [
-            {
-              "key": "Cache-Control",
-              "value": "no-cache, no-store, max-age=0, must-revalidate"
-            }
-          ]
-        },
-        {
-          "source": "/",
-          "headers": [
-            {
-              "key": "Cache-Control",
-              "value": "no-cache, no-store, max-age=0, must-revalidate"
-            }
-          ]
-        },
-        {
-          "source": "**/*.@(js|css|svg|png|jpg|jpeg|gif|webp|woff2|woff|ttf)",
-          "headers": [
-            {
-              "key": "Cache-Control",
-              "value": "public, max-age=31536000, immutable"
-            }
-          ]
-        }
-      ],
-      "rewrites": [
-        {
-          "source": "**",
-          "destination": "/mobile.html"
-        }
-      ]
     }
   ],
   "firestore": {
