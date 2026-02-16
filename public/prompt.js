@@ -802,9 +802,19 @@
         }
     ];
 
+    const mobilePromptSuggestions = [
+        "Faire une synthèse avec un plan d'action",
+        "Résumer le contenu en 5 lignes",
+        "Faire une résumé sous forme de questions réponses",
+        "Écrire un email avec contexte et demande",
+        "Expliquer davantage dans un format clair et structuré",
+        "Corriger les fautes et améliorer la formulation"
+    ];
+
     global.GoToolkitPromptShortcuts = {
         prompts: promptShortcuts,
-        categories: promptCategories
+        categories: promptCategories,
+        mobileSuggestions: mobilePromptSuggestions
     };
 
 })(window);

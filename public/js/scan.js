@@ -12,11 +12,13 @@
   const HANDOFF_HISTORY_LIMIT = 30;
   const HANDOFF_HISTORY_INPUT_DEBOUNCE_MS = 450;
   const MOBILE_CHAT_DISMISSED_DEFAULTS_KEY = "goToolkit.hub.mobileChatDismissedDefaults";
-  const MOBILE_CHAT_DEFAULT_SUGGESTIONS = [
-    "Faire le compte-rendu",
-    "Résumer en 3 lignes",
-    "Faire une foire aux questions"
-  ];
+  const MOBILE_CHAT_DEFAULT_SUGGESTIONS = Array.isArray(window.GoToolkitPromptShortcuts?.mobileSuggestions)
+    ? window.GoToolkitPromptShortcuts.mobileSuggestions
+    : [
+      "Faire le compte-rendu",
+      "Résumer en 3 lignes",
+      "Faire une foire aux questions"
+    ];
   const MAX_IMAGE_DIM = 2048;
 
   const shareWorker = window.goToolkitShareWorker;
@@ -457,23 +459,21 @@
       textEl.textContent = entry.text;
       row.appendChild(textEl);
 
-      if (entry.isHistory) {
-        const clearBtn = document.createElement("button");
-        clearBtn.type = "button";
-        clearBtn.className = "mobile-bot-suggestion-clear";
-        clearBtn.title = "Supprimer";
-        clearBtn.innerHTML = "<i data-lucide=\"x\" style=\"width:14px;height:14px;\"></i>";
-        clearBtn.addEventListener("click", event => {
-          event.stopPropagation();
-          if (entry.isHistory) {
-            removeMobileChatSuggestion(entry.text);
-          } else {
-            removeDefaultSuggestion(entry.text);
-          }
-          renderMobileBotSuggestions();
-        });
-        row.appendChild(clearBtn);
-      }
+      const clearBtn = document.createElement("button");
+      clearBtn.type = "button";
+      clearBtn.className = "mobile-bot-suggestion-clear";
+      clearBtn.title = "Supprimer";
+      clearBtn.innerHTML = "<i data-lucide=\"x\" style=\"width:14px;height:14px;\"></i>";
+      clearBtn.addEventListener("click", event => {
+        event.stopPropagation();
+        if (entry.isHistory) {
+          removeMobileChatSuggestion(entry.text);
+        } else {
+          removeDefaultSuggestion(entry.text);
+        }
+        renderMobileBotSuggestions();
+      });
+      row.appendChild(clearBtn);
 
       row.addEventListener("click", () => {
         applySuggestionToMobileChat(entry.text);
