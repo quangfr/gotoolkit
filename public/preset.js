@@ -411,6 +411,7 @@ RÈGLES DE SORTIE
 `
 
         var imageOcrPrompt = `Extrayez tout le texte de cette image. Soyez précis. Retournez uniquement le texte brut.`
+        var mobileEditPrompt = `Tu modifies le HANDOFF selon ASK. Ne pas ajouter toi spontanément des émojis si ce n'est pas demandé. Renvoyer uniquement l'intégralité du contenu modifié en texte sans aucun élément de discussion.`
 
         var initial = editChatPrompt;
         var initialInfo = adviceChatPrompt;
@@ -464,6 +465,13 @@ RÈGLES DE SORTIE
                 icon: "file-text",
                 prompt: imageOcrPrompt,
                 defaultPrompt: imageOcrPrompt
+            },
+            "mobile-edit": {
+                id: "mobile-edit",
+                label: "Mobile Edit",
+                icon: "bot",
+                prompt: mobileEditPrompt,
+                defaultPrompt: mobileEditPrompt
             }
         };
     })();

@@ -383,6 +383,11 @@
             gap: 12px;
         }
 
+        #savedGallery.share-gallery.single-page,
+        #shareGallery.share-gallery.single-page {
+            min-height: var(--gallery-row-min);
+        }
+
         .share-card {
             display: flex;
             flex-direction: column;

@@ -43,7 +43,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="apple-touch-icon" href="img/logo.png" />
     <title>Go-Toolkit Hub | Go-Toolkit</title>
-    <link rel="stylesheet" href="styles/style.css?v=2026.02.16.4">
+    <link rel="stylesheet" href="styles/style.css?v=2026.02.16.5">
     <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
     <style>
         .scan-shell {
@@ -160,6 +160,7 @@
             border-radius: 0;
             border: none;
             padding: 12px;
+            gap: 0px;
         }
 
         .capture-modal .modal-header {
@@ -295,6 +296,159 @@
             display: flex;
         }
 
+        #captureBotBtn {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 4px;
+            border-radius: 8px;
+            color: var(--text-main);
+            background: transparent;
+            border: none;
+            cursor: pointer;
+        }
+
+        #captureBotBtn:hover {
+            background: var(--bg-surface-strong);
+        }
+
+        #captureBotBtn.active {
+            display: flex;
+        }
+
+        .mobile-bot-modal {
+            width: min(680px, 96vw);
+            height: min(92vh, 760px);
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .mobile-bot-body {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .mobile-bot-suggestions {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .mobile-bot-suggestion {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            text-align: left;
+            border: 1px solid var(--border-main);
+            border-radius: 10px;
+            background: var(--bg-surface-soft);
+            color: var(--text-main);
+            padding: 10px 12px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .mobile-bot-suggestion-text {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .mobile-bot-suggestion-clear {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px;
+            height: 22px;
+            border: none;
+            border-radius: 6px;
+            background: transparent;
+            color: var(--text-main);
+            opacity: 0.65;
+            cursor: pointer;
+        }
+
+        .mobile-bot-input-wrap {
+            position: relative;
+            border: 1px solid var(--border-main);
+            border-radius: 12px;
+            background: var(--bg-surface);
+            padding: 8px 42px 8px 8px;
+            min-height: 70px;
+        }
+
+        #mobileChatTextarea {
+            width: 100%;
+            min-height: 52px;
+            border: none;
+            outline: none;
+            background: transparent;
+            color: var(--text-main);
+            resize: none;
+            overflow-y: auto;
+            font-size: 14px;
+            line-height: 1.4;
+            font-family: "JetBrains Mono", monospace;
+        }
+
+        #mobileChatSendBtn {
+            position: absolute;
+            right: 8px;
+            bottom: 8px;
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        #mobileChatSendBtn.is-loading i {
+            animation: mobile-bot-spin 1s linear infinite;
+        }
+
+        @keyframes mobile-bot-spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .hub-toast {
+            position: fixed;
+            left: 50%;
+            bottom: 20px;
+            transform: translateX(-50%);
+            padding: 8px 12px;
+            border-radius: 10px;
+            background: var(--bg-surface-strong);
+            border: 1px solid var(--border-main);
+            color: var(--text-main);
+            font-size: 13px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+            z-index: 9999;
+        }
+
+        .hub-toast.visible {
+            opacity: 1;
+        }
+
         #captureReadAloudBtn.speaking {
             animation: pulse-green 2s infinite;
             color: var(--color-primary);
@@ -338,7 +492,7 @@
     <div class="scan-shell">
         <header class="scan-header">
             <div class="scan-title">
-                <h1>Go-Toolkit Hub <span class="hero-version" style="font-size: 10px; opacity: 0.5;">v2026.02.16.4</span></h1>
+                <h1>Go-Toolkit Hub <span class="hero-version" style="font-size: 10px; opacity: 0.5;">v2026.02.16.5</span></h1>
             </div>
             <div class="scan-actions">
                 <a href="index.html" class="btn btn-secondary" title="Accueil"
@@ -368,6 +522,9 @@
                     <span>Document</span>
                 </h3>
                 <div style="display: flex; gap: 8px; align-items: center;">
+                    <button id="captureBotBtn" class="modal-close" type="button" title="Modifier avec IA">
+                        <i data-lucide="bot" style="width: 20px; height: 20px;"></i>
+                    </button>
                     <button id="captureReadAloudBtn" class="modal-close" type="button" title="Télécharger l'audio">
                         <i data-lucide="file-audio" style="width: 20px; height: 20px;"></i>
                     </button>
@@ -442,6 +599,25 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="mobileBotModal" role="dialog" aria-modal="true" aria-labelledby="mobileBotModalTitle">
+        <div class="modal mobile-bot-modal">
+            <div class="modal-header">
+                <h3 id="mobileBotModalTitle">Assistant de rédaction</h3>
+                <button class="modal-close" id="mobileBotModalClose" type="button" aria-label="Fermer"><i
+                        data-lucide="x"></i></button>
+            </div>
+            <div class="mobile-bot-body">
+                <div id="mobileBotSuggestions" class="mobile-bot-suggestions"></div>
+                <div class="mobile-bot-input-wrap">
+                    <textarea id="mobileChatTextarea" rows="2" placeholder="Demande de modification..."></textarea>
+                    <button id="mobileChatSendBtn" class="btn btn-primary" type="button" title="Envoyer">
+                        <i data-lucide="send" style="width: 16px; height: 16px;"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal-overlay" id="sendMethodModal" role="dialog" aria-modal="true"
         aria-labelledby="sendMethodModalTitle">
         <div class="modal">
@@ -511,14 +687,14 @@
         window.GO_TOOLKIT_GOOGLE_TTS_API_URL =
             window.GO_TOOLKIT_GOOGLE_TTS_API_URL || "https://googletts.gotoolkit.workers.dev";
     </script>
-    <script src="js/config.js?v=2026.02.16.4"></script>
-    <script src="prompt.js?v=2026.02.16.4"></script>
-    <script src="js/ia-config.js?v=2026.02.16.4"></script>
-    <script src="js/ia-client.js?v=2026.02.16.4"></script>
-    <script src="js/share-worker-client.js?v=2026.02.16.4"></script>
-    <script src="js/voice-transcript.js?v=2026.02.16.4"></script>
-    <script src="js/googletts.js?v=2026.02.16.4"></script>
-    <script src="js/scan.js?v=2026.02.16.4"></script>
+    <script src="js/config.js?v=2026.02.16.5"></script>
+    <script src="prompt.js?v=2026.02.16.5"></script>
+    <script src="js/ia-config.js?v=2026.02.16.5"></script>
+    <script src="js/ia-client.js?v=2026.02.16.5"></script>
+    <script src="js/share-worker-client.js?v=2026.02.16.5"></script>
+    <script src="js/voice-transcript.js?v=2026.02.16.5"></script>
+    <script src="js/googletts.js?v=2026.02.16.5"></script>
+    <script src="js/scan.js?v=2026.02.16.5"></script>
     <script>
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
@@ -539,6 +715,7 @@
             });
         }
     </script>
+    <div id="hubToast" class="hub-toast" role="status" aria-live="polite"></div>
 </body>
 
 </html>

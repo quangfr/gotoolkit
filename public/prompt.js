@@ -806,4 +806,5 @@
         prompts: promptShortcuts,
         categories: promptCategories
     };
+
 })(window);
