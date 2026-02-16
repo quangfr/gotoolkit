@@ -1,3 +1,6 @@
+## 2026-02-16
+- Voice : Télécharger l'audio d'un document
+
 ## 2026-02-13
 - Intégration : Publier un enregistrement sur Youtube
 - Voice : Transcription texte en temps réel

@@ -946,101 +946,50 @@
       closeCaptureModal();
     });
 
-    captureReadAloudBtn?.addEventListener("click", () => {
+    captureReadAloudBtn?.addEventListener("click", async () => {
       // Always get the latest value from the preview textarea
       const textarea = document.getElementById("capturePreview");
       const text = (textarea?.value || "").trim();
 
       if (!text) {
-        console.warn("No text to read in capturePreview");
+        setStatus("Aucun texte à convertir.");
         return;
       }
 
-      if (googleTtsController?.isSpeaking?.()) {
-        googleTtsController.stop();
+      if (!window.GoToolkitGoogleTTS?.synthesize) {
+        setStatus("Google TTS indisponible.", true);
+        return;
+      }
+
+      captureReadAloudBtn.classList.add("speaking");
+      setStatus("Génération audio...");
+      try {
+        const languageCode = window.GoToolkitGoogleTTS.detectLanguage(text);
+        const result = await window.GoToolkitGoogleTTS.synthesize(text, { languageCode });
+        if (!result?.ok || !result?.audioBlob) {
+          console.warn("Google TTS synthesis failed", result?.reason || result);
+          setStatus("Google TTS indisponible pour le téléchargement.", true);
+          return;
+        }
+        const meta = result?.payload?.meta || {};
+        const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+        const filename = `hub-audio-${meta?.languageCode || languageCode}-${stamp}.mp3`;
+        const url = URL.createObjectURL(result.audioBlob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        setStatus("Audio MP3 téléchargé.");
+      } catch (err) {
+        console.error("Hub audio download failed", err);
+        setStatus("Échec du téléchargement audio.", true);
+      } finally {
         captureReadAloudBtn.classList.remove("speaking");
-        return;
       }
-
-      if (googleTtsController) {
-        captureReadAloudBtn.classList.add("speaking");
-        googleTtsController.speak(text, {
-          languageCode: window.GoToolkitGoogleTTS.detectLanguage(text),
-          onEnd: () => {
-            captureReadAloudBtn.classList.remove("speaking");
-          },
-          onError: () => {
-            captureReadAloudBtn.classList.remove("speaking");
-          }
-        }).then((result) => {
-          if (result?.ok) {
-            const ttsMeta = result?.payload?.meta || {};
-            console.info(
-              "[Hub Read Aloud] Google TTS selected:",
-              ttsMeta?.voiceType || "unknown",
-              {
-                voiceName: ttsMeta?.voiceName || "",
-                languageCode: ttsMeta?.languageCode || "",
-                tierCharLimit: ttsMeta?.tierCharLimit || 0,
-                chars: ttsMeta?.chars || 0
-              }
-            );
-            return;
-          }
-          captureReadAloudBtn.classList.remove("speaking");
-          console.warn("Google TTS unavailable, fallback to Web Speech API", result?.reason || result);
-          console.info("[Hub Read Aloud] Using Web Speech API fallback");
-          speakWithWebSpeech(text);
-        }).catch(() => {
-          captureReadAloudBtn.classList.remove("speaking");
-          console.info("[Hub Read Aloud] Google TTS request failed, using Web Speech API fallback");
-          speakWithWebSpeech(text);
-        });
-        return;
-      }
-
-      console.info("[Hub Read Aloud] Google TTS controller unavailable, using Web Speech API fallback");
-      speakWithWebSpeech(text);
     });
-
-    function speakWithWebSpeech(text) {
-      if (window.speechSynthesis.speaking) {
-        window.speechSynthesis.cancel();
-        return;
-      }
-
-      // Important for Chrome/Safari: resume context
-      if (window.speechSynthesis.paused) {
-        window.speechSynthesis.resume();
-      }
-
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = "fr-FR";
-      utterance.rate = 1.0;
-      utterance.pitch = 1.0;
-
-      // Choose a better voice if available
-      const voices = window.speechSynthesis.getVoices();
-      if (voices.length > 0) {
-        const frVoice = voices.find(v => v.lang.startsWith("fr-FR") || v.lang.startsWith("fr"));
-        if (frVoice) utterance.voice = frVoice;
-      }
-
-      utterance.onstart = () => {
-        captureReadAloudBtn.classList.add("speaking");
-      };
-
-      utterance.onend = () => {
-        captureReadAloudBtn.classList.remove("speaking");
-      };
-
-      utterance.onerror = (event) => {
-        console.error("SpeechSynthesisUtterance error", event);
-        captureReadAloudBtn.classList.remove("speaking");
-      };
-
-      window.speechSynthesis.speak(utterance);
-    }
 
     captureModal?.addEventListener("click", event => {
       if (event.target === captureModal) closeCaptureModal();
