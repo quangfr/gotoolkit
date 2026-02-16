@@ -5,12 +5,12 @@ const ALLOWED_ORIGINS = [
 
 const DEFAULT_CHAR_LIMIT = 950000;
 const DEFAULT_CHAR_LIMITS = {
-  chirp3_hd: 1000000,
-  studio: 1000000,
-  polyglot: 1000000,
-  neural2: 1000000,
-  wavenet: 4000000,
-  standard: 4000000
+  chirp3_hd: 950000,
+  studio: 950000,
+  polyglot: 950000,
+  neural2: 950000,
+  wavenet: 3800000,
+  standard: 3800000
 };
 const CUSTOM_METRIC_TYPE = "custom.googleapis.com/gotoolkit/googletts/characters";
 const TOKEN_AUDIENCE = "https://oauth2.googleapis.com/token";
@@ -30,8 +30,8 @@ const VOICE_TYPES = [
 ];
 
 const DEFAULT_VOICES = {
-  chirp3_hd: { "fr-FR": "", "en-US": "" },
-  studio: { "fr-FR": "", "en-US": "" },
+  chirp3_hd: { "fr-FR": "fr-FR-Chirp3-HD-Leda", "en-US": "" },
+  studio: { "fr-FR": "fr-FR-Studio-A", "en-US": "" },
   polyglot: { "fr-FR": "", "en-US": "" },
   neural2: { "fr-FR": "fr-FR-Neural2-A", "en-US": "en-US-Neural2-F" },
   wavenet: { "fr-FR": "fr-FR-Wavenet-A", "en-US": "en-US-Wavenet-F" },
