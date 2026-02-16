@@ -40,10 +40,6 @@
       ],
       "rewrites": [
         {
-          "source": "/hub",
-          "destination": "/mobile.html"
-        },
-        {
           "source": "/mobile",
           "destination": "/mobile.html"
         },

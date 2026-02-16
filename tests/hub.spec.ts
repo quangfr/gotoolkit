@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("hub code 9RQT opens capture modal", async ({ page }) => {
-  await page.goto("/hub.html", { waitUntil: "networkidle" });
+  await page.goto("/mobile.html", { waitUntil: "networkidle" });
   await expect(page.getByRole("heading", { name: /Go-Toolkit Hub/i })).toBeVisible();
 
   await page.click("#scanCodeBtn");
