@@ -102,6 +102,66 @@
     }
   }
 
+  function isLikelyIOSDevice() {
+    try {
+      const ua = String(navigator?.userAgent || "");
+      const platform = String(navigator?.platform || "");
+      const maxTouchPoints = Number(navigator?.maxTouchPoints || 0);
+      return /iPad|iPhone|iPod/i.test(ua) || (platform === "MacIntel" && maxTouchPoints > 1);
+    } catch (err) {
+      return false;
+    }
+  }
+
+  async function saveAudioBlobWithFallback(audioBlob, filename) {
+    const normalizedBlob =
+      audioBlob instanceof Blob ? audioBlob : new Blob([audioBlob], { type: "audio/mpeg" });
+    const safeName = String(filename || "hub-audio.mp3");
+    const isIOS = isLikelyIOSDevice();
+
+    if (isIOS && typeof File === "function" && navigator?.share && navigator?.canShare) {
+      try {
+        const shareFile = new File([normalizedBlob], safeName, {
+          type: normalizedBlob.type || "audio/mpeg"
+        });
+        if (navigator.canShare({ files: [shareFile] })) {
+          await navigator.share({
+            files: [shareFile],
+            title: safeName
+          });
+          return { ok: true, mode: "share" };
+        }
+      } catch (err) {
+        // Ignore and fallback to direct download/open.
+      }
+    }
+
+    const url = URL.createObjectURL(normalizedBlob);
+    try {
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = safeName;
+      link.rel = "noopener";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      if (isIOS) {
+        setTimeout(() => {
+          try {
+            window.open(url, "_blank", "noopener");
+          } catch (err) {
+            // ignore popup/open failures
+          }
+        }, 120);
+      }
+
+      return { ok: true, mode: "download" };
+    } finally {
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+    }
+  }
+
   function showHubToast(message) {
     if (!hubToast) return;
     if (toastTimer) {
@@ -1510,15 +1570,12 @@
         const meta = result?.payload?.meta || {};
         const stamp = new Date().toISOString().replace(/[:.]/g, "-");
         const filename = `hub-audio-${meta?.languageCode || languageCode}-${stamp}.mp3`;
-        const url = URL.createObjectURL(result.audioBlob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        setStatus("Audio MP3 téléchargé.");
+        const saved = await saveAudioBlobWithFallback(result.audioBlob, filename);
+        if (saved?.ok && saved.mode === "share") {
+          setStatus("Audio MP3 prêt à enregistrer.");
+        } else {
+          setStatus("Audio MP3 téléchargé.");
+        }
       } catch (err) {
         console.error("Hub audio download failed", err);
         setStatus("Échec du téléchargement audio.", true);
