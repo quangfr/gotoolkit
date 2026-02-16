@@ -1,4 +1,4 @@
-const CACHE_NAME = 'go-toolkit-hub-v5';
+const CACHE_NAME = 'go-toolkit-mobile-v1';
 const ASSETS = [
     './mobile',
     './styles/style.css',
