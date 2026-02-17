@@ -369,6 +369,12 @@ body.app-body {
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
+  flex-shrink: 0;
+  position: sticky;
+  bottom: 0;
+  background: var(--bg-surface);
+  padding-top: 8px;
+  z-index: 1;
 }
 
 

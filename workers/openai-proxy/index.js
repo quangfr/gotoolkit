@@ -110,3 +110,61 @@ function jsonError(origin, status, code, message) {
     }
   });
 }
+
+async function forwardToOpenAI(request, env, corsOrigin) {
+  const raw = await request.text();
+  const maxBytes = 2_500_000;
+
+  if (raw.length > maxBytes) {
+    return jsonError(corsOrigin, 413, "PAYLOAD_TOO_LARGE", "Payload too large.");
+  }
+
+  let payload = {};
+  try {
+    payload = raw ? JSON.parse(raw) : {};
+  } catch (e) {
+    return jsonError(corsOrigin, 400, "BAD_JSON", "Invalid JSON payload.");
+  }
+
+  if (!env.OPENAI_API_KEY) {
+    return jsonError(corsOrigin, 500, "MISSING_ENV", "OpenAI API key missing.");
+  }
+
+  const pathname = new URL(request.url).pathname;
+  const targetPath = pathname === "/v1/chat/completions"
+    ? "/v1/chat/completions"
+    : "/v1/responses";
+
+  let upstreamResponse;
+  const wantsStream = Boolean(payload && payload.stream);
+  const acceptHeader = request.headers.get("Accept");
+  try {
+    upstreamResponse = await fetch(`https://api.openai.com${targetPath}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+        ...(wantsStream || acceptHeader ? { Accept: acceptHeader || "text/event-stream" } : {})
+      },
+      body: JSON.stringify(payload)
+    });
+  } catch (error) {
+    console.error("OpenAI fetch failed", error);
+    return jsonError(
+      corsOrigin,
+      502,
+      "UPSTREAM_UNAVAILABLE",
+      "OpenAI upstream unavailable."
+    );
+  }
+
+  const headers = new Headers(upstreamResponse.headers);
+  headers.set("Access-Control-Allow-Origin", corsOrigin);
+  headers.set("Cache-Control", "no-store");
+  headers.set("Vary", "Origin");
+
+  return new Response(upstreamResponse.body, {
+    status: upstreamResponse.status,
+    headers
+  });
+}

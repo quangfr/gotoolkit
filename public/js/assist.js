@@ -1861,7 +1861,8 @@
         }
         this.stopSpeechRecognition();
         this.speechRecognition = new SpeechRecognition();
-        this.speechRecognition.lang = "fr-FR";
+        var browserLang = (navigator.language || "").toLowerCase();
+        this.speechRecognition.lang = browserLang.startsWith("vi") ? "vi-VN" : "fr-FR";
         this.speechRecognition.continuous = true;
         this.speechRecognition.interimResults = true;
         this.speechRecognition.maxAlternatives = 1;

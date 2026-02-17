@@ -1,19 +1,19 @@
 ## 2026-02-16
 - Docs : Générer une synthèse vocale avec `Google TTS`
 - Docs : Envoyer un document sur `Outlook` et `Gmail`
-- Mobile : Editer un document avec l'AI
+- Mobile : Modifier le contenu en mode IA
 
 ## 2026-02-13
 - Voice : Publier un enregistrement sur `Youtube`
 - Voice : Transcription texte en temps réel
 - Docs : Publier un document sur `Notion`
-- AI : Commandes en fil d'attente
+- AI : Ajouter plusieurs commandes IA en attente
 
 ## 2026-01-28
 - AI : Éditer un prompt et restaurer une version
 - AI : Commande vocale et sélection automatique
-- Mobile : Capture scan, prise de note et transcription audio
-- Mobile : Envoyer le contenu dans un document
+- Mobile : OCR, prise de note et transcription audio
+- Mobile : Envoyer le contenu dans un document sur PC
 
 ## 2026-01-27
 - AI : Raccourcis Prompts

@@ -159,6 +159,8 @@
     }
 
     function buildAssemblyTranscriptPayload(uploadUrl, speakersExpected) {
+        const browserLang = (window.navigator?.language || "").toLowerCase();
+        const fallbackLanguage = browserLang.startsWith("vi") ? "vi" : "fr";
         const payload = {
             audio_url: uploadUrl,
             auto_chapters: true,
@@ -166,8 +168,8 @@
             speaker_labels: true,
             language_detection: true,
             language_detection_options: {
-                expected_languages: ["en", "fr"],
-                fallback_language: "fr"
+                expected_languages: ["en", "fr", "vi"],
+                fallback_language: fallbackLanguage
             },
             punctuate: true,
             format_text: true

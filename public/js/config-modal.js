@@ -7,7 +7,7 @@
                 <h3><i data-lucide="settings" style="width:20px;height:20px;vertical-align:middle;margin-right:8px;"></i>Paramètres</h3>
                 <button id="closeSettingsBtn" class="btn-secondary" type="button" aria-label="Fermer"><i data-lucide="x" style="width:16px;height:16px;"></i></button>
             </header>
-            <form class="feedback-form" onsubmit="return false;" style="flex: 1; overflow-y: auto; padding-right: 8px; margin-right: -8px;">
+            <form class="feedback-form" onsubmit="return false;" style="flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; padding-right: 8px; margin-right: -8px;">
                 <div class="settings-tabs tabs">
                     <button type="button" class="tab-btn active" data-tab="servicesTab"><i data-lucide="cpu" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Services IA</button>
                     <button type="button" class="tab-btn" data-tab="paramsTab"><i data-lucide="sliders" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Personnalisation</button>
@@ -221,7 +221,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="feedback-actions">
+                <div class="feedback-actions" style="margin-top: auto;">
                     <button id="refreshCacheBtn" type="button" class="btn-secondary" title="Réparer">Réparer</button>
                     <div style="flex: 1;"></div>
                     <button id="resetChatPromptBtn" type="button" class="btn-secondary" hidden>Réinitialiser</button>
