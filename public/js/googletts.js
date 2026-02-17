@@ -16,15 +16,37 @@
     const content = String(text || "").trim();
     if (!content) return "fr-FR";
 
-    const hasVietnameseChars = /[ăâđêôơưáàảãạắằẳẵặấầẩẫậéèẻẽẹếềểễệíìỉĩịóòỏõọốồổỗộớờởỡợúùủũụứừửữựýỳỷỹỵ]/i.test(content);
-    const viHints = /\b(và|là|của|cho|không|một|những|trong|được|với|tôi|bạn|chúng|ta)\b/i.test(content);
-    const hasFrenchChars = /[àâäçéèêëîïôöùûüÿœæ]/i.test(content);
-    const frHints = /\b(le|la|les|des|une|un|et|est|pour|avec|dans|que|qui|sur|pas|vous|nous)\b/i.test(content);
-    const enHints = /\b(the|and|is|are|with|for|from|this|that|you|we|not|have|has|will)\b/i.test(content);
+    const normalized = content.normalize("NFC");
+    const words = normalized.toLowerCase().match(/[a-zA-ZÀ-ỹĐđ]+/g) || [];
+    const wordSet = new Set(words);
+    const countWords = (list) => list.reduce((acc, word) => acc + (wordSet.has(word) ? 1 : 0), 0);
 
-    if (hasVietnameseChars || viHints) return "vi-VN";
-    if (hasFrenchChars || frHints) return "fr-FR";
-    if (enHints) return "en-US";
+    const viUniqueChars = /[ăđơư]/i;
+    const viToneChars = /[ắằẳẵặấầẩẫậéèẻẽẹếềểễệóòỏõọốồổỗộớờởỡợúùủũụứừửữựíìỉĩịýỳỷỹỵ]/i;
+    const frChars = /[àâäçéèêëîïôöùûüÿœæ]/i;
+
+    const viStrongWords = ["không", "được", "một", "những", "chúng", "với", "của", "người", "việt", "nam"];
+    const viCommonWords = ["và", "là", "cho", "trong", "tôi", "bạn", "anh", "chị", "em", "này", "đó", "rằng", "để"];
+    const frWords = ["le", "la", "les", "des", "une", "un", "et", "est", "pour", "avec", "dans", "que", "qui", "sur", "pas", "vous", "nous"];
+    const enWords = ["the", "and", "is", "are", "with", "for", "from", "this", "that", "you", "we", "not", "have", "has", "will"];
+
+    let viScore = 0;
+    let frScore = 0;
+    let enScore = 0;
+
+    if (viUniqueChars.test(normalized)) viScore += 4;
+    if (viToneChars.test(normalized)) viScore += 3;
+    viScore += countWords(viStrongWords) * 2;
+    viScore += countWords(viCommonWords);
+
+    if (frChars.test(normalized)) frScore += 3;
+    frScore += countWords(frWords);
+    enScore += countWords(enWords);
+
+    if (viScore >= 4 && viScore >= frScore + 1 && viScore >= enScore + 1) return "vi-VN";
+    if (frScore >= 2 && frScore >= enScore) return "fr-FR";
+    if (enScore >= 2) return "en-US";
+    if (viScore >= 3) return "vi-VN";
     return "fr-FR";
   }
 
