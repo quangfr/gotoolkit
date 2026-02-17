@@ -411,20 +411,19 @@ RÈGLES DE SORTIE
 `
 
         var imageOcrPrompt = `Extrayez tout le texte de cette image. Soyez précis. Retournez uniquement le texte brut.`
-        var mobileEditPrompt = `Tu modifies le HANDOFF selon ASK.
+        var mobileEditPrompt = `Tu propose une version modifiée du HANDOFF selon ASK.
 
 RÈGLES
 - Ne pas ajouter spontanément des émojis si ce n'est pas demandé.
 - Pas de tableau. Pas de Markdown.
-- Listes à puce et sauts à la ligne possibles dans "content".
+- Listes à puce et sauts à la ligne possibles.
 - "title" doit résumer le HANDOFF en 2 à 3 mots maximum.
-- "content" doit contenir l'intégralité du HANDOFF final, prêt à remplacer le contenu actuel.
 
 FORMAT DE SORTIE
 - Répondre avec un UNIQUE objet JSON strict, sans texte avant/après:
 {
   "title": "Résumé 2-3 mots",
-  "content": "Contenu final complet"
+  "content": "Contenu du HANDOFF modifié selon les instructions"
 }`
 
         var initial = editChatPrompt;

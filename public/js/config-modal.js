@@ -10,7 +10,7 @@
             <form class="feedback-form" onsubmit="return false;" style="flex: 1; overflow-y: auto; padding-right: 8px; margin-right: -8px;">
                 <div class="settings-tabs tabs">
                     <button type="button" class="tab-btn active" data-tab="servicesTab"><i data-lucide="cpu" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Services IA</button>
-                    <button type="button" class="tab-btn" data-tab="paramsTab"><i data-lucide="sliders" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Paramétrages</button>
+                    <button type="button" class="tab-btn" data-tab="paramsTab"><i data-lucide="sliders" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Personnalisation</button>
                     <button type="button" class="tab-btn" data-tab="integrationsTab"><i data-lucide="plug-zap" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Intégrations</button>
                 </div>
                 <div class="settings-tab-panels-wrapper" style="flex: 1; overflow-y: auto; padding-right: 8px; margin-right: -8px;">
@@ -26,7 +26,6 @@
                                         <button id="assemblyAiVerifyBtn" type="button" class="btn-secondary">Vérifier</button>
                                     </div>
                                 </div>
-                                <span class="label-subtitle">Accès partagé avec rétention des données. Accès privé (~15ct/h. Crédit offert de 50€ à l'inscription)</span>
                                 <input id="assemblyAiKeyInput" type="text" placeholder="sk-..." />
                             </label>
                         </div>
@@ -44,8 +43,6 @@
                                 <label style="width:100%">
                                     <div style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem;">
                                         <div>
-                                            <span class="label-subtitle">Accès privé (~1ct/100 requêtes)</span>
-                                            <br>
                                             <a href="https://platform.openai.com/settings/organization/api-keys" class="label-title dashed-link" target="_blank" rel="noopener noreferrer">Clé OpenAI</a>
                                             <span class="ia-status" id="openaiStatus" aria-hidden="true"></span>
                                         </div>
@@ -82,8 +79,6 @@
                                 <label style="width:100%">
                                     <div style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem;">
                                         <div>
-                                            <span class="label-subtitle">Accès partagé sans rétention des données. Accès privé (~1ct/100 requêtes)</span>
-                                            <br>
                                             <a class="label-title" href="https://openrouter.ai/settings/keys" target="_blank" rel="noopener noreferrer">Clé OpenRouter</a>
                                             <span class="ia-status" id="openrouterStatus" aria-hidden="true"></span>
                                             <span class="ia-model-label" id="openrouterModelLabel" aria-live="polite"></span><br>
@@ -546,9 +541,7 @@
                 const result = await tryEndpoint("https://openrouter.ai/api/v1/chat/completions", true);
                 setStatus(statusEl, { state: "ready", label: "Accès privé" });
                 if (modelLabelEl) {
-                    let label = appendLatencyToLabel("Accès privé", result.latencyMs);
-                    if (result.rateLimitRemaining) label += ` • Disponible : ${result.rateLimitRemaining}`;
-                    modelLabelEl.textContent = `${label} · ${model}`;
+                    modelLabelEl.textContent = appendLatencyToLabel("Clé valide. Accès privé", result.latencyMs);
                 }
                 return true;
             } catch (err) {
@@ -559,9 +552,7 @@
             const result = await tryEndpoint("https://openrouter.gotoolkit.workers.dev/api/v1/chat/completions", false);
             setStatus(statusEl, { state: "warning", label: "" });
             if (modelLabelEl) {
-                let label = appendLatencyToLabel("Clé invalide.", result.latencyMs);
-                if (result.rateLimitRemaining) label += ` • Disponible : ${result.rateLimitRemaining}`;
-                modelLabelEl.textContent = `${label} · ${model}`;
+                modelLabelEl.textContent = appendLatencyToLabel("Clé invalide. Accès partagé", result.latencyMs);
             }
             return true;
         } catch (err) {
@@ -653,6 +644,72 @@
         syncBackendSettingsVisibility();
     }
 
+    function getSettingsTabNodes(modal) {
+        if (!modal) return { buttons: [], wrapper: null, panels: [] };
+        const buttons = Array.from(modal.querySelectorAll(".settings-tabs .tab-btn"));
+        const wrapper = modal.querySelector(".settings-tab-panels-wrapper");
+        const panels = Array.from((wrapper?.querySelectorAll(".settings-tab-panel")) || modal.querySelectorAll(".settings-tab-panel"));
+        return { buttons, wrapper, panels };
+    }
+
+    function syncSettingsTabHeights(modal) {
+        const { wrapper, panels } = getSettingsTabNodes(modal);
+        if (!wrapper || !panels.length) return;
+        let maxHeight = 0;
+        const backups = [];
+        panels.forEach(function (panel, index) {
+            backups[index] = {
+                hidden: panel.hidden,
+                position: panel.style.position || "",
+                visibility: panel.style.visibility || ""
+            };
+            panel.style.position = "absolute";
+            panel.style.visibility = "hidden";
+            panel.hidden = false;
+            const height = panel.offsetHeight;
+            if (height > maxHeight) maxHeight = height;
+            panel.hidden = backups[index].hidden;
+            panel.style.position = backups[index].position;
+            panel.style.visibility = backups[index].visibility;
+        });
+        wrapper.style.minHeight = `${maxHeight || 0}px`;
+    }
+
+    function updateSettingsActionButtons(modal, tabId) {
+        const resetChatPromptBtn = modal?.querySelector("#resetChatPromptBtn");
+        if (!resetChatPromptBtn) return;
+        resetChatPromptBtn.hidden = tabId !== "promptTab";
+    }
+
+    function activateSettingsTab(modal, tabId) {
+        const { buttons, panels } = getSettingsTabNodes(modal);
+        if (!buttons.length || !panels.length) return;
+        const resolvedTabId = tabId || buttons[0]?.dataset?.tab || "servicesTab";
+        buttons.forEach(function (btn) {
+            btn.classList.toggle("active", btn.dataset.tab === resolvedTabId);
+        });
+        panels.forEach(function (panel) {
+            panel.hidden = panel.dataset.panel !== resolvedTabId;
+        });
+        syncSettingsTabHeights(modal);
+        updateSettingsActionButtons(modal, resolvedTabId);
+    }
+
+    function bindSettingsTabs(modal, options = {}) {
+        if (!modal || modal.dataset.settingsTabsBound === "1") return;
+        const { buttons } = getSettingsTabNodes(modal);
+        if (!buttons.length) return;
+        const onTabChange = typeof options.onTabChange === "function" ? options.onTabChange : null;
+        buttons.forEach(function (button) {
+            button.addEventListener("click", function () {
+                const nextTab = button.dataset.tab || buttons[0]?.dataset?.tab || "servicesTab";
+                activateSettingsTab(modal, nextTab);
+                if (onTabChange) onTabChange(nextTab);
+            });
+        });
+        modal.dataset.settingsTabsBound = "1";
+    }
+
     function bind(options = {}) {
         const modal = doc.getElementById(options.modalId || "settingsModal");
         if (!modal) return null;
@@ -664,19 +721,31 @@
 
         const onOpen = typeof options.onOpen === "function" ? options.onOpen : null;
         const onClose = typeof options.onClose === "function" ? options.onClose : null;
+        const onTabChange = typeof options.onTabChange === "function" ? options.onTabChange : null;
+        const defaultTab = options.defaultTab || "servicesTab";
+
+        bindSettingsTabs(modal, { onTabChange });
 
         const api = {
             open: function () {
                 if (onOpen) onOpen();
                 bindBackendSelector();
                 syncBackendSettingsVisibility();
+                activateSettingsTab(modal, defaultTab);
+                if (typeof requestAnimationFrame === "function") {
+                    requestAnimationFrame(() => syncSettingsTabHeights(modal));
+                } else {
+                    setTimeout(() => syncSettingsTabHeights(modal), 0);
+                }
                 open(modal);
             },
             close: function () {
                 close(modal);
                 if (onClose) onClose();
             },
-            modal
+            modal,
+            activateTab: function (tabId) { activateSettingsTab(modal, tabId); },
+            syncTabHeights: function () { syncSettingsTabHeights(modal); }
         };
 
         triggerIds.forEach(function (id) {
@@ -714,6 +783,14 @@
         populateOpenrouterModelInput,
         populateOpenrouterOcrModelInput,
         populateOpenrouterEmbeddingsModelInput,
+        activateSettingsTab: function (tabId, modalId = "settingsModal") {
+            const modal = doc.getElementById(modalId);
+            activateSettingsTab(modal, tabId);
+        },
+        syncSettingsTabHeights: function (modalId = "settingsModal") {
+            const modal = doc.getElementById(modalId);
+            syncSettingsTabHeights(modal);
+        },
         formatLatencyMs,
         appendLatencyToLabel,
         testOpenAiConnection,
@@ -727,6 +804,8 @@
         if (!modal.querySelector(".settings-modal")) {
             modal.innerHTML = SHARED_SETTINGS_MODAL_HTML;
         }
+        bindSettingsTabs(modal);
+        activateSettingsTab(modal, "servicesTab");
         bindBackendSelector();
         syncBackendSettingsVisibility();
         bindRepairButton();

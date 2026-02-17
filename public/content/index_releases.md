@@ -1,20 +1,22 @@
 ## 2026-02-16
-- Voice : Télécharger l'audio d'un document
+- Docs : Générer une synthèse vocale avec `Google TTS`
+- Docs : Envoyer un document sur `Outlook` et `Gmail`
+- Mobile : Editer un document avec l'AI
 
 ## 2026-02-13
-- Intégration : Publier un enregistrement sur Youtube
+- Voice : Publier un enregistrement sur `Youtube`
 - Voice : Transcription texte en temps réel
-- Intégration : Publier un document sur Notion
-- IA : Fil d'attente de commandes
-- Intégration : Envoyer un document sur Outlook / Gmail
+- Docs : Publier un document sur `Notion`
+- AI : Commandes en fil d'attente
 
 ## 2026-01-28
-- IA : Éditer un prompt et restaurer une version
-- IA : Commande vocale et sélection automatique
-- Docs : Capture scan et audio depuis mobile
+- AI : Éditer un prompt et restaurer une version
+- AI : Commande vocale et sélection automatique
+- Mobile : Capture scan, prise de note et transcription audio
+- Mobile : Envoyer le contenu dans un document
 
 ## 2026-01-27
-- IA : Raccourcis Prompts
+- AI : Raccourcis Prompts
 - Home : Propriétaire des modèles
 - Files : Vectorisation des données structurées avec `qwen/qwen3-embedding-8b`
 
@@ -37,7 +39,7 @@
 - Docs : Blocs tableau, code et encadrés 
 
 ## 2026-01-12
-- IA : Reconnaissance texte OCR avec `qwen-2.5-vl-7b-instruct` 
+- AI : Reconnaissance texte OCR avec `qwen-2.5-vl-7b-instruct` 
 - Files : Extraction du texte des images, PDF, DOCX et PPTX mixtes
 - Files : Import des médias avec transcription
 - Files : Ajout des fichiers JSON
@@ -54,22 +56,22 @@
 - Docs : Édition avec sélection du texte
 
 ## 2026-01-06
-- Module `Docs` pour la création de notes assistée IA
+- Module `Docs` pour la création de notes assistée AI
 - Docs : Mode `✂ Éditer` en direct ou `✦ Suggérer` avec annotation
 
 ## 2026-01-04
-- Module `Assist` pour discuter avec l'IA
-- IA : Moteur `gpt-oss-120b` plus rapide et sans rétention de données
+- Module `Assist` pour discuter avec l'AI
+- AI : Moteur `gpt-oss-120b` plus rapide et sans rétention de données
 
 ## 2025-12-29
 - Accueil : Ajout des `Notes de version` et de la `Feuille de route`
 
 ## 2025-12-28
 - Module `Voice` pour enregistrer audio et partage d’écran
-- IA : Transcription vocale avec `AssemblyAI`
+- AI : Transcription vocale avec `AssemblyAI`
 
 ## 2025-12-27
-- IA : Choix du fournisseur IA `OpenRouter`
+- AI : Choix du fournisseur AI `OpenRouter`
 - Accueil : Clarification des `CGU`
 
 ## 2025-12-24

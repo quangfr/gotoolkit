@@ -1,6 +1,6 @@
 # Safran AE — SCORE (Produit Contract Data)
 
-## ��� Résumé exécutif
+##  Résumé exécutif
 
 ---
 
@@ -13,7 +13,7 @@
 
 ---
 
-### ��� Contexte & Enjeux
+###  Contexte & Enjeux
 
 - Multiplicité des contrats MRO
 - Formats hétérogènes
@@ -33,7 +33,7 @@
 
 ---
 
-### ��� Intervention GO-LIVE!
+###  Intervention GO-LIVE!
 
 ### Rôles assurés
 
@@ -64,7 +64,7 @@
 
 ---
 
-### ��� Résultats & Impact
+###  Résultats & Impact
 
 - Vision produit partagée
 - Backlog structuré
@@ -75,7 +75,7 @@
 
 ---
 
-### ��� Feedback client
+###  Feedback client
 
 > “Première fois qu’un projet contractuel est mené avec autant de méthode et de clarté.”
 > 
@@ -85,7 +85,7 @@
 
 ---
 
-### ��� Apprentissages
+###  Apprentissages
 
 ✅ Le prototype accélère l’alignement
 
@@ -108,7 +108,7 @@ Applicable pour :
 
 ---
 
-### ��� Version marketing
+###  Version marketing
 
 > GO-LIVE! a transformé SCORE d’un simple formulaire en un véritable produit data stratégique pour Safran.
 > 
@@ -118,7 +118,7 @@ Applicable pour :
 
 ---
 
-### ��� Pièces jointes
+###  Pièces jointes
 
 - Prototype
 - Dictionnaire data
@@ -131,7 +131,7 @@ Applicable pour :
 
 ---
 
-## ��� Résumé exécutif
+##  Résumé exécutif
 
 - **Client** : Safran Aircraft Engines
 - **Programme** : MAESTRO / IBP — transformation de la planification MRO réseau (Demand / Induction / MPS / RTI / Integration)
@@ -142,7 +142,7 @@ Applicable pour :
 
 ---
 
-## ��� Contexte & Enjeux
+##  Contexte & Enjeux
 
 MAESTRO vise à industrialiser la planification MRO à l’échelle du réseau mondial.
 
@@ -155,7 +155,7 @@ Le programme est :
 
 En pratique, la difficulté n’est pas seulement technique :
 
-��� c’est d’**aligner des acteurs nombreux** (métiers, intégrateur, sites, management), et de rendre la trajectoire **compréhensible et appropriable**.
+ c’est d’**aligner des acteurs nombreux** (métiers, intégrateur, sites, management), et de rendre la trajectoire **compréhensible et appropriable**.
 
 ---
 
@@ -168,9 +168,9 @@ En pratique, la difficulté n’est pas seulement technique :
 
 ---
 
-## ��� Intervention GO-LIVE! (mission de Livier)
+##  Intervention GO-LIVE! (mission de Livier)
 
-### ��� Rôles
+###  Rôles
 
 - **PMO / Stream Leader Change Management** (cœur de mission)
 - **Proxy Product Owner (par périmètre)** — sur certaines séquences métier
@@ -178,7 +178,7 @@ En pratique, la difficulté n’est pas seulement technique :
 
 ---
 
-## ��� MOMENT GO-LIVE! #1 — Orchestration d’un programme multi-stream
+##  MOMENT GO-LIVE! #1 — Orchestration d’un programme multi-stream
 
 Livier contribue à structurer et sécuriser la mise en musique du programme :
 
@@ -187,11 +187,11 @@ Livier contribue à structurer et sécuriser la mise en musique du programme :
 - contribution aux supports de **kick-off**, de **roadmap** et de **reporting**,
 - maintien d’une trajectoire lisible malgré la simultanéité des tracks.
 
-��� Objectif : éviter l’effet “mille sujets en parallèle” et garder un pilotage exploitable.
+ Objectif : éviter l’effet “mille sujets en parallèle” et garder un pilotage exploitable.
 
 ---
 
-## ��� MOMENT GO-LIVE! #2 — Change Management vivant (pas PowerPoint)
+##  MOMENT GO-LIVE! #2 — Change Management vivant (pas PowerPoint)
 
 Au-delà de la gouvernance, l’enjeu est l’adoption.
 
@@ -202,11 +202,11 @@ Actions menées :
 - contribution à des formats plus engageants (storytelling, métaphores, vidéo à venir),
 - encadrement / animation d’un mini-collectif (dont alternants) autour d’événements et de dynamique projet.
 
-��� Objectif : rendre le programme **vivant**, lisible, et “appropriable” par le terrain.
+ Objectif : rendre le programme **vivant**, lisible, et “appropriable” par le terrain.
 
 ---
 
-## ��� MOMENT GO-LIVE! #3 — Proxy PO : matérialiser un parcours métier clé
+##  MOMENT GO-LIVE! #3 — Proxy PO : matérialiser un parcours métier clé
 
 Livier identifie un périmètre fonctionnel “simple et utile” pour sortir du flou :
 
@@ -219,11 +219,11 @@ Articulation de plusieurs KDD (IP.1 / IP.2 / IP.3 / IP.8 / IP.9), avec :
 - objets métier (ESN, types moteurs/modules, workscopes, shops préférentiels),
 - points d’intervention humaine (planner adjustments).
 
-��� Objectif : aligner métier/IT/intégrateur sur une séquence concrète et à fort impact opérationnel.
+ Objectif : aligner métier/IT/intégrateur sur une séquence concrète et à fort impact opérationnel.
 
 ---
 
-## ��� MOMENT GO-LIVE! #4 — GO-LIVE! move : prototypage frugal pour “aider l’intégrateur”
+##  MOMENT GO-LIVE! #4 — GO-LIVE! move : prototypage frugal pour “aider l’intégrateur”
 
 Dans un programme mastodonte, Livier déclenche une démarche d’exploration pragmatique :
 
@@ -231,11 +231,11 @@ Dans un programme mastodonte, Livier déclenche une démarche d’exploration pr
 - focalisation sur la **structure des écrans**, les données en entrée/sortie,
 - recherche de valeur : soutenir l’alignement et accélérer la clarification, sans attendre un cycle complet.
 
-��� Objectif : **rendre tangible** un parcours, tester un langage, débloquer des échanges.
+ Objectif : **rendre tangible** un parcours, tester un langage, débloquer des échanges.
 
 ---
 
-## ��� Résultats & Impact (observables)
+##  Résultats & Impact (observables)
 
 - Trajectoire mieux sécurisée : coordination / workshops / rythmes maîtrisés.
 - Adoption renforcée : communication régulière, ambassadeurs, dynamique de communauté.
@@ -246,7 +246,7 @@ Dans un programme mastodonte, Livier déclenche une démarche d’exploration pr
 
 ---
 
-## ��� Apprentissages
+##  Apprentissages
 
 ✅ Dans un programme multi-stream, la valeur vient autant de l’**orchestration** que du delivery.
 
@@ -269,7 +269,7 @@ Applicable à :
 
 ---
 
-## ��� Annexes / preuves (à lier dans Notion)
+##  Annexes / preuves (à lier dans Notion)
 
 - Plan projet multi-mois (tracks / sprints / go-live / hypercare)
 - Roll-out shop planning (vagues)
@@ -279,7 +279,7 @@ Applicable à :
 
 ---
 
-## ��� Version marketing (1 paragraphe)
+##  Version marketing (1 paragraphe)
 
 GO-LIVE! a contribué à sécuriser la trajectoire du programme MAESTRO en combinant orchestration PMO, conduite du changement active et initiatives Proxy PO. En matérialisant un parcours métier clé via un prototypage frugal et une communication vivante (ambassadeurs, contenus, reporting), l’équipe a renforcé l’alignement métier–IT–intégrateur et l’appropriation du programme par le terrain.
 
@@ -287,7 +287,7 @@ GO-LIVE! a contribué à sécuriser la trajectoire du programme MAESTRO en combi
 
 # Safran AE - WALK & WKS COCKPIT
 
-## ��� Résumé exécutif
+##  Résumé exécutif
 
 - Client : Safran Aircraft Engines
 - Produit : WALK (outil transactionnel d’élaboration des workscopes)
@@ -298,7 +298,7 @@ GO-LIVE! a contribué à sécuriser la trajectoire du programme MAESTRO en combi
 
 ---
 
-## ��� Contexte & Enjeux — Un moteur puissant… sans tableau de bord
+##  Contexte & Enjeux — Un moteur puissant… sans tableau de bord
 
 Safran Aircraft Engines ha développé WALK pour structurer les workscopes et tracer les interactions entre les différents acteurs :
 
@@ -316,7 +316,7 @@ Mais dans les usages quotidiens, un malaise s’installe rapidement.
 - Les analyses sont complexes et réservées à quelques experts.
 - Les équipes peinent à percevoir la valeur de leurs efforts.
 
-��� WALK fonctionne, mais reste une **boîte noire transactionnelle** :
+ WALK fonctionne, mais reste une **boîte noire transactionnelle** :
 
 on alimente le système, sans réellement pouvoir exploiter ce qu’il produit.
 
@@ -334,11 +334,11 @@ Plusieurs dérives apparaissent :
 
 Risque majeur :
 
-��� Disposer d’un système industriel robuste… mais structurellement sous-exploité.
+ Disposer d’un système industriel robuste… mais structurellement sous-exploité.
 
 ---
 
-## ��� Intervention GO-LIVE!
+##  Intervention GO-LIVE!
 
 ### Rôles mobilisés
 
@@ -349,7 +349,7 @@ Objectif : transformer WALK d’un outil transactionnel fermé en un écosystèm
 
 ---
 
-## ��� MOMENT GO-LIVE! #1 — Donner un langage commun au système
+##  MOMENT GO-LIVE! #1 — Donner un langage commun au système
 
 Avant de rendre WALK visible, il fallait d’abord le rendre compréhensible.
 
@@ -367,11 +367,11 @@ Ce chantier aboutit à :
 - une documentation vivante,
 - une base commune d’interprétation.
 
-��� WALK cesse progressivement d’être un outil “technique” pour devenir un système métier partagé.
+ WALK cesse progressivement d’être un outil “technique” pour devenir un système métier partagé.
 
 ---
 
-## ��� MOMENT GO-LIVE! #2 — Sécuriser la donnée par le terrain
+##  MOMENT GO-LIVE! #2 — Sécuriser la donnée par le terrain
 
 La fiabilité de la donnée devient un enjeu central.
 
@@ -391,11 +391,11 @@ Effets directs :
 - création de supports pédagogiques,
 - montée en compétence progressive des équipes.
 
-��� La donnée cesse d’être “supposée juste”. Elle devient vérifiée.
+ La donnée cesse d’être “supposée juste”. Elle devient vérifiée.
 
 ---
 
-## ��� MOMENT GO-LIVE! #3 — Oser ouvrir le capot : créer une vitrine indépendante
+##  MOMENT GO-LIVE! #3 — Oser ouvrir le capot : créer une vitrine indépendante
 
 Malgré les progrès, un constat persiste :
 
@@ -403,7 +403,7 @@ Même structurée, la donnée reste difficilement accessible dans WALK.
 
 GO-LIVE! prend alors une initiative structurante, non prévue initialement :
 
-��� Créer une vitrine externe dédiée.
+ Créer une vitrine externe dédiée.
 
 Une interface web moderne, responsive, développée en HTML/CSS, indépendante du cœur applicatif.
 
@@ -418,7 +418,7 @@ C’est la naissance du **Workscope Cockpit**.
 
 ---
 
-## ���️ Le Workscope Cockpit — Du moteur au tableau de bord
+## ️ Le Workscope Cockpit — Du moteur au tableau de bord
 
 Le Cockpit devient le point d’entrée naturel des utilisateurs.
 
@@ -430,13 +430,13 @@ Il permet de :
 - intégrer tutoriels et guides,
 - rechercher l’information efficacement.
 
-��� WALK reste le moteur.
+ WALK reste le moteur.
 
-��� Le Cockpit devient le tableau de bord.
+ Le Cockpit devient le tableau de bord.
 
 ---
 
-## ��� MOMENT GO-LIVE! #4 — Installer l’amélioration continue des pratiques
+##  MOMENT GO-LIVE! #4 — Installer l’amélioration continue des pratiques
 
 Une fois la donnée visible et partagée, un nouveau potentiel émerge.
 
@@ -457,11 +457,11 @@ Concrètement :
 - capitalisation collective,
 - ajustement progressif des méthodes.
 
-��� WALK devient un outil d’apprentissage organisationnel, pas seulement de production.
+ WALK devient un outil d’apprentissage organisationnel, pas seulement de production.
 
 ---
 
-## ��� Résultats & Impact — Un système qui crée désormais de la valeur
+##  Résultats & Impact — Un système qui crée désormais de la valeur
 
 - Déverrouillage du système
 - Lecture transverse facilitée
@@ -473,15 +473,15 @@ Concrètement :
 
 Le Cockpit devient à la fois :
 
-��� un outil opérationnel
+ un outil opérationnel
 
-��� un outil de pilotage
+ un outil de pilotage
 
-��� un outil de progrès continu.
+ un outil de progrès continu.
 
 ---
 
-## ��� Feedback utilisateur
+##  Feedback utilisateur
 
 > “Avant, WALK était une boîte noire.
 > 
@@ -491,7 +491,7 @@ Le Cockpit devient à la fois :
 
 ---
 
-## ��� Apprentissages GO-LIVE!
+##  Apprentissages GO-LIVE!
 
 ✅ Un système performant peut échouer sans lisibilité
 
@@ -516,7 +516,7 @@ Ce modèle est applicable à :
 
 ---
 
-## ��� Version marketing
+##  Version marketing
 
 > GO-LIVE! a transformé WALK d’une boîte noire transactionnelle en un système lisible, adopté et apprenant.
 > 
@@ -526,7 +526,7 @@ Ce modèle est applicable à :
 
 ---
 
-## ��� Version courte — Pitch / Site
+##  Version courte — Pitch / Site
 
 ### Cas client — Safran AE / WALK
 
@@ -544,7 +544,7 @@ Résultat : une plateforme enfin lisible, adoptée et créatrice de valeur colle
 
 ---
 
-## ��� Résumé exécutif
+##  Résumé exécutif
 
 - **Client** : Safran Aircraft Engines
 - **Contexte** : ramp-up industriel du moteur LEAP
@@ -557,7 +557,7 @@ Résultat : une plateforme enfin lisible, adoptée et créatrice de valeur colle
 
 ---
 
-## ��� Contexte & Enjeux — LEAP et fragmentation
+##  Contexte & Enjeux — LEAP et fragmentation
 
 Avec la montée en puissance du moteur LEAP, Safran doit absorber :
 
@@ -577,7 +577,7 @@ Mais ces projets avancent **en silos**.
 
 Il n’existe pas encore de vision unifiée.
 
-��� Un programme riche… mais sans colonne vertébrale.
+ Un programme riche… mais sans colonne vertébrale.
 
 ---
 
@@ -598,13 +598,13 @@ Mais personne ne voit encore le système.
 
 Risque majeur :
 
-��� Investir beaucoup… sans transformer durablement.
+ Investir beaucoup… sans transformer durablement.
 
 ---
 
-## ��� Positionnement GO-LIVE!
+##  Positionnement GO-LIVE!
 
-### ��� Rôle réel
+###  Rôle réel
 
 - Facilitateur stratégique du programme
 - Animateur de vision produit émergente
@@ -614,11 +614,11 @@ Pas de mandat “Product Owner”.
 
 Mais une mission plus délicate :
 
-��� Faire émerger un produit là où il n’y a qu’un programme.
+ Faire émerger un produit là où il n’y a qu’un programme.
 
 ---
 
-## ��� MOMENT GO-LIVE! #1 — Retrouver le fil rouge
+##  MOMENT GO-LIVE! #1 — Retrouver le fil rouge
 
 Première action : écouter, cartographier, relier.
 
@@ -637,15 +637,15 @@ Puis pose une question simple :
 
 Peu à peu, une évidence se dessine :
 
-��� Le dossier de facturation est le point de convergence.
+ Le dossier de facturation est le point de convergence.
 
 ---
 
-## ��� MOMENT GO-LIVE! #2 — Prototyper un “outil idéal”
+##  MOMENT GO-LIVE! #2 — Prototyper un “outil idéal”
 
 Plutôt que débattre abstraitement, GO-LIVE! choisit :
 
-��� Montrer.
+ Montrer.
 
 Par prototypage frugal (HTML, maquettes, scénarios), est matérialisé :
 
@@ -664,7 +664,7 @@ Un révélateur.
 
 ---
 
-## ��� MOMENT GO-LIVE! #3 — Provoquer les bonnes discussions
+##  MOMENT GO-LIVE! #3 — Provoquer les bonnes discussions
 
 Les prototypes deviennent un support stratégique.
 
@@ -677,11 +677,11 @@ Ils permettent de :
 
 Sponsors, métiers et IT commencent à parler du **même objet**.
 
-��� La vision converge.
+ La vision converge.
 
 ---
 
-## ��� MOMENT GO-LIVE! #4 — Faire émerger l’option “solution à façon”
+##  MOMENT GO-LIVE! #4 — Faire émerger l’option “solution à façon”
 
 À mesure que les échanges mûrissent, un constat s’impose :
 
@@ -689,13 +689,13 @@ Aucun outil existant ne peut jouer ce rôle central.
 
 GO-LIVE! formule alors une proposition structurante :
 
-��� Créer une solution dédiée, pensée pour le métier.
+ Créer une solution dédiée, pensée pour le métier.
 
 Non comme “un projet de plus”.
 
 Mais comme :
 
-### ��� La locomotive du programme.
+###  La locomotive du programme.
 
 Le produit qui :
 
@@ -706,7 +706,7 @@ Le produit qui :
 
 ---
 
-## ��� MOMENT GO-LIVE! #5 — Embarquer les sponsors
+##  MOMENT GO-LIVE! #5 — Embarquer les sponsors
 
 Cette proposition n’est pas imposée.
 
@@ -723,13 +723,13 @@ Les sponsors reconnaissent :
 - la valeur,
 - la robustesse.
 
-��� Ils portent la décision.
+ Ils portent la décision.
 
 ADVance est lancé.
 
 ---
 
-## ��� Résultats & Impact
+##  Résultats & Impact
 
 - Passage d’un programme fragmenté à une trajectoire lisible
 - Émergence d’un produit cœur partagé
@@ -741,7 +741,7 @@ ADVance devient le pivot du système.
 
 ---
 
-## ��� Apprentissages
+##  Apprentissages
 
 ✅ Un programme sans produit reste fragile
 
@@ -766,7 +766,7 @@ Applicable à :
 
 ---
 
-## ��� Version marketing
+##  Version marketing
 
 Dans un contexte de ramp-up LEAP, GO-LIVE! a aidé Safran à faire émerger un produit structurant au cœur d’un programme fragmenté.
 
@@ -776,7 +776,7 @@ Par le prototypage frugal et l’animation stratégique, le compagnon ADVance es
 
 # Epiconcept — MSF SIRH & Homere Connect
 
-**��� Résumé exécutif**
+** Résumé exécutif**
 
 - Client : Epiconcept (BU ONG)
 - Produits : Homere / Homere Connect
@@ -785,7 +785,7 @@ Par le prototypage frugal et l’animation stratégique, le compagnon ADVance es
 - Action : Pilotage transverse, stabilisation, structuration, accompagnement
 - Résultat : Service sécurisé, transformation enclenchée, forte satisfaction
 
-**��� Contexte & Enjeux — Un moment charnière pour l’éditeur**
+** Contexte & Enjeux — Un moment charnière pour l’éditeur**
 
 Epiconcept est un éditeur spécialisé, reconnu dans le monde humanitaire.
 
@@ -800,7 +800,7 @@ Dans ce contexte, une responsable clé s’absente temporairement pour congé ma
 
 Son rôle est central, transversal, structurant.
 
-��� L’enjeu n’est pas de “remplacer une personne”,
+ L’enjeu n’est pas de “remplacer une personne”,
 
 mais de sécuriser un écosystème.
 
@@ -820,9 +820,9 @@ Notamment :
 - roadmap Homere à tenir,
 - lancement Homere Connect à préparer.
 
-��� Tout devait continuer… sans rupture.
+ Tout devait continuer… sans rupture.
 
-**��� Intervention GO-LIVE!**
+** Intervention GO-LIVE!**
 
 **Rôle**
 
@@ -830,7 +830,7 @@ Notamment :
 
 Objectif : garantir la stabilité tout en préparant la transformation.
 
-**��� MOMENT GO-LIVE! #1 — Reprendre le fil sans casser la dynamique**
+** MOMENT GO-LIVE! #1 — Reprendre le fil sans casser la dynamique**
 
 Dès l’arrivée, GO-LIVE! se concentre sur :
 
@@ -841,9 +841,9 @@ Dès l’arrivée, GO-LIVE! se concentre sur :
 
 Résultat :
 
-��� confiance maintenue, continuité assurée.
+ confiance maintenue, continuité assurée.
 
-**��� MOMENT GO-LIVE! #2 — Stabiliser l’opérationnel sous pression**
+** MOMENT GO-LIVE! #2 — Stabiliser l’opérationnel sous pression**
 
 Le périmètre est large :
 
@@ -860,13 +860,13 @@ GO-LIVE! structure :
 - les circuits de décision,
 - le reporting.
 
-��� Le système tient, même en forte charge.
+ Le système tient, même en forte charge.
 
-**��� MOMENT GO-LIVE! #3 — Préparer l’avenir en parallèle**
+** MOMENT GO-LIVE! #3 — Préparer l’avenir en parallèle**
 
 En parallèle du run, un chantier stratégique est mené :
 
-��� Homere Connect.
+ Homere Connect.
 
 GO-LIVE! contribue à :
 
@@ -877,9 +877,9 @@ GO-LIVE! contribue à :
 
 Sans ralentir l’existant.
 
-��� Double piste maîtrisée : présent + futur.
+ Double piste maîtrisée : présent + futur.
 
-**��� MOMENT GO-LIVE! #4 — Étendre la contribution au-delà du périmètre**
+** MOMENT GO-LIVE! #4 — Étendre la contribution au-delà du périmètre**
 
 Face aux besoins, GO-LIVE! s’implique aussi sur :
 
@@ -890,9 +890,9 @@ Face aux besoins, GO-LIVE! s’implique aussi sur :
 
 Objectif :
 
-��� renforcer la capacité globale de la BU.
+ renforcer la capacité globale de la BU.
 
-**��� Résultats & Impact — Une transition réussie**
+** Résultats & Impact — Une transition réussie**
 
 - SLA MSF sécurisé
 - Clients rassurés
@@ -903,11 +903,11 @@ Objectif :
 
 Mission reconnue comme l’une des plus marquantes.
 
-**��� Feedback client**
+** Feedback client**
 
 “NPS 10/10.”
 
-**��� Apprentissages GO-LIVE!**
+** Apprentissages GO-LIVE!**
 
 ✅ Sécuriser une transition est un travail produit
 
@@ -927,13 +927,13 @@ Applicable pour :
 - transformation produit
 - contextes multi-clients
 
-**��� Version marketing**
+** Version marketing**
 
 GO-LIVE! a accompagné Epiconcept dans une phase charnière de son évolution, en sécurisant l’existant tout en préparant le passage au SaaS.
 
 Une transition critique menée sans rupture, saluée par un NPS de 10/10.
 
-**��� Version courte — Pitch**
+** Version courte — Pitch**
 
 Chez Epiconcept, GO-LIVE! a sécurisé une transition clé dans un contexte de transformation produit.
 
