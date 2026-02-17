@@ -16,10 +16,13 @@
     const content = String(text || "").trim();
     if (!content) return "fr-FR";
 
+    const hasVietnameseChars = /[ăâđêôơưáàảãạắằẳẵặấầẩẫậéèẻẽẹếềểễệíìỉĩịóòỏõọốồổỗộớờởỡợúùủũụứừửữựýỳỷỹỵ]/i.test(content);
+    const viHints = /\b(và|là|của|cho|không|một|những|trong|được|với|tôi|bạn|chúng|ta)\b/i.test(content);
     const hasFrenchChars = /[àâäçéèêëîïôöùûüÿœæ]/i.test(content);
     const frHints = /\b(le|la|les|des|une|un|et|est|pour|avec|dans|que|qui|sur|pas|vous|nous)\b/i.test(content);
     const enHints = /\b(the|and|is|are|with|for|from|this|that|you|we|not|have|has|will)\b/i.test(content);
 
+    if (hasVietnameseChars || viHints) return "vi-VN";
     if (hasFrenchChars || frHints) return "fr-FR";
     if (enHints) return "en-US";
     return "fr-FR";

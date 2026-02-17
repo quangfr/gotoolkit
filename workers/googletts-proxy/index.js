@@ -30,12 +30,12 @@ const VOICE_TYPES = [
 ];
 
 const DEFAULT_VOICES = {
-  chirp3_hd: { "fr-FR": "fr-FR-Chirp3-HD-Leda", "en-US": "" },
-  studio: { "fr-FR": "fr-FR-Studio-A", "en-US": "" },
-  polyglot: { "fr-FR": "", "en-US": "" },
-  neural2: { "fr-FR": "fr-FR-Neural2-A", "en-US": "en-US-Neural2-F" },
-  wavenet: { "fr-FR": "fr-FR-Wavenet-A", "en-US": "en-US-Wavenet-F" },
-  standard: { "fr-FR": "fr-FR-Standard-A", "en-US": "en-US-Standard-F" }
+  chirp3_hd: { "fr-FR": "fr-FR-Chirp3-HD-Leda", "en-US": "", "vi-VN": "" },
+  studio: { "fr-FR": "fr-FR-Studio-A", "en-US": "", "vi-VN": "" },
+  polyglot: { "fr-FR": "", "en-US": "", "vi-VN": "" },
+  neural2: { "fr-FR": "fr-FR-Neural2-A", "en-US": "en-US-Neural2-F", "vi-VN": "" },
+  wavenet: { "fr-FR": "fr-FR-Wavenet-A", "en-US": "en-US-Wavenet-F", "vi-VN": "vi-VN-Wavenet-A" },
+  standard: { "fr-FR": "fr-FR-Standard-A", "en-US": "en-US-Standard-F", "vi-VN": "vi-VN-Standard-A" }
 };
 
 let cachedToken = { token: "", expiresAt: 0 };
@@ -207,7 +207,7 @@ function resolveVoiceMap(env) {
     const custom = JSON.parse(raw);
     for (const tier of Object.keys(out)) {
       if (!custom[tier] || typeof custom[tier] !== "object") continue;
-      for (const lang of ["fr-FR", "en-US"]) {
+      for (const lang of ["fr-FR", "en-US", "vi-VN"]) {
         if (typeof custom[tier][lang] === "string") out[tier][lang] = custom[tier][lang];
       }
     }
@@ -354,7 +354,6 @@ function chooseTier(usage, charLimits, voiceMap, languageCode) {
   for (const tier of VOICE_TYPES) {
     const voiceName = voiceMap?.[tier.key]?.[languageCode] || "";
     const charLimit = Number(charLimits?.[tier.key] || 0);
-    if (!voiceName) continue;
     if (!charLimit) continue;
     if (Number(usage[tier.key] || 0) < charLimit) {
       return { tier: tier.key, voiceName };
@@ -364,12 +363,15 @@ function chooseTier(usage, charLimits, voiceMap, languageCode) {
 }
 
 async function synthesize(token, text, languageCode, voiceName) {
+  const voicePayload = {
+    languageCode
+  };
+  if (voiceName) {
+    voicePayload.name = voiceName;
+  }
   const payload = {
     input: { text },
-    voice: {
-      languageCode,
-      name: voiceName
-    },
+    voice: voicePayload,
     audioConfig: {
       audioEncoding: "MP3",
       speakingRate: 1
@@ -503,7 +505,10 @@ export default {
     }
 
     const text = String(payload?.text || "").trim();
-    const languageCode = payload?.languageCode === "en-US" ? "en-US" : "fr-FR";
+    const requestedLanguageCode = String(payload?.languageCode || "").trim();
+    const languageCode = requestedLanguageCode === "en-US" || requestedLanguageCode === "vi-VN"
+      ? requestedLanguageCode
+      : "fr-FR";
     if (!text) {
       return jsonError(corsMeta.headers, 400, "EMPTY_TEXT", "Text is required.");
     }
