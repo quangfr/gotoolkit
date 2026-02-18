@@ -35,12 +35,12 @@
     async function resolveRecordingIcon(recordingId) {
         if (!recordingId) return "";
         if (recordingIconCache.has(recordingId)) return recordingIconCache.get(recordingId);
-        let icon = "audio-lines";
+        let icon = "cassette-tape";
         try {
             const recording = await voiceRecordingsStore?.get?.(recordingId);
             if (recording?.videoBlob) icon = "monitor-play";
         } catch (err) {
-            icon = "audio-lines";
+            icon = "cassette-tape";
         }
         recordingIconCache.set(recordingId, icon);
         return icon;

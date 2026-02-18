@@ -371,7 +371,7 @@
             }
 
             const updatedLabel = formatTemplateRelativeDate(template.updatedAt);
-            const recordingIcon = template.voiceRecordingId ? `<i data-lucide="audio-lines" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.8;"></i>` : "";
+            const recordingIcon = template.voiceRecordingId ? `<i data-lucide="cassette-tape" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.8;"></i>` : "";
             btn.innerHTML = `
                 <div class="gt-template-card__title">${recordingIcon}${escapeHtml(template.label)}</div>
                 ${superpowersHtml}

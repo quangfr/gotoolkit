@@ -5258,7 +5258,7 @@
         var transcriptionDuration = clampDuration(45000 + Math.round(totalDurationSec * 250), 45000, 180000);
         global.GoToolkitAIRequestToaster?.startIcon?.(
             "aiRequestCounterToasterTranscription",
-            "audio-lines",
+            "cassette-tape",
             "Transcription",
             transcriptionDuration
         );

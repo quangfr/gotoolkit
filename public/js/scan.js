@@ -911,7 +911,7 @@
       let iconName = "tablet-smartphone";
       if (mode === "scan") iconName = "camera";
       if (mode === "gallery") iconName = "image";
-      if (mode === "audio") iconName = "audio-lines";
+      if (mode === "audio") iconName = "cassette-tape";
       if (mode === "text") iconName = "text";
       icon.setAttribute("data-lucide", iconName);
     }
@@ -1115,7 +1115,7 @@
     if (!captureLoader) return;
     if (active) {
       if (mode === "audio") {
-        captureLoader.innerHTML = "<i data-lucide=\"audio-lines\"></i><span>Transcription en cours...</span>";
+        captureLoader.innerHTML = "<i data-lucide=\"cassette-tape\"></i><span>Transcription en cours...</span>";
       } else {
         captureLoader.innerHTML = "<i data-lucide=\"image-up\"></i><span>OCR en cours...</span>";
       }

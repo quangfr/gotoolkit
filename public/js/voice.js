@@ -269,7 +269,7 @@
         const durationMs = Math.max(1000, Math.round((remainingSeconds || 0) * 1000));
         window.GoToolkitAIRequestToaster?.startIcon?.(
             "aiRequestCounterToasterTranscription",
-            "audio-lines",
+            "cassette-tape",
             "",
             durationMs
         );
@@ -456,6 +456,26 @@
         state.hadLiveTranscriptInSession = true;
         const payload = `${getLiveInsertPrefix(chunk)}${chunk}`;
         state.liveLastInsertedChar = payload.slice(-1) || state.liveLastInsertedChar;
+        if (memoId && typeof window.GoToolkitMemoAppendToRecordingTab === "function") {
+            window.GoToolkitMemoAppendToRecordingTab(payload, memoId);
+            return;
+        }
+        if (memoId && typeof window.GoToolkitMemoInsertTextAtTrackedCaret === "function") {
+            window.GoToolkitMemoInsertTextAtTrackedCaret(payload, memoId);
+            return;
+        }
+        const activeMemoId = window.GoToolkitMemoVoice?.getActiveMemo?.()?.id || null;
+        const isTargetMemoActive = Boolean(memoId && activeMemoId && memoId === activeMemoId);
+        // When the source memo is still active, keep natural inline insertion.
+        if (isTargetMemoActive && typeof window.GoToolkitMemoInsertTextAtCaret === "function") {
+            window.GoToolkitMemoInsertTextAtCaret(payload, memoId);
+            return;
+        }
+        // If user switched tab/document, keep appending to the source memo.
+        if (memoId && typeof window.GoToolkitMemoAppendText === "function") {
+            window.GoToolkitMemoAppendText(payload, memoId);
+            return;
+        }
         if (typeof window.GoToolkitMemoInsertTextAtCaret === "function") {
             window.GoToolkitMemoInsertTextAtCaret(payload, memoId || null);
             return;
