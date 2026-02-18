@@ -45,10 +45,10 @@
         crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.min.js" crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.min.js" crossorigin></script>
-    <link rel="stylesheet" href="styles/style.css?v=2026.02.18.3">
+    <link rel="stylesheet" href="styles/style.css?v=2026.02.18.4">
     <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
-    <link rel="stylesheet" href="styles/memo.css?v=2026.02.18.3">
-    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.18.3">
+    <link rel="stylesheet" href="styles/memo.css?v=2026.02.18.4">
+    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.18.4">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.css">
     <script src="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.js"></script>
     <style>
@@ -56,7 +56,7 @@
             position: fixed;
             inset: 0;
             background: rgba(15, 23, 42, 0.55);
-            z-index: 2400;
+            z-index: 30000;
         }
 
         .docs-tour-highlight {
@@ -64,13 +64,13 @@
             border: 2px solid var(--color-primary);
             border-radius: 10px;
             box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.55);
-            z-index: 2401;
+            z-index: 30001;
             pointer-events: none;
         }
 
         .docs-tour-card {
             position: fixed;
-            z-index: 2402;
+            z-index: 30002;
             width: min(360px, calc(100vw - 24px));
             background: var(--bg-surface);
             border: 1px solid var(--border-main);
@@ -141,7 +141,7 @@
                 <div class="tabs-actions">
                     <button id="documentExplorerToggle" class="app-home-link" type="button" title="Bibliothèque"
                         aria-expanded="false" aria-controls="documentExplorer"><i data-lucide="library"></i></button>
-                    <a href="/?v=2026.02.18.3" class="nav-switch-btn" title="Accueil"
+                    <a href="/?v=2026.02.18.4" class="nav-switch-btn" title="Accueil"
                         style="text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
                         <i data-lucide="home"></i>
                     </a>
@@ -381,7 +381,7 @@
         <img src="img/logo.gif" alt="Logo GoToolkit" class="logo-light">
         <img src="img/logo_inverted.gif" alt="Logo GoToolkit" class="logo-dark">
         <strong>GoToolkit</strong>
-        <span>Version 2026.02.18.3</span>
+        <span>Version 2026.02.18.4</span>
         <span>Usage réservé à Savane Consulting.</span>
         <div class="info-actions info-actions--stacked">
             <div class="info-actions-row">
@@ -391,6 +391,7 @@
             <div class="info-actions-row" style="margin-top: 4px;">
                 <div id="feedback-app-memo-inline-container" style="flex: 1; display: flex;"></div>
                 <button id="memoGuidedTourBtn" type="button" class="secondary"
+                    onclick="window.GoToolkitStartDocsTour && window.GoToolkitStartDocsTour()"
                     style="flex: 1; margin: 0; width: auto;">Tour guidé</button>
             </div>
         </div>
@@ -458,22 +459,22 @@
         window.GO_TOOLKIT_GOOGLE_TTS_API_URL =
             window.GO_TOOLKIT_GOOGLE_TTS_API_URL || "https://googletts.gotoolkit.workers.dev";
     </script>
-    <script src="js/config.js?v=2026.02.18.3"></script>
-    <script src="js/config-modal.js?v=2026.02.18.3"></script>
-    <script src="js/feature-visibility.js?v=2026.02.18.3"></script>
-    <script src="js/document-storage.js?v=2026.02.18.3"></script>
-    <script src="js/storage-service.js?v=2026.02.18.3"></script>
-    <script src="js/shared-ui.js?v=2026.02.18.3"></script>
-    <script src="js/share-worker-client.js?v=2026.02.18.3"></script>
-    <script src="js/share-history.js?v=2026.02.18.3"></script>
-    <script src="js/document-api.js?v=2026.02.18.3"></script>
-    <script src="js/keywordIndex.js?v=2026.02.18.3"></script>
-    <script src="js/document-rag.js?v=2026.02.18.3"></script>
-    <script src="js/ia-config.js?v=2026.02.18.3"></script>
-    <script src="preset.js?v=2026.02.18.3"></script>
-    <script src="prompt.js?v=2026.02.18.3"></script>
-    <script src="js/ia-client.js?v=2026.02.18.3"></script>
-    <script src="js/document-markdown.js?v=2026.02.18.3"></script>
+    <script src="js/config.js?v=2026.02.18.4"></script>
+    <script src="js/config-modal.js?v=2026.02.18.4"></script>
+    <script src="js/feature-visibility.js?v=2026.02.18.4"></script>
+    <script src="js/document-storage.js?v=2026.02.18.4"></script>
+    <script src="js/storage-service.js?v=2026.02.18.4"></script>
+    <script src="js/shared-ui.js?v=2026.02.18.4"></script>
+    <script src="js/share-worker-client.js?v=2026.02.18.4"></script>
+    <script src="js/share-history.js?v=2026.02.18.4"></script>
+    <script src="js/document-api.js?v=2026.02.18.4"></script>
+    <script src="js/keywordIndex.js?v=2026.02.18.4"></script>
+    <script src="js/document-rag.js?v=2026.02.18.4"></script>
+    <script src="js/ia-config.js?v=2026.02.18.4"></script>
+    <script src="preset.js?v=2026.02.18.4"></script>
+    <script src="prompt.js?v=2026.02.18.4"></script>
+    <script src="js/ia-client.js?v=2026.02.18.4"></script>
+    <script src="js/document-markdown.js?v=2026.02.18.4"></script>
     <script>
         document.addEventListener("click", function (event) {
             const legalTrigger = event.target?.closest?.("[data-open-nexus-modal]");
@@ -507,14 +508,14 @@
             ]
         };
     </script>
-    <script src="js/feedback.js?v=2026.02.18.3"></script>
-    <script src="js/voice-video-player.js?v=2026.02.18.3"></script>
-    <script src="js/voice-audio-player.js?v=2026.02.18.3"></script>
-    <script src="js/youtube-publish.js?v=2026.02.18.3"></script>
-    <script src="js/voice.js?v=2026.02.18.3"></script>
-    <script src="js/voice-transcript.js?v=2026.02.18.3"></script>
-    <script src="js/googletts.js?v=2026.02.18.3"></script>
-    <script src="js/draw-memo.js?v=2026.02.18.3"></script>
+    <script src="js/feedback.js?v=2026.02.18.4"></script>
+    <script src="js/voice-video-player.js?v=2026.02.18.4"></script>
+    <script src="js/voice-audio-player.js?v=2026.02.18.4"></script>
+    <script src="js/youtube-publish.js?v=2026.02.18.4"></script>
+    <script src="js/voice.js?v=2026.02.18.4"></script>
+    <script src="js/voice-transcript.js?v=2026.02.18.4"></script>
+    <script src="js/googletts.js?v=2026.02.18.4"></script>
+    <script src="js/draw-memo.js?v=2026.02.18.4"></script>
     <script>
         // Suppress React DevTools prompt in dev builds.
         window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = window.__REACT_DEVTOOLS_GLOBAL_HOOK__ || {
@@ -524,9 +525,9 @@
             onCommitFiberUnmount: function () { }
         };
     </script>
-    <script src="js/memo.bundle.js?v=2026.02.18.3"></script>
-    <script src="js/assist.js?v=2026.02.18.3"></script>
-    <script src="js/document-panel.js?v=2026.02.18.3"></script>
+    <script src="js/memo.bundle.js?v=2026.02.18.4"></script>
+    <script src="js/assist.js?v=2026.02.18.4"></script>
+    <script src="js/document-panel.js?v=2026.02.18.4"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             setTimeout(function () {
@@ -4559,8 +4560,7 @@
                     const step = steps[activeIndex];
                     if (!step) return cleanup();
                     step.before?.();
-                    const target = step.focus?.();
-                    if (!target) return cleanup();
+                    const target = step.focus?.() || document.getElementById("page") || document.body;
                     target.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
                     const rect = target.getBoundingClientRect();
                     highlight.style.left = Math.max(6, rect.left - 6) + "px";
@@ -4593,6 +4593,15 @@
                 render();
             }
 
+            window.GoToolkitStartDocsTour = function () {
+                try {
+                    memoInfoPopup?.classList.remove("open");
+                    createDocsSpotlightTour();
+                } catch (err) {
+                    console.error("Guided tour launch failed", err);
+                }
+            };
+
             infoButton?.addEventListener("click", event => {
                 event.stopPropagation();
                 closeMenus();
@@ -4601,8 +4610,7 @@
 
             memoGuidedTourBtn?.addEventListener("click", event => {
                 event.stopPropagation();
-                memoInfoPopup?.classList.remove("open");
-                createDocsSpotlightTour();
+                window.GoToolkitStartDocsTour?.();
             });
 
             memoDocsBtn?.addEventListener("click", event => {
