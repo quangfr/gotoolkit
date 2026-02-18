@@ -57649,7 +57649,6 @@ ${innerMarkdown}
   var simple_editor_default = SimpleEditor;
 
   // src/memo-bridge/index.tsx
-  console.warn("!!! MEMO BRIDGE JS EXECUTED !!!");
   var EditorItem = react_shim_default.memo(({ editor, activeId, onChangeCb, handleEditorReady }) => {
     const onReady = react_shim_default.useCallback((methods) => {
       handleEditorReady(editor.id, methods);
@@ -57971,4 +57970,3 @@ docx/dist/index.mjs:
    *)
   (*! http://mths.be/fromcodepoint v0.1.0 by @mathias *)
 */
-//# sourceMappingURL=memo.bundle.js.map

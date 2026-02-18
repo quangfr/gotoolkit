@@ -4,8 +4,6 @@ import { SimpleEditor } from '@/memo-editor';
 import { exportEditorToDocx } from '@/memo-editor/docx-export';
 import { EditorState } from '@tiptap/pm/state';
 
-console.warn('!!! MEMO BRIDGE JS EXECUTED !!!');
-
 // Bridge to maintain compatibility with docs.html
 interface MemoEditorApi {
     setValue: (content: string) => void;
