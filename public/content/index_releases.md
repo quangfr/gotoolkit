@@ -1,16 +1,16 @@
 ## 2026-02-16
 - Voice : Télécharger l'enregistrement vidéo en GIF
-- Docs : Ajouter une image
+- Docs : Ajouter des images
 
 ## 2026-02-16
 - Docs : Générer une synthèse vocale avec `Google TTS`
-- Docs : Envoyer un document sur `Outlook` et `Gmail`
+- Docs : Envoyer le contenu sur `Outlook` et `Gmail`
 - Mobile : Modifier le contenu en mode IA
 
 ## 2026-02-13
 - Voice : Publier un enregistrement sur `Youtube`
 - Voice : Transcription texte en temps réel
-- Docs : Publier un document sur `Notion`
+- Docs : Publier le contenu sur `Notion`
 - AI : Ajouter plusieurs commandes IA en attente
 
 ## 2026-01-28

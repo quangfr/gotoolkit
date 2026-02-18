@@ -1,9 +1,6 @@
 ## Assistance IA
 - Réponse au fil de l'eau (streaming)
 
-## Édition de document
-- Ajout d'images
-
 ## Intégration tiers
 - Sharepoint / OneDrive 
 - Google Drive 

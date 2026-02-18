@@ -955,6 +955,8 @@
             path: String(options?.path || "").trim(),
             title: String(options?.title || "Document").trim() || "Document",
             content: String(options?.content || ""),
+            blocks: Array.isArray(options?.blocks) ? options.blocks : [],
+            assets: Array.isArray(options?.assets) ? options.assets : [],
             format: String(options?.format || "markdown").trim() || "markdown",
             hasRecording: Boolean(options?.hasRecording)
         });

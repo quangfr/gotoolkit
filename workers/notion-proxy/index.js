@@ -168,6 +168,24 @@ async function notionApiFetch(token, path, options = {}) {
   return payload;
 }
 
+async function notionApiRawFetch(token, path, options = {}) {
+  const response = await fetch(`${NOTION_API_BASE}${path}`, {
+    method: options.method || "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Notion-Version": NOTION_VERSION,
+      ...(options.headers || {})
+    },
+    body: options.body
+  });
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    const msg = payload?.message || payload?.error || `Notion API error (${response.status})`;
+    throw new Error(msg);
+  }
+  return response;
+}
+
 function normalizeDeviceData(raw) {
   const data = raw && typeof raw === "object" ? raw : {};
   const workspaces = data.workspaces && typeof data.workspaces === "object" ? data.workspaces : {};
@@ -456,6 +474,153 @@ function splitTextToBlocks(text, options = {}) {
     });
   }
   return blocks.slice(0, 100);
+}
+
+function normalizeIncomingAssets(value) {
+  if (!Array.isArray(value)) return [];
+  return value.map((asset, index) => {
+    const id = String(asset?.id || `asset-${index + 1}`).trim();
+    const filename = String(asset?.filename || `${id}.bin`).trim() || `${id}.bin`;
+    const contentType = String(asset?.contentType || "application/octet-stream").trim() || "application/octet-stream";
+    const dataBase64 = String(asset?.dataBase64 || "").trim();
+    const sourceUrl = String(asset?.sourceUrl || "").trim();
+    return { id, filename, contentType, dataBase64, sourceUrl };
+  }).filter(asset => asset.id && (asset.dataBase64 || asset.sourceUrl));
+}
+
+function normalizeIncomingBlocks(value) {
+  if (!Array.isArray(value)) return [];
+  return value.filter(Boolean).slice(0, 100);
+}
+
+function decodeBase64ToUint8Array(base64Value) {
+  const raw = atob(String(base64Value || ""));
+  const bytes = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i += 1) {
+    bytes[i] = raw.charCodeAt(i);
+  }
+  return bytes;
+}
+
+async function resolveAssetBytes(asset) {
+  if (asset.dataBase64) {
+    return decodeBase64ToUint8Array(asset.dataBase64);
+  }
+  if (!asset.sourceUrl) return null;
+  const response = await fetch(asset.sourceUrl);
+  if (!response.ok) {
+    throw new Error(`Impossible de récupérer l'asset (${response.status})`);
+  }
+  const buffer = await response.arrayBuffer();
+  const contentType = String(response.headers.get("Content-Type") || "").trim();
+  if (contentType && !asset.contentType) {
+    asset.contentType = contentType;
+  }
+  return new Uint8Array(buffer);
+}
+
+async function createAndUploadNotionFile(token, asset) {
+  const bytes = await resolveAssetBytes(asset);
+  if (!bytes || !bytes.length) {
+    throw new Error("Asset vide");
+  }
+
+  const createPayload = await notionApiFetch(token, "/file_uploads", {
+    method: "POST",
+    body: {
+      filename: asset.filename,
+      content_type: asset.contentType || "application/octet-stream",
+      mode: "single_part"
+    }
+  });
+  const uploadId = String(createPayload?.id || "").trim();
+  if (!uploadId) {
+    throw new Error("Création upload Notion impossible");
+  }
+
+  try {
+    await notionApiRawFetch(token, `/file_uploads/${encodeURIComponent(uploadId)}/send`, {
+      method: "POST",
+      headers: {
+        "Content-Type": asset.contentType || "application/octet-stream"
+      },
+      body: bytes
+    });
+  } catch (err) {
+    const form = new FormData();
+    form.append("file", new Blob([bytes], { type: asset.contentType || "application/octet-stream" }), asset.filename);
+    await notionApiRawFetch(token, `/file_uploads/${encodeURIComponent(uploadId)}/send`, {
+      method: "POST",
+      body: form
+    });
+  }
+
+  await notionApiFetch(token, `/file_uploads/${encodeURIComponent(uploadId)}/complete`, {
+    method: "POST",
+    body: {}
+  }).catch(() => null);
+
+  return uploadId;
+}
+
+async function uploadAssetsToNotion(token, assets) {
+  const uploaded = {};
+  for (const asset of assets) {
+    try {
+      const uploadId = await createAndUploadNotionFile(token, asset);
+      uploaded[asset.id] = {
+        ok: true,
+        uploadId,
+        sourceUrl: asset.sourceUrl || ""
+      };
+    } catch (err) {
+      uploaded[asset.id] = {
+        ok: false,
+        uploadId: "",
+        sourceUrl: asset.sourceUrl || "",
+        error: err?.message || "Upload impossible"
+      };
+    }
+  }
+  return uploaded;
+}
+
+function rewriteBlocksWithUploadedAssets(blocks, uploadState) {
+  function visit(value) {
+    if (Array.isArray(value)) {
+      return value.map(visit).filter(v => v !== null);
+    }
+    if (!value || typeof value !== "object") return value;
+
+    const next = {};
+    for (const [key, raw] of Object.entries(value)) {
+      if (key === "file_upload" && raw && typeof raw === "object") {
+        const rawId = String(raw.id || "").trim();
+        if (rawId.startsWith("asset:")) {
+          const assetId = rawId.slice("asset:".length);
+          const state = uploadState[assetId];
+          if (state?.ok && state.uploadId) {
+            next[key] = { id: state.uploadId };
+            continue;
+          }
+          if (state?.sourceUrl) {
+            return {
+              type: "external",
+              external: { url: state.sourceUrl }
+            };
+          }
+          return null;
+        }
+      }
+      next[key] = visit(raw);
+    }
+    if (next.type === "image" && (!next.image || typeof next.image !== "object")) {
+      return null;
+    }
+    return next;
+  }
+
+  return visit(blocks);
 }
 
 async function getPageInfo(token, pageId) {
@@ -796,6 +961,9 @@ export default {
       const pathInput = String(body?.path || "").trim();
       const title = String(body?.title || "Document").trim() || "Document";
       const content = String(body?.content || "");
+      const format = String(body?.format || "markdown").trim().toLowerCase();
+      const incomingBlocks = normalizeIncomingBlocks(body?.blocks);
+      const incomingAssets = normalizeIncomingAssets(body?.assets);
       const hasRecording = Boolean(body?.hasRecording);
 
       if (!deviceId) return errorResponse(cors.headers, 400, "deviceId requis");
@@ -803,7 +971,21 @@ export default {
       if (!auth?.token) return errorResponse(cors.headers, 401, "Connexion Notion requise");
 
       try {
-        const children = splitTextToBlocks(content, { hasRecording });
+        let children = splitTextToBlocks(content, { hasRecording });
+        if (format === "notion_blocks" && incomingBlocks.length) {
+          const uploadState = await uploadAssetsToNotion(auth.token, incomingAssets);
+          const rewritten = rewriteBlocksWithUploadedAssets(incomingBlocks, uploadState);
+          if (Array.isArray(rewritten) && rewritten.length) {
+            children = rewritten.slice(0, 100);
+          }
+        }
+        if (hasRecording && children.length < 100) {
+          children.push({
+            object: "block",
+            type: "quote",
+            quote: { rich_text: toRichText("Ce document contient un enregistrement audio/vidéo associé.") }
+          });
+        }
         let finalPageId = "";
         let finalUrl = "";
 

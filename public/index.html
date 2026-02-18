@@ -115,8 +115,8 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Sora:wght@400;500;600&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles/style.css?v=2026.02.18.11">
-    <link rel="stylesheet" href="styles/index.css?v=2026.02.18.11">
+    <link rel="stylesheet" href="styles/style.css?v=2026.02.18.12">
+    <link rel="stylesheet" href="styles/index.css?v=2026.02.18.12">
     <style>
         .feedback-app-launcher-row {
             display: none !important;
@@ -133,7 +133,7 @@
             </div>
             <h1>GoToolkit <span class="hero-beta">beta</span></h1>
             <p>La boîte à outils IA des Product Owners</p>
-            <span class="hero-version label-link" id="releaseNotesTrigger" tabindex="0">v2026.02.18.11</span>
+            <span class="hero-version label-link" id="releaseNotesTrigger" tabindex="0">v2026.02.18.12</span>
 
             <div class="hero-meta">
                 <button id="openSettingsBtn" class="feedback-button" type="button" title="Paramètres">
@@ -330,49 +330,25 @@
     </div>
     <div id="chat-root"></div>
 
-    <div class="release-notes-modal" id="releaseNotesModal" aria-hidden="true" role="dialog" aria-modal="true"
-        aria-labelledby="releaseNotesTitle">
-        <div class="release-notes-modal__dialog">
-            <div class="release-notes-header">
-                <div>
-                    <h2 id="releaseNotesTitle">Actualités GoToolkit</h2>
-                </div>
-                <button type="button" class="release-notes-close" id="releaseNotesClose"
-                    aria-label="Fermer les notes de version"><i data-lucide="x"
-                        style="width:20px;height:20px;"></i></button>
-            </div>
-            <div class="release-notes-tabs">
-                <button class="release-tab release-tab--active" data-target="releaseNotesContent">Notes de
-                    version</button>
-                <button class="release-tab" data-target="roadmapContent">Feuille de route</button>
-            </div>
-            <div class="release-notes-content release-notes-content--active" id="releaseNotesContent">
-                <div class="release-notes-list"></div>
-            </div>
-            <div class="release-notes-content" id="roadmapContent">
-                <div class="release-roadmap-list"></div>
-            </div>
-        </div>
-    </div>
-
     <script>
         window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL =
             window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL || "https://assemblyai.gotoolkit.workers.dev/token";
     </script>
-    <script src="js/config.js?v=2026.02.18.11"></script>
-    <script src="js/config-modal.js?v=2026.02.18.11"></script>
-    <script src="js/feature-visibility.js?v=2026.02.18.11"></script>
-    <script src="js/document-storage.js?v=2026.02.18.11"></script>
-    <script src="js/storage-service.js?v=2026.02.18.11"></script>
-    <script src="js/shared-ui.js?v=2026.02.18.11"></script>
-    <script src="js/share-worker-client.js?v=2026.02.18.11"></script>
-    <script src="js/share-history.js?v=2026.02.18.11"></script>
-    <script src="js/document-api.js?v=2026.02.18.11"></script>
-    <script src="js/ia-config.js?v=2026.02.18.11"></script>
-    <script src="preset.js?v=2026.02.18.11"></script>
-    <script src="prompt.js?v=2026.02.18.11"></script>
-    <script src="js/ia-client.js?v=2026.02.18.11"></script>
-    <script src="js/template-gallery.js?v=2026.02.18.11"></script>
+    <script src="js/config.js?v=2026.02.18.12"></script>
+    <script src="js/config-modal.js?v=2026.02.18.12"></script>
+    <script src="js/feature-visibility.js?v=2026.02.18.12"></script>
+    <script src="js/document-storage.js?v=2026.02.18.12"></script>
+    <script src="js/storage-service.js?v=2026.02.18.12"></script>
+    <script src="js/shared-ui.js?v=2026.02.18.12"></script>
+    <script src="js/share-worker-client.js?v=2026.02.18.12"></script>
+    <script src="js/share-history.js?v=2026.02.18.12"></script>
+    <script src="js/document-api.js?v=2026.02.18.12"></script>
+    <script src="js/ia-config.js?v=2026.02.18.12"></script>
+    <script src="preset.js?v=2026.02.18.12"></script>
+    <script src="prompt.js?v=2026.02.18.12"></script>
+    <script src="js/ia-client.js?v=2026.02.18.12"></script>
+    <script src="js/template-gallery.js?v=2026.02.18.12"></script>
+    <script src="js/news.js?v=2026.02.18.12"></script>
     <script>
         document.addEventListener("click", function (event) {
             const legalTrigger = event.target?.closest?.("[data-open-nexus-modal]");
@@ -397,8 +373,8 @@
             primaryColor: "#2a7a57"
         };
     </script>
-    <script src="js/feedback.js?v=2026.02.18.11"></script>
-    <script src="js/youtube-publish.js?v=2026.02.18.11"></script>
+    <script src="js/feedback.js?v=2026.02.18.12"></script>
+    <script src="js/youtube-publish.js?v=2026.02.18.12"></script>
 
     <script>
         (function () {
@@ -439,287 +415,6 @@
             });
         })();
     </script>
-    <script>
-        (function () {
-            const tabs = document.querySelectorAll(".release-tab");
-            const contents = document.querySelectorAll(".release-notes-content");
-            if (!tabs.length) return;
-
-            const sectionMap = {
-                releaseNotesContent: {
-                    wrapper: document.getElementById("releaseNotesContent"),
-                    list: document.querySelector("#releaseNotesContent .release-notes-list")
-                },
-                roadmapContent: {
-                    wrapper: document.getElementById("roadmapContent"),
-                    list: document.querySelector("#roadmapContent .release-roadmap-list")
-                }
-            };
-
-            function activateTab(tab) {
-                tabs.forEach(btn => btn.classList.remove("release-tab--active"));
-                contents.forEach(content => content.classList.remove("release-notes-content--active"));
-                tab.classList.add("release-tab--active");
-                const target = document.getElementById(tab.dataset.target);
-                target?.classList.add("release-notes-content--active");
-            }
-
-            tabs.forEach(tab => tab.addEventListener("click", () => activateTab(tab)));
-
-            function parseMarkdownSections(markdown) {
-                const lines = (markdown || "").split(/\r?\n/);
-                const sections = [];
-                let current = null;
-
-                function flushCurrent() {
-                    if (current) {
-                        sections.push(current);
-                        current = null;
-                    }
-                }
-
-                function ensureCurrent() {
-                    if (!current) {
-                        current = { title: "", tags: [], blocks: [] };
-                    }
-                    return current;
-                }
-
-                function cleanTag(token) {
-                    if (!token) return "";
-                    return token.replace(/^`|`$/g, "").replace(/^"|"$/g, "").trim();
-                }
-
-                lines.forEach(line => {
-                    const trimmed = line.trim();
-                    if (!trimmed) return;
-                    const headerMatch = trimmed.match(/^##\s*(.*)$/);
-                    if (headerMatch) {
-                        flushCurrent();
-                        const headerLine = headerMatch[1];
-                        const inlineTags = [];
-                        const inlineRegex = /`([^`]+)`/g;
-                        let inlineMatch;
-                        while ((inlineMatch = inlineRegex.exec(headerLine))) {
-                            const tag = cleanTag(inlineMatch[1]);
-                            if (tag) {
-                                inlineTags.push(tag);
-                            }
-                        }
-                        const titleWithoutTags = headerLine
-                            .replace(/`[^`]+`/g, " ")
-                            .replace(/\s+/g, " ")
-                            .trim();
-                        current = {
-                            title: titleWithoutTags || "",
-                            tags: inlineTags,
-                            blocks: []
-                        };
-                        return;
-                    }
-                    const tagMatch = trimmed.match(/^###\s*(.*)$/);
-                    if (tagMatch) {
-                        const section = ensureCurrent();
-                        tagMatch[1]
-                            .split(",")
-                            .map(token => cleanTag(token))
-                            .filter(Boolean)
-                            .forEach(tag => section.tags.push(tag));
-                        return;
-                    }
-                    const section = ensureCurrent();
-                    const listMatch = trimmed.match(/^-\s*(.*)$/);
-                    if (listMatch) {
-                        section.blocks.push({ type: "list", text: listMatch[1].trim() });
-                    } else {
-                        section.blocks.push({ type: "paragraph", text: trimmed });
-                    }
-                });
-
-                flushCurrent();
-                return sections;
-            }
-
-            function renderReleaseNotes(entries) {
-                const section = sectionMap.releaseNotesContent;
-                if (!section?.list) return;
-                const list = section.list;
-                list.innerHTML = "";
-                if (!entries.length) {
-                    const placeholder = document.createElement("div");
-                    placeholder.className = "release-note";
-                    const message = document.createElement("p");
-                    message.className = "release-note-text";
-                    message.textContent = "Aucune note de version disponible.";
-                    placeholder.appendChild(message);
-                    list.appendChild(placeholder);
-                    return;
-                }
-                entries.forEach(entryData => {
-                    const entry = document.createElement("div");
-                    entry.className = "release-note";
-                    const date = document.createElement("span");
-                    date.className = "release-note-date";
-                    date.textContent = entryData.title || "Sans date";
-                    entry.appendChild(date);
-                    if (!entryData.blocks.length) {
-                        const message = document.createElement("p");
-                        message.className = "release-note-text";
-                        message.textContent = "Aucune description enregistrée.";
-                        entry.appendChild(message);
-                    } else {
-                        let listItems = [];
-                        function flushList() {
-                            if (!listItems.length) return;
-                            const ul = document.createElement("ul");
-                            ul.className = "release-note-list";
-                            listItems.forEach(text => {
-                                const li = document.createElement("li");
-                                li.append(createInlineFragment(text));
-                                ul.appendChild(li);
-                            });
-                            entry.appendChild(ul);
-                            listItems = [];
-                        }
-
-                        entryData.blocks.forEach(block => {
-                            if (block.type === "list") {
-                                listItems.push(block.text);
-                                return;
-                            }
-                            flushList();
-                            const paragraph = document.createElement("p");
-                            paragraph.className = "release-note-text";
-                            paragraph.append(createInlineFragment(block.text));
-                            entry.appendChild(paragraph);
-                        });
-                        flushList();
-                    }
-                    list.appendChild(entry);
-                });
-            }
-
-            function createInlineFragment(text) {
-                const fragment = document.createDocumentFragment();
-                const regex = /\[([^\]]+)\]\(([^)\s]+)(?:\s+"[^"]+")?\)|`([^`]+)`/g;
-                let lastIndex = 0;
-                let match;
-                while ((match = regex.exec(text))) {
-                    if (match.index > lastIndex) {
-                        fragment.append(document.createTextNode(text.slice(lastIndex, match.index)));
-                    }
-                    const href = match[2] && match[2].trim();
-                    const label = match[1];
-                    if (href && label) {
-                        const anchor = document.createElement("a");
-                        anchor.href = href;
-                        anchor.target = "_blank";
-                        anchor.rel = "noopener noreferrer";
-                        anchor.textContent = label;
-                        fragment.append(anchor);
-                    } else if (match[3]) {
-                        const tag = match[3].trim();
-                        if (tag) {
-                            const tagEl = document.createElement("span");
-                            tagEl.className = "release-roadmap-tag";
-                            tagEl.textContent = tag;
-                            fragment.append(tagEl);
-                        }
-                    }
-                    lastIndex = regex.lastIndex;
-                }
-                if (lastIndex < text.length) {
-                    fragment.append(document.createTextNode(text.slice(lastIndex)));
-                }
-                return fragment;
-            }
-
-            function renderRoadmap(entries) {
-                const section = sectionMap.roadmapContent;
-                if (!section?.list) return;
-                const list = section.list;
-                list.innerHTML = "";
-                if (!entries.length) {
-                    const message = document.createElement("p");
-                    message.className = "release-roadmap-text";
-                    message.textContent = "Feuille de route vide.";
-                    list.appendChild(message);
-                    return;
-                }
-                entries.forEach(entryData => {
-                    const item = document.createElement("div");
-                    item.className = "release-roadmap-item";
-                    const title = document.createElement("span");
-                    title.className = "release-roadmap-title";
-                    title.appendChild(document.createTextNode(entryData.title || "Sans titre"));
-                    entryData.tags.forEach(tag => {
-                        title.appendChild(document.createTextNode(" "));
-                        const tagEl = document.createElement("span");
-                        tagEl.className = "release-roadmap-tag";
-                        tagEl.textContent = tag;
-                        title.appendChild(tagEl);
-                    });
-                    item.appendChild(title);
-                    const listBlocks = entryData.blocks.filter(block => block.type === "list");
-                    if (listBlocks.length) {
-                        const ul = document.createElement("ul");
-                        ul.className = "release-roadmap-text";
-                        listBlocks.forEach(block => {
-                            const li = document.createElement("li");
-                            li.append(createInlineFragment(block.text));
-                            ul.appendChild(li);
-                        });
-                        item.appendChild(ul);
-                    }
-                    const paragraphBlocks = entryData.blocks.filter(block => block.type === "paragraph");
-                    paragraphBlocks.forEach(block => {
-                        const paragraph = document.createElement("p");
-                        paragraph.className = "release-roadmap-text";
-                        paragraph.append(createInlineFragment(block.text));
-                        item.appendChild(paragraph);
-                    });
-                    if (!listBlocks.length && !paragraphBlocks.length) {
-                        const message = document.createElement("p");
-                        message.className = "release-roadmap-text";
-                        message.textContent = "Aucun détail renseigné.";
-                        item.appendChild(message);
-                    }
-                    list.appendChild(item);
-                });
-            }
-
-            async function loadMarkdown(path) {
-                const response = await fetch(path);
-                if (!response.ok) {
-                    throw new Error(`Impossible de charger ${path}`);
-                }
-                return response.text();
-            }
-
-            async function refresh(key, path) {
-                const section = sectionMap[key];
-                if (!section?.list) return;
-                try {
-                    const markdown = await loadMarkdown(path);
-                    const entries = parseMarkdownSections(markdown);
-                    if (key === "releaseNotesContent") {
-                        renderReleaseNotes(entries);
-                    } else {
-                        renderRoadmap(entries);
-                    }
-                } catch (err) {
-                    console.error(err);
-                    const targetClass = key === "releaseNotesContent" ? "release-note-text" : "release-roadmap-text";
-                    section.list.innerHTML = `<p class="${targetClass}">Impossible de charger le contenu.</p>`;
-                }
-            }
-
-            refresh("releaseNotesContent", "content/index_releases.md");
-            refresh("roadmapContent", "content/index_roadmap.md");
-        })();
-    </script>
-
-    <script>
         (function () {
             const gallery = document.getElementById("shareGallery");
             const shareGalleryNav = document.getElementById("shareGalleryNav");
@@ -3585,16 +3280,8 @@
                     if (typeof window.GoToolkitResetApp === 'function') {
                         window.GoToolkitResetApp();
                     }
-                } else if (h === '#news') {
-                    if (typeof window.GoToolkitOpenReleaseNotes === 'function') {
-                        window.GoToolkitOpenReleaseNotes();
-                    } else {
-                        showModalById('releaseNotesModal', '#releaseNotesClose');
-                    }
-                } else if (h === '#roadmap') {
-                    if (typeof window.GoToolkitOpenReleaseNotesTab === 'function') {
-                        window.GoToolkitOpenReleaseNotesTab('roadmapContent');
-                    }
+                } else if (window.GoToolkitHandleNewsHash?.(h)) {
+                    // handled by shared news module
                 }
                 try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { /* ignore */ }
             }
@@ -3605,73 +3292,6 @@
     </script>
 
     <script>
-        (function () {
-            const trigger = document.getElementById("releaseNotesTrigger");
-            const modal = document.getElementById("releaseNotesModal");
-            const closeBtn = document.getElementById("releaseNotesClose");
-            const heroLogo = document.querySelector(".hero-logo-wrapper img");
-            function generateRandomQueryValue() {
-                const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-                let output = "";
-                for (let i = 0; i < 8; i += 1) {
-                    output += chars.charAt(Math.floor(Math.random() * chars.length));
-                }
-                return output;
-            }
-            function navigateToReleaseNotesNews() {
-                window.location.href = `/?v=${generateRandomQueryValue()}#news`;
-            }
-            function resetHeroLogo() {
-                if (!heroLogo) return;
-                const src = heroLogo.getAttribute("src");
-                if (!src) return;
-                heroLogo.src = "";
-                void heroLogo.offsetWidth;
-                heroLogo.src = src;
-            }
-            if (!modal) return;
-            const openReleaseNotes = () => {
-                resetHeroLogo();
-                modal.classList.add("open");
-                modal.setAttribute("aria-hidden", "false");
-            };
-            window.GoToolkitOpenReleaseNotes = openReleaseNotes;
-            window.GoToolkitOpenReleaseNotesTab = targetId => {
-                openReleaseNotes();
-                requestAnimationFrame(() => {
-                    const tab = document.querySelector(`.release-tab[data-target="${targetId}"]`);
-                    tab?.click();
-                });
-            };
-            const closeReleaseNotes = () => {
-                modal.classList.remove("open");
-                modal.setAttribute("aria-hidden", "true");
-                trigger?.focus();
-            };
-            trigger?.addEventListener("click", () => {
-                navigateToReleaseNotesNews();
-            });
-            trigger?.addEventListener("keydown", event => {
-                if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    navigateToReleaseNotesNews();
-                }
-            });
-            closeBtn?.addEventListener("click", closeReleaseNotes);
-            modal.addEventListener("click", event => {
-                if (event.target === modal) {
-                    closeReleaseNotes();
-                }
-            });
-            document.addEventListener("keydown", event => {
-                if (event.key !== "Escape" && event.key !== "Esc") return;
-                if (modal.classList.contains("open")) {
-                    closeReleaseNotes();
-                    event.stopPropagation();
-                }
-            });
-        })();
-
         // Process Lucide icons
         if (window.lucide) {
             window.lucide.createIcons();
