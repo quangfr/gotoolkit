@@ -45,12 +45,64 @@
         crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.min.js" crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.min.js" crossorigin></script>
-    <link rel="stylesheet" href="styles/style.css?v=2026.02.18.2">
+    <link rel="stylesheet" href="styles/style.css?v=2026.02.18.3">
     <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
-    <link rel="stylesheet" href="styles/memo.css?v=2026.02.18.2">
-    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.18.2">
+    <link rel="stylesheet" href="styles/memo.css?v=2026.02.18.3">
+    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.18.3">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.css">
     <script src="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.js"></script>
+    <style>
+        .docs-tour-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.55);
+            z-index: 2400;
+        }
+
+        .docs-tour-highlight {
+            position: fixed;
+            border: 2px solid var(--color-primary);
+            border-radius: 10px;
+            box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.55);
+            z-index: 2401;
+            pointer-events: none;
+        }
+
+        .docs-tour-card {
+            position: fixed;
+            z-index: 2402;
+            width: min(360px, calc(100vw - 24px));
+            background: var(--bg-surface);
+            border: 1px solid var(--border-main);
+            border-radius: 12px;
+            box-shadow: var(--shadow-md);
+            padding: 12px;
+        }
+
+        .docs-tour-step {
+            font-size: 12px;
+            opacity: 0.7;
+            margin-bottom: 6px;
+        }
+
+        .docs-tour-title {
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .docs-tour-text {
+            font-size: 13px;
+            line-height: 1.45;
+            margin: 0 0 10px;
+        }
+
+        .docs-tour-actions {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+        }
+    </style>
 </head>
 
 <body class="app-body">
@@ -89,7 +141,7 @@
                 <div class="tabs-actions">
                     <button id="documentExplorerToggle" class="app-home-link" type="button" title="Bibliothèque"
                         aria-expanded="false" aria-controls="documentExplorer"><i data-lucide="library"></i></button>
-                    <a href="/?v=2026.02.18.2" class="nav-switch-btn" title="Accueil"
+                    <a href="/?v=2026.02.18.3" class="nav-switch-btn" title="Accueil"
                         style="text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
                         <i data-lucide="home"></i>
                     </a>
@@ -329,7 +381,7 @@
         <img src="img/logo.gif" alt="Logo GoToolkit" class="logo-light">
         <img src="img/logo_inverted.gif" alt="Logo GoToolkit" class="logo-dark">
         <strong>GoToolkit</strong>
-        <span>Version 2026.02.18.2</span>
+        <span>Version 2026.02.18.3</span>
         <span>Usage réservé à Savane Consulting.</span>
         <div class="info-actions info-actions--stacked">
             <div class="info-actions-row">
@@ -338,8 +390,8 @@
             </div>
             <div class="info-actions-row" style="margin-top: 4px;">
                 <div id="feedback-app-memo-inline-container" style="flex: 1; display: flex;"></div>
-                <button id="memoUpdateBtn" type="button" class="update-btn"
-                    style="flex: 1; margin: 0; width: auto;">Réparer</button>
+                <button id="memoGuidedTourBtn" type="button" class="secondary"
+                    style="flex: 1; margin: 0; width: auto;">Tour guidé</button>
             </div>
         </div>
     </div>
@@ -406,22 +458,22 @@
         window.GO_TOOLKIT_GOOGLE_TTS_API_URL =
             window.GO_TOOLKIT_GOOGLE_TTS_API_URL || "https://googletts.gotoolkit.workers.dev";
     </script>
-    <script src="js/config.js?v=2026.02.18.2"></script>
-    <script src="js/config-modal.js?v=2026.02.18.2"></script>
-    <script src="js/feature-visibility.js?v=2026.02.18.2"></script>
-    <script src="js/document-storage.js?v=2026.02.18.2"></script>
-    <script src="js/storage-service.js?v=2026.02.18.2"></script>
-    <script src="js/shared-ui.js?v=2026.02.18.2"></script>
-    <script src="js/share-worker-client.js?v=2026.02.18.2"></script>
-    <script src="js/share-history.js?v=2026.02.18.2"></script>
-    <script src="js/document-api.js?v=2026.02.18.2"></script>
-    <script src="js/keywordIndex.js?v=2026.02.18.2"></script>
-    <script src="js/document-rag.js?v=2026.02.18.2"></script>
-    <script src="js/ia-config.js?v=2026.02.18.2"></script>
-    <script src="preset.js?v=2026.02.18.2"></script>
-    <script src="prompt.js?v=2026.02.18.2"></script>
-    <script src="js/ia-client.js?v=2026.02.18.2"></script>
-    <script src="js/document-markdown.js?v=2026.02.18.2"></script>
+    <script src="js/config.js?v=2026.02.18.3"></script>
+    <script src="js/config-modal.js?v=2026.02.18.3"></script>
+    <script src="js/feature-visibility.js?v=2026.02.18.3"></script>
+    <script src="js/document-storage.js?v=2026.02.18.3"></script>
+    <script src="js/storage-service.js?v=2026.02.18.3"></script>
+    <script src="js/shared-ui.js?v=2026.02.18.3"></script>
+    <script src="js/share-worker-client.js?v=2026.02.18.3"></script>
+    <script src="js/share-history.js?v=2026.02.18.3"></script>
+    <script src="js/document-api.js?v=2026.02.18.3"></script>
+    <script src="js/keywordIndex.js?v=2026.02.18.3"></script>
+    <script src="js/document-rag.js?v=2026.02.18.3"></script>
+    <script src="js/ia-config.js?v=2026.02.18.3"></script>
+    <script src="preset.js?v=2026.02.18.3"></script>
+    <script src="prompt.js?v=2026.02.18.3"></script>
+    <script src="js/ia-client.js?v=2026.02.18.3"></script>
+    <script src="js/document-markdown.js?v=2026.02.18.3"></script>
     <script>
         document.addEventListener("click", function (event) {
             const legalTrigger = event.target?.closest?.("[data-open-nexus-modal]");
@@ -455,14 +507,14 @@
             ]
         };
     </script>
-    <script src="js/feedback.js?v=2026.02.18.2"></script>
-    <script src="js/voice-video-player.js?v=2026.02.18.2"></script>
-    <script src="js/voice-audio-player.js?v=2026.02.18.2"></script>
-    <script src="js/youtube-publish.js?v=2026.02.18.2"></script>
-    <script src="js/voice.js?v=2026.02.18.2"></script>
-    <script src="js/voice-transcript.js?v=2026.02.18.2"></script>
-    <script src="js/googletts.js?v=2026.02.18.2"></script>
-    <script src="js/draw-memo.js?v=2026.02.18.2"></script>
+    <script src="js/feedback.js?v=2026.02.18.3"></script>
+    <script src="js/voice-video-player.js?v=2026.02.18.3"></script>
+    <script src="js/voice-audio-player.js?v=2026.02.18.3"></script>
+    <script src="js/youtube-publish.js?v=2026.02.18.3"></script>
+    <script src="js/voice.js?v=2026.02.18.3"></script>
+    <script src="js/voice-transcript.js?v=2026.02.18.3"></script>
+    <script src="js/googletts.js?v=2026.02.18.3"></script>
+    <script src="js/draw-memo.js?v=2026.02.18.3"></script>
     <script>
         // Suppress React DevTools prompt in dev builds.
         window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = window.__REACT_DEVTOOLS_GLOBAL_HOOK__ || {
@@ -472,9 +524,9 @@
             onCommitFiberUnmount: function () { }
         };
     </script>
-    <script src="js/memo.bundle.js?v=2026.02.18.2"></script>
-    <script src="js/assist.js?v=2026.02.18.2"></script>
-    <script src="js/document-panel.js?v=2026.02.18.2"></script>
+    <script src="js/memo.bundle.js?v=2026.02.18.3"></script>
+    <script src="js/assist.js?v=2026.02.18.3"></script>
+    <script src="js/document-panel.js?v=2026.02.18.3"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             setTimeout(function () {
@@ -774,7 +826,7 @@
             const importJsonInput = document.getElementById("importJsonInput");
             const infoButton = document.getElementById("infoButton");
             const memoInfoPopup = document.getElementById("memoInfoPopup");
-            const memoUpdateBtn = document.getElementById("memoUpdateBtn");
+            const memoGuidedTourBtn = document.getElementById("memoGuidedTourBtn");
             const memoDocsBtn = document.getElementById("memoDocsBtn");
             const memoLegalBtn = document.getElementById("memoLegalBtn");
             const shareBtn = document.getElementById("shareBtn");
@@ -4435,17 +4487,122 @@
                 handleJsonImport(file);
             });
 
+            function createDocsSpotlightTour() {
+                let activeIndex = 0;
+                const steps = [
+                    {
+                        title: "Écrire dans le document",
+                        text: "Tape directement dans l'éditeur pour rédiger. Sélectionne un passage pour ouvrir l'édition inline rapide.",
+                        focus: () => document.querySelector("#editor .ProseMirror") || document.getElementById("editor")
+                    },
+                    {
+                        title: "Panneau documents et onglets",
+                        text: "Utilise Bibliothèque pour ouvrir le document-panel puis change d'onglet document en haut.",
+                        before: () => document.getElementById("documentExplorerToggle")?.click(),
+                        focus: () => document.querySelector("#documentExplorer .document-explorer__tab-btn[data-tab='library']") || document.getElementById("document-tabs")
+                    },
+                    {
+                        title: "Assist: édition sélection + fichier",
+                        text: "Ouvre Assist, puis utilise le mode Éditer sur une sélection et ajoute un fichier avec le bouton de pièce jointe.",
+                        before: () => window.GoToolkitAssistInstance?.open?.(),
+                        focus: () => document.querySelector("#assistSidebar .chat-attach-files-btn") || document.getElementById("assistLauncherBtn")
+                    },
+                    {
+                        title: "File menu: importer, envoyer, télécharger",
+                        text: "Dans Document, tu peux importer du contenu, envoyer (Gmail/Outlook/Messagerie) et télécharger (Word/PDF/HTML/Markdown/Texte/Audio).",
+                        before: () => document.getElementById("fileMenuBtn")?.click(),
+                        focus: () => document.getElementById("fileMenu")
+                    },
+                    {
+                        title: "Quick hacks",
+                        text: "Accélère ton flux avec Modèles, Raccourcis Prompt et Capture mobile pour importer depuis ton smartphone.",
+                        before: () => document.getElementById("fileMenuBtn")?.click(),
+                        focus: () => document.getElementById("gtTemplateModalTrigger")
+                            || document.getElementById("chat-inline-prompt-shortcuts-btn")
+                            || document.getElementById("handoffFocusBtn")
+                    }
+                ];
+
+                const overlay = document.createElement("div");
+                overlay.className = "docs-tour-overlay";
+                const highlight = document.createElement("div");
+                highlight.className = "docs-tour-highlight";
+                const card = document.createElement("div");
+                card.className = "docs-tour-card";
+                document.body.appendChild(overlay);
+                document.body.appendChild(highlight);
+                document.body.appendChild(card);
+
+                function cleanup() {
+                    overlay.remove();
+                    highlight.remove();
+                    card.remove();
+                    closeMenus();
+                }
+
+                function positionCard(rect) {
+                    const margin = 12;
+                    const cardRect = card.getBoundingClientRect();
+                    let left = rect.left;
+                    let top = rect.bottom + margin;
+                    if (left + cardRect.width > window.innerWidth - margin) {
+                        left = window.innerWidth - cardRect.width - margin;
+                    }
+                    if (top + cardRect.height > window.innerHeight - margin) {
+                        top = Math.max(margin, rect.top - cardRect.height - margin);
+                    }
+                    card.style.left = Math.max(margin, left) + "px";
+                    card.style.top = Math.max(margin, top) + "px";
+                }
+
+                function render() {
+                    const step = steps[activeIndex];
+                    if (!step) return cleanup();
+                    step.before?.();
+                    const target = step.focus?.();
+                    if (!target) return cleanup();
+                    target.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+                    const rect = target.getBoundingClientRect();
+                    highlight.style.left = Math.max(6, rect.left - 6) + "px";
+                    highlight.style.top = Math.max(6, rect.top - 6) + "px";
+                    highlight.style.width = Math.max(20, rect.width + 12) + "px";
+                    highlight.style.height = Math.max(20, rect.height + 12) + "px";
+                    card.innerHTML = `
+                        <div class="docs-tour-step">Étape ${activeIndex + 1} / ${steps.length}</div>
+                        <div class="docs-tour-title">${step.title}</div>
+                        <p class="docs-tour-text">${step.text}</p>
+                        <div class="docs-tour-actions">
+                            <button type="button" class="btn btn-secondary" data-tour-prev>${activeIndex === 0 ? "Fermer" : "Précédent"}</button>
+                            <button type="button" class="btn-primary" data-tour-next>${activeIndex === steps.length - 1 ? "Terminer" : "Suivant"}</button>
+                        </div>
+                    `;
+                    positionCard(rect);
+                    card.querySelector("[data-tour-prev]")?.addEventListener("click", () => {
+                        if (activeIndex === 0) return cleanup();
+                        activeIndex -= 1;
+                        render();
+                    });
+                    card.querySelector("[data-tour-next]")?.addEventListener("click", () => {
+                        if (activeIndex >= steps.length - 1) return cleanup();
+                        activeIndex += 1;
+                        render();
+                    });
+                }
+
+                overlay.addEventListener("click", cleanup);
+                render();
+            }
+
             infoButton?.addEventListener("click", event => {
                 event.stopPropagation();
                 closeMenus();
                 memoInfoPopup?.classList.toggle("open");
             });
 
-            memoUpdateBtn?.addEventListener("click", async () => {
-                const confirmed = confirm("ATTENTION : Cette action va supprimer TOUTES vos données (documents, paramètres, historique) et réinitialiser l'application. Voulez-vous continuer ?");
-                if (confirmed) {
-                    window.location.href = "index.html#reset";
-                }
+            memoGuidedTourBtn?.addEventListener("click", event => {
+                event.stopPropagation();
+                memoInfoPopup?.classList.remove("open");
+                createDocsSpotlightTour();
             });
 
             memoDocsBtn?.addEventListener("click", event => {

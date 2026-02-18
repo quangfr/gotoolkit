@@ -5661,6 +5661,15 @@
 
             // Check for direct paste mode with media transcripts - paste directly and skip AI
             if (directPasteMode && memoId && mediaTranscriptTextMap.size) {
+                var mergeTranscriptAsParagraph = function (parts) {
+                    return (Array.isArray(parts) ? parts : [])
+                        .map(function (value) {
+                            return String(value || "").replace(/\s+/g, " ").trim();
+                        })
+                        .filter(Boolean)
+                        .join(" ")
+                        .trim();
+                };
                 var transcriptParts = [];
                 readyDocNames.forEach(function (name) {
                     var text = mediaTranscriptTextMap.get(name);
@@ -5669,7 +5678,7 @@
                     }
                 });
                 if (transcriptParts.length) {
-                    window.GoToolkitMemoAppendText?.(transcriptParts.join("\n\n"));
+                    window.GoToolkitMemoAppendText?.(mergeTranscriptAsParagraph(transcriptParts));
                     var toastMsg = readyDocNames.length === 1
                         ? "⤷ " + readyDocNames[0] + " importé"
                         : readyDocNames.length + " documents importés";
@@ -5716,7 +5725,13 @@
                     }
                 });
                 if (transcriptParts.length) {
-                    window.GoToolkitMemoAppendText?.(transcriptParts.join("\n\n"));
+                    window.GoToolkitMemoAppendText?.(
+                        transcriptParts
+                            .map(function (value) { return String(value || "").replace(/\s+/g, " ").trim(); })
+                            .filter(Boolean)
+                            .join(" ")
+                            .trim()
+                    );
                     if (!skipEmbeddings) window.GoToolkitMemoToast?.("Transcription importée.");
                 }
             }
