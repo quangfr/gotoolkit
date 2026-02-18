@@ -1673,9 +1673,10 @@ const Toolbar = ({ editor, onDropdownToggle, onLink, onInsertImage }: {
           aria-label="Insert Image"
           type="button"
           title="Image"
-          data-lucide="image"
+          onMouseDown={(event) => event.preventDefault()}
           onClick={onInsertImage}
         >
+          <i data-lucide="image" style={{ display: 'none' }} aria-hidden="true"></i>
           <ImageIcon size={16} />
         </button>
       </div>
@@ -2318,7 +2319,6 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   const mountStart = React.useRef(performance.now());
   const turndownRef = React.useRef<any>(null);
   const containerRef = React.useRef<HTMLDivElement>(null);
-  const imagePickerRef = React.useRef<HTMLInputElement>(null);
   
   const [rowHandle, setRowHandle] = React.useState<{ top: number, left: number, rowIndex: number, tablePos: number } | null>(null);
   const [colHandle, setColHandle] = React.useState<{ top: number, left: number, colIndex: number, tablePos: number } | null>(null);
@@ -2795,6 +2795,29 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     ));
     editor.chain().focus().insertContent(content).run();
   }, [editor]);
+
+  const openImagePicker = React.useCallback(() => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/png,image/jpeg,image/jpg,image/gif';
+    input.multiple = true;
+    input.style.position = 'fixed';
+    input.style.left = '-9999px';
+    input.style.top = '0';
+    input.addEventListener('change', async () => {
+      const files = input.files;
+      if (files?.length) {
+        await insertImageFiles(files);
+      }
+      try {
+        input.remove();
+      } catch (err) {
+        // noop
+      }
+    }, { once: true });
+    document.body.appendChild(input);
+    input.click();
+  }, [insertImageFiles]);
 
   React.useEffect(() => {
     if (!editor) return;
@@ -4929,21 +4952,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         editor={editor}
         onDropdownToggle={setIsDropdownOpen}
         onLink={() => setShowLinkModal(true)}
-        onInsertImage={() => imagePickerRef.current?.click()}
-      />
-      <input
-        ref={imagePickerRef}
-        type="file"
-        accept="image/png,image/jpeg,image/jpg,image/gif"
-        multiple
-        style={{ display: 'none' }}
-        onChange={async (event) => {
-          const files = event.currentTarget.files;
-          if (files?.length) {
-            await insertImageFiles(files);
-          }
-          event.currentTarget.value = '';
-        }}
+        onInsertImage={openImagePicker}
       />
       <BubbleMenuComponent 
         editor={editor}

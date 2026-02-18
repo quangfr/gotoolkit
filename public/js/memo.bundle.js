@@ -53234,51 +53234,59 @@ ${promptInput.trim()}`
     };
     const imgSrc = isGif ? gifPlaying ? src : gifPoster || src : src;
     const imageStyle = {
-      width: widthPx ? `${widthPx}px` : "100%",
-      height: heightPx ? `${heightPx}px` : "auto",
+      width: "100%",
+      height: heightPx ? "100%" : "auto",
       maxWidth: "100%",
+      maxHeight: "100%",
       objectFit: ((_d = node.attrs) == null ? void 0 : _d.fit) === "height" ? "contain" : "contain",
       cursor: isGif ? "pointer" : "default"
     };
+    const frameStyle = {
+      width: widthPx ? `${widthPx}px` : "100%",
+      ...heightPx ? { height: `${heightPx}px` } : {}
+    };
     return /* @__PURE__ */ jsxs(NodeViewWrapper, { className: "memo-image-wrapper", children: [
-      /* @__PURE__ */ jsxs("div", { ref: wrapperRef, className: "memo-image-frame", children: [
+      /* @__PURE__ */ jsxs("div", { ref: wrapperRef, className: "memo-image-frame", style: frameStyle, children: [
         /* @__PURE__ */ jsxs("div", { className: "memo-image-controls", children: [
-          /* @__PURE__ */ jsx(
+          /* @__PURE__ */ jsxs(
             "button",
             {
               type: "button",
               className: "block-delete-button memo-image-action",
-              "data-lucide": "fullscreen",
               title: "Plein \xE9cran",
               onClick: (event) => {
                 event.preventDefault();
                 event.stopPropagation();
                 setFullscreenOpen(true);
               },
-              children: /* @__PURE__ */ jsx(Fullscreen, { size: 14 })
+              children: [
+                /* @__PURE__ */ jsx("i", { "data-lucide": "fullscreen", style: { display: "none" }, "aria-hidden": "true" }),
+                /* @__PURE__ */ jsx(Fullscreen, { size: 14 })
+              ]
             }
           ),
-          /* @__PURE__ */ jsx(
+          /* @__PURE__ */ jsxs(
             "button",
             {
               type: "button",
               className: "block-delete-button memo-image-action",
-              "data-lucide": "copy",
               title: "Copier",
               onClick: (event) => {
                 event.preventDefault();
                 event.stopPropagation();
                 copyImageHtml(node.attrs || {});
               },
-              children: /* @__PURE__ */ jsx(Copy, { size: 14 })
+              children: [
+                /* @__PURE__ */ jsx("i", { "data-lucide": "copy", style: { display: "none" }, "aria-hidden": "true" }),
+                /* @__PURE__ */ jsx(Copy, { size: 14 })
+              ]
             }
           ),
-          /* @__PURE__ */ jsx(
+          /* @__PURE__ */ jsxs(
             "button",
             {
               type: "button",
               className: "block-delete-button memo-image-action",
-              "data-lucide": "trash-2",
               title: "Supprimer",
               style: { display: canEdit ? "inline-flex" : "none" },
               onClick: (event) => {
@@ -53286,7 +53294,10 @@ ${promptInput.trim()}`
                 event.stopPropagation();
                 handleDelete();
               },
-              children: /* @__PURE__ */ jsx(Trash2, { size: 14 })
+              children: [
+                /* @__PURE__ */ jsx("i", { "data-lucide": "trash-2", style: { display: "none" }, "aria-hidden": "true" }),
+                /* @__PURE__ */ jsx(Trash2, { size: 14 })
+              ]
             }
           )
         ] }),
@@ -54850,16 +54861,19 @@ ${promptInput.trim()}`
             children: /* @__PURE__ */ jsx(Shapes, { size: 16 })
           }
         ),
-        /* @__PURE__ */ jsx(
+        /* @__PURE__ */ jsxs(
           "button",
           {
             className: "tiptap-button",
             "aria-label": "Insert Image",
             type: "button",
             title: "Image",
-            "data-lucide": "image",
+            onMouseDown: (event) => event.preventDefault(),
             onClick: onInsertImage,
-            children: /* @__PURE__ */ jsx(Image2, { size: 16 })
+            children: [
+              /* @__PURE__ */ jsx("i", { "data-lucide": "image", style: { display: "none" }, "aria-hidden": "true" }),
+              /* @__PURE__ */ jsx(Image2, { size: 16 })
+            ]
           }
         )
       ] }),
@@ -55364,7 +55378,6 @@ ${promptInput.trim()}`
     const mountStart = react_shim_default.useRef(performance.now());
     const turndownRef = react_shim_default.useRef(null);
     const containerRef = react_shim_default.useRef(null);
-    const imagePickerRef = react_shim_default.useRef(null);
     const [rowHandle, setRowHandle] = react_shim_default.useState(null);
     const [colHandle, setColHandle] = react_shim_default.useState(null);
     const [blockDeleteHandle, setBlockDeleteHandle] = react_shim_default.useState(null);
@@ -55792,6 +55805,27 @@ ${promptInput.trim()}`
       const content2 = imageNodes.flatMap((imageNode, index) => index === 0 ? [imageNode] : [{ type: "paragraph" }, imageNode]);
       editor.chain().focus().insertContent(content2).run();
     }, [editor]);
+    const openImagePicker = react_shim_default.useCallback(() => {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "image/png,image/jpeg,image/jpg,image/gif";
+      input.multiple = true;
+      input.style.position = "fixed";
+      input.style.left = "-9999px";
+      input.style.top = "0";
+      input.addEventListener("change", async () => {
+        const files = input.files;
+        if (files == null ? void 0 : files.length) {
+          await insertImageFiles(files);
+        }
+        try {
+          input.remove();
+        } catch (err) {
+        }
+      }, { once: true });
+      document.body.appendChild(input);
+      input.click();
+    }, [insertImageFiles]);
     react_shim_default.useEffect(() => {
       if (!editor) return;
       editor.setEditable(Boolean(editable));
@@ -57613,27 +57647,7 @@ ${innerMarkdown}
               editor,
               onDropdownToggle: setIsDropdownOpen,
               onLink: () => setShowLinkModal(true),
-              onInsertImage: () => {
-                var _a2;
-                return (_a2 = imagePickerRef.current) == null ? void 0 : _a2.click();
-              }
-            }
-          ),
-          /* @__PURE__ */ jsx(
-            "input",
-            {
-              ref: imagePickerRef,
-              type: "file",
-              accept: "image/png,image/jpeg,image/jpg,image/gif",
-              multiple: true,
-              style: { display: "none" },
-              onChange: async (event) => {
-                const files = event.currentTarget.files;
-                if (files == null ? void 0 : files.length) {
-                  await insertImageFiles(files);
-                }
-                event.currentTarget.value = "";
-              }
+              onInsertImage: openImagePicker
             }
           ),
           /* @__PURE__ */ jsx(

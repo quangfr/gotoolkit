@@ -163,21 +163,26 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
     : src;
 
   const imageStyle: React.CSSProperties = {
-    width: widthPx ? `${widthPx}px` : '100%',
-    height: heightPx ? `${heightPx}px` : 'auto',
+    width: '100%',
+    height: heightPx ? '100%' : 'auto',
     maxWidth: '100%',
+    maxHeight: '100%',
     objectFit: node.attrs?.fit === 'height' ? 'contain' : 'contain',
     cursor: isGif ? 'pointer' : 'default',
   };
 
+  const frameStyle: React.CSSProperties = {
+    width: widthPx ? `${widthPx}px` : '100%',
+    ...(heightPx ? { height: `${heightPx}px` } : {}),
+  };
+
   return (
     <NodeViewWrapper className="memo-image-wrapper">
-      <div ref={wrapperRef} className="memo-image-frame">
+      <div ref={wrapperRef} className="memo-image-frame" style={frameStyle}>
         <div className="memo-image-controls">
           <button
             type="button"
             className="block-delete-button memo-image-action"
-            data-lucide="fullscreen"
             title="Plein écran"
             onClick={(event) => {
               event.preventDefault();
@@ -185,12 +190,12 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
               setFullscreenOpen(true);
             }}
           >
+            <i data-lucide="fullscreen" style={{ display: 'none' }} aria-hidden="true"></i>
             <Fullscreen size={14} />
           </button>
           <button
             type="button"
             className="block-delete-button memo-image-action"
-            data-lucide="copy"
             title="Copier"
             onClick={(event) => {
               event.preventDefault();
@@ -198,12 +203,12 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
               copyImageHtml(node.attrs || {});
             }}
           >
+            <i data-lucide="copy" style={{ display: 'none' }} aria-hidden="true"></i>
             <Copy size={14} />
           </button>
           <button
             type="button"
             className="block-delete-button memo-image-action"
-            data-lucide="trash-2"
             title="Supprimer"
             style={{ display: canEdit ? 'inline-flex' : 'none' }}
             onClick={(event) => {
@@ -212,6 +217,7 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
               handleDelete();
             }}
           >
+            <i data-lucide="trash-2" style={{ display: 'none' }} aria-hidden="true"></i>
             <Trash2 size={14} />
           </button>
         </div>

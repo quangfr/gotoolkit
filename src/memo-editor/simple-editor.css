@@ -759,17 +759,18 @@ body.table-resize-cursor * {
 
 .memo-image-wrapper {
   position: relative;
-  margin: 12px 0;
+  margin: 18px 0 12px 0;
 }
 
 .memo-image-frame {
   position: relative;
-  display: inline-flex;
+  display: block;
   max-width: 100%;
   border: 1px solid var(--border-main);
   border-radius: 10px;
   padding: 6px;
   background: var(--bg-surface);
+  overflow: visible;
 }
 
 .memo-image {
@@ -779,8 +780,8 @@ body.table-resize-cursor * {
 
 .memo-image-controls {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: -34px;
+  right: 0;
   z-index: 12;
   display: flex;
   gap: 6px;

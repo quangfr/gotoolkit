@@ -1,4 +1,8 @@
 ## 2026-02-16
+- Voice : Télécharger l'enregistrement vidéo en GIF
+- Docs : Ajouter une image
+
+## 2026-02-16
 - Docs : Générer une synthèse vocale avec `Google TTS`
 - Docs : Envoyer un document sur `Outlook` et `Gmail`
 - Mobile : Modifier le contenu en mode IA
