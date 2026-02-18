@@ -453,17 +453,14 @@
         const chunk = normalizeStreamingInsertText(text);
         if (!chunk) return;
         state.hadLiveTranscriptInSession = true;
-        if (memoId && typeof window.setMemoActiveTab === "function") {
-            window.setMemoActiveTab(memoId);
-        }
         const payload = `${getLiveInsertPrefix(chunk)}${chunk}`;
         state.liveLastInsertedChar = payload.slice(-1) || state.liveLastInsertedChar;
         if (typeof window.GoToolkitMemoInsertTextAtCaret === "function") {
-            window.GoToolkitMemoInsertTextAtCaret(payload);
+            window.GoToolkitMemoInsertTextAtCaret(payload, memoId || null);
             return;
         }
         if (typeof window.GoToolkitMemoAppendText === "function") {
-            window.GoToolkitMemoAppendText(payload);
+            window.GoToolkitMemoAppendText(payload, memoId || null);
         }
     }
 
