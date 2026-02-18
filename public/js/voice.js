@@ -442,6 +442,7 @@
     function normalizeStreamingInsertText(text) {
         return String(text || "")
             .replace(/[\u00A0\u202F]/g, " ")
+            .replace(/\s+/g, " ")
             .replace(/\s+([-\u2010-\u2015])\s+/g, "$1")
             .replace(/\s+([-\u2010-\u2015])$/g, "$1")
             .replace(/^([-\u2010-\u2015])\s+/g, "$1")
@@ -508,17 +509,11 @@
         if (!tokenUrl.searchParams.has("expires_in_seconds")) {
             tokenUrl.searchParams.set("expires_in_seconds", "60");
         }
-        console.log("[GoToolkitVoiceLive] fetching token", { url: tokenUrl.toString(), hasKey: Boolean(key) });
         const response = await fetch(tokenUrl.toString(), {
             method: "GET",
             headers: key ? { "X-AssemblyAI-Key": key } : {}
         });
         const raw = await response.text();
-        console.log("[GoToolkitVoiceLive] token response", {
-            status: response.status,
-            ok: response.ok,
-            preview: String(raw || "").slice(0, 240)
-        });
         if (!response.ok) {
             throw new Error(`Token streaming échoué (${response.status})`);
         }
@@ -571,8 +566,6 @@
             wsUrl.searchParams.set("formatted_finals", "false");
             wsUrl.searchParams.set("format_turns", "false");
             wsUrl.searchParams.set("end_of_turn_confidence_threshold", "0.6");
-            console.log("[GoToolkitVoiceLive] opening websocket", { wsUrl: wsUrl.toString(), memoId });
-
             const ws = new WebSocket(wsUrl.toString());
             ws.binaryType = "arraybuffer";
             state.liveSocket = ws;
@@ -582,12 +575,6 @@
             ws.onmessage = event => {
                 try {
                     const data = JSON.parse(event.data);
-                    console.log("[GoToolkitVoiceLive] websocket message", {
-                        type: data?.type,
-                        turn_order: data?.turn_order,
-                        end_of_turn: data?.end_of_turn,
-                        transcript_preview: String(data?.transcript || "").slice(0, 120)
-                    });
                     handleAssemblyLiveMessage(data, memoId);
                 } catch (err) {
                     console.warn("Live transcription parse failed", err);
@@ -597,13 +584,6 @@
                 console.warn("Live transcription websocket error", err);
             };
             ws.onclose = event => {
-                console.log("[GoToolkitVoiceLive] websocket closed", {
-                    code: event?.code,
-                    reason: event?.reason,
-                    wasClean: event?.wasClean,
-                    sentFrames,
-                    sentBytes
-                });
                 if (state.liveSocket === ws) {
                     state.liveSocket = null;
                 }
@@ -613,7 +593,6 @@
                 const timeout = setTimeout(() => reject(new Error("Timeout websocket transcription")), 12000);
                 ws.onopen = () => {
                     clearTimeout(timeout);
-                    console.log("[GoToolkitVoiceLive] websocket opened");
                     resolve();
                 };
                 ws.onerror = err => {
@@ -635,10 +614,6 @@
             state.liveProcessor = processor;
             state.liveMuteGain = muteGain;
             resetLiveTranscriptionState();
-            console.log("[GoToolkitVoiceLive] audio pipeline ready", {
-                sampleRate: audioContext.sampleRate,
-                hasTracks: audioStream.getAudioTracks?.().length || 0
-            });
 
             processor.onaudioprocess = event => {
                 const socket = state.liveSocket;
@@ -650,12 +625,6 @@
                 socket.send(chunk);
                 sentFrames += 1;
                 sentBytes += chunk.byteLength || 0;
-                if (sentFrames % 20 === 0) {
-                    console.log("[GoToolkitVoiceLive] audio frames sent", {
-                        sentFrames,
-                        sentBytes
-                    });
-                }
             };
         } catch (err) {
             console.warn("Live transcription start failed", err);
