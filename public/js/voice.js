@@ -12,6 +12,7 @@
         currentMemoId: null,
         currentMemoName: "",
         recordingMemoId: null,
+        recordingDocumentId: null,
         recordingMemoName: "",
         currentMemoRecordingId: null,
         currentMemoRecordingHasVideo: false,
@@ -457,7 +458,7 @@
         const payload = `${getLiveInsertPrefix(chunk)}${chunk}`;
         state.liveLastInsertedChar = payload.slice(-1) || state.liveLastInsertedChar;
         if (memoId && typeof window.GoToolkitMemoAppendToRecordingTab === "function") {
-            window.GoToolkitMemoAppendToRecordingTab(payload, memoId);
+            window.GoToolkitMemoAppendToRecordingTab(payload, memoId, state.recordingDocumentId || null);
             return;
         }
         if (memoId && typeof window.GoToolkitMemoInsertTextAtTrackedCaret === "function") {
@@ -832,6 +833,7 @@
         state.currentMemoRecordingId = null;
         state.currentMemoRecordingHasVideo = false;
         state.recordingMemoId = null;
+        state.recordingDocumentId = null;
         state.recordingMemoName = "";
         state.isRecording = false;
         state.isTranscribing = false;
@@ -1027,6 +1029,7 @@
             return;
         }
         state.recordingMemoId = memoId;
+        state.recordingDocumentId = window.GoToolkitMemoGetActiveDocumentId?.() || null;
         state.recordingMemoName = memoName || "";
         state.audioChunks = [];
         state.videoChunks = [];
