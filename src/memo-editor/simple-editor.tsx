@@ -10,7 +10,6 @@ import TiptapUnderline from '@tiptap/extension-underline';
 import Superscript from '@tiptap/extension-superscript';
 import Subscript from '@tiptap/extension-subscript';
 import TextAlign from '@tiptap/extension-text-align';
-import Image from '@tiptap/extension-image';
 import TiptapLink from '@tiptap/extension-link';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
@@ -489,6 +488,7 @@ import { gfm } from 'turndown-plugin-gfm';
 import { marked } from 'marked';
 import { MermaidNode, insertMermaidDiagram } from './mermaid-node';
 import { Alert, ALERT_TYPES } from './blockquote-node';
+import { CustomImage, isSupportedImageFile } from './image-node';
 import './simple-editor.css';
 
 interface SimpleEditorProps {
@@ -1431,10 +1431,11 @@ const QuoteTypeDropdown = ({ editor }: { editor: Editor }) => {
   );
 };
 
-const Toolbar = ({ editor, onDropdownToggle, onLink }: { 
+const Toolbar = ({ editor, onDropdownToggle, onLink, onInsertImage }: { 
   editor: Editor, 
   onDropdownToggle?: (isOpen: boolean) => void,
-  onLink: () => void 
+  onLink: () => void,
+  onInsertImage: () => void,
 }) => {
   // Force re-render when editor state changes
   const [, forceUpdate] = React.useReducer((x) => x + 1, 0);
@@ -1666,6 +1667,16 @@ const Toolbar = ({ editor, onDropdownToggle, onLink }: {
           title="Diagramme"
         >
           <Shapes size={16} />
+        </button>
+        <button
+          className="tiptap-button"
+          aria-label="Insert Image"
+          type="button"
+          title="Image"
+          data-lucide="image"
+          onClick={onInsertImage}
+        >
+          <ImageIcon size={16} />
         </button>
       </div>
 
@@ -2289,6 +2300,13 @@ async function downloadSvgAsPng(svgElement: SVGSVGElement, filename: string = 'd
   }
 }
 
+const readFileAsDataUrl = (file: File) => new Promise<string>((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onload = () => resolve(String(reader.result || ''));
+  reader.onerror = () => reject(reader.error || new Error('Impossible de lire le fichier image'));
+  reader.readAsDataURL(file);
+});
+
 const SimpleEditor: React.FC<SimpleEditorProps> = ({ 
   content = '', 
   onChange, 
@@ -2300,6 +2318,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   const mountStart = React.useRef(performance.now());
   const turndownRef = React.useRef<any>(null);
   const containerRef = React.useRef<HTMLDivElement>(null);
+  const imagePickerRef = React.useRef<HTMLInputElement>(null);
   
   const [rowHandle, setRowHandle] = React.useState<{ top: number, left: number, rowIndex: number, tablePos: number } | null>(null);
   const [colHandle, setColHandle] = React.useState<{ top: number, left: number, colIndex: number, tablePos: number } | null>(null);
@@ -2363,7 +2382,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           class: 'memo-link',
         },
       }),
-      Image,
+      CustomImage,
       TableNode,
       TableRow,
       TableHeader,
@@ -2746,6 +2765,36 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       }
     },
   });
+
+  const insertImageFiles = React.useCallback(async (files: FileList | File[]) => {
+    if (!editor || !files?.length) return;
+    const selected = Array.from(files).filter(isSupportedImageFile);
+    if (!selected.length) return;
+    const imageNodes: Array<{ type: string; attrs: Record<string, any> }> = [];
+    for (const file of selected) {
+      try {
+        const src = await readFileAsDataUrl(file);
+        if (!src) continue;
+        imageNodes.push({
+          type: 'image',
+          attrs: {
+            src,
+            alt: file.name || 'image',
+            title: file.name || '',
+            fileName: file.name || '',
+            mimeType: file.type || '',
+          },
+        });
+      } catch (err) {
+        // Ignore invalid files and keep the batch insert running.
+      }
+    }
+    if (!imageNodes.length) return;
+    const content = imageNodes.flatMap((imageNode, index) => (
+      index === 0 ? [imageNode] : [{ type: 'paragraph' }, imageNode]
+    ));
+    editor.chain().focus().insertContent(content).run();
+  }, [editor]);
 
   React.useEffect(() => {
     if (!editor) return;
@@ -4876,7 +4925,26 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         setCodeHandle(null);
       }}
     >
-      <Toolbar editor={editor} onDropdownToggle={setIsDropdownOpen} onLink={() => setShowLinkModal(true)} />
+      <Toolbar
+        editor={editor}
+        onDropdownToggle={setIsDropdownOpen}
+        onLink={() => setShowLinkModal(true)}
+        onInsertImage={() => imagePickerRef.current?.click()}
+      />
+      <input
+        ref={imagePickerRef}
+        type="file"
+        accept="image/png,image/jpeg,image/jpg,image/gif"
+        multiple
+        style={{ display: 'none' }}
+        onChange={async (event) => {
+          const files = event.currentTarget.files;
+          if (files?.length) {
+            await insertImageFiles(files);
+          }
+          event.currentTarget.value = '';
+        }}
+      />
       <BubbleMenuComponent 
         editor={editor}
         visible={!isDropdownOpen && isFocusWithinMemoCard}

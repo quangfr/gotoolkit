@@ -117,6 +117,40 @@ function encodeQuotedPrintableUtf8(input) {
   return out;
 }
 
+function sanitizeHeaderValue(value) {
+  return String(value || "").replace(/[\r\n]+/g, " ").trim();
+}
+
+function chunkBase64(base64) {
+  const clean = String(base64 || "").replace(/\s+/g, "");
+  const lines = [];
+  for (let i = 0; i < clean.length; i += 76) {
+    lines.push(clean.slice(i, i + 76));
+  }
+  return lines.join("\r\n");
+}
+
+function normalizeAttachments(rawAttachments) {
+  if (!Array.isArray(rawAttachments)) return [];
+  const allowedMime = new Set(["image/png", "image/jpeg", "image/jpg", "image/gif"]);
+  const result = [];
+  for (const item of rawAttachments.slice(0, 24)) {
+    const mimeType = String(item?.mimeType || "").trim().toLowerCase();
+    const contentBase64 = String(item?.contentBase64 || "").replace(/\s+/g, "");
+    if (!allowedMime.has(mimeType) || !contentBase64) continue;
+    const defaultExt = mimeType === "image/png" ? "png" : (mimeType === "image/gif" ? "gif" : "jpg");
+    const fileName = sanitizeHeaderValue(item?.fileName || `image-${result.length + 1}.${defaultExt}`) || `image-${result.length + 1}.${defaultExt}`;
+    const contentId = sanitizeHeaderValue(item?.contentId || `gotoolkit-img-${Date.now()}-${result.length}@local`);
+    result.push({
+      fileName,
+      mimeType,
+      contentBase64,
+      contentId,
+    });
+  }
+  return result;
+}
+
 function normalizeStoredToken(raw) {
   const token = raw && typeof raw === "object" ? raw : {};
   return {
@@ -322,15 +356,27 @@ function buildMimeMessage(options = {}) {
   const subject = String(options?.subject || "Document").trim() || "Document";
   const html = String(options?.html || "").trim();
   const text = String(options?.text || htmlToText(html || "")).trim();
+  const attachments = normalizeAttachments(options?.attachments);
+  const hasAttachments = attachments.length > 0;
   const boundary = `gotoolkit-alt-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const mixedBoundary = `gotoolkit-mixed-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
   const lines = [];
   if (from) lines.push(`From: ${from}`);
   lines.push("To: ");
   lines.push(`Subject: =?UTF-8?B?${base64UrlEncode(subject).replace(/-/g, "+").replace(/_/g, "/")}?=`);
   lines.push("MIME-Version: 1.0");
-  lines.push(`Content-Type: multipart/alternative; boundary=\"${boundary}\"`);
+  if (hasAttachments) {
+    lines.push(`Content-Type: multipart/mixed; boundary=\"${mixedBoundary}\"`);
+  } else {
+    lines.push(`Content-Type: multipart/alternative; boundary=\"${boundary}\"`);
+  }
   lines.push("");
+  if (hasAttachments) {
+    lines.push(`--${mixedBoundary}`);
+    lines.push(`Content-Type: multipart/alternative; boundary=\"${boundary}\"`);
+    lines.push("");
+  }
   lines.push(`--${boundary}`);
   lines.push("Content-Type: text/plain; charset=UTF-8");
   lines.push("Content-Transfer-Encoding: quoted-printable");
@@ -345,6 +391,23 @@ function buildMimeMessage(options = {}) {
   lines.push("");
   lines.push(`--${boundary}--`);
   lines.push("");
+
+  if (hasAttachments) {
+    for (const attachment of attachments) {
+      lines.push(`--${mixedBoundary}`);
+      lines.push(`Content-Type: ${attachment.mimeType}; name="${attachment.fileName}"`);
+      lines.push(`Content-Disposition: inline; filename="${attachment.fileName}"`);
+      lines.push("Content-Transfer-Encoding: base64");
+      if (attachment.contentId) {
+        lines.push(`Content-ID: <${attachment.contentId}>`);
+      }
+      lines.push("");
+      lines.push(chunkBase64(attachment.contentBase64));
+      lines.push("");
+    }
+    lines.push(`--${mixedBoundary}--`);
+    lines.push("");
+  }
   return lines.join("\r\n");
 }
 
@@ -432,6 +495,7 @@ export default {
       const subject = String(body?.subject || "Document").trim() || "Document";
       const html = String(body?.html || "");
       const text = String(body?.text || "");
+      const attachments = normalizeAttachments(body?.attachments);
       if (!deviceId) return errorResponse(cors.headers, 400, "deviceId requis");
       if (!String(html || "").trim()) return errorResponse(cors.headers, 400, "Contenu HTML requis");
 
@@ -443,7 +507,8 @@ export default {
           from: token.account_email || "",
           subject,
           html,
-          text
+          text,
+          attachments
         });
         const draft = await createGmailDraft(token.access_token, {
           message: { raw: base64UrlEncode(rawMime) }

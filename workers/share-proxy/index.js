@@ -1,5 +1,6 @@
 const API_VERSION = "v1";
 const SHARES_SEGMENT = "shares";
+const ASSETS_SEGMENT = "assets";
 const VALID_COLLECTIONS = new Set([
   "grids",
   "memos",
@@ -7,8 +8,18 @@ const VALID_COLLECTIONS = new Set([
   "handoffs",
   "codes_map"
 ]);
-const FIRESTORE_SCOPE = "https://www.googleapis.com/auth/datastore";
+const GOOGLE_API_SCOPE = [
+  "https://www.googleapis.com/auth/datastore",
+  "https://www.googleapis.com/auth/devstorage.read_write"
+].join(" ");
 const FIREBASE_TOKEN_URL = "https://oauth2.googleapis.com/token";
+const ALLOWED_ASSET_MIME = new Set([
+  "image/png",
+  "image/jpeg",
+  "image/jpg",
+  "image/gif"
+]);
+const MAX_ASSET_BYTES = 25 * 1024 * 1024;
 let serviceAccountConfig = null;
 let signingKeyPromise = null;
 let accessTokenCache = { token: null, expiresAt: 0 };
@@ -39,6 +50,125 @@ function parseSharePath(request) {
     collection,
     documentId: documentId ? decodeURIComponent(documentId) : null
   };
+}
+
+function parseAssetPath(request) {
+  const url = new URL(request.url);
+  const segments = normalizePathname(url.pathname)
+    .split("/")
+    .filter(Boolean);
+  if (segments.length < 2) return null;
+  if (segments[0] !== API_VERSION || segments[1] !== ASSETS_SEGMENT) {
+    return null;
+  }
+  return {
+    action: segments[2] ? decodeURIComponent(segments[2]) : null
+  };
+}
+
+function toBase64UrlString(text) {
+  return btoa(text).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+function fromBase64UrlString(text) {
+  const normalized = String(text || "").replace(/-/g, "+").replace(/_/g, "/");
+  const padLength = normalized.length % 4;
+  const withPadding = normalized + (padLength ? "=".repeat(4 - padLength) : "");
+  return atob(withPadding);
+}
+
+function resolveStorageBucket(env) {
+  const raw = String(
+    env?.FIREBASE_STORAGE_BUCKET
+    || env?.FIRE_STORAGE_BUCKET
+    || env?.FIREBASE_PROJECT_ID
+    || getServiceAccount(env)?.project_id
+    || ""
+  ).trim();
+  if (!raw) {
+    throw new Error("Bucket Storage Firebase manquant (FIRE_STORAGE_BUCKET)");
+  }
+  const clean = raw.replace(/^gs:\/\//, "").replace(/\/+$/, "");
+  if (clean.includes(".")) return clean;
+  return `${clean}.firebasestorage.app`;
+}
+
+function safeAssetScope(raw) {
+  const value = String(raw || "").trim().toLowerCase();
+  const clean = value
+    .replace(/[^a-z0-9-_]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return clean || "shared";
+}
+
+function detectAssetExtension(mimeType, fileName) {
+  const mime = String(mimeType || "").toLowerCase();
+  if (mime === "image/png") return "png";
+  if (mime === "image/gif") return "gif";
+  if (mime === "image/jpeg" || mime === "image/jpg") return "jpg";
+  const lowerName = String(fileName || "").toLowerCase();
+  if (lowerName.endsWith(".png")) return "png";
+  if (lowerName.endsWith(".gif")) return "gif";
+  if (lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg")) return "jpg";
+  return "bin";
+}
+
+function sanitizeAssetName(fileName, fallbackExt) {
+  const raw = String(fileName || "").trim();
+  const base = raw
+    .replace(/[^a-zA-Z0-9._-]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  if (!base) return `image.${fallbackExt}`;
+  return base;
+}
+
+function parseDataUrl(dataUrl) {
+  const raw = String(dataUrl || "").trim();
+  const match = raw.match(/^data:([^;,]+);base64,(.+)$/i);
+  if (!match) return null;
+  return {
+    mimeType: String(match[1] || "").toLowerCase(),
+    contentBase64: String(match[2] || "").replace(/\s+/g, "")
+  };
+}
+
+function parseAssetUploadBody(body) {
+  const payload = body && typeof body === "object" ? body : {};
+  const inline = parseDataUrl(payload.dataUrl);
+  const mimeType = String(payload.mimeType || inline?.mimeType || "").trim().toLowerCase();
+  const contentBase64 = String(payload.contentBase64 || inline?.contentBase64 || "").replace(/\s+/g, "");
+  const fileName = String(payload.fileName || "").trim();
+  const scope = safeAssetScope(payload.scope || payload.documentId || payload.collection || "shared");
+  if (!ALLOWED_ASSET_MIME.has(mimeType)) {
+    throw new Error("Type de fichier non autorisé");
+  }
+  if (!contentBase64) {
+    throw new Error("Image base64 manquante");
+  }
+  return { mimeType, contentBase64, fileName, scope };
+}
+
+function decodeBase64ToBytes(base64) {
+  const normalized = String(base64 || "").replace(/-/g, "+").replace(/_/g, "/");
+  const padLength = normalized.length % 4;
+  const withPadding = normalized + (padLength ? "=".repeat(4 - padLength) : "");
+  const binary = atob(withPadding);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
+function bytesToHex(bytes) {
+  return Array.from(bytes).map(byte => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function sha256Hex(bytes) {
+  const hash = await crypto.subtle.digest("SHA-256", bytes);
+  return bytesToHex(new Uint8Array(hash));
 }
 
 function parseAllowedOrigins(env) {
@@ -239,7 +369,7 @@ async function getAccessToken(env) {
     textEncoder.encode(
       JSON.stringify({
         iss: account.client_email,
-        scope: FIRESTORE_SCOPE,
+        scope: GOOGLE_API_SCOPE,
         aud: FIREBASE_TOKEN_URL,
         exp,
         iat
@@ -330,6 +460,121 @@ function extractMeta(doc) {
     return {};
   }
   return convertFields(metaField);
+}
+
+function getStorageApiBaseUrl(env) {
+  const bucket = resolveStorageBucket(env);
+  return `https://storage.googleapis.com/storage/v1/b/${encodeURIComponent(bucket)}`;
+}
+
+function getStorageUploadUrl(env, objectName) {
+  const bucket = resolveStorageBucket(env);
+  return `https://storage.googleapis.com/upload/storage/v1/b/${encodeURIComponent(bucket)}/o?uploadType=media&name=${encodeURIComponent(objectName)}`;
+}
+
+function getStorageObjectUrl(env, objectName) {
+  return `${getStorageApiBaseUrl(env)}/o/${encodeURIComponent(objectName)}`;
+}
+
+function mapStorageObjectToAsset(item, env) {
+  const objectName = String(item?.name || "").trim();
+  const contentType = String(item?.contentType || "").trim();
+  const size = Number(item?.size || 0);
+  const generation = String(item?.generation || "").trim();
+  const bucket = resolveStorageBucket(env);
+  return {
+    id: toBase64UrlString(objectName),
+    objectName,
+    bucket,
+    mimeType: contentType,
+    size,
+    generation
+  };
+}
+
+async function storageApiFetch(env, url, options = {}) {
+  const headers = Object.assign(
+    {},
+    options.headers || {},
+    { Authorization: `Bearer ${await getAccessToken(env)}` }
+  );
+  const response = await fetch(url, Object.assign({}, options, { headers }));
+  return response;
+}
+
+async function uploadAssetToStorage(env, upload) {
+  const bytes = decodeBase64ToBytes(upload.contentBase64);
+  if (!bytes.length) {
+    throw new Error("Image vide");
+  }
+  if (bytes.length > MAX_ASSET_BYTES) {
+    throw new Error("Image trop volumineuse");
+  }
+  const hash = await sha256Hex(bytes);
+  const ext = detectAssetExtension(upload.mimeType, upload.fileName);
+  const baseFileName = sanitizeAssetName(upload.fileName, ext);
+  const objectName = `assets/${upload.scope}/${hash}-${baseFileName}`;
+
+  const uploadResponse = await storageApiFetch(env, getStorageUploadUrl(env, objectName), {
+    method: "POST",
+    headers: {
+      "Content-Type": upload.mimeType
+    },
+    body: bytes
+  });
+  if (!uploadResponse.ok) {
+    const body = await uploadResponse.text().catch(() => "");
+    throw new Error(`Erreur upload Storage: ${uploadResponse.status} ${body}`);
+  }
+  const data = await uploadResponse.json().catch(() => ({}));
+  return {
+    hash,
+    asset: mapStorageObjectToAsset(data, env)
+  };
+}
+
+async function readAssetFromStorage(env, assetId) {
+  let objectName = "";
+  try {
+    objectName = fromBase64UrlString(assetId);
+  } catch (err) {
+    return null;
+  }
+  if (!objectName) return null;
+
+  const response = await storageApiFetch(env, `${getStorageObjectUrl(env, objectName)}?alt=media`, {
+    method: "GET"
+  });
+  if (response.status === 404) {
+    return null;
+  }
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    throw new Error(`Erreur lecture Storage: ${response.status} ${body}`);
+  }
+  return { objectName, response };
+}
+
+async function deleteAssetFromStorage(env, assetId) {
+  let objectName = "";
+  try {
+    objectName = fromBase64UrlString(assetId);
+  } catch (err) {
+    return false;
+  }
+  if (!objectName) return false;
+
+  const response = await storageApiFetch(env, getStorageObjectUrl(env, objectName), {
+    method: "DELETE"
+  });
+  if (response.status === 404) {
+    return true;
+  }
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    throw new Error(`Erreur suppression Storage: ${response.status} ${body}`);
+  }
+  return true;
 }
 
 async function fetchShareDocument(env, collection, documentId) {
@@ -480,6 +725,79 @@ async function handleRequest(request, env) {
   if (request.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: corsHeaders(request, env) });
   }
+
+  const assetPath = parseAssetPath(request);
+  if (assetPath) {
+    if (request.method === "GET") {
+      if (!assetPath.action || assetPath.action === "upload") {
+        return errorResponse("Identifiant d'asset manquant", 400, request, env);
+      }
+      const result = await readAssetFromStorage(env, assetPath.action);
+      if (!result) {
+        return notFoundResponse(request, env);
+      }
+      const streamHeaders = Object.assign({}, corsHeaders(request, env), {
+        "Content-Type": result.response.headers.get("Content-Type") || "application/octet-stream",
+        "Cache-Control": "public, max-age=31536000, immutable"
+      });
+      const length = result.response.headers.get("Content-Length");
+      if (length) {
+        streamHeaders["Content-Length"] = length;
+      }
+      return new Response(result.response.body, {
+        status: 200,
+        headers: streamHeaders
+      });
+    }
+
+    if (request.method === "POST") {
+      if (assetPath.action !== "upload") {
+        return errorResponse("Route assets invalide", 404, request, env);
+      }
+      const rateLimitResponse = await enforceWriteRateLimit(request, env);
+      if (rateLimitResponse) {
+        return rateLimitResponse;
+      }
+      let body = null;
+      try {
+        body = await request.json();
+      } catch (err) {
+        return errorResponse("Payload JSON attendu", 400, request, env);
+      }
+      let parsed;
+      try {
+        parsed = parseAssetUploadBody(body);
+      } catch (err) {
+        return errorResponse(err?.message || "Payload image invalide", 400, request, env);
+      }
+      const uploaded = await uploadAssetToStorage(env, parsed);
+      return jsonResponse({
+        ok: true,
+        hash: uploaded.hash,
+        asset: uploaded.asset,
+        url: `/v1/assets/${encodeURIComponent(uploaded.asset.id)}`
+      }, 200, request, env);
+    }
+
+    if (request.method === "DELETE") {
+      if (!assetPath.action || assetPath.action === "upload") {
+        return errorResponse("Identifiant d'asset manquant", 400, request, env);
+      }
+      const rateLimitResponse = await enforceWriteRateLimit(request, env);
+      if (rateLimitResponse) {
+        return rateLimitResponse;
+      }
+      await deleteAssetFromStorage(env, assetPath.action);
+      return jsonResponse({ ok: true }, 200, request, env);
+    }
+
+    const headers = Object.assign({ Allow: "GET,POST,DELETE,OPTIONS" }, corsHeaders(request, env));
+    return new Response(JSON.stringify({ error: "Méthode non autorisée" }), {
+      status: 405,
+      headers: Object.assign({ "Content-Type": "application/json; charset=utf-8" }, headers)
+    });
+  }
+
   const path = parseSharePath(request);
   if (!path) {
     return notFoundResponse(request, env);

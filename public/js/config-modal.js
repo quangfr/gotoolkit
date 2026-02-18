@@ -1068,7 +1068,8 @@
             deviceId: getMicrosoftDeviceId(),
             subject: String(options?.subject || "Document").trim() || "Document",
             html: String(options?.html || ""),
-            text: String(options?.text || "")
+            text: String(options?.text || ""),
+            attachments: Array.isArray(options?.attachments) ? options.attachments : []
         });
     }
 
@@ -1168,7 +1169,8 @@
             deviceId: getGmailDeviceId(),
             subject: String(options?.subject || "Document").trim() || "Document",
             html: String(options?.html || ""),
-            text: String(options?.text || "")
+            text: String(options?.text || ""),
+            attachments: Array.isArray(options?.attachments) ? options.attachments : []
         });
     }
 

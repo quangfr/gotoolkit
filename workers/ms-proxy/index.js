@@ -296,6 +296,29 @@ function normalizeHtmlInput(html, text) {
     .replace(/>/g, "&gt;")}</pre>`;
 }
 
+function normalizeInlineImageAttachments(rawAttachments) {
+  if (!Array.isArray(rawAttachments)) return [];
+  const allowedMime = new Set(["image/png", "image/jpeg", "image/jpg", "image/gif"]);
+  const attachments = [];
+  for (const item of rawAttachments.slice(0, 24)) {
+    const mimeType = String(item?.mimeType || "").trim().toLowerCase();
+    const contentBase64 = String(item?.contentBase64 || "").replace(/\s+/g, "");
+    if (!allowedMime.has(mimeType) || !contentBase64) continue;
+    const defaultExt = mimeType === "image/png" ? "png" : (mimeType === "image/gif" ? "gif" : "jpg");
+    const fileName = String(item?.fileName || `image-${attachments.length + 1}.${defaultExt}`).replace(/[\r\n]+/g, " ").trim() || `image-${attachments.length + 1}.${defaultExt}`;
+    const contentId = String(item?.contentId || `gotoolkit-img-${Date.now()}-${attachments.length}@local`).replace(/[\r\n]+/g, " ").trim();
+    attachments.push({
+      "@odata.type": "#microsoft.graph.fileAttachment",
+      name: fileName,
+      contentType: mimeType,
+      contentBytes: contentBase64,
+      isInline: true,
+      contentId,
+    });
+  }
+  return attachments;
+}
+
 export default {
   async fetch(request, env) {
     const cors = corsMeta(request);
@@ -349,6 +372,7 @@ export default {
       const deviceId = String(body?.deviceId || "").trim();
       const subject = String(body?.subject || "Document").trim() || "Document";
       const html = normalizeHtmlInput(body?.html, body?.text);
+      const attachments = normalizeInlineImageAttachments(body?.attachments);
       if (!deviceId) return errorResponse(cors.headers, 400, "deviceId requis");
       if (!html.trim()) return errorResponse(cors.headers, 400, "Contenu HTML requis");
 
@@ -363,7 +387,8 @@ export default {
             body: {
               contentType: "HTML",
               content: html
-            }
+            },
+            ...(attachments.length ? { attachments } : {})
           }
         });
         const draftId = String(draft?.id || "").trim();

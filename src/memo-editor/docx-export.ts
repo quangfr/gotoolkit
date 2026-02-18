@@ -347,6 +347,45 @@ async function transformNode(node: any, editor: any): Promise<any> {
       return new Paragraph({ text: "[Diagramme Mermaid]" });
     }
 
+    case 'image': {
+      const src = String(node?.attrs?.src || '').trim();
+      if (!src) return null;
+      try {
+        const data = await imageSourceToUint8Array(src);
+        if (!data) {
+          return new Paragraph({ text: "[Image indisponible]" });
+        }
+
+        const natural = await getImageNaturalSize(src);
+        const fallbackWidth = natural.width || 640;
+        const fallbackHeight = natural.height || 360;
+        const desiredWidth = parseNodePixels(node?.attrs?.width) || fallbackWidth;
+        const desiredHeight = parseNodePixels(node?.attrs?.height)
+          || Math.round((fallbackHeight / Math.max(1, fallbackWidth)) * desiredWidth);
+
+        const maxWidth = 520;
+        const scale = desiredWidth > maxWidth ? (maxWidth / desiredWidth) : 1;
+        const finalWidth = Math.max(80, Math.round(desiredWidth * scale));
+        const finalHeight = Math.max(60, Math.round(desiredHeight * scale));
+
+        return new Paragraph({
+          children: [
+            new ImageRun({
+              data,
+              transformation: {
+                width: finalWidth,
+                height: finalHeight,
+              },
+            } as any),
+          ],
+          alignment: AlignmentType.CENTER,
+          spacing: { before: 120, after: 120 },
+        });
+      } catch (err) {
+        return new Paragraph({ text: "[Image indisponible]" });
+      }
+    }
+
     default:
       return null;
   }
@@ -479,5 +518,41 @@ async function svgToPng(svgElement: SVGSVGElement): Promise<{ array: Uint8Array,
     };
     img.onerror = reject;
     img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
+  });
+}
+
+function parseNodePixels(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+    return value;
+  }
+  const text = String(value || '').trim();
+  if (!text) return null;
+  const match = text.match(/^(\d+(\.\d+)?)/);
+  if (!match) return null;
+  const parsed = Number.parseFloat(match[1]);
+  if (!Number.isFinite(parsed) || parsed <= 0) return null;
+  return parsed;
+}
+
+async function imageSourceToUint8Array(src: string): Promise<Uint8Array | null> {
+  try {
+    const response = await fetch(src);
+    if (!response.ok) return null;
+    const buffer = await response.arrayBuffer();
+    return new Uint8Array(buffer);
+  } catch (err) {
+    return null;
+  }
+}
+
+async function getImageNaturalSize(src: string): Promise<{ width: number; height: number }> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve({
+      width: img.naturalWidth || 0,
+      height: img.naturalHeight || 0,
+    });
+    img.onerror = () => resolve({ width: 0, height: 0 });
+    img.src = src;
   });
 }
