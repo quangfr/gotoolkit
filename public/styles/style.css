@@ -1471,6 +1471,8 @@ label {
 .info-popup-news-link {
   display: inline-flex;
   align-items: center;
+  align-self: flex-start;
+  width: fit-content;
   border-bottom: 1px dashed currentColor;
   cursor: pointer;
   line-height: 1.2;

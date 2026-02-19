@@ -32,10 +32,10 @@
             }
             .voice-video-player-dialog {
                 position: relative;
-                width: 95vw;
-                max-height: 90vh;
+                width: 98vw;
+                max-height: 98vh;
                 background: var(--bg-surface);
-                border-radius: 24px;
+                border-radius: 12px;
                 padding: 22px;
                 box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
                 z-index: 1;
