@@ -365,6 +365,30 @@
             .voice-video-player-transcript-save:hover {
                 background: #1e6848;
             }
+            .voice-video-player-toast {
+                position: fixed;
+                right: 16px;
+                bottom: 16px;
+                z-index: 12000;
+                background: var(--bg-surface);
+                color: var(--text-main);
+                border: 1px solid var(--border-strong);
+                border-radius: 10px;
+                padding: 8px 12px;
+                font-size: 12px;
+                box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+                opacity: 0;
+                transform: translateY(8px);
+                pointer-events: none;
+                transition: opacity 0.2s ease, transform 0.2s ease;
+            }
+            .voice-video-player-toast--visible {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            .voice-video-player-toast--error {
+                border-color: var(--intent-error-border);
+            }
             @media (max-width: 1024px) {
                 .voice-video-player-body {
                     flex-direction: column;
@@ -436,6 +460,7 @@
             this._textTrackUrl = "";
             this._gifWorkerScriptUrl = "";
             this._gifWorkerBlobUrl = "";
+            this._toastTimer = null;
             ensureStyles();
             this._buildDom();
             this._bindEvents();
@@ -520,6 +545,11 @@
             this.transcriptList = this.overlay.querySelector(".voice-video-player-transcript-list");
             this.transcriptSubtitle = this.overlay.querySelector(".voice-video-player-transcript-subtitle");
             this.saveButton = this.overlay.querySelector(".voice-video-player-transcript-save");
+            this.toastEl = document.createElement("div");
+            this.toastEl.className = "voice-video-player-toast";
+            this.toastEl.setAttribute("role", "status");
+            this.toastEl.setAttribute("aria-live", "polite");
+            (document.body || document.documentElement).appendChild(this.toastEl);
             if (this.videoEl) {
                 this.textTrackEl = document.createElement("track");
                 this.textTrackEl.kind = "subtitles";
@@ -532,6 +562,18 @@
                 this._populateSpeedOptions();
                 this._applyPlaybackRate();
             }
+        }
+
+        _showToast(message, isError = false) {
+            if (!this.toastEl) return;
+            this.toastEl.textContent = String(message || "");
+            this.toastEl.classList.toggle("voice-video-player-toast--error", Boolean(isError));
+            this.toastEl.classList.add("voice-video-player-toast--visible");
+            if (this._toastTimer) clearTimeout(this._toastTimer);
+            this._toastTimer = setTimeout(() => {
+                if (!this.toastEl) return;
+                this.toastEl.classList.remove("voice-video-player-toast--visible");
+            }, 1800);
         }
 
         _bindEvents() {
@@ -919,14 +961,13 @@
                     try { URL.revokeObjectURL(url); } catch (err) { /* noop */ }
                 }, 500);
                 console.info("[GoToolkit GIF] download triggered");
+                this._showToast("GIF téléchargé");
             } catch (err) {
                 console.error("[GoToolkit GIF] download failed", err);
                 if (this.downloadGifOption) {
                     this.downloadGifOption.textContent = "Gif (échec)";
                 }
-                try {
-                    window.alert("Export GIF impossible. Ouvrez la console et cherchez [GoToolkit GIF].");
-                } catch (alertErr) { /* noop */ }
+                this._showToast("Export GIF impossible", true);
             }
         }
 
@@ -1076,6 +1117,7 @@
             setTimeout(() => {
                 try { URL.revokeObjectURL(url); } catch (err) { /* noop */ }
             }, 500);
+            this._showToast("Vidéo téléchargée");
         }
 
         async _getOutputBlob() {
@@ -1616,6 +1658,13 @@
                 this._gifWorkerBlobUrl = "";
             }
             this._gifWorkerScriptUrl = "";
+            if (this._toastTimer) {
+                clearTimeout(this._toastTimer);
+                this._toastTimer = null;
+            }
+            if (this.toastEl) {
+                this.toastEl.classList.remove("voice-video-player-toast--visible");
+            }
         }
     }
 

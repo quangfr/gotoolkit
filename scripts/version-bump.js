@@ -47,7 +47,9 @@ htmlFiles.forEach(filePath => {
         // <span class="hero-version ...">v...</span>
         content = content.replace(/<span class="hero-version[^>]*>v[0-9.]+<\/span>/, `<span class="hero-version label-link" id="releaseNotesTrigger" tabindex="0">v${newVersion}</span>`);
     } else if (filePath.endsWith('docs.html')) {
-        // <span>Version ...</span>
+        // Main docs info panel label
+        content = content.replace(/(<span[^>]*id="memoNewsTrigger"[^>]*>)Version [0-9.]+(<\/span>)/, `$1Version ${newVersion}$2`);
+        // Fallback for any generic docs version label
         content = content.replace(/<span>Version [0-9.]+<\/span>/, `<span>Version ${newVersion}</span>`);
     } else if (filePath.endsWith('grid.html')) {
         // <span>Version ...</span>
