@@ -744,6 +744,13 @@
             return `${mb.toFixed(2)} MB`;
         }
 
+        _formatSecondsLabel(seconds) {
+            const value = Number(seconds);
+            if (!Number.isFinite(value) || value <= 0) return "1s";
+            if (value < 10) return `${Math.max(1, Math.round(value))}s`;
+            return `${Math.round(value)}s`;
+        }
+
         _getGifExportConfig(sourceWidth, sourceHeight, duration) {
             const safeWidth = Math.max(1, Number(sourceWidth) || 640);
             const safeHeight = Math.max(1, Number(sourceHeight) || 360);
@@ -784,6 +791,18 @@
             return frames * bytesPerFrame;
         }
 
+        _estimateGifBuildSeconds() {
+            const duration = this._hasCutRange() ? Math.max(0.1, this.cutEnd - this.cutStart) : Math.max(0.1, this.videoEl?.duration || 0);
+            const sourceWidth = this.videoEl?.videoWidth || 640;
+            const sourceHeight = this.videoEl?.videoHeight || 360;
+            const { width, height, frameCount } = this._getGifExportConfig(sourceWidth, sourceHeight, duration);
+            const mpix = (width * height) / 1000000;
+            const workers = Math.max(1, Math.min(4, (navigator?.hardwareConcurrency || 4) - 1));
+            // Includes decode+seek per frame + GIF quantization/render; intentionally conservative.
+            const seconds = 1.2 + ((frameCount * Math.max(0.25, mpix)) / (workers * 7));
+            return Math.max(1, Math.round(seconds));
+        }
+
         async _updateDownloadOptionLabels() {
             const videoBlob = await this._getOutputBlob().catch(() => this.videoBlobOriginal);
             const videoSize = videoBlob?.size || this.videoBlobOriginal?.size || 0;
@@ -794,7 +813,8 @@
                 this.downloadVideoOption.textContent = `Vidéo (${this._formatMbLabel(videoSize)})`;
             }
             if (this.downloadGifOption) {
-                this.downloadGifOption.textContent = `Gif (${this._formatMbLabel(gifSize)})`;
+                const gifEta = this._formatSecondsLabel(this._estimateGifBuildSeconds());
+                this.downloadGifOption.textContent = `Gif (~${gifEta}, ${this._formatMbLabel(gifSize)})`;
             }
         }
 
@@ -953,7 +973,8 @@
             const renderGif = async ({ workers, workerScript }) => {
                 const gif = new GIFCtor({
                     workers,
-                    quality: 8,
+                    quality: 6,
+                    dither: "FloydSteinberg-serpentine",
                     ...(workerScript ? { workerScript } : {}),
                     width,
                     height
@@ -977,8 +998,9 @@
             };
 
             let blob = null;
+            const preferredWorkers = Math.max(2, Math.min(4, (navigator?.hardwareConcurrency || 4) - 1));
             try {
-                blob = await renderGif({ workers: 2, workerScript: workerScriptUrl });
+                blob = await renderGif({ workers: preferredWorkers, workerScript: workerScriptUrl });
             } catch (err) {
                 console.warn("[GoToolkit GIF] workers failed, retrying without workers", err);
                 blob = await renderGif({ workers: 0 });

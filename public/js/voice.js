@@ -1741,7 +1741,7 @@
         try {
             await transcribeAndStore(durationSeconds);
         } catch (err) {
-            showToast("Transcription impossible", true);
+            showToast("Transcription impossible");
         }
     }
 
