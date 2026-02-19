@@ -785,18 +785,19 @@
             const safeHeight = Math.max(1, Number(sourceHeight) || 360);
             const safeDuration = Math.max(0.1, Number(duration) || 0.1);
 
-            // Quality-first with a fixed max export width.
-            const width = Math.min(1024, safeWidth);
+            // Balanced profile: smaller canvas, keep decent motion quality.
+            const width = Math.min(800, safeWidth);
             const height = Math.max(2, Math.round((safeHeight / safeWidth) * width));
 
-            let fps = 8;
-            if (safeDuration <= 8) fps = 12;
-            else if (safeDuration <= 20) fps = 10;
-            else if (safeDuration > 45) fps = 7;
+            let fps = 7;
+            if (safeDuration <= 8) fps = 10;
+            else if (safeDuration <= 20) fps = 8;
+            else if (safeDuration > 45) fps = 6;
 
-            let frameCap = 420;
-            if (safeDuration > 25) frameCap = 360;
-            if (safeDuration > 45) frameCap = 300;
+            // Slightly less aggressive compression than strict size mode.
+            let frameCap = 300;
+            if (safeDuration > 25) frameCap = 260;
+            if (safeDuration > 45) frameCap = 220;
             const frameCount = Math.max(1, Math.min(frameCap, Math.ceil(safeDuration * fps)));
             const delay = Math.round(1000 / fps);
 
@@ -1004,7 +1005,7 @@
                 ctx.drawImage(video, 0, 0, width, height);
                 const imageData = ctx.getImageData(0, 0, width, height);
                 const rgba = imageData.data;
-                const palette = quantize(rgba, 256, { format: "rgb565" });
+                const palette = quantize(rgba, 128, { format: "rgb565" });
                 const index = applyPalette(rgba, palette, "rgb565");
                 gif.writeFrame(index, width, height, {
                     palette,
