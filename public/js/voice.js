@@ -911,8 +911,11 @@
         });
         await sourceVideo.play().catch(() => { /* noop */ });
 
-        const width = Math.max(2, sourceVideo.videoWidth || 1280);
-        const height = Math.max(2, sourceVideo.videoHeight || 720);
+        const sourceWidth = Math.max(2, sourceVideo.videoWidth || 1280);
+        const sourceHeight = Math.max(2, sourceVideo.videoHeight || 720);
+        const scale = Math.min(1, 1080 / sourceHeight);
+        const width = Math.max(2, Math.round(sourceWidth * scale));
+        const height = Math.max(2, Math.round(sourceHeight * scale));
         const canvas = document.createElement("canvas");
         canvas.width = width;
         canvas.height = height;
@@ -1270,7 +1273,7 @@
                 for (const track of combinedTracks) {
                     if (track?.kind !== "video") continue;
                     try {
-                        track.applyConstraints?.({ frameRate: 20 });
+                        track.applyConstraints?.({ frameRate: 20, height: { max: 1080 } });
                     } catch (err) { /* noop */ }
                 }
                 const combinedStream = new MediaStream(combinedTracks);

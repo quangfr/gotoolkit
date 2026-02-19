@@ -4,19 +4,6 @@
         "https://cdn.jsdelivr.net/npm/gifenc@1.0.3/+esm",
         "https://unpkg.com/gifenc@1.0.3/dist/gifenc.esm.js"
     ];
-    const FFMPEG_ESM_URLS = [
-        "https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js",
-        "https://esm.sh/@ffmpeg/ffmpeg@0.12.10"
-    ];
-    const FFMPEG_UTIL_ESM_URLS = [
-        "https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js",
-        "https://esm.sh/@ffmpeg/util@0.12.1"
-    ];
-    const FFMPEG_CORE_BASE_URL = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd";
-    const FFMPEG_CLASS_WORKER_URLS = [
-        "https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/worker.js",
-        "https://esm.sh/@ffmpeg/ffmpeg@0.12.10/dist/esm/worker.js"
-    ];
     const VOICE_RECORDING_SPEED_STORAGE_KEY = "go-toolkit-voice-recording-speed";
 
     function normalizeVoiceRecordingSpeed(value) {
@@ -536,7 +523,6 @@
             this.videoBlobUrl = "";
             this._textTrackUrl = "";
             this._gifEncoderLibPromise = null;
-            this._ffmpegGifEnginePromise = null;
             this._gifDownloading = false;
             this._gifPrebuildTimer = null;
             this._gifPrebuildPromise = null;
@@ -837,9 +823,9 @@
 
         _formatMbLabel(bytes) {
             const value = Number(bytes);
-            if (!Number.isFinite(value) || value <= 0) return "0.00 MB";
+            if (!Number.isFinite(value) || value <= 0) return "0.0MB";
             const mb = value / (1024 * 1024);
-            return `${mb.toFixed(2)} MB`;
+            return `${mb.toFixed(1)}MB`;
         }
 
         _formatSecondsLabel(seconds) {
@@ -950,9 +936,10 @@
             const safeSpeed = Math.min(4, Math.max(0.4, Number(speed) || 1.2));
             const exportDuration = Math.max(0.05, safeDuration / safeSpeed);
 
-            // Balanced profile: smaller canvas, keep decent motion quality.
-            const width = Math.min(1280, safeWidth);
-            const height = Math.max(2, Math.round((safeHeight / safeWidth) * width));
+            // GIF SD profile: max 576px height, keep aspect ratio.
+            const scale = Math.min(1, 576 / safeHeight);
+            const width = Math.max(2, Math.round(safeWidth * scale));
+            const height = Math.max(2, Math.round(safeHeight * scale));
 
             const fps = 10;
             const frameCount = Math.max(1, Math.ceil(exportDuration * fps));
@@ -1141,21 +1128,28 @@
             const mp4Ready = mp4Status === "ready";
             const mp4Size = mp4Ready ? this._mp4BlobCache.size : this._estimateMp4Bytes();
             if (this.downloadVideoWebmOption) {
-                this._renderOptionWithStatus(this.downloadVideoWebmOption, "ready", `WebM (${this._formatMbLabel(videoSize)})`);
+                this._renderOptionWithStatus(this.downloadVideoWebmOption, "ready", `WebM FHD (${this._formatMbLabel(videoSize)})`);
             }
             if (this.downloadVideoMp4Option) {
                 if (mp4Ready) {
-                    this._renderOptionWithStatus(this.downloadVideoMp4Option, mp4Status, `MP4 (${this._formatMbLabel(mp4Size)})`);
+                    this._renderOptionWithStatus(this.downloadVideoMp4Option, mp4Status, `MP4 HD (${this._formatMbLabel(mp4Size)})`);
                 } else {
-                    const eta = this._formatSecondsLabel(this._estimateMp4BuildSeconds());
-                    this._renderOptionWithStatus(this.downloadVideoMp4Option, mp4Status, `MP4 (~${eta}, ${this._formatMbLabel(mp4Size)})`);
+                    if (mp4Status === "running") {
+                        const eta = this._formatSecondsLabel(this._estimateMp4BuildSeconds());
+                        this._renderOptionWithStatus(this.downloadVideoMp4Option, mp4Status, `MP4 HD (~${eta}, ${this._formatMbLabel(mp4Size)})`);
+                    } else {
+                        this._renderOptionWithStatus(this.downloadVideoMp4Option, mp4Status, `MP4 HD (${this._formatMbLabel(mp4Size)})`);
+                    }
                 }
             }
             if (this.downloadGifOption) {
+                const runningGifLabel = `GIF SD (~${this._formatSecondsLabel(this._estimateGifBuildSeconds())}, ${this._formatMbLabel(this._estimateGifBytes())})`;
                 this._renderOptionWithStatus(
                     this.downloadGifOption,
                     gifStatus,
-                    gifSize > 0 ? `Gif (${this._formatMbLabel(gifSize)})` : "Gif"
+                    gifSize > 0
+                        ? `GIF SD (${this._formatMbLabel(gifSize)})`
+                        : (gifStatus === "running" ? runningGifLabel : `GIF SD (${this._formatMbLabel(this._estimateGifBytes())})`)
                 );
             }
             this._updateConversionBadges();
@@ -1298,59 +1292,6 @@
             return this._gifEncoderLibPromise;
         }
 
-        async _importFirstAvailable(urls = []) {
-            let lastError = null;
-            for (let i = 0; i < urls.length; i += 1) {
-                try {
-                    // eslint-disable-next-line no-await-in-loop
-                    return await import(/* @vite-ignore */ urls[i]);
-                } catch (err) {
-                    lastError = err;
-                }
-            }
-            throw new Error(lastError?.message || "Module introuvable");
-        }
-
-        async _toBlobUrlFirstAvailable(toBlobURL, urls = [], mimeType = "text/javascript") {
-            let lastError = null;
-            for (let i = 0; i < urls.length; i += 1) {
-                try {
-                    // eslint-disable-next-line no-await-in-loop
-                    return await toBlobURL(urls[i], mimeType);
-                } catch (err) {
-                    lastError = err;
-                }
-            }
-            throw new Error(lastError?.message || "URL blob introuvable");
-        }
-
-        async _ensureFfmpegGifEngine() {
-            if (this._ffmpegGifEnginePromise) return this._ffmpegGifEnginePromise;
-            this._ffmpegGifEnginePromise = (async () => {
-                const ffmpegMod = await this._importFirstAvailable(FFMPEG_ESM_URLS);
-                const utilMod = await this._importFirstAvailable(FFMPEG_UTIL_ESM_URLS);
-                const FFmpegCtor = ffmpegMod?.FFmpeg;
-                const toBlobURL = utilMod?.toBlobURL;
-                const fetchFile = utilMod?.fetchFile;
-                if (!FFmpegCtor || !toBlobURL || !fetchFile) {
-                    throw new Error("ffmpeg.wasm indisponible");
-                }
-                const ffmpeg = new FFmpegCtor();
-                const classWorkerURL = await this._toBlobUrlFirstAvailable(
-                    toBlobURL,
-                    FFMPEG_CLASS_WORKER_URLS,
-                    "text/javascript"
-                );
-                await ffmpeg.load({
-                    coreURL: await toBlobURL(`${FFMPEG_CORE_BASE_URL}/ffmpeg-core.js`, "text/javascript"),
-                    wasmURL: await toBlobURL(`${FFMPEG_CORE_BASE_URL}/ffmpeg-core.wasm`, "application/wasm"),
-                    workerURL: classWorkerURL
-                });
-                return { ffmpeg, fetchFile };
-            })();
-            return this._ffmpegGifEnginePromise;
-        }
-
         _getGifCacheKey() {
             if (!this.videoBlobOriginal) return "";
             const speed = this._getExportSpeed().toFixed(1);
@@ -1434,7 +1375,7 @@
                 ctx.drawImage(video, 0, 0, width, height);
                 const imageData = ctx.getImageData(0, 0, width, height);
                 const rgba = imageData.data;
-                const palette = quantize(rgba, 256, { format: "rgb565" });
+                const palette = quantize(rgba, 128, { format: "rgb565" });
                 const index = applyPalette(rgba, palette, "rgb565");
                 gif.writeFrame(index, width, height, {
                     palette,
@@ -1448,59 +1389,7 @@
             return blob;
         }
 
-        async _buildGifBlobWithFfmpeg() {
-            if (!this.videoBlobOriginal) return null;
-            const { ffmpeg, fetchFile } = await this._ensureFfmpegGifEngine();
-            const inName = "input.webm";
-            const paletteName = "palette.png";
-            const outName = "output.gif";
-            const durationTotal = Math.max(0, this.videoEl?.duration || 0);
-            const start = this._hasCutRange() ? Math.max(0, Math.min(durationTotal, this.cutStart || 0)) : 0;
-            const end = this._hasCutRange()
-                ? Math.max(start + 0.05, Math.min(durationTotal, this.cutEnd || durationTotal))
-                : durationTotal;
-            const clipDuration = Math.max(0.05, end - start);
-            const exportSpeed = this._getExportSpeed();
-            const sourceWidth = this.videoEl?.videoWidth || 640;
-            const sourceHeight = this.videoEl?.videoHeight || 360;
-            const { width, fps } = this._getGifExportConfig(sourceWidth, sourceHeight, clipDuration, exportSpeed);
-            const baseFilter = `setpts=PTS/${exportSpeed},fps=${fps},scale=${width}:-1:flags=lanczos`;
-            const cutArgs = this._hasCutRange()
-                ? ["-ss", start.toFixed(3), "-t", clipDuration.toFixed(3)]
-                : [];
-
-            await ffmpeg.writeFile(inName, await fetchFile(this.videoBlobOriginal));
-            await ffmpeg.exec([
-                ...cutArgs,
-                "-i", inName,
-                "-vf", `${baseFilter},palettegen=stats_mode=diff`,
-                "-y",
-                paletteName
-            ]);
-            await ffmpeg.exec([
-                ...cutArgs,
-                "-i", inName,
-                "-i", paletteName,
-                "-lavfi", `${baseFilter}[x];[x][1:v]paletteuse=dither=sierra2_4a`,
-                "-y",
-                outName
-            ]);
-            const data = await ffmpeg.readFile(outName);
-            const bytes = data?.buffer ? data : new Uint8Array(data || []);
-            const blob = new Blob([bytes], { type: "image/gif" });
-            try { await ffmpeg.deleteFile(inName); } catch (err) { /* noop */ }
-            try { await ffmpeg.deleteFile(paletteName); } catch (err) { /* noop */ }
-            try { await ffmpeg.deleteFile(outName); } catch (err) { /* noop */ }
-            return blob;
-        }
-
         async _buildGifBlob() {
-            try {
-                const blob = await this._buildGifBlobWithFfmpeg();
-                if (blob instanceof Blob && blob.size > 0) return blob;
-            } catch (err) {
-                console.warn("[GoToolkit GIF] ffmpeg fallback to gifenc", err);
-            }
             return this._buildGifBlobWithGifenc();
         }
 
@@ -1831,11 +1720,38 @@
             const end = Math.max(start + 0.05, Math.min(duration, this.cutEnd || duration));
             const exportSpeed = this._getExportSpeed();
             sourceVideo.playbackRate = exportSpeed;
-            const stream = sourceVideo.captureStream ? sourceVideo.captureStream() : (sourceVideo.mozCaptureStream ? sourceVideo.mozCaptureStream() : null);
-            if (!stream) {
+            const sourceStream = sourceVideo.captureStream ? sourceVideo.captureStream() : (sourceVideo.mozCaptureStream ? sourceVideo.mozCaptureStream() : null);
+            if (!sourceStream) {
                 URL.revokeObjectURL(sourceUrl);
                 return null;
             }
+            const srcW = Math.max(2, sourceVideo.videoWidth || 1280);
+            const srcH = Math.max(2, sourceVideo.videoHeight || 720);
+            const scale = Math.min(1, 720 / srcH);
+            const targetW = Math.max(2, Math.round(srcW * scale));
+            const targetH = Math.max(2, Math.round(srcH * scale));
+            const canvas = document.createElement("canvas");
+            canvas.width = targetW;
+            canvas.height = targetH;
+            const ctx = canvas.getContext("2d", { alpha: false, willReadFrequently: false });
+            if (!ctx) {
+                try { sourceStream.getTracks().forEach(track => track.stop()); } catch (err) { /* noop */ }
+                URL.revokeObjectURL(sourceUrl);
+                return null;
+            }
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = "high";
+            let rafId = 0;
+            const drawFrame = () => {
+                try { ctx.drawImage(sourceVideo, 0, 0, targetW, targetH); } catch (err) { /* noop */ }
+                rafId = requestAnimationFrame(drawFrame);
+            };
+            rafId = requestAnimationFrame(drawFrame);
+            const canvasStream = canvas.captureStream(12);
+            const stream = new MediaStream([
+                ...(canvasStream.getVideoTracks() || []),
+                ...(sourceStream.getAudioTracks() || [])
+            ]);
             let recorder = null;
             for (const mimeType of preferredMimeTypes) {
                 try {
@@ -1861,7 +1777,13 @@
                 const finalize = () => {
                     if (stopped) return;
                     stopped = true;
+                    if (rafId) {
+                        cancelAnimationFrame(rafId);
+                        rafId = 0;
+                    }
                     try { sourceVideo.pause(); } catch (err) { /* noop */ }
+                    try { canvasStream.getTracks().forEach(track => track.stop()); } catch (err) { /* noop */ }
+                    try { sourceStream.getTracks().forEach(track => track.stop()); } catch (err) { /* noop */ }
                     try { stream.getTracks().forEach(track => track.stop()); } catch (err) { /* noop */ }
                     try { URL.revokeObjectURL(sourceUrl); } catch (err) { /* noop */ }
                     resolve();
