@@ -1,15 +1,17 @@
 import Image from '@tiptap/extension-image';
 import { ReactNodeViewRenderer, NodeViewWrapper } from '@tiptap/react';
+import { NodeSelection } from 'prosemirror-state';
 import React from 'react';
 import {
   Blend,
-  Circle,
+  Check,
   CirclePlay,
   Copy,
   Crop,
   Download,
   Fullscreen,
   Pencil,
+  PencilLine,
   Redo2,
   RotateCw,
   Square,
@@ -29,8 +31,12 @@ const SUPPORTED_IMAGE_MIME = new Set([
 const SUPPORTED_IMAGE_EXT = ['.png', '.jpg', '.jpeg', '.gif'];
 
 const IMAGE_EDIT_COLORS = [
-  '#000000', '#FFFFFF', '#EF4444', '#F97316', '#FACC15',
-  '#22C55E', '#3B82F6', '#8B5CF6', '#EC4899', '#64748B',
+  '#FFFFFF',
+  '#000000',
+  '#FACC15',
+  '#22C55E',
+  '#3B82F6',
+  '#EF4444',
 ];
 
 const SIZE_PRESETS = {
@@ -40,7 +46,7 @@ const SIZE_PRESETS = {
 } as const;
 
 type SizePreset = keyof typeof SIZE_PRESETS;
-type EditTool = 'none' | 'crop' | 'pencil' | 'square' | 'text';
+type EditTool = 'none' | 'crop' | 'pencil' | 'line' | 'square' | 'text';
 type Surface = 'inline' | 'fullscreen';
 type Point = { x: number; y: number };
 type DragState = {
@@ -51,6 +57,13 @@ type DragState = {
   points: Point[];
   width: number;
   height: number;
+};
+type TextDraft = {
+  surface: Surface;
+  x: number;
+  y: number;
+  width: number;
+  text: string;
 };
 
 const isGifSource = (src: string) => {
@@ -221,6 +234,7 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
   const pendingSyncRef = React.useRef<string | null>(null);
   const historyRef = React.useRef<string[]>([src]);
   const historyIndexRef = React.useRef(0);
+  const textDragRef = React.useRef<null | { surface: Surface; offsetX: number; offsetY: number }>(null);
 
   const [gifPoster, setGifPoster] = React.useState<string | null>(null);
   const [gifPlaying, setGifPlaying] = React.useState(!isGif);
@@ -228,13 +242,14 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
   const [gifReplayTick, setGifReplayTick] = React.useState(0);
   const [fullscreenOpen, setFullscreenOpen] = React.useState(false);
   const [inlineToolbarOpen, setInlineToolbarOpen] = React.useState(false);
-  const [showColorPicker, setShowColorPicker] = React.useState(false);
+  const [isImageSelected, setIsImageSelected] = React.useState(false);
   const [activeTool, setActiveTool] = React.useState<EditTool>('none');
   const [sizePreset, setSizePreset] = React.useState<SizePreset>('M');
   const [strokeColor, setStrokeColor] = React.useState('#000000');
   const [history, setHistory] = React.useState<string[]>([src]);
   const [historyIndex, setHistoryIndex] = React.useState(0);
   const [drag, setDrag] = React.useState<DragState | null>(null);
+  const [textDraft, setTextDraft] = React.useState<TextDraft | null>(null);
 
   const widthPx = getPixels(node.attrs?.width);
   const heightPx = getPixels(node.attrs?.height);
@@ -306,6 +321,7 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
         setFullscreenOpen(false);
         setActiveTool('none');
         setDrag(null);
+        setTextDraft(null);
       }
     };
     window.addEventListener('keydown', onKey);
@@ -343,12 +359,34 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
       if (!root) return;
       if (root.contains(event.target as Node)) return;
       setInlineToolbarOpen(false);
-      setShowColorPicker(false);
       setActiveTool('none');
+      setTextDraft(null);
     };
     document.addEventListener('pointerdown', onPointerDown);
     return () => document.removeEventListener('pointerdown', onPointerDown);
   }, []);
+
+  React.useEffect(() => {
+    if (!editor || typeof getPos !== 'function') return;
+    const updateNodeSelectionState = () => {
+      try {
+        const pos = getPos();
+        const selection = editor.state.selection;
+        const selected = selection instanceof NodeSelection
+          && selection.from === pos
+          && selection.node?.type?.name === 'image';
+        setIsImageSelected(Boolean(selected));
+        if (selected) {
+          setInlineToolbarOpen(true);
+        }
+      } catch (err) {
+        setIsImageSelected(false);
+      }
+    };
+    editor.on('selectionUpdate', updateNodeSelectionState);
+    updateNodeSelectionState();
+    return () => editor.off('selectionUpdate', updateNodeSelectionState);
+  }, [editor, getPos]);
 
   React.useEffect(() => {
     const surfaceRef = drag?.surface === 'fullscreen' ? fullscreenSurfaceRef : inlineSurfaceRef;
@@ -362,18 +400,26 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    if (!drag || drag.tool !== 'pencil' || drag.points.length < 2) return;
+    if (!drag || (drag.tool !== 'pencil' && drag.tool !== 'line')) return;
 
     const line = SIZE_PRESETS[sizePreset].line;
     ctx.strokeStyle = strokeColor;
     ctx.lineWidth = line;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.beginPath();
-    ctx.moveTo(drag.points[0].x, drag.points[0].y);
-    for (let i = 1; i < drag.points.length; i += 1) {
-      ctx.lineTo(drag.points[i].x, drag.points[i].y);
+    if (drag.tool === 'pencil') {
+      if (drag.points.length < 2) return;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      ctx.moveTo(drag.points[0].x, drag.points[0].y);
+      for (let i = 1; i < drag.points.length; i += 1) {
+        ctx.lineTo(drag.points[i].x, drag.points[i].y);
+      }
+      ctx.stroke();
+      return;
     }
+    ctx.beginPath();
+    ctx.moveTo(drag.start.x, drag.start.y);
+    ctx.lineTo(drag.current.x, drag.current.y);
     ctx.stroke();
   }, [drag, sizePreset, strokeColor]);
 
@@ -515,7 +561,11 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
     const line = SIZE_PRESETS[sizePreset].line;
     const rect = normalizeRect(state.start, state.current);
     const minDraw = 2;
+    const lineDistance = Math.hypot(state.current.x - state.start.x, state.current.y - state.start.y);
     if ((state.tool === 'square' || state.tool === 'crop') && (rect.width < minDraw || rect.height < minDraw)) {
+      return;
+    }
+    if (state.tool === 'line' && lineDistance < minDraw) {
       return;
     }
     if (state.tool === 'pencil' && state.points.length < 2) return;
@@ -551,6 +601,17 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
         return;
       }
 
+      if (state.tool === 'line') {
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = line;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(state.start.x * scaleX, state.start.y * scaleY);
+        ctx.lineTo(state.current.x * scaleX, state.current.y * scaleY);
+        ctx.stroke();
+        return;
+      }
+
       const cropX = Math.round(rect.x * scaleX);
       const cropY = Math.round(rect.y * scaleY);
       const cropWidth = Math.round(rect.width * scaleX);
@@ -565,24 +626,47 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
     });
   }, [applySimpleOperation, sizePreset, strokeColor]);
 
-  const handleTextPlacement = React.useCallback(async (surface: Surface, event: React.PointerEvent<HTMLDivElement>) => {
+  const handleTextPlacement = React.useCallback((surface: Surface, event: React.PointerEvent<HTMLDivElement>) => {
     const surfaceEl = surface === 'fullscreen' ? fullscreenSurfaceRef.current : inlineSurfaceRef.current;
     if (!surfaceEl) return;
     const rect = surfaceEl.getBoundingClientRect();
     const local = clampPoint({ x: event.clientX - rect.left, y: event.clientY - rect.top }, rect.width, rect.height);
-    const value = window.prompt('Texte à ajouter');
-    if (!value) return;
+    setTextDraft({
+      surface,
+      x: local.x,
+      y: local.y,
+      width: Math.min(280, Math.max(180, rect.width * 0.4)),
+      text: textDraft?.text || '',
+    });
+  }, [textDraft?.text]);
 
+  const commitTextDraft = React.useCallback(async () => {
+    if (!textDraft || !textDraft.text.trim()) {
+      setTextDraft(null);
+      return;
+    }
+    const draft = textDraft;
     const fontSize = SIZE_PRESETS[sizePreset].font;
     await applySimpleOperation(({ canvas, ctx }) => {
+      const surfaceEl = draft.surface === 'fullscreen' ? fullscreenSurfaceRef.current : inlineSurfaceRef.current;
+      if (!surfaceEl) return;
+      const rect = surfaceEl.getBoundingClientRect();
       const scaleX = canvas.width / Math.max(rect.width, 1);
       const scaleY = canvas.height / Math.max(rect.height, 1);
+      const pxFontSize = fontSize * Math.max(scaleY, 1);
+      const lineHeight = pxFontSize * 1.3;
       ctx.fillStyle = strokeColor;
-      ctx.font = `${fontSize * Math.max(scaleY, 1)}px Inter, sans-serif`;
+      ctx.font = `${pxFontSize}px Inter, sans-serif`;
       ctx.textBaseline = 'top';
-      ctx.fillText(value, local.x * scaleX, local.y * scaleY);
+      const startX = draft.x * scaleX;
+      const startY = draft.y * scaleY;
+      const lines = draft.text.split('\n');
+      lines.forEach((lineText, index) => {
+        ctx.fillText(lineText, startX, startY + (index * lineHeight));
+      });
     });
-  }, [applySimpleOperation, sizePreset, strokeColor]);
+    setTextDraft(null);
+  }, [applySimpleOperation, sizePreset, strokeColor, textDraft]);
 
   const handleSurfacePointerDown = React.useCallback((surface: Surface, event: React.PointerEvent<HTMLDivElement>) => {
     if (!canEdit) return;
@@ -594,7 +678,7 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
     event.stopPropagation();
 
     if (activeTool === 'text') {
-      void handleTextPlacement(surface, event);
+      handleTextPlacement(surface, event);
       return;
     }
 
@@ -651,9 +735,39 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
     };
   }, [drag, commitDragOperation]);
 
+  React.useEffect(() => {
+    const onMove = (event: PointerEvent) => {
+      const dragState = textDragRef.current;
+      if (!dragState) return;
+      setTextDraft((prev) => {
+        if (!prev || prev.surface !== dragState.surface) return prev;
+        const surfaceEl = dragState.surface === 'fullscreen' ? fullscreenSurfaceRef.current : inlineSurfaceRef.current;
+        if (!surfaceEl) return prev;
+        const rect = surfaceEl.getBoundingClientRect();
+        const nextX = Math.min(
+          Math.max(event.clientX - rect.left - dragState.offsetX, 0),
+          Math.max(0, rect.width - prev.width),
+        );
+        const nextY = Math.min(
+          Math.max(event.clientY - rect.top - dragState.offsetY, 0),
+          Math.max(0, rect.height - 28),
+        );
+        return { ...prev, x: nextX, y: nextY };
+      });
+    };
+    const onUp = () => {
+      textDragRef.current = null;
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    return () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+  }, []);
+
   const toggleTool = (tool: EditTool) => {
     setInlineToolbarOpen(true);
-    setShowColorPicker(false);
     setDrag(null);
     setActiveTool(prev => (prev === tool ? 'none' : tool));
   };
@@ -689,6 +803,38 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
         </button>
       </div>
 
+      <div className="memo-image-edit-group">
+        <button type="button" className={`memo-image-edit-btn ${activeTool === 'pencil' ? 'is-active' : ''}`} title="Crayon" onClick={() => toggleTool('pencil')}>
+          <i data-lucide="pencil" style={{ display: 'none' }} aria-hidden="true"></i>
+          <Pencil size={14} />
+        </button>
+        <button type="button" className={`memo-image-edit-btn ${activeTool === 'line' ? 'is-active' : ''}`} title="Ligne" onClick={() => toggleTool('line')}>
+          <i data-lucide="pencil-line" style={{ display: 'none' }} aria-hidden="true"></i>
+          <PencilLine size={14} />
+        </button>
+        <button type="button" className={`memo-image-edit-btn ${activeTool === 'square' ? 'is-active' : ''}`} title="Rectangle" onClick={() => toggleTool('square')}>
+          <i data-lucide="square" style={{ display: 'none' }} aria-hidden="true"></i>
+          <Square size={14} />
+        </button>
+        <button type="button" className={`memo-image-edit-btn ${activeTool === 'text' ? 'is-active' : ''}`} title="Texte" onClick={() => toggleTool('text')}>
+          <i data-lucide="type" style={{ display: 'none' }} aria-hidden="true"></i>
+          <Type size={14} />
+        </button>
+      </div>
+
+      <div className="memo-image-edit-group memo-image-color-group">
+        {IMAGE_EDIT_COLORS.map((color) => (
+          <button
+            key={color}
+            type="button"
+            className={`memo-image-color-cell ${strokeColor === color ? 'is-active' : ''}`}
+            style={{ background: color, boxShadow: color === '#FFFFFF' ? 'inset 0 0 0 1px var(--border-main)' : 'none' }}
+            onClick={() => setStrokeColor(color)}
+            title={color}
+          />
+        ))}
+      </div>
+
       <div className="memo-image-edit-group memo-image-size-group">
         {(['S', 'M', 'L'] as SizePreset[]).map((size) => (
           <button
@@ -701,50 +847,6 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
             {size}
           </button>
         ))}
-      </div>
-
-      <div className="memo-image-edit-group memo-image-color-group">
-        <button
-          type="button"
-          className="memo-image-edit-btn"
-          title="Couleur"
-          onClick={() => setShowColorPicker(prev => !prev)}
-        >
-          <i data-lucide="circle" style={{ display: 'none' }} aria-hidden="true"></i>
-          <Circle size={14} style={{ fill: strokeColor, color: strokeColor }} />
-        </button>
-        {showColorPicker && (
-          <div className="memo-image-color-grid" onClick={(event) => event.stopPropagation()}>
-            {IMAGE_EDIT_COLORS.map((color) => (
-              <button
-                key={color}
-                type="button"
-                className={`memo-image-color-cell ${strokeColor === color ? 'is-active' : ''}`}
-                style={{ background: color, borderColor: color === '#FFFFFF' ? 'var(--border-main)' : color }}
-                onClick={() => {
-                  setStrokeColor(color);
-                  setShowColorPicker(false);
-                }}
-                title={color}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="memo-image-edit-group">
-        <button type="button" className={`memo-image-edit-btn ${activeTool === 'pencil' ? 'is-active' : ''}`} title="Crayon" onClick={() => toggleTool('pencil')}>
-          <i data-lucide="pencil" style={{ display: 'none' }} aria-hidden="true"></i>
-          <Pencil size={14} />
-        </button>
-        <button type="button" className={`memo-image-edit-btn ${activeTool === 'square' ? 'is-active' : ''}`} title="Rectangle" onClick={() => toggleTool('square')}>
-          <i data-lucide="square" style={{ display: 'none' }} aria-hidden="true"></i>
-          <Square size={14} />
-        </button>
-        <button type="button" className={`memo-image-edit-btn ${activeTool === 'text' ? 'is-active' : ''}`} title="Texte" onClick={() => toggleTool('text')}>
-          <i data-lucide="type" style={{ display: 'none' }} aria-hidden="true"></i>
-          <Type size={14} />
-        </button>
       </div>
 
       {surface === 'fullscreen' && (
@@ -786,6 +888,53 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
 
       <canvas className="memo-image-overlay-canvas" ref={overlayRef} />
 
+      {textDraft && textDraft.surface === surface && (
+        <div
+          className="memo-image-text-frame"
+          style={{ left: `${textDraft.x}px`, top: `${textDraft.y}px`, width: `${textDraft.width}px` }}
+          onPointerDown={(event) => {
+            event.stopPropagation();
+          }}
+        >
+          <div
+            className="memo-image-text-frame-drag"
+            onPointerDown={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              const surfaceEl = surface === 'fullscreen' ? fullscreenSurfaceRef.current : inlineSurfaceRef.current;
+              if (!surfaceEl || !textDraft) return;
+              const rect = surfaceEl.getBoundingClientRect();
+              textDragRef.current = {
+                surface,
+                offsetX: event.clientX - rect.left - textDraft.x,
+                offsetY: event.clientY - rect.top - textDraft.y,
+              };
+            }}
+          >
+            Texte
+            <button
+              type="button"
+              className="memo-image-text-frame-apply"
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                void commitTextDraft();
+              }}
+              title="Appliquer le texte"
+            >
+              <Check size={12} />
+            </button>
+          </div>
+          <textarea
+            className="memo-image-text-frame-input"
+            value={textDraft.text}
+            onChange={(event) => setTextDraft(prev => prev ? { ...prev, text: event.target.value } : prev)}
+            style={{ color: strokeColor, fontSize: `${SIZE_PRESETS[sizePreset].font}px` }}
+            placeholder="Écrire..."
+          />
+        </div>
+      )}
+
       {activeDragRect && drag?.surface === surface && (
         <>
           {drag.tool === 'crop' && <div className="memo-image-crop-overlay" />}
@@ -824,7 +973,7 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
     <NodeViewWrapper className="memo-image-wrapper">
       <div
         ref={wrapperRef}
-        className={`memo-image-frame ${inlineToolbarOpen && canEdit ? 'has-inline-toolbar' : ''}`}
+        className="memo-image-frame"
         style={frameStyle}
       >
         <div className="memo-image-controls">
@@ -883,7 +1032,7 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
           </button>
         </div>
 
-        {inlineToolbarOpen && canEdit && renderEditToolbar('inline', false)}
+        {(inlineToolbarOpen || isImageSelected) && canEdit && renderEditToolbar('inline', false)}
 
         {renderSurface('inline', inlineImageRef, inlineOverlayRef, inlineSurfaceRef)}
 

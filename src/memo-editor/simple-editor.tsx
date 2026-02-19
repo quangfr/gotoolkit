@@ -535,7 +535,13 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLi
 
     const selection = editor.state.selection;
     const isCellSelection = selection instanceof CellSelection;
+    const isImageNodeSelection = selection instanceof NodeSelection && selection.node?.type?.name === 'image';
     const { from, to } = selection;
+    if (isImageNodeSelection) {
+      setPosition(prev => ({ ...prev, opacity: 0 }));
+      setShowTextColors(false);
+      return;
+    }
     if (!isCellSelection && from === to) {
       setPosition(prev => ({ ...prev, opacity: 0 }));
       setShowTextColors(false);
