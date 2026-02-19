@@ -165,6 +165,15 @@
                 align-items: center;
                 justify-content: center;
             }
+            .voice-video-player-download {
+                position: relative;
+            }
+            .voice-video-player-download > .chat-header-badge {
+                top: -2px;
+                right: -2px;
+                padding: 0;
+                min-width: 14px;
+            }
             .voice-video-player-download svg {
                 width: 18px;
                 height: 18px;
@@ -201,6 +210,27 @@
                 padding: 8px 10px;
                 border-radius: 8px;
                 cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            .voice-video-player-download-option__label {
+                flex: 1;
+            }
+            .voice-video-player-download-option .chat-header-badge {
+                position: static;
+                min-width: 14px;
+                width: 14px;
+                height: 14px;
+                padding: 0;
+                border-width: 1.5px;
+                border-style: solid;
+                border-color: var(--bg-surface);
+                flex: 0 0 auto;
+            }
+            .voice-video-player-download-option .chat-header-badge.chat-header-badge--idle {
+                background: var(--border-main);
+                border-color: var(--border-strong);
             }
             .voice-video-player-download-option:hover {
                 background: var(--bg-surface-soft);
@@ -514,7 +544,7 @@
                             <div class="voice-video-player-controls">
                                 <select class="voice-video-player-speed" aria-label="Vitesse de lecture"></select>
                                 <div class="voice-video-player-download-wrap">
-                                <button type="button" class="voice-video-player-download" title="Télécharger" aria-label="Télécharger"><i data-lucide="download"></i></button>
+                                <button type="button" class="voice-video-player-download" title="Télécharger" aria-label="Télécharger"><i data-lucide="download"></i><span class="chat-header-badge" aria-hidden="true"></span></button>
                                     <div class="voice-video-player-download-dropdown" hidden>
                                         <button type="button" class="voice-video-player-download-option" data-download-format="video-webm">Vidéo WebM</button>
                                         <button type="button" class="voice-video-player-download-option" data-download-format="video-mp4">Vidéo MP4</button>
@@ -619,6 +649,8 @@
                 this.downloadVideoMp4Option && (this.downloadVideoMp4Option.disabled = false);
                 this.downloadGifOption && (this.downloadGifOption.disabled = false);
             }
+            this._updateConversionBadges();
+            this._refreshDropdownStatusesIfOpen();
             if (window.lucide) lucide.createIcons();
         }
 
@@ -869,27 +901,81 @@
             return `${bounds}:${this.videoBlobOriginal.size}:${this.videoBlobOriginal.type || "video/webm"}`;
         }
 
+        _getGifStatus() {
+            const cacheKey = this._getGifCacheKey();
+            if (this._gifBlobCache?.size && this._gifBlobCacheKey === cacheKey) return "ready";
+            if (this._gifDownloading) return "running";
+            if (this._gifPrebuildPromise && this._gifPrebuildPromiseKey === cacheKey) return "running";
+            return "idle";
+        }
+
+        _getMp4Status() {
+            const cacheKey = this._getMp4CacheKey();
+            if (this._mp4BlobCache?.size && this._mp4BlobCacheKey === cacheKey) return "ready";
+            if (this._mp4PrebuildPromise && this._mp4PrebuildPromiseKey === cacheKey) return "running";
+            return "idle";
+        }
+
+        _renderOptionWithStatus(option, status, label) {
+            if (!option) return;
+            const safeStatus = status === "ready" || status === "running" ? status : "idle";
+            const badgeClass = safeStatus === "running"
+                ? "chat-header-badge chat-header-badge--pending"
+                : (safeStatus === "idle" ? "chat-header-badge chat-header-badge--idle" : "chat-header-badge");
+            option.innerHTML = `<span class="${badgeClass}" aria-hidden="true"></span><span class="voice-video-player-download-option__label">${label}</span>`;
+        }
+
+        _updateConversionBadges() {
+            const gifStatus = this._getGifStatus();
+            const mp4Status = this._getMp4Status();
+            const isRunning = gifStatus === "running" || mp4Status === "running";
+            const downloadBadge = this.downloadButton?.querySelector(".chat-header-badge");
+            if (downloadBadge) {
+                downloadBadge.classList.toggle("chat-header-badge--pending", isRunning);
+            }
+            try {
+                window.dispatchEvent(new CustomEvent("go-toolkit:voice-conversion-status", {
+                    detail: {
+                        running: isRunning,
+                        gif: gifStatus,
+                        mp4: mp4Status
+                    }
+                }));
+            } catch (err) { /* noop */ }
+        }
+
+        _refreshDropdownStatusesIfOpen() {
+            if (!this.downloadDropdown || this.downloadDropdown.hidden) return;
+            this._updateDownloadOptionLabels().catch(() => null);
+        }
+
         async _updateDownloadOptionLabels() {
             const videoBlob = await this._getOutputBlob().catch(() => this.videoBlobOriginal);
             const videoSize = videoBlob?.size || this.videoBlobOriginal?.size || 0;
-            const gifSize = (this._gifBlobCache?.size && this._gifBlobCacheKey === this._getGifCacheKey())
-                ? this._gifBlobCache.size
-                : 0;
-            const mp4Size = (this._mp4BlobCache?.size && this._mp4BlobCacheKey === this._getMp4CacheKey())
-                ? this._mp4BlobCache.size
-                : this._estimateMp4Bytes();
+            const gifStatus = this._getGifStatus();
+            const mp4Status = this._getMp4Status();
+            const gifSize = gifStatus === "ready" ? this._gifBlobCache.size : 0;
+            const mp4Ready = mp4Status === "ready";
+            const mp4Size = mp4Ready ? this._mp4BlobCache.size : this._estimateMp4Bytes();
             if (this.downloadVideoWebmOption) {
-                this.downloadVideoWebmOption.textContent = `WebM (${this._formatMbLabel(videoSize)})`;
+                this._renderOptionWithStatus(this.downloadVideoWebmOption, "ready", `WebM (${this._formatMbLabel(videoSize)})`);
             }
             if (this.downloadVideoMp4Option) {
-                const eta = this._formatSecondsLabel(this._estimateMp4BuildSeconds());
-                this.downloadVideoMp4Option.textContent = `MP4 (~${eta}, ${this._formatMbLabel(mp4Size)})`;
+                if (mp4Ready) {
+                    this._renderOptionWithStatus(this.downloadVideoMp4Option, mp4Status, `MP4 (${this._formatMbLabel(mp4Size)})`);
+                } else {
+                    const eta = this._formatSecondsLabel(this._estimateMp4BuildSeconds());
+                    this._renderOptionWithStatus(this.downloadVideoMp4Option, mp4Status, `MP4 (~${eta}, ${this._formatMbLabel(mp4Size)})`);
+                }
             }
             if (this.downloadGifOption) {
-                this.downloadGifOption.textContent = gifSize > 0
-                    ? `Gif (${this._formatMbLabel(gifSize)})`
-                    : "Gif";
+                this._renderOptionWithStatus(
+                    this.downloadGifOption,
+                    gifStatus,
+                    gifSize > 0 ? `Gif (${this._formatMbLabel(gifSize)})` : "Gif"
+                );
             }
+            this._updateConversionBadges();
         }
 
         async _toggleDownloadDropdown() {
@@ -936,6 +1022,8 @@
             if (!cacheKey) return;
             if (this._gifBlobCache && this._gifBlobCacheKey === cacheKey) return;
             if (this._gifPrebuildPromise && this._gifPrebuildPromiseKey === cacheKey) return this._gifPrebuildPromise;
+            this._updateConversionBadges();
+            this._refreshDropdownStatusesIfOpen();
 
             const run = (async () => {
                 try {
@@ -951,10 +1039,14 @@
                         this._gifPrebuildPromise = null;
                         this._gifPrebuildPromiseKey = "";
                     }
+                    this._updateConversionBadges();
+                    this._refreshDropdownStatusesIfOpen();
                 }
             })();
             this._gifPrebuildPromise = run;
             this._gifPrebuildPromiseKey = cacheKey;
+            this._updateConversionBadges();
+            this._refreshDropdownStatusesIfOpen();
             return run;
         }
 
@@ -964,6 +1056,8 @@
             if (!cacheKey) return;
             if (this._mp4BlobCache && this._mp4BlobCacheKey === cacheKey) return this._mp4BlobCache;
             if (this._mp4PrebuildPromise && this._mp4PrebuildPromiseKey === cacheKey) return this._mp4PrebuildPromise;
+            this._updateConversionBadges();
+            this._refreshDropdownStatusesIfOpen();
 
             const run = (async () => {
                 const startedAt = (typeof performance !== "undefined" && performance.now) ? performance.now() : Date.now();
@@ -982,10 +1076,14 @@
                         this._mp4PrebuildPromise = null;
                         this._mp4PrebuildPromiseKey = "";
                     }
+                    this._updateConversionBadges();
+                    this._refreshDropdownStatusesIfOpen();
                 }
             })();
             this._mp4PrebuildPromise = run;
             this._mp4PrebuildPromiseKey = cacheKey;
+            this._updateConversionBadges();
+            this._refreshDropdownStatusesIfOpen();
             return run;
         }
 
@@ -1259,6 +1357,8 @@
             this._mp4PrebuildPromise = null;
             this._mp4PrebuildPromiseKey = "";
             this._mp4LastBuildSeconds = 0;
+            this._updateConversionBadges();
+            this._refreshDropdownStatusesIfOpen();
             if (this.transcriptList) this._renderSentences();
             this._updateProgressRangeVisual();
         }
@@ -1857,6 +1957,8 @@
                 this._mp4BlobCacheKey = "";
                 this._mp4BlobCache = null;
             }
+            this._updateConversionBadges();
+            this._refreshDropdownStatusesIfOpen();
             if (!sameBlob) {
                 if (this.videoBlobUrl) {
                     URL.revokeObjectURL(this.videoBlobUrl);
@@ -1902,6 +2004,8 @@
             this._activeSentenceIndex = -1;
             if (window.lucide) lucide.createIcons();
             this._scheduleGifPrebuild();
+            this._updateConversionBadges();
+            this._refreshDropdownStatusesIfOpen();
         }
 
         close() {
@@ -1933,6 +2037,8 @@
             this._mp4BlobCache = null;
             this._mp4BlobCacheKey = "";
             this._mp4LastBuildSeconds = 0;
+            this._updateConversionBadges();
+            this._refreshDropdownStatusesIfOpen();
             if (this._toastTimer) {
                 clearTimeout(this._toastTimer);
                 this._toastTimer = null;

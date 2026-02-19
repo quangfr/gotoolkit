@@ -10,6 +10,7 @@
 - **Bump the version systematically ONLY when the user asks for a "bump", "commit", or "push".**
 - **Automated Versioning**: Run `npm run bump` to automatically increment the version in `package.json`, update cache-busters `?v=...` in HTML files, and update version labels.
 - **Commits and Push**: When asked to "commit" or "push", always run `npm run bump` first, then commit with a descriptive message and push. If multiple changes were made, provide a detailed bulleted list in the commit description (e.g., `git commit -m "title" -m "detailed list of changes"`).
+- **Shortcut**: Treat user request `bump` as `bump commit push` (run `npm run bump`, commit, then push).
 - **Commit title format**: Use `v2026.xx.xx.xx : <summary>` with a summary under 15 words.
 - **Manual Bumping checklist** (if `npm run bump` is not used):
   1. Increment `version` in `package.json`.

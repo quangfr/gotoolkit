@@ -1884,6 +1884,10 @@ ul.release-roadmap-text li::before {
   line-height: 1;
 }
 
+.chat-header-badge.chat-header-badge--pending {
+  background: var(--bg-text-yellow);
+}
+
 .chat-messages {
   flex: 1;
   min-height: 0;

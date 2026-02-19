@@ -82,6 +82,7 @@
         voiceButton: null,
         audioModal: null,
         videoModal: null,
+        conversionRunning: false,
         sessionInitialized: false
     };
 
@@ -796,7 +797,9 @@
 
     function buildButtonLabel() {
         const hasRecordingForCurrentMemo = Boolean(state.currentMemoRecordingId);
-        const badge = hasRecordingForCurrentMemo ? '<span class="chat-header-badge"></span>' : "";
+        const shouldShowBadge = hasRecordingForCurrentMemo || state.conversionRunning;
+        const badgeClass = state.conversionRunning ? "chat-header-badge chat-header-badge--pending" : "chat-header-badge";
+        const badge = shouldShowBadge ? `<span class="${badgeClass}"></span>` : "";
         if (state.isTranscribing) {
             return `<i data-lucide="loader-2" class="lucide-spin" style="width:14px;height:14px;"></i>${badge}`;
         }
@@ -1711,6 +1714,10 @@
             return;
         }
         state.isRecording = false;
+        // Flip to loader before stopping streams/blobs to avoid perceived freeze on stop.
+        state.isTranscribing = true;
+        updateButton();
+        await new Promise(resolve => setTimeout(resolve, 0));
         if (state.timerId) {
             clearInterval(state.timerId);
             state.timerId = null;
@@ -1745,7 +1752,6 @@
             return;
         }
         const durationSeconds = Math.floor((Date.now() - state.recordingStartTime) / 1000);
-        state.isTranscribing = true;
         startTranscriptionCountdown(durationSeconds);
         try {
             await transcribeAndStore(durationSeconds);
@@ -2136,6 +2142,12 @@
         state.sessionInitialized = true;
         ensureStyles();
         ensureVoiceButton();
+        window.addEventListener("go-toolkit:voice-conversion-status", event => {
+            const running = Boolean(event?.detail?.running);
+            if (state.conversionRunning === running) return;
+            state.conversionRunning = running;
+            updateButton();
+        });
         const observer = new MutationObserver(() => ensureVoiceButton());
         observer.observe(document.body, { childList: true, subtree: true });
         window.addEventListener("beforeunload", event => {
