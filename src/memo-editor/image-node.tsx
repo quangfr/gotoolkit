@@ -1,7 +1,7 @@
 import Image from '@tiptap/extension-image';
 import { ReactNodeViewRenderer, NodeViewWrapper } from '@tiptap/react';
 import React from 'react';
-import { Copy, Fullscreen, Play, Trash2, X } from 'lucide-react';
+import { CirclePlay, Copy, Fullscreen, Trash2, X } from 'lucide-react';
 
 const SUPPORTED_IMAGE_MIME = new Set([
   'image/png',
@@ -33,6 +33,53 @@ const getPixels = (raw: unknown) => {
   if (!size) return null;
   const value = Number.parseFloat(size);
   return Number.isFinite(value) ? value : null;
+};
+
+const parseGifDurationMs = (bytes: Uint8Array) => {
+  let totalMs = 0;
+  for (let i = 0; i < bytes.length - 7; i += 1) {
+    // Graphics Control Extension: 0x21,0xF9,0x04,packed,delayLo,delayHi,transparent,index
+    if (bytes[i] === 0x21 && bytes[i + 1] === 0xF9 && bytes[i + 2] === 0x04) {
+      const delayCs = bytes[i + 4] | (bytes[i + 5] << 8); // centiseconds
+      // Very small delay values are clamped in browsers; 10cs ~= 100ms is a safe minimum.
+      totalMs += Math.max(delayCs * 10, 100);
+      i += 7;
+    }
+  }
+  if (!Number.isFinite(totalMs) || totalMs <= 0) return null;
+  return Math.min(Math.max(totalMs, 400), 60000);
+};
+
+const readDataUrlBytes = (dataUrl: string) => {
+  const marker = ';base64,';
+  const idx = dataUrl.indexOf(marker);
+  if (idx < 0) return null;
+  const b64 = dataUrl.slice(idx + marker.length);
+  try {
+    const raw = window.atob(b64);
+    const out = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; i += 1) out[i] = raw.charCodeAt(i);
+    return out;
+  } catch (err) {
+    return null;
+  }
+};
+
+const estimateGifDurationMs = async (src: string) => {
+  const value = String(src || '').trim();
+  if (!value) return null;
+  try {
+    if (value.startsWith('data:image/gif')) {
+      const bytes = readDataUrlBytes(value);
+      return bytes ? parseGifDurationMs(bytes) : null;
+    }
+    const response = await fetch(value);
+    if (!response.ok) return null;
+    const buffer = await response.arrayBuffer();
+    return parseGifDurationMs(new Uint8Array(buffer));
+  } catch (err) {
+    return null;
+  }
 };
 
 const copyImageHtml = async (attrs: Record<string, any>) => {
@@ -74,8 +121,10 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
   const isGif = isGifSource(src);
   const wrapperRef = React.useRef<HTMLDivElement>(null);
   const resizeStateRef = React.useRef<null | { startX: number; startY: number; width: number; height: number }>(null);
+  const gifPlayTimeoutRef = React.useRef<number | null>(null);
   const [gifPoster, setGifPoster] = React.useState<string | null>(null);
   const [gifPlaying, setGifPlaying] = React.useState(!isGif);
+  const [gifDurationMs, setGifDurationMs] = React.useState(4000);
   const [gifReplayTick, setGifReplayTick] = React.useState(0);
   const [fullscreenOpen, setFullscreenOpen] = React.useState(false);
   const [fullscreenMode, setFullscreenMode] = React.useState<'width' | 'height'>('width');
@@ -84,6 +133,10 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
   const heightPx = getPixels(node.attrs?.height);
 
   React.useEffect(() => {
+    if (gifPlayTimeoutRef.current !== null) {
+      window.clearTimeout(gifPlayTimeoutRef.current);
+      gifPlayTimeoutRef.current = null;
+    }
     if (!isGif) {
       setGifPoster(null);
       setGifPlaying(true);
@@ -107,8 +160,20 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
     };
     img.onerror = () => setGifPoster(null);
     img.src = src;
+    estimateGifDurationMs(src).then((duration) => {
+      if (cancelled) return;
+      if (typeof duration === 'number' && Number.isFinite(duration) && duration > 0) {
+        setGifDurationMs(duration);
+      } else {
+        setGifDurationMs(4000);
+      }
+    });
     return () => {
       cancelled = true;
+      if (gifPlayTimeoutRef.current !== null) {
+        window.clearTimeout(gifPlayTimeoutRef.current);
+        gifPlayTimeoutRef.current = null;
+      }
     };
   }, [isGif, src]);
 
@@ -148,8 +213,18 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
   }, [updateAttributes]);
 
   const replayGif = () => {
-    setGifReplayTick(prev => prev + 1);
-    setGifPlaying(true);
+    setGifPlaying(false);
+    window.requestAnimationFrame(() => {
+      setGifReplayTick(prev => prev + 1);
+      setGifPlaying(true);
+      if (gifPlayTimeoutRef.current !== null) {
+        window.clearTimeout(gifPlayTimeoutRef.current);
+      }
+      gifPlayTimeoutRef.current = window.setTimeout(() => {
+        setGifPlaying(false);
+        gifPlayTimeoutRef.current = null;
+      }, Math.max(gifDurationMs, 400));
+    });
   };
 
   const handleDelete = () => {
@@ -158,8 +233,15 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
     editor.chain().focus().setNodeSelection(pos).deleteSelection().run();
   };
 
+  const replaySrc = React.useMemo(() => {
+    if (!gifPlaying) return src;
+    if (!src || src.startsWith('data:')) return src;
+    const sep = src.includes('?') ? '&' : '?';
+    return `${src}${sep}gtGifReplay=${gifReplayTick}`;
+  }, [gifPlaying, gifReplayTick, src]);
+
   const imgSrc = isGif
-    ? (gifPlaying ? src : (gifPoster || src))
+    ? (gifPlaying ? replaySrc : (gifPoster || src))
     : src;
 
   const imageStyle: React.CSSProperties = {
@@ -246,8 +328,8 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
               replayGif();
             }}
           >
-            <Play size={14} />
-            GIF
+            <i data-lucide="circle-play" style={{ display: 'none' }} aria-hidden="true"></i>
+            <CirclePlay size={52} />
           </button>
         )}
 

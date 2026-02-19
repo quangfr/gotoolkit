@@ -2,9 +2,9 @@
 - Réponse au fil de l'eau (streaming)
 
 ## Intégration tiers
-- Sharepoint / OneDrive 
-- Google Drive 
-- Jira / Confluence
+- Sharepoint, OneDrive, Google Drive 
+- Jira, Confluence, Github
+- Notion (Import)
 
 ## Fichiers de données
 - Import et visualisation JSON

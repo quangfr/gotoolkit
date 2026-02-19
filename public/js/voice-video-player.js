@@ -2,6 +2,7 @@
     const STYLE_ID = "voice-video-player-styles";
     const GIF_JS_CDN_URL = "https://cdn.jsdelivr.net/npm/gif.js.optimized/dist/gif.js";
     const GIF_JS_WORKER_URL = "https://cdn.jsdelivr.net/npm/gif.js.optimized/dist/gif.worker.js";
+    const GIF_JS_WORKER_LOCAL_URL = "/js/vendor/gif.worker.js";
 
     function ensureStyles() {
         if (document.getElementById(STYLE_ID)) return;
@@ -432,6 +433,8 @@
             this._handleKeydown = this._handleKeydown.bind(this);
             this.videoBlobUrl = "";
             this._textTrackUrl = "";
+            this._gifWorkerScriptUrl = "";
+            this._gifWorkerBlobUrl = "";
             ensureStyles();
             this._buildDom();
             this._bindEvents();
@@ -734,6 +737,39 @@
             return this._gifScriptPromise;
         }
 
+        async _resolveGifWorkerScriptUrl() {
+            if (this._gifWorkerScriptUrl) return this._gifWorkerScriptUrl;
+
+            const tryFetchWorkerAsBlobUrl = async (url) => {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`GIF worker fetch failed: ${response.status}`);
+                const code = await response.text();
+                if (!code || !code.trim()) throw new Error("GIF worker source is empty");
+                const blob = new Blob([code], { type: "text/javascript" });
+                return URL.createObjectURL(blob);
+            };
+
+            const candidates = [GIF_JS_WORKER_LOCAL_URL, GIF_JS_WORKER_URL];
+            let lastError = null;
+            for (let i = 0; i < candidates.length; i += 1) {
+                try {
+                    const blobUrl = await tryFetchWorkerAsBlobUrl(candidates[i]);
+                    this._gifWorkerScriptUrl = blobUrl;
+                    this._gifWorkerBlobUrl = blobUrl;
+                    return this._gifWorkerScriptUrl;
+                } catch (err) {
+                    lastError = err;
+                }
+            }
+
+            // Final fallback to direct URL for environments where cross-origin workers are allowed.
+            this._gifWorkerScriptUrl = GIF_JS_WORKER_URL;
+            if (lastError) {
+                console.warn("GIF worker blob fallback failed, trying direct URL", lastError);
+            }
+            return this._gifWorkerScriptUrl;
+        }
+
         _getGifCacheKey() {
             if (!this.videoBlobOriginal) return "";
             const bounds = this._hasCutRange()
@@ -745,6 +781,7 @@
         async _buildGifBlob() {
             if (!this.videoBlobOriginal) return null;
             await this._ensureGifJsLoaded();
+            const workerScriptUrl = await this._resolveGifWorkerScriptUrl();
             const sourceUrl = URL.createObjectURL(this.videoBlobOriginal);
             const video = document.createElement("video");
             video.src = sourceUrl;
@@ -779,7 +816,7 @@
             const canvas = document.createElement("canvas");
             canvas.width = width;
             canvas.height = height;
-            const ctx = canvas.getContext("2d", { alpha: false });
+            const ctx = canvas.getContext("2d", { alpha: false, willReadFrequently: true });
             if (!ctx) {
                 URL.revokeObjectURL(sourceUrl);
                 throw new Error("Canvas indisponible");
@@ -791,7 +828,7 @@
             const gif = new GIFCtor({
                 workers: 2,
                 quality: 10,
-                workerScript: GIF_JS_WORKER_URL,
+                workerScript: workerScriptUrl,
                 width,
                 height
             });
@@ -1472,6 +1509,11 @@
             this._trimmedBlob = null;
             this._gifBlobCacheKey = "";
             this._gifBlobCache = null;
+            if (this._gifWorkerBlobUrl) {
+                try { URL.revokeObjectURL(this._gifWorkerBlobUrl); } catch (err) { /* noop */ }
+                this._gifWorkerBlobUrl = "";
+            }
+            this._gifWorkerScriptUrl = "";
             if (this.videoBlobUrl) {
                 URL.revokeObjectURL(this.videoBlobUrl);
                 this.videoBlobUrl = "";
@@ -1528,6 +1570,11 @@
             this.videoBlobOriginal = null;
             this.cutMode = false;
             this._revokeTextTrackUrl();
+            if (this._gifWorkerBlobUrl) {
+                try { URL.revokeObjectURL(this._gifWorkerBlobUrl); } catch (err) { /* noop */ }
+                this._gifWorkerBlobUrl = "";
+            }
+            this._gifWorkerScriptUrl = "";
         }
     }
 

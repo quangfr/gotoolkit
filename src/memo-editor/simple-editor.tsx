@@ -2345,6 +2345,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   const blockDragMovedRef = React.useRef(false);
   const tableLayoutRafRef = React.useRef<number | null>(null);
   const isAutoLayoutRef = React.useRef(false);
+  const pendingEmptyListBackspaceRef = React.useRef<number | null>(null);
 
 
   const editor = useEditor({
@@ -2525,6 +2526,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       },
       handleKeyDown: (_view, event) => {
         if (!editor) return false;
+        const now = Date.now();
         const clearStoredMarks = () => {
           const blockedMarks = new Set(['code', 'textStyle', 'bold', 'italic', 'underline', 'strike', 'highlight']);
           const storedMarks = editor.state.storedMarks || editor.state.selection.$from.marks();
@@ -2536,6 +2538,57 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         };
 
         const selection = editor.state.selection;
+        if (event.key !== 'Backspace') {
+          pendingEmptyListBackspaceRef.current = null;
+        }
+
+        if (event.key === 'Backspace' && selection.empty) {
+          const { $from } = selection;
+          const isAtStart = $from.parentOffset === 0;
+          const isEmptyParagraph = $from.parent?.type?.name === 'paragraph' && $from.parent?.content?.size === 0;
+          let inListItem = false;
+          for (let d = $from.depth; d > 0; d -= 1) {
+            if ($from.node(d).type.name === 'listItem') {
+              inListItem = true;
+              break;
+            }
+          }
+
+          const topLevelIndex = $from.index(0);
+          const prevTopLevelNode = topLevelIndex > 0 ? editor.state.doc.child(topLevelIndex - 1) : null;
+          const isParagraphAfterList =
+            isAtStart &&
+            isEmptyParagraph &&
+            !inListItem &&
+            !!prevTopLevelNode &&
+            (prevTopLevelNode.type.name === 'bulletList' || prevTopLevelNode.type.name === 'orderedList');
+
+          const pendingAt = pendingEmptyListBackspaceRef.current;
+          const isSecondBackspace = Number.isFinite(pendingAt as number) && now - Number(pendingAt) < 1600;
+
+          if (isAtStart && isEmptyParagraph && inListItem && isSecondBackspace) {
+            event.preventDefault();
+            pendingEmptyListBackspaceRef.current = null;
+            if (editor.chain().focus().liftListItem('listItem').run()) {
+              return true;
+            }
+            return true;
+          }
+
+          // Prevent immediate merge back into the list right after un-bulleting.
+          if (isParagraphAfterList && isSecondBackspace) {
+            event.preventDefault();
+            pendingEmptyListBackspaceRef.current = null;
+            return true;
+          }
+
+          if ((isAtStart && isEmptyParagraph && inListItem) || isParagraphAfterList) {
+            pendingEmptyListBackspaceRef.current = now;
+          } else {
+            pendingEmptyListBackspaceRef.current = null;
+          }
+        }
+
         if (
           !event.shiftKey &&
           ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)
@@ -4283,6 +4336,32 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
               const h = el.getAttribute('height');
               if (w) el.style.width = w.endsWith('%') ? w : w + 'px';
               if (h) el.style.height = h.endsWith('%') ? h : h + 'px';
+
+              const src = String(el.getAttribute('src') || '').trim().toLowerCase();
+              const isGif = src.startsWith('data:image/gif') || /\.gif([?#].*)?$/.test(src);
+              if (format !== 'html' || !isGif || !el.parentElement) return;
+
+              const wrapper = doc.createElement('div');
+              wrapper.className = 'gif-replay-wrap';
+              wrapper.setAttribute('style', 'position:relative;display:block;width:fit-content;max-width:100%;margin:20px auto;');
+              el.style.margin = '0';
+
+              const replayBtn = doc.createElement('button');
+              replayBtn.className = 'gif-replay-button';
+              replayBtn.setAttribute('type', 'button');
+              replayBtn.setAttribute('title', 'Replay GIF');
+              replayBtn.setAttribute('aria-label', 'Replay GIF');
+              replayBtn.setAttribute('data-gif-replay', 'true');
+              replayBtn.setAttribute(
+                'onclick',
+                "var w=this.parentElement,i=w&&w.querySelector('img');if(!i)return false;var s=i.getAttribute('src')||'';i.setAttribute('src','');void i.offsetHeight;i.setAttribute('src',s);return false;"
+              );
+              replayBtn.innerHTML = '<i data-lucide="circle-play" style="width:56px;height:56px;display:block;" aria-hidden="true"></i>';
+
+              const parent = el.parentElement;
+              parent.insertBefore(wrapper, el);
+              wrapper.appendChild(el);
+              wrapper.appendChild(replayBtn);
             });
 
             doc.querySelectorAll('hr').forEach(hr => {
@@ -4310,6 +4389,37 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
             // Return rich HTML content (without the full grey background card for direct copy-paste)
             return `
 <div class="html-email-export" style="font-family:${FONT_SANS}; color: #374151; line-height: 1.6; max-width: 650px;">
+  <style>
+    .html-email-export .gif-replay-wrap .gif-replay-button {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 88px;
+      height: 88px;
+      border-radius: 999px;
+      border: 1px solid #d1d5db;
+      background: rgba(255, 255, 255, 0.82);
+      color: #111827;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s ease, transform .2s ease;
+      z-index: 3;
+      padding: 0;
+    }
+    .html-email-export .gif-replay-wrap:hover .gif-replay-button {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translate(-50%, -50%) scale(1.02);
+    }
+    .html-email-export .gif-replay-wrap .gif-replay-button:hover {
+      background: rgba(255, 255, 255, 0.94);
+    }
+  </style>
   ${content}
 </div>`.trim();
           }

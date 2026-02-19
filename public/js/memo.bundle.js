@@ -28435,136 +28435,151 @@ img.ProseMirror-separator {
   ];
   var CircleAlert = createLucideIcon("circle-alert", __iconNode12);
 
-  // node_modules/lucide-react/dist/esm/icons/circle-x.js
+  // node_modules/lucide-react/dist/esm/icons/circle-play.js
   init_define_process_env();
   init_polyfills();
   var __iconNode13 = [
+    [
+      "path",
+      {
+        d: "M9 9.003a1 1 0 0 1 1.517-.859l4.997 2.997a1 1 0 0 1 0 1.718l-4.997 2.997A1 1 0 0 1 9 14.996z",
+        key: "kmsa83"
+      }
+    ],
+    ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }]
+  ];
+  var CirclePlay = createLucideIcon("circle-play", __iconNode13);
+
+  // node_modules/lucide-react/dist/esm/icons/circle-x.js
+  init_define_process_env();
+  init_polyfills();
+  var __iconNode14 = [
     ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
     ["path", { d: "m15 9-6 6", key: "1uzhvr" }],
     ["path", { d: "m9 9 6 6", key: "z0biqf" }]
   ];
-  var CircleX = createLucideIcon("circle-x", __iconNode13);
+  var CircleX = createLucideIcon("circle-x", __iconNode14);
 
   // node_modules/lucide-react/dist/esm/icons/code-xml.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode14 = [
+  var __iconNode15 = [
     ["path", { d: "m18 16 4-4-4-4", key: "1inbqp" }],
     ["path", { d: "m6 8-4 4 4 4", key: "15zrgr" }],
     ["path", { d: "m14.5 4-5 16", key: "e7oirm" }]
   ];
-  var CodeXml = createLucideIcon("code-xml", __iconNode14);
+  var CodeXml = createLucideIcon("code-xml", __iconNode15);
 
   // node_modules/lucide-react/dist/esm/icons/copy.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode15 = [
+  var __iconNode16 = [
     ["rect", { width: "14", height: "14", x: "8", y: "8", rx: "2", ry: "2", key: "17jyea" }],
     ["path", { d: "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2", key: "zix9uf" }]
   ];
-  var Copy = createLucideIcon("copy", __iconNode15);
+  var Copy = createLucideIcon("copy", __iconNode16);
 
   // node_modules/lucide-react/dist/esm/icons/fullscreen.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode16 = [
+  var __iconNode17 = [
     ["path", { d: "M3 7V5a2 2 0 0 1 2-2h2", key: "aa7l1z" }],
     ["path", { d: "M17 3h2a2 2 0 0 1 2 2v2", key: "4qcy5o" }],
     ["path", { d: "M21 17v2a2 2 0 0 1-2 2h-2", key: "6vwrx8" }],
     ["path", { d: "M7 21H5a2 2 0 0 1-2-2v-2", key: "ioqczr" }],
     ["rect", { width: "10", height: "8", x: "7", y: "8", rx: "1", key: "vys8me" }]
   ];
-  var Fullscreen = createLucideIcon("fullscreen", __iconNode16);
+  var Fullscreen = createLucideIcon("fullscreen", __iconNode17);
 
   // node_modules/lucide-react/dist/esm/icons/heading-1.js
-  init_define_process_env();
-  init_polyfills();
-  var __iconNode17 = [
-    ["path", { d: "M4 12h8", key: "17cfdx" }],
-    ["path", { d: "M4 18V6", key: "1rz3zl" }],
-    ["path", { d: "M12 18V6", key: "zqpxq5" }],
-    ["path", { d: "m17 12 3-2v8", key: "1hhhft" }]
-  ];
-  var Heading1 = createLucideIcon("heading-1", __iconNode17);
-
-  // node_modules/lucide-react/dist/esm/icons/heading-2.js
   init_define_process_env();
   init_polyfills();
   var __iconNode18 = [
     ["path", { d: "M4 12h8", key: "17cfdx" }],
     ["path", { d: "M4 18V6", key: "1rz3zl" }],
     ["path", { d: "M12 18V6", key: "zqpxq5" }],
-    ["path", { d: "M21 18h-4c0-4 4-3 4-6 0-1.5-2-2.5-4-1", key: "9jr5yi" }]
+    ["path", { d: "m17 12 3-2v8", key: "1hhhft" }]
   ];
-  var Heading2 = createLucideIcon("heading-2", __iconNode18);
+  var Heading1 = createLucideIcon("heading-1", __iconNode18);
 
-  // node_modules/lucide-react/dist/esm/icons/heading-3.js
+  // node_modules/lucide-react/dist/esm/icons/heading-2.js
   init_define_process_env();
   init_polyfills();
   var __iconNode19 = [
     ["path", { d: "M4 12h8", key: "17cfdx" }],
     ["path", { d: "M4 18V6", key: "1rz3zl" }],
     ["path", { d: "M12 18V6", key: "zqpxq5" }],
+    ["path", { d: "M21 18h-4c0-4 4-3 4-6 0-1.5-2-2.5-4-1", key: "9jr5yi" }]
+  ];
+  var Heading2 = createLucideIcon("heading-2", __iconNode19);
+
+  // node_modules/lucide-react/dist/esm/icons/heading-3.js
+  init_define_process_env();
+  init_polyfills();
+  var __iconNode20 = [
+    ["path", { d: "M4 12h8", key: "17cfdx" }],
+    ["path", { d: "M4 18V6", key: "1rz3zl" }],
+    ["path", { d: "M12 18V6", key: "zqpxq5" }],
     ["path", { d: "M17.5 10.5c1.7-1 3.5 0 3.5 1.5a2 2 0 0 1-2 2", key: "68ncm8" }],
     ["path", { d: "M17 17.5c2 1.5 4 .3 4-1.5a2 2 0 0 0-2-2", key: "1ejuhz" }]
   ];
-  var Heading3 = createLucideIcon("heading-3", __iconNode19);
+  var Heading3 = createLucideIcon("heading-3", __iconNode20);
 
   // node_modules/lucide-react/dist/esm/icons/heading-4.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode20 = [
+  var __iconNode21 = [
     ["path", { d: "M12 18V6", key: "zqpxq5" }],
     ["path", { d: "M17 10v3a1 1 0 0 0 1 1h3", key: "tj5zdr" }],
     ["path", { d: "M21 10v8", key: "1kdml4" }],
     ["path", { d: "M4 12h8", key: "17cfdx" }],
     ["path", { d: "M4 18V6", key: "1rz3zl" }]
   ];
-  var Heading4 = createLucideIcon("heading-4", __iconNode20);
+  var Heading4 = createLucideIcon("heading-4", __iconNode21);
 
   // node_modules/lucide-react/dist/esm/icons/highlighter.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode21 = [
+  var __iconNode22 = [
     ["path", { d: "m9 11-6 6v3h9l3-3", key: "1a3l36" }],
     ["path", { d: "m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4", key: "14a9rk" }]
   ];
-  var Highlighter = createLucideIcon("highlighter", __iconNode21);
+  var Highlighter = createLucideIcon("highlighter", __iconNode22);
 
   // node_modules/lucide-react/dist/esm/icons/image.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode22 = [
+  var __iconNode23 = [
     ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", ry: "2", key: "1m3agn" }],
     ["circle", { cx: "9", cy: "9", r: "2", key: "af1f0g" }],
     ["path", { d: "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21", key: "1xmnt7" }]
   ];
-  var Image2 = createLucideIcon("image", __iconNode22);
+  var Image2 = createLucideIcon("image", __iconNode23);
 
   // node_modules/lucide-react/dist/esm/icons/info.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode23 = [
+  var __iconNode24 = [
     ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
     ["path", { d: "M12 16v-4", key: "1dtifu" }],
     ["path", { d: "M12 8h.01", key: "e9boi3" }]
   ];
-  var Info = createLucideIcon("info", __iconNode23);
+  var Info = createLucideIcon("info", __iconNode24);
 
   // node_modules/lucide-react/dist/esm/icons/italic.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode24 = [
+  var __iconNode25 = [
     ["line", { x1: "19", x2: "10", y1: "4", y2: "4", key: "15jd3p" }],
     ["line", { x1: "14", x2: "5", y1: "20", y2: "20", key: "bu0au3" }],
     ["line", { x1: "15", x2: "9", y1: "4", y2: "20", key: "uljnxc" }]
   ];
-  var Italic2 = createLucideIcon("italic", __iconNode24);
+  var Italic2 = createLucideIcon("italic", __iconNode25);
 
   // node_modules/lucide-react/dist/esm/icons/lightbulb.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode25 = [
+  var __iconNode26 = [
     [
       "path",
       {
@@ -28575,21 +28590,21 @@ img.ProseMirror-separator {
     ["path", { d: "M9 18h6", key: "x1upvd" }],
     ["path", { d: "M10 22h4", key: "ceow96" }]
   ];
-  var Lightbulb = createLucideIcon("lightbulb", __iconNode25);
+  var Lightbulb = createLucideIcon("lightbulb", __iconNode26);
 
   // node_modules/lucide-react/dist/esm/icons/link.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode26 = [
+  var __iconNode27 = [
     ["path", { d: "M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71", key: "1cjeqo" }],
     ["path", { d: "M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71", key: "19qd67" }]
   ];
-  var Link2 = createLucideIcon("link", __iconNode26);
+  var Link2 = createLucideIcon("link", __iconNode27);
 
   // node_modules/lucide-react/dist/esm/icons/list.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode27 = [
+  var __iconNode28 = [
     ["path", { d: "M3 5h.01", key: "18ugdj" }],
     ["path", { d: "M3 12h.01", key: "nlz23k" }],
     ["path", { d: "M3 19h.01", key: "noohij" }],
@@ -28597,18 +28612,18 @@ img.ProseMirror-separator {
     ["path", { d: "M8 12h13", key: "1za7za" }],
     ["path", { d: "M8 19h13", key: "m83p4d" }]
   ];
-  var List = createLucideIcon("list", __iconNode27);
+  var List = createLucideIcon("list", __iconNode28);
 
   // node_modules/lucide-react/dist/esm/icons/loader-circle.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode28 = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
-  var LoaderCircle = createLucideIcon("loader-circle", __iconNode28);
+  var __iconNode29 = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
+  var LoaderCircle = createLucideIcon("loader-circle", __iconNode29);
 
   // node_modules/lucide-react/dist/esm/icons/pencil.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode29 = [
+  var __iconNode30 = [
     [
       "path",
       {
@@ -28618,21 +28633,7 @@ img.ProseMirror-separator {
     ],
     ["path", { d: "m15 5 4 4", key: "1mk7zo" }]
   ];
-  var Pencil = createLucideIcon("pencil", __iconNode29);
-
-  // node_modules/lucide-react/dist/esm/icons/play.js
-  init_define_process_env();
-  init_polyfills();
-  var __iconNode30 = [
-    [
-      "path",
-      {
-        d: "M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z",
-        key: "10ikf1"
-      }
-    ]
-  ];
-  var Play = createLucideIcon("play", __iconNode30);
+  var Pencil = createLucideIcon("pencil", __iconNode30);
 
   // node_modules/lucide-react/dist/esm/icons/plus.js
   init_define_process_env();
@@ -53118,6 +53119,48 @@ ${promptInput.trim()}`
     const value = Number.parseFloat(size2);
     return Number.isFinite(value) ? value : null;
   };
+  var parseGifDurationMs = (bytes) => {
+    let totalMs = 0;
+    for (let i = 0; i < bytes.length - 7; i += 1) {
+      if (bytes[i] === 33 && bytes[i + 1] === 249 && bytes[i + 2] === 4) {
+        const delayCs = bytes[i + 4] | bytes[i + 5] << 8;
+        totalMs += Math.max(delayCs * 10, 100);
+        i += 7;
+      }
+    }
+    if (!Number.isFinite(totalMs) || totalMs <= 0) return null;
+    return Math.min(Math.max(totalMs, 400), 6e4);
+  };
+  var readDataUrlBytes = (dataUrl) => {
+    const marker = ";base64,";
+    const idx = dataUrl.indexOf(marker);
+    if (idx < 0) return null;
+    const b64 = dataUrl.slice(idx + marker.length);
+    try {
+      const raw = window.atob(b64);
+      const out = new Uint8Array(raw.length);
+      for (let i = 0; i < raw.length; i += 1) out[i] = raw.charCodeAt(i);
+      return out;
+    } catch (err) {
+      return null;
+    }
+  };
+  var estimateGifDurationMs = async (src) => {
+    const value = String(src || "").trim();
+    if (!value) return null;
+    try {
+      if (value.startsWith("data:image/gif")) {
+        const bytes = readDataUrlBytes(value);
+        return bytes ? parseGifDurationMs(bytes) : null;
+      }
+      const response = await fetch(value);
+      if (!response.ok) return null;
+      const buffer2 = await response.arrayBuffer();
+      return parseGifDurationMs(new Uint8Array(buffer2));
+    } catch (err) {
+      return null;
+    }
+  };
   var copyImageHtml = async (attrs) => {
     var _a;
     const src = String((attrs == null ? void 0 : attrs.src) || "");
@@ -53155,14 +53198,20 @@ ${promptInput.trim()}`
     const isGif = isGifSource(src);
     const wrapperRef = react_shim_default.useRef(null);
     const resizeStateRef = react_shim_default.useRef(null);
+    const gifPlayTimeoutRef = react_shim_default.useRef(null);
     const [gifPoster, setGifPoster] = react_shim_default.useState(null);
     const [gifPlaying, setGifPlaying] = react_shim_default.useState(!isGif);
+    const [gifDurationMs, setGifDurationMs] = react_shim_default.useState(4e3);
     const [gifReplayTick, setGifReplayTick] = react_shim_default.useState(0);
     const [fullscreenOpen, setFullscreenOpen] = react_shim_default.useState(false);
     const [fullscreenMode, setFullscreenMode] = react_shim_default.useState("width");
     const widthPx = getPixels((_b = node.attrs) == null ? void 0 : _b.width);
     const heightPx = getPixels((_c = node.attrs) == null ? void 0 : _c.height);
     react_shim_default.useEffect(() => {
+      if (gifPlayTimeoutRef.current !== null) {
+        window.clearTimeout(gifPlayTimeoutRef.current);
+        gifPlayTimeoutRef.current = null;
+      }
       if (!isGif) {
         setGifPoster(null);
         setGifPlaying(true);
@@ -53186,8 +53235,20 @@ ${promptInput.trim()}`
       };
       img.onerror = () => setGifPoster(null);
       img.src = src;
+      estimateGifDurationMs(src).then((duration) => {
+        if (cancelled) return;
+        if (typeof duration === "number" && Number.isFinite(duration) && duration > 0) {
+          setGifDurationMs(duration);
+        } else {
+          setGifDurationMs(4e3);
+        }
+      });
       return () => {
         cancelled = true;
+        if (gifPlayTimeoutRef.current !== null) {
+          window.clearTimeout(gifPlayTimeoutRef.current);
+          gifPlayTimeoutRef.current = null;
+        }
       };
     }, [isGif, src]);
     react_shim_default.useEffect(() => {
@@ -53224,15 +53285,31 @@ ${promptInput.trim()}`
       };
     }, [updateAttributes2]);
     const replayGif = () => {
-      setGifReplayTick((prev) => prev + 1);
-      setGifPlaying(true);
+      setGifPlaying(false);
+      window.requestAnimationFrame(() => {
+        setGifReplayTick((prev) => prev + 1);
+        setGifPlaying(true);
+        if (gifPlayTimeoutRef.current !== null) {
+          window.clearTimeout(gifPlayTimeoutRef.current);
+        }
+        gifPlayTimeoutRef.current = window.setTimeout(() => {
+          setGifPlaying(false);
+          gifPlayTimeoutRef.current = null;
+        }, Math.max(gifDurationMs, 400));
+      });
     };
     const handleDelete = () => {
       if (typeof getPos !== "function") return;
       const pos = getPos();
       editor.chain().focus().setNodeSelection(pos).deleteSelection().run();
     };
-    const imgSrc = isGif ? gifPlaying ? src : gifPoster || src : src;
+    const replaySrc = react_shim_default.useMemo(() => {
+      if (!gifPlaying) return src;
+      if (!src || src.startsWith("data:")) return src;
+      const sep = src.includes("?") ? "&" : "?";
+      return `${src}${sep}gtGifReplay=${gifReplayTick}`;
+    }, [gifPlaying, gifReplayTick, src]);
+    const imgSrc = isGif ? gifPlaying ? replaySrc : gifPoster || src : src;
     const imageStyle = {
       width: "100%",
       height: heightPx ? "100%" : "auto",
@@ -53328,8 +53405,8 @@ ${promptInput.trim()}`
               replayGif();
             },
             children: [
-              /* @__PURE__ */ jsx(Play, { size: 14 }),
-              "GIF"
+              /* @__PURE__ */ jsx("i", { "data-lucide": "circle-play", style: { display: "none" }, "aria-hidden": "true" }),
+              /* @__PURE__ */ jsx(CirclePlay, { size: 52 })
             ]
           }
         ),
@@ -55403,6 +55480,7 @@ ${promptInput.trim()}`
     const blockDragMovedRef = react_shim_default.useRef(false);
     const tableLayoutRafRef = react_shim_default.useRef(null);
     const isAutoLayoutRef = react_shim_default.useRef(false);
+    const pendingEmptyListBackspaceRef = react_shim_default.useRef(null);
     const editor = useEditor({
       extensions: [
         StarterKit.configure({
@@ -55567,8 +55645,9 @@ ${promptInput.trim()}`
           return true;
         },
         handleKeyDown: (_view, event) => {
-          var _a2, _b2, _c2;
+          var _a2, _b2, _c2, _d2, _e, _f, _g;
           if (!editor) return false;
+          const now = Date.now();
           const clearStoredMarks = () => {
             const blockedMarks = /* @__PURE__ */ new Set(["code", "textStyle", "bold", "italic", "underline", "strike", "highlight"]);
             const storedMarks = editor.state.storedMarks || editor.state.selection.$from.marks();
@@ -55579,6 +55658,44 @@ ${promptInput.trim()}`
             editor.view.dispatch(tr2);
           };
           const selection = editor.state.selection;
+          if (event.key !== "Backspace") {
+            pendingEmptyListBackspaceRef.current = null;
+          }
+          if (event.key === "Backspace" && selection.empty) {
+            const { $from } = selection;
+            const isAtStart = $from.parentOffset === 0;
+            const isEmptyParagraph = ((_b2 = (_a2 = $from.parent) == null ? void 0 : _a2.type) == null ? void 0 : _b2.name) === "paragraph" && ((_d2 = (_c2 = $from.parent) == null ? void 0 : _c2.content) == null ? void 0 : _d2.size) === 0;
+            let inListItem = false;
+            for (let d = $from.depth; d > 0; d -= 1) {
+              if ($from.node(d).type.name === "listItem") {
+                inListItem = true;
+                break;
+              }
+            }
+            const topLevelIndex = $from.index(0);
+            const prevTopLevelNode = topLevelIndex > 0 ? editor.state.doc.child(topLevelIndex - 1) : null;
+            const isParagraphAfterList = isAtStart && isEmptyParagraph && !inListItem && !!prevTopLevelNode && (prevTopLevelNode.type.name === "bulletList" || prevTopLevelNode.type.name === "orderedList");
+            const pendingAt = pendingEmptyListBackspaceRef.current;
+            const isSecondBackspace = Number.isFinite(pendingAt) && now - Number(pendingAt) < 1600;
+            if (isAtStart && isEmptyParagraph && inListItem && isSecondBackspace) {
+              event.preventDefault();
+              pendingEmptyListBackspaceRef.current = null;
+              if (editor.chain().focus().liftListItem("listItem").run()) {
+                return true;
+              }
+              return true;
+            }
+            if (isParagraphAfterList && isSecondBackspace) {
+              event.preventDefault();
+              pendingEmptyListBackspaceRef.current = null;
+              return true;
+            }
+            if (isAtStart && isEmptyParagraph && inListItem || isParagraphAfterList) {
+              pendingEmptyListBackspaceRef.current = now;
+            } else {
+              pendingEmptyListBackspaceRef.current = null;
+            }
+          }
           if (!event.shiftKey && ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) {
             if (hasAncestorNode(selection.$from, "table")) {
               const currentCellPos = selection instanceof CellSelection ? selection.$anchorCell.pos : getTableCellPosFromResolved(selection.$from);
@@ -55666,7 +55783,7 @@ ${promptInput.trim()}`
               }
             }
             if (tablePos >= 0 && tableNode) {
-              const totalCellCount = ((_a2 = tableNode.content) == null ? void 0 : _a2.childCount) ? tableNode.content.content.reduce((count, row) => {
+              const totalCellCount = ((_e = tableNode.content) == null ? void 0 : _e.childCount) ? tableNode.content.content.reduce((count, row) => {
                 var _a3;
                 const rowCellCount = ((_a3 = row == null ? void 0 : row.content) == null ? void 0 : _a3.childCount) || 0;
                 return count + rowCellCount;
@@ -55706,7 +55823,7 @@ ${promptInput.trim()}`
             const { selection: selection2 } = state2;
             const $from = selection2.$from;
             const parent = $from.parent;
-            if (((_b2 = parent == null ? void 0 : parent.type) == null ? void 0 : _b2.name) === "heading" && ((_c2 = parent.attrs) == null ? void 0 : _c2.collapsed)) {
+            if (((_f = parent == null ? void 0 : parent.type) == null ? void 0 : _f.name) === "heading" && ((_g = parent.attrs) == null ? void 0 : _g.collapsed)) {
               const level = parent.attrs.level || 1;
               const headingPos = $from.before($from.depth);
               const docSize = state2.doc.content.size;
@@ -57091,6 +57208,28 @@ ${innerMarkdown}
                 const h = el.getAttribute("height");
                 if (w) el.style.width = w.endsWith("%") ? w : w + "px";
                 if (h) el.style.height = h.endsWith("%") ? h : h + "px";
+                const src = String(el.getAttribute("src") || "").trim().toLowerCase();
+                const isGif = src.startsWith("data:image/gif") || /\.gif([?#].*)?$/.test(src);
+                if (format !== "html" || !isGif || !el.parentElement) return;
+                const wrapper = doc3.createElement("div");
+                wrapper.className = "gif-replay-wrap";
+                wrapper.setAttribute("style", "position:relative;display:block;width:fit-content;max-width:100%;margin:20px auto;");
+                el.style.margin = "0";
+                const replayBtn = doc3.createElement("button");
+                replayBtn.className = "gif-replay-button";
+                replayBtn.setAttribute("type", "button");
+                replayBtn.setAttribute("title", "Replay GIF");
+                replayBtn.setAttribute("aria-label", "Replay GIF");
+                replayBtn.setAttribute("data-gif-replay", "true");
+                replayBtn.setAttribute(
+                  "onclick",
+                  "var w=this.parentElement,i=w&&w.querySelector('img');if(!i)return false;var s=i.getAttribute('src')||'';i.setAttribute('src','');void i.offsetHeight;i.setAttribute('src',s);return false;"
+                );
+                replayBtn.innerHTML = '<i data-lucide="circle-play" style="width:56px;height:56px;display:block;" aria-hidden="true"></i>';
+                const parent = el.parentElement;
+                parent.insertBefore(wrapper, el);
+                wrapper.appendChild(el);
+                wrapper.appendChild(replayBtn);
               });
               doc3.querySelectorAll("hr").forEach((hr2) => {
                 const el = hr2;
@@ -57112,6 +57251,37 @@ ${innerMarkdown}
               }
               return `
 <div class="html-email-export" style="font-family:${FONT_SANS}; color: #374151; line-height: 1.6; max-width: 650px;">
+  <style>
+    .html-email-export .gif-replay-wrap .gif-replay-button {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 88px;
+      height: 88px;
+      border-radius: 999px;
+      border: 1px solid #d1d5db;
+      background: rgba(255, 255, 255, 0.82);
+      color: #111827;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s ease, transform .2s ease;
+      z-index: 3;
+      padding: 0;
+    }
+    .html-email-export .gif-replay-wrap:hover .gif-replay-button {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translate(-50%, -50%) scale(1.02);
+    }
+    .html-email-export .gif-replay-wrap .gif-replay-button:hover {
+      background: rgba(255, 255, 255, 0.94);
+    }
+  </style>
   ${content2}
 </div>`.trim();
             }
@@ -58449,6 +58619,7 @@ lucide-react/dist/esm/icons/check.js:
 lucide-react/dist/esm/icons/chevron-down.js:
 lucide-react/dist/esm/icons/chevron-up.js:
 lucide-react/dist/esm/icons/circle-alert.js:
+lucide-react/dist/esm/icons/circle-play.js:
 lucide-react/dist/esm/icons/circle-x.js:
 lucide-react/dist/esm/icons/code-xml.js:
 lucide-react/dist/esm/icons/copy.js:
@@ -58466,7 +58637,6 @@ lucide-react/dist/esm/icons/link.js:
 lucide-react/dist/esm/icons/list.js:
 lucide-react/dist/esm/icons/loader-circle.js:
 lucide-react/dist/esm/icons/pencil.js:
-lucide-react/dist/esm/icons/play.js:
 lucide-react/dist/esm/icons/plus.js:
 lucide-react/dist/esm/icons/quote.js:
 lucide-react/dist/esm/icons/rectangle-horizontal.js:
