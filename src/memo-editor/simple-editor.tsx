@@ -4351,11 +4351,12 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
               replayBtn.setAttribute('title', 'Replay GIF');
               replayBtn.setAttribute('aria-label', 'Replay GIF');
               replayBtn.setAttribute('data-gif-replay', 'true');
+              wrapper.setAttribute('data-gif-state', 'stopped');
               replayBtn.setAttribute(
                 'onclick',
-                "var w=this.parentElement,i=w&&w.querySelector('img');if(!i)return false;var s=i.getAttribute('src')||'';i.setAttribute('src','');void i.offsetHeight;i.setAttribute('src',s);return false;"
+                "var w=this.parentElement,i=w&&w.querySelector('img');if(!w||!i)return false;w.setAttribute('data-gif-state','playing');var s=i.getAttribute('src')||'';i.setAttribute('src','');void i.offsetHeight;i.setAttribute('src',s);if(!w.__gifReplayLeaveBound){w.addEventListener('mouseleave',function(){w.setAttribute('data-gif-state','stopped');});w.__gifReplayLeaveBound=true;}setTimeout(function(){if(w&&w.getAttribute('data-gif-state')==='playing'){w.setAttribute('data-gif-state','stopped');}},1800);return false;"
               );
-              replayBtn.innerHTML = '<i data-lucide="circle-play" style="width:56px;height:56px;display:block;" aria-hidden="true"></i>';
+              replayBtn.textContent = '▷';
 
               const parent = el.parentElement;
               parent.insertBefore(wrapper, el);
@@ -4391,32 +4392,34 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   <style>
     .html-email-export .gif-replay-wrap .gif-replay-button {
       position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      width: 88px;
-      height: 88px;
-      border-radius: 999px;
-      border: 1px solid #d1d5db;
-      background: rgba(255, 255, 255, 0.82);
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border-radius: 10px;
+      border: none;
+      background: rgba(15, 23, 42, 0.38);
       color: #111827;
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      font-size: 44px;
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: 0.02em;
       cursor: pointer;
       opacity: 0;
       pointer-events: none;
-      transition: opacity .2s ease, transform .2s ease;
+      transition: opacity .2s ease;
       z-index: 3;
       padding: 0;
+      color: #ffffff;
     }
-    .html-email-export .gif-replay-wrap:hover .gif-replay-button {
+    .html-email-export .gif-replay-wrap[data-gif-state="stopped"]:hover .gif-replay-button {
       opacity: 1;
       pointer-events: auto;
-      transform: translate(-50%, -50%) scale(1.02);
     }
     .html-email-export .gif-replay-wrap .gif-replay-button:hover {
-      background: rgba(255, 255, 255, 0.94);
+      background: rgba(15, 23, 42, 0.52);
     }
   </style>
   ${content}

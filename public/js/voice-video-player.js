@@ -451,6 +451,16 @@
         return hours * 3600 + minutes * 60 + seconds + millis / 1000;
     }
 
+    function buildTimestampForFilename(date = new Date()) {
+        const year = String(date.getFullYear());
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        const hours = String(date.getHours()).padStart(2, "0");
+        const minutes = String(date.getMinutes()).padStart(2, "0");
+        const seconds = String(date.getSeconds()).padStart(2, "0");
+        return `${year}${month}${day}-${hours}${minutes}${seconds}`;
+    }
+
     class VoiceVideoPlayerModal {
         constructor() {
             this.sentences = [];
@@ -465,6 +475,9 @@
             this._gifWorkerScriptUrl = "";
             this._gifWorkerBlobUrl = "";
             this._gifDownloading = false;
+            this._gifPrebuildTimer = null;
+            this._gifPrebuildPromise = null;
+            this._gifPrebuildPromiseKey = "";
             this._toastTimer = null;
             ensureStyles();
             this._buildDom();
@@ -573,7 +586,7 @@
         _showToast(message, isError = false) {
             if (!this.toastEl) return;
             this.toastEl.textContent = String(message || "");
-            this.toastEl.classList.toggle("voice-video-player-toast--error", Boolean(isError));
+            this.toastEl.classList.remove("voice-video-player-toast--error");
             this.toastEl.classList.add("voice-video-player-toast--visible");
             if (this._toastTimer) clearTimeout(this._toastTimer);
             this._toastTimer = setTimeout(() => {
@@ -696,7 +709,7 @@
                 this._applyPlaybackRate(true);
             });
             this.videoEl?.addEventListener("timeupdate", () => {
-                if (!this.cutMode && this._hasCutRange()) {
+                if (this._hasCutRange()) {
                     const bounds = this._getPlaybackBounds();
                     if ((this.videoEl.currentTime || 0) >= bounds.end) {
                         this.videoEl.currentTime = bounds.end;
@@ -751,30 +764,42 @@
             return `${Math.round(value)}s`;
         }
 
+        _sanitizeFileBaseName(rawName) {
+            return String(rawName || "")
+                .trim()
+                .replace(/[\\/:*?"<>|]+/g, "-")
+                .replace(/\s+/g, "_")
+                .replace(/_+/g, "_")
+                .replace(/^[_\-.]+|[_\-.]+$/g, "")
+                .slice(0, 80);
+        }
+
+        _buildExportFilename(ext, isCut = false) {
+            const baseName = this._sanitizeFileBaseName(this.memoName) || "document";
+            const stamp = buildTimestampForFilename(new Date());
+            const cutSuffix = isCut ? "-cut" : "";
+            return `${baseName}-${stamp}${cutSuffix}.${ext}`;
+        }
+
         _getGifExportConfig(sourceWidth, sourceHeight, duration) {
             const safeWidth = Math.max(1, Number(sourceWidth) || 640);
             const safeHeight = Math.max(1, Number(sourceHeight) || 360);
             const safeDuration = Math.max(0.1, Number(duration) || 0.1);
 
-            // Screencast-oriented defaults:
-            // keep short clips sharp, but downscale longer clips to control size/time.
-            let widthCap = 960;
-            if (safeDuration <= 6) widthCap = 1280;
-            else if (safeDuration <= 12) widthCap = 1024;
+            // Size-aware profile to keep GIFs practical.
+            let widthCap = 640;
+            if (safeDuration <= 6) widthCap = 960;
+            else if (safeDuration <= 15) widthCap = 800;
             const width = Math.min(widthCap, safeWidth);
             const height = Math.max(2, Math.round((safeHeight / safeWidth) * width));
 
-            // For screen recordings, avoid choppy cursor/text transitions.
-            let fps = 8;
-            if (safeDuration <= 6) fps = 12;
-            else if (safeDuration <= 12) fps = 10;
-            else if (safeDuration <= 20) fps = 8;
-            else fps = 6;
+            let fps = 6;
+            if (safeDuration <= 6) fps = 10;
+            else if (safeDuration <= 15) fps = 8;
 
-            // Keep total work bounded for long clips.
-            let frameCap = 320;
-            if (safeDuration > 20) frameCap = 260;
-            if (safeDuration > 40) frameCap = 220;
+            let frameCap = 240;
+            if (safeDuration > 20) frameCap = 200;
+            if (safeDuration > 40) frameCap = 160;
             const frameCount = Math.max(1, Math.min(frameCap, Math.ceil(safeDuration * fps)));
             const delay = Math.round(1000 / fps);
 
@@ -798,9 +823,9 @@
             const { width, height, frameCount } = this._getGifExportConfig(sourceWidth, sourceHeight, duration);
             const mpix = (width * height) / 1000000;
             const workers = Math.max(1, Math.min(4, (navigator?.hardwareConcurrency || 4) - 1));
-            // Includes decode+seek per frame + GIF quantization/render; intentionally conservative.
-            const seconds = 1.2 + ((frameCount * Math.max(0.25, mpix)) / (workers * 7));
-            return Math.max(1, Math.round(seconds));
+            // Deliberately conservative: user requested estimate to be much higher.
+            const baseSeconds = 1.2 + ((frameCount * Math.max(0.25, mpix)) / (workers * 7));
+            return Math.max(1, Math.round(baseSeconds * 10));
         }
 
         async _updateDownloadOptionLabels() {
@@ -813,8 +838,8 @@
                 this.downloadVideoOption.textContent = `Vidéo (${this._formatMbLabel(videoSize)})`;
             }
             if (this.downloadGifOption) {
-                const gifEta = this._formatSecondsLabel(this._estimateGifBuildSeconds());
-                this.downloadGifOption.textContent = `Gif (~${gifEta}, ${this._formatMbLabel(gifSize)})`;
+                const eta = this._formatSecondsLabel(this._estimateGifBuildSeconds());
+                this.downloadGifOption.textContent = `Gif (~${eta}, ${this._formatMbLabel(gifSize)})`;
             }
         }
 
@@ -833,6 +858,50 @@
             if (this.downloadDropdown) {
                 this.downloadDropdown.hidden = true;
             }
+        }
+
+        _clearGifPrebuildSchedule() {
+            if (this._gifPrebuildTimer) {
+                clearTimeout(this._gifPrebuildTimer);
+                this._gifPrebuildTimer = null;
+            }
+        }
+
+        _scheduleGifPrebuild() {
+            this._clearGifPrebuildSchedule();
+            if (!this.videoBlobOriginal || this._gifDownloading) return;
+            this._gifPrebuildTimer = setTimeout(() => {
+                this._gifPrebuildTimer = null;
+                this._startGifPrebuildInBackground();
+            }, 1200);
+        }
+
+        async _startGifPrebuildInBackground() {
+            if (!this.videoBlobOriginal || this._gifDownloading) return;
+            const cacheKey = this._getGifCacheKey();
+            if (!cacheKey) return;
+            if (this._gifBlobCache && this._gifBlobCacheKey === cacheKey) return;
+            if (this._gifPrebuildPromise && this._gifPrebuildPromiseKey === cacheKey) return this._gifPrebuildPromise;
+
+            const run = (async () => {
+                try {
+                    const blob = await this._buildGifBlob();
+                    if (blob && this.videoBlobOriginal && this._getGifCacheKey() === cacheKey) {
+                        this._gifBlobCache = blob;
+                        this._gifBlobCacheKey = cacheKey;
+                    }
+                } catch (err) {
+                    // Background warmup intentionally silent.
+                } finally {
+                    if (this._gifPrebuildPromiseKey === cacheKey) {
+                        this._gifPrebuildPromise = null;
+                        this._gifPrebuildPromiseKey = "";
+                    }
+                }
+            })();
+            this._gifPrebuildPromise = run;
+            this._gifPrebuildPromiseKey = cacheKey;
+            return run;
         }
 
         async _ensureGifJsLoaded() {
@@ -973,8 +1042,7 @@
             const renderGif = async ({ workers, workerScript }) => {
                 const gif = new GIFCtor({
                     workers,
-                    quality: 6,
-                    dither: "FloydSteinberg-serpentine",
+                    quality: 8,
                     ...(workerScript ? { workerScript } : {}),
                     width,
                     height
@@ -1020,6 +1088,11 @@
                 let gifBlob = null;
                 if (this._gifBlobCache && this._gifBlobCacheKey === cacheKey) {
                     gifBlob = this._gifBlobCache;
+                } else if (this._gifPrebuildPromise && this._gifPrebuildPromiseKey === cacheKey) {
+                    await this._gifPrebuildPromise.catch(() => null);
+                    if (this._gifBlobCache && this._gifBlobCacheKey === cacheKey) {
+                        gifBlob = this._gifBlobCache;
+                    }
                 } else {
                     gifBlob = await this._buildGifBlob();
                     this._gifBlobCache = gifBlob;
@@ -1029,7 +1102,7 @@
                 const url = URL.createObjectURL(gifBlob);
                 const a = document.createElement("a");
                 a.href = url;
-                a.download = this._hasCutRange() ? "video-cut.gif" : "video.gif";
+                a.download = this._buildExportFilename("gif", this._hasCutRange());
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
@@ -1125,7 +1198,7 @@
 
         _getPlaybackBounds() {
             const duration = Math.max(0, this.videoEl?.duration || 0);
-            if (this.cutMode || !this._hasCutRange()) {
+            if (!this._hasCutRange()) {
                 return { start: 0, end: duration };
             }
             const start = Math.max(0, Math.min(duration, this.cutStart || 0));
@@ -1188,7 +1261,7 @@
             const a = document.createElement("a");
             a.href = url;
             const ext = (blob.type || "").includes("webm") ? "webm" : ((blob.type || "").includes("mp4") ? "mp4" : "webm");
-            a.download = this._hasCutRange() ? `video-cut.${ext}` : `video.${ext}`;
+            a.download = this._buildExportFilename(ext, this._hasCutRange());
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -1661,6 +1734,7 @@
 
         _applyVideoBlob(blob) {
             if (!this.videoEl) return;
+            const sameBlob = this.videoBlobOriginal === blob;
             this.videoBlobOriginal = blob;
             this.cutMode = false;
             this.cutSelectionStep = "start";
@@ -1668,24 +1742,37 @@
             this.cutEnd = 0;
             this._trimCacheKey = "";
             this._trimmedBlob = null;
-            this._gifBlobCacheKey = "";
-            this._gifBlobCache = null;
-            if (this._gifWorkerBlobUrl) {
-                try { URL.revokeObjectURL(this._gifWorkerBlobUrl); } catch (err) { /* noop */ }
-                this._gifWorkerBlobUrl = "";
+            this._clearGifPrebuildSchedule();
+            this._gifPrebuildPromise = null;
+            this._gifPrebuildPromiseKey = "";
+            if (!sameBlob) {
+                this._gifBlobCacheKey = "";
+                this._gifBlobCache = null;
+                if (this._gifWorkerBlobUrl) {
+                    try { URL.revokeObjectURL(this._gifWorkerBlobUrl); } catch (err) { /* noop */ }
+                    this._gifWorkerBlobUrl = "";
+                }
+                this._gifWorkerScriptUrl = "";
             }
-            this._gifWorkerScriptUrl = "";
-            if (this.videoBlobUrl) {
-                URL.revokeObjectURL(this.videoBlobUrl);
-                this.videoBlobUrl = "";
+            if (!sameBlob) {
+                if (this.videoBlobUrl) {
+                    URL.revokeObjectURL(this.videoBlobUrl);
+                    this.videoBlobUrl = "";
+                }
+                this.videoBlobUrl = URL.createObjectURL(blob);
             }
-            this.videoBlobUrl = URL.createObjectURL(blob);
             this.videoEl.src = this.videoBlobUrl;
             this._applyPlaybackRate();
             this.videoEl.load();
             this.progress && (this.progress.value = "0");
             this.timeLabel && (this.timeLabel.textContent = "00:00 / 00:00");
             this._updatePlayButton();
+        }
+
+        async prewarmGif(videoBlob) {
+            if (!videoBlob) return;
+            this._applyVideoBlob(videoBlob);
+            await this._startGifPrebuildInBackground();
         }
 
         open(options = {}) {
@@ -1711,6 +1798,7 @@
             document.addEventListener("keydown", this._handleKeydown);
             this._activeSentenceIndex = -1;
             if (window.lucide) lucide.createIcons();
+            this._scheduleGifPrebuild();
         }
 
         close() {
@@ -1719,6 +1807,9 @@
             this.overlay.setAttribute("aria-hidden", "true");
             this._closeDownloadDropdown();
             this._setGifDownloadLoading(false);
+            this._clearGifPrebuildSchedule();
+            this._gifPrebuildPromise = null;
+            this._gifPrebuildPromiseKey = "";
             document.body?.classList.remove("voice-video-player-modal-open");
             document.removeEventListener("keydown", this._handleKeydown);
             if (this.videoEl) {

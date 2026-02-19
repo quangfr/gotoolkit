@@ -268,7 +268,7 @@
             document.body.appendChild(state.toast);
         }
         state.toast.textContent = message;
-        state.toast.style.background = isError ? "var(--intent-error-border)" : "var(--bg-surface)";
+        state.toast.style.background = "var(--bg-surface)";
         state.toast.classList.add("visible");
         clearTimeout(state.toast._timer);
         state.toast._timer = setTimeout(() => state.toast.classList.remove("visible"), 2400);
@@ -1727,6 +1727,14 @@
         state.videoBlob = state.videoChunks.length
             ? new Blob(state.videoChunks, { type: state.videoChunks[0]?.type || "video/webm" })
             : null;
+        if (state.videoBlob && window.VoiceVideoPlayerModal) {
+            if (!state.videoModal) {
+                state.videoModal = new window.VoiceVideoPlayerModal();
+            }
+            state.videoModal.prewarmGif?.(state.videoBlob).catch(err => {
+                console.warn("GIF prewarm failed", err);
+            });
+        }
         state.audioRecorder = null;
         state.videoRecorder = null;
         updateButton();
@@ -1926,6 +1934,9 @@
             if (!state.videoModal) {
                 state.videoModal = new window.VoiceVideoPlayerModal();
             }
+            const modalVideoBlob = (recording.id === state.currentRecordingId && state.videoBlob)
+                ? state.videoBlob
+                : recording.videoBlob;
             state.videoModal.onTranscriptChange = async sentences => {
                 const updated = {
                     ...recording,
@@ -1936,7 +1947,7 @@
                 recording.videoTranscriptSentences = sentences;
             };
             state.videoModal.open({
-                videoBlob: recording.videoBlob,
+                videoBlob: modalVideoBlob,
                 sentences: recording.videoTranscriptSentences || [],
                 memoName,
                 youtubeUrl: recording.youtubeVideoUrl || "",
