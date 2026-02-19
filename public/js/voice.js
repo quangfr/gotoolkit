@@ -9,6 +9,7 @@
         : null;
     const CLICK_HIGHLIGHT_DURATION_MS = 420;
     const CLICK_HIGHLIGHT_RADIUS_PX = 26;
+    const CLICK_HIGHLIGHT_Y_OFFSET_PX = 6;
 
     const state = {
         currentMemoId: null,
@@ -857,7 +858,7 @@
             const progress = elapsed / CLICK_HIGHLIGHT_DURATION_MS;
             const alpha = 1 - progress;
             const x = effect.xNorm * width;
-            const y = effect.yNorm * height;
+            const y = effect.yNorm * height + CLICK_HIGHLIGHT_Y_OFFSET_PX;
             const outerR = CLICK_HIGHLIGHT_RADIUS_PX * (1 + progress * 0.7);
             const innerR = Math.max(6, CLICK_HIGHLIGHT_RADIUS_PX * (0.28 - progress * 0.12));
 

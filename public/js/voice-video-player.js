@@ -477,6 +477,11 @@
             this._gifPrebuildTimer = null;
             this._gifPrebuildPromise = null;
             this._gifPrebuildPromiseKey = "";
+            this._mp4BlobCache = null;
+            this._mp4BlobCacheKey = "";
+            this._mp4PrebuildPromise = null;
+            this._mp4PrebuildPromiseKey = "";
+            this._mp4LastBuildSeconds = 0;
             this._toastTimer = null;
             ensureStyles();
             this._buildDom();
@@ -835,21 +840,55 @@
             return Math.max(1, Math.round(baseSeconds * 10));
         }
 
+        _estimateMp4Bytes() {
+            const source = this._hasCutRange() ? this._trimmedBlob : this.videoBlobOriginal;
+            const sourceSize = source?.size || this.videoBlobOriginal?.size || 0;
+            if (!sourceSize) return 0;
+            // Conservative estimate: MP4 output is often slightly smaller than the source recording.
+            return Math.max(1024, Math.round(sourceSize * 0.82));
+        }
+
+        _estimateMp4BuildSeconds() {
+            if (this._mp4LastBuildSeconds > 0) return this._mp4LastBuildSeconds;
+            const duration = this._hasCutRange()
+                ? Math.max(0.1, this.cutEnd - this.cutStart)
+                : Math.max(0.1, this.videoEl?.duration || 0);
+            const sourceWidth = this.videoEl?.videoWidth || 640;
+            const sourceHeight = this.videoEl?.videoHeight || 360;
+            const mpix = (sourceWidth * sourceHeight) / 1000000;
+            const workers = Math.max(1, Math.min(4, (navigator?.hardwareConcurrency || 4) - 1));
+            const baseSeconds = 2 + ((duration * Math.max(0.6, mpix)) / Math.max(1, workers * 0.9));
+            return Math.max(1, Math.round(baseSeconds));
+        }
+
+        _getMp4CacheKey() {
+            if (!this.videoBlobOriginal) return "";
+            const bounds = this._hasCutRange()
+                ? `${this.cutStart.toFixed(3)}:${this.cutEnd.toFixed(3)}`
+                : `0:${(this.videoEl?.duration || 0).toFixed(3)}`;
+            return `${bounds}:${this.videoBlobOriginal.size}:${this.videoBlobOriginal.type || "video/webm"}`;
+        }
+
         async _updateDownloadOptionLabels() {
             const videoBlob = await this._getOutputBlob().catch(() => this.videoBlobOriginal);
             const videoSize = videoBlob?.size || this.videoBlobOriginal?.size || 0;
             const gifSize = (this._gifBlobCache?.size && this._gifBlobCacheKey === this._getGifCacheKey())
                 ? this._gifBlobCache.size
-                : this._estimateGifBytes();
+                : 0;
+            const mp4Size = (this._mp4BlobCache?.size && this._mp4BlobCacheKey === this._getMp4CacheKey())
+                ? this._mp4BlobCache.size
+                : this._estimateMp4Bytes();
             if (this.downloadVideoWebmOption) {
-                this.downloadVideoWebmOption.textContent = `Vidéo WebM (${this._formatMbLabel(videoSize)})`;
+                this.downloadVideoWebmOption.textContent = `WebM (${this._formatMbLabel(videoSize)})`;
             }
             if (this.downloadVideoMp4Option) {
-                this.downloadVideoMp4Option.textContent = "Vidéo MP4 (conversion)";
+                const eta = this._formatSecondsLabel(this._estimateMp4BuildSeconds());
+                this.downloadVideoMp4Option.textContent = `MP4 (~${eta}, ${this._formatMbLabel(mp4Size)})`;
             }
             if (this.downloadGifOption) {
-                const eta = this._formatSecondsLabel(this._estimateGifBuildSeconds());
-                this.downloadGifOption.textContent = `Gif (~${eta}, ${this._formatMbLabel(gifSize)})`;
+                this.downloadGifOption.textContent = gifSize > 0
+                    ? `Gif (${this._formatMbLabel(gifSize)})`
+                    : "Gif";
             }
         }
 
@@ -882,8 +921,13 @@
             if (!this.videoBlobOriginal || this._gifDownloading) return;
             this._gifPrebuildTimer = setTimeout(() => {
                 this._gifPrebuildTimer = null;
-                this._startGifPrebuildInBackground();
+                this._startExportPrebuildInBackground();
             }, 1200);
+        }
+
+        async _startExportPrebuildInBackground() {
+            await this._startGifPrebuildInBackground().catch(() => null);
+            await this._startMp4PrebuildInBackground().catch(() => null);
         }
 
         async _startGifPrebuildInBackground() {
@@ -911,6 +955,37 @@
             })();
             this._gifPrebuildPromise = run;
             this._gifPrebuildPromiseKey = cacheKey;
+            return run;
+        }
+
+        async _startMp4PrebuildInBackground() {
+            if (!this.videoBlobOriginal || this._gifDownloading) return;
+            const cacheKey = this._getMp4CacheKey();
+            if (!cacheKey) return;
+            if (this._mp4BlobCache && this._mp4BlobCacheKey === cacheKey) return this._mp4BlobCache;
+            if (this._mp4PrebuildPromise && this._mp4PrebuildPromiseKey === cacheKey) return this._mp4PrebuildPromise;
+
+            const run = (async () => {
+                const startedAt = (typeof performance !== "undefined" && performance.now) ? performance.now() : Date.now();
+                try {
+                    const blob = await this._getOutputBlobAsMp4();
+                    if (blob && this.videoBlobOriginal && this._getMp4CacheKey() === cacheKey) {
+                        this._mp4BlobCache = blob;
+                        this._mp4BlobCacheKey = cacheKey;
+                        const endedAt = (typeof performance !== "undefined" && performance.now) ? performance.now() : Date.now();
+                        this._mp4LastBuildSeconds = Math.max(1, Math.round((endedAt - startedAt) / 1000));
+                    }
+                } catch (err) {
+                    // Background warmup intentionally silent.
+                } finally {
+                    if (this._mp4PrebuildPromiseKey === cacheKey) {
+                        this._mp4PrebuildPromise = null;
+                        this._mp4PrebuildPromiseKey = "";
+                    }
+                }
+            })();
+            this._mp4PrebuildPromise = run;
+            this._mp4PrebuildPromiseKey = cacheKey;
             return run;
         }
 
@@ -1072,6 +1147,7 @@
                 this._showToast("Export GIF impossible", true);
             } finally {
                 this._setGifDownloadLoading(false);
+                this._startMp4PrebuildInBackground().catch(() => null);
             }
         }
 
@@ -1178,6 +1254,11 @@
             this._trimmedBlob = null;
             this._gifBlobCacheKey = "";
             this._gifBlobCache = null;
+            this._mp4BlobCacheKey = "";
+            this._mp4BlobCache = null;
+            this._mp4PrebuildPromise = null;
+            this._mp4PrebuildPromiseKey = "";
+            this._mp4LastBuildSeconds = 0;
             if (this.transcriptList) this._renderSentences();
             this._updateProgressRangeVisual();
         }
@@ -1227,11 +1308,30 @@
         async _handleDownloadVideoMp4() {
             if (!this.videoBlobOriginal) return;
             try {
-                const blob = await this._getOutputBlobAsMp4();
+                const cacheKey = this._getMp4CacheKey();
+                const startedAt = (typeof performance !== "undefined" && performance.now) ? performance.now() : Date.now();
+                let blob = null;
+                if (this._mp4BlobCache && this._mp4BlobCacheKey === cacheKey) {
+                    blob = this._mp4BlobCache;
+                } else if (this._mp4PrebuildPromise && this._mp4PrebuildPromiseKey === cacheKey) {
+                    await this._mp4PrebuildPromise.catch(() => null);
+                    if (this._mp4BlobCache && this._mp4BlobCacheKey === cacheKey) {
+                        blob = this._mp4BlobCache;
+                    }
+                }
+                if (!blob) {
+                    blob = await this._getOutputBlobAsMp4();
+                    if (blob) {
+                        this._mp4BlobCache = blob;
+                        this._mp4BlobCacheKey = cacheKey;
+                    }
+                }
                 if (!blob) {
                     this._showToast("Conversion MP4 impossible sur ce navigateur", true);
                     return;
                 }
+                const endedAt = (typeof performance !== "undefined" && performance.now) ? performance.now() : Date.now();
+                this._mp4LastBuildSeconds = Math.max(1, Math.round((endedAt - startedAt) / 1000));
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement("a");
                 a.href = url;
@@ -1748,9 +1848,14 @@
             this._clearGifPrebuildSchedule();
             this._gifPrebuildPromise = null;
             this._gifPrebuildPromiseKey = "";
+            this._mp4PrebuildPromise = null;
+            this._mp4PrebuildPromiseKey = "";
+            this._mp4LastBuildSeconds = 0;
             if (!sameBlob) {
                 this._gifBlobCacheKey = "";
                 this._gifBlobCache = null;
+                this._mp4BlobCacheKey = "";
+                this._mp4BlobCache = null;
             }
             if (!sameBlob) {
                 if (this.videoBlobUrl) {
@@ -1770,7 +1875,7 @@
         async prewarmGif(videoBlob) {
             if (!videoBlob) return;
             this._applyVideoBlob(videoBlob);
-            await this._startGifPrebuildInBackground();
+            await this._startExportPrebuildInBackground();
         }
 
         open(options = {}) {
@@ -1808,6 +1913,8 @@
             this._clearGifPrebuildSchedule();
             this._gifPrebuildPromise = null;
             this._gifPrebuildPromiseKey = "";
+            this._mp4PrebuildPromise = null;
+            this._mp4PrebuildPromiseKey = "";
             document.body?.classList.remove("voice-video-player-modal-open");
             document.removeEventListener("keydown", this._handleKeydown);
             if (this.videoEl) {
@@ -1823,6 +1930,9 @@
             this.cutMode = false;
             this._revokeTextTrackUrl();
             this._gifEncoderLibPromise = null;
+            this._mp4BlobCache = null;
+            this._mp4BlobCacheKey = "";
+            this._mp4LastBuildSeconds = 0;
             if (this._toastTimer) {
                 clearTimeout(this._toastTimer);
                 this._toastTimer = null;
