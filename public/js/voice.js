@@ -7,6 +7,8 @@
     const RECORDINGS_STORE = window.goToolkitDocStore?.createStore
         ? window.goToolkitDocStore.createStore("voice-recordings")
         : null;
+    const CLICK_HIGHLIGHT_DURATION_MS = 420;
+    const CLICK_HIGHLIGHT_RADIUS_PX = 26;
 
     const state = {
         currentMemoId: null,
@@ -63,6 +65,12 @@
         micWavePhase: 0,
         systemWavePhase: 0,
         meterLastTs: 0,
+        videoCompositorCanvas: null,
+        videoCompositorRafId: null,
+        videoCompositorStream: null,
+        videoCompositorSourceVideo: null,
+        clickHighlights: [],
+        clickPointerHandler: null,
         permissionsGranted: {
             audio: false,
             webcam: false,
@@ -827,6 +835,139 @@
         updateButton();
     }
 
+    function addClickHighlight(clientX, clientY) {
+        if (!state.videoCompositorCanvas) return;
+        const viewW = Math.max(1, window.innerWidth || document.documentElement?.clientWidth || 1);
+        const viewH = Math.max(1, window.innerHeight || document.documentElement?.clientHeight || 1);
+        const xNorm = Math.max(0, Math.min(1, Number(clientX || 0) / viewW));
+        const yNorm = Math.max(0, Math.min(1, Number(clientY || 0) / viewH));
+        state.clickHighlights.push({ xNorm, yNorm, startTs: performance.now() });
+        if (state.clickHighlights.length > 24) {
+            state.clickHighlights = state.clickHighlights.slice(-24);
+        }
+    }
+
+    function drawClickHighlights(ctx, width, height, nowTs) {
+        if (!ctx || !state.clickHighlights.length) return;
+        const active = [];
+        for (let i = 0; i < state.clickHighlights.length; i += 1) {
+            const effect = state.clickHighlights[i];
+            const elapsed = Math.max(0, nowTs - effect.startTs);
+            if (elapsed > CLICK_HIGHLIGHT_DURATION_MS) continue;
+            const progress = elapsed / CLICK_HIGHLIGHT_DURATION_MS;
+            const alpha = 1 - progress;
+            const x = effect.xNorm * width;
+            const y = effect.yNorm * height;
+            const outerR = CLICK_HIGHLIGHT_RADIUS_PX * (1 + progress * 0.7);
+            const innerR = Math.max(6, CLICK_HIGHLIGHT_RADIUS_PX * (0.28 - progress * 0.12));
+
+            ctx.save();
+            ctx.globalCompositeOperation = "source-over";
+            ctx.lineWidth = Math.max(2, Math.round(width / 550));
+            ctx.strokeStyle = `rgba(255, 190, 0, ${Math.max(0, alpha * 0.95)})`;
+            ctx.fillStyle = `rgba(255, 190, 0, ${Math.max(0, alpha * 0.22)})`;
+            ctx.beginPath();
+            ctx.arc(x, y, outerR, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = `rgba(255, 245, 180, ${Math.max(0, alpha * 0.85)})`;
+            ctx.beginPath();
+            ctx.arc(x, y, innerR, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+
+            active.push(effect);
+        }
+        state.clickHighlights = active;
+    }
+
+    async function startVideoCompositor(sourceStream) {
+        if (!sourceStream?.getVideoTracks?.().length) return null;
+        const sourceVideo = document.createElement("video");
+        sourceVideo.muted = true;
+        sourceVideo.playsInline = true;
+        sourceVideo.srcObject = sourceStream;
+        await new Promise((resolve, reject) => {
+            const onLoaded = () => {
+                cleanup();
+                resolve();
+            };
+            const onError = () => {
+                cleanup();
+                reject(new Error("Prévisualisation vidéo indisponible"));
+            };
+            const cleanup = () => {
+                sourceVideo.removeEventListener("loadedmetadata", onLoaded);
+                sourceVideo.removeEventListener("error", onError);
+            };
+            sourceVideo.addEventListener("loadedmetadata", onLoaded);
+            sourceVideo.addEventListener("error", onError);
+        });
+        await sourceVideo.play().catch(() => { /* noop */ });
+
+        const width = Math.max(2, sourceVideo.videoWidth || 1280);
+        const height = Math.max(2, sourceVideo.videoHeight || 720);
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d", { alpha: true, willReadFrequently: false });
+        if (!ctx) {
+            throw new Error("Canvas vidéo indisponible");
+        }
+
+        state.clickHighlights = [];
+        const render = () => {
+            const nowTs = performance.now();
+            ctx.clearRect(0, 0, width, height);
+            try {
+                ctx.drawImage(sourceVideo, 0, 0, width, height);
+            } catch (err) { /* noop */ }
+            drawClickHighlights(ctx, width, height, nowTs);
+            state.videoCompositorRafId = requestAnimationFrame(render);
+        };
+        state.videoCompositorRafId = requestAnimationFrame(render);
+
+        const onPointerDown = event => {
+            if (!state.isRecording) return;
+            if (event.button !== 0) return;
+            addClickHighlight(event.clientX, event.clientY);
+        };
+        window.addEventListener("pointerdown", onPointerDown, true);
+
+        const fps = 30;
+        const composedStream = canvas.captureStream(fps);
+        state.videoCompositorCanvas = canvas;
+        state.videoCompositorStream = composedStream;
+        state.videoCompositorSourceVideo = sourceVideo;
+        state.clickPointerHandler = onPointerDown;
+        return composedStream;
+    }
+
+    function stopVideoCompositor() {
+        if (state.videoCompositorRafId) {
+            cancelAnimationFrame(state.videoCompositorRafId);
+            state.videoCompositorRafId = null;
+        }
+        if (state.clickPointerHandler) {
+            window.removeEventListener("pointerdown", state.clickPointerHandler, true);
+            state.clickPointerHandler = null;
+        }
+        if (state.videoCompositorSourceVideo) {
+            try { state.videoCompositorSourceVideo.pause(); } catch (err) { /* noop */ }
+            state.videoCompositorSourceVideo.srcObject = null;
+            state.videoCompositorSourceVideo = null;
+        }
+        if (state.videoCompositorStream) {
+            state.videoCompositorStream.getTracks().forEach(track => {
+                try { track.stop(); } catch (err) { /* noop */ }
+            });
+            state.videoCompositorStream = null;
+        }
+        state.videoCompositorCanvas = null;
+        state.clickHighlights = [];
+    }
+
     function resetSessionState() {
         state.currentRecordingId = null;
         state.currentRecordingHasVideo = false;
@@ -848,6 +989,7 @@
             state.timerId = null;
         }
         stopLiveTranscription();
+        stopVideoCompositor();
         stopAudioMix();
         stopOverlayStreams();
         updateButton();
@@ -1105,8 +1247,19 @@
             state.audioRecorder.start();
             startLiveTranscription(audioStream, memoId);
             if (videoStream) {
+                let videoTrackSource = videoStream;
+                if (state.overlayScreen && videoStream === screenStream) {
+                    try {
+                        const composedStream = await startVideoCompositor(videoStream);
+                        if (composedStream?.getVideoTracks?.().length) {
+                            videoTrackSource = composedStream;
+                        }
+                    } catch (err) {
+                        console.warn("Screen compositor disabled", err);
+                    }
+                }
                 const combinedTracks = [
-                    ...(videoStream.getVideoTracks() || []),
+                    ...(videoTrackSource.getVideoTracks() || []),
                     ...(audioStream.getAudioTracks() || [])
                 ];
                 const combinedStream = new MediaStream(combinedTracks);
@@ -1566,6 +1719,7 @@
         await stopRecorder(state.videoRecorder);
         stopTracks(state.audioRecorder);
         stopTracks(state.videoRecorder);
+        stopVideoCompositor();
         stopOverlayStreams();
         state.audioBlob = state.audioChunks.length
             ? new Blob(state.audioChunks, { type: state.audioChunks[0]?.type || "audio/webm" })
