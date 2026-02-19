@@ -55847,7 +55847,40 @@ ${promptInput.trim()}`
           return false;
         },
         handleDrop: (view, event) => {
+          var _a2, _b2;
           if (!event || !(event instanceof DragEvent)) return false;
+          const droppedFiles = Array.from(((_a2 = event.dataTransfer) == null ? void 0 : _a2.files) || []);
+          const droppedImages = droppedFiles.filter(isSupportedImageFile);
+          if (droppedImages.length) {
+            event.preventDefault();
+            event.stopPropagation();
+            const coords2 = view.posAtCoords({ left: event.clientX, top: event.clientY });
+            const insertionPos = (_b2 = coords2 == null ? void 0 : coords2.pos) != null ? _b2 : view.state.selection.from;
+            (async () => {
+              const imageNodes = [];
+              for (const file of droppedImages) {
+                try {
+                  const src = await readFileAsDataUrl(file);
+                  if (!src) continue;
+                  imageNodes.push({
+                    type: "image",
+                    attrs: {
+                      src,
+                      alt: file.name || "image",
+                      title: file.name || "",
+                      fileName: file.name || "",
+                      mimeType: file.type || ""
+                    }
+                  });
+                } catch (err) {
+                }
+              }
+              if (!imageNodes.length || !editor) return;
+              const content2 = imageNodes.flatMap((imageNode, index) => index === 0 ? [imageNode] : [{ type: "paragraph" }, imageNode]);
+              editor.chain().focus().insertContentAt(insertionPos, content2).run();
+            })();
+            return true;
+          }
           const coords = view.posAtCoords({ left: event.clientX, top: event.clientY });
           if (!coords) return false;
           const originCellPos = getTableCellPosFromResolved(view.state.selection.$from);

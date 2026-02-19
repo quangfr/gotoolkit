@@ -1688,7 +1688,44 @@
                 clearInterval(state.transcriptionCountdownTimer);
                 state.transcriptionCountdownTimer = null;
             }
-            resetSessionState();
+            const now = Date.now();
+            const duration = Math.max(0, durationSeconds || 0);
+            const recordId = crypto?.randomUUID ? crypto.randomUUID() : `voice-${Date.now()}`;
+            const fallbackRecording = {
+                id: recordId,
+                type: "voice-recording",
+                audioBlob: state.audioBlob,
+                videoBlob: state.videoBlob || null,
+                audioTranscript: "",
+                audioTranscriptSentences: [],
+                videoTranscript: "",
+                videoTranscriptSentences: [],
+                duration,
+                recordingDate: now,
+                assemblyTranscriptId: null,
+                assemblyLanguageCode: "fr",
+                participants: [],
+                subjects: [],
+                createdAt: now,
+                updatedAt: now
+            };
+            if (RECORDINGS_STORE) {
+                try {
+                    await RECORDINGS_STORE.set(recordId, fallbackRecording);
+                } catch (storeErr) {
+                    console.warn("Fallback recording save failed", storeErr);
+                }
+            }
+            state.currentRecordingId = recordId;
+            state.currentRecordingHasVideo = Boolean(state.videoBlob);
+            if (state.currentMemoId && state.currentMemoId === memoId) {
+                state.currentMemoRecordingId = recordId;
+                state.currentMemoRecordingHasVideo = Boolean(state.videoBlob);
+            }
+            setRecordingForMemo(memoId, recordId);
+            state.recordingMemoId = memoId;
+            state.recordingMemoName = memoName || "";
+            updateButton();
             throw err;
         }
     }

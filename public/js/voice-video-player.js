@@ -1,5 +1,6 @@
 (function () {
     const STYLE_ID = "voice-video-player-styles";
+    const GIF_JS_LOCAL_URL = "/js/vendor/gif.js";
     const GIF_JS_CDN_URL = "https://cdn.jsdelivr.net/npm/gif.js.optimized/dist/gif.js";
     const GIF_JS_WORKER_URL = "https://cdn.jsdelivr.net/npm/gif.js.optimized/dist/gif.worker.js";
     const GIF_JS_WORKER_LOCAL_URL = "/js/vendor/gif.worker.js";
@@ -720,19 +721,29 @@
         async _ensureGifJsLoaded() {
             if (window.GIF) return window.GIF;
             if (this._gifScriptPromise) return this._gifScriptPromise;
-            this._gifScriptPromise = new Promise((resolve, reject) => {
-                const script = document.createElement("script");
-                script.src = GIF_JS_CDN_URL;
-                script.async = true;
-                script.onload = () => {
-                    if (window.GIF) {
-                        resolve(window.GIF);
-                    } else {
-                        reject(new Error("GIF.js introuvable"));
+            this._gifScriptPromise = new Promise(async (resolve, reject) => {
+                const candidates = [GIF_JS_LOCAL_URL, GIF_JS_CDN_URL];
+                for (let i = 0; i < candidates.length; i += 1) {
+                    const src = candidates[i];
+                    try {
+                        // eslint-disable-next-line no-await-in-loop
+                        await new Promise((innerResolve, innerReject) => {
+                            const script = document.createElement("script");
+                            script.src = src;
+                            script.async = true;
+                            script.onload = () => innerResolve();
+                            script.onerror = () => innerReject(new Error(`Chargement GIF.js échoué: ${src}`));
+                            document.head.appendChild(script);
+                        });
+                        if (window.GIF) {
+                            resolve(window.GIF);
+                            return;
+                        }
+                    } catch (err) {
+                        // try next source
                     }
-                };
-                script.onerror = () => reject(new Error("Chargement GIF.js échoué"));
-                document.head.appendChild(script);
+                }
+                reject(new Error("GIF.js introuvable"));
             });
             return this._gifScriptPromise;
         }
@@ -780,6 +791,7 @@
 
         async _buildGifBlob() {
             if (!this.videoBlobOriginal) return null;
+            console.info("[GoToolkit GIF] build start");
             await this._ensureGifJsLoaded();
             const workerScriptUrl = await this._resolveGifWorkerScriptUrl();
             const sourceUrl = URL.createObjectURL(this.videoBlobOriginal);
@@ -827,10 +839,19 @@
             const GIFCtor = window.GIF;
             const seekTo = time => new Promise(resolve => {
                 const bounded = Math.max(0, Math.min(duration, time));
+                if (Math.abs((video.currentTime || 0) - bounded) < 0.001) {
+                    resolve();
+                    return;
+                }
                 const onSeeked = () => {
+                    clearTimeout(timer);
                     video.removeEventListener("seeked", onSeeked);
                     resolve();
                 };
+                const timer = setTimeout(() => {
+                    video.removeEventListener("seeked", onSeeked);
+                    resolve();
+                }, 800);
                 video.addEventListener("seeked", onSeeked);
                 video.currentTime = bounded;
             });
@@ -865,15 +886,17 @@
             try {
                 blob = await renderGif({ workers: 2, workerScript: workerScriptUrl });
             } catch (err) {
-                console.warn("GIF render with workers failed, retrying without workers", err);
+                console.warn("[GoToolkit GIF] workers failed, retrying without workers", err);
                 blob = await renderGif({ workers: 0 });
             }
+            console.info("[GoToolkit GIF] build success", { size: blob?.size || 0, type: blob?.type || "" });
             try { URL.revokeObjectURL(sourceUrl); } catch (err) { /* noop */ }
             return blob;
         }
 
         async _handleDownloadGif() {
             if (!this.videoBlobOriginal) return;
+            console.info("[GoToolkit GIF] download requested");
             try {
                 const cacheKey = this._getGifCacheKey();
                 let gifBlob = null;
@@ -895,8 +918,15 @@
                 setTimeout(() => {
                     try { URL.revokeObjectURL(url); } catch (err) { /* noop */ }
                 }, 500);
+                console.info("[GoToolkit GIF] download triggered");
             } catch (err) {
-                console.warn("GIF download failed", err);
+                console.error("[GoToolkit GIF] download failed", err);
+                if (this.downloadGifOption) {
+                    this.downloadGifOption.textContent = "Gif (échec)";
+                }
+                try {
+                    window.alert("Export GIF impossible. Ouvrez la console et cherchez [GoToolkit GIF].");
+                } catch (alertErr) { /* noop */ }
             }
         }
 

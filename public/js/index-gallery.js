@@ -232,7 +232,7 @@
                 try {
                     const recording = await voiceRecordingsStore?.get?.(recordingId);
                     if (recording?.videoBlob) {
-                        icon = "monitor-play";
+                        icon = "video";
                     }
                 } catch (err) {
                     icon = "cassette-tape";

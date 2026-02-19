@@ -38,7 +38,7 @@
         let icon = "cassette-tape";
         try {
             const recording = await voiceRecordingsStore?.get?.(recordingId);
-            if (recording?.videoBlob) icon = "monitor-play";
+            if (recording?.videoBlob) icon = "video";
         } catch (err) {
             icon = "cassette-tape";
         }

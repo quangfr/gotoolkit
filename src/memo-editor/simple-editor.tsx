@@ -2767,6 +2767,41 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       },
       handleDrop: (view, event) => {
         if (!event || !(event instanceof DragEvent)) return false;
+        const droppedFiles = Array.from(event.dataTransfer?.files || []);
+        const droppedImages = droppedFiles.filter(isSupportedImageFile);
+        if (droppedImages.length) {
+          event.preventDefault();
+          event.stopPropagation();
+          const coords = view.posAtCoords({ left: event.clientX, top: event.clientY });
+          const insertionPos = coords?.pos ?? view.state.selection.from;
+          (async () => {
+            const imageNodes: Array<{ type: string; attrs: Record<string, any> }> = [];
+            for (const file of droppedImages) {
+              try {
+                const src = await readFileAsDataUrl(file);
+                if (!src) continue;
+                imageNodes.push({
+                  type: 'image',
+                  attrs: {
+                    src,
+                    alt: file.name || 'image',
+                    title: file.name || '',
+                    fileName: file.name || '',
+                    mimeType: file.type || '',
+                  },
+                });
+              } catch (err) {
+                // Keep processing remaining dropped images.
+              }
+            }
+            if (!imageNodes.length || !editor) return;
+            const content = imageNodes.flatMap((imageNode, index) => (
+              index === 0 ? [imageNode] : [{ type: 'paragraph' }, imageNode]
+            ));
+            editor.chain().focus().insertContentAt(insertionPos, content).run();
+          })();
+          return true;
+        }
         const coords = view.posAtCoords({ left: event.clientX, top: event.clientY });
         if (!coords) return false;
         const originCellPos = getTableCellPosFromResolved(view.state.selection.$from);
