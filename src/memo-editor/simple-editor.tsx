@@ -50,7 +50,7 @@ import {
   ChevronDown, Check, CheckCheck, Type,
   Bot, X, Plus, Baseline, Shapes,
   CheckSquare,
-  Pencil, Copy, Image as ImageIcon,
+  Pencil, Copy, Image as ImageIcon, Video,
   Square, RectangleHorizontal, Tag,
   ArrowDownAZ, ArrowUpAZ
 } from 'lucide-react';
@@ -489,6 +489,7 @@ import { marked } from 'marked';
 import { MermaidNode, insertMermaidDiagram } from './mermaid-node';
 import { Alert, ALERT_TYPES } from './blockquote-node';
 import { CustomImage, isSupportedImageFile } from './image-node';
+import { VideoEmbed } from './video-node';
 import './simple-editor.css';
 
 interface SimpleEditorProps {
@@ -1431,11 +1432,12 @@ const QuoteTypeDropdown = ({ editor }: { editor: Editor }) => {
   );
 };
 
-const Toolbar = ({ editor, onDropdownToggle, onLink, onInsertImage }: { 
+const Toolbar = ({ editor, onDropdownToggle, onLink, onInsertImage, onInsertVideo }: {
   editor: Editor, 
   onDropdownToggle?: (isOpen: boolean) => void,
   onLink: () => void,
   onInsertImage: () => void,
+  onInsertVideo: () => void,
 }) => {
   // Force re-render when editor state changes
   const [, forceUpdate] = React.useReducer((x) => x + 1, 0);
@@ -1678,6 +1680,17 @@ const Toolbar = ({ editor, onDropdownToggle, onLink, onInsertImage }: {
         >
           <i data-lucide="image" style={{ display: 'none' }} aria-hidden="true"></i>
           <ImageIcon size={16} />
+        </button>
+        <button
+          className="tiptap-button"
+          aria-label="Insert Video"
+          type="button"
+          title="Vidéo (WebM/MP4)"
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={onInsertVideo}
+        >
+          <i data-lucide="video" style={{ display: 'none' }} aria-hidden="true"></i>
+          <Video size={16} />
         </button>
       </div>
 
@@ -2381,6 +2394,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         },
       }),
       CustomImage,
+      VideoEmbed,
       TableNode,
       TableRow,
       TableHeader,
@@ -2870,6 +2884,37 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     document.body.appendChild(input);
     input.click();
   }, [insertImageFiles]);
+
+  const openVideoInsertDialog = React.useCallback(() => {
+    if (!editor) return;
+    const raw = window.prompt('URL vidéo (.webm ou .mp4)');
+    const value = String(raw || '').trim();
+    if (!value) return;
+    if (!/^https?:\/\//i.test(value) && !/^data:video\//i.test(value)) return;
+    if (!/(\.webm([?#].*)?$)|(\.mp4([?#].*)?$)|(^data:video\/(webm|mp4);)/i.test(value)) return;
+
+    const label = (() => {
+      if (/^data:video\//i.test(value)) return 'video';
+      const withoutQuery = value.split('#')[0].split('?')[0];
+      const file = withoutQuery.split('/').pop() || '';
+      return file || 'video';
+    })();
+
+    const mimeType = /\.mp4([?#].*)?$/i.test(value) ? 'video/mp4' : 'video/webm';
+    editor
+      .chain()
+      .focus()
+      .insertContent({
+        type: 'videoEmbed',
+        attrs: {
+          src: value,
+          title: label,
+          fileName: label,
+          mimeType,
+        },
+      })
+      .run();
+  }, [editor]);
 
   React.useEffect(() => {
     if (!editor) return;
@@ -4364,6 +4409,52 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
               wrapper.appendChild(replayBtn);
             });
 
+            if (format === 'html') {
+              // Turn direct .webm/.mp4 links into embedded videos for richer HTML exports.
+              doc.querySelectorAll('a[href]').forEach(anchor => {
+                const el = anchor as HTMLAnchorElement;
+                const href = String(el.getAttribute('href') || '').trim();
+                const isWebm = /\.webm([?#].*)?$/i.test(href);
+                const isMp4 = /\.mp4([?#].*)?$/i.test(href);
+                if (!isWebm && !isMp4) return;
+
+                const video = doc.createElement('video');
+                video.setAttribute('controls', 'true');
+                video.setAttribute('playsinline', 'true');
+                video.setAttribute('preload', 'metadata');
+                video.setAttribute('src', href);
+                video.setAttribute('style', 'display:block;max-width:100%;margin:20px auto;border-radius:10px;background:#000;');
+
+                const source = doc.createElement('source');
+                source.setAttribute('src', href);
+                source.setAttribute('type', isMp4 ? 'video/mp4' : 'video/webm');
+                video.appendChild(source);
+
+                const fallback = doc.createElement('p');
+                fallback.textContent = `Video: ${href}`;
+                fallback.setAttribute('style', 'font-size:12px;color:#6b7280;margin:8px 0 0 0;');
+
+                const wrap = doc.createElement('div');
+                wrap.appendChild(video);
+                wrap.appendChild(fallback);
+
+                el.parentNode?.replaceChild(wrap, el);
+              });
+            }
+
+            doc.querySelectorAll('video').forEach(video => {
+              const el = video as HTMLVideoElement;
+              el.setAttribute('controls', 'true');
+              el.setAttribute('playsinline', 'true');
+              el.setAttribute('preload', 'metadata');
+              const style = el.style;
+              style.display = 'block';
+              style.maxWidth = '100%';
+              style.margin = '20px auto';
+              style.borderRadius = '10px';
+              style.background = '#000';
+            });
+
             doc.querySelectorAll('hr').forEach(hr => {
               const el = hr as HTMLElement;
               el.style.border = 'none';
@@ -4420,6 +4511,11 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     }
     .html-email-export .gif-replay-wrap .gif-replay-button:hover {
       background: rgba(15, 23, 42, 0.52);
+    }
+    .html-email-export video {
+      width: 100%;
+      height: auto;
+      max-width: 100%;
     }
   </style>
   ${content}
@@ -5065,6 +5161,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         onDropdownToggle={setIsDropdownOpen}
         onLink={() => setShowLinkModal(true)}
         onInsertImage={openImagePicker}
+        onInsertVideo={openVideoInsertDialog}
       />
       <BubbleMenuComponent 
         editor={editor}

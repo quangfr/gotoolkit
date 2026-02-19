@@ -887,6 +887,39 @@ body.table-resize-cursor * {
   margin: 0 auto;
 }
 
+.memo-video-wrapper {
+  position: relative;
+  margin: 18px 0 12px 0;
+}
+
+.memo-video-frame {
+  position: relative;
+  display: block;
+  max-width: 100%;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 6px;
+  background: var(--bg-surface);
+  overflow: visible;
+  transition: border-color 0.2s ease;
+}
+
+.memo-video-frame:hover {
+  border-color: var(--border-main);
+}
+
+.memo-video {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  border-radius: 6px;
+  background: #000;
+}
+
+.memo-video-frame:hover .memo-image-action {
+  opacity: 1;
+}
+
 .mermaid-size-toggle {
   width: auto;
   padding: 0 8px;

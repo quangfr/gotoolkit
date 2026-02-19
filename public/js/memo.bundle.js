@@ -28861,24 +28861,39 @@ img.ProseMirror-separator {
   ];
   var Undo2 = createLucideIcon("undo-2", __iconNode49);
 
-  // node_modules/lucide-react/dist/esm/icons/workflow.js
+  // node_modules/lucide-react/dist/esm/icons/video.js
   init_define_process_env();
   init_polyfills();
   var __iconNode50 = [
+    [
+      "path",
+      {
+        d: "m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5",
+        key: "ftymec"
+      }
+    ],
+    ["rect", { x: "2", y: "6", width: "14", height: "12", rx: "2", key: "158x01" }]
+  ];
+  var Video = createLucideIcon("video", __iconNode50);
+
+  // node_modules/lucide-react/dist/esm/icons/workflow.js
+  init_define_process_env();
+  init_polyfills();
+  var __iconNode51 = [
     ["rect", { width: "8", height: "8", x: "3", y: "3", rx: "2", key: "by2w9f" }],
     ["path", { d: "M7 11v4a2 2 0 0 0 2 2h4", key: "xkn7yn" }],
     ["rect", { width: "8", height: "8", x: "13", y: "13", rx: "2", key: "1cgmvn" }]
   ];
-  var Workflow = createLucideIcon("workflow", __iconNode50);
+  var Workflow = createLucideIcon("workflow", __iconNode51);
 
   // node_modules/lucide-react/dist/esm/icons/x.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode51 = [
+  var __iconNode52 = [
     ["path", { d: "M18 6 6 18", key: "1bl5f8" }],
     ["path", { d: "m6 6 12 12", key: "d8bk6v" }]
   ];
-  var X = createLucideIcon("x", __iconNode51);
+  var X = createLucideIcon("x", __iconNode52);
 
   // src/memo-editor/docx-export.ts
   init_define_process_env();
@@ -53528,6 +53543,143 @@ ${promptInput.trim()}`
     return SUPPORTED_IMAGE_EXT.some((ext) => name.endsWith(ext));
   };
 
+  // src/memo-editor/video-node.tsx
+  init_define_process_env();
+  init_polyfills();
+  var copyVideoHtml = async (attrs) => {
+    var _a;
+    const src = String((attrs == null ? void 0 : attrs.src) || "");
+    if (!src) return;
+    const video = document.createElement("video");
+    video.setAttribute("controls", "true");
+    video.setAttribute("playsinline", "true");
+    video.setAttribute("preload", "metadata");
+    video.src = src;
+    if (attrs == null ? void 0 : attrs.title) video.title = String(attrs.title);
+    if (attrs == null ? void 0 : attrs.width) video.setAttribute("width", String(attrs.width).replace(/px$/, ""));
+    if (attrs == null ? void 0 : attrs.height) video.setAttribute("height", String(attrs.height).replace(/px$/, ""));
+    if (attrs == null ? void 0 : attrs.mimeType) video.setAttribute("data-mime-type", String(attrs.mimeType));
+    if (attrs == null ? void 0 : attrs.fileName) video.setAttribute("data-file-name", String(attrs.fileName));
+    const source = document.createElement("source");
+    source.src = src;
+    source.type = String((attrs == null ? void 0 : attrs.mimeType) || "");
+    video.appendChild(source);
+    const html2 = video.outerHTML;
+    try {
+      if (((_a = navigator == null ? void 0 : navigator.clipboard) == null ? void 0 : _a.write) && typeof ClipboardItem !== "undefined") {
+        const payload = new ClipboardItem({
+          "text/html": new Blob([html2], { type: "text/html" }),
+          "text/plain": new Blob([src], { type: "text/plain" })
+        });
+        await navigator.clipboard.write([payload]);
+        return;
+      }
+    } catch (err) {
+    }
+    try {
+      await navigator.clipboard.writeText(src);
+    } catch (err) {
+    }
+  };
+  var VideoNodeView = ({ node, editor, getPos }) => {
+    var _a, _b;
+    const src = String(((_a = node == null ? void 0 : node.attrs) == null ? void 0 : _a.src) || "");
+    const canEdit = Boolean(editor == null ? void 0 : editor.isEditable);
+    const handleDelete = () => {
+      if (typeof getPos !== "function") return;
+      const pos = getPos();
+      editor.chain().focus().setNodeSelection(pos).deleteSelection().run();
+    };
+    return /* @__PURE__ */ jsx(NodeViewWrapper, { className: "memo-video-wrapper", children: /* @__PURE__ */ jsxs("div", { className: "memo-video-frame", children: [
+      /* @__PURE__ */ jsxs("div", { className: "memo-image-controls", children: [
+        /* @__PURE__ */ jsxs(
+          "button",
+          {
+            type: "button",
+            className: "block-delete-button memo-image-action",
+            title: "Copier",
+            onClick: (event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              copyVideoHtml(node.attrs || {});
+            },
+            children: [
+              /* @__PURE__ */ jsx("i", { "data-lucide": "copy", style: { display: "none" }, "aria-hidden": "true" }),
+              /* @__PURE__ */ jsx(Copy, { size: 14 })
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsxs(
+          "button",
+          {
+            type: "button",
+            className: "block-delete-button memo-image-action",
+            title: "Supprimer",
+            style: { display: canEdit ? "inline-flex" : "none" },
+            onClick: (event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              handleDelete();
+            },
+            children: [
+              /* @__PURE__ */ jsx("i", { "data-lucide": "trash-2", style: { display: "none" }, "aria-hidden": "true" }),
+              /* @__PURE__ */ jsx(Trash2, { size: 14 })
+            ]
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsx(
+        "video",
+        {
+          className: "memo-video",
+          src,
+          controls: true,
+          playsInline: true,
+          preload: "metadata",
+          title: String(((_b = node == null ? void 0 : node.attrs) == null ? void 0 : _b.title) || "")
+        }
+      )
+    ] }) });
+  };
+  var VideoEmbed = Node3.create({
+    name: "videoEmbed",
+    group: "block",
+    atom: true,
+    selectable: true,
+    draggable: true,
+    addAttributes() {
+      return {
+        src: { default: null },
+        title: { default: null },
+        fileName: { default: null },
+        mimeType: { default: null },
+        width: { default: null },
+        height: { default: null }
+      };
+    },
+    parseHTML() {
+      return [
+        { tag: "video[src]" }
+      ];
+    },
+    renderHTML({ HTMLAttributes }) {
+      return [
+        "video",
+        mergeAttributes(
+          {
+            controls: "true",
+            playsinline: "true",
+            preload: "metadata"
+          },
+          HTMLAttributes
+        )
+      ];
+    },
+    addNodeView() {
+      return ReactNodeViewRenderer(VideoNodeView);
+    }
+  });
+
   // src/memo-editor/simple-editor.tsx
   var CustomCode = Code.extend({
     excludes: "",
@@ -54705,7 +54857,7 @@ ${promptInput.trim()}`
       )) })
     ] });
   };
-  var Toolbar = ({ editor, onDropdownToggle, onLink, onInsertImage }) => {
+  var Toolbar = ({ editor, onDropdownToggle, onLink, onInsertImage, onInsertVideo }) => {
     const [, forceUpdate] = react_shim_default.useReducer((x) => x + 1, 0);
     const [showTextColors, setShowTextColors] = react_shim_default.useState(false);
     const toolbarRef = react_shim_default.useRef(null);
@@ -54950,6 +55102,21 @@ ${promptInput.trim()}`
             children: [
               /* @__PURE__ */ jsx("i", { "data-lucide": "image", style: { display: "none" }, "aria-hidden": "true" }),
               /* @__PURE__ */ jsx(Image2, { size: 16 })
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsxs(
+          "button",
+          {
+            className: "tiptap-button",
+            "aria-label": "Insert Video",
+            type: "button",
+            title: "Vid\xE9o (WebM/MP4)",
+            onMouseDown: (event) => event.preventDefault(),
+            onClick: onInsertVideo,
+            children: [
+              /* @__PURE__ */ jsx("i", { "data-lucide": "video", style: { display: "none" }, "aria-hidden": "true" }),
+              /* @__PURE__ */ jsx(Video, { size: 16 })
             ]
           }
         )
@@ -55517,6 +55684,7 @@ ${promptInput.trim()}`
           }
         }),
         CustomImage,
+        VideoEmbed,
         TableNode,
         TableRow,
         TableHeader,
@@ -55952,6 +56120,30 @@ ${promptInput.trim()}`
       document.body.appendChild(input);
       input.click();
     }, [insertImageFiles]);
+    const openVideoInsertDialog = react_shim_default.useCallback(() => {
+      if (!editor) return;
+      const raw = window.prompt("URL vid\xE9o (.webm ou .mp4)");
+      const value = String(raw || "").trim();
+      if (!value) return;
+      if (!/^https?:\/\//i.test(value) && !/^data:video\//i.test(value)) return;
+      if (!/(\.webm([?#].*)?$)|(\.mp4([?#].*)?$)|(^data:video\/(webm|mp4);)/i.test(value)) return;
+      const label = (() => {
+        if (/^data:video\//i.test(value)) return "video";
+        const withoutQuery = value.split("#")[0].split("?")[0];
+        const file = withoutQuery.split("/").pop() || "";
+        return file || "video";
+      })();
+      const mimeType = /\.mp4([?#].*)?$/i.test(value) ? "video/mp4" : "video/webm";
+      editor.chain().focus().insertContent({
+        type: "videoEmbed",
+        attrs: {
+          src: value,
+          title: label,
+          fileName: label,
+          mimeType
+        }
+      }).run();
+    }, [editor]);
     react_shim_default.useEffect(() => {
       if (!editor) return;
       editor.setEditable(Boolean(editable));
@@ -57241,6 +57433,45 @@ ${innerMarkdown}
                 wrapper.appendChild(el);
                 wrapper.appendChild(replayBtn);
               });
+              if (format === "html") {
+                doc3.querySelectorAll("a[href]").forEach((anchor) => {
+                  var _a2;
+                  const el = anchor;
+                  const href = String(el.getAttribute("href") || "").trim();
+                  const isWebm = /\.webm([?#].*)?$/i.test(href);
+                  const isMp4 = /\.mp4([?#].*)?$/i.test(href);
+                  if (!isWebm && !isMp4) return;
+                  const video = doc3.createElement("video");
+                  video.setAttribute("controls", "true");
+                  video.setAttribute("playsinline", "true");
+                  video.setAttribute("preload", "metadata");
+                  video.setAttribute("src", href);
+                  video.setAttribute("style", "display:block;max-width:100%;margin:20px auto;border-radius:10px;background:#000;");
+                  const source = doc3.createElement("source");
+                  source.setAttribute("src", href);
+                  source.setAttribute("type", isMp4 ? "video/mp4" : "video/webm");
+                  video.appendChild(source);
+                  const fallback = doc3.createElement("p");
+                  fallback.textContent = `Video: ${href}`;
+                  fallback.setAttribute("style", "font-size:12px;color:#6b7280;margin:8px 0 0 0;");
+                  const wrap2 = doc3.createElement("div");
+                  wrap2.appendChild(video);
+                  wrap2.appendChild(fallback);
+                  (_a2 = el.parentNode) == null ? void 0 : _a2.replaceChild(wrap2, el);
+                });
+              }
+              doc3.querySelectorAll("video").forEach((video) => {
+                const el = video;
+                el.setAttribute("controls", "true");
+                el.setAttribute("playsinline", "true");
+                el.setAttribute("preload", "metadata");
+                const style2 = el.style;
+                style2.display = "block";
+                style2.maxWidth = "100%";
+                style2.margin = "20px auto";
+                style2.borderRadius = "10px";
+                style2.background = "#000";
+              });
               doc3.querySelectorAll("hr").forEach((hr2) => {
                 const el = hr2;
                 el.style.border = "none";
@@ -57292,6 +57523,11 @@ ${innerMarkdown}
     }
     .html-email-export .gif-replay-wrap .gif-replay-button:hover {
       background: rgba(15, 23, 42, 0.52);
+    }
+    .html-email-export video {
+      width: 100%;
+      height: auto;
+      max-width: 100%;
     }
   </style>
   ${content2}
@@ -57829,7 +58065,8 @@ ${innerMarkdown}
               editor,
               onDropdownToggle: setIsDropdownOpen,
               onLink: () => setShowLinkModal(true),
-              onInsertImage: openImagePicker
+              onInsertImage: openImagePicker,
+              onInsertVideo: openVideoInsertDialog
             }
           ),
           /* @__PURE__ */ jsx(
@@ -58668,6 +58905,7 @@ lucide-react/dist/esm/icons/triangle-alert.js:
 lucide-react/dist/esm/icons/type.js:
 lucide-react/dist/esm/icons/underline.js:
 lucide-react/dist/esm/icons/undo-2.js:
+lucide-react/dist/esm/icons/video.js:
 lucide-react/dist/esm/icons/workflow.js:
 lucide-react/dist/esm/icons/x.js:
 lucide-react/dist/esm/lucide-react.js:
@@ -58688,3 +58926,4 @@ docx/dist/index.mjs:
    *)
   (*! http://mths.be/fromcodepoint v0.1.0 by @mathias *)
 */
+//# sourceMappingURL=memo.bundle.js.map
