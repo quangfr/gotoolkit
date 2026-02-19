@@ -99,7 +99,7 @@
                             <div class="field-row" id="openrouterOcrModelRow">
                                 <label style="width:100%">
                                     <span class="label-title">Modèle OCR</span>
-                                    <input id="openrouterOcrModelInput" type="text" placeholder="qwen/qwen-2.5-vl-7b-instruct" />
+                                    <input id="openrouterOcrModelInput" type="text" placeholder="qwen/qwen3-vl-8b-instruct" />
                                 </label>
                             </div>
                             <div class="field-row">

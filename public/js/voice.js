@@ -795,25 +795,33 @@
         return payload;
     }
 
+    function isRecordingCurrentMemo() {
+        return Boolean(
+            state.isRecording && state.currentMemoId && state.recordingMemoId && state.currentMemoId === state.recordingMemoId
+        );
+    }
+
+    function isRecordingAnotherMemoWithoutCurrentRecording() {
+        return Boolean(state.isRecording && !isRecordingCurrentMemo() && !state.currentMemoRecordingId);
+    }
+
     function buildButtonLabel() {
+        // Badge is tied to the active tab recording only (never to background conversions).
         const hasRecordingForCurrentMemo = Boolean(state.currentMemoRecordingId);
-        const shouldShowBadge = hasRecordingForCurrentMemo || state.conversionRunning;
-        const badgeClass = state.conversionRunning ? "chat-header-badge chat-header-badge--pending" : "chat-header-badge";
-        const badge = shouldShowBadge ? `<span class="${badgeClass}"></span>` : "";
+        const badge = hasRecordingForCurrentMemo ? '<span class="chat-header-badge"></span>' : "";
         if (state.isTranscribing) {
             return `<i data-lucide="loader-2" class="lucide-spin" style="width:14px;height:14px;"></i>${badge}`;
         }
         if (state.isRecording) {
-            const isRecordingCurrentMemo = Boolean(
-                state.currentMemoId && state.recordingMemoId && state.currentMemoId === state.recordingMemoId
-            );
-            if (!isRecordingCurrentMemo) {
-                if (state.currentMemoRecordingId) {
-                    const recordingIcon = state.currentMemoRecordingHasVideo ? "video" : "cassette-tape";
-                    return `<i data-lucide="${recordingIcon}"></i>${badge}`;
-                }
+            if (isRecordingAnotherMemoWithoutCurrentRecording()) {
                 const ongoingMemoName = state.recordingMemoName || "Autre onglet";
-                return `■ Arrêter (${ongoingMemoName})`;
+                const duration = Math.floor((Date.now() - state.recordingStartTime) / 1000);
+                const timeLabel = formatDuration(duration);
+                return `■ ${timeLabel} (${ongoingMemoName})`;
+            }
+            if (!isRecordingCurrentMemo()) {
+                const recordingIcon = state.currentMemoRecordingHasVideo ? "video" : "cassette-tape";
+                return `<i data-lucide="${recordingIcon}"></i>${badge}`;
             }
             const duration = Math.floor((Date.now() - state.recordingStartTime) / 1000);
             const timeLabel = formatDuration(duration);
@@ -829,10 +837,10 @@
     function updateButton() {
         if (!state.voiceButton) return;
         state.voiceButton.innerHTML = buildButtonLabel();
-        const isRecordingCurrentMemo = Boolean(
-            state.isRecording && state.currentMemoId && state.recordingMemoId && state.currentMemoId === state.recordingMemoId
+        state.voiceButton.classList.toggle(
+            "is-recording",
+            isRecordingCurrentMemo() || isRecordingAnotherMemoWithoutCurrentRecording()
         );
-        state.voiceButton.classList.toggle("is-recording", isRecordingCurrentMemo);
         if (window.lucide) lucide.createIcons();
     }
 

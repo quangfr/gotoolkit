@@ -851,8 +851,10 @@
 
     var MEDIA_AUDIO_EXTENSIONS = new Set(["mp3", "wav", "m4a", "aac", "ogg", "webm", "flac", "mp4"]);
     var MEDIA_VIDEO_EXTENSIONS = new Set(["mp4", "webm", "mov", "avi"]);
-    var MEDIA_MAX_BYTES = 5 * 1024 * 1024 * 1024;
-    var MEDIA_MAX_DURATION = 2 * 60 * 60;
+    var VISION_ATTACHMENT_EXTENSIONS = new Set(["png", "jpg", "jpeg", "gif", "webp", "bmp", "tif", "tiff", "svg", "webm", "mp4", "avi", "mov"]);
+    var CHAT_VISION_MODEL = "qwen/qwen3-vl-235b-a22b-instruct";
+    var MEDIA_MAX_BYTES = 3 * 1024 * 1024 * 1024;
+    var MEDIA_MAX_DURATION = 90 * 60;
 
     function isMediaFile(file) {
         if (!file) return false;
@@ -902,12 +904,12 @@
     async function validateMediaFile(file) {
         if (!file) return { ok: false, error: "Fichier manquant" };
         if (file.size > MEDIA_MAX_BYTES) {
-            return { ok: false, error: "Fichier trop volumineux (max 5 Go)" };
+            return { ok: false, error: "Fichier trop volumineux (max 3 Go)" };
         }
         try {
             var duration = await getMediaDuration(file);
             if (duration > MEDIA_MAX_DURATION) {
-                return { ok: false, error: "Durée > 2h" };
+                return { ok: false, error: "Durée > 1h30" };
             }
             return { ok: true, duration: duration };
         } catch (err) {
@@ -3042,7 +3044,8 @@
         }
         var payload = {
             stream: true,
-            messages: messages
+            messages: messages,
+            model: this.resolveModelForChatRequest(userMessage)
         };
 
         function appendToUser(text) {
@@ -3124,6 +3127,40 @@
         }
 
         return payload;
+    };
+
+    AssistSidebar.prototype.isVisionPreset = function (presetId) {
+        return presetId === "edit" || presetId === "advice" || presetId === "suggest";
+    };
+
+    AssistSidebar.prototype.isVisionAttachmentName = function (name) {
+        var ext = getFileExtension(name || "");
+        return VISION_ATTACHMENT_EXTENSIONS.has(ext);
+    };
+
+    AssistSidebar.prototype.hasVisionAttachments = function (names) {
+        if (!Array.isArray(names) || !names.length) return false;
+        for (var i = 0; i < names.length; i += 1) {
+            if (this.isVisionAttachmentName(names[i])) return true;
+        }
+        return false;
+    };
+
+    AssistSidebar.prototype.resolveModelForChatRequest = function (userMessage) {
+        if (!this.isVisionPreset(this.promptPresetId)) {
+            return global.GoToolkitIAConfig?.getOpenRouterModel?.() || "openai/gpt-oss-120b";
+        }
+        var attachmentNames = [];
+        if (Array.isArray(userMessage?.attachments)) {
+            attachmentNames = attachmentNames.concat(userMessage.attachments.filter(Boolean));
+        }
+        if (Array.isArray(this.pendingDocumentAttachments)) {
+            attachmentNames = attachmentNames.concat(this.pendingDocumentAttachments.filter(Boolean));
+        }
+        if (this.hasVisionAttachments(attachmentNames)) {
+            return CHAT_VISION_MODEL;
+        }
+        return global.GoToolkitIAConfig?.getOpenRouterModel?.() || "openai/gpt-oss-120b";
     };
 
     AssistSidebar.prototype.formatEntriesForPayload = function (entries) {
@@ -5188,7 +5225,7 @@
         }
 
         // Fallback to default if config not available
-        var fallback = "application/pdf,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx,application/vnd.openxmlformats-officedocument.presentationml.presentation,.pptx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,.xlsx,text/plain,.txt,text/markdown,.md,text/vtt,.vtt,application/json,.json,.hag,application/rtf,.rtf,application/msword,.doc,application/vnd.oasis.opendocument.text,.odt,application/vnd.oasis.opendocument.spreadsheet,.ods,audio/mpeg,.mp3,audio/wav,.wav,audio/mp4,.mp4,.m4a,audio/aac,.aac,audio/ogg,.ogg,audio/webm,.webm,audio/flac,.flac,video/mp4,video/webm,video/quicktime,.mov,video/x-msvideo,.avi";
+        var fallback = "application/pdf,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx,application/vnd.openxmlformats-officedocument.presentationml.presentation,.pptx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,.xlsx,text/plain,.txt,text/markdown,.md,text/vtt,.vtt,application/json,.json,.hag,application/rtf,.rtf,application/msword,.doc,application/vnd.oasis.opendocument.text,.odt,application/vnd.oasis.opendocument.spreadsheet,.ods,audio/mpeg,.mp3,audio/wav,.wav,audio/mp4,.mp4,.m4a,audio/aac,.aac,audio/ogg,.ogg,audio/webm,.webm,audio/flac,.flac,video/mp4,video/webm,video/quicktime,.mov,video/x-msvideo,.avi,image/png,.png,image/jpeg,.jpg,.jpeg,image/webp,.webp,image/gif,.gif,image/bmp,.bmp,image/tiff,.tif,.tiff";
         return fallback.split(",").filter(filterFn).join(",");
     };
 

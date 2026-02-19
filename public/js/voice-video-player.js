@@ -4,6 +4,18 @@
         "https://cdn.jsdelivr.net/npm/gifenc@1.0.3/+esm",
         "https://unpkg.com/gifenc@1.0.3/dist/gifenc.esm.js"
     ];
+    const FFMPEG_ESM_URLS = [
+        "https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/+esm",
+        "https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js"
+    ];
+    const FFMPEG_UTIL_ESM_URLS = [
+        "https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/+esm",
+        "https://unpkg.com/@ffmpeg/util@0.12.1/dist/esm/index.js"
+    ];
+    const FFMPEG_CORE_BASE_URLS = [
+        "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/esm",
+        "https://unpkg.com/@ffmpeg/core@0.12.10/dist/esm"
+    ];
     const VOICE_RECORDING_SPEED_STORAGE_KEY = "go-toolkit-voice-recording-speed";
 
     function normalizeVoiceRecordingSpeed(value) {
@@ -523,6 +535,8 @@
             this.videoBlobUrl = "";
             this._textTrackUrl = "";
             this._gifEncoderLibPromise = null;
+            this._ffmpegLoaderPromise = null;
+            this._ffmpeg = null;
             this._gifDownloading = false;
             this._gifPrebuildTimer = null;
             this._gifPrebuildPromise = null;
@@ -1292,6 +1306,119 @@
             return this._gifEncoderLibPromise;
         }
 
+        async _ensureFfmpegLib() {
+            if (this._ffmpegLoaderPromise) return this._ffmpegLoaderPromise;
+            this._ffmpegLoaderPromise = (async () => {
+                let ffmpegMod = null;
+                let utilMod = null;
+                let lastError = null;
+
+                for (let i = 0; i < FFMPEG_ESM_URLS.length; i += 1) {
+                    const ffmpegUrl = FFMPEG_ESM_URLS[i];
+                    const utilUrl = FFMPEG_UTIL_ESM_URLS[Math.min(i, FFMPEG_UTIL_ESM_URLS.length - 1)];
+                    try {
+                        // eslint-disable-next-line no-await-in-loop
+                        ffmpegMod = await import(/* @vite-ignore */ ffmpegUrl);
+                        // eslint-disable-next-line no-await-in-loop
+                        utilMod = await import(/* @vite-ignore */ utilUrl);
+                        if (ffmpegMod?.FFmpeg && utilMod?.toBlobURL) break;
+                    } catch (err) {
+                        lastError = err;
+                        ffmpegMod = null;
+                        utilMod = null;
+                    }
+                }
+
+                if (!ffmpegMod?.FFmpeg || !utilMod?.toBlobURL) {
+                    throw new Error(lastError?.message || "ffmpeg.wasm introuvable");
+                }
+
+                const FFmpeg = ffmpegMod.FFmpeg;
+                const toBlobURL = utilMod.toBlobURL;
+                if (!this._ffmpeg) this._ffmpeg = new FFmpeg();
+                if (typeof this._ffmpeg.loaded === "boolean" && this._ffmpeg.loaded) return this._ffmpeg;
+
+                let loadError = null;
+                for (let i = 0; i < FFMPEG_CORE_BASE_URLS.length; i += 1) {
+                    const baseUrl = FFMPEG_CORE_BASE_URLS[i];
+                    try {
+                        // toBlobURL keeps worker/core on same-origin blob URLs to avoid Worker CORS issues.
+                        // eslint-disable-next-line no-await-in-loop
+                        const coreURL = await toBlobURL(`${baseUrl}/ffmpeg-core.js`, "text/javascript");
+                        // eslint-disable-next-line no-await-in-loop
+                        const wasmURL = await toBlobURL(`${baseUrl}/ffmpeg-core.wasm`, "application/wasm");
+                        // eslint-disable-next-line no-await-in-loop
+                        const workerURL = await toBlobURL(`${baseUrl}/ffmpeg-core.worker.js`, "text/javascript");
+                        // eslint-disable-next-line no-await-in-loop
+                        await this._ffmpeg.load({ coreURL, wasmURL, workerURL });
+                        return this._ffmpeg;
+                    } catch (err) {
+                        loadError = err;
+                    }
+                }
+
+                throw new Error(loadError?.message || "Chargement ffmpeg impossible");
+            })().catch(err => {
+                this._ffmpegLoaderPromise = null;
+                throw err;
+            });
+
+            return this._ffmpegLoaderPromise;
+        }
+
+        async _buildMp4BlobWithFfmpegFallback() {
+            if (!this.videoBlobOriginal) return null;
+            const ffmpeg = await this._ensureFfmpegLib();
+
+            let inputBlob = null;
+            try {
+                inputBlob = await this._recordSegmentBlob(
+                    [
+                        "video/webm;codecs=vp9,opus",
+                        "video/webm;codecs=vp8,opus",
+                        "video/webm"
+                    ],
+                    "video/webm"
+                );
+            } catch (err) {
+                inputBlob = null;
+            }
+
+            if (!(inputBlob instanceof Blob) || inputBlob.size <= 0) {
+                inputBlob = this.videoBlobOriginal;
+            }
+            if (!(inputBlob instanceof Blob) || inputBlob.size <= 0) return null;
+
+            const stamp = `${Date.now()}-${Math.round(Math.random() * 1e6)}`;
+            const inputName = `input-${stamp}.webm`;
+            const outputName = `output-${stamp}.mp4`;
+            try {
+                await ffmpeg.writeFile(inputName, new Uint8Array(await inputBlob.arrayBuffer()));
+                const rc = await ffmpeg.exec([
+                    "-i", inputName,
+                    "-c:v", "libx264",
+                    "-preset", "veryfast",
+                    "-pix_fmt", "yuv420p",
+                    "-movflags", "+faststart",
+                    "-c:a", "aac",
+                    "-b:a", "128k",
+                    outputName
+                ]);
+                if (Number(rc) !== 0) return null;
+                const outputData = await ffmpeg.readFile(outputName);
+                const bytes = outputData instanceof Uint8Array
+                    ? outputData
+                    : new Uint8Array(outputData?.buffer || outputData || []);
+                if (!bytes.length) return null;
+                return new Blob([bytes], { type: "video/mp4" });
+            } catch (err) {
+                return null;
+            } finally {
+                try { await ffmpeg.deleteFile(inputName); } catch (err) { /* noop */ }
+                try { await ffmpeg.deleteFile(outputName); } catch (err) { /* noop */ }
+            }
+        }
+
         _getGifCacheKey() {
             if (!this.videoBlobOriginal) return "";
             const speed = this._getExportSpeed().toFixed(1);
@@ -1683,12 +1810,12 @@
                 // If source is already MP4, download as-is.
                 if ((this.videoBlobOriginal.type || "").includes("mp4")) return this.videoBlobOriginal;
                 const converted = await this._recordSegmentBlob(mp4MimeCandidates, "video/mp4");
-                if (!converted || !(converted.type || "").includes("mp4")) return null;
-                return converted;
+                if (converted && (converted.type || "").includes("mp4")) return converted;
+                return this._buildMp4BlobWithFfmpegFallback();
             }
             const trimmed = await this._recordSegmentBlob(mp4MimeCandidates, "video/mp4");
-            if (!trimmed || !(trimmed.type || "").includes("mp4")) return null;
-            return trimmed;
+            if (trimmed && (trimmed.type || "").includes("mp4")) return trimmed;
+            return this._buildMp4BlobWithFfmpegFallback();
         }
 
         async _recordSegmentBlob(preferredMimeTypes = [], fallbackType = "video/webm") {
