@@ -56170,8 +56170,6 @@ ${promptInput.trim()}`
     }, [insertImageFiles]);
     const openVideoInsertDialog = react_shim_default.useCallback(() => {
       if (!editor) return;
-      const raw = window.prompt("URL vid\xE9o (.webm ou .mp4). Laissez vide pour choisir un fichier.");
-      const value = String(raw || "").trim();
       const insertVideoFromSrc = (src, providedName, providedMimeType) => {
         const normalized = String(src || "").trim();
         if (!normalized) return;
@@ -56195,10 +56193,6 @@ ${promptInput.trim()}`
           }
         }).run();
       };
-      if (value) {
-        insertVideoFromSrc(value);
-        return;
-      }
       const input = document.createElement("input");
       input.type = "file";
       input.accept = "video/mp4,video/webm,.mp4,.webm";

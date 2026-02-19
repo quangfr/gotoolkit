@@ -2887,8 +2887,6 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
 
   const openVideoInsertDialog = React.useCallback(() => {
     if (!editor) return;
-    const raw = window.prompt('URL vidéo (.webm ou .mp4). Laissez vide pour choisir un fichier.');
-    const value = String(raw || '').trim();
     const insertVideoFromSrc = (src: string, providedName?: string, providedMimeType?: string) => {
       const normalized = String(src || '').trim();
       if (!normalized) return;
@@ -2920,11 +2918,6 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         })
         .run();
     };
-
-    if (value) {
-      insertVideoFromSrc(value);
-      return;
-    }
 
     const input = document.createElement('input');
     input.type = 'file';

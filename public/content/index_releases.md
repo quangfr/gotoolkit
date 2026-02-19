@@ -1,6 +1,6 @@
-## 2026-02-16
-- Voice : Télécharger l'enregistrement vidéo en GIF
-- Docs : Ajouter des images
+## 2026-02-19
+- Voice : Télécharger l'enregistrement vidéo
+- Docs : Ajouter des images et des vidéos
 
 ## 2026-02-16
 - Docs : Générer une synthèse vocale avec `Google TTS`
