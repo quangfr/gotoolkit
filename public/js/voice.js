@@ -812,7 +812,8 @@
                     const recordingIcon = state.currentMemoRecordingHasVideo ? "video" : "cassette-tape";
                     return `<i data-lucide="${recordingIcon}"></i>${badge}`;
                 }
-                return `<i data-lucide="video"></i>`;
+                const ongoingMemoName = state.recordingMemoName || "Autre onglet";
+                return `■ Arrêter (${ongoingMemoName})`;
             }
             const duration = Math.floor((Date.now() - state.recordingStartTime) / 1000);
             const timeLabel = formatDuration(duration);
@@ -939,7 +940,7 @@
         };
         window.addEventListener("pointerdown", onPointerDown, true);
 
-        const fps = 30;
+        const fps = 20;
         const composedStream = canvas.captureStream(fps);
         state.videoCompositorCanvas = canvas;
         state.videoCompositorStream = composedStream;
@@ -1266,6 +1267,12 @@
                     ...(videoTrackSource.getVideoTracks() || []),
                     ...(audioStream.getAudioTracks() || [])
                 ];
+                for (const track of combinedTracks) {
+                    if (track?.kind !== "video") continue;
+                    try {
+                        track.applyConstraints?.({ frameRate: 20 });
+                    } catch (err) { /* noop */ }
+                }
                 const combinedStream = new MediaStream(combinedTracks);
                 state.videoRecorder = new MediaRecorder(combinedStream);
                 state.videoRecorder.ondataavailable = event => {
@@ -1953,12 +1960,23 @@
                 await RECORDINGS_STORE.set(recording.id, updated);
                 recording.videoTranscriptSentences = sentences;
             };
+            state.videoModal.onVideoExportCacheUpdate = async exportCache => {
+                const updated = {
+                    ...recording,
+                    videoExportCache: exportCache || null,
+                    updatedAt: Date.now()
+                };
+                await RECORDINGS_STORE.set(recording.id, updated);
+                recording.videoExportCache = exportCache || null;
+            };
             state.videoModal.open({
                 videoBlob: modalVideoBlob,
                 sentences: recording.videoTranscriptSentences || [],
                 memoName,
                 youtubeUrl: recording.youtubeVideoUrl || "",
                 onTranscriptChange: state.videoModal.onTranscriptChange,
+                persistedVideoExports: recording.videoExportCache || null,
+                onVideoExportCacheUpdate: state.videoModal.onVideoExportCacheUpdate,
                 onCopyAudio: () => copyToClipboard(recording.audioTranscript || ""),
                 onCopyVideo: text => copyToClipboard(text || ""),
                 onPublish: async ({ videoBlob, vtt }) => {
@@ -2042,8 +2060,7 @@
             return;
         }
         if (state.isRecording) {
-            const memoLabel = state.recordingMemoName ? ` (${state.recordingMemoName})` : "";
-            showToast(`Enregistrement actif${memoLabel}.`, true);
+            stopRecording();
             return;
         }
         requestPermissionsThenOverlay();

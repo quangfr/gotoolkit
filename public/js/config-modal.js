@@ -141,6 +141,12 @@
                                 </select>
                             </label>
                         </div>
+                        <div class="field-row">
+                            <label style="width:100%">
+                                <span class="label-title">Vitesse d'enregistrement</span>
+                                <select id="voiceRecordingSpeedSelect"></select>
+                            </label>
+                        </div>
                     </div>
                     <div class="settings-tab-panel" data-panel="integrationsTab" hidden>
                         <div class="field-row">

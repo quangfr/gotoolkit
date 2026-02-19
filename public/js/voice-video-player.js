@@ -4,6 +4,39 @@
         "https://cdn.jsdelivr.net/npm/gifenc@1.0.3/+esm",
         "https://unpkg.com/gifenc@1.0.3/dist/gifenc.esm.js"
     ];
+    const FFMPEG_ESM_URLS = [
+        "https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js",
+        "https://esm.sh/@ffmpeg/ffmpeg@0.12.10"
+    ];
+    const FFMPEG_UTIL_ESM_URLS = [
+        "https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js",
+        "https://esm.sh/@ffmpeg/util@0.12.1"
+    ];
+    const FFMPEG_CORE_BASE_URL = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd";
+    const FFMPEG_CLASS_WORKER_URLS = [
+        "https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/worker.js",
+        "https://esm.sh/@ffmpeg/ffmpeg@0.12.10/dist/esm/worker.js"
+    ];
+    const VOICE_RECORDING_SPEED_STORAGE_KEY = "go-toolkit-voice-recording-speed";
+
+    function normalizeVoiceRecordingSpeed(value) {
+        const numeric = Number(value);
+        if (!Number.isFinite(numeric)) return 1.2;
+        const rounded = Math.round(numeric * 10) / 10;
+        return Math.min(4, Math.max(0.4, rounded));
+    }
+
+    function getConfiguredVoiceRecordingSpeed() {
+        const globalSpeed = window.GoToolkitVoiceRecordingSpeed;
+        if (globalSpeed != null) return normalizeVoiceRecordingSpeed(globalSpeed);
+        try {
+            const fromLocal = localStorage.getItem(VOICE_RECORDING_SPEED_STORAGE_KEY);
+            if (fromLocal) return normalizeVoiceRecordingSpeed(fromLocal);
+        } catch (err) { /* noop */ }
+        const fromConfig = window.GoToolkitSiteConfig?.get?.("voice.recordingSpeed", null);
+        if (fromConfig != null) return normalizeVoiceRecordingSpeed(fromConfig);
+        return 1.2;
+    }
 
     function ensureStyles() {
         if (document.getElementById(STYLE_ID)) return;
@@ -503,6 +536,7 @@
             this.videoBlobUrl = "";
             this._textTrackUrl = "";
             this._gifEncoderLibPromise = null;
+            this._ffmpegGifEnginePromise = null;
             this._gifDownloading = false;
             this._gifPrebuildTimer = null;
             this._gifPrebuildPromise = null;
@@ -512,6 +546,8 @@
             this._mp4PrebuildPromise = null;
             this._mp4PrebuildPromiseKey = "";
             this._mp4LastBuildSeconds = 0;
+            this._persistedExportCaches = { gifByKey: {}, mp4ByKey: {} };
+            this.onVideoExportCacheUpdate = null;
             this._toastTimer = null;
             ensureStyles();
             this._buildDom();
@@ -705,6 +741,10 @@
                 this._closeDownloadDropdown();
                 await this._handleDownloadGif();
             });
+            window.addEventListener("go-toolkit:voice-recording-speed-changed", event => {
+                const nextSpeed = normalizeVoiceRecordingSpeed(event?.detail?.speed);
+                this.setPlaybackRate(nextSpeed, { emitChange: false });
+            });
             this.cutButton?.addEventListener("click", () => {
                 this._toggleCutMode();
             });
@@ -826,35 +866,111 @@
             return `${baseName}-${stamp}${cutSuffix}.${ext}`;
         }
 
-        _getGifExportConfig(sourceWidth, sourceHeight, duration) {
+        _triggerBlobDownload(blob, filename) {
+            if (!(blob instanceof Blob) || blob.size <= 0) return false;
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = filename;
+            a.style.display = "none";
+            document.body.appendChild(a);
+            let triggered = false;
+            try {
+                a.click();
+                triggered = true;
+            } catch (err) {
+                triggered = false;
+            }
+            if (!triggered) {
+                try {
+                    const evt = new MouseEvent("click", { bubbles: true, cancelable: true, view: window });
+                    a.dispatchEvent(evt);
+                    triggered = true;
+                } catch (err) {
+                    triggered = false;
+                }
+            }
+            document.body.removeChild(a);
+            // Keep URL alive longer to avoid early revoke races on some browsers.
+            setTimeout(() => {
+                try { URL.revokeObjectURL(url); } catch (err) { /* noop */ }
+            }, 30000);
+            if (!triggered) {
+                try {
+                    window.open(url, "_blank", "noopener,noreferrer");
+                    triggered = true;
+                } catch (err) {
+                    triggered = false;
+                }
+            }
+            return triggered;
+        }
+
+        async _prepareSaveTarget(ext, isCut = false) {
+            if (typeof window === "undefined" || typeof window.showSaveFilePicker !== "function") return null;
+            const extension = String(ext || "").toLowerCase();
+            const mimeByExt = {
+                webm: "video/webm",
+                mp4: "video/mp4",
+                gif: "image/gif"
+            };
+            const mime = mimeByExt[extension] || "application/octet-stream";
+            const suggestedName = this._buildExportFilename(extension || "bin", isCut);
+            try {
+                const handle = await window.showSaveFilePicker({
+                    suggestedName,
+                    types: [{
+                        description: `${extension.toUpperCase()} file`,
+                        accept: { [mime]: [`.${extension}`] }
+                    }]
+                });
+                return { handle, suggestedName };
+            } catch (err) {
+                if (err?.name === "AbortError") return { aborted: true, suggestedName };
+                return { handle: null, suggestedName };
+            }
+        }
+
+        async _writeBlobToSaveTarget(saveTarget, blob) {
+            if (!saveTarget?.handle || !(blob instanceof Blob) || blob.size <= 0) return false;
+            try {
+                const writer = await saveTarget.handle.createWritable();
+                await writer.write(blob);
+                await writer.close();
+                return true;
+            } catch (err) {
+                return false;
+            }
+        }
+
+        _getGifExportConfig(sourceWidth, sourceHeight, duration, speed = this._getExportSpeed()) {
             const safeWidth = Math.max(1, Number(sourceWidth) || 640);
             const safeHeight = Math.max(1, Number(sourceHeight) || 360);
             const safeDuration = Math.max(0.1, Number(duration) || 0.1);
+            const safeSpeed = Math.min(4, Math.max(0.4, Number(speed) || 1.2));
+            const exportDuration = Math.max(0.05, safeDuration / safeSpeed);
 
             // Balanced profile: smaller canvas, keep decent motion quality.
-            const width = Math.min(800, safeWidth);
+            const width = Math.min(1280, safeWidth);
             const height = Math.max(2, Math.round((safeHeight / safeWidth) * width));
 
-            let fps = 7;
-            if (safeDuration <= 8) fps = 10;
-            else if (safeDuration <= 20) fps = 8;
-            else if (safeDuration > 45) fps = 6;
-
-            // Slightly less aggressive compression than strict size mode.
-            let frameCap = 300;
-            if (safeDuration > 25) frameCap = 260;
-            if (safeDuration > 45) frameCap = 220;
-            const frameCount = Math.max(1, Math.min(frameCap, Math.ceil(safeDuration * fps)));
+            const fps = 10;
+            const frameCount = Math.max(1, Math.ceil(exportDuration * fps));
             const delay = Math.round(1000 / fps);
 
             return { width, height, fps, delay, frameCount };
         }
 
+        _getExportSpeed() {
+            return this._getSelectedSpeed();
+        }
+
         _estimateGifBytes() {
             const duration = this._hasCutRange() ? Math.max(0.1, this.cutEnd - this.cutStart) : Math.max(0.1, this.videoEl?.duration || 0);
+            const speed = this._getExportSpeed();
             const sourceWidth = this.videoEl?.videoWidth || 640;
             const sourceHeight = this.videoEl?.videoHeight || 360;
-            const { width: targetWidth, height: targetHeight, frameCount: frames } = this._getGifExportConfig(sourceWidth, sourceHeight, duration);
+            const { width: targetWidth, height: targetHeight, frameCount: frames } = this._getGifExportConfig(sourceWidth, sourceHeight, duration, speed);
             // Heuristic average bytes/frame for GIF with moderate quality
             const bytesPerFrame = Math.max(2500, Math.round((targetWidth * targetHeight) / 18));
             return frames * bytesPerFrame;
@@ -862,9 +978,10 @@
 
         _estimateGifBuildSeconds() {
             const duration = this._hasCutRange() ? Math.max(0.1, this.cutEnd - this.cutStart) : Math.max(0.1, this.videoEl?.duration || 0);
+            const speed = this._getExportSpeed();
             const sourceWidth = this.videoEl?.videoWidth || 640;
             const sourceHeight = this.videoEl?.videoHeight || 360;
-            const { width, height, frameCount } = this._getGifExportConfig(sourceWidth, sourceHeight, duration);
+            const { width, height, frameCount } = this._getGifExportConfig(sourceWidth, sourceHeight, duration, speed);
             const mpix = (width * height) / 1000000;
             const workers = Math.max(1, Math.min(4, (navigator?.hardwareConcurrency || 4) - 1));
             // Deliberately conservative: user requested estimate to be much higher.
@@ -882,23 +999,89 @@
 
         _estimateMp4BuildSeconds() {
             if (this._mp4LastBuildSeconds > 0) return this._mp4LastBuildSeconds;
+            const speed = this._getExportSpeed();
             const duration = this._hasCutRange()
                 ? Math.max(0.1, this.cutEnd - this.cutStart)
                 : Math.max(0.1, this.videoEl?.duration || 0);
+            const effectiveDuration = Math.max(0.05, duration / speed);
             const sourceWidth = this.videoEl?.videoWidth || 640;
             const sourceHeight = this.videoEl?.videoHeight || 360;
             const mpix = (sourceWidth * sourceHeight) / 1000000;
             const workers = Math.max(1, Math.min(4, (navigator?.hardwareConcurrency || 4) - 1));
-            const baseSeconds = 2 + ((duration * Math.max(0.6, mpix)) / Math.max(1, workers * 0.9));
+            const baseSeconds = 2 + ((effectiveDuration * Math.max(0.6, mpix)) / Math.max(1, workers * 0.9));
             return Math.max(1, Math.round(baseSeconds));
         }
 
         _getMp4CacheKey() {
             if (!this.videoBlobOriginal) return "";
+            const speed = this._getExportSpeed().toFixed(1);
             const bounds = this._hasCutRange()
                 ? `${this.cutStart.toFixed(3)}:${this.cutEnd.toFixed(3)}`
                 : `0:${(this.videoEl?.duration || 0).toFixed(3)}`;
-            return `${bounds}:${this.videoBlobOriginal.size}:${this.videoBlobOriginal.type || "video/webm"}`;
+            return `${bounds}:speed=${speed}:${this.videoBlobOriginal.size}:${this.videoBlobOriginal.type || "video/webm"}`;
+        }
+
+        _normalizeExportCaches(raw) {
+            const source = raw && typeof raw === "object" ? raw : {};
+            const normalized = {
+                gifByKey: {},
+                mp4ByKey: {}
+            };
+            const gifEntries = source.gifByKey && typeof source.gifByKey === "object" ? source.gifByKey : {};
+            const mp4Entries = source.mp4ByKey && typeof source.mp4ByKey === "object" ? source.mp4ByKey : {};
+            Object.keys(gifEntries).forEach(key => {
+                if (!key) return;
+                const value = gifEntries[key];
+                if (value instanceof Blob) normalized.gifByKey[key] = value;
+            });
+            Object.keys(mp4Entries).forEach(key => {
+                if (!key) return;
+                const value = mp4Entries[key];
+                if (value instanceof Blob) normalized.mp4ByKey[key] = value;
+            });
+            return normalized;
+        }
+
+        _getPersistedBlob(kind, cacheKey) {
+            if (!cacheKey) return null;
+            const bucket = kind === "mp4" ? "mp4ByKey" : "gifByKey";
+            const map = this._persistedExportCaches?.[bucket];
+            const value = map?.[cacheKey];
+            return value instanceof Blob ? value : null;
+        }
+
+        _persistExportBlob(kind, cacheKey, blob) {
+            if (!cacheKey || !(blob instanceof Blob)) return;
+            const bucket = kind === "mp4" ? "mp4ByKey" : "gifByKey";
+            if (!this._persistedExportCaches || typeof this._persistedExportCaches !== "object") {
+                this._persistedExportCaches = { gifByKey: {}, mp4ByKey: {} };
+            }
+            if (!this._persistedExportCaches[bucket] || typeof this._persistedExportCaches[bucket] !== "object") {
+                this._persistedExportCaches[bucket] = {};
+            }
+            this._persistedExportCaches[bucket][cacheKey] = blob;
+            if (typeof this.onVideoExportCacheUpdate === "function") {
+                const snapshot = {
+                    gifByKey: { ...this._persistedExportCaches.gifByKey },
+                    mp4ByKey: { ...this._persistedExportCaches.mp4ByKey }
+                };
+                Promise.resolve(this.onVideoExportCacheUpdate(snapshot)).catch(() => null);
+            }
+        }
+
+        _restorePersistedExportCachesForCurrentKey() {
+            const gifKey = this._getGifCacheKey();
+            const gifBlob = this._getPersistedBlob("gif", gifKey);
+            if (gifBlob) {
+                this._gifBlobCache = gifBlob;
+                this._gifBlobCacheKey = gifKey;
+            }
+            const mp4Key = this._getMp4CacheKey();
+            const mp4Blob = this._getPersistedBlob("mp4", mp4Key);
+            if (mp4Blob) {
+                this._mp4BlobCache = mp4Blob;
+                this._mp4BlobCacheKey = mp4Key;
+            }
         }
 
         _getGifStatus() {
@@ -1018,6 +1201,7 @@
 
         async _startGifPrebuildInBackground() {
             if (!this.videoBlobOriginal || this._gifDownloading) return;
+            this._restorePersistedExportCachesForCurrentKey();
             const cacheKey = this._getGifCacheKey();
             if (!cacheKey) return;
             if (this._gifBlobCache && this._gifBlobCacheKey === cacheKey) return;
@@ -1031,6 +1215,7 @@
                     if (blob && this.videoBlobOriginal && this._getGifCacheKey() === cacheKey) {
                         this._gifBlobCache = blob;
                         this._gifBlobCacheKey = cacheKey;
+                        this._persistExportBlob("gif", cacheKey, blob);
                     }
                 } catch (err) {
                     // Background warmup intentionally silent.
@@ -1052,6 +1237,7 @@
 
         async _startMp4PrebuildInBackground() {
             if (!this.videoBlobOriginal || this._gifDownloading) return;
+            this._restorePersistedExportCachesForCurrentKey();
             const cacheKey = this._getMp4CacheKey();
             if (!cacheKey) return;
             if (this._mp4BlobCache && this._mp4BlobCacheKey === cacheKey) return this._mp4BlobCache;
@@ -1066,6 +1252,7 @@
                     if (blob && this.videoBlobOriginal && this._getMp4CacheKey() === cacheKey) {
                         this._mp4BlobCache = blob;
                         this._mp4BlobCacheKey = cacheKey;
+                        this._persistExportBlob("mp4", cacheKey, blob);
                         const endedAt = (typeof performance !== "undefined" && performance.now) ? performance.now() : Date.now();
                         this._mp4LastBuildSeconds = Math.max(1, Math.round((endedAt - startedAt) / 1000));
                     }
@@ -1111,15 +1298,69 @@
             return this._gifEncoderLibPromise;
         }
 
+        async _importFirstAvailable(urls = []) {
+            let lastError = null;
+            for (let i = 0; i < urls.length; i += 1) {
+                try {
+                    // eslint-disable-next-line no-await-in-loop
+                    return await import(/* @vite-ignore */ urls[i]);
+                } catch (err) {
+                    lastError = err;
+                }
+            }
+            throw new Error(lastError?.message || "Module introuvable");
+        }
+
+        async _toBlobUrlFirstAvailable(toBlobURL, urls = [], mimeType = "text/javascript") {
+            let lastError = null;
+            for (let i = 0; i < urls.length; i += 1) {
+                try {
+                    // eslint-disable-next-line no-await-in-loop
+                    return await toBlobURL(urls[i], mimeType);
+                } catch (err) {
+                    lastError = err;
+                }
+            }
+            throw new Error(lastError?.message || "URL blob introuvable");
+        }
+
+        async _ensureFfmpegGifEngine() {
+            if (this._ffmpegGifEnginePromise) return this._ffmpegGifEnginePromise;
+            this._ffmpegGifEnginePromise = (async () => {
+                const ffmpegMod = await this._importFirstAvailable(FFMPEG_ESM_URLS);
+                const utilMod = await this._importFirstAvailable(FFMPEG_UTIL_ESM_URLS);
+                const FFmpegCtor = ffmpegMod?.FFmpeg;
+                const toBlobURL = utilMod?.toBlobURL;
+                const fetchFile = utilMod?.fetchFile;
+                if (!FFmpegCtor || !toBlobURL || !fetchFile) {
+                    throw new Error("ffmpeg.wasm indisponible");
+                }
+                const ffmpeg = new FFmpegCtor();
+                const classWorkerURL = await this._toBlobUrlFirstAvailable(
+                    toBlobURL,
+                    FFMPEG_CLASS_WORKER_URLS,
+                    "text/javascript"
+                );
+                await ffmpeg.load({
+                    coreURL: await toBlobURL(`${FFMPEG_CORE_BASE_URL}/ffmpeg-core.js`, "text/javascript"),
+                    wasmURL: await toBlobURL(`${FFMPEG_CORE_BASE_URL}/ffmpeg-core.wasm`, "application/wasm"),
+                    workerURL: classWorkerURL
+                });
+                return { ffmpeg, fetchFile };
+            })();
+            return this._ffmpegGifEnginePromise;
+        }
+
         _getGifCacheKey() {
             if (!this.videoBlobOriginal) return "";
+            const speed = this._getExportSpeed().toFixed(1);
             const bounds = this._hasCutRange()
                 ? `${this.cutStart.toFixed(3)}:${this.cutEnd.toFixed(3)}`
                 : `0:${(this.videoEl?.duration || 0).toFixed(3)}`;
-            return `${bounds}:${this.videoBlobOriginal.size}:${this.videoBlobOriginal.type || "video/webm"}`;
+            return `${bounds}:speed=${speed}:${this.videoBlobOriginal.size}:${this.videoBlobOriginal.type || "video/webm"}`;
         }
 
-        async _buildGifBlob() {
+        async _buildGifBlobWithGifenc() {
             if (!this.videoBlobOriginal) return null;
             console.info("[GoToolkit GIF] build start");
             const gifLib = await this._ensureGifEncoderLib();
@@ -1151,9 +1392,10 @@
             const end = this._hasCutRange()
                 ? Math.max(start + 0.05, Math.min(duration, this.cutEnd || duration))
                 : duration;
+            const exportSpeed = this._getExportSpeed();
             const sourceWidth = video.videoWidth || 640;
             const sourceHeight = video.videoHeight || 360;
-            const exportConfig = this._getGifExportConfig(sourceWidth, sourceHeight, end - start);
+            const exportConfig = this._getGifExportConfig(sourceWidth, sourceHeight, end - start, exportSpeed);
             const { width, height, fps, delay, frameCount } = exportConfig;
             const canvas = document.createElement("canvas");
             canvas.width = width;
@@ -1163,6 +1405,8 @@
                 URL.revokeObjectURL(sourceUrl);
                 throw new Error("Canvas indisponible");
             }
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = "high";
             const seekTo = time => new Promise(resolve => {
                 const bounded = Math.max(0, Math.min(duration, time));
                 if (Math.abs((video.currentTime || 0) - bounded) < 0.001) {
@@ -1184,13 +1428,13 @@
 
             const gif = GIFEncoder();
             for (let i = 0; i < frameCount; i += 1) {
-                const t = Math.min(end, start + (i / fps));
+                const t = Math.min(end, start + ((i / fps) * exportSpeed));
                 // eslint-disable-next-line no-await-in-loop
                 await seekTo(t);
                 ctx.drawImage(video, 0, 0, width, height);
                 const imageData = ctx.getImageData(0, 0, width, height);
                 const rgba = imageData.data;
-                const palette = quantize(rgba, 128, { format: "rgb565" });
+                const palette = quantize(rgba, 256, { format: "rgb565" });
                 const index = applyPalette(rgba, palette, "rgb565");
                 gif.writeFrame(index, width, height, {
                     palette,
@@ -1204,12 +1448,71 @@
             return blob;
         }
 
+        async _buildGifBlobWithFfmpeg() {
+            if (!this.videoBlobOriginal) return null;
+            const { ffmpeg, fetchFile } = await this._ensureFfmpegGifEngine();
+            const inName = "input.webm";
+            const paletteName = "palette.png";
+            const outName = "output.gif";
+            const durationTotal = Math.max(0, this.videoEl?.duration || 0);
+            const start = this._hasCutRange() ? Math.max(0, Math.min(durationTotal, this.cutStart || 0)) : 0;
+            const end = this._hasCutRange()
+                ? Math.max(start + 0.05, Math.min(durationTotal, this.cutEnd || durationTotal))
+                : durationTotal;
+            const clipDuration = Math.max(0.05, end - start);
+            const exportSpeed = this._getExportSpeed();
+            const sourceWidth = this.videoEl?.videoWidth || 640;
+            const sourceHeight = this.videoEl?.videoHeight || 360;
+            const { width, fps } = this._getGifExportConfig(sourceWidth, sourceHeight, clipDuration, exportSpeed);
+            const baseFilter = `setpts=PTS/${exportSpeed},fps=${fps},scale=${width}:-1:flags=lanczos`;
+            const cutArgs = this._hasCutRange()
+                ? ["-ss", start.toFixed(3), "-t", clipDuration.toFixed(3)]
+                : [];
+
+            await ffmpeg.writeFile(inName, await fetchFile(this.videoBlobOriginal));
+            await ffmpeg.exec([
+                ...cutArgs,
+                "-i", inName,
+                "-vf", `${baseFilter},palettegen=stats_mode=diff`,
+                "-y",
+                paletteName
+            ]);
+            await ffmpeg.exec([
+                ...cutArgs,
+                "-i", inName,
+                "-i", paletteName,
+                "-lavfi", `${baseFilter}[x];[x][1:v]paletteuse=dither=sierra2_4a`,
+                "-y",
+                outName
+            ]);
+            const data = await ffmpeg.readFile(outName);
+            const bytes = data?.buffer ? data : new Uint8Array(data || []);
+            const blob = new Blob([bytes], { type: "image/gif" });
+            try { await ffmpeg.deleteFile(inName); } catch (err) { /* noop */ }
+            try { await ffmpeg.deleteFile(paletteName); } catch (err) { /* noop */ }
+            try { await ffmpeg.deleteFile(outName); } catch (err) { /* noop */ }
+            return blob;
+        }
+
+        async _buildGifBlob() {
+            try {
+                const blob = await this._buildGifBlobWithFfmpeg();
+                if (blob instanceof Blob && blob.size > 0) return blob;
+            } catch (err) {
+                console.warn("[GoToolkit GIF] ffmpeg fallback to gifenc", err);
+            }
+            return this._buildGifBlobWithGifenc();
+        }
+
         async _handleDownloadGif() {
             if (!this.videoBlobOriginal) return;
             if (this._gifDownloading) return;
             console.info("[GoToolkit GIF] download requested");
             this._setGifDownloadLoading(true);
             try {
+                const saveTarget = await this._prepareSaveTarget("gif", this._hasCutRange());
+                if (saveTarget?.aborted) return;
+                this._restorePersistedExportCachesForCurrentKey();
                 const cacheKey = this._getGifCacheKey();
                 let gifBlob = null;
                 if (this._gifBlobCache && this._gifBlobCacheKey === cacheKey) {
@@ -1223,18 +1526,19 @@
                     gifBlob = await this._buildGifBlob();
                     this._gifBlobCache = gifBlob;
                     this._gifBlobCacheKey = cacheKey;
+                    this._persistExportBlob("gif", cacheKey, gifBlob);
                 }
-                if (!gifBlob) return;
-                const url = URL.createObjectURL(gifBlob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = this._buildExportFilename("gif", this._hasCutRange());
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                setTimeout(() => {
-                    try { URL.revokeObjectURL(url); } catch (err) { /* noop */ }
-                }, 500);
+                if (!(gifBlob instanceof Blob) || gifBlob.size <= 0) {
+                    throw new Error("GIF invalide");
+                }
+                const savedViaHandle = await this._writeBlobToSaveTarget(saveTarget, gifBlob);
+                const triggered = savedViaHandle || this._triggerBlobDownload(
+                    gifBlob,
+                    saveTarget?.suggestedName || this._buildExportFilename("gif", this._hasCutRange())
+                );
+                if (!triggered) {
+                    throw new Error("Téléchargement GIF bloqué");
+                }
                 console.info("[GoToolkit GIF] download triggered");
                 this._showToast("GIF téléchargé");
             } catch (err) {
@@ -1357,6 +1661,7 @@
             this._mp4PrebuildPromise = null;
             this._mp4PrebuildPromiseKey = "";
             this._mp4LastBuildSeconds = 0;
+            this._restorePersistedExportCachesForCurrentKey();
             this._updateConversionBadges();
             this._refreshDropdownStatusesIfOpen();
             if (this.transcriptList) this._renderSentences();
@@ -1389,25 +1694,30 @@
 
         async _handleDownloadVideoWebm() {
             if (!this.videoBlobOriginal) return;
+            const blobExt = ((this.videoBlobOriginal.type || "").includes("mp4")) ? "mp4" : "webm";
+            const saveTarget = await this._prepareSaveTarget(blobExt, this._hasCutRange());
+            if (saveTarget?.aborted) return;
             const blob = await this._getOutputBlob().catch(() => this.videoBlobOriginal);
             if (!blob) return;
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
             const ext = (blob.type || "").includes("webm") ? "webm" : ((blob.type || "").includes("mp4") ? "mp4" : "webm");
-            a.download = this._buildExportFilename(ext, this._hasCutRange());
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            setTimeout(() => {
-                try { URL.revokeObjectURL(url); } catch (err) { /* noop */ }
-            }, 500);
+            const savedViaHandle = await this._writeBlobToSaveTarget(saveTarget, blob);
+            const triggered = savedViaHandle || this._triggerBlobDownload(
+                blob,
+                saveTarget?.suggestedName || this._buildExportFilename(ext, this._hasCutRange())
+            );
+            if (!triggered) {
+                this._showToast("Téléchargement bloqué par le navigateur", true);
+                return;
+            }
             this._showToast("Vidéo WebM téléchargée");
         }
 
         async _handleDownloadVideoMp4() {
             if (!this.videoBlobOriginal) return;
             try {
+                const saveTarget = await this._prepareSaveTarget("mp4", this._hasCutRange());
+                if (saveTarget?.aborted) return;
+                this._restorePersistedExportCachesForCurrentKey();
                 const cacheKey = this._getMp4CacheKey();
                 const startedAt = (typeof performance !== "undefined" && performance.now) ? performance.now() : Date.now();
                 let blob = null;
@@ -1424,6 +1734,7 @@
                     if (blob) {
                         this._mp4BlobCache = blob;
                         this._mp4BlobCacheKey = cacheKey;
+                        this._persistExportBlob("mp4", cacheKey, blob);
                     }
                 }
                 if (!blob) {
@@ -1432,16 +1743,15 @@
                 }
                 const endedAt = (typeof performance !== "undefined" && performance.now) ? performance.now() : Date.now();
                 this._mp4LastBuildSeconds = Math.max(1, Math.round((endedAt - startedAt) / 1000));
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = this._buildExportFilename("mp4", this._hasCutRange());
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                setTimeout(() => {
-                    try { URL.revokeObjectURL(url); } catch (err) { /* noop */ }
-                }, 500);
+                const savedViaHandle = await this._writeBlobToSaveTarget(saveTarget, blob);
+                const triggered = savedViaHandle || this._triggerBlobDownload(
+                    blob,
+                    saveTarget?.suggestedName || this._buildExportFilename("mp4", this._hasCutRange())
+                );
+                if (!triggered) {
+                    this._showToast("Téléchargement bloqué par le navigateur", true);
+                    return;
+                }
                 this._showToast("Vidéo MP4 téléchargée");
             } catch (err) {
                 this._showToast("Conversion MP4 impossible sur ce navigateur", true);
@@ -1450,7 +1760,8 @@
 
         async _getOutputBlob() {
             if (!this.videoBlobOriginal || !this._hasCutRange()) return this.videoBlobOriginal;
-            const key = `${this.cutStart.toFixed(3)}:${this.cutEnd.toFixed(3)}:${this.videoBlobOriginal.size}:${this.videoBlobOriginal.type || "video/webm"}`;
+            const speed = this._getExportSpeed().toFixed(1);
+            const key = `${this.cutStart.toFixed(3)}:${this.cutEnd.toFixed(3)}:speed=${speed}:${this.videoBlobOriginal.size}:${this.videoBlobOriginal.type || "video/webm"}`;
             if (this._trimmedBlob && this._trimCacheKey === key) {
                 return this._trimmedBlob;
             }
@@ -1518,6 +1829,8 @@
             const duration = sourceVideo.duration || 0;
             const start = Math.max(0, Math.min(duration, this.cutStart || 0));
             const end = Math.max(start + 0.05, Math.min(duration, this.cutEnd || duration));
+            const exportSpeed = this._getExportSpeed();
+            sourceVideo.playbackRate = exportSpeed;
             const stream = sourceVideo.captureStream ? sourceVideo.captureStream() : (sourceVideo.mozCaptureStream ? sourceVideo.mozCaptureStream() : null);
             if (!stream) {
                 URL.revokeObjectURL(sourceUrl);
@@ -1655,27 +1968,27 @@
         _populateSpeedOptions() {
             if (!this.speedSelect) return;
             this.speedSelect.innerHTML = "";
-            for (let speed = 0.5; speed <= 2.001; speed += 0.1) {
+            for (let speed = 0.4; speed <= 4.001; speed += 0.2) {
                 const normalized = Math.round(speed * 10) / 10;
                 const option = document.createElement("option");
                 option.value = normalized.toFixed(1);
                 option.textContent = `${normalized.toFixed(1)}x`;
                 this.speedSelect.appendChild(option);
             }
-            this.speedSelect.value = "1.2";
+            this.speedSelect.value = normalizeVoiceRecordingSpeed(getConfiguredVoiceRecordingSpeed()).toFixed(1);
         }
 
         _getSelectedSpeed() {
             if (!this.speedSelect) return 1.2;
             const numeric = parseFloat(this.speedSelect.value);
             if (!Number.isFinite(numeric)) return 1.2;
-            return Math.min(2, Math.max(0.5, Math.round(numeric * 10) / 10));
+            return Math.min(4, Math.max(0.4, Math.round(numeric * 10) / 10));
         }
 
         setPlaybackRate(value, { emitChange = false } = {}) {
             if (!this.speedSelect) return;
             const numeric = Number(value);
-            const normalized = Math.min(2, Math.max(0.5, Math.round((Number.isFinite(numeric) ? numeric : 1.2) * 10) / 10));
+            const normalized = Math.min(4, Math.max(0.4, Math.round((Number.isFinite(numeric) ? numeric : 1.2) * 10) / 10));
             this.speedSelect.value = normalized.toFixed(1);
             this._applyPlaybackRate(emitChange);
         }
@@ -1684,6 +1997,8 @@
             if (!this.videoEl) return;
             const rate = this._getSelectedSpeed();
             this.videoEl.playbackRate = rate;
+            this._updateConversionBadges();
+            this._refreshDropdownStatusesIfOpen();
             if (emitChange && typeof this.onPlaybackRateChange === "function") {
                 this.onPlaybackRateChange(rate);
             }
@@ -1981,7 +2296,20 @@
         }
 
         open(options = {}) {
-            const { videoBlob, sentences = [], onTranscriptChange, onTranscriptSaved, memoName = "", onDelete, onCopyAudio, onCopyVideo, onPublish = null, youtubeUrl = "" } = options;
+            const {
+                videoBlob,
+                sentences = [],
+                onTranscriptChange,
+                onTranscriptSaved,
+                memoName = "",
+                onDelete,
+                onCopyAudio,
+                onCopyVideo,
+                onPublish = null,
+                youtubeUrl = "",
+                persistedVideoExports = null,
+                onVideoExportCacheUpdate = null
+            } = options;
             if (!videoBlob) return;
             this.onTranscriptChange = typeof onTranscriptChange === "function" ? onTranscriptChange : null;
             this.onTranscriptSaved = typeof onTranscriptSaved === "function" ? onTranscriptSaved : null;
@@ -1989,12 +2317,16 @@
             this.onCopyAudio = typeof onCopyAudio === "function" ? onCopyAudio : null;
             this.onCopyVideo = typeof onCopyVideo === "function" ? onCopyVideo : null;
             this.onPublish = typeof onPublish === "function" ? onPublish : null;
+            this.onVideoExportCacheUpdate = typeof onVideoExportCacheUpdate === "function" ? onVideoExportCacheUpdate : null;
+            this._persistedExportCaches = this._normalizeExportCaches(persistedVideoExports);
             this.setYoutubeUrl(youtubeUrl);
             this._normalizeSentences(sentences);
             this._renderSentences();
             this._applyVideoBlob(videoBlob);
             this.memoName = memoName || "";
+            this.setPlaybackRate(getConfiguredVoiceRecordingSpeed(), { emitChange: false });
             this._syncCutUiState();
+            this._restorePersistedExportCachesForCurrentKey();
             this._closeDownloadDropdown();
             this._setGifDownloadLoading(false);
             this.overlay.classList.add("voice-video-player-modal--open");
@@ -2037,6 +2369,8 @@
             this._mp4BlobCache = null;
             this._mp4BlobCacheKey = "";
             this._mp4LastBuildSeconds = 0;
+            this.onVideoExportCacheUpdate = null;
+            this._persistedExportCaches = { gifByKey: {}, mp4ByKey: {} };
             this._updateConversionBadges();
             this._refreshDropdownStatusesIfOpen();
             if (this._toastTimer) {

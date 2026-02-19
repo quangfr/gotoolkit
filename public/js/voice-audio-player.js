@@ -1,5 +1,25 @@
 (function () {
     const STYLE_ID = "voice-audio-player-styles";
+    const VOICE_RECORDING_SPEED_STORAGE_KEY = "go-toolkit-voice-recording-speed";
+
+    function normalizeVoiceRecordingSpeed(value) {
+        const numeric = Number(value);
+        if (!Number.isFinite(numeric)) return 1.2;
+        const rounded = Math.round(numeric * 10) / 10;
+        return Math.min(4, Math.max(0.4, rounded));
+    }
+
+    function getConfiguredVoiceRecordingSpeed() {
+        const globalSpeed = window.GoToolkitVoiceRecordingSpeed;
+        if (globalSpeed != null) return normalizeVoiceRecordingSpeed(globalSpeed);
+        try {
+            const fromLocal = localStorage.getItem(VOICE_RECORDING_SPEED_STORAGE_KEY);
+            if (fromLocal) return normalizeVoiceRecordingSpeed(fromLocal);
+        } catch (err) { /* noop */ }
+        const fromConfig = window.GoToolkitSiteConfig?.get?.("voice.recordingSpeed", null);
+        if (fromConfig != null) return normalizeVoiceRecordingSpeed(fromConfig);
+        return 1.2;
+    }
 
     function ensureStyles() {
         if (document.getElementById(STYLE_ID)) return;
@@ -237,13 +257,15 @@
             this.deleteButton = this.overlay.querySelector(".voice-audio-player-delete");
             this.downloadButton = this.overlay.querySelector(".voice-audio-player-download");
             if (this.speedSelect) {
-                [0.75, 1, 1.25, 1.5, 2].forEach(rate => {
+                this.speedSelect.innerHTML = "";
+                for (let speed = 0.4; speed <= 4.001; speed += 0.2) {
+                    const rate = Math.round(speed * 10) / 10;
                     const option = document.createElement("option");
-                    option.value = String(rate);
-                    option.textContent = `${rate}×`;
-                    if (rate === 1) option.selected = true;
+                    option.value = rate.toFixed(1);
+                    option.textContent = `${rate.toFixed(1)}x`;
                     this.speedSelect.appendChild(option);
-                });
+                }
+                this.speedSelect.value = normalizeVoiceRecordingSpeed(getConfiguredVoiceRecordingSpeed()).toFixed(1);
                 this._applyPlaybackRate();
             }
         }
@@ -257,6 +279,9 @@
                 this.audioEl.currentTime = ratio * this.audioEl.duration;
             });
             this.speedSelect?.addEventListener("change", () => this._applyPlaybackRate(true));
+            window.addEventListener("go-toolkit:voice-recording-speed-changed", event => {
+                this.setPlaybackRate(event?.detail?.speed, { emitChange: false });
+            });
             this.audioEl?.addEventListener("timeupdate", () => this._updateProgress());
             this.audioEl?.addEventListener("loadedmetadata", () => this._updateProgress(true));
             this.audioEl?.addEventListener("play", () => this._updatePlayButton());
@@ -325,11 +350,19 @@
 
         _applyPlaybackRate(triggerCallback = false) {
             if (!this.audioEl || !this.speedSelect) return;
-            const rate = Number(this.speedSelect.value) || 1;
+            const rate = normalizeVoiceRecordingSpeed(this.speedSelect.value);
+            this.speedSelect.value = rate.toFixed(1);
             this.audioEl.playbackRate = rate;
             if (triggerCallback && typeof this.onPlaybackRateChange === "function") {
                 this.onPlaybackRateChange(rate);
             }
+        }
+
+        setPlaybackRate(value, { emitChange = false } = {}) {
+            if (!this.speedSelect) return;
+            const rate = normalizeVoiceRecordingSpeed(value);
+            this.speedSelect.value = rate.toFixed(1);
+            this._applyPlaybackRate(emitChange);
         }
 
         _applyAudioBlob(blob) {
@@ -356,6 +389,7 @@
                 this.subtitle.textContent = memoName ? `Docs: ${memoName}` : "";
             }
             this._applyAudioBlob(audioBlob);
+            this.setPlaybackRate(getConfiguredVoiceRecordingSpeed(), { emitChange: false });
             this.overlay.classList.add("voice-audio-player-modal--open");
             this.overlay.setAttribute("aria-hidden", "false");
             document.body?.classList.add("voice-audio-player-modal-open");
