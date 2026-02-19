@@ -825,13 +825,6 @@
             const delay = Math.round(1000 / fps);
             const frameCount = Math.max(1, Math.min(320, Math.ceil(Math.max(0.1, end - start) * fps)));
             const GIFCtor = window.GIF;
-            const gif = new GIFCtor({
-                workers: 2,
-                quality: 10,
-                workerScript: workerScriptUrl,
-                width,
-                height
-            });
             const seekTo = time => new Promise(resolve => {
                 const bounded = Math.max(0, Math.min(duration, time));
                 const onSeeked = () => {
@@ -841,22 +834,40 @@
                 video.addEventListener("seeked", onSeeked);
                 video.currentTime = bounded;
             });
-            for (let i = 0; i < frameCount; i += 1) {
-                const t = Math.min(end, start + (i / fps));
-                // eslint-disable-next-line no-await-in-loop
-                await seekTo(t);
-                ctx.drawImage(video, 0, 0, width, height);
-                gif.addFrame(canvas, { copy: true, delay });
-            }
-            const blob = await new Promise((resolve, reject) => {
-                gif.on("finished", resolve);
-                gif.on("abort", () => reject(new Error("GIF annulé")));
-                try {
-                    gif.render();
-                } catch (err) {
-                    reject(err);
+
+            const renderGif = async ({ workers, workerScript }) => {
+                const gif = new GIFCtor({
+                    workers,
+                    quality: 10,
+                    ...(workerScript ? { workerScript } : {}),
+                    width,
+                    height
+                });
+                for (let i = 0; i < frameCount; i += 1) {
+                    const t = Math.min(end, start + (i / fps));
+                    // eslint-disable-next-line no-await-in-loop
+                    await seekTo(t);
+                    ctx.drawImage(video, 0, 0, width, height);
+                    gif.addFrame(canvas, { copy: true, delay });
                 }
-            });
+                return await new Promise((resolve, reject) => {
+                    gif.on("finished", resolve);
+                    gif.on("abort", () => reject(new Error("GIF annulé")));
+                    try {
+                        gif.render();
+                    } catch (err) {
+                        reject(err);
+                    }
+                });
+            };
+
+            let blob = null;
+            try {
+                blob = await renderGif({ workers: 2, workerScript: workerScriptUrl });
+            } catch (err) {
+                console.warn("GIF render with workers failed, retrying without workers", err);
+                blob = await renderGif({ workers: 0 });
+            }
             try { URL.revokeObjectURL(sourceUrl); } catch (err) { /* noop */ }
             return blob;
         }
