@@ -520,6 +520,23 @@ async function resolveAssetBytes(asset) {
 }
 
 async function createAndUploadNotionFile(token, asset) {
+  if (asset.sourceUrl && !asset.dataBase64) {
+    const createPayload = await notionApiFetch(token, "/file_uploads", {
+      method: "POST",
+      body: {
+        filename: asset.filename,
+        content_type: asset.contentType || "application/octet-stream",
+        mode: "external_url",
+        external_url: asset.sourceUrl
+      }
+    });
+    const uploadId = String(createPayload?.id || "").trim();
+    if (!uploadId) {
+      throw new Error("Création upload Notion (external_url) impossible");
+    }
+    return uploadId;
+  }
+
   const bytes = await resolveAssetBytes(asset);
   if (!bytes || !bytes.length) {
     throw new Error("Asset vide");
@@ -615,6 +632,9 @@ function rewriteBlocksWithUploadedAssets(blocks, uploadState) {
       next[key] = visit(raw);
     }
     if (next.type === "image" && (!next.image || typeof next.image !== "object")) {
+      return null;
+    }
+    if (next.type === "video" && (!next.video || typeof next.video !== "object")) {
       return null;
     }
     return next;

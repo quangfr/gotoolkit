@@ -132,6 +132,22 @@
             if (tag === "code") nextAnnotations.code = true;
             if (tag === "mark") nextAnnotations.color = "yellow_background";
 
+            const styleFontWeight = asString(el.style?.fontWeight || "").toLowerCase();
+            const styleFontStyle = asString(el.style?.fontStyle || "").toLowerCase();
+            const styleTextDecoration = asString(el.style?.textDecoration || "").toLowerCase();
+            if (styleFontWeight === "bold" || Number.parseInt(styleFontWeight, 10) >= 600) {
+                nextAnnotations.bold = true;
+            }
+            if (styleFontStyle === "italic" || styleFontStyle === "oblique") {
+                nextAnnotations.italic = true;
+            }
+            if (styleTextDecoration.includes("underline")) {
+                nextAnnotations.underline = true;
+            }
+            if (styleTextDecoration.includes("line-through")) {
+                nextAnnotations.strikethrough = true;
+            }
+
             const styleColor = el.style?.color || "";
             const styleBackground = el.style?.backgroundColor || el.style?.background || "";
             if (styleColor) {
@@ -237,15 +253,29 @@
         const listItems = Array.from(listElement.querySelectorAll(":scope > li"));
 
         listItems.forEach(li => {
+            const nestedLists = Array.from(li.querySelectorAll(":scope > ul, :scope > ol"));
+            nestedLists.forEach(nested => nested.remove());
+
             const richText = parseInlineRichText(li, DEFAULT_ANNOTATIONS, null);
-            blocks.push({
+            const block = {
                 object: "block",
                 type: listType,
                 [listType]: {
                     rich_text: richText,
                     color: "default"
                 }
+            };
+
+            const nestedChildren = [];
+            nestedLists.forEach(nested => {
+                const nestedType = asString(nested.tagName).toLowerCase();
+                nestedChildren.push(...buildListBlocks(nested, nestedType));
             });
+            if (nestedChildren.length) {
+                block[listType].children = nestedChildren;
+            }
+
+            blocks.push(block);
         });
 
         return blocks;
@@ -391,6 +421,39 @@
         const assets = [];
         let assetIndex = 0;
 
+        function inferVideoContentType(src, hintedType) {
+            const hinted = asString(hintedType).trim().toLowerCase();
+            if (hinted.startsWith("video/")) return hinted;
+            const safeSrc = asString(src).trim().toLowerCase();
+            if (!safeSrc) return "";
+            if (safeSrc.startsWith("data:video/")) {
+                const dataMatch = safeSrc.match(/^data:(video\/[a-z0-9.+-]+)/i);
+                return dataMatch?.[1]?.toLowerCase() || "";
+            }
+            if (/\.mp4([?#].*)?$/i.test(safeSrc)) return "video/mp4";
+            if (/\.webm([?#].*)?$/i.test(safeSrc)) return "video/webm";
+            if (/\.ogg([?#].*)?$/i.test(safeSrc)) return "video/ogg";
+            return "";
+        }
+
+        function parseVideoSource(element) {
+            const direct = asString(element?.getAttribute?.("src")).trim();
+            const directType = asString(element?.getAttribute?.("data-mime-type") || element?.getAttribute?.("type")).trim();
+            if (direct) {
+                return {
+                    src: direct,
+                    contentType: inferVideoContentType(direct, directType)
+                };
+            }
+            const sourceEl = element?.querySelector?.("source[src]");
+            const nested = asString(sourceEl?.getAttribute?.("src")).trim();
+            const nestedType = asString(sourceEl?.getAttribute?.("type")).trim();
+            return {
+                src: nested || "",
+                contentType: inferVideoContentType(nested, nestedType)
+            };
+        }
+
         async function addImageBlockFromSrc(src, prefix) {
             const asset = await buildImageAsset(src, {});
             if (!asset) return null;
@@ -414,7 +477,55 @@
             };
         }
 
+        async function addVideoBlockFromSrc(src, prefix, options) {
+            const safeSrc = asString(src).trim();
+            if (!safeSrc) return null;
+            const inferredType = inferVideoContentType(safeSrc, options?.contentType);
+            const asset = await buildImageAsset(safeSrc, {
+                contentType: inferredType
+            });
+            if (!asset) return null;
+            assetIndex += 1;
+            const assetId = `asset-${assetIndex}`;
+            const contentType = asset.contentType || inferredType || "video/webm";
+            const fallbackExt = /mp4/i.test(contentType) || /\.mp4([?#].*)?$/i.test(safeSrc)
+                ? "mp4"
+                : (/ogg/i.test(contentType) || /\.ogg([?#].*)?$/i.test(safeSrc) ? "ogg" : "webm");
+            assets.push({
+                id: assetId,
+                filename: pickFileName(prefix || "video", contentType, fallbackExt),
+                contentType,
+                dataBase64: asset.dataBase64 || "",
+                sourceUrl: asset.sourceUrl || ""
+            });
+            return {
+                object: "block",
+                type: "video",
+                video: {
+                    type: "file_upload",
+                    file_upload: { id: `asset:${assetId}` }
+                }
+            };
+        }
+
         async function consumeNode(node) {
+            if (node && node.nodeType === Node.TEXT_NODE) {
+                const text = sanitizeText(node.nodeValue || "").trim();
+                if (!text) return;
+                blocks.push({
+                    object: "block",
+                    type: "paragraph",
+                    paragraph: {
+                        rich_text: [{
+                            type: "text",
+                            text: { content: text.slice(0, 1900), link: null },
+                            annotations: cloneAnnotations(DEFAULT_ANNOTATIONS)
+                        }],
+                        color: "default"
+                    }
+                });
+                return;
+            }
             if (!node || node.nodeType !== Node.ELEMENT_NODE) return;
             const element = node;
             const tag = asString(element.tagName).toLowerCase();
@@ -455,6 +566,21 @@
             if (tag === "img") {
                 const imageBlock = await addImageBlockFromSrc(element.getAttribute("src"), "image");
                 if (imageBlock) blocks.push(imageBlock);
+                return;
+            }
+            if (tag === "video") {
+                const source = parseVideoSource(element);
+                const videoBlock = await addVideoBlockFromSrc(source.src, "video", { contentType: source.contentType });
+                if (videoBlock) {
+                    blocks.push(videoBlock);
+                } else if (source.src) {
+                    // Safe fallback if Notion video block cannot be built.
+                    blocks.push({
+                        object: "block",
+                        type: "embed",
+                        embed: { url: source.src }
+                    });
+                }
                 return;
             }
             if (tag === "mermaid-diagram") {

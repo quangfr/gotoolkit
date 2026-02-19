@@ -55159,7 +55159,7 @@ ${promptInput.trim()}`
             className: "tiptap-button",
             "aria-label": "Insert Video",
             type: "button",
-            title: "Vid\xE9o (WebM/MP4)",
+            title: "Vid\xE9o",
             onMouseDown: (event) => event.preventDefault(),
             onClick: onInsertVideo,
             children: [

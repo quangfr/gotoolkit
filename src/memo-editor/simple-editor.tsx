@@ -1685,7 +1685,7 @@ const Toolbar = ({ editor, onDropdownToggle, onLink, onInsertImage, onInsertVide
           className="tiptap-button"
           aria-label="Insert Video"
           type="button"
-          title="Vidéo (WebM/MP4)"
+          title="Vidéo"
           onMouseDown={(event) => event.preventDefault()}
           onClick={onInsertVideo}
         >
