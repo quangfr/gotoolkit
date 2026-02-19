@@ -386,6 +386,60 @@ async function transformNode(node: any, editor: any): Promise<any> {
       }
     }
 
+    case 'videoEmbed': {
+      const src = String(node?.attrs?.src || '').trim();
+      if (!src) return null;
+      const title = String(node?.attrs?.title || node?.attrs?.fileName || '').trim() || 'Vidéo';
+      const mimeType = String(node?.attrs?.mimeType || '').toLowerCase();
+      const isMp4 = mimeType.includes('mp4') || /\.mp4([?#].*)?$/i.test(src);
+      const isWebm = mimeType.includes('webm') || /\.webm([?#].*)?$/i.test(src);
+      const labelSuffix = isMp4 ? 'MP4' : (isWebm ? 'WebM' : 'Vidéo');
+      const label = `${title} (${labelSuffix})`;
+
+      // Word cannot embed playable HTML5 video reliably in this export path.
+      // Export as a clear hyperlink block when the source is URL-based.
+      if (/^https?:\/\//i.test(src)) {
+        return new Paragraph({
+          children: [
+            new TextRun({
+              text: "▶ ",
+              bold: true,
+            }),
+            new ExternalHyperlink({
+              link: src,
+              children: [
+                new TextRun({
+                  text: label,
+                  style: "Hyperlink",
+                }),
+              ],
+            }),
+          ],
+          spacing: { before: 120, after: 120, line: DEFAULT_LINE_SPACING },
+        });
+      }
+
+      if (/^data:video\//i.test(src)) {
+        return new Paragraph({
+          children: [
+            new TextRun({
+              text: `▶ ${label} (fichier intégré, non exportable en média Word)`,
+            }),
+          ],
+          spacing: { before: 120, after: 120, line: DEFAULT_LINE_SPACING },
+        });
+      }
+
+      return new Paragraph({
+        children: [
+          new TextRun({
+            text: `▶ ${label}`,
+          }),
+        ],
+        spacing: { before: 120, after: 120, line: DEFAULT_LINE_SPACING },
+      });
+    }
+
     default:
       return null;
   }

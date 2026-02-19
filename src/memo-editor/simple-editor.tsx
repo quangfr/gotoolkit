@@ -1689,7 +1689,7 @@ const Toolbar = ({ editor, onDropdownToggle, onLink, onInsertImage, onInsertVide
           onMouseDown={(event) => event.preventDefault()}
           onClick={onInsertVideo}
         >
-          <i data-lucide="video" style={{ display: 'none' }} aria-hidden="true"></i>
+          <i data-lucide="film" style={{ display: 'none' }} aria-hidden="true"></i>
           <Video size={16} />
         </button>
       </div>
@@ -2887,33 +2887,83 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
 
   const openVideoInsertDialog = React.useCallback(() => {
     if (!editor) return;
-    const raw = window.prompt('URL vidéo (.webm ou .mp4)');
+    const raw = window.prompt('URL vidéo (.webm ou .mp4). Laissez vide pour choisir un fichier.');
     const value = String(raw || '').trim();
-    if (!value) return;
-    if (!/^https?:\/\//i.test(value) && !/^data:video\//i.test(value)) return;
-    if (!/(\.webm([?#].*)?$)|(\.mp4([?#].*)?$)|(^data:video\/(webm|mp4);)/i.test(value)) return;
+    const insertVideoFromSrc = (src: string, providedName?: string, providedMimeType?: string) => {
+      const normalized = String(src || '').trim();
+      if (!normalized) return;
+      if (!/^https?:\/\//i.test(normalized) && !/^data:video\//i.test(normalized)) return;
+      if (!/(\.webm([?#].*)?$)|(\.mp4([?#].*)?$)|(^data:video\/(webm|mp4);)/i.test(normalized)) return;
 
-    const label = (() => {
-      if (/^data:video\//i.test(value)) return 'video';
-      const withoutQuery = value.split('#')[0].split('?')[0];
-      const file = withoutQuery.split('/').pop() || '';
-      return file || 'video';
-    })();
+      const label = (() => {
+        if (providedName) return providedName;
+        if (/^data:video\//i.test(normalized)) return 'video';
+        const withoutQuery = normalized.split('#')[0].split('?')[0];
+        const file = withoutQuery.split('/').pop() || '';
+        return file || 'video';
+      })();
 
-    const mimeType = /\.mp4([?#].*)?$/i.test(value) ? 'video/mp4' : 'video/webm';
-    editor
-      .chain()
-      .focus()
-      .insertContent({
-        type: 'videoEmbed',
-        attrs: {
-          src: value,
-          title: label,
-          fileName: label,
-          mimeType,
-        },
-      })
-      .run();
+      const mimeType = providedMimeType
+        || (/\.mp4([?#].*)?$/i.test(normalized) ? 'video/mp4' : 'video/webm');
+
+      editor
+        .chain()
+        .focus()
+        .insertContent({
+          type: 'videoEmbed',
+          attrs: {
+            src: normalized,
+            title: label,
+            fileName: label,
+            mimeType,
+          },
+        })
+        .run();
+    };
+
+    if (value) {
+      insertVideoFromSrc(value);
+      return;
+    }
+
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'video/mp4,video/webm,.mp4,.webm';
+    input.style.position = 'fixed';
+    input.style.left = '-9999px';
+    input.style.top = '0';
+    input.addEventListener('change', async () => {
+      const file = input.files?.[0];
+      if (!file) {
+        try { input.remove(); } catch (err) { /* noop */ }
+        return;
+      }
+      const mimeType = String(file.type || '').toLowerCase();
+      const looksSupported =
+        mimeType === 'video/mp4'
+        || mimeType === 'video/webm'
+        || /\.mp4$/i.test(file.name)
+        || /\.webm$/i.test(file.name);
+      if (!looksSupported) {
+        try { input.remove(); } catch (err) { /* noop */ }
+        return;
+      }
+      try {
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result || ''));
+          reader.onerror = () => reject(reader.error || new Error('Failed to read video file'));
+          reader.readAsDataURL(file);
+        });
+        insertVideoFromSrc(dataUrl, file.name || 'video', mimeType || undefined);
+      } catch (err) {
+        // noop
+      } finally {
+        try { input.remove(); } catch (err) { /* noop */ }
+      }
+    }, { once: true });
+    document.body.appendChild(input);
+    input.click();
   }, [editor]);
 
   React.useEffect(() => {
@@ -4444,6 +4494,27 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
 
             doc.querySelectorAll('video').forEach(video => {
               const el = video as HTMLVideoElement;
+              const src = String(el.getAttribute('src') || '').trim();
+              const mime = String(el.getAttribute('data-mime-type') || '').trim().toLowerCase();
+              const isMp4 = mime.includes('mp4') || /\.mp4([?#].*)?$/i.test(src);
+              const isWebm = mime.includes('webm') || /\.webm([?#].*)?$/i.test(src);
+              const videoType = isMp4 ? 'video/mp4' : (isWebm ? 'video/webm' : '');
+
+              if (src && !el.querySelector('source')) {
+                const source = doc.createElement('source');
+                source.setAttribute('src', src);
+                if (videoType) source.setAttribute('type', videoType);
+                el.appendChild(source);
+              }
+
+              if (!el.querySelector('[data-video-fallback="true"]')) {
+                const fallback = doc.createElement('p');
+                fallback.setAttribute('data-video-fallback', 'true');
+                fallback.setAttribute('style', 'font-size:12px;color:#6b7280;margin:8px 0 0 0;');
+                fallback.textContent = src ? `Video: ${src}` : 'Video';
+                el.parentElement?.insertBefore(fallback, el.nextSibling);
+              }
+
               el.setAttribute('controls', 'true');
               el.setAttribute('playsinline', 'true');
               el.setAttribute('preload', 'metadata');

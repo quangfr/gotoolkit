@@ -48723,7 +48723,7 @@ img.ProseMirror-separator {
     return blob;
   }
   async function transformNode(node, editor) {
-    var _a, _b, _c, _d, _e, _f, _g;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k;
     switch (node.type) {
       case "heading": {
         const level = ((_a = node.attrs) == null ? void 0 : _a.level) || 1;
@@ -48925,6 +48925,54 @@ img.ProseMirror-separator {
         } catch (err) {
           return new Paragraph2({ text: "[Image indisponible]" });
         }
+      }
+      case "videoEmbed": {
+        const src = String(((_h = node == null ? void 0 : node.attrs) == null ? void 0 : _h.src) || "").trim();
+        if (!src) return null;
+        const title = String(((_i = node == null ? void 0 : node.attrs) == null ? void 0 : _i.title) || ((_j = node == null ? void 0 : node.attrs) == null ? void 0 : _j.fileName) || "").trim() || "Vid\xE9o";
+        const mimeType = String(((_k = node == null ? void 0 : node.attrs) == null ? void 0 : _k.mimeType) || "").toLowerCase();
+        const isMp4 = mimeType.includes("mp4") || /\.mp4([?#].*)?$/i.test(src);
+        const isWebm = mimeType.includes("webm") || /\.webm([?#].*)?$/i.test(src);
+        const labelSuffix = isMp4 ? "MP4" : isWebm ? "WebM" : "Vid\xE9o";
+        const label = `${title} (${labelSuffix})`;
+        if (/^https?:\/\//i.test(src)) {
+          return new Paragraph2({
+            children: [
+              new TextRun({
+                text: "\u25B6 ",
+                bold: true
+              }),
+              new ExternalHyperlink({
+                link: src,
+                children: [
+                  new TextRun({
+                    text: label,
+                    style: "Hyperlink"
+                  })
+                ]
+              })
+            ],
+            spacing: { before: 120, after: 120, line: DEFAULT_LINE_SPACING }
+          });
+        }
+        if (/^data:video\//i.test(src)) {
+          return new Paragraph2({
+            children: [
+              new TextRun({
+                text: `\u25B6 ${label} (fichier int\xE9gr\xE9, non exportable en m\xE9dia Word)`
+              })
+            ],
+            spacing: { before: 120, after: 120, line: DEFAULT_LINE_SPACING }
+          });
+        }
+        return new Paragraph2({
+          children: [
+            new TextRun({
+              text: `\u25B6 ${label}`
+            })
+          ],
+          spacing: { before: 120, after: 120, line: DEFAULT_LINE_SPACING }
+        });
       }
       default:
         return null;
@@ -55115,7 +55163,7 @@ ${promptInput.trim()}`
             onMouseDown: (event) => event.preventDefault(),
             onClick: onInsertVideo,
             children: [
-              /* @__PURE__ */ jsx("i", { "data-lucide": "video", style: { display: "none" }, "aria-hidden": "true" }),
+              /* @__PURE__ */ jsx("i", { "data-lucide": "film", style: { display: "none" }, "aria-hidden": "true" }),
               /* @__PURE__ */ jsx(Video, { size: 16 })
             ]
           }
@@ -56122,27 +56170,78 @@ ${promptInput.trim()}`
     }, [insertImageFiles]);
     const openVideoInsertDialog = react_shim_default.useCallback(() => {
       if (!editor) return;
-      const raw = window.prompt("URL vid\xE9o (.webm ou .mp4)");
+      const raw = window.prompt("URL vid\xE9o (.webm ou .mp4). Laissez vide pour choisir un fichier.");
       const value = String(raw || "").trim();
-      if (!value) return;
-      if (!/^https?:\/\//i.test(value) && !/^data:video\//i.test(value)) return;
-      if (!/(\.webm([?#].*)?$)|(\.mp4([?#].*)?$)|(^data:video\/(webm|mp4);)/i.test(value)) return;
-      const label = (() => {
-        if (/^data:video\//i.test(value)) return "video";
-        const withoutQuery = value.split("#")[0].split("?")[0];
-        const file = withoutQuery.split("/").pop() || "";
-        return file || "video";
-      })();
-      const mimeType = /\.mp4([?#].*)?$/i.test(value) ? "video/mp4" : "video/webm";
-      editor.chain().focus().insertContent({
-        type: "videoEmbed",
-        attrs: {
-          src: value,
-          title: label,
-          fileName: label,
-          mimeType
+      const insertVideoFromSrc = (src, providedName, providedMimeType) => {
+        const normalized = String(src || "").trim();
+        if (!normalized) return;
+        if (!/^https?:\/\//i.test(normalized) && !/^data:video\//i.test(normalized)) return;
+        if (!/(\.webm([?#].*)?$)|(\.mp4([?#].*)?$)|(^data:video\/(webm|mp4);)/i.test(normalized)) return;
+        const label = (() => {
+          if (providedName) return providedName;
+          if (/^data:video\//i.test(normalized)) return "video";
+          const withoutQuery = normalized.split("#")[0].split("?")[0];
+          const file = withoutQuery.split("/").pop() || "";
+          return file || "video";
+        })();
+        const mimeType = providedMimeType || (/\.mp4([?#].*)?$/i.test(normalized) ? "video/mp4" : "video/webm");
+        editor.chain().focus().insertContent({
+          type: "videoEmbed",
+          attrs: {
+            src: normalized,
+            title: label,
+            fileName: label,
+            mimeType
+          }
+        }).run();
+      };
+      if (value) {
+        insertVideoFromSrc(value);
+        return;
+      }
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "video/mp4,video/webm,.mp4,.webm";
+      input.style.position = "fixed";
+      input.style.left = "-9999px";
+      input.style.top = "0";
+      input.addEventListener("change", async () => {
+        var _a2;
+        const file = (_a2 = input.files) == null ? void 0 : _a2[0];
+        if (!file) {
+          try {
+            input.remove();
+          } catch (err) {
+          }
+          return;
         }
-      }).run();
+        const mimeType = String(file.type || "").toLowerCase();
+        const looksSupported = mimeType === "video/mp4" || mimeType === "video/webm" || /\.mp4$/i.test(file.name) || /\.webm$/i.test(file.name);
+        if (!looksSupported) {
+          try {
+            input.remove();
+          } catch (err) {
+          }
+          return;
+        }
+        try {
+          const dataUrl = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(String(reader.result || ""));
+            reader.onerror = () => reject(reader.error || new Error("Failed to read video file"));
+            reader.readAsDataURL(file);
+          });
+          insertVideoFromSrc(dataUrl, file.name || "video", mimeType || void 0);
+        } catch (err) {
+        } finally {
+          try {
+            input.remove();
+          } catch (err) {
+          }
+        }
+      }, { once: true });
+      document.body.appendChild(input);
+      input.click();
     }, [editor]);
     react_shim_default.useEffect(() => {
       if (!editor) return;
@@ -57461,7 +57560,26 @@ ${innerMarkdown}
                 });
               }
               doc3.querySelectorAll("video").forEach((video) => {
+                var _a2;
                 const el = video;
+                const src = String(el.getAttribute("src") || "").trim();
+                const mime = String(el.getAttribute("data-mime-type") || "").trim().toLowerCase();
+                const isMp4 = mime.includes("mp4") || /\.mp4([?#].*)?$/i.test(src);
+                const isWebm = mime.includes("webm") || /\.webm([?#].*)?$/i.test(src);
+                const videoType = isMp4 ? "video/mp4" : isWebm ? "video/webm" : "";
+                if (src && !el.querySelector("source")) {
+                  const source = doc3.createElement("source");
+                  source.setAttribute("src", src);
+                  if (videoType) source.setAttribute("type", videoType);
+                  el.appendChild(source);
+                }
+                if (!el.querySelector('[data-video-fallback="true"]')) {
+                  const fallback = doc3.createElement("p");
+                  fallback.setAttribute("data-video-fallback", "true");
+                  fallback.setAttribute("style", "font-size:12px;color:#6b7280;margin:8px 0 0 0;");
+                  fallback.textContent = src ? `Video: ${src}` : "Video";
+                  (_a2 = el.parentElement) == null ? void 0 : _a2.insertBefore(fallback, el.nextSibling);
+                }
                 el.setAttribute("controls", "true");
                 el.setAttribute("playsinline", "true");
                 el.setAttribute("preload", "metadata");
@@ -58926,4 +59044,3 @@ docx/dist/index.mjs:
    *)
   (*! http://mths.be/fromcodepoint v0.1.0 by @mathias *)
 */
-//# sourceMappingURL=memo.bundle.js.map

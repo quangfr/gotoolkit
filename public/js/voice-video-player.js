@@ -511,7 +511,8 @@
                                 <div class="voice-video-player-download-wrap">
                                 <button type="button" class="voice-video-player-download" title="Télécharger" aria-label="Télécharger"><i data-lucide="download"></i></button>
                                     <div class="voice-video-player-download-dropdown" hidden>
-                                        <button type="button" class="voice-video-player-download-option" data-download-format="video">Vidéo</button>
+                                        <button type="button" class="voice-video-player-download-option" data-download-format="video-webm">Vidéo WebM</button>
+                                        <button type="button" class="voice-video-player-download-option" data-download-format="video-mp4">Vidéo MP4</button>
                                         <button type="button" class="voice-video-player-download-option" data-download-format="gif">Gif</button>
                                     </div>
                                 </div>
@@ -551,7 +552,8 @@
             this._downloadButtonBaseHtml = this.downloadButton?.innerHTML || '<i data-lucide="download"></i>';
             this.downloadMenuWrap = this.overlay.querySelector(".voice-video-player-download-wrap");
             this.downloadDropdown = this.overlay.querySelector(".voice-video-player-download-dropdown");
-            this.downloadVideoOption = this.overlay.querySelector('[data-download-format="video"]');
+            this.downloadVideoWebmOption = this.overlay.querySelector('[data-download-format="video-webm"]');
+            this.downloadVideoMp4Option = this.overlay.querySelector('[data-download-format="video-mp4"]');
             this.downloadGifOption = this.overlay.querySelector('[data-download-format="gif"]');
             this.cutButton = this.overlay.querySelector(".voice-video-player-cut");
             this.playToggle = this.overlay.querySelector(".voice-video-player-play-toggle");
@@ -601,13 +603,15 @@
                 this.downloadButton.disabled = true;
                 this.downloadButton.setAttribute("aria-busy", "true");
                 this.downloadButton.innerHTML = '<i data-lucide="loader-2" class="lucide-spin"></i>';
-                this.downloadVideoOption && (this.downloadVideoOption.disabled = true);
+                this.downloadVideoWebmOption && (this.downloadVideoWebmOption.disabled = true);
+                this.downloadVideoMp4Option && (this.downloadVideoMp4Option.disabled = true);
                 this.downloadGifOption && (this.downloadGifOption.disabled = true);
             } else {
                 this.downloadButton.disabled = false;
                 this.downloadButton.removeAttribute("aria-busy");
                 this.downloadButton.innerHTML = this._downloadButtonBaseHtml;
-                this.downloadVideoOption && (this.downloadVideoOption.disabled = false);
+                this.downloadVideoWebmOption && (this.downloadVideoWebmOption.disabled = false);
+                this.downloadVideoMp4Option && (this.downloadVideoMp4Option.disabled = false);
                 this.downloadGifOption && (this.downloadGifOption.disabled = false);
             }
             if (window.lucide) lucide.createIcons();
@@ -649,10 +653,15 @@
                 if (this._gifDownloading) return;
                 this._toggleDownloadDropdown();
             });
-            this.downloadVideoOption?.addEventListener("click", async () => {
+            this.downloadVideoWebmOption?.addEventListener("click", async () => {
                 if (this._gifDownloading) return;
                 this._closeDownloadDropdown();
-                await this._handleDownloadVideo();
+                await this._handleDownloadVideoWebm();
+            });
+            this.downloadVideoMp4Option?.addEventListener("click", async () => {
+                if (this._gifDownloading) return;
+                this._closeDownloadDropdown();
+                await this._handleDownloadVideoMp4();
             });
             this.downloadGifOption?.addEventListener("click", async () => {
                 if (this._gifDownloading) return;
@@ -832,8 +841,11 @@
             const gifSize = (this._gifBlobCache?.size && this._gifBlobCacheKey === this._getGifCacheKey())
                 ? this._gifBlobCache.size
                 : this._estimateGifBytes();
-            if (this.downloadVideoOption) {
-                this.downloadVideoOption.textContent = `Vidéo (${this._formatMbLabel(videoSize)})`;
+            if (this.downloadVideoWebmOption) {
+                this.downloadVideoWebmOption.textContent = `Vidéo WebM (${this._formatMbLabel(videoSize)})`;
+            }
+            if (this.downloadVideoMp4Option) {
+                this.downloadVideoMp4Option.textContent = "Vidéo MP4 (conversion)";
             }
             if (this.downloadGifOption) {
                 const eta = this._formatSecondsLabel(this._estimateGifBuildSeconds());
@@ -1194,7 +1206,7 @@
             }
         }
 
-        async _handleDownloadVideo() {
+        async _handleDownloadVideoWebm() {
             if (!this.videoBlobOriginal) return;
             const blob = await this._getOutputBlob().catch(() => this.videoBlobOriginal);
             if (!blob) return;
@@ -1209,7 +1221,31 @@
             setTimeout(() => {
                 try { URL.revokeObjectURL(url); } catch (err) { /* noop */ }
             }, 500);
-            this._showToast("Vidéo téléchargée");
+            this._showToast("Vidéo WebM téléchargée");
+        }
+
+        async _handleDownloadVideoMp4() {
+            if (!this.videoBlobOriginal) return;
+            try {
+                const blob = await this._getOutputBlobAsMp4();
+                if (!blob) {
+                    this._showToast("Conversion MP4 impossible sur ce navigateur", true);
+                    return;
+                }
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = this._buildExportFilename("mp4", this._hasCutRange());
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(() => {
+                    try { URL.revokeObjectURL(url); } catch (err) { /* noop */ }
+                }, 500);
+                this._showToast("Vidéo MP4 téléchargée");
+            } catch (err) {
+                this._showToast("Conversion MP4 impossible sur ce navigateur", true);
+            }
         }
 
         async _getOutputBlob() {
@@ -1226,6 +1262,37 @@
 
         async _buildTrimmedBlob() {
             if (!this.videoBlobOriginal || !this._hasCutRange()) return this.videoBlobOriginal;
+            return this._recordSegmentBlob(
+                [
+                    "video/webm;codecs=vp9,opus",
+                    "video/webm;codecs=vp8,opus",
+                    "video/webm"
+                ],
+                "video/webm"
+            );
+        }
+
+        async _getOutputBlobAsMp4() {
+            if (!this.videoBlobOriginal) return null;
+            const mp4MimeCandidates = [
+                "video/mp4;codecs=avc1.42E01E,mp4a.40.2",
+                "video/mp4;codecs=avc1,mp4a.40.2",
+                "video/mp4"
+            ];
+            if (!this._hasCutRange()) {
+                // If source is already MP4, download as-is.
+                if ((this.videoBlobOriginal.type || "").includes("mp4")) return this.videoBlobOriginal;
+                const converted = await this._recordSegmentBlob(mp4MimeCandidates, "video/mp4");
+                if (!converted || !(converted.type || "").includes("mp4")) return null;
+                return converted;
+            }
+            const trimmed = await this._recordSegmentBlob(mp4MimeCandidates, "video/mp4");
+            if (!trimmed || !(trimmed.type || "").includes("mp4")) return null;
+            return trimmed;
+        }
+
+        async _recordSegmentBlob(preferredMimeTypes = [], fallbackType = "video/webm") {
+            if (!this.videoBlobOriginal) return this.videoBlobOriginal;
             const sourceUrl = URL.createObjectURL(this.videoBlobOriginal);
             const sourceVideo = document.createElement("video");
             sourceVideo.src = sourceUrl;
@@ -1254,15 +1321,10 @@
             const stream = sourceVideo.captureStream ? sourceVideo.captureStream() : (sourceVideo.mozCaptureStream ? sourceVideo.mozCaptureStream() : null);
             if (!stream) {
                 URL.revokeObjectURL(sourceUrl);
-                return this.videoBlobOriginal;
+                return null;
             }
-            const preferred = [
-                "video/webm;codecs=vp9,opus",
-                "video/webm;codecs=vp8,opus",
-                "video/webm"
-            ];
             let recorder = null;
-            for (const mimeType of preferred) {
+            for (const mimeType of preferredMimeTypes) {
                 try {
                     if (MediaRecorder.isTypeSupported && !MediaRecorder.isTypeSupported(mimeType)) continue;
                     recorder = new MediaRecorder(stream, { mimeType });
@@ -1274,7 +1336,7 @@
                     recorder = new MediaRecorder(stream);
                 } catch (err) {
                     URL.revokeObjectURL(sourceUrl);
-                    return this.videoBlobOriginal;
+                    return null;
                 }
             }
             const chunks = [];
@@ -1314,8 +1376,8 @@
                     }
                 };
             });
-            if (!chunks.length) return this.videoBlobOriginal;
-            return new Blob(chunks, { type: recorder.mimeType || "video/webm" });
+            if (!chunks.length) return null;
+            return new Blob(chunks, { type: recorder.mimeType || fallbackType || "video/webm" });
         }
 
         async _handlePublish() {
