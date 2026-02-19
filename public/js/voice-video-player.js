@@ -169,6 +169,10 @@
                 width: 18px;
                 height: 18px;
             }
+            .voice-video-player-download[disabled] {
+                cursor: wait;
+                opacity: 0.7;
+            }
             .voice-video-player-download-dropdown {
                 position: absolute;
                 bottom: calc(100% + 6px);
@@ -460,6 +464,7 @@
             this._textTrackUrl = "";
             this._gifWorkerScriptUrl = "";
             this._gifWorkerBlobUrl = "";
+            this._gifDownloading = false;
             this._toastTimer = null;
             ensureStyles();
             this._buildDom();
@@ -531,6 +536,7 @@
             this.youtubeUrl = "";
             this.videoEl = this.overlay.querySelector("video");
             this.downloadButton = this.overlay.querySelector(".voice-video-player-download");
+            this._downloadButtonBaseHtml = this.downloadButton?.innerHTML || '<i data-lucide="download"></i>';
             this.downloadMenuWrap = this.overlay.querySelector(".voice-video-player-download-wrap");
             this.downloadDropdown = this.overlay.querySelector(".voice-video-player-download-dropdown");
             this.downloadVideoOption = this.overlay.querySelector('[data-download-format="video"]');
@@ -576,6 +582,25 @@
             }, 1800);
         }
 
+        _setGifDownloadLoading(isLoading) {
+            this._gifDownloading = Boolean(isLoading);
+            if (!this.downloadButton) return;
+            if (this._gifDownloading) {
+                this.downloadButton.disabled = true;
+                this.downloadButton.setAttribute("aria-busy", "true");
+                this.downloadButton.innerHTML = '<i data-lucide="loader-2" class="lucide-spin"></i>';
+                this.downloadVideoOption && (this.downloadVideoOption.disabled = true);
+                this.downloadGifOption && (this.downloadGifOption.disabled = true);
+            } else {
+                this.downloadButton.disabled = false;
+                this.downloadButton.removeAttribute("aria-busy");
+                this.downloadButton.innerHTML = this._downloadButtonBaseHtml;
+                this.downloadVideoOption && (this.downloadVideoOption.disabled = false);
+                this.downloadGifOption && (this.downloadGifOption.disabled = false);
+            }
+            if (window.lucide) lucide.createIcons();
+        }
+
         _bindEvents() {
             this.overlay.addEventListener("click", event => {
                 if (event.target === this.overlay || event.target.classList.contains("voice-video-player-backdrop")) {
@@ -609,13 +634,16 @@
                 window.open(this.youtubeUrl, "_blank", "noopener,noreferrer");
             });
             this.downloadButton?.addEventListener("click", () => {
+                if (this._gifDownloading) return;
                 this._toggleDownloadDropdown();
             });
             this.downloadVideoOption?.addEventListener("click", async () => {
+                if (this._gifDownloading) return;
                 this._closeDownloadDropdown();
                 await this._handleDownloadVideo();
             });
             this.downloadGifOption?.addEventListener("click", async () => {
+                if (this._gifDownloading) return;
                 this._closeDownloadDropdown();
                 await this._handleDownloadGif();
             });
@@ -716,16 +744,43 @@
             return `${mb.toFixed(2)} MB`;
         }
 
+        _getGifExportConfig(sourceWidth, sourceHeight, duration) {
+            const safeWidth = Math.max(1, Number(sourceWidth) || 640);
+            const safeHeight = Math.max(1, Number(sourceHeight) || 360);
+            const safeDuration = Math.max(0.1, Number(duration) || 0.1);
+
+            // Screencast-oriented defaults:
+            // keep short clips sharp, but downscale longer clips to control size/time.
+            let widthCap = 960;
+            if (safeDuration <= 6) widthCap = 1280;
+            else if (safeDuration <= 12) widthCap = 1024;
+            const width = Math.min(widthCap, safeWidth);
+            const height = Math.max(2, Math.round((safeHeight / safeWidth) * width));
+
+            // For screen recordings, avoid choppy cursor/text transitions.
+            let fps = 8;
+            if (safeDuration <= 6) fps = 12;
+            else if (safeDuration <= 12) fps = 10;
+            else if (safeDuration <= 20) fps = 8;
+            else fps = 6;
+
+            // Keep total work bounded for long clips.
+            let frameCap = 320;
+            if (safeDuration > 20) frameCap = 260;
+            if (safeDuration > 40) frameCap = 220;
+            const frameCount = Math.max(1, Math.min(frameCap, Math.ceil(safeDuration * fps)));
+            const delay = Math.round(1000 / fps);
+
+            return { width, height, fps, delay, frameCount };
+        }
+
         _estimateGifBytes() {
             const duration = this._hasCutRange() ? Math.max(0.1, this.cutEnd - this.cutStart) : Math.max(0.1, this.videoEl?.duration || 0);
             const sourceWidth = this.videoEl?.videoWidth || 640;
             const sourceHeight = this.videoEl?.videoHeight || 360;
-            const targetWidth = Math.min(640, sourceWidth);
-            const targetHeight = Math.max(2, Math.round((sourceHeight / Math.max(1, sourceWidth)) * targetWidth));
-            const fps = 8;
+            const { width: targetWidth, height: targetHeight, frameCount: frames } = this._getGifExportConfig(sourceWidth, sourceHeight, duration);
             // Heuristic average bytes/frame for GIF with moderate quality
             const bytesPerFrame = Math.max(2500, Math.round((targetWidth * targetHeight) / 18));
-            const frames = Math.max(1, Math.min(320, Math.ceil(duration * fps)));
             return frames * bytesPerFrame;
         }
 
@@ -865,8 +920,8 @@
                 : duration;
             const sourceWidth = video.videoWidth || 640;
             const sourceHeight = video.videoHeight || 360;
-            const width = Math.min(640, sourceWidth);
-            const height = Math.max(2, Math.round((sourceHeight / Math.max(1, sourceWidth)) * width));
+            const exportConfig = this._getGifExportConfig(sourceWidth, sourceHeight, end - start);
+            const { width, height, fps, delay, frameCount } = exportConfig;
             const canvas = document.createElement("canvas");
             canvas.width = width;
             canvas.height = height;
@@ -875,9 +930,6 @@
                 URL.revokeObjectURL(sourceUrl);
                 throw new Error("Canvas indisponible");
             }
-            const fps = 8;
-            const delay = Math.round(1000 / fps);
-            const frameCount = Math.max(1, Math.min(320, Math.ceil(Math.max(0.1, end - start) * fps)));
             const GIFCtor = window.GIF;
             const seekTo = time => new Promise(resolve => {
                 const bounded = Math.max(0, Math.min(duration, time));
@@ -901,7 +953,7 @@
             const renderGif = async ({ workers, workerScript }) => {
                 const gif = new GIFCtor({
                     workers,
-                    quality: 10,
+                    quality: 8,
                     ...(workerScript ? { workerScript } : {}),
                     width,
                     height
@@ -938,7 +990,9 @@
 
         async _handleDownloadGif() {
             if (!this.videoBlobOriginal) return;
+            if (this._gifDownloading) return;
             console.info("[GoToolkit GIF] download requested");
+            this._setGifDownloadLoading(true);
             try {
                 const cacheKey = this._getGifCacheKey();
                 let gifBlob = null;
@@ -968,6 +1022,8 @@
                     this.downloadGifOption.textContent = "Gif (échec)";
                 }
                 this._showToast("Export GIF impossible", true);
+            } finally {
+                this._setGifDownloadLoading(false);
             }
         }
 
@@ -1626,6 +1682,7 @@
             this.memoName = memoName || "";
             this._syncCutUiState();
             this._closeDownloadDropdown();
+            this._setGifDownloadLoading(false);
             this.overlay.classList.add("voice-video-player-modal--open");
             this.overlay.setAttribute("aria-hidden", "false");
             document.body?.classList.add("voice-video-player-modal-open");
@@ -1639,6 +1696,7 @@
             this.overlay.classList.remove("voice-video-player-modal--open");
             this.overlay.setAttribute("aria-hidden", "true");
             this._closeDownloadDropdown();
+            this._setGifDownloadLoading(false);
             document.body?.classList.remove("voice-video-player-modal-open");
             document.removeEventListener("keydown", this._handleKeydown);
             if (this.videoEl) {

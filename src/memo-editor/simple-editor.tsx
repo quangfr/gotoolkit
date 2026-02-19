@@ -2345,9 +2345,6 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   const blockDragMovedRef = React.useRef(false);
   const tableLayoutRafRef = React.useRef<number | null>(null);
   const isAutoLayoutRef = React.useRef(false);
-  const pendingEmptyListBackspaceRef = React.useRef<number | null>(null);
-
-
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -2526,7 +2523,6 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       },
       handleKeyDown: (_view, event) => {
         if (!editor) return false;
-        const now = Date.now();
         const clearStoredMarks = () => {
           const blockedMarks = new Set(['code', 'textStyle', 'bold', 'italic', 'underline', 'strike', 'highlight']);
           const storedMarks = editor.state.storedMarks || editor.state.selection.$from.marks();
@@ -2538,54 +2534,22 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         };
 
         const selection = editor.state.selection;
-        if (event.key !== 'Backspace') {
-          pendingEmptyListBackspaceRef.current = null;
-        }
-
         if (event.key === 'Backspace' && selection.empty) {
           const { $from } = selection;
           const isAtStart = $from.parentOffset === 0;
           const isEmptyParagraph = $from.parent?.type?.name === 'paragraph' && $from.parent?.content?.size === 0;
-          let inListItem = false;
-          for (let d = $from.depth; d > 0; d -= 1) {
-            if ($from.node(d).type.name === 'listItem') {
-              inListItem = true;
-              break;
-            }
-          }
-
-          const topLevelIndex = $from.index(0);
-          const prevTopLevelNode = topLevelIndex > 0 ? editor.state.doc.child(topLevelIndex - 1) : null;
-          const isParagraphAfterList =
-            isAtStart &&
-            isEmptyParagraph &&
-            !inListItem &&
-            !!prevTopLevelNode &&
-            (prevTopLevelNode.type.name === 'bulletList' || prevTopLevelNode.type.name === 'orderedList');
-
-          const pendingAt = pendingEmptyListBackspaceRef.current;
-          const isSecondBackspace = Number.isFinite(pendingAt as number) && now - Number(pendingAt) < 1600;
-
-          if (isAtStart && isEmptyParagraph && inListItem && isSecondBackspace) {
+          const inListItem = editor.isActive('listItem');
+          if (isAtStart && isEmptyParagraph && inListItem) {
             event.preventDefault();
-            pendingEmptyListBackspaceRef.current = null;
-            if (editor.chain().focus().liftListItem('listItem').run()) {
-              return true;
+            // Exit the whole list hierarchy in one Backspace, while preserving
+            // list nodes before/after as separate lists when needed.
+            let lifted = false;
+            for (let i = 0; i < 12; i += 1) {
+              if (!editor.isActive('listItem')) break;
+              if (!editor.chain().focus().liftListItem('listItem').run()) break;
+              lifted = true;
             }
-            return true;
-          }
-
-          // Prevent immediate merge back into the list right after un-bulleting.
-          if (isParagraphAfterList && isSecondBackspace) {
-            event.preventDefault();
-            pendingEmptyListBackspaceRef.current = null;
-            return true;
-          }
-
-          if ((isAtStart && isEmptyParagraph && inListItem) || isParagraphAfterList) {
-            pendingEmptyListBackspaceRef.current = now;
-          } else {
-            pendingEmptyListBackspaceRef.current = null;
+            if (lifted) return true;
           }
         }
 

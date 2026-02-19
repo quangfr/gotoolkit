@@ -55480,7 +55480,6 @@ ${promptInput.trim()}`
     const blockDragMovedRef = react_shim_default.useRef(false);
     const tableLayoutRafRef = react_shim_default.useRef(null);
     const isAutoLayoutRef = react_shim_default.useRef(false);
-    const pendingEmptyListBackspaceRef = react_shim_default.useRef(null);
     const editor = useEditor({
       extensions: [
         StarterKit.configure({
@@ -55647,7 +55646,6 @@ ${promptInput.trim()}`
         handleKeyDown: (_view, event) => {
           var _a2, _b2, _c2, _d2, _e, _f, _g;
           if (!editor) return false;
-          const now = Date.now();
           const clearStoredMarks = () => {
             const blockedMarks = /* @__PURE__ */ new Set(["code", "textStyle", "bold", "italic", "underline", "strike", "highlight"]);
             const storedMarks = editor.state.storedMarks || editor.state.selection.$from.marks();
@@ -55658,42 +55656,20 @@ ${promptInput.trim()}`
             editor.view.dispatch(tr2);
           };
           const selection = editor.state.selection;
-          if (event.key !== "Backspace") {
-            pendingEmptyListBackspaceRef.current = null;
-          }
           if (event.key === "Backspace" && selection.empty) {
             const { $from } = selection;
             const isAtStart = $from.parentOffset === 0;
             const isEmptyParagraph = ((_b2 = (_a2 = $from.parent) == null ? void 0 : _a2.type) == null ? void 0 : _b2.name) === "paragraph" && ((_d2 = (_c2 = $from.parent) == null ? void 0 : _c2.content) == null ? void 0 : _d2.size) === 0;
-            let inListItem = false;
-            for (let d = $from.depth; d > 0; d -= 1) {
-              if ($from.node(d).type.name === "listItem") {
-                inListItem = true;
-                break;
-              }
-            }
-            const topLevelIndex = $from.index(0);
-            const prevTopLevelNode = topLevelIndex > 0 ? editor.state.doc.child(topLevelIndex - 1) : null;
-            const isParagraphAfterList = isAtStart && isEmptyParagraph && !inListItem && !!prevTopLevelNode && (prevTopLevelNode.type.name === "bulletList" || prevTopLevelNode.type.name === "orderedList");
-            const pendingAt = pendingEmptyListBackspaceRef.current;
-            const isSecondBackspace = Number.isFinite(pendingAt) && now - Number(pendingAt) < 1600;
-            if (isAtStart && isEmptyParagraph && inListItem && isSecondBackspace) {
+            const inListItem = editor.isActive("listItem");
+            if (isAtStart && isEmptyParagraph && inListItem) {
               event.preventDefault();
-              pendingEmptyListBackspaceRef.current = null;
-              if (editor.chain().focus().liftListItem("listItem").run()) {
-                return true;
+              let lifted = false;
+              for (let i = 0; i < 12; i += 1) {
+                if (!editor.isActive("listItem")) break;
+                if (!editor.chain().focus().liftListItem("listItem").run()) break;
+                lifted = true;
               }
-              return true;
-            }
-            if (isParagraphAfterList && isSecondBackspace) {
-              event.preventDefault();
-              pendingEmptyListBackspaceRef.current = null;
-              return true;
-            }
-            if (isAtStart && isEmptyParagraph && inListItem || isParagraphAfterList) {
-              pendingEmptyListBackspaceRef.current = now;
-            } else {
-              pendingEmptyListBackspaceRef.current = null;
+              if (lifted) return true;
             }
           }
           if (!event.shiftKey && ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) {
@@ -58709,4 +58685,3 @@ docx/dist/index.mjs:
    *)
   (*! http://mths.be/fromcodepoint v0.1.0 by @mathias *)
 */
-//# sourceMappingURL=memo.bundle.js.map
