@@ -28292,75 +28292,86 @@ img.ProseMirror-separator {
     return Component;
   };
 
-  // node_modules/lucide-react/dist/esm/icons/arrow-down-a-z.js
+  // node_modules/lucide-react/dist/esm/icons/a-large-small.js
   init_define_process_env();
   init_polyfills();
   var __iconNode = [
+    ["path", { d: "m15 16 2.536-7.328a1.02 1.02 1 0 1 1.928 0L22 16", key: "xik6mr" }],
+    ["path", { d: "M15.697 14h5.606", key: "1stdlc" }],
+    ["path", { d: "m2 16 4.039-9.69a.5.5 0 0 1 .923 0L11 16", key: "d5nyq2" }],
+    ["path", { d: "M3.304 13h6.392", key: "1q3zxz" }]
+  ];
+  var ALargeSmall = createLucideIcon("a-large-small", __iconNode);
+
+  // node_modules/lucide-react/dist/esm/icons/arrow-down-a-z.js
+  init_define_process_env();
+  init_polyfills();
+  var __iconNode2 = [
     ["path", { d: "m3 16 4 4 4-4", key: "1co6wj" }],
     ["path", { d: "M7 20V4", key: "1yoxec" }],
     ["path", { d: "M20 8h-5", key: "1vsyxs" }],
     ["path", { d: "M15 10V6.5a2.5 2.5 0 0 1 5 0V10", key: "ag13bf" }],
     ["path", { d: "M15 14h5l-5 6h5", key: "ur5jdg" }]
   ];
-  var ArrowDownAZ = createLucideIcon("arrow-down-a-z", __iconNode);
+  var ArrowDownAZ = createLucideIcon("arrow-down-a-z", __iconNode2);
 
   // node_modules/lucide-react/dist/esm/icons/arrow-left-right.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode2 = [
+  var __iconNode3 = [
     ["path", { d: "M8 3 4 7l4 4", key: "9rb6wj" }],
     ["path", { d: "M4 7h16", key: "6tx8e3" }],
     ["path", { d: "m16 21 4-4-4-4", key: "siv7j2" }],
     ["path", { d: "M20 17H4", key: "h6l3hr" }]
   ];
-  var ArrowLeftRight = createLucideIcon("arrow-left-right", __iconNode2);
+  var ArrowLeftRight = createLucideIcon("arrow-left-right", __iconNode3);
 
   // node_modules/lucide-react/dist/esm/icons/arrow-up-a-z.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode3 = [
+  var __iconNode4 = [
     ["path", { d: "m3 8 4-4 4 4", key: "11wl7u" }],
     ["path", { d: "M7 4v16", key: "1glfcx" }],
     ["path", { d: "M20 8h-5", key: "1vsyxs" }],
     ["path", { d: "M15 10V6.5a2.5 2.5 0 0 1 5 0V10", key: "ag13bf" }],
     ["path", { d: "M15 14h5l-5 6h5", key: "ur5jdg" }]
   ];
-  var ArrowUpAZ = createLucideIcon("arrow-up-a-z", __iconNode3);
+  var ArrowUpAZ = createLucideIcon("arrow-up-a-z", __iconNode4);
+
+  // node_modules/lucide-react/dist/esm/icons/arrow-up-left.js
+  init_define_process_env();
+  init_polyfills();
+  var __iconNode5 = [
+    ["path", { d: "M7 17V7h10", key: "11bw93" }],
+    ["path", { d: "M17 17 7 7", key: "2786uv" }]
+  ];
+  var ArrowUpLeft = createLucideIcon("arrow-up-left", __iconNode5);
 
   // node_modules/lucide-react/dist/esm/icons/baseline.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode4 = [
+  var __iconNode6 = [
     ["path", { d: "M4 20h16", key: "14thso" }],
     ["path", { d: "m6 16 6-12 6 12", key: "1b4byz" }],
     ["path", { d: "M8 12h8", key: "1wcyev" }]
   ];
-  var Baseline = createLucideIcon("baseline", __iconNode4);
-
-  // node_modules/lucide-react/dist/esm/icons/blend.js
-  init_define_process_env();
-  init_polyfills();
-  var __iconNode5 = [
-    ["circle", { cx: "9", cy: "9", r: "7", key: "p2h5vp" }],
-    ["circle", { cx: "15", cy: "15", r: "7", key: "19ennj" }]
-  ];
-  var Blend = createLucideIcon("blend", __iconNode5);
+  var Baseline = createLucideIcon("baseline", __iconNode6);
 
   // node_modules/lucide-react/dist/esm/icons/bold.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode6 = [
+  var __iconNode7 = [
     [
       "path",
       { d: "M6 12h9a4 4 0 0 1 0 8H7a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h7a4 4 0 0 1 0 8", key: "mg9rjx" }
     ]
   ];
-  var Bold2 = createLucideIcon("bold", __iconNode6);
+  var Bold2 = createLucideIcon("bold", __iconNode7);
 
   // node_modules/lucide-react/dist/esm/icons/bot.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode7 = [
+  var __iconNode8 = [
     ["path", { d: "M12 8V4H8", key: "hb8ula" }],
     ["rect", { width: "16", height: "12", x: "4", y: "8", rx: "2", key: "enze0r" }],
     ["path", { d: "M2 14h2", key: "vft8re" }],
@@ -28368,12 +28379,12 @@ img.ProseMirror-separator {
     ["path", { d: "M15 13v2", key: "1xurst" }],
     ["path", { d: "M9 13v2", key: "rq6x2g" }]
   ];
-  var Bot = createLucideIcon("bot", __iconNode7);
+  var Bot = createLucideIcon("bot", __iconNode8);
 
   // node_modules/lucide-react/dist/esm/icons/boxes.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode8 = [
+  var __iconNode9 = [
     [
       "path",
       {
@@ -28405,49 +28416,49 @@ img.ProseMirror-separator {
     ["path", { d: "m12 8 4.74-2.85", key: "3rx089" }],
     ["path", { d: "M12 13.5V8", key: "1io7kd" }]
   ];
-  var Boxes = createLucideIcon("boxes", __iconNode8);
+  var Boxes = createLucideIcon("boxes", __iconNode9);
 
   // node_modules/lucide-react/dist/esm/icons/check-check.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode9 = [
+  var __iconNode10 = [
     ["path", { d: "M18 6 7 17l-5-5", key: "116fxf" }],
     ["path", { d: "m22 10-7.5 7.5L13 16", key: "ke71qq" }]
   ];
-  var CheckCheck = createLucideIcon("check-check", __iconNode9);
+  var CheckCheck = createLucideIcon("check-check", __iconNode10);
 
   // node_modules/lucide-react/dist/esm/icons/check.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode10 = [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]];
-  var Check = createLucideIcon("check", __iconNode10);
+  var __iconNode11 = [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]];
+  var Check = createLucideIcon("check", __iconNode11);
 
   // node_modules/lucide-react/dist/esm/icons/chevron-down.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode11 = [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]];
-  var ChevronDown = createLucideIcon("chevron-down", __iconNode11);
+  var __iconNode12 = [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]];
+  var ChevronDown = createLucideIcon("chevron-down", __iconNode12);
 
   // node_modules/lucide-react/dist/esm/icons/chevron-up.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode12 = [["path", { d: "m18 15-6-6-6 6", key: "153udz" }]];
-  var ChevronUp = createLucideIcon("chevron-up", __iconNode12);
+  var __iconNode13 = [["path", { d: "m18 15-6-6-6 6", key: "153udz" }]];
+  var ChevronUp = createLucideIcon("chevron-up", __iconNode13);
 
   // node_modules/lucide-react/dist/esm/icons/circle-alert.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode13 = [
+  var __iconNode14 = [
     ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
     ["line", { x1: "12", x2: "12", y1: "8", y2: "12", key: "1pkeuh" }],
     ["line", { x1: "12", x2: "12.01", y1: "16", y2: "16", key: "4dfq90" }]
   ];
-  var CircleAlert = createLucideIcon("circle-alert", __iconNode13);
+  var CircleAlert = createLucideIcon("circle-alert", __iconNode14);
 
   // node_modules/lucide-react/dist/esm/icons/circle-play.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode14 = [
+  var __iconNode15 = [
     [
       "path",
       {
@@ -28457,157 +28468,157 @@ img.ProseMirror-separator {
     ],
     ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }]
   ];
-  var CirclePlay = createLucideIcon("circle-play", __iconNode14);
+  var CirclePlay = createLucideIcon("circle-play", __iconNode15);
 
   // node_modules/lucide-react/dist/esm/icons/circle-x.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode15 = [
+  var __iconNode16 = [
     ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
     ["path", { d: "m15 9-6 6", key: "1uzhvr" }],
     ["path", { d: "m9 9 6 6", key: "z0biqf" }]
   ];
-  var CircleX = createLucideIcon("circle-x", __iconNode15);
+  var CircleX = createLucideIcon("circle-x", __iconNode16);
 
   // node_modules/lucide-react/dist/esm/icons/code-xml.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode16 = [
+  var __iconNode17 = [
     ["path", { d: "m18 16 4-4-4-4", key: "1inbqp" }],
     ["path", { d: "m6 8-4 4 4 4", key: "15zrgr" }],
     ["path", { d: "m14.5 4-5 16", key: "e7oirm" }]
   ];
-  var CodeXml = createLucideIcon("code-xml", __iconNode16);
+  var CodeXml = createLucideIcon("code-xml", __iconNode17);
 
   // node_modules/lucide-react/dist/esm/icons/copy.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode17 = [
+  var __iconNode18 = [
     ["rect", { width: "14", height: "14", x: "8", y: "8", rx: "2", ry: "2", key: "17jyea" }],
     ["path", { d: "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2", key: "zix9uf" }]
   ];
-  var Copy = createLucideIcon("copy", __iconNode17);
+  var Copy = createLucideIcon("copy", __iconNode18);
 
   // node_modules/lucide-react/dist/esm/icons/crop.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode18 = [
+  var __iconNode19 = [
     ["path", { d: "M6 2v14a2 2 0 0 0 2 2h14", key: "ron5a4" }],
     ["path", { d: "M18 22V8a2 2 0 0 0-2-2H2", key: "7s9ehn" }]
   ];
-  var Crop = createLucideIcon("crop", __iconNode18);
+  var Crop = createLucideIcon("crop", __iconNode19);
 
   // node_modules/lucide-react/dist/esm/icons/download.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode19 = [
+  var __iconNode20 = [
     ["path", { d: "M12 15V3", key: "m9g1x1" }],
     ["path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", key: "ih7n3h" }],
     ["path", { d: "m7 10 5 5 5-5", key: "brsn70" }]
   ];
-  var Download = createLucideIcon("download", __iconNode19);
+  var Download = createLucideIcon("download", __iconNode20);
 
   // node_modules/lucide-react/dist/esm/icons/fullscreen.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode20 = [
+  var __iconNode21 = [
     ["path", { d: "M3 7V5a2 2 0 0 1 2-2h2", key: "aa7l1z" }],
     ["path", { d: "M17 3h2a2 2 0 0 1 2 2v2", key: "4qcy5o" }],
     ["path", { d: "M21 17v2a2 2 0 0 1-2 2h-2", key: "6vwrx8" }],
     ["path", { d: "M7 21H5a2 2 0 0 1-2-2v-2", key: "ioqczr" }],
     ["rect", { width: "10", height: "8", x: "7", y: "8", rx: "1", key: "vys8me" }]
   ];
-  var Fullscreen = createLucideIcon("fullscreen", __iconNode20);
+  var Fullscreen = createLucideIcon("fullscreen", __iconNode21);
 
   // node_modules/lucide-react/dist/esm/icons/heading-1.js
-  init_define_process_env();
-  init_polyfills();
-  var __iconNode21 = [
-    ["path", { d: "M4 12h8", key: "17cfdx" }],
-    ["path", { d: "M4 18V6", key: "1rz3zl" }],
-    ["path", { d: "M12 18V6", key: "zqpxq5" }],
-    ["path", { d: "m17 12 3-2v8", key: "1hhhft" }]
-  ];
-  var Heading1 = createLucideIcon("heading-1", __iconNode21);
-
-  // node_modules/lucide-react/dist/esm/icons/heading-2.js
   init_define_process_env();
   init_polyfills();
   var __iconNode22 = [
     ["path", { d: "M4 12h8", key: "17cfdx" }],
     ["path", { d: "M4 18V6", key: "1rz3zl" }],
     ["path", { d: "M12 18V6", key: "zqpxq5" }],
-    ["path", { d: "M21 18h-4c0-4 4-3 4-6 0-1.5-2-2.5-4-1", key: "9jr5yi" }]
+    ["path", { d: "m17 12 3-2v8", key: "1hhhft" }]
   ];
-  var Heading2 = createLucideIcon("heading-2", __iconNode22);
+  var Heading1 = createLucideIcon("heading-1", __iconNode22);
 
-  // node_modules/lucide-react/dist/esm/icons/heading-3.js
+  // node_modules/lucide-react/dist/esm/icons/heading-2.js
   init_define_process_env();
   init_polyfills();
   var __iconNode23 = [
     ["path", { d: "M4 12h8", key: "17cfdx" }],
     ["path", { d: "M4 18V6", key: "1rz3zl" }],
     ["path", { d: "M12 18V6", key: "zqpxq5" }],
+    ["path", { d: "M21 18h-4c0-4 4-3 4-6 0-1.5-2-2.5-4-1", key: "9jr5yi" }]
+  ];
+  var Heading2 = createLucideIcon("heading-2", __iconNode23);
+
+  // node_modules/lucide-react/dist/esm/icons/heading-3.js
+  init_define_process_env();
+  init_polyfills();
+  var __iconNode24 = [
+    ["path", { d: "M4 12h8", key: "17cfdx" }],
+    ["path", { d: "M4 18V6", key: "1rz3zl" }],
+    ["path", { d: "M12 18V6", key: "zqpxq5" }],
     ["path", { d: "M17.5 10.5c1.7-1 3.5 0 3.5 1.5a2 2 0 0 1-2 2", key: "68ncm8" }],
     ["path", { d: "M17 17.5c2 1.5 4 .3 4-1.5a2 2 0 0 0-2-2", key: "1ejuhz" }]
   ];
-  var Heading3 = createLucideIcon("heading-3", __iconNode23);
+  var Heading3 = createLucideIcon("heading-3", __iconNode24);
 
   // node_modules/lucide-react/dist/esm/icons/heading-4.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode24 = [
+  var __iconNode25 = [
     ["path", { d: "M12 18V6", key: "zqpxq5" }],
     ["path", { d: "M17 10v3a1 1 0 0 0 1 1h3", key: "tj5zdr" }],
     ["path", { d: "M21 10v8", key: "1kdml4" }],
     ["path", { d: "M4 12h8", key: "17cfdx" }],
     ["path", { d: "M4 18V6", key: "1rz3zl" }]
   ];
-  var Heading4 = createLucideIcon("heading-4", __iconNode24);
+  var Heading4 = createLucideIcon("heading-4", __iconNode25);
 
   // node_modules/lucide-react/dist/esm/icons/highlighter.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode25 = [
+  var __iconNode26 = [
     ["path", { d: "m9 11-6 6v3h9l3-3", key: "1a3l36" }],
     ["path", { d: "m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4", key: "14a9rk" }]
   ];
-  var Highlighter = createLucideIcon("highlighter", __iconNode25);
+  var Highlighter = createLucideIcon("highlighter", __iconNode26);
 
   // node_modules/lucide-react/dist/esm/icons/image.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode26 = [
+  var __iconNode27 = [
     ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", ry: "2", key: "1m3agn" }],
     ["circle", { cx: "9", cy: "9", r: "2", key: "af1f0g" }],
     ["path", { d: "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21", key: "1xmnt7" }]
   ];
-  var Image2 = createLucideIcon("image", __iconNode26);
+  var Image2 = createLucideIcon("image", __iconNode27);
 
   // node_modules/lucide-react/dist/esm/icons/info.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode27 = [
+  var __iconNode28 = [
     ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
     ["path", { d: "M12 16v-4", key: "1dtifu" }],
     ["path", { d: "M12 8h.01", key: "e9boi3" }]
   ];
-  var Info = createLucideIcon("info", __iconNode27);
+  var Info = createLucideIcon("info", __iconNode28);
 
   // node_modules/lucide-react/dist/esm/icons/italic.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode28 = [
+  var __iconNode29 = [
     ["line", { x1: "19", x2: "10", y1: "4", y2: "4", key: "15jd3p" }],
     ["line", { x1: "14", x2: "5", y1: "20", y2: "20", key: "bu0au3" }],
     ["line", { x1: "15", x2: "9", y1: "4", y2: "20", key: "uljnxc" }]
   ];
-  var Italic2 = createLucideIcon("italic", __iconNode28);
+  var Italic2 = createLucideIcon("italic", __iconNode29);
 
   // node_modules/lucide-react/dist/esm/icons/lightbulb.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode29 = [
+  var __iconNode30 = [
     [
       "path",
       {
@@ -28618,21 +28629,21 @@ img.ProseMirror-separator {
     ["path", { d: "M9 18h6", key: "x1upvd" }],
     ["path", { d: "M10 22h4", key: "ceow96" }]
   ];
-  var Lightbulb = createLucideIcon("lightbulb", __iconNode29);
+  var Lightbulb = createLucideIcon("lightbulb", __iconNode30);
 
   // node_modules/lucide-react/dist/esm/icons/link.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode30 = [
+  var __iconNode31 = [
     ["path", { d: "M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71", key: "1cjeqo" }],
     ["path", { d: "M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71", key: "19qd67" }]
   ];
-  var Link2 = createLucideIcon("link", __iconNode30);
+  var Link2 = createLucideIcon("link", __iconNode31);
 
   // node_modules/lucide-react/dist/esm/icons/list.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode31 = [
+  var __iconNode32 = [
     ["path", { d: "M3 5h.01", key: "18ugdj" }],
     ["path", { d: "M3 12h.01", key: "nlz23k" }],
     ["path", { d: "M3 19h.01", key: "noohij" }],
@@ -28640,29 +28651,13 @@ img.ProseMirror-separator {
     ["path", { d: "M8 12h13", key: "1za7za" }],
     ["path", { d: "M8 19h13", key: "m83p4d" }]
   ];
-  var List = createLucideIcon("list", __iconNode31);
+  var List = createLucideIcon("list", __iconNode32);
 
   // node_modules/lucide-react/dist/esm/icons/loader-circle.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode32 = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
-  var LoaderCircle = createLucideIcon("loader-circle", __iconNode32);
-
-  // node_modules/lucide-react/dist/esm/icons/pencil-line.js
-  init_define_process_env();
-  init_polyfills();
-  var __iconNode33 = [
-    ["path", { d: "M13 21h8", key: "1jsn5i" }],
-    ["path", { d: "m15 5 4 4", key: "1mk7zo" }],
-    [
-      "path",
-      {
-        d: "M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z",
-        key: "1a8usu"
-      }
-    ]
-  ];
-  var PencilLine = createLucideIcon("pencil-line", __iconNode33);
+  var __iconNode33 = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
+  var LoaderCircle = createLucideIcon("loader-circle", __iconNode33);
 
   // node_modules/lucide-react/dist/esm/icons/pencil.js
   init_define_process_env();
@@ -53377,13 +53372,14 @@ ${promptInput.trim()}`
     const historyRef = react_shim_default.useRef([src]);
     const historyIndexRef = react_shim_default.useRef(0);
     const textDragRef = react_shim_default.useRef(null);
+    const textResizeRef = react_shim_default.useRef(null);
+    const shapeEditRef = react_shim_default.useRef(null);
+    const prevToolRef = react_shim_default.useRef("none");
     const [gifPoster, setGifPoster] = react_shim_default.useState(null);
     const [gifPlaying, setGifPlaying] = react_shim_default.useState(!isGif);
     const [gifDurationMs, setGifDurationMs] = react_shim_default.useState(4e3);
     const [gifReplayTick, setGifReplayTick] = react_shim_default.useState(0);
     const [fullscreenOpen, setFullscreenOpen] = react_shim_default.useState(false);
-    const [inlineToolbarOpen, setInlineToolbarOpen] = react_shim_default.useState(false);
-    const [isImageSelected, setIsImageSelected] = react_shim_default.useState(false);
     const [activeTool, setActiveTool] = react_shim_default.useState("none");
     const [sizePreset, setSizePreset] = react_shim_default.useState("M");
     const [strokeColor, setStrokeColor] = react_shim_default.useState("#000000");
@@ -53391,6 +53387,7 @@ ${promptInput.trim()}`
     const [historyIndex, setHistoryIndex] = react_shim_default.useState(0);
     const [drag, setDrag] = react_shim_default.useState(null);
     const [textDraft, setTextDraft] = react_shim_default.useState(null);
+    const [shapeDraft, setShapeDraft] = react_shim_default.useState(null);
     const widthPx = getPixels((_b = node.attrs) == null ? void 0 : _b.width);
     const heightPx = getPixels((_c = node.attrs) == null ? void 0 : _c.height);
     react_shim_default.useEffect(() => {
@@ -53492,33 +53489,11 @@ ${promptInput.trim()}`
         const root2 = wrapperRef.current;
         if (!root2) return;
         if (root2.contains(event.target)) return;
-        setInlineToolbarOpen(false);
         setActiveTool("none");
-        setTextDraft(null);
       };
       document.addEventListener("pointerdown", onPointerDown);
       return () => document.removeEventListener("pointerdown", onPointerDown);
     }, []);
-    react_shim_default.useEffect(() => {
-      if (!editor || typeof getPos !== "function") return;
-      const updateNodeSelectionState = () => {
-        var _a2, _b2;
-        try {
-          const pos = getPos();
-          const selection = editor.state.selection;
-          const selected = selection instanceof NodeSelection && selection.from === pos && ((_b2 = (_a2 = selection.node) == null ? void 0 : _a2.type) == null ? void 0 : _b2.name) === "image";
-          setIsImageSelected(Boolean(selected));
-          if (selected) {
-            setInlineToolbarOpen(true);
-          }
-        } catch (err) {
-          setIsImageSelected(false);
-        }
-      };
-      editor.on("selectionUpdate", updateNodeSelectionState);
-      updateNodeSelectionState();
-      return () => editor.off("selectionUpdate", updateNodeSelectionState);
-    }, [editor, getPos]);
     react_shim_default.useEffect(() => {
       const surfaceRef = (drag == null ? void 0 : drag.surface) === "fullscreen" ? fullscreenSurfaceRef : inlineSurfaceRef;
       const canvasRef = (drag == null ? void 0 : drag.surface) === "fullscreen" ? fullscreenOverlayRef : inlineOverlayRef;
@@ -53597,7 +53572,7 @@ ${promptInput.trim()}`
       maxWidth: "100%",
       maxHeight: "100%",
       objectFit: "contain",
-      cursor: activeTool === "none" ? isGif ? "pointer" : "default" : "crosshair"
+      cursor: activeTool === "none" ? isGif ? "pointer" : "default" : activeTool === "text" ? "text" : "crosshair"
     };
     const frameStyle = {
       width: widthPx ? `${widthPx}px` : "100%",
@@ -53637,21 +53612,6 @@ ${promptInput.trim()}`
         console.warn(err);
       }
     }, [currentSource, (_d = node == null ? void 0 : node.attrs) == null ? void 0 : _d.fileName]);
-    const runTransparent = react_shim_default.useCallback(async () => {
-      await applySimpleOperation(({ canvas, ctx }) => {
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const data = imageData.data;
-        for (let i = 0; i < data.length; i += 4) {
-          const r = data[i];
-          const g = data[i + 1];
-          const b = data[i + 2];
-          if (r > 238 && g > 238 && b > 238) {
-            data[i + 3] = 0;
-          }
-        }
-        ctx.putImageData(imageData, 0, 0);
-      });
-    }, [applySimpleOperation]);
     const runRotate = react_shim_default.useCallback(async () => {
       await applySimpleOperation(({ canvas, image }) => {
         const rotated = document.createElement("canvas");
@@ -53712,6 +53672,17 @@ ${promptInput.trim()}`
           ctx.beginPath();
           ctx.moveTo(state2.start.x * scaleX, state2.start.y * scaleY);
           ctx.lineTo(state2.current.x * scaleX, state2.current.y * scaleY);
+          const angle = Math.atan2(state2.current.y - state2.start.y, state2.current.x - state2.start.x);
+          const headLen = 10 * Math.max(scaleX, scaleY);
+          ctx.lineTo(
+            state2.current.x * scaleX - headLen * Math.cos(angle - Math.PI / 7),
+            state2.current.y * scaleY - headLen * Math.sin(angle - Math.PI / 7)
+          );
+          ctx.moveTo(state2.current.x * scaleX, state2.current.y * scaleY);
+          ctx.lineTo(
+            state2.current.x * scaleX - headLen * Math.cos(angle + Math.PI / 7),
+            state2.current.y * scaleY - headLen * Math.sin(angle + Math.PI / 7)
+          );
           ctx.stroke();
           return;
         }
@@ -53728,6 +53699,22 @@ ${promptInput.trim()}`
         return cropped;
       });
     }, [applySimpleOperation, sizePreset, strokeColor]);
+    const commitShapeDraft = react_shim_default.useCallback(async (draft) => {
+      if (!draft) return;
+      const surfaceEl = draft.surface === "fullscreen" ? fullscreenSurfaceRef.current : inlineSurfaceRef.current;
+      if (!surfaceEl) return;
+      const rect = surfaceEl.getBoundingClientRect();
+      const state2 = {
+        tool: draft.tool,
+        surface: draft.surface,
+        start: draft.start,
+        current: draft.end,
+        points: [draft.start, draft.end],
+        width: rect.width,
+        height: rect.height
+      };
+      await commitDragOperation(state2);
+    }, [commitDragOperation]);
     const handleTextPlacement = react_shim_default.useCallback((surface, event) => {
       const surfaceEl = surface === "fullscreen" ? fullscreenSurfaceRef.current : inlineSurfaceRef.current;
       if (!surfaceEl) return;
@@ -53738,9 +53725,10 @@ ${promptInput.trim()}`
         x: local.x,
         y: local.y,
         width: Math.min(280, Math.max(180, rect.width * 0.4)),
-        text: (textDraft == null ? void 0 : textDraft.text) || ""
+        height: Math.min(140, Math.max(56, rect.height * 0.16)),
+        text: ""
       });
-    }, [textDraft == null ? void 0 : textDraft.text]);
+    }, []);
     const commitTextDraft = react_shim_default.useCallback(async () => {
       if (!textDraft || !textDraft.text.trim()) {
         setTextDraft(null);
@@ -53762,7 +53750,24 @@ ${promptInput.trim()}`
         const startX = draft.x * scaleX;
         const startY = draft.y * scaleY;
         const lines = draft.text.split("\n");
-        lines.forEach((lineText, index) => {
+        const maxWidth = Math.max(20, draft.width * scaleX);
+        const wrappedLines = [];
+        lines.forEach((lineText) => {
+          const words = lineText.split(" ");
+          let current = "";
+          words.forEach((word) => {
+            const candidate = current ? `${current} ${word}` : word;
+            if (ctx.measureText(candidate).width <= maxWidth) {
+              current = candidate;
+            } else {
+              if (current) wrappedLines.push(current);
+              current = word;
+            }
+          });
+          wrappedLines.push(current || "");
+        });
+        const maxLines = Math.max(1, Math.floor(draft.height * scaleY / lineHeight));
+        wrappedLines.slice(0, maxLines).forEach((lineText, index) => {
           ctx.fillText(lineText, startX, startY + index * lineHeight);
         });
       });
@@ -53770,11 +53775,13 @@ ${promptInput.trim()}`
     }, [applySimpleOperation, sizePreset, strokeColor, textDraft]);
     const handleSurfacePointerDown = react_shim_default.useCallback((surface, event) => {
       if (!canEdit) return;
-      setInlineToolbarOpen(true);
       if (activeTool === "none") return;
       event.preventDefault();
       event.stopPropagation();
       if (activeTool === "text") {
+        if (textDraft && textDraft.surface === surface) {
+          void commitTextDraft();
+        }
         handleTextPlacement(surface, event);
         return;
       }
@@ -53785,6 +53792,10 @@ ${promptInput.trim()}`
         x: event.clientX - bounds.left,
         y: event.clientY - bounds.top
       }, bounds.width, bounds.height);
+      if ((activeTool === "line" || activeTool === "square") && shapeDraft && shapeDraft.surface === surface) {
+        void commitShapeDraft(shapeDraft);
+        setShapeDraft(null);
+      }
       setDrag({
         tool: activeTool,
         surface,
@@ -53794,7 +53805,7 @@ ${promptInput.trim()}`
         width: bounds.width,
         height: bounds.height
       });
-    }, [activeTool, canEdit, handleTextPlacement]);
+    }, [activeTool, canEdit, commitShapeDraft, commitTextDraft, handleTextPlacement, shapeDraft, textDraft]);
     react_shim_default.useEffect(() => {
       if (!drag) return;
       const onMove = (event) => {
@@ -53815,6 +53826,15 @@ ${promptInput.trim()}`
         const current = drag;
         setDrag(null);
         if (current) {
+          if (current.tool === "line" || current.tool === "square") {
+            setShapeDraft({
+              tool: current.tool,
+              surface: current.surface,
+              start: current.start,
+              end: current.current
+            });
+            return;
+          }
           void commitDragOperation(current);
         }
       };
@@ -53840,7 +53860,7 @@ ${promptInput.trim()}`
           );
           const nextY = Math.min(
             Math.max(event.clientY - rect.top - dragState.offsetY, 0),
-            Math.max(0, rect.height - 28)
+            Math.max(0, rect.height - prev.height)
           );
           return { ...prev, x: nextX, y: nextY };
         });
@@ -53855,13 +53875,92 @@ ${promptInput.trim()}`
         window.removeEventListener("pointerup", onUp);
       };
     }, []);
+    react_shim_default.useEffect(() => {
+      const onMove = (event) => {
+        const resize = textResizeRef.current;
+        if (!resize) return;
+        setTextDraft((prev) => {
+          if (!prev || prev.surface !== resize.surface) return prev;
+          const surfaceEl = resize.surface === "fullscreen" ? fullscreenSurfaceRef.current : inlineSurfaceRef.current;
+          if (!surfaceEl) return prev;
+          const rect = surfaceEl.getBoundingClientRect();
+          const nextWidth = Math.min(
+            Math.max(60, resize.width + (event.clientX - resize.startX)),
+            Math.max(60, rect.width - prev.x)
+          );
+          const nextHeight = Math.min(
+            Math.max(40, resize.height + (event.clientY - resize.startY)),
+            Math.max(40, rect.height - prev.y)
+          );
+          return { ...prev, width: nextWidth, height: nextHeight };
+        });
+      };
+      const onUp = () => {
+        textResizeRef.current = null;
+      };
+      window.addEventListener("pointermove", onMove);
+      window.addEventListener("pointerup", onUp);
+      return () => {
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", onUp);
+      };
+    }, []);
+    react_shim_default.useEffect(() => {
+      const onMove = (event) => {
+        const edit2 = shapeEditRef.current;
+        if (!edit2) return;
+        setShapeDraft((prev) => {
+          var _a2, _b2;
+          if (!prev || prev.surface !== edit2.surface) return prev;
+          const surfaceEl = edit2.surface === "fullscreen" ? fullscreenSurfaceRef.current : inlineSurfaceRef.current;
+          if (!surfaceEl) return prev;
+          const rect = surfaceEl.getBoundingClientRect();
+          const next2 = clampPoint({ x: event.clientX - rect.left, y: event.clientY - rect.top }, rect.width, rect.height);
+          if (edit2.mode === "start") return { ...prev, start: next2 };
+          if (edit2.mode === "end") return { ...prev, end: next2 };
+          if (edit2.mode === "square-resize") return { ...prev, end: next2 };
+          const dx = next2.x - (((_a2 = edit2.anchor) == null ? void 0 : _a2.x) || 0);
+          const dy = next2.y - (((_b2 = edit2.anchor) == null ? void 0 : _b2.y) || 0);
+          return {
+            ...prev,
+            start: clampPoint({ x: edit2.start.x + dx, y: edit2.start.y + dy }, rect.width, rect.height),
+            end: clampPoint({ x: edit2.end.x + dx, y: edit2.end.y + dy }, rect.width, rect.height)
+          };
+        });
+      };
+      const onUp = () => {
+        shapeEditRef.current = null;
+      };
+      window.addEventListener("pointermove", onMove);
+      window.addEventListener("pointerup", onUp);
+      return () => {
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", onUp);
+      };
+    }, []);
+    react_shim_default.useEffect(() => {
+      const prevTool = prevToolRef.current;
+      prevToolRef.current = activeTool;
+      if (prevTool === activeTool) return;
+      if (prevTool === "text" && textDraft) {
+        void commitTextDraft();
+      }
+      if ((prevTool === "line" || prevTool === "square") && shapeDraft) {
+        void commitShapeDraft(shapeDraft);
+        setShapeDraft(null);
+      }
+    }, [activeTool, commitShapeDraft, commitTextDraft, shapeDraft, textDraft]);
     const toggleTool = (tool) => {
-      setInlineToolbarOpen(true);
       setDrag(null);
+      if (tool !== "line" && tool !== "square") {
+        setShapeDraft(null);
+      }
       setActiveTool((prev) => prev === tool ? "none" : tool);
     };
     const canUndo = historyIndex > 0;
     const canRedo = historyIndex < history2.length - 1;
+    const showStyleGroups = activeTool === "pencil" || activeTool === "line" || activeTool === "text" || activeTool === "square";
+    const isTextTool = activeTool === "text";
     const renderEditToolbar = (surface, permanent) => /* @__PURE__ */ jsxs("div", { className: `memo-image-edit-toolbar ${permanent ? "is-permanent" : ""}`, children: [
       /* @__PURE__ */ jsxs("div", { className: "memo-image-edit-group", children: [
         /* @__PURE__ */ jsxs("button", { type: "button", className: "memo-image-edit-btn", title: "Annuler", onClick: handleUndo, disabled: !canUndo, children: [
@@ -53881,10 +53980,6 @@ ${promptInput.trim()}`
         /* @__PURE__ */ jsxs("button", { type: "button", className: "memo-image-edit-btn", title: "Rotation droite 90\xB0", onClick: () => void runRotate(), children: [
           /* @__PURE__ */ jsx("i", { "data-lucide": "rotate-cw", style: { display: "none" }, "aria-hidden": "true" }),
           /* @__PURE__ */ jsx(RotateCw, { size: 14 })
-        ] }),
-        /* @__PURE__ */ jsxs("button", { type: "button", className: "memo-image-edit-btn", title: "Fond transparent", onClick: () => void runTransparent(), children: [
-          /* @__PURE__ */ jsx("i", { "data-lucide": "blend", style: { display: "none" }, "aria-hidden": "true" }),
-          /* @__PURE__ */ jsx(Blend, { size: 14 })
         ] })
       ] }),
       /* @__PURE__ */ jsxs("div", { className: "memo-image-edit-group", children: [
@@ -53893,8 +53988,8 @@ ${promptInput.trim()}`
           /* @__PURE__ */ jsx(Pencil, { size: 14 })
         ] }),
         /* @__PURE__ */ jsxs("button", { type: "button", className: `memo-image-edit-btn ${activeTool === "line" ? "is-active" : ""}`, title: "Ligne", onClick: () => toggleTool("line"), children: [
-          /* @__PURE__ */ jsx("i", { "data-lucide": "pencil-line", style: { display: "none" }, "aria-hidden": "true" }),
-          /* @__PURE__ */ jsx(PencilLine, { size: 14 })
+          /* @__PURE__ */ jsx("i", { "data-lucide": "arrow-up-left", style: { display: "none" }, "aria-hidden": "true" }),
+          /* @__PURE__ */ jsx(ArrowUpLeft, { size: 14 })
         ] }),
         /* @__PURE__ */ jsxs("button", { type: "button", className: `memo-image-edit-btn ${activeTool === "square" ? "is-active" : ""}`, title: "Rectangle", onClick: () => toggleTool("square"), children: [
           /* @__PURE__ */ jsx("i", { "data-lucide": "square", style: { display: "none" }, "aria-hidden": "true" }),
@@ -53905,7 +54000,7 @@ ${promptInput.trim()}`
           /* @__PURE__ */ jsx(Type, { size: 14 })
         ] })
       ] }),
-      /* @__PURE__ */ jsx("div", { className: "memo-image-edit-group memo-image-color-group", children: IMAGE_EDIT_COLORS.map((color) => /* @__PURE__ */ jsx(
+      showStyleGroups && /* @__PURE__ */ jsx("div", { className: "memo-image-edit-group memo-image-color-group", children: IMAGE_EDIT_COLORS.map((color) => /* @__PURE__ */ jsx(
         "button",
         {
           type: "button",
@@ -53916,14 +54011,28 @@ ${promptInput.trim()}`
         },
         color
       )) }),
-      /* @__PURE__ */ jsx("div", { className: "memo-image-edit-group memo-image-size-group", children: ["S", "M", "L"].map((size2) => /* @__PURE__ */ jsx(
+      showStyleGroups && /* @__PURE__ */ jsx("div", { className: "memo-image-edit-group memo-image-size-group", children: ["S", "M", "L"].map((size2) => /* @__PURE__ */ jsx(
         "button",
         {
           type: "button",
           className: `memo-image-size-btn ${sizePreset === size2 ? "is-active" : ""}`,
           onClick: () => setSizePreset(size2),
           title: `Taille ${size2}`,
-          children: size2
+          children: !isTextTool ? /* @__PURE__ */ jsx("svg", { className: "memo-size-stroke-icon", viewBox: "0 0 24 24", "aria-hidden": "true", children: /* @__PURE__ */ jsx(
+            "line",
+            {
+              x1: "5",
+              y1: "19",
+              x2: "19",
+              y2: "5",
+              stroke: "currentColor",
+              strokeWidth: size2 === "S" ? 2 : size2 === "M" ? 4 : 6,
+              strokeLinecap: "round"
+            }
+          ) }) : /* @__PURE__ */ jsxs(Fragment3, { children: [
+            /* @__PURE__ */ jsx("i", { "data-lucide": "a-large-small", style: { display: "none" }, "aria-hidden": "true" }),
+            /* @__PURE__ */ jsx(ALargeSmall, { size: size2 === "S" ? 12 : size2 === "M" ? 14 : 16 })
+          ] })
         },
         size2
       )) }),
@@ -53933,6 +54042,7 @@ ${promptInput.trim()}`
       ] })
     ] });
     const activeDragRect = drag && (drag.tool === "crop" || drag.tool === "square") ? normalizeRect(drag.start, drag.current) : null;
+    const shapeRect = shapeDraft && shapeDraft.tool === "square" ? normalizeRect(shapeDraft.start, shapeDraft.end) : null;
     const renderSurface = (surface, imageRef, overlayRef, surfaceRef) => {
       var _a2, _b2;
       return /* @__PURE__ */ jsxs(
@@ -53956,7 +54066,6 @@ ${promptInput.trim()}`
                 style: imageStyle,
                 onClick: () => {
                   if (surface === "inline" && isGif && activeTool === "none") replayGif();
-                  if (surface === "inline") setInlineToolbarOpen(true);
                 },
                 draggable: false
               },
@@ -53967,12 +54076,12 @@ ${promptInput.trim()}`
               "div",
               {
                 className: "memo-image-text-frame",
-                style: { left: `${textDraft.x}px`, top: `${textDraft.y}px`, width: `${textDraft.width}px` },
+                style: { left: `${textDraft.x}px`, top: `${textDraft.y}px`, width: `${textDraft.width}px`, height: `${textDraft.height}px` },
                 onPointerDown: (event) => {
                   event.stopPropagation();
                 },
                 children: [
-                  /* @__PURE__ */ jsxs(
+                  /* @__PURE__ */ jsx(
                     "div",
                     {
                       className: "memo-image-text-frame-drag",
@@ -53988,23 +54097,7 @@ ${promptInput.trim()}`
                           offsetY: event.clientY - rect.top - textDraft.y
                         };
                       },
-                      children: [
-                        "Texte",
-                        /* @__PURE__ */ jsx(
-                          "button",
-                          {
-                            type: "button",
-                            className: "memo-image-text-frame-apply",
-                            onClick: (event) => {
-                              event.preventDefault();
-                              event.stopPropagation();
-                              void commitTextDraft();
-                            },
-                            title: "Appliquer le texte",
-                            children: /* @__PURE__ */ jsx(Check, { size: 12 })
-                          }
-                        )
-                      ]
+                      children: "Texte"
                     }
                   ),
                   /* @__PURE__ */ jsx(
@@ -54014,10 +54107,122 @@ ${promptInput.trim()}`
                       value: textDraft.text,
                       onChange: (event) => setTextDraft((prev) => prev ? { ...prev, text: event.target.value } : prev),
                       style: { color: strokeColor, fontSize: `${SIZE_PRESETS[sizePreset].font}px` },
-                      placeholder: "\xC9crire..."
+                      placeholder: "\xC9crire...",
+                      autoFocus: true
+                    }
+                  ),
+                  /* @__PURE__ */ jsx(
+                    "div",
+                    {
+                      className: "memo-image-text-frame-resize",
+                      onPointerDown: (event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        textResizeRef.current = {
+                          surface,
+                          startX: event.clientX,
+                          startY: event.clientY,
+                          width: textDraft.width,
+                          height: textDraft.height
+                        };
+                      }
                     }
                   )
                 ]
+              }
+            ),
+            shapeDraft && shapeDraft.surface === surface && shapeDraft.tool === "line" && /* @__PURE__ */ jsxs(Fragment3, { children: [
+              /* @__PURE__ */ jsx(
+                "div",
+                {
+                  className: "memo-image-shape-line",
+                  style: {
+                    left: `${shapeDraft.start.x}px`,
+                    top: `${shapeDraft.start.y}px`,
+                    width: `${Math.hypot(shapeDraft.end.x - shapeDraft.start.x, shapeDraft.end.y - shapeDraft.start.y)}px`,
+                    transform: `rotate(${Math.atan2(shapeDraft.end.y - shapeDraft.start.y, shapeDraft.end.x - shapeDraft.start.x)}rad)`,
+                    borderColor: strokeColor,
+                    borderWidth: `${SIZE_PRESETS[sizePreset].line}px`
+                  },
+                  onPointerDown: (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    const surfaceEl = surface === "fullscreen" ? fullscreenSurfaceRef.current : inlineSurfaceRef.current;
+                    if (!surfaceEl) return;
+                    const rect = surfaceEl.getBoundingClientRect();
+                    shapeEditRef.current = {
+                      surface,
+                      mode: "move",
+                      anchor: { x: event.clientX - rect.left, y: event.clientY - rect.top },
+                      start: shapeDraft.start,
+                      end: shapeDraft.end
+                    };
+                  }
+                }
+              ),
+              /* @__PURE__ */ jsx(
+                "div",
+                {
+                  className: "memo-image-shape-handle",
+                  style: { left: `${shapeDraft.start.x}px`, top: `${shapeDraft.start.y}px`, borderColor: strokeColor },
+                  onPointerDown: (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    shapeEditRef.current = { surface, mode: "start", start: shapeDraft.start, end: shapeDraft.end };
+                  }
+                }
+              ),
+              /* @__PURE__ */ jsx(
+                "div",
+                {
+                  className: "memo-image-shape-handle",
+                  style: { left: `${shapeDraft.end.x}px`, top: `${shapeDraft.end.y}px`, borderColor: strokeColor },
+                  onPointerDown: (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    shapeEditRef.current = { surface, mode: "end", start: shapeDraft.start, end: shapeDraft.end };
+                  }
+                }
+              )
+            ] }),
+            shapeDraft && shapeDraft.surface === surface && shapeDraft.tool === "square" && shapeRect && /* @__PURE__ */ jsx(
+              "div",
+              {
+                className: "memo-image-shape-square",
+                style: {
+                  left: `${shapeRect.x}px`,
+                  top: `${shapeRect.y}px`,
+                  width: `${shapeRect.width}px`,
+                  height: `${shapeRect.height}px`,
+                  borderColor: strokeColor,
+                  borderWidth: `${SIZE_PRESETS[sizePreset].line}px`
+                },
+                onPointerDown: (event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  const surfaceEl = surface === "fullscreen" ? fullscreenSurfaceRef.current : inlineSurfaceRef.current;
+                  if (!surfaceEl) return;
+                  const rect = surfaceEl.getBoundingClientRect();
+                  shapeEditRef.current = {
+                    surface,
+                    mode: "move",
+                    anchor: { x: event.clientX - rect.left, y: event.clientY - rect.top },
+                    start: shapeDraft.start,
+                    end: shapeDraft.end
+                  };
+                },
+                children: /* @__PURE__ */ jsx(
+                  "div",
+                  {
+                    className: "memo-image-shape-square-handle",
+                    style: { borderColor: strokeColor },
+                    onPointerDown: (event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      shapeEditRef.current = { surface, mode: "square-resize", start: shapeDraft.start, end: shapeDraft.end };
+                    }
+                  }
+                )
               }
             ),
             activeDragRect && (drag == null ? void 0 : drag.surface) === surface && /* @__PURE__ */ jsxs(Fragment3, { children: [
@@ -54136,7 +54341,6 @@ ${promptInput.trim()}`
                 }
               )
             ] }),
-            (inlineToolbarOpen || isImageSelected) && canEdit && renderEditToolbar("inline", false),
             renderSurface("inline", inlineImageRef, inlineOverlayRef, inlineSurfaceRef),
             canEdit && /* @__PURE__ */ jsx(
               "div",
@@ -59623,11 +59827,12 @@ lucide-react/dist/esm/shared/src/utils.js:
 lucide-react/dist/esm/defaultAttributes.js:
 lucide-react/dist/esm/Icon.js:
 lucide-react/dist/esm/createLucideIcon.js:
+lucide-react/dist/esm/icons/a-large-small.js:
 lucide-react/dist/esm/icons/arrow-down-a-z.js:
 lucide-react/dist/esm/icons/arrow-left-right.js:
 lucide-react/dist/esm/icons/arrow-up-a-z.js:
+lucide-react/dist/esm/icons/arrow-up-left.js:
 lucide-react/dist/esm/icons/baseline.js:
-lucide-react/dist/esm/icons/blend.js:
 lucide-react/dist/esm/icons/bold.js:
 lucide-react/dist/esm/icons/bot.js:
 lucide-react/dist/esm/icons/boxes.js:
@@ -59655,7 +59860,6 @@ lucide-react/dist/esm/icons/lightbulb.js:
 lucide-react/dist/esm/icons/link.js:
 lucide-react/dist/esm/icons/list.js:
 lucide-react/dist/esm/icons/loader-circle.js:
-lucide-react/dist/esm/icons/pencil-line.js:
 lucide-react/dist/esm/icons/pencil.js:
 lucide-react/dist/esm/icons/plus.js:
 lucide-react/dist/esm/icons/quote.js:
