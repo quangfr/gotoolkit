@@ -851,10 +851,26 @@
 
     var MEDIA_AUDIO_EXTENSIONS = new Set(["mp3", "wav", "m4a", "aac", "ogg", "webm", "flac", "mp4"]);
     var MEDIA_VIDEO_EXTENSIONS = new Set(["mp4", "webm", "mov", "avi"]);
-    var VISION_ATTACHMENT_EXTENSIONS = new Set(["png", "jpg", "jpeg", "gif", "webp", "bmp", "tif", "tiff", "svg", "webm", "mp4", "avi", "mov"]);
+    var IMAGE_ATTACHMENT_EXTENSIONS = new Set(["png", "jpg", "jpeg", "gif", "webp", "bmp", "tif", "tiff", "svg"]);
     var CHAT_VISION_MODEL = "qwen/qwen3-vl-235b-a22b-instruct";
     var MEDIA_MAX_BYTES = 3 * 1024 * 1024 * 1024;
     var MEDIA_MAX_DURATION = 90 * 60;
+
+    function isImageFile(file) {
+        if (!file) return false;
+        var ext = getFileExtension(file.name || "");
+        var mime = (file.type || "").toLowerCase();
+        if (mime.startsWith("image/")) return true;
+        return IMAGE_ATTACHMENT_EXTENSIONS.has(ext);
+    }
+
+    function isVideoFile(file) {
+        if (!file) return false;
+        var ext = getFileExtension(file.name || "");
+        var mime = (file.type || "").toLowerCase();
+        if (mime.startsWith("video/")) return true;
+        return MEDIA_VIDEO_EXTENSIONS.has(ext);
+    }
 
     function isMediaFile(file) {
         if (!file) return false;
@@ -1388,6 +1404,7 @@
         this.documentChunkCount = 0;
         this.documentUploadStatus = "";
         this.pendingDocumentAttachments = [];
+        this.pendingVisionAttachmentDataUrls = new Map();
         this.pendingExcludedAttachments = new Set();
         this.attachmentsCompletedCount = 0;
         this.attachmentsCompletedSize = 0;
@@ -1502,7 +1519,10 @@
         this.mainApp = null;
         var restoredAttachments = this.conversation?.attachments;
         if (restoredAttachments && Array.isArray(restoredAttachments.names)) {
-            this.pendingDocumentAttachments = restoredAttachments.names.filter(Boolean);
+            this.pendingDocumentAttachments = restoredAttachments.names.filter(function (name) {
+                var ext = getFileExtension(name || "");
+                return Boolean(name) && !IMAGE_ATTACHMENT_EXTENSIONS.has(ext);
+            });
             if (Array.isArray(restoredAttachments.excluded)) {
                 this.pendingExcludedAttachments = new Set(restoredAttachments.excluded.filter(Boolean));
             }
@@ -1530,8 +1550,12 @@
         this.undoState = null;
 
         var restoredAttachments = this.conversation?.attachments;
+        this.pendingVisionAttachmentDataUrls = new Map();
         this.pendingDocumentAttachments = Array.isArray(restoredAttachments?.names)
-            ? restoredAttachments.names.filter(Boolean)
+            ? restoredAttachments.names.filter(function (name) {
+                var ext = getFileExtension(name || "");
+                return Boolean(name) && !IMAGE_ATTACHMENT_EXTENSIONS.has(ext);
+            })
             : [];
         this.pendingExcludedAttachments = new Set(
             Array.isArray(restoredAttachments?.excluded)
@@ -1773,6 +1797,7 @@
 
     AssistSidebar.prototype.clearAttachments = function () {
         this.pendingDocumentAttachments = [];
+        this.pendingVisionAttachmentDataUrls = new Map();
         this.pendingExcludedAttachments = new Set();
         this.attachmentsTotalCount = 0;
         this.attachmentsParsedCount = 0;
@@ -1807,14 +1832,17 @@
     AssistSidebar.prototype.handleRemoveAttachedDocuments = function () {
         var names = (this.pendingDocumentAttachments || []).slice();
         if (!names.length) return;
+        var docNames = names.filter(function (name) {
+            return !this.pendingVisionAttachmentDataUrls?.has?.(name);
+        }, this);
         this.clearAttachments();
         var memoId = this.getActiveMemoId();
         if (memoId) {
             this.memoPendingAttachmentMemos.delete(memoId);
         }
-        if (!this.docManager) return;
+        if (!this.docManager || !docNames.length) return;
         var self = this;
-        this.docManager.deleteDocumentsByNames(this.conversation.id, names)
+        this.docManager.deleteDocumentsByNames(this.conversation.id, docNames)
             .then(function () {
                 self.refreshDocumentStats();
                 self.refreshMemoContextAttachments();
@@ -3037,9 +3065,10 @@
             }
         }
         if (userMessage) {
+            var visionParts = this.buildVisionContentParts(userMessage, userContent);
             messages.push({
                 role: "user",
-                content: userContent
+                content: visionParts || userContent
             });
         }
         var payload = {
@@ -3054,7 +3083,19 @@
                 return msg.role === "user";
             });
             if (idx >= 0) {
-                messages[idx].content += (messages[idx].content ? "\n\n" : "") + text;
+                var currentContent = messages[idx].content;
+                if (Array.isArray(currentContent)) {
+                    var textPart = currentContent.find(function (part) {
+                        return part && part.type === "text";
+                    });
+                    if (textPart) {
+                        textPart.text += (textPart.text ? "\n\n" : "") + text;
+                    } else {
+                        currentContent.unshift({ type: "text", text: text });
+                    }
+                } else {
+                    messages[idx].content += (messages[idx].content ? "\n\n" : "") + text;
+                }
             } else {
                 messages.push({
                     role: "user",
@@ -3129,13 +3170,30 @@
         return payload;
     };
 
+    AssistSidebar.prototype.buildVisionContentParts = function (userMessage, fallbackText) {
+        var names = Array.isArray(userMessage?.attachments)
+            ? userMessage.attachments.filter(Boolean)
+            : [];
+        if (!names.length || !(this.pendingVisionAttachmentDataUrls instanceof Map) || !this.pendingVisionAttachmentDataUrls.size) {
+            return null;
+        }
+        var parts = [];
+        var text = String(fallbackText || "").trim();
+        parts.push({ type: "text", text: text || "Analyse ces images et réponds à la demande." });
+        names.forEach(function (name) {
+            var dataUrl = this.pendingVisionAttachmentDataUrls.get(name);
+            if (!dataUrl) return;
+            parts.push({ type: "image_url", image_url: { url: dataUrl } });
+        }, this);
+        return parts.length > 1 ? parts : null;
+    };
+
     AssistSidebar.prototype.isVisionPreset = function (presetId) {
         return presetId === "edit" || presetId === "advice" || presetId === "suggest";
     };
 
     AssistSidebar.prototype.isVisionAttachmentName = function (name) {
-        var ext = getFileExtension(name || "");
-        return VISION_ATTACHMENT_EXTENSIONS.has(ext);
+        return Boolean(this.pendingVisionAttachmentDataUrls?.has?.(name));
     };
 
     AssistSidebar.prototype.hasVisionAttachments = function (names) {
@@ -3147,9 +3205,6 @@
     };
 
     AssistSidebar.prototype.resolveModelForChatRequest = function (userMessage) {
-        if (!this.isVisionPreset(this.promptPresetId)) {
-            return global.GoToolkitIAConfig?.getOpenRouterModel?.() || "openai/gpt-oss-120b";
-        }
         var attachmentNames = [];
         if (Array.isArray(userMessage?.attachments)) {
             attachmentNames = attachmentNames.concat(userMessage.attachments.filter(Boolean));
@@ -3159,6 +3214,9 @@
         }
         if (this.hasVisionAttachments(attachmentNames)) {
             return CHAT_VISION_MODEL;
+        }
+        if (!this.isVisionPreset(this.promptPresetId)) {
+            return global.GoToolkitIAConfig?.getOpenRouterModel?.() || "openai/gpt-oss-120b";
         }
         return global.GoToolkitIAConfig?.getOpenRouterModel?.() || "openai/gpt-oss-120b";
     };
@@ -5189,9 +5247,18 @@
 
     AssistSidebar.prototype.getFileImportAcceptString = function (options) {
         var exclude = options?.exclude || [];
+        var isVideoToken = function (item) {
+            var low = String(item || "").toLowerCase();
+            return low.indexOf("video/") === 0
+                || low === ".mp4"
+                || low === ".webm"
+                || low === ".mov"
+                || low === ".avi";
+        };
         var filterFn = function (item) {
             if (!item) return false;
             var low = item.toLowerCase();
+            if (isVideoToken(low)) return false;
             return !exclude.some(function (ext) {
                 var extLow = ext.toLowerCase();
                 // Check if it's an extension or part of a mime-type
@@ -5205,15 +5272,11 @@
             var media = [
                 "audio/mpeg", ".mp3",
                 "audio/wav", ".wav",
-                "audio/mp4", ".mp4", ".m4a",
+                "audio/mp4", ".m4a",
                 "audio/aac", ".aac",
                 "audio/ogg", ".ogg",
-                "audio/webm", ".webm",
+                "audio/webm",
                 "audio/flac", ".flac",
-                "video/mp4",
-                "video/webm",
-                "video/quicktime", ".mov",
-                "video/x-msvideo", ".avi",
                 "image/png", ".png",
                 "image/jpeg", ".jpg", ".jpeg",
                 "image/webp", ".webp",
@@ -5225,7 +5288,7 @@
         }
 
         // Fallback to default if config not available
-        var fallback = "application/pdf,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx,application/vnd.openxmlformats-officedocument.presentationml.presentation,.pptx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,.xlsx,text/plain,.txt,text/markdown,.md,text/vtt,.vtt,application/json,.json,.hag,application/rtf,.rtf,application/msword,.doc,application/vnd.oasis.opendocument.text,.odt,application/vnd.oasis.opendocument.spreadsheet,.ods,audio/mpeg,.mp3,audio/wav,.wav,audio/mp4,.mp4,.m4a,audio/aac,.aac,audio/ogg,.ogg,audio/webm,.webm,audio/flac,.flac,video/mp4,video/webm,video/quicktime,.mov,video/x-msvideo,.avi,image/png,.png,image/jpeg,.jpg,.jpeg,image/webp,.webp,image/gif,.gif,image/bmp,.bmp,image/tiff,.tif,.tiff";
+        var fallback = "application/pdf,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx,application/vnd.openxmlformats-officedocument.presentationml.presentation,.pptx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,.xlsx,text/plain,.txt,text/markdown,.md,text/vtt,.vtt,application/json,.json,.hag,application/rtf,.rtf,application/msword,.doc,application/vnd.oasis.opendocument.text,.odt,application/vnd.oasis.opendocument.spreadsheet,.ods,audio/mpeg,.mp3,audio/wav,.wav,audio/mp4,.m4a,audio/aac,.aac,audio/ogg,.ogg,audio/webm,audio/flac,.flac,image/png,.png,image/jpeg,.jpg,.jpeg,image/webp,.webp,image/gif,.gif,image/bmp,.bmp,image/tiff,.tif,.tiff";
         return fallback.split(",").filter(filterFn).join(",");
     };
 
@@ -5274,6 +5337,46 @@
         if (this.importFileInput) {
             this.importFileInput.click();
         }
+    };
+
+    AssistSidebar.prototype.readFileAsDataUrl = function (file) {
+        return new Promise(function (resolve, reject) {
+            var reader = new FileReader();
+            reader.onerror = function () {
+                reject(reader.error || new Error("Lecture image échouée"));
+            };
+            reader.onload = function () {
+                resolve(String(reader.result || ""));
+            };
+            reader.readAsDataURL(file);
+        });
+    };
+
+    AssistSidebar.prototype.attachVisionFiles = async function (files) {
+        var imageFiles = Array.isArray(files) ? files.filter(isImageFile) : [];
+        if (!imageFiles.length) return 0;
+        if (!(this.pendingVisionAttachmentDataUrls instanceof Map)) {
+            this.pendingVisionAttachmentDataUrls = new Map();
+        }
+        var added = [];
+        for (var i = 0; i < imageFiles.length; i += 1) {
+            var file = imageFiles[i];
+            if (!file?.name) continue;
+            try {
+                // Direct vision payload path, without document ingestion/embeddings.
+                var dataUrl = await this.readFileAsDataUrl(file);
+                if (!dataUrl) continue;
+                this.pendingVisionAttachmentDataUrls.set(file.name, dataUrl);
+                added.push(file.name);
+            } catch (err) {
+                console.warn("Image attachment read failed:", file?.name || "", err);
+            }
+        }
+        if (!added.length) return 0;
+        var merged = Array.from(new Set((this.pendingDocumentAttachments || []).concat(added)));
+        this.setPendingDocumentAttachments(merged, { preserveExcluded: true });
+        this.setDocumentUploadStatus("Images prêtes (analyse directe IA)");
+        return added.length;
     };
 
     AssistSidebar.prototype.prepareMediaTranscripts = async function (files, options) {
@@ -5969,6 +6072,13 @@
             this.pendingExcludedAttachments = new Set();
         }
         this.pendingDocumentAttachments = nextNames;
+        if (this.pendingVisionAttachmentDataUrls instanceof Map) {
+            Array.from(this.pendingVisionAttachmentDataUrls.keys()).forEach(function (name) {
+                if (!nextNames.includes(name)) {
+                    this.pendingVisionAttachmentDataUrls.delete(name);
+                }
+            }, this);
+        }
         this.attachmentsParsedCount = this.pendingDocumentAttachments.length;
         this.attachmentsTotalCount = 0;
         this.attachmentsCharsTotal = 0;
@@ -6127,6 +6237,8 @@
 
     AssistSidebar.prototype.handleRemovePendingAttachment = function (name) {
         if (!name) return;
+        var isVisionAttachment = Boolean(this.pendingVisionAttachmentDataUrls?.has?.(name));
+        this.pendingVisionAttachmentDataUrls?.delete?.(name);
         this.pendingExcludedAttachments?.delete?.(name);
         this.pendingDocumentAttachments = (this.pendingDocumentAttachments || []).filter(function (item) {
             return item !== name;
@@ -6135,7 +6247,7 @@
         this.updateAttachmentIndicator();
         this.updateComposerState();
         this.persistPendingAttachments();
-        if (this.docManager) {
+        if (this.docManager && !isVisionAttachment) {
             this.docManager.deleteDocumentsByNames(this.conversation.id, [name])
                 .then(function () {
                     this.refreshDocumentStats();
@@ -6424,10 +6536,27 @@
         this.setSendButtonBusy(Boolean(active), options);
     };
 
-    AssistSidebar.prototype.handleDocumentFilesSelected = function (event) {
+    AssistSidebar.prototype.handleDocumentFilesSelected = async function (event) {
         var files = event.target.files;
         if (!files || !files.length) return;
-        this.startDocumentIngestion(files);
+        var selectedFiles = Array.from(files);
+        var imageFiles = selectedFiles.filter(isImageFile);
+        var videoFiles = selectedFiles.filter(isVideoFile);
+        var otherFiles = selectedFiles.filter(function (file) {
+            return !isImageFile(file) && !isVideoFile(file);
+        });
+        if (videoFiles.length) {
+            this.setDocumentUploadStatus("Vidéos non autorisées en pièces jointes");
+            window.GoToolkitMemoToast?.("Vidéos non autorisées en pièces jointes", true);
+        }
+        if (imageFiles.length) {
+            await this.attachVisionFiles(imageFiles);
+        }
+        if (otherFiles.length) {
+            this.startDocumentIngestion(otherFiles);
+        } else {
+            this.updateComposerState();
+        }
         event.target.value = "";
     };
 
