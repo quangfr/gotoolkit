@@ -53514,16 +53514,16 @@ ${promptInput.trim()}`
         ctx.lineCap = "round";
         ctx.lineJoin = "round";
         ctx.beginPath();
-        ctx.moveTo(drag.points[0].x, drag.points[0].y);
+        ctx.moveTo(drag.offsetX + drag.points[0].x, drag.offsetY + drag.points[0].y);
         for (let i = 1; i < drag.points.length; i += 1) {
-          ctx.lineTo(drag.points[i].x, drag.points[i].y);
+          ctx.lineTo(drag.offsetX + drag.points[i].x, drag.offsetY + drag.points[i].y);
         }
         ctx.stroke();
         return;
       }
       ctx.beginPath();
-      ctx.moveTo(drag.start.x, drag.start.y);
-      ctx.lineTo(drag.current.x, drag.current.y);
+      ctx.moveTo(drag.offsetX + drag.start.x, drag.offsetY + drag.start.y);
+      ctx.lineTo(drag.offsetX + drag.current.x, drag.offsetY + drag.current.y);
       ctx.stroke();
     }, [drag, sizePreset, strokeColor]);
     const currentSource = history2[historyIndex] || src;
@@ -53561,7 +53561,10 @@ ${promptInput.trim()}`
     };
     const replaySrc = react_shim_default.useMemo(() => {
       if (!gifPlaying) return src;
-      if (!src || src.startsWith("data:")) return src;
+      if (!src) return src;
+      if (src.startsWith("data:")) {
+        return `${src}#gtGifReplay=${gifReplayTick}`;
+      }
       const sep = src.includes("?") ? "&" : "?";
       return `${src}${sep}gtGifReplay=${gifReplayTick}`;
     }, [gifPlaying, gifReplayTick, src]);
@@ -53578,6 +53581,21 @@ ${promptInput.trim()}`
       width: widthPx ? `${widthPx}px` : "100%",
       ...heightPx ? { height: `${heightPx}px` } : {}
     };
+    const getImageViewport = react_shim_default.useCallback((surface) => {
+      const surfaceEl = surface === "fullscreen" ? fullscreenSurfaceRef.current : inlineSurfaceRef.current;
+      const imageEl = surface === "fullscreen" ? fullscreenImageRef.current : inlineImageRef.current;
+      if (!surfaceEl || !imageEl) return null;
+      const sRect = surfaceEl.getBoundingClientRect();
+      const iRect = imageEl.getBoundingClientRect();
+      const width = Math.max(1, iRect.width);
+      const height = Math.max(1, iRect.height);
+      return {
+        offsetX: iRect.left - sRect.left,
+        offsetY: iRect.top - sRect.top,
+        width,
+        height
+      };
+    }, []);
     const applySimpleOperation = react_shim_default.useCallback(async (op) => {
       try {
         const next2 = await applyCanvasOperation(currentSource, op);
@@ -53701,34 +53719,43 @@ ${promptInput.trim()}`
     }, [applySimpleOperation, sizePreset, strokeColor]);
     const commitShapeDraft = react_shim_default.useCallback(async (draft) => {
       if (!draft) return;
-      const surfaceEl = draft.surface === "fullscreen" ? fullscreenSurfaceRef.current : inlineSurfaceRef.current;
-      if (!surfaceEl) return;
-      const rect = surfaceEl.getBoundingClientRect();
       const state2 = {
         tool: draft.tool,
         surface: draft.surface,
         start: draft.start,
         current: draft.end,
         points: [draft.start, draft.end],
-        width: rect.width,
-        height: rect.height
+        width: draft.canvasWidth,
+        height: draft.canvasHeight,
+        offsetX: draft.offsetX,
+        offsetY: draft.offsetY
       };
       await commitDragOperation(state2);
     }, [commitDragOperation]);
     const handleTextPlacement = react_shim_default.useCallback((surface, event) => {
       const surfaceEl = surface === "fullscreen" ? fullscreenSurfaceRef.current : inlineSurfaceRef.current;
       if (!surfaceEl) return;
+      const viewport = getImageViewport(surface);
+      if (!viewport) return;
       const rect = surfaceEl.getBoundingClientRect();
-      const local = clampPoint({ x: event.clientX - rect.left, y: event.clientY - rect.top }, rect.width, rect.height);
+      const local = clampPoint(
+        { x: event.clientX - rect.left - viewport.offsetX, y: event.clientY - rect.top - viewport.offsetY },
+        viewport.width,
+        viewport.height
+      );
       setTextDraft({
         surface,
         x: local.x,
         y: local.y,
-        width: Math.min(280, Math.max(180, rect.width * 0.4)),
-        height: Math.min(140, Math.max(56, rect.height * 0.16)),
+        width: Math.min(280, Math.max(180, viewport.width * 0.4)),
+        height: Math.min(140, Math.max(56, viewport.height * 0.16)),
+        offsetX: viewport.offsetX,
+        offsetY: viewport.offsetY,
+        canvasWidth: viewport.width,
+        canvasHeight: viewport.height,
         text: ""
       });
-    }, []);
+    }, [getImageViewport]);
     const commitTextDraft = react_shim_default.useCallback(async () => {
       if (!textDraft || !textDraft.text.trim()) {
         setTextDraft(null);
@@ -53737,11 +53764,8 @@ ${promptInput.trim()}`
       const draft = textDraft;
       const fontSize = SIZE_PRESETS[sizePreset].font;
       await applySimpleOperation(({ canvas, ctx }) => {
-        const surfaceEl = draft.surface === "fullscreen" ? fullscreenSurfaceRef.current : inlineSurfaceRef.current;
-        if (!surfaceEl) return;
-        const rect = surfaceEl.getBoundingClientRect();
-        const scaleX = canvas.width / Math.max(rect.width, 1);
-        const scaleY = canvas.height / Math.max(rect.height, 1);
+        const scaleX = canvas.width / Math.max(draft.canvasWidth, 1);
+        const scaleY = canvas.height / Math.max(draft.canvasHeight, 1);
         const pxFontSize = fontSize * Math.max(scaleY, 1);
         const lineHeight = pxFontSize * 1.3;
         ctx.fillStyle = strokeColor;
@@ -53787,11 +53811,13 @@ ${promptInput.trim()}`
       }
       const surfaceEl = surface === "fullscreen" ? fullscreenSurfaceRef.current : inlineSurfaceRef.current;
       if (!surfaceEl) return;
+      const viewport = getImageViewport(surface);
+      if (!viewport) return;
       const bounds = surfaceEl.getBoundingClientRect();
       const start = clampPoint({
-        x: event.clientX - bounds.left,
-        y: event.clientY - bounds.top
-      }, bounds.width, bounds.height);
+        x: event.clientX - bounds.left - viewport.offsetX,
+        y: event.clientY - bounds.top - viewport.offsetY
+      }, viewport.width, viewport.height);
       if ((activeTool === "line" || activeTool === "square") && shapeDraft && shapeDraft.surface === surface) {
         void commitShapeDraft(shapeDraft);
         setShapeDraft(null);
@@ -53802,10 +53828,12 @@ ${promptInput.trim()}`
         start,
         current: start,
         points: [start],
-        width: bounds.width,
-        height: bounds.height
+        width: viewport.width,
+        height: viewport.height,
+        offsetX: viewport.offsetX,
+        offsetY: viewport.offsetY
       });
-    }, [activeTool, canEdit, commitShapeDraft, commitTextDraft, handleTextPlacement, shapeDraft, textDraft]);
+    }, [activeTool, canEdit, commitShapeDraft, commitTextDraft, getImageViewport, handleTextPlacement, shapeDraft, textDraft]);
     react_shim_default.useEffect(() => {
       if (!drag) return;
       const onMove = (event) => {
@@ -53814,7 +53842,11 @@ ${promptInput.trim()}`
           const surfaceEl = prev.surface === "fullscreen" ? fullscreenSurfaceRef.current : inlineSurfaceRef.current;
           if (!surfaceEl) return prev;
           const rect = surfaceEl.getBoundingClientRect();
-          const next2 = clampPoint({ x: event.clientX - rect.left, y: event.clientY - rect.top }, rect.width, rect.height);
+          const next2 = clampPoint(
+            { x: event.clientX - rect.left - prev.offsetX, y: event.clientY - rect.top - prev.offsetY },
+            prev.width,
+            prev.height
+          );
           return {
             ...prev,
             current: next2,
@@ -53831,7 +53863,11 @@ ${promptInput.trim()}`
               tool: current.tool,
               surface: current.surface,
               start: current.start,
-              end: current.current
+              end: current.current,
+              offsetX: current.offsetX,
+              offsetY: current.offsetY,
+              canvasWidth: current.width,
+              canvasHeight: current.height
             });
             return;
           }
@@ -53855,12 +53891,12 @@ ${promptInput.trim()}`
           if (!surfaceEl) return prev;
           const rect = surfaceEl.getBoundingClientRect();
           const nextX = Math.min(
-            Math.max(event.clientX - rect.left - dragState.offsetX, 0),
-            Math.max(0, rect.width - prev.width)
+            Math.max(event.clientX - rect.left - prev.offsetX - dragState.offsetX, 0),
+            Math.max(0, prev.canvasWidth - prev.width)
           );
           const nextY = Math.min(
-            Math.max(event.clientY - rect.top - dragState.offsetY, 0),
-            Math.max(0, rect.height - prev.height)
+            Math.max(event.clientY - rect.top - prev.offsetY - dragState.offsetY, 0),
+            Math.max(0, prev.canvasHeight - prev.height)
           );
           return { ...prev, x: nextX, y: nextY };
         });
@@ -53883,14 +53919,13 @@ ${promptInput.trim()}`
           if (!prev || prev.surface !== resize.surface) return prev;
           const surfaceEl = resize.surface === "fullscreen" ? fullscreenSurfaceRef.current : inlineSurfaceRef.current;
           if (!surfaceEl) return prev;
-          const rect = surfaceEl.getBoundingClientRect();
           const nextWidth = Math.min(
             Math.max(60, resize.width + (event.clientX - resize.startX)),
-            Math.max(60, rect.width - prev.x)
+            Math.max(60, prev.canvasWidth - prev.x)
           );
           const nextHeight = Math.min(
             Math.max(40, resize.height + (event.clientY - resize.startY)),
-            Math.max(40, rect.height - prev.y)
+            Math.max(40, prev.canvasHeight - prev.y)
           );
           return { ...prev, width: nextWidth, height: nextHeight };
         });
@@ -53915,7 +53950,11 @@ ${promptInput.trim()}`
           const surfaceEl = edit2.surface === "fullscreen" ? fullscreenSurfaceRef.current : inlineSurfaceRef.current;
           if (!surfaceEl) return prev;
           const rect = surfaceEl.getBoundingClientRect();
-          const next2 = clampPoint({ x: event.clientX - rect.left, y: event.clientY - rect.top }, rect.width, rect.height);
+          const next2 = clampPoint(
+            { x: event.clientX - rect.left - prev.offsetX, y: event.clientY - rect.top - prev.offsetY },
+            prev.canvasWidth,
+            prev.canvasHeight
+          );
           if (edit2.mode === "start") return { ...prev, start: next2 };
           if (edit2.mode === "end") return { ...prev, end: next2 };
           if (edit2.mode === "square-resize") return { ...prev, end: next2 };
@@ -53923,8 +53962,8 @@ ${promptInput.trim()}`
           const dy = next2.y - (((_b2 = edit2.anchor) == null ? void 0 : _b2.y) || 0);
           return {
             ...prev,
-            start: clampPoint({ x: edit2.start.x + dx, y: edit2.start.y + dy }, rect.width, rect.height),
-            end: clampPoint({ x: edit2.end.x + dx, y: edit2.end.y + dy }, rect.width, rect.height)
+            start: clampPoint({ x: edit2.start.x + dx, y: edit2.start.y + dy }, prev.canvasWidth, prev.canvasHeight),
+            end: clampPoint({ x: edit2.end.x + dx, y: edit2.end.y + dy }, prev.canvasWidth, prev.canvasHeight)
           };
         });
       };
@@ -53957,6 +53996,20 @@ ${promptInput.trim()}`
       }
       setActiveTool((prev) => prev === tool ? "none" : tool);
     };
+    const handleCloseFullscreen = react_shim_default.useCallback(async () => {
+      if (drag) {
+        await commitDragOperation(drag);
+        setDrag(null);
+      }
+      if (shapeDraft) {
+        await commitShapeDraft(shapeDraft);
+        setShapeDraft(null);
+      }
+      if (textDraft) {
+        await commitTextDraft();
+      }
+      setFullscreenOpen(false);
+    }, [commitDragOperation, commitShapeDraft, commitTextDraft, drag, shapeDraft, textDraft]);
     const canUndo = historyIndex > 0;
     const canRedo = historyIndex < history2.length - 1;
     const showStyleGroups = activeTool === "pencil" || activeTool === "line" || activeTool === "text" || activeTool === "square";
@@ -54035,11 +54088,7 @@ ${promptInput.trim()}`
           ] })
         },
         size2
-      )) }),
-      surface === "fullscreen" && /* @__PURE__ */ jsxs("button", { type: "button", className: "memo-image-edit-btn", title: "T\xE9l\xE9charger en PNG", onClick: () => void handleDownload(), children: [
-        /* @__PURE__ */ jsx("i", { "data-lucide": "download", style: { display: "none" }, "aria-hidden": "true" }),
-        /* @__PURE__ */ jsx(Download, { size: 14 })
-      ] })
+      )) })
     ] });
     const activeDragRect = drag && (drag.tool === "crop" || drag.tool === "square") ? normalizeRect(drag.start, drag.current) : null;
     const shapeRect = shapeDraft && shapeDraft.tool === "square" ? normalizeRect(shapeDraft.start, shapeDraft.end) : null;
@@ -54063,7 +54112,14 @@ ${promptInput.trim()}`
                 alt: String(((_a2 = node == null ? void 0 : node.attrs) == null ? void 0 : _a2.alt) || ""),
                 title: String(((_b2 = node == null ? void 0 : node.attrs) == null ? void 0 : _b2.title) || ""),
                 className: surface === "inline" ? "memo-image" : "memo-image-fullscreen",
-                style: imageStyle,
+                style: surface === "fullscreen" ? {
+                  width: "auto",
+                  height: "auto",
+                  maxWidth: "100%",
+                  maxHeight: "100%",
+                  objectFit: "contain",
+                  cursor: imageStyle.cursor
+                } : imageStyle,
                 onClick: () => {
                   if (surface === "inline" && isGif && activeTool === "none") replayGif();
                 },
@@ -54076,7 +54132,12 @@ ${promptInput.trim()}`
               "div",
               {
                 className: "memo-image-text-frame",
-                style: { left: `${textDraft.x}px`, top: `${textDraft.y}px`, width: `${textDraft.width}px`, height: `${textDraft.height}px` },
+                style: {
+                  left: `${textDraft.offsetX + textDraft.x}px`,
+                  top: `${textDraft.offsetY + textDraft.y}px`,
+                  width: `${textDraft.width}px`,
+                  height: `${textDraft.height}px`
+                },
                 onPointerDown: (event) => {
                   event.stopPropagation();
                 },
@@ -54093,8 +54154,8 @@ ${promptInput.trim()}`
                         const rect = surfaceEl.getBoundingClientRect();
                         textDragRef.current = {
                           surface,
-                          offsetX: event.clientX - rect.left - textDraft.x,
-                          offsetY: event.clientY - rect.top - textDraft.y
+                          offsetX: event.clientX - rect.left - textDraft.offsetX - textDraft.x,
+                          offsetY: event.clientY - rect.top - textDraft.offsetY - textDraft.y
                         };
                       },
                       children: "Texte"
@@ -54137,8 +54198,8 @@ ${promptInput.trim()}`
                 {
                   className: "memo-image-shape-line",
                   style: {
-                    left: `${shapeDraft.start.x}px`,
-                    top: `${shapeDraft.start.y}px`,
+                    left: `${shapeDraft.offsetX + shapeDraft.start.x}px`,
+                    top: `${shapeDraft.offsetY + shapeDraft.start.y}px`,
                     width: `${Math.hypot(shapeDraft.end.x - shapeDraft.start.x, shapeDraft.end.y - shapeDraft.start.y)}px`,
                     transform: `rotate(${Math.atan2(shapeDraft.end.y - shapeDraft.start.y, shapeDraft.end.x - shapeDraft.start.x)}rad)`,
                     borderColor: strokeColor,
@@ -54153,7 +54214,7 @@ ${promptInput.trim()}`
                     shapeEditRef.current = {
                       surface,
                       mode: "move",
-                      anchor: { x: event.clientX - rect.left, y: event.clientY - rect.top },
+                      anchor: { x: event.clientX - rect.left - shapeDraft.offsetX, y: event.clientY - rect.top - shapeDraft.offsetY },
                       start: shapeDraft.start,
                       end: shapeDraft.end
                     };
@@ -54164,7 +54225,7 @@ ${promptInput.trim()}`
                 "div",
                 {
                   className: "memo-image-shape-handle",
-                  style: { left: `${shapeDraft.start.x}px`, top: `${shapeDraft.start.y}px`, borderColor: strokeColor },
+                  style: { left: `${shapeDraft.offsetX + shapeDraft.start.x}px`, top: `${shapeDraft.offsetY + shapeDraft.start.y}px`, borderColor: strokeColor },
                   onPointerDown: (event) => {
                     event.preventDefault();
                     event.stopPropagation();
@@ -54176,7 +54237,7 @@ ${promptInput.trim()}`
                 "div",
                 {
                   className: "memo-image-shape-handle",
-                  style: { left: `${shapeDraft.end.x}px`, top: `${shapeDraft.end.y}px`, borderColor: strokeColor },
+                  style: { left: `${shapeDraft.offsetX + shapeDraft.end.x}px`, top: `${shapeDraft.offsetY + shapeDraft.end.y}px`, borderColor: strokeColor },
                   onPointerDown: (event) => {
                     event.preventDefault();
                     event.stopPropagation();
@@ -54190,8 +54251,8 @@ ${promptInput.trim()}`
               {
                 className: "memo-image-shape-square",
                 style: {
-                  left: `${shapeRect.x}px`,
-                  top: `${shapeRect.y}px`,
+                  left: `${shapeDraft.offsetX + shapeRect.x}px`,
+                  top: `${shapeDraft.offsetY + shapeRect.y}px`,
                   width: `${shapeRect.width}px`,
                   height: `${shapeRect.height}px`,
                   borderColor: strokeColor,
@@ -54206,7 +54267,7 @@ ${promptInput.trim()}`
                   shapeEditRef.current = {
                     surface,
                     mode: "move",
-                    anchor: { x: event.clientX - rect.left, y: event.clientY - rect.top },
+                    anchor: { x: event.clientX - rect.left - shapeDraft.offsetX, y: event.clientY - rect.top - shapeDraft.offsetY },
                     start: shapeDraft.start,
                     end: shapeDraft.end
                   };
@@ -54232,8 +54293,8 @@ ${promptInput.trim()}`
                 {
                   className: `memo-image-drag-rect ${drag.tool === "crop" ? "is-crop" : ""}`,
                   style: {
-                    left: `${activeDragRect.x}px`,
-                    top: `${activeDragRect.y}px`,
+                    left: `${((drag == null ? void 0 : drag.offsetX) || 0) + activeDragRect.x}px`,
+                    top: `${((drag == null ? void 0 : drag.offsetY) || 0) + activeDragRect.y}px`,
                     width: `${activeDragRect.width}px`,
                     height: `${activeDragRect.height}px`,
                     borderColor: strokeColor
@@ -54368,7 +54429,9 @@ ${promptInput.trim()}`
         "div",
         {
           className: "memo-image-fullscreen-overlay",
-          onClick: () => setFullscreenOpen(false),
+          onClick: () => {
+            void handleCloseFullscreen();
+          },
           children: /* @__PURE__ */ jsxs(
             "div",
             {
@@ -54376,22 +54439,43 @@ ${promptInput.trim()}`
               onClick: (event) => event.stopPropagation(),
               children: [
                 /* @__PURE__ */ jsxs("div", { className: "memo-image-fullscreen-actions", children: [
-                  renderEditToolbar("fullscreen", true),
-                  /* @__PURE__ */ jsxs(
-                    "button",
-                    {
-                      type: "button",
-                      className: "block-delete-button memo-image-action",
-                      title: "Fermer",
-                      onClick: () => setFullscreenOpen(false),
-                      children: [
-                        /* @__PURE__ */ jsx("i", { "data-lucide": "x", style: { display: "none" }, "aria-hidden": "true" }),
-                        /* @__PURE__ */ jsx(X, { size: 14 })
-                      ]
-                    }
-                  )
+                  /* @__PURE__ */ jsx("div", { className: "memo-image-fullscreen-toolbar-center", children: renderEditToolbar("fullscreen", true) }),
+                  /* @__PURE__ */ jsxs("div", { className: "memo-image-fullscreen-action-buttons", children: [
+                    /* @__PURE__ */ jsxs(
+                      "button",
+                      {
+                        type: "button",
+                        className: "block-delete-button memo-image-action",
+                        title: "T\xE9l\xE9charger PNG",
+                        onClick: (event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          void handleDownload();
+                        },
+                        children: [
+                          /* @__PURE__ */ jsx("i", { "data-lucide": "download", style: { display: "none" }, "aria-hidden": "true" }),
+                          /* @__PURE__ */ jsx(Download, { size: 14 })
+                        ]
+                      }
+                    ),
+                    /* @__PURE__ */ jsxs(
+                      "button",
+                      {
+                        type: "button",
+                        className: "block-delete-button memo-image-action",
+                        title: "Fermer",
+                        onClick: () => {
+                          void handleCloseFullscreen();
+                        },
+                        children: [
+                          /* @__PURE__ */ jsx("i", { "data-lucide": "x", style: { display: "none" }, "aria-hidden": "true" }),
+                          /* @__PURE__ */ jsx(X, { size: 14 })
+                        ]
+                      }
+                    )
+                  ] })
                 ] }),
-                renderSurface("fullscreen", fullscreenImageRef, fullscreenOverlayRef, fullscreenSurfaceRef)
+                /* @__PURE__ */ jsx("div", { className: "memo-image-frame memo-image-fullscreen-frame", children: renderSurface("fullscreen", fullscreenImageRef, fullscreenOverlayRef, fullscreenSurfaceRef) })
               ]
             }
           )
@@ -59902,3 +59986,4 @@ docx/dist/index.mjs:
    *)
   (*! http://mths.be/fromcodepoint v0.1.0 by @mathias *)
 */
+//# sourceMappingURL=memo.bundle.js.map

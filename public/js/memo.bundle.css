@@ -666,7 +666,7 @@ body.table-resize-cursor * {
   border-radius: 10px;
   padding: 6px;
   background: var(--bg-surface);
-  overflow: visible;
+  overflow: hidden;
   transition: border-color 0.2s ease;
 }
 .memo-image-frame:hover {
@@ -743,7 +743,7 @@ body.table-resize-cursor * {
   height: 28px;
   border: none;
   border-radius: 7px;
-  background: var(--bg-surface);
+  background: transparent;
   color: var(--text-main);
   display: inline-flex;
   align-items: center;
@@ -751,11 +751,11 @@ body.table-resize-cursor * {
   cursor: pointer;
 }
 .memo-image-edit-btn:hover:not(:disabled) {
-  background: var(--bg-surface-soft);
+  background: transparent;
 }
 .memo-image-edit-btn.is-active {
   color: var(--color-primary);
-  background: var(--bg-surface-soft);
+  background: var(--bg-surface);
 }
 .memo-image-edit-btn:disabled {
   opacity: 0.4;
@@ -769,7 +769,7 @@ body.table-resize-cursor * {
   height: 28px;
   border: none;
   border-radius: 6px;
-  background: var(--bg-surface);
+  background: transparent;
   color: var(--text-main);
   font-size: 11px;
   font-weight: 700;
@@ -777,7 +777,7 @@ body.table-resize-cursor * {
 }
 .memo-image-size-btn.is-active {
   color: var(--color-primary);
-  background: var(--bg-surface-soft);
+  background: var(--bg-surface);
 }
 .memo-size-stroke-icon {
   width: 16px;
@@ -990,10 +990,21 @@ body.table-resize-cursor * {
   left: 10px;
   right: 10px;
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  justify-content: flex-end;
+  align-items: center;
   gap: 6px;
   z-index: 20;
+}
+.memo-image-fullscreen-toolbar-center {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 0;
+}
+.memo-image-fullscreen-action-buttons {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 .memo-image-fullscreen-actions .memo-image-action {
   opacity: 1;
@@ -1015,9 +1026,20 @@ body.table-resize-cursor * {
   padding: 56px 12px 12px;
   box-sizing: border-box;
 }
-.memo-image-fullscreen-shell .memo-image-fullscreen {
+.memo-image-fullscreen-frame {
   width: 100%;
   height: 100%;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  overflow: hidden;
+}
+.memo-image-fullscreen-shell .memo-image-fullscreen {
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
 }
 @media (max-width: 900px) {
   .memo-image-edit-toolbar {
@@ -1797,3 +1819,4 @@ ul[data-type=taskList] li p {
   font-size: 12px;
   color: var(--text-muted);
 }
+/*# sourceMappingURL=memo.bundle.css.map */

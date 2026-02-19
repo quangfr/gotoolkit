@@ -55,6 +55,8 @@ type DragState = {
   points: Point[];
   width: number;
   height: number;
+  offsetX: number;
+  offsetY: number;
 };
 type TextDraft = {
   surface: Surface;
@@ -62,6 +64,10 @@ type TextDraft = {
   y: number;
   width: number;
   height: number;
+  offsetX: number;
+  offsetY: number;
+  canvasWidth: number;
+  canvasHeight: number;
   text: string;
 };
 type ShapeDraft = {
@@ -69,6 +75,10 @@ type ShapeDraft = {
   surface: Surface;
   start: Point;
   end: Point;
+  offsetX: number;
+  offsetY: number;
+  canvasWidth: number;
+  canvasHeight: number;
 };
 
 const isGifSource = (src: string) => {
@@ -399,16 +409,16 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
       ctx.beginPath();
-      ctx.moveTo(drag.points[0].x, drag.points[0].y);
+      ctx.moveTo(drag.offsetX + drag.points[0].x, drag.offsetY + drag.points[0].y);
       for (let i = 1; i < drag.points.length; i += 1) {
-        ctx.lineTo(drag.points[i].x, drag.points[i].y);
+        ctx.lineTo(drag.offsetX + drag.points[i].x, drag.offsetY + drag.points[i].y);
       }
       ctx.stroke();
       return;
     }
     ctx.beginPath();
-    ctx.moveTo(drag.start.x, drag.start.y);
-    ctx.lineTo(drag.current.x, drag.current.y);
+    ctx.moveTo(drag.offsetX + drag.start.x, drag.offsetY + drag.start.y);
+    ctx.lineTo(drag.offsetX + drag.current.x, drag.offsetY + drag.current.y);
     ctx.stroke();
   }, [drag, sizePreset, strokeColor]);
 
@@ -452,7 +462,10 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
 
   const replaySrc = React.useMemo(() => {
     if (!gifPlaying) return src;
-    if (!src || src.startsWith('data:')) return src;
+    if (!src) return src;
+    if (src.startsWith('data:')) {
+      return `${src}#gtGifReplay=${gifReplayTick}`;
+    }
     const sep = src.includes('?') ? '&' : '?';
     return `${src}${sep}gtGifReplay=${gifReplayTick}`;
   }, [gifPlaying, gifReplayTick, src]);
@@ -472,6 +485,22 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
     width: widthPx ? `${widthPx}px` : '100%',
     ...(heightPx ? { height: `${heightPx}px` } : {}),
   };
+
+  const getImageViewport = React.useCallback((surface: Surface) => {
+    const surfaceEl = surface === 'fullscreen' ? fullscreenSurfaceRef.current : inlineSurfaceRef.current;
+    const imageEl = surface === 'fullscreen' ? fullscreenImageRef.current : inlineImageRef.current;
+    if (!surfaceEl || !imageEl) return null;
+    const sRect = surfaceEl.getBoundingClientRect();
+    const iRect = imageEl.getBoundingClientRect();
+    const width = Math.max(1, iRect.width);
+    const height = Math.max(1, iRect.height);
+    return {
+      offsetX: iRect.left - sRect.left,
+      offsetY: iRect.top - sRect.top,
+      width,
+      height,
+    };
+  }, []);
 
   const applySimpleOperation = React.useCallback(async (
     op: (args: {
@@ -612,17 +641,16 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
 
   const commitShapeDraft = React.useCallback(async (draft: ShapeDraft | null) => {
     if (!draft) return;
-    const surfaceEl = draft.surface === 'fullscreen' ? fullscreenSurfaceRef.current : inlineSurfaceRef.current;
-    if (!surfaceEl) return;
-    const rect = surfaceEl.getBoundingClientRect();
     const state: DragState = {
       tool: draft.tool,
       surface: draft.surface,
       start: draft.start,
       current: draft.end,
       points: [draft.start, draft.end],
-      width: rect.width,
-      height: rect.height,
+      width: draft.canvasWidth,
+      height: draft.canvasHeight,
+      offsetX: draft.offsetX,
+      offsetY: draft.offsetY,
     };
     await commitDragOperation(state);
   }, [commitDragOperation]);
@@ -630,17 +658,27 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
   const handleTextPlacement = React.useCallback((surface: Surface, event: React.PointerEvent<HTMLDivElement>) => {
     const surfaceEl = surface === 'fullscreen' ? fullscreenSurfaceRef.current : inlineSurfaceRef.current;
     if (!surfaceEl) return;
+    const viewport = getImageViewport(surface);
+    if (!viewport) return;
     const rect = surfaceEl.getBoundingClientRect();
-    const local = clampPoint({ x: event.clientX - rect.left, y: event.clientY - rect.top }, rect.width, rect.height);
+    const local = clampPoint(
+      { x: event.clientX - rect.left - viewport.offsetX, y: event.clientY - rect.top - viewport.offsetY },
+      viewport.width,
+      viewport.height
+    );
     setTextDraft({
       surface,
       x: local.x,
       y: local.y,
-      width: Math.min(280, Math.max(180, rect.width * 0.4)),
-      height: Math.min(140, Math.max(56, rect.height * 0.16)),
+      width: Math.min(280, Math.max(180, viewport.width * 0.4)),
+      height: Math.min(140, Math.max(56, viewport.height * 0.16)),
+      offsetX: viewport.offsetX,
+      offsetY: viewport.offsetY,
+      canvasWidth: viewport.width,
+      canvasHeight: viewport.height,
       text: '',
     });
-  }, []);
+  }, [getImageViewport]);
 
   const commitTextDraft = React.useCallback(async () => {
     if (!textDraft || !textDraft.text.trim()) {
@@ -650,11 +688,8 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
     const draft = textDraft;
     const fontSize = SIZE_PRESETS[sizePreset].font;
     await applySimpleOperation(({ canvas, ctx }) => {
-      const surfaceEl = draft.surface === 'fullscreen' ? fullscreenSurfaceRef.current : inlineSurfaceRef.current;
-      if (!surfaceEl) return;
-      const rect = surfaceEl.getBoundingClientRect();
-      const scaleX = canvas.width / Math.max(rect.width, 1);
-      const scaleY = canvas.height / Math.max(rect.height, 1);
+      const scaleX = canvas.width / Math.max(draft.canvasWidth, 1);
+      const scaleY = canvas.height / Math.max(draft.canvasHeight, 1);
       const pxFontSize = fontSize * Math.max(scaleY, 1);
       const lineHeight = pxFontSize * 1.3;
       ctx.fillStyle = strokeColor;
@@ -705,11 +740,13 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
 
     const surfaceEl = surface === 'fullscreen' ? fullscreenSurfaceRef.current : inlineSurfaceRef.current;
     if (!surfaceEl) return;
+    const viewport = getImageViewport(surface);
+    if (!viewport) return;
     const bounds = surfaceEl.getBoundingClientRect();
     const start = clampPoint({
-      x: event.clientX - bounds.left,
-      y: event.clientY - bounds.top,
-    }, bounds.width, bounds.height);
+      x: event.clientX - bounds.left - viewport.offsetX,
+      y: event.clientY - bounds.top - viewport.offsetY,
+    }, viewport.width, viewport.height);
 
     if ((activeTool === 'line' || activeTool === 'square') && shapeDraft && shapeDraft.surface === surface) {
       void commitShapeDraft(shapeDraft);
@@ -722,10 +759,12 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
       start,
       current: start,
       points: [start],
-      width: bounds.width,
-      height: bounds.height,
+      width: viewport.width,
+      height: viewport.height,
+      offsetX: viewport.offsetX,
+      offsetY: viewport.offsetY,
     });
-  }, [activeTool, canEdit, commitShapeDraft, commitTextDraft, handleTextPlacement, shapeDraft, textDraft]);
+  }, [activeTool, canEdit, commitShapeDraft, commitTextDraft, getImageViewport, handleTextPlacement, shapeDraft, textDraft]);
 
   React.useEffect(() => {
     if (!drag) return;
@@ -736,7 +775,11 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
         const surfaceEl = prev.surface === 'fullscreen' ? fullscreenSurfaceRef.current : inlineSurfaceRef.current;
         if (!surfaceEl) return prev;
         const rect = surfaceEl.getBoundingClientRect();
-        const next = clampPoint({ x: event.clientX - rect.left, y: event.clientY - rect.top }, rect.width, rect.height);
+        const next = clampPoint(
+          { x: event.clientX - rect.left - prev.offsetX, y: event.clientY - rect.top - prev.offsetY },
+          prev.width,
+          prev.height
+        );
         return {
           ...prev,
           current: next,
@@ -755,6 +798,10 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
             surface: current.surface,
             start: current.start,
             end: current.current,
+            offsetX: current.offsetX,
+            offsetY: current.offsetY,
+            canvasWidth: current.width,
+            canvasHeight: current.height,
           });
           return;
         }
@@ -780,12 +827,12 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
         if (!surfaceEl) return prev;
         const rect = surfaceEl.getBoundingClientRect();
         const nextX = Math.min(
-          Math.max(event.clientX - rect.left - dragState.offsetX, 0),
-          Math.max(0, rect.width - prev.width),
+          Math.max(event.clientX - rect.left - prev.offsetX - dragState.offsetX, 0),
+          Math.max(0, prev.canvasWidth - prev.width),
         );
         const nextY = Math.min(
-          Math.max(event.clientY - rect.top - dragState.offsetY, 0),
-          Math.max(0, rect.height - prev.height),
+          Math.max(event.clientY - rect.top - prev.offsetY - dragState.offsetY, 0),
+          Math.max(0, prev.canvasHeight - prev.height),
         );
         return { ...prev, x: nextX, y: nextY };
       });
@@ -809,14 +856,13 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
         if (!prev || prev.surface !== resize.surface) return prev;
         const surfaceEl = resize.surface === 'fullscreen' ? fullscreenSurfaceRef.current : inlineSurfaceRef.current;
         if (!surfaceEl) return prev;
-        const rect = surfaceEl.getBoundingClientRect();
         const nextWidth = Math.min(
           Math.max(60, resize.width + (event.clientX - resize.startX)),
-          Math.max(60, rect.width - prev.x),
+          Math.max(60, prev.canvasWidth - prev.x),
         );
         const nextHeight = Math.min(
           Math.max(40, resize.height + (event.clientY - resize.startY)),
-          Math.max(40, rect.height - prev.y),
+          Math.max(40, prev.canvasHeight - prev.y),
         );
         return { ...prev, width: nextWidth, height: nextHeight };
       });
@@ -841,7 +887,11 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
         const surfaceEl = edit.surface === 'fullscreen' ? fullscreenSurfaceRef.current : inlineSurfaceRef.current;
         if (!surfaceEl) return prev;
         const rect = surfaceEl.getBoundingClientRect();
-        const next = clampPoint({ x: event.clientX - rect.left, y: event.clientY - rect.top }, rect.width, rect.height);
+        const next = clampPoint(
+          { x: event.clientX - rect.left - prev.offsetX, y: event.clientY - rect.top - prev.offsetY },
+          prev.canvasWidth,
+          prev.canvasHeight
+        );
         if (edit.mode === 'start') return { ...prev, start: next };
         if (edit.mode === 'end') return { ...prev, end: next };
         if (edit.mode === 'square-resize') return { ...prev, end: next };
@@ -849,8 +899,8 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
         const dy = next.y - (edit.anchor?.y || 0);
         return {
           ...prev,
-          start: clampPoint({ x: edit.start.x + dx, y: edit.start.y + dy }, rect.width, rect.height),
-          end: clampPoint({ x: edit.end.x + dx, y: edit.end.y + dy }, rect.width, rect.height),
+          start: clampPoint({ x: edit.start.x + dx, y: edit.start.y + dy }, prev.canvasWidth, prev.canvasHeight),
+          end: clampPoint({ x: edit.end.x + dx, y: edit.end.y + dy }, prev.canvasWidth, prev.canvasHeight),
         };
       });
     };
@@ -885,6 +935,21 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
     }
     setActiveTool(prev => (prev === tool ? 'none' : tool));
   };
+
+  const handleCloseFullscreen = React.useCallback(async () => {
+    if (drag) {
+      await commitDragOperation(drag);
+      setDrag(null);
+    }
+    if (shapeDraft) {
+      await commitShapeDraft(shapeDraft);
+      setShapeDraft(null);
+    }
+    if (textDraft) {
+      await commitTextDraft();
+    }
+    setFullscreenOpen(false);
+  }, [commitDragOperation, commitShapeDraft, commitTextDraft, drag, shapeDraft, textDraft]);
 
   const canUndo = historyIndex > 0;
   const canRedo = historyIndex < history.length - 1;
@@ -982,12 +1047,6 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
         </div>
       )}
 
-      {surface === 'fullscreen' && (
-        <button type="button" className="memo-image-edit-btn" title="Télécharger en PNG" onClick={() => void handleDownload()}>
-          <i data-lucide="download" style={{ display: 'none' }} aria-hidden="true"></i>
-          <Download size={14} />
-        </button>
-      )}
     </div>
   );
 
@@ -1014,7 +1073,16 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
         alt={String(node?.attrs?.alt || '')}
         title={String(node?.attrs?.title || '')}
         className={surface === 'inline' ? 'memo-image' : 'memo-image-fullscreen'}
-        style={imageStyle}
+        style={surface === 'fullscreen'
+          ? {
+              width: 'auto',
+              height: 'auto',
+              maxWidth: '100%',
+              maxHeight: '100%',
+              objectFit: 'contain',
+              cursor: imageStyle.cursor,
+            }
+          : imageStyle}
         onClick={() => {
           if (surface === 'inline' && isGif && activeTool === 'none') replayGif();
         }}
@@ -1026,7 +1094,12 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
       {textDraft && textDraft.surface === surface && (
         <div
           className="memo-image-text-frame"
-          style={{ left: `${textDraft.x}px`, top: `${textDraft.y}px`, width: `${textDraft.width}px`, height: `${textDraft.height}px` }}
+          style={{
+            left: `${textDraft.offsetX + textDraft.x}px`,
+            top: `${textDraft.offsetY + textDraft.y}px`,
+            width: `${textDraft.width}px`,
+            height: `${textDraft.height}px`
+          }}
           onPointerDown={(event) => {
             event.stopPropagation();
           }}
@@ -1041,8 +1114,8 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
               const rect = surfaceEl.getBoundingClientRect();
               textDragRef.current = {
                 surface,
-                offsetX: event.clientX - rect.left - textDraft.x,
-                offsetY: event.clientY - rect.top - textDraft.y,
+                offsetX: event.clientX - rect.left - textDraft.offsetX - textDraft.x,
+                offsetY: event.clientY - rect.top - textDraft.offsetY - textDraft.y,
               };
             }}
           >
@@ -1078,8 +1151,8 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
           <div
             className="memo-image-shape-line"
             style={{
-              left: `${shapeDraft.start.x}px`,
-              top: `${shapeDraft.start.y}px`,
+              left: `${shapeDraft.offsetX + shapeDraft.start.x}px`,
+              top: `${shapeDraft.offsetY + shapeDraft.start.y}px`,
               width: `${Math.hypot(shapeDraft.end.x - shapeDraft.start.x, shapeDraft.end.y - shapeDraft.start.y)}px`,
               transform: `rotate(${Math.atan2(shapeDraft.end.y - shapeDraft.start.y, shapeDraft.end.x - shapeDraft.start.x)}rad)`,
               borderColor: strokeColor,
@@ -1094,7 +1167,7 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
               shapeEditRef.current = {
                 surface,
                 mode: 'move',
-                anchor: { x: event.clientX - rect.left, y: event.clientY - rect.top },
+                anchor: { x: event.clientX - rect.left - shapeDraft.offsetX, y: event.clientY - rect.top - shapeDraft.offsetY },
                 start: shapeDraft.start,
                 end: shapeDraft.end,
               };
@@ -1102,7 +1175,7 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
           />
           <div
             className="memo-image-shape-handle"
-            style={{ left: `${shapeDraft.start.x}px`, top: `${shapeDraft.start.y}px`, borderColor: strokeColor }}
+            style={{ left: `${shapeDraft.offsetX + shapeDraft.start.x}px`, top: `${shapeDraft.offsetY + shapeDraft.start.y}px`, borderColor: strokeColor }}
             onPointerDown={(event) => {
               event.preventDefault();
               event.stopPropagation();
@@ -1111,7 +1184,7 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
           />
           <div
             className="memo-image-shape-handle"
-            style={{ left: `${shapeDraft.end.x}px`, top: `${shapeDraft.end.y}px`, borderColor: strokeColor }}
+            style={{ left: `${shapeDraft.offsetX + shapeDraft.end.x}px`, top: `${shapeDraft.offsetY + shapeDraft.end.y}px`, borderColor: strokeColor }}
             onPointerDown={(event) => {
               event.preventDefault();
               event.stopPropagation();
@@ -1125,8 +1198,8 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
         <div
           className="memo-image-shape-square"
           style={{
-            left: `${shapeRect.x}px`,
-            top: `${shapeRect.y}px`,
+            left: `${shapeDraft.offsetX + shapeRect.x}px`,
+            top: `${shapeDraft.offsetY + shapeRect.y}px`,
             width: `${shapeRect.width}px`,
             height: `${shapeRect.height}px`,
             borderColor: strokeColor,
@@ -1141,7 +1214,7 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
             shapeEditRef.current = {
               surface,
               mode: 'move',
-              anchor: { x: event.clientX - rect.left, y: event.clientY - rect.top },
+              anchor: { x: event.clientX - rect.left - shapeDraft.offsetX, y: event.clientY - rect.top - shapeDraft.offsetY },
               start: shapeDraft.start,
               end: shapeDraft.end,
             };
@@ -1165,8 +1238,8 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
           <div
             className={`memo-image-drag-rect ${drag.tool === 'crop' ? 'is-crop' : ''}`}
             style={{
-              left: `${activeDragRect.x}px`,
-              top: `${activeDragRect.y}px`,
+              left: `${(drag?.offsetX || 0) + activeDragRect.x}px`,
+              top: `${(drag?.offsetY || 0) + activeDragRect.y}px`,
               width: `${activeDragRect.width}px`,
               height: `${activeDragRect.height}px`,
               borderColor: strokeColor,
@@ -1280,25 +1353,44 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
       {fullscreenOpen && (
         <div
           className="memo-image-fullscreen-overlay"
-          onClick={() => setFullscreenOpen(false)}
+          onClick={() => { void handleCloseFullscreen(); }}
         >
           <div
             className="memo-image-fullscreen-shell"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="memo-image-fullscreen-actions">
-              {renderEditToolbar('fullscreen', true)}
-              <button
-                type="button"
-                className="block-delete-button memo-image-action"
-                title="Fermer"
-                onClick={() => setFullscreenOpen(false)}
-              >
-                <i data-lucide="x" style={{ display: 'none' }} aria-hidden="true"></i>
-                <X size={14} />
-              </button>
+              <div className="memo-image-fullscreen-toolbar-center">
+                {renderEditToolbar('fullscreen', true)}
+              </div>
+              <div className="memo-image-fullscreen-action-buttons">
+                <button
+                  type="button"
+                  className="block-delete-button memo-image-action"
+                  title="Télécharger PNG"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    void handleDownload();
+                  }}
+                >
+                  <i data-lucide="download" style={{ display: 'none' }} aria-hidden="true"></i>
+                  <Download size={14} />
+                </button>
+                <button
+                  type="button"
+                  className="block-delete-button memo-image-action"
+                  title="Fermer"
+                  onClick={() => { void handleCloseFullscreen(); }}
+                >
+                  <i data-lucide="x" style={{ display: 'none' }} aria-hidden="true"></i>
+                  <X size={14} />
+                </button>
+              </div>
             </div>
-            {renderSurface('fullscreen', fullscreenImageRef, fullscreenOverlayRef, fullscreenSurfaceRef)}
+            <div className="memo-image-frame memo-image-fullscreen-frame">
+              {renderSurface('fullscreen', fullscreenImageRef, fullscreenOverlayRef, fullscreenSurfaceRef)}
+            </div>
           </div>
         </div>
       )}
