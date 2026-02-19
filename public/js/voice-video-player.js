@@ -1,9 +1,9 @@
 (function () {
     const STYLE_ID = "voice-video-player-styles";
-    const GIF_JS_LOCAL_URL = "/js/vendor/gif.js";
-    const GIF_JS_CDN_URL = "https://cdn.jsdelivr.net/npm/gif.js.optimized/dist/gif.js";
-    const GIF_JS_WORKER_URL = "https://cdn.jsdelivr.net/npm/gif.js.optimized/dist/gif.worker.js";
-    const GIF_JS_WORKER_LOCAL_URL = "/js/vendor/gif.worker.js";
+    const GIFENC_ESM_URLS = [
+        "https://cdn.jsdelivr.net/npm/gifenc@1.0.3/+esm",
+        "https://unpkg.com/gifenc@1.0.3/dist/gifenc.esm.js"
+    ];
 
     function ensureStyles() {
         if (document.getElementById(STYLE_ID)) return;
@@ -472,8 +472,7 @@
             this._handleKeydown = this._handleKeydown.bind(this);
             this.videoBlobUrl = "";
             this._textTrackUrl = "";
-            this._gifWorkerScriptUrl = "";
-            this._gifWorkerBlobUrl = "";
+            this._gifEncoderLibPromise = null;
             this._gifDownloading = false;
             this._gifPrebuildTimer = null;
             this._gifPrebuildPromise = null;
@@ -904,67 +903,28 @@
             return run;
         }
 
-        async _ensureGifJsLoaded() {
-            if (window.GIF) return window.GIF;
-            if (this._gifScriptPromise) return this._gifScriptPromise;
-            this._gifScriptPromise = new Promise(async (resolve, reject) => {
-                const candidates = [GIF_JS_LOCAL_URL, GIF_JS_CDN_URL];
-                for (let i = 0; i < candidates.length; i += 1) {
-                    const src = candidates[i];
+        async _ensureGifEncoderLib() {
+            if (this._gifEncoderLibPromise) return this._gifEncoderLibPromise;
+            this._gifEncoderLibPromise = (async () => {
+                let lastError = null;
+                for (let i = 0; i < GIFENC_ESM_URLS.length; i += 1) {
+                    const url = GIFENC_ESM_URLS[i];
                     try {
                         // eslint-disable-next-line no-await-in-loop
-                        await new Promise((innerResolve, innerReject) => {
-                            const script = document.createElement("script");
-                            script.src = src;
-                            script.async = true;
-                            script.onload = () => innerResolve();
-                            script.onerror = () => innerReject(new Error(`Chargement GIF.js échoué: ${src}`));
-                            document.head.appendChild(script);
-                        });
-                        if (window.GIF) {
-                            resolve(window.GIF);
-                            return;
+                        const mod = await import(/* @vite-ignore */ url);
+                        const GIFEncoder = mod?.GIFEncoder;
+                        const quantize = mod?.quantize;
+                        const applyPalette = mod?.applyPalette;
+                        if (GIFEncoder && quantize && applyPalette) {
+                            return { GIFEncoder, quantize, applyPalette };
                         }
                     } catch (err) {
-                        // try next source
+                        lastError = err;
                     }
                 }
-                reject(new Error("GIF.js introuvable"));
-            });
-            return this._gifScriptPromise;
-        }
-
-        async _resolveGifWorkerScriptUrl() {
-            if (this._gifWorkerScriptUrl) return this._gifWorkerScriptUrl;
-
-            const tryFetchWorkerAsBlobUrl = async (url) => {
-                const response = await fetch(url);
-                if (!response.ok) throw new Error(`GIF worker fetch failed: ${response.status}`);
-                const code = await response.text();
-                if (!code || !code.trim()) throw new Error("GIF worker source is empty");
-                const blob = new Blob([code], { type: "text/javascript" });
-                return URL.createObjectURL(blob);
-            };
-
-            const candidates = [GIF_JS_WORKER_LOCAL_URL, GIF_JS_WORKER_URL];
-            let lastError = null;
-            for (let i = 0; i < candidates.length; i += 1) {
-                try {
-                    const blobUrl = await tryFetchWorkerAsBlobUrl(candidates[i]);
-                    this._gifWorkerScriptUrl = blobUrl;
-                    this._gifWorkerBlobUrl = blobUrl;
-                    return this._gifWorkerScriptUrl;
-                } catch (err) {
-                    lastError = err;
-                }
-            }
-
-            // Final fallback to direct URL for environments where cross-origin workers are allowed.
-            this._gifWorkerScriptUrl = GIF_JS_WORKER_URL;
-            if (lastError) {
-                console.warn("GIF worker blob fallback failed, trying direct URL", lastError);
-            }
-            return this._gifWorkerScriptUrl;
+                throw new Error(lastError?.message || "gifenc introuvable");
+            })();
+            return this._gifEncoderLibPromise;
         }
 
         _getGifCacheKey() {
@@ -978,8 +938,8 @@
         async _buildGifBlob() {
             if (!this.videoBlobOriginal) return null;
             console.info("[GoToolkit GIF] build start");
-            await this._ensureGifJsLoaded();
-            const workerScriptUrl = await this._resolveGifWorkerScriptUrl();
+            const gifLib = await this._ensureGifEncoderLib();
+            const { GIFEncoder, quantize, applyPalette } = gifLib;
             const sourceUrl = URL.createObjectURL(this.videoBlobOriginal);
             const video = document.createElement("video");
             video.src = sourceUrl;
@@ -1019,7 +979,6 @@
                 URL.revokeObjectURL(sourceUrl);
                 throw new Error("Canvas indisponible");
             }
-            const GIFCtor = window.GIF;
             const seekTo = time => new Promise(resolve => {
                 const bounded = Math.max(0, Math.min(duration, time));
                 if (Math.abs((video.currentTime || 0) - bounded) < 0.001) {
@@ -1039,40 +998,23 @@
                 video.currentTime = bounded;
             });
 
-            const renderGif = async ({ workers, workerScript }) => {
-                const gif = new GIFCtor({
-                    workers,
-                    quality: 8,
-                    ...(workerScript ? { workerScript } : {}),
-                    width,
-                    height
+            const gif = GIFEncoder();
+            for (let i = 0; i < frameCount; i += 1) {
+                const t = Math.min(end, start + (i / fps));
+                // eslint-disable-next-line no-await-in-loop
+                await seekTo(t);
+                ctx.drawImage(video, 0, 0, width, height);
+                const imageData = ctx.getImageData(0, 0, width, height);
+                const rgba = imageData.data;
+                const palette = quantize(rgba, 128, { format: "rgb565" });
+                const index = applyPalette(rgba, palette, "rgb565");
+                gif.writeFrame(index, width, height, {
+                    palette,
+                    delay
                 });
-                for (let i = 0; i < frameCount; i += 1) {
-                    const t = Math.min(end, start + (i / fps));
-                    // eslint-disable-next-line no-await-in-loop
-                    await seekTo(t);
-                    ctx.drawImage(video, 0, 0, width, height);
-                    gif.addFrame(canvas, { copy: true, delay });
-                }
-                return await new Promise((resolve, reject) => {
-                    gif.on("finished", resolve);
-                    gif.on("abort", () => reject(new Error("GIF annulé")));
-                    try {
-                        gif.render();
-                    } catch (err) {
-                        reject(err);
-                    }
-                });
-            };
-
-            let blob = null;
-            const preferredWorkers = Math.max(2, Math.min(4, (navigator?.hardwareConcurrency || 4) - 1));
-            try {
-                blob = await renderGif({ workers: preferredWorkers, workerScript: workerScriptUrl });
-            } catch (err) {
-                console.warn("[GoToolkit GIF] workers failed, retrying without workers", err);
-                blob = await renderGif({ workers: 0 });
             }
+            gif.finish();
+            const blob = new Blob([gif.bytesView()], { type: "image/gif" });
             console.info("[GoToolkit GIF] build success", { size: blob?.size || 0, type: blob?.type || "" });
             try { URL.revokeObjectURL(sourceUrl); } catch (err) { /* noop */ }
             return blob;
@@ -1748,11 +1690,6 @@
             if (!sameBlob) {
                 this._gifBlobCacheKey = "";
                 this._gifBlobCache = null;
-                if (this._gifWorkerBlobUrl) {
-                    try { URL.revokeObjectURL(this._gifWorkerBlobUrl); } catch (err) { /* noop */ }
-                    this._gifWorkerBlobUrl = "";
-                }
-                this._gifWorkerScriptUrl = "";
             }
             if (!sameBlob) {
                 if (this.videoBlobUrl) {
@@ -1824,11 +1761,7 @@
             this.videoBlobOriginal = null;
             this.cutMode = false;
             this._revokeTextTrackUrl();
-            if (this._gifWorkerBlobUrl) {
-                try { URL.revokeObjectURL(this._gifWorkerBlobUrl); } catch (err) { /* noop */ }
-                this._gifWorkerBlobUrl = "";
-            }
-            this._gifWorkerScriptUrl = "";
+            this._gifEncoderLibPromise = null;
             if (this._toastTimer) {
                 clearTimeout(this._toastTimer);
                 this._toastTimer = null;
