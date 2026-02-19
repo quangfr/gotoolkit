@@ -719,6 +719,9 @@ body.table-resize-cursor * {
 }
 .memo-image-edit-toolbar.is-permanent {
   position: static;
+  top: auto;
+  left: auto;
+  transform: none;
   flex-wrap: wrap;
   right: auto;
   border: 1px solid var(--border-main);
@@ -974,6 +977,8 @@ body.table-resize-cursor * {
   position: relative;
   width: min(92vw, 1300px);
   height: min(90vh, 900px);
+  min-width: 98vw;
+  min-height: 98vh;
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 12px;
   background: rgba(15, 23, 42, 0.9);
