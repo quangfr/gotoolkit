@@ -53223,6 +53223,8 @@ ${promptInput.trim()}`
     M: { line: 4, font: 16 },
     L: { line: 6, font: 20 }
   };
+  var TEXT_BOX_HEADER_HEIGHT = 18;
+  var TEXT_BOX_PADDING = 6;
   var isGifSource = (src) => {
     const raw = String(src || "").trim().toLowerCase();
     if (!raw) return false;
@@ -53785,10 +53787,10 @@ ${promptInput.trim()}`
         ctx.fillStyle = strokeColor;
         ctx.font = `${pxFontSize}px Inter, sans-serif`;
         ctx.textBaseline = "top";
-        const startX = draft.x * scaleX;
-        const startY = draft.y * scaleY;
+        const startX = (draft.x + TEXT_BOX_PADDING) * scaleX;
+        const startY = (draft.y + TEXT_BOX_HEADER_HEIGHT + TEXT_BOX_PADDING) * scaleY;
         const lines = draft.text.split("\n");
-        const maxWidth = Math.max(20, draft.width * scaleX);
+        const maxWidth = Math.max(20, (draft.width - TEXT_BOX_PADDING * 2) * scaleX);
         const wrappedLines = [];
         lines.forEach((lineText) => {
           const words = lineText.split(" ");
@@ -53804,7 +53806,8 @@ ${promptInput.trim()}`
           });
           wrappedLines.push(current || "");
         });
-        const maxLines = Math.max(1, Math.floor(draft.height * scaleY / lineHeight));
+        const availableHeight = Math.max(12, draft.height - TEXT_BOX_HEADER_HEIGHT - TEXT_BOX_PADDING * 2);
+        const maxLines = Math.max(1, Math.floor(availableHeight * scaleY / lineHeight));
         wrappedLines.slice(0, maxLines).forEach((lineText, index) => {
           ctx.fillText(lineText, startX, startY + index * lineHeight);
         });
@@ -54145,6 +54148,7 @@ ${promptInput.trim()}`
               "div",
               {
                 className: "memo-image-text-frame",
+                contentEditable: false,
                 style: {
                   left: `${textDraft.offsetX + textDraft.x}px`,
                   top: `${textDraft.offsetY + textDraft.y}px`,
@@ -54159,6 +54163,7 @@ ${promptInput.trim()}`
                     "div",
                     {
                       className: "memo-image-text-frame-drag",
+                      contentEditable: false,
                       onPointerDown: (event) => {
                         event.preventDefault();
                         event.stopPropagation();
@@ -54178,8 +54183,13 @@ ${promptInput.trim()}`
                     "textarea",
                     {
                       className: "memo-image-text-frame-input",
+                      contentEditable: false,
                       value: textDraft.text,
                       onChange: (event) => setTextDraft((prev) => prev ? { ...prev, text: event.target.value } : prev),
+                      onKeyDown: (event) => event.stopPropagation(),
+                      onKeyUp: (event) => event.stopPropagation(),
+                      onInput: (event) => event.stopPropagation(),
+                      onClick: (event) => event.stopPropagation(),
                       style: { color: strokeColor, fontSize: `${SIZE_PRESETS[sizePreset].font}px` },
                       placeholder: "\xC9crire...",
                       autoFocus: true
@@ -54189,6 +54199,7 @@ ${promptInput.trim()}`
                     "div",
                     {
                       className: "memo-image-text-frame-resize",
+                      contentEditable: false,
                       onPointerDown: (event) => {
                         event.preventDefault();
                         event.stopPropagation();
