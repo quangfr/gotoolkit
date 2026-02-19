@@ -53687,20 +53687,34 @@ ${promptInput.trim()}`
           ctx.strokeStyle = strokeColor;
           ctx.lineWidth = line;
           ctx.lineCap = "round";
+          ctx.lineJoin = "round";
+          const startX = state2.start.x * scaleX;
+          const startY = state2.start.y * scaleY;
+          const endX = state2.current.x * scaleX;
+          const endY = state2.current.y * scaleY;
+          const dx = endX - startX;
+          const dy = endY - startY;
+          const shaftLength = Math.hypot(dx, dy);
+          if (shaftLength <= 1e-3) return;
+          const ux = dx / shaftLength;
+          const uy = dy / shaftLength;
+          const headAngle = Math.PI / 7;
+          const headLen = Math.max(line * 2.2, 10 * Math.max(scaleX, scaleY));
+          const cos = Math.cos(headAngle);
+          const sin = Math.sin(headAngle);
+          const vx = -ux;
+          const vy = -uy;
+          const leftX = vx * cos - vy * sin;
+          const leftY = vx * sin + vy * cos;
+          const rightX = vx * cos + vy * sin;
+          const rightY = -vx * sin + vy * cos;
           ctx.beginPath();
-          ctx.moveTo(state2.start.x * scaleX, state2.start.y * scaleY);
-          ctx.lineTo(state2.current.x * scaleX, state2.current.y * scaleY);
-          const angle = Math.atan2(state2.current.y - state2.start.y, state2.current.x - state2.start.x);
-          const headLen = 10 * Math.max(scaleX, scaleY);
-          ctx.lineTo(
-            state2.current.x * scaleX - headLen * Math.cos(angle - Math.PI / 7),
-            state2.current.y * scaleY - headLen * Math.sin(angle - Math.PI / 7)
-          );
-          ctx.moveTo(state2.current.x * scaleX, state2.current.y * scaleY);
-          ctx.lineTo(
-            state2.current.x * scaleX - headLen * Math.cos(angle + Math.PI / 7),
-            state2.current.y * scaleY - headLen * Math.sin(angle + Math.PI / 7)
-          );
+          ctx.moveTo(startX, startY);
+          ctx.lineTo(endX, endY);
+          ctx.moveTo(endX, endY);
+          ctx.lineTo(endX + leftX * headLen, endY + leftY * headLen);
+          ctx.moveTo(endX, endY);
+          ctx.lineTo(endX + rightX * headLen, endY + rightY * headLen);
           ctx.stroke();
           return;
         }
@@ -54012,7 +54026,6 @@ ${promptInput.trim()}`
     }, [commitDragOperation, commitShapeDraft, commitTextDraft, drag, shapeDraft, textDraft]);
     const canUndo = historyIndex > 0;
     const canRedo = historyIndex < history2.length - 1;
-    const showStyleGroups = activeTool === "pencil" || activeTool === "line" || activeTool === "text" || activeTool === "square";
     const isTextTool = activeTool === "text";
     const renderEditToolbar = (surface, permanent) => /* @__PURE__ */ jsxs("div", { className: `memo-image-edit-toolbar ${permanent ? "is-permanent" : ""}`, children: [
       /* @__PURE__ */ jsxs("div", { className: "memo-image-edit-group", children: [
@@ -54053,7 +54066,7 @@ ${promptInput.trim()}`
           /* @__PURE__ */ jsx(Type, { size: 14 })
         ] })
       ] }),
-      showStyleGroups && /* @__PURE__ */ jsx("div", { className: "memo-image-edit-group memo-image-color-group", children: IMAGE_EDIT_COLORS.map((color) => /* @__PURE__ */ jsx(
+      /* @__PURE__ */ jsx("div", { className: "memo-image-edit-group memo-image-color-group", children: IMAGE_EDIT_COLORS.map((color) => /* @__PURE__ */ jsx(
         "button",
         {
           type: "button",
@@ -54064,7 +54077,7 @@ ${promptInput.trim()}`
         },
         color
       )) }),
-      showStyleGroups && /* @__PURE__ */ jsx("div", { className: "memo-image-edit-group memo-image-size-group", children: ["S", "M", "L"].map((size2) => /* @__PURE__ */ jsx(
+      /* @__PURE__ */ jsx("div", { className: "memo-image-edit-group memo-image-size-group", children: ["S", "M", "L"].map((size2) => /* @__PURE__ */ jsx(
         "button",
         {
           type: "button",

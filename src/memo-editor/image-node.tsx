@@ -607,20 +607,37 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
         ctx.strokeStyle = strokeColor;
         ctx.lineWidth = line;
         ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        const startX = state.start.x * scaleX;
+        const startY = state.start.y * scaleY;
+        const endX = state.current.x * scaleX;
+        const endY = state.current.y * scaleY;
+        const dx = endX - startX;
+        const dy = endY - startY;
+        const shaftLength = Math.hypot(dx, dy);
+        if (shaftLength <= 0.001) return;
+        const ux = dx / shaftLength;
+        const uy = dy / shaftLength;
+        const headAngle = Math.PI / 7;
+        const headLen = Math.max(line * 2.2, 10 * Math.max(scaleX, scaleY));
+        const cos = Math.cos(headAngle);
+        const sin = Math.sin(headAngle);
+
+        // Rotate the opposite shaft direction (+/- headAngle) for symmetric arrow wings.
+        const vx = -ux;
+        const vy = -uy;
+        const leftX = (vx * cos) - (vy * sin);
+        const leftY = (vx * sin) + (vy * cos);
+        const rightX = (vx * cos) + (vy * sin);
+        const rightY = (-vx * sin) + (vy * cos);
+
         ctx.beginPath();
-        ctx.moveTo(state.start.x * scaleX, state.start.y * scaleY);
-        ctx.lineTo(state.current.x * scaleX, state.current.y * scaleY);
-        const angle = Math.atan2((state.current.y - state.start.y), (state.current.x - state.start.x));
-        const headLen = 10 * Math.max(scaleX, scaleY);
-        ctx.lineTo(
-          (state.current.x * scaleX) - (headLen * Math.cos(angle - Math.PI / 7)),
-          (state.current.y * scaleY) - (headLen * Math.sin(angle - Math.PI / 7)),
-        );
-        ctx.moveTo(state.current.x * scaleX, state.current.y * scaleY);
-        ctx.lineTo(
-          (state.current.x * scaleX) - (headLen * Math.cos(angle + Math.PI / 7)),
-          (state.current.y * scaleY) - (headLen * Math.sin(angle + Math.PI / 7)),
-        );
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(endX, endY);
+        ctx.moveTo(endX, endY);
+        ctx.lineTo(endX + (leftX * headLen), endY + (leftY * headLen));
+        ctx.moveTo(endX, endY);
+        ctx.lineTo(endX + (rightX * headLen), endY + (rightY * headLen));
         ctx.stroke();
         return;
       }
@@ -953,7 +970,6 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
 
   const canUndo = historyIndex > 0;
   const canRedo = historyIndex < history.length - 1;
-  const showStyleGroups = activeTool === 'pencil' || activeTool === 'line' || activeTool === 'text' || activeTool === 'square';
   const isTextTool = activeTool === 'text';
 
   const renderEditToolbar = (surface: Surface, permanent: boolean) => (
@@ -999,53 +1015,49 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
         </button>
       </div>
 
-      {showStyleGroups && (
-        <div className="memo-image-edit-group memo-image-color-group">
-          {IMAGE_EDIT_COLORS.map((color) => (
-            <button
-              key={color}
-              type="button"
-              className={`memo-image-color-cell ${strokeColor === color ? 'is-active' : ''}`}
-              style={{ background: color, boxShadow: color === '#FFFFFF' ? 'inset 0 0 0 1px var(--border-main)' : 'none' }}
-              onClick={() => setStrokeColor(color)}
-              title={color}
-            />
-          ))}
-        </div>
-      )}
+      <div className="memo-image-edit-group memo-image-color-group">
+        {IMAGE_EDIT_COLORS.map((color) => (
+          <button
+            key={color}
+            type="button"
+            className={`memo-image-color-cell ${strokeColor === color ? 'is-active' : ''}`}
+            style={{ background: color, boxShadow: color === '#FFFFFF' ? 'inset 0 0 0 1px var(--border-main)' : 'none' }}
+            onClick={() => setStrokeColor(color)}
+            title={color}
+          />
+        ))}
+      </div>
 
-      {showStyleGroups && (
-        <div className="memo-image-edit-group memo-image-size-group">
-          {(['S', 'M', 'L'] as SizePreset[]).map((size) => (
-            <button
-              key={size}
-              type="button"
-              className={`memo-image-size-btn ${sizePreset === size ? 'is-active' : ''}`}
-              onClick={() => setSizePreset(size)}
-              title={`Taille ${size}`}
-            >
-              {!isTextTool ? (
-                <svg className="memo-size-stroke-icon" viewBox="0 0 24 24" aria-hidden="true">
-                  <line
-                    x1="5"
-                    y1="19"
-                    x2="19"
-                    y2="5"
-                    stroke="currentColor"
-                    strokeWidth={size === 'S' ? 2 : size === 'M' ? 4 : 6}
-                    strokeLinecap="round"
-                  />
-                </svg>
-              ) : (
-                <>
-                  <i data-lucide="a-large-small" style={{ display: 'none' }} aria-hidden="true"></i>
-                  <ALargeSmall size={size === 'S' ? 12 : size === 'M' ? 14 : 16} />
-                </>
-              )}
-            </button>
-          ))}
-        </div>
-      )}
+      <div className="memo-image-edit-group memo-image-size-group">
+        {(['S', 'M', 'L'] as SizePreset[]).map((size) => (
+          <button
+            key={size}
+            type="button"
+            className={`memo-image-size-btn ${sizePreset === size ? 'is-active' : ''}`}
+            onClick={() => setSizePreset(size)}
+            title={`Taille ${size}`}
+          >
+            {!isTextTool ? (
+              <svg className="memo-size-stroke-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <line
+                  x1="5"
+                  y1="19"
+                  x2="19"
+                  y2="5"
+                  stroke="currentColor"
+                  strokeWidth={size === 'S' ? 2 : size === 'M' ? 4 : 6}
+                  strokeLinecap="round"
+                />
+              </svg>
+            ) : (
+              <>
+                <i data-lucide="a-large-small" style={{ display: 'none' }} aria-hidden="true"></i>
+                <ALargeSmall size={size === 'S' ? 12 : size === 'M' ? 14 : 16} />
+              </>
+            )}
+          </button>
+        ))}
+      </div>
 
     </div>
   );
