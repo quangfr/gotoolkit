@@ -7,6 +7,9 @@ var COLLECTION = "feedback";
 var FIRESTORE_SCOPE = "https://www.googleapis.com/auth/datastore";
 var FIREBASE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 var DEFAULT_PROJECT_ID = "gotoolkit";
+var MAX_REQUEST_SIZE = 12 * 1024 * 1024;
+var MAX_MEDIA_FILES = 6;
+var MAX_MEDIA_BASE64_SIZE = 20 * 1024 * 1024;
 
 
 
@@ -180,7 +183,7 @@ __name(jsonResponse, "jsonResponse");
 
 async function readJson(request) {
     const text = await request.text();
-    if (!text || text.length > 1e4) {
+    if (!text || text.length > MAX_REQUEST_SIZE) {
         throw new Error("Payload trop volumineux ou vide");
     }
     return JSON.parse(text);
@@ -206,6 +209,7 @@ function validatePayload(payload) {
     const message = String(payload.message || "").trim();
     const subject = payload.subject ? String(payload.subject).trim() : "";
     const shareUrl = payload.shareUrl ? String(payload.shareUrl).trim() : "";
+    const mediaValidation = normalizeMediaPayload(payload.media);
 
     if (!type) return "Type requis";
     if (!message) return "Message requis";
@@ -214,6 +218,7 @@ function validatePayload(payload) {
     if (subject.length > 400) return "Sujet trop long";
     if (shareUrl.length > 2048) return "Lien partagé trop long";
     if (shareUrl && !/^https?:\/\//i.test(shareUrl)) return "Lien partagé invalide";
+    if (mediaValidation.error) return mediaValidation.error;
     return null;
 }
 __name(validatePayload, "validatePayload");
@@ -231,6 +236,28 @@ function validateUpdatePayload(payload) {
     return null;
 }
 __name(validateUpdatePayload, "validateUpdatePayload");
+
+function normalizeMediaPayload(input) {
+    if (input == null) return { media: [] };
+    if (!Array.isArray(input)) return { error: "Media invalide" };
+    if (input.length > MAX_MEDIA_FILES) return { error: `Maximum ${MAX_MEDIA_FILES} médias` };
+    const media = [];
+    for (let i = 0; i < input.length; i++) {
+        const raw = input[i];
+        if (!raw || typeof raw !== "object") return { error: "Media invalide" };
+        const fileName = String(raw.fileName || "").trim();
+        const mimeType = String(raw.mimeType || "").trim().toLowerCase();
+        const contentBase64 = String(raw.contentBase64 || "").trim();
+        if (!fileName || fileName.length > 200) return { error: "Nom de média invalide" };
+        if (!mimeType || (!mimeType.startsWith("image/") && !mimeType.startsWith("video/"))) return { error: "Type de média invalide" };
+        if (!contentBase64) return { error: "Média vide" };
+        if (contentBase64.length > MAX_MEDIA_BASE64_SIZE) return { error: "Média trop volumineux" };
+        if (!/^[A-Za-z0-9+/=]+$/.test(contentBase64)) return { error: "Média invalide" };
+        media.push({ fileName, mimeType, contentBase64 });
+    }
+    return { media };
+}
+__name(normalizeMediaPayload, "normalizeMediaPayload");
 
 // (Optionnel) IP helpers, conservés (utile pour rate-limit / debug)
 function getClientIp(request) {
@@ -386,6 +413,10 @@ async function saveFeedback(env, payload, request) {
     const base = getFirestoreBaseUrl(env);
     const url = `${base}/${COLLECTION}`;
 
+    const mediaValidation = normalizeMediaPayload(payload.media);
+    if (mediaValidation.error) {
+        throw new Error(mediaValidation.error);
+    }
     const body = {
         fields: toFields({
             type: payload.type,
@@ -395,6 +426,7 @@ async function saveFeedback(env, payload, request) {
             status: "recue",
             page: payload.page || "index",
             shareUrl: payload.shareUrl || null,
+            mediaJson: mediaValidation.media.length ? JSON.stringify(mediaValidation.media) : null,
             userAgent: payload.userAgent || request.headers.get("User-Agent") || "",
             createdAt: { timestampValue: (/* @__PURE__ */ new Date()).toISOString() },
             updatedAt: { timestampValue: (/* @__PURE__ */ new Date()).toISOString() }
@@ -458,6 +490,22 @@ function fromFields(doc) {
     result.createdAt = fields.createdAt?.timestampValue || fields.createdAt?.stringValue || "";
     result.updatedAt = fields.updatedAt?.timestampValue || fields.updatedAt?.stringValue || "";
     result.shareUrl = getString("shareUrl") || "";
+    result.media = [];
+    const mediaJson = getString("mediaJson");
+    if (mediaJson) {
+        try {
+            const parsed = JSON.parse(mediaJson);
+            if (Array.isArray(parsed)) {
+                result.media = parsed.map((item) => ({
+                    fileName: String(item?.fileName || ""),
+                    mimeType: String(item?.mimeType || ""),
+                    size: Math.floor((String(item?.contentBase64 || "").length * 3) / 4)
+                }));
+            }
+        } catch (err) {
+            result.media = [];
+        }
+    }
     return result;
 }
 __name(fromFields, "fromFields");

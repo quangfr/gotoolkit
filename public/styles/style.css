@@ -967,6 +967,34 @@ mark {
   color: var(--text-main);
 }
 
+.feedback-app-media-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border: 1px dashed var(--border-main);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface-soft);
+}
+
+.feedback-app-media-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.feedback-app-media-item-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.feedback-app-media-remove {
+  flex: 0 0 auto;
+}
+
 .feedback-app-share-row {
   display: flex;
   align-items: center;

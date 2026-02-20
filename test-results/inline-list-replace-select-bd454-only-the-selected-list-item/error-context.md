@@ -1,0 +1,236 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - complementary "Exploration" [ref=e3]:
+      - generic [ref=e4]:
+        - button "Bibliothèque" [ref=e5] [cursor=pointer]:
+          - img [ref=e6]
+        - button "Partages" [ref=e8] [cursor=pointer]:
+          - img [ref=e9]
+        - button "Sommaire" [ref=e11] [cursor=pointer]:
+          - img [ref=e12]
+        - button "Fermer" [ref=e13] [cursor=pointer]:
+          - img [ref=e14]
+      - generic [ref=e18]:
+        - generic [ref=e19]:
+          - button "Importer" [ref=e20] [cursor=pointer]:
+            - img [ref=e21]
+            - text: Importer
+          - button "Nouveau" [ref=e24] [cursor=pointer]:
+            - img [ref=e25]
+            - text: Nouveau
+        - button "Doc 1" [ref=e27] [cursor=pointer]:
+          - generic [ref=e28]: Doc 1
+          - generic [ref=e29]:
+            - button "Renommer" [ref=e30]:
+              - img [ref=e31]
+            - button "Supprimer" [ref=e34]:
+              - img [ref=e35]
+    - separator "Redimensionner" [ref=e38]
+    - generic [ref=e39]:
+      - generic [ref=e40]:
+        - generic [ref=e41]:
+          - button "Masquer les documents" [expanded] [ref=e42] [cursor=pointer]:
+            - img [ref=e43]
+          - link "Accueil" [ref=e46] [cursor=pointer]:
+            - /url: /?v=2026.02.19.32
+            - img [ref=e47]
+          - generic [ref=e51]:
+            - button "Doc 1 Fermer le document" [ref=e52]:
+              - generic [ref=e53]: Doc 1
+              - button "Fermer le document" [ref=e54] [cursor=pointer]:
+                - img [ref=e55]
+            - button "Créer un document" [ref=e58] [cursor=pointer]:
+              - img [ref=e59]
+        - generic [ref=e60]:
+          - button "Document" [ref=e62] [cursor=pointer]:
+            - img [ref=e63]
+          - button "Paramètres" [ref=e66] [cursor=pointer]:
+            - img [ref=e67]
+          - button "Enregistrer une conversation" [ref=e71] [cursor=pointer]:
+            - img [ref=e72]
+          - button "Assist" [ref=e75] [cursor=pointer]:
+            - img [ref=e76]
+      - generic [ref=e81]:
+        - text: Commencez à écrire... Commencez à écrire...
+        - generic [ref=e83]:
+          - toolbar "toolbar" [ref=e84]:
+            - group [ref=e85]:
+              - button "Undo" [ref=e86] [cursor=pointer]:
+                - img [ref=e87]
+              - button "Redo" [disabled] [ref=e90]:
+                - img [ref=e91]
+            - group [ref=e94]:
+              - button "Texte" [ref=e96] [cursor=pointer]:
+                - img [ref=e97]
+                - generic [ref=e99]: Texte
+                - img [ref=e100]
+            - group "Style" [ref=e102]:
+              - button "Bold" [ref=e103] [cursor=pointer]:
+                - img [ref=e104]
+              - button "Italic" [ref=e106] [cursor=pointer]:
+                - img [ref=e107]
+              - button "Underline" [ref=e109] [cursor=pointer]:
+                - img [ref=e110]
+              - button "Text Color" [ref=e113] [cursor=pointer]:
+                - img [ref=e114]
+            - group "Texte avancé" [ref=e116]:
+              - button "Strike" [ref=e117] [cursor=pointer]:
+                - img [ref=e118]
+              - button "Highlight" [ref=e121] [cursor=pointer]:
+                - img [ref=e122]
+              - button "Link" [ref=e125] [cursor=pointer]:
+                - img [ref=e126]
+            - group "Bloc" [ref=e129]:
+              - button "Libellé" [ref=e130] [cursor=pointer]:
+                - img [ref=e131]
+              - button "Citation" [ref=e135] [cursor=pointer]:
+                - img [ref=e136]
+                - img [ref=e139]
+            - group "Insertion" [ref=e141]:
+              - button "Insert Table" [ref=e142] [cursor=pointer]:
+                - img [ref=e143]
+              - button "Insert Mermaid Diagram" [ref=e145] [cursor=pointer]:
+                - img [ref=e146]
+              - button "Insert Image" [ref=e150] [cursor=pointer]:
+                - img [ref=e151]
+              - button "Insert Video" [ref=e155] [cursor=pointer]:
+                - img [ref=e156]
+            - group [ref=e159]:
+              - button "Voir le code source" [ref=e160] [cursor=pointer]:
+                - img [ref=e161]
+          - generic [ref=e165]:
+            - generic:
+              - group:
+                - button "Assistant":
+                  - img
+              - group:
+                - button "Gras":
+                  - img
+                - button "Italique":
+                  - img
+                - button "Souligné":
+                  - img
+                - generic:
+                  - button "Couleur":
+                    - img
+                - button "Barré":
+                  - img
+                - button "Surligné":
+                  - img
+                - button "Lien":
+                  - img
+          - textbox [active] [ref=e167]:
+            - list [ref=e168]:
+              - listitem [ref=e169]:
+                - paragraph [ref=e170]: Item 1
+              - listitem [ref=e171]:
+                - paragraph [ref=e172]
+                - list [ref=e173]:
+                  - listitem [ref=e174]:
+                    - paragraph [ref=e175]: AAAA
+              - listitem [ref=e176]:
+                - paragraph [ref=e177]: Item 3
+  - status: Docs créé
+  - generic [ref=e178]:
+    - generic [ref=e180]:
+      - img [ref=e182]
+      - generic [ref=e185]:
+        - button "Mémoire" [ref=e186] [cursor=pointer]:
+          - img [ref=e187]
+        - button "Prompt" [ref=e195] [cursor=pointer]:
+          - img [ref=e196]
+        - button "Effacer" [ref=e199] [cursor=pointer]:
+          - img [ref=e200]
+    - generic [ref=e204]:
+      - generic [ref=e206]:
+        - generic [ref=e207]:
+          - img [ref=e208]
+          - text: Item 2
+        - generic [ref=e211]:
+          - button "Modifier":
+            - img
+          - button "Annuler":
+            - img
+          - generic [ref=e213]: Remplace le deuxième item par AAAA
+      - paragraph [ref=e219]: ok
+    - generic [ref=e220]:
+      - textbox "Que veux-tu modifier ?" [ref=e222]
+      - generic [ref=e223]:
+        - generic [ref=e224]:
+          - button "Éditer" [ref=e226] [cursor=pointer]:
+            - text: Éditer
+            - img [ref=e227]
+          - button "Raccourcis" [ref=e229] [cursor=pointer]:
+            - img [ref=e230]
+          - button "Fichiers" [ref=e233] [cursor=pointer]:
+            - img [ref=e234]
+          - button "Dictée" [ref=e236] [cursor=pointer]:
+            - img [ref=e237]
+          - button "Auto" [pressed] [ref=e240] [cursor=pointer]:
+            - img [ref=e241]
+        - button "Envoyer" [disabled] [ref=e247] [cursor=pointer]:
+          - img [ref=e248]
+  - status [ref=e251]
+  - generic [ref=e253]:
+    - button [ref=e254] [cursor=pointer]: ←
+    - button [ref=e255] [cursor=pointer]: ✕
+  - generic [ref=e257]:
+    - generic [ref=e258]:
+      - generic [ref=e260]:
+        - img [ref=e261]
+        - text: "| 0 fichiers"
+      - generic [ref=e269]:
+        - button [ref=e270] [cursor=pointer]: + Ajouter
+        - button [ref=e271] [cursor=pointer]: ↺ Réinitialiser
+        - button [ref=e272] [cursor=pointer]: ✕
+    - generic [ref=e273]:
+      - generic [ref=e274]:
+        - checkbox [ref=e276]
+        - button [ref=e278] [cursor=pointer]: Nom
+        - button [ref=e280] [cursor=pointer]: Source
+        - generic [ref=e281]: Description
+        - button [ref=e283] [cursor=pointer]: MàJ▼
+      - generic [ref=e284]:
+        - checkbox [ref=e286]
+        - generic [ref=e287]:
+          - button [ref=e288] [cursor=pointer]: ✐
+          - button [ref=e289] [cursor=pointer]: Doc 1
+        - generic [ref=e290]: Mémo
+        - generic [ref=e291]: à l'instant
+      - generic [ref=e292]:
+        - checkbox [ref=e294]
+        - generic [ref=e295]:
+          - button [ref=e296] [cursor=pointer]: ✐
+          - button [ref=e297] [cursor=pointer]: Guide Édition Docs
+        - generic [ref=e298]: Web
+        - generic [ref=e299]: "Guide complet des fonctionnalités d'édition dans Docs : mise en forme, listes, tableaux et raccourcis Markdown."
+        - generic [ref=e300]: 22 j
+      - generic [ref=e301]:
+        - checkbox [ref=e303]
+        - generic [ref=e304]:
+          - button [ref=e305] [cursor=pointer]: ✐
+          - button [ref=e306] [cursor=pointer]: Go-Live 101
+        - generic [ref=e307]: Web
+        - generic [ref=e308]: "Guide des compétences essentielles : modélisation, sémantique, facilitation graphique et prototypage."
+        - generic [ref=e309]: 29 j
+      - generic [ref=e310]:
+        - checkbox [ref=e312]
+        - generic [ref=e313]:
+          - button [ref=e314] [cursor=pointer]: ✐
+          - button [ref=e315] [cursor=pointer]: Guide Docs & Assist
+        - generic [ref=e316]: Web
+        - generic [ref=e317]: Documentation technique exhaustive de l'architecture (docs.html, assist.js, draw-editor) et des modes de prompt IA po...
+        - generic [ref=e318]: 29 j
+      - generic [ref=e319]:
+        - checkbox [ref=e321]
+        - generic [ref=e322]:
+          - button [ref=e323] [cursor=pointer]: ✐
+          - button [ref=e324] [cursor=pointer]: Contexte Safran
+        - generic [ref=e325]: Web
+        - generic [ref=e326]: Brief de missions et de projets IT chez Safran
+        - generic [ref=e327]: 43 j
+  - text: "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"
+```

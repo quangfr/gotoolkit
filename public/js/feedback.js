@@ -64,6 +64,12 @@
                         <textarea id="${prefix}-message" name="message" required placeholder="Décris ton retour" class="feedback-app-textarea"></textarea>
                         <p class="feedback-app-helper">Message susceptible d’être consulté par tous. Évite toute information personnelle ou confidentielle.</p>
                     </label>
+                    <label class="feedback-app-label">
+                        <span>Médias (images/vidéos)</span>
+                        <input id="${prefix}-media" type="file" accept="image/*,video/*" multiple class="feedback-app-input" />
+                        <p class="feedback-app-helper">Jusqu'à 6 fichiers, 15 Mo max par fichier.</p>
+                    </label>
+                    <div id="${prefix}-mediaList" class="feedback-app-media-list" hidden></div>
                     <div class="${prefix}-share-row feedback-app-share-row">
                         <label class="feedback-app-share-checkbox">
                             <input id="${prefix}-shareCheckbox" type="checkbox" />
@@ -119,6 +125,8 @@
     const shareInfo = document.getElementById(`${prefix}-shareInfo`);
     const shareLink = document.getElementById(`${prefix}-shareLink`);
     const shareUrlInput = document.getElementById(`${prefix}-shareUrl`);
+    const mediaField = document.getElementById(`${prefix}-media`);
+    const mediaList = document.getElementById(`${prefix}-mediaList`);
     const shareStatusText = document.createElement("span");
     shareStatusText.className = "feedback-app-helper";
     shareStatusText.style.display = "block";
@@ -131,6 +139,58 @@
         bug: "Décris le bug (étapes pour reproduire, résultat attendu vs observé).",
         suggestion: "Décris la suggestion, le contexte et l’impact souhaité."
     };
+    const MAX_MEDIA_FILES = 6;
+    const MAX_MEDIA_FILE_SIZE = 15 * 1024 * 1024;
+    const selectedMedia = [];
+
+    function isSupportedMediaFile(file) {
+        const mime = String(file?.type || "").toLowerCase();
+        return mime.startsWith("image/") || mime.startsWith("video/");
+    }
+
+    function formatSize(size) {
+        const value = Number(size) || 0;
+        if (value < 1024) return `${value} B`;
+        if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} Ko`;
+        return `${(value / (1024 * 1024)).toFixed(1)} Mo`;
+    }
+
+    function readFileAsDataUrl(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(String(reader.result || ""));
+            reader.onerror = () => reject(new Error("Lecture du fichier impossible"));
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function renderMediaList() {
+        if (!mediaList) return;
+        mediaList.innerHTML = "";
+        if (!selectedMedia.length) {
+            mediaList.setAttribute("hidden", "true");
+            return;
+        }
+        mediaList.removeAttribute("hidden");
+        selectedMedia.forEach((item, index) => {
+            const row = document.createElement("div");
+            row.className = "feedback-app-media-item";
+            const label = document.createElement("span");
+            label.className = "feedback-app-media-item-label";
+            label.textContent = `${item.fileName} (${formatSize(item.size)})`;
+            const removeBtn = document.createElement("button");
+            removeBtn.type = "button";
+            removeBtn.className = "btn btn-secondary feedback-app-media-remove";
+            removeBtn.textContent = "Retirer";
+            removeBtn.addEventListener("click", () => {
+                selectedMedia.splice(index, 1);
+                renderMediaList();
+            });
+            row.appendChild(label);
+            row.appendChild(removeBtn);
+            mediaList.appendChild(row);
+        });
+    }
 
     function showToast(text, error = false) {
         if (!toast) return;
@@ -140,6 +200,41 @@
         setTimeout(() => {
             toast.classList.remove("show");
         }, 3200);
+    }
+
+    async function handleMediaSelection(event) {
+        const files = Array.from(event?.target?.files || []);
+        if (!files.length) return;
+        for (const file of files) {
+            if (selectedMedia.length >= MAX_MEDIA_FILES) {
+                showToast(`Maximum ${MAX_MEDIA_FILES} fichiers`, true);
+                break;
+            }
+            if (!isSupportedMediaFile(file)) {
+                showToast(`Type non supporté: ${file.name}`, true);
+                continue;
+            }
+            if (file.size > MAX_MEDIA_FILE_SIZE) {
+                showToast(`${file.name} dépasse 15 Mo`, true);
+                continue;
+            }
+            try {
+                const dataUrl = await readFileAsDataUrl(file);
+                const commaIndex = dataUrl.indexOf(",");
+                const contentBase64 = commaIndex >= 0 ? dataUrl.slice(commaIndex + 1) : "";
+                selectedMedia.push({
+                    fileName: file.name || "fichier",
+                    mimeType: file.type || "application/octet-stream",
+                    contentBase64,
+                    size: file.size || 0
+                });
+            } catch (err) {
+                console.error("Media read error", err);
+                showToast(`Impossible de lire ${file.name}`, true);
+            }
+        }
+        if (mediaField) mediaField.value = "";
+        renderMediaList();
     }
 
     function updatePlaceholder(type) {
@@ -254,7 +349,12 @@
             subject: subjectField?.value?.trim() || null,
             message: messageField?.value?.trim(),
             page: config.appId,
-            shareUrl: shareUrlInput?.value?.trim() || ""
+            shareUrl: shareUrlInput?.value?.trim() || "",
+            media: selectedMedia.map(item => ({
+                fileName: item.fileName,
+                mimeType: item.mimeType,
+                contentBase64: item.contentBase64
+            }))
         };
         try {
             const response = await fetch(endpoint, {
@@ -268,6 +368,8 @@
             }
             showToast("Feedback envoyé. Merci !", false);
             form.reset();
+            selectedMedia.length = 0;
+            renderMediaList();
             hideShareInfo();
             closeModal();
         } catch (err) {
@@ -286,6 +388,7 @@
     }
 
     form?.addEventListener("submit", submitFeedback);
+    mediaField?.addEventListener("change", handleMediaSelection);
     requestAnimationFrame(() => {
         if (config.defaultType && typeField) {
             typeField.value = config.defaultType;
