@@ -3694,7 +3694,7 @@
         }
         if (!value && !hasAttachment) return;
 
-        if (!isInlineEdit && !hasAttachment && this.memoSelection && window.sendInlineEditToAssist && window.memoEditor) {
+        if (!hasAttachment && window.sendInlineEditToAssist && window.memoEditor) {
             try {
                 var askText = value;
                 var documentMarkdown = (typeof window.getEditorMarkdown === "function"
@@ -3704,27 +3704,33 @@
                     || readDocumentContent()
                     || window.memoEditor.getHTML?.()
                     || "";
-                var selectionPayload = this.getMemoSelectionPayload(documentMarkdown, documentContent);
-                if (selectionPayload) {
+                var selectionPayload = (!isInlineEdit && this.memoSelection)
+                    ? this.getMemoSelectionPayload(documentMarkdown, documentContent)
+                    : null;
+                var shouldInlineAppend = (this.promptPresetId === "edit" || this.promptPresetId === "suggest");
+                if (selectionPayload || shouldInlineAppend) {
                     var systemPromptInline = this.getActiveSystemPrompt();
+                    var userContentInline = selectionPayload
+                        ? ("DOCUMENT: \n" + documentContent + " \n\nSELECTION: \n" + JSON.stringify(selectionPayload) + " \n\nASK: \n" + askText)
+                        : ("DOCUMENT: \n" + documentContent + " \n\nASK: \n" + askText);
                     var payloadInline = {
                         system: systemPromptInline,
                         messages: [
                             {
                                 role: "user",
-                                content: "DOCUMENT: \n" + documentContent + " \n\nSELECTION: \n" + JSON.stringify(selectionPayload) + " \n\nASK: \n" + askText
+                                content: userContentInline
                             }
                         ],
                         stream: false
                     };
 
-                    var savedExcerptInline = this.memoSelection.excerpt || null;
-                    var savedPosInline = { from: this.memoSelection.from, to: this.memoSelection.to };
-                    if (this.textarea) {
+                    var savedExcerptInline = selectionPayload ? (this.memoSelection.excerpt || null) : null;
+                    var savedPosInline = selectionPayload ? { from: this.memoSelection.from, to: this.memoSelection.to } : null;
+                    if (!isInlineEdit && this.textarea) {
                         this.textarea.value = "";
                         this.textarea.style.height = "auto";
                     }
-                    if (this.memoSelectionOverlay) {
+                    if (selectionPayload && this.memoSelectionOverlay) {
                         this.memoSelectionOverlay.style.display = "none";
                     }
 
@@ -3734,6 +3740,7 @@
                         selectionExcerpt: savedExcerptInline,
                         selectionPos: savedPosInline,
                         editor: window.memoEditor,
+                        editMessage: isInlineEdit ? options.editMessage : null,
                         docSnapshotId: window.getMemoActiveTabId?.() || null,
                         docSnapshotContent: documentContent || ""
                     });
@@ -10186,7 +10193,7 @@
     // Fonction pour envoyer un message inline du memo-editor
     // Remplace SEULEMENT la sélection en cours, pas tout le document
     async function sendInlineEditToAssist(options) {
-        const { payload, selectionExcerpt, selectionPos, editor, askText } = options;
+        const { payload, selectionExcerpt, selectionPos, editor, askText, editMessage } = options;
         const assistInstance = window.GoToolkitAssistInstance;
 
         if (!assistInstance) {
@@ -10272,6 +10279,182 @@
 
         let requestPayloadForLog = null;
         let aiOutForLog = null;
+        let streamPreviewStarted = false;
+        let streamFlushTimer = null;
+        let streamRawBuffer = "";
+        let streamLatestSelectionText = "";
+        let streamPendingDelta = "";
+        let streamInsertStart = null;
+        let streamInsertPos = null;
+        let streamEditorLocked = false;
+        let streamAppliedAnyDelta = false;
+        let streamTargetField = null;
+        let streamFieldCapture = {
+            started: false,
+            done: false,
+            valueStart: -1
+        };
+
+        const clearStreamFlushTimer = () => {
+            if (streamFlushTimer) {
+                clearTimeout(streamFlushTimer);
+                streamFlushTimer = null;
+            }
+        };
+
+        const setInlineEditorStreamingLock = (locked) => {
+            if (!editor || typeof editor.setEditable !== "function") return;
+            try {
+                editor.setEditable(!locked);
+                streamEditorLocked = Boolean(locked);
+            } catch (err) {
+                // noop
+            }
+        };
+
+        const extractJsonStringFieldPartial = (buffer, fieldNames) => {
+            if (typeof buffer !== "string" || !buffer) return null;
+            if (streamFieldCapture.done) {
+                return { text: streamLatestSelectionText || "", complete: true };
+            }
+            const fields = Array.isArray(fieldNames) ? fieldNames.filter(Boolean) : [];
+            if (!fields.length) return null;
+            if (!streamFieldCapture.started) {
+                let valueStart = -1;
+                for (let i = 0; i < fields.length; i++) {
+                    const key = "\"" + fields[i] + "\"";
+                    const keyPos = buffer.indexOf(key);
+                    if (keyPos === -1) continue;
+                    const colonPos = buffer.indexOf(":", keyPos + key.length);
+                    if (colonPos === -1) continue;
+                    let pos = colonPos + 1;
+                    while (pos < buffer.length && /\s/.test(buffer.charAt(pos))) pos += 1;
+                    if (buffer.charAt(pos) !== "\"") continue;
+                    valueStart = pos + 1;
+                    break;
+                }
+                if (valueStart < 0) return null;
+                streamFieldCapture.started = true;
+                streamFieldCapture.valueStart = valueStart;
+            }
+            const valueStart = streamFieldCapture.valueStart;
+            if (!Number.isFinite(valueStart) || valueStart < 0 || valueStart > buffer.length) return null;
+            let out = "";
+            let escaped = false;
+            for (let i = valueStart; i < buffer.length; i++) {
+                const ch = buffer.charAt(i);
+                if (escaped) {
+                    if (ch === "n") out += "\n";
+                    else if (ch === "r") out += "\r";
+                    else if (ch === "t") out += "\t";
+                    else if (ch === "b") out += "\b";
+                    else if (ch === "f") out += "\f";
+                    else if (ch === "\"" || ch === "\\" || ch === "/") out += ch;
+                    else if (ch === "u") {
+                        const hex = buffer.slice(i + 1, i + 5);
+                        if (/^[0-9a-fA-F]{4}$/.test(hex)) {
+                            out += String.fromCharCode(parseInt(hex, 16));
+                            i += 4;
+                        } else {
+                            out += "u";
+                        }
+                    } else {
+                        out += ch;
+                    }
+                    escaped = false;
+                    continue;
+                }
+                if (ch === "\\") {
+                    escaped = true;
+                    continue;
+                }
+                if (ch === "\"") {
+                    streamFieldCapture.done = true;
+                    return { text: out, complete: true };
+                }
+                out += ch;
+            }
+            return { text: out, complete: false };
+        };
+
+        const beginInlineStreamPreview = () => {
+            if (streamPreviewStarted || !editor?.state?.doc || !editor?.view) return;
+            let from = Number(selectionPos?.from);
+            let to = Number(selectionPos?.to);
+            const docSize = editor.state.doc.content.size;
+            const hasSelectionRange = Number.isFinite(from) && Number.isFinite(to) && to >= from;
+            if (!hasSelectionRange) {
+                from = docSize;
+                to = docSize;
+            }
+            from = Math.max(0, Math.min(docSize, Math.floor(Math.min(from, to))));
+            to = Math.max(from, Math.min(docSize, Math.floor(Math.max(from, to))));
+            streamInsertStart = from;
+            streamInsertPos = from;
+            try {
+                if (hasSelectionRange && to > from) {
+                    const tr = editor.state.tr.deleteRange(from, to).setMeta("addToHistory", false);
+                    editor.view.dispatch(tr);
+                }
+                if (editor.chain && editor.commands && typeof editor.commands.setTextSelection === "function") {
+                    editor.chain().focus().setTextSelection({ from: from, to: from }).run();
+                }
+            } catch (err) {
+                // noop
+            }
+            setInlineEditorStreamingLock(true);
+            streamPreviewStarted = true;
+        };
+
+        const flushInlineStreamDelta = () => {
+            if (!streamPendingDelta || !editor?.state?.tr || !editor?.view?.dispatch) return;
+            const delta = streamPendingDelta;
+            streamPendingDelta = "";
+            if (!streamPreviewStarted) {
+                beginInlineStreamPreview();
+            }
+            if (!streamPreviewStarted || !Number.isFinite(streamInsertPos)) return;
+            try {
+                const tr = editor.state.tr
+                    .insertText(delta, streamInsertPos, streamInsertPos)
+                    .setMeta("addToHistory", false);
+                editor.view.dispatch(tr);
+                const inserted = typeof delta === "string" ? delta.length : 0;
+                streamInsertPos += inserted;
+                streamAppliedAnyDelta = true;
+            } catch (err) {
+                // noop
+            }
+        };
+
+        const queueInlineStreamDeltaFlush = () => {
+            if (streamFlushTimer) return;
+            streamFlushTimer = setTimeout(() => {
+                streamFlushTimer = null;
+                flushInlineStreamDelta();
+            }, 80);
+        };
+
+        const ingestInlineStreamChunk = (chunk) => {
+            if (typeof chunk !== "string" || !chunk) return;
+            streamRawBuffer += chunk;
+            const extracted = extractJsonStringFieldPartial(
+                streamRawBuffer,
+                streamTargetField === "output" ? ["output"] : ["s_output", "sOutput"]
+            );
+            if (!extracted || typeof extracted.text !== "string") return;
+            const nextText = extracted.text;
+            if (nextText.length <= streamLatestSelectionText.length) return;
+            if (!nextText.startsWith(streamLatestSelectionText)) {
+                streamLatestSelectionText = nextText;
+                return;
+            }
+            const delta = nextText.slice(streamLatestSelectionText.length);
+            streamLatestSelectionText = nextText;
+            if (!delta) return;
+            streamPendingDelta += delta;
+            queueInlineStreamDeltaFlush();
+        };
 
         try {
             if (editor && editor.view && editor.view.dom && editor.view.dom.parentElement) {
@@ -10285,6 +10468,15 @@
             // 1. Normaliser le payload (memo.html fournit souvent `payload.system`, mais
             //    le client Responses attend un message `role: system` / instructions).
             const requestPayload = Object.assign({}, payload || {});
+            const hasSelectionForInline = Number.isFinite(Number(selectionPos?.from))
+                && Number.isFinite(Number(selectionPos?.to))
+                && Number(selectionPos?.to) >= Number(selectionPos?.from);
+            streamTargetField = hasSelectionForInline ? "s_output" : "output";
+            streamFieldCapture = {
+                started: false,
+                done: false,
+                valueStart: -1
+            };
             const requestMessages = Array.isArray(requestPayload.messages)
                 ? requestPayload.messages.slice()
                 : [];
@@ -10300,6 +10492,7 @@
             requestPayload.messages = requestMessages;
             // Avoid leaking non-standard field downstream.
             delete requestPayload.system;
+            requestPayload.stream = true;
             requestPayloadForLog = requestPayload;
 
             // Expose the last AI input (for memo source modal: AI In)
@@ -10354,8 +10547,8 @@
                 }
             }
 
-            // 3. Afficher le message utilisateur dans le chat
-            const userMessage = createMessage('user', askContent);
+            // 3. Afficher (ou réutiliser) le message utilisateur dans le chat
+            var userMessage = (editMessage && typeof editMessage === "object") ? editMessage : createMessage('user', askContent);
             if (!userMessage.docSnapshotId) {
                 var inlineDocId = (typeof options?.docSnapshotId === "string" && options.docSnapshotId)
                     || (typeof global.getMemoActiveTabId === "function" ? global.getMemoActiveTabId() : null)
@@ -10372,10 +10565,21 @@
                 }
                 userMessage.docSnapshotContent = inlineSnapshot || readDocumentContent() || "";
             }
-            assistInstance.conversation.messages.push(userMessage);
-            assistInstance.appendMessage(userMessage, {
-                selectionExcerpt: selectionExcerpt
-            });
+            var hasExistingUserMessage = Boolean(editMessage && editMessage.id);
+            if (!hasExistingUserMessage) {
+                assistInstance.conversation.messages.push(userMessage);
+                assistInstance.appendMessage(userMessage, {
+                    selectionExcerpt: selectionExcerpt
+                });
+            } else {
+                var existingNode = assistInstance.messageNodes[userMessage.id];
+                if (!existingNode) {
+                    assistInstance.conversation.messages.push(userMessage);
+                    assistInstance.appendMessage(userMessage, {
+                        selectionExcerpt: selectionExcerpt
+                    });
+                }
+            }
 
             // 4. Créer et afficher le message bot avec loading "..."
             botMessage = createMessage('bot', '...');
@@ -10398,10 +10602,28 @@
             startCharacterCounterToaster(totalPayloadChars, { scopeId: inlineScopeId });
 
             // 5. Appeler l'IA
-            const rawResponse = await window.GoToolkitIA?.chatCompletion({
-                payload: requestPayload,
-                endpointType: 'responses',
-            });
+            let rawResponse = null;
+            try {
+                rawResponse = await window.GoToolkitIA?.chatCompletion({
+                    payload: requestPayload,
+                    endpointType: 'responses',
+                    onChunk: ingestInlineStreamChunk
+                });
+            } catch (streamError) {
+                const streamErrText = String(streamError?.message || streamError || "");
+                const canRetryWithoutStream = Boolean(requestPayload.stream)
+                    && /(^|[^0-9])400([^0-9]|$)|invalid|unsupported|stream/i.test(streamErrText);
+                if (!canRetryWithoutStream) {
+                    throw streamError;
+                }
+                clearStreamFlushTimer();
+                streamPendingDelta = "";
+                const retryPayload = Object.assign({}, requestPayload, { stream: false });
+                rawResponse = await window.GoToolkitIA?.chatCompletion({
+                    payload: retryPayload,
+                    endpointType: 'responses'
+                });
+            }
 
             if (!rawResponse) {
                 logInlineEditIssue('L0/raw-response-missing', { reason: 'No response from AI client' });
@@ -10570,6 +10792,10 @@
 
             // 10. Mettre à jour l'éditeur selon le type de remplacement (continue dans le pipe)
             if (editor && editMetadata) {
+                clearStreamFlushTimer();
+                if (streamPendingDelta) {
+                    flushInlineStreamDelta();
+                }
                 // Restaurer la position du scroll après les modifications
                 const restoreScroll = () => {
                     try {
@@ -10587,7 +10813,25 @@
                     // Cas SELECTION : remplacer la sélection courante (overlay)
                     const selectionFrom = Number(selectionPos?.from);
                     const selectionTo = Number(selectionPos?.to);
-                    if (Number.isFinite(selectionFrom) && Number.isFinite(selectionTo) && selectionFrom >= 0 && selectionTo >= selectionFrom) {
+                    if (
+                        streamAppliedAnyDelta
+                        && Number.isFinite(streamInsertStart)
+                        && Number.isFinite(streamInsertPos)
+                        && streamInsertPos >= streamInsertStart
+                    ) {
+                        if (typeof window.insertEditorMarkdownAtRange === 'function') {
+                            window.insertEditorMarkdownAtRange(editMetadata.sOutput.text, {
+                                from: streamInsertStart,
+                                to: streamInsertPos
+                            });
+                            restoreScroll();
+                            setTimeout(function () {
+                                assistInstance.refreshMemoSelectionFromEditorSelection(editor);
+                            }, 0);
+                        } else {
+                            logInlineEditIssue('L1B/insert-range-missing-after-stream', { reason: 'insertEditorMarkdownAtRange unavailable' });
+                        }
+                    } else if (Number.isFinite(selectionFrom) && Number.isFinite(selectionTo) && selectionFrom >= 0 && selectionTo >= selectionFrom) {
                         if (typeof window.insertEditorMarkdownAtRange === 'function') {
                             let targetRange = { from: selectionFrom, to: selectionTo };
                             const listRange = getListRangeFromSelection(editor, selectionFrom, selectionTo);
@@ -10607,7 +10851,19 @@
                     }
                 } else if (typeof editMetadata.output === 'string' && editMetadata.output.trim()) {
                     // Cas DOCUMENT entier (Maintenant APPEND par défaut dans le mode "edit" sans sélection)
-                    if (typeof window.insertEditorMarkdownAtEnd === 'function') {
+                    if (
+                        streamAppliedAnyDelta
+                        && Number.isFinite(streamInsertStart)
+                        && Number.isFinite(streamInsertPos)
+                        && streamInsertPos >= streamInsertStart
+                        && typeof window.insertEditorMarkdownAtRange === 'function'
+                    ) {
+                        window.insertEditorMarkdownAtRange(editMetadata.output, {
+                            from: streamInsertStart,
+                            to: streamInsertPos
+                        });
+                        window.scrollMemoEditorToEnd?.();
+                    } else if (typeof window.insertEditorMarkdownAtEnd === 'function') {
                         window.insertEditorMarkdownAtEnd(editMetadata.output);
                         window.scrollMemoEditorToEnd?.();
                     } else if (typeof window.setEditorMarkdown === 'function') {
@@ -10647,6 +10903,11 @@
                 }
             }
         } finally {
+            clearStreamFlushTimer();
+            streamPendingDelta = "";
+            if (streamEditorLocked) {
+                setInlineEditorStreamingLock(false);
+            }
             assistInstance.setSendButtonBusy(false, { scopeId: inlineScopeId });
         }
     }
