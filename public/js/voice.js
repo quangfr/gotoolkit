@@ -10,6 +10,7 @@
     const CLICK_HIGHLIGHT_DURATION_MS = 420;
     const CLICK_HIGHLIGHT_RADIUS_PX = 26;
     const CLICK_HIGHLIGHT_Y_OFFSET_PX = 6;
+    const RECORDING_BEFORE_UNLOAD_MESSAGE = "Un enregistrement est en cours. Voulez-vous vraiment quitter ?";
 
     const state = {
         currentMemoId: null,
@@ -2181,7 +2182,8 @@
         window.addEventListener("beforeunload", event => {
             if (!state.isRecording) return;
             event.preventDefault();
-            event.returnValue = "";
+            event.returnValue = RECORDING_BEFORE_UNLOAD_MESSAGE;
+            return RECORDING_BEFORE_UNLOAD_MESSAGE;
         });
         const activeMemo = window.GoToolkitMemoVoice?.getActiveMemo?.();
         if (activeMemo) {
