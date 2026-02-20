@@ -9,16 +9,10 @@ const VALID_COLLECTIONS = new Set([
   "codes_map"
 ]);
 const GOOGLE_API_SCOPE = [
-  "https://www.googleapis.com/auth/datastore",
-  "https://www.googleapis.com/auth/devstorage.read_write"
+  "https://www.googleapis.com/auth/datastore"
 ].join(" ");
 const FIREBASE_TOKEN_URL = "https://oauth2.googleapis.com/token";
-const ALLOWED_ASSET_MIME = new Set([
-  "image/png",
-  "image/jpeg",
-  "image/jpg",
-  "image/gif"
-]);
+const ALLOWED_ASSET_MIME_PREFIXES = ["image/", "video/", "audio/"];
 const MAX_ASSET_BYTES = 25 * 1024 * 1024;
 let serviceAccountConfig = null;
 let signingKeyPromise = null;
@@ -77,20 +71,11 @@ function fromBase64UrlString(text) {
   return atob(withPadding);
 }
 
-function resolveStorageBucket(env) {
-  const raw = String(
-    env?.FIREBASE_STORAGE_BUCKET
-    || env?.FIRE_STORAGE_BUCKET
-    || env?.FIREBASE_PROJECT_ID
-    || getServiceAccount(env)?.project_id
-    || ""
-  ).trim();
-  if (!raw) {
-    throw new Error("Bucket Storage Firebase manquant (FIRE_STORAGE_BUCKET)");
+function resolveR2MediaBucket(env) {
+  if (!env?.SHARE_MEDIA_BUCKET || typeof env.SHARE_MEDIA_BUCKET.put !== "function") {
+    throw new Error("Binding R2 SHARE_MEDIA_BUCKET manquant");
   }
-  const clean = raw.replace(/^gs:\/\//, "").replace(/\/+$/, "");
-  if (clean.includes(".")) return clean;
-  return `${clean}.firebasestorage.app`;
+  return env.SHARE_MEDIA_BUCKET;
 }
 
 function safeAssetScope(raw) {
@@ -102,15 +87,35 @@ function safeAssetScope(raw) {
   return clean || "shared";
 }
 
+function isAllowedAssetMime(mimeType) {
+  const mime = String(mimeType || "").trim().toLowerCase();
+  return ALLOWED_ASSET_MIME_PREFIXES.some(prefix => mime.startsWith(prefix));
+}
+
 function detectAssetExtension(mimeType, fileName) {
   const mime = String(mimeType || "").toLowerCase();
   if (mime === "image/png") return "png";
   if (mime === "image/gif") return "gif";
   if (mime === "image/jpeg" || mime === "image/jpg") return "jpg";
+  if (mime === "image/webp") return "webp";
+  if (mime === "video/mp4") return "mp4";
+  if (mime === "video/webm") return "webm";
+  if (mime === "video/quicktime") return "mov";
+  if (mime === "audio/mpeg") return "mp3";
+  if (mime === "audio/wav" || mime === "audio/x-wav") return "wav";
+  if (mime === "audio/webm") return "webm";
+  if (mime === "audio/ogg") return "ogg";
   const lowerName = String(fileName || "").toLowerCase();
   if (lowerName.endsWith(".png")) return "png";
   if (lowerName.endsWith(".gif")) return "gif";
   if (lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg")) return "jpg";
+  if (lowerName.endsWith(".webp")) return "webp";
+  if (lowerName.endsWith(".mp4")) return "mp4";
+  if (lowerName.endsWith(".webm")) return "webm";
+  if (lowerName.endsWith(".mov")) return "mov";
+  if (lowerName.endsWith(".mp3")) return "mp3";
+  if (lowerName.endsWith(".wav")) return "wav";
+  if (lowerName.endsWith(".ogg")) return "ogg";
   return "bin";
 }
 
@@ -120,7 +125,7 @@ function sanitizeAssetName(fileName, fallbackExt) {
     .replace(/[^a-zA-Z0-9._-]/g, "-")
     .replace(/-+/g, "-")
     .replace(/^-+|-+$/g, "");
-  if (!base) return `image.${fallbackExt}`;
+  if (!base) return `asset.${fallbackExt}`;
   return base;
 }
 
@@ -141,7 +146,7 @@ function parseAssetUploadBody(body) {
   const contentBase64 = String(payload.contentBase64 || inline?.contentBase64 || "").replace(/\s+/g, "");
   const fileName = String(payload.fileName || "").trim();
   const scope = safeAssetScope(payload.scope || payload.documentId || payload.collection || "shared");
-  if (!ALLOWED_ASSET_MIME.has(mimeType)) {
+  if (!isAllowedAssetMime(mimeType)) {
     throw new Error("Type de fichier non autorisé");
   }
   if (!contentBase64) {
@@ -462,47 +467,19 @@ function extractMeta(doc) {
   return convertFields(metaField);
 }
 
-function getStorageApiBaseUrl(env) {
-  const bucket = resolveStorageBucket(env);
-  return `https://storage.googleapis.com/storage/v1/b/${encodeURIComponent(bucket)}`;
-}
-
-function getStorageUploadUrl(env, objectName) {
-  const bucket = resolveStorageBucket(env);
-  return `https://storage.googleapis.com/upload/storage/v1/b/${encodeURIComponent(bucket)}/o?uploadType=media&name=${encodeURIComponent(objectName)}`;
-}
-
-function getStorageObjectUrl(env, objectName) {
-  return `${getStorageApiBaseUrl(env)}/o/${encodeURIComponent(objectName)}`;
-}
-
-function mapStorageObjectToAsset(item, env) {
-  const objectName = String(item?.name || "").trim();
-  const contentType = String(item?.contentType || "").trim();
-  const size = Number(item?.size || 0);
-  const generation = String(item?.generation || "").trim();
-  const bucket = resolveStorageBucket(env);
+function mapStorageObjectToAsset(objectName, upload) {
   return {
     id: toBase64UrlString(objectName),
     objectName,
-    bucket,
-    mimeType: contentType,
-    size,
-    generation
+    bucket: "share-media",
+    mimeType: String(upload?.mimeType || ""),
+    size: Number(upload?.size || 0),
+    generation: ""
   };
 }
 
-async function storageApiFetch(env, url, options = {}) {
-  const headers = Object.assign(
-    {},
-    options.headers || {},
-    { Authorization: `Bearer ${await getAccessToken(env)}` }
-  );
-  const response = await fetch(url, Object.assign({}, options, { headers }));
-  return response;
-}
-
 async function uploadAssetToStorage(env, upload) {
+  const bucket = resolveR2MediaBucket(env);
   const bytes = decodeBase64ToBytes(upload.contentBase64);
   if (!bytes.length) {
     throw new Error("Image vide");
@@ -514,26 +491,19 @@ async function uploadAssetToStorage(env, upload) {
   const ext = detectAssetExtension(upload.mimeType, upload.fileName);
   const baseFileName = sanitizeAssetName(upload.fileName, ext);
   const objectName = `assets/${upload.scope}/${hash}-${baseFileName}`;
-
-  const uploadResponse = await storageApiFetch(env, getStorageUploadUrl(env, objectName), {
-    method: "POST",
-    headers: {
-      "Content-Type": upload.mimeType
-    },
-    body: bytes
+  await bucket.put(objectName, bytes, {
+    httpMetadata: {
+      contentType: upload.mimeType
+    }
   });
-  if (!uploadResponse.ok) {
-    const body = await uploadResponse.text().catch(() => "");
-    throw new Error(`Erreur upload Storage: ${uploadResponse.status} ${body}`);
-  }
-  const data = await uploadResponse.json().catch(() => ({}));
   return {
     hash,
-    asset: mapStorageObjectToAsset(data, env)
+    asset: mapStorageObjectToAsset(objectName, { mimeType: upload.mimeType, size: bytes.length })
   };
 }
 
 async function readAssetFromStorage(env, assetId) {
+  const bucket = resolveR2MediaBucket(env);
   let objectName = "";
   try {
     objectName = fromBase64UrlString(assetId);
@@ -541,21 +511,13 @@ async function readAssetFromStorage(env, assetId) {
     return null;
   }
   if (!objectName) return null;
-
-  const response = await storageApiFetch(env, `${getStorageObjectUrl(env, objectName)}?alt=media`, {
-    method: "GET"
-  });
-  if (response.status === 404) {
-    return null;
-  }
-  if (!response.ok) {
-    const body = await response.text().catch(() => "");
-    throw new Error(`Erreur lecture Storage: ${response.status} ${body}`);
-  }
-  return { objectName, response };
+  const object = await bucket.get(objectName);
+  if (!object) return null;
+  return { objectName, object };
 }
 
 async function deleteAssetFromStorage(env, assetId) {
+  const bucket = resolveR2MediaBucket(env);
   let objectName = "";
   try {
     objectName = fromBase64UrlString(assetId);
@@ -563,17 +525,7 @@ async function deleteAssetFromStorage(env, assetId) {
     return false;
   }
   if (!objectName) return false;
-
-  const response = await storageApiFetch(env, getStorageObjectUrl(env, objectName), {
-    method: "DELETE"
-  });
-  if (response.status === 404) {
-    return true;
-  }
-  if (!response.ok) {
-    const body = await response.text().catch(() => "");
-    throw new Error(`Erreur suppression Storage: ${response.status} ${body}`);
-  }
+  await bucket.delete(objectName);
   return true;
 }
 
@@ -736,15 +688,15 @@ async function handleRequest(request, env) {
       if (!result) {
         return notFoundResponse(request, env);
       }
+      const contentType = result.object.httpMetadata?.contentType || "application/octet-stream";
       const streamHeaders = Object.assign({}, corsHeaders(request, env), {
-        "Content-Type": result.response.headers.get("Content-Type") || "application/octet-stream",
+        "Content-Type": contentType,
         "Cache-Control": "public, max-age=31536000, immutable"
       });
-      const length = result.response.headers.get("Content-Length");
-      if (length) {
-        streamHeaders["Content-Length"] = length;
+      if (typeof result.object.size === "number") {
+        streamHeaders["Content-Length"] = String(result.object.size);
       }
-      return new Response(result.response.body, {
+      return new Response(result.object.body, {
         status: 200,
         headers: streamHeaders
       });

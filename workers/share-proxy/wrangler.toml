@@ -3,9 +3,6 @@ main = "index.js"
 compatibility_date = "2024-12-01"
 workers_dev = true
 
-[vars]
-FIRE_STORAGE_BUCKET = "gotoolkit"
-
 # Cloudflare Rate Limiter binding
 [[ratelimits]]
 name = "MY_RATE_LIMITER"
@@ -13,6 +10,10 @@ namespace_id = "1003"
 
 # 10 requests per 60 seconds
 simple = { limit = 10, period = 60 }
+
+[[r2_buckets]]
+binding = "SHARE_MEDIA_BUCKET"
+bucket_name = "gotoolkit-share-media"
 # To bind the worker to a custom domain, Cloudflare requires either
 # `route = { pattern = "example.com/*", zone_id = "..." }` for each
 # zone you control, or a `custom_domain` entry. Commented out for now.

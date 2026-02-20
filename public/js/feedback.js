@@ -67,25 +67,14 @@
                     <label class="feedback-app-label">
                         <span>Médias (images/vidéos)</span>
                         <input id="${prefix}-media" type="file" accept="image/*,video/*" multiple class="feedback-app-input" />
-                        <p class="feedback-app-helper">Jusqu'à 6 fichiers, 15 Mo max par fichier.</p>
+                        <p class="feedback-app-helper">Jusqu'à 6 fichiers, 100 Mo max par fichier.</p>
                     </label>
                     <div id="${prefix}-mediaList" class="feedback-app-media-list" hidden></div>
-                    <div class="${prefix}-share-row feedback-app-share-row">
-                        <label class="feedback-app-share-checkbox">
-                            <input id="${prefix}-shareCheckbox" type="checkbox" />
-                            Partager le document
-                        </label>
-                    </div>
-                    <div id="${prefix}-shareInfo" class="${prefix}-share-info feedback-app-share-info" hidden>
-                        <p class="feedback-app-helper">${config.shareWarning || "Lien partagé dans le feedback : "}</p>
-                        <a id="${prefix}-shareLink" class="feedback-app-share-link" rel="noreferrer noopener" target="_blank"></a>
-                    </div>
                     <div class="${prefix}-actions feedback-app-actions">
                         <button type="button" class="btn btn-secondary feedback-app-cgu-btn" data-open-nexus-modal>Mentions légales</button>
                         <button type="button" id="${prefix}-cancelBtn" class="btn btn-secondary">Annuler</button>
                         <button type="submit" class="btn btn-primary">Envoyer</button>
                     </div>
-                    <input type="hidden" id="${prefix}-shareUrl" name="shareUrl" />
                 </form>
             </div>
         </div>
@@ -121,26 +110,15 @@
     const messageField = document.getElementById(`${prefix}-message`);
     const nameField = document.getElementById(`${prefix}-name`);
     const subjectField = document.getElementById(`${prefix}-subject`);
-    const shareCheckbox = document.getElementById(`${prefix}-shareCheckbox`);
-    const shareInfo = document.getElementById(`${prefix}-shareInfo`);
-    const shareLink = document.getElementById(`${prefix}-shareLink`);
-    const shareUrlInput = document.getElementById(`${prefix}-shareUrl`);
     const mediaField = document.getElementById(`${prefix}-media`);
     const mediaList = document.getElementById(`${prefix}-mediaList`);
-    const shareStatusText = document.createElement("span");
-    shareStatusText.className = "feedback-app-helper";
-    shareStatusText.style.display = "block";
-    shareStatusText.style.marginTop = "4px";
-    if (shareInfo) {
-        shareInfo.appendChild(shareStatusText);
-    }
 
     const messagePlaceholders = {
         bug: "Décris le bug (étapes pour reproduire, résultat attendu vs observé).",
         suggestion: "Décris la suggestion, le contexte et l’impact souhaité."
     };
     const MAX_MEDIA_FILES = 6;
-    const MAX_MEDIA_FILE_SIZE = 15 * 1024 * 1024;
+    const MAX_MEDIA_FILE_SIZE = 100 * 1024 * 1024;
     const selectedMedia = [];
 
     function isSupportedMediaFile(file) {
@@ -215,7 +193,7 @@
                 continue;
             }
             if (file.size > MAX_MEDIA_FILE_SIZE) {
-                showToast(`${file.name} dépasse 15 Mo`, true);
+                showToast(`${file.name} dépasse 100 Mo`, true);
                 continue;
             }
             try {
@@ -277,65 +255,6 @@
         }
     });
 
-    let sharePromise = null;
-    async function createShareLink() {
-        if (!config.shareCollection) {
-            throw new Error("Collection de partage inconnue.");
-        }
-        const shareWorker = window.goToolkitShareWorker;
-        if (!shareWorker?.isReady) {
-            throw new Error("Service de partage indisponible.");
-        }
-        const token = crypto.randomUUID ? crypto.randomUUID() : `fb-${Date.now()}`;
-        const payload = await (config.buildSharePayload ? config.buildSharePayload() : {});
-        const shareBase = shareWorker.baseUrl.replace(/\/+$/, "");
-        const shareNamespace = shareWorker.version || "v1";
-        await shareWorker.saveSharePayload(config.shareCollection, token, payload);
-        return `${shareBase}/${shareNamespace}/shares/${config.shareCollection}/${encodeURIComponent(token)}`;
-    }
-
-    async function handleShareToggle() {
-        if (!shareCheckbox?.checked) {
-            shareInfo?.setAttribute("hidden", "true");
-            shareLink.textContent = "";
-            shareLink.removeAttribute("href");
-            shareUrlInput.value = "";
-            shareStatusText.textContent = "";
-            sharePromise = null;
-            return;
-        }
-        if (sharePromise) {
-            return;
-        }
-        sharePromise = (async () => {
-            shareInfo?.removeAttribute("hidden");
-            shareStatusText.textContent = "Génération du lien...";
-            try {
-                const url = await createShareLink();
-                shareLink.textContent = url;
-                shareLink.href = url;
-                shareUrlInput.value = url;
-            } catch (err) {
-                shareStatusText.textContent = err.message || "Impossible de générer le lien.";
-                shareCheckbox.checked = false;
-                shareInfo?.setAttribute("hidden", "true");
-                shareUrlInput.value = "";
-                sharePromise = null;
-                throw err;
-            } finally {
-                sharePromise = null;
-            }
-        })();
-    }
-
-    shareCheckbox?.addEventListener("change", () => {
-        if (shareCheckbox.checked) {
-            handleShareToggle().catch(() => { /* noop */ });
-        } else {
-            handleShareToggle();
-        }
-    });
-
     async function submitFeedback(event) {
         event.preventDefault();
         const endpoint = (window.GO_TOOLKIT_FEEDBACK_API_URL || "https://feedback.gotoolkit.workers.dev/v1/feedback") + "";
@@ -349,7 +268,6 @@
             subject: subjectField?.value?.trim() || null,
             message: messageField?.value?.trim(),
             page: config.appId,
-            shareUrl: shareUrlInput?.value?.trim() || "",
             media: selectedMedia.map(item => ({
                 fileName: item.fileName,
                 mimeType: item.mimeType,
@@ -370,21 +288,11 @@
             form.reset();
             selectedMedia.length = 0;
             renderMediaList();
-            hideShareInfo();
             closeModal();
         } catch (err) {
             console.error("Feedback send error", err);
             showToast("Impossible d'envoyer le feedback.", true);
         }
-    }
-
-    function hideShareInfo() {
-        shareInfo?.setAttribute("hidden", "true");
-        shareLink.textContent = "";
-        shareLink.removeAttribute("href");
-        shareUrlInput.value = "";
-        shareStatusText.textContent = "";
-        shareCheckbox.checked = false;
     }
 
     form?.addEventListener("submit", submitFeedback);

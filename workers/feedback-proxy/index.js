@@ -7,9 +7,10 @@ var COLLECTION = "feedback";
 var FIRESTORE_SCOPE = "https://www.googleapis.com/auth/datastore";
 var FIREBASE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 var DEFAULT_PROJECT_ID = "gotoolkit";
-var MAX_REQUEST_SIZE = 12 * 1024 * 1024;
+var MAX_REQUEST_SIZE = 140 * 1024 * 1024;
 var MAX_MEDIA_FILES = 6;
-var MAX_MEDIA_BASE64_SIZE = 20 * 1024 * 1024;
+var MAX_MEDIA_BASE64_SIZE = 140 * 1024 * 1024;
+var FEEDBACK_MEDIA_SEGMENT = "media";
 
 
 
@@ -39,6 +40,25 @@ var index_default = {
             }
 
             const normalizedPath = pathname.replace(/\/+/g, "/");
+            const mediaPath = parseMediaPath(normalizedPath);
+            if (mediaPath) {
+                if (request.method !== "GET") {
+                    return jsonResponse({ error: "Méthode non autorisée" }, 405, request, env, { Allow: "GET,OPTIONS" });
+                }
+                const mediaResult = await readFeedbackMedia(env, mediaPath.id);
+                if (!mediaResult) {
+                    return jsonResponse({ error: "Ressource introuvable" }, 404, request, env);
+                }
+                const headers = {
+                    ...corsHeaders(request, env),
+                    "Content-Type": mediaResult.object.httpMetadata?.contentType || "application/octet-stream",
+                    "Cache-Control": "public, max-age=31536000, immutable"
+                };
+                if (typeof mediaResult.object.size === "number") {
+                    headers["Content-Length"] = String(mediaResult.object.size);
+                }
+                return new Response(mediaResult.object.body, { status: 200, headers });
+            }
             if (!normalizedPath.startsWith(`/${API_VERSION}/feedback`)) {
                 return jsonResponse({ error: "Ressource introuvable" }, 404, request, env);
             }
@@ -132,6 +152,35 @@ var index_default = {
         }
     }
 };
+
+function parseMediaPath(pathname) {
+    const segments = String(pathname || "").split("/").filter(Boolean);
+    if (segments.length !== 3) return null;
+    if (segments[0] !== API_VERSION || segments[1] !== FEEDBACK_MEDIA_SEGMENT) return null;
+    return { id: decodeURIComponent(segments[2] || "") };
+}
+__name(parseMediaPath, "parseMediaPath");
+
+function toBase64UrlString(text) {
+    return btoa(String(text || "")).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+__name(toBase64UrlString, "toBase64UrlString");
+
+function fromBase64UrlString(text) {
+    const normalized = String(text || "").replace(/-/g, "+").replace(/_/g, "/");
+    const padLength = normalized.length % 4;
+    const withPadding = normalized + (padLength ? "=".repeat(4 - padLength) : "");
+    return atob(withPadding);
+}
+__name(fromBase64UrlString, "fromBase64UrlString");
+
+function resolveFeedbackMediaBucket(env) {
+    if (!env?.FEEDBACK_MEDIA_BUCKET || typeof env.FEEDBACK_MEDIA_BUCKET.put !== "function") {
+        throw new Error("Binding R2 FEEDBACK_MEDIA_BUCKET manquant");
+    }
+    return env.FEEDBACK_MEDIA_BUCKET;
+}
+__name(resolveFeedbackMediaBucket, "resolveFeedbackMediaBucket");
 
 function parseAllowedOrigins(env) {
     const raw = env?.SHARE_ALLOWED_ORIGINS;
@@ -258,6 +307,105 @@ function normalizeMediaPayload(input) {
     return { media };
 }
 __name(normalizeMediaPayload, "normalizeMediaPayload");
+
+function decodeBase64ToBytes(base64) {
+    const normalized = String(base64 || "").replace(/-/g, "+").replace(/_/g, "/");
+    const padLength = normalized.length % 4;
+    const withPadding = normalized + (padLength ? "=".repeat(4 - padLength) : "");
+    const binary = atob(withPadding);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes;
+}
+__name(decodeBase64ToBytes, "decodeBase64ToBytes");
+
+function bytesToHex(bytes) {
+    return Array.from(bytes).map(byte => byte.toString(16).padStart(2, "0")).join("");
+}
+__name(bytesToHex, "bytesToHex");
+
+async function sha256Hex(bytes) {
+    const hash = await crypto.subtle.digest("SHA-256", bytes);
+    return bytesToHex(new Uint8Array(hash));
+}
+__name(sha256Hex, "sha256Hex");
+
+function detectMediaExtension(mimeType, fileName) {
+    const mime = String(mimeType || "").toLowerCase();
+    if (mime === "image/png") return "png";
+    if (mime === "image/jpeg" || mime === "image/jpg") return "jpg";
+    if (mime === "image/gif") return "gif";
+    if (mime === "image/webp") return "webp";
+    if (mime === "video/mp4") return "mp4";
+    if (mime === "video/webm") return "webm";
+    if (mime === "video/quicktime") return "mov";
+    const lower = String(fileName || "").toLowerCase();
+    if (lower.endsWith(".png")) return "png";
+    if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "jpg";
+    if (lower.endsWith(".gif")) return "gif";
+    if (lower.endsWith(".webp")) return "webp";
+    if (lower.endsWith(".mp4")) return "mp4";
+    if (lower.endsWith(".webm")) return "webm";
+    if (lower.endsWith(".mov")) return "mov";
+    return "bin";
+}
+__name(detectMediaExtension, "detectMediaExtension");
+
+function sanitizeMediaName(fileName, fallbackExt) {
+    const base = String(fileName || "")
+        .trim()
+        .replace(/[^a-zA-Z0-9._-]/g, "-")
+        .replace(/-+/g, "-")
+        .replace(/^-+|-+$/g, "");
+    if (!base) return `media.${fallbackExt}`;
+    return base;
+}
+__name(sanitizeMediaName, "sanitizeMediaName");
+
+async function uploadFeedbackMedia(env, mediaItems) {
+    const bucket = resolveFeedbackMediaBucket(env);
+    const now = new Date();
+    const prefix = `${now.getUTCFullYear()}/${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
+    const uploaded = [];
+    for (const media of mediaItems) {
+        const bytes = decodeBase64ToBytes(media.contentBase64);
+        const hash = await sha256Hex(bytes);
+        const ext = detectMediaExtension(media.mimeType, media.fileName);
+        const safeName = sanitizeMediaName(media.fileName, ext);
+        const objectName = `feedback/${prefix}/${hash}-${safeName}`;
+        await bucket.put(objectName, bytes, {
+            httpMetadata: {
+                contentType: media.mimeType
+            }
+        });
+        uploaded.push({
+            id: toBase64UrlString(objectName),
+            objectName,
+            fileName: media.fileName,
+            mimeType: media.mimeType,
+            size: bytes.length
+        });
+    }
+    return uploaded;
+}
+__name(uploadFeedbackMedia, "uploadFeedbackMedia");
+
+async function readFeedbackMedia(env, mediaId) {
+    const bucket = resolveFeedbackMediaBucket(env);
+    let objectName = "";
+    try {
+        objectName = fromBase64UrlString(mediaId);
+    } catch (err) {
+        return null;
+    }
+    if (!objectName) return null;
+    const object = await bucket.get(objectName);
+    if (!object) return null;
+    return { objectName, object };
+}
+__name(readFeedbackMedia, "readFeedbackMedia");
 
 // (Optionnel) IP helpers, conservés (utile pour rate-limit / debug)
 function getClientIp(request) {
@@ -417,6 +565,7 @@ async function saveFeedback(env, payload, request) {
     if (mediaValidation.error) {
         throw new Error(mediaValidation.error);
     }
+    const uploadedMedia = await uploadFeedbackMedia(env, mediaValidation.media);
     const body = {
         fields: toFields({
             type: payload.type,
@@ -426,7 +575,7 @@ async function saveFeedback(env, payload, request) {
             status: "recue",
             page: payload.page || "index",
             shareUrl: payload.shareUrl || null,
-            mediaJson: mediaValidation.media.length ? JSON.stringify(mediaValidation.media) : null,
+            mediaJson: uploadedMedia.length ? JSON.stringify(uploadedMedia) : null,
             userAgent: payload.userAgent || request.headers.get("User-Agent") || "",
             createdAt: { timestampValue: (/* @__PURE__ */ new Date()).toISOString() },
             updatedAt: { timestampValue: (/* @__PURE__ */ new Date()).toISOString() }
@@ -497,9 +646,11 @@ function fromFields(doc) {
             const parsed = JSON.parse(mediaJson);
             if (Array.isArray(parsed)) {
                 result.media = parsed.map((item) => ({
+                    id: String(item?.id || ""),
                     fileName: String(item?.fileName || ""),
                     mimeType: String(item?.mimeType || ""),
-                    size: Math.floor((String(item?.contentBase64 || "").length * 3) / 4)
+                    size: Number(item?.size || 0),
+                    url: item?.id ? `/${API_VERSION}/${FEEDBACK_MEDIA_SEGMENT}/${encodeURIComponent(String(item.id))}` : ""
                 }));
             }
         } catch (err) {
