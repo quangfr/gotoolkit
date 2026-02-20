@@ -99,7 +99,7 @@
                             <div class="field-row" id="openrouterOcrModelRow">
                                 <label style="width:100%">
                                     <span class="label-title">Modèle OCR</span>
-                                    <input id="openrouterOcrModelInput" type="text" placeholder="qwen/qwen3-vl-8b-instruct" />
+                                    <input id="openrouterOcrModelInput" type="text" placeholder="qwen/qwen2.5-vl-72b-instruct" />
                                 </label>
                             </div>
                             <div class="field-row">
@@ -487,7 +487,7 @@
         }
         setStatus(statusEl, { state: "verifying", label: "Vérification..." });
         try {
-            const response = await fetch("https://api.assemblyai.com/v2/transcript", {
+            const response = await fetch("https://api.eu.assemblyai.com/v2/transcript", {
                 method: "GET",
                 headers: { Authorization: key }
             });

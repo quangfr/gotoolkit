@@ -66,8 +66,8 @@ function resolveAssemblyKey(request, env) {
   return env?.ASSEMBLY_KEY?.trim() || "";
 }
 
-const ASSEMBLY_API_BASE_URL = "https://api.assemblyai.com/v2";
-const STREAMING_TOKEN_URL = "https://streaming.assemblyai.com/v3/token";
+const ASSEMBLY_API_BASE_URL = "https://api.eu.assemblyai.com/v2";
+const STREAMING_TOKEN_URL = "https://streaming.eu.assemblyai.com/v3/token";
 
 function jsonError(corsHeaders, status, code, message) {
   return new Response(JSON.stringify({ error: { code, message } }), {

@@ -44,7 +44,7 @@
 - Docs : Blocs tableau, code et encadrés 
 
 ## 2026-01-12
-- AI : Reconnaissance texte OCR avec `qwen-2.5-vl-7b-instruct` 
+- AI : Reconnaissance texte OCR avec `qwen-2.5-vl-72b-instruct` 
 - Files : Extraction du texte des images, PDF, DOCX et PPTX mixtes
 - Files : Import des médias avec transcription
 - Files : Ajout des fichiers JSON

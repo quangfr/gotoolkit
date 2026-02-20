@@ -588,7 +588,7 @@
         try {
             const assemblyKey = getAssemblyApiKey();
             const token = await fetchAssemblyStreamingToken(assemblyKey);
-            const wsUrl = new URL("wss://streaming.assemblyai.com/v3/ws");
+            const wsUrl = new URL("wss://streaming.eu.assemblyai.com/v3/ws");
             wsUrl.searchParams.set("sample_rate", "16000");
             wsUrl.searchParams.set("token", token);
             wsUrl.searchParams.set("encoding", "pcm_s16le");
