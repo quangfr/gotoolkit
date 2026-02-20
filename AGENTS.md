@@ -2,7 +2,7 @@
 
 ## Structure
 - Static HTML modules in `public/`.
-- Workers live in `workers/` (OpenAI proxy, OpenRouter proxy, sharing, feedback, AssemblyAI, Notion proxy, YouTube proxy).
+- Workers live in `workers/` (OpenAI proxy, OpenRouter proxy, sharing, feedback, AssemblyAI, Notion proxy, YouTube proxy, Gmail proxy, Microsoft proxy, Google TTS proxy).
 
 ## Navigation + cache
 - `public/index.html` links: `grid.html` and `docs.html`.
@@ -26,6 +26,9 @@
 - **Docs** (`memos`): Rich-text editor + RAG-powered chat (`public/js/assist.js`); document management, context embeddings per memo.
 - **Grid** (`grids`): AG Grid, CSV/JSON export, template/criteria modal `public/js/template-criteria.js`, covered by Playwright.
 - **Templates**: System for sharing and reusing memo structures via `template-memos`.
+- **Voice** (`public/js/voice.js`, `public/js/voice-video-player.js`): audio/video capture (mic/webcam/screen), transcript sync, YouTube publish flow, and video exports.
+  - Export formats: GIF and MP4 in the video modal (`gifenc` + `@ffmpeg/ffmpeg` in-browser pipeline).
+  - Recording format remains browser-native (`video/webm`), with MP4 generated at export time.
 
 ## Globals (keep stable)
 Only `public/js` may touch `window`:
@@ -51,6 +54,7 @@ Only `public/js` may touch `window`:
 - Collections: `memos` (document sharing), `grids` (grid sharing), `template-memos` (reusable document templates).
 - Template system: Allows saving and loading memo structures as templates via the `template-memos` collection.
 - Local history: `public/js/share-history.js`; documents: `public/js/document-api.js`.
+- `workers/feedback-proxy` also stores uploaded feedback media in R2 (`FEEDBACK_MEDIA_BUCKET`) and serves files via `/v1/media/:id`.
 
 ## Build + runtime
 - Build: `npm install` → `npm run build`. This runs drawing and memo bundles in parallel using `esbuild`. 
@@ -71,15 +75,19 @@ Only `public/js` may touch `window`:
 ## Workers env
 - `workers/openai-proxy`: `OPENAI_API_KEY` + KV `RATE_LIMIT`.
 - `workers/share-proxy`: `FIREBASE_SERVICE_ACCOUNT`, optional `FIREBASE_PROJECT_ID`, `SHARE_ALLOWED_ORIGINS`, KV `RATE_LIMIT`.
-- `workers/feedback-proxy`: same secrets as share.
+- `workers/feedback-proxy`: `FIREBASE_SERVICE_ACCOUNT`, optional `FIREBASE_PROJECT_ID`, `SHARE_ALLOWED_ORIGINS`, optional `ADMIN_TOKEN`, KV `RATE_LIMIT`, and R2 binding `FEEDBACK_MEDIA_BUCKET`.
 - `workers/assemblyai-proxy`: forwards streaming token; browser sends `X-AssemblyAI-Key` (no secret stored).
 - `workers/openrouter-proxy`: `OPENROUTER_API_KEY` for fallback LLM routing.
 - `workers/notion-proxy`: `NOTION_CLIENT_ID`, `NOTION_CLIENT_SECRET`, optional `NOTION_ALLOWED_ORIGINS`, KV `NOTION_OAUTH` (stores OAuth tokens/workspace selection per device).
 - `workers/youtube-proxy`: `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET`, optional `YOUTUBE_ALLOWED_ORIGINS`, KV `YOUTUBE_OAUTH` (stores OAuth tokens/channel selection per device).
+- `workers/gmail-proxy`: `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, optional `GMAIL_ALLOWED_ORIGINS`, KV `GMAIL_OAUTH` (stores OAuth tokens per device).
+- `workers/ms-proxy`: `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET`, optional `MICROSOFT_ALLOWED_ORIGINS`, KV `MICROSOFT_OAUTH` (stores OAuth tokens/account selection per device).
 
 ## Debug + docs
 - Inspect `window.GoToolkit*`; local state in `localStorage` (`go-toolkit-*`) and IndexedDB (`go-toolkit`, `gotoolkit-documents`).
 - RAG state: IndexedDB stores `documents`, `chunks`, `memo_context_embeddings` (see `public/content/toolkit_import.md` for schema).
 - Assist state: `window.GoToolkitAssistInstance` exposes sidebar + chat API.
+- OAuth browser hooks: `public/js/config-modal.js` + `public/js/youtube-publish.js` orchestrate device-scoped OAuth start/callback/logout for Notion, YouTube, Gmail, and Microsoft.
+- Voice video export cache is persisted per recording (`videoExportCache`) and reused by `VoiceVideoPlayerModal`.
 - Do not edit `public/content/index_releases.md` or `public/content/index_roadmap.md` unless explicitly asked.
 - Always use Context7 MCP when I need library/API documentation, code generation, setup or configuration steps without me having to explicitly ask.
