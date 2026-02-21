@@ -100,6 +100,8 @@
 /* Dark Theme */
 [data-theme="dark"] {
   color-scheme: dark;
+  --color-primary: #48c78e;
+  --color-primary-rgb: 72, 199, 142;
   --bg-app: #000000;
   --bg-surface: #222222;
   --bg-surface-soft: #363636;

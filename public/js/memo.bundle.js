@@ -28347,31 +28347,40 @@ img.ProseMirror-separator {
   ];
   var ArrowUpLeft = createLucideIcon("arrow-up-left", __iconNode5);
 
-  // node_modules/lucide-react/dist/esm/icons/baseline.js
+  // node_modules/lucide-react/dist/esm/icons/arrow-up-right.js
   init_define_process_env();
   init_polyfills();
   var __iconNode6 = [
+    ["path", { d: "M7 7h10v10", key: "1tivn9" }],
+    ["path", { d: "M7 17 17 7", key: "1vkiza" }]
+  ];
+  var ArrowUpRight = createLucideIcon("arrow-up-right", __iconNode6);
+
+  // node_modules/lucide-react/dist/esm/icons/baseline.js
+  init_define_process_env();
+  init_polyfills();
+  var __iconNode7 = [
     ["path", { d: "M4 20h16", key: "14thso" }],
     ["path", { d: "m6 16 6-12 6 12", key: "1b4byz" }],
     ["path", { d: "M8 12h8", key: "1wcyev" }]
   ];
-  var Baseline = createLucideIcon("baseline", __iconNode6);
+  var Baseline = createLucideIcon("baseline", __iconNode7);
 
   // node_modules/lucide-react/dist/esm/icons/bold.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode7 = [
+  var __iconNode8 = [
     [
       "path",
       { d: "M6 12h9a4 4 0 0 1 0 8H7a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h7a4 4 0 0 1 0 8", key: "mg9rjx" }
     ]
   ];
-  var Bold2 = createLucideIcon("bold", __iconNode7);
+  var Bold2 = createLucideIcon("bold", __iconNode8);
 
   // node_modules/lucide-react/dist/esm/icons/bot.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode8 = [
+  var __iconNode9 = [
     ["path", { d: "M12 8V4H8", key: "hb8ula" }],
     ["rect", { width: "16", height: "12", x: "4", y: "8", rx: "2", key: "enze0r" }],
     ["path", { d: "M2 14h2", key: "vft8re" }],
@@ -28379,12 +28388,12 @@ img.ProseMirror-separator {
     ["path", { d: "M15 13v2", key: "1xurst" }],
     ["path", { d: "M9 13v2", key: "rq6x2g" }]
   ];
-  var Bot = createLucideIcon("bot", __iconNode8);
+  var Bot = createLucideIcon("bot", __iconNode9);
 
   // node_modules/lucide-react/dist/esm/icons/boxes.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode9 = [
+  var __iconNode10 = [
     [
       "path",
       {
@@ -28416,49 +28425,49 @@ img.ProseMirror-separator {
     ["path", { d: "m12 8 4.74-2.85", key: "3rx089" }],
     ["path", { d: "M12 13.5V8", key: "1io7kd" }]
   ];
-  var Boxes = createLucideIcon("boxes", __iconNode9);
+  var Boxes = createLucideIcon("boxes", __iconNode10);
 
   // node_modules/lucide-react/dist/esm/icons/check-check.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode10 = [
+  var __iconNode11 = [
     ["path", { d: "M18 6 7 17l-5-5", key: "116fxf" }],
     ["path", { d: "m22 10-7.5 7.5L13 16", key: "ke71qq" }]
   ];
-  var CheckCheck = createLucideIcon("check-check", __iconNode10);
+  var CheckCheck = createLucideIcon("check-check", __iconNode11);
 
   // node_modules/lucide-react/dist/esm/icons/check.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode11 = [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]];
-  var Check = createLucideIcon("check", __iconNode11);
+  var __iconNode12 = [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]];
+  var Check = createLucideIcon("check", __iconNode12);
 
   // node_modules/lucide-react/dist/esm/icons/chevron-down.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode12 = [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]];
-  var ChevronDown = createLucideIcon("chevron-down", __iconNode12);
+  var __iconNode13 = [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]];
+  var ChevronDown = createLucideIcon("chevron-down", __iconNode13);
 
   // node_modules/lucide-react/dist/esm/icons/chevron-up.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode13 = [["path", { d: "m18 15-6-6-6 6", key: "153udz" }]];
-  var ChevronUp = createLucideIcon("chevron-up", __iconNode13);
+  var __iconNode14 = [["path", { d: "m18 15-6-6-6 6", key: "153udz" }]];
+  var ChevronUp = createLucideIcon("chevron-up", __iconNode14);
 
   // node_modules/lucide-react/dist/esm/icons/circle-alert.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode14 = [
+  var __iconNode15 = [
     ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
     ["line", { x1: "12", x2: "12", y1: "8", y2: "12", key: "1pkeuh" }],
     ["line", { x1: "12", x2: "12.01", y1: "16", y2: "16", key: "4dfq90" }]
   ];
-  var CircleAlert = createLucideIcon("circle-alert", __iconNode14);
+  var CircleAlert = createLucideIcon("circle-alert", __iconNode15);
 
   // node_modules/lucide-react/dist/esm/icons/circle-play.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode15 = [
+  var __iconNode16 = [
     [
       "path",
       {
@@ -28468,22 +28477,22 @@ img.ProseMirror-separator {
     ],
     ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }]
   ];
-  var CirclePlay = createLucideIcon("circle-play", __iconNode15);
+  var CirclePlay = createLucideIcon("circle-play", __iconNode16);
 
   // node_modules/lucide-react/dist/esm/icons/circle-x.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode16 = [
+  var __iconNode17 = [
     ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
     ["path", { d: "m15 9-6 6", key: "1uzhvr" }],
     ["path", { d: "m9 9 6 6", key: "z0biqf" }]
   ];
-  var CircleX = createLucideIcon("circle-x", __iconNode16);
+  var CircleX = createLucideIcon("circle-x", __iconNode17);
 
   // node_modules/lucide-react/dist/esm/icons/clapperboard.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode17 = [
+  var __iconNode18 = [
     [
       "path",
       { d: "M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3Z", key: "1tn4o7" }
@@ -28492,103 +28501,91 @@ img.ProseMirror-separator {
     ["path", { d: "m12.4 3.4 3.1 4", key: "6hsd6n" }],
     ["path", { d: "M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z", key: "ltgou9" }]
   ];
-  var Clapperboard = createLucideIcon("clapperboard", __iconNode17);
+  var Clapperboard = createLucideIcon("clapperboard", __iconNode18);
 
   // node_modules/lucide-react/dist/esm/icons/code-xml.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode18 = [
+  var __iconNode19 = [
     ["path", { d: "m18 16 4-4-4-4", key: "1inbqp" }],
     ["path", { d: "m6 8-4 4 4 4", key: "15zrgr" }],
     ["path", { d: "m14.5 4-5 16", key: "e7oirm" }]
   ];
-  var CodeXml = createLucideIcon("code-xml", __iconNode18);
+  var CodeXml = createLucideIcon("code-xml", __iconNode19);
 
   // node_modules/lucide-react/dist/esm/icons/copy.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode19 = [
+  var __iconNode20 = [
     ["rect", { width: "14", height: "14", x: "8", y: "8", rx: "2", ry: "2", key: "17jyea" }],
     ["path", { d: "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2", key: "zix9uf" }]
   ];
-  var Copy = createLucideIcon("copy", __iconNode19);
+  var Copy = createLucideIcon("copy", __iconNode20);
 
   // node_modules/lucide-react/dist/esm/icons/crop.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode20 = [
+  var __iconNode21 = [
     ["path", { d: "M6 2v14a2 2 0 0 0 2 2h14", key: "ron5a4" }],
     ["path", { d: "M18 22V8a2 2 0 0 0-2-2H2", key: "7s9ehn" }]
   ];
-  var Crop = createLucideIcon("crop", __iconNode20);
+  var Crop = createLucideIcon("crop", __iconNode21);
 
   // node_modules/lucide-react/dist/esm/icons/download.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode21 = [
+  var __iconNode22 = [
     ["path", { d: "M12 15V3", key: "m9g1x1" }],
     ["path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", key: "ih7n3h" }],
     ["path", { d: "m7 10 5 5 5-5", key: "brsn70" }]
   ];
-  var Download = createLucideIcon("download", __iconNode21);
+  var Download = createLucideIcon("download", __iconNode22);
 
   // node_modules/lucide-react/dist/esm/icons/fullscreen.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode22 = [
+  var __iconNode23 = [
     ["path", { d: "M3 7V5a2 2 0 0 1 2-2h2", key: "aa7l1z" }],
     ["path", { d: "M17 3h2a2 2 0 0 1 2 2v2", key: "4qcy5o" }],
     ["path", { d: "M21 17v2a2 2 0 0 1-2 2h-2", key: "6vwrx8" }],
     ["path", { d: "M7 21H5a2 2 0 0 1-2-2v-2", key: "ioqczr" }],
     ["rect", { width: "10", height: "8", x: "7", y: "8", rx: "1", key: "vys8me" }]
   ];
-  var Fullscreen = createLucideIcon("fullscreen", __iconNode22);
+  var Fullscreen = createLucideIcon("fullscreen", __iconNode23);
 
   // node_modules/lucide-react/dist/esm/icons/heading-1.js
-  init_define_process_env();
-  init_polyfills();
-  var __iconNode23 = [
-    ["path", { d: "M4 12h8", key: "17cfdx" }],
-    ["path", { d: "M4 18V6", key: "1rz3zl" }],
-    ["path", { d: "M12 18V6", key: "zqpxq5" }],
-    ["path", { d: "m17 12 3-2v8", key: "1hhhft" }]
-  ];
-  var Heading1 = createLucideIcon("heading-1", __iconNode23);
-
-  // node_modules/lucide-react/dist/esm/icons/heading-2.js
   init_define_process_env();
   init_polyfills();
   var __iconNode24 = [
     ["path", { d: "M4 12h8", key: "17cfdx" }],
     ["path", { d: "M4 18V6", key: "1rz3zl" }],
     ["path", { d: "M12 18V6", key: "zqpxq5" }],
-    ["path", { d: "M21 18h-4c0-4 4-3 4-6 0-1.5-2-2.5-4-1", key: "9jr5yi" }]
+    ["path", { d: "m17 12 3-2v8", key: "1hhhft" }]
   ];
-  var Heading2 = createLucideIcon("heading-2", __iconNode24);
+  var Heading1 = createLucideIcon("heading-1", __iconNode24);
 
-  // node_modules/lucide-react/dist/esm/icons/heading-3.js
+  // node_modules/lucide-react/dist/esm/icons/heading-2.js
   init_define_process_env();
   init_polyfills();
   var __iconNode25 = [
     ["path", { d: "M4 12h8", key: "17cfdx" }],
     ["path", { d: "M4 18V6", key: "1rz3zl" }],
     ["path", { d: "M12 18V6", key: "zqpxq5" }],
-    ["path", { d: "M17.5 10.5c1.7-1 3.5 0 3.5 1.5a2 2 0 0 1-2 2", key: "68ncm8" }],
-    ["path", { d: "M17 17.5c2 1.5 4 .3 4-1.5a2 2 0 0 0-2-2", key: "1ejuhz" }]
+    ["path", { d: "M21 18h-4c0-4 4-3 4-6 0-1.5-2-2.5-4-1", key: "9jr5yi" }]
   ];
-  var Heading3 = createLucideIcon("heading-3", __iconNode25);
+  var Heading2 = createLucideIcon("heading-2", __iconNode25);
 
-  // node_modules/lucide-react/dist/esm/icons/heading-4.js
+  // node_modules/lucide-react/dist/esm/icons/heading-3.js
   init_define_process_env();
   init_polyfills();
   var __iconNode26 = [
-    ["path", { d: "M12 18V6", key: "zqpxq5" }],
-    ["path", { d: "M17 10v3a1 1 0 0 0 1 1h3", key: "tj5zdr" }],
-    ["path", { d: "M21 10v8", key: "1kdml4" }],
     ["path", { d: "M4 12h8", key: "17cfdx" }],
-    ["path", { d: "M4 18V6", key: "1rz3zl" }]
+    ["path", { d: "M4 18V6", key: "1rz3zl" }],
+    ["path", { d: "M12 18V6", key: "zqpxq5" }],
+    ["path", { d: "M17.5 10.5c1.7-1 3.5 0 3.5 1.5a2 2 0 0 1-2 2", key: "68ncm8" }],
+    ["path", { d: "M17 17.5c2 1.5 4 .3 4-1.5a2 2 0 0 0-2-2", key: "1ejuhz" }]
   ];
-  var Heading4 = createLucideIcon("heading-4", __iconNode26);
+  var Heading3 = createLucideIcon("heading-3", __iconNode26);
 
   // node_modules/lucide-react/dist/esm/icons/highlighter.js
   init_define_process_env();
@@ -54964,14 +54961,76 @@ ${promptInput.trim()}`
       ];
     }
   });
-  var LinkSearchModal = ({ editor, onClose }) => {
+  var LinkSearchModal = ({
+    editor,
+    onClose,
+    anchorPos,
+    selectionRange
+  }) => {
     const [query, setQuery] = react_shim_default.useState("");
     const [selectedIndex, setSelectedIndex] = react_shim_default.useState(0);
+    const [documents, setDocuments] = react_shim_default.useState([]);
     const modalRef = react_shim_default.useRef(null);
     react_shim_default.useEffect(() => {
+      let cancelled = false;
+      const loadDocuments = async () => {
+        var _a, _b, _c, _d, _e, _f;
+        const rows = [];
+        try {
+          const localDocs = await ((_b = (_a = window.goToolkitDocumentApi) == null ? void 0 : _a.getAllRecords) == null ? void 0 : _b.call(_a));
+          (Array.isArray(localDocs) ? localDocs : []).filter((item) => item && item.app === "memo").forEach((item) => {
+            var _a2, _b2, _c2;
+            return rows.push({
+              type: "document",
+              id: String(item.id || ""),
+              title: String(item.title || ((_c2 = (_b2 = (_a2 = item.payload) == null ? void 0 : _a2.tabs) == null ? void 0 : _b2[0]) == null ? void 0 : _c2.title) || "New page"),
+              icon: String(item.icon || ""),
+              section: "private",
+              updatedAt: String(item.updatedAt || "")
+            });
+          });
+        } catch (err) {
+        }
+        try {
+          const shared = await ((_d = (_c = window.goToolkitShareHistory) == null ? void 0 : _c.getRecordsByApp) == null ? void 0 : _d.call(_c, "memo"));
+          (Array.isArray(shared) ? shared : []).forEach((item) => rows.push({
+            type: "document",
+            id: `share:${String(item.token || "")}`,
+            title: String(item.title || "Document partag\xE9"),
+            icon: String(item.icon || "file-symlink"),
+            section: "shared",
+            updatedAt: String(item.updatedAt || "")
+          }));
+        } catch (err) {
+        }
+        try {
+          const common2 = await ((_f = (_e = window.goToolkitTemplateStore) == null ? void 0 : _e.list) == null ? void 0 : _f.call(_e));
+          (Array.isArray(common2) ? common2 : []).forEach((item) => rows.push({
+            type: "document",
+            id: `common:${String(item.id || "")}`,
+            title: String(item.label || "Commun"),
+            icon: String(item.icon || ""),
+            section: "common",
+            updatedAt: String(item.updatedAt || "")
+          }));
+        } catch (err) {
+        }
+        const deduped = /* @__PURE__ */ new Map();
+        rows.forEach((row) => {
+          if (!(row == null ? void 0 : row.id)) return;
+          if (!deduped.has(row.id)) deduped.set(row.id, row);
+        });
+        const sorted = Array.from(deduped.values()).sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+        if (!cancelled) setDocuments(sorted);
+      };
+      loadDocuments();
+      return () => {
+        cancelled = true;
+      };
+    }, []);
+    react_shim_default.useEffect(() => {
       const { view } = editor;
-      const { selection } = editor.state;
-      const { from: from2 } = selection;
+      const from2 = Math.max(1, Math.min(anchorPos || 1, editor.state.doc.content.size));
       let coords;
       try {
         coords = view.coordsAtPos(from2);
@@ -55009,56 +55068,83 @@ ${promptInput.trim()}`
       document.addEventListener("mousedown", handleClickOutside);
       return () => document.removeEventListener("mousedown", handleClickOutside);
     }, [editor, onClose]);
-    const headings = window.MemoHeadings || [];
-    const getHierarchy = (index) => {
-      const current = headings[index];
-      if (!current || current.level === 1) return "";
-      let path = [];
-      let lastLevel = current.level;
-      for (let i = index - 1; i >= 0; i--) {
-        if (headings[i].level < lastLevel) {
-          path.unshift(headings[i].textContent);
-          lastLevel = headings[i].level;
-          if (lastLevel === 1) break;
-        }
-      }
-      return path.length > 0 ? path.join(" / ") : "";
-    };
     const isUrl = (str) => {
       const pattern = /^([\da-z.-]+)\.([a-z.]{2,6})([\/\w .-]*)*\/?$/;
       return pattern.test(str) || str.startsWith("http");
     };
-    const filteredHeadings = headings.map((h, i) => ({ ...h, originalIndex: i })).filter((h) => h.textContent.toLowerCase().includes(query.toLowerCase())).slice(0, 3);
+    const filteredDocs = documents.filter((d) => String((d == null ? void 0 : d.title) || "").toLowerCase().includes(query.toLowerCase())).slice(0, 50);
     const items = [
-      ...filteredHeadings.map((h) => ({
-        type: "heading",
-        title: h.textContent,
-        id: h.id,
-        path: getHierarchy(h.originalIndex)
-      })),
+      ...filteredDocs,
       ...query ? [{
         type: "url",
         title: query,
         isValid: isUrl(query)
       }] : []
     ];
+    const insertMemoLinkBlockAt = react_shim_default.useCallback((pos, item) => {
+      var _a, _b, _c, _d, _e, _f;
+      const schema = (_a = editor == null ? void 0 : editor.state) == null ? void 0 : _a.schema;
+      const nodeType = (_b = schema == null ? void 0 : schema.nodes) == null ? void 0 : _b.memoLinkBlock;
+      if (!schema || !nodeType) return false;
+      const safePos = Math.max(0, Math.min(pos, editor.state.doc.content.size));
+      const linkNode = nodeType.create({
+        href: `memo://${item.id}`,
+        title: item.title || "Document",
+        icon: item.icon || "",
+        documentId: item.id || ""
+      });
+      const paragraph2 = ((_d = (_c = schema.nodes.paragraph) == null ? void 0 : _c.create) == null ? void 0 : _d.call(_c)) || null;
+      const fragment = paragraph2 ? schema.nodes.doc.create(null, [linkNode, paragraph2]).content : schema.nodes.doc.create(null, [linkNode]).content;
+      let tr2 = editor.state.tr;
+      const { selection } = editor.state;
+      const $from = selection.$from;
+      const inEmptyParagraph = selection.empty && ((_f = (_e = $from.parent) == null ? void 0 : _e.type) == null ? void 0 : _f.name) === "paragraph" && $from.parent.content.size === 0;
+      if (inEmptyParagraph && $from.depth > 0) {
+        const paraFrom = $from.before($from.depth);
+        const paraTo = paraFrom + $from.parent.nodeSize;
+        tr2 = tr2.replaceWith(paraFrom, paraTo, fragment);
+      } else {
+        tr2 = tr2.insert(safePos, fragment);
+      }
+      editor.view.dispatch(tr2);
+      return true;
+    }, [editor]);
     const handleSelect = (item) => {
-      let url = item.type === "heading" ? `#${item.id}` : item.title;
-      if (item.type === "url" && !url.startsWith("http") && !url.startsWith("#")) {
+      var _a, _b;
+      let url = item.type === "document" ? `memo://${item.id}` : item.title;
+      if (item.type === "url" && !url.startsWith("http") && !url.startsWith("#") && !url.startsWith("memo://")) {
         url = "https://" + url;
       }
-      const { from: from2, to } = editor.state.selection;
-      if (from2 !== to) {
-        editor.chain().focus().setLink({ href: url }).run();
+      const from2 = Math.max(1, Math.min((_a = selectionRange == null ? void 0 : selectionRange.from) != null ? _a : editor.state.selection.from, editor.state.doc.content.size));
+      const to = Math.max(from2, Math.min((_b = selectionRange == null ? void 0 : selectionRange.to) != null ? _b : editor.state.selection.to, editor.state.doc.content.size));
+      const tr2 = editor.state.tr.setSelection(TextSelection.create(editor.state.doc, from2, to));
+      editor.view.dispatch(tr2);
+      if (item.type === "document") {
+        const inserted = insertMemoLinkBlockAt(from2, item);
+        if (!inserted) {
+          editor.chain().focus().insertContent({
+            type: "memoLinkBlock",
+            attrs: {
+              href: url,
+              title: item.title,
+              icon: item.icon || "",
+              documentId: item.id
+            }
+          }).insertContent({ type: "paragraph" }).run();
+        }
       } else {
-        editor.chain().focus().insertContent([
-          {
-            type: "text",
-            text: item.title,
-            marks: [{ type: "link", attrs: { href: url } }]
-          },
-          { type: "text", text: " " }
-        ]).run();
+        if (from2 !== to) {
+          editor.chain().focus().setLink({ href: url }).setColor("var(--color-primary)").run();
+        } else {
+          editor.chain().focus().insertContent([
+            {
+              type: "text",
+              text: item.title,
+              marks: [{ type: "link", attrs: { href: url } }, { type: "textStyle", attrs: { color: "var(--color-primary)" } }]
+            },
+            { type: "text", text: " " }
+          ]).run();
+        }
       }
       onClose();
     };
@@ -55075,6 +55161,7 @@ ${promptInput.trim()}`
               autoFocus: true,
               placeholder: "Rechercher un titre ou coller un lien...",
               value: query,
+              onMouseDown: (e) => e.stopPropagation(),
               onChange: (e) => {
                 setQuery(e.target.value);
                 setSelectedIndex(0);
@@ -55099,15 +55186,19 @@ ${promptInput.trim()}`
               "div",
               {
                 className: `link-search-item ${i === selectedIndex ? "selected" : ""}`,
+                onMouseDown: (e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                },
                 onMouseEnter: () => setSelectedIndex(i),
                 onClick: () => handleSelect(item),
                 children: [
                   /* @__PURE__ */ jsxs("div", { className: "link-search-item-info", children: [
                     /* @__PURE__ */ jsxs("div", { className: "link-search-item-title", children: [
-                      item.type === "url" ? /* @__PURE__ */ jsx(Link2, { size: 12, style: { marginRight: 8, opacity: 0.6 } }) : null,
+                      item.type === "url" ? /* @__PURE__ */ jsx(Link2, { size: 12, style: { marginRight: 8, opacity: 0.6 } }) : /* @__PURE__ */ jsx(Link2, { size: 12, style: { marginRight: 8, opacity: 0.6 } }),
                       item.title
                     ] }),
-                    item.path && /* @__PURE__ */ jsx("div", { className: "link-search-item-path", children: item.path }),
+                    item.type === "document" && /* @__PURE__ */ jsx("div", { className: "link-search-item-path", children: item.section === "shared" ? "Partag\xE9" : item.section === "common" ? "Commun" : "Priv\xE9" }),
                     item.type === "url" && !item.isValid && /* @__PURE__ */ jsx("div", { className: "link-search-item-invalid", children: "URL incompl\xE8te?" })
                   ] }),
                   /* @__PURE__ */ jsx("div", { className: "link-search-item-action", children: /* @__PURE__ */ jsx(Check, { size: 14 }) })
@@ -55121,6 +55212,108 @@ ${promptInput.trim()}`
       }
     );
   };
+  var MemoLinkBlockView = ({ node, editor, getPos }) => {
+    var _a, _b, _c, _d;
+    const href = String(((_a = node == null ? void 0 : node.attrs) == null ? void 0 : _a.href) || "");
+    const title = String(((_b = node == null ? void 0 : node.attrs) == null ? void 0 : _b.title) || "Document");
+    const icon = String(((_c = node == null ? void 0 : node.attrs) == null ? void 0 : _c.icon) || "");
+    const documentId = String(((_d = node == null ? void 0 : node.attrs) == null ? void 0 : _d.documentId) || "");
+    const iconRef = react_shim_default.useRef(null);
+    react_shim_default.useEffect(() => {
+      var _a2, _b2;
+      try {
+        (_b2 = (_a2 = window.lucide) == null ? void 0 : _a2.createIcons) == null ? void 0 : _b2.call(_a2, {
+          attrs: {
+            width: "14",
+            height: "14"
+          },
+          elements: iconRef.current ? [iconRef.current] : void 0
+        });
+      } catch (err) {
+      }
+    }, [icon]);
+    const handleOpen = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const open = window.GoToolkitMemoOpenDocumentByLink;
+      if (typeof open === "function") {
+        open(documentId || href.replace(/^memo:\/\//, ""));
+      } else if (href) {
+        window.open(href, "_blank", "noopener,noreferrer");
+      }
+    };
+    const handleCopy = async (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const markdown = `[${title}](${href})`;
+      try {
+        await navigator.clipboard.writeText(markdown);
+      } catch (err) {
+      }
+    };
+    const handleDelete = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (typeof getPos !== "function") return;
+      const pos = getPos();
+      editor.chain().focus().deleteRange({ from: pos, to: pos + node.nodeSize }).run();
+    };
+    return /* @__PURE__ */ jsx(NodeViewWrapper, { className: "memo-link-block-wrap", contentEditable: false, children: /* @__PURE__ */ jsxs(
+      "div",
+      {
+        className: "memo-link-block",
+        "data-document-id": documentId,
+        role: "link",
+        tabIndex: 0,
+        onMouseDown: (event) => {
+          const target = event.target;
+          if ((target == null ? void 0 : target.closest(".memo-link-block__action")) || (target == null ? void 0 : target.closest(".memo-link-block__handle"))) return;
+          handleOpen(event);
+        },
+        onKeyDown: (event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            handleOpen(event);
+          }
+        },
+        children: [
+          /* @__PURE__ */ jsx("button", { className: "memo-link-block__handle", type: "button", "aria-label": "D\xE9placer", children: /* @__PURE__ */ jsx("svg", { viewBox: "0 0 24 24", width: "14", height: "14", "aria-hidden": "true", children: /* @__PURE__ */ jsx("path", { fill: "currentColor", d: "M10 4h2v2h-2V4zm0 7h2v2h-2v-2zm0 7h2v2h-2v-2zm4-14h2v2h-2V4zm0 7h2v2h-2v-2zm0 7h2v2h-2v-2z" }) }) }),
+          /* @__PURE__ */ jsxs("span", { className: "memo-link-block__icon", children: [
+            /* @__PURE__ */ jsx("span", { ref: iconRef, children: icon ? /* @__PURE__ */ jsx("i", { "data-lucide": icon }) : /* @__PURE__ */ jsx("i", { "data-lucide": "file" }) }),
+            /* @__PURE__ */ jsx("span", { className: "memo-link-block__icon-overlay", children: /* @__PURE__ */ jsx(ArrowUpRight, { size: 10 }) })
+          ] }),
+          /* @__PURE__ */ jsx("span", { className: "memo-link-block__title", children: title }),
+          /* @__PURE__ */ jsxs("span", { className: "memo-link-block__actions", children: [
+            /* @__PURE__ */ jsx("button", { type: "button", className: "memo-link-block__action", onClick: handleCopy, "aria-label": "Copier", children: /* @__PURE__ */ jsx(Copy, { size: 13 }) }),
+            /* @__PURE__ */ jsx("button", { type: "button", className: "memo-link-block__action", onClick: handleDelete, "aria-label": "Supprimer", children: /* @__PURE__ */ jsx(Trash2, { size: 13 }) })
+          ] })
+        ]
+      }
+    ) });
+  };
+  var MemoLinkBlock = Node3.create({
+    name: "memoLinkBlock",
+    group: "block",
+    atom: true,
+    selectable: true,
+    draggable: true,
+    addAttributes() {
+      return {
+        href: { default: "" },
+        title: { default: "Document" },
+        icon: { default: "" },
+        documentId: { default: "" }
+      };
+    },
+    parseHTML() {
+      return [{ tag: 'div[data-type="memo-link-block"]' }];
+    },
+    renderHTML({ HTMLAttributes }) {
+      return ["div", mergeAttributes(HTMLAttributes, { "data-type": "memo-link-block" })];
+    },
+    addNodeView() {
+      return ReactNodeViewRenderer(MemoLinkBlockView);
+    }
+  });
   var TEXT_COLORS = [
     { name: "D\xE9faut", value: "var(--bg-text-main)" },
     { name: "Gris", value: "var(--bg-text-gray)" },
@@ -55230,6 +55423,7 @@ ${promptInput.trim()}`
       } catch (err) {
         console.warn("BubbleMenu positioning error:", err);
         setPosition((prev) => ({ ...prev, opacity: 0 }));
+        setShowTextColors(false);
       }
     }, [editor, visible]);
     react_shim_default.useEffect(() => {
@@ -55792,7 +55986,7 @@ ${promptInput.trim()}`
       return true;
     }).run();
   };
-  var BlockTypeDropdown = ({ editor, onOpenChange }) => {
+  var BlockTypeDropdown = ({ editor, onOpenChange, onLink }) => {
     const [isOpen, setIsOpen] = react_shim_default.useState(false);
     const dropdownRef = react_shim_default.useRef(null);
     react_shim_default.useEffect(() => {
@@ -55803,10 +55997,10 @@ ${promptInput.trim()}`
       { label: "Titre 1", value: "h1", icon: Heading1, active: editor.isActive("heading", { level: 1 }) },
       { label: "Titre 2", value: "h2", icon: Heading2, active: editor.isActive("heading", { level: 2 }) },
       { label: "Titre 3", value: "h3", icon: Heading3, active: editor.isActive("heading", { level: 3 }) },
-      { label: "Titre 4", value: "h4", icon: Heading4, active: editor.isActive("heading", { level: 4 }) },
       { label: "Liste \xE0 puces", value: "bulletList", icon: List, active: editor.isActive("bulletList") },
       { label: "T\xE2che", value: "taskList", icon: SquareCheckBig, active: editor.isActive("taskList") },
-      { label: "Bloc de code", value: "codeBlock", icon: SquareCode, active: editor.isActive("codeBlock") }
+      { label: "Bloc de code", value: "codeBlock", icon: SquareCode, active: editor.isActive("codeBlock") },
+      { label: "Lien", value: "link", icon: Link2, active: editor.isActive("link") }
     ];
     const currentOption = options2.find((o) => o.active) || options2[0];
     react_shim_default.useEffect(() => {
@@ -55824,11 +56018,11 @@ ${promptInput.trim()}`
       else if (value === "h1") chain.toggleHeading({ level: 1 }).run();
       else if (value === "h2") chain.toggleHeading({ level: 2 }).run();
       else if (value === "h3") chain.toggleHeading({ level: 3 }).run();
-      else if (value === "h4") chain.toggleHeading({ level: 4 }).run();
       else if (value === "bulletList") chain.toggleBulletList().run();
       else if (value === "taskList") chain.toggleTaskList().run();
       else if (value === "code") chain.toggleCode().run();
       else if (value === "codeBlock") chain.toggleCodeBlock().run();
+      else if (value === "link") onLink == null ? void 0 : onLink();
       setIsOpen(false);
     };
     return /* @__PURE__ */ jsxs("div", { className: "tiptap-dropdown", ref: dropdownRef, children: [
@@ -55922,11 +56116,7 @@ ${promptInput.trim()}`
   };
   var Toolbar = ({ editor, onDropdownToggle, onLink, onInsertImage, onInsertVideo }) => {
     const [, forceUpdate] = react_shim_default.useReducer((x) => x + 1, 0);
-    const [showTextColors, setShowTextColors] = react_shim_default.useState(false);
     const toolbarRef = react_shim_default.useRef(null);
-    react_shim_default.useEffect(() => {
-      onDropdownToggle == null ? void 0 : onDropdownToggle(showTextColors);
-    }, [showTextColors, onDropdownToggle]);
     react_shim_default.useEffect(() => {
       if (!editor) return;
       const updateHandler = () => forceUpdate();
@@ -55934,7 +56124,7 @@ ${promptInput.trim()}`
       editor.on("selectionUpdate", updateHandler);
       const handleClickOutside = (event) => {
         if (toolbarRef.current && !toolbarRef.current.contains(event.target)) {
-          setShowTextColors(false);
+          onDropdownToggle == null ? void 0 : onDropdownToggle(false);
         }
       };
       document.addEventListener("mousedown", handleClickOutside);
@@ -55973,128 +56163,7 @@ ${promptInput.trim()}`
         )
       ] }),
       /* @__PURE__ */ jsx("div", { className: "tiptap-separator", "data-orientation": "vertical", role: "none" }),
-      /* @__PURE__ */ jsx("div", { role: "group", className: "tiptap-toolbar-group", children: /* @__PURE__ */ jsx(BlockTypeDropdown, { editor, onOpenChange: onDropdownToggle }) }),
-      /* @__PURE__ */ jsx("div", { className: "tiptap-separator", "data-orientation": "vertical", role: "none" }),
-      /* @__PURE__ */ jsxs("div", { role: "group", className: "tiptap-toolbar-group", "aria-label": "Style", children: [
-        /* @__PURE__ */ jsx(
-          "button",
-          {
-            className: "tiptap-button",
-            "aria-label": "Bold",
-            title: "Gras",
-            type: "button",
-            onClick: () => editor.chain().focus().toggleBold().run(),
-            "data-active-state": editor.isActive("bold") ? "on" : "off",
-            children: /* @__PURE__ */ jsx(Bold2, { size: 16 })
-          }
-        ),
-        /* @__PURE__ */ jsx(
-          "button",
-          {
-            className: "tiptap-button",
-            "aria-label": "Italic",
-            title: "Italique",
-            type: "button",
-            onClick: () => editor.chain().focus().toggleItalic().run(),
-            "data-active-state": editor.isActive("italic") ? "on" : "off",
-            children: /* @__PURE__ */ jsx(Italic2, { size: 16 })
-          }
-        ),
-        /* @__PURE__ */ jsx(
-          "button",
-          {
-            className: "tiptap-button",
-            "aria-label": "Underline",
-            title: "Soulign\xE9",
-            type: "button",
-            onClick: () => editor.chain().focus().toggleUnderline().run(),
-            "data-active-state": editor.isActive("underline") ? "on" : "off",
-            children: /* @__PURE__ */ jsx(Underline2, { size: 16 })
-          }
-        ),
-        /* @__PURE__ */ jsxs("div", { style: { position: "relative" }, children: [
-          /* @__PURE__ */ jsx(
-            "button",
-            {
-              className: "tiptap-button",
-              "aria-label": "Text Color",
-              type: "button",
-              onMouseDown: (event) => event.preventDefault(),
-              onClick: () => setShowTextColors(!showTextColors),
-              title: "Couleur",
-              children: /* @__PURE__ */ jsx(Baseline, { size: 16 })
-            }
-          ),
-          showTextColors && /* @__PURE__ */ jsx(
-            "div",
-            {
-              className: "table-color-grid",
-              style: {
-                position: "absolute",
-                top: "100%",
-                left: "50%",
-                transform: "translateX(-50%)",
-                marginTop: "8px"
-              },
-              children: TEXT_COLORS.map((color) => /* @__PURE__ */ jsx(
-                "div",
-                {
-                  className: "table-color-option",
-                  style: {
-                    backgroundColor: color.value
-                  },
-                  title: color.name,
-                  onMouseDown: (event) => event.preventDefault(),
-                  onClick: () => {
-                    editor.chain().focus().setColor(color.value).run();
-                    setShowTextColors(false);
-                  }
-                },
-                color.value
-              ))
-            }
-          )
-        ] })
-      ] }),
-      /* @__PURE__ */ jsx("div", { className: "tiptap-separator", "data-orientation": "vertical", role: "none" }),
-      /* @__PURE__ */ jsxs("div", { role: "group", className: "tiptap-toolbar-group", "aria-label": "Texte avanc\xE9", children: [
-        /* @__PURE__ */ jsx(
-          "button",
-          {
-            className: "tiptap-button",
-            "aria-label": "Strike",
-            title: "Barr\xE9",
-            type: "button",
-            onClick: () => editor.chain().focus().toggleStrike().run(),
-            "data-active-state": editor.isActive("strike") ? "on" : "off",
-            children: /* @__PURE__ */ jsx(Strikethrough, { size: 16 })
-          }
-        ),
-        /* @__PURE__ */ jsx(
-          "button",
-          {
-            className: "tiptap-button",
-            "aria-label": "Highlight",
-            type: "button",
-            onClick: () => editor.chain().focus().toggleHighlight().run(),
-            "data-active-state": editor.isActive("highlight") ? "on" : "off",
-            title: "Surlign\xE9",
-            children: /* @__PURE__ */ jsx(Highlighter, { size: 16 })
-          }
-        ),
-        /* @__PURE__ */ jsx(
-          "button",
-          {
-            className: "tiptap-button",
-            "aria-label": "Link",
-            type: "button",
-            onClick: onLink,
-            "data-active-state": editor.isActive("link") ? "on" : "off",
-            title: "Lien",
-            children: /* @__PURE__ */ jsx(Link2, { size: 16 })
-          }
-        )
-      ] }),
+      /* @__PURE__ */ jsx("div", { role: "group", className: "tiptap-toolbar-group", children: /* @__PURE__ */ jsx(BlockTypeDropdown, { editor, onOpenChange: onDropdownToggle, onLink }) }),
       /* @__PURE__ */ jsx("div", { className: "tiptap-separator", "data-orientation": "vertical", role: "none" }),
       /* @__PURE__ */ jsxs("div", { role: "group", className: "tiptap-toolbar-group", "aria-label": "Bloc", children: [
         /* @__PURE__ */ jsx(
@@ -56704,6 +56773,8 @@ ${promptInput.trim()}`
     const [blockDropIndicator, setBlockDropIndicator] = react_shim_default.useState(null);
     const [dragGhost, setDragGhost] = react_shim_default.useState(null);
     const [showLinkModal, setShowLinkModal] = react_shim_default.useState(false);
+    const [linkModalAnchorPos, setLinkModalAnchorPos] = react_shim_default.useState(1);
+    const [linkModalRange, setLinkModalRange] = react_shim_default.useState({ from: 1, to: 1 });
     const [isFocusWithinMemoCard, setIsFocusWithinMemoCard] = react_shim_default.useState(false);
     const [tableSelectionBox, setTableSelectionBox] = react_shim_default.useState(null);
     const [tableSelectionResize, setTableSelectionResize] = react_shim_default.useState(null);
@@ -56724,7 +56795,7 @@ ${promptInput.trim()}`
         }),
         CustomCode,
         CustomHeading.configure({
-          levels: [1, 2, 3, 4]
+          levels: [1, 2, 3]
         }),
         CustomParagraph,
         CustomBulletList,
@@ -56746,6 +56817,7 @@ ${promptInput.trim()}`
             class: "memo-link"
           }
         }),
+        MemoLinkBlock,
         CustomImage,
         VideoEmbed,
         TableNode,
@@ -56792,6 +56864,22 @@ ${promptInput.trim()}`
           }
         },
         handleClick: (view, _pos, event) => {
+          var _a2, _b2;
+          if (event instanceof MouseEvent) {
+            const target = event.target;
+            const anchor = (_a2 = target == null ? void 0 : target.closest) == null ? void 0 : _a2.call(target, "a.memo-link");
+            const linkBlock = (_b2 = target == null ? void 0 : target.closest) == null ? void 0 : _b2.call(target, ".memo-link-block");
+            const href = (anchor == null ? void 0 : anchor.getAttribute("href")) || "";
+            const blockDocId = (linkBlock == null ? void 0 : linkBlock.getAttribute("data-document-id")) || "";
+            const open = window.GoToolkitMemoOpenDocumentByLink;
+            if (typeof open === "function" && (href.startsWith("memo://") || blockDocId)) {
+              event.preventDefault();
+              event.stopPropagation();
+              const id = blockDocId || href.replace(/^memo:\/\//, "");
+              if (id) open(id);
+              return true;
+            }
+          }
           if (!(event instanceof MouseEvent)) return false;
           const info = getTableCellInfo(view, event);
           if (!info) return false;
@@ -57054,15 +57142,46 @@ ${promptInput.trim()}`
           return false;
         },
         handleDrop: (view, event) => {
-          var _a2, _b2;
+          var _a2, _b2, _c2, _d2, _e, _f;
           if (!event || !(event instanceof DragEvent)) return false;
-          const droppedFiles = Array.from(((_a2 = event.dataTransfer) == null ? void 0 : _a2.files) || []);
+          const droppedDocId = String(
+            ((_a2 = event.dataTransfer) == null ? void 0 : _a2.getData("application/x-gotoolkit-docid")) || ((_b2 = event.dataTransfer) == null ? void 0 : _b2.getData("text/uri-list")) || ((_c2 = event.dataTransfer) == null ? void 0 : _c2.getData("text/plain")) || ""
+          ).trim().replace(/^memo:\/\//, "");
+          if (droppedDocId && /^(share:|common:|[a-z0-9-]{8,})/i.test(droppedDocId)) {
+            event.preventDefault();
+            event.stopPropagation();
+            const coords2 = view.posAtCoords({ left: event.clientX, top: event.clientY });
+            const insertionPos = (_d2 = coords2 == null ? void 0 : coords2.pos) != null ? _d2 : view.state.selection.from;
+            const resolver = window.GoToolkitMemoResolveLinkTarget;
+            const apply2 = async () => {
+              var _a3, _b3, _c3;
+              const target = typeof resolver === "function" ? await resolver(droppedDocId) : { id: droppedDocId, title: "Document", icon: "" };
+              if (!(target == null ? void 0 : target.id)) return;
+              const schema = editor.state.schema;
+              const nodeType = (_a3 = schema == null ? void 0 : schema.nodes) == null ? void 0 : _a3.memoLinkBlock;
+              if (!nodeType) return;
+              const safePos = Math.max(0, Math.min(insertionPos, editor.state.doc.content.size));
+              const linkNode = nodeType.create({
+                href: `memo://${target.id}`,
+                title: target.title || "Document",
+                icon: target.icon || "",
+                documentId: target.id
+              });
+              const paragraph2 = ((_c3 = (_b3 = schema.nodes.paragraph) == null ? void 0 : _b3.create) == null ? void 0 : _c3.call(_b3)) || null;
+              const fragment = paragraph2 ? schema.nodes.doc.create(null, [linkNode, paragraph2]).content : schema.nodes.doc.create(null, [linkNode]).content;
+              const tr2 = editor.state.tr.insert(safePos, fragment);
+              view.dispatch(tr2);
+            };
+            apply2();
+            return true;
+          }
+          const droppedFiles = Array.from(((_e = event.dataTransfer) == null ? void 0 : _e.files) || []);
           const droppedImages = droppedFiles.filter(isSupportedImageFile);
           if (droppedImages.length) {
             event.preventDefault();
             event.stopPropagation();
             const coords2 = view.posAtCoords({ left: event.clientX, top: event.clientY });
-            const insertionPos = (_b2 = coords2 == null ? void 0 : coords2.pos) != null ? _b2 : view.state.selection.from;
+            const insertionPos = (_f = coords2 == null ? void 0 : coords2.pos) != null ? _f : view.state.selection.from;
             (async () => {
               const imageNodes = [];
               for (const file of droppedImages) {
@@ -59136,6 +59255,13 @@ ${innerMarkdown}
         editor.off("selectionUpdate", handleSelectionChange);
       };
     }, [editor]);
+    const openLinkModal = react_shim_default.useCallback(() => {
+      if (!editor) return;
+      const { from: from2, to } = editor.state.selection;
+      setLinkModalAnchorPos(from2);
+      setLinkModalRange({ from: from2, to });
+      setShowLinkModal(true);
+    }, [editor]);
     if (!editor) {
       return null;
     }
@@ -59191,7 +59317,7 @@ ${innerMarkdown}
             {
               editor,
               onDropdownToggle: setIsDropdownOpen,
-              onLink: () => setShowLinkModal(true),
+              onLink: openLinkModal,
               onInsertImage: openImagePicker,
               onInsertVideo: openVideoInsertDialog
             }
@@ -59204,7 +59330,7 @@ ${innerMarkdown}
               onKeep: () => keepSelection(editor),
               onReject: () => rejectSelection(editor),
               onAssist: handleAssist,
-              onLink: () => setShowLinkModal(true)
+              onLink: openLinkModal
             }
           ),
           /* @__PURE__ */ jsx(EditorContent, { editor }),
@@ -59212,6 +59338,8 @@ ${innerMarkdown}
             LinkSearchModal,
             {
               editor,
+              anchorPos: linkModalAnchorPos,
+              selectionRange: linkModalRange,
               onClose: () => setShowLinkModal(false)
             }
           ),
@@ -59988,6 +60116,7 @@ lucide-react/dist/esm/icons/arrow-down-a-z.js:
 lucide-react/dist/esm/icons/arrow-left-right.js:
 lucide-react/dist/esm/icons/arrow-up-a-z.js:
 lucide-react/dist/esm/icons/arrow-up-left.js:
+lucide-react/dist/esm/icons/arrow-up-right.js:
 lucide-react/dist/esm/icons/baseline.js:
 lucide-react/dist/esm/icons/bold.js:
 lucide-react/dist/esm/icons/bot.js:
@@ -60008,7 +60137,6 @@ lucide-react/dist/esm/icons/fullscreen.js:
 lucide-react/dist/esm/icons/heading-1.js:
 lucide-react/dist/esm/icons/heading-2.js:
 lucide-react/dist/esm/icons/heading-3.js:
-lucide-react/dist/esm/icons/heading-4.js:
 lucide-react/dist/esm/icons/highlighter.js:
 lucide-react/dist/esm/icons/image.js:
 lucide-react/dist/esm/icons/info.js:

@@ -2026,3 +2026,112 @@ ul[data-type="taskList"] li p {
   font-size: 12px;
   color: var(--text-muted);
 }
+
+.simple-editor .memo-link {
+  color: var(--color-primary);
+}
+
+.memo-link-block-wrap {
+  width: 100%;
+}
+
+.memo-link-block {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: transparent;
+  transition: background 0.15s ease;
+  cursor: pointer;
+}
+
+.memo-link-block:hover {
+  background: var(--bg-surface-soft);
+}
+
+.memo-link-block__handle {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  cursor: grab;
+}
+
+.memo-link-block:hover .memo-link-block__handle {
+  opacity: 1;
+}
+
+.memo-link-block__icon {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-main);
+}
+
+.memo-link-block__icon-overlay {
+  position: absolute;
+  right: -5px;
+  bottom: -4px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--bg-surface);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+.memo-link-block__title {
+  font-weight: 500;
+  color: var(--text-main);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.memo-link-block__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.memo-link-block:hover .memo-link-block__actions {
+  opacity: 1;
+}
+
+.memo-link-block__action {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.memo-link-block__action:hover {
+  background: var(--bg-surface);
+  color: var(--text-main);
+}

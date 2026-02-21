@@ -1,6 +1,7 @@
 import React from 'react';
 import { useEditor, EditorContent, Editor, ReactRenderer, ReactNodeViewRenderer, NodeViewWrapper, NodeViewContent } from '@tiptap/react';
 import { Extension, markInputRule, mergeAttributes } from '@tiptap/core';
+import { Node as TiptapNode } from '@tiptap/core';
 import Suggestion from '@tiptap/suggestion';
 import StarterKit from '@tiptap/starter-kit';
 import Code from '@tiptap/extension-code';
@@ -44,15 +45,15 @@ const CustomCode = Code.extend({
   },
 });
 import { 
-  Undo2, Redo2, Heading1, Heading2, Heading3, Heading4, List, SquareCode, 
-  Bold, Italic, Underline, Link, Strikethrough, 
+  Undo2, Redo2, Heading1, Heading2, Heading3, List, SquareCode, 
+  Bold, Italic, Underline, Link, Strikethrough,
   Highlighter, Table as TableIcon, Trash2, CodeXml,
   ChevronDown, Check, CheckCheck, Type,
   Bot, X, Plus, Baseline, Shapes,
   CheckSquare,
   Pencil, Copy, Image as ImageIcon, Clapperboard,
   Square, RectangleHorizontal, Tag,
-  ArrowDownAZ, ArrowUpAZ
+  ArrowDownAZ, ArrowUpAZ, ArrowUpRight
 } from 'lucide-react';
 
 
@@ -292,16 +293,85 @@ const CustomCodeBlock = CodeBlock.extend({
   },
 });
 
-const LinkSearchModal = ({ editor, onClose }: { editor: Editor, onClose: () => void }) => {
+const LinkSearchModal = ({
+  editor,
+  onClose,
+  anchorPos,
+  selectionRange
+}: {
+  editor: Editor,
+  onClose: () => void,
+  anchorPos: number,
+  selectionRange: { from: number; to: number }
+}) => {
   const [query, setQuery] = React.useState('');
   const [selectedIndex, setSelectedIndex] = React.useState(0);
+  const [documents, setDocuments] = React.useState<any[]>([]);
   const modalRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
+    let cancelled = false;
+    const loadDocuments = async () => {
+      const rows: any[] = [];
+      try {
+        const localDocs = await (window as any).goToolkitDocumentApi?.getAllRecords?.();
+        (Array.isArray(localDocs) ? localDocs : [])
+          .filter((item: any) => item && item.app === 'memo')
+          .forEach((item: any) => rows.push({
+            type: 'document',
+            id: String(item.id || ''),
+            title: String(item.title || item.payload?.tabs?.[0]?.title || 'New page'),
+            icon: String(item.icon || ''),
+            section: 'private',
+            updatedAt: String(item.updatedAt || '')
+          }));
+      } catch (err) {
+        // ignore
+      }
+      try {
+        const shared = await (window as any).goToolkitShareHistory?.getRecordsByApp?.('memo');
+        (Array.isArray(shared) ? shared : []).forEach((item: any) => rows.push({
+          type: 'document',
+          id: `share:${String(item.token || '')}`,
+          title: String(item.title || 'Document partagé'),
+          icon: String(item.icon || 'file-symlink'),
+          section: 'shared',
+          updatedAt: String(item.updatedAt || '')
+        }));
+      } catch (err) {
+        // ignore
+      }
+      try {
+        const common = await (window as any).goToolkitTemplateStore?.list?.();
+        (Array.isArray(common) ? common : []).forEach((item: any) => rows.push({
+          type: 'document',
+          id: `common:${String(item.id || '')}`,
+          title: String(item.label || 'Commun'),
+          icon: String(item.icon || ''),
+          section: 'common',
+          updatedAt: String(item.updatedAt || '')
+        }));
+      } catch (err) {
+        // ignore
+      }
+      const deduped = new Map<string, any>();
+      rows.forEach(row => {
+        if (!row?.id) return;
+        if (!deduped.has(row.id)) deduped.set(row.id, row);
+      });
+      const sorted = Array.from(deduped.values()).sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')));
+      if (!cancelled) setDocuments(sorted);
+    };
+    loadDocuments();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  React.useEffect(() => {
     const { view } = editor;
-    const { selection } = editor.state;
-    const { from } = selection;
-    
+    const from = Math.max(1, Math.min(anchorPos || 1, editor.state.doc.content.size));
+
     // Fallback if coordsAtPos fails (e.g. selection at very end)
     let coords;
     try {
@@ -344,42 +414,17 @@ const LinkSearchModal = ({ editor, onClose }: { editor: Editor, onClose: () => v
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [editor, onClose]);
 
-  const headings = (window as any).MemoHeadings || [];
-  
-  // Calculate hierarchy for each heading
-  const getHierarchy = (index: number) => {
-    const current = headings[index];
-    if (!current || current.level === 1) return '';
-    
-    let path = [];
-    let lastLevel = current.level;
-    for (let i = index - 1; i >= 0; i--) {
-      if (headings[i].level < lastLevel) {
-        path.unshift(headings[i].textContent);
-        lastLevel = headings[i].level;
-        if (lastLevel === 1) break;
-      }
-    }
-    return path.length > 0 ? path.join(' / ') : '';
-  };
-
   const isUrl = (str: string) => {
     const pattern = /^([\da-z.-]+)\.([a-z.]{2,6})([\/\w .-]*)*\/?$/;
     return pattern.test(str) || str.startsWith('http');
   };
 
-  const filteredHeadings = headings
-    .map((h: any, i: number) => ({ ...h, originalIndex: i }))
-    .filter((h: any) => h.textContent.toLowerCase().includes(query.toLowerCase()))
-    .slice(0, 3);
+  const filteredDocs = documents
+    .filter((d: any) => String(d?.title || '').toLowerCase().includes(query.toLowerCase()))
+    .slice(0, 50);
 
   const items = [
-    ...filteredHeadings.map((h: any) => ({
-      type: 'heading',
-      title: h.textContent,
-      id: h.id,
-      path: getHierarchy(h.originalIndex)
-    })),
+    ...filteredDocs,
     ...(query ? [{
       type: 'url',
       title: query,
@@ -387,24 +432,72 @@ const LinkSearchModal = ({ editor, onClose }: { editor: Editor, onClose: () => v
     }] : [])
   ];
 
+  const insertMemoLinkBlockAt = React.useCallback((pos: number, item: any) => {
+    const schema = editor?.state?.schema;
+    const nodeType = schema?.nodes?.memoLinkBlock;
+    if (!schema || !nodeType) return false;
+    const safePos = Math.max(0, Math.min(pos, editor.state.doc.content.size));
+    const linkNode = nodeType.create({
+      href: `memo://${item.id}`,
+      title: item.title || 'Document',
+      icon: item.icon || '',
+      documentId: item.id || ''
+    });
+    const paragraph = schema.nodes.paragraph?.create?.() || null;
+    const fragment = paragraph ? schema.nodes.doc.create(null, [linkNode, paragraph]).content : schema.nodes.doc.create(null, [linkNode]).content;
+    let tr = editor.state.tr;
+    const { selection } = editor.state;
+    const $from = selection.$from;
+    const inEmptyParagraph = selection.empty
+      && $from.parent?.type?.name === 'paragraph'
+      && $from.parent.content.size === 0;
+    if (inEmptyParagraph && $from.depth > 0) {
+      const paraFrom = $from.before($from.depth);
+      const paraTo = paraFrom + $from.parent.nodeSize;
+      tr = tr.replaceWith(paraFrom, paraTo, fragment);
+    } else {
+      tr = tr.insert(safePos, fragment);
+    }
+    editor.view.dispatch(tr);
+    return true;
+  }, [editor]);
+
   const handleSelect = (item: any) => {
-    let url = item.type === 'heading' ? `#${item.id}` : item.title;
-    if (item.type === 'url' && !url.startsWith('http') && !url.startsWith('#')) {
+    let url = item.type === 'document' ? `memo://${item.id}` : item.title;
+    if (item.type === 'url' && !url.startsWith('http') && !url.startsWith('#') && !url.startsWith('memo://')) {
       url = 'https://' + url;
     }
 
-    const { from, to } = editor.state.selection;
-    if (from !== to) {
-      editor.chain().focus().setLink({ href: url }).run();
+    const from = Math.max(1, Math.min(selectionRange?.from ?? editor.state.selection.from, editor.state.doc.content.size));
+    const to = Math.max(from, Math.min(selectionRange?.to ?? editor.state.selection.to, editor.state.doc.content.size));
+    const tr = editor.state.tr.setSelection(TextSelection.create(editor.state.doc, from, to));
+    editor.view.dispatch(tr);
+    if (item.type === 'document') {
+      const inserted = insertMemoLinkBlockAt(from, item);
+      if (!inserted) {
+        editor.chain().focus().insertContent({
+          type: 'memoLinkBlock',
+          attrs: {
+            href: url,
+            title: item.title,
+            icon: item.icon || '',
+            documentId: item.id
+          }
+        }).insertContent({ type: 'paragraph' }).run();
+      }
     } else {
-      editor.chain().focus().insertContent([
-        {
-          type: 'text',
-          text: item.title,
-          marks: [{ type: 'link', attrs: { href: url } }]
-        },
-        { type: 'text', text: ' ' }
-      ]).run();
+      if (from !== to) {
+        editor.chain().focus().setLink({ href: url }).setColor('var(--color-primary)').run();
+      } else {
+        editor.chain().focus().insertContent([
+          {
+            type: 'text',
+            text: item.title,
+            marks: [{ type: 'link', attrs: { href: url } }, { type: 'textStyle', attrs: { color: 'var(--color-primary)' } }]
+          },
+          { type: 'text', text: ' ' }
+        ]).run();
+      }
     }
     onClose();
   };
@@ -419,6 +512,7 @@ const LinkSearchModal = ({ editor, onClose }: { editor: Editor, onClose: () => v
         autoFocus
         placeholder="Rechercher un titre ou coller un lien..."
         value={query}
+        onMouseDown={(e) => e.stopPropagation()}
         onChange={(e) => {
           setQuery(e.target.value);
           setSelectedIndex(0);
@@ -442,15 +536,19 @@ const LinkSearchModal = ({ editor, onClose }: { editor: Editor, onClose: () => v
           <div 
             key={i}
             className={`link-search-item ${i === selectedIndex ? 'selected' : ''}`}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
             onMouseEnter={() => setSelectedIndex(i)}
             onClick={() => handleSelect(item)}
           >
             <div className="link-search-item-info">
               <div className="link-search-item-title">
-                {item.type === 'url' ? <Link size={12} style={{ marginRight: 8, opacity: 0.6 }} /> : null}
+                {item.type === 'url' ? <Link size={12} style={{ marginRight: 8, opacity: 0.6 }} /> : <Link size={12} style={{ marginRight: 8, opacity: 0.6 }} />}
                 {item.title}
               </div>
-              {item.path && <div className="link-search-item-path">{item.path}</div>}
+              {item.type === 'document' && <div className="link-search-item-path">{item.section === 'shared' ? 'Partagé' : item.section === 'common' ? 'Commun' : 'Privé'}</div>}
               {item.type === 'url' && !item.isValid && (
                 <div className="link-search-item-invalid">URL incomplète?</div>
               )}
@@ -470,6 +568,121 @@ const LinkSearchModal = ({ editor, onClose }: { editor: Editor, onClose: () => v
   );
 };
 
+const MemoLinkBlockView = ({ node, editor, getPos }: any) => {
+  const href = String(node?.attrs?.href || '');
+  const title = String(node?.attrs?.title || 'Document');
+  const icon = String(node?.attrs?.icon || '');
+  const documentId = String(node?.attrs?.documentId || '');
+  const iconRef = React.useRef<HTMLSpanElement | null>(null);
+  React.useEffect(() => {
+    try {
+      (window as any).lucide?.createIcons?.({
+        attrs: {
+          width: '14',
+          height: '14'
+        },
+        elements: iconRef.current ? [iconRef.current] : undefined
+      });
+    } catch (err) {
+      // ignore
+    }
+  }, [icon]);
+  const handleOpen = (event: React.MouseEvent | React.KeyboardEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const open = (window as any).GoToolkitMemoOpenDocumentByLink;
+    if (typeof open === 'function') {
+      open(documentId || href.replace(/^memo:\/\//, ''));
+    } else if (href) {
+      window.open(href, '_blank', 'noopener,noreferrer');
+    }
+  };
+  const handleCopy = async (event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const markdown = `[${title}](${href})`;
+    try {
+      await navigator.clipboard.writeText(markdown);
+    } catch (err) {
+      // ignore
+    }
+  };
+  const handleDelete = (event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (typeof getPos !== 'function') return;
+    const pos = getPos();
+    editor.chain().focus().deleteRange({ from: pos, to: pos + node.nodeSize }).run();
+  };
+  return (
+    <NodeViewWrapper className="memo-link-block-wrap" contentEditable={false}>
+      <div
+        className="memo-link-block"
+        data-document-id={documentId}
+        role="link"
+        tabIndex={0}
+        onMouseDown={(event) => {
+          const target = event.target as HTMLElement | null;
+          if (target?.closest('.memo-link-block__action') || target?.closest('.memo-link-block__handle')) return;
+          handleOpen(event);
+        }}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            handleOpen(event);
+          }
+        }}
+      >
+        <button className="memo-link-block__handle" type="button" aria-label="Déplacer">
+          <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M10 4h2v2h-2V4zm0 7h2v2h-2v-2zm0 7h2v2h-2v-2zm4-14h2v2h-2V4zm0 7h2v2h-2v-2zm0 7h2v2h-2v-2z" /></svg>
+        </button>
+        <span className="memo-link-block__icon">
+          <span ref={iconRef}>{icon ? <i data-lucide={icon}></i> : <i data-lucide="file"></i>}</span>
+          <span className="memo-link-block__icon-overlay"><ArrowUpRight size={10} /></span>
+        </span>
+        <span className="memo-link-block__title">{title}</span>
+        <span className="memo-link-block__actions">
+          <button type="button" className="memo-link-block__action" onClick={handleCopy} aria-label="Copier"><Copy size={13} /></button>
+          <button type="button" className="memo-link-block__action" onClick={handleDelete} aria-label="Supprimer"><Trash2 size={13} /></button>
+        </span>
+      </div>
+    </NodeViewWrapper>
+  );
+};
+
+const MemoLinkBlock = TiptapNode.create({
+  name: 'memoLinkBlock',
+  group: 'block',
+  atom: true,
+  selectable: true,
+  draggable: true,
+  addAttributes() {
+    return {
+      href: { default: '' },
+      title: { default: 'Document' },
+      icon: { default: '' },
+      documentId: { default: '' },
+    };
+  },
+  parseHTML() {
+    return [{ tag: 'div[data-type="memo-link-block"]' }];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ['div', mergeAttributes(HTMLAttributes, { 'data-type': 'memo-link-block' })];
+  },
+  addNodeView() {
+    return ReactNodeViewRenderer(MemoLinkBlockView);
+  },
+});
+
+import TurndownService from 'turndown';
+import { gfm } from 'turndown-plugin-gfm';
+import { marked } from 'marked';
+import { MermaidNode, insertMermaidDiagram } from './mermaid-node';
+import { Alert, ALERT_TYPES } from './blockquote-node';
+import { CustomImage, isSupportedImageFile } from './image-node';
+import { VideoEmbed } from './video-node';
+import './simple-editor.css';
+
 const TEXT_COLORS = [
   { name: 'Défaut', value: 'var(--bg-text-main)' },
   { name: 'Gris', value: 'var(--bg-text-gray)' },
@@ -482,15 +695,6 @@ const TEXT_COLORS = [
   { name: 'Rose', value: 'var(--bg-text-pink)' },
   { name: 'Rouge', value: 'var(--bg-text-red)' },
 ];
-
-import TurndownService from 'turndown';
-import { gfm } from 'turndown-plugin-gfm';
-import { marked } from 'marked';
-import { MermaidNode, insertMermaidDiagram } from './mermaid-node';
-import { Alert, ALERT_TYPES } from './blockquote-node';
-import { CustomImage, isSupportedImageFile } from './image-node';
-import { VideoEmbed } from './video-node';
-import './simple-editor.css';
 
 interface SimpleEditorProps {
   content?: string;
@@ -639,6 +843,7 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLi
     } catch (err) {
       console.warn('BubbleMenu positioning error:', err);
       setPosition(prev => ({ ...prev, opacity: 0 }));
+      setShowTextColors(false);
     }
   }, [editor, visible]);
 
@@ -736,7 +941,6 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLi
           >
             <Underline size={14} />
           </button>
-
           <div style={{ position: 'relative' }}>
             <button
               className="tiptap-button"
@@ -750,7 +954,7 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLi
               <Baseline size={14} />
             </button>
             {showTextColors && (
-              <div 
+              <div
                 className="table-color-grid"
                 style={{
                   position: 'absolute',
@@ -761,11 +965,11 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLi
                 }}
               >
                 {TEXT_COLORS.map(color => (
-                  <div 
+                  <div
                     key={color.value}
                     className="table-color-option"
-                    style={{ 
-                      backgroundColor: color.value, 
+                    style={{
+                      backgroundColor: color.value,
                     }}
                     title={color.name}
                     onMouseDown={(event) => event.preventDefault()}
@@ -778,9 +982,7 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLi
               </div>
             )}
           </div>
-
           <div className="tiptap-separator-inline" style={{ width: '1px', height: '18px', backgroundColor: 'var(--border-main)', margin: '0 6px' }}></div>
-
           <button
             className="tiptap-button"
             type="button"
@@ -1295,7 +1497,7 @@ const keepAllDocument = (editor: Editor | null) => {
     .run();
 };
 
-const BlockTypeDropdown = ({ editor, onOpenChange }: { editor: Editor, onOpenChange?: (isOpen: boolean) => void }) => {
+const BlockTypeDropdown = ({ editor, onOpenChange, onLink }: { editor: Editor, onOpenChange?: (isOpen: boolean) => void, onLink?: () => void }) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
 
@@ -1308,10 +1510,10 @@ const BlockTypeDropdown = ({ editor, onOpenChange }: { editor: Editor, onOpenCha
     { label: 'Titre 1', value: 'h1', icon: Heading1, active: editor.isActive('heading', { level: 1 }) },
     { label: 'Titre 2', value: 'h2', icon: Heading2, active: editor.isActive('heading', { level: 2 }) },
     { label: 'Titre 3', value: 'h3', icon: Heading3, active: editor.isActive('heading', { level: 3 }) },
-    { label: 'Titre 4', value: 'h4', icon: Heading4, active: editor.isActive('heading', { level: 4 }) },
     { label: 'Liste à puces', value: 'bulletList', icon: List, active: editor.isActive('bulletList') },
     { label: 'Tâche', value: 'taskList', icon: CheckSquare, active: editor.isActive('taskList') },
     { label: 'Bloc de code', value: 'codeBlock', icon: SquareCode, active: editor.isActive('codeBlock') },
+    { label: 'Lien', value: 'link', icon: Link, active: editor.isActive('link') },
   ];
 
   const currentOption = options.find(o => o.active) || options[0];
@@ -1332,11 +1534,11 @@ const BlockTypeDropdown = ({ editor, onOpenChange }: { editor: Editor, onOpenCha
     else if (value === 'h1') chain.toggleHeading({ level: 1 }).run();
     else if (value === 'h2') chain.toggleHeading({ level: 2 }).run();
     else if (value === 'h3') chain.toggleHeading({ level: 3 }).run();
-    else if (value === 'h4') chain.toggleHeading({ level: 4 }).run();
     else if (value === 'bulletList') chain.toggleBulletList().run();
     else if (value === 'taskList') chain.toggleTaskList().run();
     else if (value === 'code') chain.toggleCode().run();
     else if (value === 'codeBlock') chain.toggleCodeBlock().run();
+    else if (value === 'link') onLink?.();
     setIsOpen(false);
   };
 
@@ -1447,12 +1649,7 @@ const Toolbar = ({ editor, onDropdownToggle, onLink, onInsertImage, onInsertVide
 }) => {
   // Force re-render when editor state changes
   const [, forceUpdate] = React.useReducer((x) => x + 1, 0);
-  const [showTextColors, setShowTextColors] = React.useState(false);
   const toolbarRef = React.useRef<HTMLDivElement>(null);
-
-  React.useEffect(() => {
-    onDropdownToggle?.(showTextColors);
-  }, [showTextColors, onDropdownToggle]);
 
   React.useEffect(() => {
     if (!editor) return;
@@ -1464,7 +1661,7 @@ const Toolbar = ({ editor, onDropdownToggle, onLink, onInsertImage, onInsertVide
 
     const handleClickOutside = (event: MouseEvent) => {
       if (toolbarRef.current && !toolbarRef.current.contains(event.target as Node)) {
-        setShowTextColors(false);
+        onDropdownToggle?.(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -1506,119 +1703,7 @@ const Toolbar = ({ editor, onDropdownToggle, onLink, onInsertImage, onInsertVide
       <div className="tiptap-separator" data-orientation="vertical" role="none"></div>
 
       <div role="group" className="tiptap-toolbar-group">
-        <BlockTypeDropdown editor={editor} onOpenChange={onDropdownToggle} />
-      </div>
-
-      <div className="tiptap-separator" data-orientation="vertical" role="none"></div>
-
-        <div role="group" className="tiptap-toolbar-group" aria-label="Style">
-        <button
-          className="tiptap-button"
-          aria-label="Bold"
-          title="Gras"
-          type="button"
-          onClick={() => editor.chain().focus().toggleBold().run()}
-          data-active-state={editor.isActive('bold') ? 'on' : 'off'}
-        >
-          <Bold size={16} />
-        </button>
-        <button
-          className="tiptap-button"
-          aria-label="Italic"
-          title="Italique"
-          type="button"
-          onClick={() => editor.chain().focus().toggleItalic().run()}
-          data-active-state={editor.isActive('italic') ? 'on' : 'off'}
-        >
-          <Italic size={16} />
-        </button>
-        <button
-          className="tiptap-button"
-          aria-label="Underline"
-          title="Souligné"
-          type="button"
-          onClick={() => editor.chain().focus().toggleUnderline().run()}
-          data-active-state={editor.isActive('underline') ? 'on' : 'off'}
-        >
-          <Underline size={16} />
-        </button>
-
-        <div style={{ position: 'relative' }}>
-          <button
-            className="tiptap-button"
-            aria-label="Text Color"
-            type="button"
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={() => setShowTextColors(!showTextColors)}
-            title="Couleur"
-          >
-            <Baseline size={16} />
-          </button>
-          {showTextColors && (
-            <div 
-              className="table-color-grid"
-              style={{
-                position: 'absolute',
-                top: '100%',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                marginTop: '8px',
-              }}
-            >
-              {TEXT_COLORS.map(color => (
-                <div 
-                  key={color.value}
-                  className="table-color-option"
-                  style={{ 
-                    backgroundColor: color.value, 
-                  }}
-                  title={color.name}
-                  onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => {
-                    editor.chain().focus().setColor(color.value).run();
-                    setShowTextColors(false);
-                  }}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-
-      </div>
-
-      <div className="tiptap-separator" data-orientation="vertical" role="none"></div>
-
-      <div role="group" className="tiptap-toolbar-group" aria-label="Texte avancé">
-        <button
-          className="tiptap-button"
-          aria-label="Strike"
-          title="Barré"
-          type="button"
-          onClick={() => editor.chain().focus().toggleStrike().run()}
-          data-active-state={editor.isActive('strike') ? 'on' : 'off'}
-        >
-          <Strikethrough size={16} />
-        </button>
-        <button
-          className="tiptap-button"
-          aria-label="Highlight"
-          type="button"
-          onClick={() => editor.chain().focus().toggleHighlight().run()}
-          data-active-state={editor.isActive('highlight') ? 'on' : 'off'}
-          title="Surligné"
-        >
-          <Highlighter size={16} />
-        </button>
-        <button
-          className="tiptap-button"
-          aria-label="Link"
-          type="button"
-          onClick={onLink}
-          data-active-state={editor.isActive('link') ? 'on' : 'off'}
-          title="Lien"
-        >
-          <Link size={16} />
-        </button>
+        <BlockTypeDropdown editor={editor} onOpenChange={onDropdownToggle} onLink={onLink} />
       </div>
 
       <div className="tiptap-separator" data-orientation="vertical" role="none"></div>
@@ -2358,6 +2443,8 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   const [blockDropIndicator, setBlockDropIndicator] = React.useState<{ top: number, left: number, width: number } | null>(null);
   const [dragGhost, setDragGhost] = React.useState<{ html: string, width: number, height: number, offsetX: number, offsetY: number } | null>(null);
   const [showLinkModal, setShowLinkModal] = React.useState(false);
+  const [linkModalAnchorPos, setLinkModalAnchorPos] = React.useState(1);
+  const [linkModalRange, setLinkModalRange] = React.useState<{ from: number; to: number }>({ from: 1, to: 1 });
   const [isFocusWithinMemoCard, setIsFocusWithinMemoCard] = React.useState(false);
   const [tableSelectionBox, setTableSelectionBox] = React.useState<{ top: number, left: number, width: number, height: number } | null>(null);
   const [tableSelectionResize, setTableSelectionResize] = React.useState<{ anchorPos: number, tablePos: number } | null>(null);
@@ -2377,7 +2464,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       }),
       CustomCode,
       CustomHeading.configure({
-        levels: [1, 2, 3, 4],
+        levels: [1, 2, 3],
       }),
       CustomParagraph,
       CustomBulletList,
@@ -2399,6 +2486,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           class: 'memo-link',
         },
       }),
+      MemoLinkBlock,
       CustomImage,
       VideoEmbed,
       TableNode,
@@ -2447,6 +2535,21 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         },
       },
       handleClick: (view, _pos, event) => {
+        if (event instanceof MouseEvent) {
+          const target = event.target as HTMLElement | null;
+          const anchor = target?.closest?.('a.memo-link') as HTMLAnchorElement | null;
+          const linkBlock = target?.closest?.('.memo-link-block') as HTMLElement | null;
+          const href = anchor?.getAttribute('href') || '';
+          const blockDocId = linkBlock?.getAttribute('data-document-id') || '';
+          const open = (window as any).GoToolkitMemoOpenDocumentByLink;
+          if (typeof open === 'function' && (href.startsWith('memo://') || blockDocId)) {
+            event.preventDefault();
+            event.stopPropagation();
+            const id = blockDocId || href.replace(/^memo:\/\//, '');
+            if (id) open(id);
+            return true;
+          }
+        }
         if (!(event instanceof MouseEvent)) return false;
         const info = getTableCellInfo(view, event);
         if (!info) return false;
@@ -2751,6 +2854,41 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       },
       handleDrop: (view, event) => {
         if (!event || !(event instanceof DragEvent)) return false;
+        const droppedDocId = String(
+          event.dataTransfer?.getData('application/x-gotoolkit-docid')
+          || event.dataTransfer?.getData('text/uri-list')
+          || event.dataTransfer?.getData('text/plain')
+          || ''
+        ).trim().replace(/^memo:\/\//, '');
+        if (droppedDocId && /^(share:|common:|[a-z0-9-]{8,})/i.test(droppedDocId)) {
+          event.preventDefault();
+          event.stopPropagation();
+          const coords = view.posAtCoords({ left: event.clientX, top: event.clientY });
+          const insertionPos = coords?.pos ?? view.state.selection.from;
+          const resolver = (window as any).GoToolkitMemoResolveLinkTarget;
+          const apply = async () => {
+            const target = typeof resolver === 'function'
+              ? await resolver(droppedDocId)
+              : { id: droppedDocId, title: 'Document', icon: '' };
+            if (!target?.id) return;
+            const schema = editor.state.schema;
+            const nodeType = schema?.nodes?.memoLinkBlock;
+            if (!nodeType) return;
+            const safePos = Math.max(0, Math.min(insertionPos, editor.state.doc.content.size));
+            const linkNode = nodeType.create({
+              href: `memo://${target.id}`,
+              title: target.title || 'Document',
+              icon: target.icon || '',
+              documentId: target.id
+            });
+            const paragraph = schema.nodes.paragraph?.create?.() || null;
+            const fragment = paragraph ? schema.nodes.doc.create(null, [linkNode, paragraph]).content : schema.nodes.doc.create(null, [linkNode]).content;
+            const tr = editor.state.tr.insert(safePos, fragment);
+            view.dispatch(tr);
+          };
+          apply();
+          return true;
+        }
         const droppedFiles = Array.from(event.dataTransfer?.files || []);
         const droppedImages = droppedFiles.filter(isSupportedImageFile);
         if (droppedImages.length) {
@@ -5172,6 +5310,14 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     };
   }, [editor]);
 
+  const openLinkModal = React.useCallback(() => {
+    if (!editor) return;
+    const { from, to } = editor.state.selection;
+    setLinkModalAnchorPos(from);
+    setLinkModalRange({ from, to });
+    setShowLinkModal(true);
+  }, [editor]);
+
   if (!editor) {
     return null;
   }
@@ -5229,7 +5375,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       <Toolbar
         editor={editor}
         onDropdownToggle={setIsDropdownOpen}
-        onLink={() => setShowLinkModal(true)}
+        onLink={openLinkModal}
         onInsertImage={openImagePicker}
         onInsertVideo={openVideoInsertDialog}
       />
@@ -5239,13 +5385,15 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         onKeep={() => keepSelection(editor)}
         onReject={() => rejectSelection(editor)}
         onAssist={handleAssist}
-        onLink={() => setShowLinkModal(true)}
+        onLink={openLinkModal}
       />
       <EditorContent editor={editor} />
 
       {showLinkModal && (
         <LinkSearchModal 
           editor={editor} 
+          anchorPos={linkModalAnchorPos}
+          selectionRange={linkModalRange}
           onClose={() => setShowLinkModal(false)} 
         />
       )}

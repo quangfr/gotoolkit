@@ -232,7 +232,8 @@
         ensureSuperpowersLoaded();
 
         function setActiveTab(target, options) {
-            const nextTarget = target === "toc" ? "toc" : "library";
+            const canUseToc = Boolean(tocPanel && tabBtns.length && Array.from(tabBtns).some(b => b.dataset.tab === "toc"));
+            const nextTarget = (target === "toc" && canUseToc) ? "toc" : "library";
             const shouldRender = options?.renderToc ?? true;
 
             tabBtns.forEach(b => b.classList.toggle("active", b.dataset.tab === nextTarget));
@@ -278,7 +279,7 @@
             const importBtn = document.createElement("button");
             importBtn.type = "button";
             importBtn.className = "chat-knowledge-modal__add btn btn-secondary";
-            importBtn.innerHTML = '<i data-lucide="import"></i>';
+            importBtn.innerHTML = '<i data-lucide="file-down"></i>';
             importBtn.title = "Importer";
             importBtn.setAttribute("aria-label", "Importer");
             importBtn.addEventListener("click", async () => {
@@ -1058,9 +1059,10 @@
         async function renderList(items) {
             if (!listEl) return;
             const nonce = ++renderListNonce;
+            const isStale = () => nonce !== renderListNonce;
             await ensureSuperpowersLoaded();
 
-            if (nonce !== renderListNonce) return;
+            if (isStale()) return;
 
             const safeItems = normalizeList(items);
             const needle = String(searchQuery || "").trim().toLowerCase();
@@ -1080,6 +1082,7 @@
                 common: buildTree(sectionItems.common)
             };
             const renderNode = async (item, level, sectionName, containerEl) => {
+                if (isStale()) return;
                 const tree = trees[sectionName] || trees.private;
                 const childrenByParent = tree.childrenByParent;
                 const byId = tree.byId;
@@ -1235,6 +1238,8 @@
                     button.classList.add("is-dragging");
                     event.dataTransfer.effectAllowed = "move";
                     event.dataTransfer.setData("text/plain", item.id);
+                    event.dataTransfer.setData("application/x-gotoolkit-docid", item.id);
+                    event.dataTransfer.setData("text/uri-list", `memo://${item.id}`);
                 });
                 button.addEventListener("dragend", () => {
                     draggingId = "";
@@ -1283,22 +1288,25 @@
                     draggingSection = "";
                 });
                 row.appendChild(button);
+                if (isStale()) return;
                 containerEl.appendChild(row);
                 if (isExpanded) {
                     if (level < 4) {
                         for (const child of children) {
+                            if (isStale()) return;
                             await renderNode(child, level + 1, sectionName, containerEl);
                         }
                     }
                 }
             };
             const renderSection = async (sectionName, title) => {
+                if (isStale()) return null;
                 const sectionRoot = document.createElement("div");
                 sectionRoot.className = "document-explorer__section";
                 const sectionHeader = document.createElement("button");
                 sectionHeader.type = "button";
                 sectionHeader.className = "document-explorer__section-header";
-                const sectionIcon = sectionName === "shared" ? "cloud" : (sectionName === "common" ? "component" : "book");
+                const sectionIcon = sectionName === "shared" ? "cloud" : (sectionName === "common" ? "component" : "lock-keyhole-open");
                 sectionHeader.innerHTML = `<i data-lucide="${sectionIcon}"></i><strong>${title}</strong><i data-lucide="${sectionExpanded[sectionName] ? "chevron-down" : "chevron-right"}"></i>`;
                 sectionHeader.addEventListener("click", () => {
                     sectionExpanded[sectionName] = !sectionExpanded[sectionName];
@@ -1314,17 +1322,23 @@
                 } else {
                     const roots = trees[sectionName]?.roots || [];
                     for (const root of roots) {
+                        if (isStale()) return null;
                         await renderNode(root, 1, sectionName, sectionBody);
                     }
                 }
                 sectionRoot.appendChild(sectionBody);
+                if (isStale()) return null;
                 listEl.appendChild(sectionRoot);
                 return sectionBody;
             };
             await renderSection("common", "Commun");
+            if (isStale()) return;
             await renderSection("private", "Privé");
+            if (isStale()) return;
             await renderSection("shared", "Partagé");
+            if (isStale()) return;
             const renderSuperpowersSection = async () => {
+                if (isStale()) return;
                 const sectionRoot = document.createElement("div");
                 sectionRoot.className = "document-explorer__section";
                 const sectionHeader = document.createElement("button");
@@ -1341,6 +1355,7 @@
                 sectionBody.className = "document-explorer__section-body";
                 sectionBody.dataset.section = "superpowers";
                 sectionRoot.appendChild(sectionBody);
+                if (isStale()) return;
                 listEl.appendChild(sectionRoot);
                 if (!sectionExpanded.superpowers) {
                     sectionBody.style.display = "none";
@@ -1437,6 +1452,8 @@
                                 childBtn.classList.add("is-dragging");
                                 event.dataTransfer.effectAllowed = "move";
                                 event.dataTransfer.setData("text/plain", doc.id);
+                                event.dataTransfer.setData("application/x-gotoolkit-docid", doc.id);
+                                event.dataTransfer.setData("text/uri-list", `memo://${doc.id}`);
                             });
                             childBtn.addEventListener("dragend", () => {
                                 draggingId = "";
@@ -1451,6 +1468,7 @@
                 visibleGroups.forEach(group => renderGroupRow(group));
             };
             await renderSuperpowersSection();
+            if (isStale()) return;
             if (!listDnDBound) {
                 listDnDBound = true;
                 listEl.addEventListener("dragover", event => {
@@ -1664,6 +1682,22 @@
             refresh,
             upsertItem,
             removeItemById,
+            getItemsSnapshot() {
+                return normalizeList(cachedItems).map(item => ({ ...item }));
+            },
+            getChildrenOf(parentId) {
+                const pid = String(parentId || "").trim();
+                if (!pid) return [];
+                const token = pid.replace(/^(share:|common:)/, "");
+                return normalizeList(cachedItems)
+                    .filter(item => {
+                        const rawParent = String(item?.parentId || "").trim();
+                        if (!rawParent) return false;
+                        if (rawParent === pid) return true;
+                        return rawParent.replace(/^(share:|common:)/, "") === token;
+                    })
+                    .map(item => ({ ...item }));
+            },
             async refreshIndicators() {
                 refreshActiveIndicatorOnly();
             },

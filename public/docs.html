@@ -45,10 +45,10 @@
         crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.min.js" crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.min.js" crossorigin></script>
-    <link rel="stylesheet" href="styles/style.css?v=2026.02.21.1">
+    <link rel="stylesheet" href="styles/style.css?v=2026.02.21.2">
     <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
-    <link rel="stylesheet" href="styles/memo.css?v=2026.02.21.1">
-    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.21.1">
+    <link rel="stylesheet" href="styles/memo.css?v=2026.02.21.2">
+    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.21.2">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.css">
     <script src="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.js"></script>
     <style>
@@ -114,7 +114,7 @@
                     <i data-lucide="book-open"></i>
                 </button>
                 <button type="button" class="document-explorer__tab-btn" data-tab="toc" title="Sommaire">
-                    <i data-lucide="table-of-contents"></i>
+                    <i data-lucide="list-tree"></i>
                 </button>
                 <button type="button" class="chat-knowledge-modal__close" style="margin-left: auto;" title="Fermer">
                     <i data-lucide="x"></i>
@@ -136,18 +136,12 @@
                 <div class="tabs-actions">
                     <button id="documentExplorerToggle" class="app-home-link" type="button" title="Bibliothèque"
                         aria-expanded="false" aria-controls="documentExplorer"><i data-lucide="book-open"></i></button>
-                    <a href="/?v=2026.02.21.1" class="nav-switch-btn" title="Accueil"
+                    <a href="/?v=2026.02.21.2" class="nav-switch-btn" title="Accueil"
                         style="text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
                         <i data-lucide="home"></i>
                     </a>
 
                     <div id="breadcrumb" class="tabs">
-                        <div class="document-breadcrumb-icon-picker">
-                            <button id="currentDocIconBtn" class="document-breadcrumb-icon-btn" type="button" title="Icône de la page">
-                                <i data-lucide="file"></i>
-                            </button>
-                            <div id="currentDocIconGrid" class="document-explorer-icon-grid"></div>
-                        </div>
                         <div id="document-breadcrumb" class="document-breadcrumb"></div>
                         <div id="memo-tabs" class="tabs"></div>
                     </div>
@@ -159,7 +153,7 @@
                         <div class="context-menu" id="fileMenu">
                             <div class="menu-panel">
                                 <button id="memoOpenImportBtn" type="button" class="menu-panel-btn"><i
-                                        data-lucide="import"></i> Importer</button>
+                                        data-lucide="file-down"></i> Importer</button>
 
                                 <button id="handoffFocusBtn" type="button" class="menu-panel-btn" title="Capturer"
                                     style="position: relative;">
@@ -245,9 +239,23 @@
                 <div id="memoEmptyState" class="memo-empty-state"><i data-lucide="arrow-left"></i> Ouvrir un document ou
                     créer un nouveau depuis la Bibliothèque.</div>
                 <section class="memo-card">
+                    <div class="memo-page-title-bar">
+                        <div class="document-breadcrumb-icon-picker">
+                            <button id="currentDocIconBtn" class="document-breadcrumb-icon-btn" type="button" title="Icône de la page">
+                                <i data-lucide="file"></i>
+                            </button>
+                            <div id="currentDocIconGrid" class="document-explorer-icon-grid"></div>
+                        </div>
+                        <input id="memoPageTitleInput" class="memo-page-title-input" type="text" value="New page" aria-label="Titre de la page" />
+                    </div>
                     <div class="editor-wrap">
                         <div id="editor" class="editor"></div>
                     </div>
+                    <div id="memoHeadingRail" class="memo-heading-rail" hidden>
+                        <div id="memoHeadingRailBars" class="memo-heading-rail__bars"></div>
+                        <div id="memoHeadingRailPopup" class="memo-heading-rail__popup"></div>
+                    </div>
+                    <div id="memoChildLinksFooter" class="memo-child-links-footer" hidden></div>
                 </section>
             </div>
 
@@ -361,7 +369,7 @@
         <img src="img/logo.gif" alt="Logo GoToolkit" class="logo-light">
         <img src="img/logo_inverted.gif" alt="Logo GoToolkit" class="logo-dark">
         <strong>GoToolkit</strong>
-        <span id="memoNewsTrigger" class="info-popup-news-link" role="button" tabindex="0">Version 2026.02.21.1</span>
+        <span id="memoNewsTrigger" class="info-popup-news-link" role="button" tabindex="0">Version 2026.02.21.2</span>
         <span>Usage réservé à Savane Consulting.</span>
         <div class="info-actions info-actions--stacked">
             <div class="info-actions-row">
@@ -441,23 +449,23 @@
         window.GO_TOOLKIT_GOOGLE_TTS_API_URL =
             window.GO_TOOLKIT_GOOGLE_TTS_API_URL || "https://googletts.gotoolkit.workers.dev";
     </script>
-    <script src="js/config.js?v=2026.02.21.1"></script>
-    <script src="js/config-modal.js?v=2026.02.21.1"></script>
-    <script src="js/feature-visibility.js?v=2026.02.21.1"></script>
-    <script src="js/document-storage.js?v=2026.02.21.1"></script>
-    <script src="js/storage-service.js?v=2026.02.21.1"></script>
-    <script src="js/shared-ui.js?v=2026.02.21.1"></script>
-    <script src="js/share-worker-client.js?v=2026.02.21.1"></script>
-    <script src="js/share-history.js?v=2026.02.21.1"></script>
-    <script src="js/document-api.js?v=2026.02.21.1"></script>
-    <script src="js/keywordIndex.js?v=2026.02.21.1"></script>
-    <script src="js/document-rag.js?v=2026.02.21.1"></script>
-    <script src="js/ia-config.js?v=2026.02.21.1"></script>
-    <script src="preset.js?v=2026.02.21.1"></script>
-    <script src="prompt.js?v=2026.02.21.1"></script>
-    <script src="js/ia-client.js?v=2026.02.21.1"></script>
-    <script src="js/document-markdown.js?v=2026.02.21.1"></script>
-    <script src="js/notion-export.js?v=2026.02.21.1"></script>
+    <script src="js/config.js?v=2026.02.21.2"></script>
+    <script src="js/config-modal.js?v=2026.02.21.2"></script>
+    <script src="js/feature-visibility.js?v=2026.02.21.2"></script>
+    <script src="js/document-storage.js?v=2026.02.21.2"></script>
+    <script src="js/storage-service.js?v=2026.02.21.2"></script>
+    <script src="js/shared-ui.js?v=2026.02.21.2"></script>
+    <script src="js/share-worker-client.js?v=2026.02.21.2"></script>
+    <script src="js/share-history.js?v=2026.02.21.2"></script>
+    <script src="js/document-api.js?v=2026.02.21.2"></script>
+    <script src="js/keywordIndex.js?v=2026.02.21.2"></script>
+    <script src="js/document-rag.js?v=2026.02.21.2"></script>
+    <script src="js/ia-config.js?v=2026.02.21.2"></script>
+    <script src="preset.js?v=2026.02.21.2"></script>
+    <script src="prompt.js?v=2026.02.21.2"></script>
+    <script src="js/ia-client.js?v=2026.02.21.2"></script>
+    <script src="js/document-markdown.js?v=2026.02.21.2"></script>
+    <script src="js/notion-export.js?v=2026.02.21.2"></script>
     <script>
         document.addEventListener("click", function (event) {
             const legalTrigger = event.target?.closest?.("[data-open-nexus-modal]");
@@ -491,15 +499,15 @@
             ]
         };
     </script>
-    <script src="js/feedback.js?v=2026.02.21.1"></script>
-    <script src="js/news.js?v=2026.02.21.1"></script>
-    <script src="js/voice-video-player.js?v=2026.02.21.1"></script>
-    <script src="js/voice-audio-player.js?v=2026.02.21.1"></script>
-    <script src="js/youtube-publish.js?v=2026.02.21.1"></script>
-    <script src="js/voice.js?v=2026.02.21.1"></script>
-    <script src="js/voice-transcript.js?v=2026.02.21.1"></script>
-    <script src="js/googletts.js?v=2026.02.21.1"></script>
-    <script src="js/draw-memo.js?v=2026.02.21.1"></script>
+    <script src="js/feedback.js?v=2026.02.21.2"></script>
+    <script src="js/news.js?v=2026.02.21.2"></script>
+    <script src="js/voice-video-player.js?v=2026.02.21.2"></script>
+    <script src="js/voice-audio-player.js?v=2026.02.21.2"></script>
+    <script src="js/youtube-publish.js?v=2026.02.21.2"></script>
+    <script src="js/voice.js?v=2026.02.21.2"></script>
+    <script src="js/voice-transcript.js?v=2026.02.21.2"></script>
+    <script src="js/googletts.js?v=2026.02.21.2"></script>
+    <script src="js/draw-memo.js?v=2026.02.21.2"></script>
     <script>
         // Suppress React DevTools prompt in dev builds.
         window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = window.__REACT_DEVTOOLS_GLOBAL_HOOK__ || {
@@ -509,9 +517,9 @@
             onCommitFiberUnmount: function () { }
         };
     </script>
-    <script src="js/memo.bundle.js?v=2026.02.21.1"></script>
-    <script src="js/assist.js?v=2026.02.21.1"></script>
-    <script src="js/document-panel.js?v=2026.02.21.1"></script>
+    <script src="js/memo.bundle.js?v=2026.02.21.2"></script>
+    <script src="js/assist.js?v=2026.02.21.2"></script>
+    <script src="js/document-panel.js?v=2026.02.21.2"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             setTimeout(function () {
@@ -789,6 +797,7 @@
             const documentBreadcrumbEl = document.getElementById("document-breadcrumb");
             const currentDocIconBtn = document.getElementById("currentDocIconBtn");
             const currentDocIconGrid = document.getElementById("currentDocIconGrid");
+            const memoPageTitleInput = document.getElementById("memoPageTitleInput");
             const fileMenuBtn = document.getElementById("fileMenuBtn");
             const fileMenu = document.getElementById("fileMenu");
             const memoSettingsBtn = document.getElementById("memoSettingsBtn");
@@ -866,6 +875,10 @@
             const shareMenuStatus = document.getElementById("shareMenuStatus");
             const memoCardEl = document.querySelector(".memo-card");
             const memoEmptyStateEl = document.getElementById("memoEmptyState");
+            const memoHeadingRail = document.getElementById("memoHeadingRail");
+            const memoHeadingRailBars = document.getElementById("memoHeadingRailBars");
+            const memoHeadingRailPopup = document.getElementById("memoHeadingRailPopup");
+            const memoChildLinksFooter = document.getElementById("memoChildLinksFooter");
             const templateModal = document.getElementById("gtTemplateModal");
             const templateModalTrigger = document.getElementById("gtTemplateModalTrigger");
             const templateModalClose = document.getElementById("gtTemplateModalClose");
@@ -1467,6 +1480,33 @@
                 if (window.lucide) window.lucide.createIcons();
             }
 
+            function syncPageTitleInput() {
+                if (!memoPageTitleInput) return;
+                const nextTitle = getDocumentTitleFromState(state) || "New page";
+                if (memoPageTitleInput.value !== nextTitle) {
+                    memoPageTitleInput.value = nextTitle;
+                }
+            }
+
+            async function commitPageTitleInput() {
+                if (!memoPageTitleInput) return;
+                const nextTitle = String(memoPageTitleInput.value || "").trim() || "New page";
+                const activeTab = getActiveTab();
+                if (!activeTab) {
+                    memoPageTitleInput.value = nextTitle;
+                    return;
+                }
+                if (String(activeTab.title || "") === nextTitle) {
+                    memoPageTitleInput.value = nextTitle;
+                    return;
+                }
+                activeTab.title = nextTitle;
+                renderTabs();
+                renderDocumentTabs();
+                syncPageTitleInput();
+                await saveDocument({ showToast: false });
+            }
+
             function ensureCurrentDocumentIconGrid() {
                 if (!currentDocIconGrid || currentDocIconGrid.childElementCount > 0) return;
                 DOCUMENT_ICON_CHOICES.forEach(icon => {
@@ -1631,6 +1671,8 @@
                 setActiveTab(state.activeTabId);
                 syncAssistPresetFromState();
                 renderDocumentTabs();
+                await renderChildLinksFooter();
+                renderHeadingSummaryRail();
                 setSingleOpenDocument({
                     ...target,
                     payload: buildSharePayload(),
@@ -1951,6 +1993,7 @@
                     });
                     tabsEl.appendChild(btn);
                 });
+                syncPageTitleInput();
             }
 
             function getActiveTab() {
@@ -2982,6 +3025,320 @@
                 return "private";
             }
 
+            window.GoToolkitMemoOpenDocumentByLink = async function (rawId) {
+                const docId = String(rawId || "").trim();
+                if (!docId) return;
+                const section = inferSectionFromId(docId);
+                if (section === "private") {
+                    await setActiveDocument(docId);
+                    return;
+                }
+                if (section === "shared") {
+                    const token = docId.startsWith("share:") ? docId.slice("share:".length) : docId;
+                    const records = await shareHistory?.getRecordsByApp?.("memo");
+                    const item = (records || []).find(entry => entry && String(entry.token || "") === token);
+                    if (!item?.payload) return;
+                    const loaded = normalizeState(item.payload);
+                    if (!loaded?.tabs?.[0]) return;
+                    const first = loaded.tabs[0];
+                    await createNewDocument(
+                        memoExplorer?.uniqueName?.(item.title || first.title || "Document partagé") || (item.title || first.title || "Document partagé"),
+                        first.description || "",
+                        Array.isArray(first.superpowers) ? first.superpowers : [],
+                        first.content || "",
+                        String(item.parentId || "").trim(),
+                        String(item.icon || "file-symlink").trim()
+                    );
+                    return;
+                }
+                if (section === "common") {
+                    const templateId = parseCommonTemplateId(docId);
+                    await syncTemplates(false);
+                    const template = (cloudTemplates || []).find(entry => entry && String(entry.id || "") === templateId);
+                    if (!template) return;
+                    await openPublishedTemplateDirect(template);
+                }
+            };
+            window.GoToolkitMemoResolveLinkTarget = async function (rawId) {
+                const docId = String(rawId || "").trim();
+                if (!docId) return null;
+                const section = inferSectionFromId(docId);
+                if (section === "private") {
+                    const record = await documentApi?.getRecord?.(docId);
+                    if (!record) return null;
+                    return { id: docId, title: record.title || "New page", icon: record.icon || "", section };
+                }
+                if (section === "shared") {
+                    const token = docId.startsWith("share:") ? docId.slice("share:".length) : docId;
+                    const records = await shareHistory?.getRecordsByApp?.("memo");
+                    const item = (records || []).find(entry => entry && String(entry.token || "") === token);
+                    if (!item) return null;
+                    return { id: `share:${token}`, title: item.title || "Document partagé", icon: item.icon || "file-symlink", section };
+                }
+                if (section === "common") {
+                    const templateId = parseCommonTemplateId(docId);
+                    await syncTemplates(false);
+                    const template = (cloudTemplates || []).find(entry => entry && String(entry.id || "") === templateId);
+                    if (!template) return null;
+                    return { id: `common:${templateId}`, title: template.label || "Commun", icon: template.icon || "", section };
+                }
+                return null;
+            };
+
+            async function renderChildLinksFooter() {
+                try {
+                    if (!memoChildLinksFooter) return;
+                    const activeId = String(activeDocumentId || "").trim();
+                    if (!activeId) {
+                        memoChildLinksFooter.hidden = true;
+                        memoChildLinksFooter.innerHTML = "";
+                        return;
+                    }
+                    const section = inferSectionFromId(activeId);
+                    let children = [];
+                    if (typeof memoExplorer?.getChildrenOf === "function") {
+                        children = (memoExplorer.getChildrenOf(activeId) || [])
+                            .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")))
+                            .map(item => ({
+                                id: String(item.id || "").trim(),
+                                title: String(item.title || "Document"),
+                                icon: String(item.icon || "")
+                            }))
+                            .filter(item => item.id);
+                    }
+                    const explorerItems = (typeof memoExplorer?.getItemsSnapshot === "function")
+                        ? (memoExplorer.getItemsSnapshot() || [])
+                        : [];
+                    if (!children.length && explorerItems.length) {
+                        const normalizeIdToken = value => {
+                            const raw = String(value || "").trim();
+                            if (!raw) return "";
+                            return raw.replace(/^(share:|common:)/, "");
+                        };
+                        const normalizeParentId = (parentId, childSection) => {
+                            const raw = String(parentId || "").trim();
+                            if (!raw) return "";
+                            if (childSection === "shared" && !raw.startsWith("share:")) return `share:${raw}`;
+                            if (childSection === "common" && !raw.startsWith("common:")) return `common:${raw}`;
+                            return raw;
+                        };
+                        const activeToken = normalizeIdToken(activeId);
+                        children = explorerItems
+                            .filter(item => item)
+                            .filter(item => {
+                                const childSection = String(item.section || inferSectionFromId(item.id)).trim();
+                                const normalizedParent = normalizeParentId(item.parentId, childSection);
+                                if (normalizedParent === activeId) return true;
+                                // Mixed storage fallback: compare normalized tokens too.
+                                return normalizeIdToken(normalizedParent) === activeToken;
+                            })
+                            .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")))
+                            .map(item => ({
+                                id: String(item.id || "").trim(),
+                                title: String(item.title || "Document"),
+                                icon: String(item.icon || "")
+                            }))
+                            .filter(item => item.id);
+                    }
+                    if (section === "private") {
+                        if (!children.length) {
+                            const allDocs = await documentApi?.getAllRecords?.() || [];
+                            children = allDocs
+                                .filter(item => item && item.app === "memo" && String(item.parentId || "").trim() === activeId)
+                                .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")))
+                                .map(item => ({ id: item.id, title: item.title || "New page", icon: item.icon || "" }));
+                        }
+                    } else if (section === "shared") {
+                        if (!children.length) {
+                            const token = activeId.startsWith("share:") ? activeId.slice("share:".length) : activeId;
+                            const records = await shareHistory?.getRecordsByApp?.("memo");
+                            children = (records || [])
+                                .filter(item => item && [`share:${token}`, token].includes(String(item.parentId || "").trim()))
+                                .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")))
+                                .map(item => ({ id: `share:${item.token}`, title: item.title || "Document partagé", icon: item.icon || "file-symlink" }));
+                        }
+                    } else if (section === "common") {
+                        if (!children.length) {
+                            await syncTemplates(false);
+                            const templateId = parseCommonTemplateId(activeId);
+                            children = (cloudTemplates || [])
+                                .filter(item => item && [templateId, `common:${templateId}`].includes(String(item.parentId || "").trim()))
+                                .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")))
+                                .map(item => ({ id: `common:${item.id}`, title: item.label || "Commun", icon: item.icon || "" }));
+                        }
+                    }
+                    if (!children.length) {
+                        memoChildLinksFooter.hidden = true;
+                        memoChildLinksFooter.innerHTML = "";
+                        return;
+                    }
+                    memoChildLinksFooter.hidden = false;
+                    memoChildLinksFooter.innerHTML = "";
+                    children.forEach(child => {
+                        const row = document.createElement("div");
+                        row.className = "memo-child-links-footer__item";
+                        row.draggable = true;
+                        row.dataset.documentId = child.id;
+                        row.innerHTML = `
+                            <span class="memo-child-links-footer__icon">
+                                <i data-lucide="${child.icon || "file"}"></i>
+                                <span class="memo-child-links-footer__overlay"><i data-lucide="arrow-up-right"></i></span>
+                            </span>
+                            <span class="memo-child-links-footer__title">${child.title || "Document"}</span>
+                        `;
+                        row.addEventListener("click", () => window.GoToolkitMemoOpenDocumentByLink?.(child.id));
+                        row.addEventListener("dragstart", event => {
+                            row.classList.add("is-dragging");
+                            event.dataTransfer.effectAllowed = "move";
+                            event.dataTransfer.setData("text/plain", child.id);
+                        });
+                        row.addEventListener("dragend", () => row.classList.remove("is-dragging"));
+                        row.addEventListener("dragover", event => event.preventDefault());
+                        row.addEventListener("drop", async event => {
+                            event.preventDefault();
+                            const fromId = String(event.dataTransfer?.getData("text/plain") || "").trim();
+                            if (!fromId || fromId === child.id) return;
+                            const canEscape = typeof CSS !== "undefined" && typeof CSS.escape === "function";
+                            const selector = canEscape
+                                ? `.memo-child-links-footer__item[data-document-id="${CSS.escape(fromId)}"]`
+                                : `.memo-child-links-footer__item[data-document-id="${fromId.replace(/"/g, '\\"')}"]`;
+                            const draggingRow = memoChildLinksFooter.querySelector(selector);
+                            if (draggingRow && draggingRow !== row) {
+                                memoChildLinksFooter.insertBefore(draggingRow, row);
+                            }
+                        });
+                        memoChildLinksFooter.appendChild(row);
+                    });
+                    if (window.lucide) window.lucide.createIcons();
+                } catch (err) {
+                    console.warn("Child links footer render failed", err);
+                    if (memoChildLinksFooter) {
+                        memoChildLinksFooter.hidden = true;
+                        memoChildLinksFooter.innerHTML = "";
+                    }
+                }
+            }
+
+            function getMemoHeadingsList() {
+                const raw = Array.isArray(window.MemoHeadings) ? window.MemoHeadings : [];
+                const fromToc = raw
+                    .map(h => {
+                        const level = Number(h?.level || 0);
+                        const id = String(h?.id || h?.anchor || h?.node?.attrs?.id || h?.node?.attrs?.["data-toc-id"] || "").trim();
+                        const textContent = String(h?.textContent || h?.text || h?.node?.textContent || "").trim();
+                        const pos = Number.isFinite(Number(h?.pos)) ? Number(h.pos) : null;
+                        return (level >= 1 && level <= 4 && id) ? { level, id, textContent, pos } : null;
+                    })
+                    .filter(Boolean);
+                if (fromToc.length) return fromToc;
+
+                // Fallback: build list from visible headings in the editor DOM.
+                const editorRoot = document.querySelector("#editor .ProseMirror");
+                if (!editorRoot) return [];
+                const nodes = Array.from(editorRoot.querySelectorAll("h1,h2,h3,h4"));
+                return nodes
+                    .map((node, index) => {
+                        const level = Number(String(node.tagName || "").replace("H", ""));
+                        let id = String(node.getAttribute("id") || node.getAttribute("data-toc-id") || node.getAttribute("data-rail-id") || "").trim();
+                        if (!id) {
+                            id = `memo-rail-${index}`;
+                            node.setAttribute("data-rail-id", id);
+                        }
+                        const textContent = String(node.textContent || "").trim();
+                        return (level >= 1 && level <= 4 && id) ? { level, id, textContent, pos: null } : null;
+                    })
+                    .filter(Boolean);
+            }
+
+            function getActiveHeadingIdForRail(headings) {
+                if (!Array.isArray(headings) || !headings.length) return "";
+                const editor = window.MemoEditor || window.memoEditor;
+                const scrollArea = document.querySelector(".editor-wrap");
+                if (!editor || !scrollArea) return "";
+                const areaRect = scrollArea.getBoundingClientRect();
+                const rows = headings.map(h => {
+                    const element = editor.view?.dom?.querySelector?.(`[id="${h.id}"], [data-toc-id="${h.id}"], [data-rail-id="${h.id}"]`);
+                    if (!element) return null;
+                    const rect = element.getBoundingClientRect();
+                    return { id: h.id, top: rect.top - areaRect.top };
+                }).filter(Boolean);
+                let activeId = rows[0]?.id || "";
+                const threshold = 90;
+                for (let i = 0; i < rows.length; i++) {
+                    if (rows[i].top <= threshold) activeId = rows[i].id;
+                    else break;
+                }
+                return activeId;
+            }
+
+            function scrollToHeadingById(headingId) {
+                if (!headingId) return;
+                const editor = window.MemoEditor || window.memoEditor;
+                const scrollArea = document.querySelector(".editor-wrap");
+                const heading = getMemoHeadingsList().find(h => h.id === headingId);
+                if (!editor || !scrollArea || !heading) return;
+                const element = editor.view?.dom?.querySelector?.(`[id="${headingId}"], [data-toc-id="${headingId}"], [data-rail-id="${headingId}"]`);
+                if (!element) return;
+                try {
+                    const pos = Number.isFinite(heading.pos) ? Number(heading.pos) : null;
+                    if (pos !== null) editor.chain().focus().setTextSelection(pos).run();
+                } catch (err) {
+                    // ignore
+                }
+                const areaRect = scrollArea.getBoundingClientRect();
+                const elementRect = element.getBoundingClientRect();
+                const relativeTop = elementRect.top - areaRect.top + scrollArea.scrollTop;
+                scrollArea.scrollTo({ top: Math.max(0, relativeTop - 20), behavior: "smooth" });
+            }
+
+            function renderHeadingSummaryRail() {
+                try {
+                    if (!memoHeadingRail || !memoHeadingRailBars || !memoHeadingRailPopup) return;
+                    const headings = getMemoHeadingsList();
+                    if (!headings.length) {
+                        memoHeadingRail.hidden = true;
+                        memoHeadingRailBars.innerHTML = "";
+                        memoHeadingRailPopup.innerHTML = "";
+                        return;
+                    }
+                    memoHeadingRail.hidden = false;
+                    const activeId = getActiveHeadingIdForRail(headings);
+                    memoHeadingRailBars.innerHTML = "";
+                    memoHeadingRailPopup.innerHTML = "";
+                    const sizes = {
+                        1: { width: 3, height: 10 },
+                        2: { width: 3, height: 6 },
+                        3: { width: 2, height: 6 },
+                        4: { width: 1, height: 6 }
+                    };
+                    headings.forEach(heading => {
+                        const bar = document.createElement("button");
+                        bar.type = "button";
+                        bar.className = "memo-heading-rail__bar" + (heading.id === activeId ? " is-active" : "");
+                        const size = sizes[heading.level] || sizes[4];
+                        bar.style.width = `${size.width}px`;
+                        bar.style.height = `${size.height}px`;
+                        bar.style.border = "none";
+                        bar.style.padding = "0";
+                        bar.style.cursor = "pointer";
+                        bar.title = heading.textContent || "";
+                        bar.addEventListener("click", () => scrollToHeadingById(heading.id));
+                        memoHeadingRailBars.appendChild(bar);
+
+                        const item = document.createElement("button");
+                        item.type = "button";
+                        item.className = `memo-heading-rail__item memo-heading-rail__item--h${heading.level}`;
+                        item.textContent = heading.textContent || "(Sans titre)";
+                        item.title = heading.textContent || "";
+                        item.addEventListener("click", () => scrollToHeadingById(heading.id));
+                        memoHeadingRailPopup.appendChild(item);
+                    });
+                } catch (err) {
+                    console.warn("Heading rail render failed", err);
+                    if (memoHeadingRail) memoHeadingRail.hidden = true;
+                }
+            }
+
             async function setDocumentSuperpowerBySection(docId, section, superpowerId) {
                 const value = String(superpowerId || "").trim();
                 const superpowers = value && value !== "none" ? [value] : [];
@@ -3288,6 +3645,7 @@
                 }
                 await getExplorer()?.removeItemById?.(docId);
                 closeDocumentTab(docId);
+                await renderChildLinksFooter();
             }
 
             async function deleteActiveDocument() {
@@ -3322,6 +3680,8 @@
                     setActiveTab(state.activeTabId);
                     syncAssistPresetFromState();
                     await saveDocument({ showToast: true, created: true, description: description, superpowers: nextState.tabs[0].superpowers, parentId, icon });
+                    await renderChildLinksFooter();
+                    renderHeadingSummaryRail();
                     window.GoToolkitAssistInstance?.open?.();
                     markDocumentOpened({
                         id: activeDocumentId,
@@ -3960,6 +4320,19 @@
                 ensureCurrentDocumentIconGrid();
                 currentDocIconGrid?.classList.toggle("open");
                 await updateCurrentDocumentIconButton();
+            });
+            memoPageTitleInput?.addEventListener("keydown", event => {
+                if (event.key === "Enter") {
+                    event.preventDefault();
+                    memoPageTitleInput.blur();
+                } else if (event.key === "Escape") {
+                    event.preventDefault();
+                    syncPageTitleInput();
+                    memoPageTitleInput.blur();
+                }
+            });
+            memoPageTitleInput?.addEventListener("blur", () => {
+                commitPageTitleInput();
             });
 
             async function saveDocument(options) {
@@ -4911,15 +5284,37 @@
                 window.__memoState = state;
                 renderTabs();
                 renderDocumentTabs();
+                await renderChildLinksFooter();
                 if (openDocuments.length) {
                     ensureActiveDocument();
                 }
+                renderHeadingSummaryRail();
                 await memoExplorer?.refresh?.();
                 setupMemoPrompt();
                 syncAssistPresetFromState();
                 hydrateMemoContextEmbeddings();
                 migrateLegacyContextEmbeddings();
             });
+            window.addEventListener('memo:headings-updated', () => {
+                renderHeadingSummaryRail();
+            });
+            let memoHeadingScrollRaf = null;
+            const handleMemoHeadingScroll = () => {
+                if (memoHeadingScrollRaf) cancelAnimationFrame(memoHeadingScrollRaf);
+                memoHeadingScrollRaf = requestAnimationFrame(() => {
+                    renderHeadingSummaryRail();
+                    memoHeadingScrollRaf = null;
+                });
+            };
+            window.addEventListener('scroll', event => {
+                const target = event.target;
+                if (!(target instanceof HTMLElement)) return;
+                if (target.classList.contains('editor-wrap') || target.classList.contains('ProseMirror')) {
+                    handleMemoHeadingScroll();
+                }
+            }, { passive: true, capture: true });
+            const memoEditorWrapEl = document.querySelector('.editor-wrap');
+            memoEditorWrapEl?.addEventListener('scroll', handleMemoHeadingScroll, { passive: true });
 
             Promise.all([memoEditorReady, documentLoadedPromise])
                 .then(([api]) => {
