@@ -5,6 +5,16 @@
     const DEFAULT_TITLE = "Documents";
     const PUBLISH_TARGET_STORAGE_KEY = "goToolkit.memo.publishTarget";
     const NOTION_PATH_STORAGE_KEY = "goToolkit.memo.notionPath";
+    const EXPANDED_STORAGE_KEY = "goToolkit.memo.treeExpanded";
+    const ORDER_STORAGE_KEY = "goToolkit.memo.treeOrder";
+    const SECTION_EXPANDED_STORAGE_KEY = "goToolkit.memo.sectionExpanded";
+    const ICON_CHOICES = [
+        "file", "file-text", "sticky-note", "book-text", "notebook", "folder", "folder-open", "archive", "briefcase", "bookmark",
+        "star", "flag", "tag", "hash", "list", "list-checks", "check-square", "calendar", "clock", "hourglass",
+        "target", "lightbulb", "sparkles", "rocket", "bolt", "wand-sparkles", "brain", "bot", "message-square", "mail",
+        "phone", "globe", "map-pin", "compass", "link", "shield", "lock", "key", "settings", "wrench",
+        "palette", "pen", "pencil", "brush", "image", "camera", "video", "mic", "headphones", "music"
+    ];
     const voiceRecordingsStore = window.goToolkitDocStore?.createStore?.("voice-recordings") || null;
     const recordingIconCache = new Map();
 
@@ -66,7 +76,7 @@
             const isChecked = normalizedSelectedIds.some(sid => sid === spIdStr || sid === spTitleStr);
 
             label.innerHTML = `
-                <input type="checkbox" value="${sp.id}" ${isChecked ? 'checked' : ''} style="display:none;">
+                <input type="radio" name="document-superpower" value="${sp.id}" ${isChecked ? 'checked' : ''} style="display:none;">
                 <span class="superpower-pill ${isChecked ? 'active' : ''}">
                     <i data-lucide="${sp.icon}" style="width:12px;height:12px;"></i>
                     ${sp.title}
@@ -78,8 +88,14 @@
             const checkIcon = pill.querySelector('.pill-check-icon');
 
             input.addEventListener('change', () => {
-                pill.classList.toggle('active', input.checked);
-                if (checkIcon) checkIcon.style.display = input.checked ? 'inline-block' : 'none';
+                const allInputs = container.querySelectorAll('input[name="document-superpower"]');
+                allInputs.forEach(node => {
+                    const parentPill = node.closest('label')?.querySelector('.superpower-pill');
+                    const parentCheck = parentPill?.querySelector('.pill-check-icon');
+                    const active = node === input && input.checked;
+                    if (parentPill) parentPill.classList.toggle('active', active);
+                    if (parentCheck) parentCheck.style.display = active ? 'inline-block' : 'none';
+                });
             });
             container.appendChild(label);
         });
@@ -139,21 +155,21 @@
         }
     }
 
-    function getRecentTimestamp(item) {
-        const opened = Date.parse(item?.lastOpenedAt || "");
-        if (Number.isFinite(opened) && opened > 0) return opened;
-        const updated = Date.parse(item?.updatedAt || "");
-        return Number.isFinite(updated) ? updated : 0;
+    function normalizeList(value) {
+        const list = Array.isArray(value) ? value.filter(Boolean) : [];
+        const seen = new Set();
+        const deduped = [];
+        for (const item of list) {
+            const id = String(item?.id || "").trim();
+            if (!id || seen.has(id)) continue;
+            seen.add(id);
+            deduped.push(item);
+        }
+        return deduped;
     }
-
-    function sortByOpenAndRecent(list, openIds) {
-        const openOrder = Array.isArray(openIds) ? openIds.filter(Boolean) : [];
-        const openSet = new Set(openOrder);
-        const byId = new Map((list || []).map(item => [item?.id, item]));
-        const openItems = openOrder.map(id => byId.get(id)).filter(Boolean);
-        const closedItems = (list || []).filter(item => item && !openSet.has(item.id));
-        closedItems.sort((a, b) => getRecentTimestamp(b) - getRecentTimestamp(a));
-        return [...openItems, ...closedItems];
+    function isAutoFileIcon(value) {
+        const icon = String(value || "").trim();
+        return !icon || icon === "file" || icon === "file-text";
     }
 
     function formatRelativeShort(value) {
@@ -185,44 +201,46 @@
         const resizer = resolveElement(opts.resizer);
         const toggleBtn = resolveElement(opts.toggleButton);
         const listEl = sidebar.querySelector("[data-document-explorer-list]");
-        const shareListEl = sidebar.querySelector("[data-share-explorer-list]");
         const tocEl = sidebar.querySelector("[data-document-toc]");
         const headerEl = sidebar.querySelector(".document-explorer__header");
         const libraryPanel = sidebar.querySelector('[data-panel="library"]');
-        const sharePanel = sidebar.querySelector('[data-panel="shares"]');
         const tocPanel = sidebar.querySelector('[data-panel="toc"]');
         const tabBtns = sidebar.querySelectorAll(".document-explorer__tab-btn[data-tab]");
 
         const onCreate = typeof opts.onCreate === "function" ? opts.onCreate : null;
         const onRename = typeof opts.onRename === "function" ? opts.onRename : null;
         const onDelete = typeof opts.onDelete === "function" ? opts.onDelete : null;
+        const onSelect = typeof opts.onSelect === "function" ? opts.onSelect : null;
+        const onCreateChild = typeof opts.onCreateChild === "function" ? opts.onCreateChild : null;
+        const onMove = typeof opts.onMove === "function" ? opts.onMove : null;
+        const getCommonItems = typeof opts.getCommonItems === "function" ? opts.getCommonItems : null;
         const getItems = typeof opts.getItems === "function" ? opts.getItems : null;
         const getOpenIds = typeof opts.getOpenIds === "function" ? opts.getOpenIds : null;
         const getActiveId = typeof opts.getActiveId === "function" ? opts.getActiveId : null;
         let cachedItems = [];
+        let expandedIds = new Set();
+        let draggingId = "";
+        let draggingSection = "";
+        let orderIds = [];
+        let sectionExpanded = { private: true, shared: true };
+        let searchQuery = "";
+        let preSearchExpandedIds = null;
+        let preSearchSectionExpanded = null;
 
         let hasDefaultTabSet = false;
 
         ensureSuperpowersLoaded();
 
         function setActiveTab(target, options) {
-            const nextTarget = target === "toc" ? "toc" : (target === "shares" ? "shares" : "library");
+            const nextTarget = target === "toc" ? "toc" : "library";
             const shouldRender = options?.renderToc ?? true;
 
             tabBtns.forEach(b => b.classList.toggle("active", b.dataset.tab === nextTarget));
             libraryPanel?.classList.toggle("active", nextTarget === "library");
-            sharePanel?.classList.toggle("active", nextTarget === "shares");
             tocPanel?.classList.toggle("active", nextTarget === "toc");
-
-            if (actionRow) {
-                actionRow.style.display = nextTarget === "library" ? "flex" : "none";
-            }
 
             if (nextTarget === "toc" && shouldRender) {
                 renderTOC();
-            }
-            if (nextTarget === "shares") {
-                renderSharedList();
             }
         }
 
@@ -256,13 +274,13 @@
             });
         }
 
-        const actionRow = document.createElement("div");
-        actionRow.className = "document-explorer__actions";
         if (appId === "memo") {
             const importBtn = document.createElement("button");
             importBtn.type = "button";
             importBtn.className = "chat-knowledge-modal__add btn btn-secondary";
-            importBtn.innerHTML = '<i data-lucide="import"></i> Importer';
+            importBtn.innerHTML = '<i data-lucide="import"></i>';
+            importBtn.title = "Importer";
+            importBtn.setAttribute("aria-label", "Importer");
             importBtn.addEventListener("click", async () => {
                 if (typeof window.GoToolkitMemoCreateAutoDocument === "function") {
                     await window.GoToolkitMemoCreateAutoDocument();
@@ -271,22 +289,88 @@
                     skipEmbeddings: true
                 });
             });
-            actionRow.appendChild(importBtn);
-        }
-        const createBtn = document.createElement("button");
-        createBtn.type = "button";
-        createBtn.className = "chat-knowledge-modal__add btn btn-secondary";
-        createBtn.innerHTML = '<i data-lucide="plus"></i> Nouveau';
-        actionRow.appendChild(createBtn);
-
-        // Insert actionRow into the library panel instead of sidebar
-        if (libraryPanel) {
-            libraryPanel.insertBefore(actionRow, listEl);
-        } else {
-            sidebar.insertBefore(actionRow, listEl);
+            if (headerEl) {
+                const closeBtn = headerEl.querySelector(".chat-knowledge-modal__close");
+                if (closeBtn) {
+                    importBtn.style.marginLeft = "auto";
+                    closeBtn.style.marginLeft = "0";
+                    headerEl.insertBefore(importBtn, closeBtn);
+                } else {
+                    headerEl.appendChild(importBtn);
+                }
+            }
         }
 
         if (window.lucide) window.lucide.createIcons();
+
+        function readExpandedState() {
+            try {
+                const parsed = JSON.parse(localStorage.getItem(EXPANDED_STORAGE_KEY) || "[]");
+                if (!Array.isArray(parsed)) return new Set();
+                return new Set(parsed.filter(Boolean).map(String));
+            } catch (err) {
+                return new Set();
+            }
+        }
+        function persistExpandedState() {
+            try {
+                localStorage.setItem(EXPANDED_STORAGE_KEY, JSON.stringify(Array.from(expandedIds)));
+            } catch (err) {
+                // ignore
+            }
+        }
+        expandedIds = readExpandedState();
+        function readOrderState() {
+            try {
+                const parsed = JSON.parse(localStorage.getItem(ORDER_STORAGE_KEY) || "[]");
+                return Array.isArray(parsed) ? parsed.filter(Boolean).map(String) : [];
+            } catch (err) {
+                return [];
+            }
+        }
+        function persistOrderState() {
+            try {
+                localStorage.setItem(ORDER_STORAGE_KEY, JSON.stringify(orderIds));
+            } catch (err) {
+                // ignore
+            }
+        }
+        function readSectionExpandedState() {
+            try {
+                const parsed = JSON.parse(localStorage.getItem(SECTION_EXPANDED_STORAGE_KEY) || "{}");
+                return {
+                    private: parsed?.private !== false,
+                    shared: parsed?.shared !== false,
+                    common: parsed?.common !== false,
+                    superpowers: parsed?.superpowers !== false
+                };
+            } catch (err) {
+                return { private: true, shared: true, common: true, superpowers: true };
+            }
+        }
+        function persistSectionExpandedState() {
+            try {
+                localStorage.setItem(SECTION_EXPANDED_STORAGE_KEY, JSON.stringify(sectionExpanded));
+            } catch (err) {
+                // ignore
+            }
+        }
+        function syncOrderWithItems(items) {
+            const ids = new Set(normalizeList(items).map(item => String(item.id || "")));
+            const kept = orderIds.filter(id => ids.has(id));
+            const existing = new Set(kept);
+            normalizeList(items).forEach(item => {
+                const id = String(item.id || "");
+                if (id && !existing.has(id)) {
+                    kept.push(id);
+                    existing.add(id);
+                }
+            });
+            orderIds = kept;
+            persistOrderState();
+        }
+        orderIds = readOrderState();
+        sectionExpanded = readSectionExpandedState();
 
         const modalOverlay = document.createElement("div");
         modalOverlay.className = "modal-overlay";
@@ -302,7 +386,11 @@
                 <div class="ia-actions">
                     <div class="header-row ia-header-actions">
                         <label for="document-explorer-name-input">Nom</label>
-                        <input id="document-explorer-name-input" type="text" placeholder="Nom du document" />
+                        <div class="document-explorer-icon-field">
+                            <button id="document-explorer-icon-btn" type="button" class="btn btn-secondary" title="Choisir une icône"><i data-lucide="file"></i></button>
+                            <input id="document-explorer-name-input" type="text" placeholder="Nom du document" />
+                            <div id="document-explorer-icon-grid" class="document-explorer-icon-grid"></div>
+                        </div>
                     </div>
                     <div class="header-row ia-header-actions" style="display:block;">
                         <label>Superpouvoirs</label>
@@ -349,6 +437,8 @@
         const modalConfirmBtn = modalOverlay.querySelector("[data-confirm]");
         const modalEl = modalOverlay.querySelector(".modal");
         const modalInput = modalOverlay.querySelector("#document-explorer-name-input");
+        const modalIconBtn = modalOverlay.querySelector("#document-explorer-icon-btn");
+        const modalIconGrid = modalOverlay.querySelector("#document-explorer-icon-grid");
         const modalDescInput = modalOverlay.querySelector("#document-explorer-description-input");
         const ownerTokenInput = modalOverlay.querySelector("#ownerToken");
         const ownerTokenContainer = modalOverlay.querySelector("#ownerTokenContainer");
@@ -356,6 +446,9 @@
         const notionPathContainer = modalOverlay.querySelector("#notionPathContainer");
         const notionPathInput = modalOverlay.querySelector("#notionPathInput");
         const notionUnlinkBtn = modalOverlay.querySelector("#notionUnlinkBtn");
+        let searchWrap = null;
+        let searchInput = null;
+        let searchClearBtn = null;
         function normalizeOwnerTokenInput(value) {
             return String(value || "")
                 .normalize("NFD")
@@ -370,18 +463,42 @@
         let modalDocumentId = "";
         let modalNotionLink = { pageId: "", url: "", path: "", workspaceId: "" };
         let modalNotionUnlinkRequested = false;
+        let modalIcon = "file";
 
         function getSelectedSuperpowers() {
             const container = modalOverlay.querySelector("#document-explorer-superpowers-container");
             if (!container) return [];
-            return Array.from(container.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+            const selected = container.querySelector('input[name="document-superpower"]:checked');
+            return selected ? [selected.value] : [];
         }
 
         function closeModal() {
             modalOverlay.classList.remove("open");
             modalOverlay.style.display = "none";
+            if (modalIconGrid) modalIconGrid.classList.remove("open");
             modalResolver = null;
             modalAllowPublish = false;
+        }
+        function renderIconGrid() {
+            if (!modalIconGrid) return;
+            modalIconGrid.innerHTML = "";
+            ICON_CHOICES.forEach(icon => {
+                const btn = document.createElement("button");
+                btn.type = "button";
+                btn.className = "document-explorer-icon-choice" + (modalIcon === icon ? " active" : "");
+                btn.innerHTML = `<i data-lucide="${icon}"></i>`;
+                btn.title = icon;
+                btn.addEventListener("click", () => {
+                    modalIcon = icon;
+                    modalIconGrid.querySelectorAll(".document-explorer-icon-choice").forEach(node => node.classList.remove("active"));
+                    btn.classList.add("active");
+                    if (modalIconBtn) modalIconBtn.innerHTML = `<i data-lucide="${icon}"></i>`;
+                    modalIconGrid.classList.remove("open");
+                    if (window.lucide) window.lucide.createIcons();
+                });
+                modalIconGrid.appendChild(btn);
+            });
+            if (window.lucide) window.lucide.createIcons();
         }
 
         function hasAdminToken() {
@@ -442,6 +559,9 @@
             await populateSuperpowerCheckboxes(selectedSuperpowers);
             if (window.lucide) window.lucide.createIcons();
             modalInput.value = defaultValue || "";
+            modalIcon = (options && typeof options.icon === "string" && options.icon.trim()) ? options.icon.trim() : "file";
+            if (modalIconBtn) modalIconBtn.innerHTML = `<i data-lucide="${modalIcon}"></i>`;
+            renderIconGrid();
             if (modalDescInput) modalDescInput.value = defaultDescription || "";
             const shouldFetchFromStore = Boolean(options?.documentId);
             if (shouldFetchFromStore) {
@@ -507,9 +627,20 @@
 
         modalCloseBtn?.addEventListener("click", () => resolveModal(null));
         modalCancelBtn?.addEventListener("click", () => resolveModal(null));
+        modalIconBtn?.addEventListener("click", () => {
+            if (!modalIconGrid) return;
+            modalIconGrid.classList.toggle("open");
+        });
+        modalOverlay.addEventListener("click", event => {
+            if (!modalIconGrid) return;
+            if (event.target === modalIconBtn || modalIconBtn?.contains(event.target)) return;
+            if (event.target === modalIconGrid || modalIconGrid.contains(event.target)) return;
+            modalIconGrid.classList.remove("open");
+        });
         modalPublishBtn?.addEventListener("click", () => {
             resolveModal({
                 name: modalInput?.value || "",
+                icon: modalIcon,
                 description: modalDescInput?.value || "",
                 superpowers: getSelectedSuperpowers(),
                 action: "publish",
@@ -523,6 +654,7 @@
         modalConfirmBtn?.addEventListener("click", () => {
             resolveModal({
                 name: modalInput?.value || "",
+                icon: modalIcon,
                 description: modalDescInput?.value || "",
                 superpowers: getSelectedSuperpowers(),
                 action: "confirm",
@@ -569,18 +701,23 @@
                 event.preventDefault();
                 resolveModal({
                     name: modalInput?.value || "",
+                    icon: modalIcon,
                     description: modalDescInput?.value || "",
                     superpowers: getSelectedSuperpowers(),
                     action: "confirm",
                     unlinkNotion: Boolean(modalNotionUnlinkRequested)
                 });
+            } else if (event.key === "Escape") {
+                if (modalIconGrid?.classList.contains("open")) {
+                    modalIconGrid.classList.remove("open");
+                }
             }
         });
 
-        function normalizeName(value) {
-            const name = String(value || "").trim();
-            return name || "Doc";
-        }
+    function normalizeName(value) {
+        const name = String(value || "").trim();
+        return name || "New page";
+    }
 
         function uniqueName(name, list, extraNames, excludeId) {
             const base = normalizeName(name);
@@ -817,38 +954,156 @@
         }
 
         let renderListNonce = 0;
+        let listDnDBound = false;
+        let hasLoadedTreeData = false;
+
+        function buildTree(items) {
+            const byId = new Map((items || []).filter(Boolean).map(item => [item.id, item]));
+            const childrenByParent = new Map();
+            const roots = [];
+            (items || []).forEach(item => {
+                const pid = String(item?.parentId || "").trim();
+                if (!pid || !byId.has(pid)) {
+                    roots.push(item);
+                    return;
+                }
+                if (!childrenByParent.has(pid)) childrenByParent.set(pid, []);
+                childrenByParent.get(pid).push(item);
+            });
+            const indexById = new Map(orderIds.map((id, index) => [id, index]));
+            const sortFn = (a, b) => {
+                const ai = indexById.has(a.id) ? indexById.get(a.id) : Number.MAX_SAFE_INTEGER;
+                const bi = indexById.has(b.id) ? indexById.get(b.id) : Number.MAX_SAFE_INTEGER;
+                return ai - bi;
+            };
+            roots.sort(sortFn);
+            childrenByParent.forEach(list => list.sort(sortFn));
+            return { roots, childrenByParent, byId };
+        }
+        function getItemSection(item) {
+            if (!item) return "private";
+            if (item.section === "superpowers") return "superpowers";
+            if (item.section === "common") return "common";
+            if (item.isCommon) return "common";
+            if (String(item.id || "").startsWith("common:")) return "common";
+            if (item.section === "shared") return "shared";
+            if (item.isShared) return "shared";
+            if (String(item.id || "").startsWith("share:")) return "shared";
+            return "private";
+        }
+        function applyLocalOrderMove(docId, parentId, beforeId) {
+            const list = orderIds.filter(id => id !== docId);
+            if (beforeId && list.includes(beforeId)) {
+                const index = list.indexOf(beforeId);
+                list.splice(index, 0, docId);
+            } else {
+                const parent = String(parentId || "");
+                const siblingIds = normalizeList(cachedItems)
+                    .filter(item => String(item.parentId || "") === parent && item.id !== docId)
+                    .map(item => item.id)
+                    .filter(id => list.includes(id));
+                if (siblingIds.length) {
+                    const lastSibling = siblingIds[siblingIds.length - 1];
+                    const index = list.indexOf(lastSibling);
+                    list.splice(index + 1, 0, docId);
+                } else {
+                    list.push(docId);
+                }
+            }
+            orderIds = list;
+            persistOrderState();
+        }
+        function applyLocalParentMove(docId, parentId) {
+            const target = normalizeList(cachedItems).find(item => String(item.id || "") === String(docId || ""));
+            if (!target) return;
+            target.parentId = String(parentId || "").trim();
+        }
+
+        function hasDepthExceeded(targetId, movingId, byId, nextDepth) {
+            if (movingId === targetId) return true;
+            let walk = byId.get(targetId);
+            while (walk) {
+                if (walk.id === movingId) return true;
+                const pid = String(walk.parentId || "").trim();
+                walk = pid ? byId.get(pid) : null;
+            }
+            return nextDepth > 4;
+        }
+
+        function ensureSearchViewState() {
+            const hasQuery = Boolean(String(searchQuery || "").trim());
+            if (hasQuery) {
+                if (!preSearchExpandedIds) preSearchExpandedIds = new Set(expandedIds);
+                if (!preSearchSectionExpanded) preSearchSectionExpanded = { ...sectionExpanded };
+                sectionExpanded = { ...sectionExpanded, private: true, shared: true, common: true, superpowers: true };
+                expandedIds = new Set(normalizeList(cachedItems).map(item => String(item.id || "")).filter(Boolean));
+                persistExpandedState();
+                persistSectionExpandedState();
+            } else if (preSearchExpandedIds || preSearchSectionExpanded) {
+                expandedIds = preSearchExpandedIds ? new Set(preSearchExpandedIds) : expandedIds;
+                sectionExpanded = preSearchSectionExpanded ? { ...preSearchSectionExpanded } : sectionExpanded;
+                preSearchExpandedIds = null;
+                preSearchSectionExpanded = null;
+                persistExpandedState();
+                persistSectionExpandedState();
+            }
+            if (searchClearBtn) {
+                searchClearBtn.style.display = hasQuery ? "inline-flex" : "none";
+            }
+            if (searchWrap) {
+                searchWrap.classList.toggle("is-searching", hasQuery);
+            }
+        }
 
         async function renderList(items) {
             if (!listEl) return;
             const nonce = ++renderListNonce;
-            const superpowersMap = await ensureSuperpowersLoaded();
+            await ensureSuperpowersLoaded();
 
             if (nonce !== renderListNonce) return;
 
+            const safeItems = normalizeList(items);
+            const needle = String(searchQuery || "").trim().toLowerCase();
+            const filteredItems = needle
+                ? safeItems.filter(item => String(item?.title || "").toLowerCase().includes(needle))
+                : safeItems;
             listEl.innerHTML = "";
-            if (!items || !items.length) {
-                renderEmpty();
-                return;
-            }
-            const openIds = Array.isArray(getOpenIds?.()) ? getOpenIds() : [];
             const activeId = typeof getActiveId?.() === "string" ? getActiveId() : "";
-            const openSet = new Set(openIds.filter(Boolean));
-            for (const item of items) {
+            const sectionItems = {
+                private: filteredItems.filter(item => getItemSection(item) === "private"),
+                shared: filteredItems.filter(item => getItemSection(item) === "shared"),
+                common: filteredItems.filter(item => getItemSection(item) === "common")
+            };
+            const trees = {
+                private: buildTree(sectionItems.private),
+                shared: buildTree(sectionItems.shared),
+                common: buildTree(sectionItems.common)
+            };
+            const renderNode = async (item, level, sectionName, containerEl) => {
+                const tree = trees[sectionName] || trees.private;
+                const childrenByParent = tree.childrenByParent;
+                const byId = tree.byId;
+                const children = childrenByParent.get(item.id) || [];
+                const hasChildren = children.length > 0;
+                if (!hasChildren && expandedIds.has(item.id)) {
+                    expandedIds.delete(item.id);
+                    persistExpandedState();
+                }
+                const isExpanded = hasChildren && expandedIds.has(item.id);
+                const row = document.createElement("div");
+                row.className = "document-explorer__tree-row";
+                row.style.marginLeft = `${Math.max(0, level - 1) * 12}px`;
+
                 const button = document.createElement("button");
                 button.type = "button";
                 button.className = "document-explorer__item";
+                button.draggable = true;
                 if (item.id) {
                     button.dataset.documentId = item.id;
-                    if (openSet.has(item.id)) {
-                        button.classList.add("document-explorer__item--open");
-                    }
                     if (activeId && activeId === item.id) {
                         button.classList.add("document-explorer__item--active");
                     }
                 }
-
-                const label = document.createElement("span");
-                label.className = "document-explorer__item-title";
                 const payloadRecordingId = item?.payload?.tabs?.find(tab => typeof tab?.voiceRecordingId === "string" && tab.voiceRecordingId)?.voiceRecordingId || null;
                 const hasRecording = !!(item.voiceRecordingId || payloadRecordingId);
                 const recordingId = item.voiceRecordingId || payloadRecordingId;
@@ -856,59 +1111,67 @@
                 const resolvedHandoffId = (typeof item.handoffId === "string" && item.handoffId) ? item.handoffId : null;
                 const hasHandoff = resolvedHandoffId !== null;
                 const hasNotion = Boolean(String(item?.notionPageId || "").trim());
+                const lead = document.createElement("span");
+                lead.className = "document-explorer__item-leading";
+                lead.setAttribute("role", "button");
+                lead.setAttribute("tabindex", "0");
+                lead.setAttribute("aria-label", isExpanded ? "Réduire les sous-documents" : "Afficher les sous-documents");
+                const defaultIconName = (() => {
+                    if (hasHandoff) return "";
+                    if (hasRecording) return recordingIconName;
+                    if (!isAutoFileIcon(item.icon)) return item.icon;
+                    if (item.isShared) return "file-symlink";
+                    return hasChildren ? "file-text" : "file";
+                })();
+                const renderLeading = (showChevron) => {
+                    if (!hasChildren) {
+                        lead.innerHTML = defaultIconName ? `<i data-lucide="${defaultIconName}"></i>` : "";
+                    } else if (showChevron) {
+                        lead.innerHTML = `<i data-lucide="${isExpanded ? "chevron-down" : "chevron-right"}"></i>`;
+                    } else {
+                        lead.innerHTML = `<i data-lucide="${isExpanded ? "chevron-down" : defaultIconName}"></i>`;
+                    }
+                    if (window.lucide) window.lucide.createIcons();
+                };
+                renderLeading(false);
+                lead.addEventListener("click", event => {
+                    if (!hasChildren) return;
+                    event.stopPropagation();
+                    if (expandedIds.has(item.id)) expandedIds.delete(item.id);
+                    else expandedIds.add(item.id);
+                    persistExpandedState();
+                    renderList(cachedItems);
+                });
+                lead.addEventListener("keydown", event => {
+                    if (event.key !== "Enter" && event.key !== " ") return;
+                    if (!hasChildren) return;
+                    event.preventDefault();
+                    event.stopPropagation();
+                    if (expandedIds.has(item.id)) expandedIds.delete(item.id);
+                    else expandedIds.add(item.id);
+                    persistExpandedState();
+                    renderList(cachedItems);
+                });
+                button.appendChild(lead);
 
-                if (hasHandoff || hasRecording || hasNotion) {
-                    let icons = "";
-                    if (hasNotion) {
-                        icons += '<i data-lucide="notebook" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.85;"></i>';
-                    }
-                    if (hasHandoff) {
-                        icons += '<i data-lucide="tablet-smartphone" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.8;"></i>';
-                    }
-                    if (hasRecording) {
-                        icons += `<i data-lucide="${recordingIconName}" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.8;"></i>`;
-                    }
-                    label.innerHTML = `${icons}${item.title || "Docs sans titre"}`;
-                } else {
-                    label.textContent = item.title || "Docs sans titre";
-                }
+                const label = document.createElement("span");
+                label.className = "document-explorer__item-title";
+                const notionIcon = hasNotion ? '<i data-lucide="notebook" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.85;"></i>' : "";
+                label.innerHTML = `${notionIcon}${item.title || "Docs sans titre"}`;
                 button.appendChild(label);
-
-                if (!openSet.has(item.id)) {
-                    const openedLabel = formatRelativeShort(item?.lastOpenedAt || "");
-                    if (openedLabel) {
-                        const openedAt = document.createElement("span");
-                        openedAt.className = "document-explorer__item-opened";
-                        openedAt.textContent = openedLabel;
-                        openedAt.title = "Dernière ouverture";
-                        button.appendChild(openedAt);
-                    }
-                }
 
                 const actions = document.createElement("span");
                 actions.className = "document-explorer__item-actions";
-
-                const renameBtn = document.createElement("button");
-                renameBtn.type = "button";
-                renameBtn.className = "document-explorer__item-action document-explorer__rename";
-                renameBtn.innerHTML = '<i data-lucide="pencil"></i>';
-                renameBtn.title = "Renommer";
-                renameBtn.addEventListener("click", event => {
+                const plusBtn = document.createElement("button");
+                plusBtn.type = "button";
+                plusBtn.className = "document-explorer__item-action";
+                plusBtn.innerHTML = '<i data-lucide="plus"></i>';
+                plusBtn.title = "Créer une sous-page";
+                plusBtn.addEventListener("click", event => {
                     event.stopPropagation();
-                    if (!onRename) return;
-                    openNameModal(item.title || "", item.description || "", {
-                        superpowers: normalizeSuperpowersList(item.superpowers, item.category),
-                        documentId: item.id,
-                        allowPublish: true
-                    }).then(result => {
-                        if (!result) return;
-                        onRename(item, {
-                            ...result,
-                            name: uniqueName(result.name, cachedItems, null, item.id)
-                        });
-                    });
+                    onCreateChild?.(item);
                 });
-                actions.appendChild(renameBtn);
+                actions.appendChild(plusBtn);
 
                 const deleteBtn = document.createElement("button");
                 deleteBtn.type = "button";
@@ -917,126 +1180,300 @@
                 deleteBtn.title = "Supprimer";
                 deleteBtn.addEventListener("click", event => {
                     event.stopPropagation();
-                    if (!onDelete) return;
-                    onDelete(item);
+                    onDelete?.(item);
                 });
                 actions.appendChild(deleteBtn);
-
                 button.appendChild(actions);
-                listEl.appendChild(button);
-            }
-
-            if (window.lucide) window.lucide.createIcons();
-        }
-
-        let renderSharedListNonce = 0;
-
-        async function renderSharedList() {
-            if (!shareListEl) return;
-            const nonce = ++renderSharedListNonce;
-            const shareHistory = window.goToolkitShareHistory;
-            if (!shareHistory) return;
-
-            const records = await shareHistory.getRecordsByApp("memo");
-            if (nonce !== renderSharedListNonce) return;
-
-            shareListEl.innerHTML = "";
-            if (!records || !records.length) {
-                const empty = document.createElement("div");
-                empty.className = "document-explorer__empty";
-                empty.textContent = "Aucun partage";
-                shareListEl.appendChild(empty);
-                return;
-            }
-
-            for (const item of records) {
-                const button = document.createElement("button");
-                button.type = "button";
-                button.className = "document-explorer__item document-explorer__item--non-clickable";
-                button.style.cursor = "default"; // Not clickable as requested
-
-                const label = document.createElement("span");
-                label.className = "document-explorer__item-title";
-                // Show title or use token as fallback
-                const sharePayloadRecordingId = item?.payload?.tabs?.find(tab => typeof tab?.voiceRecordingId === "string" && tab.voiceRecordingId)?.voiceRecordingId || null;
-                const hasRecording = !!(item.voiceRecordingId || sharePayloadRecordingId);
-                const recordingId = item.voiceRecordingId || sharePayloadRecordingId;
-                const recordingIconName = await resolveRecordingIcon(recordingId);
-                const resolvedHandoffId = (typeof item.handoffId === "string" && item.handoffId) ? item.handoffId : null;
-                const hasHandoff = resolvedHandoffId !== null;
-                const hasNotion = Boolean(String(item?.notionPageId || "").trim());
-
-                if (hasHandoff || hasRecording || hasNotion) {
-                    let icons = "";
-                    if (hasNotion) {
-                        icons += '<i data-lucide="notebook" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.85;"></i>';
-                    }
-                    if (hasHandoff) {
-                        icons += '<i data-lucide="tablet-smartphone" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.8;"></i>';
-                    }
-                    if (hasRecording) {
-                        icons += `<i data-lucide="${recordingIconName}" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.8;"></i>`;
-                    }
-                    label.innerHTML = `${icons}${item.title || "Document partagé"}`;
-                } else {
-                    label.textContent = item.title || "Document partagé";
-                }
-                button.appendChild(label);
-
-                const openedLabel = shareHistory.formatFriendlyDate(item.updatedAt);
-                if (openedLabel) {
-                    const openedAt = document.createElement("span");
-                    openedAt.className = "document-explorer__item-opened";
-                    openedAt.textContent = openedLabel;
-                    button.appendChild(openedAt);
-                }
-
-                const actions = document.createElement("span");
-                actions.className = "document-explorer__item-actions";
-
-                const copyBtn = document.createElement("button");
-                copyBtn.type = "button";
-                copyBtn.className = "document-explorer__item-action";
-                copyBtn.innerHTML = '<i data-lucide="link"></i>';
-                copyBtn.title = "Copier le lien";
-                copyBtn.addEventListener("click", async event => {
+                button.addEventListener("mouseenter", () => renderLeading(true));
+                button.addEventListener("mouseleave", () => renderLeading(false));
+                button.addEventListener("click", () => onSelect?.(item));
+                button.addEventListener("dblclick", event => {
+                    if (String(activeId || "") !== String(item.id || "")) return;
+                    if (event.target.closest(".document-explorer__item-actions")) return;
+                    event.preventDefault();
                     event.stopPropagation();
-                    const url = new URL(window.location.origin + window.location.pathname);
-                    url.searchParams.set("share", item.token);
-                    try {
-                        await navigator.clipboard.writeText(url.toString());
-                        document.dispatchEvent(new CustomEvent("copyToast", { detail: { message: "Lien copié" } }));
-                    } catch (err) {
-                        console.error("Failed to copy link", err);
-                    }
-                });
-                actions.appendChild(copyBtn);
-
-                const deleteBtn = document.createElement("button");
-                deleteBtn.type = "button";
-                deleteBtn.className = "document-explorer__item-action document-explorer__delete";
-                deleteBtn.innerHTML = '<i data-lucide="trash-2"></i>';
-                deleteBtn.title = "Supprimer";
-                deleteBtn.addEventListener("click", async event => {
-                    event.stopPropagation();
-                    const confirmed = window.confirm("Supprimer ce document partagé sur le serveur ?");
-                    if (!confirmed) return;
-
-                    try {
-                        const shareService = window.goToolkitShareWorker;
-                        if (shareService?.isReady) {
-                            await shareService.deleteSharePayload("memos", item.token);
+                    const initialValue = item.title || "Document";
+                    const input = document.createElement("input");
+                    input.type = "text";
+                    input.className = "document-explorer__item-inline-input";
+                    input.value = initialValue;
+                    input.setAttribute("aria-label", "Renommer le document");
+                    label.innerHTML = "";
+                    label.appendChild(input);
+                    input.focus();
+                    input.select();
+                    const finish = submit => {
+                        const nextName = String(input.value || "").trim();
+                        if (submit && nextName && onRename) {
+                            onRename(item, {
+                                name: uniqueName(nextName, cachedItems, null, item.id),
+                                description: item.description || "",
+                                superpowers: normalizeSuperpowersList(item.superpowers, item.category),
+                                icon: item.icon || (item.isShared ? "file-symlink" : ""),
+                                action: "confirm",
+                                unlinkNotion: false
+                            });
+                        } else {
+                            label.innerHTML = `${hasNotion ? '<i data-lucide="notebook" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.85;"></i>' : ""}${initialValue}`;
+                            if (window.lucide) window.lucide.createIcons();
                         }
-                    } catch (err) {
-                        console.warn("Suppression distante échouée", err);
-                    }
-                    await shareHistory.removeRecord("memo", item.token);
-                    renderSharedList();
+                    };
+                    input.addEventListener("keydown", keyEvent => {
+                        if (keyEvent.key === "Enter") {
+                            keyEvent.preventDefault();
+                            finish(true);
+                        } else if (keyEvent.key === "Escape") {
+                            keyEvent.preventDefault();
+                            finish(false);
+                        }
+                    });
+                    input.addEventListener("blur", () => finish(true), { once: true });
                 });
-                actions.appendChild(deleteBtn);
-
-                button.appendChild(actions);
-                shareListEl.appendChild(button);
+                button.addEventListener("dragstart", event => {
+                    draggingId = item.id;
+                    draggingSection = sectionName || getItemSection(item);
+                    button.classList.add("is-dragging");
+                    event.dataTransfer.effectAllowed = "move";
+                    event.dataTransfer.setData("text/plain", item.id);
+                });
+                button.addEventListener("dragend", () => {
+                    draggingId = "";
+                    draggingSection = "";
+                    button.classList.remove("is-dragging");
+                });
+                button.addEventListener("dragover", event => {
+                    if (!draggingId || draggingId === item.id) return;
+                    event.preventDefault();
+                });
+                button.addEventListener("drop", async event => {
+                    event.preventDefault();
+                    const fromId = draggingId;
+                    draggingId = "";
+                    if (!fromId || fromId === item.id || !onMove) return;
+                    const rect = button.getBoundingClientRect();
+                    const y = event.clientY - rect.top;
+                    const upper = rect.height * 0.33;
+                    const lower = rect.height * 0.67;
+                    let parentId = "";
+                    let beforeId = "";
+                    let nextDepth = 1;
+                    if (y < upper) {
+                        parentId = String(item.parentId || "");
+                        beforeId = item.id;
+                        nextDepth = Math.max(1, level);
+                    } else if (y > lower) {
+                        parentId = String(item.parentId || "");
+                        beforeId = "";
+                        nextDepth = Math.max(1, level);
+                    } else {
+                        parentId = item.id;
+                        beforeId = "";
+                        nextDepth = Math.min(4, level + 1);
+                    }
+                    if (hasDepthExceeded(parentId || item.id, fromId, byId, nextDepth)) return;
+                    const fromItem = normalizeList(cachedItems).find(entry => String(entry?.id || "") === String(fromId));
+                    const fromSection = draggingSection || getItemSection(fromItem);
+                    const toSection = sectionName || "private";
+                    await onMove(fromId, parentId, nextDepth, beforeId, { fromSection, toSection });
+                    if (fromSection === toSection) {
+                        applyLocalParentMove(fromId, parentId);
+                        applyLocalOrderMove(fromId, parentId, beforeId);
+                        renderList(cachedItems);
+                    }
+                    draggingSection = "";
+                });
+                row.appendChild(button);
+                containerEl.appendChild(row);
+                if (isExpanded) {
+                    if (level < 4) {
+                        for (const child of children) {
+                            await renderNode(child, level + 1, sectionName, containerEl);
+                        }
+                    }
+                }
+            };
+            const renderSection = async (sectionName, title) => {
+                const sectionRoot = document.createElement("div");
+                sectionRoot.className = "document-explorer__section";
+                const sectionHeader = document.createElement("button");
+                sectionHeader.type = "button";
+                sectionHeader.className = "document-explorer__section-header";
+                const sectionIcon = sectionName === "shared" ? "cloud" : (sectionName === "common" ? "component" : "book");
+                sectionHeader.innerHTML = `<i data-lucide="${sectionIcon}"></i><strong>${title}</strong><i data-lucide="${sectionExpanded[sectionName] ? "chevron-down" : "chevron-right"}"></i>`;
+                sectionHeader.addEventListener("click", () => {
+                    sectionExpanded[sectionName] = !sectionExpanded[sectionName];
+                    persistSectionExpandedState();
+                    renderList(cachedItems);
+                });
+                sectionRoot.appendChild(sectionHeader);
+                const sectionBody = document.createElement("div");
+                sectionBody.className = "document-explorer__section-body";
+                sectionBody.dataset.section = sectionName;
+                if (!sectionExpanded[sectionName]) {
+                    sectionBody.style.display = "none";
+                } else {
+                    const roots = trees[sectionName]?.roots || [];
+                    for (const root of roots) {
+                        await renderNode(root, 1, sectionName, sectionBody);
+                    }
+                }
+                sectionRoot.appendChild(sectionBody);
+                listEl.appendChild(sectionRoot);
+                return sectionBody;
+            };
+            await renderSection("common", "Commun");
+            await renderSection("private", "Privé");
+            await renderSection("shared", "Partagé");
+            const renderSuperpowersSection = async () => {
+                const sectionRoot = document.createElement("div");
+                sectionRoot.className = "document-explorer__section";
+                const sectionHeader = document.createElement("button");
+                sectionHeader.type = "button";
+                sectionHeader.className = "document-explorer__section-header";
+                sectionHeader.innerHTML = `<i data-lucide="zap"></i><strong>Superpouvoirs</strong><i data-lucide="${sectionExpanded.superpowers ? "chevron-down" : "chevron-right"}"></i>`;
+                sectionHeader.addEventListener("click", () => {
+                    sectionExpanded.superpowers = !sectionExpanded.superpowers;
+                    persistSectionExpandedState();
+                    renderList(cachedItems);
+                });
+                sectionRoot.appendChild(sectionHeader);
+                const sectionBody = document.createElement("div");
+                sectionBody.className = "document-explorer__section-body";
+                sectionBody.dataset.section = "superpowers";
+                sectionRoot.appendChild(sectionBody);
+                listEl.appendChild(sectionRoot);
+                if (!sectionExpanded.superpowers) {
+                    sectionBody.style.display = "none";
+                    return;
+                }
+                const allDocs = normalizeList(safeItems).slice().sort((a, b) => String(b?.updatedAt || "").localeCompare(String(a?.updatedAt || "")));
+                const catalog = Array.isArray(superpowersCatalog) ? superpowersCatalog : [];
+                const groups = new Map();
+                groups.set("none", { id: "none", title: "(Aucun)", icon: "shield-question", docs: [] });
+                const resolveDocSuperpower = (doc) => {
+                    const value = Array.isArray(doc?.superpowers) ? doc.superpowers[0] : (doc?.superpowers || doc?.category || "");
+                    const token = String(value || "").trim();
+                    if (!token) return "none";
+                    const lower = token.toLowerCase();
+                    const found = catalog.find(sp => String(sp?.id || "").toLowerCase() === lower || String(sp?.title || "").toLowerCase() === lower);
+                    return found ? String(found.id) : token;
+                };
+                allDocs.forEach(doc => {
+                    const spKey = resolveDocSuperpower(doc);
+                    if (!groups.has(spKey)) {
+                        const found = catalog.find(sp => String(sp?.id || "") === spKey || String(sp?.title || "").toLowerCase() === spKey.toLowerCase());
+                        groups.set(spKey, {
+                            id: spKey,
+                            title: found?.title || spKey,
+                            icon: found?.icon || "zap",
+                            docs: []
+                        });
+                    }
+                    groups.get(spKey).docs.push(doc);
+                });
+                const visibleGroups = Array.from(groups.values()).filter(group => group.docs.length > 0);
+                const renderGroupRow = (group) => {
+                    const row = document.createElement("div");
+                    row.className = "document-explorer__tree-row";
+                    const button = document.createElement("button");
+                    button.type = "button";
+                    button.className = "document-explorer__item";
+                    button.draggable = false;
+                    const groupKey = `spg:${group.id}`;
+                    const isExpanded = expandedIds.has(groupKey);
+                    const lead = document.createElement("span");
+                    lead.className = "document-explorer__item-leading";
+                    lead.innerHTML = `<i data-lucide="${isExpanded ? "chevron-down" : "chevron-right"}"></i>`;
+                    lead.addEventListener("click", event => {
+                        event.stopPropagation();
+                        if (expandedIds.has(groupKey)) expandedIds.delete(groupKey);
+                        else expandedIds.add(groupKey);
+                        persistExpandedState();
+                        renderList(cachedItems);
+                    });
+                    button.appendChild(lead);
+                    const label = document.createElement("span");
+                    label.className = "document-explorer__item-title";
+                    label.innerHTML = `<i data-lucide="${group.icon || "zap"}" style="width:14px;height:14px;margin-right:6px;"></i>${group.title}`;
+                    button.appendChild(label);
+                    button.addEventListener("dragover", event => {
+                        if (!draggingId) return;
+                        event.preventDefault();
+                    });
+                    button.addEventListener("drop", async event => {
+                        if (!draggingId || !onMove) return;
+                        event.preventDefault();
+                        const fromId = draggingId;
+                        const fromSection = draggingSection || getItemSection(normalizeList(cachedItems).find(entry => String(entry?.id || "") === String(fromId)));
+                        draggingId = "";
+                        draggingSection = "";
+                        await onMove(fromId, "", 1, "", { fromSection, toSection: "superpowers", superpowerId: group.id });
+                    });
+                    row.appendChild(button);
+                    sectionBody.appendChild(row);
+                    if (isExpanded) {
+                        group.docs.forEach(doc => {
+                            const childRow = document.createElement("div");
+                            childRow.className = "document-explorer__tree-row";
+                            childRow.style.marginLeft = "12px";
+                            const childBtn = document.createElement("button");
+                            childBtn.type = "button";
+                            childBtn.className = "document-explorer__item";
+                            childBtn.draggable = true;
+                            childBtn.dataset.documentId = doc.id;
+                            if (activeId && activeId === doc.id) childBtn.classList.add("document-explorer__item--active");
+                            const childLead = document.createElement("span");
+                            childLead.className = "document-explorer__item-leading";
+                            childLead.innerHTML = `<i data-lucide="file"></i>`;
+                            childBtn.appendChild(childLead);
+                            const childLabel = document.createElement("span");
+                            childLabel.className = "document-explorer__item-title";
+                            childLabel.textContent = doc.title || "Document";
+                            childBtn.appendChild(childLabel);
+                            childBtn.addEventListener("click", () => onSelect?.(doc));
+                            childBtn.addEventListener("dragstart", event => {
+                                draggingId = doc.id;
+                                draggingSection = "superpowers";
+                                childBtn.classList.add("is-dragging");
+                                event.dataTransfer.effectAllowed = "move";
+                                event.dataTransfer.setData("text/plain", doc.id);
+                            });
+                            childBtn.addEventListener("dragend", () => {
+                                draggingId = "";
+                                draggingSection = "";
+                                childBtn.classList.remove("is-dragging");
+                            });
+                            childRow.appendChild(childBtn);
+                            sectionBody.appendChild(childRow);
+                        });
+                    }
+                };
+                visibleGroups.forEach(group => renderGroupRow(group));
+            };
+            await renderSuperpowersSection();
+            if (!listDnDBound) {
+                listDnDBound = true;
+                listEl.addEventListener("dragover", event => {
+                    if (!draggingId) return;
+                    event.preventDefault();
+                });
+                listEl.addEventListener("drop", async event => {
+                    if (!draggingId || !onMove) return;
+                    if (event.target.closest(".document-explorer__item")) return;
+                    event.preventDefault();
+                    const sectionBody = event.target.closest(".document-explorer__section-body");
+                    const toSection = sectionBody?.dataset?.section || "private";
+                    const fromItem = normalizeList(cachedItems).find(entry => String(entry?.id || "") === String(draggingId));
+                    const fromSection = draggingSection || getItemSection(fromItem);
+                    await onMove(draggingId, "", 1, "", { fromSection, toSection });
+                    if (fromSection === toSection) {
+                        applyLocalParentMove(draggingId, "");
+                        applyLocalOrderMove(draggingId, "", "");
+                    }
+                    draggingId = "";
+                    draggingSection = "";
+                    renderList(cachedItems);
+                });
             }
 
             if (window.lucide) window.lucide.createIcons();
@@ -1048,14 +1485,90 @@
                 return;
             }
             try {
+                if (hasLoadedTreeData && cachedItems.length > 0) {
+                    ensureSearchViewState();
+                    await renderList(cachedItems);
+                    return;
+                }
                 const items = await getItems();
                 const normalized = Array.isArray(items) ? items : [];
-                const openIds = Array.isArray(getOpenIds?.()) ? getOpenIds() : [];
-                cachedItems = sortByOpenAndRecent(normalized, openIds);
+                let sharedItems = [];
+                let commonItems = [];
+                const shareHistory = window.goToolkitShareHistory;
+                if (shareHistory?.getRecordsByApp) {
+                    const shared = await shareHistory.getRecordsByApp("memo");
+                    const uniqueShared = normalizeList((Array.isArray(shared) ? shared : []).map(item => ({
+                        ...item,
+                        id: `share:${item.token}`
+                    })));
+                    sharedItems = uniqueShared.map(item => ({
+                        ...item,
+                        title: item.title || "Document partagé",
+                        icon: item.icon || "file-symlink",
+                        isShared: true,
+                        section: "shared"
+                    }));
+                }
+                if (getCommonItems) {
+                    const common = await getCommonItems();
+                    commonItems = normalizeList(Array.isArray(common) ? common : []).map(item => ({
+                        ...item,
+                        id: String(item.id || "").startsWith("common:") ? String(item.id) : `common:${item.id}`,
+                        title: item.title || "Commun",
+                        isCommon: true,
+                        section: "common",
+                        icon: String(item.icon || "").trim()
+                    }));
+                }
+                cachedItems = normalizeList(
+                    normalized.map(item => ({ ...item, section: "private" }))
+                        .concat(sharedItems)
+                        .concat(commonItems)
+                );
+                ensureSearchViewState();
+                syncOrderWithItems(cachedItems);
                 await renderList(cachedItems);
+                hasLoadedTreeData = true;
             } catch (err) {
                 renderEmpty();
             }
+        }
+        async function upsertItem(item) {
+            if (!item || !item.id) return;
+            const existingIndex = cachedItems.findIndex(entry => String(entry?.id || "") === String(item.id));
+            if (existingIndex >= 0) {
+                cachedItems[existingIndex] = { ...cachedItems[existingIndex], ...item };
+            } else {
+                cachedItems.push(item);
+            }
+            if (existingIndex < 0 && !("section" in item)) {
+                const inserted = cachedItems[cachedItems.length - 1];
+                inserted.section = getItemSection(inserted);
+            }
+            cachedItems = normalizeList(cachedItems);
+            ensureSearchViewState();
+            syncOrderWithItems(cachedItems);
+            hasLoadedTreeData = true;
+            await renderList(cachedItems);
+        }
+        async function removeItemById(id) {
+            const targetId = String(id || "").trim();
+            if (!targetId) return;
+            cachedItems = normalizeList(cachedItems).filter(item => String(item?.id || "") !== targetId);
+            orderIds = orderIds.filter(entryId => entryId !== targetId);
+            persistOrderState();
+            ensureSearchViewState();
+            hasLoadedTreeData = true;
+            await renderList(cachedItems);
+        }
+        function refreshActiveIndicatorOnly() {
+            if (!listEl) return;
+            const activeId = typeof getActiveId?.() === "string" ? getActiveId() : "";
+            const nodes = listEl.querySelectorAll(".document-explorer__item[data-document-id]");
+            nodes.forEach(node => {
+                const nodeId = node.getAttribute("data-document-id") || "";
+                node.classList.toggle("document-explorer__item--active", Boolean(activeId) && nodeId === activeId);
+            });
         }
 
         if (toggleBtn) {
@@ -1074,25 +1587,6 @@
         };
         document.addEventListener("mousedown", handleOutsideClose);
         document.addEventListener("touchstart", handleOutsideClose, { passive: true });
-
-        let isCreating = false;
-        const pendingNames = new Set();
-
-        createBtn.addEventListener("click", async () => {
-            if (!onCreate) return;
-            if (isCreating) return;
-            isCreating = true;
-            createBtn.disabled = true;
-            try {
-                const name = uniqueName(`Doc ${cachedItems.length + 1}`, cachedItems, Array.from(pendingNames));
-                pendingNames.add(name);
-                await Promise.resolve(onCreate(name, "", []));
-            } finally {
-                isCreating = false;
-                createBtn.disabled = false;
-                pendingNames.clear();
-            }
-        });
 
         if (resizer) {
             let startX = 0;
@@ -1134,6 +1628,31 @@
         applyOpen(isOpen);
         ensureDefaultTab();
 
+        if (listEl && listEl.parentElement && !listEl.parentElement.querySelector(".document-explorer__search")) {
+            searchWrap = document.createElement("div");
+            searchWrap.className = "document-explorer__search";
+            searchWrap.innerHTML = `
+                <i data-lucide="search" class="document-explorer__search-icon"></i>
+                <input type="text" class="document-explorer__search-input" placeholder="Rechercher un document" aria-label="Rechercher un document" />
+                <button type="button" class="document-explorer__search-clear" aria-label="Effacer la recherche" title="Effacer"><i data-lucide="x"></i></button>
+            `;
+            listEl.parentElement.insertBefore(searchWrap, listEl);
+            searchInput = searchWrap.querySelector(".document-explorer__search-input");
+            searchClearBtn = searchWrap.querySelector(".document-explorer__search-clear");
+            searchInput?.addEventListener("input", event => {
+                searchQuery = String(event?.target?.value || "");
+                ensureSearchViewState();
+                renderList(cachedItems);
+            });
+            searchClearBtn?.addEventListener("click", () => {
+                searchQuery = "";
+                if (searchInput) searchInput.value = "";
+                ensureSearchViewState();
+                renderList(cachedItems);
+            });
+            if (window.lucide) window.lucide.createIcons();
+        }
+
         window.addEventListener("resize", () => {
             // Keep state on resize (persistence)
             if (window.innerWidth < 900 && isOpen) {
@@ -1143,10 +1662,10 @@
 
         return {
             refresh,
+            upsertItem,
+            removeItemById,
             async refreshIndicators() {
-                const openIds = Array.isArray(getOpenIds?.()) ? getOpenIds() : [];
-                cachedItems = sortByOpenAndRecent(cachedItems, openIds);
-                await renderList(cachedItems);
+                refreshActiveIndicatorOnly();
             },
             open() {
                 applyOpen(true);
@@ -1161,8 +1680,8 @@
                 return uniqueName(name, cachedItems, null, excludeId);
             },
             async setItems(items) {
-                const openIds = Array.isArray(getOpenIds?.()) ? getOpenIds() : [];
-                cachedItems = sortByOpenAndRecent(Array.isArray(items) ? items : [], openIds);
+                cachedItems = normalizeList(items);
+                syncOrderWithItems(cachedItems);
                 await renderList(cachedItems);
             }
         };

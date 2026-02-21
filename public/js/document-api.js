@@ -83,6 +83,8 @@
         const hasNotionPageUrl = Object.prototype.hasOwnProperty.call(value, "notionPageUrl");
         const hasNotionPath = Object.prototype.hasOwnProperty.call(value, "notionPath");
         const hasNotionWorkspaceId = Object.prototype.hasOwnProperty.call(value, "notionWorkspaceId");
+        const hasParentId = Object.prototype.hasOwnProperty.call(value, "parentId");
+        const hasIcon = Object.prototype.hasOwnProperty.call(value, "icon");
         return {
             id,
             app,
@@ -99,7 +101,9 @@
             notionPageId: hasNotionPageId ? String(value.notionPageId || "").trim() : undefined,
             notionPageUrl: hasNotionPageUrl ? String(value.notionPageUrl || "").trim() : undefined,
             notionPath: hasNotionPath ? String(value.notionPath || "").trim() : undefined,
-            notionWorkspaceId: hasNotionWorkspaceId ? String(value.notionWorkspaceId || "").trim() : undefined
+            notionWorkspaceId: hasNotionWorkspaceId ? String(value.notionWorkspaceId || "").trim() : undefined,
+            parentId: hasParentId ? String(value.parentId || "").trim() : undefined,
+            icon: hasIcon ? String(value.icon || "").trim() : undefined
         };
     }
 
@@ -139,6 +143,8 @@
         const hasNotionPageUrl = Object.prototype.hasOwnProperty.call(record, "notionPageUrl");
         const hasNotionPath = Object.prototype.hasOwnProperty.call(record, "notionPath");
         const hasNotionWorkspaceId = Object.prototype.hasOwnProperty.call(record, "notionWorkspaceId");
+        const hasParentId = Object.prototype.hasOwnProperty.call(record, "parentId");
+        const hasIcon = Object.prototype.hasOwnProperty.call(record, "icon");
         const next = {
             id: normalized.id,
             app: normalized.app,
@@ -183,6 +189,16 @@
             next.notionWorkspaceId = normalized.notionWorkspaceId || "";
         } else if (existing && Object.prototype.hasOwnProperty.call(existing, "notionWorkspaceId")) {
             next.notionWorkspaceId = existing.notionWorkspaceId || "";
+        }
+        if (hasParentId) {
+            next.parentId = normalized.parentId || "";
+        } else if (existing && Object.prototype.hasOwnProperty.call(existing, "parentId")) {
+            next.parentId = existing.parentId || "";
+        }
+        if (hasIcon) {
+            next.icon = normalized.icon || "";
+        } else if (existing && Object.prototype.hasOwnProperty.call(existing, "icon")) {
+            next.icon = existing.icon || "";
         }
         stored[next.id] = next;
         await writeRecords(stored);

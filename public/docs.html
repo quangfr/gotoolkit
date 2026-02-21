@@ -45,10 +45,10 @@
         crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.min.js" crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.min.js" crossorigin></script>
-    <link rel="stylesheet" href="styles/style.css?v=2026.02.20.6">
+    <link rel="stylesheet" href="styles/style.css?v=2026.02.21.1">
     <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
-    <link rel="stylesheet" href="styles/memo.css?v=2026.02.20.6">
-    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.20.6">
+    <link rel="stylesheet" href="styles/memo.css?v=2026.02.21.1">
+    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.21.1">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.css">
     <script src="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.js"></script>
     <style>
@@ -111,10 +111,7 @@
         <aside id="documentExplorer" class="document-explorer document-explorer--collapsed" aria-label="Exploration">
             <div class="document-explorer__header">
                 <button type="button" class="document-explorer__tab-btn active" data-tab="library" title="Bibliothèque">
-                    <i data-lucide="library"></i>
-                </button>
-                <button type="button" class="document-explorer__tab-btn" data-tab="shares" title="Partages">
-                    <i data-lucide="cloud"></i>
+                    <i data-lucide="book-open"></i>
                 </button>
                 <button type="button" class="document-explorer__tab-btn" data-tab="toc" title="Sommaire">
                     <i data-lucide="table-of-contents"></i>
@@ -127,9 +124,6 @@
                 <div class="document-explorer__tab-panel active" data-panel="library">
                     <div class="document-explorer__list" data-document-explorer-list></div>
                 </div>
-                <div class="document-explorer__tab-panel" data-panel="shares">
-                    <div class="document-explorer__list" data-share-explorer-list></div>
-                </div>
                 <div class="document-explorer__tab-panel" data-panel="toc">
                     <div class="document-explorer__toc" data-document-toc></div>
                 </div>
@@ -141,14 +135,20 @@
             <div class="app-header">
                 <div class="tabs-actions">
                     <button id="documentExplorerToggle" class="app-home-link" type="button" title="Bibliothèque"
-                        aria-expanded="false" aria-controls="documentExplorer"><i data-lucide="library"></i></button>
-                    <a href="/?v=2026.02.20.6" class="nav-switch-btn" title="Accueil"
+                        aria-expanded="false" aria-controls="documentExplorer"><i data-lucide="book-open"></i></button>
+                    <a href="/?v=2026.02.21.1" class="nav-switch-btn" title="Accueil"
                         style="text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
                         <i data-lucide="home"></i>
                     </a>
 
-                    <div id="tabs" class="tabs">
-                        <div id="document-tabs" class="tabs"></div>
+                    <div id="breadcrumb" class="tabs">
+                        <div class="document-breadcrumb-icon-picker">
+                            <button id="currentDocIconBtn" class="document-breadcrumb-icon-btn" type="button" title="Icône de la page">
+                                <i data-lucide="file"></i>
+                            </button>
+                            <div id="currentDocIconGrid" class="document-explorer-icon-grid"></div>
+                        </div>
+                        <div id="document-breadcrumb" class="document-breadcrumb"></div>
                         <div id="memo-tabs" class="tabs"></div>
                     </div>
                 </div>
@@ -165,11 +165,6 @@
                                     style="position: relative;">
                                     <i data-lucide="tablet-smartphone"></i> Capturer
                                     <span id="handoffBadge" class="chat-header-badge" style="display:none;"></span>
-                                </button>
-
-                                <button id="gtTemplateModalTrigger" type="button" class="menu-panel-btn"
-                                    title="Modèles">
-                                    <i data-lucide="zap"></i> Modèles
                                 </button>
 
                                 <div class="menu-panel-item has-submenu">
@@ -295,22 +290,6 @@
         </div>
     </div>
 
-    <div class="modal-overlay gt-template-preview-modal" id="gtTemplatePreviewModal" role="dialog" aria-modal="true"
-        aria-labelledby="gtTemplatePreviewTitle">
-        <div class="modal gt-template-preview-modal__panel">
-            <div class="modal-header gt-template-preview-modal__header">
-                <button id="gtTemplatePreviewBack" type="button" class="gt-template-preview-modal__back" title="Retour"
-                    aria-label="Retour"><i data-lucide="arrow-left"></i></button>
-                <h3 id="gtTemplatePreviewTitle" class="gt-template-preview-modal__title">Prévisualisation</h3>
-                <button id="gtTemplatePreviewApply" type="button" class="btn-primary"
-                    style="margin-left:auto;">Utiliser</button>
-                <button id="gtTemplatePreviewClose" type="button" class="gt-template-preview-modal__close"
-                    title="Fermer" aria-label="Fermer"><i data-lucide="x"></i></button>
-            </div>
-            <div class="gt-template-preview-modal__body" id="gtTemplatePreviewBody"></div>
-        </div>
-    </div>
-
     <div class="modal-overlay gt-prompt-modal" id="gtPromptModal" role="dialog" aria-modal="true"
         aria-labelledby="gtPromptModalTitle">
         <div class="modal">
@@ -382,7 +361,7 @@
         <img src="img/logo.gif" alt="Logo GoToolkit" class="logo-light">
         <img src="img/logo_inverted.gif" alt="Logo GoToolkit" class="logo-dark">
         <strong>GoToolkit</strong>
-        <span id="memoNewsTrigger" class="info-popup-news-link" role="button" tabindex="0">Version 2026.02.20.6</span>
+        <span id="memoNewsTrigger" class="info-popup-news-link" role="button" tabindex="0">Version 2026.02.21.1</span>
         <span>Usage réservé à Savane Consulting.</span>
         <div class="info-actions info-actions--stacked">
             <div class="info-actions-row">
@@ -462,23 +441,23 @@
         window.GO_TOOLKIT_GOOGLE_TTS_API_URL =
             window.GO_TOOLKIT_GOOGLE_TTS_API_URL || "https://googletts.gotoolkit.workers.dev";
     </script>
-    <script src="js/config.js?v=2026.02.20.6"></script>
-    <script src="js/config-modal.js?v=2026.02.20.6"></script>
-    <script src="js/feature-visibility.js?v=2026.02.20.6"></script>
-    <script src="js/document-storage.js?v=2026.02.20.6"></script>
-    <script src="js/storage-service.js?v=2026.02.20.6"></script>
-    <script src="js/shared-ui.js?v=2026.02.20.6"></script>
-    <script src="js/share-worker-client.js?v=2026.02.20.6"></script>
-    <script src="js/share-history.js?v=2026.02.20.6"></script>
-    <script src="js/document-api.js?v=2026.02.20.6"></script>
-    <script src="js/keywordIndex.js?v=2026.02.20.6"></script>
-    <script src="js/document-rag.js?v=2026.02.20.6"></script>
-    <script src="js/ia-config.js?v=2026.02.20.6"></script>
-    <script src="preset.js?v=2026.02.20.6"></script>
-    <script src="prompt.js?v=2026.02.20.6"></script>
-    <script src="js/ia-client.js?v=2026.02.20.6"></script>
-    <script src="js/document-markdown.js?v=2026.02.20.6"></script>
-    <script src="js/notion-export.js?v=2026.02.20.6"></script>
+    <script src="js/config.js?v=2026.02.21.1"></script>
+    <script src="js/config-modal.js?v=2026.02.21.1"></script>
+    <script src="js/feature-visibility.js?v=2026.02.21.1"></script>
+    <script src="js/document-storage.js?v=2026.02.21.1"></script>
+    <script src="js/storage-service.js?v=2026.02.21.1"></script>
+    <script src="js/shared-ui.js?v=2026.02.21.1"></script>
+    <script src="js/share-worker-client.js?v=2026.02.21.1"></script>
+    <script src="js/share-history.js?v=2026.02.21.1"></script>
+    <script src="js/document-api.js?v=2026.02.21.1"></script>
+    <script src="js/keywordIndex.js?v=2026.02.21.1"></script>
+    <script src="js/document-rag.js?v=2026.02.21.1"></script>
+    <script src="js/ia-config.js?v=2026.02.21.1"></script>
+    <script src="preset.js?v=2026.02.21.1"></script>
+    <script src="prompt.js?v=2026.02.21.1"></script>
+    <script src="js/ia-client.js?v=2026.02.21.1"></script>
+    <script src="js/document-markdown.js?v=2026.02.21.1"></script>
+    <script src="js/notion-export.js?v=2026.02.21.1"></script>
     <script>
         document.addEventListener("click", function (event) {
             const legalTrigger = event.target?.closest?.("[data-open-nexus-modal]");
@@ -512,15 +491,15 @@
             ]
         };
     </script>
-    <script src="js/feedback.js?v=2026.02.20.6"></script>
-    <script src="js/news.js?v=2026.02.20.6"></script>
-    <script src="js/voice-video-player.js?v=2026.02.20.6"></script>
-    <script src="js/voice-audio-player.js?v=2026.02.20.6"></script>
-    <script src="js/youtube-publish.js?v=2026.02.20.6"></script>
-    <script src="js/voice.js?v=2026.02.20.6"></script>
-    <script src="js/voice-transcript.js?v=2026.02.20.6"></script>
-    <script src="js/googletts.js?v=2026.02.20.6"></script>
-    <script src="js/draw-memo.js?v=2026.02.20.6"></script>
+    <script src="js/feedback.js?v=2026.02.21.1"></script>
+    <script src="js/news.js?v=2026.02.21.1"></script>
+    <script src="js/voice-video-player.js?v=2026.02.21.1"></script>
+    <script src="js/voice-audio-player.js?v=2026.02.21.1"></script>
+    <script src="js/youtube-publish.js?v=2026.02.21.1"></script>
+    <script src="js/voice.js?v=2026.02.21.1"></script>
+    <script src="js/voice-transcript.js?v=2026.02.21.1"></script>
+    <script src="js/googletts.js?v=2026.02.21.1"></script>
+    <script src="js/draw-memo.js?v=2026.02.21.1"></script>
     <script>
         // Suppress React DevTools prompt in dev builds.
         window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = window.__REACT_DEVTOOLS_GLOBAL_HOOK__ || {
@@ -530,9 +509,9 @@
             onCommitFiberUnmount: function () { }
         };
     </script>
-    <script src="js/memo.bundle.js?v=2026.02.20.6"></script>
-    <script src="js/assist.js?v=2026.02.20.6"></script>
-    <script src="js/document-panel.js?v=2026.02.20.6"></script>
+    <script src="js/memo.bundle.js?v=2026.02.21.1"></script>
+    <script src="js/assist.js?v=2026.02.21.1"></script>
+    <script src="js/document-panel.js?v=2026.02.21.1"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             setTimeout(function () {
@@ -807,7 +786,9 @@
                 }
             }
 
-            const documentTabsEl = document.getElementById("document-tabs");
+            const documentBreadcrumbEl = document.getElementById("document-breadcrumb");
+            const currentDocIconBtn = document.getElementById("currentDocIconBtn");
+            const currentDocIconGrid = document.getElementById("currentDocIconGrid");
             const fileMenuBtn = document.getElementById("fileMenuBtn");
             const fileMenu = document.getElementById("fileMenu");
             const memoSettingsBtn = document.getElementById("memoSettingsBtn");
@@ -940,6 +921,14 @@
             let activeHandoff = null;
             let templatePreviewReturnFocusEl = null;
             let documentTabsRenderToken = 0;
+            var state = { tabs: [], activeTabId: "" };
+            const DOCUMENT_ICON_CHOICES = [
+                "file", "file-text", "sticky-note", "book-text", "notebook", "folder", "folder-open", "archive", "briefcase", "bookmark",
+                "star", "flag", "tag", "hash", "list", "list-checks", "check-square", "calendar", "clock", "hourglass",
+                "target", "lightbulb", "sparkles", "rocket", "bolt", "wand-sparkles", "brain", "bot", "message-square", "mail",
+                "phone", "globe", "map-pin", "compass", "link", "shield", "lock", "key", "settings", "wrench",
+                "palette", "pen", "pencil", "brush", "image", "camera", "video", "mic", "headphones", "music"
+            ];
             if (notionDefaultPathInput) {
                 notionDefaultPathInput.value = localStorage.getItem(NOTION_PATH_STORAGE_KEY) || "";
             }
@@ -1247,7 +1236,7 @@
                     tabs: [
                         {
                             id,
-                            title: "Doc 1",
+                            title: "New page",
                             description: "",
                             superpowers: [],
                             category: "",
@@ -1280,7 +1269,7 @@
                     const id = typeof tab.id === "string" && tab.id ? tab.id : createId();
                     const title = typeof tab.title === "string" && tab.title.trim()
                         ? tab.title.trim()
-                        : "Doc " + (index + 1);
+                        : "New page";
                     const description = typeof tab.description === "string" ? tab.description : "";
                     const category = typeof tab.category === "string" ? tab.category : "";
                     const superpowers = Array.isArray(tab.superpowers) ? tab.superpowers : (category ? [category] : []);
@@ -1341,7 +1330,40 @@
                     notionPageUrl: String(doc.notionPageUrl || "").trim(),
                     notionPath: String(doc.notionPath || "").trim(),
                     notionWorkspaceId: String(doc.notionWorkspaceId || "").trim(),
+                    parentId: String(doc.parentId || "").trim(),
+                    icon: String(doc.icon || "").trim(),
                     updatedAt: doc.updatedAt || new Date().toISOString()
+                });
+            }
+            function setSingleOpenDocument(doc) {
+                if (!doc || !doc.id) return;
+                openDocuments = [{
+                    id: doc.id,
+                    title: doc.title,
+                    description: doc.description || "",
+                    superpowers: doc.superpowers || [],
+                    payload: doc.payload,
+                    voiceRecordingId: doc.voiceRecordingId || null,
+                    handoffId: resolveHandoffId(doc.id, doc.handoffId),
+                    notionPageId: String(doc.notionPageId || "").trim(),
+                    notionPageUrl: String(doc.notionPageUrl || "").trim(),
+                    notionPath: String(doc.notionPath || "").trim(),
+                    notionWorkspaceId: String(doc.notionWorkspaceId || "").trim(),
+                    parentId: String(doc.parentId || "").trim(),
+                    icon: String(doc.icon || "").trim(),
+                    updatedAt: doc.updatedAt || new Date().toISOString()
+                }];
+            }
+            function unloadStateEditors(docState) {
+                if (!memoEditorApi || typeof memoEditorApi.removeInstance !== "function") return;
+                const tabs = Array.isArray(docState?.tabs) ? docState.tabs : [];
+                tabs.forEach(tab => {
+                    if (!tab?.id) return;
+                    try {
+                        memoEditorApi.removeInstance(tab.id);
+                    } catch (err) {
+                        // ignore
+                    }
                 });
             }
 
@@ -1372,86 +1394,104 @@
             }
 
             async function renderDocumentTabs() {
-                if (!documentTabsEl) return;
+                if (!documentBreadcrumbEl) return;
                 const renderToken = ++documentTabsRenderToken;
-                documentTabsEl.innerHTML = "";
-                for (const doc of openDocuments) {
-                    if (renderToken !== documentTabsRenderToken) return;
-                    const btn = document.createElement("button");
-                    btn.type = "button";
-                    btn.className = "tab document-tab" + (doc.id === activeDocumentId ? " active" : "");
-                    btn.dataset.documentId = doc.id;
-                    btn.draggable = true;
-                    btn.title = doc.title || "Docs";
-
-                    const label = document.createElement("span");
-                    const recordingId = doc.voiceRecordingId || getVoiceRecordingIdFromPayload(doc.payload);
-                    const hasRecording = !!recordingId;
-                    const resolvedHandoffId = resolveHandoffId(doc.id, doc.handoffId);
-                    const hasHandoff = resolvedHandoffId !== null;
-                    const recordingIconName = await resolveRecordingIcon(recordingId);
-                    if (renderToken !== documentTabsRenderToken) return;
-
-                    const hasNotion = hasNotionLink(doc);
-                    if (hasHandoff || hasRecording || hasNotion) {
-                        let icons = "";
-                        if (hasNotion) {
-                            icons += '<i data-lucide="notebook" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.85;"></i>';
-                        }
-                        if (hasHandoff) {
-                            icons += '<i data-lucide="tablet-smartphone" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.8;"></i>';
-                        }
-                        if (hasRecording) {
-                            icons += `<i data-lucide="${recordingIconName}" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.8;"></i>`;
-                        }
-                        label.innerHTML = `${icons}${escapeHtml(doc.title || "Docs")}`;
+                documentBreadcrumbEl.innerHTML = "";
+                if (!activeDocumentId) return;
+                let walker = openDocuments.find(doc => doc.id === activeDocumentId) || null;
+                if (!walker && documentApi?.getRecord) {
+                    walker = await documentApi.getRecord(activeDocumentId);
+                }
+                const chain = [];
+                const seen = new Set();
+                while (walker) {
+                    if (seen.has(walker.id)) break;
+                    seen.add(walker.id);
+                    chain.unshift(walker);
+                    const pid = String(walker.parentId || "").trim();
+                    if (!pid) {
+                        walker = null;
                     } else {
-                        label.textContent = doc.title || "Docs";
+                        walker = openDocuments.find(doc => doc.id === pid) || null;
+                        if (!walker && documentApi?.getRecord) {
+                            walker = await documentApi.getRecord(pid);
+                        }
                     }
-                    btn.appendChild(label);
-
-                    const close = document.createElement("span");
-                    close.className = "document-tab__close";
-                    close.innerHTML = '<i data-lucide="x"></i>';
-                    close.setAttribute("role", "button");
-                    close.setAttribute("aria-label", "Fermer le document");
-                    close.tabIndex = 0;
-                    const handleTabClose = async (event) => {
-                        event.stopPropagation();
-                        await saveDocument({ showToast: false });
-                        closeDocumentTab(doc.id);
-                    };
-                    close.addEventListener("click", handleTabClose);
-                    close.addEventListener("keydown", event => {
-                        if (event.key !== "Enter" && event.key !== " ") return;
-                        event.preventDefault();
-                        handleTabClose(event);
-                    });
-                    btn.appendChild(close);
-
-                    btn.addEventListener("click", () => {
+                }
+                if (!chain.length) {
+                    const activeDoc = openDocuments.find(item => item.id === activeDocumentId);
+                    if (activeDoc) chain.push(activeDoc);
+                }
+                chain.forEach((doc, index) => {
+                    if (renderToken !== documentTabsRenderToken) return;
+                    const crumb = document.createElement("button");
+                    crumb.type = "button";
+                    crumb.className = "document-breadcrumb__item" + (index === chain.length - 1 ? " active" : "");
+                    crumb.textContent = doc.title || "Document";
+                    crumb.addEventListener("click", () => {
+                        if (index === chain.length - 1) {
+                            renameDocument(doc.id, doc.title || "", doc.description || "", doc.superpowers || []);
+                            return;
+                        }
                         setActiveDocument(doc.id);
                     });
-                    btn.addEventListener("dblclick", () => {
-                        renameDocument(doc.id, doc.title || "");
-                    });
-                    documentTabsEl.appendChild(btn);
-                }
-                if (renderToken !== documentTabsRenderToken) return;
-                const createBtn = document.createElement("button");
-                createBtn.type = "button";
-                createBtn.className = "tab document-tab document-tab--create";
-                createBtn.innerHTML = '<i data-lucide="plus"></i>';
-                createBtn.title = "Nouveau document";
-                createBtn.setAttribute("aria-label", "Créer un document");
-                createBtn.draggable = false;
-                createBtn.addEventListener("click", () => {
-                    createAutoDocument();
+                    documentBreadcrumbEl.appendChild(crumb);
+                    if (index < chain.length - 1) {
+                        const sep = document.createElement("span");
+                        sep.className = "document-breadcrumb__sep";
+                        sep.textContent = "/";
+                        documentBreadcrumbEl.appendChild(sep);
+                    }
                 });
-                documentTabsEl.appendChild(createBtn);
+                await updateCurrentDocumentIconButton();
                 persistOpenDocumentState();
                 updateEmptyState();
                 memoExplorer?.refreshIndicators?.();
+                if (window.lucide) window.lucide.createIcons();
+            }
+
+            async function resolveCurrentDocumentDisplayIcon() {
+                if (!activeDocumentId) return "file";
+                const activeDoc = openDocuments.find(item => item.id === activeDocumentId) || await documentApi?.getRecord?.(activeDocumentId);
+                const customIcon = String(activeDoc?.icon || "").trim();
+                if (customIcon && customIcon !== "file" && customIcon !== "file-text") return customIcon;
+                const allDocs = await documentApi?.getAllRecords?.() || [];
+                const hasChildren = allDocs.some(item => item && item.app === "memo" && String(item.parentId || "").trim() === String(activeDocumentId));
+                return hasChildren ? "file-text" : "file";
+            }
+
+            async function updateCurrentDocumentIconButton() {
+                if (!currentDocIconBtn) return;
+                const iconName = await resolveCurrentDocumentDisplayIcon();
+                currentDocIconBtn.innerHTML = `<i data-lucide="${iconName}"></i>`;
+                if (window.lucide) window.lucide.createIcons();
+            }
+
+            function ensureCurrentDocumentIconGrid() {
+                if (!currentDocIconGrid || currentDocIconGrid.childElementCount > 0) return;
+                DOCUMENT_ICON_CHOICES.forEach(icon => {
+                    const btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.className = "document-explorer-icon-choice";
+                    btn.innerHTML = `<i data-lucide="${icon}"></i>`;
+                    btn.title = icon;
+                    btn.addEventListener("click", async event => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        if (!activeDocumentId) return;
+                        await documentApi?.upsertRecord?.({
+                            id: activeDocumentId,
+                            app: "memo",
+                            icon: icon,
+                            updatedAt: new Date().toISOString()
+                        });
+                        upsertOpenDocument({ id: activeDocumentId, icon, updatedAt: new Date().toISOString() });
+                        await memoExplorer?.upsertItem?.({ id: activeDocumentId, icon, updatedAt: new Date().toISOString() });
+                        currentDocIconGrid.classList.remove("open");
+                        await updateCurrentDocumentIconButton();
+                    });
+                    currentDocIconGrid.appendChild(btn);
+                });
                 if (window.lucide) window.lucide.createIcons();
             }
 
@@ -1536,10 +1576,23 @@
                         notionPageUrl: record.notionPageUrl || notionPageUrl,
                         notionPath: record.notionPath || notionPath,
                         notionWorkspaceId: record.notionWorkspaceId || notionWorkspaceId,
+                        parentId: record.parentId || "",
+                        icon: record.icon || "",
                         updatedAt: record.updatedAt || updatedAt,
                         lastOpenedAt: now
                     });
-                    memoExplorer?.refresh?.();
+                    await memoExplorer?.upsertItem?.({
+                        id: doc.id,
+                        app: "memo",
+                        title: record.title || title,
+                        description: record.description || description,
+                        superpowers: record.superpowers || superpowers,
+                        payload,
+                        parentId: record.parentId || "",
+                        icon: record.icon || "",
+                        updatedAt: record.updatedAt || updatedAt
+                    });
+                    memoExplorer?.refreshIndicators?.();
                 }
             }
 
@@ -1547,6 +1600,9 @@
                 if (!docId || docId === activeDocumentId) return;
                 saveCaretForTab(state.activeTabId, { persist: true });
                 let target = openDocuments.find(item => item.id === docId);
+                if (!target && documentApi?.getRecord) {
+                    target = await documentApi.getRecord(docId);
+                }
                 if (!target) return;
                 if (hasNotionLink(target)) {
                     const refreshed = await hydrateRecordFromNotion(target);
@@ -1558,9 +1614,16 @@
                         upsertOpenDocument(target);
                     }
                 }
-                syncActiveDocumentPayload();
+                const previousState = state;
+                const previousDocumentId = activeDocumentId;
+                if (previousDocumentId && previousDocumentId !== docId) {
+                    await saveDocument({ showToast: false });
+                } else {
+                    syncActiveDocumentPayload();
+                }
                 const loaded = normalizeState(target.payload);
                 if (!loaded) return;
+                unloadStateEditors(previousState);
                 state = loaded;
                 activeDocumentId = target.id;
                 window.__memoActiveDocumentId = activeDocumentId || null;
@@ -1568,6 +1631,11 @@
                 setActiveTab(state.activeTabId);
                 syncAssistPresetFromState();
                 renderDocumentTabs();
+                setSingleOpenDocument({
+                    ...target,
+                    payload: buildSharePayload(),
+                    title: target.title || getDocumentTitleFromState(state)
+                });
                 markDocumentOpened(target);
                 updateDocumentHandoffId(target.id, target.handoffId);
                 refreshHandoffBadge(target.id);
@@ -1887,6 +1955,40 @@
 
             function getActiveTab() {
                 return state.tabs.find(tab => tab.id === state.activeTabId) || state.tabs[0];
+            }
+
+            async function openPublishedTemplateDirect(template) {
+                if (!template) return;
+                const tabId = createId();
+                const nextState = normalizeState({
+                    tabs: [{
+                        id: tabId,
+                        title: String(template.label || "New page"),
+                        description: String(template.description || ""),
+                        superpowers: Array.isArray(template.superpowers) ? template.superpowers : [],
+                        content: String(template.html || ""),
+                        metadata: {}
+                    }],
+                    activeTabId: tabId,
+                    templateId: String(template.id || ""),
+                    templateLabel: String(template.label || ""),
+                    promptPresetId: state?.promptPresetId || "edit"
+                });
+                if (!nextState) return;
+                const previousState = state;
+                await saveDocument({ showToast: false });
+                unloadStateEditors(previousState);
+                state = nextState;
+                renderTabs();
+                setActiveTab(state.activeTabId);
+                syncAssistPresetFromState();
+                renderDocumentTabs();
+                await saveDocument({
+                    showToast: false,
+                    description: String(template.description || ""),
+                    superpowers: Array.isArray(template.superpowers) ? template.superpowers : []
+                });
+                setStatus("Contenu commun ouvert");
             }
 
             function getEditorCaretRange() {
@@ -2575,16 +2677,23 @@
                 const loaded = normalizeState(
                     hydratedRecord.payload.tabs
                         ? hydratedRecord.payload
-                        : { tabs: [{ id: createId(), title: "Doc 1", content: hydratedRecord.payload }] }
+                        : { tabs: [{ id: createId(), title: "New page", content: hydratedRecord.payload }] }
                 );
                 if (!loaded) return;
-                syncActiveDocumentPayload();
+                const previousState = state;
+                const previousDocumentId = activeDocumentId;
+                if (previousDocumentId && previousDocumentId !== hydratedRecord.id) {
+                    await saveDocument({ showToast: false });
+                } else {
+                    syncActiveDocumentPayload();
+                }
+                unloadStateEditors(previousState);
                 state = loaded;
                 activeDocumentId = hydratedRecord.id;
                 renderTabs();
                 setActiveTab(state.activeTabId);
                 syncAssistPresetFromState();
-                upsertOpenDocument({
+                setSingleOpenDocument({
                     id: hydratedRecord.id,
                     title: hydratedRecord.title || getDocumentTitleFromState(state),
                     description: hydratedRecord.description || "",
@@ -2827,6 +2936,157 @@
                 }
             }
 
+            function parseCommonTemplateId(value) {
+                const raw = String(value || "").trim();
+                if (!raw) return "";
+                return raw.startsWith("common:") ? raw.slice("common:".length) : raw;
+            }
+
+            async function updateGoLiveTemplateRecord(templateId, patch) {
+                const id = parseCommonTemplateId(templateId);
+                if (!id) return null;
+                await syncTemplates(false);
+                const existing = cloudTemplates.find(item => String(item?.id || "") === id);
+                if (!existing) return null;
+                const next = { ...existing, ...(patch || {}) };
+                if (!next.id) next.id = id;
+                cloudTemplates = cloudTemplates.map(item => String(item?.id || "") === id ? next : item);
+                await window.goToolkitTemplateStore?.save?.(next);
+                try {
+                    if (shareWorker?.isReady) {
+                        const remote = await shareWorker.fetchSharePayload(TEMPLATES_COLLECTION, id);
+                        const remotePayload = { ...(remote?.payload || {}) };
+                        if (patch && Object.prototype.hasOwnProperty.call(patch, "label")) remotePayload.label = next.label || "";
+                        if (patch && Object.prototype.hasOwnProperty.call(patch, "description")) remotePayload.description = next.description || "";
+                        if (patch && Object.prototype.hasOwnProperty.call(patch, "superpowers")) remotePayload.superpowers = next.superpowers || [];
+                        if (patch && Object.prototype.hasOwnProperty.call(patch, "parentId")) remotePayload.parentId = next.parentId || "";
+                        if (patch && Object.prototype.hasOwnProperty.call(patch, "icon")) remotePayload.icon = next.icon || "";
+                        await shareWorker.saveSharePayload(
+                            TEMPLATES_COLLECTION,
+                            id,
+                            remotePayload,
+                            { inlineAssets: true, assetScope: "template-memos" }
+                        );
+                    }
+                } catch (err) {
+                    console.warn("Mise à jour Go-Live distante échouée", err);
+                }
+                return next;
+            }
+
+            function inferSectionFromId(docId) {
+                const id = String(docId || "").trim();
+                if (!id) return "private";
+                if (id.startsWith("common:")) return "common";
+                if (id.startsWith("share:")) return "shared";
+                return "private";
+            }
+
+            async function setDocumentSuperpowerBySection(docId, section, superpowerId) {
+                const value = String(superpowerId || "").trim();
+                const superpowers = value && value !== "none" ? [value] : [];
+                const now = new Date().toISOString();
+                if (section === "private") {
+                    await documentApi?.upsertRecord?.({ id: docId, app: "memo", superpowers, updatedAt: now });
+                    await memoExplorer?.upsertItem?.({ id: docId, superpowers, updatedAt: now });
+                    return;
+                }
+                if (section === "shared") {
+                    const token = String(docId).startsWith("share:") ? String(docId).slice("share:".length) : String(docId);
+                    const records = await shareHistory?.getRecordsByApp?.("memo");
+                    const record = (records || []).find(item => item && String(item.token || "") === token);
+                    if (!record) return;
+                    await shareHistory?.upsertRecord?.("memo", { ...record, superpowers, updatedAt: now });
+                    await memoExplorer?.upsertItem?.({ id: `share:${token}`, superpowers, updatedAt: now });
+                    return;
+                }
+                if (section === "common") {
+                    const templateId = parseCommonTemplateId(docId);
+                    const next = await updateGoLiveTemplateRecord(templateId, { superpowers, updatedAt: now });
+                    await memoExplorer?.upsertItem?.({
+                        id: `common:${templateId}`,
+                        superpowers,
+                        templateData: next || null,
+                        updatedAt: now
+                    });
+                }
+            }
+
+            async function createSharedFromPayload(payload, meta = {}) {
+                const token = createShareToken();
+                const saved = await shareWorker.saveSharePayload(
+                    FIRESTORE_COLLECTION,
+                    token,
+                    payload,
+                    { inlineAssets: true, assetScope: "memos" }
+                );
+                await shareHistory?.upsertRecord?.("memo", {
+                    token,
+                    title: meta.title || "Document partagé",
+                    description: meta.description || "",
+                    superpowers: Array.isArray(meta.superpowers) ? meta.superpowers : [],
+                    payload,
+                    icon: String(meta.icon || "file-symlink").trim(),
+                    parentId: String(meta.parentId || "").trim(),
+                    updatedAt: saved?.updatedAt || new Date().toISOString()
+                });
+                return { token, updatedAt: saved?.updatedAt || new Date().toISOString() };
+            }
+
+            async function createPrivateFromPayload(payload, meta = {}) {
+                const id = (documentApi?.generateId && documentApi.generateId()) || createId();
+                const now = new Date().toISOString();
+                await documentApi?.upsertRecord?.({
+                    id,
+                    app: "memo",
+                    title: meta.title || "New page",
+                    description: meta.description || "",
+                    superpowers: Array.isArray(meta.superpowers) ? meta.superpowers : [],
+                    payload,
+                    parentId: String(meta.parentId || "").trim(),
+                    icon: String(meta.icon || "").trim(),
+                    updatedAt: now
+                });
+                return { id, updatedAt: now };
+            }
+
+            async function createCommonFromPayload(payload, meta = {}) {
+                const firstTab = payload?.tabs?.[0] || {};
+                const templatePayload = {
+                    label: meta.title || firstTab.title || "New page",
+                    description: meta.description || firstTab.description || "",
+                    category: "",
+                    superpowers: Array.isArray(meta.superpowers) ? meta.superpowers : (Array.isArray(firstTab.superpowers) ? firstTab.superpowers : []),
+                    html: firstTab.content || "",
+                    parentId: parseCommonTemplateId(meta.parentId || ""),
+                    icon: String(meta.icon || "").trim(),
+                    ownerToken: normalizeOwnerTokenInput(ownerToken?.value || localStorage.getItem("feedback-admin-token") || ""),
+                    meta: { uuid: createTemplateUuid() }
+                };
+                const saved = await shareWorker.saveSharePayload(
+                    TEMPLATES_COLLECTION,
+                    null,
+                    templatePayload,
+                    { inlineAssets: true, assetScope: "template-memos" }
+                );
+                const id = String(saved?.id || saved?.token || saved?.shareId || "").trim() || createTemplateUuid();
+                const next = {
+                    id,
+                    label: templatePayload.label,
+                    description: templatePayload.description,
+                    category: "",
+                    superpowers: templatePayload.superpowers,
+                    html: templatePayload.html,
+                    parentId: templatePayload.parentId || "",
+                    icon: templatePayload.icon || "",
+                    ownerToken: templatePayload.ownerToken || "",
+                    updatedAt: saved?.updatedAt || new Date().toISOString()
+                };
+                cloudTemplates.push(next);
+                await window.goToolkitTemplateStore?.save?.(next);
+                return { id, template: next, updatedAt: next.updatedAt };
+            }
+
             async function applyDocumentRename(docId, nextName, nextDescription, nextSuperpowers) {
                 if (!docId || !nextName) return;
                 const doc = openDocuments.find(item => item.id === docId);
@@ -2871,8 +3131,16 @@
                     payload: doc?.payload || buildSharePayload(),
                     updatedAt: new Date().toISOString()
                 });
+                await getExplorer()?.upsertItem?.({
+                    id: docId,
+                    app: "memo",
+                    title: nextName,
+                    description: nextDescription !== undefined ? nextDescription : (doc?.description || ""),
+                    superpowers: nextSuperpowers !== undefined ? nextSuperpowers : (doc?.superpowers || []),
+                    payload: doc?.payload || buildSharePayload(),
+                    updatedAt: new Date().toISOString()
+                });
                 renderDocumentTabs();
-                getExplorer()?.refresh?.();
             }
 
             async function unlinkDocumentFromNotion(docId) {
@@ -2894,8 +3162,16 @@
                     notionWorkspaceId: "",
                     updatedAt: new Date().toISOString()
                 });
+                await getExplorer()?.upsertItem?.({
+                    id: docId,
+                    notionPageId: "",
+                    notionPageUrl: "",
+                    notionPath: "",
+                    notionWorkspaceId: "",
+                    updatedAt: new Date().toISOString()
+                });
                 renderDocumentTabs();
-                memoExplorer?.refresh?.();
+                memoExplorer?.refreshIndicators?.();
             }
 
             async function renameDocument(docId, currentTitle, currentDescription, currentSuperpowers) {
@@ -2971,8 +3247,29 @@
                 }
                 const target = openDocuments.find(item => item.id === docId);
                 const name = target?.title || "ce document";
-                const confirmed = window.confirm(`Supprimer "${name}" ?`);
+                const allDocs = await documentApi?.getAllRecords?.() || [];
+                const childrenCount = allDocs.filter(item => item && item.app === "memo" && String(item.parentId || "").trim() === String(docId).trim()).length;
+                const confirmMessage = childrenCount > 0
+                    ? `Supprimer "${name}" ?\nCe document contient ${childrenCount} document(s) enfant. Ils resteront existants mais seront détachés.`
+                    : `Supprimer "${name}" ?`;
+                const confirmed = window.confirm(confirmMessage);
                 if (!confirmed) return;
+                if (childrenCount > 0) {
+                    for (const child of allDocs) {
+                        if (!child || child.app !== "memo" || String(child.parentId || "").trim() !== String(docId).trim()) continue;
+                        await documentApi?.upsertRecord?.({
+                            id: child.id,
+                            app: "memo",
+                            parentId: "",
+                            updatedAt: new Date().toISOString()
+                        });
+                        await getExplorer()?.upsertItem?.({
+                            id: child.id,
+                            parentId: "",
+                            updatedAt: new Date().toISOString()
+                        });
+                    }
+                }
                 const manager = window.GoToolkitDocumentManager;
                 const tabsToDelete = Array.isArray(target?.payload?.tabs) ? target.payload.tabs : [];
                 if (manager?.deleteMemoEmbeddings) {
@@ -2989,8 +3286,8 @@
                 if (documentApi) {
                     await documentApi.removeRecord(docId);
                 }
+                await getExplorer()?.removeItemById?.(docId);
                 closeDocumentTab(docId);
-                getExplorer()?.refresh?.();
             }
 
             async function deleteActiveDocument() {
@@ -3000,7 +3297,7 @@
 
             let isCreatingNewDocument = false;
 
-            async function createNewDocument(name, description, superpowers, initialContent) {
+            async function createNewDocument(name, description, superpowers, initialContent, parentId, icon) {
                 if (isCreatingNewDocument) return;
                 isCreatingNewDocument = true;
                 try {
@@ -3024,15 +3321,27 @@
                     renderTabs();
                     setActiveTab(state.activeTabId);
                     syncAssistPresetFromState();
-                    await saveDocument({ showToast: true, created: true, description: description, superpowers: nextState.tabs[0].superpowers });
-                    getExplorer()?.refresh?.();
+                    await saveDocument({ showToast: true, created: true, description: description, superpowers: nextState.tabs[0].superpowers, parentId, icon });
                     window.GoToolkitAssistInstance?.open?.();
                     markDocumentOpened({
                         id: activeDocumentId,
                         title: getDocumentTitleFromState(state),
                         description: description || "",
                         superpowers: nextState.tabs[0].superpowers,
+                        parentId: String(parentId || "").trim(),
+                        icon: String(icon || "").trim(),
                         payload: buildSharePayload()
+                    });
+                    await getExplorer()?.upsertItem?.({
+                        id: activeDocumentId,
+                        app: "memo",
+                        title: getDocumentTitleFromState(state),
+                        description: description || "",
+                        superpowers: nextState.tabs[0].superpowers,
+                        parentId: String(parentId || "").trim(),
+                        icon: String(icon || "").trim(),
+                        payload: buildSharePayload(),
+                        updatedAt: new Date().toISOString()
                     });
                     try {
                         document.dispatchEvent(new CustomEvent("goToolkitMemoActiveDocumentChanged", {
@@ -3068,28 +3377,12 @@
                         names.add(title);
                     }
                 });
-                let maxIndex = 0;
-                names.forEach(name => {
-                    const pattern = templateName
-                        ? new RegExp(`^Doc\\s+(\\d+)\\s+\\[${escapeRegExp(templateName)}\\]$`, 'i')
-                        : /^Doc\s+(\d+)$/i;
-                    const match = name.match(pattern);
-                    if (match) {
-                        const num = Number(match[1]);
-                        if (Number.isFinite(num)) {
-                            maxIndex = Math.max(maxIndex, num);
-                        }
-                    }
-                });
-                let candidateIndex = maxIndex + 1;
-                let candidateName = templateName
-                    ? `Doc ${candidateIndex} [${templateName}]`
-                    : `Doc ${candidateIndex}`;
+                const baseName = templateName ? `New page [${templateName}]` : "New page";
+                let candidateName = baseName;
+                let suffix = 1;
                 while (names.has(candidateName)) {
-                    candidateIndex += 1;
-                    candidateName = templateName
-                        ? `Doc ${candidateIndex} [${templateName}]`
-                        : `Doc ${candidateIndex}`;
+                    suffix += 1;
+                    candidateName = `${baseName} (${suffix})`;
                 }
                 return explorer?.uniqueName?.(candidateName) || candidateName;
             }
@@ -3119,14 +3412,140 @@
                     const documents = await window.goToolkitDocumentApi?.getAllRecords?.();
                     return (documents || []).filter(item => item && item.app === "memo");
                 },
+                getCommonItems: async () => {
+                    await syncTemplates(false);
+                    return (cloudTemplates || []).map(template => ({
+                        id: template.id,
+                        title: template.label || "Commun",
+                        description: template.description || "",
+                        superpowers: Array.isArray(template.superpowers) ? template.superpowers : [],
+                        parentId: String(template.parentId || "").trim() ? `common:${String(template.parentId || "").trim()}` : "",
+                        icon: String(template.icon || "").trim(),
+                        templateData: template,
+                        updatedAt: template.updatedAt || ""
+                    }));
+                },
                 getOpenIds: () => openDocuments.map(doc => doc.id).filter(Boolean),
                 getActiveId: () => activeDocumentId || "",
                 onCreate: (name, description, superpowers) => {
                     if (!name) return;
                     createNewDocument(name, description, superpowers);
                 },
+                onCreateChild: async item => {
+                    if (!item?.id) return;
+                    if (item.isCommon) {
+                        const parentTemplateId = parseCommonTemplateId(item.id);
+                        const baseLabel = "New page";
+                        const labels = new Set((cloudTemplates || []).map(t => String(t?.label || "").trim()).filter(Boolean));
+                        let label = baseLabel;
+                        let i = 2;
+                        while (labels.has(label)) {
+                            label = `${baseLabel} (${i})`;
+                            i += 1;
+                        }
+                        const payload = {
+                            label,
+                            description: "",
+                            category: "",
+                            superpowers: [],
+                            html: "",
+                            parentId: parentTemplateId || "",
+                            icon: "",
+                            ownerToken: normalizeOwnerTokenInput(ownerToken?.value || localStorage.getItem("feedback-admin-token") || ""),
+                            meta: { uuid: createTemplateUuid() }
+                        };
+                        const saved = await shareWorker.saveSharePayload(
+                            TEMPLATES_COLLECTION,
+                            null,
+                            payload,
+                            { inlineAssets: true, assetScope: "template-memos" }
+                        );
+                        const next = {
+                            id: String(saved?.id || saved?.token || saved?.shareId || "").trim() || createTemplateUuid(),
+                            label,
+                            description: "",
+                            category: "",
+                            superpowers: [],
+                            html: "",
+                            parentId: parentTemplateId || "",
+                            icon: "",
+                            ownerToken: payload.ownerToken || "",
+                            updatedAt: saved?.updatedAt || new Date().toISOString()
+                        };
+                        cloudTemplates.push(next);
+                        await window.goToolkitTemplateStore?.save?.(next);
+                        await memoExplorer?.upsertItem?.({
+                            id: `common:${next.id}`,
+                            title: next.label,
+                            description: next.description,
+                            superpowers: next.superpowers,
+                            parentId: next.parentId ? `common:${next.parentId}` : "",
+                            icon: next.icon || "",
+                            isCommon: true,
+                            section: "common",
+                            templateData: next,
+                            updatedAt: next.updatedAt
+                        });
+                        return;
+                    }
+                    const parentId = item.isShared ? "" : item.id;
+                    const childName = memoExplorer?.uniqueName?.("New page") || "New page";
+                    await createNewDocument(childName, "", [], "", parentId, "");
+                },
                 onRename: async (item, result) => {
                     if (!item || !result || !result.name) return;
+                    if (item.isCommon) {
+                        const templateId = parseCommonTemplateId(item.id);
+                        const next = await updateGoLiveTemplateRecord(templateId, {
+                            label: result.name,
+                            description: result.description || "",
+                            superpowers: Array.isArray(result.superpowers) ? result.superpowers : [],
+                            icon: String(result.icon || item.icon || "").trim(),
+                            updatedAt: new Date().toISOString()
+                        });
+                        await memoExplorer?.upsertItem?.({
+                            id: `common:${templateId}`,
+                            title: next?.label || result.name,
+                            description: next?.description || result.description || "",
+                            superpowers: next?.superpowers || [],
+                            parentId: String(next?.parentId || "").trim() ? `common:${String(next.parentId).trim()}` : "",
+                            icon: String(next?.icon || result.icon || "").trim(),
+                            isCommon: true,
+                            section: "common",
+                            templateData: next || item.templateData || null,
+                            updatedAt: next?.updatedAt || new Date().toISOString()
+                        });
+                        return;
+                    }
+                    if (item.isShared) {
+                        await shareHistory?.upsertRecord?.("memo", {
+                            token: item.token,
+                            title: result.name,
+                            payload: item.payload,
+                            icon: String(result.icon || "file-symlink").trim(),
+                            parentId: String(item.parentId || "").trim(),
+                            updatedAt: new Date().toISOString()
+                        });
+                        await memoExplorer?.upsertItem?.({
+                            id: `share:${item.token}`,
+                            token: item.token,
+                            title: result.name,
+                            payload: item.payload,
+                            icon: String(result.icon || "file-symlink").trim(),
+                            parentId: String(item.parentId || "").trim(),
+                            isShared: true,
+                            section: "shared",
+                            updatedAt: new Date().toISOString()
+                        });
+                        return;
+                    }
+                    await documentApi?.upsertRecord?.({
+                        id: item.id,
+                        app: "memo",
+                        icon: String(result.icon || item.icon || "").trim(),
+                        updatedAt: new Date().toISOString()
+                    });
+                    upsertOpenDocument({ id: item.id, icon: String(result.icon || item.icon || "").trim() });
                     await applyDocumentRename(item.id, result.name, result.description, result.superpowers);
                     if (result.unlinkNotion) {
                         await unlinkDocumentFromNotion(item.id);
@@ -3158,26 +3577,389 @@
                         }
                     }
                 },
-                onDelete: item => {
+                onDelete: async item => {
                     if (!item) return;
+                    if (item.isCommon) {
+                        const templateId = parseCommonTemplateId(item.id);
+                        const name = item.title || "Commun";
+                        if (!window.confirm(`Supprimer "${name}" ?`)) return;
+                        try {
+                            if (shareWorker?.isReady && templateId) {
+                                await shareWorker.deleteSharePayload(TEMPLATES_COLLECTION, templateId);
+                            }
+                        } catch (err) {
+                            console.warn("Suppression Go-Live distante échouée", err);
+                        }
+                        cloudTemplates = (cloudTemplates || []).filter(t => String(t?.id || "") !== templateId);
+                        await window.goToolkitTemplateStore?.delete?.(templateId);
+                        await memoExplorer?.removeItemById?.(`common:${templateId}`);
+                        return;
+                    }
+                    if (item.isShared) {
+                        const confirmed = window.confirm(`Supprimer "${item.title || "Document partagé"}" ?`);
+                        if (!confirmed) return;
+                        try {
+                            const shareService = window.goToolkitShareWorker;
+                            if (shareService?.isReady && item.token) {
+                                await shareService.deleteSharePayload("memos", item.token);
+                            }
+                        } catch (err) {
+                            console.warn("Suppression distante échouée", err);
+                        }
+                        await shareHistory?.removeRecord?.("memo", item.token);
+                        await memoExplorer?.removeItemById?.(`share:${item.token}`);
+                        return;
+                    }
                     deleteDocument(item.id);
+                },
+                onSelect: item => {
+                    if (!item?.id) return;
+                    if (item.isCommon) {
+                        openPublishedTemplateDirect(item.templateData || item);
+                        return;
+                    }
+                    if (item.isShared) {
+                        const loaded = normalizeState(item.payload);
+                        if (loaded?.tabs?.[0]) {
+                            const first = loaded.tabs[0];
+                            createNewDocument(
+                                memoExplorer?.uniqueName?.(item.title || first.title || "Document partagé") || (item.title || first.title || "Document partagé"),
+                                first.description || "",
+                                Array.isArray(first.superpowers) ? first.superpowers : [],
+                                first.content || "",
+                                String(item.parentId || "").trim(),
+                                String(item.icon || "file-symlink").trim()
+                            );
+                        }
+                        return;
+                    }
+                    setActiveDocument(item.id);
+                },
+                onMove: async (docId, newParentId, nextDepth, beforeId, moveMeta) => {
+                    if (!docId || nextDepth > 4) return;
+                    let fromSection = String(moveMeta?.fromSection || "").trim() || inferSectionFromId(docId);
+                    const toSection = String(moveMeta?.toSection || "").trim() || fromSection;
+                    if (fromSection === "superpowers") {
+                        fromSection = inferSectionFromId(docId);
+                    }
+                    if (toSection === "superpowers") {
+                        await setDocumentSuperpowerBySection(docId, fromSection, moveMeta?.superpowerId || "none");
+                        return;
+                    }
+                    const nextParentId = String(newParentId || "").trim();
+                    const now = new Date().toISOString();
+
+                    if (fromSection === toSection) {
+                        if (toSection === "common") {
+                            const templateId = parseCommonTemplateId(docId);
+                            const parentTemplateId = parseCommonTemplateId(nextParentId);
+                            const next = await updateGoLiveTemplateRecord(templateId, {
+                                parentId: parentTemplateId,
+                                updatedAt: now
+                            });
+                            await memoExplorer?.upsertItem?.({
+                                id: `common:${templateId}`,
+                                parentId: parentTemplateId ? `common:${parentTemplateId}` : "",
+                                title: next?.label || "Commun",
+                                description: next?.description || "",
+                                superpowers: next?.superpowers || [],
+                                icon: String(next?.icon || "").trim(),
+                                isCommon: true,
+                                section: "common",
+                                templateData: next || null,
+                                updatedAt: next?.updatedAt || now
+                            });
+                            return;
+                        }
+                        if (toSection === "shared") {
+                            const token = String(docId).startsWith("share:") ? String(docId).slice("share:".length) : String(docId);
+                            const records = await shareHistory?.getRecordsByApp?.("memo");
+                            const record = (records || []).find(item => item && String(item.token || "") === token);
+                            if (!record) return;
+                            await shareHistory?.upsertRecord?.("memo", {
+                                ...record,
+                                token,
+                                parentId: nextParentId,
+                                updatedAt: now
+                            });
+                            await memoExplorer?.upsertItem?.({
+                                id: `share:${token}`,
+                                token,
+                                title: record.title || "Document partagé",
+                                description: record.description || "",
+                                superpowers: Array.isArray(record.superpowers) ? record.superpowers : [],
+                                payload: record.payload,
+                                icon: String(record.icon || "file-symlink").trim(),
+                                parentId: nextParentId,
+                                isShared: true,
+                                section: "shared",
+                                updatedAt: now
+                            });
+                            return;
+                        }
+                        await documentApi?.upsertRecord?.({
+                            id: docId,
+                            app: "memo",
+                            parentId: nextParentId,
+                            updatedAt: now
+                        });
+                        upsertOpenDocument({ id: docId, parentId: nextParentId });
+                        await memoExplorer?.upsertItem?.({
+                            id: docId,
+                            parentId: nextParentId,
+                            section: "private",
+                            updatedAt: now
+                        });
+                        return;
+                    }
+
+                    if (fromSection === "private" && toSection === "common") {
+                        const record = await documentApi?.getRecord?.(docId);
+                        if (!record) return;
+                        const payload = record.payload || buildSharePayload();
+                        const created = await createCommonFromPayload(payload, {
+                            title: record.title || "New page",
+                            description: record.description || "",
+                            superpowers: Array.isArray(record.superpowers) ? record.superpowers : [],
+                            parentId: nextParentId
+                        });
+                        await documentApi?.deleteRecord?.(docId);
+                        await memoExplorer?.removeItemById?.(docId);
+                        await memoExplorer?.upsertItem?.({
+                            id: `common:${created.id}`,
+                            title: created.template.label,
+                            description: created.template.description,
+                            superpowers: created.template.superpowers,
+                            parentId: created.template.parentId ? `common:${created.template.parentId}` : "",
+                            icon: String(created.template.icon || "").trim(),
+                            isCommon: true,
+                            section: "common",
+                            templateData: created.template,
+                            updatedAt: created.updatedAt
+                        });
+                        return;
+                    }
+
+                    if (fromSection === "common" && toSection === "private") {
+                        const templateId = parseCommonTemplateId(docId);
+                        await syncTemplates(false);
+                        const template = cloudTemplates.find(item => String(item?.id || "") === templateId);
+                        if (!template) return;
+                        const tabId = createId();
+                        const payload = normalizeState({
+                            tabs: [{
+                                id: tabId,
+                                title: String(template.label || "New page"),
+                                description: String(template.description || ""),
+                                superpowers: Array.isArray(template.superpowers) ? template.superpowers : [],
+                                content: String(template.html || ""),
+                                metadata: {}
+                            }],
+                            activeTabId: tabId,
+                            promptPresetId: "edit"
+                        }) || buildSharePayload();
+                        const created = await createPrivateFromPayload(payload, {
+                            title: template.label || "New page",
+                            description: template.description || "",
+                            superpowers: Array.isArray(template.superpowers) ? template.superpowers : [],
+                            parentId: nextParentId
+                        });
+                        try {
+                            if (shareWorker?.isReady) await shareWorker.deleteSharePayload(TEMPLATES_COLLECTION, templateId);
+                        } catch (err) { }
+                        cloudTemplates = cloudTemplates.filter(item => String(item?.id || "") !== templateId);
+                        await window.goToolkitTemplateStore?.delete?.(templateId);
+                        await memoExplorer?.removeItemById?.(`common:${templateId}`);
+                        await memoExplorer?.upsertItem?.({
+                            id: created.id,
+                            app: "memo",
+                            title: template.label || "New page",
+                            description: template.description || "",
+                            superpowers: Array.isArray(template.superpowers) ? template.superpowers : [],
+                            parentId: nextParentId,
+                            section: "private",
+                            updatedAt: created.updatedAt
+                        });
+                        return;
+                    }
+
+                    if (fromSection === "private" && toSection === "shared") {
+                        const record = await documentApi?.getRecord?.(docId);
+                        if (!record || !shareWorker?.isReady) return;
+                        const token = createShareToken();
+                        const payload = record.payload || buildSharePayload();
+                        const meta = await shareWorker.saveSharePayload(
+                            FIRESTORE_COLLECTION,
+                            token,
+                            payload,
+                            { inlineAssets: true, assetScope: "memos" }
+                        );
+                        await shareHistory?.upsertRecord?.("memo", {
+                            token,
+                            title: record.title || "Document partagé",
+                            description: record.description || "",
+                            superpowers: Array.isArray(record.superpowers) ? record.superpowers : [],
+                            payload,
+                            icon: String(record.icon || "file-symlink").trim(),
+                            parentId: nextParentId,
+                            updatedAt: meta?.updatedAt || now
+                        });
+                        await documentApi?.deleteRecord?.(docId);
+                        await memoExplorer?.removeItemById?.(docId);
+                        await memoExplorer?.upsertItem?.({
+                            id: `share:${token}`,
+                            token,
+                            title: record.title || "Document partagé",
+                            description: record.description || "",
+                            superpowers: Array.isArray(record.superpowers) ? record.superpowers : [],
+                            payload,
+                            icon: String(record.icon || "file-symlink").trim(),
+                            parentId: nextParentId,
+                            isShared: true,
+                            section: "shared",
+                            updatedAt: meta?.updatedAt || now
+                        });
+                        if (activeDocumentId === docId) {
+                            const docs = await documentApi?.getAllRecords?.();
+                            const memoDocs = (docs || []).filter(item => item && item.app === "memo" && item.id !== docId);
+                            if (memoDocs.length) {
+                                await setActiveDocument(memoDocs[0].id);
+                            } else {
+                                await createAutoDocument();
+                            }
+                        }
+                        return;
+                    }
+
+                    if (fromSection === "shared" && toSection === "private") {
+                        const token = String(docId).startsWith("share:") ? String(docId).slice("share:".length) : String(docId);
+                        const records = await shareHistory?.getRecordsByApp?.("memo");
+                        const sharedRecord = (records || []).find(item => item && String(item.token || "") === token);
+                        if (!sharedRecord) return;
+                        const localId = (documentApi?.generateId && documentApi.generateId()) || createId();
+                        const payload = normalizeState(sharedRecord.payload) || sharedRecord.payload;
+                        await documentApi?.upsertRecord?.({
+                            id: localId,
+                            app: "memo",
+                            title: sharedRecord.title || "New page",
+                            description: sharedRecord.description || "",
+                            superpowers: Array.isArray(sharedRecord.superpowers) ? sharedRecord.superpowers : [],
+                            payload,
+                            parentId: nextParentId,
+                            icon: String(sharedRecord.icon || "").trim(),
+                            updatedAt: now
+                        });
+                        try {
+                            if (shareWorker?.isReady) {
+                                await shareWorker.deleteSharePayload("memos", token);
+                            }
+                        } catch (err) {
+                            console.warn("Suppression distante échouée", err);
+                        }
+                        await shareHistory?.removeRecord?.("memo", token);
+                        await memoExplorer?.removeItemById?.(`share:${token}`);
+                        await memoExplorer?.upsertItem?.({
+                            id: localId,
+                            app: "memo",
+                            title: sharedRecord.title || "New page",
+                            description: sharedRecord.description || "",
+                            superpowers: Array.isArray(sharedRecord.superpowers) ? sharedRecord.superpowers : [],
+                            payload,
+                            parentId: nextParentId,
+                            icon: String(sharedRecord.icon || "").trim(),
+                            section: "private",
+                            updatedAt: now
+                        });
+                        return;
+                    }
+
+                    if (fromSection === "shared" && toSection === "common") {
+                        const token = String(docId).startsWith("share:") ? String(docId).slice("share:".length) : String(docId);
+                        const records = await shareHistory?.getRecordsByApp?.("memo");
+                        const sharedRecord = (records || []).find(item => item && String(item.token || "") === token);
+                        if (!sharedRecord) return;
+                        const created = await createCommonFromPayload(sharedRecord.payload, {
+                            title: sharedRecord.title || "New page",
+                            description: sharedRecord.description || "",
+                            superpowers: Array.isArray(sharedRecord.superpowers) ? sharedRecord.superpowers : [],
+                            parentId: nextParentId
+                        });
+                        try {
+                            if (shareWorker?.isReady) await shareWorker.deleteSharePayload(FIRESTORE_COLLECTION, token);
+                        } catch (err) { }
+                        await shareHistory?.removeRecord?.("memo", token);
+                        await memoExplorer?.removeItemById?.(`share:${token}`);
+                        await memoExplorer?.upsertItem?.({
+                            id: `common:${created.id}`,
+                            title: created.template.label,
+                            description: created.template.description,
+                            superpowers: created.template.superpowers,
+                            parentId: created.template.parentId ? `common:${created.template.parentId}` : "",
+                            icon: String(created.template.icon || "").trim(),
+                            isCommon: true,
+                            section: "common",
+                            templateData: created.template,
+                            updatedAt: created.updatedAt
+                        });
+                        return;
+                    }
+
+                    if (fromSection === "common" && toSection === "shared") {
+                        const templateId = parseCommonTemplateId(docId);
+                        await syncTemplates(false);
+                        const template = cloudTemplates.find(item => String(item?.id || "") === templateId);
+                        if (!template) return;
+                        const tabId = createId();
+                        const payload = normalizeState({
+                            tabs: [{
+                                id: tabId,
+                                title: String(template.label || "New page"),
+                                description: String(template.description || ""),
+                                superpowers: Array.isArray(template.superpowers) ? template.superpowers : [],
+                                content: String(template.html || ""),
+                                metadata: {}
+                            }],
+                            activeTabId: tabId,
+                            promptPresetId: "edit"
+                        }) || buildSharePayload();
+                        const shared = await createSharedFromPayload(payload, {
+                            title: template.label || "Document partagé",
+                            description: template.description || "",
+                            superpowers: Array.isArray(template.superpowers) ? template.superpowers : [],
+                            parentId: nextParentId
+                        });
+                        try {
+                            if (shareWorker?.isReady) await shareWorker.deleteSharePayload(TEMPLATES_COLLECTION, templateId);
+                        } catch (err) { }
+                        cloudTemplates = cloudTemplates.filter(item => String(item?.id || "") !== templateId);
+                        await window.goToolkitTemplateStore?.delete?.(templateId);
+                        await memoExplorer?.removeItemById?.(`common:${templateId}`);
+                        await memoExplorer?.upsertItem?.({
+                            id: `share:${shared.token}`,
+                            token: shared.token,
+                            title: template.label || "Document partagé",
+                            description: template.description || "",
+                            superpowers: Array.isArray(template.superpowers) ? template.superpowers : [],
+                            payload,
+                            icon: "file-symlink",
+                            parentId: nextParentId,
+                            isShared: true,
+                            section: "shared",
+                            updatedAt: shared.updatedAt
+                        });
+                        return;
+                    }
                 }
             });
             memoExplorer?.refresh();
             window.GoToolkitMemoDocumentExplorer = memoExplorer;
-
-            const documentExplorerList = document.querySelector("[data-document-explorer-list]");
-            documentExplorerList?.addEventListener("click", event => {
-                const button = event.target.closest(".document-explorer__item");
-                if (!button) return;
-                if (window.innerWidth < 1200) {
-                    const assist = window.GoToolkitAssistInstance;
-                    if (assist?.isOpen && typeof assist.close === "function") {
-                        assist.close();
-                    }
-                }
-                const docId = button.dataset.documentId;
-                openDocumentById(docId);
+            ensureCurrentDocumentIconGrid();
+            currentDocIconBtn?.addEventListener("click", async event => {
+                event.preventDefault();
+                event.stopPropagation();
+                ensureCurrentDocumentIconGrid();
+                currentDocIconGrid?.classList.toggle("open");
+                await updateCurrentDocumentIconButton();
             });
 
             async function saveDocument(options) {
@@ -3191,6 +3973,7 @@
                     // IMPORTANT: Preserve existing activeDocumentId if it exists
                     const startedWithId = activeDocumentId;
                     const id = startedWithId || (documentApi.generateId && documentApi.generateId()) || createId();
+                    const currentDocMeta = openDocuments.find(item => item.id === id) || null;
                     const now = new Date().toISOString();
                     const record = await documentApi.upsertRecord({
                         id,
@@ -3201,6 +3984,8 @@
                         superpowers: superpowers,
                         voiceRecordingId: activeTab?.voiceRecordingId || null,
                         handoffId: resolveHandoffId(id, activeTab?.handoffId),
+                        parentId: String(options?.parentId ?? currentDocMeta?.parentId ?? "").trim(),
+                        icon: String(options?.icon ?? currentDocMeta?.icon ?? "").trim(),
                         updatedAt: now
                     });
                     if (record) {
@@ -3213,6 +3998,8 @@
                             title: preview.title || getDocumentTitleFromState(state),
                             description: options?.description !== undefined ? options.description : preview.description,
                             superpowers: superpowers,
+                            parentId: String(record.parentId || options?.parentId || currentDocMeta?.parentId || "").trim(),
+                            icon: String(record.icon || options?.icon || currentDocMeta?.icon || "").trim(),
                             payload,
                             voiceRecordingId: record.voiceRecordingId || activeTab?.voiceRecordingId || null,
                             handoffId: resolveHandoffId(id, record.handoffId !== undefined ? record.handoffId : activeTab?.handoffId),
@@ -3462,6 +4249,8 @@
                         category: doc.payload?.category || "",
                         superpowers: doc.payload?.superpowers || [],
                         html: doc.payload?.html || "",
+                        parentId: doc.payload?.parentId || "",
+                        icon: doc.payload?.icon || "component",
                         ownerToken: doc.payload?.ownerToken || "",
                         updatedAt: doc.meta?.updatedDate || doc.meta?.updatedAt || ""
                     }));
@@ -3548,16 +4337,6 @@
                     `;
 
                     if (cloudTemplates.some(t => t.id === template.id)) {
-                        const previewBtn = document.createElement("button");
-                        previewBtn.type = "button";
-                        previewBtn.className = "gt-template-card__preview";
-                        previewBtn.innerHTML = '<i data-lucide="eye" style="width: 14px; height: 14px;"></i>';
-                        previewBtn.addEventListener("click", (e) => {
-                            e.stopPropagation();
-                            openTemplatePreview(template);
-                        });
-                        btn.appendChild(previewBtn);
-
                         const deleteBtn = document.createElement("button");
                         deleteBtn.type = "button";
                         deleteBtn.className = "gt-template-card__delete";
@@ -3580,22 +4359,11 @@
                             }
                         });
                         btn.appendChild(deleteBtn);
-                    } else {
-                        const previewBtn = document.createElement("button");
-                        previewBtn.type = "button";
-                        previewBtn.className = "gt-template-card__preview";
-                        previewBtn.innerHTML = '<i data-lucide="eye" style="width: 14px; height: 14px;"></i>';
-                        previewBtn.addEventListener("click", (e) => {
-                            e.stopPropagation();
-                            openTemplatePreview(template);
-                        });
-                        btn.appendChild(previewBtn);
                     }
 
                     btn.addEventListener("click", () => {
-                        templateModalList.querySelectorAll(".gt-template-card--selected")
-                            .forEach(el => el.classList.remove("gt-template-card--selected"));
-                        btn.classList.add("gt-template-card--selected");
+                        openPublishedTemplateDirect(template);
+                        closeTemplateModal();
                     });
                     if (index === 0) {
                         btn.classList.add("gt-template-card--selected");
@@ -4024,34 +4792,34 @@
                 if (!documentApi) return false;
                 const stored = loadOpenDocumentState();
                 if (!stored || !stored.openDocumentIds.length) return false;
-                const restoredDocs = [];
-                for (const id of stored.openDocumentIds) {
-                    if (!id) continue;
-                    try {
-                        const record = await documentApi.getRecord(id);
-                        if (!record || !record.payload) continue;
-                        restoredDocs.push({
+                const preferred = stored.activeDocumentId || stored.openDocumentIds[0];
+                if (!preferred) return false;
+                let selected = null;
+                try {
+                    const record = await documentApi.getRecord(preferred);
+                    if (record?.payload) {
+                        selected = {
                             id: record.id,
                             title: record.title || "Docs",
                             description: record.description || "",
                             superpowers: record.superpowers || [],
                             payload: record.payload,
+                            parentId: record.parentId || "",
+                            icon: record.icon || "",
                             notionPageId: record.notionPageId || "",
                             notionPageUrl: record.notionPageUrl || "",
                             notionPath: record.notionPath || "",
                             notionWorkspaceId: record.notionWorkspaceId || "",
                             updatedAt: record.updatedAt || new Date().toISOString()
-                        });
-                    } catch (err) {
-                        console.warn("Failed to restore Docs document", err);
+                        };
                     }
+                } catch (err) {
+                    selected = null;
                 }
-                if (!restoredDocs.length) return false;
-                openDocuments = restoredDocs;
-                const preferred = stored.activeDocumentId;
-                const selected = restoredDocs.find(doc => doc.id === preferred) || restoredDocs[0];
+                if (!selected) return false;
+                openDocuments = [selected];
                 const active = await hydrateRecordFromNotion(selected);
-                upsertOpenDocument(active);
+                setSingleOpenDocument(active);
                 const loaded = normalizeState(active.payload);
                 if (loaded) {
                     state = loaded;
@@ -4080,6 +4848,8 @@
                         description: record.description || "",
                         superpowers: record.superpowers || [],
                         payload: record.payload,
+                        parentId: record.parentId || "",
+                        icon: record.icon || "",
                         notionPageId: record.notionPageId || "",
                         notionPageUrl: record.notionPageUrl || "",
                         notionPath: record.notionPath || "",
@@ -4095,11 +4865,15 @@
 
             resetDevState();
             const initialState = loadState();
-            let state = initialState || createDefaultState(true);
+            state = initialState || createDefaultState(true);
             const shouldOpenTemplateOnStart = !initialState;
 
             const documentLoadedPromise = (async () => {
-                const restored = await restoreOpenDocumentsFromStorage();
+                let restored = await restoreOpenDocumentsFromStorage();
+                if (!restored) {
+                    await ensureDefaultDocumentRecord();
+                    restored = await openMostRecentDocumentFromStore();
+                }
                 return restored;
             })();
 
@@ -4110,14 +4884,13 @@
                     if (previewData) {
                         localStorage.removeItem("goToolkit.memo.templateToPreview");
                         const template = JSON.parse(previewData);
-                        openTemplatePreview(template, { forceCreate: true });
+                        await openPublishedTemplateDirect(template);
                     }
                     const templateData = localStorage.getItem("goToolkit.memo.templateToLoad");
                     if (templateData && !previewData) {
                         localStorage.removeItem("goToolkit.memo.templateToLoad");
                         const template = JSON.parse(templateData);
-                        const autoName = await getAutoDocumentName(template.label || null);
-                        await createNewDocument(autoName, template.description, template.superpowers, template.html);
+                        await openPublishedTemplateDirect(template);
                     }
                 } catch (err) {
                     console.warn("Failed to load template from localStorage", err);
@@ -4141,6 +4914,7 @@
                 if (openDocuments.length) {
                     ensureActiveDocument();
                 }
+                await memoExplorer?.refresh?.();
                 setupMemoPrompt();
                 syncAssistPresetFromState();
                 hydrateMemoContextEmbeddings();
@@ -4988,7 +5762,7 @@
                         title: "Panneau documents et onglets",
                         text: "Utilise Bibliothèque pour ouvrir le document-panel puis change d'onglet document en haut.",
                         before: () => ensureDocumentPanelOpen(),
-                        focus: () => document.querySelector("#documentExplorer .document-explorer__tab-btn[data-tab='library']") || document.getElementById("document-tabs")
+                        focus: () => document.querySelector("#documentExplorer .document-explorer__tab-btn[data-tab='library']") || document.getElementById("document-breadcrumb")
                     },
                     {
                         title: "Assist: édition sélection + fichier",
@@ -5005,7 +5779,7 @@
                     },
                     {
                         title: "Quick hacks",
-                        text: "Accélère ton flux avec Modèles, Raccourcis Prompt et Capture mobile pour importer depuis ton smartphone.",
+                        text: "Accélère ton flux avec Raccourcis Prompt et Capture mobile pour importer depuis ton smartphone.",
                         keepFileMenuOpen: true,
                         before: () => {
                             ensureFileMenuOpen();
@@ -5013,7 +5787,6 @@
                         },
                         focus: () => ([
                             document.querySelector("#assistSidebar .chat-prompt-shortcuts-btn"),
-                            document.getElementById("gtTemplateModalTrigger"),
                             document.getElementById("handoffFocusBtn")
                         ].filter(Boolean))
                     }
@@ -5196,7 +5969,6 @@
                 });
             });
 
-            templateModalTrigger?.addEventListener("click", () => openTemplateModal("create"));
             document.getElementById("refreshTemplatesBtn")?.addEventListener("click", async () => {
                 const btn = document.getElementById("refreshTemplatesBtn");
                 if (btn) btn.classList.add("btn--loading");
@@ -5209,21 +5981,8 @@
             });
             templateModalApply?.addEventListener("click", async () => {
                 const template = getSelectedTemplate();
-                await applyTemplateContent(template);
+                await openPublishedTemplateDirect(template);
                 closeTemplateModal();
-            });
-            templatePreviewBack?.addEventListener("click", () => {
-                closeTemplatePreview({ restoreFocus: false });
-                openTemplateModal("create");
-            });
-            templatePreviewClose?.addEventListener("click", () => closeTemplatePreview());
-            templatePreviewModal?.addEventListener("click", event => {
-                if (event.target === templatePreviewModal) closeTemplatePreview();
-            });
-            templatePreviewApply?.addEventListener("click", async () => {
-                if (!activeTemplatePreview) return;
-                await applyTemplateContent(activeTemplatePreview);
-                closeTemplatePreview();
             });
 
             handoffFocusBtn?.addEventListener("click", event => {
@@ -5320,12 +6079,16 @@
                 if (shareMenu?.contains(event.target) || shareBtn?.contains(event.target)) return;
                 if (settingsModal?.contains(event.target) || memoSettingsBtn?.contains(event.target)) return;
                 if (memoInfoPopup?.contains(event.target) || infoButton?.contains(event.target)) return;
+                if (currentDocIconGrid && !currentDocIconGrid.contains(event.target) && !currentDocIconBtn?.contains(event.target)) {
+                    currentDocIconGrid.classList.remove("open");
+                }
                 closeMenus();
                 closeInfoPopup();
             });
 
             document.addEventListener("keydown", event => {
                 if (event.key === "Escape") {
+                    currentDocIconGrid?.classList.remove("open");
                     closeMenus();
                     closeTemplateModal();
                     closeTemplatePreview();
@@ -5333,61 +6096,6 @@
                     closeSettingsModal();
                     closeInfoPopup();
                 }
-            });
-
-            const EDGE_DROP_BUFFER = 50;
-            let draggedDocumentId = null;
-            documentTabsEl?.addEventListener("dragstart", event => {
-                const tab = event.target.closest(".document-tab");
-                if (!tab || !tab.dataset.documentId) return;
-                draggedDocumentId = tab.dataset.documentId;
-                tab.classList.add("is-dragging");
-                event.dataTransfer.effectAllowed = "move";
-                event.dataTransfer.setData("text/plain", draggedDocumentId);
-            });
-            documentTabsEl?.addEventListener("dragend", event => {
-                const tab = event.target.closest(".document-tab");
-                tab?.classList.remove("is-dragging");
-                draggedDocumentId = null;
-            });
-            documentTabsEl?.addEventListener("dragover", event => {
-                if (!draggedDocumentId) return;
-                const target = event.target.closest(".document-tab");
-                if (target) {
-                    if (target.dataset.documentId === draggedDocumentId) return;
-                    event.preventDefault();
-                    return;
-                }
-                const containerRect = documentTabsEl.getBoundingClientRect();
-                if (event.clientX <= containerRect.right + EDGE_DROP_BUFFER && event.clientX >= containerRect.left) {
-                    event.preventDefault();
-                }
-            });
-            documentTabsEl?.addEventListener("drop", event => {
-                const target = event.target.closest(".document-tab");
-                if (!draggedDocumentId) return;
-                event.preventDefault();
-                const fromIndex = openDocuments.findIndex(doc => doc.id === draggedDocumentId);
-                const [moved] = openDocuments.splice(fromIndex, 1);
-                if (!target) {
-                    const containerRect = documentTabsEl.getBoundingClientRect();
-                    if (event.clientX <= containerRect.right + EDGE_DROP_BUFFER) { openDocuments.push(moved); renderDocumentTabs(); }
-                    else { openDocuments.splice(fromIndex, 0, moved); } return;
-                } const targetId = target.dataset.documentId; if
-                    (!targetId || targetId === draggedDocumentId) return; const toIndex = openDocuments.findIndex(doc => doc.id ===
-                        targetId);
-                if (fromIndex < 0 || toIndex < 0) return; const rect = target.getBoundingClientRect(); const
-                    insertAfter = event.clientX > rect.left + rect.width / 2;
-                let nextIndex = toIndex;
-                if (insertAfter) {
-                    nextIndex = toIndex + (fromIndex < toIndex ? 0 : 1);
-                } else {
-                    nextIndex = toIndex + (fromIndex < toIndex ? -1
-                        : 0);
-                } if (nextIndex < 0) nextIndex = 0; if (nextIndex > openDocuments.length) nextIndex =
-                    openDocuments.length;
-                openDocuments.splice(nextIndex, 0, moved);
-                renderDocumentTabs();
             });
 
             window.applyMemoOperations = function (operations) {

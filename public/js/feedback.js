@@ -46,26 +46,21 @@
                 </header>
                 <form id="${prefix}-form" class="${prefix}-form feedback-app-form">
                     <label class="feedback-app-label">
-                        <span>Nom</span>
                         <input id="${prefix}-name" name="name" type="text" placeholder="Ton nom" required class="feedback-app-input" />
                     </label>
                     <label class="feedback-app-label">
-                        <span>Type <span aria-hidden="true">*</span></span>
                         <select id="${prefix}-type" name="type" required class="feedback-app-input">
                             ${types.map(option => `<option value="${option.value}">${option.label}</option>`).join("")}
                         </select>
                     </label>
                     <label class="feedback-app-label">
-                        <span>Sujet <span aria-hidden="true">*</span></span>
                         <input id="${prefix}-subject" name="subject" type="text" placeholder="Titre de la demande" required class="feedback-app-input"  />
                     </label>
                     <label class="feedback-app-label">
-                        <span>Message <span aria-hidden="true">*</span></span>
                         <textarea id="${prefix}-message" name="message" required placeholder="Décris ton retour" class="feedback-app-textarea"></textarea>
                         <p class="feedback-app-helper">Message susceptible d’être consulté par tous. Évite toute information personnelle ou confidentielle.</p>
                     </label>
                     <label class="feedback-app-label">
-                        <span>Médias (images/vidéos)</span>
                         <input id="${prefix}-media" type="file" accept="image/*,video/*" multiple class="feedback-app-input" />
                         <p class="feedback-app-helper">Jusqu'à 6 fichiers, 100 Mo max par fichier.</p>
                     </label>
@@ -153,9 +148,29 @@
         selectedMedia.forEach((item, index) => {
             const row = document.createElement("div");
             row.className = "feedback-app-media-item";
+            const preview = document.createElement("div");
+            preview.className = "feedback-app-media-preview";
+            const dataUrl = `data:${item.mimeType};base64,${item.contentBase64}`;
+            if (String(item.mimeType || "").startsWith("image/")) {
+                const img = document.createElement("img");
+                img.className = "feedback-app-media-thumb";
+                img.src = dataUrl;
+                img.alt = item.fileName || "aperçu média";
+                preview.appendChild(img);
+            } else if (String(item.mimeType || "").startsWith("video/")) {
+                const video = document.createElement("video");
+                video.className = "feedback-app-media-thumb";
+                video.src = dataUrl;
+                video.controls = true;
+                video.preload = "metadata";
+                preview.appendChild(video);
+            }
+            const details = document.createElement("div");
+            details.className = "feedback-app-media-item-details";
             const label = document.createElement("span");
             label.className = "feedback-app-media-item-label";
             label.textContent = `${item.fileName} (${formatSize(item.size)})`;
+            details.appendChild(label);
             const removeBtn = document.createElement("button");
             removeBtn.type = "button";
             removeBtn.className = "btn btn-secondary feedback-app-media-remove";
@@ -164,7 +179,8 @@
                 selectedMedia.splice(index, 1);
                 renderMediaList();
             });
-            row.appendChild(label);
+            row.appendChild(preview);
+            row.appendChild(details);
             row.appendChild(removeBtn);
             mediaList.appendChild(row);
         });

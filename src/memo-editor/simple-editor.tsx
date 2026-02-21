@@ -50,7 +50,7 @@ import {
   ChevronDown, Check, CheckCheck, Type,
   Bot, X, Plus, Baseline, Shapes,
   CheckSquare,
-  Pencil, Copy, Image as ImageIcon, Video,
+  Pencil, Copy, Image as ImageIcon, Clapperboard,
   Square, RectangleHorizontal, Tag,
   ArrowDownAZ, ArrowUpAZ
 } from 'lucide-react';
@@ -1695,8 +1695,8 @@ const Toolbar = ({ editor, onDropdownToggle, onLink, onInsertImage, onInsertVide
           onMouseDown={(event) => event.preventDefault()}
           onClick={onInsertVideo}
         >
-          <i data-lucide="film" style={{ display: 'none' }} aria-hidden="true"></i>
-          <Video size={16} />
+          <i data-lucide="clapperboard" style={{ display: 'none' }} aria-hidden="true"></i>
+          <Clapperboard size={16} />
         </button>
       </div>
 

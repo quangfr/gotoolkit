@@ -28480,145 +28480,159 @@ img.ProseMirror-separator {
   ];
   var CircleX = createLucideIcon("circle-x", __iconNode16);
 
-  // node_modules/lucide-react/dist/esm/icons/code-xml.js
+  // node_modules/lucide-react/dist/esm/icons/clapperboard.js
   init_define_process_env();
   init_polyfills();
   var __iconNode17 = [
+    [
+      "path",
+      { d: "M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3Z", key: "1tn4o7" }
+    ],
+    ["path", { d: "m6.2 5.3 3.1 3.9", key: "iuk76l" }],
+    ["path", { d: "m12.4 3.4 3.1 4", key: "6hsd6n" }],
+    ["path", { d: "M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z", key: "ltgou9" }]
+  ];
+  var Clapperboard = createLucideIcon("clapperboard", __iconNode17);
+
+  // node_modules/lucide-react/dist/esm/icons/code-xml.js
+  init_define_process_env();
+  init_polyfills();
+  var __iconNode18 = [
     ["path", { d: "m18 16 4-4-4-4", key: "1inbqp" }],
     ["path", { d: "m6 8-4 4 4 4", key: "15zrgr" }],
     ["path", { d: "m14.5 4-5 16", key: "e7oirm" }]
   ];
-  var CodeXml = createLucideIcon("code-xml", __iconNode17);
+  var CodeXml = createLucideIcon("code-xml", __iconNode18);
 
   // node_modules/lucide-react/dist/esm/icons/copy.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode18 = [
+  var __iconNode19 = [
     ["rect", { width: "14", height: "14", x: "8", y: "8", rx: "2", ry: "2", key: "17jyea" }],
     ["path", { d: "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2", key: "zix9uf" }]
   ];
-  var Copy = createLucideIcon("copy", __iconNode18);
+  var Copy = createLucideIcon("copy", __iconNode19);
 
   // node_modules/lucide-react/dist/esm/icons/crop.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode19 = [
+  var __iconNode20 = [
     ["path", { d: "M6 2v14a2 2 0 0 0 2 2h14", key: "ron5a4" }],
     ["path", { d: "M18 22V8a2 2 0 0 0-2-2H2", key: "7s9ehn" }]
   ];
-  var Crop = createLucideIcon("crop", __iconNode19);
+  var Crop = createLucideIcon("crop", __iconNode20);
 
   // node_modules/lucide-react/dist/esm/icons/download.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode20 = [
+  var __iconNode21 = [
     ["path", { d: "M12 15V3", key: "m9g1x1" }],
     ["path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", key: "ih7n3h" }],
     ["path", { d: "m7 10 5 5 5-5", key: "brsn70" }]
   ];
-  var Download = createLucideIcon("download", __iconNode20);
+  var Download = createLucideIcon("download", __iconNode21);
 
   // node_modules/lucide-react/dist/esm/icons/fullscreen.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode21 = [
+  var __iconNode22 = [
     ["path", { d: "M3 7V5a2 2 0 0 1 2-2h2", key: "aa7l1z" }],
     ["path", { d: "M17 3h2a2 2 0 0 1 2 2v2", key: "4qcy5o" }],
     ["path", { d: "M21 17v2a2 2 0 0 1-2 2h-2", key: "6vwrx8" }],
     ["path", { d: "M7 21H5a2 2 0 0 1-2-2v-2", key: "ioqczr" }],
     ["rect", { width: "10", height: "8", x: "7", y: "8", rx: "1", key: "vys8me" }]
   ];
-  var Fullscreen = createLucideIcon("fullscreen", __iconNode21);
+  var Fullscreen = createLucideIcon("fullscreen", __iconNode22);
 
   // node_modules/lucide-react/dist/esm/icons/heading-1.js
-  init_define_process_env();
-  init_polyfills();
-  var __iconNode22 = [
-    ["path", { d: "M4 12h8", key: "17cfdx" }],
-    ["path", { d: "M4 18V6", key: "1rz3zl" }],
-    ["path", { d: "M12 18V6", key: "zqpxq5" }],
-    ["path", { d: "m17 12 3-2v8", key: "1hhhft" }]
-  ];
-  var Heading1 = createLucideIcon("heading-1", __iconNode22);
-
-  // node_modules/lucide-react/dist/esm/icons/heading-2.js
   init_define_process_env();
   init_polyfills();
   var __iconNode23 = [
     ["path", { d: "M4 12h8", key: "17cfdx" }],
     ["path", { d: "M4 18V6", key: "1rz3zl" }],
     ["path", { d: "M12 18V6", key: "zqpxq5" }],
-    ["path", { d: "M21 18h-4c0-4 4-3 4-6 0-1.5-2-2.5-4-1", key: "9jr5yi" }]
+    ["path", { d: "m17 12 3-2v8", key: "1hhhft" }]
   ];
-  var Heading2 = createLucideIcon("heading-2", __iconNode23);
+  var Heading1 = createLucideIcon("heading-1", __iconNode23);
 
-  // node_modules/lucide-react/dist/esm/icons/heading-3.js
+  // node_modules/lucide-react/dist/esm/icons/heading-2.js
   init_define_process_env();
   init_polyfills();
   var __iconNode24 = [
     ["path", { d: "M4 12h8", key: "17cfdx" }],
     ["path", { d: "M4 18V6", key: "1rz3zl" }],
     ["path", { d: "M12 18V6", key: "zqpxq5" }],
+    ["path", { d: "M21 18h-4c0-4 4-3 4-6 0-1.5-2-2.5-4-1", key: "9jr5yi" }]
+  ];
+  var Heading2 = createLucideIcon("heading-2", __iconNode24);
+
+  // node_modules/lucide-react/dist/esm/icons/heading-3.js
+  init_define_process_env();
+  init_polyfills();
+  var __iconNode25 = [
+    ["path", { d: "M4 12h8", key: "17cfdx" }],
+    ["path", { d: "M4 18V6", key: "1rz3zl" }],
+    ["path", { d: "M12 18V6", key: "zqpxq5" }],
     ["path", { d: "M17.5 10.5c1.7-1 3.5 0 3.5 1.5a2 2 0 0 1-2 2", key: "68ncm8" }],
     ["path", { d: "M17 17.5c2 1.5 4 .3 4-1.5a2 2 0 0 0-2-2", key: "1ejuhz" }]
   ];
-  var Heading3 = createLucideIcon("heading-3", __iconNode24);
+  var Heading3 = createLucideIcon("heading-3", __iconNode25);
 
   // node_modules/lucide-react/dist/esm/icons/heading-4.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode25 = [
+  var __iconNode26 = [
     ["path", { d: "M12 18V6", key: "zqpxq5" }],
     ["path", { d: "M17 10v3a1 1 0 0 0 1 1h3", key: "tj5zdr" }],
     ["path", { d: "M21 10v8", key: "1kdml4" }],
     ["path", { d: "M4 12h8", key: "17cfdx" }],
     ["path", { d: "M4 18V6", key: "1rz3zl" }]
   ];
-  var Heading4 = createLucideIcon("heading-4", __iconNode25);
+  var Heading4 = createLucideIcon("heading-4", __iconNode26);
 
   // node_modules/lucide-react/dist/esm/icons/highlighter.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode26 = [
+  var __iconNode27 = [
     ["path", { d: "m9 11-6 6v3h9l3-3", key: "1a3l36" }],
     ["path", { d: "m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4", key: "14a9rk" }]
   ];
-  var Highlighter = createLucideIcon("highlighter", __iconNode26);
+  var Highlighter = createLucideIcon("highlighter", __iconNode27);
 
   // node_modules/lucide-react/dist/esm/icons/image.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode27 = [
+  var __iconNode28 = [
     ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", ry: "2", key: "1m3agn" }],
     ["circle", { cx: "9", cy: "9", r: "2", key: "af1f0g" }],
     ["path", { d: "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21", key: "1xmnt7" }]
   ];
-  var Image2 = createLucideIcon("image", __iconNode27);
+  var Image2 = createLucideIcon("image", __iconNode28);
 
   // node_modules/lucide-react/dist/esm/icons/info.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode28 = [
+  var __iconNode29 = [
     ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
     ["path", { d: "M12 16v-4", key: "1dtifu" }],
     ["path", { d: "M12 8h.01", key: "e9boi3" }]
   ];
-  var Info = createLucideIcon("info", __iconNode28);
+  var Info = createLucideIcon("info", __iconNode29);
 
   // node_modules/lucide-react/dist/esm/icons/italic.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode29 = [
+  var __iconNode30 = [
     ["line", { x1: "19", x2: "10", y1: "4", y2: "4", key: "15jd3p" }],
     ["line", { x1: "14", x2: "5", y1: "20", y2: "20", key: "bu0au3" }],
     ["line", { x1: "15", x2: "9", y1: "4", y2: "20", key: "uljnxc" }]
   ];
-  var Italic2 = createLucideIcon("italic", __iconNode29);
+  var Italic2 = createLucideIcon("italic", __iconNode30);
 
   // node_modules/lucide-react/dist/esm/icons/lightbulb.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode30 = [
+  var __iconNode31 = [
     [
       "path",
       {
@@ -28629,21 +28643,21 @@ img.ProseMirror-separator {
     ["path", { d: "M9 18h6", key: "x1upvd" }],
     ["path", { d: "M10 22h4", key: "ceow96" }]
   ];
-  var Lightbulb = createLucideIcon("lightbulb", __iconNode30);
+  var Lightbulb = createLucideIcon("lightbulb", __iconNode31);
 
   // node_modules/lucide-react/dist/esm/icons/link.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode31 = [
+  var __iconNode32 = [
     ["path", { d: "M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71", key: "1cjeqo" }],
     ["path", { d: "M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71", key: "19qd67" }]
   ];
-  var Link2 = createLucideIcon("link", __iconNode31);
+  var Link2 = createLucideIcon("link", __iconNode32);
 
   // node_modules/lucide-react/dist/esm/icons/list.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode32 = [
+  var __iconNode33 = [
     ["path", { d: "M3 5h.01", key: "18ugdj" }],
     ["path", { d: "M3 12h.01", key: "nlz23k" }],
     ["path", { d: "M3 19h.01", key: "noohij" }],
@@ -28651,18 +28665,18 @@ img.ProseMirror-separator {
     ["path", { d: "M8 12h13", key: "1za7za" }],
     ["path", { d: "M8 19h13", key: "m83p4d" }]
   ];
-  var List = createLucideIcon("list", __iconNode32);
+  var List = createLucideIcon("list", __iconNode33);
 
   // node_modules/lucide-react/dist/esm/icons/loader-circle.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode33 = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
-  var LoaderCircle = createLucideIcon("loader-circle", __iconNode33);
+  var __iconNode34 = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
+  var LoaderCircle = createLucideIcon("loader-circle", __iconNode34);
 
   // node_modules/lucide-react/dist/esm/icons/pencil.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode34 = [
+  var __iconNode35 = [
     [
       "path",
       {
@@ -28672,21 +28686,21 @@ img.ProseMirror-separator {
     ],
     ["path", { d: "m15 5 4 4", key: "1mk7zo" }]
   ];
-  var Pencil = createLucideIcon("pencil", __iconNode34);
+  var Pencil = createLucideIcon("pencil", __iconNode35);
 
   // node_modules/lucide-react/dist/esm/icons/plus.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode35 = [
+  var __iconNode36 = [
     ["path", { d: "M5 12h14", key: "1ays0h" }],
     ["path", { d: "M12 5v14", key: "s699le" }]
   ];
-  var Plus = createLucideIcon("plus", __iconNode35);
+  var Plus = createLucideIcon("plus", __iconNode36);
 
   // node_modules/lucide-react/dist/esm/icons/quote.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode36 = [
+  var __iconNode37 = [
     [
       "path",
       {
@@ -28702,38 +28716,38 @@ img.ProseMirror-separator {
       }
     ]
   ];
-  var Quote = createLucideIcon("quote", __iconNode36);
+  var Quote = createLucideIcon("quote", __iconNode37);
 
   // node_modules/lucide-react/dist/esm/icons/rectangle-horizontal.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode37 = [
+  var __iconNode38 = [
     ["rect", { width: "20", height: "12", x: "2", y: "6", rx: "2", key: "9lu3g6" }]
   ];
-  var RectangleHorizontal = createLucideIcon("rectangle-horizontal", __iconNode37);
+  var RectangleHorizontal = createLucideIcon("rectangle-horizontal", __iconNode38);
 
   // node_modules/lucide-react/dist/esm/icons/redo-2.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode38 = [
+  var __iconNode39 = [
     ["path", { d: "m15 14 5-5-5-5", key: "12vg1m" }],
     ["path", { d: "M20 9H9.5A5.5 5.5 0 0 0 4 14.5A5.5 5.5 0 0 0 9.5 20H13", key: "6uklza" }]
   ];
-  var Redo2 = createLucideIcon("redo-2", __iconNode38);
+  var Redo2 = createLucideIcon("redo-2", __iconNode39);
 
   // node_modules/lucide-react/dist/esm/icons/rotate-cw.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode39 = [
+  var __iconNode40 = [
     ["path", { d: "M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8", key: "1p45f6" }],
     ["path", { d: "M21 3v5h-5", key: "1q7to0" }]
   ];
-  var RotateCw = createLucideIcon("rotate-cw", __iconNode39);
+  var RotateCw = createLucideIcon("rotate-cw", __iconNode40);
 
   // node_modules/lucide-react/dist/esm/icons/send.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode40 = [
+  var __iconNode41 = [
     [
       "path",
       {
@@ -28743,12 +28757,12 @@ img.ProseMirror-separator {
     ],
     ["path", { d: "m21.854 2.147-10.94 10.939", key: "12cjpa" }]
   ];
-  var Send = createLucideIcon("send", __iconNode40);
+  var Send = createLucideIcon("send", __iconNode41);
 
   // node_modules/lucide-react/dist/esm/icons/shapes.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode41 = [
+  var __iconNode42 = [
     [
       "path",
       {
@@ -28759,12 +28773,12 @@ img.ProseMirror-separator {
     ["rect", { x: "3", y: "14", width: "7", height: "7", rx: "1", key: "1bkyp8" }],
     ["circle", { cx: "17.5", cy: "17.5", r: "3.5", key: "w3z12y" }]
   ];
-  var Shapes = createLucideIcon("shapes", __iconNode41);
+  var Shapes = createLucideIcon("shapes", __iconNode42);
 
   // node_modules/lucide-react/dist/esm/icons/sparkles.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode42 = [
+  var __iconNode43 = [
     [
       "path",
       {
@@ -28776,72 +28790,72 @@ img.ProseMirror-separator {
     ["path", { d: "M22 4h-4", key: "gwowj6" }],
     ["circle", { cx: "4", cy: "20", r: "2", key: "6kqj1y" }]
   ];
-  var Sparkles = createLucideIcon("sparkles", __iconNode42);
+  var Sparkles = createLucideIcon("sparkles", __iconNode43);
 
   // node_modules/lucide-react/dist/esm/icons/square-check-big.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode43 = [
+  var __iconNode44 = [
     [
       "path",
       { d: "M21 10.656V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h12.344", key: "2acyp4" }
     ],
     ["path", { d: "m9 11 3 3L22 4", key: "1pflzl" }]
   ];
-  var SquareCheckBig = createLucideIcon("square-check-big", __iconNode43);
+  var SquareCheckBig = createLucideIcon("square-check-big", __iconNode44);
 
   // node_modules/lucide-react/dist/esm/icons/square-check.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode44 = [
+  var __iconNode45 = [
     ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }],
     ["path", { d: "m9 12 2 2 4-4", key: "dzmm74" }]
   ];
-  var SquareCheck = createLucideIcon("square-check", __iconNode44);
+  var SquareCheck = createLucideIcon("square-check", __iconNode45);
 
   // node_modules/lucide-react/dist/esm/icons/square-code.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode45 = [
+  var __iconNode46 = [
     ["path", { d: "m10 9-3 3 3 3", key: "1oro0q" }],
     ["path", { d: "m14 15 3-3-3-3", key: "bz13h7" }],
     ["rect", { x: "3", y: "3", width: "18", height: "18", rx: "2", key: "h1oib" }]
   ];
-  var SquareCode = createLucideIcon("square-code", __iconNode45);
+  var SquareCode = createLucideIcon("square-code", __iconNode46);
 
   // node_modules/lucide-react/dist/esm/icons/square.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode46 = [
+  var __iconNode47 = [
     ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }]
   ];
-  var Square = createLucideIcon("square", __iconNode46);
+  var Square = createLucideIcon("square", __iconNode47);
 
   // node_modules/lucide-react/dist/esm/icons/strikethrough.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode47 = [
+  var __iconNode48 = [
     ["path", { d: "M16 4H9a3 3 0 0 0-2.83 4", key: "43sutm" }],
     ["path", { d: "M14 12a4 4 0 0 1 0 8H6", key: "nlfj13" }],
     ["line", { x1: "4", x2: "20", y1: "12", y2: "12", key: "1e0a9i" }]
   ];
-  var Strikethrough = createLucideIcon("strikethrough", __iconNode47);
+  var Strikethrough = createLucideIcon("strikethrough", __iconNode48);
 
   // node_modules/lucide-react/dist/esm/icons/table.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode48 = [
+  var __iconNode49 = [
     ["path", { d: "M12 3v18", key: "108xh3" }],
     ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }],
     ["path", { d: "M3 9h18", key: "1pudct" }],
     ["path", { d: "M3 15h18", key: "5xshup" }]
   ];
-  var Table2 = createLucideIcon("table", __iconNode48);
+  var Table2 = createLucideIcon("table", __iconNode49);
 
   // node_modules/lucide-react/dist/esm/icons/tag.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode49 = [
+  var __iconNode50 = [
     [
       "path",
       {
@@ -28851,24 +28865,24 @@ img.ProseMirror-separator {
     ],
     ["circle", { cx: "7.5", cy: "7.5", r: ".5", fill: "currentColor", key: "kqv944" }]
   ];
-  var Tag = createLucideIcon("tag", __iconNode49);
+  var Tag = createLucideIcon("tag", __iconNode50);
 
   // node_modules/lucide-react/dist/esm/icons/trash-2.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode50 = [
+  var __iconNode51 = [
     ["path", { d: "M10 11v6", key: "nco0om" }],
     ["path", { d: "M14 11v6", key: "outv1u" }],
     ["path", { d: "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6", key: "miytrc" }],
     ["path", { d: "M3 6h18", key: "d0wm0j" }],
     ["path", { d: "M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2", key: "e791ji" }]
   ];
-  var Trash2 = createLucideIcon("trash-2", __iconNode50);
+  var Trash2 = createLucideIcon("trash-2", __iconNode51);
 
   // node_modules/lucide-react/dist/esm/icons/triangle-alert.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode51 = [
+  var __iconNode52 = [
     [
       "path",
       {
@@ -28879,50 +28893,35 @@ img.ProseMirror-separator {
     ["path", { d: "M12 9v4", key: "juzpu7" }],
     ["path", { d: "M12 17h.01", key: "p32p05" }]
   ];
-  var TriangleAlert = createLucideIcon("triangle-alert", __iconNode51);
+  var TriangleAlert = createLucideIcon("triangle-alert", __iconNode52);
 
   // node_modules/lucide-react/dist/esm/icons/type.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode52 = [
+  var __iconNode53 = [
     ["path", { d: "M12 4v16", key: "1654pz" }],
     ["path", { d: "M4 7V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2", key: "e0r10z" }],
     ["path", { d: "M9 20h6", key: "s66wpe" }]
   ];
-  var Type = createLucideIcon("type", __iconNode52);
+  var Type = createLucideIcon("type", __iconNode53);
 
   // node_modules/lucide-react/dist/esm/icons/underline.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode53 = [
+  var __iconNode54 = [
     ["path", { d: "M6 4v6a6 6 0 0 0 12 0V4", key: "9kb039" }],
     ["line", { x1: "4", x2: "20", y1: "20", y2: "20", key: "nun2al" }]
   ];
-  var Underline2 = createLucideIcon("underline", __iconNode53);
+  var Underline2 = createLucideIcon("underline", __iconNode54);
 
   // node_modules/lucide-react/dist/esm/icons/undo-2.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode54 = [
+  var __iconNode55 = [
     ["path", { d: "M9 14 4 9l5-5", key: "102s5s" }],
     ["path", { d: "M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11", key: "f3b9sd" }]
   ];
-  var Undo2 = createLucideIcon("undo-2", __iconNode54);
-
-  // node_modules/lucide-react/dist/esm/icons/video.js
-  init_define_process_env();
-  init_polyfills();
-  var __iconNode55 = [
-    [
-      "path",
-      {
-        d: "m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5",
-        key: "ftymec"
-      }
-    ],
-    ["rect", { x: "2", y: "6", width: "14", height: "12", rx: "2", key: "158x01" }]
-  ];
-  var Video = createLucideIcon("video", __iconNode55);
+  var Undo2 = createLucideIcon("undo-2", __iconNode55);
 
   // node_modules/lucide-react/dist/esm/icons/workflow.js
   init_define_process_env();
@@ -52104,6 +52103,8 @@ ${content}</tr>
     const [isGenerating, setIsGenerating] = react_shim_default.useState(false);
     const [isTypeMenuOpen, setIsTypeMenuOpen] = react_shim_default.useState(false);
     const composerTextareaRef = react_shim_default.useRef(null);
+    const [editorPanelWidth, setEditorPanelWidth] = react_shim_default.useState(350);
+    const resizeStateRef = react_shim_default.useRef(null);
     const code = node.attrs.code || "";
     const excalidrawJSON = node.attrs.excalidrawJSON || "";
     const autoOpen = node.attrs.autoOpen === true;
@@ -52619,6 +52620,29 @@ ${promptInput.trim()}`
       });
       return () => cancelAnimationFrame(raf);
     }, [isEditing]);
+    react_shim_default.useEffect(() => {
+      if (!isEditing) return;
+      const onPointerMove = (event) => {
+        if (!resizeStateRef.current) return;
+        const modalEl = document.querySelector(".mermaid-modal");
+        const modalWidth = (modalEl == null ? void 0 : modalEl.clientWidth) || window.innerWidth;
+        const minWidth = 260;
+        const maxWidth = Math.max(minWidth, Math.floor(modalWidth * 0.65));
+        const nextWidth = resizeStateRef.current.startWidth - (event.clientX - resizeStateRef.current.startX);
+        setEditorPanelWidth(Math.min(maxWidth, Math.max(minWidth, Math.round(nextWidth))));
+      };
+      const onPointerUp = () => {
+        resizeStateRef.current = null;
+        document.body.classList.remove("table-resize-cursor");
+      };
+      window.addEventListener("pointermove", onPointerMove);
+      window.addEventListener("pointerup", onPointerUp);
+      return () => {
+        window.removeEventListener("pointermove", onPointerMove);
+        window.removeEventListener("pointerup", onPointerUp);
+        document.body.classList.remove("table-resize-cursor");
+      };
+    }, [isEditing]);
     const handleCodeChange = (e) => {
       const newCode = e.target.value;
       setDraftCode(newCode);
@@ -52789,133 +52813,157 @@ ${promptInput.trim()}`
               }
             }
           ) }),
-          /* @__PURE__ */ jsxs("div", { className: "mermaid-modal-editor", children: [
-            /* @__PURE__ */ jsxs("div", { style: { flex: 1, display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }, children: [
-              /* @__PURE__ */ jsx(
-                "textarea",
-                {
-                  className: "mermaid-modal-textarea",
-                  value: draftCode,
-                  onChange: handleCodeChange,
-                  placeholder: "Entrez votre code Mermaid ici...",
-                  spellCheck: false
-                }
-              ),
-              /* @__PURE__ */ jsxs("div", { className: "mermaid-modal-textarea-actions", children: [
-                /* @__PURE__ */ jsx(
-                  "button",
-                  {
-                    type: "button",
-                    className: "mermaid-modal-textarea-btn",
-                    onClick: handleCopyCode,
-                    title: "Copier",
-                    children: /* @__PURE__ */ jsx(Copy, { size: 14 })
-                  }
-                ),
-                /* @__PURE__ */ jsx(
-                  "button",
-                  {
-                    type: "button",
-                    className: "mermaid-modal-textarea-btn",
-                    onClick: handleClearCode,
-                    title: "Effacer",
-                    children: /* @__PURE__ */ jsx(CircleX, { size: 14, "data-lucide": "circle-x" })
-                  }
-                )
-              ] }),
-              modalError && /* @__PURE__ */ jsx("div", { className: "mermaid-modal-error-display", children: modalError })
-            ] }),
-            /* @__PURE__ */ jsxs("div", { id: "draw-composer", className: "draw-composer chat-composer", style: { border: "none", background: "var(--bg-surface)" }, children: [
-              /* @__PURE__ */ jsx("div", { className: "chat-input-wrapper", children: /* @__PURE__ */ jsx(
-                "textarea",
-                {
-                  ref: composerTextareaRef,
-                  id: "draw-composer-input",
-                  className: "chat-input",
-                  rows: 2,
-                  value: promptInput,
-                  onChange: handlePromptInput,
-                  onKeyDown: (e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      handleDrawSend();
+          /* @__PURE__ */ jsx(
+            "div",
+            {
+              className: "mermaid-modal-resizer",
+              role: "separator",
+              "aria-orientation": "vertical",
+              "aria-label": "Redimensionner l'\xE9diteur Mermaid",
+              onPointerDown: (event) => {
+                event.preventDefault();
+                resizeStateRef.current = {
+                  startX: event.clientX,
+                  startWidth: editorPanelWidth
+                };
+                document.body.classList.add("table-resize-cursor");
+              }
+            }
+          ),
+          /* @__PURE__ */ jsxs(
+            "div",
+            {
+              className: "mermaid-modal-editor",
+              style: { width: `${editorPanelWidth}px`, flexBasis: `${editorPanelWidth}px` },
+              children: [
+                /* @__PURE__ */ jsxs("div", { style: { flex: 1, display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }, children: [
+                  /* @__PURE__ */ jsx(
+                    "textarea",
+                    {
+                      className: "mermaid-modal-textarea",
+                      value: draftCode,
+                      onChange: handleCodeChange,
+                      placeholder: "Entrez votre code Mermaid ici...",
+                      spellCheck: false
                     }
-                  },
-                  placeholder: "D\xE9crivez votre diagramme..."
-                }
-              ) }),
-              /* @__PURE__ */ jsxs("div", { className: "chat-composer-actions", children: [
-                /* @__PURE__ */ jsxs("div", { className: "chat-composer-left-actions", children: [
-                  /* @__PURE__ */ jsxs("div", { className: "diagram-type-dropdown chat-prompt-dropdown", children: [
-                    /* @__PURE__ */ jsxs(
+                  ),
+                  /* @__PURE__ */ jsxs("div", { className: "mermaid-modal-textarea-actions", children: [
+                    /* @__PURE__ */ jsx(
                       "button",
                       {
                         type: "button",
-                        id: "diagram-type-selector",
-                        className: "btn-secondary chat-prompt-btn",
-                        onClick: () => setIsTypeMenuOpen(!isTypeMenuOpen),
-                        style: { display: "flex", alignItems: "center", gap: "4px" },
-                        children: [
-                          (() => {
-                            const current = diagramTypes.find((t) => t.id === diagramType);
-                            const Icon2 = (current == null ? void 0 : current.Icon) || Workflow;
-                            const label = (draftCode || code).trim() ? current == null ? void 0 : current.label : "\xC9diter";
-                            return /* @__PURE__ */ jsxs(Fragment3, { children: [
-                              /* @__PURE__ */ jsx(Icon2, { size: 14 }),
-                              " ",
-                              /* @__PURE__ */ jsx("span", { children: label })
-                            ] });
-                          })(),
-                          /* @__PURE__ */ jsx(ChevronUp, { size: 12, style: { transform: isTypeMenuOpen ? "rotate(180deg)" : "" } })
-                        ]
+                        className: "mermaid-modal-textarea-btn",
+                        onClick: handleCopyCode,
+                        title: "Copier",
+                        children: /* @__PURE__ */ jsx(Copy, { size: 14 })
                       }
                     ),
-                    isTypeMenuOpen && /* @__PURE__ */ jsx("div", { id: "diagram-type-menu", className: "diagram-type-menu chat-prompt-menu open", style: { bottom: "100%", top: "auto", marginBottom: "8px" }, children: diagramTypes.map((t) => /* @__PURE__ */ jsxs(
+                    /* @__PURE__ */ jsx(
                       "button",
                       {
                         type: "button",
-                        className: "chat-prompt-menu-item",
-                        onClick: () => {
-                          setDiagramType(t.id);
-                          setIsTypeMenuOpen(false);
-                        },
-                        style: { display: "flex", alignItems: "center", gap: "8px" },
-                        children: [
-                          /* @__PURE__ */ jsx(t.Icon, { size: 14 }),
-                          /* @__PURE__ */ jsx("span", { children: t.label })
-                        ]
-                      },
-                      t.id
-                    )) })
+                        className: "mermaid-modal-textarea-btn",
+                        onClick: handleClearCode,
+                        title: "Effacer",
+                        children: /* @__PURE__ */ jsx(CircleX, { size: 14, "data-lucide": "circle-x" })
+                      }
+                    )
                   ] }),
-                  /* @__PURE__ */ jsx(
-                    "button",
-                    {
-                      type: "button",
-                      className: "btn-secondary chat-prompt-shortcuts-btn",
-                      title: "Raccourcis",
-                      onClick: () => {
-                        var _a, _b;
-                        (_b = (_a = window.GoToolkitAssistInstance) == null ? void 0 : _a.openPromptShortcutsModal) == null ? void 0 : _b.call(_a, composerTextareaRef.current);
-                      },
-                      children: /* @__PURE__ */ jsx(Sparkles, { size: 14, "data-lucide": "sparkles" })
-                    }
-                  )
+                  modalError && /* @__PURE__ */ jsx("div", { className: "mermaid-modal-error-display", children: modalError })
                 ] }),
-                /* @__PURE__ */ jsx(
-                  "button",
-                  {
-                    type: "button",
-                    className: "btn-primary chat-send-btn",
-                    onClick: handleDrawSend,
-                    disabled: isGenerating || !promptInput.trim(),
-                    title: "Envoyer",
-                    children: isGenerating ? /* @__PURE__ */ jsx(LoaderCircle, { className: "animate-spin", size: 16 }) : /* @__PURE__ */ jsx(Send, { size: 16 })
-                  }
-                )
-              ] })
-            ] })
-          ] })
+                /* @__PURE__ */ jsxs("div", { id: "draw-composer", className: "draw-composer chat-composer", style: { border: "none", background: "var(--bg-surface)" }, children: [
+                  /* @__PURE__ */ jsx("div", { className: "chat-input-wrapper", children: /* @__PURE__ */ jsx(
+                    "textarea",
+                    {
+                      ref: composerTextareaRef,
+                      id: "draw-composer-input",
+                      className: "chat-input",
+                      rows: 2,
+                      value: promptInput,
+                      onChange: handlePromptInput,
+                      onKeyDown: (e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          handleDrawSend();
+                        }
+                      },
+                      placeholder: "D\xE9crivez votre diagramme..."
+                    }
+                  ) }),
+                  /* @__PURE__ */ jsxs("div", { className: "chat-composer-actions", children: [
+                    /* @__PURE__ */ jsxs("div", { className: "chat-composer-left-actions", children: [
+                      /* @__PURE__ */ jsxs("div", { className: "diagram-type-dropdown chat-prompt-dropdown", children: [
+                        /* @__PURE__ */ jsxs(
+                          "button",
+                          {
+                            type: "button",
+                            id: "diagram-type-selector",
+                            className: "btn-secondary chat-prompt-btn",
+                            onClick: () => setIsTypeMenuOpen(!isTypeMenuOpen),
+                            style: { display: "flex", alignItems: "center", gap: "4px" },
+                            children: [
+                              (() => {
+                                const current = diagramTypes.find((t) => t.id === diagramType);
+                                const Icon2 = (current == null ? void 0 : current.Icon) || Workflow;
+                                const label = (draftCode || code).trim() ? current == null ? void 0 : current.label : "\xC9diter";
+                                return /* @__PURE__ */ jsxs(Fragment3, { children: [
+                                  /* @__PURE__ */ jsx(Icon2, { size: 14 }),
+                                  " ",
+                                  /* @__PURE__ */ jsx("span", { children: label })
+                                ] });
+                              })(),
+                              /* @__PURE__ */ jsx(ChevronUp, { size: 12, style: { transform: isTypeMenuOpen ? "rotate(180deg)" : "" } })
+                            ]
+                          }
+                        ),
+                        isTypeMenuOpen && /* @__PURE__ */ jsx("div", { id: "diagram-type-menu", className: "diagram-type-menu chat-prompt-menu open", style: { bottom: "100%", top: "auto", marginBottom: "8px" }, children: diagramTypes.map((t) => /* @__PURE__ */ jsxs(
+                          "button",
+                          {
+                            type: "button",
+                            className: "chat-prompt-menu-item",
+                            onClick: () => {
+                              setDiagramType(t.id);
+                              setIsTypeMenuOpen(false);
+                            },
+                            style: { display: "flex", alignItems: "center", gap: "8px" },
+                            children: [
+                              /* @__PURE__ */ jsx(t.Icon, { size: 14 }),
+                              /* @__PURE__ */ jsx("span", { children: t.label })
+                            ]
+                          },
+                          t.id
+                        )) })
+                      ] }),
+                      /* @__PURE__ */ jsx(
+                        "button",
+                        {
+                          type: "button",
+                          className: "btn-secondary chat-prompt-shortcuts-btn",
+                          title: "Raccourcis",
+                          onClick: () => {
+                            var _a, _b;
+                            (_b = (_a = window.GoToolkitAssistInstance) == null ? void 0 : _a.openPromptShortcutsModal) == null ? void 0 : _b.call(_a, composerTextareaRef.current);
+                          },
+                          children: /* @__PURE__ */ jsx(Sparkles, { size: 14, "data-lucide": "sparkles" })
+                        }
+                      )
+                    ] }),
+                    /* @__PURE__ */ jsx(
+                      "button",
+                      {
+                        type: "button",
+                        className: "btn-primary chat-send-btn",
+                        onClick: handleDrawSend,
+                        disabled: isGenerating || !promptInput.trim(),
+                        title: "Envoyer",
+                        children: isGenerating ? /* @__PURE__ */ jsx(LoaderCircle, { className: "animate-spin", size: 16 }) : /* @__PURE__ */ jsx(Send, { size: 16 })
+                      }
+                    )
+                  ] })
+                ] })
+              ]
+            }
+          )
         ] })
       ] }) }),
       showToast && /* @__PURE__ */ jsx("div", { className: "mermaid-toast", children: "Contenu copi\xE9" })
@@ -56130,8 +56178,8 @@ ${promptInput.trim()}`
             onMouseDown: (event) => event.preventDefault(),
             onClick: onInsertVideo,
             children: [
-              /* @__PURE__ */ jsx("i", { "data-lucide": "film", style: { display: "none" }, "aria-hidden": "true" }),
-              /* @__PURE__ */ jsx(Video, { size: 16 })
+              /* @__PURE__ */ jsx("i", { "data-lucide": "clapperboard", style: { display: "none" }, "aria-hidden": "true" }),
+              /* @__PURE__ */ jsx(Clapperboard, { size: 16 })
             ]
           }
         )
@@ -59951,6 +59999,7 @@ lucide-react/dist/esm/icons/chevron-up.js:
 lucide-react/dist/esm/icons/circle-alert.js:
 lucide-react/dist/esm/icons/circle-play.js:
 lucide-react/dist/esm/icons/circle-x.js:
+lucide-react/dist/esm/icons/clapperboard.js:
 lucide-react/dist/esm/icons/code-xml.js:
 lucide-react/dist/esm/icons/copy.js:
 lucide-react/dist/esm/icons/crop.js:
@@ -59989,7 +60038,6 @@ lucide-react/dist/esm/icons/triangle-alert.js:
 lucide-react/dist/esm/icons/type.js:
 lucide-react/dist/esm/icons/underline.js:
 lucide-react/dist/esm/icons/undo-2.js:
-lucide-react/dist/esm/icons/video.js:
 lucide-react/dist/esm/icons/workflow.js:
 lucide-react/dist/esm/icons/x.js:
 lucide-react/dist/esm/lucide-react.js:

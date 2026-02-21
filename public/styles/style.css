@@ -902,12 +902,12 @@ mark {
 
 .feedback-app-dialog {
   width: min(95vw, 960px);
-  min-width: 800px;
+  min-width: 95vw;
   background: var(--bg-surface);
   border-radius: var(--radius-lg);
   padding: 10px;
   box-shadow: var(--shadow-lg);
-  max-height: 90vh;
+  max-height: 98vh;
   overflow: auto;
   font-size: 13px;
 }
@@ -950,7 +950,7 @@ mark {
 }
 
 .feedback-app-textarea {
-  min-height: 220px;
+  min-height: 140px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-main);
   padding: 6px 10px;
@@ -975,13 +975,39 @@ mark {
   border: 1px dashed var(--border-main);
   border-radius: var(--radius-md);
   background: var(--bg-surface-soft);
+  min-height: 150px;
 }
 
 .feedback-app-media-item {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  align-items: flex-start;
+  justify-content: flex-start;
   gap: 8px;
+}
+
+.feedback-app-media-preview {
+  width: 120px;
+  height: 80px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--border-main);
+  background: var(--bg-surface);
+  flex: 0 0 auto;
+}
+
+.feedback-app-media-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.feedback-app-media-item-details {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .feedback-app-media-item-label {
@@ -993,6 +1019,14 @@ mark {
 
 .feedback-app-media-remove {
   flex: 0 0 auto;
+}
+
+#feedback-app-index-message {
+  min-height: 120px;
+}
+
+#feedback-app-index-mediaList {
+  min-height: 150px;
 }
 
 .feedback-app-share-row {

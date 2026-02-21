@@ -115,8 +115,8 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Sora:wght@400;500;600&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles/style.css?v=2026.02.20.6">
-    <link rel="stylesheet" href="styles/index.css?v=2026.02.20.6">
+    <link rel="stylesheet" href="styles/style.css?v=2026.02.21.1">
+    <link rel="stylesheet" href="styles/index.css?v=2026.02.21.1">
     <style>
         .feedback-app-launcher-row {
             display: none !important;
@@ -133,7 +133,7 @@
             </div>
             <h1>GoToolkit <span class="hero-beta">beta</span></h1>
             <p>La boîte à outils IA des Product Owners</p>
-            <span class="hero-version label-link" id="releaseNotesTrigger" tabindex="0">v2026.02.20.6</span>
+            <span class="hero-version label-link" id="releaseNotesTrigger" tabindex="0">v2026.02.21.1</span>
 
             <div class="hero-meta">
                 <button id="openSettingsBtn" class="feedback-button" type="button" title="Paramètres">
@@ -152,9 +152,31 @@
         </header>
 
         <section class="section">
+            <div id="pinnedBlock" hidden>
+                <div class="section-title-row" style="margin-top: 4px;">
+                    <p class="section-label"><i data-lucide="pin"
+                            style="width:14px;height:14px;margin-right:4px;"></i>Mes favoris</p>
+                </div>
+                <div id="pinnedGallery" class="share-gallery" aria-live="polite"></div>
+            </div>
             <div class="section-title-row">
+                <p class="section-label nexus-label label-link" data-open-nexus-modal><i data-lucide="book"
+                        style="width:14px;height:14px;margin-right:4px;"></i>Privé
+                </p>
+            </div>
+            <p id="savedEmpty" class="share-helper" hidden>Aucun document enregistré localement.</p>
+            <div class="gallery-nav" id="savedGalleryNav">
+                <button class="gallery-nav__btn gallery-nav__prev" type="button" aria-label="Précédent">
+                    <i data-lucide="chevron-left"></i>
+                </button>
+                <div id="savedGallery" class="share-gallery" aria-live="polite"></div>
+                <button class="gallery-nav__btn gallery-nav__next" type="button" aria-label="Suivant">
+                    <i data-lucide="chevron-right"></i>
+                </button>
+            </div>
+            <div class="section-title-row" style="margin-top: 12px;">
                 <p class="section-label superpower-label label-link" id="superpowerToggle">
-                    <i data-lucide="zap" style="width:14px;height:14px;margin-right:2px;"></i>Modèles Go-Live
+                    <i data-lucide="component" style="width:14px;height:14px;margin-right:2px;"></i>Commun
                 </p>
                 <div id="templateOwnerFilters" style="display:flex; flex-wrap:wrap; gap:6px; margin-left:auto;"></div>
                 <button id="refreshTemplatesBtn" class="share-card-action refresh-templates-btn" title="Rafraîchir">
@@ -171,36 +193,11 @@
                     <i data-lucide="chevron-right"></i>
                 </button>
             </div>
-        </section>
-
-        <section class="section">
-            <div id="pinnedBlock" hidden>
-                <div class="section-title-row" style="margin-top: 4px;">
-                    <p class="section-label"><i data-lucide="pin"
-                            style="width:14px;height:14px;margin-right:4px;"></i>Mes favoris</p>
-                </div>
-                <div id="pinnedGallery" class="share-gallery" aria-live="polite"></div>
-            </div>
-            <div class="section-title-row">
-                <p class="section-label nexus-label label-link" data-open-nexus-modal><i data-lucide="library"
-                        style="width:14px;height:14px;margin-right:4px;"></i>Bibliothèque locale
-                </p>
-            </div>
-            <p id="savedEmpty" class="share-helper" hidden>Aucun document enregistré localement.</p>
-            <div class="gallery-nav" id="savedGalleryNav">
-                <button class="gallery-nav__btn gallery-nav__prev" type="button" aria-label="Précédent">
-                    <i data-lucide="chevron-left"></i>
-                </button>
-                <div id="savedGallery" class="share-gallery" aria-live="polite"></div>
-                <button class="gallery-nav__btn gallery-nav__next" type="button" aria-label="Suivant">
-                    <i data-lucide="chevron-right"></i>
-                </button>
-            </div>
 
             <div id="onlineBlock">
                 <div class="section-title-row" style="margin-top: 12px;">
                     <p class="section-label nexus-label label-link" data-open-nexus-modal><i data-lucide="cloud"
-                            style="width:14px;height:14px;margin-right:4px;"></i>Espace en ligne</p>
+                            style="width:14px;height:14px;margin-right:4px;"></i>Partagé</p>
                 </div>
                 <p id="shareEmpty" class="share-helper" hidden>Aucun document enregistré en ligne.</p>
 
@@ -258,41 +255,24 @@
                     </aside>
                     <section class="requests-content">
                         <div class="request-content-body">
-                            <label>
-                                Sujet
-                                <input id="requestSubject" type="text" readonly />
-                            </label>
-                            <label>
-                                Type
-                                <select id="requestType" disabled>
-                                    <option value="bug-general">Bug Général</option>
-                                    <option value="bug-assist">Bug Assist</option>
-                                    <option value="bug-grid">Bug Grid</option>
-                                    <option value="bug-timeline">Bug Timeline</option>
-                                    <option value="suggestion">Suggestion</option>
-                                </select>
-                            </label>
-                            <label id="requestStatusWrapper">
-                                Statut
+                            <input id="requestSubject" type="text" readonly />
+                            <select id="requestType" disabled>
+                                <option value="bug-general">Bug Général</option>
+                                <option value="bug-assist">Bug Assist</option>
+                                <option value="bug-grid">Bug Grid</option>
+                                <option value="bug-timeline">Bug Timeline</option>
+                                <option value="suggestion">Suggestion</option>
+                            </select>
+                            <div id="requestStatusWrapper">
                                 <select id="requestStatus" disabled>
                                     <option value="recue">Reçue</option>
                                     <option value="traitee">Traitée</option>
                                     <option value="planifiee">Planifiée</option>
                                     <option value="reportee">Reportée</option>
                                 </select>
-                            </label>
-                            <label>
-                                Message
-                                <textarea id="requestMessage" rows="12" readonly></textarea>
-                            </label>
-                            <label>
-                                Lien partagé
-                                <input id="requestShareUrl" type="text" readonly />
-                            </label>
-                            <label>
-                                Médias
-                                <div id="requestMediaList" class="request-media-list"></div>
-                            </label>
+                            </div>
+                            <textarea id="requestMessage" rows="12" readonly></textarea>
+                            <div id="requestMediaList" class="request-media-list"></div>
                         </div>
                         <div class="requests-actions">
                             <button id="saveRequestBtn" class="btn-primary" type="button" disabled>Sauvegarder</button>
@@ -338,21 +318,21 @@
         window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL =
             window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL || "https://assemblyai.gotoolkit.workers.dev/token";
     </script>
-    <script src="js/config.js?v=2026.02.20.6"></script>
-    <script src="js/config-modal.js?v=2026.02.20.6"></script>
-    <script src="js/feature-visibility.js?v=2026.02.20.6"></script>
-    <script src="js/document-storage.js?v=2026.02.20.6"></script>
-    <script src="js/storage-service.js?v=2026.02.20.6"></script>
-    <script src="js/shared-ui.js?v=2026.02.20.6"></script>
-    <script src="js/share-worker-client.js?v=2026.02.20.6"></script>
-    <script src="js/share-history.js?v=2026.02.20.6"></script>
-    <script src="js/document-api.js?v=2026.02.20.6"></script>
-    <script src="js/ia-config.js?v=2026.02.20.6"></script>
-    <script src="preset.js?v=2026.02.20.6"></script>
-    <script src="prompt.js?v=2026.02.20.6"></script>
-    <script src="js/ia-client.js?v=2026.02.20.6"></script>
-    <script src="js/template-gallery.js?v=2026.02.20.6"></script>
-    <script src="js/news.js?v=2026.02.20.6"></script>
+    <script src="js/config.js?v=2026.02.21.1"></script>
+    <script src="js/config-modal.js?v=2026.02.21.1"></script>
+    <script src="js/feature-visibility.js?v=2026.02.21.1"></script>
+    <script src="js/document-storage.js?v=2026.02.21.1"></script>
+    <script src="js/storage-service.js?v=2026.02.21.1"></script>
+    <script src="js/shared-ui.js?v=2026.02.21.1"></script>
+    <script src="js/share-worker-client.js?v=2026.02.21.1"></script>
+    <script src="js/share-history.js?v=2026.02.21.1"></script>
+    <script src="js/document-api.js?v=2026.02.21.1"></script>
+    <script src="js/ia-config.js?v=2026.02.21.1"></script>
+    <script src="preset.js?v=2026.02.21.1"></script>
+    <script src="prompt.js?v=2026.02.21.1"></script>
+    <script src="js/ia-client.js?v=2026.02.21.1"></script>
+    <script src="js/template-gallery.js?v=2026.02.21.1"></script>
+    <script src="js/news.js?v=2026.02.21.1"></script>
     <script>
         document.addEventListener("click", function (event) {
             const legalTrigger = event.target?.closest?.("[data-open-nexus-modal]");
@@ -377,8 +357,8 @@
             primaryColor: "#2a7a57"
         };
     </script>
-    <script src="js/feedback.js?v=2026.02.20.6"></script>
-    <script src="js/youtube-publish.js?v=2026.02.20.6"></script>
+    <script src="js/feedback.js?v=2026.02.21.1"></script>
+    <script src="js/youtube-publish.js?v=2026.02.21.1"></script>
 
     <script>
         (function () {
@@ -419,7 +399,7 @@
             });
         })();
     </script>
-    <script src="js/index-gallery.js?v=2026.02.20.6"></script>
+    <script src="js/index-gallery.js?v=2026.02.21.1"></script>
     <script type="module">
         const openFeedbackBtn = document.getElementById("openFeedbackBtn");
         const toastEl = document.getElementById("feedbackToast");
@@ -436,7 +416,6 @@
         const requestStatusSelect = document.getElementById("requestStatus");
         const requestStatusWrapper = document.getElementById("requestStatusWrapper");
         const requestMessageField = document.getElementById("requestMessage");
-        const requestShareUrl = document.getElementById("requestShareUrl");
         const requestMediaList = document.getElementById("requestMediaList");
         const saveRequestBtn = document.getElementById("saveRequestBtn");
         const deleteRequestBtn = document.getElementById("deleteRequestBtn");
@@ -543,23 +522,53 @@
             media.forEach(entry => {
                 const row = document.createElement("div");
                 row.className = "request-media-item";
+                const preview = document.createElement("div");
+                preview.className = "request-media-preview";
+                const mimeType = String(entry?.mimeType || "");
+                const isImage = mimeType.startsWith("image/");
+                const isVideo = mimeType.startsWith("video/");
                 const nameEl = document.createElement("span");
+                nameEl.className = "request-media-name";
                 nameEl.textContent = `${entry.fileName || "fichier"} (${formatFileSize(entry.size)})`;
                 const typeEl = document.createElement("span");
                 typeEl.className = "share-helper";
                 typeEl.textContent = entry.mimeType || "";
+                const details = document.createElement("div");
+                details.className = "request-media-details";
+                details.appendChild(nameEl);
+                details.appendChild(typeEl);
                 const url = String(entry?.url || "").trim();
-                row.appendChild(nameEl);
-                row.appendChild(typeEl);
                 if (url) {
+                    const resolvedUrl = url.startsWith("http") ? url : `${feedbackApiBase}${url}`;
+                    if (isImage) {
+                        const img = document.createElement("img");
+                        img.className = "request-media-thumb";
+                        img.src = resolvedUrl;
+                        img.alt = entry.fileName || "aperçu média";
+                        preview.appendChild(img);
+                    } else if (isVideo) {
+                        const video = document.createElement("video");
+                        video.className = "request-media-thumb";
+                        video.src = resolvedUrl;
+                        video.controls = true;
+                        video.preload = "metadata";
+                        preview.appendChild(video);
+                    } else {
+                        const generic = document.createElement("span");
+                        generic.className = "share-helper";
+                        generic.textContent = "Fichier";
+                        preview.appendChild(generic);
+                    }
                     const viewLink = document.createElement("a");
-                    viewLink.href = url.startsWith("http") ? url : `${feedbackApiBase}${url}`;
+                    viewLink.href = resolvedUrl;
                     viewLink.target = "_blank";
                     viewLink.rel = "noreferrer noopener";
                     viewLink.className = "share-helper";
                     viewLink.textContent = "ouvrir";
-                    row.appendChild(viewLink);
+                    details.appendChild(viewLink);
                 }
+                row.appendChild(preview);
+                row.appendChild(details);
                 requestMediaList.appendChild(row);
             });
         }
@@ -570,7 +579,6 @@
             if (requestTypeField) requestTypeField.value = hasItem ? (item.type || "") : "";
             if (requestStatusSelect) requestStatusSelect.value = hasItem ? (item.status || "recue") : "recue";
             if (requestMessageField) requestMessageField.value = hasItem ? (item.message || "") : "";
-            if (requestShareUrl) requestShareUrl.value = hasItem ? (item.shareUrl || "") : "";
             renderRequestMediaList(item);
             if (requestsState.canEdit && hasItem) {
                 requestSubject?.removeAttribute("readonly");

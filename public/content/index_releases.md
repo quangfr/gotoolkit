@@ -2,6 +2,7 @@
 - Voice : Télécharger l'enregistrement vidéo
 - Docs : Ajouter des images et des vidéos
 - Docs : Éditer une image
+- Docs : Ajout
 
 ## 2026-02-16
 - Docs : Générer une synthèse vocale avec `Google TTS`

@@ -25,6 +25,11 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
   const [isGenerating, setIsGenerating] = React.useState(false);
   const [isTypeMenuOpen, setIsTypeMenuOpen] = React.useState(false);
   const composerTextareaRef = React.useRef<HTMLTextAreaElement>(null);
+  const [editorPanelWidth, setEditorPanelWidth] = React.useState(350);
+  const resizeStateRef = React.useRef<{
+    startX: number;
+    startWidth: number;
+  } | null>(null);
 
   const code = node.attrs.code || '';
   const excalidrawJSON = node.attrs.excalidrawJSON || '';
@@ -636,6 +641,30 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
     return () => cancelAnimationFrame(raf);
   }, [isEditing]);
 
+  React.useEffect(() => {
+    if (!isEditing) return;
+    const onPointerMove = (event: PointerEvent) => {
+      if (!resizeStateRef.current) return;
+      const modalEl = document.querySelector('.mermaid-modal') as HTMLElement | null;
+      const modalWidth = modalEl?.clientWidth || window.innerWidth;
+      const minWidth = 260;
+      const maxWidth = Math.max(minWidth, Math.floor(modalWidth * 0.65));
+      const nextWidth = resizeStateRef.current.startWidth - (event.clientX - resizeStateRef.current.startX);
+      setEditorPanelWidth(Math.min(maxWidth, Math.max(minWidth, Math.round(nextWidth))));
+    };
+    const onPointerUp = () => {
+      resizeStateRef.current = null;
+      document.body.classList.remove('table-resize-cursor');
+    };
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+    return () => {
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      document.body.classList.remove('table-resize-cursor');
+    };
+  }, [isEditing]);
+
   const handleCodeChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newCode = e.target.value;
     setDraftCode(newCode);
@@ -830,7 +859,24 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
                   onMouseDown={() => excalidrawHostRef.current?.focus()}
                 />
               </div>
-              <div className="mermaid-modal-editor">
+              <div
+                className="mermaid-modal-resizer"
+                role="separator"
+                aria-orientation="vertical"
+                aria-label="Redimensionner l'éditeur Mermaid"
+                onPointerDown={(event) => {
+                  event.preventDefault();
+                  resizeStateRef.current = {
+                    startX: event.clientX,
+                    startWidth: editorPanelWidth,
+                  };
+                  document.body.classList.add('table-resize-cursor');
+                }}
+              />
+              <div
+                className="mermaid-modal-editor"
+                style={{ width: `${editorPanelWidth}px`, flexBasis: `${editorPanelWidth}px` }}
+              >
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
                   <textarea
                     className="mermaid-modal-textarea"

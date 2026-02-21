@@ -1572,6 +1572,28 @@ body.table-resize-cursor * {
   border-left: 1px solid var(--border-main);
 }
 
+.mermaid-modal-resizer {
+  width: 8px;
+  flex: 0 0 8px;
+  cursor: col-resize;
+  background: var(--bg-surface);
+  border-left: 1px solid var(--border-main);
+  border-right: 1px solid var(--border-main);
+  position: relative;
+}
+
+.mermaid-modal-resizer::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px;
+  height: 28px;
+  background: var(--border-strong);
+  border-radius: 999px;
+}
+
 .mermaid-modal-textarea {
   flex: 1;
   width: 100%;
