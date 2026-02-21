@@ -412,10 +412,10 @@
             try {
                 const parsed = JSON.parse(localStorage.getItem(SECTION_EXPANDED_STORAGE_KEY) || "{}");
                 const next = {
-                    recent: parsed?.recent !== false,
+                    recent: false,
                     private: parsed?.private !== false,
                     common: parsed?.common !== false,
-                    superpowers: parsed?.superpowers !== false
+                    superpowers: false
                 };
                 Object.keys(parsed || {}).forEach(key => {
                     if (key in next) return;
@@ -423,7 +423,7 @@
                 });
                 return next;
             } catch (err) {
-                return { recent: true, private: true, common: true, superpowers: true };
+                return { recent: false, private: true, common: true, superpowers: false };
             }
         }
         function persistSectionExpandedState() {
@@ -915,6 +915,7 @@
         let renderListNonce = 0;
         let listDnDBound = false;
         let hasLoadedTreeData = false;
+        let lastAutoExpandedActiveId = "";
 
         function buildTree(items) {
             const byId = new Map((items || []).filter(Boolean).map(item => [item.id, item]));
@@ -1033,7 +1034,7 @@
                 dynamicSharedKeys.forEach(key => {
                     forcedShared[key] = true;
                 });
-                sectionExpanded = { ...sectionExpanded, recent: true, private: true, common: true, superpowers: true, ...forcedShared };
+                sectionExpanded = { ...sectionExpanded, recent: false, private: true, common: true, superpowers: false, ...forcedShared };
                 expandedIds = new Set(normalizeList(cachedItems).map(item => String(item.id || "")).filter(Boolean));
                 persistExpandedState();
                 persistSectionExpandedState();
@@ -1062,6 +1063,8 @@
             if (isStale()) return;
 
             const safeItems = normalizeList(items);
+            sectionExpanded.recent = false;
+            sectionExpanded.superpowers = false;
             const needle = String(searchQuery || "").trim().toLowerCase();
             const filteredItems = needle
                 ? safeItems.filter(item => String(item?.title || "").toLowerCase().includes(needle))
@@ -1090,22 +1093,43 @@
             sharedSectionNames.forEach(sectionName => {
                 trees[sectionName] = buildTree(sharedSections[sectionName] || []);
             });
-            if (activeId) {
-                let expandedChanged = false;
-                Object.values(trees).forEach(tree => {
-                    if (!tree?.byId || typeof tree.byId.get !== "function") return;
-                    let current = tree.byId.get(activeId);
+            const activeItem = activeId
+                ? safeItems.find(item => String(item?.id || "") === String(activeId))
+                : null;
+            const activeSection = activeItem ? getItemSection(activeItem) : "";
+            const shouldApplyActiveDefaults = Boolean(activeId) && activeId !== lastAutoExpandedActiveId;
+            if (shouldApplyActiveDefaults) {
+                const nextExpanded = new Set();
+                const activeTree = trees[activeSection];
+                if (activeTree?.byId?.get) {
+                    let current = activeTree.byId.get(activeId);
                     while (current) {
                         const parentId = String(current.parentId || "").trim();
                         if (!parentId) break;
-                        if (!expandedIds.has(parentId)) {
-                            expandedIds.add(parentId);
-                            expandedChanged = true;
-                        }
-                        current = tree.byId.get(parentId);
+                        nextExpanded.add(parentId);
+                        current = activeTree.byId.get(parentId);
                     }
-                });
-                if (expandedChanged) persistExpandedState();
+                }
+                expandedIds = nextExpanded;
+
+                sectionExpanded.recent = false;
+                sectionExpanded.superpowers = false;
+                if (activeSection.startsWith("shared:")) {
+                    sectionExpanded.private = false;
+                    sharedSectionNames.forEach(sectionName => {
+                        sectionExpanded[sectionName] = sectionName === activeSection;
+                    });
+                } else {
+                    sectionExpanded.private = activeSection === "private";
+                    sharedSectionNames.forEach(sectionName => {
+                        sectionExpanded[sectionName] = false;
+                    });
+                }
+                persistExpandedState();
+                persistSectionExpandedState();
+                lastAutoExpandedActiveId = String(activeId);
+            } else if (!activeId) {
+                lastAutoExpandedActiveId = "";
             }
             const recentItems = filteredItems
                 .slice()
@@ -1380,6 +1404,7 @@
                     sectionHeader.appendChild(actions);
                 }
                 sectionHeader.addEventListener("click", () => {
+                    if (sectionName === "recent") return;
                     sectionExpanded[sectionName] = !sectionExpanded[sectionName];
                     persistSectionExpandedState();
                     renderList(cachedItems);
@@ -1467,11 +1492,7 @@
                 sectionHeader.type = "button";
                 sectionHeader.className = "document-explorer__section-header";
                 sectionHeader.innerHTML = `<i data-lucide="zap"></i><strong>Superpouvoirs</strong><i data-lucide="${sectionExpanded.superpowers ? "chevron-down" : "chevron-right"}"></i>`;
-                sectionHeader.addEventListener("click", () => {
-                    sectionExpanded.superpowers = !sectionExpanded.superpowers;
-                    persistSectionExpandedState();
-                    renderList(cachedItems);
-                });
+                sectionHeader.addEventListener("click", () => { });
                 sectionRoot.appendChild(sectionHeader);
                 const sectionBody = document.createElement("div");
                 sectionBody.className = "document-explorer__section-body";
