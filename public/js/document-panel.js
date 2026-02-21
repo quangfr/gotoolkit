@@ -298,6 +298,9 @@
         let searchQuery = "";
         let preSearchExpandedIds = null;
         let preSearchSectionExpanded = null;
+        let pendingInlineRenameId = "";
+        let pendingInlineRenameUntil = 0;
+        let activeInlineRenameId = "";
 
         let hasDefaultTabSet = false;
 
@@ -989,6 +992,14 @@
             if (!target) return;
             target.parentId = String(parentId || "").trim();
         }
+        function prioritizeItem(docId) {
+            const targetId = String(docId || "").trim();
+            if (!targetId) return;
+            const next = orderIds.filter(id => id !== targetId);
+            next.unshift(targetId);
+            orderIds = next;
+            persistOrderState();
+        }
 
         function hasDepthExceeded(targetId, movingId, byId, nextDepth) {
             if (movingId === targetId) return true;
@@ -1059,12 +1070,15 @@
             const nonce = ++renderListNonce;
             const isStale = () => nonce !== renderListNonce;
             await ensureSuperpowersLoaded();
+            if (pendingInlineRenameId && pendingInlineRenameUntil && Date.now() > pendingInlineRenameUntil) {
+                pendingInlineRenameId = "";
+                pendingInlineRenameUntil = 0;
+                activeInlineRenameId = "";
+            }
 
             if (isStale()) return;
 
             const safeItems = normalizeList(items);
-            sectionExpanded.recent = false;
-            sectionExpanded.superpowers = false;
             const needle = String(searchQuery || "").trim().toLowerCase();
             const filteredItems = needle
                 ? safeItems.filter(item => String(item?.title || "").toLowerCase().includes(needle))
@@ -1236,9 +1250,12 @@
                 button.addEventListener("mouseenter", () => renderLeading(true));
                 button.addEventListener("mouseleave", () => renderLeading(false));
                 button.addEventListener("click", () => onSelect?.(item));
-                button.addEventListener("dblclick", event => {
+                const openInlineRename = (event, options = {}) => {
+                    const isAutoStart = Boolean(options && options.autoStart);
+                    const itemId = String(item.id || "");
                     if (String(activeId || "") !== String(item.id || "")) return;
                     if (event.target.closest(".document-explorer__item-actions")) return;
+                    activeInlineRenameId = itemId;
                     event.preventDefault();
                     event.stopPropagation();
                     const initialValue = item.title || "Document";
@@ -1251,7 +1268,15 @@
                     label.appendChild(input);
                     input.focus();
                     input.select();
+                    const openedAt = Date.now();
                     const finish = submit => {
+                        if (pendingInlineRenameId && String(pendingInlineRenameId) === String(item.id || "")) {
+                            pendingInlineRenameId = "";
+                            pendingInlineRenameUntil = 0;
+                        }
+                        if (activeInlineRenameId && String(activeInlineRenameId) === String(item.id || "")) {
+                            activeInlineRenameId = "";
+                        }
                         const nextName = String(input.value || "").trim();
                         if (submit && nextName && onRename) {
                             onRename(item, {
@@ -1275,8 +1300,46 @@
                             finish(false);
                         }
                     });
-                    input.addEventListener("blur", () => finish(true), { once: true });
+                    input.addEventListener("blur", () => {
+                        if (isAutoStart && pendingInlineRenameId === itemId) {
+                            // Create/refresh can re-render the row and detach the input.
+                            // If that happens, keep rename mode pending and reopen inline editor.
+                            setTimeout(() => {
+                                if (!input.isConnected) {
+                                    if (activeInlineRenameId === itemId) activeInlineRenameId = "";
+                                    if (pendingInlineRenameId === itemId) {
+                                        renderList(cachedItems);
+                                    }
+                                    return;
+                                }
+                                if (document.activeElement !== input) finish(true);
+                            }, 0);
+                            return;
+                        }
+                        finish(true);
+                    });
+                };
+                button.addEventListener("dblclick", event => {
+                    openInlineRename(event, { autoStart: false });
                 });
+                if (
+                    pendingInlineRenameId &&
+                    String(pendingInlineRenameId) === String(item.id || "") &&
+                    String(activeInlineRenameId || "") !== String(item.id || "")
+                ) {
+                    setTimeout(() => {
+                        try {
+                            const fakeEvent = {
+                                target: button,
+                                preventDefault() { },
+                                stopPropagation() { }
+                            };
+                            openInlineRename(fakeEvent, { autoStart: true });
+                        } catch (err) {
+                            // ignore
+                        }
+                    }, 0);
+                }
                 button.addEventListener("dragstart", event => {
                     draggingId = item.id;
                     draggingSection = sectionName || getItemSection(item);
@@ -1362,46 +1425,47 @@
                 const collapseIcon = document.createElement("i");
                 collapseIcon.setAttribute("data-lucide", isSectionExpanded ? "chevron-down" : "chevron-right");
                 sectionHeader.appendChild(collapseIcon);
-                if (sectionName.startsWith("shared:")) {
+                if (sectionName.startsWith("shared:") || sectionName === "private") {
                     const actions = document.createElement("span");
                     actions.className = "document-explorer__section-actions";
-                    const refreshBtn = document.createElement("button");
-                    refreshBtn.type = "button";
-                    refreshBtn.className = "document-explorer__item-action";
-                    refreshBtn.title = "Rafraîchir cet espace";
-                    refreshBtn.innerHTML = '<i data-lucide="refresh-cw"></i>';
-                    refreshBtn.addEventListener("click", (event) => {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        onSectionRefresh?.(sectionName);
-                    });
-                    actions.appendChild(refreshBtn);
                     const addBtn = document.createElement("button");
                     addBtn.type = "button";
                     addBtn.className = "document-explorer__item-action";
-                    addBtn.title = "Créer ou rejoindre un espace";
+                    addBtn.title = sectionName === "private" ? "Créer une page racine" : "Ajouter une page";
                     addBtn.innerHTML = '<i data-lucide="plus"></i>';
                     addBtn.addEventListener("click", (event) => {
                         event.preventDefault();
                         event.stopPropagation();
                         onSectionAdd?.(sectionName);
                     });
-                    const settingsBtn = document.createElement("button");
-                    settingsBtn.type = "button";
-                    settingsBtn.className = "document-explorer__item-action";
-                    settingsBtn.title = "Modifier cet espace";
-                    settingsBtn.innerHTML = '<i data-lucide="settings"></i>';
-                    settingsBtn.addEventListener("click", (event) => {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        onSectionSettings?.(sectionName);
-                    });
                     actions.appendChild(addBtn);
-                    actions.appendChild(settingsBtn);
+                    if (sectionName.startsWith("shared:")) {
+                        const refreshBtn = document.createElement("button");
+                        refreshBtn.type = "button";
+                        refreshBtn.className = "document-explorer__item-action";
+                        refreshBtn.title = "Rafraîchir cet espace";
+                        refreshBtn.innerHTML = '<i data-lucide="refresh-cw"></i>';
+                        refreshBtn.addEventListener("click", (event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            onSectionRefresh?.(sectionName);
+                        });
+                        const settingsBtn = document.createElement("button");
+                        settingsBtn.type = "button";
+                        settingsBtn.className = "document-explorer__item-action";
+                        settingsBtn.title = "Modifier cet espace";
+                        settingsBtn.innerHTML = '<i data-lucide="settings"></i>';
+                        settingsBtn.addEventListener("click", (event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            onSectionSettings?.(sectionName);
+                        });
+                        actions.appendChild(refreshBtn);
+                        actions.appendChild(settingsBtn);
+                    }
                     sectionHeader.appendChild(actions);
                 }
                 sectionHeader.addEventListener("click", () => {
-                    if (sectionName === "recent") return;
                     sectionExpanded[sectionName] = !sectionExpanded[sectionName];
                     persistSectionExpandedState();
                     renderList(cachedItems);
@@ -1489,7 +1553,11 @@
                 sectionHeader.type = "button";
                 sectionHeader.className = "document-explorer__section-header";
                 sectionHeader.innerHTML = `<i data-lucide="zap"></i><strong>Superpouvoirs</strong><i data-lucide="${sectionExpanded.superpowers ? "chevron-down" : "chevron-right"}"></i>`;
-                sectionHeader.addEventListener("click", () => { });
+                sectionHeader.addEventListener("click", () => {
+                    sectionExpanded.superpowers = !sectionExpanded.superpowers;
+                    persistSectionExpandedState();
+                    renderList(cachedItems);
+                });
                 sectionRoot.appendChild(sectionHeader);
                 const sectionBody = document.createElement("div");
                 sectionBody.className = "document-explorer__section-body";
@@ -1856,6 +1924,17 @@
             },
             uniqueName(name, excludeId) {
                 return uniqueName(name, cachedItems, null, excludeId);
+            },
+            async prioritizeItem(id) {
+                prioritizeItem(id);
+                await renderList(cachedItems);
+            },
+            async startInlineRename(id) {
+                pendingInlineRenameId = String(id || "").trim();
+                pendingInlineRenameUntil = pendingInlineRenameId ? Date.now() + 15000 : 0;
+                activeInlineRenameId = "";
+                if (!pendingInlineRenameId) return;
+                await renderList(cachedItems);
             },
             async setItems(items) {
                 cachedItems = normalizeList(items);
