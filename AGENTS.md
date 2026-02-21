@@ -5,7 +5,7 @@
 - Workers live in `workers/` (OpenAI proxy, OpenRouter proxy, sharing, feedback, AssemblyAI, Notion proxy, YouTube proxy, Gmail proxy, Microsoft proxy, Google TTS proxy).
 
 ## Navigation + cache
-- `public/index.html` links: `grid.html` and `docs.html`.
+- `public/index.html` is the Docs app entry point; `public/docs.html` redirects to `index.html`.
 - Version format: `YYYY.MM.DD.N` (N is an increment number for the day).
 - **Bump the version systematically ONLY when the user asks for a "bump", "commit", or "push".**
 - **Automated Versioning**: Run `npm run bump` to automatically increment the version in `package.json`, update cache-busters `?v=...` in HTML files, and update version labels.
@@ -16,7 +16,7 @@
   1. Increment `version` in `package.json`.
   2. Search and replace all `?v=...` cache-busters in `public/index.html`, `public/docs.html`, and `public/grid.html`.
   3. Update the version label in `public/index.html` (`hero-version`), `public/docs.html` (info panel), and `public/grid.html` (info panel).
-  4. Sync version in `AGENTS.md` example.
+  4. Verify version labels and cache-busters are consistent across touched pages.
 - `public/prompt.js` is the root for all AI system prompts and templates.
 - Keep the IndexedDB version in `public/js/assist.js` health-check/repair (`indexedDB.open`) aligned with `DB_VERSION` in `public/js/document-rag.js`.
 - When adding/editing UI, reuse colors and classes from `public/styles/style.css` before adding new CSS.
@@ -58,7 +58,7 @@ Only `public/js` may touch `window`:
 
 ## Build + runtime
 - Build: `npm install` → `npm run build`. This runs drawing and memo bundles in parallel using `esbuild`. 
-- Production: Build is automated via GitHub Actions (`npm run build:prod`). Local result files are ignored by Git. 
+- Production: Build is automated via GitHub Actions (`npm run build:prod`). Local build outputs in `public/js` may still appear in Git status depending on changes.
 - Heavy Libraries: React, ReactDOM, Excalidraw, and Mermaid are loaded via CDN (see `docs.html`).
 - Shims: Build aliases in `package.json` map module imports (e.g., `react`, `react-dom`, `excalidraw`, `mermaid`) to `window` globals via `src/*-shim.ts` files (react-shim, react-dom-shim, etc.) to keep bundles small and fast.
 - Dev: `npm start` serves `public/` on port 5000.
@@ -71,13 +71,51 @@ Only `public/js` may touch `window`:
   - Install deps in Linux FS copy: `cd ~/work/gotoolkit && npm ci`
   - Run Playwright with local binary (avoid `npx`): `./node_modules/.bin/playwright test <spec> --workers=1 --reporter=line`
   - Keep server startup simple: `npm start` should use `serve` directly (no `npx serve ...`) to avoid WSL process stalls.
+  - **Codex runtime fallback (verified):** if Playwright MCP fails with missing Chrome channel (`browserType.launchPersistentContext: Chromium distribution 'chrome' is not found`), install Chromium instead of Chrome: `npx playwright install chromium`.
+  - If MCP browser tools still fail/time out, run Playwright directly with Node scripts (`require("playwright")`) using `chromium.launch()` for page flows or `request.newContext()` for API timing checks.
+
+## MCP + Troubleshooting
+- **Debug playbook (always follow order)**:
+  1. Reproduce with exact page/action and capture timestamp.
+  2. Collect evidence (`console`, network request, worker response, local storage/IndexedDB state).
+  3. Isolate layer (UI vs client store vs worker vs external API).
+  4. Fix smallest surface first.
+  5. Verify with a clean state + one regression check.
+- **MCP fallback ladder**:
+  1. Use MCP tool first.
+  2. If MCP fails/timeouts, use local CLI equivalent.
+  3. If still unclear, use direct API checks (`curl` or Playwright `request.newContext()`).
+  4. Use manual browser flow last.
+- **Known failure signatures**:
+  - `browserType.launchPersistentContext ... chrome not found` → run `npx playwright install chromium` and use local Node Playwright script.
+  - `TypeError: Failed to fetch` from share client → verify worker reachability with `curl https://share.gotoolkit.workers.dev/...`.
+  - Shared tree appears stale after move → verify remote `parentId/spaceId/updatedAt`, then run space refresh.
+- **Context7 usage**:
+  - Use Context7 for external library/API behavior and setup.
+  - Prefer local code inspection for repo-specific behavior and regressions.
+
+## Workers smoke checks
+- After worker changes, run a minimal smoke pass:
+  1. Basic endpoint responds (2xx/expected 4xx).
+  2. CORS headers present for browser-facing routes.
+  3. Auth/env-dependent path behaves with missing and valid config.
+  4. Rate limiter path returns expected error format.
+  5. R2/KV bindings touched by change can read/write.
+
+## Quick diagnostics
+- `git status --short`
+- `rg -n "<feature|error|token>" public workers -S`
+- `node --check <touched-js-file>`
+- `curl -i https://share.gotoolkit.workers.dev/v1/shares/memos?view=tree\\&spaceId=golive`
+- Playwright API timing (when UI MCP is flaky): use `require(\"playwright\").request.newContext()`.
 
 ## Workers env
-- `workers/openai-proxy`: `OPENAI_API_KEY` + KV `RATE_LIMIT`.
-- `workers/share-proxy`: `FIREBASE_SERVICE_ACCOUNT`, optional `FIREBASE_PROJECT_ID`, `SHARE_ALLOWED_ORIGINS`, KV `RATE_LIMIT`.
-- `workers/feedback-proxy`: `FIREBASE_SERVICE_ACCOUNT`, optional `FIREBASE_PROJECT_ID`, `SHARE_ALLOWED_ORIGINS`, optional `ADMIN_TOKEN`, KV `RATE_LIMIT`, and R2 binding `FEEDBACK_MEDIA_BUCKET`.
-- `workers/assemblyai-proxy`: forwards streaming token; browser sends `X-AssemblyAI-Key` (no secret stored).
+- `workers/openai-proxy`: `OPENAI_API_KEY` + Rate Limiter binding `MY_RATE_LIMITER`.
+- `workers/share-proxy`: `FIREBASE_SERVICE_ACCOUNT`, optional `FIREBASE_PROJECT_ID`, `SHARE_ALLOWED_ORIGINS`, Rate Limiter binding `MY_RATE_LIMITER`, and R2 binding `SHARE_MEDIA_BUCKET`.
+- `workers/feedback-proxy`: `FIREBASE_SERVICE_ACCOUNT`, optional `FIREBASE_PROJECT_ID`, `SHARE_ALLOWED_ORIGINS`, optional `ADMIN_TOKEN`, Rate Limiter binding `MY_RATE_LIMITER`, and R2 binding `FEEDBACK_MEDIA_BUCKET`.
+- `workers/assemblyai-proxy`: forwards streaming token; browser sends `X-AssemblyAI-Key` (no secret stored) + Rate Limiter binding `MY_RATE_LIMITER`.
 - `workers/openrouter-proxy`: `OPENROUTER_API_KEY` for fallback LLM routing.
+- `workers/googletts-proxy`: `GOOGLE_TTS_API_KEY`, optional OAuth vars for service-account/token fallback, KV `USAGE_KV`, and Rate Limiter binding `MY_RATE_LIMITER`.
 - `workers/notion-proxy`: `NOTION_CLIENT_ID`, `NOTION_CLIENT_SECRET`, optional `NOTION_ALLOWED_ORIGINS`, KV `NOTION_OAUTH` (stores OAuth tokens/workspace selection per device).
 - `workers/youtube-proxy`: `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET`, optional `YOUTUBE_ALLOWED_ORIGINS`, KV `YOUTUBE_OAUTH` (stores OAuth tokens/channel selection per device).
 - `workers/gmail-proxy`: `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, optional `GMAIL_ALLOWED_ORIGINS`, KV `GMAIL_OAUTH` (stores OAuth tokens per device).
