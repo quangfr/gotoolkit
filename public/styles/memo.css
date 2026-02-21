@@ -1114,6 +1114,44 @@
             overflow: visible;
             position: relative;
         }
+        .memo-switch-loader {
+            position: absolute;
+            inset: 0;
+            z-index: 40;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: color-mix(in srgb, var(--bg-surface) 72%, transparent);
+            backdrop-filter: blur(2px);
+            pointer-events: all;
+        }
+        .memo-switch-loader[hidden] {
+            display: none;
+        }
+        .memo-switch-loader__card {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid var(--border-main);
+            border-radius: 999px;
+            background: var(--bg-surface);
+            color: var(--text-main);
+            box-shadow: var(--shadow-sm);
+            padding: 8px 14px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .memo-switch-loader__spinner {
+            width: 14px;
+            height: 14px;
+            border: 2px solid color-mix(in srgb, var(--text-main) 20%, transparent);
+            border-top-color: var(--text-main);
+            border-radius: 50%;
+            animation: memo-switch-spin 0.8s linear infinite;
+        }
+        @keyframes memo-switch-spin {
+            to { transform: rotate(360deg); }
+        }
         .memo-heading-rail {
             position: absolute;
             right: 14px;

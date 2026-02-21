@@ -75,10 +75,10 @@
         crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.min.js" crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.min.js" crossorigin></script>
-    <link rel="stylesheet" href="styles/style.css?v=2026.02.21.16">
+    <link rel="stylesheet" href="styles/style.css?v=2026.02.22.1">
     <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
-    <link rel="stylesheet" href="styles/memo.css?v=2026.02.21.16">
-    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.21.16">
+    <link rel="stylesheet" href="styles/memo.css?v=2026.02.22.1">
+    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.22.1">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.css">
     <script src="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.js"></script>
     <style>
@@ -287,6 +287,12 @@
                     <div class="editor-wrap">
                         <div id="editor" class="editor"></div>
                     </div>
+                    <div id="memoSwitchLoader" class="memo-switch-loader" hidden aria-live="polite">
+                        <div class="memo-switch-loader__card">
+                            <span class="memo-switch-loader__spinner" aria-hidden="true"></span>
+                            <span>Ouverture du document...</span>
+                        </div>
+                    </div>
                     <div id="memoHeadingRail" class="memo-heading-rail" hidden>
                         <div id="memoHeadingRailBars" class="memo-heading-rail__bars"></div>
                         <div id="memoHeadingRailPopup" class="memo-heading-rail__popup"></div>
@@ -461,24 +467,24 @@
         window.GO_TOOLKIT_GOOGLE_TTS_API_URL =
             window.GO_TOOLKIT_GOOGLE_TTS_API_URL || "https://googletts.gotoolkit.workers.dev";
     </script>
-    <script src="js/config.js?v=2026.02.21.16"></script>
-    <script src="js/config-modal.js?v=2026.02.21.16"></script>
-    <script src="js/feature-visibility.js?v=2026.02.21.16"></script>
-    <script src="js/document-storage.js?v=2026.02.21.16"></script>
-    <script src="js/storage-service.js?v=2026.02.21.16"></script>
-    <script src="js/shared-ui.js?v=2026.02.21.16"></script>
-    <script src="js/spaces-store.js?v=2026.02.21.16"></script>
-    <script src="js/share-worker-client.js?v=2026.02.21.16"></script>
-    <script src="js/share-history.js?v=2026.02.21.16"></script>
-    <script src="js/document-api.js?v=2026.02.21.16"></script>
-    <script src="js/keywordIndex.js?v=2026.02.21.16"></script>
-    <script src="js/document-rag.js?v=2026.02.21.16"></script>
-    <script src="js/ia-config.js?v=2026.02.21.16"></script>
-    <script src="preset.js?v=2026.02.21.16"></script>
-    <script src="prompt.js?v=2026.02.21.16"></script>
-    <script src="js/ia-client.js?v=2026.02.21.16"></script>
-    <script src="js/document-markdown.js?v=2026.02.21.16"></script>
-    <script src="js/notion-export.js?v=2026.02.21.16"></script>
+    <script src="js/config.js?v=2026.02.22.1"></script>
+    <script src="js/config-modal.js?v=2026.02.22.1"></script>
+    <script src="js/feature-visibility.js?v=2026.02.22.1"></script>
+    <script src="js/document-storage.js?v=2026.02.22.1"></script>
+    <script src="js/storage-service.js?v=2026.02.22.1"></script>
+    <script src="js/shared-ui.js?v=2026.02.22.1"></script>
+    <script src="js/spaces-store.js?v=2026.02.22.1"></script>
+    <script src="js/share-worker-client.js?v=2026.02.22.1"></script>
+    <script src="js/share-history.js?v=2026.02.22.1"></script>
+    <script src="js/document-api.js?v=2026.02.22.1"></script>
+    <script src="js/keywordIndex.js?v=2026.02.22.1"></script>
+    <script src="js/document-rag.js?v=2026.02.22.1"></script>
+    <script src="js/ia-config.js?v=2026.02.22.1"></script>
+    <script src="preset.js?v=2026.02.22.1"></script>
+    <script src="prompt.js?v=2026.02.22.1"></script>
+    <script src="js/ia-client.js?v=2026.02.22.1"></script>
+    <script src="js/document-markdown.js?v=2026.02.22.1"></script>
+    <script src="js/notion-export.js?v=2026.02.22.1"></script>
     <script>
         document.addEventListener("click", function (event) {
             const legalTrigger = event.target?.closest?.("[data-open-nexus-modal]");
@@ -512,15 +518,15 @@
             ]
         };
     </script>
-    <script src="js/feedback.js?v=2026.02.21.16"></script>
-    <script src="js/news.js?v=2026.02.21.16"></script>
-    <script src="js/voice-video-player.js?v=2026.02.21.16"></script>
-    <script src="js/voice-audio-player.js?v=2026.02.21.16"></script>
-    <script src="js/youtube-publish.js?v=2026.02.21.16"></script>
-    <script src="js/voice.js?v=2026.02.21.16"></script>
-    <script src="js/voice-transcript.js?v=2026.02.21.16"></script>
-    <script src="js/googletts.js?v=2026.02.21.16"></script>
-    <script src="js/draw-memo.js?v=2026.02.21.16"></script>
+    <script src="js/feedback.js?v=2026.02.22.1"></script>
+    <script src="js/news.js?v=2026.02.22.1"></script>
+    <script src="js/voice-video-player.js?v=2026.02.22.1"></script>
+    <script src="js/voice-audio-player.js?v=2026.02.22.1"></script>
+    <script src="js/youtube-publish.js?v=2026.02.22.1"></script>
+    <script src="js/voice.js?v=2026.02.22.1"></script>
+    <script src="js/voice-transcript.js?v=2026.02.22.1"></script>
+    <script src="js/googletts.js?v=2026.02.22.1"></script>
+    <script src="js/draw-memo.js?v=2026.02.22.1"></script>
     <script>
         // Suppress React DevTools prompt in dev builds.
         window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = window.__REACT_DEVTOOLS_GLOBAL_HOOK__ || {
@@ -530,9 +536,9 @@
             onCommitFiberUnmount: function () { }
         };
     </script>
-    <script src="js/memo.bundle.js?v=2026.02.21.16"></script>
-    <script src="js/assist.js?v=2026.02.21.16"></script>
-    <script src="js/document-panel.js?v=2026.02.21.16"></script>
+    <script src="js/memo.bundle.js?v=2026.02.22.1"></script>
+    <script src="js/assist.js?v=2026.02.22.1"></script>
+    <script src="js/document-panel.js?v=2026.02.22.1"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             setTimeout(function () {
@@ -900,6 +906,7 @@
             const memoHeadingRailBars = document.getElementById("memoHeadingRailBars");
             const memoHeadingRailPopup = document.getElementById("memoHeadingRailPopup");
             const memoChildLinksFooter = document.getElementById("memoChildLinksFooter");
+            const memoSwitchLoader = document.getElementById("memoSwitchLoader");
             const templateModal = document.getElementById("gtTemplateModal");
             const templateModalTrigger = document.getElementById("gtTemplateModalTrigger");
             const templateModalClose = document.getElementById("gtTemplateModalClose");
@@ -952,6 +959,16 @@
             let templatePreviewReturnFocusEl = null;
             let documentTabsRenderToken = 0;
             let currentDocIconSearch = "";
+            const markOpenedTimers = new Map();
+            const markOpenedLastWriteAt = new Map();
+            const MARK_OPEN_WRITE_MIN_INTERVAL_MS = 5000;
+            let localSaveTimer = null;
+            const LOCAL_SAVE_DEBOUNCE_MS = 1200;
+            let documentSwitchLoaderTimer = null;
+            let documentSwitchLoaderVisibleAt = 0;
+            let documentSwitchInFlight = 0;
+            const DOCUMENT_SWITCH_LOADER_DELAY_MS = 120;
+            const DOCUMENT_SWITCH_LOADER_MIN_VISIBLE_MS = 120;
             var state = { tabs: [], activeTabId: "" };
             const CLOUD_DRAFTS_STORAGE_KEY = "goToolkit.memo.cloudDrafts.v1";
             const CLOUD_AUTOSAVE_DELAY_MS = 60 * 1000;
@@ -1265,6 +1282,8 @@
 
             const spacesApi = window.GoToolkitSpaces;
             const DEFAULT_SPACE_ID = spacesApi?.DEFAULT_SPACE_ID || "golive";
+            const CLOUD_SYNC_LAST_AT_KEY = "goToolkit.memo.cloudSyncLastAt";
+            const CLOUD_SYNC_MIN_INTERVAL_MS = 5 * 60 * 1000;
 
             function normalizeSpaceId(value) {
                 const normalized = spacesApi?.normalizeSpaceId?.(value);
@@ -1292,6 +1311,81 @@
                 memoExplorer?.refresh?.();
             }
 
+            async function syncSpaceFromRemote(spaceId, options = {}) {
+                const targetSpaceId = normalizeSpaceId(spaceId || DEFAULT_SPACE_ID);
+                if (!shareWorker?.isReady || !shareHistory?.getRecordsByApp) {
+                    throw new Error("Service de partage indisponible");
+                }
+                const localRecords = await shareHistory.getRecordsByApp("memo");
+                const localForSpace = (Array.isArray(localRecords) ? localRecords : [])
+                    .filter(item => normalizeSpaceId(item?.spaceId || DEFAULT_SPACE_ID) === targetSpaceId);
+                const localByToken = new Map(localForSpace.map(item => [String(item?.token || "").trim(), item]).filter(([token]) => Boolean(token)));
+
+                const treeResult = shareWorker?.listShareTree
+                    ? await shareWorker.listShareTree(FIRESTORE_COLLECTION, { spaceId: targetSpaceId })
+                    : { documents: [] };
+                const remoteTree = Array.isArray(treeResult?.documents) ? treeResult.documents : [];
+                const summaryByToken = new Map(
+                    remoteTree
+                        .map(item => [String(item?.id || "").trim(), item])
+                        .filter(([token]) => Boolean(token))
+                );
+                const remoteTokenSet = new Set(remoteTree.map(doc => String(doc?.id || "").trim()).filter(Boolean));
+                const changedTokens = Array.from(summaryByToken.keys())
+                    .filter(token => {
+                        const local = localByToken.get(token);
+                        if (!local) return true;
+                        const localUpdatedAt = String(local?.updatedAt || "").trim();
+                        const remoteUpdatedAt = String(summaryByToken.get(token)?.updatedAt || "").trim();
+                        return localUpdatedAt !== remoteUpdatedAt;
+                    });
+
+                await Promise.all(localForSpace.map(async (item) => {
+                    const token = String(item?.token || "").trim();
+                    if (!token || remoteTokenSet.has(token)) return;
+                    await shareHistory.removeRecord("memo", token);
+                }));
+
+                const changedDocs = await Promise.all(changedTokens.map(async token => {
+                    try {
+                        const result = await shareWorker.fetchSharePayload(FIRESTORE_COLLECTION, token);
+                        if (!result?.payload) return null;
+                        return {
+                            id: token,
+                            payload: result.payload,
+                            meta: result.meta || {}
+                        };
+                    } catch (err) {
+                        return null;
+                    }
+                }));
+
+                await Promise.all(changedDocs.map(async (doc) => {
+                    if (!doc) return;
+                    const token = String(doc?.id || "").trim();
+                    if (!token) return;
+                    const payload = doc?.payload || {};
+                    const firstTab = Array.isArray(payload?.tabs) ? payload.tabs[0] : null;
+                    const summary = summaryByToken.get(token) || {};
+                    await shareHistory.upsertRecord("memo", {
+                        token,
+                        title: String(summary?.title || payload?.title || firstTab?.title || "Document partagé").trim(),
+                        description: String(summary?.description || payload?.description || firstTab?.description || "").trim(),
+                        superpowers: Array.isArray(firstTab?.superpowers) ? firstTab.superpowers : [],
+                        payload,
+                        icon: String(summary?.icon || payload?.icon || "file-symlink").trim() || "file-symlink",
+                        parentId: String(summary?.parentId || payload?.parentId || "").trim(),
+                        spaceId: targetSpaceId,
+                        updatedAt: String(summary?.updatedAt || doc?.meta?.updatedAt || doc?.meta?.updatedDate || new Date().toISOString()).trim()
+                    });
+                }));
+
+                if (options.refreshExplorer !== false) {
+                    await memoExplorer?.refresh?.();
+                }
+                return { spaceId: targetSpaceId, changedCount: changedTokens.length };
+            }
+
             async function reloadSpaceFromRemote(spaceId) {
                 const targetSpaceId = normalizeSpaceId(spaceId || DEFAULT_SPACE_ID);
                 if (!shareWorker?.isReady || !shareHistory?.getRecordsByApp) {
@@ -1300,76 +1394,38 @@
                 }
                 try {
                     setStatus("Rafraîchissement de l'espace...");
-                    const localRecords = await shareHistory.getRecordsByApp("memo");
-                    const localForSpace = (Array.isArray(localRecords) ? localRecords : [])
-                        .filter(item => normalizeSpaceId(item?.spaceId || DEFAULT_SPACE_ID) === targetSpaceId);
-                    const localByToken = new Map(localForSpace.map(item => [String(item?.token || "").trim(), item]).filter(([token]) => Boolean(token)));
-
-                    const treeResult = shareWorker?.listShareTree
-                        ? await shareWorker.listShareTree(FIRESTORE_COLLECTION, { spaceId: targetSpaceId })
-                        : { documents: [] };
-                    const remoteTree = Array.isArray(treeResult?.documents) ? treeResult.documents : [];
-                    const summaryByToken = new Map(
-                        remoteTree
-                            .map(item => [String(item?.id || "").trim(), item])
-                            .filter(([token]) => Boolean(token))
-                    );
-                    const remoteTokenSet = new Set(remoteTree.map(doc => String(doc?.id || "").trim()).filter(Boolean));
-                    const changedTokens = Array.from(summaryByToken.keys())
-                        .filter(token => {
-                            const local = localByToken.get(token);
-                            if (!local) return true;
-                            const localUpdatedAt = String(local?.updatedAt || "").trim();
-                            const remoteUpdatedAt = String(summaryByToken.get(token)?.updatedAt || "").trim();
-                            return localUpdatedAt !== remoteUpdatedAt;
-                        });
-
-                    await Promise.all(localForSpace.map(async (item) => {
-                        const token = String(item?.token || "").trim();
-                        if (!token || remoteTokenSet.has(token)) return;
-                        await shareHistory.removeRecord("memo", token);
-                    }));
-
-                    const changedDocs = await Promise.all(changedTokens.map(async token => {
-                        try {
-                            const result = await shareWorker.fetchSharePayload(FIRESTORE_COLLECTION, token);
-                            if (!result?.payload) return null;
-                            return {
-                                id: token,
-                                payload: result.payload,
-                                meta: result.meta || {}
-                            };
-                        } catch (err) {
-                            return null;
-                        }
-                    }));
-
-                    await Promise.all(changedDocs.map(async (doc) => {
-                        if (!doc) return;
-                        const token = String(doc?.id || "").trim();
-                        if (!token) return;
-                        const payload = doc?.payload || {};
-                        const firstTab = Array.isArray(payload?.tabs) ? payload.tabs[0] : null;
-                        const summary = summaryByToken.get(token) || {};
-                        await shareHistory.upsertRecord("memo", {
-                            token,
-                            title: String(summary?.title || payload?.title || firstTab?.title || "Document partagé").trim(),
-                            description: String(summary?.description || payload?.description || firstTab?.description || "").trim(),
-                            superpowers: Array.isArray(firstTab?.superpowers) ? firstTab.superpowers : [],
-                            payload,
-                            icon: String(summary?.icon || payload?.icon || "file-symlink").trim() || "file-symlink",
-                            parentId: String(summary?.parentId || payload?.parentId || "").trim(),
-                            spaceId: targetSpaceId,
-                            updatedAt: String(summary?.updatedAt || doc?.meta?.updatedAt || doc?.meta?.updatedDate || new Date().toISOString()).trim()
-                        });
-                    }));
-
-                    await memoExplorer?.refresh?.();
+                    await syncSpaceFromRemote(targetSpaceId, { refreshExplorer: true });
                     const space = getSpaceById(targetSpaceId);
                     setStatus(`Espace ${space?.name || "mis à jour"}`);
                 } catch (err) {
                     console.error("Space refresh failed", err);
                     setStatus("Impossible de rafraîchir cet espace", true);
+                }
+            }
+
+            async function backgroundSyncAllCloudDocuments(options = {}) {
+                if (!shareWorker?.isReady || !shareHistory?.getRecordsByApp) return;
+                const force = Boolean(options.force);
+                const now = Date.now();
+                if (!force) {
+                    const last = Number(localStorage.getItem(CLOUD_SYNC_LAST_AT_KEY) || 0);
+                    if (last && Number.isFinite(last) && (now - last) < CLOUD_SYNC_MIN_INTERVAL_MS) {
+                        return;
+                    }
+                }
+                try {
+                    const localRecords = await shareHistory.getRecordsByApp("memo");
+                    const knownSpaceIds = new Set(getSpaces().map(space => normalizeSpaceId(space?.id || DEFAULT_SPACE_ID)));
+                    (Array.isArray(localRecords) ? localRecords : []).forEach(record => {
+                        knownSpaceIds.add(normalizeSpaceId(record?.spaceId || DEFAULT_SPACE_ID));
+                    });
+                    for (const spaceId of knownSpaceIds) {
+                        await syncSpaceFromRemote(spaceId, { refreshExplorer: false });
+                    }
+                    await memoExplorer?.refresh?.();
+                    localStorage.setItem(CLOUD_SYNC_LAST_AT_KEY, String(now));
+                } catch (err) {
+                    console.warn("Background cloud sync failed", err);
                 }
             }
 
@@ -2203,6 +2259,7 @@
                     updatedAt,
                     lastOpenedAt: now
                 });
+                markOpenedLastWriteAt.set(String(doc.id || "").trim(), Date.now());
                 if (record) {
                     upsertOpenDocument({
                         id: doc.id,
@@ -2233,6 +2290,89 @@
                         updatedAt: record.updatedAt || updatedAt
                     });
                     memoExplorer?.refreshIndicators?.();
+                }
+            }
+
+            function scheduleMarkDocumentOpened(doc, existingRecord, delayMs = 300) {
+                const docId = String(doc?.id || "").trim();
+                if (!docId) return;
+                const now = Date.now();
+                const lastWriteAt = Number(markOpenedLastWriteAt.get(docId) || 0);
+                if (!existingRecord && lastWriteAt && (now - lastWriteAt) < MARK_OPEN_WRITE_MIN_INTERVAL_MS) {
+                    return;
+                }
+                const existingTimer = markOpenedTimers.get(docId);
+                if (existingTimer) clearTimeout(existingTimer);
+                const timerId = setTimeout(() => {
+                    markOpenedTimers.delete(docId);
+                    markDocumentOpened(doc, existingRecord).catch(() => null);
+                }, Math.max(0, Number(delayMs) || 0));
+                markOpenedTimers.set(docId, timerId);
+            }
+
+            function scheduleLocalSave(options = {}) {
+                if (!activeDocumentId || isCloudDocumentId(activeDocumentId)) return;
+                const delayMs = Math.max(0, Number(options.delayMs ?? LOCAL_SAVE_DEBOUNCE_MS) || LOCAL_SAVE_DEBOUNCE_MS);
+                if (localSaveTimer) {
+                    clearTimeout(localSaveTimer);
+                    localSaveTimer = null;
+                }
+                localSaveTimer = setTimeout(() => {
+                    localSaveTimer = null;
+                    const maybeSave = saveDocument && saveDocument({ showToast: false });
+                    if (maybeSave && typeof maybeSave.catch === "function") {
+                        maybeSave.catch(() => null);
+                    }
+                }, delayMs);
+            }
+
+            function showDocumentSwitchLoader() {
+                if (!memoSwitchLoader || !memoCardEl) return;
+                memoSwitchLoader.hidden = false;
+                memoCardEl.classList.add("is-switching-document");
+                documentSwitchLoaderVisibleAt = Date.now();
+            }
+
+            function hideDocumentSwitchLoader() {
+                if (!memoSwitchLoader || !memoCardEl) return;
+                memoSwitchLoader.hidden = true;
+                memoCardEl.classList.remove("is-switching-document");
+                documentSwitchLoaderVisibleAt = 0;
+            }
+
+            async function runWithDocumentSwitchLoader(task) {
+                documentSwitchInFlight += 1;
+                if (documentSwitchInFlight === 1) {
+                    if (documentSwitchLoaderTimer) clearTimeout(documentSwitchLoaderTimer);
+                    documentSwitchLoaderTimer = setTimeout(() => {
+                        documentSwitchLoaderTimer = null;
+                        if (documentSwitchInFlight > 0) {
+                            showDocumentSwitchLoader();
+                        }
+                    }, DOCUMENT_SWITCH_LOADER_DELAY_MS);
+                }
+                try {
+                    return await task();
+                } finally {
+                    documentSwitchInFlight = Math.max(0, documentSwitchInFlight - 1);
+                    if (documentSwitchInFlight > 0) return;
+                    if (documentSwitchLoaderTimer) {
+                        clearTimeout(documentSwitchLoaderTimer);
+                        documentSwitchLoaderTimer = null;
+                    }
+                    const visibleAt = documentSwitchLoaderVisibleAt;
+                    if (!visibleAt) {
+                        hideDocumentSwitchLoader();
+                        return;
+                    }
+                    const elapsed = Date.now() - visibleAt;
+                    if (elapsed >= DOCUMENT_SWITCH_LOADER_MIN_VISIBLE_MS) {
+                        hideDocumentSwitchLoader();
+                    } else {
+                        setTimeout(() => {
+                            if (documentSwitchInFlight === 0) hideDocumentSwitchLoader();
+                        }, DOCUMENT_SWITCH_LOADER_MIN_VISIBLE_MS - elapsed);
+                    }
                 }
             }
 
@@ -2366,83 +2506,67 @@
 
             async function setActiveDocument(docId) {
                 if (!docId || docId === activeDocumentId) return;
-                saveCaretForTab(state.activeTabId, { persist: false });
-                let target = openDocuments.find(item => item.id === docId);
-                if (!target && documentApi?.getRecord) {
-                    target = await documentApi.getRecord(docId);
-                }
-                if (!target) return;
-                if (hasNotionLink(target)) {
-                    const refreshed = await hydrateRecordFromNotion(target);
-                    if (refreshed) {
-                        target = {
-                            ...target,
-                            ...refreshed
-                        };
-                        upsertOpenDocument(target);
+                return runWithDocumentSwitchLoader(async () => {
+                    saveCaretForTab(state.activeTabId, { persist: false });
+                    let target = openDocuments.find(item => item.id === docId);
+                    if (!target && documentApi?.getRecord) {
+                        target = await documentApi.getRecord(docId);
                     }
-                }
-                const previousState = state;
-                const previousDocumentId = activeDocumentId;
-                let previousDocSnapshot = null;
-                if (previousDocumentId && previousDocumentId !== docId) {
-                    syncActiveDocumentPayload();
-                    previousDocSnapshot = openDocuments.find(item => item.id === previousDocumentId) || null;
-                } else {
-                    syncActiveDocumentPayload();
-                }
-                const loaded = normalizeState(target.payload);
-                if (!loaded) return;
-                unloadStateEditors(previousState);
-                state = loaded;
-                activeDocumentId = target.id;
-                window.__memoActiveDocumentId = activeDocumentId || null;
-                renderTabs();
-                setActiveTab(state.activeTabId, { deferHeavySync: true });
-                syncAssistPresetFromState();
-                renderDocumentTabs();
-                Promise.resolve().then(() => renderChildLinksFooter()).catch(() => null);
-                renderHeadingSummaryRail();
-                setSingleOpenDocument({
-                    ...target,
-                    payload: buildSharePayload(),
-                    title: target.title || getDocumentTitleFromState(state)
+                    if (!target) return;
+                    if (hasNotionLink(target)) {
+                        const refreshed = await hydrateRecordFromNotion(target);
+                        if (refreshed) {
+                            target = {
+                                ...target,
+                                ...refreshed
+                            };
+                            upsertOpenDocument(target);
+                        }
+                    }
+                    const previousState = state;
+                    const previousDocumentId = activeDocumentId;
+                    if (previousDocumentId && previousDocumentId !== docId) {
+                        syncActiveDocumentPayload();
+                    } else {
+                        syncActiveDocumentPayload();
+                    }
+                    const loaded = normalizeState(target.payload);
+                    if (!loaded) return;
+                    unloadStateEditors(previousState);
+                    state = loaded;
+                    activeDocumentId = target.id;
+                    window.__memoActiveDocumentId = activeDocumentId || null;
+                    renderTabs();
+                    setActiveTab(state.activeTabId, { deferHeavySync: true });
+                    syncAssistPresetFromState();
+                    renderDocumentTabs();
+                    Promise.resolve().then(() => renderChildLinksFooter()).catch(() => null);
+                    renderHeadingSummaryRail();
+                    setSingleOpenDocument({
+                        ...target,
+                        payload: buildSharePayload(),
+                        title: target.title || getDocumentTitleFromState(state)
+                    });
+                    if (!isCloudDocumentId(target.id)) {
+                        scheduleMarkDocumentOpened(target);
+                    }
+                    updateDocumentHandoffId(target.id, target.handoffId);
+                    refreshHandoffBadge(target.id);
+                    try {
+                        document.dispatchEvent(new CustomEvent("goToolkitMemoActiveDocumentChanged", {
+                            detail: { documentId: activeDocumentId || null }
+                        }));
+                    } catch (err) {
+                        // ignore
+                    }
+                    if (previousDocumentId && previousDocumentId !== docId) {
+                        if (isCloudDocumentId(previousDocumentId)) {
+                            setTimeout(() => {
+                                flushCloudDocument(previousDocumentId, { reason: "switch" }).catch(() => null);
+                            }, 0);
+                        }
+                    }
                 });
-                if (!isCloudDocumentId(target.id)) {
-                    markDocumentOpened(target);
-                }
-                updateDocumentHandoffId(target.id, target.handoffId);
-                refreshHandoffBadge(target.id);
-                try {
-                    document.dispatchEvent(new CustomEvent("goToolkitMemoActiveDocumentChanged", {
-                        detail: { documentId: activeDocumentId || null }
-                    }));
-                } catch (err) {
-                    // ignore
-                }
-                if (previousDocumentId && previousDocumentId !== docId) {
-                    if (isCloudDocumentId(previousDocumentId)) {
-                        setTimeout(() => {
-                            flushCloudDocument(previousDocumentId, { reason: "switch" }).catch(() => null);
-                        }, 0);
-                    } else if (previousDocSnapshot && documentApi?.upsertRecord) {
-                        const previousPayload = normalizeState(previousDocSnapshot.payload) || previousDocSnapshot.payload;
-                        const now = new Date().toISOString();
-                        setTimeout(() => {
-                            documentApi.upsertRecord({
-                                id: previousDocumentId,
-                                app: "memo",
-                                payload: previousPayload,
-                                title: previousDocSnapshot.title || "Document",
-                                description: previousDocSnapshot.description || "",
-                                superpowers: Array.isArray(previousDocSnapshot.superpowers) ? previousDocSnapshot.superpowers : [],
-                                parentId: String(previousDocSnapshot.parentId || "").trim(),
-                                icon: String(previousDocSnapshot.icon || "").trim(),
-                                updatedAt: now
-                            }).catch(() => null);
-                        }, 0);
-                    }
-                }
             }
 
             function closeDocumentTab(docId) {
@@ -2679,10 +2803,7 @@
                 memo.voiceRecordingId = recordingId || null;
                 persistState();
                 try {
-                    const maybeSave = saveDocument && saveDocument({ showToast: false });
-                    if (maybeSave && typeof maybeSave.catch === "function") {
-                        maybeSave.catch(() => { });
-                    }
+                    scheduleLocalSave({ delayMs: 600 });
                 } catch (err) { }
                 return true;
             }
@@ -2758,46 +2879,48 @@
             async function openCloudDocumentWorkingCopy(meta) {
                 const cloudId = String(meta?.id || "").trim();
                 if (!cloudId || !isCloudDocumentId(cloudId)) return;
-                const baseState = normalizeState(meta?.payload) || null;
-                if (!baseState) return;
-                const draft = getCloudDraft(cloudId);
-                const draftState = normalizeState(draft?.payload);
-                const nextState = draftState || baseState;
+                return runWithDocumentSwitchLoader(async () => {
+                    const baseState = normalizeState(meta?.payload) || null;
+                    if (!baseState) return;
+                    const draft = getCloudDraft(cloudId);
+                    const draftState = normalizeState(draft?.payload);
+                    const nextState = draftState || baseState;
 
-                if (activeDocumentId && activeDocumentId !== cloudId) {
-                    if (isCloudDocumentId(activeDocumentId)) {
-                        await flushCloudDocument(activeDocumentId, { reason: "switch" }).catch(() => null);
-                    } else {
-                        await saveDocument({ showToast: false });
+                    if (activeDocumentId && activeDocumentId !== cloudId) {
+                        if (isCloudDocumentId(activeDocumentId)) {
+                            await flushCloudDocument(activeDocumentId, { reason: "switch" }).catch(() => null);
+                        } else {
+                            scheduleLocalSave({ delayMs: 200 });
+                        }
                     }
-                }
-                const previousState = state;
-                unloadStateEditors(previousState);
-                state = nextState;
-                activeDocumentId = cloudId;
-                window.__memoActiveDocumentId = activeDocumentId || null;
-                renderTabs();
-                setActiveTab(state.activeTabId);
-                syncAssistPresetFromState();
-                setSingleOpenDocument({
-                    id: cloudId,
-                    title: String(meta?.title || getDocumentTitleFromState(nextState) || "Document"),
-                    description: String(meta?.description || nextState?.tabs?.[0]?.description || ""),
-                    superpowers: Array.isArray(meta?.superpowers) ? meta.superpowers : (nextState?.tabs?.[0]?.superpowers || []),
-                    payload: buildSharePayload(),
-                    icon: String(meta?.icon || "").trim(),
-                    parentId: String(meta?.parentId || "").trim(),
-                    ownerToken: String(meta?.ownerToken || "").trim(),
-                    token: String(meta?.token || "").trim(),
-                    spaceId: String(meta?.spaceId || "").trim(),
-                    cloudKind: String(meta?.cloudKind || "").trim(),
-                    cloudDirty: Boolean(draftState),
-                    cloudLastEditedAt: String(draft?.updatedAt || "").trim() || null,
-                    updatedAt: String(meta?.updatedAt || draft?.updatedAt || new Date().toISOString())
+                    const previousState = state;
+                    unloadStateEditors(previousState);
+                    state = nextState;
+                    activeDocumentId = cloudId;
+                    window.__memoActiveDocumentId = activeDocumentId || null;
+                    renderTabs();
+                    setActiveTab(state.activeTabId);
+                    syncAssistPresetFromState();
+                    setSingleOpenDocument({
+                        id: cloudId,
+                        title: String(meta?.title || getDocumentTitleFromState(nextState) || "Document"),
+                        description: String(meta?.description || nextState?.tabs?.[0]?.description || ""),
+                        superpowers: Array.isArray(meta?.superpowers) ? meta.superpowers : (nextState?.tabs?.[0]?.superpowers || []),
+                        payload: buildSharePayload(),
+                        icon: String(meta?.icon || "").trim(),
+                        parentId: String(meta?.parentId || "").trim(),
+                        ownerToken: String(meta?.ownerToken || "").trim(),
+                        token: String(meta?.token || "").trim(),
+                        spaceId: String(meta?.spaceId || "").trim(),
+                        cloudKind: String(meta?.cloudKind || "").trim(),
+                        cloudDirty: Boolean(draftState),
+                        cloudLastEditedAt: String(draft?.updatedAt || "").trim() || null,
+                        updatedAt: String(meta?.updatedAt || draft?.updatedAt || new Date().toISOString())
+                    });
+                    renderDocumentTabs();
+                    await renderChildLinksFooter();
+                    renderHeadingSummaryRail();
                 });
-                renderDocumentTabs();
-                await renderChildLinksFooter();
-                renderHeadingSummaryRail();
             }
 
             async function openSharedWorkingCopy(item) {
@@ -2819,7 +2942,6 @@
                     spaceId: String(item?.spaceId || "").trim(),
                     updatedAt: String(item?.updatedAt || "")
                 });
-                setStatus("Document cloud ouvert");
             }
 
             async function openPublishedTemplateDirect(template) {
@@ -3553,52 +3675,54 @@
 
             async function openDocumentFromRecord(record) {
                 if (!record || !record.payload) return;
-                const hydratedRecord = await hydrateRecordFromNotion(record);
-                const loaded = normalizeState(
-                    hydratedRecord.payload.tabs
-                        ? hydratedRecord.payload
-                        : { tabs: [{ id: createId(), title: "New page", content: hydratedRecord.payload }] }
-                );
-                if (!loaded) return;
-                const previousState = state;
-                const previousDocumentId = activeDocumentId;
-                if (previousDocumentId && previousDocumentId !== hydratedRecord.id) {
-                    await saveDocument({ showToast: false });
-                } else {
-                    syncActiveDocumentPayload();
-                }
-                unloadStateEditors(previousState);
-                state = loaded;
-                activeDocumentId = hydratedRecord.id;
-                renderTabs();
-                setActiveTab(state.activeTabId);
-                syncAssistPresetFromState();
-                setSingleOpenDocument({
-                    id: hydratedRecord.id,
-                    title: hydratedRecord.title || getDocumentTitleFromState(state),
-                    description: hydratedRecord.description || "",
-                    superpowers: hydratedRecord.superpowers || [],
-                    payload: buildSharePayload(),
-                    notionPageId: hydratedRecord.notionPageId || "",
-                    notionPageUrl: hydratedRecord.notionPageUrl || "",
-                    notionPath: hydratedRecord.notionPath || "",
-                    notionWorkspaceId: hydratedRecord.notionWorkspaceId || "",
-                    updatedAt: hydratedRecord.updatedAt || new Date().toISOString()
+                return runWithDocumentSwitchLoader(async () => {
+                    const hydratedRecord = await hydrateRecordFromNotion(record);
+                    const loaded = normalizeState(
+                        hydratedRecord.payload.tabs
+                            ? hydratedRecord.payload
+                            : { tabs: [{ id: createId(), title: "New page", content: hydratedRecord.payload }] }
+                    );
+                    if (!loaded) return;
+                    const previousState = state;
+                    const previousDocumentId = activeDocumentId;
+                    if (previousDocumentId && previousDocumentId !== hydratedRecord.id) {
+                        scheduleLocalSave({ delayMs: 200 });
+                    } else {
+                        syncActiveDocumentPayload();
+                    }
+                    unloadStateEditors(previousState);
+                    state = loaded;
+                    activeDocumentId = hydratedRecord.id;
+                    renderTabs();
+                    setActiveTab(state.activeTabId);
+                    syncAssistPresetFromState();
+                    setSingleOpenDocument({
+                        id: hydratedRecord.id,
+                        title: hydratedRecord.title || getDocumentTitleFromState(state),
+                        description: hydratedRecord.description || "",
+                        superpowers: hydratedRecord.superpowers || [],
+                        payload: buildSharePayload(),
+                        notionPageId: hydratedRecord.notionPageId || "",
+                        notionPageUrl: hydratedRecord.notionPageUrl || "",
+                        notionPath: hydratedRecord.notionPath || "",
+                        notionWorkspaceId: hydratedRecord.notionWorkspaceId || "",
+                        updatedAt: hydratedRecord.updatedAt || new Date().toISOString()
+                    });
+                    renderDocumentTabs();
+                    markDocumentOpened({
+                        id: hydratedRecord.id,
+                        title: hydratedRecord.title || getDocumentTitleFromState(state),
+                        description: hydratedRecord.description || "",
+                        superpowers: hydratedRecord.superpowers || [],
+                        payload: buildSharePayload(),
+                        notionPageId: hydratedRecord.notionPageId || "",
+                        notionPageUrl: hydratedRecord.notionPageUrl || "",
+                        notionPath: hydratedRecord.notionPath || "",
+                        notionWorkspaceId: hydratedRecord.notionWorkspaceId || "",
+                        updatedAt: hydratedRecord.updatedAt || new Date().toISOString()
+                    }, hydratedRecord);
+                    hydrateMemoContextEmbeddings();
                 });
-                renderDocumentTabs();
-                markDocumentOpened({
-                    id: hydratedRecord.id,
-                    title: hydratedRecord.title || getDocumentTitleFromState(state),
-                    description: hydratedRecord.description || "",
-                    superpowers: hydratedRecord.superpowers || [],
-                    payload: buildSharePayload(),
-                    notionPageId: hydratedRecord.notionPageId || "",
-                    notionPageUrl: hydratedRecord.notionPageUrl || "",
-                    notionPath: hydratedRecord.notionPath || "",
-                    notionWorkspaceId: hydratedRecord.notionWorkspaceId || "",
-                    updatedAt: hydratedRecord.updatedAt || new Date().toISOString()
-                }, hydratedRecord);
-                hydrateMemoContextEmbeddings();
             }
 
             let isOpeningDocument = false;
@@ -5390,6 +5514,10 @@
             async function saveDocument(options) {
                 if (isDocumentSaving || !activeDocumentId) return null;
                 if (!isCloudDocumentId(activeDocumentId) && !documentApi) return null;
+                if (localSaveTimer) {
+                    clearTimeout(localSaveTimer);
+                    localSaveTimer = null;
+                }
                 isDocumentSaving = true;
                 try {
                     if (isCloudDocumentId(activeDocumentId)) {
@@ -6482,6 +6610,9 @@
                 }
                 renderHeadingSummaryRail();
                 await memoExplorer?.refresh?.();
+                setTimeout(() => {
+                    backgroundSyncAllCloudDocuments({ force: false }).catch(() => null);
+                }, 0);
                 setupMemoPrompt();
                 syncAssistPresetFromState();
                 hydrateMemoContextEmbeddings();
@@ -6551,7 +6682,7 @@
                                     flushCloudDocument(activeDocumentId, { reason: "timer" }).catch(() => null);
                                 }
                             } else {
-                                saveDocument({ showToast: false });
+                                scheduleLocalSave({ delayMs: 300 });
                             }
                         }
                     }, 10000);
@@ -6567,6 +6698,10 @@
                     if (isCloudDocumentId(activeDocumentId)) {
                         flushCloudDocument(activeDocumentId, { reason: "unload", force: true }).catch(() => null);
                     } else {
+                        if (localSaveTimer) {
+                            clearTimeout(localSaveTimer);
+                            localSaveTimer = null;
+                        }
                         saveDocument({ showToast: false });
                     }
                 } catch (err) {
@@ -6577,6 +6712,9 @@
                 if (document.visibilityState !== "hidden") return;
                 if (!isCloudDocumentId(activeDocumentId)) return;
                 flushCloudDocument(activeDocumentId, { reason: "hidden", force: true }).catch(() => null);
+            });
+            window.addEventListener("focus", () => {
+                backgroundSyncAllCloudDocuments({ force: false }).catch(() => null);
             });
 
             const settingsModalApi = window.GoToolkitSettingsModal?.bind?.({

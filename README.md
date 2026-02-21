@@ -1,57 +1,128 @@
 # GoToolkit
 
-Boîte à outils 100 % navigateur conçue pour les consultants. GoToolkit combine rédaction intelligente, schémas dynamiques et analyse de données avec une approche "Private by Design" : vos données et votre IA restent locales.
+Browser-first productivity toolkit for consultants. GoToolkit combines document authoring, data grid workflows, AI assistance, sharing, and voice/video capture while keeping local-first behavior for user content and settings.
 
-## 🚀 Modules Principaux
+## Core Apps
 
-- **Docs** : Espace de rédaction Markdown enrichi. Supporte les diagrammes Mermaid (IA assistée), l'édition par sélection et le RAG (Retrieval-Augmented Generation) pour discuter avec vos propres documents.
-- **Grid** : Générateur de tableaux structurés (AG Grid). Idéal pour les mappings de données, les structures d'APIs et la génération de jeux de données fictifs via l'IA.
+- `Docs` (`public/index.html`): rich text editor (Tiptap bridge), AI assist sidebar, local document library, semantic RAG over imported files, sharing/export flows.
+- `Grid` (`public/grid.html`): AG Grid workspace with templates/criteria helpers, AI-assisted generation, and export capabilities.
+- `Mobile` (`public/mobile.html`): narrow-screen optimized experience. `index.html` auto-redirects to this page for mobile contexts.
 
-## 🧠 L'Assistant (Assist)
+`public/docs.html` is a redirect shim to `public/index.html` for backward compatibility.
 
-L'Assist est votre compagnon IA intégré, capable de puiser dans votre base de connaissances locale :
-- **RAG Local** : Importez vos fichiers (PDF, Word, Excel, JSON, etc.). Ils sont indexés dans votre navigateur (IndexedDB) et ne quittent jamais votre machine.
-- **Modes Explorer & Demander** : Choisissez entre une recherche sourcée dans vos documents ou une génération libre.
-- **Outils Dédiés** : Suggérer des idées, Éditer une sélection, ou Dessiner des schémas Mermaid.
-- **Transcription Vocale** : Dictée en temps réel via AssemblyAI.
+## Architecture
 
-## ⚡️ Super-pouvoirs
-GoToolkit n'est pas qu'un éditeur, c'est un levier méthodologique pour :
-- **Structurer la pensée** : Passer de l'idée brute au schéma structuré.
-- **Accélérer les livrables** : Générer des bases solides de documentation ou de mappings techniques.
-- **Concevoir orienté données** : Faciliter la manipulation de structures complexes.
+- Static frontend: `public/` (HTML/CSS/vanilla JS + bundled bridges in `public/js`).
+- React bridges bundled with esbuild:
+  - `src/memo-bridge/index.tsx` -> `public/js/memo.bundle.js`
+  - `src/draw-editor/index.tsx` -> `public/js/draw.bundle.js`
+- Cloudflare Workers in `workers/`:
+  - `openai-proxy`, `openrouter-proxy`
+  - `share-proxy`, `feedback-proxy`
+  - `assemblyai-proxy`, `googletts-proxy`
+  - `notion-proxy`, `youtube-proxy`, `gmail-proxy`, `ms-proxy`
 
-## 🛠 IA et Backends
-- **Moteurs supportés** : OpenRouter (recommandé), OpenAI.
-- **Confidentialité** : Les clés API et les données indexées sont stockées uniquement dans le `localStorage` et l' `IndexedDB` de votre navigateur.
-- **RAG Architecture** : Utilise Transformers.js pour les embeddings on-device (all-MiniLM-L6-v2) et une recherche vectorielle locale.
+## AI + Data
 
-## 🏗 Structure du Projet
-- **Frontend** : Site statique dans `public/`. HTML/JS/CSS natif pour une performance maximale et une portabilité totale.
-- **Bridges React** : Ponts spécialisés dans `src/` (Excalidraw pour les schémas, Tiptap pour Docs) bundlés via esbuild.
-- **Workers Cloudflare** : Proxies légers dans `workers/` pour la gestion des clés API, le partage de documents et le feedback.
+- Client AI routing/config: `public/js/ia-config.js`, `public/js/ia-client.js`
+- Local storage:
+  - `localStorage` for user config
+  - IndexedDB (`go-toolkit`, `gotoolkit-documents`) for documents, sharing history, and RAG index data
+- RAG engine: `public/js/document-rag.js`
+  - On-device embedding model (`Xenova/all-MiniLM-L6-v2`, 384 dims)
+  - Vector + keyword retrieval
+  - File ingestion/chunking for common office/text formats
 
-## 🚦 Démarrage Rapide
+## Development
 
-### Installation
+### Requirements
+
+- Node.js 18+
+- npm
+
+### Install
+
 ```bash
 npm install
 ```
 
-### Développement
+### Start local server
+
 ```bash
-# Lance le build en mode watch et le serveur local (F5 dans VS Code)
+npm start
+```
+
+Serves `public/` on `http://localhost:5000`.
+
+### Full dev mode (watch + server)
+
+```bash
 npm run dev
 ```
 
-### Build de production
+### Build
+
 ```bash
 npm run build
 ```
 
-## 📦 Déploiement
-- Le dossier `public/` peut être servi par n'importe quel hébergeur statique (Vercel, Netlify, GitHub Pages).
-- **Anti-cache** : Le projet utilise des cache-busters (`?v=...`). Veillez à incrémenter la version dans `package.json` et les fichiers HTML avant de déployer.
+Production-optimized bundle build:
 
----
-_GoToolkit est un projet "Browser-only" — Vos données vous appartiennent._
+```bash
+npm run build:prod
+```
+
+### Playwright tests
+
+```bash
+npm run test:playwright
+```
+
+## Versioning and Cache Busting
+
+- Version format: `YYYY.MM.DD.N`
+- Automated bump command:
+
+```bash
+npm run bump
+```
+
+This updates:
+
+- `package.json` version
+- HTML cache-buster query params (`?v=...`)
+- visible version labels
+
+## Worker Environment Variables
+
+Each worker has its own `wrangler.toml` and required bindings/secrets. Main variables include:
+
+- `OPENAI_API_KEY`, `OPENROUTER_API_KEY`
+- `FIREBASE_SERVICE_ACCOUNT`, optional `FIREBASE_PROJECT_ID`
+- OAuth client credentials for Notion/YouTube/Gmail/Microsoft workers
+- KV bindings for OAuth/session usage
+- R2 bucket bindings for shared/feedback media
+- `MY_RATE_LIMITER` binding for request limiting
+
+See each worker under `workers/*/index.js` and `workers/*/wrangler.toml` for exact requirements.
+
+## Deployment Notes
+
+- Frontend is static and can be hosted on any static provider.
+- Worker deployment is separate and managed through Cloudflare Workers.
+- Build artifacts in `public/js` can appear in Git status after builds.
+
+## Security and Privacy Notes
+
+- User content and RAG indexes are stored locally in the browser by default.
+- Proxy workers handle external API calls and secrets server-side.
+- Configure strict allowed origins in worker environments for production domains.
+
+## Repository Quick Map
+
+- `public/`: app entrypoints, UI, runtime scripts
+- `src/`: React bridge/editor sources and shims
+- `workers/`: Cloudflare worker services
+- `tests/`: Playwright scenarios
+- `scripts/`: build/version helper scripts
+
