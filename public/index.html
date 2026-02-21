@@ -2,6 +2,8 @@
 <html lang="fr">
 
 <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script>
         (function () {
             const storedTheme = localStorage.getItem('go-toolkit-theme');
@@ -18,10 +20,17 @@
                 if (url.searchParams.get("desktop") === "1") return;
 
                 var forceMobile = url.searchParams.get("mobile") === "1";
-                var isNarrow = window.matchMedia && window.matchMedia("(max-width: 768px)").matches;
+                var ua = String(navigator.userAgent || "").toLowerCase();
+                var uaMobile = /android|iphone|ipod|iemobile|windows phone|mobile/i.test(ua);
                 var isCoarse = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
-                var uaMobile = /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent || "");
-                var shouldRedirect = forceMobile || ((isNarrow && isCoarse) || (isNarrow && uaMobile));
+                var hasTouch = Number(navigator.maxTouchPoints || 0) > 1;
+                var vvWidth = Number(window.visualViewport && window.visualViewport.width) || 0;
+                var innerWidth = Number(window.innerWidth) || 0;
+                var screenWidth = Number(window.screen && window.screen.width) || 0;
+                var isNarrow = [vvWidth, innerWidth, screenWidth].some(function (value) {
+                    return value > 0 && value <= 820;
+                });
+                var shouldRedirect = forceMobile || uaMobile || (isCoarse && hasTouch && isNarrow);
                 if (!shouldRedirect) return;
 
                 var target = "mobile.html" + (window.location.search || "") + (window.location.hash || "");
@@ -31,7 +40,6 @@
             }
         })();
     </script>
-    <meta charset="UTF-8" />
     <script>
         // Global Polyfill for missing browser APIs (prevents crashes in Excalidraw/Mermaid)
         (function () {
@@ -67,10 +75,10 @@
         crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.min.js" crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.min.js" crossorigin></script>
-    <link rel="stylesheet" href="styles/style.css?v=2026.02.21.10">
+    <link rel="stylesheet" href="styles/style.css?v=2026.02.21.11">
     <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
-    <link rel="stylesheet" href="styles/memo.css?v=2026.02.21.10">
-    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.21.10">
+    <link rel="stylesheet" href="styles/memo.css?v=2026.02.21.11">
+    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.21.11">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.css">
     <script src="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.js"></script>
     <style>
@@ -450,24 +458,24 @@
         window.GO_TOOLKIT_GOOGLE_TTS_API_URL =
             window.GO_TOOLKIT_GOOGLE_TTS_API_URL || "https://googletts.gotoolkit.workers.dev";
     </script>
-    <script src="js/config.js?v=2026.02.21.10"></script>
-    <script src="js/config-modal.js?v=2026.02.21.10"></script>
-    <script src="js/feature-visibility.js?v=2026.02.21.10"></script>
-    <script src="js/document-storage.js?v=2026.02.21.10"></script>
-    <script src="js/storage-service.js?v=2026.02.21.10"></script>
-    <script src="js/shared-ui.js?v=2026.02.21.10"></script>
-    <script src="js/spaces-store.js?v=2026.02.21.10"></script>
-    <script src="js/share-worker-client.js?v=2026.02.21.10"></script>
-    <script src="js/share-history.js?v=2026.02.21.10"></script>
-    <script src="js/document-api.js?v=2026.02.21.10"></script>
-    <script src="js/keywordIndex.js?v=2026.02.21.10"></script>
-    <script src="js/document-rag.js?v=2026.02.21.10"></script>
-    <script src="js/ia-config.js?v=2026.02.21.10"></script>
-    <script src="preset.js?v=2026.02.21.10"></script>
-    <script src="prompt.js?v=2026.02.21.10"></script>
-    <script src="js/ia-client.js?v=2026.02.21.10"></script>
-    <script src="js/document-markdown.js?v=2026.02.21.10"></script>
-    <script src="js/notion-export.js?v=2026.02.21.10"></script>
+    <script src="js/config.js?v=2026.02.21.11"></script>
+    <script src="js/config-modal.js?v=2026.02.21.11"></script>
+    <script src="js/feature-visibility.js?v=2026.02.21.11"></script>
+    <script src="js/document-storage.js?v=2026.02.21.11"></script>
+    <script src="js/storage-service.js?v=2026.02.21.11"></script>
+    <script src="js/shared-ui.js?v=2026.02.21.11"></script>
+    <script src="js/spaces-store.js?v=2026.02.21.11"></script>
+    <script src="js/share-worker-client.js?v=2026.02.21.11"></script>
+    <script src="js/share-history.js?v=2026.02.21.11"></script>
+    <script src="js/document-api.js?v=2026.02.21.11"></script>
+    <script src="js/keywordIndex.js?v=2026.02.21.11"></script>
+    <script src="js/document-rag.js?v=2026.02.21.11"></script>
+    <script src="js/ia-config.js?v=2026.02.21.11"></script>
+    <script src="preset.js?v=2026.02.21.11"></script>
+    <script src="prompt.js?v=2026.02.21.11"></script>
+    <script src="js/ia-client.js?v=2026.02.21.11"></script>
+    <script src="js/document-markdown.js?v=2026.02.21.11"></script>
+    <script src="js/notion-export.js?v=2026.02.21.11"></script>
     <script>
         document.addEventListener("click", function (event) {
             const legalTrigger = event.target?.closest?.("[data-open-nexus-modal]");
@@ -501,15 +509,15 @@
             ]
         };
     </script>
-    <script src="js/feedback.js?v=2026.02.21.10"></script>
-    <script src="js/news.js?v=2026.02.21.10"></script>
-    <script src="js/voice-video-player.js?v=2026.02.21.10"></script>
-    <script src="js/voice-audio-player.js?v=2026.02.21.10"></script>
-    <script src="js/youtube-publish.js?v=2026.02.21.10"></script>
-    <script src="js/voice.js?v=2026.02.21.10"></script>
-    <script src="js/voice-transcript.js?v=2026.02.21.10"></script>
-    <script src="js/googletts.js?v=2026.02.21.10"></script>
-    <script src="js/draw-memo.js?v=2026.02.21.10"></script>
+    <script src="js/feedback.js?v=2026.02.21.11"></script>
+    <script src="js/news.js?v=2026.02.21.11"></script>
+    <script src="js/voice-video-player.js?v=2026.02.21.11"></script>
+    <script src="js/voice-audio-player.js?v=2026.02.21.11"></script>
+    <script src="js/youtube-publish.js?v=2026.02.21.11"></script>
+    <script src="js/voice.js?v=2026.02.21.11"></script>
+    <script src="js/voice-transcript.js?v=2026.02.21.11"></script>
+    <script src="js/googletts.js?v=2026.02.21.11"></script>
+    <script src="js/draw-memo.js?v=2026.02.21.11"></script>
     <script>
         // Suppress React DevTools prompt in dev builds.
         window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = window.__REACT_DEVTOOLS_GLOBAL_HOOK__ || {
@@ -519,9 +527,9 @@
             onCommitFiberUnmount: function () { }
         };
     </script>
-    <script src="js/memo.bundle.js?v=2026.02.21.10"></script>
-    <script src="js/assist.js?v=2026.02.21.10"></script>
-    <script src="js/document-panel.js?v=2026.02.21.10"></script>
+    <script src="js/memo.bundle.js?v=2026.02.21.11"></script>
+    <script src="js/assist.js?v=2026.02.21.11"></script>
+    <script src="js/document-panel.js?v=2026.02.21.11"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             setTimeout(function () {
