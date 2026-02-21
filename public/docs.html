@@ -45,10 +45,10 @@
         crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.min.js" crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.min.js" crossorigin></script>
-    <link rel="stylesheet" href="styles/style.css?v=2026.02.21.4">
+    <link rel="stylesheet" href="styles/style.css?v=2026.02.21.5">
     <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
-    <link rel="stylesheet" href="styles/memo.css?v=2026.02.21.4">
-    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.21.4">
+    <link rel="stylesheet" href="styles/memo.css?v=2026.02.21.5">
+    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.21.5">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.css">
     <script src="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.js"></script>
     <style>
@@ -136,7 +136,7 @@
                 <div class="tabs-actions">
                     <button id="documentExplorerToggle" class="app-home-link" type="button" title="Bibliothèque"
                         aria-expanded="false" aria-controls="documentExplorer"><i data-lucide="book-open"></i></button>
-                    <a href="/?v=2026.02.21.4" class="nav-switch-btn" title="Accueil"
+                    <a href="/?v=2026.02.21.5" class="nav-switch-btn" title="Accueil"
                         style="text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
                         <i data-lucide="home"></i>
                     </a>
@@ -151,6 +151,10 @@
                         <div id="document-breadcrumb" class="document-breadcrumb"></div>
                         <div id="memo-tabs" class="tabs"></div>
                     </div>
+                </div>
+                <div id="activeDocMeta" class="active-doc-meta" aria-live="polite">
+                    <span id="activeDocOwnerToken" class="active-doc-meta__item" hidden></span>
+                    <span id="activeDocUpdatedAt" class="active-doc-meta__item"></span>
                 </div>
                 <div class="global-actions">
                     <div class="menu-trigger" id="fileMenuTrigger">
@@ -369,7 +373,7 @@
         <img src="img/logo.gif" alt="Logo GoToolkit" class="logo-light">
         <img src="img/logo_inverted.gif" alt="Logo GoToolkit" class="logo-dark">
         <strong>GoToolkit</strong>
-        <span id="memoNewsTrigger" class="info-popup-news-link" role="button" tabindex="0">Version 2026.02.21.4</span>
+        <span id="memoNewsTrigger" class="info-popup-news-link" role="button" tabindex="0">Version 2026.02.21.5</span>
         <span>Usage réservé à Savane Consulting.</span>
         <div class="info-actions info-actions--stacked">
             <div class="info-actions-row">
@@ -449,23 +453,23 @@
         window.GO_TOOLKIT_GOOGLE_TTS_API_URL =
             window.GO_TOOLKIT_GOOGLE_TTS_API_URL || "https://googletts.gotoolkit.workers.dev";
     </script>
-    <script src="js/config.js?v=2026.02.21.4"></script>
-    <script src="js/config-modal.js?v=2026.02.21.4"></script>
-    <script src="js/feature-visibility.js?v=2026.02.21.4"></script>
-    <script src="js/document-storage.js?v=2026.02.21.4"></script>
-    <script src="js/storage-service.js?v=2026.02.21.4"></script>
-    <script src="js/shared-ui.js?v=2026.02.21.4"></script>
-    <script src="js/share-worker-client.js?v=2026.02.21.4"></script>
-    <script src="js/share-history.js?v=2026.02.21.4"></script>
-    <script src="js/document-api.js?v=2026.02.21.4"></script>
-    <script src="js/keywordIndex.js?v=2026.02.21.4"></script>
-    <script src="js/document-rag.js?v=2026.02.21.4"></script>
-    <script src="js/ia-config.js?v=2026.02.21.4"></script>
-    <script src="preset.js?v=2026.02.21.4"></script>
-    <script src="prompt.js?v=2026.02.21.4"></script>
-    <script src="js/ia-client.js?v=2026.02.21.4"></script>
-    <script src="js/document-markdown.js?v=2026.02.21.4"></script>
-    <script src="js/notion-export.js?v=2026.02.21.4"></script>
+    <script src="js/config.js?v=2026.02.21.5"></script>
+    <script src="js/config-modal.js?v=2026.02.21.5"></script>
+    <script src="js/feature-visibility.js?v=2026.02.21.5"></script>
+    <script src="js/document-storage.js?v=2026.02.21.5"></script>
+    <script src="js/storage-service.js?v=2026.02.21.5"></script>
+    <script src="js/shared-ui.js?v=2026.02.21.5"></script>
+    <script src="js/share-worker-client.js?v=2026.02.21.5"></script>
+    <script src="js/share-history.js?v=2026.02.21.5"></script>
+    <script src="js/document-api.js?v=2026.02.21.5"></script>
+    <script src="js/keywordIndex.js?v=2026.02.21.5"></script>
+    <script src="js/document-rag.js?v=2026.02.21.5"></script>
+    <script src="js/ia-config.js?v=2026.02.21.5"></script>
+    <script src="preset.js?v=2026.02.21.5"></script>
+    <script src="prompt.js?v=2026.02.21.5"></script>
+    <script src="js/ia-client.js?v=2026.02.21.5"></script>
+    <script src="js/document-markdown.js?v=2026.02.21.5"></script>
+    <script src="js/notion-export.js?v=2026.02.21.5"></script>
     <script>
         document.addEventListener("click", function (event) {
             const legalTrigger = event.target?.closest?.("[data-open-nexus-modal]");
@@ -499,15 +503,15 @@
             ]
         };
     </script>
-    <script src="js/feedback.js?v=2026.02.21.4"></script>
-    <script src="js/news.js?v=2026.02.21.4"></script>
-    <script src="js/voice-video-player.js?v=2026.02.21.4"></script>
-    <script src="js/voice-audio-player.js?v=2026.02.21.4"></script>
-    <script src="js/youtube-publish.js?v=2026.02.21.4"></script>
-    <script src="js/voice.js?v=2026.02.21.4"></script>
-    <script src="js/voice-transcript.js?v=2026.02.21.4"></script>
-    <script src="js/googletts.js?v=2026.02.21.4"></script>
-    <script src="js/draw-memo.js?v=2026.02.21.4"></script>
+    <script src="js/feedback.js?v=2026.02.21.5"></script>
+    <script src="js/news.js?v=2026.02.21.5"></script>
+    <script src="js/voice-video-player.js?v=2026.02.21.5"></script>
+    <script src="js/voice-audio-player.js?v=2026.02.21.5"></script>
+    <script src="js/youtube-publish.js?v=2026.02.21.5"></script>
+    <script src="js/voice.js?v=2026.02.21.5"></script>
+    <script src="js/voice-transcript.js?v=2026.02.21.5"></script>
+    <script src="js/googletts.js?v=2026.02.21.5"></script>
+    <script src="js/draw-memo.js?v=2026.02.21.5"></script>
     <script>
         // Suppress React DevTools prompt in dev builds.
         window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = window.__REACT_DEVTOOLS_GLOBAL_HOOK__ || {
@@ -517,9 +521,9 @@
             onCommitFiberUnmount: function () { }
         };
     </script>
-    <script src="js/memo.bundle.js?v=2026.02.21.4"></script>
-    <script src="js/assist.js?v=2026.02.21.4"></script>
-    <script src="js/document-panel.js?v=2026.02.21.4"></script>
+    <script src="js/memo.bundle.js?v=2026.02.21.5"></script>
+    <script src="js/assist.js?v=2026.02.21.5"></script>
+    <script src="js/document-panel.js?v=2026.02.21.5"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             setTimeout(function () {
@@ -798,6 +802,9 @@
             const currentDocIconBtn = document.getElementById("currentDocIconBtn");
             const currentDocIconGrid = document.getElementById("currentDocIconGrid");
             const memoPageTitleInput = document.getElementById("memoPageTitleInput");
+            const activeDocMeta = document.getElementById("activeDocMeta");
+            const activeDocOwnerToken = document.getElementById("activeDocOwnerToken");
+            const activeDocUpdatedAt = document.getElementById("activeDocUpdatedAt");
             const fileMenuBtn = document.getElementById("fileMenuBtn");
             const fileMenu = document.getElementById("fileMenu");
             const memoSettingsBtn = document.getElementById("memoSettingsBtn");
@@ -1496,7 +1503,10 @@
                 if (!documentBreadcrumbEl) return;
                 const renderToken = ++documentTabsRenderToken;
                 documentBreadcrumbEl.innerHTML = "";
-                if (!activeDocumentId) return;
+                if (!activeDocumentId) {
+                    await renderActiveDocumentHeaderMeta();
+                    return;
+                }
                 let walker = openDocuments.find(doc => doc.id === activeDocumentId) || null;
                 if (!walker && documentApi?.getRecord) {
                     walker = await documentApi.getRecord(activeDocumentId);
@@ -1543,6 +1553,7 @@
                     }
                 });
                 await updateCurrentDocumentIconButton();
+                await renderActiveDocumentHeaderMeta();
                 persistOpenDocumentState();
                 updateEmptyState();
                 memoExplorer?.refreshIndicators?.();
@@ -4562,6 +4573,77 @@
                 if (typeof value === "number") return value;
                 const parsed = Date.parse(String(value));
                 return Number.isFinite(parsed) ? parsed : 0;
+            }
+
+            function formatCompactRelativeDate(value) {
+                const ts = parseTemplateUpdatedAt(value);
+                if (!ts) return "—";
+                const deltaSeconds = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+                if (deltaSeconds < 60) return "1m";
+                const minutes = Math.floor(deltaSeconds / 60);
+                if (minutes < 60) return `${minutes}m`;
+                const hours = Math.floor(minutes / 60);
+                if (hours < 24) return `${hours}h`;
+                const days = Math.floor(hours / 24);
+                if (days < 31) return `${Math.max(days, 1)} j`;
+                const weeks = Math.max(1, Math.floor(days / 7));
+                return `${weeks} sem`;
+            }
+
+            async function getActiveDocumentHeaderMeta() {
+                if (!activeDocumentId) return null;
+                const templateId = String(state?.templateId || "").trim();
+                if (templateId) {
+                    let template = (cloudTemplates || []).find(item => item && String(item.id || "") === templateId) || null;
+                    if (!template && window.goToolkitTemplateStore?.list) {
+                        try {
+                            const storedTemplates = await window.goToolkitTemplateStore.list();
+                            template = (storedTemplates || []).find(item => item && String(item.id || "") === templateId) || null;
+                        } catch (err) {
+                            template = null;
+                        }
+                    }
+                    if (template) {
+                        return {
+                            section: "common",
+                            ownerToken: normalizeOwnerTokenInput(template.ownerToken || ""),
+                            updatedAt: template.updatedAt || ""
+                        };
+                    }
+                }
+                const activeDoc = openDocuments.find(item => item && item.id === activeDocumentId) || await documentApi?.getRecord?.(activeDocumentId) || null;
+                return {
+                    section: "private",
+                    ownerToken: "",
+                    updatedAt: activeDoc?.updatedAt || ""
+                };
+            }
+
+            async function renderActiveDocumentHeaderMeta() {
+                if (!activeDocMeta || !activeDocUpdatedAt || !activeDocOwnerToken) return;
+                if (!activeDocumentId) {
+                    activeDocMeta.style.display = "none";
+                    activeDocOwnerToken.hidden = true;
+                    activeDocUpdatedAt.textContent = "";
+                    return;
+                }
+                const meta = await getActiveDocumentHeaderMeta();
+                if (!meta) {
+                    activeDocMeta.style.display = "none";
+                    activeDocOwnerToken.hidden = true;
+                    activeDocUpdatedAt.textContent = "";
+                    return;
+                }
+                activeDocMeta.style.display = "inline-flex";
+                const updatedLabel = formatCompactRelativeDate(meta.updatedAt);
+                activeDocUpdatedAt.textContent = `Màj ${updatedLabel}`;
+                if (meta.section === "common" && meta.ownerToken) {
+                    activeDocOwnerToken.hidden = false;
+                    activeDocOwnerToken.textContent = `owner ${meta.ownerToken}`;
+                } else {
+                    activeDocOwnerToken.hidden = true;
+                    activeDocOwnerToken.textContent = "";
+                }
             }
 
             function formatTemplateRelativeDate(value) {
