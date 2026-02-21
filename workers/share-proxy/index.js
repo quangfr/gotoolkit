@@ -189,9 +189,13 @@ function corsHeaders(request, env) {
   const allowedOrigins = parseAllowedOrigins(env);
   const origin = request.headers.get("Origin");
   const isLocalhost = origin && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin);
+  const requestedHeaders = request.headers.get("Access-Control-Request-Headers");
+  const allowHeaders = requestedHeaders && requestedHeaders.trim()
+    ? requestedHeaders
+    : "Content-Type,Authorization,Cache-Control";
   const headers = {
     "Access-Control-Allow-Methods": "GET,PUT,POST,DELETE,OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": allowHeaders,
     "Access-Control-Allow-Origin": isLocalhost
       ? origin
       : allowedOrigins && origin && allowedOrigins.includes(origin)

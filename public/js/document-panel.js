@@ -1621,13 +1621,14 @@
             if (window.lucide) window.lucide.createIcons();
         }
 
-        async function refresh() {
+        async function refresh(options = {}) {
+            const forceReload = Boolean(options && options.forceReload);
             if (typeof getItems !== "function") {
                 renderEmpty();
                 return;
             }
             try {
-                if (hasLoadedTreeData && cachedItems.length > 0) {
+                if (!forceReload && hasLoadedTreeData && cachedItems.length > 0) {
                     ensureSearchViewState();
                     await renderList(cachedItems);
                     return;
