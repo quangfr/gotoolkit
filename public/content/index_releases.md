@@ -1,6 +1,6 @@
 ## 2026-02-21
 - Docs : Vue en arborescence des documents
-- Home : Espace commun
+- Docs: Espace de partage
 
 ## 2026-02-19
 - Voice : Télécharger l'enregistrement vidéo

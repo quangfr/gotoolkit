@@ -57058,10 +57058,13 @@ ${promptInput.trim()}`
         handleDrop: (view, event) => {
           var _a2, _b2, _c2, _d2, _e, _f;
           if (!event || !(event instanceof DragEvent)) return false;
-          const droppedDocId = String(
-            ((_a2 = event.dataTransfer) == null ? void 0 : _a2.getData("application/x-gotoolkit-docid")) || ((_b2 = event.dataTransfer) == null ? void 0 : _b2.getData("text/uri-list")) || ((_c2 = event.dataTransfer) == null ? void 0 : _c2.getData("text/plain")) || ""
-          ).trim().replace(/^memo:\/\//, "");
-          if (droppedDocId && /^(share:|common:|[a-z0-9-]{8,})/i.test(droppedDocId)) {
+          const rawCustomDocId = String(((_a2 = event.dataTransfer) == null ? void 0 : _a2.getData("application/x-gotoolkit-docid")) || "").trim();
+          const rawUriList = String(((_b2 = event.dataTransfer) == null ? void 0 : _b2.getData("text/uri-list")) || "").trim();
+          const rawPlainText = String(((_c2 = event.dataTransfer) == null ? void 0 : _c2.getData("text/plain")) || "").trim();
+          const droppedDocId = String(rawCustomDocId || rawUriList || rawPlainText || "").trim().replace(/^memo:\/\//, "");
+          const isMemoUriDrop = rawUriList.startsWith("memo://");
+          const isDocumentPanelDrop = Boolean(rawCustomDocId) || isMemoUriDrop;
+          if (droppedDocId && (isDocumentPanelDrop || /^(share:|common:|[a-z0-9-]{8,})/i.test(droppedDocId))) {
             event.preventDefault();
             event.stopPropagation();
             const coords2 = view.posAtCoords({ left: event.clientX, top: event.clientY });

@@ -24,7 +24,7 @@
         image image-plus image-off camera video clapperboard mic mic-off headphones music radio podcast
         play pause stop-circle fast-forward rewind volume-2 volume-x
         chart-column chart-bar chart-line chart-pie trending-up trending-down activity gauge
-        database table receipt text quote clipboard clipboard-check clipboard-list clipboard-pen copy paste save download upload
+        database table receipt text quote clipboard clipboard-check clipboard-list clipboard-pen copy save download upload
         cloud cloud-upload cloud-download cloud-check cloud-alert cloud-cog
         user user-round user-check user-plus user-cog users contact id-card
         building building-2 landmark store factory warehouse home
@@ -285,6 +285,7 @@
         const getSharedSections = typeof opts.getSharedSections === "function" ? opts.getSharedSections : null;
         const onSectionAdd = typeof opts.onSectionAdd === "function" ? opts.onSectionAdd : null;
         const onSectionSettings = typeof opts.onSectionSettings === "function" ? opts.onSectionSettings : null;
+        const onSectionRefresh = typeof opts.onSectionRefresh === "function" ? opts.onSectionRefresh : null;
         const getItems = typeof opts.getItems === "function" ? opts.getItems : null;
         const getOpenIds = typeof opts.getOpenIds === "function" ? opts.getOpenIds : null;
         const getActiveId = typeof opts.getActiveId === "function" ? opts.getActiveId : null;
@@ -1068,6 +1069,23 @@
             sharedSectionNames.forEach(sectionName => {
                 trees[sectionName] = buildTree(sharedSections[sectionName] || []);
             });
+            if (activeId) {
+                let expandedChanged = false;
+                Object.values(trees).forEach(tree => {
+                    if (!tree?.byId || typeof tree.byId.get !== "function") return;
+                    let current = tree.byId.get(activeId);
+                    while (current) {
+                        const parentId = String(current.parentId || "").trim();
+                        if (!parentId) break;
+                        if (!expandedIds.has(parentId)) {
+                            expandedIds.add(parentId);
+                            expandedChanged = true;
+                        }
+                        current = tree.byId.get(parentId);
+                    }
+                });
+                if (expandedChanged) persistExpandedState();
+            }
             const recentItems = filteredItems
                 .slice()
                 .sort((a, b) => String(b?.updatedAt || "").localeCompare(String(a?.updatedAt || "")))
@@ -1298,9 +1316,23 @@
                     : (sectionName === "common" ? "component" : "lock-keyhole-open"));
                 const isSectionExpanded = sectionExpanded[sectionName] !== false;
                 sectionHeader.innerHTML = `<i data-lucide="${sectionIcon}"></i><strong>${title}</strong>`;
+                const collapseIcon = document.createElement("i");
+                collapseIcon.setAttribute("data-lucide", isSectionExpanded ? "chevron-down" : "chevron-right");
+                sectionHeader.appendChild(collapseIcon);
                 if (sectionName.startsWith("shared:")) {
                     const actions = document.createElement("span");
                     actions.className = "document-explorer__section-actions";
+                    const refreshBtn = document.createElement("button");
+                    refreshBtn.type = "button";
+                    refreshBtn.className = "document-explorer__item-action";
+                    refreshBtn.title = "Rafraîchir cet espace";
+                    refreshBtn.innerHTML = '<i data-lucide="refresh-cw"></i>';
+                    refreshBtn.addEventListener("click", (event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        onSectionRefresh?.(sectionName);
+                    });
+                    actions.appendChild(refreshBtn);
                     const addBtn = document.createElement("button");
                     addBtn.type = "button";
                     addBtn.className = "document-explorer__item-action";
@@ -1325,9 +1357,6 @@
                     actions.appendChild(settingsBtn);
                     sectionHeader.appendChild(actions);
                 }
-                const collapseIcon = document.createElement("i");
-                collapseIcon.setAttribute("data-lucide", isSectionExpanded ? "chevron-down" : "chevron-right");
-                sectionHeader.appendChild(collapseIcon);
                 sectionHeader.addEventListener("click", () => {
                     sectionExpanded[sectionName] = !sectionExpanded[sectionName];
                     persistSectionExpandedState();
@@ -1381,8 +1410,6 @@
                 }
             };
             await renderRecentSection();
-            if (isStale()) return;
-            await renderSection("common", "Golive");
             if (isStale()) return;
             await renderSection("private", "Privé");
             if (isStale()) return;

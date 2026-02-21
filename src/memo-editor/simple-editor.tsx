@@ -2923,13 +2923,13 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       },
       handleDrop: (view, event) => {
         if (!event || !(event instanceof DragEvent)) return false;
-        const droppedDocId = String(
-          event.dataTransfer?.getData('application/x-gotoolkit-docid')
-          || event.dataTransfer?.getData('text/uri-list')
-          || event.dataTransfer?.getData('text/plain')
-          || ''
-        ).trim().replace(/^memo:\/\//, '');
-        if (droppedDocId && /^(share:|common:|[a-z0-9-]{8,})/i.test(droppedDocId)) {
+        const rawCustomDocId = String(event.dataTransfer?.getData('application/x-gotoolkit-docid') || '').trim();
+        const rawUriList = String(event.dataTransfer?.getData('text/uri-list') || '').trim();
+        const rawPlainText = String(event.dataTransfer?.getData('text/plain') || '').trim();
+        const droppedDocId = String(rawCustomDocId || rawUriList || rawPlainText || '').trim().replace(/^memo:\/\//, '');
+        const isMemoUriDrop = rawUriList.startsWith('memo://');
+        const isDocumentPanelDrop = Boolean(rawCustomDocId) || isMemoUriDrop;
+        if (droppedDocId && (isDocumentPanelDrop || /^(share:|common:|[a-z0-9-]{8,})/i.test(droppedDocId))) {
           event.preventDefault();
           event.stopPropagation();
           const coords = view.posAtCoords({ left: event.clientX, top: event.clientY });

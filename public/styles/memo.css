@@ -762,6 +762,9 @@
             border: none;
             background: transparent;
         }
+        #activeDocUpdatedAt {
+            margin-left: auto;
+        }
 
         #breadcrumb {
             display: flex;
@@ -964,6 +967,18 @@
             border-color: var(--color-primary);
             background: var(--bg-surface-strong);
         }
+        #spaceManageModal {
+            overflow: visible;
+        }
+        #spaceManageModal .ia-actions {
+            overflow: visible;
+        }
+        #spaceCreateJoinModal {
+            overflow: visible;
+        }
+        #spaceCreateJoinModal .ia-actions {
+            overflow: visible;
+        }
 
         .app-main {
             flex: 1;
@@ -1013,7 +1028,7 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            color: var(--text-muted);
+            color: var(--text-main);
         }
         .memo-child-links-footer__title {
             font-weight: 500;
