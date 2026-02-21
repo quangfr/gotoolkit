@@ -18,7 +18,7 @@
   flex-wrap: wrap;
   position: sticky;
   top: 0px;
-  margin: 0 auto 10px auto;
+  margin: 0 0 10px auto;
   z-index: 20;
   width: fit-content;
   box-shadow: var(--shadow-md);

@@ -1290,6 +1290,14 @@ button.btn-small-active {
   min-height: 110px;
 }
 
+.ia-actions .header-row.ia-header-actions {
+  margin-bottom: 12px;
+}
+
+.ia-actions .header-row.ia-header-actions:last-of-type {
+  margin-bottom: 0;
+}
+
 .modal-actions {
   display: flex;
   justify-content: flex-end;
@@ -2412,7 +2420,7 @@ ul.release-roadmap-text li::before {
   color: var(--text-main);
 }
 
-.chat-knowledge-modal__add, .chat-knowledge-modal__reset {
+.chat-knowledge-modal__reset {
   border: 1px solid var(--border-main);
   background: var(--bg-surface);
   border-radius: var(--radius-md);
@@ -2505,6 +2513,76 @@ ul.release-roadmap-text li::before {
   font-size: inherit;
   cursor: pointer;
   text-align: left;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.chat-knowledge-modal__section-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 10px 0 4px;
+}
+
+.chat-knowledge-modal__tree-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 520px);
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 5px 6px 5px calc(6px + (var(--tree-depth, 0) * 16px));
+  border-radius: 6px;
+}
+
+.chat-knowledge-modal__tree-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.chat-knowledge-modal__tree-description {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat-knowledge-modal__tree-item:hover {
+  background: var(--bg-surface-soft);
+}
+
+.chat-knowledge-modal__tree-toggle {
+  width: 16px;
+  height: 16px;
+  border: none;
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  padding: 0;
+  cursor: pointer;
+}
+
+.chat-knowledge-modal__tree-toggle[disabled] {
+  visibility: hidden;
+  cursor: default;
+}
+
+.chat-knowledge-modal__name i {
+  width: 14px;
+  height: 14px;
+}
+
+.chat-knowledge-modal__name span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .chat-knowledge-modal__header-checkbox {

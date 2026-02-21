@@ -3,20 +3,101 @@
     const MIN_WIDTH = 100;
     const MAX_WIDTH = 520;
     const DEFAULT_TITLE = "Documents";
-    const PUBLISH_TARGET_STORAGE_KEY = "goToolkit.memo.publishTarget";
-    const NOTION_PATH_STORAGE_KEY = "goToolkit.memo.notionPath";
     const EXPANDED_STORAGE_KEY = "goToolkit.memo.treeExpanded";
     const ORDER_STORAGE_KEY = "goToolkit.memo.treeOrder";
     const SECTION_EXPANDED_STORAGE_KEY = "goToolkit.memo.sectionExpanded";
-    const ICON_CHOICES = [
-        "file", "file-text", "sticky-note", "book-text", "notebook", "folder", "folder-open", "archive", "briefcase", "bookmark",
-        "star", "flag", "tag", "hash", "list", "list-checks", "check-square", "calendar", "clock", "hourglass",
-        "target", "lightbulb", "sparkles", "rocket", "bolt", "wand-sparkles", "brain", "bot", "message-square", "mail",
-        "phone", "globe", "map-pin", "compass", "link", "shield", "lock", "key", "settings", "wrench",
-        "palette", "pen", "pencil", "brush", "image", "camera", "video", "mic", "headphones", "music"
-    ];
-    const voiceRecordingsStore = window.goToolkitDocStore?.createStore?.("voice-recordings") || null;
-    const recordingIconCache = new Map();
+    const ICON_CHOICES = Array.from(new Set(`
+        file file-text file-plus file-pen file-check file-search file-lock file-symlink file-stack files file-down
+        folder folder-open folder-plus folder-search folder-git-2 folder-kanban folder-lock folder-sync folder-tree
+        archive archive-restore briefcase briefcase-business briefcase-medical book book-open book-text notebook notepad-text
+        bookmark library
+        star flag tags tag hash at-sign link link-2 unlink paperclip
+        list list-checks list-todo list-tree list-ordered list-minus list-plus list-filter layout-grid layout-list kanban square-kanban
+        check check-check check-square circle-check circle minus plus x triangle-alert octagon-alert
+        shield shield-check shield-alert shield-question lock lock-keyhole lock-keyhole-open key key-round
+        calendar calendar-check calendar-clock calendar-days calendar-range clock alarm-clock timer history hourglass
+        target lightbulb rocket sparkles wand-sparkles brain bot cpu circuit-board binary code code-2 terminal command workflow
+        message-square message-circle messages-square mail send inbox bell bell-ring phone smartphone tablet laptop monitor server
+        globe map map-pin navigation compass route locate pin
+        settings sliders-horizontal wrench hammer cog
+        pen pencil pen-tool highlighter eraser palette paintbrush ruler scissors stamp signature
+        image image-plus image-off camera video clapperboard mic mic-off headphones music radio podcast
+        play pause stop-circle fast-forward rewind volume-2 volume-x
+        chart-column chart-bar chart-line chart-pie trending-up trending-down activity gauge
+        database table receipt text quote clipboard clipboard-check clipboard-list clipboard-pen copy paste save download upload
+        cloud cloud-upload cloud-download cloud-check cloud-alert cloud-cog
+        user user-round user-check user-plus user-cog users contact id-card
+        building building-2 landmark store factory warehouse home
+        shopping-cart package truck plane ship car
+        dollar-sign euro piggy-bank wallet credit-card receipt-text calculator percent
+        search filter funnel zap component puzzle layers git-branch git-commit git-merge git-pull-request refresh-cw refresh-ccw
+        sun moon leaf flame snowflake umbrella
+    `.trim().split(/\s+/)));
+    const ICON_TOKEN_FR = {
+        file: ["fichier", "document", "page"],
+        folder: ["dossier", "repertoire"],
+        archive: ["archive", "historique"],
+        briefcase: ["projet", "travail", "business"],
+        book: ["livre", "guide", "documentation"],
+        notebook: ["notes", "bloc-notes"],
+        bookmark: ["favori", "marque-page"],
+        tag: ["etiquette", "label"],
+        list: ["liste", "plan"],
+        check: ["valide", "ok", "tache"],
+        calendar: ["calendrier", "planning", "date"],
+        clock: ["heure", "temps", "delai"],
+        target: ["objectif", "cible", "kpi"],
+        lightbulb: ["idee", "innovation"],
+        rocket: ["lancement", "croissance"],
+        brain: ["strategie", "analyse"],
+        bot: ["ia", "assistant"],
+        code: ["dev", "technique"],
+        message: ["message", "discussion", "chat"],
+        mail: ["email", "courriel"],
+        phone: ["telephone", "appel"],
+        globe: ["monde", "internet", "web"],
+        map: ["carte", "localisation"],
+        link: ["lien", "url"],
+        shield: ["securite", "protection"],
+        lock: ["prive", "confidentiel"],
+        key: ["acces", "cle"],
+        settings: ["parametres", "config"],
+        pen: ["edition", "redaction"],
+        image: ["image", "visuel"],
+        video: ["video", "media"],
+        mic: ["audio", "micro"],
+        chart: ["graphique", "analyse", "reporting"],
+        database: ["base", "donnees"],
+        table: ["tableau", "grille"],
+        cloud: ["partage", "en-ligne", "sync"],
+        user: ["utilisateur", "profil", "personne"],
+        users: ["equipe", "collaboration"],
+        building: ["entreprise", "organisation"],
+        search: ["recherche", "trouver"],
+        filter: ["filtre", "tri"],
+        zap: ["rapide", "automatisation"],
+        component: ["commun", "module"],
+        puzzle: ["solution", "assemblage"],
+        git: ["version", "code-source"],
+    };
+    const normalizeIconSearchValue = (value) => String(value || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim();
+    const getIconSearchText = (icon) => {
+        const parts = String(icon || "").split("-").filter(Boolean);
+        const words = [icon].concat(parts);
+        parts.forEach((token) => {
+            const fr = ICON_TOKEN_FR[token];
+            if (Array.isArray(fr)) words.push(...fr);
+        });
+        if (parts.length > 1) {
+            const fr = ICON_TOKEN_FR[parts[0]];
+            if (Array.isArray(fr)) words.push(...fr);
+        }
+        return normalizeIconSearchValue(words.join(" "));
+    };
 
     let superpowersCatalog = null;
     let currentModalSelectedIds = [];
@@ -40,20 +121,6 @@
         const normalized = Array.isArray(list) ? list.filter(Boolean) : [];
         if (normalized.length) return normalized;
         return category ? [category] : [];
-    }
-
-    async function resolveRecordingIcon(recordingId) {
-        if (!recordingId) return "";
-        if (recordingIconCache.has(recordingId)) return recordingIconCache.get(recordingId);
-        let icon = "cassette-tape";
-        try {
-            const recording = await voiceRecordingsStore?.get?.(recordingId);
-            if (recording?.videoBlob) icon = "video";
-        } catch (err) {
-            icon = "cassette-tape";
-        }
-        recordingIconCache.set(recordingId, icon);
-        return icon;
     }
 
     async function populateSuperpowerCheckboxes(selectedIds = []) {
@@ -401,32 +468,9 @@
                         <label for="document-explorer-description-input">Description</label>
                         <textarea id="document-explorer-description-input" rows="3" placeholder="Description courte (optionnelle)"></textarea>
                     </div>
-                    <div class="modal-actions" style="justify-content: space-between; align-items: center;">
-                        <div style="display:flex; align-items:center; gap:8px; flex: 1; max-width: 560px;">
-                            <select id="publishTargetSelect"
-                                style="width: 140px; height: 26px; font-size: 11px; border-radius: 6px; border: 1px solid var(--border-strong); background: var(--bg-surface); color: var(--text-main); padding: 0 8px; outline: none;">
-                                <option value="gotoolkit"><i data-lucide="zap"></i> Go-Live</option>
-                                <option value="notion"><i data-lucide="notebook"></i> Notion</option>
-                            </select>
-                            <div id="notionPathContainer" style="display:none; position:relative; flex:1;">
-                                <input type="text" id="notionPathInput" placeholder=""
-                                    style="width: 100%; height: 26px; font-size: 11px; border-radius: 6px; border: 1px solid var(--border-strong); background: var(--bg-surface); color: var(--text-main); padding: 0 24px 0 8px; outline: none;">
-                                <button type="button" id="notionUnlinkBtn" title="Délier Notion"
-                                    style="position:absolute; right:4px; top:50%; transform:translateY(-50%); border:none; background:transparent; color:var(--text-muted); padding:0; width:16px; height:16px; display:flex; align-items:center; justify-content:center; cursor:pointer;">
-                                    <i data-lucide="unlink" style="width:12px;height:12px;"></i>
-                                </button>
-                            </div>
-                            <div id="ownerTokenContainer" style="display:flex; align-items:center; gap:6px; flex: 1;">
-                                <i data-lucide="user" style="width:12px;height:12px;"></i>
-                                <input type="text" id="ownerToken" placeholder="Prénom"
-                                    style="width: 100%; height: 26px; font-size: 11px; border-radius: 6px; border: 1px solid var(--border-strong); background: var(--bg-surface); color: var(--text-main); padding: 0 8px; outline: none;">
-                            </div>
-                        </div>
-                        <div style="display: flex; gap: 8px; margin-left: auto;">
-                            <button class="btn btn-secondary" type="button" data-cancel>Annuler</button>
-                            <button class="btn btn-secondary" type="button" data-publish style="display:none;">Publier</button>
-                            <button class="btn-primary" type="button" data-confirm>Enregistrer</button>
-                        </div>
+                    <div class="modal-actions" style="justify-content: flex-end; align-items: center; gap: 8px;">
+                        <button class="btn btn-secondary" type="button" data-cancel>Annuler</button>
+                        <button class="btn-primary" type="button" data-publish>Publier</button>
                     </div>
                 </div>
             </div>
@@ -435,36 +479,20 @@
         const modalCloseBtn = modalOverlay.querySelector(".modal-close");
         const modalCancelBtn = modalOverlay.querySelector("[data-cancel]");
         const modalPublishBtn = modalOverlay.querySelector("[data-publish]");
-        const modalConfirmBtn = modalOverlay.querySelector("[data-confirm]");
         const modalEl = modalOverlay.querySelector(".modal");
         const modalInput = modalOverlay.querySelector("#document-explorer-name-input");
         const modalIconBtn = modalOverlay.querySelector("#document-explorer-icon-btn");
         const modalIconGrid = modalOverlay.querySelector("#document-explorer-icon-grid");
         const modalDescInput = modalOverlay.querySelector("#document-explorer-description-input");
-        const ownerTokenInput = modalOverlay.querySelector("#ownerToken");
-        const ownerTokenContainer = modalOverlay.querySelector("#ownerTokenContainer");
-        const publishTargetSelect = modalOverlay.querySelector("#publishTargetSelect");
-        const notionPathContainer = modalOverlay.querySelector("#notionPathContainer");
-        const notionPathInput = modalOverlay.querySelector("#notionPathInput");
-        const notionUnlinkBtn = modalOverlay.querySelector("#notionUnlinkBtn");
         let searchWrap = null;
         let searchInput = null;
         let searchClearBtn = null;
-        function normalizeOwnerTokenInput(value) {
-            return String(value || "")
-                .normalize("NFD")
-                .replace(/[\u0300-\u036f]/g, "")
-                .toLowerCase()
-                .replace(/[^a-z0-9]+/g, "-")
-                .replace(/^-+|-+$/g, "")
-                .trim();
-        }
         let modalResolver = null;
-        let modalAllowPublish = false;
         let modalDocumentId = "";
         let modalNotionLink = { pageId: "", url: "", path: "", workspaceId: "" };
         let modalNotionUnlinkRequested = false;
         let modalIcon = "file";
+        let modalIconSearch = "";
 
         function getSelectedSuperpowers() {
             const container = modalOverlay.querySelector("#document-explorer-superpowers-container");
@@ -478,12 +506,28 @@
             modalOverlay.style.display = "none";
             if (modalIconGrid) modalIconGrid.classList.remove("open");
             modalResolver = null;
-            modalAllowPublish = false;
         }
         function renderIconGrid() {
             if (!modalIconGrid) return;
             modalIconGrid.innerHTML = "";
-            ICON_CHOICES.forEach(icon => {
+            const searchWrap = document.createElement("div");
+            searchWrap.className = "document-explorer-icon-search-wrap";
+            const searchInput = document.createElement("input");
+            searchInput.type = "search";
+            searchInput.className = "document-explorer-icon-search";
+            searchInput.placeholder = "Rechercher une icône (ex: dossier, calendrier, partage)";
+            searchInput.value = modalIconSearch;
+            searchInput.addEventListener("input", () => {
+                modalIconSearch = searchInput.value || "";
+                renderIconGrid();
+            });
+            searchWrap.appendChild(searchInput);
+            modalIconGrid.appendChild(searchWrap);
+            const q = normalizeIconSearchValue(modalIconSearch);
+            const filteredIcons = !q
+                ? ICON_CHOICES
+                : ICON_CHOICES.filter((icon) => getIconSearchText(icon).includes(q));
+            filteredIcons.forEach(icon => {
                 const btn = document.createElement("button");
                 btn.type = "button";
                 btn.className = "document-explorer-icon-choice" + (modalIcon === icon ? " active" : "");
@@ -499,52 +543,10 @@
                 });
                 modalIconGrid.appendChild(btn);
             });
+            if (searchInput && document.activeElement !== searchInput && modalIconGrid.classList.contains("open")) {
+                searchInput.focus();
+            }
             if (window.lucide) window.lucide.createIcons();
-        }
-
-        function hasAdminToken() {
-            const token = localStorage.getItem("feedback-admin-token") || "";
-            return Boolean(String(token).trim());
-        }
-
-        function syncOwnerTokenFromStorage() {
-            if (!ownerTokenInput) return;
-            const stored = localStorage.getItem("feedback-admin-token") || "";
-            const normalized = normalizeOwnerTokenInput(stored);
-            if (!ownerTokenInput.value && normalized) ownerTokenInput.value = normalized;
-            if (normalized && stored !== normalized) {
-                localStorage.setItem("feedback-admin-token", normalized);
-            }
-        }
-
-        function updatePublishVisibility() {
-            const isNotion = (publishTargetSelect?.value || "gotoolkit") === "notion";
-            const allowPublish = Boolean(modalAllowPublish && (isNotion || hasAdminToken()));
-            if (modalPublishBtn) {
-                modalPublishBtn.style.display = allowPublish ? "inline-flex" : "none";
-            }
-            if (modalCancelBtn) {
-                modalCancelBtn.style.display = allowPublish ? "none" : "inline-flex";
-            }
-        }
-
-        function getSavedNotionPath() {
-            try {
-                return String(localStorage.getItem(NOTION_PATH_STORAGE_KEY) || "").trim();
-            } catch (err) {
-                return "";
-            }
-        }
-
-        function updatePublishTargetUI() {
-            const isNotion = (publishTargetSelect?.value || "gotoolkit") === "notion";
-            if (ownerTokenContainer) ownerTokenContainer.style.display = isNotion ? "none" : "flex";
-            const linked = Boolean(modalNotionLink?.pageId);
-            if (notionPathContainer) notionPathContainer.style.display = isNotion && linked ? "block" : "none";
-            if (notionPathInput) {
-                notionPathInput.readOnly = true;
-                notionPathInput.value = modalNotionLink.path || modalNotionLink.url || "";
-            }
         }
 
         async function openNameModal(defaultValue, defaultDescription, options) {
@@ -561,6 +563,7 @@
             if (window.lucide) window.lucide.createIcons();
             modalInput.value = defaultValue || "";
             modalIcon = (options && typeof options.icon === "string" && options.icon.trim()) ? options.icon.trim() : "file";
+            modalIconSearch = "";
             if (modalIconBtn) modalIconBtn.innerHTML = `<i data-lucide="${modalIcon}"></i>`;
             renderIconGrid();
             if (modalDescInput) modalDescInput.value = defaultDescription || "";
@@ -580,13 +583,6 @@
                     } catch (err) { /* noop */ }
                 }
             }
-            syncOwnerTokenFromStorage();
-            if (publishTargetSelect) {
-                publishTargetSelect.value = "gotoolkit";
-            }
-            if (notionPathInput) {
-                notionPathInput.value = "";
-            }
             modalDocumentId = String(options?.documentId || "").trim();
             modalNotionUnlinkRequested = false;
             modalNotionLink = { pageId: "", url: "", path: "", workspaceId: "" };
@@ -603,13 +599,6 @@
                     modalNotionLink = { pageId: "", url: "", path: "", workspaceId: "" };
                 }
             }
-            if (!modalNotionLink.pageId) {
-                const fallbackPath = getSavedNotionPath();
-                if (fallbackPath) modalNotionLink.path = fallbackPath;
-            }
-            updatePublishTargetUI();
-            modalAllowPublish = Boolean(options && options.allowPublish);
-            updatePublishVisibility();
             requestAnimationFrame(() => {
                 modalInput.focus();
                 modalInput.select();
@@ -645,53 +634,12 @@
                 description: modalDescInput?.value || "",
                 superpowers: getSelectedSuperpowers(),
                 action: "publish",
-                publishTarget: publishTargetSelect?.value || "gotoolkit",
-                notionPath: notionPathInput?.value || "",
+                publishTarget: "gotoolkit",
+                notionPath: "",
                 notionPageId: modalNotionLink.pageId || "",
                 notionWorkspaceId: modalNotionLink.workspaceId || "",
                 unlinkNotion: Boolean(modalNotionUnlinkRequested)
             });
-        });
-        modalConfirmBtn?.addEventListener("click", () => {
-            resolveModal({
-                name: modalInput?.value || "",
-                icon: modalIcon,
-                description: modalDescInput?.value || "",
-                superpowers: getSelectedSuperpowers(),
-                action: "confirm",
-                unlinkNotion: Boolean(modalNotionUnlinkRequested)
-            });
-        });
-        ownerTokenInput?.addEventListener("input", () => {
-            const normalized = normalizeOwnerTokenInput(ownerTokenInput.value || "");
-            if (ownerTokenInput.value !== normalized) ownerTokenInput.value = normalized;
-            if (normalized) {
-                localStorage.setItem("feedback-admin-token", normalized);
-            } else {
-                localStorage.removeItem("feedback-admin-token");
-            }
-        });
-        ownerTokenInput?.addEventListener("blur", () => {
-            const normalized = normalizeOwnerTokenInput(ownerTokenInput.value || "");
-            if (ownerTokenInput.value !== normalized) ownerTokenInput.value = normalized;
-            if (normalized) {
-                localStorage.setItem("feedback-admin-token", normalized);
-            } else {
-                localStorage.removeItem("feedback-admin-token");
-            }
-            updatePublishVisibility();
-        });
-        publishTargetSelect?.addEventListener("change", () => {
-            const value = (publishTargetSelect.value || "gotoolkit").toLowerCase();
-            localStorage.setItem(PUBLISH_TARGET_STORAGE_KEY, value === "notion" ? "notion" : "gotoolkit");
-            updatePublishTargetUI();
-            updatePublishVisibility();
-        });
-        notionUnlinkBtn?.addEventListener("click", () => {
-            modalNotionUnlinkRequested = true;
-            modalNotionLink = { pageId: "", url: "", path: "", workspaceId: "" };
-            if (notionPathInput) notionPathInput.value = "";
-            updatePublishTargetUI();
         });
         modalEl?.addEventListener("click", event => {
             event.stopPropagation();
@@ -705,7 +653,7 @@
                     icon: modalIcon,
                     description: modalDescInput?.value || "",
                     superpowers: getSelectedSuperpowers(),
-                    action: "confirm",
+                    action: "publish",
                     unlinkNotion: Boolean(modalNotionUnlinkRequested)
                 });
             } else if (event.key === "Escape") {
@@ -1107,10 +1055,6 @@
                         button.classList.add("document-explorer__item--active");
                     }
                 }
-                const payloadRecordingId = item?.payload?.tabs?.find(tab => typeof tab?.voiceRecordingId === "string" && tab.voiceRecordingId)?.voiceRecordingId || null;
-                const hasRecording = !!(item.voiceRecordingId || payloadRecordingId);
-                const recordingId = item.voiceRecordingId || payloadRecordingId;
-                const recordingIconName = await resolveRecordingIcon(recordingId);
                 const resolvedHandoffId = (typeof item.handoffId === "string" && item.handoffId) ? item.handoffId : null;
                 const hasHandoff = resolvedHandoffId !== null;
                 const hasNotion = Boolean(String(item?.notionPageId || "").trim());
@@ -1121,7 +1065,6 @@
                 lead.setAttribute("aria-label", isExpanded ? "Réduire les sous-documents" : "Afficher les sous-documents");
                 const defaultIconName = (() => {
                     if (hasHandoff) return "";
-                    if (hasRecording) return recordingIconName;
                     if (!isAutoFileIcon(item.icon)) return item.icon;
                     if (item.isShared) return "file-symlink";
                     return hasChildren ? "file-text" : "file";
@@ -1306,7 +1249,7 @@
                 const sectionHeader = document.createElement("button");
                 sectionHeader.type = "button";
                 sectionHeader.className = "document-explorer__section-header";
-                const sectionIcon = sectionName === "shared" ? "cloud" : (sectionName === "common" ? "component" : "lock-keyhole-open");
+                const sectionIcon = sectionName === "shared" ? "cloud-upload" : (sectionName === "common" ? "component" : "lock-keyhole-open");
                 sectionHeader.innerHTML = `<i data-lucide="${sectionIcon}"></i><strong>${title}</strong><i data-lucide="${sectionExpanded[sectionName] ? "chevron-down" : "chevron-right"}"></i>`;
                 sectionHeader.addEventListener("click", () => {
                     sectionExpanded[sectionName] = !sectionExpanded[sectionName];

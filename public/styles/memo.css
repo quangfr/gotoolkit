@@ -748,7 +748,7 @@
             width: 100%;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 0;
             overflow-x: auto;
             white-space: nowrap;
         }
@@ -780,7 +780,7 @@
             border: none;
             background: transparent;
             color: var(--text-main);
-            font-size: 13px;
+            font-size: 14px;
             cursor: pointer;
             padding: 2px 4px;
             border-radius: 6px;
@@ -788,6 +788,7 @@
         .document-breadcrumb__item.active {
             color: var(--text-main);
             font-weight: 600;
+            font-size: 16px;
         }
         .document-breadcrumb__item:hover {
             background: var(--bg-surface-strong);
@@ -795,6 +796,8 @@
         .document-breadcrumb__sep {
             color: var(--text-muted);
             opacity: 0.7;
+            font-size: 15px;
+            margin: 0 2px;
         }
 
         #memo-tabs {
@@ -878,7 +881,7 @@
             position: absolute;
             top: calc(100% + 6px);
             left: 0;
-            z-index: 20;
+            z-index: 150000;
             display: none;
             grid-template-columns: repeat(10, minmax(0, 1fr));
             gap: 6px;
@@ -893,6 +896,28 @@
         }
         .document-explorer-icon-grid.open {
             display: grid;
+        }
+        .document-explorer-icon-search-wrap {
+            grid-column: 1 / -1;
+            position: sticky;
+            top: 0;
+            background: var(--bg-surface);
+            z-index: 1;
+            padding-bottom: 4px;
+        }
+        .document-explorer-icon-search {
+            width: 100%;
+            height: 30px;
+            border-radius: 6px;
+            border: 1px solid var(--border-main);
+            background: var(--bg-surface-soft);
+            color: var(--text-main);
+            font-size: 12px;
+            padding: 0 8px;
+            outline: none;
+        }
+        .document-explorer-icon-search:focus {
+            border-color: var(--color-primary);
         }
         .document-explorer-icon-choice {
             border: 1px solid var(--border-main);

@@ -1501,6 +1501,8 @@
         this.knowledgeEditCloseBtn = null;
         this.knowledgeEditTargetKey = null;
         this.knowledgeModalSelectionSet = new Set();
+        this.knowledgeModalExpandedKeys = new Set();
+        this.knowledgeModalChildrenByKey = new Map();
         this.knowledgeManifestEntries = [];
         this.contentManifestEntries = [];
         this.knowledgeIndexing = false;
@@ -7184,6 +7186,82 @@
         return entries;
     };
 
+    AssistSidebar.prototype.inferKnowledgeSection = function (id, sectionHint, isShared, isCommon) {
+        var idValue = String(id || "").trim();
+        var section = String(sectionHint || "").trim().toLowerCase();
+        if (section === "common" || isCommon || idValue.startsWith("common:")) return "common";
+        if (section === "shared" || isShared || idValue.startsWith("share:")) return "shared";
+        return "private";
+    };
+
+    AssistSidebar.prototype.loadKnowledgeTreeEntries = async function () {
+        var entries = [];
+        var seenIds = new Set();
+        var privateRecordMap = new Map();
+        try {
+            var records = await global.goToolkitDocumentApi?.getAllRecords?.();
+            (records || []).forEach(function (record) {
+                if (!record || record.app !== "memo") return;
+                privateRecordMap.set(String(record.id || "").trim(), record);
+            });
+        } catch (err) {
+            console.warn("Knowledge private records load failed", err);
+        }
+        var explorerItems = [];
+        try {
+            explorerItems = global.GoToolkitMemoDocumentExplorer?.getItemsSnapshot?.() || [];
+        } catch (err) {
+            explorerItems = [];
+        }
+        var sourceItems = Array.isArray(explorerItems) && explorerItems.length
+            ? explorerItems
+            : Array.from(privateRecordMap.values()).map(function (record) {
+                return {
+                    id: record.id,
+                    title: record.title,
+                    description: record.description,
+                    icon: record.icon,
+                    parentId: record.parentId || "",
+                    section: "private",
+                    updatedAt: record.updatedAt || ""
+                };
+            });
+        sourceItems.forEach(function (item) {
+            if (!item) return;
+            var id = String(item.id || "").trim();
+            if (!id || seenIds.has(id)) return;
+            seenIds.add(id);
+            var section = this.inferKnowledgeSection(id, item.section, item.isShared, item.isCommon);
+            var parentId = String(item.parentId || "").trim();
+            var fileName = this.getMemoLibraryFileName(id);
+            if (!fileName) return;
+            var record = privateRecordMap.get(id);
+            var payload = record?.payload;
+            var firstTab = payload && Array.isArray(payload.tabs) ? payload.tabs[0] : null;
+            var memoHtml = typeof firstTab?.content === "string"
+                ? firstTab.content
+                : (typeof payload === "string" ? payload : "");
+            var plainText = this.stripHtmlText(memoHtml);
+            var abstract = String(item.description || "").trim() || this.getFirstNonEmptyLine(plainText);
+            var title = String(item.title || record?.title || "").trim() || "New page";
+            entries.push({
+                path: "",
+                name: title,
+                abstract: abstract,
+                updatedAt: this.parseUpdatedAt(item.updatedAt || record?.updatedAt),
+                fileName: fileName,
+                source: "Mémo",
+                memoHtml: memoHtml,
+                memoText: plainText,
+                documentId: id,
+                parentId: parentId,
+                section: section,
+                icon: String(item.icon || record?.icon || "").trim()
+            });
+        }.bind(this));
+        return entries;
+    };
+
     AssistSidebar.prototype.fetchContentManifest = function () {
         try {
             const url = new URL("content/files.json", window.location.href);
@@ -7347,27 +7425,18 @@
         left.appendChild(title);
         var actions = document.createElement("div");
         actions.className = "chat-knowledge-modal__header-actions";
-        var addBtn = document.createElement("button");
-        addBtn.type = "button";
-        addBtn.className = "chat-knowledge-modal__add";
-        addBtn.textContent = "+ Ajouter";
-        addBtn.setAttribute("title", "Ajouter");
-        addBtn.addEventListener("click", this.openKnowledgeFilePicker.bind(this));
         var closeBtn = document.createElement("button");
         closeBtn.type = "button";
         closeBtn.className = "chat-knowledge-modal__close";
         closeBtn.textContent = "✕";
         closeBtn.setAttribute("title", "Fermer");
         closeBtn.addEventListener("click", this.closeKnowledgeModal.bind(this));
-        actions.appendChild(addBtn);
-        actions.appendChild(closeBtn);
         var resetBtn = document.createElement("button");
         resetBtn.type = "button";
         resetBtn.className = "chat-knowledge-modal__reset";
         resetBtn.textContent = "↺ Réinitialiser";
         resetBtn.setAttribute("title", "Réinitialiser");
         resetBtn.addEventListener("click", this.handleKnowledgeResetClick.bind(this));
-        actions.appendChild(addBtn);
         actions.appendChild(resetBtn);
         actions.appendChild(closeBtn);
         header.appendChild(left);
@@ -7385,8 +7454,6 @@
         this.knowledgeModalListEl = list;
         this.knowledgeModalTitleEl = title;
         this.knowledgeModalCloseBtn = closeBtn;
-        this.knowledgeModalAddBtn = addBtn;
-        this.buildKnowledgeFilePicker();
         this.buildKnowledgeEditModal();
         this.renderKnowledgeModalTitle();
     };
@@ -7702,12 +7769,6 @@
     };
 
     AssistSidebar.prototype.openKnowledgeModal = function (persist, options) {
-        if (options && Object.prototype.hasOwnProperty.call(options, "sourceFilter")) {
-            var nextFilter = (options.sourceFilter || "").toString().trim();
-            this.knowledgeModalSourceFilter = nextFilter || null;
-        } else {
-            this.knowledgeModalSourceFilter = null;
-        }
         this.buildKnowledgeModal();
         if (!this.knowledgeModal) return;
         if (this.previewPanel && this.previewPanel.classList.contains("open")) {
@@ -7722,7 +7783,7 @@
     };
 
     AssistSidebar.prototype.openKnowledgeModalWithSourceFilter = function (source) {
-        this.openKnowledgeModal(true, { sourceFilter: source });
+        this.openKnowledgeModal(true);
     };
 
     AssistSidebar.prototype.closeKnowledgeModal = function (persist) {
@@ -7738,30 +7799,14 @@
     AssistSidebar.prototype.refreshKnowledgeModal = async function (options) {
         options = options || {};
         if (!this.knowledgeModalListEl) return;
-        if (Object.prototype.hasOwnProperty.call(options, "sourceFilter")) {
-            var nextFilter = (options.sourceFilter || "").toString().trim();
-            this.knowledgeModalSourceFilter = nextFilter || null;
-        }
-        var manifest = await this.loadKnowledgeManifest();
-        var webEntries = Array.isArray(manifest) ? manifest : [];
-        var webMap = new Map();
-        webEntries.forEach(function (entry) {
-            var key = this.normalizeKnowledgeKey(entry.fileName);
-            if (key) webMap.set(key, entry);
-        }.bind(this));
-        this.contentManifestEntries = webEntries.slice();
+        this.contentManifestEntries = [];
         var storedList = [];
         if (this.knowledgeManifestStore?.read) {
             storedList = await this.knowledgeManifestStore.read();
         }
         var storedSet = new Set((storedList || []).map(this.normalizeKnowledgeKey.bind(this)));
         var indexedSet = new Set();
-        var localEntries = [];
-        var chatEntries = [];
         var memoEntries = [];
-        var localCache = await this.loadKnowledgeLocalDocsCache();
-        this.knowledgeLocalDocRefs.clear();
-        this.knowledgeChatDocRefs.clear();
         this.knowledgeMemoDocRefs.clear();
         if (this.docManager) {
             try {
@@ -7779,101 +7824,12 @@
                         });
                         return;
                     }
-                    var isLocal = Array.isArray(doc.scope) && doc.scope.includes("local");
-                    if (!isLocal && webMap.has(key)) {
-                        var webEntry = webMap.get(key);
-                        if (webEntry && !webEntry.abstract && doc.abstract) {
-                            webEntry.abstract = doc.abstract;
-                        }
-                        return;
-                    }
-                    if (isLocal) {
-                        localCache[key] = {
-                            fileName: doc.sourceFileName || doc.name || "",
-                            name: doc.name || doc.sourceFileName || "Document",
-                            abstract: typeof doc.abstract === "string" ? doc.abstract : "",
-                            updatedAt: Number(doc.updatedAt) || 0,
-                            mime: doc.mime || "",
-                            buffer: doc.fileBuffer || null
-                        };
-                    }
-                    this.knowledgeLocalDocRefs.set(key, { id: doc.id, name: doc.name || doc.sourceFileName || "" });
-                    localEntries.push({
-                        path: "",
-                        name: doc.name || doc.sourceFileName || "Document",
-                        abstract: doc.abstract || "",
-                        updatedAt: Number(doc.updatedAt) || 0,
-                        fileName: doc.sourceFileName || doc.name || "",
-                        source: "Local"
-                    });
                 }.bind(this));
             } catch (err) {
                 console.warn("Knowledge docs fetch failed", err);
             }
-            try {
-                var chatDocs = await this.docManager.getDocuments(this.conversation?.id);
-                (chatDocs || []).forEach(function (doc) {
-                    if (!doc) return;
-                    if (!this.hasAttachmentScope(doc)) return;
-                    if (!doc.fileBuffer) return;
-                    var key = this.normalizeKnowledgeKey(doc.sourceFileName || doc.name);
-                    if (!key || indexedSet.has(key)) return;
-                    var docName = doc.name || doc.sourceFileName || "Document";
-                    this.knowledgeChatDocRefs.set(key, { id: doc.id, name: docName });
-                    chatEntries.push({
-                        path: "",
-                        name: docName,
-                        abstract: doc.abstract || "",
-                        updatedAt: Number(doc.updatedAt) || 0,
-                        fileName: doc.sourceFileName || doc.name || "",
-                        source: "Chat"
-                    });
-                }.bind(this));
-            } catch (err) {
-                console.warn("Knowledge chat docs fetch failed", err);
-            }
         }
-        var localCacheEntries = Object.values(localCache || {})
-            .map(function (record) {
-                if (!record) return null;
-                var key = this.normalizeKnowledgeKey(record.fileName || record.name);
-                if (!key) return null;
-                return {
-                    path: "",
-                    name: record.name || record.fileName || "Document",
-                    abstract: typeof record.abstract === "string" ? record.abstract : "",
-                    updatedAt: Number(record.updatedAt) || 0,
-                    fileName: record.fileName || record.name || "",
-                    source: "Local"
-                };
-            }.bind(this))
-            .filter(Boolean);
-        if (localCacheEntries.length) {
-            var localEntryMap = new Map();
-            localEntries.forEach(function (entry) {
-                var key = this.normalizeKnowledgeKey(entry.fileName || entry.name);
-                if (key) localEntryMap.set(key, entry);
-            }.bind(this));
-            localCacheEntries.forEach(function (entry) {
-                var key = this.normalizeKnowledgeKey(entry.fileName || entry.name);
-                var existing = key ? localEntryMap.get(key) : null;
-                if (existing) {
-                    if (!existing.abstract && entry.abstract) {
-                        existing.abstract = entry.abstract;
-                    }
-                    if (!existing.updatedAt && entry.updatedAt) {
-                        existing.updatedAt = entry.updatedAt;
-                    }
-                } else if (key) {
-                    localEntries.push(entry);
-                }
-            }.bind(this));
-        }
-        await this.saveKnowledgeLocalDocsCache(localCache);
-        if (localEntries.length) {
-            localEntries = await this.applyKnowledgeOverrides(localEntries);
-        }
-        memoEntries = await this.loadMemoLibraryEntries();
+        memoEntries = await this.loadKnowledgeTreeEntries();
         if (memoEntries.length) {
             memoEntries = await this.applyKnowledgeOverrides(memoEntries);
             memoEntries.forEach(function (entry) {
@@ -7882,7 +7838,7 @@
                 entry.indexedUpdatedAt = indexed?.updatedAt || 0;
             }.bind(this));
         }
-        this.knowledgeManifestEntries = webEntries.concat(memoEntries, localEntries, chatEntries);
+        this.knowledgeManifestEntries = memoEntries;
 
         // Load user's persistent selection (independent of preset)
         var persistedSelection = [];
@@ -7928,7 +7884,7 @@
             }.bind(this));
         }
 
-        var newEntries = webEntries.filter(function (entry) {
+        var newEntries = memoEntries.filter(function (entry) {
             var key = this.normalizeKnowledgeKey(entry.fileName);
             return key && !storedSet.has(key);
         }.bind(this));
@@ -7943,19 +7899,13 @@
                 if (key) selectionSet.add(key);
             }.bind(this));
         }
-        var entriesToRender = this.knowledgeManifestEntries;
-        if (this.knowledgeModalSourceFilter) {
-            entriesToRender = entriesToRender.filter(function (entry) {
-                return (entry?.source || "").toString() === this.knowledgeModalSourceFilter;
-            }.bind(this));
-        }
-        this.renderKnowledgeModalList(entriesToRender, selectionSet);
+        this.renderKnowledgeModalList(this.knowledgeManifestEntries, selectionSet);
         if (newEntries.length && options.autoReindex === true && selectionSet.size > 0) {
             await this.reindexKnowledgeSelection(this.knowledgeManifestEntries, selectionSet);
         }
         if (this.knowledgeManifestStore?.write) {
             await this.knowledgeManifestStore.write(
-                webEntries.map(function (entry) { return entry.fileName; })
+                memoEntries.map(function (entry) { return entry.fileName; })
             );
         }
         this.updateHeaderDocumentCount();
@@ -7969,70 +7919,92 @@
             list.innerHTML = "<div class=\"chat-knowledge-modal__empty\">Aucun document disponible.</div>";
             return;
         }
-        var sorted = entries.slice();
-        var selSet = selectionSet instanceof Set ? selectionSet : new Set();
-        var sortConfig = this.knowledgeModalSort || { column: "updatedAt", direction: "desc" };
-        sorted.sort(function (a, b) {
-            var aKey = this.normalizeKnowledgeKey(a?.fileName);
-            var bKey = this.normalizeKnowledgeKey(b?.fileName);
-            var aChecked = selSet.has(aKey);
-            var bChecked = selSet.has(bKey);
-            if (aChecked !== bChecked) return aChecked ? -1 : 1;
-            return this.compareKnowledgeEntries(a, b, sortConfig);
+        var selection = selectionSet instanceof Set ? selectionSet : new Set();
+        var sectionRank = { common: 0, shared: 1, private: 2 };
+        var all = entries.slice().sort(function (a, b) {
+            var aSection = String(a?.section || "private");
+            var bSection = String(b?.section || "private");
+            var rank = (sectionRank[aSection] ?? 9) - (sectionRank[bSection] ?? 9);
+            if (rank) return rank;
+            return this.compareKnowledgeEntries(a, b, { column: "updatedAt", direction: "desc" });
+        }.bind(this));
+        var byKey = new Map();
+        var childrenByKey = new Map();
+        this.knowledgeModalChildrenByKey = childrenByKey;
+        all.forEach(function (entry) {
+            var key = this.normalizeKnowledgeKey(entry.fileName);
+            if (!key) return;
+            byKey.set(key, entry);
+            if (!childrenByKey.has(key)) childrenByKey.set(key, []);
+        }.bind(this));
+        all.forEach(function (entry) {
+            var key = this.normalizeKnowledgeKey(entry.fileName);
+            if (!key) return;
+            var parentId = String(entry.parentId || "").trim();
+            if (!parentId) return;
+            var parentKey = this.normalizeKnowledgeKey(this.getMemoLibraryFileName(parentId));
+            if (!parentKey || !childrenByKey.has(parentKey)) return;
+            childrenByKey.get(parentKey).push(key);
+        }.bind(this));
+        var rootsBySection = { common: [], shared: [], private: [] };
+        all.forEach(function (entry) {
+            var key = this.normalizeKnowledgeKey(entry.fileName);
+            if (!key) return;
+            var section = String(entry.section || "private");
+            var parentId = String(entry.parentId || "").trim();
+            var parentKey = this.normalizeKnowledgeKey(this.getMemoLibraryFileName(parentId));
+            if (parentKey && byKey.has(parentKey) && String(byKey.get(parentKey)?.section || "private") === section) return;
+            if (!rootsBySection[section]) rootsBySection[section] = [];
+            rootsBySection[section].push(key);
         }.bind(this));
         var html = [];
-        html.push(
-            "<div class=\"chat-knowledge-modal__row chat-knowledge-modal__row--header\">" +
-            "<div><input type=\"checkbox\" class=\"chat-knowledge-modal__header-checkbox\" aria-label=\"Tout sélectionner\"></div>" +
-            "<div><button type=\"button\" class=\"chat-knowledge-modal__header-sort\" data-sort=\"name\">Nom</button></div>" +
-            "<div><button type=\"button\" class=\"chat-knowledge-modal__header-sort\" data-sort=\"source\">Source</button></div>" +
-            "<div>Description</div>" +
-            "<div><button type=\"button\" class=\"chat-knowledge-modal__header-sort\" data-sort=\"updatedAt\">MàJ</button></div>" +
-            "</div>"
-        );
-        var disableCheckboxes = Boolean(this.knowledgeIndexing);
-        sorted.forEach(function (entry) {
-            var key = this.normalizeKnowledgeKey(entry.fileName);
-            var checked = selectionSet && selectionSet.has(key);
-            var fullName = entry.name || "";
-            var truncatedName = this.truncateKnowledgeName(fullName);
-            var abstractText = entry.abstract || "";
-            var truncatedAbstract = this.truncateKnowledgeAbstract(abstractText);
-            var indexedUpdatedAt = Number(entry.indexedUpdatedAt) || 0;
-            var entryUpdatedAt = Number(entry.updatedAt) || 0;
-            var needsReindex = entry.source === "Mémo" && indexedUpdatedAt && entryUpdatedAt > indexedUpdatedAt;
+        var renderBranch = function (key, depth) {
+            var entry = byKey.get(key);
+            if (!entry) return;
+            var children = childrenByKey.get(key) || [];
+            var hasChildren = children.length > 0;
+            var isExpanded = hasChildren && this.knowledgeModalExpandedKeys.has(key);
+            var checked = selection.has(key);
+            var icon = String(entry.icon || "").trim() || "file";
             html.push(
-                "<div class=\"chat-knowledge-modal__row\" data-key=\"" + escapeHtml(key) + "\">" +
-                "<div><input type=\"checkbox\" class=\"chat-knowledge-modal__checkbox\" data-key=\"" + escapeHtml(key) + "\" " + (checked ? "checked" : "") + " " + (disableCheckboxes ? "disabled" : "") + "></div>" +
-                "<div class=\"chat-knowledge-modal__name-cell\">" +
-                "<button type=\"button\" class=\"chat-knowledge-modal__edit\" data-key=\"" + escapeHtml(key) + "\" aria-label=\"Modifier\" title=\"Modifier\">✐</button>" +
-                (needsReindex
-                    ? "<button type=\"button\" class=\"chat-knowledge-modal__reindex\" data-key=\"" + escapeHtml(key) + "\" aria-label=\"Réindexer\" title=\"Réindexer\">↺</button>"
-                    : "") +
-                "<button type=\"button\" class=\"chat-knowledge-modal__name\" data-key=\"" + escapeHtml(key) + "\" title=\"" + escapeHtml(fullName) + "\">" + escapeHtml(truncatedName) + "</button>" +
+                "<div class=\"chat-knowledge-modal__tree-item\" data-key=\"" + escapeHtml(key) + "\" style=\"--tree-depth:" + Number(depth || 0) + ";\">" +
+                "<div class=\"chat-knowledge-modal__tree-main\">" +
+                "<button type=\"button\" class=\"chat-knowledge-modal__tree-toggle\" data-key=\"" + escapeHtml(key) + "\" " + (hasChildren ? "" : "disabled") + " aria-label=\"Développer/Réduire\">" +
+                "<i data-lucide=\"" + (isExpanded ? "chevron-down" : "chevron-right") + "\"></i>" +
+                "</button>" +
+                "<input type=\"checkbox\" class=\"chat-knowledge-modal__checkbox\" data-key=\"" + escapeHtml(key) + "\" " + (checked ? "checked" : "") + " " + (this.knowledgeIndexing ? "disabled" : "") + ">" +
+                "<button type=\"button\" class=\"chat-knowledge-modal__name\" data-key=\"" + escapeHtml(key) + "\" title=\"" + escapeHtml(entry.name || "") + "\">" +
+                "<i data-lucide=\"" + escapeHtml(icon) + "\"></i>" +
+                "<span>" + escapeHtml(entry.name || "New page") + "</span>" +
+                "</button>" +
                 "</div>" +
-                "<div class=\"chat-knowledge-modal__source\">" + escapeHtml(entry.source || "") + "</div>" +
-                "<div class=\"chat-knowledge-modal__abstract\" title=\"" + escapeHtml(abstractText) + "\">" + escapeHtml(truncatedAbstract) + "</div>" +
-                "<div class=\"chat-knowledge-modal__date\">" + escapeHtml(this.formatKnowledgeRelativeDate(entry.updatedAt)) + "</div>" +
+                "<div class=\"chat-knowledge-modal__tree-description\" title=\"" + escapeHtml(entry.abstract || "") + "\">" + escapeHtml(this.truncateKnowledgeAbstract(entry.abstract || "")) + "</div>" +
                 "</div>"
             );
-        }.bind(this));
+            if (!isExpanded) return;
+            children.forEach(function (childKey) {
+                renderBranch(childKey, depth + 1);
+            });
+        }.bind(this);
+        var sections = [
+            { id: "common", label: "Commun" },
+            { id: "shared", label: "Partagé" },
+            { id: "private", label: "Privé" }
+        ];
+        sections.forEach(function (section) {
+            var roots = rootsBySection[section.id] || [];
+            if (!roots.length) return;
+            html.push("<div class=\"chat-knowledge-modal__section-title\">" + escapeHtml(section.label) + "</div>");
+            roots.forEach(function (rootKey) {
+                renderBranch(rootKey, 0);
+            });
+        });
         list.innerHTML = html.join("");
-        this.setKnowledgeModalSelection(selectionSet);
-        var sortButtons = list.querySelectorAll(".chat-knowledge-modal__header-sort");
-        sortButtons.forEach(function (btn) {
-            var column = btn.dataset.sort || "";
-            if (!column) return;
-            var direction = this.knowledgeModalSort?.column === column ? (this.knowledgeModalSort.direction === "asc" ? "asc" : "desc") : "";
-            btn.dataset.direction = direction;
-            btn.addEventListener("click", this.handleKnowledgeHeaderSort.bind(this));
+        this.setKnowledgeModalSelection(selection);
+        var toggles = list.querySelectorAll(".chat-knowledge-modal__tree-toggle");
+        toggles.forEach(function (toggle) {
+            toggle.addEventListener("click", this.handleKnowledgeTreeToggle.bind(this));
         }.bind(this));
-        var headerCheckbox = list.querySelector(".chat-knowledge-modal__header-checkbox");
-        if (headerCheckbox) {
-            headerCheckbox.disabled = disableCheckboxes;
-            headerCheckbox.addEventListener("change", this.handleKnowledgeHeaderToggle.bind(this));
-        }
-
         var checkboxes = list.querySelectorAll(".chat-knowledge-modal__checkbox");
         checkboxes.forEach(function (checkbox) {
             checkbox.addEventListener("change", this.handleKnowledgeToggle.bind(this));
@@ -8041,14 +8013,7 @@
         nameButtons.forEach(function (btn) {
             btn.addEventListener("click", this.handleKnowledgePreviewClick.bind(this));
         }.bind(this));
-        var editButtons = list.querySelectorAll(".chat-knowledge-modal__edit");
-        editButtons.forEach(function (btn) {
-            btn.addEventListener("click", this.handleKnowledgeEditClick.bind(this));
-        }.bind(this));
-        var reindexButtons = list.querySelectorAll(".chat-knowledge-modal__reindex");
-        reindexButtons.forEach(function (btn) {
-            btn.addEventListener("click", this.handleKnowledgeReindexClick.bind(this));
-        }.bind(this));
+        if (window.lucide) window.lucide.createIcons();
     };
 
     AssistSidebar.prototype.getContentManifestKeys = function () {
@@ -8062,32 +8027,7 @@
     };
 
     AssistSidebar.prototype.updateKnowledgeHeaderCheckboxState = function () {
-        if (!this.knowledgeModalListEl) return;
-        var checkbox = this.knowledgeModalListEl.querySelector(".chat-knowledge-modal__header-checkbox");
-        if (!checkbox) return;
-        var manifestKeys = this.getContentManifestKeys();
-        if (!manifestKeys.size) {
-            checkbox.checked = false;
-            checkbox.indeterminate = false;
-            checkbox.disabled = true;
-            return;
-        }
-        checkbox.disabled = false;
-        var selection = this.knowledgeModalSelectionSet instanceof Set ? this.knowledgeModalSelectionSet : new Set();
-        var selectedCount = 0;
-        manifestKeys.forEach(function (key) {
-            if (selection.has(key)) selectedCount += 1;
-        });
-        if (selectedCount === 0) {
-            checkbox.checked = false;
-            checkbox.indeterminate = false;
-        } else if (selectedCount >= manifestKeys.size) {
-            checkbox.checked = true;
-            checkbox.indeterminate = false;
-        } else {
-            checkbox.checked = false;
-            checkbox.indeterminate = true;
-        }
+        return;
     };
 
     AssistSidebar.prototype.setKnowledgeModalSelection = function (selectionSet) {
@@ -8178,6 +8118,22 @@
         return selection;
     };
 
+    AssistSidebar.prototype.handleKnowledgeTreeToggle = function (event) {
+        event?.preventDefault?.();
+        event?.stopPropagation?.();
+        var target = event?.currentTarget || event?.target;
+        var key = this.normalizeKnowledgeKey(target?.dataset?.key || "");
+        if (!key) return;
+        var children = this.knowledgeModalChildrenByKey?.get?.(key) || [];
+        if (!children.length) return;
+        if (this.knowledgeModalExpandedKeys.has(key)) {
+            this.knowledgeModalExpandedKeys.delete(key);
+        } else {
+            this.knowledgeModalExpandedKeys.add(key);
+        }
+        this.renderKnowledgeModalList(this.knowledgeManifestEntries, this.knowledgeModalSelectionSet);
+    };
+
     AssistSidebar.prototype.handleKnowledgeToggle = async function (event) {
         if (this.knowledgeIndexing) return;
         var target = event?.currentTarget || event?.target;
@@ -8193,38 +8149,25 @@
             }
             return;
         }
-        var entryName = entry?.name || entry?.fileName || "Document";
-        var removalMessage = entryName + " retiré.";
-        if (!checked && entry.source === "Mémo") {
-            await this.deleteKnowledgeEntryDocument(entry);
-            var memoSelection = this.collectKnowledgeSelection();
-            await this.reindexKnowledgeSelection(this.knowledgeManifestEntries, memoSelection);
-            this.refreshDocumentStats();
-            this.setKnowledgeModalStatus(removalMessage, false, 4000);
-            return;
-        }
-        if (!checked && (entry.source === "Local" || entry.source === "Chat")) {
-            var confirmDeletion = globalThis.confirm("Souhaitez-vous supprimer le fichier ?");
-            var removed = false;
-            if (confirmDeletion) {
-                this.setKnowledgeModalStatus("Suppression en cours…");
-                removed = await this.deleteKnowledgeEntryDocument(entry);
-            }
-            if (removed) {
-                await this.refreshKnowledgeModal();
-            }
-            var selection = this.collectKnowledgeSelection();
-            await this.reindexKnowledgeSelection(this.knowledgeManifestEntries, selection);
-            this.setKnowledgeModalStatus(removalMessage, false, 4000);
-            return;
-        }
-        var selection = this.collectKnowledgeSelection();
-        await this.reindexKnowledgeSelection(this.knowledgeManifestEntries, selection);
-        if (!checked) {
-            this.setKnowledgeModalStatus(removalMessage, false, 4000);
+        var selection = new Set(this.knowledgeModalSelectionSet || []);
+        if (checked) {
+            selection.add(key);
         } else {
-            this.setKnowledgeModalStatus("");
+            selection.delete(key);
         }
+        if (checked) {
+            this.knowledgeModalExpandedKeys.add(key);
+            var immediateChildren = this.knowledgeModalChildrenByKey?.get?.(key) || [];
+            if (immediateChildren.length) {
+                immediateChildren.forEach(function (childKey) {
+                    if (childKey) selection.add(childKey);
+                });
+            }
+        }
+        this.setKnowledgeModalSelection(selection);
+        await this.reindexKnowledgeSelection(this.knowledgeManifestEntries, selection);
+        this.setKnowledgeModalStatus("");
+        this.renderKnowledgeModalList(this.knowledgeManifestEntries, selection);
     };
 
     AssistSidebar.prototype.deleteKnowledgeEntryDocument = async function (entry) {

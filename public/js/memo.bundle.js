@@ -55326,7 +55326,7 @@ ${promptInput.trim()}`
     { name: "Rose", value: "var(--bg-text-pink)" },
     { name: "Rouge", value: "var(--bg-text-red)" }
   ];
-  var BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLink }) => {
+  var BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLink, onInsertImage, onInsertVideo, onDropdownToggle }) => {
     const [position, setPosition] = react_shim_default.useState({ top: 0, left: 0, opacity: 0 });
     const [hasMarks, setHasMarks] = react_shim_default.useState(false);
     const [showTextColors, setShowTextColors] = react_shim_default.useState(false);
@@ -55473,16 +55473,28 @@ ${promptInput.trim()}`
           boxShadow: "var(--shadow-md)"
         },
         children: [
-          /* @__PURE__ */ jsx("div", { role: "group", className: "tiptap-toolbar-group", children: /* @__PURE__ */ jsx(
-            "button",
-            {
-              className: "tiptap-button tiptap-button--primary",
-              type: "button",
-              onClick: onAssist,
-              title: "Assistant",
-              children: /* @__PURE__ */ jsx(Bot, { size: 16 })
-            }
-          ) }),
+          /* @__PURE__ */ jsxs("div", { role: "group", className: "tiptap-toolbar-group", children: [
+            /* @__PURE__ */ jsx(
+              "button",
+              {
+                className: "tiptap-button tiptap-button--primary",
+                type: "button",
+                onClick: onAssist,
+                title: "Assistant",
+                children: /* @__PURE__ */ jsx(Bot, { size: 16 })
+              }
+            ),
+            editor && /* @__PURE__ */ jsx(
+              TiptapActionsDropdown,
+              {
+                editor,
+                onOpenChange: onDropdownToggle,
+                onLink,
+                onInsertImage,
+                onInsertVideo
+              }
+            )
+          ] }),
           /* @__PURE__ */ jsx("div", { className: "tiptap-separator", "data-orientation": "vertical", role: "none" }),
           /* @__PURE__ */ jsxs("div", { role: "group", className: "tiptap-toolbar-group", children: [
             /* @__PURE__ */ jsx(
@@ -55986,23 +55998,18 @@ ${promptInput.trim()}`
       return true;
     }).run();
   };
-  var BlockTypeDropdown = ({ editor, onOpenChange, onLink }) => {
+  var TiptapActionsDropdown = ({
+    editor,
+    onOpenChange,
+    onLink,
+    onInsertImage,
+    onInsertVideo
+  }) => {
     const [isOpen, setIsOpen] = react_shim_default.useState(false);
     const dropdownRef = react_shim_default.useRef(null);
     react_shim_default.useEffect(() => {
       onOpenChange == null ? void 0 : onOpenChange(isOpen);
     }, [isOpen, onOpenChange]);
-    const options2 = [
-      { label: "Texte", value: "paragraph", icon: Type, active: editor.isActive("paragraph") },
-      { label: "Titre 1", value: "h1", icon: Heading1, active: editor.isActive("heading", { level: 1 }) },
-      { label: "Titre 2", value: "h2", icon: Heading2, active: editor.isActive("heading", { level: 2 }) },
-      { label: "Titre 3", value: "h3", icon: Heading3, active: editor.isActive("heading", { level: 3 }) },
-      { label: "Liste \xE0 puces", value: "bulletList", icon: List, active: editor.isActive("bulletList") },
-      { label: "T\xE2che", value: "taskList", icon: SquareCheckBig, active: editor.isActive("taskList") },
-      { label: "Bloc de code", value: "codeBlock", icon: SquareCode, active: editor.isActive("codeBlock") },
-      { label: "Lien", value: "link", icon: Link2, active: editor.isActive("link") }
-    ];
-    const currentOption = options2.find((o) => o.active) || options2[0];
     react_shim_default.useEffect(() => {
       const handleClickOutside = (event) => {
         if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -56012,17 +56019,25 @@ ${promptInput.trim()}`
       document.addEventListener("mousedown", handleClickOutside);
       return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
+    const options2 = [
+      { label: "Texte", value: "paragraph", icon: Type, active: editor.isActive("paragraph") },
+      { label: "Titre 1", value: "h1", icon: Heading1, active: editor.isActive("heading", { level: 1 }) },
+      { label: "Titre 2", value: "h2", icon: Heading2, active: editor.isActive("heading", { level: 2 }) },
+      { label: "Titre 3", value: "h3", icon: Heading3, active: editor.isActive("heading", { level: 3 }) },
+      { label: "Liste \xE0 puces", value: "bulletList", icon: List, active: editor.isActive("bulletList") },
+      { label: "T\xE2che", value: "taskList", icon: SquareCheckBig, active: editor.isActive("taskList") },
+      { label: "Bloc de code", value: "codeBlock", icon: SquareCode, active: editor.isActive("codeBlock") },
+      { label: "Lien", value: "link", icon: Link2, active: editor.isActive("link") },
+      { label: "Libell\xE9", value: "label", icon: Tag, active: editor.isActive("code") },
+      { label: "Citation", value: "quote", icon: Shapes, active: editor.isActive("blockquote") },
+      { label: "Tableau", value: "table", icon: Table2, active: editor.isActive("table") },
+      { label: "Diagramme", value: "diagram", icon: Shapes, active: editor.isActive("mermaidDiagram") },
+      { label: "Image", value: "image", icon: Image2, active: false },
+      { label: "Vid\xE9o", value: "video", icon: Clapperboard, active: false }
+    ];
+    const currentOption = options2.find((o) => o.active) || options2[0];
     const handleSelect = (value) => {
-      const chain = editor.chain().focus();
-      if (value === "paragraph") chain.setParagraph().run();
-      else if (value === "h1") chain.toggleHeading({ level: 1 }).run();
-      else if (value === "h2") chain.toggleHeading({ level: 2 }).run();
-      else if (value === "h3") chain.toggleHeading({ level: 3 }).run();
-      else if (value === "bulletList") chain.toggleBulletList().run();
-      else if (value === "taskList") chain.toggleTaskList().run();
-      else if (value === "code") chain.toggleCode().run();
-      else if (value === "codeBlock") chain.toggleCodeBlock().run();
-      else if (value === "link") onLink == null ? void 0 : onLink();
+      runEditorDropdownAction(editor, value, { onLink, onInsertImage, onInsertVideo });
       setIsOpen(false);
     };
     return /* @__PURE__ */ jsxs("div", { className: "tiptap-dropdown", ref: dropdownRef, children: [
@@ -56032,7 +56047,7 @@ ${promptInput.trim()}`
           type: "button",
           className: "tiptap-dropdown-trigger",
           onClick: () => setIsOpen(!isOpen),
-          title: "Format",
+          title: "Actions",
           children: [
             /* @__PURE__ */ jsx(currentOption.icon, { size: 16 }),
             /* @__PURE__ */ jsx("span", { children: currentOption.label }),
@@ -56040,7 +56055,7 @@ ${promptInput.trim()}`
           ]
         }
       ),
-      isOpen && /* @__PURE__ */ jsx("div", { className: "tiptap-dropdown-menu", children: options2.map((option) => /* @__PURE__ */ jsxs(
+      isOpen && /* @__PURE__ */ jsx("div", { className: "tiptap-dropdown-menu", style: { minWidth: "190px" }, children: options2.map((option) => /* @__PURE__ */ jsxs(
         "div",
         {
           className: "tiptap-dropdown-item",
@@ -56053,64 +56068,6 @@ ${promptInput.trim()}`
           ]
         },
         option.value
-      )) })
-    ] });
-  };
-  var QuoteTypeDropdown = ({ editor }) => {
-    const [isOpen, setIsOpen] = react_shim_default.useState(false);
-    const dropdownRef = react_shim_default.useRef(null);
-    react_shim_default.useEffect(() => {
-      const handleClickOutside = (event) => {
-        if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-          setIsOpen(false);
-        }
-      };
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
-    const handleSelect = (type2) => {
-      const chain = editor.chain().focus();
-      if (editor.isActive("blockquote", { type: type2 })) {
-        chain.lift("blockquote").run();
-      } else if (editor.isActive("blockquote")) {
-        chain.updateAttributes("blockquote", { type: type2 }).run();
-      } else {
-        chain.setBlockquote().updateAttributes("blockquote", { type: type2 }).run();
-      }
-      setIsOpen(false);
-    };
-    const isAnyQuoteActive = editor.isActive("blockquote");
-    const currentQuoteType = editor.getAttributes("blockquote").type || "default";
-    const currentOption = ALERT_TYPES.find((a) => a.type === currentQuoteType) || ALERT_TYPES[0];
-    return /* @__PURE__ */ jsxs("div", { className: "tiptap-dropdown", ref: dropdownRef, children: [
-      /* @__PURE__ */ jsxs(
-        "button",
-        {
-          type: "button",
-          className: "tiptap-button",
-          onClick: () => setIsOpen(!isOpen),
-          "data-active-state": isAnyQuoteActive ? "on" : "off",
-          title: "Citation",
-          style: { width: "auto", padding: "0 4px", gap: "2px", display: "flex", alignItems: "center" },
-          children: [
-            /* @__PURE__ */ jsx(currentOption.icon, { size: 16, style: { color: isAnyQuoteActive ? currentOption.color : "inherit" } }),
-            /* @__PURE__ */ jsx(ChevronDown, { size: 14 })
-          ]
-        }
-      ),
-      isOpen && /* @__PURE__ */ jsx("div", { className: "tiptap-dropdown-menu", style: { width: "180px" }, children: ALERT_TYPES.map((alert) => /* @__PURE__ */ jsxs(
-        "div",
-        {
-          className: "tiptap-dropdown-item",
-          "data-active": editor.isActive("blockquote", { type: alert.type }),
-          onClick: () => handleSelect(alert.type),
-          children: [
-            /* @__PURE__ */ jsx(alert.icon, { size: 16, style: { color: alert.color } }),
-            /* @__PURE__ */ jsx("span", { style: { flex: 1 }, children: alert.label }),
-            editor.isActive("blockquote", { type: alert.type }) && /* @__PURE__ */ jsx(Check, { size: 14 })
-          ]
-        },
-        alert.type
       )) })
     ] });
   };
@@ -56163,97 +56120,6 @@ ${promptInput.trim()}`
         )
       ] }),
       /* @__PURE__ */ jsx("div", { className: "tiptap-separator", "data-orientation": "vertical", role: "none" }),
-      /* @__PURE__ */ jsx("div", { role: "group", className: "tiptap-toolbar-group", children: /* @__PURE__ */ jsx(BlockTypeDropdown, { editor, onOpenChange: onDropdownToggle, onLink }) }),
-      /* @__PURE__ */ jsx("div", { className: "tiptap-separator", "data-orientation": "vertical", role: "none" }),
-      /* @__PURE__ */ jsxs("div", { role: "group", className: "tiptap-toolbar-group", "aria-label": "Bloc", children: [
-        /* @__PURE__ */ jsx(
-          "button",
-          {
-            className: "tiptap-button",
-            "aria-label": "Libell\xE9",
-            type: "button",
-            onClick: () => {
-              editor.chain().focus().insertContent("`").run();
-            },
-            "data-active-state": editor.isActive("code") ? "on" : "off",
-            title: "Libell\xE9",
-            children: /* @__PURE__ */ jsx(Tag, { size: 16 })
-          }
-        ),
-        /* @__PURE__ */ jsx(QuoteTypeDropdown, { editor })
-      ] }),
-      /* @__PURE__ */ jsx("div", { className: "tiptap-separator", "data-orientation": "vertical", role: "none" }),
-      /* @__PURE__ */ jsxs("div", { role: "group", className: "tiptap-toolbar-group", "aria-label": "Insertion", children: [
-        /* @__PURE__ */ jsx(
-          "button",
-          {
-            className: "tiptap-button",
-            "aria-label": "Insert Table",
-            title: "Tableau",
-            type: "button",
-            onClick: () => {
-              const selectedItems = getTableItemsFromSelection(editor);
-              if (selectedItems.length) {
-                const tableNode = buildTableNodeFromItems(editor, selectedItems, 2);
-                if (tableNode) {
-                  const tr2 = editor.state.tr.replaceSelectionWith(tableNode).scrollIntoView();
-                  const selectionPos = tr2.selection.from + 1;
-                  tr2.setSelection(TextSelection.near(tr2.doc.resolve(selectionPos)));
-                  editor.view.dispatch(tr2);
-                  return;
-                }
-              }
-              editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
-            },
-            children: /* @__PURE__ */ jsx(Table2, { size: 16 })
-          }
-        ),
-        /* @__PURE__ */ jsx(
-          "button",
-          {
-            className: "tiptap-button",
-            "aria-label": "Insert Mermaid Diagram",
-            type: "button",
-            onClick: () => {
-              insertMermaidDiagram(editor);
-            },
-            "data-active-state": editor.isActive("mermaidDiagram") ? "on" : "off",
-            title: "Diagramme",
-            children: /* @__PURE__ */ jsx(Shapes, { size: 16 })
-          }
-        ),
-        /* @__PURE__ */ jsxs(
-          "button",
-          {
-            className: "tiptap-button",
-            "aria-label": "Insert Image",
-            type: "button",
-            title: "Image",
-            onMouseDown: (event) => event.preventDefault(),
-            onClick: onInsertImage,
-            children: [
-              /* @__PURE__ */ jsx("i", { "data-lucide": "image", style: { display: "none" }, "aria-hidden": "true" }),
-              /* @__PURE__ */ jsx(Image2, { size: 16 })
-            ]
-          }
-        ),
-        /* @__PURE__ */ jsxs(
-          "button",
-          {
-            className: "tiptap-button",
-            "aria-label": "Insert Video",
-            type: "button",
-            title: "Vid\xE9o",
-            onMouseDown: (event) => event.preventDefault(),
-            onClick: onInsertVideo,
-            children: [
-              /* @__PURE__ */ jsx("i", { "data-lucide": "clapperboard", style: { display: "none" }, "aria-hidden": "true" }),
-              /* @__PURE__ */ jsx(Clapperboard, { size: 16 })
-            ]
-          }
-        )
-      ] }),
-      /* @__PURE__ */ jsx("div", { className: "tiptap-separator", "data-orientation": "vertical", role: "none" }),
       /* @__PURE__ */ jsxs("div", { role: "group", className: "tiptap-toolbar-group", children: [
         editor && hasMarksInDocument(editor) && /* @__PURE__ */ jsx(
           "button",
@@ -56283,6 +56149,40 @@ ${promptInput.trim()}`
         )
       ] })
     ] });
+  };
+  var runEditorDropdownAction = (editor, value, callbacks) => {
+    var _a, _b, _c;
+    const chain = editor.chain().focus();
+    if (value === "paragraph") chain.setParagraph().run();
+    else if (value === "h1") chain.toggleHeading({ level: 1 }).run();
+    else if (value === "h2") chain.toggleHeading({ level: 2 }).run();
+    else if (value === "h3") chain.toggleHeading({ level: 3 }).run();
+    else if (value === "bulletList") chain.toggleBulletList().run();
+    else if (value === "taskList") chain.toggleTaskList().run();
+    else if (value === "codeBlock") chain.toggleCodeBlock().run();
+    else if (value === "link") (_a = callbacks.onLink) == null ? void 0 : _a.call(callbacks);
+    else if (value === "label") chain.insertContent("`").run();
+    else if (value === "quote") chain.setBlockquote().run();
+    else if (value === "table") {
+      const selectedItems = getTableItemsFromSelection(editor);
+      if (selectedItems.length) {
+        const tableNode = buildTableNodeFromItems(editor, selectedItems, 2);
+        if (tableNode) {
+          const tr2 = editor.state.tr.replaceSelectionWith(tableNode).scrollIntoView();
+          const selectionPos = tr2.selection.from + 1;
+          tr2.setSelection(TextSelection.near(tr2.doc.resolve(selectionPos)));
+          editor.view.dispatch(tr2);
+          return;
+        }
+      }
+      chain.insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
+    } else if (value === "diagram") {
+      insertMermaidDiagram(editor);
+    } else if (value === "image") {
+      (_b = callbacks.onInsertImage) == null ? void 0 : _b.call(callbacks);
+    } else if (value === "video") {
+      (_c = callbacks.onInsertVideo) == null ? void 0 : _c.call(callbacks);
+    }
   };
   var CodeList = react_shim_default.forwardRef((props, ref2) => {
     var _a;
@@ -56775,6 +56675,8 @@ ${promptInput.trim()}`
     const [showLinkModal, setShowLinkModal] = react_shim_default.useState(false);
     const [linkModalAnchorPos, setLinkModalAnchorPos] = react_shim_default.useState(1);
     const [linkModalRange, setLinkModalRange] = react_shim_default.useState({ from: 1, to: 1 });
+    const [showSlashActionMenu, setShowSlashActionMenu] = react_shim_default.useState(false);
+    const [slashActionMenuPos, setSlashActionMenuPos] = react_shim_default.useState({ top: 0, left: 0 });
     const [isFocusWithinMemoCard, setIsFocusWithinMemoCard] = react_shim_default.useState(false);
     const [tableSelectionBox, setTableSelectionBox] = react_shim_default.useState(null);
     const [tableSelectionResize, setTableSelectionResize] = react_shim_default.useState(null);
@@ -56965,6 +56867,18 @@ ${promptInput.trim()}`
         handleKeyDown: (_view, event) => {
           var _a2, _b2, _c2, _d2, _e, _f, _g;
           if (!editor) return false;
+          if (event.key === "/" && !event.shiftKey && !event.altKey && !event.metaKey && !event.ctrlKey && editor.state.selection.empty) {
+            event.preventDefault();
+            const pos = editor.state.selection.from;
+            const coords = editor.view.coordsAtPos(pos);
+            setSlashActionMenuPos({ top: coords.bottom + 8, left: coords.left });
+            setShowSlashActionMenu(true);
+            return true;
+          }
+          if (event.key === "Escape" && showSlashActionMenu) {
+            setShowSlashActionMenu(false);
+            return true;
+          }
           const clearStoredMarks = () => {
             const blockedMarks = /* @__PURE__ */ new Set(["code", "textStyle", "bold", "italic", "underline", "strike", "highlight"]);
             const storedMarks = editor.state.storedMarks || editor.state.selection.$from.marks();
@@ -59262,6 +59176,32 @@ ${innerMarkdown}
       setLinkModalRange({ from: from2, to });
       setShowLinkModal(true);
     }, [editor]);
+    react_shim_default.useEffect(() => {
+      if (!showSlashActionMenu) return;
+      const onMouseDown = (event) => {
+        const target = event.target;
+        if (target == null ? void 0 : target.closest(".memo-slash-actions-menu")) return;
+        setShowSlashActionMenu(false);
+      };
+      document.addEventListener("mousedown", onMouseDown);
+      return () => document.removeEventListener("mousedown", onMouseDown);
+    }, [showSlashActionMenu]);
+    const slashActions = react_shim_default.useMemo(() => [
+      { label: "Texte", value: "paragraph", icon: Type },
+      { label: "Titre 1", value: "h1", icon: Heading1 },
+      { label: "Titre 2", value: "h2", icon: Heading2 },
+      { label: "Titre 3", value: "h3", icon: Heading3 },
+      { label: "Liste \xE0 puces", value: "bulletList", icon: List },
+      { label: "T\xE2che", value: "taskList", icon: SquareCheckBig },
+      { label: "Bloc de code", value: "codeBlock", icon: SquareCode },
+      { label: "Lien", value: "link", icon: Link2 },
+      { label: "Libell\xE9", value: "label", icon: Tag },
+      { label: "Citation", value: "quote", icon: Shapes },
+      { label: "Tableau", value: "table", icon: Table2 },
+      { label: "Diagramme", value: "diagram", icon: Shapes },
+      { label: "Image", value: "image", icon: Image2 },
+      { label: "Vid\xE9o", value: "video", icon: Clapperboard }
+    ], []);
     if (!editor) {
       return null;
     }
@@ -59330,10 +59270,40 @@ ${innerMarkdown}
               onKeep: () => keepSelection(editor),
               onReject: () => rejectSelection(editor),
               onAssist: handleAssist,
-              onLink: openLinkModal
+              onLink: openLinkModal,
+              onInsertImage: openImagePicker,
+              onInsertVideo: openVideoInsertDialog,
+              onDropdownToggle: setIsDropdownOpen
             }
           ),
           /* @__PURE__ */ jsx(EditorContent, { editor }),
+          showSlashActionMenu && editor && /* @__PURE__ */ jsx(
+            "div",
+            {
+              className: "memo-slash-actions-menu tiptap-dropdown-menu",
+              style: { position: "fixed", top: `${slashActionMenuPos.top}px`, left: `${slashActionMenuPos.left}px`, zIndex: 1600, minWidth: "210px" },
+              children: slashActions.map((item) => /* @__PURE__ */ jsxs(
+                "div",
+                {
+                  className: "tiptap-dropdown-item",
+                  onMouseDown: (event) => event.preventDefault(),
+                  onClick: () => {
+                    runEditorDropdownAction(editor, item.value, {
+                      onLink: openLinkModal,
+                      onInsertImage: openImagePicker,
+                      onInsertVideo: openVideoInsertDialog
+                    });
+                    setShowSlashActionMenu(false);
+                  },
+                  children: [
+                    /* @__PURE__ */ jsx(item.icon, { size: 16 }),
+                    /* @__PURE__ */ jsx("span", { style: { flex: 1 }, children: item.label })
+                  ]
+                },
+                item.value
+              ))
+            }
+          ),
           showLinkModal && /* @__PURE__ */ jsx(
             LinkSearchModal,
             {

@@ -715,13 +715,16 @@ interface SimpleEditorProps {
 }
 
 // Custom BubbleMenu component for Tiptap v3
-const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLink }: { 
+const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLink, onInsertImage, onInsertVideo, onDropdownToggle }: { 
   editor: Editor | null, 
   visible: boolean,
   onKeep: () => void,
   onReject: () => void,
   onAssist: () => void,
   onLink: () => void,
+  onInsertImage: () => void,
+  onInsertVideo: () => void,
+  onDropdownToggle?: (isOpen: boolean) => void,
 }) => {
   const [position, setPosition] = React.useState({ top: 0, left: 0, opacity: 0 });
   const [hasMarks, setHasMarks] = React.useState(false);
@@ -909,6 +912,15 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLi
           >
             <Bot size={16} />
           </button>
+          {editor && (
+            <TiptapActionsDropdown
+              editor={editor}
+              onOpenChange={onDropdownToggle}
+              onLink={onLink}
+              onInsertImage={onInsertImage}
+              onInsertVideo={onInsertVideo}
+            />
+          )}
         </div>
 
         <div className="tiptap-separator" data-orientation="vertical" role="none"></div>
@@ -1574,6 +1586,89 @@ const BlockTypeDropdown = ({ editor, onOpenChange, onLink }: { editor: Editor, o
   );
 };
 
+const TiptapActionsDropdown = ({
+  editor,
+  onOpenChange,
+  onLink,
+  onInsertImage,
+  onInsertVideo,
+}: {
+  editor: Editor,
+  onOpenChange?: (isOpen: boolean) => void,
+  onLink?: () => void,
+  onInsertImage?: () => void,
+  onInsertVideo?: () => void,
+}) => {
+  const [isOpen, setIsOpen] = React.useState(false);
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    onOpenChange?.(isOpen);
+  }, [isOpen, onOpenChange]);
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const options = [
+    { label: 'Texte', value: 'paragraph', icon: Type, active: editor.isActive('paragraph') },
+    { label: 'Titre 1', value: 'h1', icon: Heading1, active: editor.isActive('heading', { level: 1 }) },
+    { label: 'Titre 2', value: 'h2', icon: Heading2, active: editor.isActive('heading', { level: 2 }) },
+    { label: 'Titre 3', value: 'h3', icon: Heading3, active: editor.isActive('heading', { level: 3 }) },
+    { label: 'Liste à puces', value: 'bulletList', icon: List, active: editor.isActive('bulletList') },
+    { label: 'Tâche', value: 'taskList', icon: CheckSquare, active: editor.isActive('taskList') },
+    { label: 'Bloc de code', value: 'codeBlock', icon: SquareCode, active: editor.isActive('codeBlock') },
+    { label: 'Lien', value: 'link', icon: Link, active: editor.isActive('link') },
+    { label: 'Libellé', value: 'label', icon: Tag, active: editor.isActive('code') },
+    { label: 'Citation', value: 'quote', icon: Shapes, active: editor.isActive('blockquote') },
+    { label: 'Tableau', value: 'table', icon: TableIcon, active: editor.isActive('table') },
+    { label: 'Diagramme', value: 'diagram', icon: Shapes, active: editor.isActive('mermaidDiagram') },
+    { label: 'Image', value: 'image', icon: ImageIcon, active: false },
+    { label: 'Vidéo', value: 'video', icon: Clapperboard, active: false },
+  ];
+  const currentOption = options.find(o => o.active) || options[0];
+
+  const handleSelect = (value: string) => {
+    runEditorDropdownAction(editor, value, { onLink, onInsertImage, onInsertVideo });
+    setIsOpen(false);
+  };
+
+  return (
+    <div className="tiptap-dropdown" ref={dropdownRef}>
+      <button
+        type="button"
+        className="tiptap-dropdown-trigger"
+        onClick={() => setIsOpen(!isOpen)}
+        title="Actions"
+      >
+        <currentOption.icon size={16} />
+        <span>{currentOption.label}</span>
+        <ChevronDown size={14} />
+      </button>
+      {isOpen && (
+        <div className="tiptap-dropdown-menu" style={{ minWidth: '190px' }}>
+          {options.map((option) => (
+            <div
+              key={option.value}
+              className="tiptap-dropdown-item"
+              data-active={option.active}
+              onClick={() => handleSelect(option.value)}
+            >
+              <option.icon size={16} />
+              <span style={{ flex: 1 }}>{option.label}</span>
+              {option.active && <Check size={14} />}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const QuoteTypeDropdown = ({ editor }: { editor: Editor }) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
@@ -1703,91 +1798,6 @@ const Toolbar = ({ editor, onDropdownToggle, onLink, onInsertImage, onInsertVide
       <div className="tiptap-separator" data-orientation="vertical" role="none"></div>
 
       <div role="group" className="tiptap-toolbar-group">
-        <BlockTypeDropdown editor={editor} onOpenChange={onDropdownToggle} onLink={onLink} />
-      </div>
-
-      <div className="tiptap-separator" data-orientation="vertical" role="none"></div>
-
-      <div role="group" className="tiptap-toolbar-group" aria-label="Bloc">
-        <button
-          className="tiptap-button"
-          aria-label="Libellé"
-          type="button"
-          onClick={() => {
-            editor.chain().focus().insertContent('`').run();
-          }}
-          data-active-state={editor.isActive('code') ? 'on' : 'off'}
-          title="Libellé"
-        >
-          <Tag size={16} />
-        </button>
-        <QuoteTypeDropdown editor={editor} />
-      </div>
-
-      <div className="tiptap-separator" data-orientation="vertical" role="none"></div>
-
-      <div role="group" className="tiptap-toolbar-group" aria-label="Insertion">
-        <button
-          className="tiptap-button"
-          aria-label="Insert Table"
-          title="Tableau"
-          type="button"
-          onClick={() => {
-            const selectedItems = getTableItemsFromSelection(editor);
-            if (selectedItems.length) {
-              const tableNode = buildTableNodeFromItems(editor, selectedItems, 2);
-              if (tableNode) {
-                const tr = editor.state.tr.replaceSelectionWith(tableNode).scrollIntoView();
-                const selectionPos = tr.selection.from + 1;
-                tr.setSelection(TextSelection.near(tr.doc.resolve(selectionPos)));
-                editor.view.dispatch(tr);
-                return;
-              }
-            }
-            editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
-          }}
-        >
-          <TableIcon size={16} />
-        </button>
-        <button
-          className="tiptap-button"
-          aria-label="Insert Mermaid Diagram"
-          type="button"
-          onClick={() => {
-            insertMermaidDiagram(editor);
-          }}
-          data-active-state={editor.isActive('mermaidDiagram') ? 'on' : 'off'}
-          title="Diagramme"
-        >
-          <Shapes size={16} />
-        </button>
-        <button
-          className="tiptap-button"
-          aria-label="Insert Image"
-          type="button"
-          title="Image"
-          onMouseDown={(event) => event.preventDefault()}
-          onClick={onInsertImage}
-        >
-          <i data-lucide="image" style={{ display: 'none' }} aria-hidden="true"></i>
-          <ImageIcon size={16} />
-        </button>
-        <button
-          className="tiptap-button"
-          aria-label="Insert Video"
-          type="button"
-          title="Vidéo"
-          onMouseDown={(event) => event.preventDefault()}
-          onClick={onInsertVideo}
-        >
-          <i data-lucide="clapperboard" style={{ display: 'none' }} aria-hidden="true"></i>
-          <Clapperboard size={16} />
-        </button>
-      </div>
-
-      <div className="tiptap-separator" data-orientation="vertical" role="none"></div>
-
-      <div role="group" className="tiptap-toolbar-group">
         {editor && hasMarksInDocument(editor) && (
           <button
             className="tiptap-button toolbar-action-btn toolbar-keep"
@@ -1814,6 +1824,44 @@ const Toolbar = ({ editor, onDropdownToggle, onLink, onInsertImage, onInsertVide
       </div>
     </div>
   );
+};
+
+const runEditorDropdownAction = (
+  editor: Editor,
+  value: string,
+  callbacks: { onLink?: () => void; onInsertImage?: () => void; onInsertVideo?: () => void }
+) => {
+  const chain = editor.chain().focus();
+  if (value === 'paragraph') chain.setParagraph().run();
+  else if (value === 'h1') chain.toggleHeading({ level: 1 }).run();
+  else if (value === 'h2') chain.toggleHeading({ level: 2 }).run();
+  else if (value === 'h3') chain.toggleHeading({ level: 3 }).run();
+  else if (value === 'bulletList') chain.toggleBulletList().run();
+  else if (value === 'taskList') chain.toggleTaskList().run();
+  else if (value === 'codeBlock') chain.toggleCodeBlock().run();
+  else if (value === 'link') callbacks.onLink?.();
+  else if (value === 'label') chain.insertContent('`').run();
+  else if (value === 'quote') chain.setBlockquote().run();
+  else if (value === 'table') {
+    const selectedItems = getTableItemsFromSelection(editor);
+    if (selectedItems.length) {
+      const tableNode = buildTableNodeFromItems(editor, selectedItems, 2);
+      if (tableNode) {
+        const tr = editor.state.tr.replaceSelectionWith(tableNode).scrollIntoView();
+        const selectionPos = tr.selection.from + 1;
+        tr.setSelection(TextSelection.near(tr.doc.resolve(selectionPos)));
+        editor.view.dispatch(tr);
+        return;
+      }
+    }
+    chain.insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
+  } else if (value === 'diagram') {
+    insertMermaidDiagram(editor);
+  } else if (value === 'image') {
+    callbacks.onInsertImage?.();
+  } else if (value === 'video') {
+    callbacks.onInsertVideo?.();
+  }
 };
 
 // Code Suggestion List Component
@@ -2445,6 +2493,8 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   const [showLinkModal, setShowLinkModal] = React.useState(false);
   const [linkModalAnchorPos, setLinkModalAnchorPos] = React.useState(1);
   const [linkModalRange, setLinkModalRange] = React.useState<{ from: number; to: number }>({ from: 1, to: 1 });
+  const [showSlashActionMenu, setShowSlashActionMenu] = React.useState(false);
+  const [slashActionMenuPos, setSlashActionMenuPos] = React.useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const [isFocusWithinMemoCard, setIsFocusWithinMemoCard] = React.useState(false);
   const [tableSelectionBox, setTableSelectionBox] = React.useState<{ top: number, left: number, width: number, height: number } | null>(null);
   const [tableSelectionResize, setTableSelectionResize] = React.useState<{ anchorPos: number, tablePos: number } | null>(null);
@@ -2646,6 +2696,25 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       },
       handleKeyDown: (_view, event) => {
         if (!editor) return false;
+        if (
+          event.key === '/' &&
+          !event.shiftKey &&
+          !event.altKey &&
+          !event.metaKey &&
+          !event.ctrlKey &&
+          editor.state.selection.empty
+        ) {
+          event.preventDefault();
+          const pos = editor.state.selection.from;
+          const coords = editor.view.coordsAtPos(pos);
+          setSlashActionMenuPos({ top: coords.bottom + 8, left: coords.left });
+          setShowSlashActionMenu(true);
+          return true;
+        }
+        if (event.key === 'Escape' && showSlashActionMenu) {
+          setShowSlashActionMenu(false);
+          return true;
+        }
         const clearStoredMarks = () => {
           const blockedMarks = new Set(['code', 'textStyle', 'bold', 'italic', 'underline', 'strike', 'highlight']);
           const storedMarks = editor.state.storedMarks || editor.state.selection.$from.marks();
@@ -5318,6 +5387,34 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     setShowLinkModal(true);
   }, [editor]);
 
+  React.useEffect(() => {
+    if (!showSlashActionMenu) return;
+    const onMouseDown = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target?.closest('.memo-slash-actions-menu')) return;
+      setShowSlashActionMenu(false);
+    };
+    document.addEventListener('mousedown', onMouseDown);
+    return () => document.removeEventListener('mousedown', onMouseDown);
+  }, [showSlashActionMenu]);
+
+  const slashActions = React.useMemo(() => ([
+    { label: 'Texte', value: 'paragraph', icon: Type },
+    { label: 'Titre 1', value: 'h1', icon: Heading1 },
+    { label: 'Titre 2', value: 'h2', icon: Heading2 },
+    { label: 'Titre 3', value: 'h3', icon: Heading3 },
+    { label: 'Liste à puces', value: 'bulletList', icon: List },
+    { label: 'Tâche', value: 'taskList', icon: CheckSquare },
+    { label: 'Bloc de code', value: 'codeBlock', icon: SquareCode },
+    { label: 'Lien', value: 'link', icon: Link },
+    { label: 'Libellé', value: 'label', icon: Tag },
+    { label: 'Citation', value: 'quote', icon: Shapes },
+    { label: 'Tableau', value: 'table', icon: TableIcon },
+    { label: 'Diagramme', value: 'diagram', icon: Shapes },
+    { label: 'Image', value: 'image', icon: ImageIcon },
+    { label: 'Vidéo', value: 'video', icon: Clapperboard },
+  ]), []);
+
   if (!editor) {
     return null;
   }
@@ -5386,8 +5483,37 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         onReject={() => rejectSelection(editor)}
         onAssist={handleAssist}
         onLink={openLinkModal}
+        onInsertImage={openImagePicker}
+        onInsertVideo={openVideoInsertDialog}
+        onDropdownToggle={setIsDropdownOpen}
       />
       <EditorContent editor={editor} />
+
+      {showSlashActionMenu && editor && (
+        <div
+          className="memo-slash-actions-menu tiptap-dropdown-menu"
+          style={{ position: 'fixed', top: `${slashActionMenuPos.top}px`, left: `${slashActionMenuPos.left}px`, zIndex: 1600, minWidth: '210px' }}
+        >
+          {slashActions.map((item) => (
+            <div
+              key={item.value}
+              className="tiptap-dropdown-item"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                runEditorDropdownAction(editor, item.value, {
+                  onLink: openLinkModal,
+                  onInsertImage: openImagePicker,
+                  onInsertVideo: openVideoInsertDialog,
+                });
+                setShowSlashActionMenu(false);
+              }}
+            >
+              <item.icon size={16} />
+              <span style={{ flex: 1 }}>{item.label}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {showLinkModal && (
         <LinkSearchModal 

@@ -221,26 +221,6 @@
                 }
             }
 
-            const voiceRecordingsStore = window.goToolkitDocStore?.createStore?.("voice-recordings") || null;
-            const recordingIconCache = new Map();
-            async function resolveRecordingIcon(recordingId) {
-                if (!recordingId) return "";
-                if (recordingIconCache.has(recordingId)) {
-                    return recordingIconCache.get(recordingId);
-                }
-                let icon = "cassette-tape";
-                try {
-                    const recording = await voiceRecordingsStore?.get?.(recordingId);
-                    if (recording?.videoBlob) {
-                        icon = "video";
-                    }
-                } catch (err) {
-                    icon = "cassette-tape";
-                }
-                recordingIconCache.set(recordingId, icon);
-                return icon;
-            }
-
             async function createShareCardElement(cardInfo, target = "_self") {
                 const { definition, preview, formattedDate, href, app, record, superpowerHtml } = cardInfo;
                 const card = document.createElement("a");
@@ -249,15 +229,10 @@
                 card.target = target;
                 card.rel = "noopener";
                 card.setAttribute("data-app", app);
-                const metaHtml = buildMetaBadge(preview.templateLabel);
-                const payloadRecordingId = record?.payload?.tabs?.find(tab => typeof tab?.voiceRecordingId === "string" && tab.voiceRecordingId)?.voiceRecordingId || null;
-                const iconName = await resolveRecordingIcon(record?.voiceRecordingId || payloadRecordingId || null);
-                const recordingIcon = preview.hasRecording ? `<i data-lucide="${iconName}" style="width:14px;height:14px;margin-right:8px;vertical-align:text-bottom;opacity:0.8;"></i>` : "";
                 const notionIcon = String(record?.notionPageId || "").trim() ? '<i data-lucide="notebook" style="width:14px;height:14px;margin-right:8px;vertical-align:text-bottom;opacity:0.85;"></i>' : "";
                 card.innerHTML = `
-                    <p class="share-card-title">${notionIcon}${recordingIcon}${preview.tabName}</p>
+                    <p class="share-card-title">${notionIcon}${preview.tabName}</p>
                     ${superpowerHtml || ""}
-                    ${metaHtml}
                     <p class="share-card-desc">${preview.lines.join(" · ") || "(sans contexte)"}</p>
                     <p class="share-card-date">${formattedDate}</p>
                 `;
@@ -351,17 +326,12 @@
                 card.target = target;
                 card.rel = "noopener";
                 card.setAttribute("data-app", record.app);
-                const metaHtml = buildMetaBadge(preview.templateLabel);
                 const superpowers = normalizeSuperpowers(record.superpowers, record.category);
                 const superpowerHtml = buildSuperpowerBadges(superpowers, catalog);
-                const payloadRecordingId = record?.payload?.tabs?.find(tab => typeof tab?.voiceRecordingId === "string" && tab.voiceRecordingId)?.voiceRecordingId || null;
-                const iconName = await resolveRecordingIcon(record.voiceRecordingId || payloadRecordingId || null);
-                const recordingIcon = (preview.hasRecording || record.voiceRecordingId) ? `<i data-lucide="${iconName}" style="width:14px;height:14px;margin-right:8px;vertical-align:text-bottom;opacity:0.8;"></i>` : "";
                 const notionIcon = String(record?.notionPageId || "").trim() ? '<i data-lucide="notebook" style="width:14px;height:14px;margin-right:8px;vertical-align:text-bottom;opacity:0.85;"></i>' : "";
                 card.innerHTML = `
-                    <p class="share-card-title">${notionIcon}${recordingIcon}${preview.tabName}</p>
+                    <p class="share-card-title">${notionIcon}${preview.tabName}</p>
                     ${superpowerHtml}
-                    ${metaHtml}
                     <p class="share-card-desc">${preview.lines.join(" · ") || "Complète le contexte pour l'afficher ici."}</p>
                     <p class="share-card-date">${formattedDate}</p>
                 `;

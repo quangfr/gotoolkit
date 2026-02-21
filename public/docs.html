@@ -45,10 +45,10 @@
         crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.min.js" crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.min.js" crossorigin></script>
-    <link rel="stylesheet" href="styles/style.css?v=2026.02.21.2">
+    <link rel="stylesheet" href="styles/style.css?v=2026.02.21.3">
     <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
-    <link rel="stylesheet" href="styles/memo.css?v=2026.02.21.2">
-    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.21.2">
+    <link rel="stylesheet" href="styles/memo.css?v=2026.02.21.3">
+    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.21.3">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.css">
     <script src="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.js"></script>
     <style>
@@ -136,12 +136,18 @@
                 <div class="tabs-actions">
                     <button id="documentExplorerToggle" class="app-home-link" type="button" title="Bibliothèque"
                         aria-expanded="false" aria-controls="documentExplorer"><i data-lucide="book-open"></i></button>
-                    <a href="/?v=2026.02.21.2" class="nav-switch-btn" title="Accueil"
+                    <a href="/?v=2026.02.21.3" class="nav-switch-btn" title="Accueil"
                         style="text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
                         <i data-lucide="home"></i>
                     </a>
 
                     <div id="breadcrumb" class="tabs">
+                        <div class="document-breadcrumb-icon-picker">
+                            <button id="currentDocIconBtn" class="document-breadcrumb-icon-btn" type="button" title="Icône de la page">
+                                <i data-lucide="file"></i>
+                            </button>
+                            <div id="currentDocIconGrid" class="document-explorer-icon-grid"></div>
+                        </div>
                         <div id="document-breadcrumb" class="document-breadcrumb"></div>
                         <div id="memo-tabs" class="tabs"></div>
                     </div>
@@ -203,14 +209,14 @@
                                     </div>
                                 </div>
 
-                                <button id="shareBtn" type="button" class="menu-panel-btn"><i data-lucide="share-2"></i>
+                                <button id="shareBtn" type="button" class="menu-panel-btn"><i data-lucide="cloud-upload"></i>
                                     Partager</button>
                                 <div class="menu-panel-item has-submenu">
-                                    <button type="button" class="menu-panel-btn"><i data-lucide="cloud-upload"></i>
+                                    <button type="button" class="menu-panel-btn"><i data-lucide="component"></i>
                                         Publier</button>
                                     <div class="submenu">
                                         <button id="publishGoLiveBtn" type="button"
-                                            class="menu-panel-btn">Go-Live</button>
+                                            class="menu-panel-btn">Commun</button>
                                         <button id="publishNotionBtn" type="button"
                                             class="menu-panel-btn">Notion</button>
                                     </div>
@@ -240,12 +246,6 @@
                     créer un nouveau depuis la Bibliothèque.</div>
                 <section class="memo-card">
                     <div class="memo-page-title-bar">
-                        <div class="document-breadcrumb-icon-picker">
-                            <button id="currentDocIconBtn" class="document-breadcrumb-icon-btn" type="button" title="Icône de la page">
-                                <i data-lucide="file"></i>
-                            </button>
-                            <div id="currentDocIconGrid" class="document-explorer-icon-grid"></div>
-                        </div>
                         <input id="memoPageTitleInput" class="memo-page-title-input" type="text" value="New page" aria-label="Titre de la page" />
                     </div>
                     <div class="editor-wrap">
@@ -369,7 +369,7 @@
         <img src="img/logo.gif" alt="Logo GoToolkit" class="logo-light">
         <img src="img/logo_inverted.gif" alt="Logo GoToolkit" class="logo-dark">
         <strong>GoToolkit</strong>
-        <span id="memoNewsTrigger" class="info-popup-news-link" role="button" tabindex="0">Version 2026.02.21.2</span>
+        <span id="memoNewsTrigger" class="info-popup-news-link" role="button" tabindex="0">Version 2026.02.21.3</span>
         <span>Usage réservé à Savane Consulting.</span>
         <div class="info-actions info-actions--stacked">
             <div class="info-actions-row">
@@ -449,23 +449,23 @@
         window.GO_TOOLKIT_GOOGLE_TTS_API_URL =
             window.GO_TOOLKIT_GOOGLE_TTS_API_URL || "https://googletts.gotoolkit.workers.dev";
     </script>
-    <script src="js/config.js?v=2026.02.21.2"></script>
-    <script src="js/config-modal.js?v=2026.02.21.2"></script>
-    <script src="js/feature-visibility.js?v=2026.02.21.2"></script>
-    <script src="js/document-storage.js?v=2026.02.21.2"></script>
-    <script src="js/storage-service.js?v=2026.02.21.2"></script>
-    <script src="js/shared-ui.js?v=2026.02.21.2"></script>
-    <script src="js/share-worker-client.js?v=2026.02.21.2"></script>
-    <script src="js/share-history.js?v=2026.02.21.2"></script>
-    <script src="js/document-api.js?v=2026.02.21.2"></script>
-    <script src="js/keywordIndex.js?v=2026.02.21.2"></script>
-    <script src="js/document-rag.js?v=2026.02.21.2"></script>
-    <script src="js/ia-config.js?v=2026.02.21.2"></script>
-    <script src="preset.js?v=2026.02.21.2"></script>
-    <script src="prompt.js?v=2026.02.21.2"></script>
-    <script src="js/ia-client.js?v=2026.02.21.2"></script>
-    <script src="js/document-markdown.js?v=2026.02.21.2"></script>
-    <script src="js/notion-export.js?v=2026.02.21.2"></script>
+    <script src="js/config.js?v=2026.02.21.3"></script>
+    <script src="js/config-modal.js?v=2026.02.21.3"></script>
+    <script src="js/feature-visibility.js?v=2026.02.21.3"></script>
+    <script src="js/document-storage.js?v=2026.02.21.3"></script>
+    <script src="js/storage-service.js?v=2026.02.21.3"></script>
+    <script src="js/shared-ui.js?v=2026.02.21.3"></script>
+    <script src="js/share-worker-client.js?v=2026.02.21.3"></script>
+    <script src="js/share-history.js?v=2026.02.21.3"></script>
+    <script src="js/document-api.js?v=2026.02.21.3"></script>
+    <script src="js/keywordIndex.js?v=2026.02.21.3"></script>
+    <script src="js/document-rag.js?v=2026.02.21.3"></script>
+    <script src="js/ia-config.js?v=2026.02.21.3"></script>
+    <script src="preset.js?v=2026.02.21.3"></script>
+    <script src="prompt.js?v=2026.02.21.3"></script>
+    <script src="js/ia-client.js?v=2026.02.21.3"></script>
+    <script src="js/document-markdown.js?v=2026.02.21.3"></script>
+    <script src="js/notion-export.js?v=2026.02.21.3"></script>
     <script>
         document.addEventListener("click", function (event) {
             const legalTrigger = event.target?.closest?.("[data-open-nexus-modal]");
@@ -499,15 +499,15 @@
             ]
         };
     </script>
-    <script src="js/feedback.js?v=2026.02.21.2"></script>
-    <script src="js/news.js?v=2026.02.21.2"></script>
-    <script src="js/voice-video-player.js?v=2026.02.21.2"></script>
-    <script src="js/voice-audio-player.js?v=2026.02.21.2"></script>
-    <script src="js/youtube-publish.js?v=2026.02.21.2"></script>
-    <script src="js/voice.js?v=2026.02.21.2"></script>
-    <script src="js/voice-transcript.js?v=2026.02.21.2"></script>
-    <script src="js/googletts.js?v=2026.02.21.2"></script>
-    <script src="js/draw-memo.js?v=2026.02.21.2"></script>
+    <script src="js/feedback.js?v=2026.02.21.3"></script>
+    <script src="js/news.js?v=2026.02.21.3"></script>
+    <script src="js/voice-video-player.js?v=2026.02.21.3"></script>
+    <script src="js/voice-audio-player.js?v=2026.02.21.3"></script>
+    <script src="js/youtube-publish.js?v=2026.02.21.3"></script>
+    <script src="js/voice.js?v=2026.02.21.3"></script>
+    <script src="js/voice-transcript.js?v=2026.02.21.3"></script>
+    <script src="js/googletts.js?v=2026.02.21.3"></script>
+    <script src="js/draw-memo.js?v=2026.02.21.3"></script>
     <script>
         // Suppress React DevTools prompt in dev builds.
         window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = window.__REACT_DEVTOOLS_GLOBAL_HOOK__ || {
@@ -517,9 +517,9 @@
             onCommitFiberUnmount: function () { }
         };
     </script>
-    <script src="js/memo.bundle.js?v=2026.02.21.2"></script>
-    <script src="js/assist.js?v=2026.02.21.2"></script>
-    <script src="js/document-panel.js?v=2026.02.21.2"></script>
+    <script src="js/memo.bundle.js?v=2026.02.21.3"></script>
+    <script src="js/assist.js?v=2026.02.21.3"></script>
+    <script src="js/document-panel.js?v=2026.02.21.3"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             setTimeout(function () {
@@ -934,14 +934,100 @@
             let activeHandoff = null;
             let templatePreviewReturnFocusEl = null;
             let documentTabsRenderToken = 0;
+            let currentDocIconSearch = "";
             var state = { tabs: [], activeTabId: "" };
-            const DOCUMENT_ICON_CHOICES = [
-                "file", "file-text", "sticky-note", "book-text", "notebook", "folder", "folder-open", "archive", "briefcase", "bookmark",
-                "star", "flag", "tag", "hash", "list", "list-checks", "check-square", "calendar", "clock", "hourglass",
-                "target", "lightbulb", "sparkles", "rocket", "bolt", "wand-sparkles", "brain", "bot", "message-square", "mail",
-                "phone", "globe", "map-pin", "compass", "link", "shield", "lock", "key", "settings", "wrench",
-                "palette", "pen", "pencil", "brush", "image", "camera", "video", "mic", "headphones", "music"
-            ];
+            const DOCUMENT_ICON_CHOICES = Array.from(new Set(`
+                file file-text file-plus file-pen file-check file-search file-lock file-symlink file-stack files file-down
+                folder folder-open folder-plus folder-search folder-git-2 folder-kanban folder-lock folder-sync folder-tree
+                archive archive-restore briefcase briefcase-business briefcase-medical book book-open book-text notebook notepad-text
+                bookmark library
+                star flag tags tag hash at-sign link link-2 unlink paperclip
+                list list-checks list-todo list-tree list-ordered list-minus list-plus list-filter layout-grid layout-list kanban square-kanban
+                check check-check check-square circle-check circle minus plus x triangle-alert octagon-alert
+                shield shield-check shield-alert shield-question lock lock-keyhole lock-keyhole-open key key-round
+                calendar calendar-check calendar-clock calendar-days calendar-range clock alarm-clock timer history hourglass
+                target lightbulb rocket sparkles wand-sparkles brain bot cpu circuit-board binary code code-2 terminal command workflow
+                message-square message-circle messages-square mail send inbox bell bell-ring phone smartphone tablet laptop monitor server
+                globe map map-pin navigation compass route locate pin
+                settings sliders-horizontal wrench hammer cog
+                pen pencil pen-tool highlighter eraser palette paintbrush ruler scissors stamp signature
+                image image-plus image-off camera video clapperboard mic mic-off headphones music radio podcast
+                play pause stop-circle fast-forward rewind volume-2 volume-x
+                chart-column chart-bar chart-line chart-pie trending-up trending-down activity gauge
+                database table receipt text quote clipboard clipboard-check clipboard-list clipboard-pen copy paste save download upload
+                cloud cloud-upload cloud-download cloud-check cloud-alert cloud-cog
+                user user-round user-check user-plus user-cog users contact id-card
+                building building-2 landmark store factory warehouse home
+                shopping-cart package truck plane ship car
+                dollar-sign euro piggy-bank wallet credit-card receipt-text calculator percent
+                search filter funnel zap component puzzle layers git-branch git-commit git-merge git-pull-request refresh-cw refresh-ccw
+                sun moon leaf flame snowflake umbrella
+            `.trim().split(/\s+/)));
+            const DOCUMENT_ICON_TOKEN_FR = {
+                file: ["fichier", "document", "page"],
+                folder: ["dossier", "repertoire"],
+                archive: ["archive", "historique"],
+                briefcase: ["projet", "travail", "business"],
+                book: ["livre", "guide", "documentation"],
+                notebook: ["notes", "bloc-notes"],
+                bookmark: ["favori", "marque-page"],
+                tag: ["etiquette", "label"],
+                list: ["liste", "plan"],
+                check: ["valide", "ok", "tache"],
+                calendar: ["calendrier", "planning", "date"],
+                clock: ["heure", "temps", "delai"],
+                target: ["objectif", "cible", "kpi"],
+                lightbulb: ["idee", "innovation"],
+                rocket: ["lancement", "croissance"],
+                brain: ["strategie", "analyse"],
+                bot: ["ia", "assistant"],
+                code: ["dev", "technique"],
+                message: ["message", "discussion", "chat"],
+                mail: ["email", "courriel"],
+                phone: ["telephone", "appel"],
+                globe: ["monde", "internet", "web"],
+                map: ["carte", "localisation"],
+                link: ["lien", "url"],
+                shield: ["securite", "protection"],
+                lock: ["prive", "confidentiel"],
+                key: ["acces", "cle"],
+                settings: ["parametres", "config"],
+                pen: ["edition", "redaction"],
+                image: ["image", "visuel"],
+                video: ["video", "media"],
+                mic: ["audio", "micro"],
+                chart: ["graphique", "analyse", "reporting"],
+                database: ["base", "donnees"],
+                table: ["tableau", "grille"],
+                cloud: ["partage", "en-ligne", "sync"],
+                user: ["utilisateur", "profil", "personne"],
+                users: ["equipe", "collaboration"],
+                building: ["entreprise", "organisation"],
+                search: ["recherche", "trouver"],
+                filter: ["filtre", "tri"],
+                zap: ["rapide", "automatisation"],
+                component: ["commun", "module"],
+                puzzle: ["solution", "assemblage"],
+                git: ["version", "code-source"],
+            };
+            const normalizeIconSearchValue = (value) => String(value || "")
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .toLowerCase()
+                .trim();
+            const getDocumentIconSearchText = (icon) => {
+                const parts = String(icon || "").split("-").filter(Boolean);
+                const words = [icon].concat(parts);
+                parts.forEach((token) => {
+                    const fr = DOCUMENT_ICON_TOKEN_FR[token];
+                    if (Array.isArray(fr)) words.push(...fr);
+                });
+                if (parts.length > 1) {
+                    const fr = DOCUMENT_ICON_TOKEN_FR[parts[0]];
+                    if (Array.isArray(fr)) words.push(...fr);
+                }
+                return normalizeIconSearchValue(words.join(" "));
+            };
             if (notionDefaultPathInput) {
                 notionDefaultPathInput.value = localStorage.getItem(NOTION_PATH_STORAGE_KEY) || "";
             }
@@ -1508,8 +1594,26 @@
             }
 
             function ensureCurrentDocumentIconGrid() {
-                if (!currentDocIconGrid || currentDocIconGrid.childElementCount > 0) return;
-                DOCUMENT_ICON_CHOICES.forEach(icon => {
+                if (!currentDocIconGrid) return;
+                currentDocIconGrid.innerHTML = "";
+                const searchWrap = document.createElement("div");
+                searchWrap.className = "document-explorer-icon-search-wrap";
+                const searchInput = document.createElement("input");
+                searchInput.type = "search";
+                searchInput.className = "document-explorer-icon-search";
+                searchInput.placeholder = "Rechercher une icône (ex: dossier, calendrier, partage)";
+                searchInput.value = currentDocIconSearch;
+                searchInput.addEventListener("input", () => {
+                    currentDocIconSearch = searchInput.value || "";
+                    ensureCurrentDocumentIconGrid();
+                });
+                searchWrap.appendChild(searchInput);
+                currentDocIconGrid.appendChild(searchWrap);
+                const q = normalizeIconSearchValue(currentDocIconSearch);
+                const filteredIcons = !q
+                    ? DOCUMENT_ICON_CHOICES
+                    : DOCUMENT_ICON_CHOICES.filter(icon => getDocumentIconSearchText(icon).includes(q));
+                filteredIcons.forEach(icon => {
                     const btn = document.createElement("button");
                     btn.type = "button";
                     btn.className = "document-explorer-icon-choice";
@@ -1532,6 +1636,9 @@
                     });
                     currentDocIconGrid.appendChild(btn);
                 });
+                if (currentDocIconGrid.classList.contains("open")) {
+                    searchInput.focus();
+                }
                 if (window.lucide) window.lucide.createIcons();
             }
 
@@ -4317,6 +4424,8 @@
             currentDocIconBtn?.addEventListener("click", async event => {
                 event.preventDefault();
                 event.stopPropagation();
+                const willOpen = !currentDocIconGrid?.classList.contains("open");
+                if (willOpen) currentDocIconSearch = "";
                 ensureCurrentDocumentIconGrid();
                 currentDocIconGrid?.classList.toggle("open");
                 await updateCurrentDocumentIconButton();
@@ -6327,7 +6436,7 @@
             memoDocsBtn?.addEventListener("click", event => {
                 event.stopPropagation();
                 memoInfoPopup?.classList.remove("open");
-                window.GoToolkitAssistInstance?.openKnowledgeModalWithSourceFilter?.("Web");
+                window.GoToolkitAssistInstance?.openKnowledgeModal?.();
             });
 
             memoLegalBtn?.addEventListener("click", event => {

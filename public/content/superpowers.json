@@ -58,11 +58,5 @@
     "icon": "database",
     "title": "Pôlène",
     "description": "Le pouvoir de concevoir des produits qui exposent leur valeur par la donnée. Anticiper APIs, événements métiers et données pivots pour polliniser l’écosystème."
-  },
-  {
-    "id": 11,
-    "icon": "sparkles",
-    "title": "Autre",
-    "description": "Compétences complémentaires et transverses non répertoriées dans les catégories standards."
   }
 ]
