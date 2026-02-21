@@ -50,9 +50,11 @@ const EditorItem = React.memo(({ editor, activeId, onChangeCb, handleEditorReady
 });
 
 const App = () => {
+    const MAX_CACHED_EDITORS = 8;
     const [editors, setEditors] = useState<Record<string, EditorInstance>>({});
     const [activeId, setActiveId] = useState<string>('');
     const [onChangeCb, setOnChangeCb] = useState<((content: string, id?: string) => void) | null>(null);
+    const editorOrderRef = React.useRef<string[]>([]);
 
     // Track active instance for global functions
     const activeInstanceRef = React.useRef<any>(null);
@@ -140,11 +142,26 @@ const App = () => {
     // no-op
                 setActiveId(id);
                 setEditors(prev => {
-                    if (prev[id]) return prev;
-                    return {
-                        ...prev,
-                        [id]: { id, content: initialContent || '' }
-                    };
+                    const hasExisting = Boolean(prev[id]);
+                    const next: Record<string, EditorInstance> = hasExisting
+                        ? prev
+                        : {
+                            ...prev,
+                            [id]: { id, content: initialContent || '' }
+                        };
+
+                    let nextOrder = editorOrderRef.current.filter(editorId => Boolean(next[editorId]));
+                    nextOrder = nextOrder.filter(editorId => editorId !== id);
+                    nextOrder.push(id);
+
+                    while (nextOrder.length > MAX_CACHED_EDITORS) {
+                        const victimId = nextOrder.find(editorId => editorId !== id && editorId !== activeId);
+                        if (!victimId) break;
+                        delete next[victimId];
+                        nextOrder = nextOrder.filter(editorId => editorId !== victimId);
+                    }
+                    editorOrderRef.current = nextOrder;
+                    return next;
                 });
                 setTimeout(() => {
                     // no-op
@@ -154,6 +171,7 @@ const App = () => {
                 setEditors(prev => {
                     const next = { ...prev };
                     delete next[id];
+                    editorOrderRef.current = editorOrderRef.current.filter(editorId => editorId !== id);
                     return next;
                 });
             },
@@ -167,7 +185,7 @@ const App = () => {
                             editor.methods.setMarkdown(output);
                         }
                     }
-                    return { ...prev };
+                    return prev;
                 });
             },
             applyStructuredOpsTo: (id: string, ops: Array<{ action?: string; type?: string; start?: number; end?: number; text?: string; content?: string }>) => {
@@ -176,7 +194,7 @@ const App = () => {
                     if (editor && editor.methods && typeof editor.methods.applyStructuredOps === "function") {
                         editor.methods.applyStructuredOps(ops);
                     }
-                    return { ...prev };
+                    return prev;
                 });
             }
         };

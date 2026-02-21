@@ -59901,9 +59901,11 @@ ${innerMarkdown}
     );
   });
   var App = () => {
+    const MAX_CACHED_EDITORS = 8;
     const [editors, setEditors] = useState({});
     const [activeId, setActiveId] = useState("");
     const [onChangeCb, setOnChangeCb] = useState(null);
+    const editorOrderRef = react_shim_default.useRef([]);
     const activeInstanceRef = react_shim_default.useRef(null);
     const handleEditorReady = react_shim_default.useCallback((id, methods) => {
       setEditors((prev) => {
@@ -59988,11 +59990,22 @@ ${innerMarkdown}
           const start = performance.now();
           setActiveId(id);
           setEditors((prev) => {
-            if (prev[id]) return prev;
-            return {
+            const hasExisting = Boolean(prev[id]);
+            const next2 = hasExisting ? prev : {
               ...prev,
               [id]: { id, content: initialContent || "" }
             };
+            let nextOrder = editorOrderRef.current.filter((editorId) => Boolean(next2[editorId]));
+            nextOrder = nextOrder.filter((editorId) => editorId !== id);
+            nextOrder.push(id);
+            while (nextOrder.length > MAX_CACHED_EDITORS) {
+              const victimId = nextOrder.find((editorId) => editorId !== id && editorId !== activeId);
+              if (!victimId) break;
+              delete next2[victimId];
+              nextOrder = nextOrder.filter((editorId) => editorId !== victimId);
+            }
+            editorOrderRef.current = nextOrder;
+            return next2;
           });
           setTimeout(() => {
           }, 0);
@@ -60001,6 +60014,7 @@ ${innerMarkdown}
           setEditors((prev) => {
             const next2 = { ...prev };
             delete next2[id];
+            editorOrderRef.current = editorOrderRef.current.filter((editorId) => editorId !== id);
             return next2;
           });
         },
@@ -60014,7 +60028,7 @@ ${innerMarkdown}
                 editor.methods.setMarkdown(output);
               }
             }
-            return { ...prev };
+            return prev;
           });
         },
         applyStructuredOpsTo: (id, ops) => {
@@ -60023,7 +60037,7 @@ ${innerMarkdown}
             if (editor && editor.methods && typeof editor.methods.applyStructuredOps === "function") {
               editor.methods.applyStructuredOps(ops);
             }
-            return { ...prev };
+            return prev;
           });
         }
       };
