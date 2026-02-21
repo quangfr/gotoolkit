@@ -602,6 +602,18 @@
             font-size: 10px;
             font-weight: 500;
         }
+        .document-explorer__section-actions {
+            margin-left: auto;
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            opacity: 0;
+            transition: opacity 0.15s ease;
+        }
+        .document-explorer__section-header:hover .document-explorer__section-actions,
+        .document-explorer__section-header:focus-within .document-explorer__section-actions {
+            opacity: 1;
+        }
         .document-explorer__section-header i,
         .document-explorer__section-header svg {
             width: 14px;
@@ -729,26 +741,26 @@
             align-items: center;
             gap: 4px;
             flex-wrap: wrap;
-            margin-left: auto;
         }
         .active-doc-meta {
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            margin-left: 8px;
+            margin-left: auto;
             margin-right: 8px;
             color: var(--text-muted);
-            font-size: 12px;
-            white-space: nowrap;
+            font-size: 11px;
+            white-space: nowrap;    
+            margin-left: auto;
         }
         .active-doc-meta__item {
             display: inline-flex;
             align-items: center;
             min-height: 24px;
-            padding: 0 6px;
+            padding: 0;
             border-radius: 6px;
-            border: 1px solid var(--border-main);
-            background: var(--bg-surface-soft);
+            border: none;
+            background: transparent;
         }
 
         #breadcrumb {

@@ -281,6 +281,10 @@
         const onCreateChild = typeof opts.onCreateChild === "function" ? opts.onCreateChild : null;
         const onMove = typeof opts.onMove === "function" ? opts.onMove : null;
         const getCommonItems = typeof opts.getCommonItems === "function" ? opts.getCommonItems : null;
+        const getSectionMeta = typeof opts.getSectionMeta === "function" ? opts.getSectionMeta : null;
+        const getSharedSections = typeof opts.getSharedSections === "function" ? opts.getSharedSections : null;
+        const onSectionAdd = typeof opts.onSectionAdd === "function" ? opts.onSectionAdd : null;
+        const onSectionSettings = typeof opts.onSectionSettings === "function" ? opts.onSectionSettings : null;
         const getItems = typeof opts.getItems === "function" ? opts.getItems : null;
         const getOpenIds = typeof opts.getOpenIds === "function" ? opts.getOpenIds : null;
         const getActiveId = typeof opts.getActiveId === "function" ? opts.getActiveId : null;
@@ -289,7 +293,7 @@
         let draggingId = "";
         let draggingSection = "";
         let orderIds = [];
-        let sectionExpanded = { private: true, shared: true };
+        let sectionExpanded = { recent: true, private: true, common: true, superpowers: true };
         let searchQuery = "";
         let preSearchExpandedIds = null;
         let preSearchSectionExpanded = null;
@@ -406,14 +410,19 @@
         function readSectionExpandedState() {
             try {
                 const parsed = JSON.parse(localStorage.getItem(SECTION_EXPANDED_STORAGE_KEY) || "{}");
-                return {
+                const next = {
+                    recent: parsed?.recent !== false,
                     private: parsed?.private !== false,
-                    shared: parsed?.shared !== false,
                     common: parsed?.common !== false,
                     superpowers: parsed?.superpowers !== false
                 };
+                Object.keys(parsed || {}).forEach(key => {
+                    if (key in next) return;
+                    next[key] = parsed[key] !== false;
+                });
+                return next;
             } catch (err) {
-                return { private: true, shared: true, common: true, superpowers: true };
+                return { recent: true, private: true, common: true, superpowers: true };
             }
         }
         function persistSectionExpandedState() {
@@ -931,13 +940,24 @@
         }
         function getItemSection(item) {
             if (!item) return "private";
+            const explicit = String(item.section || "").trim();
+            if (explicit.startsWith("shared:")) return explicit;
             if (item.section === "superpowers") return "superpowers";
             if (item.section === "common") return "common";
             if (item.isCommon) return "common";
             if (String(item.id || "").startsWith("common:")) return "common";
-            if (item.section === "shared") return "shared";
-            if (item.isShared) return "shared";
-            if (String(item.id || "").startsWith("share:")) return "shared";
+            if (item.section === "shared") {
+                const spaceId = String(item.spaceId || "golive").trim() || "golive";
+                return `shared:${spaceId}`;
+            }
+            if (item.isShared) {
+                const spaceId = String(item.spaceId || "golive").trim() || "golive";
+                return `shared:${spaceId}`;
+            }
+            if (String(item.id || "").startsWith("share:")) {
+                const spaceId = String(item.spaceId || "golive").trim() || "golive";
+                return `shared:${spaceId}`;
+            }
             return "private";
         }
         function applyLocalOrderMove(docId, parentId, beforeId) {
@@ -984,7 +1004,14 @@
             if (hasQuery) {
                 if (!preSearchExpandedIds) preSearchExpandedIds = new Set(expandedIds);
                 if (!preSearchSectionExpanded) preSearchSectionExpanded = { ...sectionExpanded };
-                sectionExpanded = { ...sectionExpanded, private: true, shared: true, common: true, superpowers: true };
+                const dynamicSharedKeys = normalizeList(cachedItems)
+                    .map(item => getItemSection(item))
+                    .filter(section => section.startsWith("shared:"));
+                const forcedShared = {};
+                dynamicSharedKeys.forEach(key => {
+                    forcedShared[key] = true;
+                });
+                sectionExpanded = { ...sectionExpanded, recent: true, private: true, common: true, superpowers: true, ...forcedShared };
                 expandedIds = new Set(normalizeList(cachedItems).map(item => String(item.id || "")).filter(Boolean));
                 persistExpandedState();
                 persistSectionExpandedState();
@@ -1021,14 +1048,30 @@
             const activeId = typeof getActiveId?.() === "string" ? getActiveId() : "";
             const sectionItems = {
                 private: filteredItems.filter(item => getItemSection(item) === "private"),
-                shared: filteredItems.filter(item => getItemSection(item) === "shared"),
                 common: filteredItems.filter(item => getItemSection(item) === "common")
             };
+            const discoveredShared = filteredItems
+                .map(item => getItemSection(item))
+                .filter(section => section.startsWith("shared:"));
+            const configuredShared = Array.isArray(getSharedSections?.())
+                ? getSharedSections().map(section => String(section || "").trim()).filter(section => section.startsWith("shared:"))
+                : [];
+            const sharedSectionNames = Array.from(new Set(discoveredShared.concat(configuredShared)));
+            const sharedSections = {};
+            sharedSectionNames.forEach(sectionName => {
+                sharedSections[sectionName] = filteredItems.filter(item => getItemSection(item) === sectionName);
+            });
             const trees = {
                 private: buildTree(sectionItems.private),
-                shared: buildTree(sectionItems.shared),
                 common: buildTree(sectionItems.common)
             };
+            sharedSectionNames.forEach(sectionName => {
+                trees[sectionName] = buildTree(sharedSections[sectionName] || []);
+            });
+            const recentItems = filteredItems
+                .slice()
+                .sort((a, b) => String(b?.updatedAt || "").localeCompare(String(a?.updatedAt || "")))
+                .slice(0, 10);
             const renderNode = async (item, level, sectionName, containerEl) => {
                 if (isStale()) return;
                 const tree = trees[sectionName] || trees.private;
@@ -1242,15 +1285,49 @@
                     }
                 }
             };
-            const renderSection = async (sectionName, title) => {
+            const renderSection = async (sectionName, title, iconOverride) => {
                 if (isStale()) return null;
                 const sectionRoot = document.createElement("div");
                 sectionRoot.className = "document-explorer__section";
                 const sectionHeader = document.createElement("button");
                 sectionHeader.type = "button";
                 sectionHeader.className = "document-explorer__section-header";
-                const sectionIcon = sectionName === "shared" ? "cloud-upload" : (sectionName === "common" ? "component" : "lock-keyhole-open");
-                sectionHeader.innerHTML = `<i data-lucide="${sectionIcon}"></i><strong>${title}</strong><i data-lucide="${sectionExpanded[sectionName] ? "chevron-down" : "chevron-right"}"></i>`;
+                const sectionMeta = getSectionMeta?.(sectionName) || null;
+                const sectionIcon = iconOverride || sectionMeta?.icon || (sectionName === "recent"
+                    ? "history"
+                    : (sectionName === "common" ? "component" : "lock-keyhole-open"));
+                const isSectionExpanded = sectionExpanded[sectionName] !== false;
+                sectionHeader.innerHTML = `<i data-lucide="${sectionIcon}"></i><strong>${title}</strong>`;
+                if (sectionName.startsWith("shared:")) {
+                    const actions = document.createElement("span");
+                    actions.className = "document-explorer__section-actions";
+                    const addBtn = document.createElement("button");
+                    addBtn.type = "button";
+                    addBtn.className = "document-explorer__item-action";
+                    addBtn.title = "Créer ou rejoindre un espace";
+                    addBtn.innerHTML = '<i data-lucide="plus"></i>';
+                    addBtn.addEventListener("click", (event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        onSectionAdd?.(sectionName);
+                    });
+                    const settingsBtn = document.createElement("button");
+                    settingsBtn.type = "button";
+                    settingsBtn.className = "document-explorer__item-action";
+                    settingsBtn.title = "Modifier cet espace";
+                    settingsBtn.innerHTML = '<i data-lucide="settings"></i>';
+                    settingsBtn.addEventListener("click", (event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        onSectionSettings?.(sectionName);
+                    });
+                    actions.appendChild(addBtn);
+                    actions.appendChild(settingsBtn);
+                    sectionHeader.appendChild(actions);
+                }
+                const collapseIcon = document.createElement("i");
+                collapseIcon.setAttribute("data-lucide", isSectionExpanded ? "chevron-down" : "chevron-right");
+                sectionHeader.appendChild(collapseIcon);
                 sectionHeader.addEventListener("click", () => {
                     sectionExpanded[sectionName] = !sectionExpanded[sectionName];
                     persistSectionExpandedState();
@@ -1260,7 +1337,7 @@
                 const sectionBody = document.createElement("div");
                 sectionBody.className = "document-explorer__section-body";
                 sectionBody.dataset.section = sectionName;
-                if (!sectionExpanded[sectionName]) {
+                if (!isSectionExpanded) {
                     sectionBody.style.display = "none";
                 } else {
                     const roots = trees[sectionName]?.roots || [];
@@ -1274,11 +1351,47 @@
                 listEl.appendChild(sectionRoot);
                 return sectionBody;
             };
-            await renderSection("common", "Commun");
+            const renderRecentSection = async () => {
+                const sectionBody = await renderSection("recent", "Récent");
+                if (!sectionBody || !sectionExpanded.recent) return;
+                for (const item of recentItems) {
+                    if (isStale()) return;
+                    const row = document.createElement("div");
+                    row.className = "document-explorer__tree-row";
+                    const button = document.createElement("button");
+                    button.type = "button";
+                    button.className = "document-explorer__item";
+                    if (item.id) {
+                        button.dataset.documentId = item.id;
+                        if (activeId && activeId === item.id) {
+                            button.classList.add("document-explorer__item--active");
+                        }
+                    }
+                    const lead = document.createElement("span");
+                    lead.className = "document-explorer__item-leading";
+                    lead.innerHTML = `<i data-lucide="${item.icon || "file"}"></i>`;
+                    button.appendChild(lead);
+                    const label = document.createElement("span");
+                    label.className = "document-explorer__item-title";
+                    label.textContent = item.title || "Document";
+                    button.appendChild(label);
+                    button.addEventListener("click", () => onSelect?.(item));
+                    row.appendChild(button);
+                    sectionBody.appendChild(row);
+                }
+            };
+            await renderRecentSection();
+            if (isStale()) return;
+            await renderSection("common", "Golive");
             if (isStale()) return;
             await renderSection("private", "Privé");
             if (isStale()) return;
-            await renderSection("shared", "Partagé");
+            for (const sectionName of sharedSectionNames) {
+                if (isStale()) return;
+                const sectionMeta = getSectionMeta?.(sectionName) || {};
+                const fallbackName = sectionName.replace(/^shared:/, "") || "Espace";
+                await renderSection(sectionName, sectionMeta.title || fallbackName, sectionMeta.icon || "cloud-upload");
+            }
             if (isStale()) return;
             const renderSuperpowersSection = async () => {
                 if (isStale()) return;
@@ -1467,7 +1580,8 @@
                         title: item.title || "Document partagé",
                         icon: item.icon || "file-symlink",
                         isShared: true,
-                        section: "shared"
+                        spaceId: String(item.spaceId || "golive").trim() || "golive",
+                        section: `shared:${String(item.spaceId || "golive").trim() || "golive"}`
                     }));
                 }
                 if (getCommonItems) {
@@ -1475,7 +1589,7 @@
                     commonItems = normalizeList(Array.isArray(common) ? common : []).map(item => ({
                         ...item,
                         id: String(item.id || "").startsWith("common:") ? String(item.id) : `common:${item.id}`,
-                        title: item.title || "Commun",
+                        title: item.title || "Golive",
                         isCommon: true,
                         section: "common",
                         icon: String(item.icon || "").trim()

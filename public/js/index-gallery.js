@@ -1,15 +1,13 @@
         (function () {
-            const gallery = document.getElementById("shareGallery");
-            const shareGalleryNav = document.getElementById("shareGalleryNav");
-            const onlineBlock = document.getElementById("onlineBlock");
+            const sharedSpacesRoot = document.getElementById("sharedSpacesRoot");
             const pinnedGallery = document.getElementById("pinnedGallery");
             const pinnedBlock = document.getElementById("pinnedBlock");
             const loadingLabel = document.getElementById("shareLoading");
-            const emptyLabel = document.getElementById("shareEmpty");
             const errorLabel = document.getElementById("shareError");
             const refreshBtn = document.getElementById("refreshShares");
             const shareHistory = window.goToolkitShareHistory;
             const shareService = window.goToolkitShareWorker;
+            const spacesApi = window.GoToolkitSpaces;
             const savedGallery = document.getElementById("savedGallery");
             const savedGalleryNav = document.getElementById("savedGalleryNav");
             const savedEmpty = document.getElementById("savedEmpty");
@@ -28,16 +26,9 @@
             let refreshGalleryPromise = null;
             let refreshSavedPromise = null;
 
-            function setState({ loading = false, hasData = false, hasPinned = false, hasRegular = false, error = "" }) {
-                const hasOnlineDocuments = hasData || hasPinned || hasRegular;
-                if (onlineBlock) {
-                    onlineBlock.hidden = !loading && !error && !hasOnlineDocuments;
-                }
+            function setState({ loading = false, hasPinned = false, error = "" }) {
                 if (loadingLabel) {
                     loadingLabel.hidden = !loading;
-                }
-                if (emptyLabel) {
-                    emptyLabel.hidden = loading || hasRegular || Boolean(error) || hasPinned;
                 }
                 if (pinnedBlock) {
                     pinnedBlock.hidden = !hasPinned;
@@ -447,7 +438,7 @@
                 const prevBtn = wrapper.querySelector(".gallery-nav__prev");
                 const nextBtn = wrapper.querySelector(".gallery-nav__next");
                 const pageSize = 10;
-                const isSavedOrShareGallery = listEl.id === "savedGallery" || listEl.id === "shareGallery";
+                const isSavedOrShareGallery = listEl.id === "savedGallery" || String(listEl.id || "").startsWith("spaceGallery_");
 
                 function update() {
                     const items = Array.from(listEl.children);
@@ -494,7 +485,6 @@
                     btn.style.display = "none";
                 });
                 if (wrapper.id === "savedGalleryNav") savedGallery?.classList.add("single-page");
-                if (wrapper.id === "shareGalleryNav") gallery?.classList.add("single-page");
             }
 
             async function refreshSavedGallery() {
@@ -587,26 +577,69 @@
                 return refreshSavedPromise;
             }
 
+            function normalizeSpaceId(value) {
+                const normalized = spacesApi?.normalizeSpaceId?.(value);
+                if (normalized) return normalized;
+                const raw = String(value || "").trim().toLowerCase();
+                return raw || "golive";
+            }
+
+            function getSpaces() {
+                const spaces = spacesApi?.readSpaces?.();
+                if (Array.isArray(spaces) && spaces.length) return spaces;
+                return [{ id: "golive", name: "Go Live", icon: "cloud-upload", isDefault: true }];
+            }
+
+            function createSharedSpaceSection(space) {
+                const section = document.createElement("section");
+                section.className = "space-section";
+                const navId = `spaceGalleryNav_${space.id}`;
+                const galleryId = `spaceGallery_${space.id}`;
+                section.innerHTML = `
+                    <div class="section-title-row">
+                        <p class="section-label nexus-label label-link">
+                            <i data-lucide="${space.icon || "cloud-upload"}" style="width:14px;height:14px;margin-right:4px;"></i>${space.name || "Espace"}
+                        </p>
+                    </div>
+                    <div class="gallery-nav" id="${navId}">
+                        <button class="gallery-nav__btn gallery-nav__prev" type="button" aria-label="Précédent">
+                            <i data-lucide="chevron-left"></i>
+                        </button>
+                        <div id="${galleryId}" class="share-gallery space-gallery" aria-live="polite"></div>
+                        <button class="gallery-nav__btn gallery-nav__next" type="button" aria-label="Suivant">
+                            <i data-lucide="chevron-right"></i>
+                        </button>
+                    </div>
+                `;
+                return { section, navId, galleryId };
+            }
+
             async function refreshGallery() {
                 if (refreshGalleryPromise) {
                     return refreshGalleryPromise;
                 }
                 refreshGalleryPromise = (async () => {
                     if (!shareHistory) {
-                        setState({ loading: false, hasData: false, error: "Historique indisponible." });
+                        setState({ loading: false, error: "Historique indisponible." });
                         return;
                     }
                     if (!shareService?.isReady) {
-                        setState({ loading: false, hasData: false, error: "Service de documents indisponible." });
+                        setState({ loading: false, error: "Service de documents indisponible." });
                         return;
                     }
-                    setState({ loading: true, hasData: false, error: "", hasPinned: false, hasRegular: false });
-                    gallery.innerHTML = "";
+                    setState({ loading: true, error: "", hasPinned: false });
+                    if (sharedSpacesRoot) sharedSpacesRoot.innerHTML = "";
                     if (pinnedGallery) pinnedGallery.innerHTML = "";
                     const entries = await getStoredRecords();
+                    const spaces = getSpaces();
                     if (!entries.length) {
-                        setState({ loading: false, hasData: false, error: "", hasPinned: false, hasRegular: false });
-                        hideGalleryNav(shareGalleryNav);
+                        spaces.forEach(space => {
+                            const { section, navId } = createSharedSpaceSection(space);
+                            sharedSpacesRoot?.appendChild(section);
+                            hideGalleryNav(document.getElementById(navId));
+                        });
+                        setState({ loading: false, error: "", hasPinned: false });
+                        if (window.lucide) window.lucide.createIcons();
                         return;
                     }
                     const cards = await Promise.all(entries.map(({ app, record }) => buildShareCard(app, record)));
@@ -624,23 +657,55 @@
                         window.__goToolkitSharedPreviewKeys = new Set();
                     }
                     if (!validCards.length) {
-                        setState({ loading: false, hasData: false, error: "", hasPinned: false, hasRegular: false });
-                        hideGalleryNav(shareGalleryNav);
+                        getSpaces().forEach(space => {
+                            const { section, navId } = createSharedSpaceSection(space);
+                            sharedSpacesRoot?.appendChild(section);
+                            hideGalleryNav(document.getElementById(navId));
+                        });
+                        setState({ loading: false, error: "", hasPinned: false });
                         return;
                     }
-                    const regular = validCards
+                    const cardsBySpace = new Map(spaces.map(space => [normalizeSpaceId(space.id), []]));
+                    validCards.forEach(item => {
+                        const spaceId = normalizeSpaceId(item.record?.spaceId || "golive");
+                        if (!cardsBySpace.has(spaceId)) {
+                            const fallbackSpace = spacesApi?.upsertSpace?.({
+                                id: spaceId,
+                                name: `Espace ${spaceId.toUpperCase()}`,
+                                icon: "cloud-upload",
+                                spaceCode: "",
+                                isDefault: spaceId === "golive"
+                            }) || { id: spaceId, name: `Espace ${spaceId.toUpperCase()}`, icon: "cloud-upload" };
+                            cardsBySpace.set(spaceId, []);
+                            spaces.push(fallbackSpace);
+                        }
+                        cardsBySpace.get(spaceId).push(item);
+                    });
+                    const orderedSpaces = spaces
+                        .slice()
                         .sort((a, b) => {
-                            const nameA = (a.preview?.tabName || "").toLowerCase();
-                            const nameB = (b.preview?.tabName || "").toLowerCase();
-                            if (nameA && nameB) return nameA.localeCompare(nameB, "fr");
-                            return 0;
+                            if (normalizeSpaceId(a.id) === "golive") return -1;
+                            if (normalizeSpaceId(b.id) === "golive") return 1;
+                            return String(a.name || "").localeCompare(String(b.name || ""), "fr");
                         });
-
-                    regular.forEach(item => gallery.appendChild(item.card));
-                    const hasRegular = regular.length > 0;
-                    setState({ loading: false, hasData: hasRegular, hasPinned: false, hasRegular, error: "" });
+                    orderedSpaces.forEach(space => {
+                        const key = normalizeSpaceId(space.id);
+                        const entriesForSpace = (cardsBySpace.get(key) || [])
+                            .sort((a, b) => Date.parse(b.updatedAt || 0) - Date.parse(a.updatedAt || 0))
+                            .slice(0, 10);
+                        const { section, navId, galleryId } = createSharedSpaceSection(space);
+                        sharedSpacesRoot?.appendChild(section);
+                        const galleryEl = document.getElementById(galleryId);
+                        const navEl = document.getElementById(navId);
+                        if (!galleryEl || !navEl || !entriesForSpace.length) {
+                            hideGalleryNav(navEl);
+                            return;
+                        }
+                        entriesForSpace.forEach(entry => galleryEl.appendChild(entry.card));
+                        initGalleryNav(navEl, galleryEl);
+                    });
+                    setState({ loading: false, hasPinned: false, error: "" });
                     if (window.lucide) window.lucide.createIcons();
-                    initGalleryNav(shareGalleryNav, gallery);
                 })().finally(() => {
                     refreshGalleryPromise = null;
                 });
@@ -674,7 +739,8 @@
             });
             const galleryStorageKeys = new Set([
                 documentApi?.STORAGE_KEY,
-                shareHistory?.STORAGE_KEY
+                shareHistory?.STORAGE_KEY,
+                spacesApi?.STORAGE_KEY
             ].filter(Boolean));
             window.addEventListener("storage", event => {
                 if (!event.key || !galleryStorageKeys.has(event.key)) return;

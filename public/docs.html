@@ -45,10 +45,10 @@
         crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.min.js" crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.min.js" crossorigin></script>
-    <link rel="stylesheet" href="styles/style.css?v=2026.02.21.5">
+    <link rel="stylesheet" href="styles/style.css?v=2026.02.21.6">
     <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
-    <link rel="stylesheet" href="styles/memo.css?v=2026.02.21.5">
-    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.21.5">
+    <link rel="stylesheet" href="styles/memo.css?v=2026.02.21.6">
+    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.21.6">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.css">
     <script src="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.js"></script>
     <style>
@@ -136,7 +136,7 @@
                 <div class="tabs-actions">
                     <button id="documentExplorerToggle" class="app-home-link" type="button" title="Bibliothèque"
                         aria-expanded="false" aria-controls="documentExplorer"><i data-lucide="book-open"></i></button>
-                    <a href="/?v=2026.02.21.5" class="nav-switch-btn" title="Accueil"
+                    <a href="/?v=2026.02.21.6" class="nav-switch-btn" title="Accueil"
                         style="text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
                         <i data-lucide="home"></i>
                     </a>
@@ -153,7 +153,6 @@
                     </div>
                 </div>
                 <div id="activeDocMeta" class="active-doc-meta" aria-live="polite">
-                    <span id="activeDocOwnerToken" class="active-doc-meta__item" hidden></span>
                     <span id="activeDocUpdatedAt" class="active-doc-meta__item"></span>
                 </div>
                 <div class="global-actions">
@@ -213,14 +212,11 @@
                                     </div>
                                 </div>
 
-                                <button id="shareBtn" type="button" class="menu-panel-btn"><i data-lucide="cloud-upload"></i>
-                                    Partager</button>
                                 <div class="menu-panel-item has-submenu">
                                     <button type="button" class="menu-panel-btn"><i data-lucide="component"></i>
                                         Publier</button>
                                     <div class="submenu">
-                                        <button id="publishGoLiveBtn" type="button"
-                                            class="menu-panel-btn">Commun</button>
+                                        <div id="publishSpacesMenu"></div>
                                         <button id="publishNotionBtn" type="button"
                                             class="menu-panel-btn">Notion</button>
                                     </div>
@@ -373,7 +369,7 @@
         <img src="img/logo.gif" alt="Logo GoToolkit" class="logo-light">
         <img src="img/logo_inverted.gif" alt="Logo GoToolkit" class="logo-dark">
         <strong>GoToolkit</strong>
-        <span id="memoNewsTrigger" class="info-popup-news-link" role="button" tabindex="0">Version 2026.02.21.5</span>
+        <span id="memoNewsTrigger" class="info-popup-news-link" role="button" tabindex="0">Version 2026.02.21.6</span>
         <span>Usage réservé à Savane Consulting.</span>
         <div class="info-actions info-actions--stacked">
             <div class="info-actions-row">
@@ -453,23 +449,24 @@
         window.GO_TOOLKIT_GOOGLE_TTS_API_URL =
             window.GO_TOOLKIT_GOOGLE_TTS_API_URL || "https://googletts.gotoolkit.workers.dev";
     </script>
-    <script src="js/config.js?v=2026.02.21.5"></script>
-    <script src="js/config-modal.js?v=2026.02.21.5"></script>
-    <script src="js/feature-visibility.js?v=2026.02.21.5"></script>
-    <script src="js/document-storage.js?v=2026.02.21.5"></script>
-    <script src="js/storage-service.js?v=2026.02.21.5"></script>
-    <script src="js/shared-ui.js?v=2026.02.21.5"></script>
-    <script src="js/share-worker-client.js?v=2026.02.21.5"></script>
-    <script src="js/share-history.js?v=2026.02.21.5"></script>
-    <script src="js/document-api.js?v=2026.02.21.5"></script>
-    <script src="js/keywordIndex.js?v=2026.02.21.5"></script>
-    <script src="js/document-rag.js?v=2026.02.21.5"></script>
-    <script src="js/ia-config.js?v=2026.02.21.5"></script>
-    <script src="preset.js?v=2026.02.21.5"></script>
-    <script src="prompt.js?v=2026.02.21.5"></script>
-    <script src="js/ia-client.js?v=2026.02.21.5"></script>
-    <script src="js/document-markdown.js?v=2026.02.21.5"></script>
-    <script src="js/notion-export.js?v=2026.02.21.5"></script>
+    <script src="js/config.js?v=2026.02.21.6"></script>
+    <script src="js/config-modal.js?v=2026.02.21.6"></script>
+    <script src="js/feature-visibility.js?v=2026.02.21.6"></script>
+    <script src="js/document-storage.js?v=2026.02.21.6"></script>
+    <script src="js/storage-service.js?v=2026.02.21.6"></script>
+    <script src="js/shared-ui.js?v=2026.02.21.6"></script>
+    <script src="js/spaces-store.js?v=2026.02.21.6"></script>
+    <script src="js/share-worker-client.js?v=2026.02.21.6"></script>
+    <script src="js/share-history.js?v=2026.02.21.6"></script>
+    <script src="js/document-api.js?v=2026.02.21.6"></script>
+    <script src="js/keywordIndex.js?v=2026.02.21.6"></script>
+    <script src="js/document-rag.js?v=2026.02.21.6"></script>
+    <script src="js/ia-config.js?v=2026.02.21.6"></script>
+    <script src="preset.js?v=2026.02.21.6"></script>
+    <script src="prompt.js?v=2026.02.21.6"></script>
+    <script src="js/ia-client.js?v=2026.02.21.6"></script>
+    <script src="js/document-markdown.js?v=2026.02.21.6"></script>
+    <script src="js/notion-export.js?v=2026.02.21.6"></script>
     <script>
         document.addEventListener("click", function (event) {
             const legalTrigger = event.target?.closest?.("[data-open-nexus-modal]");
@@ -503,15 +500,15 @@
             ]
         };
     </script>
-    <script src="js/feedback.js?v=2026.02.21.5"></script>
-    <script src="js/news.js?v=2026.02.21.5"></script>
-    <script src="js/voice-video-player.js?v=2026.02.21.5"></script>
-    <script src="js/voice-audio-player.js?v=2026.02.21.5"></script>
-    <script src="js/youtube-publish.js?v=2026.02.21.5"></script>
-    <script src="js/voice.js?v=2026.02.21.5"></script>
-    <script src="js/voice-transcript.js?v=2026.02.21.5"></script>
-    <script src="js/googletts.js?v=2026.02.21.5"></script>
-    <script src="js/draw-memo.js?v=2026.02.21.5"></script>
+    <script src="js/feedback.js?v=2026.02.21.6"></script>
+    <script src="js/news.js?v=2026.02.21.6"></script>
+    <script src="js/voice-video-player.js?v=2026.02.21.6"></script>
+    <script src="js/voice-audio-player.js?v=2026.02.21.6"></script>
+    <script src="js/youtube-publish.js?v=2026.02.21.6"></script>
+    <script src="js/voice.js?v=2026.02.21.6"></script>
+    <script src="js/voice-transcript.js?v=2026.02.21.6"></script>
+    <script src="js/googletts.js?v=2026.02.21.6"></script>
+    <script src="js/draw-memo.js?v=2026.02.21.6"></script>
     <script>
         // Suppress React DevTools prompt in dev builds.
         window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = window.__REACT_DEVTOOLS_GLOBAL_HOOK__ || {
@@ -521,9 +518,9 @@
             onCommitFiberUnmount: function () { }
         };
     </script>
-    <script src="js/memo.bundle.js?v=2026.02.21.5"></script>
-    <script src="js/assist.js?v=2026.02.21.5"></script>
-    <script src="js/document-panel.js?v=2026.02.21.5"></script>
+    <script src="js/memo.bundle.js?v=2026.02.21.6"></script>
+    <script src="js/assist.js?v=2026.02.21.6"></script>
+    <script src="js/document-panel.js?v=2026.02.21.6"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             setTimeout(function () {
@@ -538,6 +535,7 @@
             const STORAGE_KEY = "goToolkit.memo.state";
             const OPEN_DOCS_STORAGE_KEY = "goToolkit.memo.openDocuments";
             const CONTEXT_EMBEDDINGS_MIGRATION_KEY = "goToolkit.memo.contextEmbeddings.migrated";
+            const TEMPLATE_TO_SPACE_MIGRATION_KEY = "goToolkit.memo.templateToSpace.migrated.v1";
             const PROMPT_PRESET_STORAGE_KEY = "goToolkit.memo.promptPreset";
             const DOCUMENT_OPEN_REQUEST_KEY = "goToolkit.memo.documentToOpen";
             const NOTION_PATH_STORAGE_KEY = "goToolkit.memo.notionPath";
@@ -803,7 +801,6 @@
             const currentDocIconGrid = document.getElementById("currentDocIconGrid");
             const memoPageTitleInput = document.getElementById("memoPageTitleInput");
             const activeDocMeta = document.getElementById("activeDocMeta");
-            const activeDocOwnerToken = document.getElementById("activeDocOwnerToken");
             const activeDocUpdatedAt = document.getElementById("activeDocUpdatedAt");
             const fileMenuBtn = document.getElementById("fileMenuBtn");
             const fileMenu = document.getElementById("fileMenu");
@@ -841,7 +838,7 @@
             const memoOpenImportBtn = document.getElementById("memoOpenImportBtn");
             const saveDocumentBtn = document.getElementById("saveDocumentBtn");
             const fileMenuDownloadAudioBtn = document.getElementById("fileMenuDownloadAudio");
-            const publishGoLiveBtn = document.getElementById("publishGoLiveBtn");
+            const publishSpacesMenu = document.getElementById("publishSpacesMenu");
             const publishNotionBtn = document.getElementById("publishNotionBtn");
             const deleteDocumentBtn = document.getElementById("deleteDocumentBtn");
             const publishTemplateBtn = document.getElementById("publishTemplateBtn");
@@ -943,6 +940,25 @@
             let documentTabsRenderToken = 0;
             let currentDocIconSearch = "";
             var state = { tabs: [], activeTabId: "" };
+
+            async function migrateSharedRecordsToSpaces() {
+                try {
+                    const records = await shareHistory?.getRecordsByApp?.("memo");
+                    if (!Array.isArray(records) || !records.length) return;
+                    await Promise.all(records.map(async (record) => {
+                        if (!record || !record.token) return;
+                        const nextSpaceId = normalizeSpaceId(record.spaceId || DEFAULT_SPACE_ID);
+                        if (String(record.spaceId || "").trim() === nextSpaceId) return;
+                        await shareHistory?.upsertRecord?.("memo", {
+                            ...record,
+                            spaceId: nextSpaceId,
+                            updatedAt: record.updatedAt || new Date().toISOString()
+                        });
+                    }));
+                } catch (err) {
+                    console.warn("Space migration skipped", err);
+                }
+            }
             const DOCUMENT_ICON_CHOICES = Array.from(new Set(`
                 file file-text file-plus file-pen file-check file-search file-lock file-symlink file-stack files file-down
                 folder folder-open folder-plus folder-search folder-git-2 folder-kanban folder-lock folder-sync folder-tree
@@ -1059,6 +1075,9 @@
                 if (event.key === "feedback-admin-token") {
                     updateAdminVisibility();
                 }
+                if (event.key === spacesApi?.STORAGE_KEY) {
+                    refreshSpaceAwareUi();
+                }
             });
 
             if (ownerToken) {
@@ -1153,6 +1172,271 @@
                     code += alphabet[Math.floor(Math.random() * alphabet.length)];
                 }
                 return code;
+            }
+
+            const spacesApi = window.GoToolkitSpaces;
+            const DEFAULT_SPACE_ID = spacesApi?.DEFAULT_SPACE_ID || "golive";
+
+            function normalizeSpaceId(value) {
+                const normalized = spacesApi?.normalizeSpaceId?.(value);
+                if (normalized) return normalized;
+                const fallback = String(value || "").trim().toLowerCase();
+                return fallback || DEFAULT_SPACE_ID;
+            }
+
+            function getSpaces() {
+                const spaces = spacesApi?.readSpaces?.() || [];
+                if (Array.isArray(spaces) && spaces.length) return spaces;
+                return [{ id: DEFAULT_SPACE_ID, name: "Go Live", icon: "cloud-upload", spaceCode: "", isDefault: true }];
+            }
+
+            function getSpaceById(spaceId) {
+                const id = normalizeSpaceId(spaceId);
+                const direct = spacesApi?.getSpaceById?.(id);
+                if (direct) return direct;
+                const spaces = getSpaces();
+                return spaces.find(item => String(item?.id || "") === id) || spaces[0] || null;
+            }
+
+            function refreshSpaceAwareUi() {
+                renderPublishSpacesMenu();
+                memoExplorer?.refresh?.();
+            }
+
+            function mountSpaceIconPicker(overlay, options = {}) {
+                if (!overlay) return { getValue: () => "cloud-upload", close: () => { } };
+                const button = overlay.querySelector(options.buttonSelector || "");
+                const grid = overlay.querySelector(options.gridSelector || "");
+                const valueInput = overlay.querySelector(options.valueSelector || "");
+                let searchValue = "";
+                let selectedIcon = String(options.initialIcon || "cloud-upload").trim() || "cloud-upload";
+
+                function setValue(nextIcon) {
+                    selectedIcon = String(nextIcon || "").trim() || "cloud-upload";
+                    if (button) button.innerHTML = `<i data-lucide="${selectedIcon}"></i>`;
+                    if (valueInput) valueInput.value = selectedIcon;
+                    if (window.lucide) window.lucide.createIcons();
+                }
+
+                function closeGrid() {
+                    grid?.classList.remove("open");
+                }
+
+                function renderGrid() {
+                    if (!grid) return;
+                    grid.innerHTML = "";
+                    const searchWrap = document.createElement("div");
+                    searchWrap.className = "document-explorer-icon-search-wrap";
+                    const searchInput = document.createElement("input");
+                    searchInput.type = "search";
+                    searchInput.className = "document-explorer-icon-search";
+                    searchInput.placeholder = "Rechercher une icône (ex: cloud, folder, user)";
+                    searchInput.value = searchValue;
+                    searchInput.addEventListener("input", () => {
+                        searchValue = searchInput.value || "";
+                        renderGrid();
+                    });
+                    searchWrap.appendChild(searchInput);
+                    grid.appendChild(searchWrap);
+
+                    const q = normalizeIconSearchValue(searchValue);
+                    const icons = !q
+                        ? DOCUMENT_ICON_CHOICES
+                        : DOCUMENT_ICON_CHOICES.filter(icon => getDocumentIconSearchText(icon).includes(q));
+                    icons.forEach(icon => {
+                        const choice = document.createElement("button");
+                        choice.type = "button";
+                        choice.className = "document-explorer-icon-choice" + (icon === selectedIcon ? " active" : "");
+                        choice.innerHTML = `<i data-lucide="${icon}"></i>`;
+                        choice.title = icon;
+                        choice.addEventListener("click", () => {
+                            setValue(icon);
+                            closeGrid();
+                        });
+                        grid.appendChild(choice);
+                    });
+                    if (grid.classList.contains("open")) searchInput.focus();
+                    if (window.lucide) window.lucide.createIcons();
+                }
+
+                setValue(selectedIcon);
+                renderGrid();
+
+                button?.addEventListener("click", event => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    grid?.classList.toggle("open");
+                });
+                overlay.addEventListener("click", event => {
+                    if (!grid?.classList.contains("open")) return;
+                    const target = event.target;
+                    if (button?.contains(target) || grid?.contains(target)) return;
+                    closeGrid();
+                });
+
+                return {
+                    getValue: () => selectedIcon,
+                    close: closeGrid
+                };
+            }
+
+            function openSpaceManageModal(spaceId) {
+                const target = getSpaceById(spaceId) || getSpaceById(DEFAULT_SPACE_ID);
+                if (!target) return;
+                const overlay = document.createElement("div");
+                overlay.className = "modal-overlay open";
+                const isDefault = Boolean(target.isDefault || target.id === DEFAULT_SPACE_ID);
+                overlay.innerHTML = `
+                    <div class="modal" style="max-width:520px;">
+                        <div class="modal-header">
+                            <h3>Paramètres de l'espace</h3>
+                            <button class="modal-close" type="button" aria-label="Fermer"><i data-lucide="x"></i></button>
+                        </div>
+                        <div class="ia-actions">
+                            <div class="header-row ia-header-actions">
+                                <label for="spaceManageName">Nom</label>
+                                <input id="spaceManageName" type="text" value="${escapeHtml(target.name || "")}" />
+                            </div>
+                            <div class="header-row ia-header-actions">
+                                <label for="spaceManageIconValue">Icône</label>
+                                <div class="document-explorer-icon-field">
+                                    <button id="spaceManageIconBtn" type="button" class="btn btn-secondary" title="Choisir une icône"><i data-lucide="${escapeHtml(target.icon || "cloud-upload")}"></i></button>
+                                    <input id="spaceManageIconValue" type="text" value="${escapeHtml(target.icon || "cloud-upload")}" readonly />
+                                    <div id="spaceManageIconGrid" class="document-explorer-icon-grid"></div>
+                                </div>
+                            </div>
+                            <div class="header-row ia-header-actions">
+                                <label for="spaceManageCode">Code d'accès</label>
+                                <div style="display:flex; gap:8px; align-items:center;">
+                                    <input id="spaceManageCode" type="text" value="${escapeHtml(target.spaceCode || "")}" maxlength="5" ${isDefault ? "disabled" : ""} />
+                                    <button id="spaceManageRegenerate" class="btn btn-secondary" type="button" ${isDefault ? "disabled" : ""}>Régénérer</button>
+                                </div>
+                            </div>
+                            <div class="modal-actions" style="justify-content: space-between;">
+                                <button id="spaceManageDelete" class="btn btn-secondary" type="button" ${isDefault ? 'style="display:none;"' : ""}>Quitter / Supprimer</button>
+                                <div style="display:flex; gap:8px;">
+                                    <button class="btn btn-secondary" type="button" data-close>Annuler</button>
+                                    <button class="btn-primary" type="button" data-save>Enregistrer</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(overlay);
+                if (window.lucide) window.lucide.createIcons();
+                const iconPicker = mountSpaceIconPicker(overlay, {
+                    buttonSelector: "#spaceManageIconBtn",
+                    gridSelector: "#spaceManageIconGrid",
+                    valueSelector: "#spaceManageIconValue",
+                    initialIcon: target.icon || "cloud-upload"
+                });
+                const close = () => overlay.remove();
+                overlay.addEventListener("click", event => {
+                    if (event.target === overlay) close();
+                });
+                overlay.querySelector(".modal-close")?.addEventListener("click", close);
+                overlay.querySelector("[data-close]")?.addEventListener("click", close);
+                overlay.querySelector("#spaceManageRegenerate")?.addEventListener("click", () => {
+                    const next = spacesApi?.regenerateCode?.(target.id);
+                    if (next) {
+                        const codeInput = overlay.querySelector("#spaceManageCode");
+                        if (codeInput) codeInput.value = next.spaceCode || "";
+                        refreshSpaceAwareUi();
+                    }
+                });
+                overlay.querySelector("#spaceManageDelete")?.addEventListener("click", async () => {
+                    if (isDefault) return;
+                    const confirmed = window.confirm(`Supprimer ou quitter l'espace \"${target.name}\" ?`);
+                    if (!confirmed) return;
+                    const deleted = spacesApi?.deleteSpace?.(target.id);
+                    if (deleted) {
+                        const records = await shareHistory?.getRecordsByApp?.("memo");
+                        const toDelete = (records || []).filter(item => normalizeSpaceId(item?.spaceId || DEFAULT_SPACE_ID) === target.id);
+                        await Promise.all(toDelete.map(item => shareWorker?.deleteSharePayload?.(FIRESTORE_COLLECTION, item.token).catch(() => null)));
+                        await Promise.all(toDelete.map(item => shareHistory?.removeRecord?.("memo", item.token)));
+                        close();
+                        refreshSpaceAwareUi();
+                    }
+                });
+                overlay.querySelector("[data-save]")?.addEventListener("click", () => {
+                    const name = String(overlay.querySelector("#spaceManageName")?.value || "").trim() || target.name || "Espace";
+                    const icon = String(iconPicker.getValue() || "cloud-upload").trim() || "cloud-upload";
+                    const code = String(overlay.querySelector("#spaceManageCode")?.value || "").trim().toUpperCase();
+                    spacesApi?.upsertSpace?.({ ...target, name, icon, spaceCode: isDefault ? "" : code });
+                    close();
+                    refreshSpaceAwareUi();
+                });
+            }
+
+            function openSpaceCreateJoinModal(contextSpaceId) {
+                const overlay = document.createElement("div");
+                overlay.className = "modal-overlay open";
+                const randomName = spacesApi?.createRandomName?.() || `Espace ${Math.floor(100 + Math.random() * 900)}`;
+                overlay.innerHTML = `
+                    <div class="modal" style="max-width:520px;">
+                        <div class="modal-header">
+                            <h3>Créer ou rejoindre un espace</h3>
+                            <button class="modal-close" type="button" aria-label="Fermer"><i data-lucide="x"></i></button>
+                        </div>
+                        <div class="ia-actions">
+                            <div class="header-row ia-header-actions">
+                                <div class="document-explorer-icon-field">
+                                    <input id="spaceCreateName" type="text" value="${escapeHtml(randomName)}" />
+                                    <button id="spaceCreateIconBtn" type="button" class="btn btn-secondary" title="Choisir une icône" aria-label="Choisir une icône"><i data-lucide="cloud-upload"></i></button>
+                                    <div id="spaceCreateIconGrid" class="document-explorer-icon-grid"></div>
+                                </div>
+                            </div>
+                            <div class="modal-actions" style="justify-content:flex-end; margin-top:-2px;">
+                                <button id="spaceCreateBtn" class="btn btn-secondary" type="button">Créer</button>
+                            </div>
+                            <div class="header-row ia-header-actions">
+                                <input id="spaceJoinCode" type="text" maxlength="5" placeholder="ABCDE" />
+                            </div>
+                            <div class="modal-actions" style="justify-content: space-between;">
+                                <button class="btn btn-secondary" type="button" data-close>Annuler</button>
+                                <button id="spaceJoinBtn" class="btn-primary" type="button">Rejoindre</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(overlay);
+                if (window.lucide) window.lucide.createIcons();
+                const iconPicker = mountSpaceIconPicker(overlay, {
+                    buttonSelector: "#spaceCreateIconBtn",
+                    gridSelector: "#spaceCreateIconGrid",
+                    initialIcon: "cloud-upload"
+                });
+                const close = () => overlay.remove();
+                overlay.addEventListener("click", event => {
+                    if (event.target === overlay) close();
+                });
+                overlay.querySelector(".modal-close")?.addEventListener("click", close);
+                overlay.querySelector("[data-close]")?.addEventListener("click", close);
+                overlay.querySelector("#spaceCreateBtn")?.addEventListener("click", () => {
+                    const name = String(overlay.querySelector("#spaceCreateName")?.value || "").trim() || randomName;
+                    const icon = String(iconPicker.getValue() || "cloud-upload").trim() || "cloud-upload";
+                    const created = spacesApi?.createSpace?.(name, icon);
+                    close();
+                    refreshSpaceAwareUi();
+                    if (created?.id) {
+                        openSpaceManageModal(created.id);
+                    }
+                });
+                overlay.querySelector("#spaceJoinBtn")?.addEventListener("click", () => {
+                    const code = String(overlay.querySelector("#spaceJoinCode")?.value || "").trim().toUpperCase();
+                    if (!/^[A-Z0-9]{5}$/.test(code)) {
+                        setStatus("Le code espace doit contenir 5 caractères", true);
+                        return;
+                    }
+                    const joined = spacesApi?.joinByCode?.(code);
+                    close();
+                    refreshSpaceAwareUi();
+                    if (joined?.id) {
+                        openSpaceManageModal(joined.id);
+                    } else {
+                        setStatus("Impossible de rejoindre cet espace", true);
+                    }
+                });
             }
 
             function setHandoffStatus(message) {
@@ -2992,6 +3276,68 @@
                 }
             }
 
+            async function publishDocumentToSpace(spaceId, options = {}) {
+                if (!activeDocumentId || !shareWorker?.isReady) {
+                    setStatus("Service de publication indisponible", true);
+                    return null;
+                }
+                const currentRecord = await documentApi?.getRecord?.(activeDocumentId);
+                const payload = buildSharePayload();
+                const token = String(currentRecord?.shareToken || "").trim() || createShareToken();
+                const selectedSpaceId = normalizeSpaceId(spaceId || currentRecord?.spaceId || DEFAULT_SPACE_ID);
+                const savedMeta = await shareWorker.saveSharePayload(
+                    FIRESTORE_COLLECTION,
+                    token,
+                    { ...payload, spaceId: selectedSpaceId },
+                    { inlineAssets: true, assetScope: "memos" }
+                );
+                const preview = buildSharePreview();
+                const superpowers = Array.isArray(options.superpowers)
+                    ? options.superpowers
+                    : (Array.isArray(getActiveTab()?.superpowers) ? getActiveTab().superpowers : []);
+                const updatedAt = savedMeta?.updatedAt || new Date().toISOString();
+                await shareHistory?.upsertRecord?.("memo", {
+                    token,
+                    title: options.name || preview.title || currentRecord?.title || "Document partagé",
+                    description: options.description || preview.description || currentRecord?.description || "",
+                    superpowers,
+                    payload,
+                    icon: String(options.icon || currentRecord?.icon || "file-symlink").trim() || "file-symlink",
+                    parentId: String(currentRecord?.parentId || "").trim(),
+                    spaceId: selectedSpaceId,
+                    updatedAt
+                });
+                await documentApi?.upsertRecord?.({
+                    id: activeDocumentId,
+                    app: "memo",
+                    shareToken: token,
+                    spaceId: selectedSpaceId,
+                    updatedAt
+                });
+                await memoExplorer?.refresh?.();
+                const space = getSpaceById(selectedSpaceId);
+                setStatus(`Document publié dans ${space?.name || "l'espace"}`);
+                return { token, spaceId: selectedSpaceId, updatedAt };
+            }
+
+            function renderPublishSpacesMenu() {
+                if (!publishSpacesMenu) return;
+                publishSpacesMenu.innerHTML = "";
+                const spaces = getSpaces();
+                spaces.forEach(space => {
+                    const btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.className = "menu-panel-btn";
+                    btn.innerHTML = `<i data-lucide="${String(space?.icon || "cloud-upload").trim() || "cloud-upload"}"></i>${String(space?.name || "Espace").trim() || "Espace"}`;
+                    btn.addEventListener("click", async () => {
+                        closeMenus();
+                        await renameActiveDocument({ publishSpaceId: space.id });
+                    });
+                    publishSpacesMenu.appendChild(btn);
+                });
+                if (window.lucide) window.lucide.createIcons();
+            }
+
             async function publishDocumentToNotion(docId, meta) {
                 const notion = window.GoToolkitNotionPublish;
                 if (!notion?.publishPage || !notion?.ensureConnected || !notion?.getAuthStatus) {
@@ -3143,6 +3489,16 @@
                 return "private";
             }
 
+            function isSharedSection(section) {
+                const value = String(section || "").trim();
+                return value === "shared" || value.startsWith("shared:");
+            }
+
+            function normalizeSectionKey(section) {
+                if (isSharedSection(section)) return "shared";
+                return String(section || "").trim() || "private";
+            }
+
             window.GoToolkitMemoOpenDocumentByLink = async function (rawId) {
                 const docId = String(rawId || "").trim();
                 if (!docId) return;
@@ -3151,7 +3507,7 @@
                     await setActiveDocument(docId);
                     return;
                 }
-                if (section === "shared") {
+                if (isSharedSection(section)) {
                     const token = docId.startsWith("share:") ? docId.slice("share:".length) : docId;
                     const records = await shareHistory?.getRecordsByApp?.("memo");
                     const item = (records || []).find(entry => entry && String(entry.token || "") === token);
@@ -3198,7 +3554,7 @@
                     await syncTemplates(false);
                     const template = (cloudTemplates || []).find(entry => entry && String(entry.id || "") === templateId);
                     if (!template) return null;
-                    return { id: `common:${templateId}`, title: template.label || "Commun", icon: template.icon || "", section };
+                    return { id: `common:${templateId}`, title: template.label || "Golive", icon: template.icon || "", section };
                 }
                 return null;
             };
@@ -3236,7 +3592,7 @@
                         const normalizeParentId = (parentId, childSection) => {
                             const raw = String(parentId || "").trim();
                             if (!raw) return "";
-                            if (childSection === "shared" && !raw.startsWith("share:")) return `share:${raw}`;
+                            if (isSharedSection(childSection) && !raw.startsWith("share:")) return `share:${raw}`;
                             if (childSection === "common" && !raw.startsWith("common:")) return `common:${raw}`;
                             return raw;
                         };
@@ -3282,7 +3638,7 @@
                             children = (cloudTemplates || [])
                                 .filter(item => item && [templateId, `common:${templateId}`].includes(String(item.parentId || "").trim()))
                                 .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")))
-                                .map(item => ({ id: `common:${item.id}`, title: item.label || "Commun", icon: item.icon || "" }));
+                                .map(item => ({ id: `common:${item.id}`, title: item.label || "Golive", icon: item.icon || "" }));
                         }
                     }
                     if (!children.length) {
@@ -3489,10 +3845,11 @@
 
             async function createSharedFromPayload(payload, meta = {}) {
                 const token = createShareToken();
+                const spaceId = normalizeSpaceId(meta.spaceId || DEFAULT_SPACE_ID);
                 const saved = await shareWorker.saveSharePayload(
                     FIRESTORE_COLLECTION,
                     token,
-                    payload,
+                    { ...(payload || {}), spaceId },
                     { inlineAssets: true, assetScope: "memos" }
                 );
                 await shareHistory?.upsertRecord?.("memo", {
@@ -3503,9 +3860,106 @@
                     payload,
                     icon: String(meta.icon || "file-symlink").trim(),
                     parentId: String(meta.parentId || "").trim(),
+                    spaceId,
                     updatedAt: saved?.updatedAt || new Date().toISOString()
                 });
                 return { token, updatedAt: saved?.updatedAt || new Date().toISOString() };
+            }
+
+            function templateToMemoToken(templateId) {
+                const raw = String(templateId || "").trim().toLowerCase();
+                const safe = raw.replace(/[^a-z0-9_-]/g, "-");
+                return `tmpl-${safe || createShareToken()}`;
+            }
+
+            async function migrateTemplatesToDefaultSpace() {
+                try {
+                    if (!shareWorker?.isReady) return;
+                    if (!spacesApi) return;
+                    if (localStorage.getItem(TEMPLATE_TO_SPACE_MIGRATION_KEY) === "done") return;
+
+                    const templateDocs = await shareWorker.listShares(TEMPLATES_COLLECTION);
+                    const templates = Array.isArray(templateDocs) ? templateDocs : [];
+                    if (!templates.length) {
+                        localStorage.setItem(TEMPLATE_TO_SPACE_MIGRATION_KEY, "done");
+                        return;
+                    }
+
+                    const sourceById = new Map();
+                    templates.forEach(doc => {
+                        const id = String(doc?.id || "").trim();
+                        if (!id) return;
+                        sourceById.set(id, doc);
+                    });
+
+                    const migrateOne = async (doc) => {
+                        const templateId = String(doc?.id || "").trim();
+                        const payload = doc?.payload || {};
+                        if (!templateId || !payload || typeof payload !== "object") return false;
+                        const token = templateToMemoToken(templateId);
+                        const parentTemplateId = String(payload.parentId || "").trim();
+                        const parentToken = parentTemplateId ? templateToMemoToken(parentTemplateId) : "";
+                        const tabId = createId();
+                        const memoPayload = normalizeState({
+                            tabs: [{
+                                id: tabId,
+                                title: String(payload.label || "New page"),
+                                description: String(payload.description || ""),
+                                superpowers: Array.isArray(payload.superpowers) ? payload.superpowers : [],
+                                content: String(payload.html || ""),
+                                metadata: { sourceTemplateId: templateId }
+                            }],
+                            activeTabId: tabId,
+                            promptPresetId: "edit",
+                            spaceId: DEFAULT_SPACE_ID
+                        }) || {
+                            tabs: [{
+                                id: tabId,
+                                title: String(payload.label || "New page"),
+                                description: String(payload.description || ""),
+                                superpowers: Array.isArray(payload.superpowers) ? payload.superpowers : [],
+                                content: String(payload.html || ""),
+                                metadata: { sourceTemplateId: templateId }
+                            }],
+                            activeTabId: tabId,
+                            promptPresetId: "edit",
+                            spaceId: DEFAULT_SPACE_ID
+                        };
+
+                        const savedMeta = await shareWorker.saveSharePayload(
+                            FIRESTORE_COLLECTION,
+                            token,
+                            memoPayload,
+                            { inlineAssets: true, assetScope: "memos" }
+                        );
+
+                        await shareHistory?.upsertRecord?.("memo", {
+                            token,
+                            title: String(payload.label || "Document partagé"),
+                            description: String(payload.description || ""),
+                            superpowers: Array.isArray(payload.superpowers) ? payload.superpowers : [],
+                            payload: memoPayload,
+                            icon: String(payload.icon || "file-symlink").trim() || "file-symlink",
+                            parentId: parentToken,
+                            spaceId: DEFAULT_SPACE_ID,
+                            updatedAt: savedMeta?.updatedAt || doc?.meta?.updatedAt || doc?.meta?.updatedDate || new Date().toISOString()
+                        });
+
+                        await shareWorker.deleteSharePayload(TEMPLATES_COLLECTION, templateId).catch(() => null);
+                        await window.goToolkitTemplateStore?.delete?.(templateId).catch?.(() => null);
+                        return true;
+                    };
+
+                    for (const doc of templates) {
+                        await migrateOne(doc);
+                    }
+
+                    localStorage.setItem(TEMPLATE_TO_SPACE_MIGRATION_KEY, "done");
+                    renderPublishSpacesMenu();
+                    memoExplorer?.refresh?.();
+                } catch (err) {
+                    console.warn("Template -> default space migration failed", err);
+                }
             }
 
             async function createPrivateFromPayload(payload, meta = {}) {
@@ -3649,7 +4103,7 @@
                 memoExplorer?.refreshIndicators?.();
             }
 
-            async function renameDocument(docId, currentTitle, currentDescription, currentSuperpowers) {
+            async function renameDocument(docId, currentTitle, currentDescription, currentSuperpowers, options = {}) {
                 const explorer = getExplorer();
                 const activeContent = state?.tabs?.[0]?.content || "";
                 const fallbackContent = docId === activeDocumentId
@@ -3684,8 +4138,8 @@
                 }
 
                 if (result.action === "publish") {
-                    const tab = getActiveTab();
-                    await publishTemplateFromTab(tab, {
+                    const targetSpaceId = normalizeSpaceId(options.publishSpaceId || DEFAULT_SPACE_ID);
+                    await publishDocumentToSpace(targetSpaceId, {
                         name: finalName,
                         description: result.description,
                         superpowers: result.superpowers
@@ -3693,10 +4147,10 @@
                 }
             }
 
-            async function renameActiveDocument() {
+            async function renameActiveDocument(options = {}) {
                 if (!activeDocumentId) return;
                 const tab = state.tabs[0];
-                await renameDocument(activeDocumentId, tab?.title || "", tab?.description || "", tab?.superpowers || []);
+                await renameDocument(activeDocumentId, tab?.title || "", tab?.description || "", tab?.superpowers || [], options);
             }
 
             async function publishActiveDocumentToNotionDirect() {
@@ -3880,6 +4334,8 @@
                 return activeDocumentId || null;
             };
 
+            migrateSharedRecordsToSpaces();
+            migrateTemplatesToDefaultSpace();
             memoExplorer = window.GoToolkitDocumentExplorer?.create({
                 appId: "memo",
                 sidebar: "#documentExplorer",
@@ -3894,7 +4350,7 @@
                     await syncTemplates(false);
                     return (cloudTemplates || []).map(template => ({
                         id: template.id,
-                        title: template.label || "Commun",
+                        title: template.label || "Golive",
                         description: template.description || "",
                         superpowers: Array.isArray(template.superpowers) ? template.superpowers : [],
                         parentId: String(template.parentId || "").trim() ? `common:${String(template.parentId || "").trim()}` : "",
@@ -3902,6 +4358,25 @@
                         templateData: template,
                         updatedAt: template.updatedAt || ""
                     }));
+                },
+                getSectionMeta: (sectionName) => {
+                    const raw = String(sectionName || "").trim();
+                    if (!raw.startsWith("shared:")) return null;
+                    const spaceId = normalizeSpaceId(raw.slice("shared:".length) || DEFAULT_SPACE_ID);
+                    const space = getSpaceById(spaceId);
+                    return {
+                        title: String(space?.name || "Espace").trim() || "Espace",
+                        icon: String(space?.icon || "cloud-upload").trim() || "cloud-upload"
+                    };
+                },
+                getSharedSections: () => getSpaces().map(space => `shared:${normalizeSpaceId(space?.id || DEFAULT_SPACE_ID)}`),
+                onSectionAdd: (sectionName) => {
+                    const spaceId = normalizeSpaceId(String(sectionName || "").replace(/^shared:/, "") || DEFAULT_SPACE_ID);
+                    openSpaceCreateJoinModal(spaceId);
+                },
+                onSectionSettings: (sectionName) => {
+                    const spaceId = normalizeSpaceId(String(sectionName || "").replace(/^shared:/, "") || DEFAULT_SPACE_ID);
+                    openSpaceManageModal(spaceId);
                 },
                 getOpenIds: () => openDocuments.map(doc => doc.id).filter(Boolean),
                 getActiveId: () => activeDocumentId || "",
@@ -3996,12 +4471,14 @@
                         return;
                     }
                     if (item.isShared) {
+                        const targetSpaceId = normalizeSpaceId(item.spaceId || DEFAULT_SPACE_ID);
                         await shareHistory?.upsertRecord?.("memo", {
                             token: item.token,
                             title: result.name,
                             payload: item.payload,
                             icon: String(result.icon || "file-symlink").trim(),
                             parentId: String(item.parentId || "").trim(),
+                            spaceId: targetSpaceId,
                             updatedAt: new Date().toISOString()
                         });
                         await memoExplorer?.upsertItem?.({
@@ -4011,8 +4488,9 @@
                             payload: item.payload,
                             icon: String(result.icon || "file-symlink").trim(),
                             parentId: String(item.parentId || "").trim(),
+                            spaceId: targetSpaceId,
                             isShared: true,
-                            section: "shared",
+                            section: `shared:${targetSpaceId}`,
                             updatedAt: new Date().toISOString()
                         });
                         return;
@@ -4046,8 +4524,8 @@
                                 notionWorkspaceId: result.notionWorkspaceId
                             });
                         } else if (item.id === activeDocumentId) {
-                            const tab = getActiveTab();
-                            publishTemplateFromTab(tab, {
+                            const itemSpaceId = normalizeSpaceId(item.spaceId || DEFAULT_SPACE_ID);
+                            await publishDocumentToSpace(itemSpaceId, {
                                 name: result.name,
                                 description: result.description,
                                 superpowers: result.superpowers
@@ -4059,7 +4537,7 @@
                     if (!item) return;
                     if (item.isCommon) {
                         const templateId = parseCommonTemplateId(item.id);
-                        const name = item.title || "Commun";
+                        const name = item.title || "Golive";
                         if (!window.confirm(`Supprimer "${name}" ?`)) return;
                         try {
                             if (shareWorker?.isReady && templateId) {
@@ -4115,13 +4593,16 @@
                 },
                 onMove: async (docId, newParentId, nextDepth, beforeId, moveMeta) => {
                     if (!docId || nextDepth > 4) return;
-                    let fromSection = String(moveMeta?.fromSection || "").trim() || inferSectionFromId(docId);
-                    const toSection = String(moveMeta?.toSection || "").trim() || fromSection;
+                    let fromSectionRaw = String(moveMeta?.fromSection || "").trim() || inferSectionFromId(docId);
+                    const toSectionRaw = String(moveMeta?.toSection || "").trim() || fromSectionRaw;
+                    let fromSection = normalizeSectionKey(fromSectionRaw);
+                    const toSection = normalizeSectionKey(toSectionRaw);
                     if (fromSection === "superpowers") {
-                        fromSection = inferSectionFromId(docId);
+                        fromSectionRaw = inferSectionFromId(docId);
+                        fromSection = normalizeSectionKey(fromSectionRaw);
                     }
                     if (toSection === "superpowers") {
-                        await setDocumentSuperpowerBySection(docId, fromSection, moveMeta?.superpowerId || "none");
+                        await setDocumentSuperpowerBySection(docId, fromSectionRaw, moveMeta?.superpowerId || "none");
                         return;
                     }
                     const nextParentId = String(newParentId || "").trim();
@@ -4138,7 +4619,7 @@
                             await memoExplorer?.upsertItem?.({
                                 id: `common:${templateId}`,
                                 parentId: parentTemplateId ? `common:${parentTemplateId}` : "",
-                                title: next?.label || "Commun",
+                                title: next?.label || "Golive",
                                 description: next?.description || "",
                                 superpowers: next?.superpowers || [],
                                 icon: String(next?.icon || "").trim(),
@@ -4150,6 +4631,7 @@
                             return;
                         }
                         if (toSection === "shared") {
+                            const targetSpaceId = normalizeSpaceId(toSectionRaw.replace(/^shared:/, "") || DEFAULT_SPACE_ID);
                             const token = String(docId).startsWith("share:") ? String(docId).slice("share:".length) : String(docId);
                             const records = await shareHistory?.getRecordsByApp?.("memo");
                             const record = (records || []).find(item => item && String(item.token || "") === token);
@@ -4158,6 +4640,7 @@
                                 ...record,
                                 token,
                                 parentId: nextParentId,
+                                spaceId: targetSpaceId,
                                 updatedAt: now
                             });
                             await memoExplorer?.upsertItem?.({
@@ -4169,8 +4652,9 @@
                                 payload: record.payload,
                                 icon: String(record.icon || "file-symlink").trim(),
                                 parentId: nextParentId,
+                                spaceId: targetSpaceId,
                                 isShared: true,
-                                section: "shared",
+                                section: `shared:${targetSpaceId}`,
                                 updatedAt: now
                             });
                             return;
@@ -4262,10 +4746,11 @@
                     }
 
                     if (fromSection === "private" && toSection === "shared") {
+                        const targetSpaceId = normalizeSpaceId(toSectionRaw.replace(/^shared:/, "") || DEFAULT_SPACE_ID);
                         const record = await documentApi?.getRecord?.(docId);
                         if (!record || !shareWorker?.isReady) return;
                         const token = createShareToken();
-                        const payload = record.payload || buildSharePayload();
+                        const payload = { ...(record.payload || buildSharePayload()), spaceId: targetSpaceId };
                         const meta = await shareWorker.saveSharePayload(
                             FIRESTORE_COLLECTION,
                             token,
@@ -4280,6 +4765,7 @@
                             payload,
                             icon: String(record.icon || "file-symlink").trim(),
                             parentId: nextParentId,
+                            spaceId: targetSpaceId,
                             updatedAt: meta?.updatedAt || now
                         });
                         await documentApi?.deleteRecord?.(docId);
@@ -4293,8 +4779,9 @@
                             payload,
                             icon: String(record.icon || "file-symlink").trim(),
                             parentId: nextParentId,
+                            spaceId: targetSpaceId,
                             isShared: true,
-                            section: "shared",
+                            section: `shared:${targetSpaceId}`,
                             updatedAt: meta?.updatedAt || now
                         });
                         if (activeDocumentId === docId) {
@@ -4383,6 +4870,7 @@
                     }
 
                     if (fromSection === "common" && toSection === "shared") {
+                        const targetSpaceId = normalizeSpaceId(toSectionRaw.replace(/^shared:/, "") || DEFAULT_SPACE_ID);
                         const templateId = parseCommonTemplateId(docId);
                         await syncTemplates(false);
                         const template = cloudTemplates.find(item => String(item?.id || "") === templateId);
@@ -4404,7 +4892,8 @@
                             title: template.label || "Document partagé",
                             description: template.description || "",
                             superpowers: Array.isArray(template.superpowers) ? template.superpowers : [],
-                            parentId: nextParentId
+                            parentId: nextParentId,
+                            spaceId: targetSpaceId
                         });
                         try {
                             if (shareWorker?.isReady) await shareWorker.deleteSharePayload(TEMPLATES_COLLECTION, templateId);
@@ -4421,8 +4910,9 @@
                             payload,
                             icon: "file-symlink",
                             parentId: nextParentId,
+                            spaceId: targetSpaceId,
                             isShared: true,
-                            section: "shared",
+                            section: `shared:${targetSpaceId}`,
                             updatedAt: shared.updatedAt
                         });
                         return;
@@ -4430,6 +4920,7 @@
                 }
             });
             memoExplorer?.refresh();
+            renderPublishSpacesMenu();
             window.GoToolkitMemoDocumentExplorer = memoExplorer;
             ensureCurrentDocumentIconGrid();
             currentDocIconBtn?.addEventListener("click", async event => {
@@ -4579,19 +5070,40 @@
                 const ts = parseTemplateUpdatedAt(value);
                 if (!ts) return "—";
                 const deltaSeconds = Math.max(0, Math.floor((Date.now() - ts) / 1000));
-                if (deltaSeconds < 60) return "1m";
+                if (deltaSeconds < 60) return "Il y a <1 min";
                 const minutes = Math.floor(deltaSeconds / 60);
-                if (minutes < 60) return `${minutes}m`;
+                if (minutes < 60) return `Il y a ${minutes} min`;
                 const hours = Math.floor(minutes / 60);
-                if (hours < 24) return `${hours}h`;
+                if (hours < 24) return `Il y a ${hours} h`;
                 const days = Math.floor(hours / 24);
-                if (days < 31) return `${Math.max(days, 1)} j`;
+                if (days < 7) return `Il y a ${Math.max(days, 1)} jour${days > 1 ? "s" : ""}`;
                 const weeks = Math.max(1, Math.floor(days / 7));
-                return `${weeks} sem`;
+                return `Il y a ${weeks} semaine${weeks > 1 ? "s" : ""}`;
             }
 
             async function getActiveDocumentHeaderMeta() {
                 if (!activeDocumentId) return null;
+                const activeSection = inferSectionFromId(activeDocumentId);
+                if (activeSection === "shared") {
+                    const token = activeDocumentId.startsWith("share:") ? activeDocumentId.slice("share:".length) : activeDocumentId;
+                    const records = await shareHistory?.getRecordsByApp?.("memo");
+                    const item = (records || []).find(entry => entry && String(entry.token || "") === token);
+                    return {
+                        section: "shared",
+                        ownerToken: normalizeOwnerTokenInput(item?.ownerToken || ""),
+                        updatedAt: item?.updatedAt || ""
+                    };
+                }
+                if (activeSection === "common") {
+                    const templateId = parseCommonTemplateId(activeDocumentId);
+                    await syncTemplates(false);
+                    const template = (cloudTemplates || []).find(item => item && String(item.id || "") === templateId) || null;
+                    return {
+                        section: "common",
+                        ownerToken: normalizeOwnerTokenInput(template?.ownerToken || ""),
+                        updatedAt: template?.updatedAt || ""
+                    };
+                }
                 const templateId = String(state?.templateId || "").trim();
                 if (templateId) {
                     let template = (cloudTemplates || []).find(item => item && String(item.id || "") === templateId) || null;
@@ -4614,57 +5126,49 @@
                 const activeDoc = openDocuments.find(item => item && item.id === activeDocumentId) || await documentApi?.getRecord?.(activeDocumentId) || null;
                 return {
                     section: "private",
-                    ownerToken: "",
+                    ownerToken: normalizeOwnerTokenInput(activeDoc?.ownerToken || activeDoc?.payload?.ownerToken || ""),
                     updatedAt: activeDoc?.updatedAt || ""
                 };
             }
 
             async function renderActiveDocumentHeaderMeta() {
-                if (!activeDocMeta || !activeDocUpdatedAt || !activeDocOwnerToken) return;
+                if (!activeDocMeta || !activeDocUpdatedAt) return;
                 if (!activeDocumentId) {
                     activeDocMeta.style.display = "none";
-                    activeDocOwnerToken.hidden = true;
                     activeDocUpdatedAt.textContent = "";
                     return;
                 }
                 const meta = await getActiveDocumentHeaderMeta();
                 if (!meta) {
                     activeDocMeta.style.display = "none";
-                    activeDocOwnerToken.hidden = true;
                     activeDocUpdatedAt.textContent = "";
                     return;
                 }
                 activeDocMeta.style.display = "inline-flex";
                 const updatedLabel = formatCompactRelativeDate(meta.updatedAt);
-                activeDocUpdatedAt.textContent = `Màj ${updatedLabel}`;
-                if (meta.section === "common" && meta.ownerToken) {
-                    activeDocOwnerToken.hidden = false;
-                    activeDocOwnerToken.textContent = `owner ${meta.ownerToken}`;
-                } else {
-                    activeDocOwnerToken.hidden = true;
-                    activeDocOwnerToken.textContent = "";
-                }
+                const hasOwner = Boolean(meta.ownerToken);
+                activeDocUpdatedAt.textContent = hasOwner ? `${updatedLabel} par ${meta.ownerToken}` : updatedLabel;
             }
 
             function formatTemplateRelativeDate(value) {
                 const ts = parseTemplateUpdatedAt(value);
                 if (!ts) return "—";
                 const deltaSeconds = Math.max(0, Math.floor((Date.now() - ts) / 1000));
-                if (deltaSeconds < 60) return "Il y a <1 mn";
+                if (deltaSeconds < 60) return "Il y a <1 min";
                 const minutes = Math.floor(deltaSeconds / 60);
                 if (minutes < 60) {
-                    return `Il y a ${minutes} mn`;
+                    return `Il y a ${minutes} min`;
                 }
                 const hours = Math.floor(minutes / 60);
                 if (hours < 24) {
                     return `Il y a ${hours} h`;
                 }
                 const days = Math.floor(hours / 24);
-                if (days < 30) {
-                    return `Il y a ${days} j`;
+                if (days < 7) {
+                    return `Il y a ${days} jour${days > 1 ? "s" : ""}`;
                 }
-                const months = Math.floor(days / 30) || 1;
-                return `Il y a ${months} m`;
+                const weeks = Math.floor(days / 7) || 1;
+                return `Il y a ${weeks} semaine${weeks > 1 ? "s" : ""}`;
             }
 
             function initGalleryNav(wrapper, listEl) {
@@ -5899,11 +6403,6 @@
                     persistState();
                     setStatus("Docs enregistré localement");
                 }
-            });
-
-            publishGoLiveBtn?.addEventListener("click", async () => {
-                closeMenus();
-                await renameActiveDocument();
             });
 
             publishNotionBtn?.addEventListener("click", async () => {

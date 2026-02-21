@@ -85,6 +85,8 @@
         const hasNotionWorkspaceId = Object.prototype.hasOwnProperty.call(value, "notionWorkspaceId");
         const hasParentId = Object.prototype.hasOwnProperty.call(value, "parentId");
         const hasIcon = Object.prototype.hasOwnProperty.call(value, "icon");
+        const hasSpaceId = Object.prototype.hasOwnProperty.call(value, "spaceId");
+        const hasShareToken = Object.prototype.hasOwnProperty.call(value, "shareToken");
         return {
             id,
             app,
@@ -103,7 +105,9 @@
             notionPath: hasNotionPath ? String(value.notionPath || "").trim() : undefined,
             notionWorkspaceId: hasNotionWorkspaceId ? String(value.notionWorkspaceId || "").trim() : undefined,
             parentId: hasParentId ? String(value.parentId || "").trim() : undefined,
-            icon: hasIcon ? String(value.icon || "").trim() : undefined
+            icon: hasIcon ? String(value.icon || "").trim() : undefined,
+            spaceId: hasSpaceId ? String(value.spaceId || "").trim() : undefined,
+            shareToken: hasShareToken ? String(value.shareToken || "").trim() : undefined
         };
     }
 
@@ -145,6 +149,8 @@
         const hasNotionWorkspaceId = Object.prototype.hasOwnProperty.call(record, "notionWorkspaceId");
         const hasParentId = Object.prototype.hasOwnProperty.call(record, "parentId");
         const hasIcon = Object.prototype.hasOwnProperty.call(record, "icon");
+        const hasSpaceId = Object.prototype.hasOwnProperty.call(record, "spaceId");
+        const hasShareToken = Object.prototype.hasOwnProperty.call(record, "shareToken");
         const next = {
             id: normalized.id,
             app: normalized.app,
@@ -199,6 +205,16 @@
             next.icon = normalized.icon || "";
         } else if (existing && Object.prototype.hasOwnProperty.call(existing, "icon")) {
             next.icon = existing.icon || "";
+        }
+        if (hasSpaceId) {
+            next.spaceId = normalized.spaceId || "";
+        } else if (existing && Object.prototype.hasOwnProperty.call(existing, "spaceId")) {
+            next.spaceId = existing.spaceId || "";
+        }
+        if (hasShareToken) {
+            next.shareToken = normalized.shareToken || "";
+        } else if (existing && Object.prototype.hasOwnProperty.call(existing, "shareToken")) {
+            next.shareToken = existing.shareToken || "";
         }
         stored[next.id] = next;
         await writeRecords(stored);

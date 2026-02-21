@@ -363,13 +363,13 @@
         }
 
         @media (max-width: 1024px) {
-            #gtTemplateModalList, #savedGallery, #shareGallery {
+            #gtTemplateModalList, #savedGallery, .space-gallery {
                 grid-template-columns: repeat(3, minmax(0, 1fr));
             }
         }
 
         @media (max-width: 640px) {
-            #gtTemplateModalList, #savedGallery, #shareGallery {
+            #gtTemplateModalList, #savedGallery, .space-gallery {
                 grid-template-columns: repeat(1, minmax(0, 1fr));
             }
         }
@@ -384,7 +384,7 @@
         }
 
         #savedGallery.share-gallery.single-page,
-        #shareGallery.share-gallery.single-page {
+        .space-gallery.share-gallery.single-page {
             min-height: var(--gallery-row-min);
         }
 
