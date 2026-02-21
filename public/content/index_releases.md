@@ -1,8 +1,11 @@
+## 2026-02-21
+- Docs : Vue en arborescence des documents
+- Home : Espace commun
+
 ## 2026-02-19
 - Voice : Télécharger l'enregistrement vidéo
 - Docs : Ajouter des images et des vidéos
 - Docs : Éditer une image
-- Docs : Ajout
 
 ## 2026-02-16
 - Docs : Générer une synthèse vocale avec `Google TTS`
@@ -23,7 +26,6 @@
 
 ## 2026-01-27
 - AI : Raccourcis Prompts
-- Home : Propriétaire des modèles
 - Files : Vectorisation des données structurées avec `qwen/qwen3-embedding-8b`
 
 ## 2026-01-21

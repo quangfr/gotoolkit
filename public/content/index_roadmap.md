@@ -13,4 +13,4 @@
 ## Sécurité des données 
 - Pseudonymisation des données
 - Connexion à un serveur IA auto-hébergé 
-- Compte connecté et sauvegarde en ligne
+- Compte connecté SSO Google
