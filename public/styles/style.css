@@ -1544,15 +1544,16 @@ label {
   align-items: center;
   align-self: flex-start;
   width: fit-content;
-  border-bottom: 1px dashed currentColor;
   cursor: pointer;
   line-height: 1.2;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  color: inherit;
 }
 
 .info-popup-news-link:hover,
 .info-popup-news-link:focus-visible {
-  color: var(--color-primary);
-  border-bottom-color: var(--color-primary);
+  color: inherit;
   outline: none;
 }
 
@@ -1564,9 +1565,15 @@ label {
 }
 
 .info-popup a {
-  color: var(--color-primary);
-  text-decoration: none;
-  font-weight: 600;
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-weight: 400;
+}
+
+.info-popup a:hover,
+.info-popup a:focus-visible {
+  color: inherit;
 }
 
 .info-popup button {

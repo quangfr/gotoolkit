@@ -1,0 +1,2613 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta name="google-site-verification" content="eC4e7YythOOYxqbyFdxlWAJFb2pmjQ6KWJdYN-TFBSA" />
+    <script>
+        (function () {
+            const storedTheme = localStorage.getItem('go-toolkit-theme');
+            const theme = storedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'cream');
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+    <script>
+        (function () {
+            if (!('serviceWorker' in navigator)) return;
+            const reloadFlag = 'goToolkit.swCleared';
+            const shouldReload = !sessionStorage.getItem(reloadFlag);
+            let unregistered = false;
+            navigator.serviceWorker.getRegistrations().then((registrations) => {
+                registrations.forEach((reg) => {
+                    const scope = reg.scope || '';
+                    const scriptUrl = reg.active && reg.active.scriptURL ? reg.active.scriptURL : '';
+                    const isMobileScope = scope.endsWith('/mobile') || scope.endsWith('/mobile/');
+                    if (!isMobileScope && scriptUrl.endsWith('/sw.js')) {
+                        unregistered = true;
+                        reg.unregister();
+                    }
+                });
+                if (unregistered && 'caches' in window) {
+                    return caches.keys().then((keys) => {
+                        return Promise.all(keys.map((key) => {
+                            if (key.indexOf('go-toolkit-mobile') === 0) {
+                                return caches.delete(key);
+                            }
+                            return Promise.resolve();
+                        }));
+                    });
+                }
+                return null;
+            }).then(() => {
+                if (unregistered && shouldReload) {
+                    sessionStorage.setItem(reloadFlag, '1');
+                    window.location.reload();
+                }
+            }).catch(() => { });
+        })();
+    </script>
+    <script>window.GO_TOOLKIT_SHARE_API_URL = 'https://share.gotoolkit.workers.dev/'</script>
+    <script>
+            // Global Polyfill for missing browser APIs (prevents crashes in Excalidraw/Mermaid)
+            (function () {
+                var g = typeof globalThis !== 'undefined' ? globalThis : window;
+                function ensure(name) {
+                    try {
+                        if (typeof g[name] === 'undefined' || !g[name]) {
+                            var F = function () { };
+                            F.prototype = {};
+                            g[name] = F;
+                        }
+                        if (g[name] && !g[name].prototype) g[name].prototype = {};
+                    } catch (e) { }
+                }
+                ensure('Element');
+                ensure('Path2D');
+                ensure('SVGPathSeg');
+                // Array.at polyfill if missing
+                if (typeof Array.prototype.at !== 'function') {
+                    Array.prototype.at = function (n) {
+                        n = Math.trunc(n) || 0;
+                        if (n < 0) n += this.length;
+                        if (n < 0 || n >= this.length) return undefined;
+                        return this[n];
+                    };
+                }
+            })();
+    </script>
+    <script>
+        window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL =
+            window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL || "https://assemblyai.gotoolkit.workers.dev/token";
+        window.GO_TOOLKIT_YOUTUBE_API_URL =
+            window.GO_TOOLKIT_YOUTUBE_API_URL || "https://youtube.gotoolkit.workers.dev";
+        window.GO_TOOLKIT_MICROSOFT_API_URL =
+            window.GO_TOOLKIT_MICROSOFT_API_URL || "https://ms.gotoolkit.workers.dev";
+        window.GO_TOOLKIT_GMAIL_API_URL =
+            window.GO_TOOLKIT_GMAIL_API_URL || "https://gmail.gotoolkit.workers.dev";
+    </script>
+    <script>
+        (function () {
+            if (!window.history.replaceState) {
+                return;
+            }
+            const url = new URL(window.location.href);
+            if (!url.searchParams.has("v")) {
+                return;
+            }
+            url.searchParams.delete("v");
+            window.history.replaceState(
+                null,
+                "",
+                url.pathname + url.search + url.hash
+            );
+        })();
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GoToolkit</title>
+    <script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js" crossorigin></script>
+    <script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://cdn.jsdelivr.net/npm/@excalidraw/excalidraw@0.17.6/dist/excalidraw.production.min.js"
+        crossorigin></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.min.js" crossorigin></script>
+    <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Sora:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="styles/style.css?v=2026.02.21.9">
+    <link rel="stylesheet" href="styles/index.css?v=2026.02.21.9">
+    <style>
+        .feedback-app-launcher-row {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="page" class="page">
+        <header class="hero">
+            <div class="hero-logo-wrapper">
+                <img src="img/logo.gif" alt="Logo GoToolkit" class="logo-light">
+                <img src="img/logo_inverted.gif" alt="Logo GoToolkit" class="logo-dark">
+            </div>
+            <h1>GoToolkit <span class="hero-beta">beta</span></h1>
+            <p>La boîte à outils IA des Product Owners</p>
+            <span class="hero-version label-link" id="releaseNotesTrigger" tabindex="0">v2026.02.21.9</span>
+
+            <div class="hero-meta">
+                <button id="openSettingsBtn" class="feedback-button" type="button" title="Paramètres">
+                    <i data-lucide="settings" style="width:16px;height:16px;vertical-align:middle;"></i>
+                </button>
+                <button id="openRequestsBtn" class="feedback-button" type="button" title="Feedback"
+                    style="position: relative;">
+                    <i data-lucide="message-square-plus" style="width:16px;height:16px;vertical-align:middle;"></i>
+                    <span id="requestsCount" class="chat-header-badge"
+                        style="font-size: 10px; min-width: 16px; height: 16px; top: -4px; right: -4px;">0</span>
+                </button>
+                <a href="mobile" class="feedback-button" title="Mobile">
+                    <i data-lucide="tablet-smartphone" style="width:16px;height:16px;vertical-align:middle;"></i>
+                </a>
+            </div>
+        </header>
+
+        <section class="section">
+            <div id="pinnedBlock" hidden>
+                <div class="section-title-row" style="margin-top: 4px;">
+                    <p class="section-label"><i data-lucide="pin"
+                            style="width:14px;height:14px;margin-right:4px;"></i>Mes favoris</p>
+                </div>
+                <div id="pinnedGallery" class="share-gallery" aria-live="polite"></div>
+            </div>
+            <div class="section-title-row">
+                <p class="section-label nexus-label label-link" data-open-nexus-modal><i data-lucide="lock-keyhole-open"
+                        style="width:14px;height:14px;margin-right:4px;"></i>Privé
+                </p>
+            </div>
+            <p id="savedEmpty" class="share-helper" hidden>Aucun document enregistré localement.</p>
+            <div class="gallery-nav" id="savedGalleryNav">
+                <button class="gallery-nav__btn gallery-nav__prev" type="button" aria-label="Précédent">
+                    <i data-lucide="chevron-left"></i>
+                </button>
+                <div id="savedGallery" class="share-gallery" aria-live="polite"></div>
+                <button class="gallery-nav__btn gallery-nav__next" type="button" aria-label="Suivant">
+                    <i data-lucide="chevron-right"></i>
+                </button>
+            </div>
+
+            <div id="sharedSpacesRoot" style="display:flex; flex-direction:column; gap:12px; margin-top: 12px;"></div>
+            <p id="shareLoading" class="share-helper">Chargement des galeries...</p>
+            <p id="shareError" class="share-helper share-helper-error" hidden></p>
+        </section>
+
+        <div id="requestsModal" class="feedback-modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
+            <div class="requests-modal">
+                <header style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                    <h3 style="margin:0;font-size:1rem;"><i data-lucide="message-square"
+                            style="width:18px;height:18px;vertical-align:middle;margin-right:6px;"></i>Liste des
+                        feedback </h3>
+                    <button id="addFeedbackBtn" class="btn" type="button" style="margin-left:auto;">+ Ajouter</button>
+                    <button id="closeRequestsBtn" class="btn-secondary" type="button" aria-label="Fermer"><i
+                            data-lucide="x" style="width:16px;height:16px;"></i></button>
+                </header>
+                <div class="requests-body">
+                    <aside class="requests-list-panel">
+                        <div class="requests-filter">
+                            <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;">
+                                Statut
+                                <select id="requestsStatusFilter">
+                                    <option value="tous" selected>Tous</option>
+                                    <option value="recue">Reçues</option>
+                                    <option value="traitee">Traitées</option>
+                                    <option value="planifiee">Planifiées</option>
+                                    <option value="reportee">Reportées</option>
+                                </select>
+                            </label>
+                            <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;">
+                                Type
+                                <select id="requestsTypeFilter">
+                                    <option value="tous" selected>Tous</option>
+                                    <option value="bug-general">Bug Général</option>
+                                    <option value="bug-assist">Bug Assist</option>
+                                    <option value="bug-grid">Bug Grid</option>
+                                    <option value="bug-timeline">Bug Timeline</option>
+                                    <option value="suggestion">Suggestion</option>
+                                </select>
+                            </label>
+
+                        </div>
+                        <div id="requestsList" class="requests-list" aria-live="polite"></div>
+                    </aside>
+                    <section class="requests-content">
+                        <div class="request-content-body">
+                            <input id="requestSubject" type="text" readonly />
+                            <select id="requestType" disabled>
+                                <option value="bug-general">Bug Général</option>
+                                <option value="bug-assist">Bug Assist</option>
+                                <option value="bug-grid">Bug Grid</option>
+                                <option value="bug-timeline">Bug Timeline</option>
+                                <option value="suggestion">Suggestion</option>
+                            </select>
+                            <div id="requestStatusWrapper">
+                                <select id="requestStatus" disabled>
+                                    <option value="recue">Reçue</option>
+                                    <option value="traitee">Traitée</option>
+                                    <option value="planifiee">Planifiée</option>
+                                    <option value="reportee">Reportée</option>
+                                </select>
+                            </div>
+                            <textarea id="requestMessage" rows="12" readonly></textarea>
+                            <div id="requestMediaList" class="request-media-list"></div>
+                        </div>
+                        <div class="requests-actions">
+                            <button id="saveRequestBtn" class="btn-primary" type="button" disabled>Sauvegarder</button>
+                            <button id="deleteRequestBtn" class="btn-secondary" type="button"
+                                disabled>Supprimer</button>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </div>
+
+        <div id="superpowerModal" class="feedback-modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
+            <div class="superpower-modal">
+                <header>
+                    <h3><i data-lucide="zap"
+                            style="width:20px;height:20px;vertical-align:middle;margin-right:8px;"></i>Superpouvoirs
+                        Go-Live</h3>
+                    <button id="closeSuperpowerBtn" class="btn-secondary" type="button" aria-label="Fermer"><i
+                            data-lucide="x" style="width:16px;height:16px;"></i></button>
+                </header>
+                <div class="superpower-list" id="superpowerList">
+                    <p class="superpower-subtitle">
+                        La GoToolkit illustre les superpouvoirs du Product Owner assistés par l'IA.
+                    </p>
+                    <!-- Contenu chargé dynamiquement depuis superpowers.json -->
+                </div>
+            </div>
+        </div>
+
+        <div id="settingsModal" class="feedback-modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true"
+            style="max-height: 100vh; overflow-y: hidden;"></div>
+
+        <div id="feedbackToast" class="toast" role="status" aria-live="polite"></div>
+        <div class="legal-footer">
+            Savane Go Live © 2025
+            <a href="legal.html#tos">Conditions d'utilisation</a>
+            <a href="legal.html#privacy">Politique de confidentialité</a>
+        </div>
+    </div>
+    <div id="chat-root"></div>
+
+    <script>
+        window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL =
+            window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL || "https://assemblyai.gotoolkit.workers.dev/token";
+    </script>
+    <script src="js/config.js?v=2026.02.21.9"></script>
+    <script src="js/config-modal.js?v=2026.02.21.9"></script>
+    <script src="js/feature-visibility.js?v=2026.02.21.9"></script>
+    <script src="js/document-storage.js?v=2026.02.21.9"></script>
+    <script src="js/storage-service.js?v=2026.02.21.9"></script>
+    <script src="js/shared-ui.js?v=2026.02.21.9"></script>
+    <script src="js/spaces-store.js?v=2026.02.21.9"></script>
+    <script src="js/share-worker-client.js?v=2026.02.21.9"></script>
+    <script src="js/share-history.js?v=2026.02.21.9"></script>
+    <script src="js/document-api.js?v=2026.02.21.9"></script>
+    <script src="js/ia-config.js?v=2026.02.21.9"></script>
+    <script src="preset.js?v=2026.02.21.9"></script>
+    <script src="prompt.js?v=2026.02.21.9"></script>
+    <script src="js/ia-client.js?v=2026.02.21.9"></script>
+    <script src="js/template-gallery.js?v=2026.02.21.9"></script>
+    <script src="js/news.js?v=2026.02.21.9"></script>
+    <script>
+        document.addEventListener("click", function (event) {
+            const legalTrigger = event.target?.closest?.("[data-open-nexus-modal]");
+            if (legalTrigger) {
+                event.preventDefault();
+                window.location.href = "legal.html#tos";
+                return;
+            }
+            const privacyTrigger = event.target?.closest?.("[data-open-privacy-modal]");
+            if (privacyTrigger) {
+                event.preventDefault();
+                window.location.href = "legal.html#privacy";
+            }
+        });
+    </script>
+    <script>
+        // Initialize feedback configuration before loading feedback.js
+        window.GoToolkitAppFeedbackConfig = {
+            appId: "index",
+            appName: "GoToolkit",
+            defaultType: "bug-general",
+            primaryColor: "#2a7a57"
+        };
+    </script>
+    <script src="js/feedback.js?v=2026.02.21.9"></script>
+    <script src="js/youtube-publish.js?v=2026.02.21.9"></script>
+
+    <script>
+        (function () {
+            const modal = document.getElementById("superpowerModal");
+            const openBtn = document.getElementById("superpowerToggle");
+            const closeBtn = document.getElementById("closeSuperpowerBtn");
+            function close() {
+                if (!modal) return;
+                modal.classList.remove("open");
+                modal.setAttribute("aria-hidden", "true");
+            }
+            function open() {
+                if (!modal) return;
+                modal.classList.add("open");
+                modal.setAttribute("aria-hidden", "false");
+            }
+            openBtn?.addEventListener("click", open);
+            closeBtn?.addEventListener("click", close);
+            modal?.addEventListener("click", event => {
+                if (event.target === modal) {
+                    close();
+                }
+            });
+        })();
+    </script>
+    <script>
+        (function () {
+            function closeModalById(id) {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.classList.remove("open");
+                el.setAttribute("aria-hidden", "true");
+            }
+            document.addEventListener("keydown", event => {
+                if (event.key !== "Escape" && event.key !== "Esc") return;
+                closeModalById("superpowerModal");
+                window.goToolkitNexusModal?.close?.();
+            });
+        })();
+    </script>
+    <script src="js/index-gallery.js?v=2026.02.21.9"></script>
+    <script type="module">
+        const openFeedbackBtn = document.getElementById("openFeedbackBtn");
+        const toastEl = document.getElementById("feedbackToast");
+        const requestsBtn = document.getElementById("openRequestsBtn");
+        const requestsModal = document.getElementById("requestsModal");
+        const addFeedbackBtn = document.getElementById("addFeedbackBtn");
+        const closeRequestsBtn = document.getElementById("closeRequestsBtn");
+        const requestsList = document.getElementById("requestsList");
+        const requestsStatusFilter = document.getElementById("requestsStatusFilter");
+        const requestsTypeFilter = document.getElementById("requestsTypeFilter");
+        const requestsCountLabel = document.getElementById("requestsCount");
+        const requestSubject = document.getElementById("requestSubject");
+        const requestTypeField = document.getElementById("requestType");
+        const requestStatusSelect = document.getElementById("requestStatus");
+        const requestStatusWrapper = document.getElementById("requestStatusWrapper");
+        const requestMessageField = document.getElementById("requestMessage");
+        const requestMediaList = document.getElementById("requestMediaList");
+        const saveRequestBtn = document.getElementById("saveRequestBtn");
+        const deleteRequestBtn = document.getElementById("deleteRequestBtn");
+        const feedbackWebsite = document.getElementById("feedbackWebsite");
+        const ownerToken = document.getElementById("ownerToken");
+        function normalizeOwnerTokenInput(value) {
+            return String(value || "")
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, "-")
+                .replace(/^-+|-+$/g, "")
+                .trim();
+        }
+        try {
+            const storedAdmin = localStorage.getItem("feedback-admin-token");
+            const normalizedAdmin = normalizeOwnerTokenInput(storedAdmin);
+            if (ownerToken && !ownerToken.value && normalizedAdmin) ownerToken.value = normalizedAdmin;
+            if (normalizedAdmin && storedAdmin !== normalizedAdmin) {
+                localStorage.setItem("feedback-admin-token", normalizedAdmin);
+            }
+        } catch (e) { /* noop */ }
+        const REQUEST_STATUS_LABELS = {
+            recue: "Reçue",
+            traitee: "Traitée",
+            planifiee: "Planifiée",
+            reportee: "Reportée"
+        };
+        let requestsState = { items: [], canEdit: false };
+        let activeRequestId = null;
+
+        function updateRequestsButtonVisibility() {
+            const token = normalizeOwnerTokenInput(ownerToken?.value || localStorage.getItem("feedback-admin-token") || "");
+            const hasToken = Boolean(token);
+            if (requestsBtn) requestsBtn.hidden = !hasToken;
+            // Hide feedback-app-index-openBtn when admin token is filled
+            const feedbackOpenBtn = document.getElementById("feedback-app-index-openBtn");
+            if (feedbackOpenBtn) feedbackOpenBtn.style.display = hasToken ? "none" : "";
+            if (!hasToken) {
+                activeRequestId = null;
+                closeRequestsModal();
+            }
+            return hasToken;
+        }
+
+        function formatFriendlyDate(isoString) {
+            if (!isoString) return "Mis à jour";
+            try {
+                const value = new Date(isoString).getTime();
+                if (Number.isNaN(value)) return "Mis à jour";
+                const deltaSeconds = Math.max(0, Math.floor((Date.now() - value) / 1000));
+                if (deltaSeconds < 60) return "À l'instant";
+                const deltaMinutes = Math.floor(deltaSeconds / 60);
+                if (deltaMinutes < 60) return `Il y a ${deltaMinutes} min`;
+                const deltaHours = Math.floor(deltaMinutes / 60);
+                if (deltaHours < 24) return `Il y a ${deltaHours} h`;
+                const deltaDays = Math.floor(deltaHours / 24);
+                if (deltaDays < 30) return `Il y a ${deltaDays} j`;
+                const formatter = new Intl.DateTimeFormat("fr-FR", {
+                    day: "2-digit",
+                    month: "short",
+                    hour: "2-digit",
+                    minute: "2-digit"
+                });
+                return formatter.format(new Date(value));
+            } catch (err) {
+                return "Mis à jour";
+            }
+        }
+
+        function showToast(message, isError = false, reason = "") {
+            if (!toastEl) return;
+            toastEl.textContent = message;
+            toastEl.classList.toggle("error", Boolean(isError));
+            if (reason) {
+                toastEl.dataset.reason = reason;
+            } else {
+                delete toastEl.dataset.reason;
+            }
+            toastEl.classList.add("show");
+            setTimeout(() => toastEl.classList.remove("show"), 3200);
+        }
+
+        function formatFileSize(size) {
+            const value = Number(size) || 0;
+            if (value < 1024) return `${value} B`;
+            if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} Ko`;
+            return `${(value / (1024 * 1024)).toFixed(1)} Mo`;
+        }
+
+        function renderRequestMediaList(item) {
+            if (!requestMediaList) return;
+            requestMediaList.innerHTML = "";
+            const media = Array.isArray(item?.media) ? item.media : [];
+            const feedbackApiBase = String(window.GO_TOOLKIT_FEEDBACK_API_URL || "https://feedback.gotoolkit.workers.dev/v1/feedback")
+                .replace(/\/v1\/feedback\/?$/i, "");
+            if (!media.length) {
+                const empty = document.createElement("p");
+                empty.className = "share-helper";
+                empty.textContent = "Aucun média";
+                requestMediaList.appendChild(empty);
+                return;
+            }
+            media.forEach(entry => {
+                const row = document.createElement("div");
+                row.className = "request-media-item";
+                const preview = document.createElement("div");
+                preview.className = "request-media-preview";
+                const mimeType = String(entry?.mimeType || "");
+                const isImage = mimeType.startsWith("image/");
+                const isVideo = mimeType.startsWith("video/");
+                const nameEl = document.createElement("span");
+                nameEl.className = "request-media-name";
+                nameEl.textContent = `${entry.fileName || "fichier"} (${formatFileSize(entry.size)})`;
+                const typeEl = document.createElement("span");
+                typeEl.className = "share-helper";
+                typeEl.textContent = entry.mimeType || "";
+                const details = document.createElement("div");
+                details.className = "request-media-details";
+                details.appendChild(nameEl);
+                details.appendChild(typeEl);
+                const url = String(entry?.url || "").trim();
+                if (url) {
+                    const resolvedUrl = url.startsWith("http") ? url : `${feedbackApiBase}${url}`;
+                    if (isImage) {
+                        const img = document.createElement("img");
+                        img.className = "request-media-thumb";
+                        img.src = resolvedUrl;
+                        img.alt = entry.fileName || "aperçu média";
+                        preview.appendChild(img);
+                    } else if (isVideo) {
+                        const video = document.createElement("video");
+                        video.className = "request-media-thumb";
+                        video.src = resolvedUrl;
+                        video.controls = true;
+                        video.preload = "metadata";
+                        preview.appendChild(video);
+                    } else {
+                        const generic = document.createElement("span");
+                        generic.className = "share-helper";
+                        generic.textContent = "Fichier";
+                        preview.appendChild(generic);
+                    }
+                    const viewLink = document.createElement("a");
+                    viewLink.href = resolvedUrl;
+                    viewLink.target = "_blank";
+                    viewLink.rel = "noreferrer noopener";
+                    viewLink.className = "share-helper";
+                    viewLink.textContent = "ouvrir";
+                    details.appendChild(viewLink);
+                }
+                row.appendChild(preview);
+                row.appendChild(details);
+                requestMediaList.appendChild(row);
+            });
+        }
+
+        function renderRequestDetail(item) {
+            const hasItem = Boolean(item);
+            if (requestSubject) requestSubject.value = hasItem ? (item.subject || "") : "";
+            if (requestTypeField) requestTypeField.value = hasItem ? (item.type || "") : "";
+            if (requestStatusSelect) requestStatusSelect.value = hasItem ? (item.status || "recue") : "recue";
+            if (requestMessageField) requestMessageField.value = hasItem ? (item.message || "") : "";
+            renderRequestMediaList(item);
+            if (requestsState.canEdit && hasItem) {
+                requestSubject?.removeAttribute("readonly");
+                requestMessageField?.removeAttribute("readonly");
+                requestStatusSelect?.removeAttribute("disabled");
+                requestTypeField?.removeAttribute("disabled");
+                saveRequestBtn.disabled = false;
+                if (deleteRequestBtn) deleteRequestBtn.disabled = false;
+            } else {
+                requestSubject?.setAttribute("readonly", "true");
+                requestMessageField?.setAttribute("readonly", "true");
+                requestStatusSelect?.setAttribute("disabled", "true");
+                requestTypeField?.setAttribute("disabled", "true");
+                saveRequestBtn.disabled = true;
+                if (deleteRequestBtn) deleteRequestBtn.disabled = true;
+            }
+        }
+
+        function ensureSelectBaseLabels(selectEl) {
+            if (!selectEl) return;
+            Array.from(selectEl.options).forEach(opt => {
+                if (!opt.dataset.baseLabel) opt.dataset.baseLabel = opt.textContent || "";
+            });
+        }
+
+        function renderRequestsList() {
+            if (!requestsList) return;
+            requestsList.innerHTML = "";
+            const statusFilter = requestsStatusFilter?.value || "tous";
+            const typeFilter = (requestsTypeFilter?.value || "tous").toLowerCase();
+            const items = requestsState.items
+                .filter(item => {
+                    const normalizedStatus = item.status || "recue";
+                    const normalizedType = (item.type || "").toLowerCase();
+                    const statusMatches = statusFilter === "tous" ? true : normalizedStatus === statusFilter;
+                    const typeMatches = typeFilter === "tous" ? true : normalizedType === typeFilter;
+                    return statusMatches && typeMatches;
+                })
+                .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+            if (!items.length) {
+                const empty = document.createElement("p");
+                empty.textContent = "Aucune demande pour ces filtres.";
+                empty.className = "share-helper";
+                requestsList.appendChild(empty);
+                return;
+            }
+            items.forEach(item => {
+                const el = document.createElement("div");
+                el.className = "requests-item";
+                if (item.id === activeRequestId) el.classList.add("active");
+                const title = document.createElement("p");
+                title.className = "requests-item-title";
+                title.textContent = item.subject || "(sans sujet)";
+                const meta = document.createElement("p");
+                meta.className = "requests-item-meta";
+                meta.textContent = `${REQUEST_STATUS_LABELS[item.status] || "Reçue"} · ${(item.type || "").toUpperCase()} · ${item.name || "Anonyme"} · ${formatFriendlyDate(item.createdAt)}`;
+                const msg = document.createElement("p");
+                el.appendChild(title);
+                el.appendChild(meta);
+                el.addEventListener("click", () => {
+                    activeRequestId = item.id;
+                    renderRequestsList();
+                    renderRequestDetail(item);
+                });
+                requestsList.appendChild(el);
+            });
+        }
+
+        function updateRequestCounters() {
+            const statusFilter = requestsStatusFilter?.value || "tous";
+            const typeFilter = (requestsTypeFilter?.value || "tous").toLowerCase();
+
+            ensureSelectBaseLabels(requestsStatusFilter);
+            ensureSelectBaseLabels(requestsTypeFilter);
+
+            const itemsForStatusCounts = requestsState.items.filter(item => {
+                const normalizedType = (item.type || "").toLowerCase();
+                return typeFilter === "tous" ? true : normalizedType === typeFilter;
+            });
+            const statusCounts = itemsForStatusCounts.reduce((acc, item) => {
+                const key = item.status || "recue";
+                acc[key] = (acc[key] || 0) + 1;
+                return acc;
+            }, {});
+
+            const receivedCount = requestsState.items.reduce((acc, item) => acc + ((item.status || "recue") === "recue" ? 1 : 0), 0);
+            if (requestsCountLabel) requestsCountLabel.textContent = receivedCount;
+
+            if (requestsStatusFilter) {
+                const statusTotal = itemsForStatusCounts.length;
+                Array.from(requestsStatusFilter.options).forEach(opt => {
+                    const key = opt.value;
+                    const count = key === "tous" ? statusTotal : (statusCounts[key] || 0);
+                    const label = opt.dataset.baseLabel || (key === "tous" ? "Tous" : (REQUEST_STATUS_LABELS[key] || key));
+                    opt.textContent = `${label} (${count})`;
+                });
+            }
+
+            const itemsForTypeCounts = requestsState.items.filter(item => {
+                const normalizedStatus = item.status || "recue";
+                return statusFilter === "tous" ? true : normalizedStatus === statusFilter;
+            });
+            const typeCounts = itemsForTypeCounts.reduce((acc, item) => {
+                const key = (item.type || "").toLowerCase() || "inconnu";
+                acc[key] = (acc[key] || 0) + 1;
+                return acc;
+            }, {});
+
+            if (requestsTypeFilter) {
+                const typeTotal = itemsForTypeCounts.length;
+                Array.from(requestsTypeFilter.options).forEach(opt => {
+                    const key = (opt.value || "").toLowerCase();
+                    const count = key === "tous" ? typeTotal : (typeCounts[key] || 0);
+                    const label = opt.dataset.baseLabel || (key === "tous" ? "Tous" : key);
+                    opt.textContent = `${label} (${count})`;
+                });
+            }
+        }
+
+        async function fetchRequests() {
+            try {
+                const endpoint = (window.GO_TOOLKIT_FEEDBACK_API_URL || "https://feedback.gotoolkit.workers.dev/v1/feedback") + "";
+                const response = await fetch(endpoint, { method: "GET" });
+                if (!response.ok) {
+                    throw new Error("HTTP " + response.status);
+                }
+                const data = await response.json();
+                const items = Array.isArray(data.items) ? data.items : [];
+                // Ignore server-side IP-based admin flag and allow editing in the UI
+                requestsState = { items, canEdit: true };
+                if (requestStatusWrapper) {
+                    requestStatusWrapper.style.display = "";
+                }
+                updateRequestCounters();
+                renderRequestsList();
+                if (items.length) {
+                    activeRequestId = items[0].id;
+                    renderRequestDetail(items[0]);
+                } else {
+                    activeRequestId = null;
+                    renderRequestDetail(null);
+                }
+            } catch (err) {
+                console.warn("Impossible de charger les demandes", err);
+                if (requestsList) {
+                    requestsList.innerHTML = "";
+                    const p = document.createElement("p");
+                    p.className = "share-helper share-helper-error";
+                    p.textContent = "Impossible de charger les demandes : " + (err && err.message ? err.message : "erreur");
+                    requestsList.appendChild(p);
+                }
+                if (requestsCountLabel) requestsCountLabel.textContent = "0";
+            }
+        }
+
+        async function saveCurrentRequest() {
+            if (!requestsState.canEdit || !activeRequestId) return;
+            saveRequestBtn.disabled = true;
+            saveRequestBtn.textContent = "Sauvegarde...";
+            try {
+                const endpoint = (window.GO_TOOLKIT_FEEDBACK_API_URL || "https://feedback.gotoolkit.workers.dev/v1/feedback") + "/" + encodeURIComponent(activeRequestId);
+                const current = requestsState.items.find(i => i.id === activeRequestId) || {};
+                const payload = {
+                    subject: (requestSubject?.value || "").trim(),
+                    message: (requestMessageField?.value || "").trim(),
+                    status: (requestStatusSelect?.value || "recue"),
+                    type: (requestTypeField?.value || "").toLowerCase(),
+                    name: current.name || null
+                };
+                const headers = { "Content-Type": "application/json" };
+                try {
+                    const token = normalizeOwnerTokenInput(ownerToken?.value || localStorage.getItem("feedback-admin-token") || "");
+                    if (token) headers["Authorization"] = "Bearer " + token;
+                } catch (e) { /* noop */ }
+                const response = await fetch(endpoint, {
+                    method: "PUT",
+                    headers,
+                    body: JSON.stringify(payload)
+                });
+                if (!response.ok) {
+                    const text = await response.text().catch(() => "");
+                    if (response.status === 401 || response.status === 403 || /token invalide/i.test(text || "")) {
+                        showToast("Accès non autorisé. Token invalide", true);
+                        return;
+                    }
+                    throw new Error(text || "Sauvegarde impossible");
+                }
+                await fetchRequests();
+                showToast("Demande mise à jour.");
+            } catch (err) {
+                console.error("Sauvegarde demande impossible", err);
+                showToast("Sauvegarde impossible", true);
+            } finally {
+                saveRequestBtn.disabled = false;
+                saveRequestBtn.textContent = "Sauvegarder";
+            }
+        }
+
+        async function deleteCurrentRequest() {
+            if (!requestsState.canEdit || !activeRequestId) return;
+            const confirmed = window.confirm("Supprimer définitivement cette demande ?");
+            if (!confirmed) return;
+
+            if (deleteRequestBtn) {
+                deleteRequestBtn.disabled = true;
+                deleteRequestBtn.textContent = "Suppression...";
+            }
+            try {
+                const endpoint = (window.GO_TOOLKIT_FEEDBACK_API_URL || "https://feedback.gotoolkit.workers.dev/v1/feedback") + "/" + encodeURIComponent(activeRequestId);
+                const headers = {};
+                try {
+                    const token = normalizeOwnerTokenInput(ownerToken?.value || localStorage.getItem("feedback-admin-token") || "");
+                    if (token) headers["Authorization"] = "Bearer " + token;
+                } catch (e) { /* noop */ }
+                const response = await fetch(endpoint, { method: "DELETE", headers });
+                if (!response.ok) {
+                    const text = await response.text().catch(() => "");
+                    if (response.status === 401 || response.status === 403 || /token invalide/i.test(text || "")) {
+                        showToast("Accès non autorisé. Token invalide", true);
+                        return;
+                    }
+                    throw new Error(text || "Suppression impossible");
+                }
+                activeRequestId = null;
+                await fetchRequests();
+                showToast("Demande supprimée.");
+            } catch (err) {
+                console.error("Suppression demande impossible", err);
+                showToast("Suppression impossible", true);
+            } finally {
+                if (deleteRequestBtn) {
+                    deleteRequestBtn.disabled = !requestsState.canEdit || !activeRequestId;
+                    deleteRequestBtn.textContent = "Supprimer";
+                }
+            }
+        }
+        const IA_STATUS_ICONS = {
+            ready: "check-circle",
+            verifying: "loader-2",
+            error: "circle-x",
+            warning: "triangle-alert"
+        };
+        const statusSpinnerTimers = new WeakMap();
+
+        function startStatusSpinner(el, label = "") {
+            if (!el) return;
+            stopStatusSpinner(el);
+            el.innerHTML = `<i data-lucide="loader-2" class="lucide-spin" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i> ${label}`;
+            if (window.lucide) window.lucide.createIcons({ props: { size: 14 } });
+            statusSpinnerTimers.set(el, { isSpinner: true });
+        }
+
+        function stopStatusSpinner(el) {
+            const state = statusSpinnerTimers.get(el);
+            if (!state) return;
+            statusSpinnerTimers.delete(el);
+        }
+
+        function updateStatusIcon(el, state) {
+            if (!el) {
+                return;
+            }
+            if (!state) {
+                stopStatusSpinner(el);
+                el.innerHTML = "";
+                el.classList.remove("ia-status--error");
+                return;
+            }
+            if (state === "verifying") {
+                startStatusSpinner(el);
+                el.classList.remove("ia-status--error");
+                return;
+            }
+            stopStatusSpinner(el);
+            const iconName = IA_STATUS_ICONS[state];
+            if (iconName) {
+                el.innerHTML = `<i data-lucide="${iconName}" style="width:14px;height:14px;vertical-align:middle;"></i>`;
+                if (window.lucide) window.lucide.createIcons({ props: { size: 14 } });
+            } else {
+                el.innerHTML = "";
+            }
+            if (state === "error") {
+                el.classList.add("ia-status--error");
+            } else {
+                el.classList.remove("ia-status--error");
+            }
+        }
+
+        function setAssemblyAiStatusLabel(label = "", options = {}) {
+            if (!assemblyAiStatusEl) return;
+            const iconState = options.state;
+            if (iconState === "verifying") {
+                startStatusSpinner(assemblyAiStatusEl, label);
+                return;
+            }
+            stopStatusSpinner(assemblyAiStatusEl);
+            const iconName = iconState && IA_STATUS_ICONS[iconState];
+            const iconHtml = iconName ? `<i data-lucide="${iconName}" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i>` : "";
+            const trimmedLabel = (label || "").trim();
+
+            assemblyAiStatusEl.innerHTML = iconHtml + trimmedLabel;
+            if (iconName && window.lucide) window.lucide.createIcons({ props: { size: 14 } });
+
+            if (iconState === "error") {
+                assemblyAiStatusEl.classList.add("ia-status--error");
+            } else {
+                assemblyAiStatusEl.classList.remove("ia-status--error");
+            }
+            assemblyAiStatusEl.setAttribute("aria-hidden", (iconHtml || trimmedLabel) ? "false" : "true");
+        }
+
+        function resolveAssemblyAiProxyBase() {
+            const tokenUrl = (window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL || "https://assemblyai.gotoolkit.workers.dev/token")
+                .replace(/\/$/, "");
+            const defaultProxy = tokenUrl.replace(/\/token$/, "");
+            const proxyUrl = (window.GO_TOOLKIT_ASSEMBLYAI_PROXY_URL || defaultProxy).replace(/\/$/, "");
+            return proxyUrl;
+        }
+
+        function formatLatencyMs(value) {
+            const sharedFormatter = window.GoToolkitSettingsModal?.formatLatencyMs;
+            if (typeof sharedFormatter === "function") {
+                return sharedFormatter(value);
+            }
+            const num = Number(value);
+            if (!Number.isFinite(num)) return null;
+            const rounded = Math.round(Math.max(0, num));
+            return String(rounded);
+        }
+
+        function appendLatencyToLabel(label, latencyMs) {
+            const sharedAppender = window.GoToolkitSettingsModal?.appendLatencyToLabel;
+            if (typeof sharedAppender === "function") {
+                return sharedAppender(label, latencyMs);
+            }
+            if (!label || latencyMs == null) return label;
+            const formatted = formatLatencyMs(latencyMs);
+            if (!formatted) return label;
+            return `${label} (${formatted} ms)`;
+        }
+
+        function getRateLimitRemaining(headers) {
+            if (!headers || typeof headers.get !== "function") return null;
+            const value = headers.get("X-RateLimit-Remaining");
+            if (!value) return null;
+            const trimmed = value.trim();
+            return trimmed ? trimmed : null;
+        }
+
+        function appendRateLimitAvailability(label, rateLimitRemaining) {
+            if (!label || rateLimitRemaining == null) return label;
+            const normalized = String(rateLimitRemaining).trim();
+            if (!normalized) return label;
+            return `${label} • Disponible : ${normalized}`;
+        }
+
+        function isOpenAiProxyCorsError(err) {
+            if (!err) return false;
+            const message =
+                typeof err?.message === "string"
+                    ? err.message
+                    : err != null
+                        ? String(err)
+                        : "";
+            if (!message) {
+                return false;
+            }
+            return /Failed to fetch/i.test(message) || /NetworkError/i.test(message);
+        }
+
+        function getOpenAiProxyCorsMessage(endpoint) {
+            if (!endpoint) return null;
+            if (typeof window !== "object" || !window?.location?.origin) {
+                return null;
+            }
+            return `Access to fetch at '${endpoint}' from origin '${window.location.origin}' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.`;
+        }
+
+        function getTimestampMs() {
+            if (typeof performance === "object" && typeof performance.now === "function") {
+                return performance.now();
+            }
+            return Date.now();
+        }
+
+        const openAiLatencies = { private: null, shared: null };
+        const openAiRateLimits = { private: null, shared: null };
+        let openAiProxyVerified = false;
+
+        function setOpenAiStatusLabel(label, options = {}) {
+            if (!openaiStatusEl) return;
+            const trimmed = (label || "").trim();
+            const iconState = options.state;
+            const labelWithLatency = appendLatencyForOpenAi(trimmed, options.latencyMs);
+            const labelWithAvailability = appendRateLimitAvailability(
+                labelWithLatency,
+                options.rateLimitRemaining
+            );
+            if (iconState === "verifying") {
+                startStatusSpinner(openaiStatusEl, labelWithAvailability);
+            } else {
+                stopStatusSpinner(openaiStatusEl);
+                const iconName = iconState && IA_STATUS_ICONS[iconState];
+                const iconHtml = iconName ? `<i data-lucide="${iconName}" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i>` : "";
+                openaiStatusEl.innerHTML = iconHtml + (labelWithAvailability || "");
+                if (iconName && window.lucide) window.lucide.createIcons({ props: { size: 14 } });
+            }
+            if (iconState === "error") {
+                openaiStatusEl.classList.add("ia-status--error");
+            } else {
+                openaiStatusEl.classList.remove("ia-status--error");
+            }
+            openaiStatusEl.setAttribute("aria-hidden", trimmed ? "false" : "true");
+            if (options.sticky) {
+                openaiStatusEl.dataset.openaiStatusSticky = "1";
+            } else {
+                delete openaiStatusEl.dataset.openaiStatusSticky;
+            }
+        }
+
+        function appendLatencyForOpenAi(label, latencyMs) {
+            if (!label) return label;
+            if (latencyMs == null) return label;
+            const normalized = label === "Accès privé" || label === "Accès partagé";
+            return normalized ? appendLatencyToLabel(label, latencyMs) : label;
+        }
+
+        function resolveOpenRouterModel(modelOverride) {
+            const normalizedOverride = (modelOverride && typeof modelOverride === "string") ? modelOverride.trim() : "";
+            if (normalizedOverride) {
+                return normalizedOverride;
+            }
+            const config = window.GoToolkitIAConfig;
+            try {
+                if (config && typeof config.getOpenRouterModel === "function") {
+                    const stored = config.getOpenRouterModel();
+                    if (stored && typeof stored === "string") {
+                        const normalized = stored.trim();
+                        if (normalized) {
+                            return normalized;
+                        }
+                    }
+                }
+            } catch (err) {
+                // ignore read errors
+            }
+            return (
+                (config && config.DEFAULTS && config.DEFAULTS.OPENROUTER_MODEL) ||
+                ""
+            );
+        }
+
+        let currentOpenRouterAccessType = null;
+        let currentOpenRouterModelOptions = {};
+
+        function getSelectedOpenRouterModel() {
+            if (openrouterModelInput && openrouterModelInput.value) {
+                return openrouterModelInput.value;
+            }
+            return resolveOpenRouterModel();
+        }
+
+        function appendModelToLabel(label, model) {
+            if (!label) return "";
+            const normalizedModel = (model || "").trim();
+            if (!normalizedModel) {
+                return label;
+            }
+            return `${label} · ${normalizedModel}`;
+        }
+
+        function refreshOpenRouterModelLabel() {
+            if (!currentOpenRouterAccessType) return;
+            updateOpenRouterModelLabel(currentOpenRouterAccessType, currentOpenRouterModelOptions);
+        }
+
+        function updateOpenRouterModelLabel(accessType, options = {}) {
+            if (!openrouterModelLabelEl) {
+                return;
+            }
+            if (!accessType) {
+                openrouterModelLabelEl.textContent = "";
+                currentOpenRouterAccessType = null;
+                currentOpenRouterModelOptions = {};
+                return;
+            }
+            currentOpenRouterAccessType = accessType;
+            currentOpenRouterModelOptions = { ...(options || {}) };
+            if (accessType === "error") {
+                openrouterModelLabelEl.textContent = "Accès partagé indisponible";
+                return;
+            }
+            let baseLabel = "";
+            if (accessType === "private") {
+                baseLabel = "Accès privé";
+            } else if (accessType === "shared") {
+                baseLabel = "Clé invalide.";
+            }
+            if (!baseLabel) {
+                openrouterModelLabelEl.textContent = "";
+                return;
+            }
+            const labelWithLatency = appendLatencyToLabel(baseLabel, options.latencyMs);
+            const labelWithRateLimit = appendRateLimitAvailability(
+                labelWithLatency,
+                options.rateLimitRemaining
+            );
+            openrouterModelLabelEl.textContent = appendModelToLabel(
+                labelWithRateLimit,
+                options.model || getSelectedOpenRouterModel()
+            );
+            if (accessType === "shared") {
+                updateStatusIcon(openrouterStatusEl, "warning");
+            }
+        }
+
+        if (typeof window.GoToolkitForceOpenRouterProxy !== "boolean") {
+            window.GoToolkitForceOpenRouterProxy = false;
+        }
+
+        async function testOpenRouterChatCompletion({ apiKey, useProxy = false } = {}) {
+            const endpoint = useProxy
+                ? "https://openrouter.gotoolkit.workers.dev/api/v1/chat/completions"
+                : "https://openrouter.ai/api/v1/chat/completions";
+            const model = resolveOpenRouterModel();
+            const resolvedModel = model || "openrouter/auto";
+            const payload = {
+                model: resolvedModel,
+                messages: [
+                    {
+                        role: "user",
+                        content: "Vérification"
+                    }
+                ],
+                stream: false
+            };
+            const headers = { "Content-Type": "application/json" };
+            if (!useProxy && apiKey) {
+                headers.Authorization = "Bearer " + apiKey;
+            }
+
+            const response = await fetch(endpoint, {
+                method: "POST",
+                headers,
+                body: JSON.stringify(payload),
+                cache: "no-cache"
+            });
+            if (!response.ok) {
+                const text = await response.text().catch(() => "");
+                throw new Error(text || "HTTP " + response.status);
+            }
+            return {
+                modelLabel: resolvedModel,
+                rateLimitRemaining: getRateLimitRemaining(response.headers)
+            };
+        }
+
+        async function verifyOpenRouterDirect(apiKey, { showToasts } = {}) {
+            const startTime = getTimestampMs();
+            const { modelLabel, rateLimitRemaining } = await testOpenRouterChatCompletion({ apiKey, useProxy: false });
+            const latencyMs = Math.max(0, getTimestampMs() - startTime);
+            openrouterLatencies.private = latencyMs;
+            openrouterRateLimits.private = rateLimitRemaining;
+            window.GoToolkitForceOpenRouterProxy = false;
+            openrouterHasValidPrivateKey = true;
+            updateOpenRouterExtrasVisibility();
+            updateStatusIcon(openrouterStatusEl, "ready");
+            updateOpenRouterModelLabel("private", { latencyMs, rateLimitRemaining });
+            if (showToasts) {
+                showToast("Accès privé OpenRouter prêt (" + modelLabel + ")");
+            }
+            return true;
+        }
+
+        async function verifyOpenRouterProxy({ showToasts } = {}) {
+            window.GoToolkitForceOpenRouterProxy = true;
+            openrouterHasValidPrivateKey = false;
+            updateOpenRouterExtrasVisibility();
+            try {
+                const startTime = getTimestampMs();
+                const { modelLabel, rateLimitRemaining } = await testOpenRouterChatCompletion({ useProxy: true });
+                const latencyMs = Math.max(0, getTimestampMs() - startTime);
+                openrouterLatencies.shared = latencyMs;
+                openrouterRateLimits.shared = rateLimitRemaining;
+                updateStatusIcon(openrouterStatusEl, "warning");
+                updateOpenRouterModelLabel("shared", { latencyMs, rateLimitRemaining });
+                if (showToasts) {
+                    showToast("Accès partagé OpenRouter prêt (" + modelLabel + ")");
+                }
+                return true;
+            } catch (err) {
+                console.warn("OpenRouter proxy test failed", err);
+                updateStatusIcon(openrouterStatusEl, "error");
+                updateOpenRouterModelLabel("error");
+                if (showToasts) {
+                    showToast("Accès partagé indisponible", true, "openrouterStatus");
+                }
+                return false;
+            }
+        }
+
+
+        function populateOpenrouterModelInput() {
+            window.GoToolkitSettingsModal?.populateOpenrouterModelInput?.();
+        }
+
+        function populateOpenrouterOcrModelInput() {
+            window.GoToolkitSettingsModal?.populateOpenrouterOcrModelInput?.();
+        }
+
+        function populateOpenrouterEmbeddingsModelInput() {
+            window.GoToolkitSettingsModal?.populateOpenrouterEmbeddingsModelInput?.();
+        }
+
+        async function testOpenAiConnection({ showToasts = true } = {}) {
+            var config = window.GoToolkitIAConfig;
+            var apiKey = config && typeof config.getApiKey === "function" ? (config.getApiKey() || "").trim() : "";
+            setOpenAiStatusLabel("Vérification OpenAI...", { state: "verifying" });
+            if (apiKey) {
+                try {
+                    const startTime = getTimestampMs();
+                    var response = await fetch("https://api.openai.com/v1/models", {
+                        method: "GET",
+                        headers: {
+                            Authorization: "Bearer " + apiKey
+                        }
+                    });
+                    if (!response.ok) {
+                        throw new Error("HTTP " + response.status + " " + (response.statusText || ""));
+                    }
+                    const latencyMs = Math.max(0, getTimestampMs() - startTime);
+                    const rateLimitRemaining = getRateLimitRemaining(response.headers);
+                    if (showToasts) {
+                        showToast("Connexion OpenAI prête");
+                    }
+                    openAiLatencies.private = latencyMs;
+                    openAiRateLimits.private = rateLimitRemaining;
+                    setOpenAiStatusLabel("Accès privé", {
+                        state: "ready",
+                        latencyMs,
+                        rateLimitRemaining
+                    });
+                    return true;
+                } catch (err) {
+                    console.warn("OpenAI test failed", err);
+                    var message = (err && err.message) || String(err) || "erreur inconnue";
+                    if (showToasts) {
+                        showToast("Échec de la connexion OpenAI (" + message + ")", true);
+                    }
+                }
+            }
+            return await testOpenAiProxyConnection({ showToasts });
+        }
+
+        async function testOpenAiProxyConnection({ showToasts = true } = {}) {
+            var config = window.GoToolkitIAConfig;
+            var endpoint =
+                (config && config.PROXY_ENDPOINTS && config.PROXY_ENDPOINTS.responses) ||
+                "https://openai.gotoolkit.workers.dev/v1/responses";
+            var model =
+                (config && typeof config.getOpenAiModel === "function" ? config.getOpenAiModel() : "") ||
+                (config && config.DEFAULTS && config.DEFAULTS.OPENAI_MODEL) ||
+                "gpt-5-nano";
+            setOpenAiStatusLabel("Vérification en cours...", { state: "verifying" });
+            try {
+                const startTime = getTimestampMs();
+                var response = await fetch(endpoint, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        model: model,
+                        input: [
+                            {
+                                role: "user",
+                                content: [
+                                    {
+                                        type: "input_text",
+                                        text: "Vérification"
+                                    }
+                                ]
+                            }
+                        ],
+                        stream: false
+                    })
+                });
+                if (!response.ok) {
+                    throw new Error("HTTP " + response.status + " " + (response.statusText || ""));
+                }
+                if (showToasts) {
+                    showToast("Connexion partagée prête");
+                }
+                openAiProxyVerified = true;
+                const latencyMs = Math.max(0, getTimestampMs() - startTime);
+                const rateLimitRemaining = getRateLimitRemaining(response.headers);
+                openAiLatencies.shared = latencyMs;
+                openAiRateLimits.shared = rateLimitRemaining;
+                setOpenAiStatusLabel("Accès partagé", {
+                    state: "ready",
+                    latencyMs,
+                    rateLimitRemaining
+                });
+                return true;
+            } catch (err) {
+                console.warn("OpenAI proxy test failed", err);
+                var message = (err && err.message) || String(err) || "erreur inconnue";
+                openAiProxyVerified = false;
+                if (isOpenAiProxyCorsError(err)) {
+                    var corsMessage = getOpenAiProxyCorsMessage(endpoint);
+                    if (corsMessage) {
+                        message = corsMessage;
+                    }
+                }
+                if (showToasts) {
+                    showToast("Clé invalide (" + message + ")", true);
+                }
+                setOpenAiStatusLabel("Clé invalide", { state: "error", sticky: true });
+                return false;
+            }
+        }
+
+        async function testAssemblyAiConnection({ showToasts = true } = {}) {
+            var apiKey = (assemblyAiKeyInput?.value || "").trim();
+            if (!apiKey) {
+                setAssemblyAiStatusLabel("Clé invalide", { state: "warning" });
+                if (showToasts) {
+                    showToast("Clé AssemblyAI requise pour tester la connexion.", true);
+                }
+                return false;
+            }
+            updateStatusIcon(assemblyAiStatusEl, "verifying");
+            try {
+                var response = await fetch("https://api.assemblyai.com/v2/transcript", {
+                    method: "GET",
+                    headers: {
+                        Authorization: apiKey
+                    }
+                });
+                if (!response.ok) {
+                    throw new Error("HTTP " + response.status + " " + (response.statusText || ""));
+                }
+                if (showToasts) {
+                    showToast("Connexion AssemblyAI prête");
+                }
+                updateStatusIcon(assemblyAiStatusEl, "ready");
+                return true;
+            } catch (err) {
+                console.warn("AssemblyAI test failed", err);
+                var message = (err && err.message) || String(err) || "erreur inconnue";
+                if (showToasts) {
+                    showToast("Échec de la connexion AssemblyAI (" + message + ")", true);
+                }
+            }
+            return await testAssemblyAiProxyConnection({ showToasts });
+        }
+
+        async function testAssemblyAiProxyConnection({ showToasts = true } = {}) {
+            var apiKey = (assemblyAiKeyInput?.value || "").trim();
+            if (!apiKey) {
+                setAssemblyAiStatusLabel("Clé invalide", { state: "warning" });
+                if (showToasts) {
+                    showToast("Clé AssemblyAI requise pour tester la connexion.", true);
+                }
+                return false;
+            }
+            const proxyBase = resolveAssemblyAiProxyBase();
+            if (!proxyBase) {
+                setAssemblyAiStatusLabel("Clé invalide", { state: "warning" });
+                if (showToasts) {
+                    showToast("Proxy AssemblyAI indisponible", true);
+                }
+                return false;
+            }
+            updateStatusIcon(assemblyAiStatusEl, "verifying");
+            try {
+                const response = await fetch(proxyBase + "/transcript", {
+                    method: "GET",
+                    headers: {
+                        Authorization: apiKey
+                    }
+                });
+                if (!response.ok) {
+                    throw new Error("HTTP " + response.status + " " + (response.statusText || ""));
+                }
+                setAssemblyAiStatusLabel("Clé invalide.", { state: "warning" });
+                return true;
+            } catch (err) {
+                console.warn("AssemblyAI proxy test failed", err);
+                var message = (err && err.message) || String(err) || "erreur inconnue";
+                if (showToasts) {
+                    showToast("Accès partagé indisponible (" + message + ")", true);
+                }
+                setAssemblyAiStatusLabel("Clé invalide", { state: "warning" });
+                return false;
+            }
+        }
+
+        async function testOpenRouterConnection({ showToasts = true } = {}) {
+            var config = window.GoToolkitIAConfig;
+            var apiKey = config && typeof config.getOpenRouterApiKey === "function" ? config.getOpenRouterApiKey() : "";
+            updateStatusIcon(openrouterStatusEl, "verifying");
+            if (!apiKey) {
+                window.GoToolkitForceOpenRouterProxy = true;
+                return verifyOpenRouterProxy({ showToasts });
+            }
+            try {
+                return await verifyOpenRouterDirect(apiKey, { showToasts });
+            } catch (err) {
+                console.warn("OpenRouter test failed", err);
+                if (showToasts) {
+                    showToast("Clé OpenRouter invalide — utilisation de l'accès partagé", true, "openrouterStatus");
+                }
+                return verifyOpenRouterProxy({ showToasts });
+            }
+        }
+        function openRequestsModal() {
+            if (!requestsModal) return;
+            requestsModal.classList.add("open");
+            requestsModal.setAttribute("aria-hidden", "false");
+            fetchRequests();
+        }
+
+        function closeRequestsModal() {
+            if (!requestsModal) return;
+            requestsModal.classList.remove("open");
+            requestsModal.setAttribute("aria-hidden", "true");
+        }
+
+
+
+        // Settings modal (global Réglages)
+        const openSettingsBtn = document.getElementById("openSettingsBtn");
+        const settingsModal = document.getElementById("settingsModal");
+        const closeSettingsBtn = document.getElementById("closeSettingsBtn");
+        const resetChatPromptBtn = document.getElementById("resetChatPromptBtn");
+        const saveSettingsBtn = document.getElementById("saveSettingsBtn");
+        const settingsApiKeyInput = document.getElementById("iaApiKeyInput");
+        const settingsReasoningSelect = document.getElementById("reasoningEffortSelect");
+        const settingsOpenAiModelSelect = document.getElementById("openaiModelSelect");
+        const settingsSpeechModeSelect = document.getElementById("speechModeSelect");
+        const openaiStatusEl = document.getElementById("openaiStatus");
+        const assemblyAiStatusEl = document.getElementById("assemblyAiStatus");
+        const openaiVerifyBtn = document.getElementById("openaiVerifyBtn");
+        const assemblyAiVerifyBtn = document.getElementById("assemblyAiVerifyBtn");
+        const aiBackendSelect = document.getElementById("aiBackendSelect");
+        const openaiSettingsEl = document.getElementById("openaiSettings");
+        const openrouterSettingsEl = document.getElementById("openrouterSettings");
+        const assemblyAiKeyInput = document.getElementById("assemblyAiKeyInput");
+        const openrouterApiKeyInput = document.getElementById("openrouterApiKeyInput");
+        const openrouterExtras = document.getElementById("openrouterExtras");
+        const openrouterDataCollectionSelect = document.getElementById("openrouterDataCollectionSelect");
+        const openrouterStatusEl = document.getElementById("openrouterStatus");
+        const openrouterModelLabelEl = document.getElementById("openrouterModelLabel");
+        const openrouterVerifyBtn = document.getElementById("openrouterVerifyBtn");
+        const openrouterModelInput = document.getElementById("openrouterModelInput");
+        const openrouterOcrModelInput = document.getElementById("openrouterOcrModelInput");
+        const openrouterEmbeddingsModelInput = document.getElementById("openrouterEmbeddingsModelInput");
+        const openrouterOcrModelRow = document.getElementById("openrouterOcrModelRow");
+        const themeSelectMemo = document.getElementById("themeSelectMemo");
+        const youtubeAuthLink = document.getElementById("youtubeAuthLink");
+        const youtubeChannelSelect = document.getElementById("youtubeChannelSelect");
+        const youtubeChannelRow = document.getElementById("youtubeChannelRow");
+        const youtubeNoChannelRow = document.getElementById("youtubeNoChannelRow");
+        const youtubeChannelSwitcherLink = document.getElementById("youtubeChannelSwitcherLink");
+        const notionAuthLink = document.getElementById("notionAuthLink");
+        const notionWorkspaceRow = document.getElementById("notionWorkspaceRow");
+        const notionWorkspaceSelect = document.getElementById("notionWorkspaceSelect");
+        const notionDefaultPathRow = document.getElementById("notionDefaultPathRow");
+        const notionDefaultPathInput = document.getElementById("notionDefaultPathInput");
+        const microsoftAuthLink = document.getElementById("microsoftAuthLink");
+        const gmailAuthLink = document.getElementById("gmailAuthLink");
+        const chatPromptTextarea = document.getElementById("chatPromptTextarea");
+        const chatPromptPresetSelect = document.getElementById("chatPromptPresetSelect");
+        const CHAT_PROMPT_STORAGE_KEY = "goToolkit.chat.prompt";
+        const CHAT_PROMPT_INFO_KEY = "goToolkit.chat.prompt.info";
+        const CHAT_PROMPT_PRESET_KEY = "goToolkit.chat.prompt.preset.index";
+        const CHAT_PROMPT_PRESET_KEY_LEGACY = "goToolkit.chat.prompt.preset";
+        const NOTION_PATH_STORAGE_KEY = "go-toolkit-notion-default-path";
+
+        const DEFAULT_AI_BACKEND = "openrouter";
+        populateOpenrouterModelInput();
+        populateOpenrouterOcrModelInput();
+        populateOpenrouterEmbeddingsModelInput();
+        const VERSION_QUERY_PARAM = "v";
+        const DATE_VERSION_PATTERN = /^\d{4}\.\d{2}\.\d{2}(?:\.\d+)?$/;
+        (function ensureDefaultAIBackend() {
+            try {
+                const stored = (typeof localStorage !== "undefined" ? localStorage.getItem("go-toolkit-ai-backend") : null) || "";
+                const resolved = stored || (aiBackendSelect && aiBackendSelect.value) || DEFAULT_AI_BACKEND;
+                if (!stored && typeof localStorage !== "undefined") {
+                    localStorage.setItem("go-toolkit-ai-backend", resolved);
+                }
+                if (aiBackendSelect) {
+                    aiBackendSelect.value = resolved;
+                }
+                if (!window.GoToolkitSelectedAIBackend) {
+                    window.GoToolkitSelectedAIBackend = resolved;
+                }
+                updateBackendVisibility();
+            } catch (err) {
+                console.warn("Failed to enforce default AI backend", err);
+            }
+        })();
+        function getBrowserDateVersion() {
+            const now = new Date();
+            const month = String(now.getMonth() + 1).padStart(2, "0");
+            const day = String(now.getDate()).padStart(2, "0");
+            return `${now.getFullYear()}.${month}.${day}`;
+        }
+        function reloadIndexWithVersion(version = getBrowserDateVersion()) {
+            try {
+                const url = new URL(window.location.href);
+                url.searchParams.set(VERSION_QUERY_PARAM, version);
+                window.location.href = url.toString();
+            } catch (err) {
+                window.location.reload();
+            }
+        }
+
+        function reloadWithCacheBustedHash(fragment, versionValue = "v", options = {}) {
+            const normalizedFragment = String(fragment || "").replace(/^#/, "");
+            const { reload = true } = options;
+            const navigateTo = urlString => {
+                if (reload) {
+                    window.location.href = urlString;
+                    return urlString;
+                }
+                try {
+                    window.history.replaceState(null, "", urlString);
+                } catch (err) {
+                    window.location.href = urlString;
+                }
+                return urlString;
+            };
+            try {
+                const url = new URL(window.location.href);
+                url.search = "";
+                url.hash = "";
+                url.searchParams.set(VERSION_QUERY_PARAM, versionValue);
+                if (normalizedFragment) {
+                    url.hash = `#${normalizedFragment}`;
+                }
+                return navigateTo(url.toString());
+            } catch (err) {
+                const fallbackBase = `${window.location.origin}${window.location.pathname}`;
+                let fallbackUrl = `${fallbackBase}?${VERSION_QUERY_PARAM}=${versionValue}`;
+                if (normalizedFragment) {
+                    fallbackUrl += `#${normalizedFragment}`;
+                }
+                return navigateTo(fallbackUrl);
+            }
+        }
+        (function removeVersionQueryParam() {
+            try {
+                const url = new URL(window.location.href);
+                const versionValue = url.searchParams.get(VERSION_QUERY_PARAM);
+                if (versionValue && (DATE_VERSION_PATTERN.test(versionValue) || versionValue === "v") && window.history?.replaceState) {
+                    url.searchParams.delete(VERSION_QUERY_PARAM);
+                    window.history.replaceState(null, "", url.toString());
+                }
+            } catch (err) {
+                // ignore invalid URL or history replacement failures
+            }
+        })();
+        let openrouterHasValidPrivateKey = false;
+        const openrouterLatencies = { private: null, shared: null };
+        const openrouterRateLimits = { private: null, shared: null };
+        const ASSEMBLY_AI_KEY_STORAGE = "go-toolkit-assemblyai-key";
+
+        try {
+            const storedKey = (localStorage.getItem(ASSEMBLY_AI_KEY_STORAGE) || "").trim();
+            window.GoToolkitAssemblyAiKey = storedKey;
+        } catch (e) {
+            window.GoToolkitAssemblyAiKey = "";
+        }
+        function updateBackendVisibility() {
+            const val = (aiBackendSelect && aiBackendSelect.value) || "openrouter";
+            if (openaiSettingsEl) openaiSettingsEl.style.display = val === "openai" ? "" : "none";
+            if (openrouterSettingsEl) openrouterSettingsEl.style.display = val === "openrouter" ? "" : "none";
+            if (val === "openrouter") {
+                populateOpenrouterModelInput();
+                populateOpenrouterOcrModelInput();
+                populateOpenrouterEmbeddingsModelInput();
+            }
+            window.GoToolkitSelectedAIBackend = val;
+        }
+
+        function updateOpenRouterExtrasVisibility() {
+            if (!openrouterExtras || !openrouterApiKeyInput) return;
+            const hasKey = Boolean((openrouterApiKeyInput.value || "").trim());
+            const showExtras = hasKey && openrouterHasValidPrivateKey;
+            openrouterExtras.style.display = showExtras ? "" : "none";
+            if (openrouterOcrModelRow) {
+                openrouterOcrModelRow.style.display = hasKey ? "" : "none";
+            }
+        }
+
+        aiBackendSelect?.addEventListener("change", function () {
+            try {
+                localStorage.setItem("go-toolkit-ai-backend", aiBackendSelect.value);
+            } catch (e) { }
+            updateBackendVisibility();
+        });
+
+        const THEME_STORAGE_KEY = "go-toolkit-theme";
+
+        function applyTheme(theme) {
+            if (theme === "auto") {
+                const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+                document.documentElement.setAttribute("data-theme", isDark ? "dark" : "cream");
+            } else {
+                document.documentElement.setAttribute("data-theme", theme);
+            }
+        }
+
+        function setYoutubeIntegrationBusy(isBusy) {
+            if (youtubeChannelSelect) youtubeChannelSelect.disabled = isBusy || !youtubeChannelSelect.options.length;
+            if (youtubeAuthLink) {
+                youtubeAuthLink.style.pointerEvents = isBusy ? "none" : "";
+                youtubeAuthLink.style.opacity = isBusy ? "0.6" : "";
+            }
+        }
+
+        function setNotionIntegrationBusy(isBusy) {
+            if (notionWorkspaceSelect) notionWorkspaceSelect.disabled = isBusy || !notionWorkspaceSelect.options.length;
+            if (notionAuthLink) {
+                notionAuthLink.style.pointerEvents = isBusy ? "none" : "";
+                notionAuthLink.style.opacity = isBusy ? "0.6" : "";
+            }
+        }
+
+        function setMicrosoftIntegrationBusy(isBusy) {
+            if (microsoftAuthLink) {
+                microsoftAuthLink.style.pointerEvents = isBusy ? "none" : "";
+                microsoftAuthLink.style.opacity = isBusy ? "0.6" : "";
+            }
+        }
+
+        function setGmailIntegrationBusy(isBusy) {
+            if (gmailAuthLink) {
+                gmailAuthLink.style.pointerEvents = isBusy ? "none" : "";
+                gmailAuthLink.style.opacity = isBusy ? "0.6" : "";
+            }
+        }
+
+        function updateNotionWorkspacesUI(payload) {
+            const connected = Boolean(payload?.connected);
+            const workspaces = Array.isArray(payload?.workspaces) ? payload.workspaces : [];
+            const selectedWorkspaceId = String(payload?.selectedWorkspaceId || "").trim();
+            if (notionAuthLink) notionAuthLink.textContent = connected ? "Se déconnecter" : "Se connecter";
+            window.GoToolkitSettingsModal?.setIntegrationConnected?.(notionAuthLink, connected);
+            if (notionWorkspaceRow) notionWorkspaceRow.style.display = connected ? "" : "none";
+            if (notionDefaultPathRow) notionDefaultPathRow.style.display = connected ? "" : "none";
+            if (notionWorkspaceSelect) {
+                notionWorkspaceSelect.innerHTML = "";
+                if (!connected || !workspaces.length) {
+                    const option = document.createElement("option");
+                    option.value = "";
+                    option.textContent = connected ? "Aucun workspace disponible" : "Connectez-vous à Notion";
+                    notionWorkspaceSelect.appendChild(option);
+                    notionWorkspaceSelect.disabled = true;
+                } else {
+                    workspaces.forEach(workspace => {
+                        const option = document.createElement("option");
+                        option.value = String(workspace?.id || "").trim();
+                        option.textContent = String(workspace?.name || workspace?.id || "Workspace").trim();
+                        notionWorkspaceSelect.appendChild(option);
+                    });
+                    notionWorkspaceSelect.value = selectedWorkspaceId || workspaces[0].id;
+                    notionWorkspaceSelect.disabled = false;
+                }
+            }
+        }
+
+        async function refreshNotionIntegration(showToastOnError = false) {
+            const notion = window.GoToolkitNotionPublish;
+            if (!notion?.getAuthStatus) return;
+            setNotionIntegrationBusy(true);
+            try {
+                const status = await notion.getAuthStatus();
+                let notionPayload = status || {};
+                if (status?.connected && notion.getWorkspaces) {
+                    const workspacePayload = await notion.getWorkspaces();
+                    notionPayload = {
+                        ...status,
+                        workspaces: Array.isArray(workspacePayload?.workspaces) ? workspacePayload.workspaces : [],
+                        selectedWorkspaceId: workspacePayload?.selectedWorkspaceId || status?.selectedWorkspaceId || ""
+                    };
+                }
+                updateNotionWorkspacesUI(notionPayload || {});
+            } catch (err) {
+                updateNotionWorkspacesUI({ connected: false, workspaces: [], selectedWorkspaceId: "" });
+                if (showToastOnError) {
+                    showToast(err?.message || "Etat Notion indisponible", true);
+                }
+            } finally {
+                setNotionIntegrationBusy(false);
+            }
+        }
+
+        function updateYoutubeChannelsUI(payload) {
+            const connected = Boolean(payload?.connected);
+            const channels = Array.isArray(payload?.channels) ? payload.channels : [];
+            const hasChannel = Boolean(payload?.hasChannel) && channels.length > 0;
+            const selectedChannelId = String(payload?.selectedChannelId || "").trim();
+
+            if (youtubeAuthLink) youtubeAuthLink.textContent = connected ? "Se déconnecter" : "Se connecter";
+            window.GoToolkitSettingsModal?.setIntegrationConnected?.(youtubeAuthLink, connected);
+            if (youtubeChannelRow) youtubeChannelRow.style.display = connected ? "" : "none";
+
+            if (youtubeChannelSelect) {
+                youtubeChannelSelect.innerHTML = "";
+                if (!hasChannel) {
+                    const emptyOption = document.createElement("option");
+                    emptyOption.value = "";
+                    emptyOption.textContent = connected ? "Aucune chaîne disponible" : "Connectez-vous à YouTube";
+                    youtubeChannelSelect.appendChild(emptyOption);
+                    youtubeChannelSelect.disabled = true;
+                } else {
+                    channels.forEach(channel => {
+                        const option = document.createElement("option");
+                        option.value = String(channel?.id || "").trim();
+                        option.textContent = String(channel?.title || channel?.id || "Chaîne").trim();
+                        youtubeChannelSelect.appendChild(option);
+                    });
+                    youtubeChannelSelect.value = selectedChannelId || channels[0].id;
+                    youtubeChannelSelect.disabled = false;
+                }
+            }
+
+            if (youtubeNoChannelRow) {
+                youtubeNoChannelRow.style.display = connected && !hasChannel ? "" : "none";
+            }
+            if (youtubeChannelSwitcherLink) {
+                youtubeChannelSwitcherLink.onclick = function (event) {
+                    event.preventDefault();
+                    window.open("https://www.youtube.com/channel_switcher", "_blank", "noopener,noreferrer");
+                };
+            }
+        }
+
+        async function refreshYoutubeIntegration(showToastOnError = false) {
+            const publisher = window.GoToolkitYouTubePublish;
+            if (!publisher?.getAuthStatus) return;
+            setYoutubeIntegrationBusy(true);
+            try {
+                const status = await publisher.getAuthStatus();
+                updateYoutubeChannelsUI(status || {});
+            } catch (err) {
+                updateYoutubeChannelsUI({ connected: false, hasChannel: false, channels: [], selectedChannelId: "" });
+                if (showToastOnError) {
+                    showToast(err?.message || "Etat YouTube indisponible", true);
+                }
+            } finally {
+                setYoutubeIntegrationBusy(false);
+            }
+        }
+
+        function updateMicrosoftIntegrationUI(payload) {
+            const connected = Boolean(payload?.connected);
+            if (microsoftAuthLink) {
+                microsoftAuthLink.textContent = connected ? "Se déconnecter" : "Se connecter";
+            }
+            window.GoToolkitSettingsModal?.setIntegrationConnected?.(microsoftAuthLink, connected);
+        }
+
+        async function refreshMicrosoftIntegration(showToastOnError = false) {
+            const publisher = window.GoToolkitMicrosoftPublish;
+            if (!publisher?.getAuthStatus) return;
+            setMicrosoftIntegrationBusy(true);
+            try {
+                const status = await publisher.getAuthStatus();
+                updateMicrosoftIntegrationUI(status || {});
+            } catch (err) {
+                updateMicrosoftIntegrationUI({ connected: false });
+                if (showToastOnError) {
+                    showToast(err?.message || "Etat Outlook indisponible", true);
+                }
+            } finally {
+                setMicrosoftIntegrationBusy(false);
+            }
+        }
+
+        function updateGmailIntegrationUI(payload) {
+            const connected = Boolean(payload?.connected);
+            if (gmailAuthLink) {
+                gmailAuthLink.textContent = connected ? "Se déconnecter" : "Se connecter";
+            }
+            window.GoToolkitSettingsModal?.setIntegrationConnected?.(gmailAuthLink, connected);
+        }
+
+        async function refreshGmailIntegration(showToastOnError = false) {
+            const publisher = window.GoToolkitGmailPublish;
+            if (!publisher?.getAuthStatus) return;
+            setGmailIntegrationBusy(true);
+            try {
+                const status = await publisher.getAuthStatus();
+                updateGmailIntegrationUI(status || {});
+            } catch (err) {
+                updateGmailIntegrationUI({ connected: false });
+                if (showToastOnError) {
+                    showToast(err?.message || "Etat Gmail indisponible", true);
+                }
+            } finally {
+                setGmailIntegrationBusy(false);
+            }
+        }
+
+        // Listen for OS theme changes if on auto
+        window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function () {
+            const current = localStorage.getItem(THEME_STORAGE_KEY) || "auto";
+            if (current === "auto") {
+                applyTheme("auto");
+            }
+        });
+
+        function openSettings() {
+            if (!settingsModal) return;
+            // populate current values from localStorage
+            try {
+                const config = window.GoToolkitIAConfig;
+                var storedKey = "";
+                if (config && typeof config.getApiKey === "function") {
+                    storedKey = config.getApiKey()?.trim() || "";
+                } else {
+                    storedKey = localStorage.getItem("go-toolkit-api-key") || "";
+                }
+                if (settingsApiKeyInput) settingsApiKeyInput.value = storedKey;
+                var storedOpenAiModel = (config && typeof config.getOpenAiModel === "function" ? config.getOpenAiModel() : "") || "gpt-5-nano";
+                if (settingsOpenAiModelSelect) {
+                    settingsOpenAiModelSelect.value = storedOpenAiModel;
+                }
+                var storedContextWindow = (config && typeof config.getContextWindow === "function" ? config.getContextWindow() : "") || "4000";
+                var storedBackend = (config && typeof config.getBackend === "function" ? config.getBackend() : null) || localStorage.getItem("go-toolkit-ai-backend") || "openrouter";
+                if (aiBackendSelect) aiBackendSelect.value = storedBackend;
+                updateBackendVisibility();
+                var storedOpenRouterKey = (config && typeof config.getOpenRouterApiKey === "function" ? config.getOpenRouterApiKey() : "") || "";
+                if (openrouterApiKeyInput) {
+                    openrouterApiKeyInput.value = storedOpenRouterKey;
+                }
+                populateOpenrouterModelInput();
+                const storedOpenRouterModel =
+                    (config && typeof config.getOpenRouterModel === "function" ? config.getOpenRouterModel() : "") ||
+                    (window.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_MODEL || "");
+                if (openrouterModelInput && storedOpenRouterModel) {
+                    openrouterModelInput.value = storedOpenRouterModel;
+                }
+                const storedOpenRouterOcrModel =
+                    (config && typeof config.getOpenRouterOcrModel === "function" ? config.getOpenRouterOcrModel() : "") ||
+                    (window.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_OCR_MODEL || "");
+                if (openrouterOcrModelInput && storedOpenRouterOcrModel) {
+                    openrouterOcrModelInput.value = storedOpenRouterOcrModel;
+                }
+                const storedOpenRouterEmbeddingsModel =
+                    (config && typeof config.getOpenRouterEmbeddingsModel === "function" ? config.getOpenRouterEmbeddingsModel() : "") ||
+                    (window.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_EMBEDDINGS_MODEL || "");
+                if (openrouterEmbeddingsModelInput && storedOpenRouterEmbeddingsModel) {
+                    openrouterEmbeddingsModelInput.value = storedOpenRouterEmbeddingsModel;
+                }
+                const dataCollectionDefault = window.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_DATA_COLLECTION || "deny";
+                const storedOpenRouterDataCollection =
+                    (config && typeof config.getOpenRouterDataCollectionOption === "function"
+                        ? config.getOpenRouterDataCollectionOption()
+                        : "") ||
+                    dataCollectionDefault;
+                if (openrouterDataCollectionSelect) {
+                    openrouterDataCollectionSelect.value = storedOpenRouterDataCollection;
+                }
+                updateOpenRouterExtrasVisibility();
+                updateOpenRouterModelLabel(null);
+                const storedReasoning = localStorage.getItem("plan-reasoning-effort") || localStorage.getItem("nuances-reasoning-effort") || "low";
+                if (settingsReasoningSelect) settingsReasoningSelect.value = storedReasoning;
+                const storedAssemblyKey = ((localStorage.getItem(ASSEMBLY_AI_KEY_STORAGE) || "").trim() || (window.GoToolkitAssemblyAiKey || "").trim()) || "";
+                if (assemblyAiKeyInput) {
+                    assemblyAiKeyInput.value = storedAssemblyKey;
+                }
+                const storedSpeechMode = localStorage.getItem("go-toolkit-speech-mode") || "manual";
+                if (settingsSpeechModeSelect) {
+                    settingsSpeechModeSelect.value = storedSpeechMode === "auto" ? "auto" : "manual";
+                }
+            } catch (e) { /* noop */ }
+            try {
+                const storedAdmin = localStorage.getItem("feedback-admin-token");
+                const normalizedAdmin = normalizeOwnerTokenInput(storedAdmin);
+                if (ownerToken && normalizedAdmin) ownerToken.value = normalizedAdmin;
+                if (normalizedAdmin && storedAdmin !== normalizedAdmin) {
+                    localStorage.setItem("feedback-admin-token", normalizedAdmin);
+                }
+            } catch (e) { /* noop */ }
+            loadChatPrompt();
+            activateSettingsTab("integrationsTab");
+            updateRequestsButtonVisibility();
+            if (themeSelectMemo) {
+                themeSelectMemo.value = localStorage.getItem(THEME_STORAGE_KEY) || "auto";
+            }
+            if (notionDefaultPathInput) {
+                notionDefaultPathInput.value = localStorage.getItem(NOTION_PATH_STORAGE_KEY) || "";
+            }
+            refreshNotionIntegration(false).catch(() => { /* noop */ });
+            refreshYoutubeIntegration(false).catch(() => { /* noop */ });
+            refreshMicrosoftIntegration(false).catch(() => { /* noop */ });
+            refreshGmailIntegration(false).catch(() => { /* noop */ });
+            settingsModal.classList.add("open");
+            settingsModal.setAttribute("aria-hidden", "false");
+            if (typeof syncSettingsTabHeights === "function") {
+                if (typeof requestAnimationFrame === "function") {
+                    requestAnimationFrame(syncSettingsTabHeights);
+                } else {
+                    setTimeout(syncSettingsTabHeights, 0);
+                }
+            }
+            settingsReasoningSelect?.focus();
+        }
+
+        const settingsTabButtons = Array.from(document.querySelectorAll("#settingsModal .settings-tabs .tab-btn"));
+        const settingsTabPanelsWrapper = document.querySelector("#settingsModal .settings-tab-panels-wrapper");
+        const settingsTabPanels = Array.from(
+            (settingsTabPanelsWrapper?.querySelectorAll(".settings-tab-panel")) ||
+            document.querySelectorAll("#settingsModal .settings-tab-panel")
+        );
+
+        function syncSettingsTabHeights() {
+            if (!settingsTabPanels.length) return;
+            let maxHeight = 0;
+            const backups = [];
+            settingsTabPanels.forEach(function (panel, index) {
+                backups[index] = {
+                    hidden: panel.hidden,
+                    position: panel.style.position || "",
+                    visibility: panel.style.visibility || ""
+                };
+                panel.style.position = "absolute";
+                panel.style.visibility = "hidden";
+                panel.hidden = false;
+                const height = panel.offsetHeight;
+                if (height > maxHeight) {
+                    maxHeight = height;
+                }
+                panel.hidden = backups[index].hidden;
+                panel.style.position = backups[index].position;
+                panel.style.visibility = backups[index].visibility;
+            });
+            if (settingsTabPanelsWrapper) {
+                settingsTabPanelsWrapper.style.minHeight = (maxHeight || 0) + "px";
+            }
+        }
+
+        function updateSettingsActionButtons(tabId) {
+            if (!resetChatPromptBtn) return;
+            resetChatPromptBtn.hidden = tabId !== "promptTab";
+        }
+
+        function activateSettingsTab(tabId) {
+            settingsTabButtons.forEach(function (btn) {
+                btn.classList.toggle("active", btn.dataset.tab === tabId);
+            });
+            settingsTabPanels.forEach(function (panel) {
+                panel.hidden = panel.dataset.panel !== tabId;
+            });
+            syncSettingsTabHeights();
+            updateSettingsActionButtons(tabId);
+        }
+
+        settingsTabButtons.forEach(function (button) {
+            button.addEventListener("click", function () {
+                activateSettingsTab(button.dataset.tab);
+                if ((button.dataset.tab || "") === "integrationsTab") {
+                    refreshNotionIntegration(false).catch(() => { /* noop */ });
+                    refreshYoutubeIntegration(false).catch(() => { /* noop */ });
+                    refreshMicrosoftIntegration(false).catch(() => { /* noop */ });
+                    refreshGmailIntegration(false).catch(() => { /* noop */ });
+                }
+            });
+        });
+
+        function getPromptPresets() {
+            var presets = window.GoToolkitChatPrompt?.PRESETS;
+            if (presets) return presets;
+            return {
+                advice: {
+                    id: "advice",
+                    label: "Conseil",
+                    prompt: (window.GoToolkitChatPrompt?.SYSTEM_PROMPT || "").trim(),
+                    defaultPrompt: (window.GoToolkitChatPrompt?.DEFAULT_SYSTEM_PROMPT || "").trim()
+                },
+                ask: {
+                    id: "ask",
+                    label: "Demande",
+                    prompt: (window.GoToolkitChatPrompt?.INFO_PROMPT || "").trim(),
+                    defaultPrompt: (window.GoToolkitChatPrompt?.DEFAULT_INFO_PROMPT || "").trim()
+                }
+            };
+        }
+
+        function resolvePromptPresetId() {
+            var fallback = "edit";
+            if (chatPromptPresetSelect && chatPromptPresetSelect.value) {
+                return chatPromptPresetSelect.value;
+            }
+            try {
+                var stored = localStorage.getItem(CHAT_PROMPT_PRESET_KEY);
+                if (stored) return stored;
+                var legacy = localStorage.getItem(CHAT_PROMPT_PRESET_KEY_LEGACY);
+                if (legacy) return legacy;
+            } catch (err) {
+                console.warn("Lecture preset prompt chat", err);
+            }
+            return fallback;
+        }
+
+        function syncPromptPresetSelect(presetId) {
+            if (!chatPromptPresetSelect) return;
+            chatPromptPresetSelect.value = presetId;
+        }
+
+        function loadChatPrompt(presetId) {
+            if (!chatPromptTextarea) return;
+            var presets = getPromptPresets();
+            var resolvedId = presetId || resolvePromptPresetId();
+            var preset = presets[resolvedId] || presets.advice;
+            var storageKey = resolvedId === "ask" ? CHAT_PROMPT_INFO_KEY : CHAT_PROMPT_STORAGE_KEY;
+            var stored = "";
+            try {
+                stored = (localStorage.getItem(storageKey) || "").trim();
+            } catch (err) {
+                console.warn("Lecture prompt chat", err);
+            }
+            var fallback = (preset.defaultPrompt || preset.prompt || "").trim();
+            var next = stored || fallback;
+            chatPromptTextarea.value = next;
+            syncPromptPresetSelect(resolvedId);
+            try {
+                localStorage.setItem(CHAT_PROMPT_PRESET_KEY, resolvedId);
+            } catch (err) {
+                console.warn("Sauvegarde preset prompt chat", err);
+            }
+            if (window.GoToolkitChatPrompt) {
+                if (resolvedId === "ask") {
+                    window.GoToolkitChatPrompt.INFO_PROMPT = next;
+                } else {
+                    window.GoToolkitChatPrompt.SYSTEM_PROMPT = next;
+                }
+            }
+        }
+
+        function persistChatPrompt(value, presetId) {
+            var presets = getPromptPresets();
+            var resolvedId = presetId || resolvePromptPresetId();
+            var preset = presets[resolvedId] || presets.advice;
+            var trimmed = (value || "").trim();
+            var fallback = (preset.defaultPrompt || "").trim();
+            var next = trimmed || fallback;
+            var storageKey = resolvedId === "ask" ? CHAT_PROMPT_INFO_KEY : CHAT_PROMPT_STORAGE_KEY;
+            try {
+                localStorage.setItem(storageKey, next);
+            } catch (err) {
+                console.warn("Sauvegarde prompt chat", err);
+            }
+            if (window.GoToolkitChatPrompt) {
+                if (resolvedId === "ask") {
+                    window.GoToolkitChatPrompt.INFO_PROMPT = next;
+                } else {
+                    window.GoToolkitChatPrompt.SYSTEM_PROMPT = next;
+                }
+            }
+            return next;
+        }
+
+        function resetChatPromptToDefault() {
+            if (!chatPromptTextarea) return;
+            var presets = getPromptPresets();
+            var resolvedId = resolvePromptPresetId();
+            var preset = presets[resolvedId] || presets.advice;
+            var defaultPrompt = (preset.defaultPrompt || "").trim();
+            if (!defaultPrompt) return;
+            chatPromptTextarea.value = defaultPrompt;
+            persistChatPrompt(defaultPrompt, resolvedId);
+        }
+
+        if (chatPromptPresetSelect) {
+            chatPromptPresetSelect.addEventListener("change", function () {
+                loadChatPrompt(chatPromptPresetSelect.value);
+            });
+        }
+
+        loadChatPrompt();
+        activateSettingsTab("integrationsTab");
+
+        function closeSettings() {
+            if (!settingsModal) return;
+            settingsModal.classList.remove("open");
+            settingsModal.setAttribute("aria-hidden", "true");
+        }
+
+        async function persistSettings({ skipClose = false, showSavedToast = true } = {}) {
+            let selectedBackend = (aiBackendSelect && aiBackendSelect.value) || "openrouter";
+            try {
+                const apiKey = (settingsApiKeyInput?.value || "").trim();
+                const reasoning = settingsReasoningSelect?.value || "low";
+                const iaConfig = window.GoToolkitIAConfig;
+                if (chatPromptTextarea) {
+                    persistChatPrompt(chatPromptTextarea.value, resolvePromptPresetId());
+                }
+                if (iaConfig && typeof iaConfig.setApiKey === "function") {
+                    iaConfig.setApiKey(apiKey);
+                } else {
+                    if (apiKey) {
+                        localStorage.setItem("go-toolkit-api-key", apiKey);
+                    } else {
+                        localStorage.removeItem("go-toolkit-api-key");
+                    }
+                }
+                const openaiModelValue = (settingsOpenAiModelSelect?.value || "").trim();
+                if (iaConfig && typeof iaConfig.setOpenAiModel === "function" && openaiModelValue) {
+                    iaConfig.setOpenAiModel(openaiModelValue);
+                }
+                const openrouterKeyValue = (openrouterApiKeyInput?.value || "").trim();
+                if (iaConfig && typeof iaConfig.setOpenRouterApiKey === "function") {
+                    iaConfig.setOpenRouterApiKey(openrouterKeyValue);
+                }
+                const openrouterDataCollectionValue =
+                    (openrouterDataCollectionSelect?.value || window.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_DATA_COLLECTION || "deny");
+                if (iaConfig && typeof iaConfig.setOpenRouterDataCollection === "function") {
+                    iaConfig.setOpenRouterDataCollection(openrouterDataCollectionValue);
+                }
+                const openrouterModelValue =
+                    (openrouterModelInput?.value || "").trim() ||
+                    (window.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_MODEL || "");
+                if (iaConfig && typeof iaConfig.setOpenRouterModel === "function") {
+                    iaConfig.setOpenRouterModel(openrouterModelValue);
+                }
+                const openrouterOcrModelValue =
+                    (openrouterOcrModelInput?.value || "").trim() ||
+                    (window.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_OCR_MODEL || "");
+                if (iaConfig && typeof iaConfig.setOpenRouterOcrModel === "function") {
+                    iaConfig.setOpenRouterOcrModel(openrouterOcrModelValue);
+                }
+                const openrouterEmbeddingsModelValue =
+                    (openrouterEmbeddingsModelInput?.value || "").trim() ||
+                    (window.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_EMBEDDINGS_MODEL || "");
+                if (iaConfig && typeof iaConfig.setOpenRouterEmbeddingsModel === "function") {
+                    iaConfig.setOpenRouterEmbeddingsModel(openrouterEmbeddingsModelValue);
+                }
+                const requiresOpenAi = Boolean(apiKey && apiKey.length);
+                if (requiresOpenAi && aiBackendSelect) {
+                    aiBackendSelect.value = "openai";
+                }
+                selectedBackend = requiresOpenAi ? "openai" : ((aiBackendSelect && aiBackendSelect.value) || "openrouter");
+                if (iaConfig && typeof iaConfig.setBackend === "function") {
+                    iaConfig.setBackend(selectedBackend);
+                } else {
+                    try { localStorage.setItem("go-toolkit-ai-backend", selectedBackend); } catch (e) { }
+                }
+                const speechModeValue = (settingsSpeechModeSelect?.value || "manual") === "auto" ? "auto" : "manual";
+                try {
+                    localStorage.setItem("go-toolkit-speech-mode", speechModeValue);
+                } catch (e) { }
+                const assemblyKeyValue = (assemblyAiKeyInput?.value || "").trim();
+                try {
+                    if (assemblyKeyValue) {
+                        localStorage.setItem(ASSEMBLY_AI_KEY_STORAGE, assemblyKeyValue);
+                    } else {
+                        localStorage.removeItem(ASSEMBLY_AI_KEY_STORAGE);
+                    }
+                } catch (e) { /* noop */ }
+                try { window.GoToolkitAssemblyAiKey = assemblyKeyValue; } catch (e) { /* noop */ }
+                // expose immediate selection to runtime
+                try { window.GoToolkitSelectedAIBackend = selectedBackend; } catch (e) { }
+                const ownerTokenValue = normalizeOwnerTokenInput(ownerToken?.value || "");
+                try {
+                    if (ownerTokenValue) {
+                        localStorage.setItem("feedback-admin-token", ownerTokenValue);
+                    } else {
+                        localStorage.removeItem("feedback-admin-token");
+                    }
+                } catch (e) { /* noop */ }
+                localStorage.setItem("plan-reasoning-effort", reasoning);
+                try { localStorage.setItem("nuances-reasoning-effort", reasoning); } catch (e) { }
+                // Optionally validate OpenAI key but do not block save.
+                if (apiKey && showSavedToast) {
+                    var openaiKeyPattern = /^sk-[A-Za-z0-9\-_]{20,}$/;
+                    if (openaiKeyPattern.test(apiKey)) {
+                        showToast("Clé OpenAI valide — réglages sauvegardés");
+                    } else {
+                        showToast("Clé OpenAI invalide — vérifie la clé", true);
+                    }
+                } else if (showSavedToast) {
+                    showToast("Réglages sauvegardés");
+                }
+                if (!skipClose) closeSettings();
+                checkIaConnection();
+                return { success: true, selectedBackend };
+            } catch (e) {
+                showToast("Impossible de sauvegarder les réglages", true);
+                return { success: false, selectedBackend };
+            }
+        }
+
+        async function saveSettings() {
+            const result = await persistSettings({ skipClose: false, showSavedToast: true });
+            if (result?.success) {
+                const assemblyKey = (assemblyAiKeyInput?.value || "").trim();
+                if (assemblyKey) {
+                    testAssemblyAiConnection({ showToasts: true }).catch(() => { /* noop */ });
+                }
+                if (result?.selectedBackend === "openrouter") {
+                    testOpenRouterConnection({ showToasts: true }).catch(() => { /* noop */ });
+                }
+            }
+            if (updateRequestsButtonVisibility()) {
+                fetchRequests().catch(() => { /* noop */ });
+            }
+        }
+
+        window.GoToolkitSettingsModalHandlers = {
+            onVerifyOpenAi: async function () {
+                const result = await persistSettings({ skipClose: true, showSavedToast: true });
+                if (result?.success) {
+                    window.GoToolkitSettingsModal?.testOpenAiConnection?.().catch(() => { /* noop */ });
+                }
+            },
+            onVerifyAssemblyAi: async function () {
+                const result = await persistSettings({ skipClose: true, showSavedToast: true });
+                if (result?.success) {
+                    window.GoToolkitSettingsModal?.testAssemblyAiConnection?.().catch(() => { /* noop */ });
+                }
+            },
+            onVerifyOpenRouter: async function () {
+                const result = await persistSettings({ skipClose: true, showSavedToast: true });
+                if (result?.success) {
+                    window.GoToolkitSettingsModal?.testOpenRouterConnection?.().catch(() => { /* noop */ });
+                }
+            }
+        };
+
+        if (openSettingsBtn) openSettingsBtn.addEventListener("click", () => {
+            reloadWithCacheBustedHash("settings");
+        });
+        if (closeSettingsBtn) closeSettingsBtn.addEventListener("click", closeSettings);
+        themeSelectMemo?.addEventListener("change", () => {
+            const theme = themeSelectMemo.value || "auto";
+            localStorage.setItem(THEME_STORAGE_KEY, theme);
+            applyTheme(theme);
+        });
+        notionDefaultPathInput?.addEventListener("input", () => {
+            localStorage.setItem(NOTION_PATH_STORAGE_KEY, notionDefaultPathInput.value || "");
+        });
+        notionAuthLink?.addEventListener("click", async event => {
+            event.preventDefault();
+            const notion = window.GoToolkitNotionPublish;
+            if (!notion?.getAuthStatus) {
+                showToast("Service Notion indisponible", true);
+                return;
+            }
+            setNotionIntegrationBusy(true);
+            try {
+                const status = await notion.getAuthStatus();
+                if (status?.connected) {
+                    if (!notion.disconnect) {
+                        showToast("Déconnexion Notion indisponible", true);
+                        return;
+                    }
+                    await notion.disconnect();
+                    updateNotionWorkspacesUI({ connected: false, workspaces: [], selectedWorkspaceId: "" });
+                    showToast("Notion déconnecté");
+                } else {
+                    if (!notion.ensureConnected) {
+                        showToast("Service Notion indisponible", true);
+                        return;
+                    }
+                    await notion.ensureConnected();
+                    await refreshNotionIntegration(false);
+                    showToast("Connexion Notion établie");
+                }
+            } catch (err) {
+                showToast(err?.message || "Action Notion impossible", true);
+            } finally {
+                setNotionIntegrationBusy(false);
+            }
+        });
+        notionWorkspaceSelect?.addEventListener("change", async () => {
+            const notion = window.GoToolkitNotionPublish;
+            const workspaceId = (notionWorkspaceSelect.value || "").trim();
+            if (!workspaceId || !notion?.selectWorkspace) return;
+            setNotionIntegrationBusy(true);
+            try {
+                await notion.selectWorkspace(workspaceId);
+                await refreshNotionIntegration(false);
+                showToast("Workspace Notion sélectionné");
+            } catch (err) {
+                showToast(err?.message || "Sélection du workspace impossible", true);
+                await refreshNotionIntegration(false);
+            } finally {
+                setNotionIntegrationBusy(false);
+            }
+        });
+        youtubeAuthLink?.addEventListener("click", async event => {
+            event.preventDefault();
+            const publisher = window.GoToolkitYouTubePublish;
+            if (!publisher?.getAuthStatus) {
+                showToast("Service YouTube indisponible", true);
+                return;
+            }
+            setYoutubeIntegrationBusy(true);
+            try {
+                const status = await publisher.getAuthStatus();
+                if (status?.connected) {
+                    if (!publisher.disconnect) {
+                        showToast("Déconnexion YouTube indisponible", true);
+                        return;
+                    }
+                    await publisher.disconnect();
+                    updateYoutubeChannelsUI({ connected: false, hasChannel: false, channels: [], selectedChannelId: "" });
+                    showToast("YouTube déconnecté");
+                } else {
+                    if (!publisher.ensureConnected) {
+                        showToast("Service YouTube indisponible", true);
+                        return;
+                    }
+                    await publisher.ensureConnected();
+                    if (publisher.getChannels) {
+                        const payload = await publisher.getChannels();
+                        updateYoutubeChannelsUI(payload || {});
+                        if (!payload?.hasChannel) {
+                            window.open("https://www.youtube.com/channel_switcher", "_blank", "noopener,noreferrer");
+                        }
+                    } else {
+                        await refreshYoutubeIntegration(false);
+                    }
+                    showToast("Connexion YouTube établie");
+                }
+            } catch (err) {
+                showToast(err?.message || "Action YouTube impossible", true);
+            } finally {
+                setYoutubeIntegrationBusy(false);
+            }
+        });
+        if (youtubeChannelSelect) {
+            youtubeChannelSelect.addEventListener("change", async () => {
+                const publisher = window.GoToolkitYouTubePublish;
+                const channelId = (youtubeChannelSelect.value || "").trim();
+                if (!channelId || !publisher?.selectChannel) return;
+                setYoutubeIntegrationBusy(true);
+                try {
+                    const payload = await publisher.selectChannel(channelId);
+                    updateYoutubeChannelsUI(payload || {});
+                    showToast("Chaîne YouTube sélectionnée");
+                } catch (err) {
+                    showToast(err?.message || "Sélection de chaîne impossible", true);
+                    await refreshYoutubeIntegration(false);
+                } finally {
+                    setYoutubeIntegrationBusy(false);
+                }
+            });
+        }
+        microsoftAuthLink?.addEventListener("click", async event => {
+            event.preventDefault();
+            const publisher = window.GoToolkitMicrosoftPublish;
+            if (!publisher?.getAuthStatus) {
+                showToast("Service Outlook indisponible", true);
+                return;
+            }
+            setMicrosoftIntegrationBusy(true);
+            try {
+                const status = await publisher.getAuthStatus();
+                if (status?.connected) {
+                    if (!publisher.disconnect) {
+                        showToast("Déconnexion Outlook indisponible", true);
+                        return;
+                    }
+                    await publisher.disconnect();
+                    updateMicrosoftIntegrationUI({ connected: false });
+                    showToast("Outlook déconnecté");
+                } else {
+                    if (!publisher.ensureConnected) {
+                        showToast("Service Outlook indisponible", true);
+                        return;
+                    }
+                    await publisher.ensureConnected();
+                    await refreshMicrosoftIntegration(false);
+                    showToast("Connexion Outlook établie");
+                }
+            } catch (err) {
+                showToast(err?.message || "Action Outlook impossible", true);
+            } finally {
+                setMicrosoftIntegrationBusy(false);
+            }
+        });
+        gmailAuthLink?.addEventListener("click", async event => {
+            event.preventDefault();
+            const publisher = window.GoToolkitGmailPublish;
+            if (!publisher?.getAuthStatus) {
+                showToast("Service Gmail indisponible", true);
+                return;
+            }
+            setGmailIntegrationBusy(true);
+            try {
+                const status = await publisher.getAuthStatus();
+                if (status?.connected) {
+                    if (!publisher.disconnect) {
+                        showToast("Déconnexion Gmail indisponible", true);
+                        return;
+                    }
+                    await publisher.disconnect();
+                    updateGmailIntegrationUI({ connected: false });
+                    showToast("Gmail déconnecté");
+                } else {
+                    if (!publisher.ensureConnected) {
+                        showToast("Service Gmail indisponible", true);
+                        return;
+                    }
+                    await publisher.ensureConnected();
+                    await refreshGmailIntegration(false);
+                    showToast("Connexion Gmail établie");
+                }
+            } catch (err) {
+                showToast(err?.message || "Action Gmail impossible", true);
+            } finally {
+                setGmailIntegrationBusy(false);
+            }
+        });
+        if (resetChatPromptBtn) {
+            resetChatPromptBtn.addEventListener("click", event => {
+                event.preventDefault();
+                resetChatPromptToDefault();
+                chatPromptTextarea?.focus();
+            });
+        }
+
+        async function performFullReset() {
+            return window.GoToolkitSettingsModal?.performFullReset?.();
+        }
+        window.GoToolkitResetApp = performFullReset;
+
+        if (saveSettingsBtn) saveSettingsBtn.addEventListener("click", saveSettings);
+        openrouterApiKeyInput?.addEventListener("input", () => {
+            window.GoToolkitForceOpenRouterProxy = false;
+            openrouterHasValidPrivateKey = false;
+            updateOpenRouterExtrasVisibility();
+        });
+        openrouterModelInput?.addEventListener("change", () => {
+            refreshOpenRouterModelLabel();
+        });
+
+        openFeedbackBtn?.addEventListener("click", function () {
+            // Click the feedback.js launcher button to open the modal
+            const feedbackBtn = document.getElementById("feedback-app-index-openBtn");
+            feedbackBtn?.click();
+        });
+        document.addEventListener("keydown", event => {
+            if (event.key !== "Escape" && event.key !== "Esc") return;
+            if (settingsModal?.classList?.contains("open")) {
+                closeSettings();
+                return;
+            }
+            if (requestsModal?.classList?.contains("open")) {
+                closeRequestsModal();
+                return;
+            }
+
+        });
+
+        requestsBtn?.addEventListener("click", openRequestsModal);
+        closeRequestsBtn?.addEventListener("click", closeRequestsModal);
+        addFeedbackBtn?.addEventListener("click", () => {
+            // Close requests modal and open feedback modal
+            closeRequestsModal();
+            const feedbackBackdrop = document.getElementById("feedback-app-index-backdrop");
+            if (feedbackBackdrop) {
+                feedbackBackdrop.classList.add("open");
+            }
+        });
+        requestsModal?.addEventListener("click", event => {
+            if (event.target === requestsModal) closeRequestsModal();
+        });
+        requestsStatusFilter?.addEventListener("change", () => {
+            renderRequestsList();
+            updateRequestCounters();
+        });
+        requestsTypeFilter?.addEventListener("change", () => {
+            renderRequestsList();
+            updateRequestCounters();
+        });
+        saveRequestBtn?.addEventListener("click", () => {
+            saveCurrentRequest();
+        });
+        deleteRequestBtn?.addEventListener("click", () => {
+            deleteCurrentRequest();
+        });
+        ownerToken?.addEventListener("input", () => {
+            const normalized = normalizeOwnerTokenInput(ownerToken.value || "");
+            if (ownerToken.value !== normalized) ownerToken.value = normalized;
+            try {
+                if (normalized) {
+                    localStorage.setItem("feedback-admin-token", normalized);
+                } else {
+                    localStorage.removeItem("feedback-admin-token");
+                }
+            } catch (e) { /* noop */ }
+            if (updateRequestsButtonVisibility()) {
+                fetchRequests().catch(() => { /* noop */ });
+            }
+        });
+
+        if (updateRequestsButtonVisibility()) {
+            fetchRequests().catch(() => { /* noop */ });
+        }
+
+        function setIaStatus(backend) {
+            if (openaiStatusEl && !openaiStatusEl.dataset.openaiStatusSticky) {
+                if (backend?.type === "openai") {
+                    setOpenAiStatusLabel("Accès privé", {
+                        state: "ready",
+                        latencyMs: openAiLatencies.private,
+                        rateLimitRemaining: openAiRateLimits.private
+                    });
+                } else if (backend?.type === "proxy" && openAiProxyVerified) {
+                    setOpenAiStatusLabel("Accès partagé", {
+                        state: "ready",
+                        latencyMs: openAiLatencies.shared,
+                        rateLimitRemaining: openAiRateLimits.shared
+                    });
+                } else {
+                    setOpenAiStatusLabel("", { state: null });
+                }
+            }
+            if (openrouterStatusEl) {
+                const ready = typeof backend?.type === "string" && backend.type.startsWith("openrouter");
+                let openrouterIconState = ready ? "ready" : null;
+                if (openrouterIconState && (!openrouterHasValidPrivateKey || backend?.type === "openrouter-proxy")) {
+                    openrouterIconState = "warning";
+                }
+                updateStatusIcon(openrouterStatusEl, openrouterIconState);
+                openrouterStatusEl.setAttribute("aria-hidden", ready ? "false" : "true");
+                if (ready) {
+                    const accessType =
+                        backend.type === "openrouter"
+                            ? "private"
+                            : backend.type === "openrouter-proxy"
+                                ? "shared"
+                                : "default";
+                    const latencyMs = openrouterLatencies[accessType] ?? null;
+                    const rateLimitRemaining = openrouterRateLimits[accessType] ?? null;
+                    updateOpenRouterModelLabel(accessType, { latencyMs, rateLimitRemaining });
+                } else {
+                    updateOpenRouterModelLabel(null);
+                }
+            }
+        }
+
+        function checkIaConnection(showNotifications = false) {
+            if (!window.GoToolkitAIBackend || typeof window.GoToolkitAIBackend.getBackend !== "function") {
+                setIaStatus(null);
+                return;
+            }
+            GoToolkitAIBackend.getBackend("responses")
+                .then(backend => {
+                    setIaStatus(backend);
+                    if (!showNotifications || !backend) {
+                        return;
+                    }
+                    if (backend.type === "openai") {
+                        showToast(`Connexion OpenAI prête (${backend.model})`);
+                    } else if (typeof backend.type === "string" && backend.type.startsWith("openrouter")) {
+                        const label = backend.model ? backend.model : "modèle OpenRouter";
+                        showToast(`Connexion OpenRouter prête (${label})`);
+                    }
+                })
+                .catch(err => {
+                    setIaStatus(null);
+                    console.warn("IA backend detection failed", err);
+                });
+        }
+        checkIaConnection(true);
+
+        // Indélébile launcher: open external tool with a one-time confirmation
+        (function () {
+            const indelebileLauncher = document.getElementById("indelebileLauncher");
+            const STORAGE_KEY = "indelebile_confirmed_v1";
+            const TARGET_URL = "https://teach.tldraw.com/";
+            if (!indelebileLauncher) return;
+            indelebileLauncher.addEventListener("click", function (e) {
+                e.preventDefault();
+                try {
+                    const already = localStorage.getItem(STORAGE_KEY) === "1";
+                    if (already) {
+                        window.open(TARGET_URL, "_blank", "noopener");
+                        return;
+                    }
+                }
+                catch (err) {
+                    // ignore storage errors and proceed to confirmation
+                }
+
+                const message = "Tu vas ouvrir un outil externe (https://teach.tldraw.com/).\nCe service est géré par un tiers et est soumis à des conditions d'utilisation différentes. Continuer ?";
+                const ok = window.confirm(message);
+                if (!ok) return;
+                try {
+                    localStorage.setItem(STORAGE_KEY, "1");
+                }
+                catch (err) {
+                    // ignore
+                }
+                window.open(TARGET_URL, "_blank", "noopener");
+            });
+        })();
+    </script>
+
+    <script>
+        (function () {
+            // Hash-fragment → open modal shortcuts
+            function showModalById(id, focusSelector) {
+                const m = document.getElementById(id);
+                if (!m) return;
+                m.classList.add('open');
+                m.setAttribute('aria-hidden', 'false');
+                const focusEl = m.querySelector(focusSelector) || m.querySelector('button, [tabindex], input, textarea, select');
+                try { focusEl?.focus(); } catch (e) { /* ignore */ }
+            }
+
+            function handleFragment(hash) {
+                if (!hash) return;
+                const h = String(hash).toLowerCase();
+                if (h === '#feedback') {
+                    const feedbackBtn = document.getElementById("feedback-app-index-openBtn");
+                    feedbackBtn?.click();
+                } else if (h === '#config' || h === '#parametres' || h === '#paramètres' || h === '#settings') {
+                    if (typeof openSettings === 'function') {
+                        try { openSettings(); } catch (e) { showModalById('settingsModal', '#saveSettingsBtn'); }
+                    } else {
+                        showModalById('settingsModal', '#saveSettingsBtn');
+                    }
+                } else if (h === '#legal') {
+                    window.location.href = 'legal.html#tos';
+                    return;
+                } else if (h === '#privacy') {
+                    window.location.href = 'legal.html#privacy';
+                    return;
+                } else if (h === '#info') {
+                    showModalById('superpowerModal', '#closeSuperpowerBtn');
+                } else if (h === '#reset') {
+                    if (typeof window.GoToolkitResetApp === 'function') {
+                        window.GoToolkitResetApp();
+                    }
+                } else if (window.GoToolkitHandleNewsHash?.(h)) {
+                    // handled by shared news module
+                }
+                try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { /* ignore */ }
+            }
+
+            window.addEventListener('DOMContentLoaded', () => { handleFragment(location.hash); });
+            window.addEventListener('hashchange', () => { handleFragment(location.hash); });
+        })();
+    </script>
+
+    <script>
+        // Process Lucide icons
+        if (window.lucide) {
+            window.lucide.createIcons();
+        }
+    </script>
+
+</body>
+
+</html>

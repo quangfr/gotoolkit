@@ -407,9 +407,9 @@
             }
 
             btn.addEventListener("click", () => {
-                // Open Docs with template preview
+                // Open memo editor with template preview
                 localStorage.setItem("goToolkit.memo.templateToPreview", JSON.stringify(template));
-                window.location.href = "docs.html";
+                window.location.href = "index.html";
             });
 
             gallery.appendChild(btn);

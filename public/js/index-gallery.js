@@ -14,7 +14,7 @@
             const documentApi = window.goToolkitDocumentApi;
 
             const APP_DEFINITIONS = {
-                memo: { icon: "zap", name: "Docs", page: "docs.html", collection: "memos" },
+                memo: { icon: "zap", name: "Docs", page: "index.html", collection: "memos" },
                 plan: { icon: "layout-list", name: "Timeline", page: "old/timeline.html", collection: "timelines" },
                 grid: { icon: "grid-3x3", name: "Grid", page: "grid.html", collection: "grids" }
             };
@@ -198,7 +198,7 @@
             }
 
             function buildShareUrl(definition, token) {
-                const url = new URL("docs.html", window.location.origin);
+                const url = new URL("index.html", window.location.origin);
                 url.searchParams.set("share", token);
                 return url.toString();
             }
@@ -285,7 +285,7 @@
             function buildCreateCard() {
                 const card = document.createElement("a");
                 card.className = "share-card share-card--create";
-                card.href = "docs.html?edit=new";
+                card.href = "index.html?edit=new";
                 card.target = "_self";
                 card.innerHTML = `
                     <p class="share-card-title"><i data-lucide="plus-circle" style="width:16px;height:16px;margin-right:8px;vertical-align:text-bottom;"></i>Créer un nouveau document</p>
@@ -309,7 +309,7 @@
 
                 let href = "";
                 let target = "_self";
-                href = `docs.html?edit=${record.id}`;
+                href = `index.html?edit=${record.id}`;
 
                 const card = document.createElement("a");
                 card.className = "share-card";

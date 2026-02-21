@@ -28,6 +28,7 @@
             width: var(--doc-sidebar-width, 180px);
             flex: 0 0 var(--doc-sidebar-width, 180px);
             background: var(--bg-surface);
+            position: relative;
             display: flex;
             flex-direction: column;
             gap: 4px;
@@ -84,8 +85,48 @@
             display: flex;
             align-items: center;
             gap: 4px;
+            position: relative;
             padding-bottom: 6px;
             border-bottom: 1px solid var(--border-main);
+            z-index: 1;
+        }
+
+        .document-explorer__brand {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 11px;
+            letter-spacing: 0.08em;
+            font-weight: 700;
+            text-transform: uppercase;
+            opacity: 0.42;
+            pointer-events: none;
+            user-select: none;
+        }
+
+        .document-explorer__bg-logo {
+            position: absolute;
+            left: 50%;
+            bottom: 8px;
+            width: min(86%, 220px);
+            aspect-ratio: 1 / 1;
+            transform: translateX(-50%);
+            background-repeat: no-repeat;
+            background-position: center bottom;
+            background-size: contain;
+            opacity: 0.16;
+            pointer-events: none;
+            user-select: none;
+            z-index: 0;
+        }
+
+        [data-theme="dark"] .document-explorer__bg-logo {
+            background-image: url("../img/logo-inverted.gif");
+        }
+
+        [data-theme="cream"] .document-explorer__bg-logo,
+        [data-theme="app"] .document-explorer__bg-logo {
+            background-image: url("../img/logo.gif");
         }
 
         #memo-source-overlay {
@@ -330,6 +371,8 @@
             flex-direction: column;
             overflow: hidden;
             margin-top: 4px;
+            position: relative;
+            z-index: 1;
         }
 
         .document-explorer__tab-panel {

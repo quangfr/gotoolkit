@@ -297,8 +297,9 @@
         try {
             var path = (new URL(global.location.href)).pathname || "";
             var lower = path.toLowerCase();
-            if (!lower || lower === "/") return "index";
-            if (lower.endsWith("/index.html")) return "index";
+            if (!lower || lower === "/") return "memo";
+            if (lower.endsWith("/index.html")) return "memo";
+            if (lower.endsWith("/home.html")) return "index";
             if (lower.endsWith("/memo.html")) return "memo";
             if (lower.endsWith("/docs.html")) return "memo";
             if (lower.endsWith("/memo")) return "memo";
