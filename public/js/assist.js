@@ -8059,11 +8059,48 @@
         }
         var selection = selectionSet instanceof Set ? selectionSet : new Set();
         var sectionRank = { common: 0, shared: 1, private: 2 };
+        var normalizeSectionKey = function (value) {
+            var raw = String(value || "private").trim();
+            if (!raw) return "private";
+            if (raw.indexOf("shared:") === 0) return raw;
+            if (raw.indexOf("shared") === 0) return "shared";
+            if (raw === "common" || raw === "private") return raw;
+            return "private";
+        };
+        var getSectionBucket = function (value) {
+            var key = normalizeSectionKey(value);
+            if (key.indexOf("shared") === 0) return "shared";
+            return key;
+        };
+        var getSectionLabel = function (sectionId) {
+            var key = normalizeSectionKey(sectionId);
+            if (key === "common") return "Golive";
+            if (key === "private") return "Privé";
+            if (key.indexOf("shared:") === 0) {
+                var spaceId = String(key.slice("shared:".length) || "").trim().toLowerCase();
+                if (!spaceId) return "Partagé";
+                var spaceName = "";
+                try {
+                    var spacesApi = window.GoToolkitSpaces;
+                    if (spacesApi && typeof spacesApi.getSpaceById === "function") {
+                        spaceName = String(spacesApi.getSpaceById(spaceId)?.name || "").trim();
+                    }
+                } catch (err) {
+                    spaceName = "";
+                }
+                return spaceName || spaceId || "Partagé";
+            }
+            return "Partagé";
+        };
+        var getSectionIcon = function (sectionId) {
+            var key = normalizeSectionKey(sectionId);
+            if (key === "common") return "component";
+            if (key === "private") return "lock-keyhole-open";
+            return "cloud-upload";
+        };
         var all = entries.slice().sort(function (a, b) {
-            var aSection = String(a?.section || "private");
-            if (aSection.indexOf("shared") === 0) aSection = "shared";
-            var bSection = String(b?.section || "private");
-            if (bSection.indexOf("shared") === 0) bSection = "shared";
+            var aSection = getSectionBucket(a?.section);
+            var bSection = getSectionBucket(b?.section);
             var rank = (sectionRank[aSection] ?? 9) - (sectionRank[bSection] ?? 9);
             if (rank) return rank;
             return this.compareKnowledgeEntries(a, b, { column: "updatedAt", direction: "desc" });
@@ -8086,16 +8123,14 @@
             if (!parentKey || !childrenByKey.has(parentKey)) return;
             childrenByKey.get(parentKey).push(key);
         }.bind(this));
-        var rootsBySection = { common: [], shared: [], private: [] };
+        var rootsBySection = {};
         all.forEach(function (entry) {
             var key = this.normalizeKnowledgeKey(entry.fileName);
             if (!key) return;
-            var section = String(entry.section || "private");
-            if (section.indexOf("shared") === 0) section = "shared";
+            var section = normalizeSectionKey(entry.section);
             var parentId = String(entry.parentId || "").trim();
             var parentKey = this.normalizeKnowledgeKey(this.getMemoLibraryFileName(parentId));
-            var parentSection = String(byKey.get(parentKey)?.section || "private");
-            if (parentSection.indexOf("shared") === 0) parentSection = "shared";
+            var parentSection = normalizeSectionKey(byKey.get(parentKey)?.section || "private");
             if (parentKey && byKey.has(parentKey) && parentSection === section) return;
             if (!rootsBySection[section]) rootsBySection[section] = [];
             rootsBySection[section].push(key);
@@ -8129,17 +8164,22 @@
                 renderBranch(childKey, depth + 1);
             });
         }.bind(this);
-        var sections = [
-            { id: "common", label: "Golive" },
-            { id: "shared", label: "Partagé" },
-            { id: "private", label: "Privé" }
-        ];
+        var sections = Object.keys(rootsBySection).map(function (id) {
+            return { id: id, label: getSectionLabel(id), bucket: getSectionBucket(id) };
+        }).sort(function (a, b) {
+            var rank = (sectionRank[a.bucket] ?? 9) - (sectionRank[b.bucket] ?? 9);
+            if (rank) return rank;
+            if (a.bucket === "shared" && b.bucket === "shared") {
+                return String(a.label || "").localeCompare(String(b.label || ""), "fr", { sensitivity: "base" });
+            }
+            return 0;
+        });
         sections.forEach(function (section) {
             var roots = rootsBySection[section.id] || [];
             if (!roots.length) return;
             html.push(
                 "<div class=\"document-explorer__section\">" +
-                "<div class=\"document-explorer__section-header\"><i data-lucide=\"" + (section.id === "common" ? "component" : (section.id === "shared" ? "cloud-upload" : "lock-keyhole-open")) + "\"></i><strong>" + escapeHtml(section.label) + "</strong></div>" +
+                "<div class=\"document-explorer__section-header\"><i data-lucide=\"" + getSectionIcon(section.id) + "\"></i><strong>" + escapeHtml(section.label) + "</strong></div>" +
                 "<div class=\"document-explorer__section-body\">"
             );
             roots.forEach(function (rootKey) {

@@ -76,7 +76,7 @@
     const PDFJS_URL = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.6.82/+esm";
     const TESSERACT_URL = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.0/dist/tesseract.esm.min.js";
     const PDFJS_WORKER = "js/pdf.worker.min.mjs";
-    const TRANSFORMERS_URL = "https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2";
+    const TRANSFORMERS_URL = "https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/dist/transformers.min.js";
     const JSZIP_URL = "https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm";
 
     function normalizeJsZipModule(module) {

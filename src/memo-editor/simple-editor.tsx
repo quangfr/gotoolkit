@@ -2719,17 +2719,95 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           const isAtStart = $from.parentOffset === 0;
           const isEmptyParagraph = $from.parent?.type?.name === 'paragraph' && $from.parent?.content?.size === 0;
           const inListItem = editor.isActive('listItem');
+          if (isAtStart && isEmptyParagraph && !inListItem) {
+            const parentDepth = $from.depth - 1;
+            const indexInParent = parentDepth >= 0 ? $from.index(parentDepth) : -1;
+            const prevSibling = parentDepth >= 0 && indexInParent > 0
+              ? $from.node(parentDepth).child(indexInParent - 1)
+              : null;
+            const prevType = prevSibling?.type?.name || '';
+            if (prevType === 'bulletList' || prevType === 'orderedList' || prevType === 'taskList') {
+              event.preventDefault();
+              const currentBlockDepth = $from.depth;
+              const currentBlockPos = $from.before(currentBlockDepth);
+              const currentBlockNode = $from.node(currentBlockDepth);
+              const tr = editor.state.tr.delete(currentBlockPos, currentBlockPos + currentBlockNode.nodeSize);
+              const targetPos = Math.max(1, currentBlockPos - 1);
+              tr.setSelection(TextSelection.near(tr.doc.resolve(targetPos), -1));
+              editor.view.dispatch(tr.scrollIntoView());
+              return true;
+            }
+          }
           if (isAtStart && isEmptyParagraph && inListItem) {
             event.preventDefault();
-            // Exit the whole list hierarchy in one Backspace, while preserving
-            // list nodes before/after as separate lists when needed.
-            let lifted = false;
-            for (let i = 0; i < 12; i += 1) {
-              if (!editor.isActive('listItem')) break;
-              if (!editor.chain().focus().liftListItem('listItem').run()) break;
-              lifted = true;
+            let listItemDepth = -1;
+            for (let depth = $from.depth; depth > 0; depth -= 1) {
+              if ($from.node(depth).type?.name === 'listItem') {
+                listItemDepth = depth;
+                break;
+              }
             }
-            if (lifted) return true;
+            if (listItemDepth > 0) {
+              const listItemNode = $from.node(listItemDepth);
+              const listNode = $from.node(listItemDepth - 1);
+              const itemIndex = $from.index(listItemDepth - 1);
+              const hasSiblingBefore = itemIndex > 0;
+              const hasSiblingAfter = itemIndex < (listNode?.childCount || 0) - 1;
+              const isPlainEmptyItem = listItemNode.childCount === 1
+                && listItemNode.firstChild?.type?.name === 'paragraph'
+                && listItemNode.firstChild?.content?.size === 0;
+              if (isPlainEmptyItem && (hasSiblingBefore || hasSiblingAfter)) {
+                const listItemPos = $from.before(listItemDepth);
+                const tr = editor.state.tr.delete(listItemPos, listItemPos + listItemNode.nodeSize);
+                const docSize = tr.doc.content.size;
+                const rawTarget = hasSiblingAfter ? listItemPos + 1 : Math.max(1, listItemPos - 1);
+                const targetPos = Math.max(1, Math.min(rawTarget, docSize));
+                tr.setSelection(TextSelection.near(tr.doc.resolve(targetPos), hasSiblingAfter ? 1 : -1));
+                editor.view.dispatch(tr.scrollIntoView());
+                return true;
+              }
+            }
+            // Fallback: only lift one level when deleting an empty list item.
+            if (editor.chain().focus().liftListItem('listItem').run()) return true;
+          }
+        }
+
+        if (event.key === 'Delete' && selection.empty) {
+          const { $from } = selection;
+          const inListItem = editor.isActive('listItem');
+          const isAtEnd = $from.parentOffset === $from.parent.content.size;
+          if (inListItem && isAtEnd) {
+            for (let depth = $from.depth; depth > 0; depth -= 1) {
+              let afterPos = 0;
+              try {
+                afterPos = $from.after(depth);
+              } catch (err) {
+                continue;
+              }
+              if (afterPos <= 0 || afterPos >= editor.state.doc.content.size) continue;
+              const $after = editor.state.doc.resolve(afterPos);
+              const nextNode = $after.nodeAfter;
+              if (!nextNode) continue;
+              const isEmptySpacer = nextNode.type?.name === 'paragraph' && nextNode.content?.size === 0;
+              if (isEmptySpacer) {
+                event.preventDefault();
+                let tr = editor.state.tr;
+                let deletePos = afterPos;
+                for (let i = 0; i < 16; i += 1) {
+                  if (deletePos <= 0 || deletePos >= tr.doc.content.size) break;
+                  const $probe = tr.doc.resolve(deletePos);
+                  const probeNode = $probe.nodeAfter;
+                  const probeIsEmptyParagraph = probeNode?.type?.name === 'paragraph' && probeNode?.content?.size === 0;
+                  if (!probeIsEmptyParagraph) break;
+                  tr = tr.delete(deletePos, deletePos + probeNode.nodeSize);
+                }
+                const mapped = tr.mapping.map(selection.from);
+                tr.setSelection(TextSelection.near(tr.doc.resolve(Math.max(1, Math.min(mapped, tr.doc.content.size))), -1));
+                editor.view.dispatch(tr.scrollIntoView());
+                return true;
+              }
+              break;
+            }
           }
         }
 

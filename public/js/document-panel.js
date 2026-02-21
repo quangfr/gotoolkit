@@ -1107,23 +1107,6 @@
                 });
                 if (expandedChanged) persistExpandedState();
             }
-            const activeSectionName = (() => {
-                if (!activeId) return "";
-                const activeItem = filteredItems.find(item => String(item?.id || "") === String(activeId));
-                return activeItem ? getItemSection(activeItem) : "";
-            })();
-            const isActiveInsideNode = (tree, nodeId) => {
-                const targetId = String(nodeId || "").trim();
-                if (!activeId || !targetId || !tree?.byId?.get) return false;
-                let cursorId = String(activeId).trim();
-                while (cursorId) {
-                    if (cursorId === targetId) return true;
-                    const cursorItem = tree.byId.get(cursorId);
-                    if (!cursorItem) break;
-                    cursorId = String(cursorItem.parentId || "").trim();
-                }
-                return false;
-            };
             const recentItems = filteredItems
                 .slice()
                 .sort((a, b) => String(b?.updatedAt || "").localeCompare(String(a?.updatedAt || "")))
@@ -1181,10 +1164,7 @@
                 lead.addEventListener("click", event => {
                     if (!hasChildren) return;
                     event.stopPropagation();
-                    if (expandedIds.has(item.id)) {
-                        if (isActiveInsideNode(tree, item.id)) return;
-                        expandedIds.delete(item.id);
-                    }
+                    if (expandedIds.has(item.id)) expandedIds.delete(item.id);
                     else expandedIds.add(item.id);
                     persistExpandedState();
                     renderList(cachedItems);
@@ -1194,10 +1174,7 @@
                     if (!hasChildren) return;
                     event.preventDefault();
                     event.stopPropagation();
-                    if (expandedIds.has(item.id)) {
-                        if (isActiveInsideNode(tree, item.id)) return;
-                        expandedIds.delete(item.id);
-                    }
+                    if (expandedIds.has(item.id)) expandedIds.delete(item.id);
                     else expandedIds.add(item.id);
                     persistExpandedState();
                     renderList(cachedItems);
@@ -1403,10 +1380,6 @@
                     sectionHeader.appendChild(actions);
                 }
                 sectionHeader.addEventListener("click", () => {
-                    const isSectionExpandedNow = sectionExpanded[sectionName] !== false;
-                    if (isSectionExpandedNow && sectionName !== "recent" && activeSectionName === sectionName) {
-                        return;
-                    }
                     sectionExpanded[sectionName] = !sectionExpanded[sectionName];
                     persistSectionExpandedState();
                     renderList(cachedItems);

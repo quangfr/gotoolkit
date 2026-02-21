@@ -56838,7 +56838,7 @@ ${promptInput.trim()}`
           return true;
         },
         handleKeyDown: (_view, event) => {
-          var _a2, _b2, _c2, _d2, _e, _f, _g;
+          var _a2, _b2, _c2, _d2, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q;
           if (!editor) return false;
           if (event.key === "/" && !event.shiftKey && !event.altKey && !event.metaKey && !event.ctrlKey && editor.state.selection.empty) {
             event.preventDefault();
@@ -56867,15 +56867,89 @@ ${promptInput.trim()}`
             const isAtStart = $from.parentOffset === 0;
             const isEmptyParagraph = ((_b2 = (_a2 = $from.parent) == null ? void 0 : _a2.type) == null ? void 0 : _b2.name) === "paragraph" && ((_d2 = (_c2 = $from.parent) == null ? void 0 : _c2.content) == null ? void 0 : _d2.size) === 0;
             const inListItem = editor.isActive("listItem");
+            if (isAtStart && isEmptyParagraph && !inListItem) {
+              const parentDepth = $from.depth - 1;
+              const indexInParent = parentDepth >= 0 ? $from.index(parentDepth) : -1;
+              const prevSibling = parentDepth >= 0 && indexInParent > 0 ? $from.node(parentDepth).child(indexInParent - 1) : null;
+              const prevType = ((_e = prevSibling == null ? void 0 : prevSibling.type) == null ? void 0 : _e.name) || "";
+              if (prevType === "bulletList" || prevType === "orderedList" || prevType === "taskList") {
+                event.preventDefault();
+                const currentBlockDepth = $from.depth;
+                const currentBlockPos = $from.before(currentBlockDepth);
+                const currentBlockNode = $from.node(currentBlockDepth);
+                const tr2 = editor.state.tr.delete(currentBlockPos, currentBlockPos + currentBlockNode.nodeSize);
+                const targetPos = Math.max(1, currentBlockPos - 1);
+                tr2.setSelection(TextSelection.near(tr2.doc.resolve(targetPos), -1));
+                editor.view.dispatch(tr2.scrollIntoView());
+                return true;
+              }
+            }
             if (isAtStart && isEmptyParagraph && inListItem) {
               event.preventDefault();
-              let lifted = false;
-              for (let i = 0; i < 12; i += 1) {
-                if (!editor.isActive("listItem")) break;
-                if (!editor.chain().focus().liftListItem("listItem").run()) break;
-                lifted = true;
+              let listItemDepth = -1;
+              for (let depth = $from.depth; depth > 0; depth -= 1) {
+                if (((_f = $from.node(depth).type) == null ? void 0 : _f.name) === "listItem") {
+                  listItemDepth = depth;
+                  break;
+                }
               }
-              if (lifted) return true;
+              if (listItemDepth > 0) {
+                const listItemNode = $from.node(listItemDepth);
+                const listNode = $from.node(listItemDepth - 1);
+                const itemIndex = $from.index(listItemDepth - 1);
+                const hasSiblingBefore = itemIndex > 0;
+                const hasSiblingAfter = itemIndex < ((listNode == null ? void 0 : listNode.childCount) || 0) - 1;
+                const isPlainEmptyItem = listItemNode.childCount === 1 && ((_h = (_g = listItemNode.firstChild) == null ? void 0 : _g.type) == null ? void 0 : _h.name) === "paragraph" && ((_j = (_i = listItemNode.firstChild) == null ? void 0 : _i.content) == null ? void 0 : _j.size) === 0;
+                if (isPlainEmptyItem && (hasSiblingBefore || hasSiblingAfter)) {
+                  const listItemPos = $from.before(listItemDepth);
+                  const tr2 = editor.state.tr.delete(listItemPos, listItemPos + listItemNode.nodeSize);
+                  const docSize = tr2.doc.content.size;
+                  const rawTarget = hasSiblingAfter ? listItemPos + 1 : Math.max(1, listItemPos - 1);
+                  const targetPos = Math.max(1, Math.min(rawTarget, docSize));
+                  tr2.setSelection(TextSelection.near(tr2.doc.resolve(targetPos), hasSiblingAfter ? 1 : -1));
+                  editor.view.dispatch(tr2.scrollIntoView());
+                  return true;
+                }
+              }
+              if (editor.chain().focus().liftListItem("listItem").run()) return true;
+            }
+          }
+          if (event.key === "Delete" && selection.empty) {
+            const { $from } = selection;
+            const inListItem = editor.isActive("listItem");
+            const isAtEnd = $from.parentOffset === $from.parent.content.size;
+            if (inListItem && isAtEnd) {
+              for (let depth = $from.depth; depth > 0; depth -= 1) {
+                let afterPos = 0;
+                try {
+                  afterPos = $from.after(depth);
+                } catch (err) {
+                  continue;
+                }
+                if (afterPos <= 0 || afterPos >= editor.state.doc.content.size) continue;
+                const $after = editor.state.doc.resolve(afterPos);
+                const nextNode = $after.nodeAfter;
+                if (!nextNode) continue;
+                const isEmptySpacer = ((_k = nextNode.type) == null ? void 0 : _k.name) === "paragraph" && ((_l = nextNode.content) == null ? void 0 : _l.size) === 0;
+                if (isEmptySpacer) {
+                  event.preventDefault();
+                  let tr2 = editor.state.tr;
+                  let deletePos = afterPos;
+                  for (let i = 0; i < 16; i += 1) {
+                    if (deletePos <= 0 || deletePos >= tr2.doc.content.size) break;
+                    const $probe = tr2.doc.resolve(deletePos);
+                    const probeNode = $probe.nodeAfter;
+                    const probeIsEmptyParagraph = ((_m = probeNode == null ? void 0 : probeNode.type) == null ? void 0 : _m.name) === "paragraph" && ((_n = probeNode == null ? void 0 : probeNode.content) == null ? void 0 : _n.size) === 0;
+                    if (!probeIsEmptyParagraph) break;
+                    tr2 = tr2.delete(deletePos, deletePos + probeNode.nodeSize);
+                  }
+                  const mapped = tr2.mapping.map(selection.from);
+                  tr2.setSelection(TextSelection.near(tr2.doc.resolve(Math.max(1, Math.min(mapped, tr2.doc.content.size))), -1));
+                  editor.view.dispatch(tr2.scrollIntoView());
+                  return true;
+                }
+                break;
+              }
             }
           }
           if (!event.shiftKey && ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) {
@@ -56965,7 +57039,7 @@ ${promptInput.trim()}`
               }
             }
             if (tablePos >= 0 && tableNode) {
-              const totalCellCount = ((_e = tableNode.content) == null ? void 0 : _e.childCount) ? tableNode.content.content.reduce((count, row) => {
+              const totalCellCount = ((_o = tableNode.content) == null ? void 0 : _o.childCount) ? tableNode.content.content.reduce((count, row) => {
                 var _a3;
                 const rowCellCount = ((_a3 = row == null ? void 0 : row.content) == null ? void 0 : _a3.childCount) || 0;
                 return count + rowCellCount;
@@ -57005,7 +57079,7 @@ ${promptInput.trim()}`
             const { selection: selection2 } = state2;
             const $from = selection2.$from;
             const parent = $from.parent;
-            if (((_f = parent == null ? void 0 : parent.type) == null ? void 0 : _f.name) === "heading" && ((_g = parent.attrs) == null ? void 0 : _g.collapsed)) {
+            if (((_p = parent == null ? void 0 : parent.type) == null ? void 0 : _p.name) === "heading" && ((_q = parent.attrs) == null ? void 0 : _q.collapsed)) {
               const level = parent.attrs.level || 1;
               const headingPos = $from.before($from.depth);
               const docSize = state2.doc.content.size;
