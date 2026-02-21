@@ -1163,7 +1163,6 @@
                 }
                 const resolvedHandoffId = (typeof item.handoffId === "string" && item.handoffId) ? item.handoffId : null;
                 const hasHandoff = resolvedHandoffId !== null;
-                const hasNotion = Boolean(String(item?.notionPageId || "").trim());
                 const lead = document.createElement("span");
                 lead.className = "document-explorer__item-leading";
                 lead.setAttribute("role", "button");
@@ -1207,8 +1206,7 @@
 
                 const label = document.createElement("span");
                 label.className = "document-explorer__item-title";
-                const notionIcon = hasNotion ? '<i data-lucide="notebook" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.85;"></i>' : "";
-                label.innerHTML = `${notionIcon}${item.title || "Docs sans titre"}`;
+                label.textContent = item.title || "Docs sans titre";
                 button.appendChild(label);
 
                 const actions = document.createElement("span");
@@ -1265,8 +1263,7 @@
                                 unlinkNotion: false
                             });
                         } else {
-                            label.innerHTML = `${hasNotion ? '<i data-lucide="notebook" style="width:14px;height:14px;margin-right:6px;vertical-align:text-bottom;opacity:0.85;"></i>' : ""}${initialValue}`;
-                            if (window.lucide) window.lucide.createIcons();
+                            label.textContent = initialValue;
                         }
                     };
                     input.addEventListener("keydown", keyEvent => {
