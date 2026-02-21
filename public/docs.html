@@ -45,10 +45,10 @@
         crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.min.js" crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.min.js" crossorigin></script>
-    <link rel="stylesheet" href="styles/style.css?v=2026.02.21.7">
+    <link rel="stylesheet" href="styles/style.css?v=2026.02.21.8">
     <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
-    <link rel="stylesheet" href="styles/memo.css?v=2026.02.21.7">
-    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.21.7">
+    <link rel="stylesheet" href="styles/memo.css?v=2026.02.21.8">
+    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.21.8">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.css">
     <script src="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.js"></script>
     <style>
@@ -136,10 +136,6 @@
                 <div class="tabs-actions">
                     <button id="documentExplorerToggle" class="app-home-link" type="button" title="Bibliothèque"
                         aria-expanded="false" aria-controls="documentExplorer"><i data-lucide="book-open"></i></button>
-                    <a href="/?v=2026.02.21.7" class="nav-switch-btn" title="Accueil"
-                        style="text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
-                        <i data-lucide="home"></i>
-                    </a>
 
                     <div id="breadcrumb" class="tabs">
                         <div class="document-breadcrumb-icon-picker">
@@ -223,9 +219,9 @@
                                 </div>
                                 <button id="deleteDocumentBtn" type="button" class="menu-panel-btn"><i
                                         data-lucide="trash-2"></i> Supprimer</button>
-                                <button id="infoButton" type="button" class="menu-panel-btn"><i
-                                        data-lucide="help-circle"></i>
-                                    Aide</button>
+                                <button id="fileMenuSourceBtn" type="button" class="menu-panel-btn"><i
+                                        data-lucide="code-xml"></i>
+                                    Source</button>
                             </div>
                         </div>
                         <div data-share-menu-slot></div>
@@ -235,6 +231,9 @@
                         <i data-lucide="settings"></i>
                     </button>
                     <div id="globalActionsExtras" class="global-actions-extras"></div>
+                    <button id="infoButton" class="btn btn-secondary app-header-btn" type="button" title="Aide">
+                        <i data-lucide="help-circle"></i>
+                    </button>
                     <button id="assistLauncherBtn" class="btn btn-secondary app-header-btn" type="button" title="Assist"
                         data-app="assist">
                         <i data-lucide="bot"></i></button>
@@ -298,31 +297,6 @@
         </div>
     </div>
 
-    <div class="modal-overlay gt-prompt-modal" id="gtPromptModal" role="dialog" aria-modal="true"
-        aria-labelledby="gtPromptModalTitle">
-        <div class="modal">
-            <div class="modal-header">
-                <h3 id="gtPromptModalTitle" title="Prompt">Prompt</h3>
-                <button class="modal-close" id="gtPromptModalClose" type="button" title="Fermer" aria-label="Fermer"><i
-                        data-lucide="x"></i></button>
-            </div>
-            <div class="ia-actions">
-                <div class="header-row ia-header-actions">
-                    <div id="memoPromptPresetSelect"></div>
-                    <textarea id="memoPromptEditor" rows="30"></textarea>
-                </div>
-                <div class="ia-actions-footer ia-template-footer">
-                    <div class="modal-actions" style="width:100%; justify-content:flex-end;">
-                        <button class="btn btn-secondary" type="button" id="resetPromptBtn"><i data-lucide="rotate-ccw"
-                                style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i>
-                            Réinitialiser</button>
-                        <button class="btn-primary" type="button" id="applyPromptBtn">Appliquer</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <div class="modal-overlay" id="handoffModal" role="dialog" aria-modal="true" aria-labelledby="handoffModalTitle">
         <div class="modal" style="max-width: 640px; width: min(640px, 94vw);">
             <div class="modal-header" style="align-items: center;">
@@ -369,7 +343,7 @@
         <img src="img/logo.gif" alt="Logo GoToolkit" class="logo-light">
         <img src="img/logo_inverted.gif" alt="Logo GoToolkit" class="logo-dark">
         <strong>GoToolkit</strong>
-        <span id="memoNewsTrigger" class="info-popup-news-link" role="button" tabindex="0">Version 2026.02.21.7</span>
+        <span id="memoNewsTrigger" class="info-popup-news-link" role="button" tabindex="0">Version 2026.02.21.8</span>
         <span>Usage réservé à Savane Consulting.</span>
         <div class="info-actions info-actions--stacked">
             <div class="info-actions-row">
@@ -449,24 +423,24 @@
         window.GO_TOOLKIT_GOOGLE_TTS_API_URL =
             window.GO_TOOLKIT_GOOGLE_TTS_API_URL || "https://googletts.gotoolkit.workers.dev";
     </script>
-    <script src="js/config.js?v=2026.02.21.7"></script>
-    <script src="js/config-modal.js?v=2026.02.21.7"></script>
-    <script src="js/feature-visibility.js?v=2026.02.21.7"></script>
-    <script src="js/document-storage.js?v=2026.02.21.7"></script>
-    <script src="js/storage-service.js?v=2026.02.21.7"></script>
-    <script src="js/shared-ui.js?v=2026.02.21.7"></script>
-    <script src="js/spaces-store.js?v=2026.02.21.7"></script>
-    <script src="js/share-worker-client.js?v=2026.02.21.7"></script>
-    <script src="js/share-history.js?v=2026.02.21.7"></script>
-    <script src="js/document-api.js?v=2026.02.21.7"></script>
-    <script src="js/keywordIndex.js?v=2026.02.21.7"></script>
-    <script src="js/document-rag.js?v=2026.02.21.7"></script>
-    <script src="js/ia-config.js?v=2026.02.21.7"></script>
-    <script src="preset.js?v=2026.02.21.7"></script>
-    <script src="prompt.js?v=2026.02.21.7"></script>
-    <script src="js/ia-client.js?v=2026.02.21.7"></script>
-    <script src="js/document-markdown.js?v=2026.02.21.7"></script>
-    <script src="js/notion-export.js?v=2026.02.21.7"></script>
+    <script src="js/config.js?v=2026.02.21.8"></script>
+    <script src="js/config-modal.js?v=2026.02.21.8"></script>
+    <script src="js/feature-visibility.js?v=2026.02.21.8"></script>
+    <script src="js/document-storage.js?v=2026.02.21.8"></script>
+    <script src="js/storage-service.js?v=2026.02.21.8"></script>
+    <script src="js/shared-ui.js?v=2026.02.21.8"></script>
+    <script src="js/spaces-store.js?v=2026.02.21.8"></script>
+    <script src="js/share-worker-client.js?v=2026.02.21.8"></script>
+    <script src="js/share-history.js?v=2026.02.21.8"></script>
+    <script src="js/document-api.js?v=2026.02.21.8"></script>
+    <script src="js/keywordIndex.js?v=2026.02.21.8"></script>
+    <script src="js/document-rag.js?v=2026.02.21.8"></script>
+    <script src="js/ia-config.js?v=2026.02.21.8"></script>
+    <script src="preset.js?v=2026.02.21.8"></script>
+    <script src="prompt.js?v=2026.02.21.8"></script>
+    <script src="js/ia-client.js?v=2026.02.21.8"></script>
+    <script src="js/document-markdown.js?v=2026.02.21.8"></script>
+    <script src="js/notion-export.js?v=2026.02.21.8"></script>
     <script>
         document.addEventListener("click", function (event) {
             const legalTrigger = event.target?.closest?.("[data-open-nexus-modal]");
@@ -500,15 +474,15 @@
             ]
         };
     </script>
-    <script src="js/feedback.js?v=2026.02.21.7"></script>
-    <script src="js/news.js?v=2026.02.21.7"></script>
-    <script src="js/voice-video-player.js?v=2026.02.21.7"></script>
-    <script src="js/voice-audio-player.js?v=2026.02.21.7"></script>
-    <script src="js/youtube-publish.js?v=2026.02.21.7"></script>
-    <script src="js/voice.js?v=2026.02.21.7"></script>
-    <script src="js/voice-transcript.js?v=2026.02.21.7"></script>
-    <script src="js/googletts.js?v=2026.02.21.7"></script>
-    <script src="js/draw-memo.js?v=2026.02.21.7"></script>
+    <script src="js/feedback.js?v=2026.02.21.8"></script>
+    <script src="js/news.js?v=2026.02.21.8"></script>
+    <script src="js/voice-video-player.js?v=2026.02.21.8"></script>
+    <script src="js/voice-audio-player.js?v=2026.02.21.8"></script>
+    <script src="js/youtube-publish.js?v=2026.02.21.8"></script>
+    <script src="js/voice.js?v=2026.02.21.8"></script>
+    <script src="js/voice-transcript.js?v=2026.02.21.8"></script>
+    <script src="js/googletts.js?v=2026.02.21.8"></script>
+    <script src="js/draw-memo.js?v=2026.02.21.8"></script>
     <script>
         // Suppress React DevTools prompt in dev builds.
         window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = window.__REACT_DEVTOOLS_GLOBAL_HOOK__ || {
@@ -518,9 +492,9 @@
             onCommitFiberUnmount: function () { }
         };
     </script>
-    <script src="js/memo.bundle.js?v=2026.02.21.7"></script>
-    <script src="js/assist.js?v=2026.02.21.7"></script>
-    <script src="js/document-panel.js?v=2026.02.21.7"></script>
+    <script src="js/memo.bundle.js?v=2026.02.21.8"></script>
+    <script src="js/assist.js?v=2026.02.21.8"></script>
+    <script src="js/document-panel.js?v=2026.02.21.8"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             setTimeout(function () {
@@ -600,6 +574,9 @@
                 settingsTabPanels.forEach(panel => {
                     panel.hidden = panel.dataset.panel !== tabId;
                 });
+                if (resetPromptBtn) {
+                    resetPromptBtn.hidden = tabId !== "promptTab";
+                }
             }
 
             function setYoutubeIntegrationBusy(isBusy) {
@@ -867,6 +844,7 @@
             }
             const importJsonInput = document.getElementById("importJsonInput");
             const infoButton = document.getElementById("infoButton");
+            const fileMenuSourceBtn = document.getElementById("fileMenuSourceBtn");
             const memoInfoPopup = document.getElementById("memoInfoPopup");
             const memoGuidedTourBtn = document.getElementById("memoGuidedTourBtn");
             const memoDocsBtn = document.getElementById("memoDocsBtn");
@@ -910,13 +888,9 @@
             const handoffStatus = document.getElementById("handoffStatus");
             const handoffBadge = document.getElementById("handoffBadge");
             let activeTemplatePreview = null;
-            const promptModal = document.getElementById("gtPromptModal");
-            const promptModalTrigger = document.getElementById("gtPromptModalTrigger");
-            const promptModalClose = document.getElementById("gtPromptModalClose");
             const promptPresetSelect = document.getElementById("memoPromptPresetSelect");
             const promptEditor = document.getElementById("memoPromptEditor");
             const resetPromptBtn = document.getElementById("resetPromptBtn");
-            const applyPromptBtn = document.getElementById("applyPromptBtn");
             const memoEditorReady = window.GoToolkitMemoEditorReady || Promise.resolve(null);
             let memoEditorApi = null;
             let activeDocumentId = null;
@@ -940,6 +914,79 @@
             let documentTabsRenderToken = 0;
             let currentDocIconSearch = "";
             var state = { tabs: [], activeTabId: "" };
+            const CLOUD_DRAFTS_STORAGE_KEY = "goToolkit.memo.cloudDrafts.v1";
+            const CLOUD_AUTOSAVE_DELAY_MS = 60 * 1000;
+
+            function isCloudDocumentId(docId) {
+                const id = String(docId || "").trim();
+                return id.startsWith("share:") || id.startsWith("common:");
+            }
+
+            function readCloudDrafts() {
+                if (typeof localStorage === "undefined") return {};
+                try {
+                    const raw = localStorage.getItem(CLOUD_DRAFTS_STORAGE_KEY);
+                    if (!raw) return {};
+                    const parsed = JSON.parse(raw);
+                    return parsed && typeof parsed === "object" ? parsed : {};
+                } catch (err) {
+                    return {};
+                }
+            }
+
+            function writeCloudDrafts(store) {
+                if (typeof localStorage === "undefined") return;
+                try {
+                    localStorage.setItem(CLOUD_DRAFTS_STORAGE_KEY, JSON.stringify(store || {}));
+                } catch (err) {
+                    // ignore
+                }
+            }
+
+            function getCloudDraft(docId) {
+                const key = String(docId || "").trim();
+                if (!key) return null;
+                const store = readCloudDrafts();
+                const value = store[key];
+                return value && typeof value === "object" ? value : null;
+            }
+
+            function setCloudDraft(docId, value) {
+                const key = String(docId || "").trim();
+                if (!key) return;
+                const store = readCloudDrafts();
+                store[key] = value;
+                writeCloudDrafts(store);
+            }
+
+            function removeCloudDraft(docId) {
+                const key = String(docId || "").trim();
+                if (!key) return;
+                const store = readCloudDrafts();
+                if (!Object.prototype.hasOwnProperty.call(store, key)) return;
+                delete store[key];
+                writeCloudDrafts(store);
+            }
+
+            function markActiveCloudDocumentDirty(reason = "edit") {
+                if (!isCloudDocumentId(activeDocumentId)) return;
+                const nowIso = new Date().toISOString();
+                upsertOpenDocument({
+                    id: activeDocumentId,
+                    cloudDirty: true,
+                    cloudDirtyReason: reason,
+                    cloudLastEditedAt: nowIso
+                });
+                setCloudDraft(activeDocumentId, {
+                    ...(getCloudDraft(activeDocumentId) || {}),
+                    id: activeDocumentId,
+                    payload: buildSharePayload(),
+                    updatedAt: nowIso,
+                    title: getDocumentTitleFromState(state),
+                    description: getActiveTab()?.description || "",
+                    superpowers: Array.isArray(getActiveTab()?.superpowers) ? getActiveTab().superpowers : []
+                });
+            }
 
             async function migrateSharedRecordsToSpaces() {
                 try {
@@ -1787,7 +1834,15 @@
                     notionWorkspaceId: String(doc.notionWorkspaceId || "").trim(),
                     parentId: String(doc.parentId || "").trim(),
                     icon: String(doc.icon || "").trim(),
-                    updatedAt: doc.updatedAt || new Date().toISOString()
+                    updatedAt: doc.updatedAt || new Date().toISOString(),
+                    token: String(doc.token || "").trim(),
+                    ownerToken: String(doc.ownerToken || "").trim(),
+                    spaceId: String(doc.spaceId || "").trim(),
+                    cloudKind: String(doc.cloudKind || "").trim(),
+                    cloudDirty: Boolean(doc.cloudDirty),
+                    cloudDirtyReason: String(doc.cloudDirtyReason || "").trim(),
+                    cloudLastEditedAt: String(doc.cloudLastEditedAt || "").trim(),
+                    cloudSyncedAt: String(doc.cloudSyncedAt || "").trim()
                 });
             }
             function setSingleOpenDocument(doc) {
@@ -1806,7 +1861,15 @@
                     notionWorkspaceId: String(doc.notionWorkspaceId || "").trim(),
                     parentId: String(doc.parentId || "").trim(),
                     icon: String(doc.icon || "").trim(),
-                    updatedAt: doc.updatedAt || new Date().toISOString()
+                    updatedAt: doc.updatedAt || new Date().toISOString(),
+                    token: String(doc.token || "").trim(),
+                    ownerToken: String(doc.ownerToken || "").trim(),
+                    spaceId: String(doc.spaceId || "").trim(),
+                    cloudKind: String(doc.cloudKind || "").trim(),
+                    cloudDirty: Boolean(doc.cloudDirty),
+                    cloudDirtyReason: String(doc.cloudDirtyReason || "").trim(),
+                    cloudLastEditedAt: String(doc.cloudLastEditedAt || "").trim(),
+                    cloudSyncedAt: String(doc.cloudSyncedAt || "").trim()
                 }];
             }
             function unloadStateEditors(docState) {
@@ -1883,11 +1946,14 @@
                 chain.forEach((doc, index) => {
                     if (renderToken !== documentTabsRenderToken) return;
                     const crumb = document.createElement("button");
+                    const fullTitle = String(doc.title || "Document");
+                    const isActiveCrumb = index === chain.length - 1;
                     crumb.type = "button";
-                    crumb.className = "document-breadcrumb__item" + (index === chain.length - 1 ? " active" : "");
-                    crumb.textContent = doc.title || "Document";
+                    crumb.className = "document-breadcrumb__item" + (isActiveCrumb ? " active" : "");
+                    crumb.textContent = isActiveCrumb ? fullTitle : formatMiddleEllipsis(fullTitle, 22);
+                    crumb.title = fullTitle;
                     crumb.addEventListener("click", () => {
-                        if (index === chain.length - 1) {
+                        if (isActiveCrumb) {
                             renameDocument(doc.id, doc.title || "", doc.description || "", doc.superpowers || []);
                             return;
                         }
@@ -2103,6 +2169,128 @@
                 }
             }
 
+            async function flushCloudDocument(docId, options = {}) {
+                const id = String(docId || "").trim();
+                if (!isCloudDocumentId(id) || !shareWorker?.isReady) return null;
+                const target = openDocuments.find(item => item.id === id) || null;
+                const shouldFlush = Boolean(options.force) || Boolean(target?.cloudDirty);
+                if (!shouldFlush) return null;
+                const payload = buildSharePayload();
+                const activeTab = getActiveTab();
+                const title = activeTab?.title || target?.title || "Document";
+                const description = activeTab?.description || target?.description || "";
+                const superpowers = Array.isArray(activeTab?.superpowers) ? activeTab.superpowers : (target?.superpowers || []);
+                const nowIso = new Date().toISOString();
+
+                if (id.startsWith("share:")) {
+                    const token = String(target?.token || id.slice("share:".length)).trim();
+                    if (!token) return null;
+                    const selectedSpaceId = normalizeSpaceId(target?.spaceId || DEFAULT_SPACE_ID);
+                    const savePayload = { ...payload, spaceId: selectedSpaceId };
+                    const savedMeta = await shareWorker.saveSharePayload(
+                        FIRESTORE_COLLECTION,
+                        token,
+                        savePayload,
+                        { inlineAssets: true, assetScope: "memos" }
+                    );
+                    const updatedAt = savedMeta?.updatedAt || nowIso;
+                    await shareHistory?.upsertRecord?.("memo", {
+                        token,
+                        title,
+                        description,
+                        superpowers,
+                        payload: savePayload,
+                        icon: String(target?.icon || "file-symlink").trim() || "file-symlink",
+                        parentId: String(target?.parentId || "").trim(),
+                        ownerToken: String(target?.ownerToken || "").trim(),
+                        spaceId: selectedSpaceId,
+                        updatedAt
+                    });
+                    upsertOpenDocument({
+                        id,
+                        title,
+                        description,
+                        superpowers,
+                        payload: savePayload,
+                        updatedAt,
+                        cloudDirty: false,
+                        cloudSyncedAt: updatedAt
+                    });
+                    removeCloudDraft(id);
+                    return { id, updatedAt };
+                }
+
+                if (id.startsWith("common:")) {
+                    const templateId = parseCommonTemplateId(id);
+                    if (!templateId) return null;
+                    await syncTemplates(false);
+                    const template = (cloudTemplates || []).find(item => item && String(item.id || "") === templateId) || {};
+                    const templatePayload = {
+                        label: title,
+                        description: description,
+                        category: template.category || "",
+                        superpowers: superpowers,
+                        html: activeTab?.content || "",
+                        parentId: template.parentId || "",
+                        icon: String(target?.icon || template.icon || "").trim(),
+                        ownerToken: String(target?.ownerToken || template.ownerToken || "").trim(),
+                        meta: template.meta || { uuid: createTemplateUuid() }
+                    };
+                    const savedMeta = await shareWorker.saveSharePayload(
+                        TEMPLATES_COLLECTION,
+                        templateId,
+                        templatePayload,
+                        { inlineAssets: true, assetScope: "template-memos" }
+                    );
+                    const updatedAt = savedMeta?.updatedAt || nowIso;
+                    const nextTemplate = {
+                        ...template,
+                        id: templateId,
+                        label: templatePayload.label,
+                        description: templatePayload.description,
+                        category: templatePayload.category,
+                        superpowers: templatePayload.superpowers,
+                        html: templatePayload.html,
+                        parentId: templatePayload.parentId,
+                        icon: templatePayload.icon,
+                        ownerToken: templatePayload.ownerToken,
+                        meta: templatePayload.meta,
+                        updatedAt
+                    };
+                    cloudTemplates = (cloudTemplates || []).filter(item => String(item?.id || "") !== templateId);
+                    cloudTemplates.push(nextTemplate);
+                    await window.goToolkitTemplateStore?.save?.(nextTemplate);
+                    await memoExplorer?.upsertItem?.({
+                        id: `common:${templateId}`,
+                        title: nextTemplate.label || "Golive",
+                        description: nextTemplate.description || "",
+                        superpowers: nextTemplate.superpowers || [],
+                        parentId: String(nextTemplate.parentId || "").trim() ? `common:${String(nextTemplate.parentId || "").trim()}` : "",
+                        icon: String(nextTemplate.icon || "").trim(),
+                        ownerToken: String(nextTemplate.ownerToken || "").trim(),
+                        isCommon: true,
+                        section: "common",
+                        templateData: nextTemplate,
+                        updatedAt
+                    });
+                    upsertOpenDocument({
+                        id,
+                        title: nextTemplate.label || title,
+                        description: nextTemplate.description || description,
+                        superpowers: nextTemplate.superpowers || superpowers,
+                        payload: buildSharePayload(),
+                        icon: String(nextTemplate.icon || "").trim(),
+                        ownerToken: String(nextTemplate.ownerToken || "").trim(),
+                        updatedAt,
+                        cloudDirty: false,
+                        cloudSyncedAt: updatedAt
+                    });
+                    removeCloudDraft(id);
+                    return { id, updatedAt };
+                }
+                return null;
+            }
+
             async function setActiveDocument(docId) {
                 if (!docId || docId === activeDocumentId) return;
                 saveCaretForTab(state.activeTabId, { persist: true });
@@ -2124,7 +2312,11 @@
                 const previousState = state;
                 const previousDocumentId = activeDocumentId;
                 if (previousDocumentId && previousDocumentId !== docId) {
-                    await saveDocument({ showToast: false });
+                    if (isCloudDocumentId(previousDocumentId)) {
+                        await flushCloudDocument(previousDocumentId, { reason: "switch" }).catch(() => null);
+                    } else {
+                        await saveDocument({ showToast: false });
+                    }
                 } else {
                     syncActiveDocumentPayload();
                 }
@@ -2145,7 +2337,9 @@
                     payload: buildSharePayload(),
                     title: target.title || getDocumentTitleFromState(state)
                 });
-                markDocumentOpened(target);
+                if (!isCloudDocumentId(target.id)) {
+                    markDocumentOpened(target);
+                }
                 updateDocumentHandoffId(target.id, target.handoffId);
                 refreshHandoffBadge(target.id);
                 try {
@@ -2467,10 +2661,79 @@
                 return state.tabs.find(tab => tab.id === state.activeTabId) || state.tabs[0];
             }
 
+            async function openCloudDocumentWorkingCopy(meta) {
+                const cloudId = String(meta?.id || "").trim();
+                if (!cloudId || !isCloudDocumentId(cloudId)) return;
+                const baseState = normalizeState(meta?.payload) || null;
+                if (!baseState) return;
+                const draft = getCloudDraft(cloudId);
+                const draftState = normalizeState(draft?.payload);
+                const nextState = draftState || baseState;
+
+                if (activeDocumentId && activeDocumentId !== cloudId) {
+                    if (isCloudDocumentId(activeDocumentId)) {
+                        await flushCloudDocument(activeDocumentId, { reason: "switch" }).catch(() => null);
+                    } else {
+                        await saveDocument({ showToast: false });
+                    }
+                }
+                const previousState = state;
+                unloadStateEditors(previousState);
+                state = nextState;
+                activeDocumentId = cloudId;
+                window.__memoActiveDocumentId = activeDocumentId || null;
+                renderTabs();
+                setActiveTab(state.activeTabId);
+                syncAssistPresetFromState();
+                setSingleOpenDocument({
+                    id: cloudId,
+                    title: String(meta?.title || getDocumentTitleFromState(nextState) || "Document"),
+                    description: String(meta?.description || nextState?.tabs?.[0]?.description || ""),
+                    superpowers: Array.isArray(meta?.superpowers) ? meta.superpowers : (nextState?.tabs?.[0]?.superpowers || []),
+                    payload: buildSharePayload(),
+                    icon: String(meta?.icon || "").trim(),
+                    parentId: String(meta?.parentId || "").trim(),
+                    ownerToken: String(meta?.ownerToken || "").trim(),
+                    token: String(meta?.token || "").trim(),
+                    spaceId: String(meta?.spaceId || "").trim(),
+                    cloudKind: String(meta?.cloudKind || "").trim(),
+                    cloudDirty: Boolean(draftState),
+                    cloudLastEditedAt: String(draft?.updatedAt || "").trim() || null,
+                    updatedAt: String(meta?.updatedAt || draft?.updatedAt || new Date().toISOString())
+                });
+                renderDocumentTabs();
+                await renderChildLinksFooter();
+                renderHeadingSummaryRail();
+            }
+
+            async function openSharedWorkingCopy(item) {
+                const token = String(item?.token || "").trim();
+                const id = token ? `share:${token}` : "";
+                const payload = normalizeState(item?.payload) || null;
+                if (!id || !payload) return;
+                await openCloudDocumentWorkingCopy({
+                    id,
+                    cloudKind: "shared",
+                    token,
+                    payload,
+                    title: item?.title || payload?.tabs?.[0]?.title || "Document partagé",
+                    description: item?.description || payload?.tabs?.[0]?.description || "",
+                    superpowers: Array.isArray(item?.superpowers) ? item.superpowers : (payload?.tabs?.[0]?.superpowers || []),
+                    icon: String(item?.icon || "file-symlink").trim(),
+                    parentId: String(item?.parentId || "").trim(),
+                    ownerToken: String(item?.ownerToken || "").trim(),
+                    spaceId: String(item?.spaceId || "").trim(),
+                    updatedAt: String(item?.updatedAt || "")
+                });
+                setStatus("Document cloud ouvert");
+            }
+
             async function openPublishedTemplateDirect(template) {
                 if (!template) return;
+                const templateId = String(template.id || "").trim();
+                if (!templateId) return;
                 const tabId = createId();
-                const nextState = normalizeState({
+                const payload = normalizeState({
                     tabs: [{
                         id: tabId,
                         title: String(template.label || "New page"),
@@ -2480,25 +2743,24 @@
                         metadata: {}
                     }],
                     activeTabId: tabId,
-                    templateId: String(template.id || ""),
+                    templateId: templateId,
                     templateLabel: String(template.label || ""),
                     promptPresetId: state?.promptPresetId || "edit"
                 });
-                if (!nextState) return;
-                const previousState = state;
-                await saveDocument({ showToast: false });
-                unloadStateEditors(previousState);
-                state = nextState;
-                renderTabs();
-                setActiveTab(state.activeTabId);
-                syncAssistPresetFromState();
-                renderDocumentTabs();
-                await saveDocument({
-                    showToast: false,
+                if (!payload) return;
+                await openCloudDocumentWorkingCopy({
+                    id: `common:${templateId}`,
+                    cloudKind: "common",
+                    payload,
+                    title: String(template.label || "Golive"),
                     description: String(template.description || ""),
-                    superpowers: Array.isArray(template.superpowers) ? template.superpowers : []
+                    superpowers: Array.isArray(template.superpowers) ? template.superpowers : [],
+                    icon: String(template.icon || "").trim(),
+                    parentId: String(template.parentId || "").trim() ? `common:${String(template.parentId || "").trim()}` : "",
+                    ownerToken: String(template.ownerToken || "").trim(),
+                    updatedAt: String(template.updatedAt || "")
                 });
-                setStatus("Contenu commun ouvert");
+                setStatus("Contenu Golive ouvert");
             }
 
             function getEditorCaretRange() {
@@ -2620,6 +2882,7 @@
                     if (tab) {
                         tab.content = typeof value === "string" ? value : "";
                         persistState();
+                        markActiveCloudDocumentDirty("content");
                         return;
                     }
                 }
@@ -3577,17 +3840,7 @@
                     const records = await shareHistory?.getRecordsByApp?.("memo");
                     const item = (records || []).find(entry => entry && String(entry.token || "") === token);
                     if (!item?.payload) return;
-                    const loaded = normalizeState(item.payload);
-                    if (!loaded?.tabs?.[0]) return;
-                    const first = loaded.tabs[0];
-                    await createNewDocument(
-                        memoExplorer?.uniqueName?.(item.title || first.title || "Document partagé") || (item.title || first.title || "Document partagé"),
-                        first.description || "",
-                        Array.isArray(first.superpowers) ? first.superpowers : [],
-                        first.content || "",
-                        String(item.parentId || "").trim(),
-                        String(item.icon || "file-symlink").trim()
-                    );
+                    await openSharedWorkingCopy(item);
                     return;
                 }
                 if (section === "common") {
@@ -4644,18 +4897,7 @@
                         return;
                     }
                     if (item.isShared) {
-                        const loaded = normalizeState(item.payload);
-                        if (loaded?.tabs?.[0]) {
-                            const first = loaded.tabs[0];
-                            createNewDocument(
-                                memoExplorer?.uniqueName?.(item.title || first.title || "Document partagé") || (item.title || first.title || "Document partagé"),
-                                first.description || "",
-                                Array.isArray(first.superpowers) ? first.superpowers : [],
-                                first.content || "",
-                                String(item.parentId || "").trim(),
-                                String(item.icon || "file-symlink").trim()
-                            );
-                        }
+                        openSharedWorkingCopy(item);
                         return;
                     }
                     setActiveDocument(item.id);
@@ -5033,9 +5275,41 @@
             });
 
             async function saveDocument(options) {
-                if (!documentApi || isDocumentSaving || !activeDocumentId) return null;
+                if (isDocumentSaving || !activeDocumentId) return null;
+                if (!isCloudDocumentId(activeDocumentId) && !documentApi) return null;
                 isDocumentSaving = true;
                 try {
+                    if (isCloudDocumentId(activeDocumentId)) {
+                        const payload = buildSharePayload();
+                        const preview = buildSharePreview();
+                        const activeTab = getActiveTab();
+                        const superpowers = activeTab?.superpowers || options?.superpowers || [];
+                        const now = new Date().toISOString();
+                        upsertOpenDocument({
+                            id: activeDocumentId,
+                            title: preview.title || getDocumentTitleFromState(state),
+                            description: options?.description !== undefined ? options.description : preview.description,
+                            superpowers,
+                            payload,
+                            updatedAt: now,
+                            cloudDirty: true,
+                            cloudLastEditedAt: now
+                        });
+                        setCloudDraft(activeDocumentId, {
+                            ...(getCloudDraft(activeDocumentId) || {}),
+                            id: activeDocumentId,
+                            payload,
+                            title: preview.title || getDocumentTitleFromState(state),
+                            description: options?.description !== undefined ? options.description : preview.description,
+                            superpowers,
+                            updatedAt: now
+                        });
+                        renderDocumentTabs();
+                        if (options && options.showToast) {
+                            setStatus("Brouillon local enregistré");
+                        }
+                        return { id: activeDocumentId, updatedAt: now };
+                    }
                     const payload = buildSharePayload();
                     const preview = buildSharePreview();
                     const activeTab = getActiveTab();
@@ -5094,6 +5368,33 @@
                 memoInfoPopup?.classList.remove("open");
             }
 
+            function getInfoPopupTriggerElement() {
+                return document.getElementById("memoToolbarInfoBtn") || infoButton;
+            }
+            let ignoreInfoPopupAutoCloseUntil = 0;
+
+            function positionInfoPopupUnderTrigger(triggerEl) {
+                if (!memoInfoPopup || !triggerEl) return;
+                const popupWidth = 320;
+                memoInfoPopup.style.position = "fixed";
+                memoInfoPopup.style.width = `${popupWidth}px`;
+                const rect = triggerEl.getBoundingClientRect();
+                const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
+                const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+                const spacing = 8;
+                let left = rect.left + rect.width - popupWidth;
+                if (left < spacing) left = spacing;
+                if (left + popupWidth > viewportWidth - spacing) left = Math.max(spacing, viewportWidth - popupWidth - spacing);
+                let top = rect.bottom + spacing;
+                const estimatedHeight = memoInfoPopup.offsetHeight || 220;
+                if (top + estimatedHeight > viewportHeight - spacing) {
+                    top = Math.max(spacing, rect.top - estimatedHeight - spacing);
+                }
+                memoInfoPopup.style.left = `${Math.round(left)}px`;
+                memoInfoPopup.style.top = `${Math.round(top)}px`;
+                memoInfoPopup.style.right = "auto";
+            }
+
             function escapeHtml(value) {
                 return String(value || "")
                     .replace(/&/g, "&amp;")
@@ -5101,6 +5402,16 @@
                     .replace(/>/g, "&gt;")
                     .replace(/"/g, "&quot;")
                     .replace(/'/g, "&#39;");
+            }
+
+            function formatMiddleEllipsis(value, maxLength = 28) {
+                const text = String(value || "").trim();
+                if (!text) return "";
+                if (text.length <= maxLength) return text;
+                const safeMax = Math.max(8, Number(maxLength) || 28);
+                const head = Math.ceil((safeMax - 1) / 2);
+                const tail = Math.floor((safeMax - 1) / 2);
+                return `${text.slice(0, head)}…${text.slice(text.length - tail)}`;
             }
 
             function formatOwnerTokenLabel(token) {
@@ -5660,88 +5971,74 @@
                 templatePreviewReturnFocusEl = null;
             }
 
-            function openPromptModal() {
-                function getAllowedPresetIds() {
-                    const storePresets = window.GoToolkitChatPrompt?.PRESETS || {};
-                    const base = ["edit", "suggest", "advice", "import", "draw", "extract"];
-                    const allowed = base.filter(id => Object.prototype.hasOwnProperty.call(storePresets, id));
-                    return allowed.length ? allowed : ["edit", "suggest", "advice"];
-                }
-
-                function readPromptForPreset(presetId) {
-                    const store = window.GoToolkitChatPrompt || {};
-                    const presets = store.PRESETS || {};
-                    const keyMap = {
-                        "advice": "goToolkit.chat.prompt",
-                        "suggest": "goToolkit.chat.prompt.suggest",
-                        "edit": "goToolkit.chat.prompt.edit",
-                        "import": "goToolkit.chat.prompt.import",
-                        "draw": "goToolkit.chat.prompt.draw",
-                        "extract": "goToolkit.chat.prompt.extract"
-                    };
-                    const key = keyMap[presetId] || "goToolkit.chat.prompt.edit";
-                    try {
-                        return (localStorage.getItem(key) || presets[presetId]?.prompt || presets[presetId]?.defaultPrompt || "").trim();
-                    } catch (err) {
-                        return (presets[presetId]?.prompt || presets[presetId]?.defaultPrompt || "").trim();
-                    }
-                }
-
-                function ensurePresetOptions(allowedIds) {
-                    if (!promptPresetSelect || !window.GoToolkitChatPrompt?.PRESETS) return;
-                    const presets = window.GoToolkitChatPrompt.PRESETS;
-                    promptPresetSelect.innerHTML = "";
-                    allowedIds.forEach(id => {
-                        const preset = presets[id] || {};
-                        const btn = document.createElement("button");
-                        btn.type = "button";
-                        btn.className = "btn-secondary memo-prompt-preset-btn";
-                        btn.dataset.id = id;
-                        btn.innerHTML = (preset.icon ? `<i data-lucide="${preset.icon}"></i> ` : '') + (preset.label || id);
-                        btn.addEventListener("click", () => {
-                            setActivePreset(id);
-                        });
-                        promptPresetSelect.appendChild(btn);
-                    });
-                    if (window.lucide) window.lucide.createIcons();
-                }
-
-                function setActivePreset(id) {
-                    if (promptEditor) {
-                        promptEditor.value = readPromptForPreset(id);
-                    }
-
-                    promptPresetSelect?.querySelectorAll(".memo-prompt-preset-btn").forEach(btn => {
-                        btn.classList.toggle("active", btn.dataset.id === id);
-                    });
-                    if (promptPresetSelect) promptPresetSelect.dataset.value = id;
-                }
-
-                if (promptEditor && window.GoToolkitChatPrompt) {
-                    const allowedIds = getAllowedPresetIds();
-                    ensurePresetOptions(allowedIds);
-
-                    const assistPreset = window.GoToolkitAssistInstance?.promptPresetId;
-                    const fallbackPreset = state?.promptPresetId;
-                    const activeId = (assistPreset && allowedIds.includes(assistPreset))
-                        ? assistPreset
-                        : (fallbackPreset && allowedIds.includes(fallbackPreset))
-                            ? fallbackPreset
-                            : (allowedIds.includes("edit") ? "edit" : (allowedIds[0] || "edit"));
-
-                    if (promptPresetSelect) {
-                        setActivePreset(activeId);
-                    }
-                    promptEditor.value = readPromptForPreset(activeId);
-                }
-
-                promptModal?.classList.add("open");
-                promptModal?.setAttribute("aria-hidden", "false");
+            function getAllowedPromptPresetIds() {
+                const storePresets = window.GoToolkitChatPrompt?.PRESETS || {};
+                const base = ["edit", "suggest", "advice", "import", "draw", "extract"];
+                const allowed = base.filter(id => Object.prototype.hasOwnProperty.call(storePresets, id));
+                return allowed.length ? allowed : ["edit", "suggest", "advice"];
             }
 
-            function closePromptModal() {
-                promptModal?.classList.remove("open");
-                promptModal?.setAttribute("aria-hidden", "true");
+            function readPromptForPreset(presetId) {
+                const store = window.GoToolkitChatPrompt || {};
+                const presets = store.PRESETS || {};
+                const keyMap = {
+                    "advice": "goToolkit.chat.prompt",
+                    "suggest": "goToolkit.chat.prompt.suggest",
+                    "edit": "goToolkit.chat.prompt.edit",
+                    "import": "goToolkit.chat.prompt.import",
+                    "draw": "goToolkit.chat.prompt.draw",
+                    "extract": "goToolkit.chat.prompt.extract"
+                };
+                const key = keyMap[presetId] || "goToolkit.chat.prompt.edit";
+                try {
+                    return (localStorage.getItem(key) || presets[presetId]?.prompt || presets[presetId]?.defaultPrompt || "").trim();
+                } catch (err) {
+                    return (presets[presetId]?.prompt || presets[presetId]?.defaultPrompt || "").trim();
+                }
+            }
+
+            function setActivePromptPreset(id) {
+                if (promptEditor) {
+                    promptEditor.value = readPromptForPreset(id);
+                }
+                promptPresetSelect?.querySelectorAll(".memo-prompt-preset-btn").forEach(btn => {
+                    btn.classList.toggle("active", btn.dataset.id === id);
+                });
+                if (promptPresetSelect) promptPresetSelect.dataset.value = id;
+            }
+
+            function ensurePromptPresetOptions(allowedIds) {
+                if (!promptPresetSelect || !window.GoToolkitChatPrompt?.PRESETS) return;
+                const presets = window.GoToolkitChatPrompt.PRESETS;
+                promptPresetSelect.innerHTML = "";
+                allowedIds.forEach(id => {
+                    const preset = presets[id] || {};
+                    const btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.className = "btn-secondary memo-prompt-preset-btn";
+                    btn.dataset.id = id;
+                    btn.innerHTML = (preset.icon ? `<i data-lucide="${preset.icon}"></i> ` : '') + (preset.label || id);
+                    btn.addEventListener("click", () => {
+                        setActivePromptPreset(id);
+                    });
+                    promptPresetSelect.appendChild(btn);
+                });
+                if (window.lucide) window.lucide.createIcons();
+            }
+
+            function refreshPromptSettingsEditor() {
+                if (!promptEditor || !window.GoToolkitChatPrompt) return;
+                const allowedIds = getAllowedPromptPresetIds();
+                ensurePromptPresetOptions(allowedIds);
+                const assistPreset = window.GoToolkitAssistInstance?.promptPresetId;
+                const fallbackPreset = state?.promptPresetId;
+                const activeId = (assistPreset && allowedIds.includes(assistPreset))
+                    ? assistPreset
+                    : (fallbackPreset && allowedIds.includes(fallbackPreset))
+                        ? fallbackPreset
+                        : (allowedIds.includes("edit") ? "edit" : (allowedIds[0] || "edit"));
+                setActivePromptPreset(activeId);
+                promptEditor.value = readPromptForPreset(activeId);
             }
 
             function setupMemoPrompt() {
@@ -6133,7 +6430,16 @@
                     }
                     autoSaveTimer = setInterval(() => {
                         if (activeDocumentId) {
-                            saveDocument({ showToast: false });
+                            if (isCloudDocumentId(activeDocumentId)) {
+                                const activeDoc = openDocuments.find(item => item.id === activeDocumentId) || null;
+                                const lastEditedAt = Date.parse(String(activeDoc?.cloudLastEditedAt || ""));
+                                const elapsedMs = Number.isFinite(lastEditedAt) ? (Date.now() - lastEditedAt) : Number.MAX_SAFE_INTEGER;
+                                if (activeDoc?.cloudDirty && elapsedMs >= CLOUD_AUTOSAVE_DELAY_MS) {
+                                    flushCloudDocument(activeDocumentId, { reason: "timer" }).catch(() => null);
+                                }
+                            } else {
+                                saveDocument({ showToast: false });
+                            }
                         }
                     }, 10000);
                 })
@@ -6145,10 +6451,19 @@
                 try {
                     saveCaretForTab(state.activeTabId, { persist: false });
                     persistState();
-                    saveDocument({ showToast: false });
+                    if (isCloudDocumentId(activeDocumentId)) {
+                        flushCloudDocument(activeDocumentId, { reason: "unload", force: true }).catch(() => null);
+                    } else {
+                        saveDocument({ showToast: false });
+                    }
                 } catch (err) {
                     // ignore
                 }
+            });
+            document.addEventListener("visibilitychange", () => {
+                if (document.visibilityState !== "hidden") return;
+                if (!isCloudDocumentId(activeDocumentId)) return;
+                flushCloudDocument(activeDocumentId, { reason: "hidden", force: true }).catch(() => null);
             });
 
             const settingsModalApi = window.GoToolkitSettingsModal?.bind?.({
@@ -6188,6 +6503,8 @@
                         refreshYoutubeIntegration(false).catch(() => { /* noop */ });
                         refreshMicrosoftIntegration(false).catch(() => { /* noop */ });
                         refreshGmailIntegration(false).catch(() => { /* noop */ });
+                    } else if ((button.dataset.tab || "") === "promptTab") {
+                        refreshPromptSettingsEditor();
                     }
                 });
             });
@@ -6204,8 +6521,22 @@
                 applyTheme(theme);
             });
 
+            resetPromptBtn?.addEventListener("click", () => {
+                if (!window.GoToolkitChatPrompt) return;
+                const presetId = (promptPresetSelect?.dataset.value || "edit").trim();
+                promptEditor.value = window.GoToolkitChatPrompt.PRESETS?.[presetId]?.defaultPrompt || "";
+            });
+
             saveSettingsBtn?.addEventListener("click", () => {
                 try {
+                    const activeSettingsTab = settingsTabButtons.find(button => button.classList.contains("active"))?.dataset?.tab || "";
+                    if (activeSettingsTab === "promptTab") {
+                        const presetId = (promptPresetSelect?.dataset.value || "edit").trim();
+                        applyPromptChanges(presetId, promptEditor?.value || "");
+                        closeSettingsModal();
+                        setStatus("Prompt mis à jour");
+                        return;
+                    }
                     const cfg = window.GoToolkitIAConfig;
                     const backend = (aiBackendSelect?.value || "openrouter").trim();
                     const openAiKey = (iaApiKeyInput?.value || "").trim();
@@ -7090,10 +7421,28 @@
                 }
             };
 
+            document.addEventListener("memoEditorOpenInfoPopup", () => {
+                const trigger = getInfoPopupTriggerElement();
+                if (!trigger) return;
+                closeMenus();
+                positionInfoPopupUnderTrigger(trigger);
+                ignoreInfoPopupAutoCloseUntil = Date.now() + 250;
+                memoInfoPopup?.classList.add("open");
+            });
+
             infoButton?.addEventListener("click", event => {
                 event.stopPropagation();
                 closeMenus();
+                const trigger = getInfoPopupTriggerElement();
+                if (trigger) positionInfoPopupUnderTrigger(trigger);
                 memoInfoPopup?.classList.toggle("open");
+            });
+
+            fileMenuSourceBtn?.addEventListener("click", event => {
+                event.preventDefault();
+                event.stopPropagation();
+                closeMenus();
+                window.openMemoSourceModal?.();
             });
 
             memoGuidedTourBtn?.addEventListener("click", event => {
@@ -7225,32 +7574,12 @@
             });
 
             document.addEventListener("click", event => {
-                const trigger = event.target.closest("#gtPromptModalTrigger");
-                if (!trigger) return;
-                event.preventDefault();
-                openPromptModal();
-            });
-            promptModalClose?.addEventListener("click", () => closePromptModal());
-            promptModal?.addEventListener("click", event => {
-                if (event.target === promptModal) closePromptModal();
-            });
-            resetPromptBtn?.addEventListener("click", () => {
-                if (!window.GoToolkitChatPrompt) return;
-                const presetId = (promptPresetSelect?.dataset.value || "edit").trim();
-                promptEditor.value = window.GoToolkitChatPrompt.PRESETS?.[presetId]?.defaultPrompt || "";
-            });
-            applyPromptBtn?.addEventListener("click", () => {
-                const presetId = (promptPresetSelect?.dataset.value || "edit").trim();
-                applyPromptChanges(presetId, promptEditor.value);
-                closePromptModal();
-                setStatus("Prompt mis à jour");
-            });
-
-            document.addEventListener("click", event => {
                 if (fileMenu?.contains(event.target) || fileMenuBtn?.contains(event.target)) return;
                 if (shareMenu?.contains(event.target) || shareBtn?.contains(event.target)) return;
                 if (settingsModal?.contains(event.target) || memoSettingsBtn?.contains(event.target)) return;
-                if (memoInfoPopup?.contains(event.target) || infoButton?.contains(event.target)) return;
+                const infoTrigger = getInfoPopupTriggerElement();
+                if (memoInfoPopup?.contains(event.target) || infoTrigger?.contains?.(event.target)) return;
+                if (Date.now() < ignoreInfoPopupAutoCloseUntil) return;
                 if (currentDocIconGrid && !currentDocIconGrid.contains(event.target) && !currentDocIconBtn?.contains(event.target)) {
                     currentDocIconGrid.classList.remove("open");
                 }
@@ -7264,7 +7593,6 @@
                     closeMenus();
                     closeTemplateModal();
                     closeTemplatePreview();
-                    closePromptModal();
                     closeSettingsModal();
                     closeInfoPopup();
                 }

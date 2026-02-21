@@ -236,7 +236,7 @@
     }
     function isAutoFileIcon(value) {
         const icon = String(value || "").trim();
-        return !icon || icon === "file" || icon === "file-text";
+        return !icon || icon === "file" || icon === "file-text" || icon === "file-symlink";
     }
 
     function formatRelativeShort(value) {
@@ -1000,6 +1000,27 @@
             return nextDepth > 4;
         }
 
+        function setDocumentDragPayload(dataTransfer, item) {
+            if (!dataTransfer || !item) return;
+            const docId = String(item.id || "").trim();
+            if (!docId) return;
+            const payload = {
+                id: docId,
+                title: String(item.title || "").trim(),
+                section: String(getItemSection(item) || "private")
+            };
+            dataTransfer.effectAllowed = "move";
+            dataTransfer.setData("text/plain", docId);
+            dataTransfer.setData("application/x-gotoolkit-docid", docId);
+            dataTransfer.setData("application/x-gotoolkit-memo-document", JSON.stringify(payload));
+            dataTransfer.setData("text/uri-list", `memo://${docId}`);
+            try {
+                window.__goToolkitDraggingMemoDocument = payload;
+            } catch (err) {
+                // ignore
+            }
+        }
+
         function ensureSearchViewState() {
             const hasQuery = Boolean(String(searchQuery || "").trim());
             if (hasQuery) {
@@ -1086,6 +1107,23 @@
                 });
                 if (expandedChanged) persistExpandedState();
             }
+            const activeSectionName = (() => {
+                if (!activeId) return "";
+                const activeItem = filteredItems.find(item => String(item?.id || "") === String(activeId));
+                return activeItem ? getItemSection(activeItem) : "";
+            })();
+            const isActiveInsideNode = (tree, nodeId) => {
+                const targetId = String(nodeId || "").trim();
+                if (!activeId || !targetId || !tree?.byId?.get) return false;
+                let cursorId = String(activeId).trim();
+                while (cursorId) {
+                    if (cursorId === targetId) return true;
+                    const cursorItem = tree.byId.get(cursorId);
+                    if (!cursorItem) break;
+                    cursorId = String(cursorItem.parentId || "").trim();
+                }
+                return false;
+            };
             const recentItems = filteredItems
                 .slice()
                 .sort((a, b) => String(b?.updatedAt || "").localeCompare(String(a?.updatedAt || "")))
@@ -1127,7 +1165,6 @@
                 const defaultIconName = (() => {
                     if (hasHandoff) return "";
                     if (!isAutoFileIcon(item.icon)) return item.icon;
-                    if (item.isShared) return "file-symlink";
                     return hasChildren ? "file-text" : "file";
                 })();
                 const renderLeading = (showChevron) => {
@@ -1136,7 +1173,7 @@
                     } else if (showChevron) {
                         lead.innerHTML = `<i data-lucide="${isExpanded ? "chevron-down" : "chevron-right"}"></i>`;
                     } else {
-                        lead.innerHTML = `<i data-lucide="${isExpanded ? "chevron-down" : defaultIconName}"></i>`;
+                        lead.innerHTML = defaultIconName ? `<i data-lucide="${defaultIconName}"></i>` : "";
                     }
                     if (window.lucide) window.lucide.createIcons();
                 };
@@ -1144,7 +1181,10 @@
                 lead.addEventListener("click", event => {
                     if (!hasChildren) return;
                     event.stopPropagation();
-                    if (expandedIds.has(item.id)) expandedIds.delete(item.id);
+                    if (expandedIds.has(item.id)) {
+                        if (isActiveInsideNode(tree, item.id)) return;
+                        expandedIds.delete(item.id);
+                    }
                     else expandedIds.add(item.id);
                     persistExpandedState();
                     renderList(cachedItems);
@@ -1154,7 +1194,10 @@
                     if (!hasChildren) return;
                     event.preventDefault();
                     event.stopPropagation();
-                    if (expandedIds.has(item.id)) expandedIds.delete(item.id);
+                    if (expandedIds.has(item.id)) {
+                        if (isActiveInsideNode(tree, item.id)) return;
+                        expandedIds.delete(item.id);
+                    }
                     else expandedIds.add(item.id);
                     persistExpandedState();
                     renderList(cachedItems);
@@ -1240,15 +1283,17 @@
                     draggingId = item.id;
                     draggingSection = sectionName || getItemSection(item);
                     button.classList.add("is-dragging");
-                    event.dataTransfer.effectAllowed = "move";
-                    event.dataTransfer.setData("text/plain", item.id);
-                    event.dataTransfer.setData("application/x-gotoolkit-docid", item.id);
-                    event.dataTransfer.setData("text/uri-list", `memo://${item.id}`);
+                    setDocumentDragPayload(event.dataTransfer, item);
                 });
                 button.addEventListener("dragend", () => {
                     draggingId = "";
                     draggingSection = "";
                     button.classList.remove("is-dragging");
+                    try {
+                        window.__goToolkitDraggingMemoDocument = null;
+                    } catch (err) {
+                        // ignore
+                    }
                 });
                 button.addEventListener("dragover", event => {
                     if (!draggingId || draggingId === item.id) return;
@@ -1358,6 +1403,10 @@
                     sectionHeader.appendChild(actions);
                 }
                 sectionHeader.addEventListener("click", () => {
+                    const isSectionExpandedNow = sectionExpanded[sectionName] !== false;
+                    if (isSectionExpandedNow && sectionName !== "recent" && activeSectionName === sectionName) {
+                        return;
+                    }
                     sectionExpanded[sectionName] = !sectionExpanded[sectionName];
                     persistSectionExpandedState();
                     renderList(cachedItems);
@@ -1390,6 +1439,7 @@
                     const button = document.createElement("button");
                     button.type = "button";
                     button.className = "document-explorer__item";
+                    button.draggable = true;
                     if (item.id) {
                         button.dataset.documentId = item.id;
                         if (activeId && activeId === item.id) {
@@ -1405,6 +1455,22 @@
                     label.textContent = item.title || "Document";
                     button.appendChild(label);
                     button.addEventListener("click", () => onSelect?.(item));
+                    button.addEventListener("dragstart", event => {
+                        draggingId = item.id;
+                        draggingSection = getItemSection(item);
+                        button.classList.add("is-dragging");
+                        setDocumentDragPayload(event.dataTransfer, item);
+                    });
+                    button.addEventListener("dragend", () => {
+                        draggingId = "";
+                        draggingSection = "";
+                        button.classList.remove("is-dragging");
+                        try {
+                            window.__goToolkitDraggingMemoDocument = null;
+                        } catch (err) {
+                            // ignore
+                        }
+                    });
                     row.appendChild(button);
                     sectionBody.appendChild(row);
                 }
@@ -1533,15 +1599,17 @@
                                 draggingId = doc.id;
                                 draggingSection = "superpowers";
                                 childBtn.classList.add("is-dragging");
-                                event.dataTransfer.effectAllowed = "move";
-                                event.dataTransfer.setData("text/plain", doc.id);
-                                event.dataTransfer.setData("application/x-gotoolkit-docid", doc.id);
-                                event.dataTransfer.setData("text/uri-list", `memo://${doc.id}`);
+                                setDocumentDragPayload(event.dataTransfer, doc);
                             });
                             childBtn.addEventListener("dragend", () => {
                                 draggingId = "";
                                 draggingSection = "";
                                 childBtn.classList.remove("is-dragging");
+                                try {
+                                    window.__goToolkitDraggingMemoDocument = null;
+                                } catch (err) {
+                                    // ignore
+                                }
                             });
                             childRow.appendChild(childBtn);
                             sectionBody.appendChild(childRow);

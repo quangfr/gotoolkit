@@ -1523,7 +1523,7 @@ label {
   position: absolute;
   top: 56px;
   right: 12px;
-  width: 280px;
+  width: 320px;
   background: var(--bg-surface);
   border-radius: var(--radius-md);
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
@@ -1611,7 +1611,21 @@ label {
   display: flex;
   justify-content: space-between;
   gap: 8px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+}
+
+.info-actions-row > * {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.info-actions-row > button {
+  width: 100%;
+}
+
+#feedback-app-memo-inline-container > * {
+  flex: 1 1 0;
+  width: 100%;
 }
 
 .release-notes-modal {
@@ -1934,6 +1948,18 @@ ul.release-roadmap-text li::before {
 .chat-header-btn {
   padding: 6px 10px;
   position: relative;
+}
+
+#chatMemoryBtn:hover,
+#chatMemoryBtn:focus-visible,
+#chatClearBtn:hover,
+#chatClearBtn:focus-visible {
+  border-color: var(--color-primary);
+}
+
+#assistSidebar.chat-sidebar--drop-target {
+  border-color: var(--color-primary);
+  box-shadow: inset 0 0 0 1px var(--color-primary);
 }
 
 .chat-header-badge {
@@ -2360,14 +2386,17 @@ ul.release-roadmap-text li::before {
 
 .chat-knowledge-modal {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: var(--chat-sidebar-width, 0px);
-  height: 100vh;
+  top: 1vh;
+  left: 50%;
+  transform: translate(-50%, -105%);
+  width: 95vw;
+  min-width: 800px;
+  max-width: 1200px;
+  height: 98vh;
   background: var(--bg-surface);
-  border-right: 1px solid var(--border-main);
+  border: 1px solid var(--border-main);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
-  transform: translateX(-100%);
   transition: transform 0.2s ease;
   z-index: 5000;
   display: flex;
@@ -2379,7 +2408,7 @@ ul.release-roadmap-text li::before {
 }
 
 .chat-knowledge-modal.open {
-  transform: translateX(0);
+  transform: translate(-50%, 0);
 }
 
 .chat-knowledge-modal__header {
@@ -2433,10 +2462,10 @@ ul.release-roadmap-text li::before {
 .chat-knowledge-modal__list {
   flex: 1;
   overflow: auto;
-  border: 1px solid var(--border-main);
-  border-radius: var(--radius-md);
-  padding: 10px;
-  background: var(--bg-surface-soft);
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
   font-size: 14px;
 }
 
@@ -2465,6 +2494,20 @@ ul.release-roadmap-text li::before {
 }
 
 @media (max-width: 900px) {
+  .chat-knowledge-modal {
+    top: 1vh;
+    left: 50%;
+    width: 95vw;
+    min-width: 0;
+    height: 98vh;
+    border-radius: var(--radius-md);
+    transform: translate(-50%, -105%);
+  }
+
+  .chat-knowledge-modal.open {
+    transform: translate(-50%, 0);
+  }
+
   .modal,
   .feedback-app-dialog {
     width: 100%;
@@ -2527,13 +2570,13 @@ ul.release-roadmap-text li::before {
 }
 
 .chat-knowledge-modal__tree-item {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(320px, 520px);
+  display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   width: 100%;
-  padding: 5px 6px 5px calc(6px + (var(--tree-depth, 0) * 16px));
-  border-radius: 6px;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
 }
 
 .chat-knowledge-modal__tree-main {
@@ -2544,15 +2587,11 @@ ul.release-roadmap-text li::before {
 }
 
 .chat-knowledge-modal__tree-description {
-  font-size: 12px;
-  color: var(--text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  display: none;
 }
 
 .chat-knowledge-modal__tree-item:hover {
-  background: var(--bg-surface-soft);
+  background: transparent;
 }
 
 .chat-knowledge-modal__tree-toggle {

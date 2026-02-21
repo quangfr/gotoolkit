@@ -1809,18 +1809,6 @@ const Toolbar = ({ editor, onDropdownToggle, onLink, onInsertImage, onInsertVide
             <CheckCheck size={16} />
           </button>
         )}
-        <button
-          className="tiptap-button"
-          aria-label="Voir le code source"
-          title="Source"
-          type="button"
-          onClick={() => {
-            (window as any).openMemoSourceModal?.();
-            document.dispatchEvent(new CustomEvent('memoEditorOpenSourceModal'));
-          }}
-        >
-          <CodeXml size={16} />
-        </button>
       </div>
     </div>
   );

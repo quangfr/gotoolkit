@@ -12,6 +12,7 @@
                     <button type="button" class="tab-btn active" data-tab="servicesTab"><i data-lucide="cpu" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Services IA</button>
                     <button type="button" class="tab-btn" data-tab="paramsTab"><i data-lucide="sliders" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Personnalisation</button>
                     <button type="button" class="tab-btn" data-tab="integrationsTab"><i data-lucide="plug-zap" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Intégrations</button>
+                    <button type="button" class="tab-btn" data-tab="promptTab"><i data-lucide="square-terminal" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Prompt</button>
                 </div>
                 <div class="settings-tab-panels-wrapper" style="flex: 1; overflow-y: auto; padding-right: 8px; margin-right: -8px;">
                     <div class="settings-tab-panel" data-panel="servicesTab">
@@ -208,29 +209,17 @@
                         </div>
                     </div>
                     <div class="settings-tab-panel" data-panel="promptTab" hidden>
-                        <div class="field-row">
-                            <label>
-                                <span class="label-title">Preset</span>
-                                <select id="chatPromptPresetSelect">
-                                    <option value="advice">Conseiller</option>
-                                    <option value="ask">Explorer</option>
-                                    <option value="suggest">Suggérer</option>
-                                    <option value="edit">Éditer</option>
-                                </select>
-                            </label>
-                        </div>
-                        <div class="field-row">
-                            <label>
-                                <span class="label-title">Prompt</span>
-                                <textarea id="chatPromptTextarea" rows="15" placeholder="Entrez le prompt personnalisé..."></textarea>
-                            </label>
+                        <div class="header-row ia-header-actions" style="display:block;">
+                            <div id="memoPromptPresetSelect"></div>
+                            <textarea id="memoPromptEditor" rows="24" placeholder="Entrez le prompt personnalisé..."></textarea>
                         </div>
                     </div>
                 </div>
                 <div class="feedback-actions" style="margin-top: auto;">
                     <button id="refreshCacheBtn" type="button" class="btn-secondary" title="Réparer">Réparer</button>
                     <div style="flex: 1;"></div>
-                    <button id="resetChatPromptBtn" type="button" class="btn-secondary" hidden>Réinitialiser</button>
+                    <button id="resetPromptBtn" type="button" class="btn-secondary" hidden><i data-lucide="rotate-ccw"
+                            style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i>Réinitialiser</button>
                     <button id="saveSettingsBtn" type="button" class="btn-primary" style="margin-left:auto;">Sauvegarder</button>
                 </div>
             </form>
@@ -682,9 +671,9 @@
     }
 
     function updateSettingsActionButtons(modal, tabId) {
-        const resetChatPromptBtn = modal?.querySelector("#resetChatPromptBtn");
-        if (!resetChatPromptBtn) return;
-        resetChatPromptBtn.hidden = tabId !== "promptTab";
+        const resetPromptBtn = modal?.querySelector("#resetPromptBtn");
+        if (!resetPromptBtn) return;
+        resetPromptBtn.hidden = tabId !== "promptTab";
     }
 
     function activateSettingsTab(modal, tabId) {

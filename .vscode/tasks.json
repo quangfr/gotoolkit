@@ -65,8 +65,7 @@
 			"dependsOrder": "sequence",
 			"dependsOn": [
 				"Build",
-				"Dev",
-				"Serve public"
+				"Dev"
 			],
 			"problemMatcher": []
 		},
