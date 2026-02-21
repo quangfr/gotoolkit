@@ -28,6 +28,18 @@
     return `${base}/${API_VERSION}/shares/${encodedCollection}/${encodedToken}`;
   }
 
+  function buildCollectionQueryUrl(base, collection, query) {
+    const url = new URL(buildShareUrl(base, collection, null));
+    const params = query && typeof query === "object" ? query : {};
+    Object.entries(params).forEach(([key, value]) => {
+      if (value === undefined || value === null) return;
+      const text = String(value).trim();
+      if (!text) return;
+      url.searchParams.set(String(key), text);
+    });
+    return url.toString();
+  }
+
   function buildAssetUrl(base, assetId) {
     const encodedId = encodeURIComponent(assetId);
     return `${base}/${API_VERSION}/assets/${encodedId}`;
@@ -86,10 +98,26 @@
   }
 
   async function fetchWithBase(base, collection, token, options) {
-    const url = buildShareUrl(base, collection, token);
+    const requestOptions = Object.assign({}, options || {});
+    const method = String(requestOptions.method || "GET").toUpperCase();
+    let url = buildShareUrl(base, collection, token);
+    if (method === "GET") {
+      const parsed = new URL(url);
+      parsed.searchParams.set("_ts", String(Date.now()));
+      url = parsed.toString();
+      requestOptions.cache = "no-store";
+      const headers = new Headers(requestOptions.headers || {});
+      if (!headers.has("Cache-Control")) {
+        headers.set("Cache-Control", "no-cache, no-store, max-age=0");
+      }
+      if (!headers.has("Pragma")) {
+        headers.set("Pragma", "no-cache");
+      }
+      requestOptions.headers = headers;
+    }
     let response;
     try {
-      response = await fetch(url, options);
+      response = await fetch(url, requestOptions);
     } catch (error) {
       throw markNetworkFailure(error instanceof Error ? error : new Error(String(error)));
     }
@@ -278,6 +306,39 @@
     });
   }
 
+  async function listShareTree(collection, options = {}) {
+    assertReady();
+    return withWorkerFallback(async base => {
+      const url = buildCollectionQueryUrl(base, collection, {
+        view: "tree",
+        spaceId: options?.spaceId
+      });
+      let response;
+      try {
+        response = await fetch(url, {
+          method: "GET",
+          cache: "no-store",
+          headers: {
+            Accept: "application/json",
+            "Cache-Control": "no-cache, no-store, max-age=0",
+            Pragma: "no-cache"
+          }
+        });
+      } catch (error) {
+        throw markNetworkFailure(error instanceof Error ? error : new Error(String(error)));
+      }
+      if (!response.ok) {
+        const body = await response.text().catch(() => "");
+        throw new Error(body || "Impossible de récupérer l'arborescence");
+      }
+      const data = await response.json().catch(() => ({}));
+      return {
+        documents: Array.isArray(data.documents) ? data.documents : [],
+        watermark: String(data.watermark || "").trim()
+      };
+    });
+  }
+
   async function uploadAsset(payload, options = {}) {
     assertReady();
     return withWorkerFallback(async base => {
@@ -320,6 +381,7 @@
     saveSharePayload,
     deleteSharePayload,
     listShares,
+    listShareTree,
     uploadAsset,
     deleteAsset,
     buildAssetUrl: assetId => buildAssetUrl(workerBases[0], assetId)

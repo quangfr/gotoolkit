@@ -1,6 +1,6 @@
 ## 2026-02-21
 - Docs : Vue en arborescence des documents
-- Docs: Espace de partage
+- Docs : Espace de partage
 
 ## 2026-02-19
 - Voice : Télécharger l'enregistrement vidéo
@@ -32,7 +32,6 @@
 - Docs : Exporter en HTML Email, Markdown, PDF et texte
 
 ## 2026-01-18
-- Home : Affichage des modèles par superpouvoir
 - Docs : Libellé avec autocomplétion, style et couleurs
 - Docs : Sommaire et entêtes dépliables
 
@@ -72,7 +71,7 @@
 - AI : Moteur `gpt-oss-120b` plus rapide et sans rétention de données
 
 ## 2025-12-29
-- Accueil : Ajout des `Notes de version` et de la `Feuille de route`
+- Misc : Ajout des `Notes de version` et de la `Feuille de route`
 
 ## 2025-12-28
 - Module `Voice` pour enregistrer audio et partage d’écran
@@ -80,7 +79,7 @@
 
 ## 2025-12-27
 - AI : Choix du fournisseur AI `OpenRouter`
-- Accueil : Clarification des `CGU`
+- Misc : Clarification des `Mentions légales`
 
 ## 2025-12-24
 - Feedback : Liste des demandes de feedback (admin)
@@ -104,7 +103,7 @@
 - Module `Timeline` (déprécié): planning temporel de projet ou de produit 
 
 ## 2025-11-24
-- Module `Home` avec partage des liens de document et espace en ligne
+- Module `Home` (déprécié) avec partage des liens de document et espace en ligne
 
 ## 2025-11-22
 - Module `Canvas` (déprécié) : Texte structuré

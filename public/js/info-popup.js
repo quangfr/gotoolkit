@@ -105,7 +105,7 @@
         logoLight.className = "logo-light";
 
         const logoDark = document.createElement("img");
-        logoDark.src = config.logoSrc.replace("logo.gif", "logo_inverted.gif");
+        logoDark.src = config.logoSrc.replace("logo.gif", "logo-inverted.gif");
         logoDark.alt = config.logoAlt;
         logoDark.className = "logo-dark";
 

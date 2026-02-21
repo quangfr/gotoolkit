@@ -437,6 +437,21 @@ function extractMeta(doc) {
   return convertFields(metaField);
 }
 
+function buildShareSummary(entry) {
+  const payload = entry?.payload && typeof entry.payload === "object" ? entry.payload : {};
+  const firstTab = Array.isArray(payload?.tabs) ? payload.tabs[0] : null;
+  return {
+    id: String(entry?.id || "").trim(),
+    title: String(payload?.title || firstTab?.title || "Document partagé").trim(),
+    description: String(payload?.description || firstTab?.description || "").trim(),
+    superpowers: Array.isArray(firstTab?.superpowers) ? firstTab.superpowers : [],
+    icon: String(payload?.icon || "file-symlink").trim() || "file-symlink",
+    parentId: String(payload?.parentId || "").trim(),
+    spaceId: String(payload?.spaceId || "golive").trim().toLowerCase() || "golive",
+    updatedAt: String(entry?.meta?.updatedAt || entry?.meta?.updatedDate || "").trim()
+  };
+}
+
 function mapStorageObjectToAsset(objectName, upload) {
   return {
     id: toBase64UrlString(objectName),
@@ -523,28 +538,45 @@ async function fetchShareDocument(env, collection, documentId) {
 
 async function listShareDocuments(env, collection) {
   const baseUrl = getFirestoreBaseUrl(env);
-  const url = `${baseUrl}/${collection}?pageSize=100`;
-  const response = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${await getAccessToken(env)}`,
-      Accept: "application/json"
+  const token = await getAccessToken(env);
+  const documents = [];
+  let pageToken = "";
+  let pageCount = 0;
+  do {
+    const params = new URLSearchParams();
+    params.set("pageSize", "100");
+    if (pageToken) {
+      params.set("pageToken", pageToken);
     }
-  });
-  if (!response.ok) {
-    const body = await response.text().catch(() => "");
-    throw new Error(`Erreur Firestore: ${response.status} ${body}`);
-  }
-  const data = await response.json();
-  const documents = (data.documents || []).map(doc => {
-    // extract document ID from name path
-    const nameSegments = doc.name.split("/");
-    const id = nameSegments[nameSegments.length - 1];
-    return {
-      id,
-      payload: extractPayload(doc),
-      meta: extractMeta(doc)
-    };
-  });
+    const url = `${baseUrl}/${collection}?${params.toString()}`;
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json"
+      }
+    });
+    if (!response.ok) {
+      const body = await response.text().catch(() => "");
+      throw new Error(`Erreur Firestore: ${response.status} ${body}`);
+    }
+    const data = await response.json();
+    const pageDocs = (data.documents || []).map(doc => {
+      // extract document ID from name path
+      const nameSegments = doc.name.split("/");
+      const id = nameSegments[nameSegments.length - 1];
+      return {
+        id,
+        payload: extractPayload(doc),
+        meta: extractMeta(doc)
+      };
+    });
+    documents.push(...pageDocs);
+    pageToken = String(data.nextPageToken || "").trim();
+    pageCount += 1;
+    if (pageCount >= 50) {
+      break;
+    }
+  } while (pageToken);
   return documents;
 }
 
@@ -726,14 +758,35 @@ async function handleRequest(request, env) {
   }
   if (request.method === "GET") {
     if (!path.documentId) {
+      const requestUrl = new URL(request.url);
+      const view = String(requestUrl.searchParams.get("view") || "").trim().toLowerCase();
+      if (view === "tree") {
+        const spaceFilter = String(requestUrl.searchParams.get("spaceId") || "").trim().toLowerCase();
+        const docs = await listShareDocuments(env, path.collection);
+        const summaries = docs
+          .map(buildShareSummary)
+          .filter(item => item.id)
+          .filter(item => !spaceFilter || item.spaceId === spaceFilter)
+          .sort((a, b) => Date.parse(b.updatedAt || 0) - Date.parse(a.updatedAt || 0));
+        const watermark = summaries[0]?.updatedAt || "";
+        return jsonResponse({ documents: summaries, watermark }, 200, request, env, {
+          "Cache-Control": "no-store, max-age=0"
+        });
+      }
       const docs = await listShareDocuments(env, path.collection);
-      return jsonResponse({ documents: docs }, 200, request, env);
+      return jsonResponse({ documents: docs }, 200, request, env, {
+        "Cache-Control": "no-store, max-age=0"
+      });
     }
     const doc = await fetchShareDocument(env, path.collection, path.documentId);
     if (!doc) {
-      return jsonResponse({ payload: null }, 404, request, env);
+      return jsonResponse({ payload: null }, 404, request, env, {
+        "Cache-Control": "no-store, max-age=0"
+      });
     }
-    return jsonResponse({ payload: doc.payload, meta: doc.meta }, 200, request, env);
+    return jsonResponse({ payload: doc.payload, meta: doc.meta }, 200, request, env, {
+      "Cache-Control": "no-store, max-age=0"
+    });
   }
   if (request.method === "DELETE") {
     if (!path.documentId) {

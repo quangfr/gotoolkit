@@ -712,9 +712,46 @@
                 return refreshGalleryPromise;
             }
 
+            async function syncRemoteShares() {
+                if (!shareService?.isReady || !shareService?.listShares || !shareHistory?.upsertRecord || !shareHistory?.getRecordsByApp) {
+                    return;
+                }
+                const targets = [
+                    { app: "memo", collection: APP_DEFINITIONS.memo?.collection || "memos", fallbackTitle: "Document partagé" },
+                    { app: "grid", collection: APP_DEFINITIONS.grid?.collection || "grids", fallbackTitle: "Tableau partagé" }
+                ];
+                await Promise.all(targets.map(async ({ app, collection, fallbackTitle }) => {
+                    const remoteDocs = await shareService.listShares(collection);
+                    const remote = Array.isArray(remoteDocs) ? remoteDocs : [];
+                    const remoteTokenSet = new Set(remote.map(doc => String(doc?.id || "").trim()).filter(Boolean));
+                    const localRecords = await shareHistory.getRecordsByApp(app);
+                    await Promise.all((Array.isArray(localRecords) ? localRecords : []).map(async item => {
+                        const token = String(item?.token || "").trim();
+                        if (!token || remoteTokenSet.has(token)) return;
+                        await shareHistory.removeRecord(app, token);
+                    }));
+                    await Promise.all(remote.map(async doc => {
+                        const token = String(doc?.id || "").trim();
+                        if (!token) return;
+                        const payload = doc?.payload || {};
+                        const firstTab = Array.isArray(payload?.tabs) ? payload.tabs[0] : null;
+                        await shareHistory.upsertRecord(app, {
+                            token,
+                            title: String(payload?.title || firstTab?.title || fallbackTitle).trim(),
+                            description: String(payload?.description || firstTab?.description || "").trim(),
+                            superpowers: Array.isArray(firstTab?.superpowers) ? firstTab.superpowers : [],
+                            payload,
+                            spaceId: normalizeSpaceId(payload?.spaceId || "golive"),
+                            updatedAt: doc?.meta?.updatedAt || doc?.meta?.updatedDate || new Date().toISOString()
+                        });
+                    }));
+                }));
+            }
+
             refreshBtn?.addEventListener("click", () => {
                 (async () => {
                     try {
+                        await syncRemoteShares();
                         await shareHistory?.refreshFromStore?.();
                     } catch (err) {
                         console.warn("Impossible de rafraîchir les documents partagés", err);
