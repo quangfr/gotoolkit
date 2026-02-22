@@ -1300,7 +1300,8 @@
                 const openInlineRename = (event, options = {}) => {
                     const isAutoStart = Boolean(options && options.autoStart);
                     const itemId = String(item.id || "");
-                    if (String(activeId || "") !== String(item.id || "")) return;
+                    const liveActiveId = String(getActiveId?.() || activeId || "").trim();
+                    if (!isAutoStart && liveActiveId !== itemId) return;
                     if (event.target.closest(".document-explorer__item-actions")) return;
                     activeInlineRenameId = itemId;
                     event.preventDefault();
@@ -1370,6 +1371,14 @@
                     if (clickSelectTimer) {
                         clearTimeout(clickSelectTimer);
                         clickSelectTimer = null;
+                    }
+                    const liveActiveId = String(getActiveId?.() || activeId || "").trim();
+                    if (liveActiveId !== String(item.id || "").trim()) {
+                        onSelect?.(item);
+                        pendingInlineRenameId = String(item.id || "").trim();
+                        pendingInlineRenameUntil = pendingInlineRenameId ? Date.now() + 15000 : 0;
+                        activeInlineRenameId = "";
+                        return;
                     }
                     openInlineRename(event, { autoStart: false });
                 });
