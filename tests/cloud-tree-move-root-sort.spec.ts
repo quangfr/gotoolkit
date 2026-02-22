@@ -4,6 +4,10 @@ function tokenFromDocId(docId: string) {
   return String(docId || "").replace(/^share:/, "").trim();
 }
 
+async function sleep(ms: number) {
+  await new Promise(resolve => setTimeout(resolve, Math.max(0, ms)));
+}
+
 test.describe("Cloud tree ops - parent/root/sort persistence", () => {
   test("persists move to parent, reorder, and move back to root", async ({ page }) => {
     test.setTimeout(8 * 60 * 1000);
@@ -120,7 +124,7 @@ test.describe("Cloud tree ops - parent/root/sort persistence", () => {
           position
         };
         let lastError: any = null;
-        for (let attempt = 0; attempt < 6; attempt += 1) {
+        for (let attempt = 0; attempt < 12; attempt += 1) {
           try {
             await worker.saveSharePayload("memos-meta", docToken, savePayload);
             lastError = null;
@@ -128,15 +132,16 @@ test.describe("Cloud tree ops - parent/root/sort persistence", () => {
           } catch (err: any) {
             lastError = err;
             const message = String(err?.message || err || "");
-            if (!/Trop de requêtes d'écriture/i.test(message) || attempt === 5) {
+            if (!/Trop de requêtes d'écriture/i.test(message) || attempt === 11) {
               throw err;
             }
-            const waitMs = 300 + (attempt * 300);
+            const waitMs = Math.min(8_000, 700 + (attempt * 500));
             await new Promise(resolve => setTimeout(resolve, waitMs));
           }
         }
         if (lastError) throw lastError;
       }, { docToken: token, next: patch });
+      await sleep(350);
     };
 
     const getRemoteMeta = async (docId: string) => {
@@ -212,6 +217,7 @@ test.describe("Cloud tree ops - parent/root/sort persistence", () => {
       await setCloudSharedMeta(rootExtra, { title: `${prefix}-root-extra`, parentId: "", position: 4000, updatedAtMs: t });
       t += 11;
       await setCloudSharedMeta(childC, { title: `${prefix}-child-c`, parentId, position: 2050, updatedAtMs: t });
+      await sleep(800);
       await clickSectionAction("Rafraîchir cet espace");
 
       await expect.poll(async () => getRemoteMeta(childA), { timeout: 60_000 }).toMatchObject({
@@ -231,6 +237,7 @@ test.describe("Cloud tree ops - parent/root/sort persistence", () => {
       // Rename in metadata and verify.
       t += 11;
       await setCloudSharedMeta(childB, { title: `${prefix}-child-b-renamed`, updatedAtMs: t });
+      await sleep(600);
       await clickSectionAction("Rafraîchir cet espace");
       await expect.poll(async () => getRemoteMeta(childB), { timeout: 60_000 }).toMatchObject({
         title: `${prefix}-child-b-renamed`,
@@ -240,6 +247,7 @@ test.describe("Cloud tree ops - parent/root/sort persistence", () => {
       // Move A back to root and put it before parent by position.
       t += 11;
       await setCloudSharedMeta(childA, { parentId: "", position: 900, updatedAtMs: t });
+      await sleep(600);
       await clickSectionAction("Rafraîchir cet espace");
 
       await expect.poll(async () => getRemoteMeta(childA), { timeout: 60_000 }).toMatchObject({
@@ -291,6 +299,239 @@ test.describe("Cloud tree ops - parent/root/sort persistence", () => {
       await expect.poll(async () => getRemoteMeta(parentDoc), { timeout: 60_000 }).toMatchObject({
         exists: true
       });
+    } finally {
+      for (const docId of createdDocIds) {
+        const token = tokenFromDocId(docId);
+        await page.evaluate(async (docToken) => {
+          const worker = (window as any).goToolkitShareWorker;
+          const history = (window as any).goToolkitShareHistory;
+          if (!worker?.isReady) return;
+          await worker.deleteSharePayload("memos", docToken).catch(() => null);
+          await worker.deleteSharePayload("memos-meta", docToken).catch(() => null);
+          await history?.removeRecord?.("memo", docToken).catch?.(() => null);
+        }, token);
+      }
+      await page.evaluate(async () => {
+        await (window as any).GoToolkitMemoDocumentExplorer?.refresh?.({ forceReload: true });
+      });
+    }
+  });
+
+  test("persists random tree ops across refresh and reload", async ({ page }) => {
+    test.setTimeout(10 * 60 * 1000);
+    const baseUrl = "http://127.0.0.1:5000/index.html";
+    const prefix = `tree-rand-${Date.now()}`;
+    const createdDocIds: string[] = [];
+
+    function seeded(seed: number) {
+      let x = seed >>> 0;
+      return () => {
+        x = (1664525 * x + 1013904223) >>> 0;
+        return x / 0x100000000;
+      };
+    }
+    const rand = seeded(Date.now() & 0xffffffff);
+
+    page.on("dialog", async (dialog) => {
+      try { await dialog.accept(); } catch {}
+    });
+
+    await page.goto(baseUrl, { waitUntil: "load" });
+    await page.waitForFunction(() => Boolean((window as any).goToolkitShareWorker?.isReady), null, { timeout: 45_000 });
+    await page.waitForFunction(() => Boolean((window as any).goToolkitShareHistory?.getRecordsByApp), null, { timeout: 45_000 });
+    await page.waitForFunction(() => Boolean((window as any).GoToolkitMemoDocumentExplorer?.refresh), null, { timeout: 45_000 });
+    const isPanelOpen = await page.evaluate(
+      () => !document.querySelector("#documentExplorer")?.classList.contains("document-explorer--collapsed")
+    );
+    if (!isPanelOpen) await page.click("#documentExplorerToggle");
+    await page.evaluate(async () => {
+      await (window as any).GoToolkitMemoDocumentExplorer?.refresh?.({ forceReload: true });
+    });
+    await page.waitForFunction(
+      () => Boolean(document.querySelector(".document-explorer__section-body[data-section^='shared:']")),
+      null,
+      { timeout: 30_000 }
+    );
+    const sharedSection = await page.evaluate(() => {
+      const body = document.querySelector(".document-explorer__section-body[data-section^='shared:']") as HTMLElement | null;
+      return String(body?.dataset?.section || "").trim();
+    });
+    expect(sharedSection).toBeTruthy();
+
+    const clickSectionRefresh = async () => {
+      await page.evaluate((sectionName) => {
+        const body = document.querySelector(`.document-explorer__section-body[data-section="${sectionName}"]`) as HTMLElement | null;
+        const root = body?.closest(".document-explorer__section") as HTMLElement | null;
+        const button = root?.querySelector(
+          `.document-explorer__section-actions .document-explorer__item-action[title="Rafraîchir cet espace"]`
+        ) as HTMLButtonElement | null;
+        button?.click();
+      }, sharedSection);
+    };
+
+    const createSharedDoc = async () => {
+      const beforeTokens = await page.evaluate(async () => {
+        const records = await (window as any).goToolkitShareHistory?.getRecordsByApp?.("memo");
+        return (records || []).map((r: any) => String(r?.token || "")).filter(Boolean);
+      });
+      await page.evaluate((sectionName) => {
+        const body = document.querySelector(`.document-explorer__section-body[data-section="${sectionName}"]`) as HTMLElement | null;
+        const root = body?.closest(".document-explorer__section") as HTMLElement | null;
+        const addBtn = root?.querySelector(".document-explorer__section-actions .document-explorer__item-action") as HTMLButtonElement | null;
+        addBtn?.click();
+      }, sharedSection);
+      const token = await expect
+        .poll(async () => {
+          return await page.evaluate(async (before) => {
+            const seen = new Set(before || []);
+            const records = await (window as any).goToolkitShareHistory?.getRecordsByApp?.("memo");
+            const found = (records || []).find((r: any) => {
+              const t = String(r?.token || "");
+              return t && !seen.has(t);
+            });
+            return String(found?.token || "");
+          }, beforeTokens);
+        }, { timeout: 25_000, intervals: [250, 500, 1000] })
+        .not.toBe("")
+        .then(async () => {
+          return await page.evaluate(async (before) => {
+            const seen = new Set(before || []);
+            const records = await (window as any).goToolkitShareHistory?.getRecordsByApp?.("memo");
+            const found = (records || []).find((r: any) => {
+              const t = String(r?.token || "");
+              return t && !seen.has(t);
+            });
+            return String(found?.token || "");
+          }, beforeTokens);
+        });
+      const docId = `share:${token}`;
+      createdDocIds.push(docId);
+      return docId;
+    };
+
+    const setCloudSharedMeta = async (
+      docId: string,
+      patch: { title?: string; parentId?: string; position?: number }
+    ) => {
+      const token = tokenFromDocId(docId);
+      await page.evaluate(async ({ docToken, next }) => {
+        const worker = (window as any).goToolkitShareWorker;
+        const existing = await worker.fetchSharePayload("memos-meta", docToken).catch(() => null);
+        const current = existing?.payload && typeof existing.payload === "object" ? existing.payload : {};
+        const savePayload = {
+          title: typeof next.title === "string" ? next.title : String(current.title || "Document partagé"),
+          description: String(current.description || ""),
+          icon: String(current.icon || "file-symlink"),
+          superpowers: Array.isArray(current.superpowers) ? current.superpowers : [],
+          parentId: Object.prototype.hasOwnProperty.call(next, "parentId")
+            ? String(next.parentId || "")
+            : String(current.parentId || ""),
+          spaceId: String(current.spaceId || "golive"),
+          status: String(current.status || "active"),
+          position: typeof next.position === "number"
+            ? next.position
+            : (Number.isFinite(Number(current.position)) ? Number(current.position) : Date.now())
+        };
+        let lastError: any = null;
+        for (let attempt = 0; attempt < 12; attempt += 1) {
+          try {
+            await worker.saveSharePayload("memos-meta", docToken, savePayload);
+            lastError = null;
+            break;
+          } catch (err: any) {
+            lastError = err;
+            const message = String(err?.message || err || "");
+            if (!/Trop de requêtes d'écriture/i.test(message) || attempt === 11) throw err;
+            const waitMs = Math.min(8_000, 700 + (attempt * 500));
+            await new Promise(resolve => setTimeout(resolve, waitMs));
+          }
+        }
+        if (lastError) throw lastError;
+      }, { docToken: token, next: patch });
+      await sleep(300);
+    };
+
+    const getRemoteMeta = async (docId: string) => {
+      const token = tokenFromDocId(docId);
+      return await page.evaluate(async (docToken) => {
+        const worker = (window as any).goToolkitShareWorker;
+        const data = await worker.fetchSharePayload("memos-meta", docToken);
+        const payload = data?.payload;
+        return {
+          exists: Boolean(payload),
+          title: String(payload?.title || ""),
+          parentId: String(payload?.parentId || ""),
+          position: Number(payload?.position || 0)
+        };
+      }, token);
+    };
+
+    try {
+      const docs: string[] = [];
+      for (let i = 0; i < 8; i += 1) docs.push(await createSharedDoc());
+
+      const expected = new Map<string, { title: string; parentId: string; position: number }>();
+      let posBase = 1000;
+      for (let i = 0; i < docs.length; i += 1) {
+        const docId = docs[i];
+        const title = `${prefix}-init-${i + 1}`;
+        const parentId = "";
+        const position = posBase + i * 100;
+        expected.set(docId, { title, parentId, position });
+        await setCloudSharedMeta(docId, { title, parentId, position });
+      }
+
+      const opCount = 24;
+      for (let step = 1; step <= opCount; step += 1) {
+        const target = docs[Math.floor(rand() * docs.length)];
+        const current = expected.get(target)!;
+        const op = rand();
+        if (op < 0.33) {
+          // move to root or parent
+          const useRoot = rand() < 0.45;
+          let parentId = "";
+          if (!useRoot) {
+            const parentDoc = docs[Math.floor(rand() * docs.length)];
+            if (parentDoc !== target) parentId = `share:${tokenFromDocId(parentDoc)}`;
+          }
+          const position = Math.floor(1000 + rand() * 5000);
+          await setCloudSharedMeta(target, { parentId, position });
+          expected.set(target, { ...current, parentId, position });
+        } else if (op < 0.66) {
+          // rename
+          const title = `${prefix}-r${step}-${Math.floor(rand() * 1000)}`;
+          await setCloudSharedMeta(target, { title });
+          expected.set(target, { ...current, title });
+        } else {
+          // reorder
+          const position = Math.floor(1000 + rand() * 5000);
+          await setCloudSharedMeta(target, { position });
+          expected.set(target, { ...current, position });
+        }
+
+        if (step % 8 === 0) {
+          await sleep(800);
+          await clickSectionRefresh();
+          for (const [docId, exp] of expected.entries()) {
+            await expect.poll(async () => getRemoteMeta(docId), { timeout: 60_000 }).toMatchObject({
+              exists: true,
+              title: exp.title,
+              parentId: exp.parentId
+            });
+          }
+        }
+      }
+
+      await page.reload({ waitUntil: "load" });
+      await page.waitForFunction(() => Boolean((window as any).goToolkitShareWorker?.isReady), null, { timeout: 45_000 });
+      await clickSectionRefresh();
+      for (const [docId, exp] of expected.entries()) {
+        await expect.poll(async () => getRemoteMeta(docId), { timeout: 60_000 }).toMatchObject({
+          exists: true,
+          title: exp.title,
+          parentId: exp.parentId
+        });
+      }
     } finally {
       for (const docId of createdDocIds) {
         const token = tokenFromDocId(docId);
