@@ -4,6 +4,7 @@ const ASSETS_SEGMENT = "assets";
 const VALID_COLLECTIONS = new Set([
   "grids",
   "memos",
+  "memos-meta",
   "template-memos",
   "handoffs",
   "codes_map"

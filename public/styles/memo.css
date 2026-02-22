@@ -702,6 +702,9 @@
         .document-explorer__section-header:focus-within .document-explorer__section-actions {
             opacity: 1;
         }
+        .document-explorer__section-actions.document-explorer__section-actions--force-visible {
+            opacity: 1;
+        }
         .document-explorer__section-header i,
         .document-explorer__section-header svg {
             width: 14px;

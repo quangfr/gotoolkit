@@ -1312,11 +1312,28 @@
                     if (!isAutoFileIcon(item.icon)) return item.icon;
                     return hasChildren ? "file-text" : "file";
                 })();
-                if (!hasChildren) {
+                const renderLeadIcon = (hoverChevron = false) => {
+                    if (!hasChildren) {
+                        lead.innerHTML = defaultIconName ? `<i data-lucide="${defaultIconName}"></i>` : "";
+                        return;
+                    }
+                    if (hoverChevron) {
+                        lead.innerHTML = `<i data-lucide="${isExpanded ? "chevron-down" : "chevron-right"}"></i>`;
+                        return;
+                    }
                     lead.innerHTML = defaultIconName ? `<i data-lucide="${defaultIconName}"></i>` : "";
-                } else {
-                    lead.innerHTML = `<i data-lucide="${isExpanded ? "chevron-down" : "chevron-right"}"></i>`;
-                }
+                };
+                renderLeadIcon(false);
+                lead.addEventListener("mouseenter", () => {
+                    if (!hasChildren) return;
+                    renderLeadIcon(true);
+                    if (window.lucide) window.lucide.createIcons();
+                });
+                lead.addEventListener("mouseleave", () => {
+                    if (!hasChildren) return;
+                    renderLeadIcon(false);
+                    if (window.lucide) window.lucide.createIcons();
+                });
                 lead.addEventListener("click", event => {
                     if (!hasChildren) return;
                     event.stopPropagation();
@@ -1606,6 +1623,9 @@
                 if (sectionName.startsWith("shared:") || sectionName === "private") {
                     const actions = document.createElement("span");
                     actions.className = "document-explorer__section-actions";
+                    if (sectionName.startsWith("shared:") && Boolean(sectionMeta?.hasPendingSync)) {
+                        actions.classList.add("document-explorer__section-actions--force-visible");
+                    }
                     const addBtn = document.createElement("button");
                     addBtn.type = "button";
                     addBtn.className = "document-explorer__item-action";
@@ -1651,8 +1671,8 @@
                             event.stopPropagation();
                             onSectionSettings?.(sectionName);
                         });
-                        actions.appendChild(refreshBtn);
                         actions.appendChild(settingsBtn);
+                        actions.appendChild(refreshBtn);
                     }
                     sectionHeader.appendChild(actions);
                 }
@@ -1811,7 +1831,7 @@
                     const isExpanded = expandedIds.has(groupKey);
                     const lead = document.createElement("span");
                     lead.className = "document-explorer__item-leading";
-                    lead.innerHTML = `<i data-lucide="${isExpanded ? "chevron-down" : "chevron-right"}"></i>`;
+                    lead.innerHTML = `<i data-lucide="${isExpanded ? "folder-open" : "folder"}"></i>`;
                     lead.addEventListener("click", event => {
                         event.stopPropagation();
                         if (expandedIds.has(groupKey)) expandedIds.delete(groupKey);
