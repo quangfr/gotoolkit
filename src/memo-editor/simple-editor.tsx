@@ -212,7 +212,8 @@ const hasAncestorNode = ($pos: any, typeName: string) => {
   return false;
 };
 
-const getNearestScrollableAncestor = (element: HTMLElement | null): HTMLElement | null => {
+const getScrollableAncestors = (element: HTMLElement | null): HTMLElement[] => {
+  const scrollables: HTMLElement[] = [];
   let current = element?.parentElement || null;
   while (current) {
     const style = window.getComputedStyle(current);
@@ -220,10 +221,10 @@ const getNearestScrollableAncestor = (element: HTMLElement | null): HTMLElement 
     const canScroll =
       (overflowY === 'auto' || overflowY === 'scroll' || overflowY === 'overlay') &&
       current.scrollHeight > current.clientHeight + 1;
-    if (canScroll) return current;
+    if (canScroll) scrollables.push(current);
     current = current.parentElement;
   }
-  return null;
+  return scrollables;
 };
 
 const getDiagramHeaderLine = (code: string) => {
@@ -2821,25 +2822,27 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       handleKeyDown: (_view, event) => {
         if (!editor) return false;
         const selection = editor.state.selection;
+        const docEnd = editor.state.doc.content.size;
+        const isNearDocumentEnd = selection.to >= Math.max(0, docEnd - 1);
         const shouldStickToBottomAfterEnter =
           event.key === 'Enter' &&
           selection.empty &&
-          selection.to === editor.state.doc.content.size &&
+          isNearDocumentEnd &&
           !hasAncestorNode(selection.$from, 'table');
 
         if (shouldStickToBottomAfterEnter) {
           requestAnimationFrame(() => {
             requestAnimationFrame(() => {
               if (!editor || editor.isDestroyed) return;
-              const scrollContainer = getNearestScrollableAncestor(editor.view.dom as HTMLElement);
-              if (scrollContainer) {
+              const scrollContainers = getScrollableAncestors(editor.view.dom as HTMLElement);
+              scrollContainers.forEach((scrollContainer) => {
                 scrollContainer.scrollTop = scrollContainer.scrollHeight;
-                return;
-              }
+              });
               const rootScroller = document.scrollingElement as HTMLElement | null;
               if (rootScroller) {
                 rootScroller.scrollTop = rootScroller.scrollHeight;
               }
+              window.scrollTo({ top: document.body.scrollHeight, behavior: 'auto' });
             });
           });
         }

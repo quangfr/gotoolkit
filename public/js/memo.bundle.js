@@ -54877,16 +54877,17 @@ ${promptInput.trim()}`
     }
     return false;
   };
-  var getNearestScrollableAncestor = (element) => {
+  var getScrollableAncestors = (element) => {
+    const scrollables = [];
     let current = (element == null ? void 0 : element.parentElement) || null;
     while (current) {
       const style2 = window.getComputedStyle(current);
       const overflowY = style2.overflowY;
       const canScroll = (overflowY === "auto" || overflowY === "scroll" || overflowY === "overlay") && current.scrollHeight > current.clientHeight + 1;
-      if (canScroll) return current;
+      if (canScroll) scrollables.push(current);
       current = current.parentElement;
     }
-    return null;
+    return scrollables;
   };
   var getDiagramHeaderLine = (code) => {
     const lines = (code || "").split("\n");
@@ -56893,20 +56894,22 @@ ${promptInput.trim()}`
           var _a2, _b2, _c2, _d2, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t;
           if (!editor) return false;
           const selection = editor.state.selection;
-          const shouldStickToBottomAfterEnter = event.key === "Enter" && selection.empty && selection.to === editor.state.doc.content.size && !hasAncestorNode(selection.$from, "table");
+          const docEnd = editor.state.doc.content.size;
+          const isNearDocumentEnd = selection.to >= Math.max(0, docEnd - 1);
+          const shouldStickToBottomAfterEnter = event.key === "Enter" && selection.empty && isNearDocumentEnd && !hasAncestorNode(selection.$from, "table");
           if (shouldStickToBottomAfterEnter) {
             requestAnimationFrame(() => {
               requestAnimationFrame(() => {
                 if (!editor || editor.isDestroyed) return;
-                const scrollContainer = getNearestScrollableAncestor(editor.view.dom);
-                if (scrollContainer) {
+                const scrollContainers = getScrollableAncestors(editor.view.dom);
+                scrollContainers.forEach((scrollContainer) => {
                   scrollContainer.scrollTop = scrollContainer.scrollHeight;
-                  return;
-                }
+                });
                 const rootScroller = document.scrollingElement;
                 if (rootScroller) {
                   rootScroller.scrollTop = rootScroller.scrollHeight;
                 }
+                window.scrollTo({ top: document.body.scrollHeight, behavior: "auto" });
               });
             });
           }
@@ -60571,3 +60574,4 @@ docx/dist/index.mjs:
    *)
   (*! http://mths.be/fromcodepoint v0.1.0 by @mathias *)
 */
+//# sourceMappingURL=memo.bundle.js.map
