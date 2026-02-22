@@ -1815,6 +1815,11 @@
                         ...item,
                         title: item.title || "Document partagé",
                         icon: item.icon || "file-symlink",
+                        parentId: (() => {
+                            const rawParent = String(item.parentId || "").trim();
+                            if (!rawParent) return "";
+                            return rawParent.startsWith("share:") ? rawParent : `share:${rawParent}`;
+                        })(),
                         isShared: true,
                         spaceId: String(item.spaceId || "golive").trim() || "golive",
                         section: `shared:${String(item.spaceId || "golive").trim() || "golive"}`
