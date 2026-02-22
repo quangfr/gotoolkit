@@ -457,6 +457,7 @@
         }
 
         .document-explorer__item {
+            position: relative;
             border: 1px solid transparent;
             background: var(--bg-surface);
             color: var(--text-main);
@@ -472,6 +473,34 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+        }
+        .document-explorer__item::before,
+        .document-explorer__item::after {
+            content: "";
+            position: absolute;
+            left: 8px;
+            right: 8px;
+            height: 2px;
+            border-radius: 999px;
+            background: transparent;
+            pointer-events: none;
+        }
+        .document-explorer__item::before {
+            top: -1px;
+        }
+        .document-explorer__item::after {
+            bottom: -1px;
+        }
+        .document-explorer__item--drop-before::before {
+            background: var(--color-primary);
+        }
+        .document-explorer__item--drop-after::after {
+            background: var(--color-primary);
+        }
+        .document-explorer__item--drop-inside {
+            background: var(--bg-surface-soft);
+            border-color: var(--color-primary);
+            box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.25);
         }
 
         .document-explorer__item--open {
@@ -673,6 +702,11 @@
         }
         .document-explorer__section-body {
             width: 100%;
+        }
+        .document-explorer__section-body--drop-root {
+            background: var(--bg-surface-soft);
+            border-radius: 8px;
+            box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.25);
         }
         .document-explorer__search {
             position: relative;

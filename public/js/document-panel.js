@@ -1070,6 +1070,61 @@
                 ? safeItems.filter(item => String(item?.title || "").toLowerCase().includes(needle))
                 : safeItems;
             listEl.innerHTML = "";
+            let dropHintTarget = null;
+            let dropHintMode = "";
+            let rootDropBody = null;
+            const clearDropHint = () => {
+                if (!dropHintTarget) return;
+                dropHintTarget.classList.remove(
+                    "document-explorer__item--drop-before",
+                    "document-explorer__item--drop-inside",
+                    "document-explorer__item--drop-after"
+                );
+                dropHintTarget = null;
+                dropHintMode = "";
+            };
+            const setDropHint = (target, mode) => {
+                const nextMode = String(mode || "").trim();
+                if (!target || !nextMode) return;
+                if (dropHintTarget !== target) {
+                    clearDropHint();
+                }
+                if (dropHintMode === nextMode && dropHintTarget === target) return;
+                target.classList.remove(
+                    "document-explorer__item--drop-before",
+                    "document-explorer__item--drop-inside",
+                    "document-explorer__item--drop-after"
+                );
+                target.classList.add(`document-explorer__item--drop-${nextMode}`);
+                dropHintTarget = target;
+                dropHintMode = nextMode;
+            };
+            const clearRootDropHint = () => {
+                if (!rootDropBody) return;
+                rootDropBody.classList.remove("document-explorer__section-body--drop-root");
+                rootDropBody = null;
+            };
+            const setRootDropHint = (sectionBody) => {
+                if (!sectionBody) return;
+                if (rootDropBody && rootDropBody !== sectionBody) {
+                    rootDropBody.classList.remove("document-explorer__section-body--drop-root");
+                }
+                rootDropBody = sectionBody;
+                rootDropBody.classList.add("document-explorer__section-body--drop-root");
+            };
+            const clearAllDropHints = () => {
+                clearDropHint();
+                clearRootDropHint();
+            };
+            const getDropModeFromPointer = (buttonEl, clientY) => {
+                const rect = buttonEl.getBoundingClientRect();
+                const y = clientY - rect.top;
+                const upper = rect.height * 0.33;
+                const lower = rect.height * 0.67;
+                if (y < upper) return "before";
+                if (y > lower) return "after";
+                return "inside";
+            };
             const activeId = typeof getActiveId?.() === "string" ? getActiveId() : "";
             const sectionItems = {
                 private: filteredItems.filter(item => getItemSection(item) === "private"),
@@ -1346,6 +1401,7 @@
                     draggingId = "";
                     draggingSection = "";
                     button.classList.remove("is-dragging");
+                    clearAllDropHints();
                     try {
                         window.__goToolkitDraggingMemoDocument = null;
                     } catch (err) {
@@ -1355,9 +1411,19 @@
                 button.addEventListener("dragover", event => {
                     if (!draggingId || draggingId === item.id) return;
                     event.preventDefault();
+                    clearRootDropHint();
+                    const mode = getDropModeFromPointer(button, event.clientY);
+                    setDropHint(button, mode);
+                });
+                button.addEventListener("dragleave", event => {
+                    if (dropHintTarget !== button) return;
+                    const nextTarget = event.relatedTarget;
+                    if (nextTarget && button.contains(nextTarget)) return;
+                    clearDropHint();
                 });
                 button.addEventListener("drop", async event => {
                     event.preventDefault();
+                    clearAllDropHints();
                     const fromId = draggingId;
                     draggingId = "";
                     if (!fromId || fromId === item.id || !onMove) return;
@@ -1680,6 +1746,18 @@
                 listEl.addEventListener("dragover", event => {
                     if (!draggingId) return;
                     event.preventDefault();
+                    const itemTarget = event.target.closest(".document-explorer__item");
+                    if (itemTarget) {
+                        clearRootDropHint();
+                        return;
+                    }
+                    const sectionBody = event.target.closest(".document-explorer__section-body");
+                    if (sectionBody) {
+                        clearDropHint();
+                        setRootDropHint(sectionBody);
+                    } else {
+                        clearRootDropHint();
+                    }
                 });
                 listEl.addEventListener("drop", async event => {
                     if (!draggingId || !onMove) return;
@@ -1689,14 +1767,21 @@
                     const toSection = sectionBody?.dataset?.section || "private";
                     const fromItem = normalizeList(cachedItems).find(entry => String(entry?.id || "") === String(draggingId));
                     const fromSection = draggingSection || getItemSection(fromItem);
-                    await onMove(draggingId, "", 1, "", { fromSection, toSection });
+                    const fromId = draggingId;
+                    await onMove(fromId, "", 1, "", { fromSection, toSection });
                     if (fromSection === toSection) {
-                        applyLocalParentMove(draggingId, "");
-                        applyLocalOrderMove(draggingId, "", "");
+                        applyLocalParentMove(fromId, "");
+                        applyLocalOrderMove(fromId, "", "");
                     }
                     draggingId = "";
                     draggingSection = "";
+                    clearAllDropHints();
                     renderList(cachedItems);
+                });
+                listEl.addEventListener("dragleave", event => {
+                    const nextTarget = event.relatedTarget;
+                    if (nextTarget && listEl.contains(nextTarget)) return;
+                    clearAllDropHints();
                 });
             }
 
