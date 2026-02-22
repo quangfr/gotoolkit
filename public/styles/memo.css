@@ -1311,6 +1311,18 @@
             margin: 10px 0 8px;
         }
 
+        .simple-editor .ProseMirror > h1:first-child,
+        .simple-editor .ProseMirror > h2:first-child,
+        .simple-editor .ProseMirror > h3:first-child {
+            margin-top: 0;
+        }
+        .simple-editor .ProseMirror > .react-renderer.node-heading:first-child .node-heading-wrapper > h1.node-text,
+        .simple-editor .ProseMirror > .react-renderer.node-heading:first-child .node-heading-wrapper > h2.node-text,
+        .simple-editor .ProseMirror > .react-renderer.node-heading:first-child .node-heading-wrapper > h3.node-text,
+        .simple-editor .ProseMirror > .react-renderer.node-heading:first-child .node-heading-wrapper > h4.node-text {
+            margin-top: 0;
+        }
+
         .ProseMirror ul {
             margin: 8px 0 10px 22px;
         }

@@ -2454,7 +2454,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   editorId,
   onReady,
   editable = true,
-  placeholder = 'Commencez à écrire...' 
+  placeholder = "Appuie sur 'espace' pour l'IA ou '/' pour les commandes"
 }) => {
   const mountStart = React.useRef(performance.now());
   const turndownRef = React.useRef<any>(null);
@@ -2549,6 +2549,8 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       }),
       Placeholder.configure({
         placeholder,
+        showOnlyCurrent: true,
+        includeChildren: true,
       }),
     ],
     content,
@@ -2684,20 +2686,80 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       },
       handleKeyDown: (_view, event) => {
         if (!editor) return false;
-        if (
-          event.key === '/' &&
+        const selection = editor.state.selection;
+        const isInlineTriggerCandidate =
+          selection.empty &&
           !event.shiftKey &&
           !event.altKey &&
           !event.metaKey &&
-          !event.ctrlKey &&
-          editor.state.selection.empty
-        ) {
-          event.preventDefault();
-          const pos = editor.state.selection.from;
+          !event.ctrlKey;
+        const { $from } = selection;
+        const isEmptyCurrentLine =
+          $from.parent?.isTextblock &&
+          $from.parent.type?.name === 'paragraph' &&
+          $from.parent.content.size === 0;
+
+        const dispatchInlineEditorOpen = () => {
+          const currentSelection = editor.state.selection;
+          const pos = currentSelection.from;
+          const node = currentSelection.$from.parent;
+          const blockFrom = currentSelection.$from.start();
+          const blockTo = currentSelection.$from.end();
+          let blockMarkdown = '';
+          try {
+            const blockSlice = editor.state.doc.slice(blockFrom, blockTo);
+            const serializer = DOMSerializer.fromSchema(editor.state.schema);
+            const fragment = serializer.serializeFragment(blockSlice.content);
+            const tmp = document.createElement('div');
+            tmp.appendChild(fragment);
+            blockMarkdown = (turndownRef.current?.turndown(tmp.innerHTML) || '').trim();
+          } catch (err) {
+            blockMarkdown = '';
+          }
+          const blockText = (node?.textContent || '').trim();
+          const excerpt = blockText ? blockText.slice(0, 100) : 'Ligne vide';
           const coords = editor.view.coordsAtPos(pos);
-          setSlashActionMenuPos({ top: coords.bottom + 8, left: coords.left });
-          setShowSlashActionMenu(true);
+          document.dispatchEvent(new CustomEvent('memoEditorSelectionChanged', {
+            detail: {
+              isSelected: true,
+              nodeType: node?.type?.name || 'paragraph',
+              selectionText: '',
+              selectionMarkdown: '',
+              blockText,
+              blockMarkdown,
+              selectionExcerpt: excerpt,
+              positionFrom: blockFrom,
+              positionTo: blockTo,
+              coords: {
+                top: coords.bottom + 10,
+                left: coords.left,
+                bottom: coords.bottom,
+                right: coords.right,
+              },
+              inlineTrigger: 'space',
+              focus: true,
+            }
+          }));
+        };
+
+        if (event.key === ' ' && isInlineTriggerCandidate && isEmptyCurrentLine) {
+          event.preventDefault();
+          dispatchInlineEditorOpen();
           return true;
+        }
+
+        if (
+          event.key === '/' &&
+          isInlineTriggerCandidate
+        ) {
+          requestAnimationFrame(() => {
+            if (!editor || editor.isDestroyed) return;
+            const pos = editor.state.selection.from;
+            const coords = editor.view.coordsAtPos(pos);
+            setSlashActionMenuPos({ top: coords.bottom + 8, left: coords.left });
+            setShowSlashActionMenu(true);
+          });
+          return false;
         }
         if (event.key === 'Escape' && showSlashActionMenu) {
           setShowSlashActionMenu(false);
@@ -2713,8 +2775,15 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           editor.view.dispatch(tr);
         };
 
-        const selection = editor.state.selection;
         if (event.key === 'Backspace' && selection.empty) {
+          if (
+            showSlashActionMenu &&
+            selection.$from.parent?.isTextblock &&
+            selection.$from.parent.textContent === '/' &&
+            selection.$from.parentOffset === 1
+          ) {
+            setShowSlashActionMenu(false);
+          }
           const { $from } = selection;
           const isAtStart = $from.parentOffset === 0;
           const isEmptyParagraph = $from.parent?.type?.name === 'paragraph' && $from.parent?.content?.size === 0;
@@ -5465,20 +5534,20 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   }, [showSlashActionMenu]);
 
   const slashActions = React.useMemo(() => ([
-    { label: 'Texte', value: 'paragraph', icon: Type },
-    { label: 'Titre 1', value: 'h1', icon: Heading1 },
-    { label: 'Titre 2', value: 'h2', icon: Heading2 },
-    { label: 'Titre 3', value: 'h3', icon: Heading3 },
-    { label: 'Liste à puces', value: 'bulletList', icon: List },
-    { label: 'Tâche', value: 'taskList', icon: CheckSquare },
-    { label: 'Bloc de code', value: 'codeBlock', icon: SquareCode },
-    { label: 'Lien', value: 'link', icon: Link },
-    { label: 'Libellé', value: 'label', icon: Tag },
-    { label: 'Citation', value: 'quote', icon: Shapes },
-    { label: 'Tableau', value: 'table', icon: TableIcon },
-    { label: 'Diagramme', value: 'diagram', icon: Shapes },
-    { label: 'Image', value: 'image', icon: ImageIcon },
-    { label: 'Vidéo', value: 'video', icon: Clapperboard },
+    { label: 'Texte', value: 'paragraph', icon: Type, markdownShortcut: 'texte' },
+    { label: 'Titre 1', value: 'h1', icon: Heading1, markdownShortcut: '#' },
+    { label: 'Titre 2', value: 'h2', icon: Heading2, markdownShortcut: '##' },
+    { label: 'Titre 3', value: 'h3', icon: Heading3, markdownShortcut: '###' },
+    { label: 'Liste à puces', value: 'bulletList', icon: List, markdownShortcut: '-' },
+    { label: 'Tâche', value: 'taskList', icon: CheckSquare, markdownShortcut: '[]' },
+    { label: 'Bloc de code', value: 'codeBlock', icon: SquareCode, markdownShortcut: '```' },
+    { label: 'Lien', value: 'link', icon: Link, markdownShortcut: '[texte](url)' },
+    { label: 'Libellé', value: 'label', icon: Tag, markdownShortcut: '@' },
+    { label: 'Citation', value: 'quote', icon: Shapes, markdownShortcut: '>' },
+    { label: 'Tableau', value: 'table', icon: TableIcon, markdownShortcut: '|' },
+    { label: 'Diagramme', value: 'diagram', icon: Shapes, markdownShortcut: 'mermaid' },
+    { label: 'Image', value: 'image', icon: ImageIcon, markdownShortcut: '![alt](url)' },
+    { label: 'Vidéo', value: 'video', icon: Clapperboard, markdownShortcut: 'video' },
   ]), []);
 
   if (!editor) {
@@ -5544,7 +5613,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       />
       <BubbleMenuComponent 
         editor={editor}
-        visible={!isDropdownOpen && isFocusWithinMemoCard}
+        visible={isFocusWithinMemoCard}
         onKeep={() => keepSelection(editor)}
         onReject={() => rejectSelection(editor)}
         onAssist={handleAssist}
@@ -5558,7 +5627,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       {showSlashActionMenu && editor && (
         <div
           className="memo-slash-actions-menu tiptap-dropdown-menu"
-          style={{ position: 'fixed', top: `${slashActionMenuPos.top}px`, left: `${slashActionMenuPos.left}px`, zIndex: 1600, minWidth: '210px' }}
+          style={{ position: 'fixed', top: `${slashActionMenuPos.top}px`, left: `${slashActionMenuPos.left}px`, zIndex: 1600, minWidth: '250px' }}
         >
           {slashActions.map((item) => (
             <div
@@ -5576,8 +5645,18 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
             >
               <item.icon size={16} />
               <span style={{ flex: 1 }}>{item.label}</span>
+              <span className="memo-slash-actions-menu__shortcut">{item.markdownShortcut}</span>
             </div>
           ))}
+          <button
+            type="button"
+            className="memo-slash-actions-menu__close"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => setShowSlashActionMenu(false)}
+          >
+            <span>Fermer le menu</span>
+            <span className="memo-slash-actions-menu__shortcut">esc</span>
+          </button>
         </div>
       )}
 

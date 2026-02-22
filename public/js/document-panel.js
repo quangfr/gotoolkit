@@ -712,7 +712,7 @@
 
                 const icon = toggleBtn.querySelector("[data-lucide]");
                 if (icon) {
-                    icon.setAttribute("data-lucide", isOpen ? "panel-left-close" : "panel-left-open");
+                    icon.setAttribute("data-lucide", isOpen ? "panel-left-dashed" : "panel-left");
                     if (window.lucide) window.lucide.createIcons();
                 }
             }
@@ -1233,7 +1233,15 @@
                 button.appendChild(actions);
                 button.addEventListener("mouseenter", () => renderLeading(true));
                 button.addEventListener("mouseleave", () => renderLeading(false));
-                button.addEventListener("click", () => onSelect?.(item));
+                let clickSelectTimer = null;
+                button.addEventListener("click", event => {
+                    if (event.target.closest(".document-explorer__item-actions")) return;
+                    if (clickSelectTimer) clearTimeout(clickSelectTimer);
+                    clickSelectTimer = setTimeout(() => {
+                        clickSelectTimer = null;
+                        onSelect?.(item);
+                    }, 220);
+                });
                 const openInlineRename = (event, options = {}) => {
                     const isAutoStart = Boolean(options && options.autoStart);
                     const itemId = String(item.id || "");
@@ -1304,6 +1312,10 @@
                     });
                 };
                 button.addEventListener("dblclick", event => {
+                    if (clickSelectTimer) {
+                        clearTimeout(clickSelectTimer);
+                        clickSelectTimer = null;
+                    }
                     openInlineRename(event, { autoStart: false });
                 });
                 if (

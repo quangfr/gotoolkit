@@ -56621,7 +56621,7 @@ ${promptInput.trim()}`
     editorId,
     onReady,
     editable = true,
-    placeholder = "Commencez \xE0 \xE9crire..."
+    placeholder = "Appuie sur 'espace' pour l'IA ou '/' pour les commandes"
   }) => {
     var _a, _b, _c, _d;
     const mountStart = react_shim_default.useRef(performance.now());
@@ -56715,7 +56715,9 @@ ${promptInput.trim()}`
           }
         }),
         Placeholder.configure({
-          placeholder
+          placeholder,
+          showOnlyCurrent: true,
+          includeChildren: true
         })
       ],
       content,
@@ -56838,15 +56840,69 @@ ${promptInput.trim()}`
           return true;
         },
         handleKeyDown: (_view, event) => {
-          var _a2, _b2, _c2, _d2, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q;
+          var _a2, _b2, _c2, _d2, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t;
           if (!editor) return false;
-          if (event.key === "/" && !event.shiftKey && !event.altKey && !event.metaKey && !event.ctrlKey && editor.state.selection.empty) {
-            event.preventDefault();
-            const pos = editor.state.selection.from;
+          const selection = editor.state.selection;
+          const isInlineTriggerCandidate = selection.empty && !event.shiftKey && !event.altKey && !event.metaKey && !event.ctrlKey;
+          const { $from } = selection;
+          const isEmptyCurrentLine = ((_a2 = $from.parent) == null ? void 0 : _a2.isTextblock) && ((_b2 = $from.parent.type) == null ? void 0 : _b2.name) === "paragraph" && $from.parent.content.size === 0;
+          const dispatchInlineEditorOpen = () => {
+            var _a3, _b3;
+            const currentSelection = editor.state.selection;
+            const pos = currentSelection.from;
+            const node = currentSelection.$from.parent;
+            const blockFrom = currentSelection.$from.start();
+            const blockTo = currentSelection.$from.end();
+            let blockMarkdown = "";
+            try {
+              const blockSlice = editor.state.doc.slice(blockFrom, blockTo);
+              const serializer = DOMSerializer.fromSchema(editor.state.schema);
+              const fragment = serializer.serializeFragment(blockSlice.content);
+              const tmp = document.createElement("div");
+              tmp.appendChild(fragment);
+              blockMarkdown = (((_a3 = turndownRef.current) == null ? void 0 : _a3.turndown(tmp.innerHTML)) || "").trim();
+            } catch (err) {
+              blockMarkdown = "";
+            }
+            const blockText2 = ((node == null ? void 0 : node.textContent) || "").trim();
+            const excerpt = blockText2 ? blockText2.slice(0, 100) : "Ligne vide";
             const coords = editor.view.coordsAtPos(pos);
-            setSlashActionMenuPos({ top: coords.bottom + 8, left: coords.left });
-            setShowSlashActionMenu(true);
+            document.dispatchEvent(new CustomEvent("memoEditorSelectionChanged", {
+              detail: {
+                isSelected: true,
+                nodeType: ((_b3 = node == null ? void 0 : node.type) == null ? void 0 : _b3.name) || "paragraph",
+                selectionText: "",
+                selectionMarkdown: "",
+                blockText: blockText2,
+                blockMarkdown,
+                selectionExcerpt: excerpt,
+                positionFrom: blockFrom,
+                positionTo: blockTo,
+                coords: {
+                  top: coords.bottom + 10,
+                  left: coords.left,
+                  bottom: coords.bottom,
+                  right: coords.right
+                },
+                inlineTrigger: "space",
+                focus: true
+              }
+            }));
+          };
+          if (event.key === " " && isInlineTriggerCandidate && isEmptyCurrentLine) {
+            event.preventDefault();
+            dispatchInlineEditorOpen();
             return true;
+          }
+          if (event.key === "/" && isInlineTriggerCandidate) {
+            requestAnimationFrame(() => {
+              if (!editor || editor.isDestroyed) return;
+              const pos = editor.state.selection.from;
+              const coords = editor.view.coordsAtPos(pos);
+              setSlashActionMenuPos({ top: coords.bottom + 8, left: coords.left });
+              setShowSlashActionMenu(true);
+            });
+            return false;
           }
           if (event.key === "Escape" && showSlashActionMenu) {
             setShowSlashActionMenu(false);
@@ -56861,22 +56917,24 @@ ${promptInput.trim()}`
             const tr2 = editor.state.tr.setStoredMarks(filtered.length ? filtered : null);
             editor.view.dispatch(tr2);
           };
-          const selection = editor.state.selection;
           if (event.key === "Backspace" && selection.empty) {
-            const { $from } = selection;
-            const isAtStart = $from.parentOffset === 0;
-            const isEmptyParagraph = ((_b2 = (_a2 = $from.parent) == null ? void 0 : _a2.type) == null ? void 0 : _b2.name) === "paragraph" && ((_d2 = (_c2 = $from.parent) == null ? void 0 : _c2.content) == null ? void 0 : _d2.size) === 0;
+            if (showSlashActionMenu && ((_c2 = selection.$from.parent) == null ? void 0 : _c2.isTextblock) && selection.$from.parent.textContent === "/" && selection.$from.parentOffset === 1) {
+              setShowSlashActionMenu(false);
+            }
+            const { $from: $from2 } = selection;
+            const isAtStart = $from2.parentOffset === 0;
+            const isEmptyParagraph = ((_e = (_d2 = $from2.parent) == null ? void 0 : _d2.type) == null ? void 0 : _e.name) === "paragraph" && ((_g = (_f = $from2.parent) == null ? void 0 : _f.content) == null ? void 0 : _g.size) === 0;
             const inListItem = editor.isActive("listItem");
             if (isAtStart && isEmptyParagraph && !inListItem) {
-              const parentDepth = $from.depth - 1;
-              const indexInParent = parentDepth >= 0 ? $from.index(parentDepth) : -1;
-              const prevSibling = parentDepth >= 0 && indexInParent > 0 ? $from.node(parentDepth).child(indexInParent - 1) : null;
-              const prevType = ((_e = prevSibling == null ? void 0 : prevSibling.type) == null ? void 0 : _e.name) || "";
+              const parentDepth = $from2.depth - 1;
+              const indexInParent = parentDepth >= 0 ? $from2.index(parentDepth) : -1;
+              const prevSibling = parentDepth >= 0 && indexInParent > 0 ? $from2.node(parentDepth).child(indexInParent - 1) : null;
+              const prevType = ((_h = prevSibling == null ? void 0 : prevSibling.type) == null ? void 0 : _h.name) || "";
               if (prevType === "bulletList" || prevType === "orderedList" || prevType === "taskList") {
                 event.preventDefault();
-                const currentBlockDepth = $from.depth;
-                const currentBlockPos = $from.before(currentBlockDepth);
-                const currentBlockNode = $from.node(currentBlockDepth);
+                const currentBlockDepth = $from2.depth;
+                const currentBlockPos = $from2.before(currentBlockDepth);
+                const currentBlockNode = $from2.node(currentBlockDepth);
                 const tr2 = editor.state.tr.delete(currentBlockPos, currentBlockPos + currentBlockNode.nodeSize);
                 const targetPos = Math.max(1, currentBlockPos - 1);
                 tr2.setSelection(TextSelection.near(tr2.doc.resolve(targetPos), -1));
@@ -56887,21 +56945,21 @@ ${promptInput.trim()}`
             if (isAtStart && isEmptyParagraph && inListItem) {
               event.preventDefault();
               let listItemDepth = -1;
-              for (let depth = $from.depth; depth > 0; depth -= 1) {
-                if (((_f = $from.node(depth).type) == null ? void 0 : _f.name) === "listItem") {
+              for (let depth = $from2.depth; depth > 0; depth -= 1) {
+                if (((_i = $from2.node(depth).type) == null ? void 0 : _i.name) === "listItem") {
                   listItemDepth = depth;
                   break;
                 }
               }
               if (listItemDepth > 0) {
-                const listItemNode = $from.node(listItemDepth);
-                const listNode = $from.node(listItemDepth - 1);
-                const itemIndex = $from.index(listItemDepth - 1);
+                const listItemNode = $from2.node(listItemDepth);
+                const listNode = $from2.node(listItemDepth - 1);
+                const itemIndex = $from2.index(listItemDepth - 1);
                 const hasSiblingBefore = itemIndex > 0;
                 const hasSiblingAfter = itemIndex < ((listNode == null ? void 0 : listNode.childCount) || 0) - 1;
-                const isPlainEmptyItem = listItemNode.childCount === 1 && ((_h = (_g = listItemNode.firstChild) == null ? void 0 : _g.type) == null ? void 0 : _h.name) === "paragraph" && ((_j = (_i = listItemNode.firstChild) == null ? void 0 : _i.content) == null ? void 0 : _j.size) === 0;
+                const isPlainEmptyItem = listItemNode.childCount === 1 && ((_k = (_j = listItemNode.firstChild) == null ? void 0 : _j.type) == null ? void 0 : _k.name) === "paragraph" && ((_m = (_l = listItemNode.firstChild) == null ? void 0 : _l.content) == null ? void 0 : _m.size) === 0;
                 if (isPlainEmptyItem && (hasSiblingBefore || hasSiblingAfter)) {
-                  const listItemPos = $from.before(listItemDepth);
+                  const listItemPos = $from2.before(listItemDepth);
                   const tr2 = editor.state.tr.delete(listItemPos, listItemPos + listItemNode.nodeSize);
                   const docSize = tr2.doc.content.size;
                   const rawTarget = hasSiblingAfter ? listItemPos + 1 : Math.max(1, listItemPos - 1);
@@ -56915,14 +56973,14 @@ ${promptInput.trim()}`
             }
           }
           if (event.key === "Delete" && selection.empty) {
-            const { $from } = selection;
+            const { $from: $from2 } = selection;
             const inListItem = editor.isActive("listItem");
-            const isAtEnd = $from.parentOffset === $from.parent.content.size;
+            const isAtEnd = $from2.parentOffset === $from2.parent.content.size;
             if (inListItem && isAtEnd) {
-              for (let depth = $from.depth; depth > 0; depth -= 1) {
+              for (let depth = $from2.depth; depth > 0; depth -= 1) {
                 let afterPos = 0;
                 try {
-                  afterPos = $from.after(depth);
+                  afterPos = $from2.after(depth);
                 } catch (err) {
                   continue;
                 }
@@ -56930,7 +56988,7 @@ ${promptInput.trim()}`
                 const $after = editor.state.doc.resolve(afterPos);
                 const nextNode = $after.nodeAfter;
                 if (!nextNode) continue;
-                const isEmptySpacer = ((_k = nextNode.type) == null ? void 0 : _k.name) === "paragraph" && ((_l = nextNode.content) == null ? void 0 : _l.size) === 0;
+                const isEmptySpacer = ((_n = nextNode.type) == null ? void 0 : _n.name) === "paragraph" && ((_o = nextNode.content) == null ? void 0 : _o.size) === 0;
                 if (isEmptySpacer) {
                   event.preventDefault();
                   let tr2 = editor.state.tr;
@@ -56939,7 +56997,7 @@ ${promptInput.trim()}`
                     if (deletePos <= 0 || deletePos >= tr2.doc.content.size) break;
                     const $probe = tr2.doc.resolve(deletePos);
                     const probeNode = $probe.nodeAfter;
-                    const probeIsEmptyParagraph = ((_m = probeNode == null ? void 0 : probeNode.type) == null ? void 0 : _m.name) === "paragraph" && ((_n = probeNode == null ? void 0 : probeNode.content) == null ? void 0 : _n.size) === 0;
+                    const probeIsEmptyParagraph = ((_p = probeNode == null ? void 0 : probeNode.type) == null ? void 0 : _p.name) === "paragraph" && ((_q = probeNode == null ? void 0 : probeNode.content) == null ? void 0 : _q.size) === 0;
                     if (!probeIsEmptyParagraph) break;
                     tr2 = tr2.delete(deletePos, deletePos + probeNode.nodeSize);
                   }
@@ -57039,7 +57097,7 @@ ${promptInput.trim()}`
               }
             }
             if (tablePos >= 0 && tableNode) {
-              const totalCellCount = ((_o = tableNode.content) == null ? void 0 : _o.childCount) ? tableNode.content.content.reduce((count, row) => {
+              const totalCellCount = ((_r = tableNode.content) == null ? void 0 : _r.childCount) ? tableNode.content.content.reduce((count, row) => {
                 var _a3;
                 const rowCellCount = ((_a3 = row == null ? void 0 : row.content) == null ? void 0 : _a3.childCount) || 0;
                 return count + rowCellCount;
@@ -57077,11 +57135,11 @@ ${promptInput.trim()}`
           if (event.key === "Enter") {
             const { state: state2 } = editor;
             const { selection: selection2 } = state2;
-            const $from = selection2.$from;
-            const parent = $from.parent;
-            if (((_p = parent == null ? void 0 : parent.type) == null ? void 0 : _p.name) === "heading" && ((_q = parent.attrs) == null ? void 0 : _q.collapsed)) {
+            const $from2 = selection2.$from;
+            const parent = $from2.parent;
+            if (((_s = parent == null ? void 0 : parent.type) == null ? void 0 : _s.name) === "heading" && ((_t = parent.attrs) == null ? void 0 : _t.collapsed)) {
               const level = parent.attrs.level || 1;
-              const headingPos = $from.before($from.depth);
+              const headingPos = $from2.before($from2.depth);
               const docSize = state2.doc.content.size;
               let insertPos = docSize;
               state2.doc.nodesBetween(headingPos + parent.nodeSize, docSize, (node, pos) => {
@@ -59237,20 +59295,20 @@ ${innerMarkdown}
       return () => document.removeEventListener("mousedown", onMouseDown);
     }, [showSlashActionMenu]);
     const slashActions = react_shim_default.useMemo(() => [
-      { label: "Texte", value: "paragraph", icon: Type },
-      { label: "Titre 1", value: "h1", icon: Heading1 },
-      { label: "Titre 2", value: "h2", icon: Heading2 },
-      { label: "Titre 3", value: "h3", icon: Heading3 },
-      { label: "Liste \xE0 puces", value: "bulletList", icon: List },
-      { label: "T\xE2che", value: "taskList", icon: SquareCheckBig },
-      { label: "Bloc de code", value: "codeBlock", icon: SquareCode },
-      { label: "Lien", value: "link", icon: Link2 },
-      { label: "Libell\xE9", value: "label", icon: Tag },
-      { label: "Citation", value: "quote", icon: Shapes },
-      { label: "Tableau", value: "table", icon: Table2 },
-      { label: "Diagramme", value: "diagram", icon: Shapes },
-      { label: "Image", value: "image", icon: Image2 },
-      { label: "Vid\xE9o", value: "video", icon: Clapperboard }
+      { label: "Texte", value: "paragraph", icon: Type, markdownShortcut: "texte" },
+      { label: "Titre 1", value: "h1", icon: Heading1, markdownShortcut: "#" },
+      { label: "Titre 2", value: "h2", icon: Heading2, markdownShortcut: "##" },
+      { label: "Titre 3", value: "h3", icon: Heading3, markdownShortcut: "###" },
+      { label: "Liste \xE0 puces", value: "bulletList", icon: List, markdownShortcut: "-" },
+      { label: "T\xE2che", value: "taskList", icon: SquareCheckBig, markdownShortcut: "[]" },
+      { label: "Bloc de code", value: "codeBlock", icon: SquareCode, markdownShortcut: "```" },
+      { label: "Lien", value: "link", icon: Link2, markdownShortcut: "[texte](url)" },
+      { label: "Libell\xE9", value: "label", icon: Tag, markdownShortcut: "@" },
+      { label: "Citation", value: "quote", icon: Shapes, markdownShortcut: ">" },
+      { label: "Tableau", value: "table", icon: Table2, markdownShortcut: "|" },
+      { label: "Diagramme", value: "diagram", icon: Shapes, markdownShortcut: "mermaid" },
+      { label: "Image", value: "image", icon: Image2, markdownShortcut: "![alt](url)" },
+      { label: "Vid\xE9o", value: "video", icon: Clapperboard, markdownShortcut: "video" }
     ], []);
     if (!editor) {
       return null;
@@ -59316,7 +59374,7 @@ ${innerMarkdown}
             BubbleMenuComponent,
             {
               editor,
-              visible: !isDropdownOpen && isFocusWithinMemoCard,
+              visible: isFocusWithinMemoCard,
               onKeep: () => keepSelection(editor),
               onReject: () => rejectSelection(editor),
               onAssist: handleAssist,
@@ -59327,31 +59385,47 @@ ${innerMarkdown}
             }
           ),
           /* @__PURE__ */ jsx(EditorContent, { editor }),
-          showSlashActionMenu && editor && /* @__PURE__ */ jsx(
+          showSlashActionMenu && editor && /* @__PURE__ */ jsxs(
             "div",
             {
               className: "memo-slash-actions-menu tiptap-dropdown-menu",
-              style: { position: "fixed", top: `${slashActionMenuPos.top}px`, left: `${slashActionMenuPos.left}px`, zIndex: 1600, minWidth: "210px" },
-              children: slashActions.map((item) => /* @__PURE__ */ jsxs(
-                "div",
-                {
-                  className: "tiptap-dropdown-item",
-                  onMouseDown: (event) => event.preventDefault(),
-                  onClick: () => {
-                    runEditorDropdownAction(editor, item.value, {
-                      onLink: openLinkModal,
-                      onInsertImage: openImagePicker,
-                      onInsertVideo: openVideoInsertDialog
-                    });
-                    setShowSlashActionMenu(false);
+              style: { position: "fixed", top: `${slashActionMenuPos.top}px`, left: `${slashActionMenuPos.left}px`, zIndex: 1600, minWidth: "250px" },
+              children: [
+                slashActions.map((item) => /* @__PURE__ */ jsxs(
+                  "div",
+                  {
+                    className: "tiptap-dropdown-item",
+                    onMouseDown: (event) => event.preventDefault(),
+                    onClick: () => {
+                      runEditorDropdownAction(editor, item.value, {
+                        onLink: openLinkModal,
+                        onInsertImage: openImagePicker,
+                        onInsertVideo: openVideoInsertDialog
+                      });
+                      setShowSlashActionMenu(false);
+                    },
+                    children: [
+                      /* @__PURE__ */ jsx(item.icon, { size: 16 }),
+                      /* @__PURE__ */ jsx("span", { style: { flex: 1 }, children: item.label }),
+                      /* @__PURE__ */ jsx("span", { className: "memo-slash-actions-menu__shortcut", children: item.markdownShortcut })
+                    ]
                   },
-                  children: [
-                    /* @__PURE__ */ jsx(item.icon, { size: 16 }),
-                    /* @__PURE__ */ jsx("span", { style: { flex: 1 }, children: item.label })
-                  ]
-                },
-                item.value
-              ))
+                  item.value
+                )),
+                /* @__PURE__ */ jsxs(
+                  "button",
+                  {
+                    type: "button",
+                    className: "memo-slash-actions-menu__close",
+                    onMouseDown: (event) => event.preventDefault(),
+                    onClick: () => setShowSlashActionMenu(false),
+                    children: [
+                      /* @__PURE__ */ jsx("span", { children: "Fermer le menu" }),
+                      /* @__PURE__ */ jsx("span", { className: "memo-slash-actions-menu__shortcut", children: "esc" })
+                    ]
+                  }
+                )
+              ]
             }
           ),
           showLinkModal && /* @__PURE__ */ jsx(

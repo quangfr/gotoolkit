@@ -1,3 +1,6 @@
+## Document
+- Recherche texte contenu
+
 ## Sécurité des données 
 - Chiffrement côté client des données de l'espace
 - Lien secret pour le partage de l'espace

@@ -311,12 +311,49 @@ td .node-text.node-paragraph,
 .mermaid-diagram-container:focus {
   border: 2px solid var(--color-primary);
 }
-.simple-editor .ProseMirror p.is-editor-empty:first-child::before {
+.simple-editor .ProseMirror p.is-editor-empty::before {
   content: attr(data-placeholder);
   float: left;
   color: var(--text-muted);
   pointer-events: none;
   height: 0;
+}
+.memo-slash-actions-menu {
+  max-height: 400px;
+  overflow-y: auto;
+}
+.memo-slash-actions-menu__shortcut {
+  margin-left: 10px;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Monaco,
+    Consolas,
+    "Liberation Mono",
+    "Courier New",
+    monospace;
+  white-space: nowrap;
+}
+.memo-slash-actions-menu__close {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  border: none;
+  border-top: 1px solid var(--border-main);
+  background: transparent;
+  color: var(--text-main);
+  padding: 8px 8px 6px 8px;
+  margin-top: 2px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.memo-slash-actions-menu__close:hover {
+  background-color: var(--bg-surface-soft);
 }
 .bubble-menu {
   display: flex;
@@ -1557,6 +1594,12 @@ button.btn-secondary {
 .simple-editor .ProseMirror h2:first-child,
 .simple-editor .ProseMirror h3:first-child,
 .simple-editor .ProseMirror h4:first-child {
+  margin-top: 0;
+}
+.simple-editor .ProseMirror > .react-renderer.node-heading:first-child .node-heading-wrapper > h1.node-text,
+.simple-editor .ProseMirror > .react-renderer.node-heading:first-child .node-heading-wrapper > h2.node-text,
+.simple-editor .ProseMirror > .react-renderer.node-heading:first-child .node-heading-wrapper > h3.node-text,
+.simple-editor .ProseMirror > .react-renderer.node-heading:first-child .node-heading-wrapper > h4.node-text {
   margin-top: 0;
 }
 .simple-editor .ProseMirror ul,
