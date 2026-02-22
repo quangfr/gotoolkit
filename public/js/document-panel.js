@@ -1329,16 +1329,18 @@
                     lead.innerHTML = defaultIconName ? `<i data-lucide="${defaultIconName}"></i>` : "";
                 };
                 renderLeadIcon(false);
-                lead.addEventListener("mouseenter", () => {
+                const showRowChevron = () => {
                     if (!hasChildren) return;
                     renderLeadIcon(true);
                     if (window.lucide) window.lucide.createIcons();
-                });
-                lead.addEventListener("mouseleave", () => {
+                };
+                const hideRowChevron = () => {
                     if (!hasChildren) return;
                     renderLeadIcon(false);
                     if (window.lucide) window.lucide.createIcons();
-                });
+                };
+                button.addEventListener("mouseenter", showRowChevron);
+                button.addEventListener("mouseleave", hideRowChevron);
                 lead.addEventListener("click", event => {
                     if (!hasChildren) return;
                     event.stopPropagation();
@@ -1687,7 +1689,14 @@
                         refreshBtn.type = "button";
                         refreshBtn.className = "document-explorer__item-action document-explorer__item-action--sync-refresh";
                         const sinceLabel = String(sectionMeta?.lastSyncLabel || "").trim();
-                        refreshBtn.title = sinceLabel || "Rafraîchir cet espace";
+                        const pendingNames = Array.isArray(sectionMeta?.pendingNames)
+                            ? sectionMeta.pendingNames.map(name => String(name || "").trim()).filter(Boolean)
+                            : [];
+                        if (pendingNames.length) {
+                            refreshBtn.title = `${sinceLabel || "Rafraîchir cet espace"}\nEn attente: ${pendingNames.join(", ")}`;
+                        } else {
+                            refreshBtn.title = sinceLabel || "Rafraîchir cet espace";
+                        }
                         refreshBtn.innerHTML = '<i data-lucide="refresh-cw"></i>';
                         if (pendingCount > 0) {
                             const badge = document.createElement("span");
