@@ -297,7 +297,7 @@
         let draggingId = "";
         let draggingSection = "";
         let orderIds = [];
-        let sectionExpanded = { recent: true, private: true, common: true, superpowers: true };
+        let sectionExpanded = { recent: true, private: true, archives: true, common: true, superpowers: true };
         let searchQuery = "";
         let pendingInlineRenameId = "";
         let pendingInlineRenameUntil = 0;
@@ -421,6 +421,7 @@
                 const next = {
                     recent: false,
                     private: parsed?.private !== false,
+                    archives: parsed?.archives !== false,
                     common: parsed?.common !== false,
                     superpowers: false
                 };
@@ -430,7 +431,7 @@
                 });
                 return next;
             } catch (err) {
-                return { recent: false, private: true, common: true, superpowers: false };
+                return { recent: false, private: true, archives: true, common: true, superpowers: false };
             }
         }
         function persistSectionExpandedState() {
@@ -947,6 +948,7 @@
             const explicit = String(item.section || "").trim();
             if (explicit.startsWith("shared:")) return explicit;
             if (item.section === "superpowers") return "superpowers";
+            if (item.section === "archives") return "archives";
             if (item.section === "common") return "common";
             if (item.isCommon) return "common";
             if (String(item.id || "").startsWith("common:")) return "common";
@@ -962,6 +964,7 @@
                 const spaceId = String(item.spaceId || "golive").trim() || "golive";
                 return `shared:${spaceId}`;
             }
+            if (String(item?.status || "").trim().toLowerCase() === "archived") return "archives";
             return "private";
         }
         function applyLocalOrderMove(docId, parentId, beforeId) {
@@ -1247,6 +1250,7 @@
             }
             const sectionItems = {
                 private: filteredItems.filter(item => getItemSection(item) === "private"),
+                archives: filteredItems.filter(item => getItemSection(item) === "archives"),
                 common: filteredItems.filter(item => getItemSection(item) === "common")
             };
             const discoveredShared = filteredItems
@@ -1262,6 +1266,7 @@
             });
             const trees = {
                 private: buildTree(sectionItems.private),
+                archives: buildTree(sectionItems.archives),
                 common: buildTree(sectionItems.common)
             };
             sharedSectionNames.forEach(sectionName => {
@@ -1638,7 +1643,7 @@
                 const sectionMeta = getSectionMeta?.(sectionName) || null;
                 const sectionIcon = iconOverride || sectionMeta?.icon || (sectionName === "recent"
                     ? "history"
-                    : (sectionName === "common" ? "component" : "lock-keyhole-open"));
+                    : (sectionName === "common" ? "component" : (sectionName === "private" ? "user" : "lock-keyhole-open")));
                 const isSectionExpanded = sectionExpanded[sectionName] !== false;
                 sectionHeader.innerHTML = `<i data-lucide="${sectionIcon}"></i><strong>${title}</strong>`;
                 const collapseIcon = document.createElement("i");
@@ -1793,6 +1798,8 @@
                 const fallbackName = sectionName.replace(/^shared:/, "") || "Espace";
                 await renderSection(sectionName, sectionMeta.title || fallbackName, sectionMeta.icon || "cloud-upload");
             }
+            if (isStale()) return;
+            await renderSection("archives", "Archives", "archive");
             if (isStale()) return;
             const renderSuperpowersSection = async () => {
                 if (isStale()) return;
@@ -2056,7 +2063,10 @@
                     }));
                 }
                 cachedItems = normalizeList(
-                    normalized.map(item => ({ ...item, section: "private" }))
+                    normalized.map(item => {
+                        const isArchived = String(item?.status || "").trim().toLowerCase() === "archived";
+                        return { ...item, section: isArchived ? "archives" : "private" };
+                    })
                         .concat(sharedItems)
                         .concat(commonItems)
                 );

@@ -55,6 +55,11 @@
     return `${base}/${API_VERSION}/shares/${encodedCollection}:batchDelete`;
   }
 
+  function buildShareBatchCreateUrl(base, collection) {
+    const encodedCollection = encodeURIComponent(collection);
+    return `${base}/${API_VERSION}/shares/${encodedCollection}:batchCreate`;
+  }
+
   function buildAssetUrl(base, assetId) {
     const encodedId = encodeURIComponent(assetId);
     return `${base}/${API_VERSION}/assets/${encodedId}`;
@@ -412,12 +417,49 @@
     });
   }
 
+  async function createSharePayloadBatch(collection, writes) {
+    assertReady();
+    const normalizedWrites = Array.isArray(writes)
+      ? writes
+        .map(entry => ({
+          id: String(entry?.id || "").trim(),
+          contentPayload: entry?.contentPayload,
+          metaPayload: entry?.metaPayload
+        }))
+        .filter(entry => entry.id && entry.contentPayload && entry.metaPayload)
+      : [];
+    if (!normalizedWrites.length) {
+      return { count: 0, results: [] };
+    }
+    return withWorkerFallback(async base => {
+      let response;
+      try {
+        response = await fetch(buildShareBatchCreateUrl(base, collection), {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json"
+          },
+          body: JSON.stringify({ writes: normalizedWrites })
+        });
+      } catch (error) {
+        throw markNetworkFailure(error instanceof Error ? error : new Error(String(error)));
+      }
+      if (!response.ok) {
+        const body = await response.text().catch(() => "");
+        throw new Error(body || "Impossible de créer le lot");
+      }
+      return await response.json().catch(() => ({ count: normalizedWrites.length, results: [] }));
+    });
+  }
+
   async function listShareTree(collection, options = {}) {
     assertReady();
     return withWorkerFallback(async base => {
       const url = buildCollectionQueryUrl(base, collection, {
         view: "tree",
-        spaceId: options?.spaceId
+        spaceId: options?.spaceId,
+        includeArchived: options?.includeArchived ? "1" : ""
       });
       let response;
       try {
@@ -483,6 +525,7 @@
     isReady,
     fetchSharePayload,
     fetchSharePayloadBatch,
+    createSharePayloadBatch,
     deleteSharePayloadBatch,
     saveSharePayload,
     saveSharePayloadBatch,

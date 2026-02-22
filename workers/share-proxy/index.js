@@ -116,6 +116,29 @@ function parseShareBatchDeletePath(request) {
   return { collection };
 }
 
+function parseShareBatchCreatePath(request) {
+  const url = new URL(request.url);
+  const segments = normalizePathname(url.pathname)
+    .split("/")
+    .filter(Boolean);
+  if (segments.length !== 3) {
+    return null;
+  }
+  if (segments[0] !== API_VERSION || segments[1] !== SHARES_SEGMENT) {
+    return null;
+  }
+  const rawCollection = String(segments[2] || "");
+  const match = rawCollection.match(/^(.+):batchCreate$/);
+  if (!match) {
+    return null;
+  }
+  const collection = decodeURIComponent(match[1] || "");
+  if (!collection || !VALID_COLLECTIONS.has(collection)) {
+    return null;
+  }
+  return { collection };
+}
+
 function parseShareRepairPath(request) {
   const url = new URL(request.url);
   const segments = normalizePathname(url.pathname)
@@ -824,6 +847,30 @@ function buildEmptyMemosContentPayloadFromMeta(metaPayload) {
   };
 }
 
+function buildArchivedMemosMetaPayload(metaPayload, contentPayload, options = {}) {
+  const baseMeta = metaPayload && typeof metaPayload === "object" ? metaPayload : {};
+  const normalizedFromContent = normalizeMemosMetaPayloadFromContent(
+    contentPayload && typeof contentPayload === "object" ? contentPayload : {},
+    "Document archivé"
+  );
+  const base = Object.keys(baseMeta).length ? baseMeta : normalizedFromContent;
+  const archivedAt = String(options?.archivedAt || new Date().toISOString()).trim() || new Date().toISOString();
+  return {
+    title: String(base?.title || normalizedFromContent?.title || "Document archivé").trim() || "Document archivé",
+    description: String(base?.description || normalizedFromContent?.description || "").trim(),
+    superpowers: Array.isArray(base?.superpowers) ? base.superpowers : (Array.isArray(normalizedFromContent?.superpowers) ? normalizedFromContent.superpowers : []),
+    icon: String(base?.icon || normalizedFromContent?.icon || "file-symlink").trim() || "file-symlink",
+    parentId: String(base?.parentId || normalizedFromContent?.parentId || "").trim(),
+    spaceId: String(base?.spaceId || normalizedFromContent?.spaceId || "golive").trim().toLowerCase() || "golive",
+    status: "archived",
+    position: Number.isFinite(Number(base?.position))
+      ? Number(base.position)
+      : (Number.isFinite(Number(normalizedFromContent?.position)) ? Number(normalizedFromContent.position) : Date.now()),
+    archivedAt,
+    archivedReason: String(options?.reason || "delete").trim() || "delete"
+  };
+}
+
 async function reconcileMemosConsistency(env, request, options = {}) {
   const dryRun = Boolean(options?.dryRun);
   const [memosDocs, metaDocs] = await Promise.all([
@@ -842,6 +889,8 @@ async function reconcileMemosConsistency(env, request, options = {}) {
   );
   const contentOnly = [];
   const metaOnly = [];
+  const metaOnlyActive = [];
+  const metaOnlyArchived = [];
   const repairedMeta = [];
   const repairedContent = [];
 
@@ -851,6 +900,12 @@ async function reconcileMemosConsistency(env, request, options = {}) {
   for (const id of metaById.keys()) {
     if (!memosById.has(id)) metaOnly.push(id);
   }
+  for (const id of metaOnly) {
+    const metaDoc = metaById.get(id);
+    const payload = metaDoc?.payload && typeof metaDoc.payload === "object" ? metaDoc.payload : {};
+    if (isArchivedPayload(payload)) metaOnlyArchived.push(id);
+    else metaOnlyActive.push(id);
+  }
 
   if (!dryRun) {
     for (const id of contentOnly) {
@@ -859,7 +914,7 @@ async function reconcileMemosConsistency(env, request, options = {}) {
       await upsertShareDocument(env, "memos-meta", id, metaPayload, request);
       repairedMeta.push(id);
     }
-    for (const id of metaOnly) {
+    for (const id of metaOnlyActive) {
       const metaDoc = metaById.get(id);
       const contentPayload = buildEmptyMemosContentPayloadFromMeta(metaDoc?.payload || {});
       await upsertShareDocument(env, "memos", id, contentPayload, request);
@@ -876,7 +931,9 @@ async function reconcileMemosConsistency(env, request, options = {}) {
     },
     mismatches: {
       contentOnlyCount: contentOnly.length,
-      metaOnlyCount: metaOnly.length
+      metaOnlyCount: metaOnly.length,
+      metaOnlyActiveCount: metaOnlyActive.length,
+      metaOnlyArchivedCount: metaOnlyArchived.length
     },
     repaired: {
       metaCreatedFromContent: dryRun ? 0 : repairedMeta.length,
@@ -884,7 +941,9 @@ async function reconcileMemosConsistency(env, request, options = {}) {
     },
     samples: {
       contentOnly: contentOnly.slice(0, 50),
-      metaOnly: metaOnly.slice(0, 50)
+      metaOnly: metaOnly.slice(0, 50),
+      metaOnlyActive: metaOnlyActive.slice(0, 50),
+      metaOnlyArchived: metaOnlyArchived.slice(0, 50)
     }
   };
 }
@@ -994,6 +1053,7 @@ async function handleRequest(request, env) {
   const batchPath = parseShareBatchPath(request);
   const batchGetPath = parseShareBatchGetPath(request);
   const batchDeletePath = parseShareBatchDeletePath(request);
+  const batchCreatePath = parseShareBatchCreatePath(request);
   const repairPath = parseShareRepairPath(request);
   if (!path && batchPath) {
     if (request.method !== "POST") {
@@ -1113,15 +1173,82 @@ async function handleRequest(request, env) {
     }
     const results = [];
     for (const id of ids) {
+      const [existingContent, existingMeta] = await Promise.all([
+        fetchShareDocument(env, "memos", id),
+        fetchShareDocument(env, "memos-meta", id)
+      ]);
+      const archivedMetaPayload = buildArchivedMemosMetaPayload(
+        existingMeta?.payload || null,
+        existingContent?.payload || null,
+        { reason: "delete", archivedAt: new Date().toISOString() }
+      );
       await Promise.all([
         deleteShareDocument(env, "memos", id),
-        deleteShareDocument(env, "memos-meta", id)
+        upsertShareDocument(env, "memos-meta", id, archivedMetaPayload, request)
       ]);
       results.push({
         id,
-        deleted: {
-          content: true,
-          meta: true
+        archived: true,
+        deleted: { content: true },
+        kept: { meta: true }
+      });
+    }
+    return jsonResponse({
+      success: true,
+      count: results.length,
+      results
+    }, 200, request, env);
+  }
+  if (!path && batchCreatePath) {
+    if (request.method !== "POST") {
+      const headers = Object.assign({ Allow: "POST,OPTIONS" }, corsHeaders(request, env));
+      return new Response(JSON.stringify({ error: "Méthode non autorisée" }), {
+        status: 405,
+        headers: Object.assign({ "Content-Type": "application/json; charset=utf-8" }, headers)
+      });
+    }
+    const rateLimitResponse = await enforceWriteRateLimit(request, env);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
+    }
+    let body = null;
+    try {
+      body = await request.json();
+    } catch (err) {
+      return errorResponse("Payload JSON attendu", 400, request, env);
+    }
+    const writes = Array.isArray(body?.writes) ? body.writes : [];
+    if (!writes.length) {
+      return errorResponse("writes[] manquant", 400, request, env);
+    }
+    if (writes.length > 200) {
+      return errorResponse("writes[] dépasse la limite (200)", 400, request, env);
+    }
+    if (batchCreatePath.collection !== "memos") {
+      return errorResponse("Route de création groupée supportée uniquement pour memos", 400, request, env);
+    }
+    const results = [];
+    for (const entry of writes) {
+      const id = String(entry?.id || "").trim();
+      if (!id) {
+        return errorResponse("Chaque write doit contenir un id", 400, request, env);
+      }
+      const contentPayload = entry?.contentPayload;
+      const metaPayload = entry?.metaPayload;
+      if (!contentPayload || typeof contentPayload !== "object") {
+        return errorResponse(`contentPayload manquant pour ${id}`, 400, request, env);
+      }
+      if (!metaPayload || typeof metaPayload !== "object") {
+        return errorResponse(`metaPayload manquant pour ${id}`, 400, request, env);
+      }
+      const [contentResult, metaResult] = await Promise.all([
+        upsertShareDocument(env, "memos", id, contentPayload, request),
+        upsertShareDocument(env, "memos-meta", id, metaPayload, request)
+      ]);
+      results.push({
+        id,
+        meta: {
+          updatedAt: String(metaResult?.meta?.updatedAt || contentResult?.meta?.updatedAt || new Date().toISOString()).trim()
         }
       });
     }
