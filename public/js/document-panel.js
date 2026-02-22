@@ -1652,20 +1652,17 @@
                 if (sectionName.startsWith("shared:") || sectionName === "private") {
                     const actions = document.createElement("span");
                     actions.className = "document-explorer__section-actions";
+                    const pendingCount = sectionName.startsWith("shared:")
+                        ? Number(sectionMeta?.pendingCount || 0)
+                        : 0;
+                    if (sectionName.startsWith("shared:") && pendingCount > 0) {
+                        actions.classList.add("document-explorer__section-actions--pending-sync");
+                    }
                     const addBtn = document.createElement("button");
                     addBtn.type = "button";
                     addBtn.className = "document-explorer__item-action";
                     addBtn.title = sectionName === "private" ? "Créer une page racine" : "Ajouter une page";
                     addBtn.innerHTML = '<i data-lucide="plus"></i>';
-                    if (sectionName.startsWith("shared:")) {
-                        const pendingCount = Number(sectionMeta?.pendingCount || 0);
-                        if (pendingCount > 0) {
-                            const badge = document.createElement("span");
-                            badge.className = "chat-header-badge chat-header-badge--pending";
-                            badge.textContent = String(pendingCount);
-                            addBtn.appendChild(badge);
-                        }
-                    }
                     addBtn.addEventListener("click", (event) => {
                         event.preventDefault();
                         event.stopPropagation();
@@ -1688,10 +1685,16 @@
                     if (sectionName.startsWith("shared:")) {
                         const refreshBtn = document.createElement("button");
                         refreshBtn.type = "button";
-                        refreshBtn.className = "document-explorer__item-action";
+                        refreshBtn.className = "document-explorer__item-action document-explorer__item-action--sync-refresh";
                         const sinceLabel = String(sectionMeta?.lastSyncLabel || "").trim();
                         refreshBtn.title = sinceLabel || "Rafraîchir cet espace";
                         refreshBtn.innerHTML = '<i data-lucide="refresh-cw"></i>';
+                        if (pendingCount > 0) {
+                            const badge = document.createElement("span");
+                            badge.className = "document-explorer__sync-badge";
+                            badge.textContent = String(pendingCount);
+                            refreshBtn.appendChild(badge);
+                        }
                         refreshBtn.addEventListener("click", (event) => {
                             event.preventDefault();
                             event.stopPropagation();
@@ -1712,6 +1715,66 @@
                     }
                     sectionHeader.appendChild(actions);
                 }
+                const buildRootMoveIds = (fromId) => {
+                    const selectedForMove = (selectedHighlightEnabled && selectedIds.has(fromId))
+                        ? Array.from(sanitizeSelectedIds(selectedIds))
+                        : [fromId];
+                    const byId = new Map(
+                        normalizeList(cachedItems)
+                            .map(item => [String(item?.id || "").trim(), item])
+                            .filter(([id]) => Boolean(id))
+                    );
+                    const selectedSet = new Set(selectedForMove.map(id => String(id || "").trim()).filter(Boolean));
+                    return selectedForMove.filter((candidateId) => {
+                        const id = String(candidateId || "").trim();
+                        if (!id) return false;
+                        let cursor = String(byId.get(id)?.parentId || "").trim();
+                        while (cursor) {
+                            if (selectedSet.has(cursor)) return false;
+                            cursor = String(byId.get(cursor)?.parentId || "").trim();
+                        }
+                        return true;
+                    });
+                };
+                sectionHeader.addEventListener("dragover", event => {
+                    if (!draggingId || !onMove) return;
+                    if (event.target.closest(".document-explorer__section-actions")) return;
+                    event.preventDefault();
+                    clearDropHint();
+                    clearRootDropHint();
+                    sectionHeader.classList.add("document-explorer__section-header--drop-root");
+                });
+                sectionHeader.addEventListener("dragleave", event => {
+                    const nextTarget = event.relatedTarget;
+                    if (nextTarget && sectionHeader.contains(nextTarget)) return;
+                    sectionHeader.classList.remove("document-explorer__section-header--drop-root");
+                });
+                sectionHeader.addEventListener("drop", async event => {
+                    if (!draggingId || !onMove) return;
+                    if (event.target.closest(".document-explorer__section-actions")) return;
+                    event.preventDefault();
+                    sectionHeader.classList.remove("document-explorer__section-header--drop-root");
+                    clearAllDropHints();
+                    const fromItem = normalizeList(cachedItems).find(entry => String(entry?.id || "") === String(draggingId));
+                    const fromSection = draggingSection || getItemSection(fromItem);
+                    const fromId = draggingId;
+                    const toSection = sectionName || "private";
+                    const idsToMove = buildRootMoveIds(fromId);
+                    if (!idsToMove.length) return;
+                    if (fromSection === toSection) {
+                        idsToMove.forEach((id, index) => {
+                            applyLocalParentMove(id, "");
+                            applyLocalOrderMove(id, "", index === 0 ? "" : "");
+                        });
+                        rebuildOrderFromCachedItems();
+                    }
+                    for (const id of idsToMove) {
+                        await onMove(id, "", 1, "", { fromSection, toSection, selectedIds: idsToMove });
+                    }
+                    draggingId = "";
+                    draggingSection = "";
+                    renderList(cachedItems);
+                });
                 sectionHeader.addEventListener("click", () => {
                     sectionExpanded[sectionName] = !sectionExpanded[sectionName];
                     persistSectionExpandedState();
@@ -1984,6 +2047,11 @@
                     const selectedForMove = (selectedHighlightEnabled && selectedIds.has(fromId))
                         ? Array.from(sanitizeSelectedIds(selectedIds))
                         : [fromId];
+                    const byId = new Map(
+                        normalizeList(cachedItems)
+                            .map(item => [String(item?.id || "").trim(), item])
+                            .filter(([id]) => Boolean(id))
+                    );
                     const selectedSet = new Set(selectedForMove.map(id => String(id || "").trim()).filter(Boolean));
                     const idsToMove = selectedForMove.filter((candidateId) => {
                         const id = String(candidateId || "").trim();

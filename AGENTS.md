@@ -65,6 +65,7 @@ Only `public/js` may touch `window`:
 - Excalidraw bridge: `src/draw-editor/index.tsx` forces light theme, normalizes Mermaid, exposes `window.GoToolkitExcalidraw`.
 - Docs bridge: `src/memo-bridge/index.tsx` exposes the Docs editor API to `window`.
 - When modifying memo-editor (memo) or draw-editor (connect), run an npm build for the corresponding component after changes.
+- Build scope rule: do not run `build:connect`/draw build unless draw-related `src/` files changed, and do not run `build:memo` unless memo-related `src/` files changed. Prefer targeted builds over full `npm run build` when only one side changed.
 - **Playwright (generic workflow for all tests)**:
   - Pre-run the server when possible (`npm run start:test` preferred, `npm start` acceptable). `playwright.config.ts` uses `reuseExistingServer: true`, so Playwright will attach to an existing server instead of waiting for boot.
   - Use the cache-friendly test server profile for Playwright (`start:test`), which serves JS/CSS with cache headers to reduce cold-start load time across repeated runs.

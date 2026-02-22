@@ -705,10 +705,55 @@
         .document-explorer__section-actions.document-explorer__section-actions--force-visible {
             opacity: 1;
         }
+        .document-explorer__section-actions--pending-sync {
+            opacity: 1;
+        }
+        .document-explorer__section-actions--pending-sync .document-explorer__item-action {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.15s ease;
+        }
+        .document-explorer__section-actions--pending-sync .document-explorer__item-action--sync-refresh {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .document-explorer__section-header:hover .document-explorer__section-actions--pending-sync .document-explorer__item-action,
+        .document-explorer__section-header:focus-within .document-explorer__section-actions--pending-sync .document-explorer__item-action {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .document-explorer__item-action--sync-refresh {
+            position: relative;
+        }
+        .document-explorer__sync-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            min-width: 14px;
+            height: 14px;
+            background: var(--bg-text-yellow);
+            color: white;
+            border-radius: var(--radius-full);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8px;
+            font-weight: 700;
+            padding: 0 3px;
+            border: 1.5px solid var(--bg-surface);
+            line-height: 1;
+            pointer-events: none;
+            z-index: 1;
+        }
         .document-explorer__section-header i,
         .document-explorer__section-header svg {
             width: 14px;
             height: 14px;
+        }
+        .document-explorer__section-header--drop-root {
+            background: var(--bg-surface-soft);
+            border-radius: 8px;
+            box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.25);
         }
         .document-explorer__section-body {
             width: 100%;
