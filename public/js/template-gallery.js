@@ -217,35 +217,7 @@
 
     async function syncTemplates(force = false) {
         if (!window.goToolkitTemplateStore) return;
-
-        const lastSync = parseInt(localStorage.getItem('last_template_sync') || '0');
-        const now = Date.now();
-
-        if (!force && lastSync && (now - lastSync < TEMPLATE_SYNC_PERIOD)) {
-            cloudTemplates = await window.goToolkitTemplateStore.list();
-            if (cloudTemplates && cloudTemplates.length > 0) return;
-        }
-
-        localStorage.setItem('last_template_sync', now.toString());
-
-        try {
-            const fetched = await window.goToolkitShareWorker.listShares(TEMPLATES_COLLECTION);
-            const mapped = (fetched || []).map(doc => ({
-                id: doc.id,
-                label: doc.payload?.label || "Modèle sans titre",
-                description: doc.payload?.description || "",
-                category: doc.payload?.category || "",
-                superpowers: doc.payload?.superpowers || [],
-                html: doc.payload?.html || "",
-                ownerToken: doc.payload?.ownerToken || "",
-                updatedAt: doc.meta?.updatedDate || doc.meta?.updatedAt || ""
-            }));
-            await window.goToolkitTemplateStore.clear(); await window.goToolkitTemplateStore.saveAll(mapped);
-            cloudTemplates = mapped;
-        } catch (err) {
-            console.warn("Failed to fetch cloud templates, falling back to local store", err);
-            cloudTemplates = await window.goToolkitTemplateStore.list();
-        }
+        cloudTemplates = await window.goToolkitTemplateStore.list();
     }
 
     function escapeHtml(value) {

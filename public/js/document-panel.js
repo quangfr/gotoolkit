@@ -1685,9 +1685,14 @@
                         actions.appendChild(refreshBtn);
                     }
                     if (sectionName.startsWith("shared:")) {
+                        const sharedSpaceId = String(sectionMeta?.spaceId || sectionName.replace(/^shared:/, "")).trim().toLowerCase();
+                        const isSharedSpaceSyncing = Boolean(sectionMeta?.isSyncing);
                         const refreshBtn = document.createElement("button");
                         refreshBtn.type = "button";
                         refreshBtn.className = "document-explorer__item-action document-explorer__item-action--sync-refresh";
+                        if (sharedSpaceId) {
+                            refreshBtn.dataset.spaceId = sharedSpaceId;
+                        }
                         const sinceLabel = String(sectionMeta?.lastSyncLabel || "").trim();
                         const pendingNames = Array.isArray(sectionMeta?.pendingNames)
                             ? sectionMeta.pendingNames.map(name => String(name || "").trim()).filter(Boolean)
@@ -1698,6 +1703,10 @@
                             refreshBtn.title = sinceLabel || "Rafraîchir cet espace";
                         }
                         refreshBtn.innerHTML = '<i data-lucide="refresh-cw"></i>';
+                        if (isSharedSpaceSyncing) {
+                            const icon = refreshBtn.querySelector('i[data-lucide="refresh-cw"]') || refreshBtn.querySelector("i");
+                            if (icon) icon.classList.add("lucide-spin");
+                        }
                         if (pendingCount > 0) {
                             const badge = document.createElement("span");
                             badge.className = "document-explorer__sync-badge";
