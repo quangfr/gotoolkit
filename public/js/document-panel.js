@@ -297,7 +297,7 @@
         let draggingId = "";
         let draggingSection = "";
         let orderIds = [];
-        let sectionExpanded = { recent: true, private: true, archives: true, common: true, superpowers: true };
+        let sectionExpanded = { recent: true, private: true, archives: false, common: true, superpowers: true };
         let searchQuery = "";
         let pendingInlineRenameId = "";
         let pendingInlineRenameUntil = 0;
@@ -421,7 +421,7 @@
                 const next = {
                     recent: false,
                     private: parsed?.private !== false,
-                    archives: parsed?.archives !== false,
+                    archives: parsed?.archives === true,
                     common: parsed?.common !== false,
                     superpowers: false
                 };
@@ -431,7 +431,7 @@
                 });
                 return next;
             } catch (err) {
-                return { recent: false, private: true, archives: true, common: true, superpowers: false };
+                return { recent: false, private: true, archives: false, common: true, superpowers: false };
             }
         }
         function persistSectionExpandedState() {
