@@ -444,6 +444,9 @@ function extractMeta(doc) {
 function buildShareSummary(entry) {
   const payload = entry?.payload && typeof entry.payload === "object" ? entry.payload : {};
   const firstTab = Array.isArray(payload?.tabs) ? payload.tabs[0] : null;
+  const status = String(payload?.status || "active").trim().toLowerCase() || "active";
+  const parsedPosition = Number(payload?.position);
+  const position = Number.isFinite(parsedPosition) ? parsedPosition : null;
   return {
     id: String(entry?.id || "").trim(),
     title: String(payload?.title || firstTab?.title || "Document partagé").trim(),
@@ -452,8 +455,15 @@ function buildShareSummary(entry) {
     icon: String(payload?.icon || "file-symlink").trim() || "file-symlink",
     parentId: String(payload?.parentId || "").trim(),
     spaceId: String(payload?.spaceId || "golive").trim().toLowerCase() || "golive",
-    updatedAt: String(entry?.meta?.updatedAt || entry?.meta?.updatedDate || "").trim()
+    updatedAt: String(entry?.meta?.updatedAt || entry?.meta?.updatedDate || "").trim(),
+    status,
+    position
   };
+}
+
+function isArchivedPayload(payload) {
+  const status = String(payload?.status || "active").trim().toLowerCase();
+  return status === "archived";
 }
 
 function mapStorageObjectToAsset(objectName, upload) {
@@ -764,21 +774,31 @@ async function handleRequest(request, env) {
     if (!path.documentId) {
       const requestUrl = new URL(request.url);
       const view = String(requestUrl.searchParams.get("view") || "").trim().toLowerCase();
+      const includeArchived = ["1", "true", "yes"].includes(
+        String(requestUrl.searchParams.get("includeArchived") || "").trim().toLowerCase()
+      );
       if (view === "tree") {
         const spaceFilter = String(requestUrl.searchParams.get("spaceId") || "").trim().toLowerCase();
         const docs = await listShareDocuments(env, path.collection);
         const summaries = docs
           .map(buildShareSummary)
           .filter(item => item.id)
+          .filter(item => includeArchived || item.status !== "archived")
           .filter(item => !spaceFilter || item.spaceId === spaceFilter)
-          .sort((a, b) => Date.parse(b.updatedAt || 0) - Date.parse(a.updatedAt || 0));
+          .sort((a, b) => {
+            const ap = Number.isFinite(Number(a?.position)) ? Number(a.position) : Number.POSITIVE_INFINITY;
+            const bp = Number.isFinite(Number(b?.position)) ? Number(b.position) : Number.POSITIVE_INFINITY;
+            if (ap !== bp) return ap - bp;
+            return Date.parse(b.updatedAt || 0) - Date.parse(a.updatedAt || 0);
+          });
         const watermark = summaries[0]?.updatedAt || "";
         return jsonResponse({ documents: summaries, watermark }, 200, request, env, {
           "Cache-Control": "no-store, max-age=0"
         });
       }
       const docs = await listShareDocuments(env, path.collection);
-      return jsonResponse({ documents: docs }, 200, request, env, {
+      const filtered = includeArchived ? docs : docs.filter(doc => !isArchivedPayload(doc?.payload || {}));
+      return jsonResponse({ documents: filtered }, 200, request, env, {
         "Cache-Control": "no-store, max-age=0"
       });
     }

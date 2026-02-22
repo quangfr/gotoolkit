@@ -86,6 +86,15 @@
         const records = await readRecords();
         const appData = records[app] || {};
         return Object.values(appData).sort((a, b) => {
+            const posA = Number(a?.position);
+            const posB = Number(b?.position);
+            const hasPosA = Number.isFinite(posA);
+            const hasPosB = Number.isFinite(posB);
+            if (hasPosA && hasPosB && posA !== posB) {
+                return posA - posB;
+            }
+            if (hasPosA && !hasPosB) return -1;
+            if (!hasPosA && hasPosB) return 1;
             const dateA = Date.parse(a.updatedAt || 0);
             const dateB = Date.parse(b.updatedAt || 0);
             return dateB - dateA;

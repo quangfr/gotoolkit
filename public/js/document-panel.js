@@ -682,21 +682,7 @@
     }
 
         function uniqueName(name, list, extraNames, excludeId) {
-            const base = normalizeName(name);
-            const names = (list || [])
-                .filter(item => !excludeId || item.id !== excludeId)
-                .map(item => String(item.title || "").trim())
-                .filter(Boolean);
-            const extras = Array.isArray(extraNames) ? extraNames.map(value => String(value || "").trim()).filter(Boolean) : [];
-            const allNames = names.concat(extras);
-            if (!allNames.includes(base)) return base;
-            let index = 1;
-            let candidate = `${base} (${index})`;
-            while (allNames.includes(candidate)) {
-                index += 1;
-                candidate = `${base} (${index})`;
-            }
-            return candidate;
+            return normalizeName(name);
         }
 
         let isOpen = (window.innerWidth < 900) ? false : readBool(openKey, false);
@@ -1045,7 +1031,7 @@
                 dynamicSharedKeys.forEach(key => {
                     forcedShared[key] = true;
                 });
-                sectionExpanded = { ...sectionExpanded, recent: false, private: true, common: true, superpowers: false, ...forcedShared };
+                sectionExpanded = { ...sectionExpanded, private: true, common: true, ...forcedShared };
                 expandedIds = new Set(normalizeList(cachedItems).map(item => String(item.id || "")).filter(Boolean));
                 persistExpandedState();
                 persistSectionExpandedState();
@@ -1126,8 +1112,6 @@
                 }
                 expandedIds = nextExpanded;
 
-                sectionExpanded.recent = false;
-                sectionExpanded.superpowers = false;
                 if (activeSection.startsWith("shared:")) {
                     sectionExpanded.private = false;
                     sharedSectionNames.forEach(sectionName => {
@@ -1280,7 +1264,7 @@
                         const nextName = String(input.value || "").trim();
                         if (submit && nextName && onRename) {
                             onRename(item, {
-                                name: uniqueName(nextName, cachedItems, null, item.id),
+                                name: normalizeName(nextName),
                                 description: item.description || "",
                                 superpowers: normalizeSuperpowersList(item.superpowers, item.category),
                                 icon: item.icon || (item.isShared ? "file-symlink" : ""),
