@@ -892,7 +892,7 @@ async function reconcileMemosConsistency(env, request, options = {}) {
   const metaOnlyActive = [];
   const metaOnlyArchived = [];
   const repairedMeta = [];
-  const repairedContent = [];
+  const removedMeta = [];
 
   for (const id of memosById.keys()) {
     if (!metaById.has(id)) contentOnly.push(id);
@@ -915,10 +915,8 @@ async function reconcileMemosConsistency(env, request, options = {}) {
       repairedMeta.push(id);
     }
     for (const id of metaOnlyActive) {
-      const metaDoc = metaById.get(id);
-      const contentPayload = buildEmptyMemosContentPayloadFromMeta(metaDoc?.payload || {});
-      await upsertShareDocument(env, "memos", id, contentPayload, request);
-      repairedContent.push(id);
+      await deleteShareDocument(env, "memos-meta", id);
+      removedMeta.push(id);
     }
   }
 
@@ -937,7 +935,8 @@ async function reconcileMemosConsistency(env, request, options = {}) {
     },
     repaired: {
       metaCreatedFromContent: dryRun ? 0 : repairedMeta.length,
-      contentCreatedFromMeta: dryRun ? 0 : repairedContent.length
+      contentCreatedFromMeta: 0,
+      metaRemovedWithoutContent: dryRun ? 0 : removedMeta.length
     },
     samples: {
       contentOnly: contentOnly.slice(0, 50),

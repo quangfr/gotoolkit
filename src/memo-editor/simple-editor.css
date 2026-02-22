@@ -34,8 +34,7 @@
   z-index: 1000;
   max-width: calc(100% - 20px);
   box-sizing: border-box;
-  overflow-x: auto;
-  overflow-y: hidden;
+  overflow: visible;
 }
 
 .code-dropdown-autocomplete {
@@ -1774,9 +1773,9 @@ button.btn-secondary {
 .ProseMirror blockquote code {
   background: var(--bg-surface);
 }
-.simple-editor .ProseMirror h1 { font-size: 1.8rem; margin-top: 2.2rem; margin-bottom:1.0rem; font-weight: 500;}
-.simple-editor .ProseMirror h2 { font-size: 1.6rem; margin-top: 1.7rem; margin-bottom:1.0rem; font-weight: 500;}
-.simple-editor .ProseMirror h3 { font-size: 1.4rem; margin-top: 1.3rem; margin-bottom:1.0rem; font-weight: 500;}
+.simple-editor .ProseMirror h1 { font-size: 36px; margin-top: 2.2rem; margin-bottom:1.0rem; font-weight: 500;}
+.simple-editor .ProseMirror h2 { font-size: 28px; margin-top: 1.7rem; margin-bottom:1.0rem; font-weight: 500;}
+.simple-editor .ProseMirror h3 { font-size: 20px; margin-top: 1.3rem; margin-bottom:1.0rem; font-weight: 500;}
 .simple-editor .ProseMirror h4 { font-size: 1.2rem; margin-top: 1rem; margin-bottom:1.0rem; font-weight: 500;}
 .simple-editor .ProseMirror h1:first-child,
 .simple-editor .ProseMirror h2:first-child,

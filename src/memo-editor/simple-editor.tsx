@@ -212,6 +212,20 @@ const hasAncestorNode = ($pos: any, typeName: string) => {
   return false;
 };
 
+const getNearestScrollableAncestor = (element: HTMLElement | null): HTMLElement | null => {
+  let current = element?.parentElement || null;
+  while (current) {
+    const style = window.getComputedStyle(current);
+    const overflowY = style.overflowY;
+    const canScroll =
+      (overflowY === 'auto' || overflowY === 'scroll' || overflowY === 'overlay') &&
+      current.scrollHeight > current.clientHeight + 1;
+    if (canScroll) return current;
+    current = current.parentElement;
+  }
+  return null;
+};
+
 const getDiagramHeaderLine = (code: string) => {
   const lines = (code || '').split('\n');
   for (let i = 0; i < Math.min(lines.length, 5); i++) {
@@ -921,7 +935,7 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLi
             <Bot size={16} />
           </button>
           {editor && (
-            <TiptapActionsDropdown
+            <BubbleActionsDropdown
               editor={editor}
               onOpenChange={onDropdownToggle}
               onLink={onLink}
@@ -1665,6 +1679,114 @@ const TiptapActionsDropdown = ({
               className="tiptap-dropdown-item"
               data-active={option.active}
               onClick={() => handleSelect(option.value)}
+            >
+              <option.icon size={16} />
+              <span style={{ flex: 1 }}>{option.label}</span>
+              {option.active && <Check size={14} />}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const BubbleActionsDropdown = ({
+  editor,
+  onOpenChange,
+  onLink,
+  onInsertImage,
+  onInsertVideo,
+}: {
+  editor: Editor,
+  onOpenChange?: (isOpen: boolean) => void,
+  onLink?: () => void,
+  onInsertImage?: () => void,
+  onInsertVideo?: () => void,
+}) => {
+  const [isOpen, setIsOpen] = React.useState(false);
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    onOpenChange?.(isOpen);
+  }, [isOpen, onOpenChange]);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const options = [
+    { label: 'Texte', value: 'paragraph', icon: Type, active: editor.isActive('paragraph') },
+    { label: 'Titre 1', value: 'h1', icon: Heading1, active: editor.isActive('heading', { level: 1 }) },
+    { label: 'Titre 2', value: 'h2', icon: Heading2, active: editor.isActive('heading', { level: 2 }) },
+    { label: 'Titre 3', value: 'h3', icon: Heading3, active: editor.isActive('heading', { level: 3 }) },
+    { label: 'Liste à puces', value: 'bulletList', icon: List, active: editor.isActive('bulletList') },
+    { label: 'Tâche', value: 'taskList', icon: CheckSquare, active: editor.isActive('taskList') },
+    { label: 'Bloc de code', value: 'codeBlock', icon: SquareCode, active: editor.isActive('codeBlock') },
+    { label: 'Lien', value: 'link', icon: Link, active: editor.isActive('link') },
+    { label: 'Libellé', value: 'label', icon: Tag, active: editor.isActive('code') },
+    { label: 'Citation', value: 'quote', icon: Shapes, active: editor.isActive('blockquote') },
+    { label: 'Tableau', value: 'table', icon: TableIcon, active: editor.isActive('table') },
+    { label: 'Diagramme', value: 'diagram', icon: Shapes, active: editor.isActive('mermaidDiagram') },
+    { label: 'Image', value: 'image', icon: ImageIcon, active: false },
+    { label: 'Vidéo', value: 'video', icon: Clapperboard, active: false },
+  ];
+  const currentOption = options.find(o => o.active) || options[0];
+
+  const handleToggle = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsOpen((prev) => !prev);
+  };
+
+  const handleSelect = (event: React.MouseEvent<HTMLDivElement>, value: string) => {
+    event.preventDefault();
+    event.stopPropagation();
+    runEditorDropdownAction(editor, value, { onLink, onInsertImage, onInsertVideo });
+    setIsOpen(false);
+  };
+
+  return (
+    <div className="tiptap-dropdown" ref={dropdownRef}>
+      <button
+        type="button"
+        className="tiptap-dropdown-trigger"
+        onMouseDown={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+        }}
+        onClick={handleToggle}
+        title="Actions"
+      >
+        <currentOption.icon size={16} />
+        <span>{currentOption.label}</span>
+        <ChevronDown size={14} />
+      </button>
+      {isOpen && (
+        <div
+          className="tiptap-dropdown-menu"
+          style={{ minWidth: '190px' }}
+          onMouseDown={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+          }}
+        >
+          {options.map((option) => (
+            <div
+              key={option.value}
+              className="tiptap-dropdown-item"
+              data-active={option.active}
+              onMouseDown={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+              }}
+              onClick={(event) => handleSelect(event, option.value)}
             >
               <option.icon size={16} />
               <span style={{ flex: 1 }}>{option.label}</span>
@@ -2476,6 +2598,8 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   const [codeHandle, setCodeHandle] = React.useState<{ top: number, left: number, pos: number } | null>(null);
   const [mermaidHandles, setMermaidHandles] = React.useState<Array<{ top: number, left: number, pos: number }>>([]);
   const [hoveredMermaidPos, setHoveredMermaidPos] = React.useState<number | null>(null);
+  const [mediaHandles, setMediaHandles] = React.useState<Array<{ top: number, left: number, pos: number }>>([]);
+  const [hoveredMediaPos, setHoveredMediaPos] = React.useState<number | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
   const [selectionData, setSelectionData] = React.useState<any>(null);
   const [tableContextMenu, setTableContextMenu] = React.useState<{ top: number, left: number, type: 'row' | 'col', index: number, tablePos: number } | null>(null);
@@ -2697,6 +2821,29 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       handleKeyDown: (_view, event) => {
         if (!editor) return false;
         const selection = editor.state.selection;
+        const shouldStickToBottomAfterEnter =
+          event.key === 'Enter' &&
+          selection.empty &&
+          selection.to === editor.state.doc.content.size &&
+          !hasAncestorNode(selection.$from, 'table');
+
+        if (shouldStickToBottomAfterEnter) {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              if (!editor || editor.isDestroyed) return;
+              const scrollContainer = getNearestScrollableAncestor(editor.view.dom as HTMLElement);
+              if (scrollContainer) {
+                scrollContainer.scrollTop = scrollContainer.scrollHeight;
+                return;
+              }
+              const rootScroller = document.scrollingElement as HTMLElement | null;
+              if (rootScroller) {
+                rootScroller.scrollTop = rootScroller.scrollHeight;
+              }
+            });
+          });
+        }
+
         const isInlineTriggerCandidate =
           selection.empty &&
           !event.shiftKey &&
@@ -3936,6 +4083,30 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     setMermaidHandles(handles);
   }, [editor, hoveredMermaidPos]);
 
+  const updateMediaHandles = React.useCallback(() => {
+    if (!editor || !containerRef.current) return;
+    if (hoveredMediaPos === null) {
+      setMediaHandles([]);
+      return;
+    }
+    const containerRect = containerRef.current.getBoundingClientRect();
+    const handles: Array<{ top: number, left: number, pos: number }> = [];
+    editor.state.doc.descendants((node, pos) => {
+      const isMediaNode = node.type.name === 'image' || node.type.name === 'videoEmbed';
+      if (!isMediaNode || pos !== hoveredMediaPos) return;
+      const dom = editor.view.nodeDOM(pos) as HTMLElement | null;
+      const wrapper = dom?.closest('.memo-image-wrapper, .memo-video-wrapper') as HTMLElement | null;
+      const rect = (wrapper || dom)?.getBoundingClientRect();
+      if (!rect) return;
+      handles.push({
+        top: rect.top - containerRect.top + 10,
+        left: rect.left - containerRect.left + 5,
+        pos
+      });
+    });
+    setMediaHandles(handles);
+  }, [editor, hoveredMediaPos]);
+
   React.useEffect(() => {
     if (!editor) return;
     const handleUpdate = () => updateMermaidHandles();
@@ -3951,6 +4122,22 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       window.removeEventListener('scroll', handleUpdate, true);
     };
   }, [editor, updateMermaidHandles]);
+
+  React.useEffect(() => {
+    if (!editor) return;
+    const handleUpdate = () => updateMediaHandles();
+    handleUpdate();
+    editor.on('update', handleUpdate);
+    editor.on('selectionUpdate', handleUpdate);
+    window.addEventListener('resize', handleUpdate);
+    window.addEventListener('scroll', handleUpdate, true);
+    return () => {
+      editor.off('update', handleUpdate);
+      editor.off('selectionUpdate', handleUpdate);
+      window.removeEventListener('resize', handleUpdate);
+      window.removeEventListener('scroll', handleUpdate, true);
+    };
+  }, [editor, updateMediaHandles]);
 
   const getBlockRectForPos = (pos: number, node: PMNode) => {
     if (!editor || !containerRef.current) return null;
@@ -4119,8 +4306,9 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     const blockquoteEl = element?.closest('.node-blockquote');
     const detailsEl = element?.closest('.node-details');
     const mermaidEl = element?.closest('.node-mermaidDiagram, .mermaid-diagram-container');
+    const mediaEl = element?.closest('.memo-image-frame, .memo-video-frame, .node-image, .node-videoEmbed');
     const codeEl = element?.closest('.node-codeBlock, pre');
-    const targetBlock = tableEl || blockquoteEl || detailsEl || mermaidEl || codeEl;
+    const targetBlock = tableEl || blockquoteEl || detailsEl || mermaidEl || mediaEl || codeEl;
 
     if (targetBlock && containerRef.current.contains(targetBlock)) {
       let rect = targetBlock.getBoundingClientRect();
@@ -4181,6 +4369,22 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
               label = "le diagramme";
             }
           }
+        } else if (mediaEl) {
+          for (let d = $pos.depth; d >= 0; d--) {
+            const typeName = $pos.node(d)?.type.name;
+            if (typeName === 'image' || typeName === 'videoEmbed') {
+              blockPos = $pos.before(d);
+              label = typeName === 'image' ? "l'image" : "la vidéo";
+              break;
+            }
+          }
+          if (blockPos === -1) {
+            const node = editor.state.doc.nodeAt(pos);
+            if (node?.type.name === 'image' || node?.type.name === 'videoEmbed') {
+              blockPos = pos;
+              label = node.type.name === 'image' ? "l'image" : "la vidéo";
+            }
+          }
         } else if (codeEl) {
           for (let d = $pos.depth; d >= 0; d--) {
             if ($pos.node(d)?.type.name === 'codeBlock') {
@@ -4213,6 +4417,12 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         setHoveredMermaidPos(null);
       }
 
+      if (mediaEl && blockPos !== -1) {
+        setHoveredMediaPos(blockPos);
+      } else if (!mediaEl && hoveredMediaPos !== null) {
+        setHoveredMediaPos(null);
+      }
+
       if (blockPos !== -1) {
         setBlockDeleteHandle({
           top: rect.top - containerRect.top + 8,
@@ -4226,6 +4436,9 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     }
     if (!mermaidEl && hoveredMermaidPos !== null) {
       setHoveredMermaidPos(null);
+    }
+    if (!mediaEl && hoveredMediaPos !== null) {
+      setHoveredMediaPos(null);
     }
 
     // 2. Code Block Drag Handle (Top-Left)
@@ -5634,6 +5847,47 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     });
   }, [slashActionQuery, slashActions, normalizeSlashSearchValue]);
 
+  const runFirstSlashAction = React.useCallback(() => {
+    if (!editor) return;
+    const firstAction = filteredSlashActions[0];
+    if (!firstAction) return;
+
+    const { selection, doc } = editor.state;
+    if (selection.empty) {
+      const { $from } = selection;
+      const blockStart = $from.start($from.depth);
+      const textBefore = doc.textBetween(blockStart, selection.from, '\n', '\n');
+      const match = textBefore.match(/(?:^|\s)\/([^\s/]*)$/);
+      if (match) {
+        const query = match[1] || '';
+        const from = Math.max(blockStart, selection.from - (query.length + 1));
+        if (from < selection.from) {
+          editor.chain().focus().deleteRange({ from, to: selection.from }).run();
+        }
+      }
+    }
+
+    runEditorDropdownAction(editor, firstAction.value, {
+      onLink: openLinkModal,
+      onInsertImage: openImagePicker,
+      onInsertVideo: openVideoInsertDialog,
+    });
+    setSlashActionQuery('');
+    setShowSlashActionMenu(false);
+  }, [editor, filteredSlashActions, openImagePicker, openLinkModal, openVideoInsertDialog]);
+
+  React.useEffect(() => {
+    if (!showSlashActionMenu || !editor) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Enter') return;
+      event.preventDefault();
+      event.stopPropagation();
+      runFirstSlashAction();
+    };
+    document.addEventListener('keydown', onKeyDown, true);
+    return () => document.removeEventListener('keydown', onKeyDown, true);
+  }, [editor, showSlashActionMenu, runFirstSlashAction]);
+
   const slashActionMenuStyle = React.useMemo(() => {
     const containerRect = containerRef.current?.getBoundingClientRect();
     const baseStyle: React.CSSProperties = {
@@ -5718,6 +5972,8 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         setColHandle(null);
         setQuoteHandle(null);
         setCodeHandle(null);
+        setHoveredMermaidPos(null);
+        setHoveredMediaPos(null);
       }}
     >
       <Toolbar
@@ -5752,13 +6008,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
               className="tiptap-dropdown-item"
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => {
-                runEditorDropdownAction(editor, item.value, {
-                  onLink: openLinkModal,
-                  onInsertImage: openImagePicker,
-                  onInsertVideo: openVideoInsertDialog,
-                });
-                setSlashActionQuery('');
-                setShowSlashActionMenu(false);
+                runFirstSlashAction();
               }}
             >
               <item.icon size={16} />
@@ -6153,6 +6403,27 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         <div
           key={`mermaid-handle-${handle.pos}`}
           className="table-handle mermaid-handle"
+          style={{ top: handle.top, left: handle.left }}
+          onMouseDown={(e) => {
+            const node = editor.state.doc.nodeAt(handle.pos);
+            if (!node) return;
+            setBlockDragPending({
+              pos: handle.pos,
+              nodeSize: node.nodeSize,
+              startX: e.clientX,
+              startY: e.clientY
+            });
+            blockDragMovedRef.current = false;
+          }}
+        >
+          ⠿
+        </div>
+      ))}
+
+      {!dragState && !blockDragState && mediaHandles.map((handle) => (
+        <div
+          key={`media-handle-${handle.pos}`}
+          className="table-handle media-handle"
           style={{ top: handle.top, left: handle.left }}
           onMouseDown={(e) => {
             const node = editor.state.doc.nodeAt(handle.pos);

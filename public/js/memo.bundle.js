@@ -54877,6 +54877,17 @@ ${promptInput.trim()}`
     }
     return false;
   };
+  var getNearestScrollableAncestor = (element) => {
+    let current = (element == null ? void 0 : element.parentElement) || null;
+    while (current) {
+      const style2 = window.getComputedStyle(current);
+      const overflowY = style2.overflowY;
+      const canScroll = (overflowY === "auto" || overflowY === "scroll" || overflowY === "overlay") && current.scrollHeight > current.clientHeight + 1;
+      if (canScroll) return current;
+      current = current.parentElement;
+    }
+    return null;
+  };
   var getDiagramHeaderLine = (code) => {
     const lines = (code || "").split("\n");
     for (let i = 0; i < Math.min(lines.length, 5); i++) {
@@ -55484,7 +55495,7 @@ ${promptInput.trim()}`
               }
             ),
             editor && /* @__PURE__ */ jsx(
-              TiptapActionsDropdown,
+              BubbleActionsDropdown,
               {
                 editor,
                 onOpenChange: onDropdownToggle,
@@ -55997,7 +56008,7 @@ ${promptInput.trim()}`
       return true;
     }).run();
   };
-  var TiptapActionsDropdown = ({
+  var BubbleActionsDropdown = ({
     editor,
     onOpenChange,
     onLink,
@@ -56035,7 +56046,14 @@ ${promptInput.trim()}`
       { label: "Vid\xE9o", value: "video", icon: Clapperboard, active: false }
     ];
     const currentOption = options2.find((o) => o.active) || options2[0];
-    const handleSelect = (value) => {
+    const handleToggle = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      setIsOpen((prev) => !prev);
+    };
+    const handleSelect = (event, value) => {
+      event.preventDefault();
+      event.stopPropagation();
       runEditorDropdownAction(editor, value, { onLink, onInsertImage, onInsertVideo });
       setIsOpen(false);
     };
@@ -56045,7 +56063,11 @@ ${promptInput.trim()}`
         {
           type: "button",
           className: "tiptap-dropdown-trigger",
-          onClick: () => setIsOpen(!isOpen),
+          onMouseDown: (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+          },
+          onClick: handleToggle,
           title: "Actions",
           children: [
             /* @__PURE__ */ jsx(currentOption.icon, { size: 16 }),
@@ -56054,20 +56076,35 @@ ${promptInput.trim()}`
           ]
         }
       ),
-      isOpen && /* @__PURE__ */ jsx("div", { className: "tiptap-dropdown-menu", style: { minWidth: "190px" }, children: options2.map((option) => /* @__PURE__ */ jsxs(
+      isOpen && /* @__PURE__ */ jsx(
         "div",
         {
-          className: "tiptap-dropdown-item",
-          "data-active": option.active,
-          onClick: () => handleSelect(option.value),
-          children: [
-            /* @__PURE__ */ jsx(option.icon, { size: 16 }),
-            /* @__PURE__ */ jsx("span", { style: { flex: 1 }, children: option.label }),
-            option.active && /* @__PURE__ */ jsx(Check, { size: 14 })
-          ]
-        },
-        option.value
-      )) })
+          className: "tiptap-dropdown-menu",
+          style: { minWidth: "190px" },
+          onMouseDown: (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+          },
+          children: options2.map((option) => /* @__PURE__ */ jsxs(
+            "div",
+            {
+              className: "tiptap-dropdown-item",
+              "data-active": option.active,
+              onMouseDown: (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+              },
+              onClick: (event) => handleSelect(event, option.value),
+              children: [
+                /* @__PURE__ */ jsx(option.icon, { size: 16 }),
+                /* @__PURE__ */ jsx("span", { style: { flex: 1 }, children: option.label }),
+                option.active && /* @__PURE__ */ jsx(Check, { size: 14 })
+              ]
+            },
+            option.value
+          ))
+        }
+      )
     ] });
   };
   var Toolbar = ({ editor, onDropdownToggle, onLink, onInsertImage, onInsertVideo }) => {
@@ -56644,6 +56681,8 @@ ${promptInput.trim()}`
     const [codeHandle, setCodeHandle] = react_shim_default.useState(null);
     const [mermaidHandles, setMermaidHandles] = react_shim_default.useState([]);
     const [hoveredMermaidPos, setHoveredMermaidPos] = react_shim_default.useState(null);
+    const [mediaHandles, setMediaHandles] = react_shim_default.useState([]);
+    const [hoveredMediaPos, setHoveredMediaPos] = react_shim_default.useState(null);
     const [isDropdownOpen, setIsDropdownOpen] = react_shim_default.useState(false);
     const [selectionData, setSelectionData] = react_shim_default.useState(null);
     const [tableContextMenu, setTableContextMenu] = react_shim_default.useState(null);
@@ -56854,6 +56893,23 @@ ${promptInput.trim()}`
           var _a2, _b2, _c2, _d2, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t;
           if (!editor) return false;
           const selection = editor.state.selection;
+          const shouldStickToBottomAfterEnter = event.key === "Enter" && selection.empty && selection.to === editor.state.doc.content.size && !hasAncestorNode(selection.$from, "table");
+          if (shouldStickToBottomAfterEnter) {
+            requestAnimationFrame(() => {
+              requestAnimationFrame(() => {
+                if (!editor || editor.isDestroyed) return;
+                const scrollContainer = getNearestScrollableAncestor(editor.view.dom);
+                if (scrollContainer) {
+                  scrollContainer.scrollTop = scrollContainer.scrollHeight;
+                  return;
+                }
+                const rootScroller = document.scrollingElement;
+                if (rootScroller) {
+                  rootScroller.scrollTop = rootScroller.scrollHeight;
+                }
+              });
+            });
+          }
           const isInlineTriggerCandidate = selection.empty && !event.shiftKey && !event.altKey && !event.metaKey && !event.ctrlKey;
           const { $from } = selection;
           const isEmptyCurrentLine = ((_a2 = $from.parent) == null ? void 0 : _a2.isTextblock) && ((_b2 = $from.parent.type) == null ? void 0 : _b2.name) === "paragraph" && $from.parent.content.size === 0;
@@ -57939,6 +57995,30 @@ ${promptInput.trim()}`
       });
       setMermaidHandles(handles);
     }, [editor, hoveredMermaidPos]);
+    const updateMediaHandles = react_shim_default.useCallback(() => {
+      if (!editor || !containerRef.current) return;
+      if (hoveredMediaPos === null) {
+        setMediaHandles([]);
+        return;
+      }
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const handles = [];
+      editor.state.doc.descendants((node, pos) => {
+        var _a2;
+        const isMediaNode = node.type.name === "image" || node.type.name === "videoEmbed";
+        if (!isMediaNode || pos !== hoveredMediaPos) return;
+        const dom = editor.view.nodeDOM(pos);
+        const wrapper = dom == null ? void 0 : dom.closest(".memo-image-wrapper, .memo-video-wrapper");
+        const rect = (_a2 = wrapper || dom) == null ? void 0 : _a2.getBoundingClientRect();
+        if (!rect) return;
+        handles.push({
+          top: rect.top - containerRect.top + 10,
+          left: rect.left - containerRect.left + 5,
+          pos
+        });
+      });
+      setMediaHandles(handles);
+    }, [editor, hoveredMediaPos]);
     react_shim_default.useEffect(() => {
       if (!editor) return;
       const handleUpdate = () => updateMermaidHandles();
@@ -57954,6 +58034,21 @@ ${promptInput.trim()}`
         window.removeEventListener("scroll", handleUpdate, true);
       };
     }, [editor, updateMermaidHandles]);
+    react_shim_default.useEffect(() => {
+      if (!editor) return;
+      const handleUpdate = () => updateMediaHandles();
+      handleUpdate();
+      editor.on("update", handleUpdate);
+      editor.on("selectionUpdate", handleUpdate);
+      window.addEventListener("resize", handleUpdate);
+      window.addEventListener("scroll", handleUpdate, true);
+      return () => {
+        editor.off("update", handleUpdate);
+        editor.off("selectionUpdate", handleUpdate);
+        window.removeEventListener("resize", handleUpdate);
+        window.removeEventListener("scroll", handleUpdate, true);
+      };
+    }, [editor, updateMediaHandles]);
     const getBlockRectForPos = (pos, node) => {
       if (!editor || !containerRef.current) return null;
       const dom = editor.view.nodeDOM(pos);
@@ -58097,7 +58192,7 @@ ${promptInput.trim()}`
       };
     }, [blockDragPending, blockDragState, editor]);
     const handleMouseMove2 = (e) => {
-      var _a2, _b2, _c2, _d2, _e, _f, _g, _h, _i;
+      var _a2, _b2, _c2, _d2, _e, _f, _g, _h, _i, _j;
       if (!editor || dragState || blockDragState || !containerRef.current) return;
       if (e.target.closest(".table-handle, .quote-handle, .details-handle, .mermaid-handle, .node-handle, .block-delete-button")) return;
       const element = document.elementFromPoint(e.clientX, e.clientY);
@@ -58106,8 +58201,9 @@ ${promptInput.trim()}`
       const blockquoteEl = element == null ? void 0 : element.closest(".node-blockquote");
       const detailsEl = element == null ? void 0 : element.closest(".node-details");
       const mermaidEl = element == null ? void 0 : element.closest(".node-mermaidDiagram, .mermaid-diagram-container");
+      const mediaEl = element == null ? void 0 : element.closest(".memo-image-frame, .memo-video-frame, .node-image, .node-videoEmbed");
       const codeEl = element == null ? void 0 : element.closest(".node-codeBlock, pre");
-      const targetBlock = tableEl || blockquoteEl || detailsEl || mermaidEl || codeEl;
+      const targetBlock = tableEl || blockquoteEl || detailsEl || mermaidEl || mediaEl || codeEl;
       if (targetBlock && containerRef.current.contains(targetBlock)) {
         let rect = targetBlock.getBoundingClientRect();
         const wrapper = targetBlock.closest(".tableWrapper, .mermaid-diagram-wrapper");
@@ -58158,9 +58254,25 @@ ${promptInput.trim()}`
                 label = "le diagramme";
               }
             }
+          } else if (mediaEl) {
+            for (let d = $pos.depth; d >= 0; d--) {
+              const typeName = (_e = $pos.node(d)) == null ? void 0 : _e.type.name;
+              if (typeName === "image" || typeName === "videoEmbed") {
+                blockPos = $pos.before(d);
+                label = typeName === "image" ? "l'image" : "la vid\xE9o";
+                break;
+              }
+            }
+            if (blockPos === -1) {
+              const node = editor.state.doc.nodeAt(pos);
+              if ((node == null ? void 0 : node.type.name) === "image" || (node == null ? void 0 : node.type.name) === "videoEmbed") {
+                blockPos = pos;
+                label = node.type.name === "image" ? "l'image" : "la vid\xE9o";
+              }
+            }
           } else if (codeEl) {
             for (let d = $pos.depth; d >= 0; d--) {
-              if (((_e = $pos.node(d)) == null ? void 0 : _e.type.name) === "codeBlock") {
+              if (((_f = $pos.node(d)) == null ? void 0 : _f.type.name) === "codeBlock") {
                 blockPos = $pos.before(d);
                 label = "le bloc de code";
                 break;
@@ -58168,12 +58280,12 @@ ${promptInput.trim()}`
             }
           }
         } catch (err) {
-          const coordsPos = (_f = editor.view.posAtCoords({ left: e.clientX, top: e.clientY })) == null ? void 0 : _f.pos;
+          const coordsPos = (_g = editor.view.posAtCoords({ left: e.clientX, top: e.clientY })) == null ? void 0 : _g.pos;
           if (coordsPos !== void 0) {
             const $cPos = editor.state.doc.resolve(coordsPos);
             if (mermaidEl) {
               for (let d = $cPos.depth; d >= 0; d--) {
-                if (((_g = $cPos.node(d)) == null ? void 0 : _g.type.name) === "mermaidDiagram") {
+                if (((_h = $cPos.node(d)) == null ? void 0 : _h.type.name) === "mermaidDiagram") {
                   blockPos = $cPos.before(d);
                   label = "le diagramme";
                   break;
@@ -58186,6 +58298,11 @@ ${promptInput.trim()}`
           setHoveredMermaidPos(blockPos);
         } else if (!mermaidEl && hoveredMermaidPos !== null) {
           setHoveredMermaidPos(null);
+        }
+        if (mediaEl && blockPos !== -1) {
+          setHoveredMediaPos(blockPos);
+        } else if (!mediaEl && hoveredMediaPos !== null) {
+          setHoveredMediaPos(null);
         }
         if (blockPos !== -1) {
           setBlockDeleteHandle({
@@ -58200,6 +58317,9 @@ ${promptInput.trim()}`
       }
       if (!mermaidEl && hoveredMermaidPos !== null) {
         setHoveredMermaidPos(null);
+      }
+      if (!mediaEl && hoveredMediaPos !== null) {
+        setHoveredMediaPos(null);
       }
       if (codeEl && containerRef.current.contains(codeEl)) {
         const rect = codeEl.getBoundingClientRect();
@@ -58216,7 +58336,7 @@ ${promptInput.trim()}`
         } catch (err) {
         }
         if (codePos === -1) {
-          const pos = (_h = editor.view.posAtCoords({ left: e.clientX, top: e.clientY })) == null ? void 0 : _h.pos;
+          const pos = (_i = editor.view.posAtCoords({ left: e.clientX, top: e.clientY })) == null ? void 0 : _i.pos;
           if (pos !== void 0) {
             const $pos = editor.state.doc.resolve(pos);
             for (let d = $pos.depth; d > 0; d--) {
@@ -58257,7 +58377,7 @@ ${promptInput.trim()}`
         } catch (err) {
         }
         if (quotePos === -1) {
-          const pos = (_i = editor.view.posAtCoords({ left: e.clientX, top: e.clientY })) == null ? void 0 : _i.pos;
+          const pos = (_j = editor.view.posAtCoords({ left: e.clientX, top: e.clientY })) == null ? void 0 : _j.pos;
           if (pos !== void 0) {
             const $pos = editor.state.doc.resolve(pos);
             for (let d = $pos.depth; d > 0; d--) {
@@ -59377,6 +59497,43 @@ ${innerMarkdown}
         return haystack.includes(query);
       });
     }, [slashActionQuery, slashActions, normalizeSlashSearchValue]);
+    const runFirstSlashAction = react_shim_default.useCallback(() => {
+      if (!editor) return;
+      const firstAction = filteredSlashActions[0];
+      if (!firstAction) return;
+      const { selection, doc: doc3 } = editor.state;
+      if (selection.empty) {
+        const { $from } = selection;
+        const blockStart = $from.start($from.depth);
+        const textBefore = doc3.textBetween(blockStart, selection.from, "\n", "\n");
+        const match = textBefore.match(/(?:^|\s)\/([^\s/]*)$/);
+        if (match) {
+          const query = match[1] || "";
+          const from2 = Math.max(blockStart, selection.from - (query.length + 1));
+          if (from2 < selection.from) {
+            editor.chain().focus().deleteRange({ from: from2, to: selection.from }).run();
+          }
+        }
+      }
+      runEditorDropdownAction(editor, firstAction.value, {
+        onLink: openLinkModal,
+        onInsertImage: openImagePicker,
+        onInsertVideo: openVideoInsertDialog
+      });
+      setSlashActionQuery("");
+      setShowSlashActionMenu(false);
+    }, [editor, filteredSlashActions, openImagePicker, openLinkModal, openVideoInsertDialog]);
+    react_shim_default.useEffect(() => {
+      if (!showSlashActionMenu || !editor) return;
+      const onKeyDown = (event) => {
+        if (event.key !== "Enter") return;
+        event.preventDefault();
+        event.stopPropagation();
+        runFirstSlashAction();
+      };
+      document.addEventListener("keydown", onKeyDown, true);
+      return () => document.removeEventListener("keydown", onKeyDown, true);
+    }, [editor, showSlashActionMenu, runFirstSlashAction]);
     const slashActionMenuStyle = react_shim_default.useMemo(() => {
       var _a2, _b2, _c2;
       const containerRect = (_a2 = containerRef.current) == null ? void 0 : _a2.getBoundingClientRect();
@@ -59453,6 +59610,8 @@ ${innerMarkdown}
           setColHandle(null);
           setQuoteHandle(null);
           setCodeHandle(null);
+          setHoveredMermaidPos(null);
+          setHoveredMediaPos(null);
         },
         children: [
           /* @__PURE__ */ jsx(
@@ -59493,13 +59652,7 @@ ${innerMarkdown}
                     className: "tiptap-dropdown-item",
                     onMouseDown: (event) => event.preventDefault(),
                     onClick: () => {
-                      runEditorDropdownAction(editor, item.value, {
-                        onLink: openLinkModal,
-                        onInsertImage: openImagePicker,
-                        onInsertVideo: openVideoInsertDialog
-                      });
-                      setSlashActionQuery("");
-                      setShowSlashActionMenu(false);
+                      runFirstSlashAction();
                     },
                     children: [
                       /* @__PURE__ */ jsx(item.icon, { size: 16 }),
@@ -59906,6 +60059,26 @@ ${innerMarkdown}
               children: "\u283F"
             },
             `mermaid-handle-${handle.pos}`
+          )),
+          !dragState && !blockDragState && mediaHandles.map((handle) => /* @__PURE__ */ jsx(
+            "div",
+            {
+              className: "table-handle media-handle",
+              style: { top: handle.top, left: handle.left },
+              onMouseDown: (e) => {
+                const node = editor.state.doc.nodeAt(handle.pos);
+                if (!node) return;
+                setBlockDragPending({
+                  pos: handle.pos,
+                  nodeSize: node.nodeSize,
+                  startX: e.clientX,
+                  startY: e.clientY
+                });
+                blockDragMovedRef.current = false;
+              },
+              children: "\u283F"
+            },
+            `media-handle-${handle.pos}`
           )),
           quoteMenu && /* @__PURE__ */ jsxs(Fragment3, { children: [
             /* @__PURE__ */ jsx("div", { style: { position: "fixed", inset: 0, zIndex: 999 }, onClick: () => setQuoteMenu(null) }),
@@ -60398,4 +60571,3 @@ docx/dist/index.mjs:
    *)
   (*! http://mths.be/fromcodepoint v0.1.0 by @mathias *)
 */
-//# sourceMappingURL=memo.bundle.js.map
