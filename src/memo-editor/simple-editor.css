@@ -21,6 +21,10 @@
   margin: 0 0 10px auto;
   z-index: 2;
   width: fit-content;
+  max-width: calc(100% - 20px);
+  box-sizing: border-box;
+  overflow-x: auto;
+  overflow-y: hidden;
   box-shadow: var(--shadow-md);
 }
 
@@ -28,6 +32,10 @@
   flex-wrap: nowrap !important;
   white-space: nowrap;
   z-index: 1000;
+  max-width: calc(100% - 20px);
+  box-sizing: border-box;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .code-dropdown-autocomplete {
@@ -368,6 +376,9 @@ td .node-text.node-paragraph,
 }
 
 .memo-slash-actions-menu {
+  max-width: calc(100% - 20px);
+  box-sizing: border-box;
+  overflow-x: auto;
   max-height: 400px;
   overflow-y: auto;
 }

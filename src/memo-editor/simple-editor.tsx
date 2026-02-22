@@ -819,23 +819,31 @@ const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLi
       // Check bounds
       const padding = 10;
       const parentWidth = relativeParent?.clientWidth || window.innerWidth;
-      const viewportTop = bubbleTop + parentRect.top;
-
+      const parentHeight = relativeParent?.clientHeight || window.innerHeight;
+      const boundedMenuWidth = Math.min(menuWidth, Math.max(parentWidth - (padding * 2), 0));
       // 1. Clamp Horizontal (Stay within parent bounds)
       if (bubbleLeft < padding) {
         bubbleLeft = padding;
-      } else if (bubbleLeft + menuWidth > parentWidth - padding) {
-        bubbleLeft = parentWidth - menuWidth - padding;
+      } else if (bubbleLeft + boundedMenuWidth > parentWidth - padding) {
+        bubbleLeft = parentWidth - boundedMenuWidth - padding;
       }
 
-      // 2. Clamp Vertical (Stay within screen bounds)
-      // If it goes above the top of the screen, move it below the selection
-      if (viewportTop < padding) {
+      // 2. Clamp Vertical (prefer staying inside memo container bounds)
+      // If not enough room above in container, place below selection.
+      if (bubbleTop < padding) {
         bubbleTop = selectionRect.bottom - parentRect.top + verticalOffset;
       }
-      // If it goes below the screen, move it back up (limit at 10px from bottom)
-      else if (viewportTop + menuHeight > window.innerHeight - padding) {
-        bubbleTop = window.innerHeight - padding - menuHeight - parentRect.top;
+      // If it overflows container bottom, move it up inside container.
+      if (bubbleTop + menuHeight > parentHeight - padding) {
+        bubbleTop = parentHeight - padding - menuHeight;
+      }
+      // Final viewport safety clamp for edge cases when container is off-screen.
+      const viewportTop = bubbleTop + parentRect.top;
+      const viewportBottom = viewportTop + menuHeight;
+      if (viewportTop < padding) {
+        bubbleTop = Math.max(padding - parentRect.top, bubbleTop);
+      } else if (viewportBottom > window.innerHeight - padding) {
+        bubbleTop = Math.min(window.innerHeight - padding - menuHeight - parentRect.top, bubbleTop);
       }
 
       setPosition({
@@ -2483,6 +2491,8 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   const [linkModalRange, setLinkModalRange] = React.useState<{ from: number; to: number }>({ from: 1, to: 1 });
   const [showSlashActionMenu, setShowSlashActionMenu] = React.useState(false);
   const [slashActionMenuPos, setSlashActionMenuPos] = React.useState<{ top: number; left: number }>({ top: 0, left: 0 });
+  const [slashActionQuery, setSlashActionQuery] = React.useState('');
+  const slashActionMenuRef = React.useRef<HTMLDivElement>(null);
   const [isFocusWithinMemoCard, setIsFocusWithinMemoCard] = React.useState(false);
   const [tableSelectionBox, setTableSelectionBox] = React.useState<{ top: number, left: number, width: number, height: number } | null>(null);
   const [tableSelectionResize, setTableSelectionResize] = React.useState<{ anchorPos: number, tablePos: number } | null>(null);
@@ -2756,12 +2766,15 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
             if (!editor || editor.isDestroyed) return;
             const pos = editor.state.selection.from;
             const coords = editor.view.coordsAtPos(pos);
+            const query = getSlashTriggerQuery() || '';
+            setSlashActionQuery(query);
             setSlashActionMenuPos({ top: coords.bottom + 8, left: coords.left });
             setShowSlashActionMenu(true);
           });
           return false;
         }
         if (event.key === 'Escape' && showSlashActionMenu) {
+          setSlashActionQuery('');
           setShowSlashActionMenu(false);
           return true;
         }
@@ -2782,6 +2795,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
             selection.$from.parent.textContent === '/' &&
             selection.$from.parentOffset === 1
           ) {
+            setSlashActionQuery('');
             setShowSlashActionMenu(false);
           }
           const { $from } = selection;
@@ -5533,22 +5547,124 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     return () => document.removeEventListener('mousedown', onMouseDown);
   }, [showSlashActionMenu]);
 
-  const slashActions = React.useMemo(() => ([
-    { label: 'Texte', value: 'paragraph', icon: Type, markdownShortcut: 'texte' },
-    { label: 'Titre 1', value: 'h1', icon: Heading1, markdownShortcut: '#' },
-    { label: 'Titre 2', value: 'h2', icon: Heading2, markdownShortcut: '##' },
-    { label: 'Titre 3', value: 'h3', icon: Heading3, markdownShortcut: '###' },
-    { label: 'Liste à puces', value: 'bulletList', icon: List, markdownShortcut: '-' },
-    { label: 'Tâche', value: 'taskList', icon: CheckSquare, markdownShortcut: '[]' },
-    { label: 'Bloc de code', value: 'codeBlock', icon: SquareCode, markdownShortcut: '```' },
-    { label: 'Lien', value: 'link', icon: Link, markdownShortcut: '[texte](url)' },
-    { label: 'Libellé', value: 'label', icon: Tag, markdownShortcut: '@' },
-    { label: 'Citation', value: 'quote', icon: Shapes, markdownShortcut: '>' },
-    { label: 'Tableau', value: 'table', icon: TableIcon, markdownShortcut: '|' },
-    { label: 'Diagramme', value: 'diagram', icon: Shapes, markdownShortcut: 'mermaid' },
-    { label: 'Image', value: 'image', icon: ImageIcon, markdownShortcut: '![alt](url)' },
-    { label: 'Vidéo', value: 'video', icon: Clapperboard, markdownShortcut: 'video' },
+  const normalizeSlashSearchValue = React.useCallback((value: string) => {
+    return String(value || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim();
+  }, []);
+
+  const getSlashTriggerQuery = React.useCallback((): string | null => {
+    if (!editor || editor.isDestroyed) return null;
+    const { selection, doc } = editor.state;
+    if (!selection.empty) return null;
+    const { $from } = selection;
+    const blockStart = $from.start($from.depth);
+    const textBefore = doc.textBetween(blockStart, selection.from, '\n', '\n');
+    const match = textBefore.match(/(?:^|\s)\/([^\s/]*)$/);
+    if (!match) return null;
+    return match[1] || '';
+  }, [editor]);
+
+  React.useEffect(() => {
+    if (!editor || !showSlashActionMenu) return;
+    const syncSlashQuery = () => {
+      const query = getSlashTriggerQuery();
+      if (query === null) {
+        setShowSlashActionMenu(false);
+        return;
+      }
+      setSlashActionQuery(query);
+    };
+    editor.on('update', syncSlashQuery);
+    editor.on('selectionUpdate', syncSlashQuery);
+    syncSlashQuery();
+    return () => {
+      editor.off('update', syncSlashQuery);
+      editor.off('selectionUpdate', syncSlashQuery);
+    };
+  }, [editor, showSlashActionMenu, getSlashTriggerQuery]);
+
+  React.useEffect(() => {
+    if (!showSlashActionMenu) return;
+    const raf = requestAnimationFrame(() => {
+      // Trigger one extra render once the menu is mounted so width/height-based clamping is accurate.
+      setSlashActionMenuPos(prev => ({ ...prev }));
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [showSlashActionMenu]);
+
+  type SlashActionItem = {
+    label: string;
+    value: string;
+    icon: React.ComponentType<{ size?: number }>;
+    markdownShortcut: string;
+    aliases?: string[];
+  };
+
+  const slashActions = React.useMemo<SlashActionItem[]>(() => ([
+    { label: 'Texte', value: 'paragraph', icon: Type, markdownShortcut: 'texte', aliases: ['paragraphe', 'text'] },
+    { label: 'Titre 1', value: 'h1', icon: Heading1, markdownShortcut: '#', aliases: ['titre', 'heading'] },
+    { label: 'Titre 2', value: 'h2', icon: Heading2, markdownShortcut: '##', aliases: ['titre', 'heading'] },
+    { label: 'Titre 3', value: 'h3', icon: Heading3, markdownShortcut: '###', aliases: ['titre', 'heading'] },
+    { label: 'Liste à puces', value: 'bulletList', icon: List, markdownShortcut: '-', aliases: ['liste', 'puce', 'list'] },
+    { label: 'Tâche', value: 'taskList', icon: CheckSquare, markdownShortcut: '[]', aliases: ['todo', 'task', 'checklist'] },
+    { label: 'Bloc de code', value: 'codeBlock', icon: SquareCode, markdownShortcut: '```', aliases: ['code', 'snippet'] },
+    { label: 'Lien', value: 'link', icon: Link, markdownShortcut: '[texte](url)', aliases: ['url', 'hyperlink'] },
+    { label: 'Libellé', value: 'label', icon: Tag, markdownShortcut: '@', aliases: ['tag', 'etiquette'] },
+    { label: 'Citation', value: 'quote', icon: Shapes, markdownShortcut: '>', aliases: ['blockquote', 'citation'] },
+    { label: 'Tableau', value: 'table', icon: TableIcon, markdownShortcut: '|', aliases: ['table', 'grille'] },
+    { label: 'Diagramme', value: 'diagram', icon: Shapes, markdownShortcut: 'mermaid', aliases: ['schema', 'graph', 'mermaid'] },
+    { label: 'Image', value: 'image', icon: ImageIcon, markdownShortcut: '![alt](url)', aliases: ['photo', 'illustration'] },
+    { label: 'Vidéo', value: 'video', icon: Clapperboard, markdownShortcut: 'video', aliases: ['movie', 'clip'] },
   ]), []);
+
+  const filteredSlashActions = React.useMemo(() => {
+    const query = normalizeSlashSearchValue(slashActionQuery);
+    if (!query) return slashActions;
+    return slashActions.filter((item) => {
+      const haystack = normalizeSlashSearchValue([
+        item.label,
+        item.value,
+        item.markdownShortcut,
+        ...(Array.isArray(item.aliases) ? item.aliases : []),
+      ].join(' '));
+      return haystack.includes(query);
+    });
+  }, [slashActionQuery, slashActions, normalizeSlashSearchValue]);
+
+  const slashActionMenuStyle = React.useMemo(() => {
+    const containerRect = containerRef.current?.getBoundingClientRect();
+    const baseStyle: React.CSSProperties = {
+      position: 'absolute',
+      top: `${slashActionMenuPos.top}px`,
+      left: `${slashActionMenuPos.left}px`,
+      zIndex: 1600,
+      minWidth: '250px',
+    };
+    if (!containerRect) return baseStyle;
+
+    const padding = 10;
+    const menuWidth = slashActionMenuRef.current?.offsetWidth || 250;
+    const menuHeight = slashActionMenuRef.current?.offsetHeight || 320;
+
+    const rawLeft = slashActionMenuPos.left - containerRect.left;
+    const rawTop = slashActionMenuPos.top - containerRect.top;
+    const minLeft = padding;
+    const minTop = padding;
+    const maxLeft = Math.max(minLeft, containerRect.width - menuWidth - padding);
+    const maxTop = Math.max(minTop, containerRect.height - menuHeight - padding);
+
+    const clampedLeft = Math.min(Math.max(rawLeft, minLeft), maxLeft);
+    const clampedTop = Math.min(Math.max(rawTop, minTop), maxTop);
+
+    return {
+      ...baseStyle,
+      top: `${clampedTop}px`,
+      left: `${clampedLeft}px`,
+    };
+  }, [slashActionMenuPos]);
 
   if (!editor) {
     return null;
@@ -5626,10 +5742,11 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
 
       {showSlashActionMenu && editor && (
         <div
+          ref={slashActionMenuRef}
           className="memo-slash-actions-menu tiptap-dropdown-menu"
-          style={{ position: 'fixed', top: `${slashActionMenuPos.top}px`, left: `${slashActionMenuPos.left}px`, zIndex: 1600, minWidth: '250px' }}
+          style={slashActionMenuStyle}
         >
-          {slashActions.map((item) => (
+          {filteredSlashActions.map((item) => (
             <div
               key={item.value}
               className="tiptap-dropdown-item"
@@ -5640,6 +5757,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
                   onInsertImage: openImagePicker,
                   onInsertVideo: openVideoInsertDialog,
                 });
+                setSlashActionQuery('');
                 setShowSlashActionMenu(false);
               }}
             >
@@ -5648,11 +5766,19 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
               <span className="memo-slash-actions-menu__shortcut">{item.markdownShortcut}</span>
             </div>
           ))}
+          {!filteredSlashActions.length && (
+            <div className="tiptap-dropdown-item" style={{ cursor: 'default', opacity: 0.75 }}>
+              <span style={{ flex: 1 }}>Aucun bloc trouvé pour "{slashActionQuery}"</span>
+            </div>
+          )}
           <button
             type="button"
             className="memo-slash-actions-menu__close"
             onMouseDown={(event) => event.preventDefault()}
-            onClick={() => setShowSlashActionMenu(false)}
+            onClick={() => {
+              setSlashActionQuery('');
+              setShowSlashActionMenu(false);
+            }}
           >
             <span>Fermer le menu</span>
             <span className="memo-slash-actions-menu__shortcut">esc</span>
