@@ -106,14 +106,6 @@
       parsed.searchParams.set("_ts", String(Date.now()));
       url = parsed.toString();
       requestOptions.cache = "no-store";
-      const headers = new Headers(requestOptions.headers || {});
-      if (!headers.has("Cache-Control")) {
-        headers.set("Cache-Control", "no-cache, no-store, max-age=0");
-      }
-      if (!headers.has("Pragma")) {
-        headers.set("Pragma", "no-cache");
-      }
-      requestOptions.headers = headers;
     }
     let response;
     try {
@@ -319,9 +311,7 @@
           method: "GET",
           cache: "no-store",
           headers: {
-            Accept: "application/json",
-            "Cache-Control": "no-cache, no-store, max-age=0",
-            Pragma: "no-cache"
+            Accept: "application/json"
           }
         });
       } catch (error) {
