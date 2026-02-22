@@ -1652,14 +1652,20 @@
                 if (sectionName.startsWith("shared:") || sectionName === "private") {
                     const actions = document.createElement("span");
                     actions.className = "document-explorer__section-actions";
-                    if (sectionName.startsWith("shared:") && Boolean(sectionMeta?.hasPendingSync)) {
-                        actions.classList.add("document-explorer__section-actions--force-visible");
-                    }
                     const addBtn = document.createElement("button");
                     addBtn.type = "button";
                     addBtn.className = "document-explorer__item-action";
                     addBtn.title = sectionName === "private" ? "Créer une page racine" : "Ajouter une page";
                     addBtn.innerHTML = '<i data-lucide="plus"></i>';
+                    if (sectionName.startsWith("shared:")) {
+                        const pendingCount = Number(sectionMeta?.pendingCount || 0);
+                        if (pendingCount > 0) {
+                            const badge = document.createElement("span");
+                            badge.className = "chat-header-badge chat-header-badge--pending";
+                            badge.textContent = String(pendingCount);
+                            addBtn.appendChild(badge);
+                        }
+                    }
                     addBtn.addEventListener("click", (event) => {
                         event.preventDefault();
                         event.stopPropagation();
@@ -1683,7 +1689,8 @@
                         const refreshBtn = document.createElement("button");
                         refreshBtn.type = "button";
                         refreshBtn.className = "document-explorer__item-action";
-                        refreshBtn.title = "Rafraîchir cet espace";
+                        const sinceLabel = String(sectionMeta?.lastSyncLabel || "").trim();
+                        refreshBtn.title = sinceLabel || "Rafraîchir cet espace";
                         refreshBtn.innerHTML = '<i data-lucide="refresh-cw"></i>';
                         refreshBtn.addEventListener("click", (event) => {
                             event.preventDefault();
@@ -1798,8 +1805,6 @@
                 const fallbackName = sectionName.replace(/^shared:/, "") || "Espace";
                 await renderSection(sectionName, sectionMeta.title || fallbackName, sectionMeta.icon || "cloud-upload");
             }
-            if (isStale()) return;
-            await renderSection("archives", "Archives", "archive");
             if (isStale()) return;
             const renderSuperpowersSection = async () => {
                 if (isStale()) return;
@@ -1946,6 +1951,8 @@
                 visibleGroups.forEach(group => renderGroupRow(group));
             };
             await renderSuperpowersSection();
+            if (isStale()) return;
+            await renderSection("archives", "Archives", "archive");
             if (isStale()) return;
             if (!listDnDBound) {
                 listDnDBound = true;
