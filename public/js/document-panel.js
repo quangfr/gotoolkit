@@ -1583,13 +1583,37 @@
                     const fromItem = normalizeList(cachedItems).find(entry => String(entry?.id || "") === String(fromId));
                     const fromSection = draggingSection || getItemSection(fromItem);
                     const toSection = sectionName || "private";
+                    const selectedForMove = (selectedHighlightEnabled && selectedIds.has(fromId))
+                        ? Array.from(sanitizeSelectedIds(selectedIds))
+                        : [fromId];
+                    const selectedSet = new Set(selectedForMove.map(id => String(id || "").trim()).filter(Boolean));
+                    const idsToMove = selectedForMove.filter((candidateId) => {
+                        const id = String(candidateId || "").trim();
+                        if (!id) return false;
+                        let cursor = String(byId.get(id)?.parentId || "").trim();
+                        while (cursor) {
+                            if (selectedSet.has(cursor)) return false;
+                            cursor = String(byId.get(cursor)?.parentId || "").trim();
+                        }
+                        return true;
+                    });
+                    if (!idsToMove.length) return;
                     if (fromSection === toSection) {
-                        applyLocalParentMove(fromId, parentId);
-                        applyLocalOrderMove(fromId, parentId, beforeId);
+                        idsToMove.forEach((id, index) => {
+                            applyLocalParentMove(id, parentId);
+                            applyLocalOrderMove(id, parentId, index === 0 ? beforeId : "");
+                        });
                         rebuildOrderFromCachedItems();
                         renderList(cachedItems);
                     }
-                    await onMove(fromId, parentId, nextDepth, beforeId, { fromSection, toSection });
+                    for (let index = 0; index < idsToMove.length; index += 1) {
+                        const id = idsToMove[index];
+                        await onMove(id, parentId, nextDepth, index === 0 ? beforeId : "", {
+                            fromSection,
+                            toSection,
+                            selectedIds: idsToMove
+                        });
+                    }
                     draggingSection = "";
                 });
                 row.appendChild(button);
@@ -1943,12 +1967,31 @@
                     const fromItem = normalizeList(cachedItems).find(entry => String(entry?.id || "") === String(draggingId));
                     const fromSection = draggingSection || getItemSection(fromItem);
                     const fromId = draggingId;
+                    const selectedForMove = (selectedHighlightEnabled && selectedIds.has(fromId))
+                        ? Array.from(sanitizeSelectedIds(selectedIds))
+                        : [fromId];
+                    const selectedSet = new Set(selectedForMove.map(id => String(id || "").trim()).filter(Boolean));
+                    const idsToMove = selectedForMove.filter((candidateId) => {
+                        const id = String(candidateId || "").trim();
+                        if (!id) return false;
+                        let cursor = String(byId.get(id)?.parentId || "").trim();
+                        while (cursor) {
+                            if (selectedSet.has(cursor)) return false;
+                            cursor = String(byId.get(cursor)?.parentId || "").trim();
+                        }
+                        return true;
+                    });
+                    if (!idsToMove.length) return;
                     if (fromSection === toSection) {
-                        applyLocalParentMove(fromId, "");
-                        applyLocalOrderMove(fromId, "", "");
+                        idsToMove.forEach((id, index) => {
+                            applyLocalParentMove(id, "");
+                            applyLocalOrderMove(id, "", index === 0 ? "" : "");
+                        });
                         rebuildOrderFromCachedItems();
                     }
-                    await onMove(fromId, "", 1, "", { fromSection, toSection });
+                    for (const id of idsToMove) {
+                        await onMove(id, "", 1, "", { fromSection, toSection, selectedIds: idsToMove });
+                    }
                     draggingId = "";
                     draggingSection = "";
                     clearAllDropHints();

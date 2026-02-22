@@ -40,6 +40,21 @@
     return url.toString();
   }
 
+  function buildShareBatchUrl(base, collection) {
+    const encodedCollection = encodeURIComponent(collection);
+    return `${base}/${API_VERSION}/shares/${encodedCollection}:batch`;
+  }
+
+  function buildShareBatchGetUrl(base, collection) {
+    const encodedCollection = encodeURIComponent(collection);
+    return `${base}/${API_VERSION}/shares/${encodedCollection}:batchGet`;
+  }
+
+  function buildShareBatchDeleteUrl(base, collection) {
+    const encodedCollection = encodeURIComponent(collection);
+    return `${base}/${API_VERSION}/shares/${encodedCollection}:batchDelete`;
+  }
+
   function buildAssetUrl(base, assetId) {
     const encodedId = encodeURIComponent(assetId);
     return `${base}/${API_VERSION}/assets/${encodedId}`;
@@ -298,6 +313,105 @@
     });
   }
 
+  async function saveSharePayloadBatch(collection, writes) {
+    assertReady();
+    const normalizedWrites = Array.isArray(writes)
+      ? writes
+        .map(entry => ({
+          id: String(entry?.id || "").trim(),
+          payload: entry?.payload
+        }))
+        .filter(entry => entry.id)
+      : [];
+    if (!normalizedWrites.length) {
+      return { count: 0, results: [] };
+    }
+    return withWorkerFallback(async base => {
+      let response;
+      try {
+        response = await fetch(buildShareBatchUrl(base, collection), {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json"
+          },
+          body: JSON.stringify({ writes: normalizedWrites })
+        });
+      } catch (error) {
+        throw markNetworkFailure(error instanceof Error ? error : new Error(String(error)));
+      }
+      if (!response.ok) {
+        const body = await response.text().catch(() => "");
+        throw new Error(body || "Impossible de sauvegarder le lot");
+      }
+      return await response.json().catch(() => ({ count: normalizedWrites.length, results: [] }));
+    });
+  }
+
+  async function fetchSharePayloadBatch(collection, ids) {
+    assertReady();
+    const normalizedIds = Array.isArray(ids)
+      ? ids.map(id => String(id || "").trim()).filter(Boolean)
+      : [];
+    if (!normalizedIds.length) {
+      return { count: 0, documents: [] };
+    }
+    return withWorkerFallback(async base => {
+      let response;
+      try {
+        response = await fetch(buildShareBatchGetUrl(base, collection), {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json"
+          },
+          body: JSON.stringify({ ids: normalizedIds })
+        });
+      } catch (error) {
+        throw markNetworkFailure(error instanceof Error ? error : new Error(String(error)));
+      }
+      if (!response.ok) {
+        const body = await response.text().catch(() => "");
+        throw new Error(body || "Impossible de récupérer le lot");
+      }
+      const data = await response.json().catch(() => ({ documents: [] }));
+      return {
+        count: Number(data?.count || normalizedIds.length),
+        documents: Array.isArray(data?.documents) ? data.documents : []
+      };
+    });
+  }
+
+  async function deleteSharePayloadBatch(collection, ids) {
+    assertReady();
+    const normalizedIds = Array.isArray(ids)
+      ? ids.map(id => String(id || "").trim()).filter(Boolean)
+      : [];
+    if (!normalizedIds.length) {
+      return { count: 0, results: [] };
+    }
+    return withWorkerFallback(async base => {
+      let response;
+      try {
+        response = await fetch(buildShareBatchDeleteUrl(base, collection), {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json"
+          },
+          body: JSON.stringify({ ids: normalizedIds })
+        });
+      } catch (error) {
+        throw markNetworkFailure(error instanceof Error ? error : new Error(String(error)));
+      }
+      if (!response.ok) {
+        const body = await response.text().catch(() => "");
+        throw new Error(body || "Impossible de supprimer le lot");
+      }
+      return await response.json().catch(() => ({ count: normalizedIds.length, results: [] }));
+    });
+  }
+
   async function listShareTree(collection, options = {}) {
     assertReady();
     return withWorkerFallback(async base => {
@@ -368,7 +482,10 @@
     version: API_VERSION,
     isReady,
     fetchSharePayload,
+    fetchSharePayloadBatch,
+    deleteSharePayloadBatch,
     saveSharePayload,
+    saveSharePayloadBatch,
     deleteSharePayload,
     listShares,
     listShareTree,

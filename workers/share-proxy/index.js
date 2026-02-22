@@ -47,6 +47,98 @@ function parseSharePath(request) {
   };
 }
 
+function parseShareBatchPath(request) {
+  const url = new URL(request.url);
+  const segments = normalizePathname(url.pathname)
+    .split("/")
+    .filter(Boolean);
+  if (segments.length !== 3) {
+    return null;
+  }
+  if (segments[0] !== API_VERSION || segments[1] !== SHARES_SEGMENT) {
+    return null;
+  }
+  const rawCollection = String(segments[2] || "");
+  const match = rawCollection.match(/^(.+):batch$/);
+  if (!match) {
+    return null;
+  }
+  const collection = decodeURIComponent(match[1] || "");
+  if (!collection || !VALID_COLLECTIONS.has(collection)) {
+    return null;
+  }
+  return { collection };
+}
+
+function parseShareBatchGetPath(request) {
+  const url = new URL(request.url);
+  const segments = normalizePathname(url.pathname)
+    .split("/")
+    .filter(Boolean);
+  if (segments.length !== 3) {
+    return null;
+  }
+  if (segments[0] !== API_VERSION || segments[1] !== SHARES_SEGMENT) {
+    return null;
+  }
+  const rawCollection = String(segments[2] || "");
+  const match = rawCollection.match(/^(.+):batchGet$/);
+  if (!match) {
+    return null;
+  }
+  const collection = decodeURIComponent(match[1] || "");
+  if (!collection || !VALID_COLLECTIONS.has(collection)) {
+    return null;
+  }
+  return { collection };
+}
+
+function parseShareBatchDeletePath(request) {
+  const url = new URL(request.url);
+  const segments = normalizePathname(url.pathname)
+    .split("/")
+    .filter(Boolean);
+  if (segments.length !== 3) {
+    return null;
+  }
+  if (segments[0] !== API_VERSION || segments[1] !== SHARES_SEGMENT) {
+    return null;
+  }
+  const rawCollection = String(segments[2] || "");
+  const match = rawCollection.match(/^(.+):batchDelete$/);
+  if (!match) {
+    return null;
+  }
+  const collection = decodeURIComponent(match[1] || "");
+  if (!collection || !VALID_COLLECTIONS.has(collection)) {
+    return null;
+  }
+  return { collection };
+}
+
+function parseShareRepairPath(request) {
+  const url = new URL(request.url);
+  const segments = normalizePathname(url.pathname)
+    .split("/")
+    .filter(Boolean);
+  if (segments.length !== 3) {
+    return null;
+  }
+  if (segments[0] !== API_VERSION || segments[1] !== SHARES_SEGMENT) {
+    return null;
+  }
+  const rawCollection = String(segments[2] || "");
+  const match = rawCollection.match(/^(.+):repair$/);
+  if (!match) {
+    return null;
+  }
+  const collection = decodeURIComponent(match[1] || "");
+  if (!collection || !VALID_COLLECTIONS.has(collection)) {
+    return null;
+  }
+  return { collection };
+}
+
 function parseAssetPath(request) {
   const url = new URL(request.url);
   const segments = normalizePathname(url.pathname)
@@ -225,6 +317,17 @@ function jsonResponse(body, status, request, env, extraHeaders = {}) {
 
 function errorResponse(message, status, request, env) {
   return jsonResponse({ error: message }, status, request, env);
+}
+
+function verifyAdminAccess(request, env) {
+  const requiredToken = String(env?.SHARE_ADMIN_TOKEN || "").trim();
+  if (!requiredToken) return true;
+  const provided = String(
+    request.headers.get("X-Admin-Token")
+    || request.headers.get("Authorization")?.replace(/^Bearer\s+/i, "")
+    || ""
+  ).trim();
+  return Boolean(provided) && provided === requiredToken;
 }
 
 function notFoundResponse(request, env) {
@@ -666,6 +769,126 @@ function buildDocumentFields(payload, updatedAt) {
   };
 }
 
+function normalizeMemosMetaPayloadFromContent(contentPayload, fallbackTitle = "Document partagé") {
+  const payload = contentPayload && typeof contentPayload === "object" ? contentPayload : {};
+  const firstTab = Array.isArray(payload?.tabs) ? payload.tabs[0] : null;
+  const title = String(payload?.title || firstTab?.title || fallbackTitle).trim() || fallbackTitle;
+  const description = String(payload?.description || firstTab?.description || "").trim();
+  const superpowers = Array.isArray(firstTab?.superpowers) ? firstTab.superpowers : [];
+  const icon = String(payload?.icon || "file-symlink").trim() || "file-symlink";
+  const parentId = String(payload?.parentId || "").trim();
+  const spaceId = String(payload?.spaceId || "golive").trim().toLowerCase() || "golive";
+  const status = String(payload?.status || "active").trim().toLowerCase() || "active";
+  const positionNum = Number(payload?.position);
+  const metaPayload = {
+    title,
+    description,
+    superpowers,
+    icon,
+    parentId,
+    spaceId,
+    status
+  };
+  if (Number.isFinite(positionNum)) {
+    metaPayload.position = positionNum;
+  } else {
+    metaPayload.position = Date.now();
+  }
+  return metaPayload;
+}
+
+function buildEmptyMemosContentPayloadFromMeta(metaPayload) {
+  const payload = metaPayload && typeof metaPayload === "object" ? metaPayload : {};
+  const title = String(payload?.title || "Document partagé").trim() || "Document partagé";
+  const description = String(payload?.description || "").trim();
+  const superpowers = Array.isArray(payload?.superpowers) ? payload.superpowers : [];
+  const tabId = `tab-${crypto.randomUUID()}`;
+  return {
+    tabs: [{
+      id: tabId,
+      title,
+      description,
+      superpowers,
+      content: "",
+      metadata: {}
+    }],
+    activeTabId: tabId,
+    promptPresetId: "edit",
+    title,
+    description,
+    icon: String(payload?.icon || "file-symlink").trim() || "file-symlink",
+    parentId: String(payload?.parentId || "").trim(),
+    spaceId: String(payload?.spaceId || "golive").trim().toLowerCase() || "golive",
+    position: Number.isFinite(Number(payload?.position)) ? Number(payload.position) : Date.now(),
+    status: String(payload?.status || "active").trim().toLowerCase() || "active"
+  };
+}
+
+async function reconcileMemosConsistency(env, request, options = {}) {
+  const dryRun = Boolean(options?.dryRun);
+  const [memosDocs, metaDocs] = await Promise.all([
+    listShareDocuments(env, "memos"),
+    listShareDocuments(env, "memos-meta")
+  ]);
+  const memosById = new Map(
+    (memosDocs || [])
+      .map(doc => [String(doc?.id || "").trim(), doc])
+      .filter(([id]) => Boolean(id))
+  );
+  const metaById = new Map(
+    (metaDocs || [])
+      .map(doc => [String(doc?.id || "").trim(), doc])
+      .filter(([id]) => Boolean(id))
+  );
+  const contentOnly = [];
+  const metaOnly = [];
+  const repairedMeta = [];
+  const repairedContent = [];
+
+  for (const id of memosById.keys()) {
+    if (!metaById.has(id)) contentOnly.push(id);
+  }
+  for (const id of metaById.keys()) {
+    if (!memosById.has(id)) metaOnly.push(id);
+  }
+
+  if (!dryRun) {
+    for (const id of contentOnly) {
+      const contentDoc = memosById.get(id);
+      const metaPayload = normalizeMemosMetaPayloadFromContent(contentDoc?.payload || {}, "Document partagé");
+      await upsertShareDocument(env, "memos-meta", id, metaPayload, request);
+      repairedMeta.push(id);
+    }
+    for (const id of metaOnly) {
+      const metaDoc = metaById.get(id);
+      const contentPayload = buildEmptyMemosContentPayloadFromMeta(metaDoc?.payload || {});
+      await upsertShareDocument(env, "memos", id, contentPayload, request);
+      repairedContent.push(id);
+    }
+  }
+
+  return {
+    success: true,
+    dryRun,
+    totals: {
+      memos: memosById.size,
+      memosMeta: metaById.size
+    },
+    mismatches: {
+      contentOnlyCount: contentOnly.length,
+      metaOnlyCount: metaOnly.length
+    },
+    repaired: {
+      metaCreatedFromContent: dryRun ? 0 : repairedMeta.length,
+      contentCreatedFromMeta: dryRun ? 0 : repairedContent.length
+    },
+    samples: {
+      contentOnly: contentOnly.slice(0, 50),
+      metaOnly: metaOnly.slice(0, 50)
+    }
+  };
+}
+
 async function upsertShareDocument(env, collection, documentId, payload, request) {
   const url = getDocumentUrl(env, collection, documentId);
   const now = new Date().toISOString();
@@ -768,12 +991,182 @@ async function handleRequest(request, env) {
   }
 
   const path = parseSharePath(request);
+  const batchPath = parseShareBatchPath(request);
+  const batchGetPath = parseShareBatchGetPath(request);
+  const batchDeletePath = parseShareBatchDeletePath(request);
+  const repairPath = parseShareRepairPath(request);
+  if (!path && batchPath) {
+    if (request.method !== "POST") {
+      const headers = Object.assign({ Allow: "POST,OPTIONS" }, corsHeaders(request, env));
+      return new Response(JSON.stringify({ error: "Méthode non autorisée" }), {
+        status: 405,
+        headers: Object.assign({ "Content-Type": "application/json; charset=utf-8" }, headers)
+      });
+    }
+    const rateLimitResponse = await enforceWriteRateLimit(request, env);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
+    }
+    let body = null;
+    try {
+      body = await request.json();
+    } catch (err) {
+      return errorResponse("Payload JSON attendu", 400, request, env);
+    }
+    const writes = Array.isArray(body?.writes) ? body.writes : null;
+    if (!writes || !writes.length) {
+      return errorResponse("writes[] manquant", 400, request, env);
+    }
+    if (writes.length > 200) {
+      return errorResponse("writes[] dépasse la limite (200)", 400, request, env);
+    }
+    const results = [];
+    for (const entry of writes) {
+      const id = String(entry?.id || "").trim();
+      if (!id) {
+        return errorResponse("Chaque write doit contenir un id", 400, request, env);
+      }
+      if (!Object.prototype.hasOwnProperty.call(entry || {}, "payload")) {
+        return errorResponse(`Payload manquant pour ${id}`, 400, request, env);
+      }
+      const result = await upsertShareDocument(env, batchPath.collection, id, entry.payload, request);
+      results.push({
+        id,
+        meta: result?.meta || { updatedAt: new Date().toISOString() }
+      });
+    }
+    return jsonResponse({
+      success: true,
+      count: results.length,
+      results
+    }, 200, request, env);
+  }
+  if (!path && batchGetPath) {
+    if (request.method !== "POST") {
+      const headers = Object.assign({ Allow: "POST,OPTIONS" }, corsHeaders(request, env));
+      return new Response(JSON.stringify({ error: "Méthode non autorisée" }), {
+        status: 405,
+        headers: Object.assign({ "Content-Type": "application/json; charset=utf-8" }, headers)
+      });
+    }
+    let body = null;
+    try {
+      body = await request.json();
+    } catch (err) {
+      return errorResponse("Payload JSON attendu", 400, request, env);
+    }
+    const ids = Array.isArray(body?.ids)
+      ? body.ids.map(id => String(id || "").trim()).filter(Boolean)
+      : [];
+    if (!ids.length) {
+      return errorResponse("ids[] manquant", 400, request, env);
+    }
+    if (ids.length > 200) {
+      return errorResponse("ids[] dépasse la limite (200)", 400, request, env);
+    }
+    const documents = [];
+    for (const id of ids) {
+      const doc = await fetchShareDocument(env, batchGetPath.collection, id);
+      documents.push({
+        id,
+        payload: doc?.payload || null,
+        meta: doc?.meta || null
+      });
+    }
+    return jsonResponse({
+      success: true,
+      count: documents.length,
+      documents
+    }, 200, request, env, {
+      "Cache-Control": "no-store, max-age=0"
+    });
+  }
+  if (!path && batchDeletePath) {
+    if (request.method !== "POST") {
+      const headers = Object.assign({ Allow: "POST,OPTIONS" }, corsHeaders(request, env));
+      return new Response(JSON.stringify({ error: "Méthode non autorisée" }), {
+        status: 405,
+        headers: Object.assign({ "Content-Type": "application/json; charset=utf-8" }, headers)
+      });
+    }
+    const rateLimitResponse = await enforceWriteRateLimit(request, env);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
+    }
+    let body = null;
+    try {
+      body = await request.json();
+    } catch (err) {
+      return errorResponse("Payload JSON attendu", 400, request, env);
+    }
+    const ids = Array.isArray(body?.ids)
+      ? body.ids.map(id => String(id || "").trim()).filter(Boolean)
+      : [];
+    if (!ids.length) {
+      return errorResponse("ids[] manquant", 400, request, env);
+    }
+    if (ids.length > 200) {
+      return errorResponse("ids[] dépasse la limite (200)", 400, request, env);
+    }
+    if (batchDeletePath.collection !== "memos") {
+      return errorResponse("Route de suppression groupée supportée uniquement pour memos", 400, request, env);
+    }
+    const results = [];
+    for (const id of ids) {
+      await Promise.all([
+        deleteShareDocument(env, "memos", id),
+        deleteShareDocument(env, "memos-meta", id)
+      ]);
+      results.push({
+        id,
+        deleted: {
+          content: true,
+          meta: true
+        }
+      });
+    }
+    return jsonResponse({
+      success: true,
+      count: results.length,
+      results
+    }, 200, request, env);
+  }
+  if (!path && repairPath) {
+    if (request.method !== "POST") {
+      const headers = Object.assign({ Allow: "POST,OPTIONS" }, corsHeaders(request, env));
+      return new Response(JSON.stringify({ error: "Méthode non autorisée" }), {
+        status: 405,
+        headers: Object.assign({ "Content-Type": "application/json; charset=utf-8" }, headers)
+      });
+    }
+    if (!verifyAdminAccess(request, env)) {
+      return errorResponse("Accès refusé", 403, request, env);
+    }
+    if (repairPath.collection !== "memos") {
+      return errorResponse("Route de réparation supportée uniquement pour memos", 400, request, env);
+    }
+    const url = new URL(request.url);
+    const dryRun = ["1", "true", "yes"].includes(String(url.searchParams.get("dryRun") || "").trim().toLowerCase());
+    const report = await reconcileMemosConsistency(env, request, { dryRun });
+    return jsonResponse(report, 200, request, env, {
+      "Cache-Control": "no-store, max-age=0"
+    });
+  }
   if (!path) {
     return notFoundResponse(request, env);
   }
   if (request.method === "GET") {
+    const requestUrl = new URL(request.url);
+    const ensureConsistency = ["1", "true", "yes"].includes(
+      String(requestUrl.searchParams.get("ensureConsistency") || "").trim().toLowerCase()
+    );
+    if (ensureConsistency && (path.collection === "memos" || path.collection === "memos-meta")) {
+      if (!verifyAdminAccess(request, env)) {
+        return errorResponse("Accès refusé", 403, request, env);
+      }
+      await reconcileMemosConsistency(env, request, { dryRun: false });
+    }
     if (!path.documentId) {
-      const requestUrl = new URL(request.url);
       const view = String(requestUrl.searchParams.get("view") || "").trim().toLowerCase();
       const includeArchived = ["1", "true", "yes"].includes(
         String(requestUrl.searchParams.get("includeArchived") || "").trim().toLowerCase()
