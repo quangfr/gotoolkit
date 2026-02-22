@@ -60,11 +60,6 @@
     return `${base}/${API_VERSION}/shares/${encodedCollection}:batchCreate`;
   }
 
-  function buildShareSyncUrl(base, collection) {
-    const encodedCollection = encodeURIComponent(collection);
-    return `${base}/${API_VERSION}/shares/${encodedCollection}:sync`;
-  }
-
   function buildAssetUrl(base, assetId) {
     const encodedId = encodeURIComponent(assetId);
     return `${base}/${API_VERSION}/assets/${encodedId}`;
@@ -490,42 +485,6 @@
     });
   }
 
-  async function syncShareTree(collection, options = {}) {
-    assertReady();
-    return withWorkerFallback(async base => {
-      let response;
-      try {
-        response = await fetch(buildShareSyncUrl(base, collection), {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json"
-          },
-          body: JSON.stringify({
-            since: options?.since,
-            spaceId: options?.spaceId,
-            includeArchived: options?.includeArchived ? true : false,
-            includeContent: options?.includeContent !== false
-          })
-        });
-      } catch (error) {
-        throw markNetworkFailure(error instanceof Error ? error : new Error(String(error)));
-      }
-      if (!response.ok) {
-        const body = await response.text().catch(() => "");
-        throw new Error(body || "Impossible de synchroniser l'arborescence");
-      }
-      const data = await response.json().catch(() => ({}));
-      return {
-        mode: String(data.mode || "").trim().toLowerCase() || "full",
-        since: String(data.since || "").trim(),
-        watermark: String(data.watermark || "").trim(),
-        documents: Array.isArray(data.documents) ? data.documents : [],
-        contents: Array.isArray(data.contents) ? data.contents : []
-      };
-    });
-  }
-
   async function uploadAsset(payload, options = {}) {
     assertReady();
     return withWorkerFallback(async base => {
@@ -573,7 +532,6 @@
     deleteSharePayload,
     listShares,
     listShareTree,
-    syncShareTree,
     uploadAsset,
     deleteAsset,
     buildAssetUrl: assetId => buildAssetUrl(workerBases[0], assetId)
