@@ -21,7 +21,8 @@
   },
   "features": {
     "hideTimeline": true,
-    "hideVoice": false
+    "hideVoice": false,
+    "shareIncrementalSync": true
   },
   "fileImport": {
     "allowOverLimitEmbeddings": true,

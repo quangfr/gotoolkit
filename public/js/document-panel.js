@@ -691,10 +691,10 @@
             }
         });
 
-    function normalizeName(value) {
-        const name = String(value || "").trim();
-        return name || "New page";
-    }
+        function normalizeName(value) {
+            const name = String(value || "").trim();
+            return name || "New page";
+        }
 
         function uniqueName(name, list, extraNames, excludeId) {
             return normalizeName(name);
@@ -1173,6 +1173,21 @@
             if (!listEl) return;
             const nonce = ++renderListNonce;
             const isStale = () => nonce !== renderListNonce;
+            const resolveTreeScrollContainer = () => {
+                let node = listEl;
+                while (node && node !== sidebar) {
+                    const style = window.getComputedStyle(node);
+                    const overflowY = String(style?.overflowY || "").toLowerCase();
+                    const isScrollable = overflowY === "auto" || overflowY === "scroll";
+                    if (isScrollable && node.scrollHeight > node.clientHeight) {
+                        return node;
+                    }
+                    node = node.parentElement;
+                }
+                return listEl;
+            };
+            const treeScrollContainer = resolveTreeScrollContainer();
+            const preservedScrollTop = Number(treeScrollContainer?.scrollTop || 0);
             await ensureSuperpowersLoaded();
             if (pendingInlineRenameId && pendingInlineRenameUntil && Date.now() > pendingInlineRenameUntil) {
                 pendingInlineRenameId = "";
@@ -1296,11 +1311,11 @@
                 button.type = "button";
                 button.className = "document-explorer__item";
                 button.draggable = true;
-                    if (item.id) {
-                        button.dataset.documentId = item.id;
-                        if (activeId && activeId === item.id) {
-                            button.classList.add("document-explorer__item--active");
-                        }
+                if (item.id) {
+                    button.dataset.documentId = item.id;
+                    if (activeId && activeId === item.id) {
+                        button.classList.add("document-explorer__item--active");
+                    }
                     if (selectedHighlightEnabled && selectedIds.has(item.id)) {
                         button.classList.add("document-explorer__item--selected");
                     }
@@ -1622,6 +1637,7 @@
                         });
                     }
                     draggingSection = "";
+                    await renderList(cachedItems);
                 });
                 row.appendChild(button);
                 if (isStale()) return;
@@ -2104,6 +2120,10 @@
                 });
             }
 
+            if (treeScrollContainer && Number.isFinite(preservedScrollTop)) {
+                const maxTop = Math.max(0, treeScrollContainer.scrollHeight - treeScrollContainer.clientHeight);
+                treeScrollContainer.scrollTop = Math.min(preservedScrollTop, maxTop);
+            }
             if (window.lucide) window.lucide.createIcons();
         }
 

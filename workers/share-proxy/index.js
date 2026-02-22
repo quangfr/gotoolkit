@@ -162,6 +162,29 @@ function parseShareRepairPath(request) {
   return { collection };
 }
 
+function parseShareSyncPath(request) {
+  const url = new URL(request.url);
+  const segments = normalizePathname(url.pathname)
+    .split("/")
+    .filter(Boolean);
+  if (segments.length !== 3) {
+    return null;
+  }
+  if (segments[0] !== API_VERSION || segments[1] !== SHARES_SEGMENT) {
+    return null;
+  }
+  const rawCollection = String(segments[2] || "");
+  const match = rawCollection.match(/^(.+):sync$/);
+  if (!match) {
+    return null;
+  }
+  const collection = decodeURIComponent(match[1] || "");
+  if (!collection || !VALID_COLLECTIONS.has(collection)) {
+    return null;
+  }
+  return { collection };
+}
+
 function parseAssetPath(request) {
   const url = new URL(request.url);
   const segments = normalizePathname(url.pathname)
@@ -721,6 +744,70 @@ async function listShareDocuments(env, collection) {
   return documents;
 }
 
+function normalizeIsoDateString(input) {
+  const raw = String(input || "").trim();
+  if (!raw) return "";
+  const parsed = Date.parse(raw);
+  if (!Number.isFinite(parsed)) return "";
+  return new Date(parsed).toISOString();
+}
+
+async function listShareDocumentsSince(env, collection, sinceIso) {
+  const normalizedSince = normalizeIsoDateString(sinceIso);
+  if (!normalizedSince) {
+    return listShareDocuments(env, collection);
+  }
+
+  const runQueryUrl = `${getFirestoreBaseUrl(env)}:runQuery`;
+  const response = await fetch(runQueryUrl, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${await getAccessToken(env)}`,
+      "Content-Type": "application/json",
+      Accept: "application/json"
+    },
+    body: JSON.stringify({
+      structuredQuery: {
+        from: [{ collectionId: collection }],
+        where: {
+          fieldFilter: {
+            field: { fieldPath: "meta.updatedAt" },
+            op: "GREATER_THAN",
+            value: { stringValue: normalizedSince }
+          }
+        },
+        orderBy: [{
+          field: { fieldPath: "meta.updatedAt" },
+          direction: "ASCENDING"
+        }],
+        limit: 2000
+      }
+    })
+  });
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    throw new Error(`Erreur Firestore: ${response.status} ${body}`);
+  }
+
+  const rows = await response.json().catch(() => []);
+  const entries = Array.isArray(rows) ? rows : [];
+  const documents = [];
+  for (const row of entries) {
+    const doc = row?.document;
+    if (!doc?.name) continue;
+    const nameSegments = doc.name.split("/");
+    const id = nameSegments[nameSegments.length - 1];
+    if (!id) continue;
+    documents.push({
+      id,
+      payload: extractPayload(doc),
+      meta: extractMeta(doc)
+    });
+  }
+  return documents;
+}
+
 async function deleteShareDocument(env, collection, documentId) {
   const url = getDocumentUrl(env, collection, documentId);
   const response = await fetch(url, {
@@ -1054,6 +1141,7 @@ async function handleRequest(request, env) {
   const batchDeletePath = parseShareBatchDeletePath(request);
   const batchCreatePath = parseShareBatchCreatePath(request);
   const repairPath = parseShareRepairPath(request);
+  const syncPath = parseShareSyncPath(request);
   if (!path && batchPath) {
     if (request.method !== "POST") {
       const headers = Object.assign({ Allow: "POST,OPTIONS" }, corsHeaders(request, env));
@@ -1275,6 +1363,69 @@ async function handleRequest(request, env) {
     const dryRun = ["1", "true", "yes"].includes(String(url.searchParams.get("dryRun") || "").trim().toLowerCase());
     const report = await reconcileMemosConsistency(env, request, { dryRun });
     return jsonResponse(report, 200, request, env, {
+      "Cache-Control": "no-store, max-age=0"
+    });
+  }
+  if (!path && syncPath) {
+    if (request.method !== "POST") {
+      const headers = Object.assign({ Allow: "POST,OPTIONS" }, corsHeaders(request, env));
+      return new Response(JSON.stringify({ error: "Méthode non autorisée" }), {
+        status: 405,
+        headers: Object.assign({ "Content-Type": "application/json; charset=utf-8" }, headers)
+      });
+    }
+    let body = null;
+    try {
+      body = await request.json();
+    } catch (err) {
+      return errorResponse("Payload JSON attendu", 400, request, env);
+    }
+    const since = normalizeIsoDateString(body?.since);
+    const includeArchived = ["1", "true", "yes"].includes(
+      String(body?.includeArchived || "").trim().toLowerCase()
+    );
+    const includeContent = !["0", "false", "no"].includes(
+      String(body?.includeContent || "").trim().toLowerCase()
+    );
+    const spaceFilter = String(body?.spaceId || "").trim().toLowerCase();
+    const docs = await listShareDocumentsSince(env, syncPath.collection, since || "");
+    const summaries = docs
+      .map(buildShareSummary)
+      .filter(item => item.id)
+      .filter(item => includeArchived || item.status !== "archived")
+      .filter(item => !spaceFilter || item.spaceId === spaceFilter)
+      .sort((a, b) => {
+        const ap = Number.isFinite(Number(a?.position)) ? Number(a.position) : Number.POSITIVE_INFINITY;
+        const bp = Number.isFinite(Number(b?.position)) ? Number(b.position) : Number.POSITIVE_INFINITY;
+        if (ap !== bp) return ap - bp;
+        return Date.parse(b.updatedAt || 0) - Date.parse(a.updatedAt || 0);
+      });
+    const watermark = summaries[0]?.updatedAt || "";
+
+    let contents = [];
+    if (includeContent && syncPath.collection === "memos-meta") {
+      const ids = summaries
+        .map(item => String(item?.id || "").trim())
+        .filter(Boolean)
+        .slice(0, 500);
+      const contentDocs = await Promise.all(ids.map(async id => {
+        const doc = await fetchShareDocument(env, "memos", id).catch(() => null);
+        return {
+          id,
+          payload: doc?.payload || null,
+          meta: doc?.meta || null
+        };
+      }));
+      contents = contentDocs;
+    }
+
+    return jsonResponse({
+      mode: since ? "delta" : "full",
+      since,
+      watermark,
+      documents: summaries,
+      contents
+    }, 200, request, env, {
       "Cache-Control": "no-store, max-age=0"
     });
   }
