@@ -4,12 +4,13 @@ function tokenFromDocId(docId: string) {
   return String(docId || "").replace(/^share:/, "").trim();
 }
 
-test.describe("Cloud local-first sync", () => {
-  test("manual sync and reload sync propagate local tree/page changes", async ({ page }) => {
-    test.setTimeout(8 * 60 * 1000);
+test.describe("Cloud local-first sync stress", () => {
+  test("stresses manual and reload sync with higher operation count", async ({ page }) => {
+    test.setTimeout(12 * 60 * 1000);
     const baseUrl = "http://127.0.0.1:5000";
-    const prefix = `sync-local-${Date.now()}`;
+    const prefix = `sync-stress-${Date.now()}`;
     const createdDocIds: string[] = [];
+    const operationCount = 12;
 
     page.on("dialog", async (dialog) => {
       try {
@@ -32,7 +33,6 @@ test.describe("Cloud local-first sync", () => {
     await page.evaluate(async () => {
       await (window as any).GoToolkitMemoDocumentExplorer?.refresh?.({ forceReload: true });
     });
-
     await page.waitForFunction(
       () => Boolean(document.querySelector(".document-explorer__section-body[data-section^='shared:']")),
       null,
@@ -44,9 +44,6 @@ test.describe("Cloud local-first sync", () => {
       return String(body?.dataset?.section || "").trim();
     });
     expect(sharedSection).toBeTruthy();
-
-    const docItem = (docId: string) =>
-      page.locator(`.document-explorer__section-body[data-section="${sharedSection}"] .document-explorer__item[data-document-id="${docId}"]`).first();
 
     const clickSectionAdd = async () => {
       await page.evaluate((sectionName) => {
@@ -116,9 +113,26 @@ test.describe("Cloud local-first sync", () => {
       }, token);
     };
 
+    const allDocsMatch = async (expectedMap: Map<string, { title: string; parentId: string }>, timeoutMs = 30_000) => {
+      const startedAt = Date.now();
+      while ((Date.now() - startedAt) < timeoutMs) {
+        let ok = true;
+        for (const [docId, expected] of expectedMap.entries()) {
+          const remote = await getRemote(docId);
+          if (!(remote.title === expected.title && remote.parentId === expected.parentId)) {
+            ok = false;
+            break;
+          }
+        }
+        if (ok) return true;
+        await page.waitForTimeout(900);
+      }
+      return false;
+    };
+
     const setLocalShared = async (
       docId: string,
-      patch: { title?: string; content?: string; parentId?: string; position?: number }
+      patch: { title?: string; content?: string; parentId?: string; position?: number; updatedAtMs?: number }
     ) => {
       const token = tokenFromDocId(docId);
       await page.evaluate(async ({ docToken, next }) => {
@@ -142,13 +156,11 @@ test.describe("Cloud local-first sync", () => {
         if (typeof next.title === "string") tabs[0] = { ...(tabs[0] || {}), title: next.title };
         if (typeof next.content === "string") tabs[0] = { ...(tabs[0] || {}), content: next.content };
         payload.tabs = tabs;
-        if (Object.prototype.hasOwnProperty.call(next, "parentId")) {
-          payload.parentId = String(next.parentId || "");
-        }
-        if (typeof next.position === "number") {
-          payload.position = next.position;
-        }
-        const updatedAt = new Date().toISOString();
+        if (Object.prototype.hasOwnProperty.call(next, "parentId")) payload.parentId = String(next.parentId || "");
+        if (typeof next.position === "number") payload.position = next.position;
+        const updatedAt = new Date(
+          Number.isFinite(Number(next.updatedAtMs)) ? Number(next.updatedAtMs) : Date.now()
+        ).toISOString();
         await history.upsertRecord("memo", {
           ...record,
           token: docToken,
@@ -177,53 +189,74 @@ test.describe("Cloud local-first sync", () => {
 
     try {
       const parentDoc = await createSharedDoc();
-      const movingDoc = await createSharedDoc();
+      const docs: string[] = [parentDoc];
+      for (let i = 0; i < 4; i += 1) {
+        docs.push(await createSharedDoc());
+      }
 
-      const manualTitle = `${prefix}-manual-rename`;
-      const expectedManualParent = `share:${tokenFromDocId(parentDoc)}`;
+      const expectedAfterManual = new Map<string, { title: string; parentId: string }>();
+      let manualClock = Date.now() + 20_000;
+      for (let i = 0; i < operationCount; i += 1) {
+        const targetDoc = docs[(i % (docs.length - 1)) + 1];
+        const parentDocId = i % 3 === 0 ? parentDoc : "";
+        const title = `${prefix}-m-${String(i + 1).padStart(2, "0")}`;
+        const parentId = parentDocId ? `share:${tokenFromDocId(parentDocId)}` : "";
+        manualClock += 11;
+        await setLocalShared(targetDoc, {
+          title,
+          content: `manual-${i}-${Date.now()}`,
+          parentId,
+          position: Date.now() + i,
+          updatedAtMs: manualClock
+        });
+        expectedAfterManual.set(targetDoc, { title, parentId });
+      }
 
-      const beforeManual = await getRemote(movingDoc);
-      await setLocalShared(movingDoc, {
-        title: manualTitle,
-        parentId: expectedManualParent,
-        content: `Manual sync content ${Date.now()}`,
-        position: Date.now()
-      });
+      for (const [docId, expected] of expectedAfterManual.entries()) {
+        const remote = await getRemote(docId);
+        expect(remote.title).not.toBe(expected.title);
+      }
 
-      const stillBeforeManual = await getRemote(movingDoc);
-      expect(stillBeforeManual.title).toBe(beforeManual.title);
-      expect(stillBeforeManual.parentId).toBe(beforeManual.parentId);
+      let manualSynced = false;
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        await clickSectionRefresh();
+        manualSynced = await allDocsMatch(expectedAfterManual, 45_000);
+        if (manualSynced) break;
+      }
+      expect(manualSynced).toBe(true);
 
-      await clickSectionRefresh();
-      await expect
-        .poll(async () => {
-          const remote = await getRemote(movingDoc);
-          return remote.title === manualTitle && remote.parentId === expectedManualParent;
-        }, { timeout: 60_000, intervals: [500, 1000, 1500] })
-        .toBe(true);
+      const expectedAfterReload = new Map<string, { title: string; parentId: string }>();
+      let reloadClock = Date.now() + 120_000;
+      for (let i = 0; i < operationCount; i += 1) {
+        const targetDoc = docs[(i % (docs.length - 1)) + 1];
+        const parentDocId = i % 2 === 0 ? parentDoc : "";
+        const title = `${prefix}-r-${String(i + 1).padStart(2, "0")}`;
+        const parentId = parentDocId ? `share:${tokenFromDocId(parentDocId)}` : "";
+        reloadClock += 17;
+        await setLocalShared(targetDoc, {
+          title,
+          content: `reload-${i}-${Date.now()}`,
+          parentId,
+          position: Date.now() + 10_000 + i,
+          updatedAtMs: reloadClock
+        });
+        expectedAfterReload.set(targetDoc, { title, parentId });
+      }
 
-      const reloadTitle = `${prefix}-reload-rename`;
-      await setLocalShared(movingDoc, {
-        title: reloadTitle,
-        parentId: "",
-        content: `Reload sync content ${Date.now()}`,
-        position: Date.now() + 5000
-      });
+      for (const [docId, expected] of expectedAfterReload.entries()) {
+        const remote = await getRemote(docId);
+        expect(remote.title).not.toBe(expected.title);
+      }
 
-      const stillBeforeReload = await getRemote(movingDoc);
-      expect(stillBeforeReload.title).toBe(manualTitle);
-      expect(stillBeforeReload.parentId).toBe(expectedManualParent);
-
-      await page.reload({ waitUntil: "load" });
-      await page.waitForFunction(() => Boolean((window as any).goToolkitShareWorker?.isReady), null, { timeout: 45_000 });
-      await page.waitForFunction(() => Boolean((window as any).goToolkitShareHistory?.getRecordsByApp), null, { timeout: 45_000 });
-
-      await expect
-        .poll(async () => {
-          const remote = await getRemote(movingDoc);
-          return remote.title === reloadTitle && remote.parentId === "";
-        }, { timeout: 75_000, intervals: [750, 1250, 2000] })
-        .toBe(true);
+      let reloadSynced = false;
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        await page.reload({ waitUntil: "load" });
+        await page.waitForFunction(() => Boolean((window as any).goToolkitShareWorker?.isReady), null, { timeout: 45_000 });
+        await page.waitForFunction(() => Boolean((window as any).goToolkitShareHistory?.getRecordsByApp), null, { timeout: 45_000 });
+        reloadSynced = await allDocsMatch(expectedAfterReload, 50_000);
+        if (reloadSynced) break;
+      }
+      expect(reloadSynced).toBe(true);
     } finally {
       await page.evaluate(async (ids) => {
         const worker = (window as any).goToolkitShareWorker;

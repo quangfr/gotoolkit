@@ -11,7 +11,7 @@ export default defineConfig({
     navigationTimeout: 30 * 1000
   },
   webServer: {
-    command: "npm start",
+    command: "npm run start:test",
     port: 5000,
     reuseExistingServer: true,
     timeout: 60_000

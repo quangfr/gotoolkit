@@ -65,13 +65,15 @@ Only `public/js` may touch `window`:
 - Excalidraw bridge: `src/draw-editor/index.tsx` forces light theme, normalizes Mermaid, exposes `window.GoToolkitExcalidraw`.
 - Docs bridge: `src/memo-bridge/index.tsx` exposes the Docs editor API to `window`.
 - When modifying memo-editor (memo) or draw-editor (connect), run an npm build for the corresponding component after changes.
-- **Playwright (WSL anti-hang)**:
-  - If Playwright hangs on startup in WSL (`playwright --version` or tests), run tests from Linux FS (e.g. `~/work/gotoolkit`), not `/mnt/c/...`.
-  - Sync repo to Linux FS: `rsync -a --delete --exclude node_modules --exclude .git /mnt/c/Users/<you>/Documents/Github/gotoolkit/ ~/work/gotoolkit/`
-  - Install deps in Linux FS copy: `cd ~/work/gotoolkit && npm ci`
-  - Run Playwright with local binary (avoid `npx`): `./node_modules/.bin/playwright test <spec> --workers=1 --reporter=line`
-  - Keep server startup simple: `npm start` should use `serve` directly (no `npx serve ...`) to avoid WSL process stalls.
-  - **Codex runtime fallback (verified):** if Playwright MCP fails with missing Chrome channel (`browserType.launchPersistentContext: Chromium distribution 'chrome' is not found`), install Chromium instead of Chrome: `npx playwright install chromium`.
+- **Playwright (generic workflow for all tests)**:
+  - Pre-run the server when possible (`npm run start:test` preferred, `npm start` acceptable). `playwright.config.ts` uses `reuseExistingServer: true`, so Playwright will attach to an existing server instead of waiting for boot.
+  - Use the cache-friendly test server profile for Playwright (`start:test`), which serves JS/CSS with cache headers to reduce cold-start load time across repeated runs.
+  - Run Playwright with the local binary (avoid `npx`): `./node_modules/.bin/playwright test <spec> --workers=1 --reporter=line`.
+  - Navigate directly to the target page in tests (avoid redirect shims when possible) to reduce startup roundtrips.
+  - On WSL, prefer running from native Linux FS (e.g. `~/work/gotoolkit`) rather than `/mnt/c/...`:
+    - `rsync -a --delete --exclude node_modules --exclude .git /mnt/c/Users/<you>/Documents/Github/gotoolkit/ ~/work/gotoolkit/`
+    - `cd ~/work/gotoolkit && npm ci`
+  - If Playwright MCP fails with missing Chrome channel (`browserType.launchPersistentContext: Chromium distribution 'chrome' is not found`), install Chromium: `npx playwright install chromium`.
   - If MCP browser tools still fail/time out, run Playwright directly with Node scripts (`require("playwright")`) using `chromium.launch()` for page flows or `request.newContext()` for API timing checks.
 
 ## MCP + Troubleshooting
