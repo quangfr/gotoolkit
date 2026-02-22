@@ -44,6 +44,13 @@
 
     var GLOBAL_BUILD_VERSION = "2026.01.14.4";
     global.GoToolkitAssistVersion = GLOBAL_BUILD_VERSION;
+    document.addEventListener("contextmenu", function (event) {
+        var target = event && event.target;
+        if (!(target instanceof Element)) return;
+        if (target.closest("#assistSidebar, .chat-sidebar, .chat-knowledge-modal, #chat-inline-editor-container, #chat-root")) {
+            event.preventDefault();
+        }
+    });
     var globalConfigPromise;
     var siteConfigPromise = global.GoToolkitSiteConfigPromise;
     if (siteConfigPromise && typeof siteConfigPromise.then === "function") {

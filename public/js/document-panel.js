@@ -291,16 +291,20 @@
         const getActiveId = typeof opts.getActiveId === "function" ? opts.getActiveId : null;
         let cachedItems = [];
         let expandedIds = new Set();
+        let selectedIds = new Set();
+        let selectedHighlightEnabled = false;
+        let selectionAnchorId = "";
         let draggingId = "";
         let draggingSection = "";
         let orderIds = [];
         let sectionExpanded = { recent: true, private: true, common: true, superpowers: true };
         let searchQuery = "";
-        let preSearchExpandedIds = null;
-        let preSearchSectionExpanded = null;
         let pendingInlineRenameId = "";
         let pendingInlineRenameUntil = 0;
         let activeInlineRenameId = "";
+        let activeInlineRenameInput = null;
+        let inlineRenameCommitId = "";
+        let deferredRenderAfterInlineRename = false;
 
         let hasDefaultTabSet = false;
 
@@ -482,16 +486,14 @@
                         <textarea id="document-explorer-description-input" rows="3" placeholder="Description courte (optionnelle)"></textarea>
                     </div>
                     <div class="modal-actions" style="justify-content: flex-end; align-items: center; gap: 8px;">
-                        <button class="btn btn-secondary" type="button" data-cancel>Annuler</button>
-                        <button class="btn-primary" type="button" data-publish>Publier</button>
+                        <button class="btn-primary" type="button" data-save>Enregistrer</button>
                     </div>
                 </div>
             </div>
         `;
         document.body.appendChild(modalOverlay);
         const modalCloseBtn = modalOverlay.querySelector(".modal-close");
-        const modalCancelBtn = modalOverlay.querySelector("[data-cancel]");
-        const modalPublishBtn = modalOverlay.querySelector("[data-publish]");
+        const modalSaveBtn = modalOverlay.querySelector("[data-save]");
         const modalEl = modalOverlay.querySelector(".modal");
         const modalInput = modalOverlay.querySelector("#document-explorer-name-input");
         const modalIconBtn = modalOverlay.querySelector("#document-explorer-icon-btn");
@@ -560,6 +562,20 @@
                 searchInput.focus();
             }
             if (window.lucide) window.lucide.createIcons();
+            if (!searchQuery && listEl) {
+                const visibleIds = Array.from(listEl.querySelectorAll(".document-explorer__item[data-document-id]"))
+                    .map(node => String(node.getAttribute("data-document-id") || "").trim())
+                    .filter(Boolean);
+                if (visibleIds.length) {
+                    const seen = new Set(visibleIds);
+                    const tail = orderIds.filter(id => {
+                        const token = String(id || "").trim();
+                        return token && !seen.has(token);
+                    });
+                    orderIds = visibleIds.concat(tail);
+                    persistOrderState();
+                }
+            }
         }
 
         async function openNameModal(defaultValue, defaultDescription, options) {
@@ -629,7 +645,6 @@
         }
 
         modalCloseBtn?.addEventListener("click", () => resolveModal(null));
-        modalCancelBtn?.addEventListener("click", () => resolveModal(null));
         modalIconBtn?.addEventListener("click", () => {
             if (!modalIconGrid) return;
             modalIconGrid.classList.toggle("open");
@@ -640,14 +655,13 @@
             if (event.target === modalIconGrid || modalIconGrid.contains(event.target)) return;
             modalIconGrid.classList.remove("open");
         });
-        modalPublishBtn?.addEventListener("click", () => {
+        modalSaveBtn?.addEventListener("click", () => {
             resolveModal({
                 name: modalInput?.value || "",
                 icon: modalIcon,
                 description: modalDescInput?.value || "",
                 superpowers: getSelectedSuperpowers(),
-                action: "publish",
-                publishTarget: "gotoolkit",
+                action: "confirm",
                 notionPath: "",
                 notionPageId: modalNotionLink.pageId || "",
                 notionWorkspaceId: modalNotionLink.workspaceId || "",
@@ -666,7 +680,7 @@
                     icon: modalIcon,
                     description: modalDescInput?.value || "",
                     superpowers: getSelectedSuperpowers(),
-                    action: "publish",
+                    action: "confirm",
                     unlinkNotion: Boolean(modalNotionUnlinkRequested)
                 });
             } else if (event.key === "Escape") {
@@ -904,7 +918,6 @@
         let renderListNonce = 0;
         let listDnDBound = false;
         let hasLoadedTreeData = false;
-        let lastAutoExpandedActiveId = "";
 
         function buildTree(items) {
             const byId = new Map((items || []).filter(Boolean).map(item => [item.id, item]));
@@ -978,6 +991,36 @@
             if (!target) return;
             target.parentId = String(parentId || "").trim();
         }
+        function rebuildOrderFromCachedItems() {
+            const sectionNames = Array.from(new Set(
+                normalizeList(cachedItems)
+                    .map(item => getItemSection(item))
+                    .filter(Boolean)
+            ));
+            const ordered = [];
+            const seen = new Set();
+            const walkTree = (item, tree) => {
+                const id = String(item?.id || "").trim();
+                if (!id || seen.has(id)) return;
+                seen.add(id);
+                ordered.push(id);
+                const children = tree.childrenByParent.get(id) || [];
+                children.forEach(child => walkTree(child, tree));
+            };
+            sectionNames.forEach(sectionName => {
+                const sectionItems = normalizeList(cachedItems).filter(item => getItemSection(item) === sectionName);
+                const tree = buildTree(sectionItems);
+                (tree.roots || []).forEach(root => walkTree(root, tree));
+            });
+            orderIds.forEach(id => {
+                const token = String(id || "").trim();
+                if (!token || seen.has(token)) return;
+                seen.add(token);
+                ordered.push(token);
+            });
+            orderIds = ordered;
+            persistOrderState();
+        }
         function prioritizeItem(docId) {
             const targetId = String(docId || "").trim();
             if (!targetId) return;
@@ -985,6 +1028,12 @@
             next.unshift(targetId);
             orderIds = next;
             persistOrderState();
+        }
+        function shouldDeferRenderForInlineRename(itemId) {
+            const targetId = String(itemId || "").trim();
+            if (!targetId) return false;
+            if (String(inlineRenameCommitId || "") !== targetId) return false;
+            return Boolean(activeInlineRenameInput && activeInlineRenameInput.isConnected);
         }
 
         function hasDepthExceeded(targetId, movingId, byId, nextDepth) {
@@ -1021,34 +1070,100 @@
 
         function ensureSearchViewState() {
             const hasQuery = Boolean(String(searchQuery || "").trim());
-            if (hasQuery) {
-                if (!preSearchExpandedIds) preSearchExpandedIds = new Set(expandedIds);
-                if (!preSearchSectionExpanded) preSearchSectionExpanded = { ...sectionExpanded };
-                const dynamicSharedKeys = normalizeList(cachedItems)
-                    .map(item => getItemSection(item))
-                    .filter(section => section.startsWith("shared:"));
-                const forcedShared = {};
-                dynamicSharedKeys.forEach(key => {
-                    forcedShared[key] = true;
-                });
-                sectionExpanded = { ...sectionExpanded, private: true, common: true, ...forcedShared };
-                expandedIds = new Set(normalizeList(cachedItems).map(item => String(item.id || "")).filter(Boolean));
-                persistExpandedState();
-                persistSectionExpandedState();
-            } else if (preSearchExpandedIds || preSearchSectionExpanded) {
-                expandedIds = preSearchExpandedIds ? new Set(preSearchExpandedIds) : expandedIds;
-                sectionExpanded = preSearchSectionExpanded ? { ...preSearchSectionExpanded } : sectionExpanded;
-                preSearchExpandedIds = null;
-                preSearchSectionExpanded = null;
-                persistExpandedState();
-                persistSectionExpandedState();
-            }
             if (searchClearBtn) {
                 searchClearBtn.style.display = hasQuery ? "inline-flex" : "none";
             }
             if (searchWrap) {
                 searchWrap.classList.toggle("is-searching", hasQuery);
             }
+        }
+        function normalizeId(value) {
+            return String(value || "").trim();
+        }
+        function sanitizeSelectedIds(sourceIds) {
+            const available = new Set(normalizeList(cachedItems).map(item => normalizeId(item?.id)));
+            const next = new Set();
+            const values = sourceIds instanceof Set ? Array.from(sourceIds) : Array.isArray(sourceIds) ? sourceIds : [];
+            values.forEach(value => {
+                const id = normalizeId(value);
+                if (id && available.has(id)) next.add(id);
+            });
+            return next;
+        }
+        function getVisibleDocumentIds() {
+            if (!listEl) return [];
+            const ids = [];
+            const seen = new Set();
+            const nodes = listEl.querySelectorAll(".document-explorer__item[data-document-id]");
+            nodes.forEach(node => {
+                const id = normalizeId(node.getAttribute("data-document-id"));
+                if (!id || seen.has(id)) return;
+                seen.add(id);
+                ids.push(id);
+            });
+            return ids;
+        }
+        function refreshSelectionIndicatorsOnly() {
+            if (!listEl) return;
+            const nodes = listEl.querySelectorAll(".document-explorer__item[data-document-id]");
+            nodes.forEach(node => {
+                const nodeId = normalizeId(node.getAttribute("data-document-id"));
+                node.classList.toggle("document-explorer__item--selected", selectedHighlightEnabled && selectedIds.has(nodeId));
+            });
+        }
+        function getSelectedIdsSnapshot() {
+            selectedIds = sanitizeSelectedIds(selectedIds);
+            return Array.from(selectedIds);
+        }
+        function setExplorerSelection(nextIds, options = {}) {
+            selectedIds = sanitizeSelectedIds(nextIds);
+            if (typeof options.highlightSelected === "boolean") {
+                selectedHighlightEnabled = options.highlightSelected;
+            }
+            const anchor = normalizeId(options.anchorId);
+            if (anchor) selectionAnchorId = anchor;
+            else if (!selectedIds.size) selectionAnchorId = "";
+            if (!selectedIds.size) selectedHighlightEnabled = false;
+            refreshSelectionIndicatorsOnly();
+            return getSelectedIdsSnapshot();
+        }
+        function clearExplorerSelection() {
+            selectedIds = new Set();
+            selectedHighlightEnabled = false;
+            selectionAnchorId = "";
+            refreshSelectionIndicatorsOnly();
+        }
+        function applySelectionFromClick(itemId, modifiers = {}) {
+            const clickedId = normalizeId(itemId);
+            if (!clickedId) return getSelectedIdsSnapshot();
+            const visibleIds = getVisibleDocumentIds();
+            const hasShift = Boolean(modifiers.shiftKey);
+            const hasToggle = Boolean(modifiers.ctrlKey || modifiers.metaKey);
+            let next = new Set(selectedIds);
+            if (hasShift && visibleIds.length > 0) {
+                const anchor = (selectionAnchorId && visibleIds.includes(selectionAnchorId))
+                    ? selectionAnchorId
+                    : clickedId;
+                const start = visibleIds.indexOf(anchor);
+                const end = visibleIds.indexOf(clickedId);
+                const rangeIds = start >= 0 && end >= 0
+                    ? visibleIds.slice(Math.min(start, end), Math.max(start, end) + 1)
+                    : [clickedId];
+                next = hasToggle ? new Set(next) : new Set();
+                rangeIds.forEach(id => next.add(id));
+                selectionAnchorId = anchor;
+            } else if (hasToggle) {
+                if (next.has(clickedId)) next.delete(clickedId);
+                else next.add(clickedId);
+                selectionAnchorId = clickedId;
+            } else {
+                next = new Set([clickedId]);
+                selectionAnchorId = clickedId;
+            }
+            return setExplorerSelection(next, {
+                anchorId: selectionAnchorId,
+                highlightSelected: hasShift || hasToggle
+            });
         }
 
         async function renderList(items) {
@@ -1126,6 +1241,10 @@
                 return "inside";
             };
             const activeId = typeof getActiveId?.() === "string" ? getActiveId() : "";
+            selectedIds = sanitizeSelectedIds(selectedIds);
+            if (selectionAnchorId && !selectedIds.has(selectionAnchorId)) {
+                selectionAnchorId = "";
+            }
             const sectionItems = {
                 private: filteredItems.filter(item => getItemSection(item) === "private"),
                 common: filteredItems.filter(item => getItemSection(item) === "common")
@@ -1148,42 +1267,6 @@
             sharedSectionNames.forEach(sectionName => {
                 trees[sectionName] = buildTree(sharedSections[sectionName] || []);
             });
-            const activeItem = activeId
-                ? safeItems.find(item => String(item?.id || "") === String(activeId))
-                : null;
-            const activeSection = activeItem ? getItemSection(activeItem) : "";
-            const shouldApplyActiveDefaults = Boolean(activeId) && activeId !== lastAutoExpandedActiveId;
-            if (shouldApplyActiveDefaults) {
-                const nextExpanded = new Set();
-                const activeTree = trees[activeSection];
-                if (activeTree?.byId?.get) {
-                    let current = activeTree.byId.get(activeId);
-                    while (current) {
-                        const parentId = String(current.parentId || "").trim();
-                        if (!parentId) break;
-                        nextExpanded.add(parentId);
-                        current = activeTree.byId.get(parentId);
-                    }
-                }
-                expandedIds = nextExpanded;
-
-                if (activeSection.startsWith("shared:")) {
-                    sectionExpanded.private = false;
-                    sharedSectionNames.forEach(sectionName => {
-                        sectionExpanded[sectionName] = sectionName === activeSection;
-                    });
-                } else {
-                    sectionExpanded.private = activeSection === "private";
-                    sharedSectionNames.forEach(sectionName => {
-                        sectionExpanded[sectionName] = false;
-                    });
-                }
-                persistExpandedState();
-                persistSectionExpandedState();
-                lastAutoExpandedActiveId = String(activeId);
-            } else if (!activeId) {
-                lastAutoExpandedActiveId = "";
-            }
             const recentItems = filteredItems
                 .slice()
                 .sort((a, b) => String(b?.updatedAt || "").localeCompare(String(a?.updatedAt || "")))
@@ -1208,10 +1291,13 @@
                 button.type = "button";
                 button.className = "document-explorer__item";
                 button.draggable = true;
-                if (item.id) {
-                    button.dataset.documentId = item.id;
-                    if (activeId && activeId === item.id) {
-                        button.classList.add("document-explorer__item--active");
+                    if (item.id) {
+                        button.dataset.documentId = item.id;
+                        if (activeId && activeId === item.id) {
+                            button.classList.add("document-explorer__item--active");
+                        }
+                    if (selectedHighlightEnabled && selectedIds.has(item.id)) {
+                        button.classList.add("document-explorer__item--selected");
                     }
                 }
                 const resolvedHandoffId = (typeof item.handoffId === "string" && item.handoffId) ? item.handoffId : null;
@@ -1226,17 +1312,11 @@
                     if (!isAutoFileIcon(item.icon)) return item.icon;
                     return hasChildren ? "file-text" : "file";
                 })();
-                const renderLeading = (showChevron) => {
-                    if (!hasChildren) {
-                        lead.innerHTML = defaultIconName ? `<i data-lucide="${defaultIconName}"></i>` : "";
-                    } else if (showChevron) {
-                        lead.innerHTML = `<i data-lucide="${isExpanded ? "chevron-down" : "chevron-right"}"></i>`;
-                    } else {
-                        lead.innerHTML = defaultIconName ? `<i data-lucide="${defaultIconName}"></i>` : "";
-                    }
-                    if (window.lucide) window.lucide.createIcons();
-                };
-                renderLeading(false);
+                if (!hasChildren) {
+                    lead.innerHTML = defaultIconName ? `<i data-lucide="${defaultIconName}"></i>` : "";
+                } else {
+                    lead.innerHTML = `<i data-lucide="${isExpanded ? "chevron-down" : "chevron-right"}"></i>`;
+                }
                 lead.addEventListener("click", event => {
                     if (!hasChildren) return;
                     event.stopPropagation();
@@ -1282,20 +1362,26 @@
                 deleteBtn.title = "Supprimer";
                 deleteBtn.addEventListener("click", event => {
                     event.stopPropagation();
-                    onDelete?.(item);
+                    const selected = getSelectedIdsSnapshot();
+                    const selectedForDelete = selected.length > 1 && selected.includes(item.id)
+                        ? selected
+                        : [item.id];
+                    onDelete?.(item, { selectedIds: selectedForDelete, trigger: "row-delete" });
                 });
                 actions.appendChild(deleteBtn);
                 button.appendChild(actions);
-                button.addEventListener("mouseenter", () => renderLeading(true));
-                button.addEventListener("mouseleave", () => renderLeading(false));
-                let clickSelectTimer = null;
                 button.addEventListener("click", event => {
                     if (event.target.closest(".document-explorer__item-actions")) return;
-                    if (clickSelectTimer) clearTimeout(clickSelectTimer);
-                    clickSelectTimer = setTimeout(() => {
-                        clickSelectTimer = null;
-                        onSelect?.(item);
-                    }, 220);
+                    const clickMeta = {
+                        shiftKey: Boolean(event.shiftKey),
+                        ctrlKey: Boolean(event.ctrlKey),
+                        metaKey: Boolean(event.metaKey)
+                    };
+                    const selected = applySelectionFromClick(item.id, clickMeta);
+                    if (clickMeta.shiftKey || clickMeta.ctrlKey || clickMeta.metaKey) return;
+                    const liveActiveId = String(getActiveId?.() || activeId || "").trim();
+                    if (liveActiveId === String(item.id || "").trim()) return;
+                    onSelect?.(item, { selectedIds: selected, trigger: "row-click" });
                 });
                 const openInlineRename = (event, options = {}) => {
                     const isAutoStart = Boolean(options && options.autoStart);
@@ -1314,38 +1400,59 @@
                     input.setAttribute("aria-label", "Renommer le document");
                     label.innerHTML = "";
                     label.appendChild(input);
+                    activeInlineRenameInput = input;
                     input.focus();
                     input.select();
-                    const openedAt = Date.now();
+                    let finished = false;
                     const finish = submit => {
-                        if (pendingInlineRenameId && String(pendingInlineRenameId) === String(item.id || "")) {
+                        if (finished) return;
+                        finished = true;
+                        const itemId = String(item.id || "");
+                        const nextName = String(input.value || "").trim();
+                        if (submit && nextName && onRename) {
+                            const normalizedCurrent = normalizeName(initialValue);
+                            const normalizedNext = normalizeName(nextName);
+                            if (normalizedNext && normalizedNext !== normalizedCurrent) {
+                                inlineRenameCommitId = itemId;
+                                label.textContent = normalizedNext;
+                                Promise.resolve(onRename(item, {
+                                    name: normalizedNext,
+                                    description: item.description || "",
+                                    superpowers: normalizeSuperpowersList(item.superpowers, item.category),
+                                    icon: item.icon || (item.isShared ? "file-symlink" : ""),
+                                    action: "confirm",
+                                    unlinkNotion: false
+                                })).finally(() => {
+                                    inlineRenameCommitId = "";
+                                    if (deferredRenderAfterInlineRename) {
+                                        deferredRenderAfterInlineRename = false;
+                                        renderList(cachedItems);
+                                    }
+                                });
+                            } else {
+                                label.textContent = nextName || initialValue;
+                            }
+                        } else {
+                            label.textContent = initialValue;
+                        }
+                        if (pendingInlineRenameId && String(pendingInlineRenameId) === itemId) {
                             pendingInlineRenameId = "";
                             pendingInlineRenameUntil = 0;
                         }
-                        if (activeInlineRenameId && String(activeInlineRenameId) === String(item.id || "")) {
+                        if (activeInlineRenameId && String(activeInlineRenameId) === itemId) {
                             activeInlineRenameId = "";
                         }
-                        const nextName = String(input.value || "").trim();
-                        if (submit && nextName && onRename) {
-                            onRename(item, {
-                                name: normalizeName(nextName),
-                                description: item.description || "",
-                                superpowers: normalizeSuperpowersList(item.superpowers, item.category),
-                                icon: item.icon || (item.isShared ? "file-symlink" : ""),
-                                action: "confirm",
-                                unlinkNotion: false
-                            });
-                        } else {
-                            label.textContent = initialValue;
+                        if (activeInlineRenameInput === input) {
+                            activeInlineRenameInput = null;
                         }
                     };
                     input.addEventListener("keydown", keyEvent => {
                         if (keyEvent.key === "Enter") {
                             keyEvent.preventDefault();
-                            finish(true);
+                            void finish(true);
                         } else if (keyEvent.key === "Escape") {
                             keyEvent.preventDefault();
-                            finish(false);
+                            void finish(false);
                         }
                     });
                     input.addEventListener("blur", () => {
@@ -1360,18 +1467,14 @@
                                     }
                                     return;
                                 }
-                                if (document.activeElement !== input) finish(true);
+                                if (document.activeElement !== input) void finish(true);
                             }, 0);
                             return;
                         }
-                        finish(true);
+                        void finish(true);
                     });
                 };
                 button.addEventListener("dblclick", event => {
-                    if (clickSelectTimer) {
-                        clearTimeout(clickSelectTimer);
-                        clickSelectTimer = null;
-                    }
                     const liveActiveId = String(getActiveId?.() || activeId || "").trim();
                     if (liveActiveId !== String(item.id || "").trim()) {
                         onSelect?.(item);
@@ -1400,6 +1503,9 @@
                         }
                     }, 0);
                 }
+                button.addEventListener("contextmenu", event => {
+                    event.preventDefault();
+                });
                 button.addEventListener("dragstart", event => {
                     draggingId = item.id;
                     draggingSection = sectionName || getItemSection(item);
@@ -1460,12 +1566,13 @@
                     const fromItem = normalizeList(cachedItems).find(entry => String(entry?.id || "") === String(fromId));
                     const fromSection = draggingSection || getItemSection(fromItem);
                     const toSection = sectionName || "private";
-                    await onMove(fromId, parentId, nextDepth, beforeId, { fromSection, toSection });
                     if (fromSection === toSection) {
                         applyLocalParentMove(fromId, parentId);
                         applyLocalOrderMove(fromId, parentId, beforeId);
+                        rebuildOrderFromCachedItems();
                         renderList(cachedItems);
                     }
+                    await onMove(fromId, parentId, nextDepth, beforeId, { fromSection, toSection });
                     draggingSection = "";
                 });
                 row.appendChild(button);
@@ -1510,6 +1617,19 @@
                         onSectionAdd?.(sectionName);
                     });
                     actions.appendChild(addBtn);
+                    if (sectionName === "private") {
+                        const refreshBtn = document.createElement("button");
+                        refreshBtn.type = "button";
+                        refreshBtn.className = "document-explorer__item-action";
+                        refreshBtn.title = "Rafraîchir et nettoyer l'espace privé";
+                        refreshBtn.innerHTML = '<i data-lucide="refresh-cw"></i>';
+                        refreshBtn.addEventListener("click", (event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            onSectionRefresh?.(sectionName);
+                        });
+                        actions.appendChild(refreshBtn);
+                    }
                     if (sectionName.startsWith("shared:")) {
                         const refreshBtn = document.createElement("button");
                         refreshBtn.type = "button";
@@ -1575,6 +1695,9 @@
                         if (activeId && activeId === item.id) {
                             button.classList.add("document-explorer__item--active");
                         }
+                        if (selectedHighlightEnabled && selectedIds.has(item.id)) {
+                            button.classList.add("document-explorer__item--selected");
+                        }
                     }
                     const lead = document.createElement("span");
                     lead.className = "document-explorer__item-leading";
@@ -1584,7 +1707,18 @@
                     label.className = "document-explorer__item-title";
                     label.textContent = item.title || "Document";
                     button.appendChild(label);
-                    button.addEventListener("click", () => onSelect?.(item));
+                    button.addEventListener("click", event => {
+                        const clickMeta = {
+                            shiftKey: Boolean(event.shiftKey),
+                            ctrlKey: Boolean(event.ctrlKey),
+                            metaKey: Boolean(event.metaKey)
+                        };
+                        const selected = applySelectionFromClick(item.id, clickMeta);
+                        if (clickMeta.shiftKey || clickMeta.ctrlKey || clickMeta.metaKey) return;
+                        const liveActiveId = String(getActiveId?.() || activeId || "").trim();
+                        if (liveActiveId === String(item.id || "").trim()) return;
+                        onSelect?.(item, { selectedIds: selected, trigger: "recent-click" });
+                    });
                     button.addEventListener("dragstart", event => {
                         draggingId = item.id;
                         draggingSection = getItemSection(item);
@@ -1716,6 +1850,7 @@
                             childBtn.draggable = true;
                             childBtn.dataset.documentId = doc.id;
                             if (activeId && activeId === doc.id) childBtn.classList.add("document-explorer__item--active");
+                            if (selectedHighlightEnabled && selectedIds.has(doc.id)) childBtn.classList.add("document-explorer__item--selected");
                             const childLead = document.createElement("span");
                             childLead.className = "document-explorer__item-leading";
                             childLead.innerHTML = `<i data-lucide="file"></i>`;
@@ -1724,7 +1859,18 @@
                             childLabel.className = "document-explorer__item-title";
                             childLabel.textContent = doc.title || "Document";
                             childBtn.appendChild(childLabel);
-                            childBtn.addEventListener("click", () => onSelect?.(doc));
+                            childBtn.addEventListener("click", event => {
+                                const clickMeta = {
+                                    shiftKey: Boolean(event.shiftKey),
+                                    ctrlKey: Boolean(event.ctrlKey),
+                                    metaKey: Boolean(event.metaKey)
+                                };
+                                const selected = applySelectionFromClick(doc.id, clickMeta);
+                                if (clickMeta.shiftKey || clickMeta.ctrlKey || clickMeta.metaKey) return;
+                                const liveActiveId = String(getActiveId?.() || activeId || "").trim();
+                                if (liveActiveId === String(doc.id || "").trim()) return;
+                                onSelect?.(doc, { selectedIds: selected, trigger: "superpower-click" });
+                            });
                             childBtn.addEventListener("dragstart", event => {
                                 draggingId = doc.id;
                                 draggingSection = "superpowers";
@@ -1777,11 +1923,12 @@
                     const fromItem = normalizeList(cachedItems).find(entry => String(entry?.id || "") === String(draggingId));
                     const fromSection = draggingSection || getItemSection(fromItem);
                     const fromId = draggingId;
-                    await onMove(fromId, "", 1, "", { fromSection, toSection });
                     if (fromSection === toSection) {
                         applyLocalParentMove(fromId, "");
                         applyLocalOrderMove(fromId, "", "");
+                        rebuildOrderFromCachedItems();
                     }
+                    await onMove(fromId, "", 1, "", { fromSection, toSection });
                     draggingId = "";
                     draggingSection = "";
                     clearAllDropHints();
@@ -1874,6 +2021,10 @@
             ensureSearchViewState();
             syncOrderWithItems(cachedItems);
             hasLoadedTreeData = true;
+            if (shouldDeferRenderForInlineRename(item.id)) {
+                deferredRenderAfterInlineRename = true;
+                return;
+            }
             await renderList(cachedItems);
         }
         async function removeItemById(id) {
@@ -1889,10 +2040,12 @@
         function refreshActiveIndicatorOnly() {
             if (!listEl) return;
             const activeId = typeof getActiveId?.() === "string" ? getActiveId() : "";
+            selectedIds = sanitizeSelectedIds(selectedIds);
             const nodes = listEl.querySelectorAll(".document-explorer__item[data-document-id]");
             nodes.forEach(node => {
                 const nodeId = node.getAttribute("data-document-id") || "";
                 node.classList.toggle("document-explorer__item--active", Boolean(activeId) && nodeId === activeId);
+                node.classList.toggle("document-explorer__item--selected", selectedHighlightEnabled && selectedIds.has(nodeId));
             });
         }
 
@@ -1912,6 +2065,17 @@
         };
         document.addEventListener("mousedown", handleOutsideClose);
         document.addEventListener("touchstart", handleOutsideClose, { passive: true });
+        sidebar.addEventListener("contextmenu", event => {
+            event.preventDefault();
+        });
+        sidebar.addEventListener("pointerdown", event => {
+            const input = activeInlineRenameInput;
+            if (!input || !input.isConnected) return;
+            const target = event.target;
+            if (!(target instanceof Node)) return;
+            if (target === input || input.contains(target)) return;
+            input.blur();
+        }, true);
 
         if (resizer) {
             let startX = 0;
@@ -2007,6 +2171,15 @@
             },
             async refreshIndicators() {
                 refreshActiveIndicatorOnly();
+            },
+            getSelectedIds() {
+                return getSelectedIdsSnapshot();
+            },
+            setSelectedIds(ids) {
+                return setExplorerSelection(ids);
+            },
+            clearSelection() {
+                clearExplorerSelection();
             },
             open() {
                 applyOpen(true);

@@ -15,7 +15,7 @@
 - Dossiers Sharepoint, OneDrive, Google Drive 
 
 ## Export de contenu
-- Ticket Jira, Github
+- Tickets Jira, Github
 - Pages Confluence
 - Fichiers Sharepoint, OneDrive, Google Drive 
 

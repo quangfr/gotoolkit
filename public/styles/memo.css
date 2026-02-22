@@ -502,6 +502,13 @@
             border-color: var(--color-primary);
             box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.25);
         }
+        .document-explorer__item--selected,
+        .document-explorer__item--selected:hover,
+        .document-explorer__item--selected:focus-visible {
+            background: var(--bg-surface-soft);
+            border-color: var(--color-primary);
+            box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.25);
+        }
 
         .document-explorer__item--open {
             border: 2px solid var(--border-strong);

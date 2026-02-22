@@ -1,0 +1,130 @@
+{
+  "runAt": "2026-02-22T06:55:14.138Z",
+  "summary": [
+    {
+      "operation": "multi_select_delete",
+      "runs": 1,
+      "uiMeanMs": 3218,
+      "uiP95Ms": 3218,
+      "storeMeanMs": 3224,
+      "storeP95Ms": 3224
+    },
+    {
+      "operation": "add_in_parent",
+      "runs": 1,
+      "uiMeanMs": 1748,
+      "uiP95Ms": 1748,
+      "storeMeanMs": 1910,
+      "storeP95Ms": 1910
+    },
+    {
+      "operation": "rename",
+      "runs": 1,
+      "uiMeanMs": 1418,
+      "uiP95Ms": 1418,
+      "storeMeanMs": 1418,
+      "storeP95Ms": 1418
+    },
+    {
+      "operation": "delete",
+      "runs": 1,
+      "uiMeanMs": 1046,
+      "uiP95Ms": 1046,
+      "storeMeanMs": 1052,
+      "storeP95Ms": 1052
+    },
+    {
+      "operation": "move_sorting",
+      "runs": 1,
+      "uiMeanMs": 401,
+      "uiP95Ms": 401,
+      "storeMeanMs": 422,
+      "storeP95Ms": 422
+    },
+    {
+      "operation": "add_root",
+      "runs": 1,
+      "uiMeanMs": 376,
+      "uiP95Ms": 376,
+      "storeMeanMs": 404,
+      "storeP95Ms": 404
+    },
+    {
+      "operation": "move_in_parent",
+      "runs": 1,
+      "uiMeanMs": 299,
+      "uiP95Ms": 299,
+      "storeMeanMs": 299,
+      "storeP95Ms": 299
+    }
+  ],
+  "details": [
+    {
+      "operation": "add_root",
+      "uiMs": 376,
+      "storeMs": 404,
+      "details": {
+        "docId": "fda0fa14-d900-4fc6-8aab-d52b851ed991"
+      }
+    },
+    {
+      "operation": "add_in_parent",
+      "uiMs": 1748,
+      "storeMs": 1910,
+      "details": {
+        "parentId": "da0dfb98-1bb1-434b-9849-cdb4ceb49bc2",
+        "childId": "2b34c7de-5b59-4052-bb7f-cb2e75d540e8"
+      }
+    },
+    {
+      "operation": "rename",
+      "uiMs": 1418,
+      "storeMs": 1418,
+      "details": {
+        "docId": "fda0fa14-d900-4fc6-8aab-d52b851ed991",
+        "nextName": "perf-private-1771743291327-renamed-root"
+      }
+    },
+    {
+      "operation": "move_sorting",
+      "uiMs": 401,
+      "storeMs": 422,
+      "details": {
+        "movingId": "fda0fa14-d900-4fc6-8aab-d52b851ed991",
+        "beforeId": "b327e1ea-9b24-4e70-9bd9-cefe48feb2db",
+        "localOrderPersisted": true,
+        "orderIndexA": 3,
+        "orderIndexB": 4
+      }
+    },
+    {
+      "operation": "move_in_parent",
+      "uiMs": 299,
+      "storeMs": 299,
+      "details": {
+        "childId": "fda0fa14-d900-4fc6-8aab-d52b851ed991",
+        "parentId": "da0dfb98-1bb1-434b-9849-cdb4ceb49bc2"
+      }
+    },
+    {
+      "operation": "delete",
+      "uiMs": 1046,
+      "storeMs": 1052,
+      "details": {
+        "docId": "c7102e78-51ed-45b0-b827-9139dcbeb1f2"
+      }
+    },
+    {
+      "operation": "multi_select_delete",
+      "uiMs": 3218,
+      "storeMs": 3224,
+      "details": {
+        "ids": [
+          "7659f9b7-caf6-4fb7-9306-2c9c2803c2a1",
+          "1f36bae0-cda9-441b-8dda-073b9f5e05cf",
+          "7fd7525c-655d-41c1-b0fa-f6c46af994f4"
+        ]
+      }
+    }
+  ]
+}
