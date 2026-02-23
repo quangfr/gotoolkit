@@ -1732,7 +1732,7 @@
         var icon = this.toggleButton.querySelector("i[data-lucide]");
         if (!icon) return;
         var isActuallyOpen = Boolean(this.isOpen && this.sidebar && this.sidebar.classList.contains("chat-sidebar--open"));
-        var nextIcon = isActuallyOpen ? "bot-off" : "bot";
+        var nextIcon = isActuallyOpen ? "panel-right-dashed" : "panel-right";
         if (icon.getAttribute("data-lucide") === nextIcon) return;
         icon.setAttribute("data-lucide", nextIcon);
         if (global.lucide) global.lucide.createIcons();
