@@ -371,12 +371,23 @@
             });
             if (headerEl) {
                 const closeBtn = headerEl.querySelector(".chat-knowledge-modal__close");
+                const memoSettingsBtn = document.getElementById("memoSettingsBtn");
+                if (memoSettingsBtn) {
+                    memoSettingsBtn.classList.add("chat-knowledge-modal__add");
+                    memoSettingsBtn.classList.remove("app-header-btn");
+                }
                 if (closeBtn) {
                     importBtn.style.marginLeft = "auto";
                     closeBtn.style.marginLeft = "0";
                     headerEl.insertBefore(importBtn, closeBtn);
+                    if (memoSettingsBtn) {
+                        headerEl.insertBefore(memoSettingsBtn, closeBtn);
+                    }
                 } else {
                     headerEl.appendChild(importBtn);
+                    if (memoSettingsBtn) {
+                        headerEl.appendChild(memoSettingsBtn);
+                    }
                 }
             }
         }

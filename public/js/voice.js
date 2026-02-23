@@ -618,7 +618,7 @@
     function syncTranscriptionTile() {
         if (!state.overlayTranscriptionTile || !state.overlayTranscriptionTitle) return;
         const isLive = Boolean(state.overlayLiveTranscription);
-        state.overlayTranscriptionTitle.textContent = isLive ? "Transcription en direct" : "Transcription en différé";
+        state.overlayTranscriptionTitle.textContent = isLive ? "Transcription en direct dans le document" : "Transcription en différé";
         state.overlayTranscriptionTile.classList.toggle("voice-overlay__transcription-tile--active", isLive);
         renderLivePreview();
     }
@@ -2235,12 +2235,23 @@
     }
 
     function ensureVoiceButton() {
+        if (state.voiceButton && !state.voiceButton.isConnected) {
+            state.voiceButton = null;
+        }
+        if (state.voiceButton) return;
         const launcher = document.querySelector(".feedback-app-launcher-row");
         const globalActions = document.querySelector(".global-actions");
         if (!launcher && !globalActions) return;
-        if (state.voiceButton) return;
         let existingButton = document.querySelector(".go-toolkit-voice-button");
+        const bindVoiceButton = button => {
+            if (!button) return;
+            if (button.dataset.voiceBound !== "1") {
+                button.addEventListener("click", handleButtonClick);
+                button.dataset.voiceBound = "1";
+            }
+        };
         if (existingButton) {
+            bindVoiceButton(existingButton);
             state.voiceButton = existingButton;
             updateButton();
             return;
@@ -2251,7 +2262,7 @@
         btn.title = "Enregistrer une conversation";
         btn.dataset.app = "voice";
         btn.innerHTML = '<i data-lucide="disc-3"></i><span>Enregistrer une conversation</span>';
-        btn.addEventListener("click", handleButtonClick);
+        bindVoiceButton(btn);
         const handoffBtn = document.getElementById("handoffFocusBtn");
         const themeMenuTrigger = document.getElementById("themeMenuTrigger");
         const globalActionsExtras = document.getElementById("globalActionsExtras");
