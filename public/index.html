@@ -75,10 +75,10 @@
         crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.min.js" crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.min.js" crossorigin></script>
-    <link rel="stylesheet" href="styles/style.css?v=2026.02.23.22">
+    <link rel="stylesheet" href="styles/style.css?v=2026.02.24.1">
     <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
-    <link rel="stylesheet" href="styles/memo.css?v=2026.02.23.22">
-    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.23.22">
+    <link rel="stylesheet" href="styles/memo.css?v=2026.02.24.1">
+    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.24.1">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.css">
     <script src="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.js"></script>
     <style>
@@ -132,6 +132,98 @@
             display: flex;
             justify-content: space-between;
             gap: 8px;
+        }
+
+        .space-access-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 40000;
+            background: rgba(6, 9, 17, 0.86);
+            display: none;
+            align-items: stretch;
+            justify-content: center;
+        }
+
+        .space-access-overlay.open {
+            display: flex;
+        }
+
+        .space-access-overlay__panel {
+            width: min(860px, 96vw);
+            min-height: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            padding: 24px 16px 40px;
+            color: #eef4ff;
+        }
+
+        .space-access-overlay__header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .space-access-overlay__logo {
+            font-size: 26px;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
+        .space-access-overlay__close {
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            background: transparent;
+            color: #eef4ff;
+            padding: 6px 10px;
+            cursor: pointer;
+        }
+
+        .space-access-overlay__body {
+            margin: auto 0;
+            display: grid;
+            gap: 14px;
+            justify-items: center;
+            text-align: center;
+        }
+
+        .space-access-overlay__title {
+            font-size: clamp(24px, 3vw, 34px);
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .space-access-overlay__input {
+            width: min(760px, 92vw);
+            padding: 18px 22px;
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.34);
+            background: rgba(255, 255, 255, 0.08);
+            color: #eef4ff;
+            font-size: clamp(18px, 2.3vw, 26px);
+            line-height: 1.3;
+        }
+
+        .space-access-overlay__input::placeholder {
+            color: rgba(238, 244, 255, 0.72);
+        }
+
+        .space-access-overlay__submit {
+            min-width: 220px;
+            padding: 12px 18px;
+            border-radius: 12px;
+            border: 1px solid transparent;
+            background: #3f7dff;
+            color: #ffffff;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .space-access-overlay__error {
+            min-height: 20px;
+            font-size: 14px;
+            color: #ffb3b3;
         }
     </style>
 </head>
@@ -348,12 +440,27 @@
     </div>
 
     <div id="settingsModal" class="modal-overlay" role="dialog" aria-modal="true" aria-hidden="true"></div>
+    <div id="spaceAccessOverlay" class="space-access-overlay" aria-hidden="true">
+        <div class="space-access-overlay__panel">
+            <div class="space-access-overlay__header">
+                <div class="space-access-overlay__logo">GoToolkit</div>
+                <button id="spaceAccessOverlayClose" class="space-access-overlay__close" type="button">Accueil</button>
+            </div>
+            <div class="space-access-overlay__body">
+                <h2 class="space-access-overlay__title">Code d'accès à l'espace requis</h2>
+                <input id="spaceAccessOverlayInput" class="space-access-overlay__input" type="text"
+                    placeholder="Passphrase en 5 mots espacés (ex : equipe produit cloud securite intelligence)" />
+                <button id="spaceAccessOverlaySubmit" class="space-access-overlay__submit" type="button">Valider l'accès</button>
+                <div id="spaceAccessOverlayError" class="space-access-overlay__error" aria-live="polite"></div>
+            </div>
+        </div>
+    </div>
 
     <div id="memoInfoPopup" class="info-popup" role="dialog" aria-live="polite">
         <img src="img/logo.gif" alt="Logo GoToolkit" class="logo-light">
         <img src="img/logo-inverted.gif" alt="Logo GoToolkit" class="logo-dark">
         <strong>GoToolkit</strong>
-        <span id="memoNewsTrigger" class="info-popup-news-link" role="button" tabindex="0">Version 2026.02.23.22</span>
+        <span id="memoNewsTrigger" class="info-popup-news-link" role="button" tabindex="0">Version 2026.02.24.1</span>
         <span>Usage réservé à Savane Consulting.</span>
         <div class="info-actions info-actions--stacked">
             <div class="info-actions-row">
@@ -432,24 +539,24 @@
         window.GO_TOOLKIT_GOOGLE_TTS_API_URL =
             window.GO_TOOLKIT_GOOGLE_TTS_API_URL || "https://googletts.gotoolkit.workers.dev";
     </script>
-    <script src="js/config.js?v=2026.02.23.22"></script>
-    <script src="js/config-modal.js?v=2026.02.23.22"></script>
-    <script src="js/feature-visibility.js?v=2026.02.23.22"></script>
-    <script src="js/document-storage.js?v=2026.02.23.22"></script>
-    <script src="js/storage-service.js?v=2026.02.23.22"></script>
-    <script src="js/shared-ui.js?v=2026.02.23.22"></script>
-    <script src="js/spaces-store.js?v=2026.02.23.22"></script>
-    <script src="js/share-worker-client.js?v=2026.02.23.22"></script>
-    <script src="js/share-history.js?v=2026.02.23.22"></script>
-    <script src="js/document-api.js?v=2026.02.23.22"></script>
-    <script src="js/keywordIndex.js?v=2026.02.23.22"></script>
-    <script src="js/document-rag.js?v=2026.02.23.22"></script>
-    <script src="js/ia-config.js?v=2026.02.23.22"></script>
-    <script src="preset.js?v=2026.02.23.22"></script>
-    <script src="prompt.js?v=2026.02.23.22"></script>
-    <script src="js/ia-client.js?v=2026.02.23.22"></script>
-    <script src="js/document-markdown.js?v=2026.02.23.22"></script>
-    <script src="js/notion-export.js?v=2026.02.23.22"></script>
+    <script src="js/config.js?v=2026.02.24.1"></script>
+    <script src="js/config-modal.js?v=2026.02.24.1"></script>
+    <script src="js/feature-visibility.js?v=2026.02.24.1"></script>
+    <script src="js/document-storage.js?v=2026.02.24.1"></script>
+    <script src="js/storage-service.js?v=2026.02.24.1"></script>
+    <script src="js/shared-ui.js?v=2026.02.24.1"></script>
+    <script src="js/spaces-store.js?v=2026.02.24.1"></script>
+    <script src="js/share-worker-client.js?v=2026.02.24.1"></script>
+    <script src="js/share-history.js?v=2026.02.24.1"></script>
+    <script src="js/document-api.js?v=2026.02.24.1"></script>
+    <script src="js/keywordIndex.js?v=2026.02.24.1"></script>
+    <script src="js/document-rag.js?v=2026.02.24.1"></script>
+    <script src="js/ia-config.js?v=2026.02.24.1"></script>
+    <script src="preset.js?v=2026.02.24.1"></script>
+    <script src="prompt.js?v=2026.02.24.1"></script>
+    <script src="js/ia-client.js?v=2026.02.24.1"></script>
+    <script src="js/document-markdown.js?v=2026.02.24.1"></script>
+    <script src="js/notion-export.js?v=2026.02.24.1"></script>
     <script>
         document.addEventListener("click", function (event) {
             const legalTrigger = event.target?.closest?.("[data-open-nexus-modal]");
@@ -483,15 +590,15 @@
             ]
         };
     </script>
-    <script src="js/feedback.js?v=2026.02.23.22"></script>
-    <script src="js/news.js?v=2026.02.23.22"></script>
-    <script src="js/voice-video-player.js?v=2026.02.23.22"></script>
-    <script src="js/voice-audio-player.js?v=2026.02.23.22"></script>
-    <script src="js/youtube-publish.js?v=2026.02.23.22"></script>
-    <script src="js/voice.js?v=2026.02.23.22"></script>
-    <script src="js/voice-transcript.js?v=2026.02.23.22"></script>
-    <script src="js/googletts.js?v=2026.02.23.22"></script>
-    <script src="js/draw-memo.js?v=2026.02.23.22"></script>
+    <script src="js/feedback.js?v=2026.02.24.1"></script>
+    <script src="js/news.js?v=2026.02.24.1"></script>
+    <script src="js/voice-video-player.js?v=2026.02.24.1"></script>
+    <script src="js/voice-audio-player.js?v=2026.02.24.1"></script>
+    <script src="js/youtube-publish.js?v=2026.02.24.1"></script>
+    <script src="js/voice.js?v=2026.02.24.1"></script>
+    <script src="js/voice-transcript.js?v=2026.02.24.1"></script>
+    <script src="js/googletts.js?v=2026.02.24.1"></script>
+    <script src="js/draw-memo.js?v=2026.02.24.1"></script>
     <script>
         // Suppress React DevTools prompt in dev builds.
         window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = window.__REACT_DEVTOOLS_GLOBAL_HOOK__ || {
@@ -501,9 +608,9 @@
             onCommitFiberUnmount: function () { }
         };
     </script>
-    <script src="js/memo.bundle.js?v=2026.02.23.22"></script>
-    <script src="js/assist.js?v=2026.02.23.22"></script>
-    <script src="js/document-panel.js?v=2026.02.23.22"></script>
+    <script src="js/memo.bundle.js?v=2026.02.24.1"></script>
+    <script src="js/assist.js?v=2026.02.24.1"></script>
+    <script src="js/document-panel.js?v=2026.02.24.1"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             setTimeout(function () {
@@ -524,6 +631,8 @@
             const NOTION_PATH_STORAGE_KEY = "goToolkit.memo.notionPath";
             const VOICE_RECORDING_SPEED_STORAGE_KEY = "go-toolkit-voice-recording-speed";
             const SHARE_QUERY_PARAM = "share";
+            const SPACE_JOIN_CODE_PLACEHOLDER = "Passphrase en 5 mots espacés (ex : equipe produit cloud securite intelligence)";
+            const SHARED_DOC_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
             const FIRESTORE_CONTENT_COLLECTION = "pages";
             const FIRESTORE_META_COLLECTION = "pages-meta";
             const TEMPLATES_COLLECTION = "template-memos";
@@ -893,6 +1002,11 @@
             const handoffTitle = document.getElementById("handoffTitle");
             const handoffStatus = document.getElementById("handoffStatus");
             const handoffBadge = document.getElementById("handoffBadge");
+            const spaceAccessOverlay = document.getElementById("spaceAccessOverlay");
+            const spaceAccessOverlayInput = document.getElementById("spaceAccessOverlayInput");
+            const spaceAccessOverlaySubmit = document.getElementById("spaceAccessOverlaySubmit");
+            const spaceAccessOverlayClose = document.getElementById("spaceAccessOverlayClose");
+            const spaceAccessOverlayError = document.getElementById("spaceAccessOverlayError");
             let activeTemplatePreview = null;
             const promptPresetSelect = document.getElementById("memoPromptPresetSelect");
             const promptEditor = document.getElementById("memoPromptEditor");
@@ -929,6 +1043,7 @@
             let documentSwitchLoaderTimer = null;
             let documentSwitchLoaderVisibleAt = 0;
             let documentSwitchInFlight = 0;
+            let isHandlingHistoryNavigation = false;
             const DOCUMENT_SWITCH_LOADER_DELAY_MS = 120;
             const DOCUMENT_SWITCH_LOADER_MIN_VISIBLE_MS = 120;
             const memoChildrenByParent = new Map();
@@ -937,6 +1052,7 @@
             const CLOUD_SYNC_DEVICE_ID_KEY = "goToolkit.memo.cloudSyncDeviceId.v1";
             const CLOUD_SPACE_LAST_SYNC_STORAGE_KEY = "goToolkit.memo.cloudSpaceLastSync.v1";
             const TMPL_PURGE_STORAGE_KEY = "goToolkit.memo.tmplPurge.v1";
+            let deepLinkRequest = null;
 
             function getCloudSyncDeviceId() {
                 if (typeof localStorage === "undefined") return "device-local";
@@ -1728,6 +1844,167 @@
                     if (ok) return { spaceId, token };
                 }
                 return null;
+            }
+
+            async function fetchSharedMetaByToken(token) {
+                const normalizedToken = String(token || "").trim().toLowerCase();
+                if (!normalizedToken || !shareWorker?.fetchSharePayload) return null;
+                try {
+                    const meta = await shareWorker.fetchSharePayload(FIRESTORE_META_COLLECTION, normalizedToken);
+                    const payload = meta?.payload && typeof meta.payload === "object" ? meta.payload : {};
+                    return {
+                        token: normalizedToken,
+                        title: String(payload?.title || "").trim(),
+                        description: String(payload?.description || "").trim(),
+                        superpowers: Array.isArray(payload?.superpowers) ? payload.superpowers : [],
+                        icon: String(payload?.icon || "file-symlink").trim() || "file-symlink",
+                        parentId: String(payload?.parentId || "").trim(),
+                        spaceId: normalizeSpaceId(payload?.spaceId || DEFAULT_SPACE_ID),
+                        position: parseSharedPosition(payload?.position),
+                        updatedAt: String(meta?.updatedAt || "").trim()
+                    };
+                } catch (err) {
+                    return null;
+                }
+            }
+
+            async function fetchSharedPayloadRawByToken(token) {
+                const normalizedToken = String(token || "").trim().toLowerCase();
+                if (!normalizedToken || !shareWorker?.fetchSharePayloadBatch) return null;
+                try {
+                    const batch = await shareWorker.fetchSharePayloadBatch(FIRESTORE_CONTENT_COLLECTION, [normalizedToken]);
+                    const docs = Array.isArray(batch?.documents) ? batch.documents : [];
+                    const row = docs.find(entry => String(entry?.id || "").trim() === normalizedToken);
+                    return row?.payload || null;
+                } catch (err) {
+                    return null;
+                }
+            }
+
+            function hasLocalSpaceAccess(spaceId) {
+                const space = getSpaceById(spaceId);
+                const code = String(space?.spaceJoinCode || "").trim();
+                return Boolean(code);
+            }
+
+            async function resolveSharedRecordByToken(token) {
+                const normalizedToken = String(token || "").trim().toLowerCase();
+                if (!normalizedToken) return null;
+                const records = await shareHistory?.getRecordsByApp?.("memo");
+                const existing = (records || []).find(entry => String(entry?.token || "").trim().toLowerCase() === normalizedToken);
+                const meta = await fetchSharedMetaByToken(normalizedToken);
+                if (!meta?.spaceId) return null;
+                return {
+                    token: normalizedToken,
+                    title: existing?.title || meta.title || "Document partagé",
+                    description: existing?.description || meta.description || "",
+                    superpowers: Array.isArray(existing?.superpowers) ? existing.superpowers : (meta.superpowers || []),
+                    icon: String(existing?.icon || meta.icon || "file-symlink").trim() || "file-symlink",
+                    parentId: String(existing?.parentId || meta.parentId || "").trim(),
+                    spaceId: normalizeSpaceId(existing?.spaceId || meta.spaceId || DEFAULT_SPACE_ID),
+                    position: Number.isFinite(Number(existing?.position)) ? Number(existing.position) : meta.position,
+                    payload: normalizeState(existing?.payload) || null,
+                    updatedAt: String(existing?.updatedAt || meta.updatedAt || "").trim()
+                };
+            }
+
+            async function openSharedTokenFirst(token, options = {}) {
+                const item = await resolveSharedRecordByToken(token);
+                if (!item?.spaceId) return false;
+                const spaceId = normalizeSpaceId(item.spaceId || DEFAULT_SPACE_ID);
+                if (!item.payload) {
+                    const syncResult = await syncSpaceFromRemote(spaceId, { refreshExplorer: false }).catch(() => null);
+                    if (syncResult?.changedCount >= 0) {
+                        markSpaceLastSynced(spaceId);
+                    }
+                    const refreshed = await resolveSharedRecordByToken(token);
+                    if (refreshed?.payload) {
+                        Object.assign(item, refreshed);
+                    }
+                }
+                if (!item.payload && shareWorker?.fetchSharePayload) {
+                    const remote = await shareWorker.fetchSharePayload(FIRESTORE_CONTENT_COLLECTION, token).catch(() => null);
+                    const normalizedRemote = normalizeState(remote?.payload);
+                    if (normalizedRemote) item.payload = normalizedRemote;
+                }
+                if (!item.payload) return false;
+                await openSharedWorkingCopy(item, { pushHistory: Boolean(options?.pushHistory) });
+                if (options?.canonicalize !== false) {
+                    updateSharedDocumentCanonicalPath(item);
+                }
+                return true;
+            }
+
+            async function submitDeepLinkSpaceAccessCode(codeInput) {
+                const request = deepLinkRequest;
+                if (!request?.token || !request?.spaceId) return false;
+                const normalizedCode = String(spacesApi?.normalizeSpaceJoinCode?.(codeInput) || "").trim();
+                if (!normalizedCode || normalizedCode.split(" ").filter(Boolean).length !== 5) {
+                    setSpaceAccessOverlayVisible(true, "Code invalide. Utilisez la passphrase complète en 5 mots.");
+                    return false;
+                }
+                const rawPayload = request.rawPayload || await fetchSharedPayloadRawByToken(request.token);
+                if (!rawPayload || !shareWorker?.probePagePayloadJoinCode) {
+                    setSpaceAccessOverlayVisible(true, "Vérification impossible pour ce document. Réessayez.");
+                    return false;
+                }
+                const ok = await shareWorker.probePagePayloadJoinCode(rawPayload, request.spaceId, normalizedCode).catch(() => false);
+                if (!ok) {
+                    setSpaceAccessOverlayVisible(true, "Code d'accès incorrect pour cet espace.");
+                    return false;
+                }
+                const existing = getSpaceById(request.spaceId);
+                spacesApi?.upsertSpace?.({
+                    id: request.spaceId,
+                    name: String(existing?.name || `Espace ${request.spaceId.toUpperCase()}`).trim(),
+                    icon: String(existing?.icon || "cloud-upload").trim() || "cloud-upload",
+                    spaceJoinCode: normalizedCode,
+                    isDefault: Boolean(existing?.isDefault || request.spaceId === DEFAULT_SPACE_ID)
+                });
+                refreshSpaceAwareUi();
+                setSpaceAccessOverlayVisible(false);
+                const opened = await openSharedTokenFirst(request.token, { canonicalize: true });
+                if (!opened) {
+                    navigateToDocsHomePath();
+                    return false;
+                }
+                setTimeout(() => {
+                    backgroundSyncAllCloudDocuments({
+                        force: false,
+                        announceStatus: true,
+                        skipIfRecentMs: 10 * 60 * 1000
+                    }).catch(() => null);
+                }, 0);
+                deepLinkRequest = null;
+                return true;
+            }
+
+            async function loadSharedRouteFromPath() {
+                const route = parseSharedDocumentRoute();
+                if (!route?.token) return false;
+                const token = route.token;
+                const meta = await fetchSharedMetaByToken(token);
+                if (!meta?.spaceId) {
+                    navigateToDocsHomePath();
+                    return false;
+                }
+                const hasAccess = hasLocalSpaceAccess(meta.spaceId);
+                if (hasAccess) {
+                    const opened = await openSharedTokenFirst(token, { canonicalize: true });
+                    if (!opened) {
+                        navigateToDocsHomePath();
+                        return false;
+                    }
+                    return true;
+                }
+                deepLinkRequest = {
+                    token,
+                    spaceId: meta.spaceId,
+                    rawPayload: await fetchSharedPayloadRawByToken(token),
+                    title: meta.title || "Document partagé"
+                };
+                setSpaceAccessOverlayVisible(true);
+                return true;
             }
 
             function updateSharedSpaceSyncButtonState(spaceId, isSyncing) {
@@ -4074,7 +4351,7 @@
                 }
             }
 
-            async function setActiveDocument(docId) {
+            async function setActiveDocument(docId, options = {}) {
                 if (!docId || docId === activeDocumentId) return;
                 return runWithDocumentSwitchLoader(async () => {
                     window.GoToolkitAssistInstance?.close?.();
@@ -4128,6 +4405,11 @@
                         payload: buildSharePayload(),
                         title: target.title || getDocumentTitleFromState(state)
                     });
+                    syncRouteForCurrentDocument({
+                        id: String(target?.id || "").trim(),
+                        token: String(target?.token || "").trim(),
+                        title: target.title || getDocumentTitleFromState(state)
+                    }, { pushHistory: Boolean(options?.pushHistory) });
                     if (!isCloudDocumentId(target.id)) {
                         scheduleMarkDocumentOpened(target);
                     }
@@ -4455,7 +4737,7 @@
                 return state.tabs.find(tab => tab.id === state.activeTabId) || state.tabs[0];
             }
 
-            async function openCloudDocumentWorkingCopy(meta) {
+            async function openCloudDocumentWorkingCopy(meta, options = {}) {
                 const cloudId = String(meta?.id || "").trim();
                 if (!cloudId || !isCloudDocumentId(cloudId)) return;
                 return runWithDocumentSwitchLoader(async () => {
@@ -4506,13 +4788,18 @@
                         cloudLastEditedAt: String(draft?.updatedAt || "").trim() || null,
                         updatedAt: String(meta?.updatedAt || draft?.updatedAt || new Date().toISOString())
                     });
+                    syncRouteForCurrentDocument({
+                        id: cloudId,
+                        token: String(meta?.token || "").trim(),
+                        title: String(meta?.title || getDocumentTitleFromState(nextState) || "Document")
+                    }, { pushHistory: Boolean(options?.pushHistory) });
                     renderDocumentTabs();
                     await renderChildLinksFooter();
                     renderHeadingSummaryRail();
                 });
             }
 
-            async function openSharedWorkingCopy(item) {
+            async function openSharedWorkingCopy(item, options = {}) {
                 const token = String(item?.token || "").trim();
                 const id = token ? `share:${token}` : "";
                 if (!id) return;
@@ -4544,10 +4831,10 @@
                     spaceId: String(source?.spaceId || "").trim(),
                     position: Number.isFinite(Number(source?.position)) ? Number(source.position) : parseSharedPosition(payload?.position),
                     updatedAt: String(source?.updatedAt || "")
-                });
+                }, options);
             }
 
-            async function openPublishedTemplateDirect(template) {
+            async function openPublishedTemplateDirect(template, options = {}) {
                 if (!template) return;
                 const templateId = String(template.id || "").trim();
                 if (!templateId) return;
@@ -4578,7 +4865,7 @@
                     parentId: String(template.parentId || "").trim() ? `common:${String(template.parentId || "").trim()}` : "",
                     ownerToken: String(template.ownerToken || "").trim(),
                     updatedAt: String(template.updatedAt || "")
-                });
+                }, options);
                 setStatus("Contenu Golive ouvert");
             }
 
@@ -4990,6 +5277,118 @@
                 };
             }
 
+            function slugifyDocumentName(value) {
+                const raw = String(value || "").trim().toLowerCase();
+                if (!raw) return "document";
+                const normalized = raw
+                    .normalize("NFD")
+                    .replace(/[\u0300-\u036f]/g, "")
+                    .replace(/[^a-z0-9]+/g, "-")
+                    .replace(/^-+|-+$/g, "");
+                return normalized || "document";
+            }
+
+            function parseSharedDocumentRoute() {
+                try {
+                    const path = String(window.location.pathname || "").trim();
+                    if (!path || path === "/" || path.toLowerCase().endsWith("/index.html")) return null;
+                    const lastSegment = decodeURIComponent(path.split("/").filter(Boolean).pop() || "");
+                    if (!lastSegment || lastSegment.endsWith(".html")) return null;
+                    const match = lastSegment.match(/(?:.*-)?([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i);
+                    const token = String(match?.[1] || "").trim().toLowerCase();
+                    if (!SHARED_DOC_UUID_RE.test(token)) return null;
+                    return { token };
+                } catch (err) {
+                    return null;
+                }
+            }
+
+            function replaceUrlPath(pathname) {
+                try {
+                    const url = new URL(window.location.href);
+                    url.pathname = pathname;
+                    url.searchParams.delete("edit");
+                    history.replaceState(null, "", url.toString());
+                } catch (err) {
+                    // noop
+                }
+            }
+
+            function updateUrlState(url, options = {}) {
+                const shouldPush = Boolean(options?.pushHistory);
+                const statePayload = options?.state && typeof options.state === "object" ? options.state : null;
+                const currentHref = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+                const nextHref = `${url.pathname}${url.search}${url.hash}`;
+                if (currentHref === nextHref && !shouldPush) return;
+                if (shouldPush) {
+                    history.pushState(statePayload, "", url.toString());
+                    return;
+                }
+                history.replaceState(statePayload, "", url.toString());
+            }
+
+            function buildDocumentUrl(item = {}) {
+                const id = String(item?.id || "").trim();
+                const url = new URL(window.location.href);
+                url.searchParams.delete("share");
+                if (id.startsWith("share:")) {
+                    const token = String(item?.token || id.replace(/^share:/, "")).trim().toLowerCase();
+                    const title = String(item?.title || "document").trim();
+                    if (SHARED_DOC_UUID_RE.test(token)) {
+                        url.pathname = `/${slugifyDocumentName(title)}-${token}`;
+                        url.searchParams.delete("edit");
+                        return url;
+                    }
+                }
+                url.pathname = "/";
+                if (id) {
+                    url.searchParams.set("edit", id);
+                } else {
+                    url.searchParams.delete("edit");
+                }
+                return url;
+            }
+
+            function updateSharedDocumentCanonicalPath(item) {
+                const token = String(item?.token || "").trim().toLowerCase();
+                if (!SHARED_DOC_UUID_RE.test(token)) return;
+                const canonical = `/${slugifyDocumentName(item?.title || "document")}-${token}`;
+                if (window.location.pathname !== canonical) {
+                    replaceUrlPath(canonical);
+                }
+            }
+
+            function navigateToDocsHomePath() {
+                if (window.location.pathname === "/" || window.location.pathname.toLowerCase() === "/index.html") return;
+                replaceUrlPath("/");
+            }
+
+            function syncRouteForCurrentDocument(item = {}, options = {}) {
+                const id = String(item?.id || "").trim();
+                const nextUrl = buildDocumentUrl({
+                    id,
+                    token: String(item?.token || "").trim(),
+                    title: item?.title || "Document"
+                });
+                updateUrlState(nextUrl, {
+                    pushHistory: Boolean(options?.pushHistory),
+                    state: { memoDocId: id || null }
+                });
+            }
+
+            function setSpaceAccessOverlayVisible(visible, message = "") {
+                if (!spaceAccessOverlay) return;
+                spaceAccessOverlay.classList.toggle("open", Boolean(visible));
+                spaceAccessOverlay.setAttribute("aria-hidden", visible ? "false" : "true");
+                if (spaceAccessOverlayError) spaceAccessOverlayError.textContent = message || "";
+                if (visible && spaceAccessOverlayInput) {
+                    spaceAccessOverlayInput.placeholder = SPACE_JOIN_CODE_PLACEHOLDER;
+                    setTimeout(() => {
+                        try { spaceAccessOverlayInput.focus({ preventScroll: true }); } catch (err) { }
+                    }, 0);
+                }
+            }
+
             function getShareTokenFromUrl() {
                 try {
                     const params = new URLSearchParams(window.location.search);
@@ -5233,11 +5632,12 @@
                 return false;
             }
 
-            async function loadEditFromUrl() {
+            async function loadEditFromUrl(options = {}) {
                 try {
                     const params = new URLSearchParams(window.location.search);
                     const docId = params.get("edit");
                     if (!docId) return false;
+                    const clearParam = options?.clearParam !== false;
 
                     let handled = false;
                     if (docId === "new") {
@@ -5247,7 +5647,7 @@
                         // Check if already open
                         const existing = openDocuments.find(d => d.id === docId);
                         if (existing) {
-                            setActiveDocument(docId);
+                            setActiveDocument(docId, { pushHistory: false });
                             handled = true;
                         } else if (documentApi) {
                             const record = await documentApi.getRecord(docId);
@@ -5258,7 +5658,7 @@
                         }
                     }
 
-                    if (handled) {
+                    if (handled && clearParam) {
                         const url = new URL(window.location.href);
                         url.searchParams.delete("edit");
                         // If no more params, simplify to clean path
@@ -5272,6 +5672,25 @@
                     console.error("Failed to load document from URL", err);
                 }
                 return false;
+            }
+
+            async function restoreDocumentFromCurrentRoute() {
+                if (isHandlingHistoryNavigation) return false;
+                isHandlingHistoryNavigation = true;
+                try {
+                    const sharedLoaded = await loadSharedRouteFromPath();
+                    if (sharedLoaded) return true;
+                    const params = new URLSearchParams(window.location.search);
+                    if (params.get("edit")) {
+                        return await loadEditFromUrl({ clearParam: false });
+                    }
+                    if (parseSharedDocumentRoute()) {
+                        navigateToDocsHomePath();
+                    }
+                    return false;
+                } finally {
+                    isHandlingHistoryNavigation = false;
+                }
             }
 
             async function openDocumentFromRecord(record) {
@@ -5677,7 +6096,7 @@
                 if (!docId) return;
                 const section = inferSectionFromId(docId);
                 if (section === "private") {
-                    await setActiveDocument(docId);
+                    await setActiveDocument(docId, { pushHistory: true });
                     return;
                 }
                 if (isSharedSection(section)) {
@@ -5685,7 +6104,7 @@
                     const records = await shareHistory?.getRecordsByApp?.("memo");
                     const item = (records || []).find(entry => entry && String(entry.token || "") === token);
                     if (!item?.payload) return;
-                    await openSharedWorkingCopy(item);
+                    await openSharedWorkingCopy(item, { pushHistory: true });
                     return;
                 }
                 if (section === "common") {
@@ -5693,7 +6112,7 @@
                     await syncTemplates(false);
                     const template = (cloudTemplates || []).find(entry => entry && String(entry.id || "") === templateId);
                     if (!template) return;
-                    await openPublishedTemplateDirect(template);
+                    await openPublishedTemplateDirect(template, { pushHistory: true });
                 }
             };
             window.GoToolkitMemoResolveLinkTarget = async function (rawId) {
@@ -6508,6 +6927,13 @@
                 });
 
                 renderDocumentTabs();
+                if (id === activeDocumentId) {
+                    syncRouteForCurrentDocument({
+                        id,
+                        token: String(token || id.replace(/^share:/, "")).trim(),
+                        title: nextName
+                    });
+                }
                 return { payload: cloudPayload, updatedAt: now, icon, parentId, token, spaceId, position };
             }
 
@@ -7483,14 +7909,14 @@
                 onSelect: item => {
                     if (!item?.id) return;
                     if (item.isCommon) {
-                        openPublishedTemplateDirect(item.templateData || item);
+                        openPublishedTemplateDirect(item.templateData || item, { pushHistory: true });
                         return;
                     }
                     if (item.isShared) {
-                        openSharedWorkingCopy(item);
+                        openSharedWorkingCopy(item, { pushHistory: true });
                         return;
                     }
-                    setActiveDocument(item.id);
+                    setActiveDocument(item.id, { pushHistory: true });
                 },
                 onMove: async (docId, newParentId, nextDepth, beforeId, moveMeta) => {
                     if (!docId || nextDepth > 4) return;
@@ -9077,6 +9503,26 @@
                 return restored;
             })();
 
+            spaceAccessOverlayInput?.setAttribute("placeholder", SPACE_JOIN_CODE_PLACEHOLDER);
+            spaceAccessOverlaySubmit?.addEventListener("click", async () => {
+                const code = String(spaceAccessOverlayInput?.value || "").trim();
+                await submitDeepLinkSpaceAccessCode(code);
+            });
+            spaceAccessOverlayInput?.addEventListener("keydown", async event => {
+                if (event.key !== "Enter") return;
+                event.preventDefault();
+                const code = String(spaceAccessOverlayInput?.value || "").trim();
+                await submitDeepLinkSpaceAccessCode(code);
+            });
+            spaceAccessOverlayClose?.addEventListener("click", () => {
+                deepLinkRequest = null;
+                setSpaceAccessOverlayVisible(false);
+                navigateToDocsHomePath();
+            });
+            window.addEventListener("popstate", () => {
+                restoreDocumentFromCurrentRoute().catch(() => null);
+            });
+
             documentLoadedPromise.then(async () => {
                 // Check if we came from home.html with a template to load
                 try {
@@ -9096,8 +9542,12 @@
                     console.warn("Failed to load template from localStorage", err);
                 }
 
-                loadDocumentRequestFromStorage()
-                    .then(loaded => {
+                loadSharedRouteFromPath()
+                    .then(async pathLoaded => {
+                        if (pathLoaded) return;
+                        return loadDocumentRequestFromStorage();
+                    })
+                    .then(async loaded => {
                         if (loaded) return;
                         return loadShareFromUrl().then(shareLoaded => {
                             if (!shareLoaded) {

@@ -14,4 +14,3 @@
 
 ## Fichiers de données
 - Import et visualisation JSON
-- Intégration Grid et import CSV, XLSX, ODS

@@ -37,10 +37,17 @@
         overlay: null,
         overlayReady: null,
         overlayTiles: null,
+        overlayTranscriptionTile: null,
+        overlayTranscriptionTitle: null,
+        overlayTranscriptionLine1: null,
+        overlayTranscriptionLine2: null,
         overlayMic: true,
         overlayWebcam: false,
         overlayScreen: false,
         overlaySystemAudio: false,
+        overlayLiveTranscription: false,
+        livePreviewLine1: "",
+        livePreviewLine2: "",
         overlayStreams: {
             audio: null,
             webcam: null,
@@ -153,6 +160,54 @@
                 position: relative;
                 z-index: 2;
                 align-self: flex-end;
+            }
+            .voice-overlay__transcription-tile {
+                width: min(100%, 1254px);
+                min-height: 60px;
+                align-self: center;
+                margin: 12px auto 8px;
+                border-radius: 14px;
+                border: 2px solid rgba(255, 255, 255, 0.4);
+                background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(0, 0, 0, 0.45));
+                box-shadow: 0 14px 28px rgba(0, 0, 0, 0.35), 0 0 0 4px rgba(255, 255, 255, 0.05);
+                padding: 8px 14px;
+                box-sizing: border-box;
+                cursor: pointer;
+                pointer-events: auto;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                gap: 1px;
+            }
+            .voice-overlay__transcription-tile--active {
+                border-color: var(--intent-warning-border);
+                box-shadow: 0 18px 50px rgba(0, 0, 0, 0.65), 0 0 0 6px rgba(250, 204, 21, 0.18);
+            }
+            .voice-overlay__transcription-title {
+                font-size: 21px;
+                line-height: 1.05;
+                font-weight: 800;
+                letter-spacing: 0.01em;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .voice-overlay__transcription-live {
+                min-height: 32px;
+                font-size: 16px;
+                line-height: 1;
+                font-weight: 650;
+                opacity: 0.95;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                overflow: hidden;
+            }
+            .voice-overlay__transcription-line {
+                min-height: 16px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
             .voice-overlay__tile {
                 width: 300px;
@@ -501,6 +556,47 @@
         state.liveInsertedByTurn = {};
         state.liveInsertedOnce = false;
         state.liveLastInsertedChar = "";
+        state.livePreviewLine1 = "";
+        state.livePreviewLine2 = "";
+        renderLivePreview();
+    }
+
+    function renderLivePreview() {
+        if (!state.overlayTranscriptionLine1 || !state.overlayTranscriptionLine2) return;
+        const canShowPreview = Boolean(state.overlayMic && state.overlayLiveTranscription);
+        state.overlayTranscriptionLine1.textContent = canShowPreview ? state.livePreviewLine1 : "";
+        state.overlayTranscriptionLine2.textContent = canShowPreview ? state.livePreviewLine2 : "";
+    }
+
+    function appendLivePreviewText(text) {
+        if (!text || !state.overlayMic || !state.overlayLiveTranscription) return;
+        const chunks = String(text)
+            .replace(/\s+/g, " ")
+            .trim()
+            .split(" ")
+            .filter(Boolean);
+        if (!chunks.length) return;
+        const maxChars = 84;
+        const pushToken = token => {
+            const current = state.livePreviewLine2 || "";
+            const next = current ? `${current} ${token}` : token;
+            if (next.length <= maxChars) {
+                state.livePreviewLine2 = next;
+                return;
+            }
+            state.livePreviewLine1 = current || state.livePreviewLine1;
+            state.livePreviewLine2 = token;
+        };
+        chunks.forEach(pushToken);
+        renderLivePreview();
+    }
+
+    function syncTranscriptionTile() {
+        if (!state.overlayTranscriptionTile || !state.overlayTranscriptionTitle) return;
+        const isLive = Boolean(state.overlayLiveTranscription);
+        state.overlayTranscriptionTitle.textContent = isLive ? "Transcription en direct" : "Transcription en différé";
+        state.overlayTranscriptionTile.classList.toggle("voice-overlay__transcription-tile--active", isLive);
+        renderLivePreview();
     }
 
     function stopLiveTranscription() {
@@ -580,6 +676,7 @@
         const next = String(delta || "").trim();
         if (!next) return;
         state.liveInsertedByTurn[turnOrder] = transcript;
+        appendLivePreviewText(next);
         insertLiveTextAtCaret(next, memoId);
     }
 
@@ -1027,6 +1124,13 @@
             <button class="voice-overlay__close" type="button" aria-label="Fermer">×</button>
             <div class="voice-overlay__caption">Demander l'autorisation à vos interlocuteurs pour enregistrer la conversation.</div>
             <div class="voice-overlay__ready">Prêt</div>
+            <div class="voice-overlay__transcription-tile" role="button" tabindex="0" aria-label="Mode de transcription">
+                <div class="voice-overlay__transcription-title">Transcription en différé</div>
+                <div class="voice-overlay__transcription-live" aria-live="polite">
+                    <div class="voice-overlay__transcription-line" data-line="1"></div>
+                    <div class="voice-overlay__transcription-line" data-line="2"></div>
+                </div>
+            </div>
             <div class="voice-overlay__tiles">
                 <div class="voice-overlay__tile" data-kind="mic">
                     <div class="voice-overlay__tile-label">Microphone</div>
@@ -1053,8 +1157,28 @@
         document.body.appendChild(state.overlay);
         state.overlayTiles = Array.from(state.overlay.querySelectorAll(".voice-overlay__tile"));
         state.overlayReady = state.overlay.querySelector(".voice-overlay__ready");
+        state.overlayTranscriptionTile = state.overlay.querySelector(".voice-overlay__transcription-tile");
+        state.overlayTranscriptionTitle = state.overlay.querySelector(".voice-overlay__transcription-title");
+        state.overlayTranscriptionLine1 = state.overlay.querySelector('.voice-overlay__transcription-line[data-line="1"]');
+        state.overlayTranscriptionLine2 = state.overlay.querySelector('.voice-overlay__transcription-line[data-line="2"]');
         const closeBtn = state.overlay.querySelector(".voice-overlay__close");
         closeBtn?.addEventListener("click", closeOverlay);
+        const toggleTranscriptionMode = () => {
+            state.overlayLiveTranscription = !state.overlayLiveTranscription;
+            if (!state.overlayLiveTranscription) {
+                stopLiveTranscription();
+            }
+            state.livePreviewLine1 = "";
+            state.livePreviewLine2 = "";
+            syncTranscriptionTile();
+        };
+        state.overlayTranscriptionTile?.addEventListener("click", toggleTranscriptionMode);
+        state.overlayTranscriptionTile?.addEventListener("keydown", event => {
+            if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                toggleTranscriptionMode();
+            }
+        });
         state.overlayTiles.forEach(tile => {
             tile.addEventListener("click", async () => {
                 const kind = tile.dataset.kind;
@@ -1075,6 +1199,7 @@
             await startRecording(state.currentMemoId, state.currentMemoName);
         });
         syncOverlayTiles();
+        syncTranscriptionTile();
     }
 
     function syncOverlayTiles() {
@@ -1100,6 +1225,7 @@
                 label.textContent = `${labelText} ${enabled ? "activé" : "désactivé"}`;
             }
         });
+        syncTranscriptionTile();
     }
 
     function attachOverlayStreams() {
@@ -1262,7 +1388,11 @@
                 }
             };
             state.audioRecorder.start();
-            startLiveTranscription(audioStream, memoId);
+            if (state.overlayLiveTranscription && state.overlayMic) {
+                startLiveTranscription(audioStream, memoId);
+            } else {
+                stopLiveTranscription();
+            }
             if (videoStream) {
                 let videoTrackSource = videoStream;
                 if (state.overlayScreen && videoStream === screenStream) {
