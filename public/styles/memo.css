@@ -408,7 +408,7 @@
             border-radius: 4px;
             color: var(--text-main);
             transition: all 0.1s ease;
-            line-height: 1.2;
+            line-height: 1.35;
         }
 
         .toc-item:hover {
