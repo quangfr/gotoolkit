@@ -702,23 +702,29 @@
         .document-explorer__section-header:focus-within .document-explorer__section-actions {
             opacity: 1;
         }
-        .document-explorer__section-actions.document-explorer__section-actions--force-visible {
+        .document-explorer__section-header[data-section^="shared:"] .document-explorer__section-actions {
             opacity: 1;
         }
-        .document-explorer__section-actions--pending-sync {
-            opacity: 1;
-        }
-        .document-explorer__section-actions--pending-sync .document-explorer__item-action {
+        .document-explorer__section-header[data-section^="shared:"] .document-explorer__section-actions .document-explorer__item-action--hover-only {
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.15s ease;
         }
-        .document-explorer__section-actions--pending-sync .document-explorer__item-action--sync-refresh {
+        .document-explorer__section-header[data-section^="shared:"]:hover .document-explorer__section-actions .document-explorer__item-action--hover-only,
+        .document-explorer__section-header[data-section^="shared:"]:focus-within .document-explorer__section-actions .document-explorer__item-action--hover-only {
             opacity: 1;
             pointer-events: auto;
         }
-        .document-explorer__section-header:hover .document-explorer__section-actions--pending-sync .document-explorer__item-action,
-        .document-explorer__section-header:focus-within .document-explorer__section-actions--pending-sync .document-explorer__item-action {
+        .document-explorer__section-actions--pending-sync {
+            opacity: 1;
+        }
+        .document-explorer__section-actions--pending-sync .document-explorer__item-action--hover-only {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.15s ease;
+        }
+        .document-explorer__section-header:hover .document-explorer__section-actions--pending-sync .document-explorer__item-action--hover-only,
+        .document-explorer__section-header:focus-within .document-explorer__section-actions--pending-sync .document-explorer__item-action--hover-only {
             opacity: 1;
             pointer-events: auto;
         }

@@ -1679,6 +1679,9 @@
                     const addBtn = document.createElement("button");
                     addBtn.type = "button";
                     addBtn.className = "document-explorer__item-action";
+                    if (sectionName.startsWith("shared:")) {
+                        addBtn.classList.add("document-explorer__item-action--hover-only");
+                    }
                     addBtn.title = sectionName === "private" ? "Créer une page racine" : "Ajouter une page";
                     addBtn.innerHTML = '<i data-lucide="plus"></i>';
                     addBtn.addEventListener("click", (event) => {
@@ -1709,18 +1712,27 @@
                         if (sharedSpaceId) {
                             refreshBtn.dataset.spaceId = sharedSpaceId;
                         }
+                        const shouldShowCleanIcon = !isSharedSpaceSyncing && pendingCount <= 0;
+                        refreshBtn.dataset.cleanIcon = shouldShowCleanIcon ? "1" : "0";
                         const sinceLabel = String(sectionMeta?.lastSyncLabel || "").trim();
+                        const syncSinceLabel = sinceLabel
+                            ? (sinceLabel.toLowerCase().startsWith("il y a")
+                                ? `Synchronisé ${sinceLabel.toLowerCase()}`
+                                : `Synchronisé : ${sinceLabel.toLowerCase()}`)
+                            : "Synchronisé il y a 0 mn";
                         const pendingNames = Array.isArray(sectionMeta?.pendingNames)
                             ? sectionMeta.pendingNames.map(name => String(name || "").trim()).filter(Boolean)
                             : [];
                         if (pendingNames.length) {
-                            refreshBtn.title = `${sinceLabel || "Rafraîchir cet espace"}\nEn attente: ${pendingNames.join(", ")}`;
+                            refreshBtn.title = `${syncSinceLabel}\nEn attente: ${pendingNames.join(", ")}`;
                         } else {
-                            refreshBtn.title = sinceLabel || "Rafraîchir cet espace";
+                            refreshBtn.title = syncSinceLabel;
                         }
-                        refreshBtn.innerHTML = '<i data-lucide="refresh-cw"></i>';
+                        refreshBtn.innerHTML = shouldShowCleanIcon
+                            ? '<i data-lucide="circle-check"></i>'
+                            : '<i data-lucide="refresh-cw"></i>';
                         if (isSharedSpaceSyncing) {
-                            const icon = refreshBtn.querySelector('i[data-lucide="refresh-cw"]') || refreshBtn.querySelector("i");
+                            const icon = refreshBtn.querySelector('svg.lucide-refresh-cw, i[data-lucide="refresh-cw"], svg, i');
                             if (icon) icon.classList.add("lucide-spin");
                         }
                         if (pendingCount > 0) {
@@ -1737,6 +1749,7 @@
                         const settingsBtn = document.createElement("button");
                         settingsBtn.type = "button";
                         settingsBtn.className = "document-explorer__item-action";
+                        settingsBtn.classList.add("document-explorer__item-action--hover-only");
                         settingsBtn.title = "Modifier cet espace";
                         settingsBtn.innerHTML = '<i data-lucide="settings"></i>';
                         settingsBtn.addEventListener("click", (event) => {
@@ -2145,8 +2158,34 @@
                 let commonItems = [];
                 const shareHistory = window.goToolkitShareHistory;
                 if (shareHistory?.getRecordsByApp) {
+                    const cloudDraftsKey = "goToolkit.memo.cloudDrafts.v1";
+                    let cloudDrafts = {};
+                    try {
+                        if (typeof localStorage !== "undefined") {
+                            const rawCloudDrafts = localStorage.getItem(cloudDraftsKey);
+                            const parsedCloudDrafts = rawCloudDrafts ? JSON.parse(rawCloudDrafts) : {};
+                            cloudDrafts = parsedCloudDrafts && typeof parsedCloudDrafts === "object" ? parsedCloudDrafts : {};
+                        }
+                    } catch (err) {
+                        cloudDrafts = {};
+                    }
                     const shared = await shareHistory.getRecordsByApp("memo");
-                    const uniqueShared = normalizeList((Array.isArray(shared) ? shared : []).map(item => ({
+                    const staleTokensToRemove = [];
+                    const filteredShared = (Array.isArray(shared) ? shared : []).filter(item => {
+                        const token = String(item?.token || "").trim();
+                        if (!token) return false;
+                        const draft = cloudDrafts[`share:${token}`];
+                        const draftOpType = String(draft?.opType || draft?.reason || "").trim().toLowerCase();
+                        if (draftOpType === "archive") {
+                            staleTokensToRemove.push(token);
+                            return false;
+                        }
+                        return true;
+                    });
+                    if (staleTokensToRemove.length && shareHistory?.removeRecord) {
+                        await Promise.all(staleTokensToRemove.map(token => shareHistory.removeRecord("memo", token)));
+                    }
+                    const uniqueShared = normalizeList(filteredShared.map(item => ({
                         ...item,
                         id: `share:${item.token}`
                     })));
