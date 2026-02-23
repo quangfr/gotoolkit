@@ -129,6 +129,70 @@
     };
   }
 
+  function isEncryptedPagePayload(payload) {
+    return Boolean(
+      payload &&
+      typeof payload === "object" &&
+      Number(payload.gtke) === 1 &&
+      String(payload.type || "").trim() === "page-payload" &&
+      typeof payload.ciphertext === "string" &&
+      typeof payload.iv === "string"
+    );
+  }
+
+  async function encryptPagePayload(payload, collection, spaceId) {
+    if (String(collection || "").trim().toLowerCase() !== "pages") return payload;
+    if (!payload || typeof payload !== "object") return payload;
+    if (isEncryptedPagePayload(payload)) return payload;
+    const space = getSpaceById(spaceId);
+    const joinCode = normalizeSpaceJoinCode(space?.spaceJoinCode || "");
+    if (!joinCode) return payload;
+    const key = await deriveSpaceKey(spaceId, joinCode);
+    if (!key) return payload;
+    const plainBytes = textEncoder.encode(JSON.stringify(payload));
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const cipherBuffer = await crypto.subtle.encrypt(
+      { name: "AES-GCM", iv },
+      key,
+      plainBytes
+    );
+    return {
+      gtke: 1,
+      type: "page-payload",
+      alg: "AES-256-GCM",
+      kdf: "PBKDF2-SHA256",
+      iterations: PBKDF2_ITERATIONS,
+      spaceId: String(spaceId || "golive").trim().toLowerCase() || "golive",
+      iv: toBase64FromBytes(iv),
+      ciphertext: toBase64FromBytes(new Uint8Array(cipherBuffer))
+    };
+  }
+
+  async function decryptPagePayload(payload, collection) {
+    if (String(collection || "").trim().toLowerCase() !== "pages") return payload;
+    if (!isEncryptedPagePayload(payload)) return payload;
+    const effectiveSpaceId = String(payload.spaceId || "golive").trim().toLowerCase() || "golive";
+    const space = getSpaceById(effectiveSpaceId);
+    const joinCode = normalizeSpaceJoinCode(space?.spaceJoinCode || "");
+    if (!joinCode) {
+      throw new Error(`Phrase d'accès manquante pour l'espace ${effectiveSpaceId}`);
+    }
+    const key = await deriveSpaceKey(effectiveSpaceId, joinCode);
+    if (!key) {
+      throw new Error("Clé de déchiffrement indisponible");
+    }
+    const iv = bytesFromBase64(payload.iv || "");
+    const ciphertext = bytesFromBase64(payload.ciphertext || "");
+    const plainBuffer = await crypto.subtle.decrypt(
+      { name: "AES-GCM", iv },
+      key,
+      ciphertext
+    );
+    const plainText = textDecoder.decode(plainBuffer);
+    const parsed = JSON.parse(plainText);
+    return parsed && typeof parsed === "object" ? parsed : payload;
+  }
+
   async function decryptAssetEnvelope(rawBytes, spaceId) {
     const payloadText = textDecoder.decode(rawBytes);
     let wrapper = null;
@@ -492,11 +556,15 @@
       }
       const data = await response.json();
       const payload = data.payload || null;
-      const hydratedPayload = payload && (collection === "pages" || collection === "memos")
-        ? await hydratePayloadAssetUrls(payload, base, {
-          spaceId: String(payload?.spaceId || "golive").trim().toLowerCase()
+      const decryptedPayload = await decryptPagePayload(payload, collection).catch(err => {
+        console.warn("E2EE page: déchiffrement impossible", err);
+        return payload;
+      });
+      const hydratedPayload = decryptedPayload && (collection === "pages" || collection === "memos")
+        ? await hydratePayloadAssetUrls(decryptedPayload, base, {
+          spaceId: String(decryptedPayload?.spaceId || payload?.spaceId || "golive").trim().toLowerCase()
         })
-        : payload;
+        : decryptedPayload;
       return {
         payload: hydratedPayload,
         meta: data.meta || null
@@ -541,11 +609,15 @@
       const docs = Array.isArray(data.documents) ? data.documents : [];
       return Promise.all(docs.map(async doc => {
         const payload = doc?.payload || null;
-        const hydratedPayload = payload && (collection === "pages" || collection === "memos")
-          ? await hydratePayloadAssetUrls(payload, base, {
-            spaceId: String(payload?.spaceId || "golive").trim().toLowerCase()
+        const decryptedPayload = await decryptPagePayload(payload, collection).catch(err => {
+          console.warn("E2EE page: déchiffrement impossible", err);
+          return payload;
+        });
+        const hydratedPayload = decryptedPayload && (collection === "pages" || collection === "memos")
+          ? await hydratePayloadAssetUrls(decryptedPayload, base, {
+            spaceId: String(decryptedPayload?.spaceId || payload?.spaceId || "golive").trim().toLowerCase()
           })
-          : payload;
+          : decryptedPayload;
         return {
           id: doc.id,
           payload: hydratedPayload,
@@ -571,13 +643,14 @@
           spaceId
         })
         : payload;
+      const encryptedPayload = await encryptPagePayload(preparedPayload, collection, spaceId);
       const response = await fetch(url, {
         method,
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json"
         },
-        body: JSON.stringify({ payload: preparedPayload })
+        body: JSON.stringify({ payload: encryptedPayload })
       });
       if (!response.ok) {
         const body = await response.text().catch(() => "");
@@ -602,6 +675,16 @@
       return { count: 0, results: [] };
     }
     return withWorkerFallback(async base => {
+      const preparedWrites = [];
+      for (const entry of normalizedWrites) {
+        const payload = entry?.payload;
+        const spaceId = resolveSpaceIdForPayload(payload || {}, {});
+        const encryptedPayload = await encryptPagePayload(payload, collection, spaceId);
+        preparedWrites.push({
+          id: entry.id,
+          payload: encryptedPayload
+        });
+      }
       let response;
       try {
         response = await fetch(buildShareBatchUrl(base, collection), {
@@ -610,7 +693,7 @@
             "Content-Type": "application/json",
             Accept: "application/json"
           },
-          body: JSON.stringify({ writes: normalizedWrites })
+          body: JSON.stringify({ writes: preparedWrites })
         });
       } catch (error) {
         throw markNetworkFailure(error instanceof Error ? error : new Error(String(error)));
@@ -653,11 +736,15 @@
       const docs = Array.isArray(data?.documents) ? data.documents : [];
       const hydratedDocs = await Promise.all(docs.map(async doc => {
         const payload = doc?.payload || null;
-        const hydratedPayload = payload && (collection === "pages" || collection === "memos")
-          ? await hydratePayloadAssetUrls(payload, base, {
-            spaceId: String(payload?.spaceId || "golive").trim().toLowerCase()
+        const decryptedPayload = await decryptPagePayload(payload, collection).catch(err => {
+          console.warn("E2EE page: déchiffrement impossible", err);
+          return payload;
+        });
+        const hydratedPayload = decryptedPayload && (collection === "pages" || collection === "memos")
+          ? await hydratePayloadAssetUrls(decryptedPayload, base, {
+            spaceId: String(decryptedPayload?.spaceId || payload?.spaceId || "golive").trim().toLowerCase()
           })
-          : payload;
+          : decryptedPayload;
         return {
           id: doc?.id,
           payload: hydratedPayload,
@@ -716,6 +803,17 @@
       return { count: 0, results: [] };
     }
     return withWorkerFallback(async base => {
+      const preparedWrites = [];
+      for (const entry of normalizedWrites) {
+        const contentPayload = entry?.contentPayload;
+        const spaceId = resolveSpaceIdForPayload(contentPayload || {}, {});
+        const encryptedContentPayload = await encryptPagePayload(contentPayload, collection, spaceId);
+        preparedWrites.push({
+          id: entry.id,
+          contentPayload: encryptedContentPayload,
+          metaPayload: entry.metaPayload
+        });
+      }
       let response;
       try {
         response = await fetch(buildShareBatchCreateUrl(base, collection), {
@@ -724,7 +822,7 @@
             "Content-Type": "application/json",
             Accept: "application/json"
           },
-          body: JSON.stringify({ writes: normalizedWrites })
+          body: JSON.stringify({ writes: preparedWrites })
         });
       } catch (error) {
         throw markNetworkFailure(error instanceof Error ? error : new Error(String(error)));

@@ -1,11 +1,12 @@
 (function () {
   const STORAGE_KEY = "go-toolkit-spaces";
   const DEFAULT_SPACE_ID = "golive";
+  const DEFAULT_GOLIVE_JOIN_CODE = "equipe produit cloud securite intelligence";
   const DEFAULT_SPACE = {
     id: DEFAULT_SPACE_ID,
     name: "Go Live",
     icon: "cloud-upload",
-    spaceJoinCode: "",
+    spaceJoinCode: DEFAULT_GOLIVE_JOIN_CODE,
     isDefault: true,
     updatedAt: ""
   };
@@ -107,7 +108,7 @@
         id: DEFAULT_SPACE_ID,
         name: current.name || "Go Live",
         icon: current.icon || "cloud-upload",
-        spaceJoinCode: "",
+        spaceJoinCode: normalizeSpaceJoinCode(current.spaceJoinCode || DEFAULT_GOLIVE_JOIN_CODE),
         isDefault: true,
         updatedAt: current.updatedAt || nowIso()
       });

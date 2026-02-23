@@ -1706,13 +1706,15 @@
                     if (sectionName.startsWith("shared:")) {
                         const sharedSpaceId = String(sectionMeta?.spaceId || sectionName.replace(/^shared:/, "")).trim().toLowerCase();
                         const isSharedSpaceSyncing = Boolean(sectionMeta?.isSyncing);
+                        const hasSharedSpaceSyncError = Boolean(sectionMeta?.hasSyncError);
+                        const sharedSpaceSyncErrorMessage = String(sectionMeta?.syncErrorMessage || "").trim();
                         const refreshBtn = document.createElement("button");
                         refreshBtn.type = "button";
                         refreshBtn.className = "document-explorer__item-action document-explorer__item-action--sync-refresh";
                         if (sharedSpaceId) {
                             refreshBtn.dataset.spaceId = sharedSpaceId;
                         }
-                        const shouldShowCleanIcon = !isSharedSpaceSyncing && pendingCount <= 0;
+                        const shouldShowCleanIcon = !isSharedSpaceSyncing && !hasSharedSpaceSyncError && pendingCount <= 0;
                         refreshBtn.dataset.cleanIcon = shouldShowCleanIcon ? "1" : "0";
                         const sinceLabel = String(sectionMeta?.lastSyncLabel || "").trim();
                         const syncSinceLabel = sinceLabel
@@ -1723,15 +1725,19 @@
                         const pendingNames = Array.isArray(sectionMeta?.pendingNames)
                             ? sectionMeta.pendingNames.map(name => String(name || "").trim()).filter(Boolean)
                             : [];
-                        if (pendingNames.length) {
+                        if (hasSharedSpaceSyncError) {
+                            refreshBtn.title = `Problème de synchronisation cloud (accès Firestore).\n${sharedSpaceSyncErrorMessage || "Réessayez."}`;
+                        } else if (pendingNames.length) {
                             refreshBtn.title = `${syncSinceLabel}\nEn attente: ${pendingNames.join(", ")}`;
                         } else {
                             refreshBtn.title = syncSinceLabel;
                         }
-                        refreshBtn.innerHTML = shouldShowCleanIcon
-                            ? '<i data-lucide="circle-check"></i>'
-                            : '<i data-lucide="refresh-cw"></i>';
-                        if (isSharedSpaceSyncing) {
+                        refreshBtn.innerHTML = hasSharedSpaceSyncError
+                            ? '<i data-lucide="triangle-alert"></i>'
+                            : (shouldShowCleanIcon
+                                ? '<i data-lucide="circle-check"></i>'
+                                : '<i data-lucide="refresh-cw"></i>');
+                        if (isSharedSpaceSyncing && !hasSharedSpaceSyncError) {
                             const icon = refreshBtn.querySelector('svg.lucide-refresh-cw, i[data-lucide="refresh-cw"], svg, i');
                             if (icon) icon.classList.add("lucide-spin");
                         }
