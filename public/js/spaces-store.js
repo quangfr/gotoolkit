@@ -5,10 +5,46 @@
     id: DEFAULT_SPACE_ID,
     name: "Go Live",
     icon: "cloud-upload",
-    spaceCode: "",
+    spaceJoinCode: "",
     isDefault: true,
     updatedAt: ""
   };
+
+  const DICEWARE_FR_WORDS = [
+    "abricot", "abeille", "abri", "acier", "acrobate", "adieu", "agenda", "agile", "aigle", "aile",
+    "aimer", "air", "alarme", "alibi", "allure", "alpage", "ambre", "amical", "amiral", "amour",
+    "ancre", "ange", "animal", "anneau", "anonyme", "apero", "arbre", "ardoise", "arena", "argent",
+    "armoire", "arpent", "artiste", "astre", "atlas", "aurore", "avalanche", "avion", "azur", "badge",
+    "balade", "bambou", "banane", "barque", "bastion", "beige", "berceau", "besace", "biscuit", "bleu",
+    "bobine", "bois", "boussole", "brise", "broder", "bronze", "bruine", "bulle", "bureau", "cabane",
+    "cactus", "cadeau", "cafe", "calme", "camion", "canard", "capuche", "carte", "cascade", "cendre",
+    "cerise", "chaise", "chance", "chant", "charme", "chemin", "chiffre", "chocolat", "ciel", "clair",
+    "cloche", "coffre", "colline", "comete", "compas", "corail", "corde", "cosmos", "coton", "courage",
+    "crayon", "cristal", "danse", "debut", "declic", "delta", "desir", "diamant", "dossier", "dragon",
+    "dune", "eclair", "ecume", "elan", "elegant", "embarcation", "encre", "energie", "enigme", "envol",
+    "epice", "equilibre", "etoile", "etude", "eventail", "fabrique", "falaise", "famille", "farine", "faucon",
+    "fete", "fibre", "ficelle", "filtre", "flamme", "fleur", "flocon", "forgeron", "forme", "fortune",
+    "foudre", "fraise", "fromage", "fusion", "galaxie", "garage", "gazon", "gelule", "genie", "geste",
+    "glace", "graine", "graphite", "grimoire", "grotte", "harmonie", "helium", "herbe", "hiver", "horizon",
+    "idee", "illusion", "image", "indice", "isotope", "ivoire", "jardin", "jaune", "jeton", "joie",
+    "journal", "jungle", "karate", "kilo", "kimono", "label", "lagon", "lampe", "lancement", "lavande",
+    "lecteur", "legende", "levier", "liane", "liberte", "limite", "linge", "liseron", "livre", "lueur",
+    "lune", "lycee", "machine", "magie", "maison", "mangue", "marche", "masque", "matin", "melodie",
+    "memoire", "mer", "metal", "meteor", "micro", "minuit", "mirage", "mobile", "modele", "montagne",
+    "moteur", "mouette", "muguet", "musique", "mystere", "nageur", "nature", "neige", "noisette", "nuage",
+    "objet", "ocean", "odeur", "olive", "ombre", "ondule", "orange", "orbite", "orchidee", "orignal",
+    "outil", "ouverture", "paille", "palier", "papier", "parfum", "passage", "patience", "perle", "pierre",
+    "pilote", "piment", "pinceau", "planete", "plume", "poche", "poeme", "pollen", "pomme", "pont",
+    "portail", "prairie", "precieux", "prisme", "projet", "puzzle", "quartier", "question", "quille", "racine",
+    "radar", "raffut", "raison", "ramure", "rapide", "rayon", "regle", "relais", "renard", "reserve",
+    "ressort", "reverie", "rivage", "robot", "rose", "roue", "ruban", "rucher", "sable", "saison",
+    "salon", "saphir", "saturne", "science", "secret", "sejour", "serpent", "signal", "silence", "sillage",
+    "soleil", "source", "spirale", "sport", "station", "sucre", "sud", "surprise", "table", "talisman",
+    "tambour", "tempo", "tendre", "terre", "theorie", "tiroir", "tonnerre", "tour", "trace", "trampoline",
+    "triangle", "trouve", "tulipe", "univers", "utile", "vacance", "vague", "valise", "velo", "vent",
+    "verger", "verite", "verre", "village", "violet", "vision", "vitesse", "voile", "volcan", "voyage",
+    "wagon", "xylophone", "zenith", "zeste"
+  ];
 
   function nowIso() {
     return new Date().toISOString();
@@ -20,13 +56,21 @@
     return raw.replace(/[^a-z0-9_-]/g, "");
   }
 
+  function normalizeSpaceJoinCode(value) {
+    const raw = String(value || "").trim().toLowerCase();
+    if (!raw) return "";
+    const noAccent = raw.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const withSpaces = noAccent.replace(/[-_]+/g, " ").replace(/\s+/g, " ").trim();
+    return withSpaces;
+  }
+
   function createRandomCode() {
-    const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-    let code = "";
+    const words = [];
     for (let i = 0; i < 5; i += 1) {
-      code += alphabet[Math.floor(Math.random() * alphabet.length)];
+      const pick = Math.floor(Math.random() * DICEWARE_FR_WORDS.length);
+      words.push(DICEWARE_FR_WORDS[pick]);
     }
-    return code;
+    return words.join(" ");
   }
 
   function createRandomName() {
@@ -43,7 +87,9 @@
       id,
       name: String(value.name || (isDefault ? "Go Live" : createRandomName())).trim() || (isDefault ? "Go Live" : createRandomName()),
       icon: String(value.icon || (isDefault ? "cloud-upload" : "cloud-upload")).trim() || "cloud-upload",
-      spaceCode: isDefault ? "" : String(value.spaceCode || "").trim().toUpperCase(),
+      spaceJoinCode: isDefault
+        ? ""
+        : normalizeSpaceJoinCode(value.spaceJoinCode || value.spaceCode || ""),
       isDefault,
       updatedAt: String(value.updatedAt || nowIso()).trim() || nowIso()
     };
@@ -61,7 +107,7 @@
         id: DEFAULT_SPACE_ID,
         name: current.name || "Go Live",
         icon: current.icon || "cloud-upload",
-        spaceCode: "",
+        spaceJoinCode: "",
         isDefault: true,
         updatedAt: current.updatedAt || nowIso()
       });
@@ -129,17 +175,19 @@
   }
 
   function joinByCode(spaceCode) {
-    const code = String(spaceCode || "").trim().toUpperCase();
-    if (!code || code.length !== 5) return null;
+    const code = normalizeSpaceJoinCode(spaceCode);
+    if (!code) return null;
+    const parts = code.split(" ").filter(Boolean);
+    if (parts.length !== 5) return null;
     const spaces = readSpaces();
-    const existing = spaces.find(item => String(item.spaceCode || "").toUpperCase() === code);
+    const existing = spaces.find(item => normalizeSpaceJoinCode(item.spaceJoinCode || item.spaceCode || "") === code);
     if (existing) return existing;
-    const id = `space-${code.toLowerCase()}`;
+    const id = `space-${code.replace(/\s+/g, "-")}`;
     return upsertSpace({
       id,
       name: createRandomName(),
       icon: "cloud-upload",
-      spaceCode: code,
+      spaceJoinCode: code,
       isDefault: false
     });
   }
@@ -162,7 +210,7 @@
       id: candidate,
       name: trimmedName,
       icon: String(icon || "cloud-upload").trim() || "cloud-upload",
-      spaceCode: createRandomCode(),
+      spaceJoinCode: createRandomCode(),
       isDefault: false
     });
   }
@@ -170,7 +218,7 @@
   function regenerateCode(spaceId) {
     const space = getSpaceById(spaceId);
     if (!space || space.isDefault) return space;
-    return upsertSpace({ ...space, spaceCode: createRandomCode() });
+    return upsertSpace({ ...space, spaceJoinCode: createRandomCode() });
   }
 
   window.GoToolkitSpaces = window.GoToolkitSpaces || {
@@ -182,6 +230,7 @@
     deleteSpace,
     getSpaceById,
     normalizeSpaceId,
+    normalizeSpaceJoinCode,
     createRandomCode,
     createRandomName,
     joinByCode,

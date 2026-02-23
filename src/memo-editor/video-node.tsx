@@ -232,10 +232,14 @@ const VideoNodeView = ({ node, editor, getPos, updateAttributes }: any) => {
   );
 };
 
-const EmbedNodeView = ({ node, editor, getPos }: any) => {
+const EmbedNodeView = ({ node, editor, getPos, updateAttributes }: any) => {
   const canEdit = Boolean(editor?.isEditable);
   const src = String(node?.attrs?.src || '');
   const title = String(node?.attrs?.title || '');
+  const frameRef = React.useRef<HTMLDivElement | null>(null);
+  const resizeStateRef = React.useRef<null | { startX: number; startY: number; width: number; height: number }>(null);
+  const widthPx = parseSizePx(node?.attrs?.width);
+  const heightPx = parseSizePx(node?.attrs?.height);
 
   const handleDelete = () => {
     if (typeof getPos !== 'function') return;
@@ -254,9 +258,48 @@ const EmbedNodeView = ({ node, editor, getPos }: any) => {
     }
   };
 
+  React.useEffect(() => {
+    if (!canEdit) return;
+    const onPointerMove = (event: PointerEvent) => {
+      const current = resizeStateRef.current;
+      if (!current) return;
+      const nextWidth = Math.max(220, current.width + (event.clientX - current.startX));
+      const nextHeight = Math.max(180, current.height + (event.clientY - current.startY));
+      if (typeof updateAttributes === 'function') {
+        updateAttributes({
+          width: `${Math.round(nextWidth)}px`,
+          height: `${Math.round(nextHeight)}px`,
+        });
+      }
+    };
+    const onPointerUp = () => {
+      if (!resizeStateRef.current) return;
+      resizeStateRef.current = null;
+      document.body.classList.remove('table-resize-cursor');
+    };
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', onPointerUp);
+    return () => {
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerUp);
+      document.body.classList.remove('table-resize-cursor');
+    };
+  }, [canEdit, updateAttributes]);
+
+  const frameStyle: React.CSSProperties = {
+    width: widthPx ? `${widthPx}px` : undefined,
+    height: heightPx ? `${heightPx}px` : undefined,
+  };
+
+  const embedStyle: React.CSSProperties = {
+    height: heightPx ? '100%' : undefined,
+  };
+
   return (
     <NodeViewWrapper className="memo-video-wrapper">
-      <div className="memo-video-frame memo-embed-frame">
+      <div ref={frameRef} className="memo-video-frame memo-embed-frame" style={frameStyle}>
         <button className="memo-link-block__handle" type="button" aria-label="Déplacer" data-drag-handle>
           <i data-lucide="grip-vertical" aria-hidden="true" />
         </button>
@@ -287,6 +330,7 @@ const EmbedNodeView = ({ node, editor, getPos }: any) => {
         </div>
         <iframe
           className="memo-embed"
+          style={embedStyle}
           src={src}
           title={title || 'Embedded video'}
           loading="lazy"
@@ -294,6 +338,23 @@ const EmbedNodeView = ({ node, editor, getPos }: any) => {
           referrerPolicy="strict-origin-when-cross-origin"
           allowFullScreen
         />
+        {canEdit && (
+          <div
+            className="memo-video-resize-handle"
+            onPointerDown={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              const rect = frameRef.current?.getBoundingClientRect();
+              resizeStateRef.current = {
+                startX: event.clientX,
+                startY: event.clientY,
+                width: rect?.width || 640,
+                height: rect?.height || 360,
+              };
+              document.body.classList.add('table-resize-cursor');
+            }}
+          />
+        )}
       </div>
     </NodeViewWrapper>
   );
@@ -354,6 +415,8 @@ export const ExternalVideoEmbed = Node.create({
       src: { default: null },
       title: { default: null },
       provider: { default: null },
+      width: { default: null },
+      height: { default: null },
     };
   },
 

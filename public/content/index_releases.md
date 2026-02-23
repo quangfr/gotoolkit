@@ -1,6 +1,10 @@
 ## 2026-02-21
+- Docs : Chiffrement E2EE du contenu
+- DOcs : Liens Youtube and Loom 
+
+## 2026-02-21
 - Docs : Vue en arborescence des documents
-- Docs : Espace de partage
+- Docs : Espace de partage GoLive
 
 ## 2026-02-19
 - Voice : Télécharger l'enregistrement vidéo

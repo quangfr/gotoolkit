@@ -18,6 +18,249 @@
   );
   const API_VERSION = "v1";
   const isReady = workerBases.length > 0;
+  const E2EE_ASSET_MIME = "application/x-gotoolkit-e2ee+json";
+  const PBKDF2_ITERATIONS = 310000;
+  const textEncoder = new TextEncoder();
+  const textDecoder = new TextDecoder();
+  const assetBlobCache = new Map();
+  const spaceKeyCache = new Map();
+
+  function normalizeSpaceJoinCode(value) {
+    if (window.GoToolkitSpaces?.normalizeSpaceJoinCode) {
+      return window.GoToolkitSpaces.normalizeSpaceJoinCode(value);
+    }
+    const raw = String(value || "").trim().toLowerCase();
+    if (!raw) return "";
+    return raw
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[-_]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function getSpaceById(spaceId) {
+    const api = window.GoToolkitSpaces;
+    if (!api?.getSpaceById) return null;
+    return api.getSpaceById(spaceId) || null;
+  }
+
+  function toBase64FromBytes(bytes) {
+    let binary = "";
+    const chunkSize = 0x8000;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      const slice = bytes.subarray(i, i + chunkSize);
+      binary += String.fromCharCode.apply(null, slice);
+    }
+    return btoa(binary);
+  }
+
+  function bytesFromBase64(base64) {
+    const normalized = normalizeBase64(base64);
+    const binary = atob(normalized);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes;
+  }
+
+  async function deriveSpaceKey(spaceId, joinCodeRaw) {
+    const normalizedJoinCode = normalizeSpaceJoinCode(joinCodeRaw);
+    const normalizedSpaceId = String(spaceId || "").trim().toLowerCase();
+    if (!normalizedSpaceId || !normalizedJoinCode) return null;
+    const cacheKey = `${normalizedSpaceId}::${normalizedJoinCode}`;
+    if (spaceKeyCache.has(cacheKey)) {
+      return spaceKeyCache.get(cacheKey);
+    }
+    const keyPromise = (async () => {
+      const baseKey = await crypto.subtle.importKey(
+        "raw",
+        textEncoder.encode(normalizedJoinCode),
+        "PBKDF2",
+        false,
+        ["deriveKey"]
+      );
+      return crypto.subtle.deriveKey(
+        {
+          name: "PBKDF2",
+          hash: "SHA-256",
+          iterations: PBKDF2_ITERATIONS,
+          salt: textEncoder.encode(`gotoolkit:space:${normalizedSpaceId}`)
+        },
+        baseKey,
+        { name: "AES-GCM", length: 256 },
+        false,
+        ["encrypt", "decrypt"]
+      );
+    })();
+    spaceKeyCache.set(cacheKey, keyPromise);
+    return keyPromise;
+  }
+
+  async function encryptAssetPayload(contentBase64, mimeType, fileName, spaceId, joinCode) {
+    const key = await deriveSpaceKey(spaceId, joinCode);
+    if (!key) {
+      return { mimeType, contentBase64, fileName };
+    }
+    const plainBytes = bytesFromBase64(contentBase64);
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const cipherBuffer = await crypto.subtle.encrypt(
+      { name: "AES-GCM", iv },
+      key,
+      plainBytes
+    );
+    const wrapper = {
+      gtke: 1,
+      alg: "AES-256-GCM",
+      kdf: "PBKDF2-SHA256",
+      iterations: PBKDF2_ITERATIONS,
+      spaceId: String(spaceId || "").trim().toLowerCase(),
+      iv: toBase64FromBytes(iv),
+      ciphertext: toBase64FromBytes(new Uint8Array(cipherBuffer)),
+      mimeType: String(mimeType || "application/octet-stream").trim() || "application/octet-stream",
+      fileName: String(fileName || "").trim() || "asset.bin"
+    };
+    const wrapperBytes = textEncoder.encode(JSON.stringify(wrapper));
+    return {
+      mimeType: E2EE_ASSET_MIME,
+      contentBase64: toBase64FromBytes(wrapperBytes),
+      fileName: `${wrapper.fileName}.gtke`
+    };
+  }
+
+  async function decryptAssetEnvelope(rawBytes, spaceId) {
+    const payloadText = textDecoder.decode(rawBytes);
+    let wrapper = null;
+    try {
+      wrapper = JSON.parse(payloadText);
+    } catch (error) {
+      return null;
+    }
+    if (!wrapper || Number(wrapper.gtke) !== 1) return null;
+    const effectiveSpaceId = String(spaceId || wrapper.spaceId || "").trim().toLowerCase();
+    const space = getSpaceById(effectiveSpaceId);
+    const joinCode = normalizeSpaceJoinCode(space?.spaceJoinCode || "");
+    if (!joinCode) {
+      throw new Error(`Clé d'accès manquante pour l'espace ${effectiveSpaceId || "inconnu"}`);
+    }
+    const key = await deriveSpaceKey(effectiveSpaceId, joinCode);
+    if (!key) {
+      throw new Error("Clé de déchiffrement indisponible");
+    }
+    const iv = bytesFromBase64(wrapper.iv || "");
+    const ciphertext = bytesFromBase64(wrapper.ciphertext || "");
+    const plainBuffer = await crypto.subtle.decrypt(
+      { name: "AES-GCM", iv },
+      key,
+      ciphertext
+    );
+    return {
+      bytes: new Uint8Array(plainBuffer),
+      mimeType: String(wrapper.mimeType || "application/octet-stream").trim() || "application/octet-stream"
+    };
+  }
+
+  function shouldEncryptMedia(collection, spaceId) {
+    const normalizedCollection = String(collection || "").trim().toLowerCase();
+    if (normalizedCollection !== "pages") return false;
+    const space = getSpaceById(spaceId);
+    const joinCode = normalizeSpaceJoinCode(space?.spaceJoinCode || "");
+    return Boolean(joinCode);
+  }
+
+  function resolveSpaceIdForPayload(payload, options = {}) {
+    const candidate = String(options?.spaceId || payload?.spaceId || "golive").trim().toLowerCase();
+    return candidate || "golive";
+  }
+
+  function extractAssetIdFromUrl(base, assetUrl) {
+    try {
+      const parsed = new URL(assetUrl, base);
+      const parts = parsed.pathname.split("/").filter(Boolean);
+      if (parts.length < 3) return "";
+      if (parts[0] !== API_VERSION || parts[1] !== "assets") return "";
+      return decodeURIComponent(parts[2] || "");
+    } catch (error) {
+      return "";
+    }
+  }
+
+  async function resolveAssetBlobUrl(base, assetUrl, spaceId) {
+    const assetId = extractAssetIdFromUrl(base, assetUrl);
+    if (!assetId) return assetUrl;
+    const cacheKey = `${base}::${spaceId || ""}::${assetId}`;
+    if (assetBlobCache.has(cacheKey)) {
+      return assetBlobCache.get(cacheKey);
+    }
+    let response;
+    try {
+      response = await fetch(buildAssetUrl(base, assetId), {
+        method: "GET",
+        cache: "force-cache"
+      });
+    } catch (error) {
+      return assetUrl;
+    }
+    if (!response.ok) return assetUrl;
+    const contentType = String(response.headers.get("content-type") || "").toLowerCase();
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    let blob = null;
+    if (contentType.includes(E2EE_ASSET_MIME) || (bytes.length && bytes[0] === 123)) {
+      try {
+        const decrypted = await decryptAssetEnvelope(bytes, spaceId);
+        if (decrypted?.bytes?.length) {
+          blob = new Blob([decrypted.bytes], { type: decrypted.mimeType });
+        }
+      } catch (error) {
+        console.warn("E2EE média: déchiffrement impossible", error);
+        return assetUrl;
+      }
+    }
+    if (!blob) {
+      blob = new Blob([bytes], { type: contentType || "application/octet-stream" });
+    }
+    const blobUrl = URL.createObjectURL(blob);
+    assetBlobCache.set(cacheKey, blobUrl);
+    return blobUrl;
+  }
+
+  async function hydrateHtmlAssetUrls(html, base, options = {}) {
+    if (typeof html !== "string" || !html.includes("/v1/assets/") || typeof DOMParser === "undefined") {
+      return html;
+    }
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(String(html), "text/html");
+    if (!doc?.body) return html;
+    const spaceId = String(options?.spaceId || "").trim().toLowerCase();
+    const srcNodes = Array.from(doc.querySelectorAll("img[src],video[src],audio[src],source[src]"));
+    for (const node of srcNodes) {
+      const src = String(node.getAttribute("src") || "").trim();
+      if (!src || !src.includes("/v1/assets/")) continue;
+      const blobUrl = await resolveAssetBlobUrl(base, src, spaceId);
+      if (!blobUrl || blobUrl === src) continue;
+      node.setAttribute("src", blobUrl);
+    }
+    return doc.body.innerHTML;
+  }
+
+  async function hydratePayloadAssetUrls(payload, base, options = {}) {
+    async function walk(value) {
+      if (typeof value === "string") {
+        return hydrateHtmlAssetUrls(value, base, options);
+      }
+      if (Array.isArray(value)) {
+        return Promise.all(value.map(item => walk(item)));
+      }
+      if (!value || typeof value !== "object") return value;
+      const next = {};
+      for (const [key, entry] of Object.entries(value)) {
+        next[key] = await walk(entry);
+      }
+      return next;
+    }
+    return walk(payload);
+  }
 
   function buildShareUrl(base, collection, token) {
     const encodedCollection = encodeURIComponent(collection);
@@ -179,12 +422,21 @@
       const fileNameAttr = String(img.getAttribute("data-file-name") || img.getAttribute("title") || "").trim();
       const ext = mimeType === "image/png" ? "png" : mimeType === "image/gif" ? "gif" : "jpg";
       const fileName = fileNameAttr || `image.${ext}`;
-
+      const shouldEncrypt = shouldEncryptMedia(options?.collection || "", options?.spaceId);
+      const encryptedAsset = shouldEncrypt
+        ? await encryptAssetPayload(
+          parsed.contentBase64,
+          mimeType,
+          fileName,
+          options?.spaceId,
+          getSpaceById(options?.spaceId)?.spaceJoinCode || ""
+        )
+        : { mimeType, contentBase64: parsed.contentBase64, fileName };
       const uploadResult = await uploadAssetWithBase(base, {
         scope,
-        fileName,
-        mimeType,
-        contentBase64: parsed.contentBase64
+        fileName: encryptedAsset.fileName,
+        mimeType: encryptedAsset.mimeType,
+        contentBase64: encryptedAsset.contentBase64
       });
       const assetId = String(uploadResult?.asset?.id || "").trim();
       if (!assetId) continue;
@@ -239,8 +491,14 @@
         throw new Error(body || "Accès impossible au partage");
       }
       const data = await response.json();
+      const payload = data.payload || null;
+      const hydratedPayload = payload && (collection === "pages" || collection === "memos")
+        ? await hydratePayloadAssetUrls(payload, base, {
+          spaceId: String(payload?.spaceId || "golive").trim().toLowerCase()
+        })
+        : payload;
       return {
-        payload: data.payload || null,
+        payload: hydratedPayload,
         meta: data.meta || null
       };
     });
@@ -280,10 +538,19 @@
         throw new Error(body || "Impossible de récupérer la liste");
       }
       const data = await response.json();
-      return (data.documents || []).map(doc => ({
-        id: doc.id,
-        payload: doc.payload || null,
-        meta: doc.meta || null
+      const docs = Array.isArray(data.documents) ? data.documents : [];
+      return Promise.all(docs.map(async doc => {
+        const payload = doc?.payload || null;
+        const hydratedPayload = payload && (collection === "pages" || collection === "memos")
+          ? await hydratePayloadAssetUrls(payload, base, {
+            spaceId: String(payload?.spaceId || "golive").trim().toLowerCase()
+          })
+          : payload;
+        return {
+          id: doc.id,
+          payload: hydratedPayload,
+          meta: doc.meta || null
+        };
       }));
     });
   }
@@ -296,9 +563,12 @@
       const url = buildShareUrl(base, collection, normalizedToken);
       const method = normalizedToken ? "PUT" : "POST";
       const shouldInlineAssets = Boolean(options && options.inlineAssets);
+      const spaceId = resolveSpaceIdForPayload(payload, options);
       const preparedPayload = shouldInlineAssets
         ? await processPayloadInlineAssets(payload, base, {
-          assetScope: options.assetScope || collection
+          assetScope: options.assetScope || collection,
+          collection,
+          spaceId
         })
         : payload;
       const response = await fetch(url, {
@@ -380,9 +650,23 @@
         throw new Error(body || "Impossible de récupérer le lot");
       }
       const data = await response.json().catch(() => ({ documents: [] }));
+      const docs = Array.isArray(data?.documents) ? data.documents : [];
+      const hydratedDocs = await Promise.all(docs.map(async doc => {
+        const payload = doc?.payload || null;
+        const hydratedPayload = payload && (collection === "pages" || collection === "memos")
+          ? await hydratePayloadAssetUrls(payload, base, {
+            spaceId: String(payload?.spaceId || "golive").trim().toLowerCase()
+          })
+          : payload;
+        return {
+          id: doc?.id,
+          payload: hydratedPayload,
+          meta: doc?.meta || null
+        };
+      }));
       return {
         count: Number(data?.count || normalizedIds.length),
-        documents: Array.isArray(data?.documents) ? data.documents : []
+        documents: hydratedDocs
       };
     });
   }
@@ -489,7 +773,19 @@
     assertReady();
     return withWorkerFallback(async base => {
       const scope = String(options.assetScope || options.scope || "shared").trim() || "shared";
-      const data = await uploadAssetWithBase(base, Object.assign({}, payload || {}, { scope }));
+      const spaceId = String(options?.spaceId || "golive").trim().toLowerCase() || "golive";
+      let finalPayload = Object.assign({}, payload || {}, { scope });
+      if (shouldEncryptMedia(String(options?.collection || "pages"), spaceId)) {
+        const encryptedAsset = await encryptAssetPayload(
+          String(payload?.contentBase64 || ""),
+          String(payload?.mimeType || "application/octet-stream"),
+          String(payload?.fileName || "asset.bin"),
+          spaceId,
+          getSpaceById(spaceId)?.spaceJoinCode || ""
+        );
+        finalPayload = Object.assign({}, finalPayload, encryptedAsset);
+      }
+      const data = await uploadAssetWithBase(base, finalPayload);
       if (data?.asset?.id) {
         data.asset.url = buildAssetUrl(base, data.asset.id);
       }

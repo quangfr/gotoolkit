@@ -342,7 +342,7 @@ const LinkSearchModal = ({
           .forEach((item: any) => rows.push({
             type: 'document',
             id: String(item.id || ''),
-            title: String(item.title || item.payload?.tabs?.[0]?.title || 'New page'),
+            title: String(item.title || item.payload?.tabs?.[0]?.title || 'Nouvelle page'),
             icon: String(item.icon || ''),
             section: 'private',
             updatedAt: String(item.updatedAt || '')

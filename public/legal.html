@@ -117,13 +117,31 @@
             <p><strong>8. Vos droits</strong><br>Conformément au RGPD, vous disposez des droits d’accès, rectification,
                 effacement, limitation, opposition et portabilité, selon les conditions légales applicables. Vous
                 pouvez également introduire une réclamation auprès de la CNIL.</p>
-            <p><strong>9. Sécurité</strong><br>Des mesures techniques et organisationnelles raisonnables sont mises en
-                œuvre pour protéger les données. Compte tenu de la nature d’Internet, une sécurité absolue ne peut être
-                garantie.</p>
-            <p><strong>10. Données de tiers</strong><br>Si vous traitez des données personnelles de tiers (notamment via
+            <p><strong>9. Chiffrement côté client (E2EE) des contenus et fichiers</strong><br>Les contenus de pages et
+                les fichiers média associés peuvent être chiffrés de bout en bout avant envoi, directement dans le
+                navigateur, à partir d’une phrase d’accès d’espace (5 mots). Le chiffrement média est réalisé côté
+                client en AES-256-GCM. Les serveurs GoToolkit et les intermédiaires techniques ne disposent pas de la
+                phrase d’accès en clair et ne peuvent pas lire les contenus chiffrés.</p>
+            <p><strong>10. Portée et limites du chiffrement</strong><br>Le chiffrement couvre le contenu des pages et
+                les fichiers. Certaines métadonnées restent nécessaires au fonctionnement (ex. identifiants techniques,
+                espace, horodatages, statut, taille/type de fichier, structure de partage) et ne sont pas chiffrées.
+                Le dispositif améliore fortement la confidentialité opérationnelle, mais ne constitue pas une garantie
+                absolue contre tous les risques (poste compromis, partage involontaire, perte de secret, etc.).</p>
+            <p><strong>11. Absence de récupération de la phrase d’accès</strong><br>GoToolkit ne fournit pas de mécanisme
+                de récupération de la phrase d’accès d’un espace. En cas de perte, l’accès aux données chiffrées de cet
+                espace peut devenir impossible.</p>
+            <p><strong>12. Responsabilité utilisateur sur le secret d’accès</strong><br>Vous êtes responsable de la
+                génération, de la conservation, de la transmission et de la révocation de la phrase d’accès de vos
+                espaces. Toute personne disposant de cette phrase peut déchiffrer les contenus correspondants.</p>
+            <p><strong>13. Conformité et standards professionnels</strong><br>L’architecture (chiffrement client,
+                principe de minimisation de l’accès serveur au contenu, séparation contenu/métadonnées) s’aligne avec
+                des pratiques reconnues de protection des données en contexte professionnel. Toutefois, la conformité
+                réglementaire globale dépend aussi de votre usage, de vos bases légales, de votre gouvernance interne
+                et des services tiers éventuellement connectés.</p>
+            <p><strong>14. Données de tiers</strong><br>Si vous traitez des données personnelles de tiers (notamment via
                 dictée, transcription, partage ou publication), vous devez vous assurer de disposer d’une base légale
                 et, lorsque nécessaire, d’avoir informé les personnes concernées.</p>
-            <p><strong>11. Mises à jour</strong><br>La présente section peut évoluer pour refléter les changements
+            <p><strong>15. Mises à jour</strong><br>La présente section peut évoluer pour refléter les changements
                 réglementaires, techniques ou fonctionnels.</p>
         </section>
         <p style="margin-top:14px;font-size:0.85em;opacity:0.85;">Responsable de la publication : Xuan Quang Tran

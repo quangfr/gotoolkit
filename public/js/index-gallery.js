@@ -14,7 +14,7 @@
             const documentApi = window.goToolkitDocumentApi;
 
             const APP_DEFINITIONS = {
-                memo: { icon: "zap", name: "Docs", page: "index.html", collection: "memos" },
+                memo: { icon: "zap", name: "Docs", page: "index.html", collection: "pages" },
                 plan: { icon: "layout-list", name: "Timeline", page: "old/timeline.html", collection: "timelines" },
                 grid: { icon: "grid-3x3", name: "Grid", page: "grid.html", collection: "grids" }
             };
@@ -673,7 +673,7 @@
                                 id: spaceId,
                                 name: `Espace ${spaceId.toUpperCase()}`,
                                 icon: "cloud-upload",
-                                spaceCode: "",
+                                spaceJoinCode: "",
                                 isDefault: spaceId === "golive"
                             }) || { id: spaceId, name: `Espace ${spaceId.toUpperCase()}`, icon: "cloud-upload" };
                             cardsBySpace.set(spaceId, []);
@@ -717,7 +717,7 @@
                     return;
                 }
                 const targets = [
-                    { app: "memo", collection: APP_DEFINITIONS.memo?.collection || "memos", fallbackTitle: "Document partagé" },
+                    { app: "memo", collection: APP_DEFINITIONS.memo?.collection || "pages", fallbackTitle: "Document partagé" },
                     { app: "grid", collection: APP_DEFINITIONS.grid?.collection || "grids", fallbackTitle: "Tableau partagé" }
                 ];
                 await Promise.all(targets.map(async ({ app, collection, fallbackTitle }) => {

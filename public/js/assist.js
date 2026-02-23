@@ -7287,7 +7287,7 @@
                 : (typeof payload === "string" ? payload : "");
             var plainText = this.stripHtmlText(memoHtml);
             var abstract = String(item.description || "").trim() || this.getFirstNonEmptyLine(plainText);
-            var title = String(item.title || record?.title || "").trim() || "New page";
+            var title = String(item.title || record?.title || "").trim() || "Nouvelle page";
             entries.push({
                 path: "",
                 name: title,
@@ -8162,7 +8162,7 @@
                 "<input type=\"checkbox\" class=\"chat-knowledge-modal__checkbox\" data-key=\"" + escapeHtml(key) + "\" " + (checked ? "checked" : "") + " " + (this.knowledgeIndexing ? "disabled" : "") + ">" +
                 "<button type=\"button\" class=\"document-explorer__item-title chat-knowledge-modal__name\" data-key=\"" + escapeHtml(key) + "\" title=\"" + escapeHtml(entry.name || "") + "\">" +
                 "<i data-lucide=\"" + escapeHtml(icon) + "\" style=\"width:14px;height:14px;margin-right:6px;\"></i>" +
-                "<span>" + escapeHtml(entry.name || "New page") + "</span>" +
+                "<span>" + escapeHtml(entry.name || "Nouvelle page") + "</span>" +
                 "</button>" +
                 "</div>" +
                 "</div>"

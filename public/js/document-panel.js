@@ -693,7 +693,7 @@
 
         function normalizeName(value) {
             const name = String(value || "").trim();
-            return name || "New page";
+            return name || "Nouvelle page";
         }
 
         function uniqueName(name, list, extraNames, excludeId) {

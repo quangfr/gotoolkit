@@ -54628,11 +54628,15 @@ ${promptInput.trim()}`
       )
     ] }) });
   };
-  var EmbedNodeView = ({ node, editor, getPos }) => {
-    var _a, _b;
+  var EmbedNodeView = ({ node, editor, getPos, updateAttributes: updateAttributes2 }) => {
+    var _a, _b, _c, _d;
     const canEdit = Boolean(editor == null ? void 0 : editor.isEditable);
     const src = String(((_a = node == null ? void 0 : node.attrs) == null ? void 0 : _a.src) || "");
     const title = String(((_b = node == null ? void 0 : node.attrs) == null ? void 0 : _b.title) || "");
+    const frameRef = react_shim_default.useRef(null);
+    const resizeStateRef = react_shim_default.useRef(null);
+    const widthPx = parseSizePx((_c = node == null ? void 0 : node.attrs) == null ? void 0 : _c.width);
+    const heightPx = parseSizePx((_d = node == null ? void 0 : node.attrs) == null ? void 0 : _d.height);
     const handleDelete = () => {
       if (typeof getPos !== "function") return;
       const pos = getPos();
@@ -54647,7 +54651,43 @@ ${promptInput.trim()}`
       } catch (err) {
       }
     };
-    return /* @__PURE__ */ jsx(NodeViewWrapper, { className: "memo-video-wrapper", children: /* @__PURE__ */ jsxs("div", { className: "memo-video-frame memo-embed-frame", children: [
+    react_shim_default.useEffect(() => {
+      if (!canEdit) return;
+      const onPointerMove = (event) => {
+        const current = resizeStateRef.current;
+        if (!current) return;
+        const nextWidth = Math.max(220, current.width + (event.clientX - current.startX));
+        const nextHeight = Math.max(180, current.height + (event.clientY - current.startY));
+        if (typeof updateAttributes2 === "function") {
+          updateAttributes2({
+            width: `${Math.round(nextWidth)}px`,
+            height: `${Math.round(nextHeight)}px`
+          });
+        }
+      };
+      const onPointerUp = () => {
+        if (!resizeStateRef.current) return;
+        resizeStateRef.current = null;
+        document.body.classList.remove("table-resize-cursor");
+      };
+      window.addEventListener("pointermove", onPointerMove);
+      window.addEventListener("pointerup", onPointerUp);
+      window.addEventListener("pointercancel", onPointerUp);
+      return () => {
+        window.removeEventListener("pointermove", onPointerMove);
+        window.removeEventListener("pointerup", onPointerUp);
+        window.removeEventListener("pointercancel", onPointerUp);
+        document.body.classList.remove("table-resize-cursor");
+      };
+    }, [canEdit, updateAttributes2]);
+    const frameStyle = {
+      width: widthPx ? `${widthPx}px` : void 0,
+      height: heightPx ? `${heightPx}px` : void 0
+    };
+    const embedStyle = {
+      height: heightPx ? "100%" : void 0
+    };
+    return /* @__PURE__ */ jsx(NodeViewWrapper, { className: "memo-video-wrapper", children: /* @__PURE__ */ jsxs("div", { ref: frameRef, className: "memo-video-frame memo-embed-frame", style: frameStyle, children: [
       /* @__PURE__ */ jsx("button", { className: "memo-link-block__handle", type: "button", "aria-label": "D\xE9placer", "data-drag-handle": true, children: /* @__PURE__ */ jsx("i", { "data-lucide": "grip-vertical", "aria-hidden": "true" }) }),
       /* @__PURE__ */ jsxs("div", { className: "memo-image-controls", children: [
         /* @__PURE__ */ jsxs(
@@ -54686,12 +54726,32 @@ ${promptInput.trim()}`
         "iframe",
         {
           className: "memo-embed",
+          style: embedStyle,
           src,
           title: title || "Embedded video",
           loading: "lazy",
           allow: "autoplay; fullscreen; picture-in-picture; clipboard-write",
           referrerPolicy: "strict-origin-when-cross-origin",
           allowFullScreen: true
+        }
+      ),
+      canEdit && /* @__PURE__ */ jsx(
+        "div",
+        {
+          className: "memo-video-resize-handle",
+          onPointerDown: (event) => {
+            var _a2;
+            event.preventDefault();
+            event.stopPropagation();
+            const rect = (_a2 = frameRef.current) == null ? void 0 : _a2.getBoundingClientRect();
+            resizeStateRef.current = {
+              startX: event.clientX,
+              startY: event.clientY,
+              width: (rect == null ? void 0 : rect.width) || 640,
+              height: (rect == null ? void 0 : rect.height) || 360
+            };
+            document.body.classList.add("table-resize-cursor");
+          }
         }
       )
     ] }) });
@@ -54744,7 +54804,9 @@ ${promptInput.trim()}`
       return {
         src: { default: null },
         title: { default: null },
-        provider: { default: null }
+        provider: { default: null },
+        width: { default: null },
+        height: { default: null }
       };
     },
     parseHTML() {
@@ -55037,7 +55099,7 @@ ${promptInput.trim()}`
             return rows.push({
               type: "document",
               id: String(item.id || ""),
-              title: String(item.title || ((_c2 = (_b2 = (_a2 = item.payload) == null ? void 0 : _a2.tabs) == null ? void 0 : _b2[0]) == null ? void 0 : _c2.title) || "New page"),
+              title: String(item.title || ((_c2 = (_b2 = (_a2 = item.payload) == null ? void 0 : _a2.tabs) == null ? void 0 : _b2[0]) == null ? void 0 : _c2.title) || "Nouvelle page"),
               icon: String(item.icon || ""),
               section: "private",
               updatedAt: String(item.updatedAt || "")

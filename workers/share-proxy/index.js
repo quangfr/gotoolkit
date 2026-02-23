@@ -3,6 +3,8 @@ const SHARES_SEGMENT = "shares";
 const ASSETS_SEGMENT = "assets";
 const VALID_COLLECTIONS = new Set([
   "grids",
+  "pages",
+  "pages-meta",
   "memos",
   "memos-meta",
   "template-memos",
@@ -14,6 +16,9 @@ const GOOGLE_API_SCOPE = [
 ].join(" ");
 const FIREBASE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const ALLOWED_ASSET_MIME_PREFIXES = ["image/", "video/", "audio/"];
+const ALLOWED_ASSET_MIME_TYPES = new Set([
+  "application/x-gotoolkit-e2ee+json"
+]);
 const MAX_ASSET_BYTES = 25 * 1024 * 1024;
 let serviceAccountConfig = null;
 let signingKeyPromise = null;
@@ -205,7 +210,7 @@ function safeAssetScope(raw) {
 
 function isAllowedAssetMime(mimeType) {
   const mime = String(mimeType || "").trim().toLowerCase();
-  return ALLOWED_ASSET_MIME_PREFIXES.some(prefix => mime.startsWith(prefix));
+  return ALLOWED_ASSET_MIME_PREFIXES.some(prefix => mime.startsWith(prefix)) || ALLOWED_ASSET_MIME_TYPES.has(mime);
 }
 
 function detectAssetExtension(mimeType, fileName) {
@@ -871,11 +876,30 @@ function buildArchivedMemosMetaPayload(metaPayload, contentPayload, options = {}
   };
 }
 
+function resolveContentMetaCollections(contentCollection) {
+  const collection = String(contentCollection || "").trim().toLowerCase();
+  if (collection === "memos") return { content: "memos", meta: "memos-meta" };
+  if (collection === "pages") return { content: "pages", meta: "pages-meta" };
+  return null;
+}
+
+function resolveConsistencyCollections(collection) {
+  const normalized = String(collection || "").trim().toLowerCase();
+  if (normalized === "memos" || normalized === "memos-meta") {
+    return { content: "memos", meta: "memos-meta" };
+  }
+  if (normalized === "pages" || normalized === "pages-meta") {
+    return { content: "pages", meta: "pages-meta" };
+  }
+  return null;
+}
+
 async function reconcileMemosConsistency(env, request, options = {}) {
   const dryRun = Boolean(options?.dryRun);
+  const targetCollections = resolveConsistencyCollections(options?.collection || "memos") || { content: "memos", meta: "memos-meta" };
   const [memosDocs, metaDocs] = await Promise.all([
-    listShareDocuments(env, "memos"),
-    listShareDocuments(env, "memos-meta")
+    listShareDocuments(env, targetCollections.content),
+    listShareDocuments(env, targetCollections.meta)
   ]);
   const memosById = new Map(
     (memosDocs || [])
@@ -911,11 +935,11 @@ async function reconcileMemosConsistency(env, request, options = {}) {
     for (const id of contentOnly) {
       const contentDoc = memosById.get(id);
       const metaPayload = normalizeMemosMetaPayloadFromContent(contentDoc?.payload || {}, "Document partagé");
-      await upsertShareDocument(env, "memos-meta", id, metaPayload, request);
+      await upsertShareDocument(env, targetCollections.meta, id, metaPayload, request);
       repairedMeta.push(id);
     }
     for (const id of metaOnlyActive) {
-      await deleteShareDocument(env, "memos-meta", id);
+      await deleteShareDocument(env, targetCollections.meta, id);
       removedMeta.push(id);
     }
   }
@@ -924,8 +948,8 @@ async function reconcileMemosConsistency(env, request, options = {}) {
     success: true,
     dryRun,
     totals: {
-      memos: memosById.size,
-      memosMeta: metaById.size
+      content: memosById.size,
+      meta: metaById.size
     },
     mismatches: {
       contentOnlyCount: contentOnly.length,
@@ -1167,14 +1191,15 @@ async function handleRequest(request, env) {
     if (ids.length > 200) {
       return errorResponse("ids[] dépasse la limite (200)", 400, request, env);
     }
-    if (batchDeletePath.collection !== "memos") {
-      return errorResponse("Route de suppression groupée supportée uniquement pour memos", 400, request, env);
+    const collections = resolveContentMetaCollections(batchDeletePath.collection);
+    if (!collections) {
+      return errorResponse("Route de suppression groupée supportée uniquement pour pages/memos", 400, request, env);
     }
     const results = [];
     for (const id of ids) {
       const [existingContent, existingMeta] = await Promise.all([
-        fetchShareDocument(env, "memos", id),
-        fetchShareDocument(env, "memos-meta", id)
+        fetchShareDocument(env, collections.content, id),
+        fetchShareDocument(env, collections.meta, id)
       ]);
       const archivedMetaPayload = buildArchivedMemosMetaPayload(
         existingMeta?.payload || null,
@@ -1182,8 +1207,8 @@ async function handleRequest(request, env) {
         { reason: "delete", archivedAt: new Date().toISOString() }
       );
       await Promise.all([
-        deleteShareDocument(env, "memos", id),
-        upsertShareDocument(env, "memos-meta", id, archivedMetaPayload, request)
+        deleteShareDocument(env, collections.content, id),
+        upsertShareDocument(env, collections.meta, id, archivedMetaPayload, request)
       ]);
       results.push({
         id,
@@ -1223,8 +1248,9 @@ async function handleRequest(request, env) {
     if (writes.length > 200) {
       return errorResponse("writes[] dépasse la limite (200)", 400, request, env);
     }
-    if (batchCreatePath.collection !== "memos") {
-      return errorResponse("Route de création groupée supportée uniquement pour memos", 400, request, env);
+    const collections = resolveContentMetaCollections(batchCreatePath.collection);
+    if (!collections) {
+      return errorResponse("Route de création groupée supportée uniquement pour pages/memos", 400, request, env);
     }
     const results = [];
     for (const entry of writes) {
@@ -1241,8 +1267,8 @@ async function handleRequest(request, env) {
         return errorResponse(`metaPayload manquant pour ${id}`, 400, request, env);
       }
       const [contentResult, metaResult] = await Promise.all([
-        upsertShareDocument(env, "memos", id, contentPayload, request),
-        upsertShareDocument(env, "memos-meta", id, metaPayload, request)
+        upsertShareDocument(env, collections.content, id, contentPayload, request),
+        upsertShareDocument(env, collections.meta, id, metaPayload, request)
       ]);
       results.push({
         id,
@@ -1268,12 +1294,13 @@ async function handleRequest(request, env) {
     if (!verifyAdminAccess(request, env)) {
       return errorResponse("Accès refusé", 403, request, env);
     }
-    if (repairPath.collection !== "memos") {
-      return errorResponse("Route de réparation supportée uniquement pour memos", 400, request, env);
+    const collections = resolveContentMetaCollections(repairPath.collection);
+    if (!collections) {
+      return errorResponse("Route de réparation supportée uniquement pour pages/memos", 400, request, env);
     }
     const url = new URL(request.url);
     const dryRun = ["1", "true", "yes"].includes(String(url.searchParams.get("dryRun") || "").trim().toLowerCase());
-    const report = await reconcileMemosConsistency(env, request, { dryRun });
+    const report = await reconcileMemosConsistency(env, request, { dryRun, collection: collections.content });
     return jsonResponse(report, 200, request, env, {
       "Cache-Control": "no-store, max-age=0"
     });
@@ -1286,11 +1313,12 @@ async function handleRequest(request, env) {
     const ensureConsistency = ["1", "true", "yes"].includes(
       String(requestUrl.searchParams.get("ensureConsistency") || "").trim().toLowerCase()
     );
-    if (ensureConsistency && (path.collection === "memos" || path.collection === "memos-meta")) {
+    const consistencyCollections = resolveConsistencyCollections(path.collection);
+    if (ensureConsistency && consistencyCollections) {
       if (!verifyAdminAccess(request, env)) {
         return errorResponse("Accès refusé", 403, request, env);
       }
-      await reconcileMemosConsistency(env, request, { dryRun: false });
+      await reconcileMemosConsistency(env, request, { dryRun: false, collection: consistencyCollections.content });
     }
     if (!path.documentId) {
       const view = String(requestUrl.searchParams.get("view") || "").trim().toLowerCase();
