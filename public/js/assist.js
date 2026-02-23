@@ -7498,6 +7498,16 @@
         this.knowledgeModalListEl = list;
         this.knowledgeModalTitleEl = title;
         this.knowledgeModalCloseBtn = closeBtn;
+        if (!this._knowledgeModalEscapeHandler) {
+            this._knowledgeModalEscapeHandler = function (event) {
+                if (event.key !== "Escape") return;
+                if (this.knowledgeModal && this.knowledgeModal.classList.contains("open")) {
+                    event.preventDefault();
+                    this.closeKnowledgeModal();
+                }
+            }.bind(this);
+            document.addEventListener("keydown", this._knowledgeModalEscapeHandler, true);
+        }
         this.buildKnowledgeEditModal();
         this.renderKnowledgeModalTitle();
     };
@@ -9272,6 +9282,16 @@
         this.previewTitleEl = title;
         this.previewBodyEl = body;
         this.previewCloseBtn = closeBtn;
+        if (!this._previewPanelEscapeHandler) {
+            this._previewPanelEscapeHandler = function (event) {
+                if (event.key !== "Escape") return;
+                if (this.previewPanel && this.previewPanel.classList.contains("open")) {
+                    event.preventDefault();
+                    this.closePreviewPanel();
+                }
+            }.bind(this);
+            document.addEventListener("keydown", this._previewPanelEscapeHandler, true);
+        }
     };
 
     AssistSidebar.prototype.clearPreviewIframe = function () {

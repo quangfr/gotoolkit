@@ -687,8 +687,21 @@
             } else if (event.key === "Escape") {
                 if (modalIconGrid?.classList.contains("open")) {
                     modalIconGrid.classList.remove("open");
+                    return;
                 }
+                event.preventDefault();
+                resolveModal(null);
             }
+        });
+        document.addEventListener("keydown", event => {
+            if (event.key !== "Escape") return;
+            if (modalOverlay.style.display !== "flex" || !modalOverlay.classList.contains("open")) return;
+            if (modalIconGrid?.classList.contains("open")) {
+                modalIconGrid.classList.remove("open");
+                return;
+            }
+            event.preventDefault();
+            resolveModal(null);
         });
 
         function normalizeName(value) {
