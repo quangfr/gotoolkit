@@ -1259,7 +1259,7 @@
             right: 0;
             top: 50%;
             transform: translateY(-50%);
-            z-index: 25;
+            z-index: 12000;
             display: flex;
             align-items: center;
             pointer-events: auto;
@@ -1294,6 +1294,7 @@
             box-shadow: var(--shadow-md);
             padding: 6px;
             display: none;
+            z-index: 12010;
             pointer-events: auto;
         }
         .memo-heading-rail:hover .memo-heading-rail__popup,
