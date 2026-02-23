@@ -23912,12 +23912,6 @@ img.ProseMirror-separator {
     x: v,
     y: v
   });
-  function clamp(start, value, end) {
-    return max(start, min(value, end));
-  }
-  function evaluate(value, param) {
-    return typeof value === "function" ? value(param) : value;
-  }
   function getSide2(placement) {
     return placement.split("-")[0];
   }
@@ -23936,23 +23930,6 @@ img.ProseMirror-separator {
   }
   function getAlignmentAxis(placement) {
     return getOppositeAxis(getSideAxis(placement));
-  }
-  function expandPaddingObject(padding) {
-    return {
-      top: 0,
-      right: 0,
-      bottom: 0,
-      left: 0,
-      ...padding
-    };
-  }
-  function getPaddingObject(padding) {
-    return typeof padding !== "number" ? expandPaddingObject(padding) : {
-      top: padding,
-      right: padding,
-      bottom: padding,
-      left: padding
-    };
   }
   function rectToClientRect(rect) {
     const {
@@ -24110,202 +24087,6 @@ img.ProseMirror-separator {
       placement: statefulPlacement,
       strategy,
       middlewareData
-    };
-  };
-  async function detectOverflow(state2, options2) {
-    var _await$platform$isEle;
-    if (options2 === void 0) {
-      options2 = {};
-    }
-    const {
-      x,
-      y,
-      platform: platform2,
-      rects,
-      elements,
-      strategy
-    } = state2;
-    const {
-      boundary = "clippingAncestors",
-      rootBoundary = "viewport",
-      elementContext = "floating",
-      altBoundary = false,
-      padding = 0
-    } = evaluate(options2, state2);
-    const paddingObject = getPaddingObject(padding);
-    const altContext = elementContext === "floating" ? "reference" : "floating";
-    const element = elements[altBoundary ? altContext : elementContext];
-    const clippingClientRect = rectToClientRect(await platform2.getClippingRect({
-      element: ((_await$platform$isEle = await (platform2.isElement == null ? void 0 : platform2.isElement(element))) != null ? _await$platform$isEle : true) ? element : element.contextElement || await (platform2.getDocumentElement == null ? void 0 : platform2.getDocumentElement(elements.floating)),
-      boundary,
-      rootBoundary,
-      strategy
-    }));
-    const rect = elementContext === "floating" ? {
-      x,
-      y,
-      width: rects.floating.width,
-      height: rects.floating.height
-    } : rects.reference;
-    const offsetParent = await (platform2.getOffsetParent == null ? void 0 : platform2.getOffsetParent(elements.floating));
-    const offsetScale = await (platform2.isElement == null ? void 0 : platform2.isElement(offsetParent)) ? await (platform2.getScale == null ? void 0 : platform2.getScale(offsetParent)) || {
-      x: 1,
-      y: 1
-    } : {
-      x: 1,
-      y: 1
-    };
-    const elementClientRect = rectToClientRect(platform2.convertOffsetParentRelativeRectToViewportRelativeRect ? await platform2.convertOffsetParentRelativeRectToViewportRelativeRect({
-      elements,
-      rect,
-      offsetParent,
-      strategy
-    }) : rect);
-    return {
-      top: (clippingClientRect.top - elementClientRect.top + paddingObject.top) / offsetScale.y,
-      bottom: (elementClientRect.bottom - clippingClientRect.bottom + paddingObject.bottom) / offsetScale.y,
-      left: (clippingClientRect.left - elementClientRect.left + paddingObject.left) / offsetScale.x,
-      right: (elementClientRect.right - clippingClientRect.right + paddingObject.right) / offsetScale.x
-    };
-  }
-  var originSides = /* @__PURE__ */ new Set(["left", "top"]);
-  async function convertValueToCoords(state2, options2) {
-    const {
-      placement,
-      platform: platform2,
-      elements
-    } = state2;
-    const rtl = await (platform2.isRTL == null ? void 0 : platform2.isRTL(elements.floating));
-    const side = getSide2(placement);
-    const alignment = getAlignment(placement);
-    const isVertical = getSideAxis(placement) === "y";
-    const mainAxisMulti = originSides.has(side) ? -1 : 1;
-    const crossAxisMulti = rtl && isVertical ? -1 : 1;
-    const rawValue = evaluate(options2, state2);
-    let {
-      mainAxis,
-      crossAxis,
-      alignmentAxis
-    } = typeof rawValue === "number" ? {
-      mainAxis: rawValue,
-      crossAxis: 0,
-      alignmentAxis: null
-    } : {
-      mainAxis: rawValue.mainAxis || 0,
-      crossAxis: rawValue.crossAxis || 0,
-      alignmentAxis: rawValue.alignmentAxis
-    };
-    if (alignment && typeof alignmentAxis === "number") {
-      crossAxis = alignment === "end" ? alignmentAxis * -1 : alignmentAxis;
-    }
-    return isVertical ? {
-      x: crossAxis * crossAxisMulti,
-      y: mainAxis * mainAxisMulti
-    } : {
-      x: mainAxis * mainAxisMulti,
-      y: crossAxis * crossAxisMulti
-    };
-  }
-  var offset = function(options2) {
-    if (options2 === void 0) {
-      options2 = 0;
-    }
-    return {
-      name: "offset",
-      options: options2,
-      async fn(state2) {
-        var _middlewareData$offse, _middlewareData$arrow;
-        const {
-          x,
-          y,
-          placement,
-          middlewareData
-        } = state2;
-        const diffCoords = await convertValueToCoords(state2, options2);
-        if (placement === ((_middlewareData$offse = middlewareData.offset) == null ? void 0 : _middlewareData$offse.placement) && (_middlewareData$arrow = middlewareData.arrow) != null && _middlewareData$arrow.alignmentOffset) {
-          return {};
-        }
-        return {
-          x: x + diffCoords.x,
-          y: y + diffCoords.y,
-          data: {
-            ...diffCoords,
-            placement
-          }
-        };
-      }
-    };
-  };
-  var shift2 = function(options2) {
-    if (options2 === void 0) {
-      options2 = {};
-    }
-    return {
-      name: "shift",
-      options: options2,
-      async fn(state2) {
-        const {
-          x,
-          y,
-          placement
-        } = state2;
-        const {
-          mainAxis: checkMainAxis = true,
-          crossAxis: checkCrossAxis = false,
-          limiter = {
-            fn: (_ref) => {
-              let {
-                x: x2,
-                y: y2
-              } = _ref;
-              return {
-                x: x2,
-                y: y2
-              };
-            }
-          },
-          ...detectOverflowOptions
-        } = evaluate(options2, state2);
-        const coords = {
-          x,
-          y
-        };
-        const overflow = await detectOverflow(state2, detectOverflowOptions);
-        const crossAxis = getSideAxis(getSide2(placement));
-        const mainAxis = getOppositeAxis(crossAxis);
-        let mainAxisCoord = coords[mainAxis];
-        let crossAxisCoord = coords[crossAxis];
-        if (checkMainAxis) {
-          const minSide = mainAxis === "y" ? "top" : "left";
-          const maxSide = mainAxis === "y" ? "bottom" : "right";
-          const min3 = mainAxisCoord + overflow[minSide];
-          const max3 = mainAxisCoord - overflow[maxSide];
-          mainAxisCoord = clamp(min3, mainAxisCoord, max3);
-        }
-        if (checkCrossAxis) {
-          const minSide = crossAxis === "y" ? "top" : "left";
-          const maxSide = crossAxis === "y" ? "bottom" : "right";
-          const min3 = crossAxisCoord + overflow[minSide];
-          const max3 = crossAxisCoord - overflow[maxSide];
-          crossAxisCoord = clamp(min3, crossAxisCoord, max3);
-        }
-        const limitedCoords = limiter.fn({
-          ...state2,
-          [mainAxis]: mainAxisCoord,
-          [crossAxis]: crossAxisCoord
-        });
-        return {
-          ...limitedCoords,
-          data: {
-            x: limitedCoords.x - x,
-            y: limitedCoords.y - y,
-            enabled: {
-              [mainAxis]: checkMainAxis,
-              [crossAxis]: checkCrossAxis
-            }
-          }
-        };
-      }
     };
   };
 
@@ -24907,8 +24688,6 @@ img.ProseMirror-separator {
     isElement,
     isRTL
   };
-  var offset2 = offset;
-  var shift3 = shift2;
   var computePosition2 = (reference, floating, options2) => {
     const cache = /* @__PURE__ */ new Map();
     const mergedOptions = {
@@ -54967,12 +54746,18 @@ ${promptInput.trim()}`
     editor,
     onClose,
     anchorPos,
-    selectionRange
+    selectionRange,
+    containerRef
   }) => {
     const [query, setQuery] = react_shim_default.useState("");
     const [selectedIndex, setSelectedIndex] = react_shim_default.useState(0);
     const [documents, setDocuments] = react_shim_default.useState([]);
     const modalRef = react_shim_default.useRef(null);
+    const [modalStyle, setModalStyle] = react_shim_default.useState({
+      position: "absolute",
+      zIndex: 2e3,
+      visibility: "hidden"
+    });
     react_shim_default.useEffect(() => {
       let cancelled = false;
       const loadDocuments = async () => {
@@ -55030,59 +54815,135 @@ ${promptInput.trim()}`
         cancelled = true;
       };
     }, []);
-    react_shim_default.useEffect(() => {
+    const updateModalPosition = react_shim_default.useCallback(() => {
+      var _a;
       const { view } = editor;
       const from2 = Math.max(1, Math.min(anchorPos || 1, editor.state.doc.content.size));
+      const host = containerRef.current;
+      const modal = modalRef.current;
+      if (!host || !modal) return;
       let coords;
       try {
         coords = view.coordsAtPos(from2);
       } catch (e) {
-        coords = { left: window.innerWidth / 2, top: window.innerHeight / 2 };
+        const hostRect2 = host.getBoundingClientRect();
+        coords = { left: hostRect2.left + 20, top: hostRect2.top + 20 };
       }
-      if (modalRef.current) {
-        const virtualElement = {
-          getBoundingClientRect() {
-            return new DOMRect(coords.left, coords.top, 0, 0);
-          }
-        };
-        computePosition2(virtualElement, modalRef.current, {
-          placement: "bottom-start",
-          middleware: [
-            offset2(10),
-            shift3({ padding: 10 })
-          ]
-        }).then(({ x, y, strategy }) => {
-          if (modalRef.current) {
-            Object.assign(modalRef.current.style, {
-              left: `${x}px`,
-              top: `${y}px`,
-              position: strategy,
-              display: "block"
-            });
-          }
-        });
-      }
+      const hostRect = host.getBoundingClientRect();
+      const padding = 10;
+      const caretLeftInHost = coords.left - hostRect.left;
+      const caretTopInHost = coords.top - hostRect.top;
+      const caretBottomInHost = ((_a = coords.bottom) != null ? _a : coords.top) - hostRect.top;
+      const modalWidth = modal.offsetWidth || 450;
+      const modalHeight = modal.offsetHeight || 320;
+      const minLeft = padding;
+      const maxLeft = Math.max(minLeft, host.clientWidth - modalWidth - padding);
+      const nextLeft = Math.min(Math.max(caretLeftInHost, minLeft), maxLeft);
+      const aboveTop = caretTopInHost - modalHeight - 8;
+      const belowTop = caretBottomInHost + 8;
+      const minTop = padding;
+      const maxTop = Math.max(minTop, host.clientHeight - modalHeight - padding);
+      const preferredTop = aboveTop >= minTop ? aboveTop : belowTop;
+      const nextTop = Math.min(Math.max(preferredTop, minTop), maxTop);
+      setModalStyle({
+        position: "absolute",
+        zIndex: 2e3,
+        left: `${nextLeft}px`,
+        top: `${nextTop}px`,
+        visibility: "visible"
+      });
+    }, [anchorPos, containerRef, editor]);
+    react_shim_default.useLayoutEffect(() => {
+      updateModalPosition();
+      const onLayoutChange = () => updateModalPosition();
+      window.addEventListener("resize", onLayoutChange);
+      const host = containerRef.current;
+      host == null ? void 0 : host.addEventListener("scroll", onLayoutChange, true);
       const handleClickOutside = (e) => {
         if (modalRef.current && !modalRef.current.contains(e.target)) {
           onClose();
         }
       };
       document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, [editor, onClose]);
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+        window.removeEventListener("resize", onLayoutChange);
+        host == null ? void 0 : host.removeEventListener("scroll", onLayoutChange, true);
+      };
+    }, [containerRef, onClose, updateModalPosition]);
     const isUrl = (str) => {
-      const pattern = /^([\da-z.-]+)\.([a-z.]{2,6})([\/\w .-]*)*\/?$/;
-      return pattern.test(str) || str.startsWith("http");
+      const value = String(str || "").trim().toLowerCase();
+      if (!value) return false;
+      if (value.startsWith("http://") || value.startsWith("https://") || value.startsWith("memo://")) return true;
+      if (value.startsWith("www.")) return true;
+      const pattern = /^([\da-z.-]+)\.([a-z.]{2,})([\/\w .~%:#?&=+-]*)*\/?$/;
+      return pattern.test(value);
     };
     const filteredDocs = documents.filter((d) => String((d == null ? void 0 : d.title) || "").toLowerCase().includes(query.toLowerCase())).slice(0, 50);
+    const queryTrimmed = String(query || "").trim();
+    const hasUrlQuery = isUrl(queryTrimmed);
     const items = [
       ...filteredDocs,
-      ...query ? [{
+      ...hasUrlQuery ? [{
         type: "url",
-        title: query,
-        isValid: isUrl(query)
+        title: queryTrimmed,
+        isValid: true
       }] : []
     ];
+    react_shim_default.useEffect(() => {
+      setSelectedIndex(0);
+    }, [queryTrimmed, hasUrlQuery]);
+    react_shim_default.useEffect(() => {
+      const onKeyDown = (e) => {
+        if (e.isComposing) return;
+        const key = e.key;
+        if (key === "Escape") {
+          e.preventDefault();
+          e.stopPropagation();
+          onClose();
+          return;
+        }
+        if (key === "Enter") {
+          e.preventDefault();
+          e.stopPropagation();
+          if (items[0]) handleSelect(items[0]);
+          return;
+        }
+        if (key === "ArrowDown") {
+          if (!items.length) return;
+          e.preventDefault();
+          e.stopPropagation();
+          setSelectedIndex((prev) => (prev + 1) % items.length);
+          return;
+        }
+        if (key === "ArrowUp") {
+          if (!items.length) return;
+          e.preventDefault();
+          e.stopPropagation();
+          setSelectedIndex((prev) => (prev - 1 + items.length) % items.length);
+          return;
+        }
+        if (key === "Backspace") {
+          e.preventDefault();
+          e.stopPropagation();
+          setQuery((prev) => prev.slice(0, -1));
+          return;
+        }
+        if (key === " ") {
+          e.preventDefault();
+          e.stopPropagation();
+          setQuery((prev) => prev + " ");
+          return;
+        }
+        if (key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+          e.preventDefault();
+          e.stopPropagation();
+          setQuery((prev) => prev + key);
+        }
+      };
+      document.addEventListener("keydown", onKeyDown, true);
+      return () => document.removeEventListener("keydown", onKeyDown, true);
+    }, [items, onClose]);
     const insertMemoLinkBlockAt = react_shim_default.useCallback((pos, item) => {
       var _a, _b, _c, _d, _e, _f;
       const schema = (_a = editor == null ? void 0 : editor.state) == null ? void 0 : _a.schema;
@@ -55155,34 +55016,9 @@ ${promptInput.trim()}`
       {
         ref: modalRef,
         className: "link-search-modal",
-        style: { position: "fixed", zIndex: 2e3, display: "none" },
+        style: modalStyle,
         children: [
-          /* @__PURE__ */ jsx(
-            "input",
-            {
-              autoFocus: true,
-              placeholder: "Rechercher un titre ou coller un lien...",
-              value: query,
-              onMouseDown: (e) => e.stopPropagation(),
-              onChange: (e) => {
-                setQuery(e.target.value);
-                setSelectedIndex(0);
-              },
-              onKeyDown: (e) => {
-                if (e.key === "Enter" && items[selectedIndex]) {
-                  handleSelect(items[selectedIndex]);
-                } else if (e.key === "ArrowDown") {
-                  setSelectedIndex((selectedIndex + 1) % items.length);
-                  e.preventDefault();
-                } else if (e.key === "ArrowUp") {
-                  setSelectedIndex((selectedIndex - 1 + items.length) % items.length);
-                  e.preventDefault();
-                } else if (e.key === "Escape") {
-                  onClose();
-                }
-              }
-            }
-          ),
+          /* @__PURE__ */ jsx("div", { style: { padding: "10px 12px", borderBottom: "1px solid var(--bg-surface-soft)", fontSize: 12, color: "var(--text-muted)" }, children: queryTrimmed ? `Recherche: ${queryTrimmed}` : "Tape pour rechercher un titre ou un lien" }),
           /* @__PURE__ */ jsxs("div", { className: "link-search-results", children: [
             items.map((item, i) => /* @__PURE__ */ jsxs(
               "div",
@@ -55200,8 +55036,7 @@ ${promptInput.trim()}`
                       item.type === "url" ? /* @__PURE__ */ jsx(Link2, { size: 12, style: { marginRight: 8, opacity: 0.6 } }) : /* @__PURE__ */ jsx(Link2, { size: 12, style: { marginRight: 8, opacity: 0.6 } }),
                       item.title
                     ] }),
-                    item.type === "document" && /* @__PURE__ */ jsx("div", { className: "link-search-item-path", children: item.section === "shared" ? "Partag\xE9" : item.section === "common" ? "Commun" : "Priv\xE9" }),
-                    item.type === "url" && !item.isValid && /* @__PURE__ */ jsx("div", { className: "link-search-item-invalid", children: "URL incompl\xE8te?" })
+                    item.type === "document" && /* @__PURE__ */ jsx("div", { className: "link-search-item-path", children: item.section === "shared" ? "Partag\xE9" : item.section === "common" ? "Commun" : "Priv\xE9" })
                   ] }),
                   /* @__PURE__ */ jsx("div", { className: "link-search-item-action", children: /* @__PURE__ */ jsx(Check, { size: 14 }) })
                 ]
@@ -55214,13 +55049,26 @@ ${promptInput.trim()}`
       }
     );
   };
-  var MemoLinkBlockView = ({ node, editor, getPos }) => {
+  var MemoLinkBlockView = ({ node, editor, getPos, updateAttributes: updateAttributes2 }) => {
     var _a, _b, _c, _d;
     const href = String(((_a = node == null ? void 0 : node.attrs) == null ? void 0 : _a.href) || "");
     const title = String(((_b = node == null ? void 0 : node.attrs) == null ? void 0 : _b.title) || "Document");
     const icon = String(((_c = node == null ? void 0 : node.attrs) == null ? void 0 : _c.icon) || "");
     const documentId = String(((_d = node == null ? void 0 : node.attrs) == null ? void 0 : _d.documentId) || "");
+    const canEdit = Boolean(editor == null ? void 0 : editor.isEditable);
+    const [isEditingTitle, setIsEditingTitle] = react_shim_default.useState(false);
+    const [draftTitle, setDraftTitle] = react_shim_default.useState(title);
     const iconRef = react_shim_default.useRef(null);
+    const titleInputRef = react_shim_default.useRef(null);
+    react_shim_default.useEffect(() => {
+      setDraftTitle(title);
+    }, [title]);
+    react_shim_default.useEffect(() => {
+      var _a2, _b2;
+      if (!isEditingTitle) return;
+      (_a2 = titleInputRef.current) == null ? void 0 : _a2.focus();
+      (_b2 = titleInputRef.current) == null ? void 0 : _b2.select();
+    }, [isEditingTitle]);
     react_shim_default.useEffect(() => {
       var _a2, _b2;
       try {
@@ -55245,11 +55093,35 @@ ${promptInput.trim()}`
       }
     };
     const handleCopy = async (event) => {
+      var _a2, _b2, _c2;
       event.preventDefault();
       event.stopPropagation();
       const markdown = `[${title}](${href})`;
       try {
-        await navigator.clipboard.writeText(markdown);
+        let copiedRich = false;
+        if (typeof getPos === "function") {
+          const pos = getPos();
+          const nodeAtPos = (_c2 = (_b2 = (_a2 = editor == null ? void 0 : editor.state) == null ? void 0 : _a2.doc) == null ? void 0 : _b2.nodeAt) == null ? void 0 : _c2.call(_b2, pos);
+          if (nodeAtPos) {
+            const slice2 = editor.state.doc.slice(pos, pos + nodeAtPos.nodeSize);
+            const serializer = DOMSerializer.fromSchema(editor.state.schema);
+            const fragment = serializer.serializeFragment(slice2.content);
+            const tmp = document.createElement("div");
+            tmp.appendChild(fragment);
+            const html2 = tmp.innerHTML.trim();
+            if (html2 && navigator.clipboard && typeof navigator.clipboard.write === "function" && typeof window.ClipboardItem === "function") {
+              const item = new window.ClipboardItem({
+                "text/html": new Blob([html2], { type: "text/html" }),
+                "text/plain": new Blob([markdown], { type: "text/plain" })
+              });
+              await navigator.clipboard.write([item]);
+              copiedRich = true;
+            }
+          }
+        }
+        if (!copiedRich) {
+          await navigator.clipboard.writeText(markdown);
+        }
       } catch (err) {
       }
     };
@@ -55258,8 +55130,22 @@ ${promptInput.trim()}`
       event.stopPropagation();
       if (typeof getPos !== "function") return;
       const pos = getPos();
-      editor.chain().focus().deleteRange({ from: pos, to: pos + node.nodeSize }).run();
+      const tr2 = editor.state.tr.delete(pos, pos + node.nodeSize).scrollIntoView();
+      editor.view.dispatch(tr2);
+      editor.view.focus();
     };
+    const commitTitle = react_shim_default.useCallback(() => {
+      const nextTitle = String(draftTitle || "").trim() || "Document";
+      setIsEditingTitle(false);
+      if (nextTitle === title) return;
+      if (typeof updateAttributes2 === "function") {
+        updateAttributes2({ title: nextTitle });
+      }
+    }, [draftTitle, title, updateAttributes2]);
+    const cancelTitleEdit = react_shim_default.useCallback(() => {
+      setDraftTitle(title);
+      setIsEditingTitle(false);
+    }, [title]);
     return /* @__PURE__ */ jsx(NodeViewWrapper, { className: "memo-link-block-wrap", contentEditable: false, children: /* @__PURE__ */ jsxs(
       "div",
       {
@@ -55269,21 +55155,58 @@ ${promptInput.trim()}`
         tabIndex: 0,
         onMouseDown: (event) => {
           const target = event.target;
+          if (isEditingTitle) {
+            event.preventDefault();
+            event.stopPropagation();
+            return;
+          }
           if ((target == null ? void 0 : target.closest(".memo-link-block__action")) || (target == null ? void 0 : target.closest(".memo-link-block__handle"))) return;
           handleOpen(event);
         },
+        onDoubleClick: (event) => {
+          const target = event.target;
+          if (!canEdit) return;
+          if ((target == null ? void 0 : target.closest(".memo-link-block__action")) || (target == null ? void 0 : target.closest(".memo-link-block__handle"))) return;
+          event.preventDefault();
+          event.stopPropagation();
+          setIsEditingTitle(true);
+        },
         onKeyDown: (event) => {
+          if (isEditingTitle) return;
           if (event.key === "Enter" || event.key === " ") {
             handleOpen(event);
           }
         },
         children: [
-          /* @__PURE__ */ jsx("button", { className: "memo-link-block__handle", type: "button", "aria-label": "D\xE9placer", children: /* @__PURE__ */ jsx("svg", { viewBox: "0 0 24 24", width: "14", height: "14", "aria-hidden": "true", children: /* @__PURE__ */ jsx("path", { fill: "currentColor", d: "M10 4h2v2h-2V4zm0 7h2v2h-2v-2zm0 7h2v2h-2v-2zm4-14h2v2h-2V4zm0 7h2v2h-2v-2zm0 7h2v2h-2v-2z" }) }) }),
+          /* @__PURE__ */ jsx("button", { className: "memo-link-block__handle", type: "button", "aria-label": "D\xE9placer", "data-drag-handle": true, children: /* @__PURE__ */ jsx("svg", { viewBox: "0 0 24 24", width: "14", height: "14", "aria-hidden": "true", children: /* @__PURE__ */ jsx("path", { fill: "currentColor", d: "M10 4h2v2h-2V4zm0 7h2v2h-2v-2zm0 7h2v2h-2v-2zm4-14h2v2h-2V4zm0 7h2v2h-2v-2zm0 7h2v2h-2v-2z" }) }) }),
           /* @__PURE__ */ jsxs("span", { className: "memo-link-block__icon", children: [
             /* @__PURE__ */ jsx("span", { ref: iconRef, children: icon ? /* @__PURE__ */ jsx("i", { "data-lucide": icon }) : /* @__PURE__ */ jsx("i", { "data-lucide": "file" }) }),
             /* @__PURE__ */ jsx("span", { className: "memo-link-block__icon-overlay", children: /* @__PURE__ */ jsx(ArrowUpRight, { size: 10 }) })
           ] }),
-          /* @__PURE__ */ jsx("span", { className: "memo-link-block__title", children: title }),
+          /* @__PURE__ */ jsx("span", { className: "memo-link-block__title", children: isEditingTitle ? /* @__PURE__ */ jsx(
+            "input",
+            {
+              ref: titleInputRef,
+              className: "memo-link-block__title-input",
+              value: draftTitle,
+              onMouseDown: (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+              },
+              onChange: (event) => setDraftTitle(event.target.value),
+              onBlur: () => commitTitle(),
+              onKeyDown: (event) => {
+                event.stopPropagation();
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  commitTitle();
+                } else if (event.key === "Escape") {
+                  event.preventDefault();
+                  cancelTitleEdit();
+                }
+              }
+            }
+          ) : title }),
           /* @__PURE__ */ jsxs("span", { className: "memo-link-block__actions", children: [
             /* @__PURE__ */ jsx("button", { type: "button", className: "memo-link-block__action", onClick: handleCopy, "aria-label": "Copier", children: /* @__PURE__ */ jsx(Copy, { size: 13 }) }),
             /* @__PURE__ */ jsx("button", { type: "button", className: "memo-link-block__action", onClick: handleDelete, "aria-label": "Supprimer", children: /* @__PURE__ */ jsx(Trash2, { size: 13 }) })
@@ -55314,6 +55237,141 @@ ${promptInput.trim()}`
     },
     addNodeView() {
       return ReactNodeViewRenderer(MemoLinkBlockView);
+    }
+  });
+  var MemoSummaryBlockView = ({ node, editor, getPos }) => {
+    var _a, _b;
+    const title = String(((_a = node == null ? void 0 : node.attrs) == null ? void 0 : _a.title) || "Sommaire");
+    const parentIdAttr = String(((_b = node == null ? void 0 : node.attrs) == null ? void 0 : _b.parentId) || "").trim();
+    const [children, setChildren] = react_shim_default.useState([]);
+    const blockRef = react_shim_default.useRef(null);
+    const refreshChildren = react_shim_default.useCallback(async () => {
+      const resolver = window.GoToolkitMemoGetChildrenForDocument;
+      const fallbackParentId = String(window.__memoActiveDocumentId || "").trim();
+      const parentId = parentIdAttr || fallbackParentId;
+      if (!parentId || typeof resolver !== "function") {
+        setChildren([]);
+        return;
+      }
+      try {
+        const rows = await resolver(parentId);
+        const next2 = (Array.isArray(rows) ? rows : []).map((item) => ({
+          id: String((item == null ? void 0 : item.id) || "").trim(),
+          title: String((item == null ? void 0 : item.title) || "Document").trim() || "Document",
+          icon: String((item == null ? void 0 : item.icon) || "").trim()
+        })).filter((item) => item.id);
+        setChildren(next2);
+      } catch (err) {
+        setChildren([]);
+      }
+    }, [parentIdAttr]);
+    react_shim_default.useEffect(() => {
+      refreshChildren();
+      const onChildrenUpdated = () => refreshChildren();
+      window.addEventListener("goToolkitMemoChildrenUpdated", onChildrenUpdated);
+      return () => window.removeEventListener("goToolkitMemoChildrenUpdated", onChildrenUpdated);
+    }, [refreshChildren]);
+    react_shim_default.useEffect(() => {
+      var _a2, _b2;
+      try {
+        (_b2 = (_a2 = window.lucide) == null ? void 0 : _a2.createIcons) == null ? void 0 : _b2.call(_a2, {
+          attrs: { width: "14", height: "14" },
+          elements: blockRef.current ? [blockRef.current] : void 0
+        });
+      } catch (err) {
+      }
+    }, [children]);
+    const handleOpenChild = react_shim_default.useCallback((event, id) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const open = window.GoToolkitMemoOpenDocumentByLink;
+      if (typeof open === "function") open(id);
+    }, []);
+    const handleCopy = react_shim_default.useCallback(async (event) => {
+      var _a2, _b2, _c;
+      event.preventDefault();
+      event.stopPropagation();
+      const markdown = [
+        `## ${title}`,
+        ...children.map((item) => `- [${item.title}](memo://${item.id})`)
+      ].join("\n");
+      try {
+        if (typeof getPos === "function") {
+          const pos = getPos();
+          const nodeAtPos = (_c = (_b2 = (_a2 = editor == null ? void 0 : editor.state) == null ? void 0 : _a2.doc) == null ? void 0 : _b2.nodeAt) == null ? void 0 : _c.call(_b2, pos);
+          if (nodeAtPos && navigator.clipboard && typeof navigator.clipboard.write === "function" && typeof window.ClipboardItem === "function") {
+            const slice2 = editor.state.doc.slice(pos, pos + nodeAtPos.nodeSize);
+            const serializer = DOMSerializer.fromSchema(editor.state.schema);
+            const fragment = serializer.serializeFragment(slice2.content);
+            const tmp = document.createElement("div");
+            tmp.appendChild(fragment);
+            const html2 = tmp.innerHTML.trim();
+            if (html2) {
+              const item = new window.ClipboardItem({
+                "text/html": new Blob([html2], { type: "text/html" }),
+                "text/plain": new Blob([markdown], { type: "text/plain" })
+              });
+              await navigator.clipboard.write([item]);
+              return;
+            }
+          }
+        }
+        await navigator.clipboard.writeText(markdown);
+      } catch (err) {
+      }
+    }, [children, editor, getPos, title]);
+    const handleDelete = react_shim_default.useCallback((event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (typeof getPos !== "function") return;
+      const pos = getPos();
+      const tr2 = editor.state.tr.delete(pos, pos + node.nodeSize).scrollIntoView();
+      editor.view.dispatch(tr2);
+      editor.view.focus();
+    }, [editor, getPos, node == null ? void 0 : node.nodeSize]);
+    return /* @__PURE__ */ jsx(NodeViewWrapper, { className: "memo-summary-block-wrap", contentEditable: false, children: /* @__PURE__ */ jsxs("div", { className: "memo-summary-block", "data-parent-id": parentIdAttr, ref: blockRef, children: [
+      /* @__PURE__ */ jsxs("div", { className: "memo-summary-block__header", children: [
+        /* @__PURE__ */ jsx("span", { className: "memo-summary-block__title", children: title }),
+        /* @__PURE__ */ jsxs("span", { className: "memo-summary-block__actions", children: [
+          /* @__PURE__ */ jsx("button", { type: "button", className: "memo-summary-block__action", onClick: handleCopy, "aria-label": "Copier", children: /* @__PURE__ */ jsx(Copy, { size: 13 }) }),
+          /* @__PURE__ */ jsx("button", { type: "button", className: "memo-summary-block__action", onClick: handleDelete, "aria-label": "Supprimer", children: /* @__PURE__ */ jsx(Trash2, { size: 13 }) })
+        ] })
+      ] }),
+      /* @__PURE__ */ jsx("div", { className: "memo-summary-block__list", children: children.length ? children.map((child) => /* @__PURE__ */ jsxs(
+        "button",
+        {
+          type: "button",
+          className: "memo-summary-block__item",
+          onClick: (event) => handleOpenChild(event, child.id),
+          children: [
+            /* @__PURE__ */ jsx("span", { className: "memo-summary-block__item-icon", children: /* @__PURE__ */ jsx("i", { "data-lucide": child.icon || "file" }) }),
+            /* @__PURE__ */ jsx("span", { className: "memo-summary-block__item-title", children: child.title })
+          ]
+        },
+        child.id
+      )) : /* @__PURE__ */ jsx("div", { className: "memo-summary-block__empty", children: "Aucune page enfant" }) })
+    ] }) });
+  };
+  var MemoSummaryBlock = Node3.create({
+    name: "memoSummaryBlock",
+    group: "block",
+    atom: true,
+    selectable: true,
+    draggable: true,
+    addAttributes() {
+      return {
+        title: { default: "Sommaire" },
+        parentId: { default: "" }
+      };
+    },
+    parseHTML() {
+      return [{ tag: 'div[data-type="memo-summary-block"]' }];
+    },
+    renderHTML({ HTMLAttributes }) {
+      return ["div", mergeAttributes(HTMLAttributes, { "data-type": "memo-summary-block" })];
+    },
+    addNodeView() {
+      return ReactNodeViewRenderer(MemoSummaryBlockView);
     }
   });
   var TEXT_COLORS = [
@@ -56171,7 +56229,7 @@ ${promptInput.trim()}`
     ] });
   };
   var runEditorDropdownAction = (editor, value, callbacks) => {
-    var _a, _b, _c;
+    var _a, _b, _c, _d;
     const chain = editor.chain().focus();
     if (value === "paragraph") chain.setParagraph().run();
     else if (value === "h1") chain.toggleHeading({ level: 1 }).run();
@@ -56202,6 +56260,8 @@ ${promptInput.trim()}`
       (_b = callbacks.onInsertImage) == null ? void 0 : _b.call(callbacks);
     } else if (value === "video") {
       (_c = callbacks.onInsertVideo) == null ? void 0 : _c.call(callbacks);
+    } else if (value === "summary") {
+      (_d = callbacks.onInsertSummary) == null ? void 0 : _d.call(callbacks);
     }
   };
   var CodeList = react_shim_default.forwardRef((props, ref2) => {
@@ -56744,6 +56804,7 @@ ${promptInput.trim()}`
           }
         }),
         MemoLinkBlock,
+        MemoSummaryBlock,
         CustomImage,
         VideoEmbed,
         TableNode,
@@ -59422,6 +59483,14 @@ ${innerMarkdown}
       setLinkModalRange({ from: from2, to });
       setShowLinkModal(true);
     }, [editor]);
+    const insertSummaryBlock = react_shim_default.useCallback(() => {
+      if (!editor) return;
+      const parentId = String(window.__memoActiveDocumentId || "").trim();
+      editor.chain().focus().insertContent([
+        { type: "memoSummaryBlock", attrs: { title: "Sommaire", parentId } },
+        { type: "paragraph" }
+      ]).run();
+    }, [editor]);
     react_shim_default.useEffect(() => {
       if (!showSlashActionMenu) return;
       const onMouseDown = (event) => {
@@ -59480,6 +59549,7 @@ ${innerMarkdown}
       { label: "T\xE2che", value: "taskList", icon: SquareCheckBig, markdownShortcut: "[]", aliases: ["todo", "task", "checklist"] },
       { label: "Bloc de code", value: "codeBlock", icon: SquareCode, markdownShortcut: "```", aliases: ["code", "snippet"] },
       { label: "Lien", value: "link", icon: Link2, markdownShortcut: "[texte](url)", aliases: ["url", "hyperlink"] },
+      { label: "Sommaire", value: "summary", icon: List, markdownShortcut: "sommaire", aliases: ["summary", "children", "enfants"] },
       { label: "Libell\xE9", value: "label", icon: Tag, markdownShortcut: "@", aliases: ["tag", "etiquette"] },
       { label: "Citation", value: "quote", icon: Shapes, markdownShortcut: ">", aliases: ["blockquote", "citation"] },
       { label: "Tableau", value: "table", icon: Table2, markdownShortcut: "|", aliases: ["table", "grille"] },
@@ -59500,10 +59570,9 @@ ${innerMarkdown}
         return haystack.includes(query);
       });
     }, [slashActionQuery, slashActions, normalizeSlashSearchValue]);
-    const runFirstSlashAction = react_shim_default.useCallback(() => {
+    const runSlashAction = react_shim_default.useCallback((action) => {
       if (!editor) return;
-      const firstAction = filteredSlashActions[0];
-      if (!firstAction) return;
+      if (!action) return;
       const { selection, doc: doc3 } = editor.state;
       if (selection.empty) {
         const { $from } = selection;
@@ -59518,14 +59587,19 @@ ${innerMarkdown}
           }
         }
       }
-      runEditorDropdownAction(editor, firstAction.value, {
+      runEditorDropdownAction(editor, action.value, {
         onLink: openLinkModal,
         onInsertImage: openImagePicker,
-        onInsertVideo: openVideoInsertDialog
+        onInsertVideo: openVideoInsertDialog,
+        onInsertSummary: insertSummaryBlock
       });
       setSlashActionQuery("");
       setShowSlashActionMenu(false);
-    }, [editor, filteredSlashActions, openImagePicker, openLinkModal, openVideoInsertDialog]);
+    }, [editor, insertSummaryBlock, openImagePicker, openLinkModal, openVideoInsertDialog]);
+    const runFirstSlashAction = react_shim_default.useCallback(() => {
+      const firstAction = filteredSlashActions[0];
+      runSlashAction(firstAction);
+    }, [filteredSlashActions, runSlashAction]);
     react_shim_default.useEffect(() => {
       if (!showSlashActionMenu || !editor) return;
       const onKeyDown = (event) => {
@@ -59655,7 +59729,7 @@ ${innerMarkdown}
                     className: "tiptap-dropdown-item",
                     onMouseDown: (event) => event.preventDefault(),
                     onClick: () => {
-                      runFirstSlashAction();
+                      runSlashAction(item);
                     },
                     children: [
                       /* @__PURE__ */ jsx(item.icon, { size: 16 }),
@@ -59695,6 +59769,7 @@ ${innerMarkdown}
               editor,
               anchorPos: linkModalAnchorPos,
               selectionRange: linkModalRange,
+              containerRef,
               onClose: () => setShowLinkModal(false)
             }
           ),

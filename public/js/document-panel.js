@@ -1977,7 +1977,7 @@
                     const isExpanded = expandedIds.has(groupKey);
                     const lead = document.createElement("span");
                     lead.className = "document-explorer__item-leading";
-                    lead.innerHTML = `<i data-lucide="${isExpanded ? "folder-open" : "folder"}"></i>`;
+                    lead.innerHTML = `<i data-lucide="${isExpanded ? "chevron-down" : "chevron-right"}"></i>`;
                     lead.addEventListener("click", event => {
                         event.stopPropagation();
                         if (expandedIds.has(groupKey)) expandedIds.delete(groupKey);

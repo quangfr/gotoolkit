@@ -312,17 +312,24 @@ const LinkSearchModal = ({
   editor,
   onClose,
   anchorPos,
-  selectionRange
+  selectionRange,
+  containerRef
 }: {
   editor: Editor,
   onClose: () => void,
   anchorPos: number,
-  selectionRange: { from: number; to: number }
+  selectionRange: { from: number; to: number },
+  containerRef: React.RefObject<HTMLDivElement | null>
 }) => {
   const [query, setQuery] = React.useState('');
   const [selectedIndex, setSelectedIndex] = React.useState(0);
   const [documents, setDocuments] = React.useState<any[]>([]);
   const modalRef = React.useRef<HTMLDivElement>(null);
+  const [modalStyle, setModalStyle] = React.useState<React.CSSProperties>({
+    position: 'absolute',
+    zIndex: 2000,
+    visibility: 'hidden',
+  });
 
   React.useEffect(() => {
     let cancelled = false;
@@ -383,42 +390,57 @@ const LinkSearchModal = ({
     };
   }, []);
 
-  React.useEffect(() => {
+  const updateModalPosition = React.useCallback(() => {
     const { view } = editor;
     const from = Math.max(1, Math.min(anchorPos || 1, editor.state.doc.content.size));
+    const host = containerRef.current;
+    const modal = modalRef.current;
+    if (!host || !modal) return;
 
     // Fallback if coordsAtPos fails (e.g. selection at very end)
     let coords;
     try {
       coords = view.coordsAtPos(from);
     } catch (e) {
-      coords = { left: window.innerWidth / 2, top: window.innerHeight / 2 };
+      const hostRect = host.getBoundingClientRect();
+      coords = { left: hostRect.left + 20, top: hostRect.top + 20 };
     }
-    
-    if (modalRef.current) {
-      const virtualElement = {
-        getBoundingClientRect() {
-          return new DOMRect(coords.left, coords.top, 0, 0);
-        },
-      };
+    const hostRect = host.getBoundingClientRect();
+    const padding = 10;
+    const caretLeftInHost = coords.left - hostRect.left;
+    const caretTopInHost = coords.top - hostRect.top;
+    const caretBottomInHost = (coords.bottom ?? coords.top) - hostRect.top;
+    const modalWidth = modal.offsetWidth || 450;
+    const modalHeight = modal.offsetHeight || 320;
+    const minLeft = padding;
+    const maxLeft = Math.max(minLeft, host.clientWidth - modalWidth - padding);
+    const nextLeft = Math.min(Math.max(caretLeftInHost, minLeft), maxLeft);
 
-      computePosition(virtualElement, modalRef.current, {
-        placement: 'bottom-start',
-        middleware: [
-          offset(10),
-          shift({ padding: 10 })
-        ]
-      }).then(({ x, y, strategy }: { x: number, y: number, strategy: string }) => {
-        if (modalRef.current) {
-          Object.assign(modalRef.current.style, {
-            left: `${x}px`,
-            top: `${y}px`,
-            position: strategy,
-            display: 'block',
-          });
-        }
-      });
-    }
+    const aboveTop = caretTopInHost - modalHeight - 8;
+    const belowTop = caretBottomInHost + 8;
+    const minTop = padding;
+    const maxTop = Math.max(minTop, host.clientHeight - modalHeight - padding);
+
+    // Prefer opening above the caret to keep the selector visible and out of the typing flow.
+    const preferredTop = aboveTop >= minTop ? aboveTop : belowTop;
+    const nextTop = Math.min(Math.max(preferredTop, minTop), maxTop);
+
+    setModalStyle({
+      position: 'absolute',
+      zIndex: 2000,
+      left: `${nextLeft}px`,
+      top: `${nextTop}px`,
+      visibility: 'visible',
+    });
+  }, [anchorPos, containerRef, editor]);
+
+  React.useLayoutEffect(() => {
+    updateModalPosition();
+
+    const onLayoutChange = () => updateModalPosition();
+    window.addEventListener('resize', onLayoutChange);
+    const host = containerRef.current;
+    host?.addEventListener('scroll', onLayoutChange, true);
 
     const handleClickOutside = (e: MouseEvent) => {
       if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
@@ -426,26 +448,93 @@ const LinkSearchModal = ({
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [editor, onClose]);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('resize', onLayoutChange);
+      host?.removeEventListener('scroll', onLayoutChange, true);
+    };
+  }, [containerRef, onClose, updateModalPosition]);
 
   const isUrl = (str: string) => {
-    const pattern = /^([\da-z.-]+)\.([a-z.]{2,6})([\/\w .-]*)*\/?$/;
-    return pattern.test(str) || str.startsWith('http');
+    const value = String(str || '').trim().toLowerCase();
+    if (!value) return false;
+    if (value.startsWith('http://') || value.startsWith('https://') || value.startsWith('memo://')) return true;
+    if (value.startsWith('www.')) return true;
+    const pattern = /^([\da-z.-]+)\.([a-z.]{2,})([\/\w .~%:#?&=+-]*)*\/?$/;
+    return pattern.test(value);
   };
 
   const filteredDocs = documents
     .filter((d: any) => String(d?.title || '').toLowerCase().includes(query.toLowerCase()))
     .slice(0, 50);
 
+  const queryTrimmed = String(query || '').trim();
+  const hasUrlQuery = isUrl(queryTrimmed);
   const items = [
     ...filteredDocs,
-    ...(query ? [{
+    ...(hasUrlQuery ? [{
       type: 'url',
-      title: query,
-      isValid: isUrl(query)
+      title: queryTrimmed,
+      isValid: true
     }] : [])
   ];
+
+  React.useEffect(() => {
+    setSelectedIndex(0);
+  }, [queryTrimmed, hasUrlQuery]);
+
+  React.useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.isComposing) return;
+      const key = e.key;
+
+      if (key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        onClose();
+        return;
+      }
+      if (key === 'Enter') {
+        e.preventDefault();
+        e.stopPropagation();
+        if (items[0]) handleSelect(items[0]);
+        return;
+      }
+      if (key === 'ArrowDown') {
+        if (!items.length) return;
+        e.preventDefault();
+        e.stopPropagation();
+        setSelectedIndex((prev) => (prev + 1) % items.length);
+        return;
+      }
+      if (key === 'ArrowUp') {
+        if (!items.length) return;
+        e.preventDefault();
+        e.stopPropagation();
+        setSelectedIndex((prev) => (prev - 1 + items.length) % items.length);
+        return;
+      }
+      if (key === 'Backspace') {
+        e.preventDefault();
+        e.stopPropagation();
+        setQuery((prev) => prev.slice(0, -1));
+        return;
+      }
+      if (key === ' ') {
+        e.preventDefault();
+        e.stopPropagation();
+        setQuery((prev) => prev + ' ');
+        return;
+      }
+      if (key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        setQuery((prev) => prev + key);
+      }
+    };
+    document.addEventListener('keydown', onKeyDown, true);
+    return () => document.removeEventListener('keydown', onKeyDown, true);
+  }, [items, onClose]);
 
   const insertMemoLinkBlockAt = React.useCallback((pos: number, item: any) => {
     const schema = editor?.state?.schema;
@@ -521,31 +610,11 @@ const LinkSearchModal = ({
     <div 
       ref={modalRef} 
       className="link-search-modal"
-      style={{ position: 'fixed', zIndex: 2000, display: 'none' }}
+      style={modalStyle}
     >
-      <input
-        autoFocus
-        placeholder="Rechercher un titre ou coller un lien..."
-        value={query}
-        onMouseDown={(e) => e.stopPropagation()}
-        onChange={(e) => {
-          setQuery(e.target.value);
-          setSelectedIndex(0);
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' && items[selectedIndex]) {
-            handleSelect(items[selectedIndex]);
-          } else if (e.key === 'ArrowDown') {
-            setSelectedIndex((selectedIndex + 1) % items.length);
-            e.preventDefault();
-          } else if (e.key === 'ArrowUp') {
-            setSelectedIndex((selectedIndex - 1 + items.length) % items.length);
-            e.preventDefault();
-          } else if (e.key === 'Escape') {
-            onClose();
-          }
-        }}
-      />
+      <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--bg-surface-soft)', fontSize: 12, color: 'var(--text-muted)' }}>
+        {queryTrimmed ? `Recherche: ${queryTrimmed}` : 'Tape pour rechercher un titre ou un lien'}
+      </div>
       <div className="link-search-results">
         {items.map((item, i) => (
           <div 
@@ -564,9 +633,6 @@ const LinkSearchModal = ({
                 {item.title}
               </div>
               {item.type === 'document' && <div className="link-search-item-path">{item.section === 'shared' ? 'Partagé' : item.section === 'common' ? 'Commun' : 'Privé'}</div>}
-              {item.type === 'url' && !item.isValid && (
-                <div className="link-search-item-invalid">URL incomplète?</div>
-              )}
             </div>
             <div className="link-search-item-action">
               <Check size={14} />
@@ -583,12 +649,26 @@ const LinkSearchModal = ({
   );
 };
 
-const MemoLinkBlockView = ({ node, editor, getPos }: any) => {
+const MemoLinkBlockView = ({ node, editor, getPos, updateAttributes }: any) => {
   const href = String(node?.attrs?.href || '');
   const title = String(node?.attrs?.title || 'Document');
   const icon = String(node?.attrs?.icon || '');
   const documentId = String(node?.attrs?.documentId || '');
+  const canEdit = Boolean(editor?.isEditable);
+  const [isEditingTitle, setIsEditingTitle] = React.useState(false);
+  const [draftTitle, setDraftTitle] = React.useState(title);
   const iconRef = React.useRef<HTMLSpanElement | null>(null);
+  const titleInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  React.useEffect(() => {
+    setDraftTitle(title);
+  }, [title]);
+
+  React.useEffect(() => {
+    if (!isEditingTitle) return;
+    titleInputRef.current?.focus();
+    titleInputRef.current?.select();
+  }, [isEditingTitle]);
   React.useEffect(() => {
     try {
       (window as any).lucide?.createIcons?.({
@@ -617,7 +697,30 @@ const MemoLinkBlockView = ({ node, editor, getPos }: any) => {
     event.stopPropagation();
     const markdown = `[${title}](${href})`;
     try {
-      await navigator.clipboard.writeText(markdown);
+      let copiedRich = false;
+      if (typeof getPos === 'function') {
+        const pos = getPos();
+        const nodeAtPos = editor?.state?.doc?.nodeAt?.(pos);
+        if (nodeAtPos) {
+          const slice = editor.state.doc.slice(pos, pos + nodeAtPos.nodeSize);
+          const serializer = DOMSerializer.fromSchema(editor.state.schema);
+          const fragment = serializer.serializeFragment(slice.content);
+          const tmp = document.createElement('div');
+          tmp.appendChild(fragment);
+          const html = tmp.innerHTML.trim();
+          if (html && navigator.clipboard && typeof (navigator.clipboard as any).write === 'function' && typeof (window as any).ClipboardItem === 'function') {
+            const item = new (window as any).ClipboardItem({
+              'text/html': new Blob([html], { type: 'text/html' }),
+              'text/plain': new Blob([markdown], { type: 'text/plain' }),
+            });
+            await (navigator.clipboard as any).write([item]);
+            copiedRich = true;
+          }
+        }
+      }
+      if (!copiedRich) {
+        await navigator.clipboard.writeText(markdown);
+      }
     } catch (err) {
       // ignore
     }
@@ -627,8 +730,24 @@ const MemoLinkBlockView = ({ node, editor, getPos }: any) => {
     event.stopPropagation();
     if (typeof getPos !== 'function') return;
     const pos = getPos();
-    editor.chain().focus().deleteRange({ from: pos, to: pos + node.nodeSize }).run();
+    const tr = editor.state.tr.delete(pos, pos + node.nodeSize).scrollIntoView();
+    editor.view.dispatch(tr);
+    editor.view.focus();
   };
+  const commitTitle = React.useCallback(() => {
+    const nextTitle = String(draftTitle || '').trim() || 'Document';
+    setIsEditingTitle(false);
+    if (nextTitle === title) return;
+    if (typeof updateAttributes === 'function') {
+      updateAttributes({ title: nextTitle });
+    }
+  }, [draftTitle, title, updateAttributes]);
+
+  const cancelTitleEdit = React.useCallback(() => {
+    setDraftTitle(title);
+    setIsEditingTitle(false);
+  }, [title]);
+
   return (
     <NodeViewWrapper className="memo-link-block-wrap" contentEditable={false}>
       <div
@@ -638,23 +757,63 @@ const MemoLinkBlockView = ({ node, editor, getPos }: any) => {
         tabIndex={0}
         onMouseDown={(event) => {
           const target = event.target as HTMLElement | null;
+          if (isEditingTitle) {
+            event.preventDefault();
+            event.stopPropagation();
+            return;
+          }
           if (target?.closest('.memo-link-block__action') || target?.closest('.memo-link-block__handle')) return;
           handleOpen(event);
         }}
+        onDoubleClick={(event) => {
+          const target = event.target as HTMLElement | null;
+          if (!canEdit) return;
+          if (target?.closest('.memo-link-block__action') || target?.closest('.memo-link-block__handle')) return;
+          event.preventDefault();
+          event.stopPropagation();
+          setIsEditingTitle(true);
+        }}
         onKeyDown={(event) => {
+          if (isEditingTitle) return;
           if (event.key === 'Enter' || event.key === ' ') {
             handleOpen(event);
           }
         }}
       >
-        <button className="memo-link-block__handle" type="button" aria-label="Déplacer">
+        <button className="memo-link-block__handle" type="button" aria-label="Déplacer" data-drag-handle>
           <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M10 4h2v2h-2V4zm0 7h2v2h-2v-2zm0 7h2v2h-2v-2zm4-14h2v2h-2V4zm0 7h2v2h-2v-2zm0 7h2v2h-2v-2z" /></svg>
         </button>
         <span className="memo-link-block__icon">
           <span ref={iconRef}>{icon ? <i data-lucide={icon}></i> : <i data-lucide="file"></i>}</span>
           <span className="memo-link-block__icon-overlay"><ArrowUpRight size={10} /></span>
         </span>
-        <span className="memo-link-block__title">{title}</span>
+        <span className="memo-link-block__title">
+          {isEditingTitle ? (
+            <input
+              ref={titleInputRef}
+              className="memo-link-block__title-input"
+              value={draftTitle}
+              onMouseDown={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+              }}
+              onChange={(event) => setDraftTitle(event.target.value)}
+              onBlur={() => commitTitle()}
+              onKeyDown={(event) => {
+                event.stopPropagation();
+                if (event.key === 'Enter') {
+                  event.preventDefault();
+                  commitTitle();
+                } else if (event.key === 'Escape') {
+                  event.preventDefault();
+                  cancelTitleEdit();
+                }
+              }}
+            />
+          ) : (
+            title
+          )}
+        </span>
         <span className="memo-link-block__actions">
           <button type="button" className="memo-link-block__action" onClick={handleCopy} aria-label="Copier"><Copy size={13} /></button>
           <button type="button" className="memo-link-block__action" onClick={handleDelete} aria-label="Supprimer"><Trash2 size={13} /></button>
@@ -686,6 +845,157 @@ const MemoLinkBlock = TiptapNode.create({
   },
   addNodeView() {
     return ReactNodeViewRenderer(MemoLinkBlockView);
+  },
+});
+
+const MemoSummaryBlockView = ({ node, editor, getPos }: any) => {
+  const title = String(node?.attrs?.title || 'Sommaire');
+  const parentIdAttr = String(node?.attrs?.parentId || '').trim();
+  const [children, setChildren] = React.useState<Array<{ id: string; title: string; icon?: string }>>([]);
+  const blockRef = React.useRef<HTMLDivElement | null>(null);
+
+  const refreshChildren = React.useCallback(async () => {
+    const resolver = (window as any).GoToolkitMemoGetChildrenForDocument;
+    const fallbackParentId = String((window as any).__memoActiveDocumentId || '').trim();
+    const parentId = parentIdAttr || fallbackParentId;
+    if (!parentId || typeof resolver !== 'function') {
+      setChildren([]);
+      return;
+    }
+    try {
+      const rows = await resolver(parentId);
+      const next = (Array.isArray(rows) ? rows : [])
+        .map((item: any) => ({
+          id: String(item?.id || '').trim(),
+          title: String(item?.title || 'Document').trim() || 'Document',
+          icon: String(item?.icon || '').trim()
+        }))
+        .filter((item: any) => item.id);
+      setChildren(next);
+    } catch (err) {
+      setChildren([]);
+    }
+  }, [parentIdAttr]);
+
+  React.useEffect(() => {
+    refreshChildren();
+    const onChildrenUpdated = () => refreshChildren();
+    window.addEventListener('goToolkitMemoChildrenUpdated', onChildrenUpdated as EventListener);
+    return () => window.removeEventListener('goToolkitMemoChildrenUpdated', onChildrenUpdated as EventListener);
+  }, [refreshChildren]);
+
+  React.useEffect(() => {
+    try {
+      (window as any).lucide?.createIcons?.({
+        attrs: { width: '14', height: '14' },
+        elements: blockRef.current ? [blockRef.current] : undefined
+      });
+    } catch (err) {
+      // ignore
+    }
+  }, [children]);
+
+  const handleOpenChild = React.useCallback((event: React.MouseEvent, id: string) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const open = (window as any).GoToolkitMemoOpenDocumentByLink;
+    if (typeof open === 'function') open(id);
+  }, []);
+
+  const handleCopy = React.useCallback(async (event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const markdown = [
+      `## ${title}`,
+      ...children.map(item => `- [${item.title}](memo://${item.id})`)
+    ].join('\n');
+    try {
+      if (typeof getPos === 'function') {
+        const pos = getPos();
+        const nodeAtPos = editor?.state?.doc?.nodeAt?.(pos);
+        if (nodeAtPos && navigator.clipboard && typeof (navigator.clipboard as any).write === 'function' && typeof (window as any).ClipboardItem === 'function') {
+          const slice = editor.state.doc.slice(pos, pos + nodeAtPos.nodeSize);
+          const serializer = DOMSerializer.fromSchema(editor.state.schema);
+          const fragment = serializer.serializeFragment(slice.content);
+          const tmp = document.createElement('div');
+          tmp.appendChild(fragment);
+          const html = tmp.innerHTML.trim();
+          if (html) {
+            const item = new (window as any).ClipboardItem({
+              'text/html': new Blob([html], { type: 'text/html' }),
+              'text/plain': new Blob([markdown], { type: 'text/plain' }),
+            });
+            await (navigator.clipboard as any).write([item]);
+            return;
+          }
+        }
+      }
+      await navigator.clipboard.writeText(markdown);
+    } catch (err) {
+      // ignore
+    }
+  }, [children, editor, getPos, title]);
+
+  const handleDelete = React.useCallback((event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (typeof getPos !== 'function') return;
+    const pos = getPos();
+    const tr = editor.state.tr.delete(pos, pos + node.nodeSize).scrollIntoView();
+    editor.view.dispatch(tr);
+    editor.view.focus();
+  }, [editor, getPos, node?.nodeSize]);
+
+  return (
+    <NodeViewWrapper className="memo-summary-block-wrap" contentEditable={false}>
+      <div className="memo-summary-block" data-parent-id={parentIdAttr} ref={blockRef}>
+        <div className="memo-summary-block__header">
+          <span className="memo-summary-block__title">{title}</span>
+          <span className="memo-summary-block__actions">
+            <button type="button" className="memo-summary-block__action" onClick={handleCopy} aria-label="Copier"><Copy size={13} /></button>
+            <button type="button" className="memo-summary-block__action" onClick={handleDelete} aria-label="Supprimer"><Trash2 size={13} /></button>
+          </span>
+        </div>
+        <div className="memo-summary-block__list">
+          {children.length ? children.map((child) => (
+            <button
+              key={child.id}
+              type="button"
+              className="memo-summary-block__item"
+              onClick={(event) => handleOpenChild(event, child.id)}
+            >
+              <span className="memo-summary-block__item-icon"><i data-lucide={child.icon || 'file'}></i></span>
+              <span className="memo-summary-block__item-title">{child.title}</span>
+            </button>
+          )) : (
+            <div className="memo-summary-block__empty">Aucune page enfant</div>
+          )}
+        </div>
+      </div>
+    </NodeViewWrapper>
+  );
+};
+
+const MemoSummaryBlock = TiptapNode.create({
+  name: 'memoSummaryBlock',
+  group: 'block',
+  atom: true,
+  selectable: true,
+  draggable: true,
+  addAttributes() {
+    return {
+      title: { default: 'Sommaire' },
+      parentId: { default: '' },
+    };
+  },
+  parseHTML() {
+    return [{ tag: 'div[data-type="memo-summary-block"]' }];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ['div', mergeAttributes(HTMLAttributes, { 'data-type': 'memo-summary-block' })];
+  },
+  addNodeView() {
+    return ReactNodeViewRenderer(MemoSummaryBlockView);
   },
 });
 
@@ -1948,7 +2258,7 @@ const Toolbar = ({ editor, onDropdownToggle, onLink, onInsertImage, onInsertVide
 const runEditorDropdownAction = (
   editor: Editor,
   value: string,
-  callbacks: { onLink?: () => void; onInsertImage?: () => void; onInsertVideo?: () => void }
+  callbacks: { onLink?: () => void; onInsertImage?: () => void; onInsertVideo?: () => void; onInsertSummary?: () => void }
 ) => {
   const chain = editor.chain().focus();
   if (value === 'paragraph') chain.setParagraph().run();
@@ -1980,6 +2290,8 @@ const runEditorDropdownAction = (
     callbacks.onInsertImage?.();
   } else if (value === 'video') {
     callbacks.onInsertVideo?.();
+  } else if (value === 'summary') {
+    callbacks.onInsertSummary?.();
   }
 };
 
@@ -2660,6 +2972,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         },
       }),
       MemoLinkBlock,
+      MemoSummaryBlock,
       CustomImage,
       VideoEmbed,
       TableNode,
@@ -5752,6 +6065,15 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     setShowLinkModal(true);
   }, [editor]);
 
+  const insertSummaryBlock = React.useCallback(() => {
+    if (!editor) return;
+    const parentId = String((window as any).__memoActiveDocumentId || '').trim();
+    editor.chain().focus().insertContent([
+      { type: 'memoSummaryBlock', attrs: { title: 'Sommaire', parentId } },
+      { type: 'paragraph' }
+    ]).run();
+  }, [editor]);
+
   React.useEffect(() => {
     if (!showSlashActionMenu) return;
     const onMouseDown = (event: MouseEvent) => {
@@ -5828,6 +6150,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     { label: 'Tâche', value: 'taskList', icon: CheckSquare, markdownShortcut: '[]', aliases: ['todo', 'task', 'checklist'] },
     { label: 'Bloc de code', value: 'codeBlock', icon: SquareCode, markdownShortcut: '```', aliases: ['code', 'snippet'] },
     { label: 'Lien', value: 'link', icon: Link, markdownShortcut: '[texte](url)', aliases: ['url', 'hyperlink'] },
+    { label: 'Sommaire', value: 'summary', icon: List, markdownShortcut: 'sommaire', aliases: ['summary', 'children', 'enfants'] },
     { label: 'Libellé', value: 'label', icon: Tag, markdownShortcut: '@', aliases: ['tag', 'etiquette'] },
     { label: 'Citation', value: 'quote', icon: Shapes, markdownShortcut: '>', aliases: ['blockquote', 'citation'] },
     { label: 'Tableau', value: 'table', icon: TableIcon, markdownShortcut: '|', aliases: ['table', 'grille'] },
@@ -5850,10 +6173,9 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     });
   }, [slashActionQuery, slashActions, normalizeSlashSearchValue]);
 
-  const runFirstSlashAction = React.useCallback(() => {
+  const runSlashAction = React.useCallback((action: SlashActionItem | null | undefined) => {
     if (!editor) return;
-    const firstAction = filteredSlashActions[0];
-    if (!firstAction) return;
+    if (!action) return;
 
     const { selection, doc } = editor.state;
     if (selection.empty) {
@@ -5870,14 +6192,20 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       }
     }
 
-    runEditorDropdownAction(editor, firstAction.value, {
+    runEditorDropdownAction(editor, action.value, {
       onLink: openLinkModal,
       onInsertImage: openImagePicker,
       onInsertVideo: openVideoInsertDialog,
+      onInsertSummary: insertSummaryBlock,
     });
     setSlashActionQuery('');
     setShowSlashActionMenu(false);
-  }, [editor, filteredSlashActions, openImagePicker, openLinkModal, openVideoInsertDialog]);
+  }, [editor, insertSummaryBlock, openImagePicker, openLinkModal, openVideoInsertDialog]);
+
+  const runFirstSlashAction = React.useCallback(() => {
+    const firstAction = filteredSlashActions[0];
+    runSlashAction(firstAction);
+  }, [filteredSlashActions, runSlashAction]);
 
   React.useEffect(() => {
     if (!showSlashActionMenu || !editor) return;
@@ -6011,7 +6339,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
               className="tiptap-dropdown-item"
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => {
-                runFirstSlashAction();
+                runSlashAction(item);
               }}
             >
               <item.icon size={16} />
@@ -6044,6 +6372,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           editor={editor} 
           anchorPos={linkModalAnchorPos}
           selectionRange={linkModalRange}
+          containerRef={containerRef}
           onClose={() => setShowLinkModal(false)} 
         />
       )}
