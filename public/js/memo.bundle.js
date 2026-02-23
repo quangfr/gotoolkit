@@ -28411,19 +28411,41 @@ img.ProseMirror-separator {
   ];
   var Lightbulb = createLucideIcon("lightbulb", __iconNode30);
 
-  // node_modules/lucide-react/dist/esm/icons/link.js
+  // node_modules/lucide-react/dist/esm/icons/link-2.js
   init_define_process_env();
   init_polyfills();
   var __iconNode31 = [
+    ["path", { d: "M9 17H7A5 5 0 0 1 7 7h2", key: "8i5ue5" }],
+    ["path", { d: "M15 7h2a5 5 0 1 1 0 10h-2", key: "1b9ql8" }],
+    ["line", { x1: "8", x2: "16", y1: "12", y2: "12", key: "1jonct" }]
+  ];
+  var Link2 = createLucideIcon("link-2", __iconNode31);
+
+  // node_modules/lucide-react/dist/esm/icons/link.js
+  init_define_process_env();
+  init_polyfills();
+  var __iconNode32 = [
     ["path", { d: "M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71", key: "1cjeqo" }],
     ["path", { d: "M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71", key: "19qd67" }]
   ];
-  var Link2 = createLucideIcon("link", __iconNode31);
+  var Link3 = createLucideIcon("link", __iconNode32);
+
+  // node_modules/lucide-react/dist/esm/icons/list-tree.js
+  init_define_process_env();
+  init_polyfills();
+  var __iconNode33 = [
+    ["path", { d: "M8 5h13", key: "1pao27" }],
+    ["path", { d: "M13 12h8", key: "h98zly" }],
+    ["path", { d: "M13 19h8", key: "c3s6r1" }],
+    ["path", { d: "M3 10a2 2 0 0 0 2 2h3", key: "1npucw" }],
+    ["path", { d: "M3 5v12a2 2 0 0 0 2 2h3", key: "x1gjn2" }]
+  ];
+  var ListTree = createLucideIcon("list-tree", __iconNode33);
 
   // node_modules/lucide-react/dist/esm/icons/list.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode32 = [
+  var __iconNode34 = [
     ["path", { d: "M3 5h.01", key: "18ugdj" }],
     ["path", { d: "M3 12h.01", key: "nlz23k" }],
     ["path", { d: "M3 19h.01", key: "noohij" }],
@@ -28431,18 +28453,18 @@ img.ProseMirror-separator {
     ["path", { d: "M8 12h13", key: "1za7za" }],
     ["path", { d: "M8 19h13", key: "m83p4d" }]
   ];
-  var List = createLucideIcon("list", __iconNode32);
+  var List = createLucideIcon("list", __iconNode34);
 
   // node_modules/lucide-react/dist/esm/icons/loader-circle.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode33 = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
-  var LoaderCircle = createLucideIcon("loader-circle", __iconNode33);
+  var __iconNode35 = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
+  var LoaderCircle = createLucideIcon("loader-circle", __iconNode35);
 
   // node_modules/lucide-react/dist/esm/icons/pencil.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode34 = [
+  var __iconNode36 = [
     [
       "path",
       {
@@ -28452,12 +28474,12 @@ img.ProseMirror-separator {
     ],
     ["path", { d: "m15 5 4 4", key: "1mk7zo" }]
   ];
-  var Pencil = createLucideIcon("pencil", __iconNode34);
+  var Pencil = createLucideIcon("pencil", __iconNode36);
 
   // node_modules/lucide-react/dist/esm/icons/play.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode35 = [
+  var __iconNode37 = [
     [
       "path",
       {
@@ -28466,21 +28488,21 @@ img.ProseMirror-separator {
       }
     ]
   ];
-  var Play = createLucideIcon("play", __iconNode35);
+  var Play = createLucideIcon("play", __iconNode37);
 
   // node_modules/lucide-react/dist/esm/icons/plus.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode36 = [
+  var __iconNode38 = [
     ["path", { d: "M5 12h14", key: "1ays0h" }],
     ["path", { d: "M12 5v14", key: "s699le" }]
   ];
-  var Plus = createLucideIcon("plus", __iconNode36);
+  var Plus = createLucideIcon("plus", __iconNode38);
 
   // node_modules/lucide-react/dist/esm/icons/quote.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode37 = [
+  var __iconNode39 = [
     [
       "path",
       {
@@ -28496,38 +28518,38 @@ img.ProseMirror-separator {
       }
     ]
   ];
-  var Quote = createLucideIcon("quote", __iconNode37);
+  var Quote = createLucideIcon("quote", __iconNode39);
 
   // node_modules/lucide-react/dist/esm/icons/rectangle-horizontal.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode38 = [
+  var __iconNode40 = [
     ["rect", { width: "20", height: "12", x: "2", y: "6", rx: "2", key: "9lu3g6" }]
   ];
-  var RectangleHorizontal = createLucideIcon("rectangle-horizontal", __iconNode38);
+  var RectangleHorizontal = createLucideIcon("rectangle-horizontal", __iconNode40);
 
   // node_modules/lucide-react/dist/esm/icons/redo-2.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode39 = [
+  var __iconNode41 = [
     ["path", { d: "m15 14 5-5-5-5", key: "12vg1m" }],
     ["path", { d: "M20 9H9.5A5.5 5.5 0 0 0 4 14.5A5.5 5.5 0 0 0 9.5 20H13", key: "6uklza" }]
   ];
-  var Redo2 = createLucideIcon("redo-2", __iconNode39);
+  var Redo2 = createLucideIcon("redo-2", __iconNode41);
 
   // node_modules/lucide-react/dist/esm/icons/rotate-cw.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode40 = [
+  var __iconNode42 = [
     ["path", { d: "M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8", key: "1p45f6" }],
     ["path", { d: "M21 3v5h-5", key: "1q7to0" }]
   ];
-  var RotateCw = createLucideIcon("rotate-cw", __iconNode40);
+  var RotateCw = createLucideIcon("rotate-cw", __iconNode42);
 
   // node_modules/lucide-react/dist/esm/icons/send.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode41 = [
+  var __iconNode43 = [
     [
       "path",
       {
@@ -28537,12 +28559,12 @@ img.ProseMirror-separator {
     ],
     ["path", { d: "m21.854 2.147-10.94 10.939", key: "12cjpa" }]
   ];
-  var Send = createLucideIcon("send", __iconNode41);
+  var Send = createLucideIcon("send", __iconNode43);
 
   // node_modules/lucide-react/dist/esm/icons/shapes.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode42 = [
+  var __iconNode44 = [
     [
       "path",
       {
@@ -28553,12 +28575,12 @@ img.ProseMirror-separator {
     ["rect", { x: "3", y: "14", width: "7", height: "7", rx: "1", key: "1bkyp8" }],
     ["circle", { cx: "17.5", cy: "17.5", r: "3.5", key: "w3z12y" }]
   ];
-  var Shapes = createLucideIcon("shapes", __iconNode42);
+  var Shapes = createLucideIcon("shapes", __iconNode44);
 
   // node_modules/lucide-react/dist/esm/icons/sparkles.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode43 = [
+  var __iconNode45 = [
     [
       "path",
       {
@@ -28570,72 +28592,72 @@ img.ProseMirror-separator {
     ["path", { d: "M22 4h-4", key: "gwowj6" }],
     ["circle", { cx: "4", cy: "20", r: "2", key: "6kqj1y" }]
   ];
-  var Sparkles = createLucideIcon("sparkles", __iconNode43);
+  var Sparkles = createLucideIcon("sparkles", __iconNode45);
 
   // node_modules/lucide-react/dist/esm/icons/square-check-big.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode44 = [
+  var __iconNode46 = [
     [
       "path",
       { d: "M21 10.656V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h12.344", key: "2acyp4" }
     ],
     ["path", { d: "m9 11 3 3L22 4", key: "1pflzl" }]
   ];
-  var SquareCheckBig = createLucideIcon("square-check-big", __iconNode44);
+  var SquareCheckBig = createLucideIcon("square-check-big", __iconNode46);
 
   // node_modules/lucide-react/dist/esm/icons/square-check.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode45 = [
+  var __iconNode47 = [
     ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }],
     ["path", { d: "m9 12 2 2 4-4", key: "dzmm74" }]
   ];
-  var SquareCheck = createLucideIcon("square-check", __iconNode45);
+  var SquareCheck = createLucideIcon("square-check", __iconNode47);
 
   // node_modules/lucide-react/dist/esm/icons/square-code.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode46 = [
+  var __iconNode48 = [
     ["path", { d: "m10 9-3 3 3 3", key: "1oro0q" }],
     ["path", { d: "m14 15 3-3-3-3", key: "bz13h7" }],
     ["rect", { x: "3", y: "3", width: "18", height: "18", rx: "2", key: "h1oib" }]
   ];
-  var SquareCode = createLucideIcon("square-code", __iconNode46);
+  var SquareCode = createLucideIcon("square-code", __iconNode48);
 
   // node_modules/lucide-react/dist/esm/icons/square.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode47 = [
+  var __iconNode49 = [
     ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }]
   ];
-  var Square = createLucideIcon("square", __iconNode47);
+  var Square = createLucideIcon("square", __iconNode49);
 
   // node_modules/lucide-react/dist/esm/icons/strikethrough.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode48 = [
+  var __iconNode50 = [
     ["path", { d: "M16 4H9a3 3 0 0 0-2.83 4", key: "43sutm" }],
     ["path", { d: "M14 12a4 4 0 0 1 0 8H6", key: "nlfj13" }],
     ["line", { x1: "4", x2: "20", y1: "12", y2: "12", key: "1e0a9i" }]
   ];
-  var Strikethrough = createLucideIcon("strikethrough", __iconNode48);
+  var Strikethrough = createLucideIcon("strikethrough", __iconNode50);
 
   // node_modules/lucide-react/dist/esm/icons/table.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode49 = [
+  var __iconNode51 = [
     ["path", { d: "M12 3v18", key: "108xh3" }],
     ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }],
     ["path", { d: "M3 9h18", key: "1pudct" }],
     ["path", { d: "M3 15h18", key: "5xshup" }]
   ];
-  var Table2 = createLucideIcon("table", __iconNode49);
+  var Table2 = createLucideIcon("table", __iconNode51);
 
   // node_modules/lucide-react/dist/esm/icons/tag.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode50 = [
+  var __iconNode52 = [
     [
       "path",
       {
@@ -28645,24 +28667,24 @@ img.ProseMirror-separator {
     ],
     ["circle", { cx: "7.5", cy: "7.5", r: ".5", fill: "currentColor", key: "kqv944" }]
   ];
-  var Tag = createLucideIcon("tag", __iconNode50);
+  var Tag = createLucideIcon("tag", __iconNode52);
 
   // node_modules/lucide-react/dist/esm/icons/trash-2.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode51 = [
+  var __iconNode53 = [
     ["path", { d: "M10 11v6", key: "nco0om" }],
     ["path", { d: "M14 11v6", key: "outv1u" }],
     ["path", { d: "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6", key: "miytrc" }],
     ["path", { d: "M3 6h18", key: "d0wm0j" }],
     ["path", { d: "M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2", key: "e791ji" }]
   ];
-  var Trash2 = createLucideIcon("trash-2", __iconNode51);
+  var Trash2 = createLucideIcon("trash-2", __iconNode53);
 
   // node_modules/lucide-react/dist/esm/icons/triangle-alert.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode52 = [
+  var __iconNode54 = [
     [
       "path",
       {
@@ -28673,54 +28695,54 @@ img.ProseMirror-separator {
     ["path", { d: "M12 9v4", key: "juzpu7" }],
     ["path", { d: "M12 17h.01", key: "p32p05" }]
   ];
-  var TriangleAlert = createLucideIcon("triangle-alert", __iconNode52);
+  var TriangleAlert = createLucideIcon("triangle-alert", __iconNode54);
 
   // node_modules/lucide-react/dist/esm/icons/type.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode53 = [
+  var __iconNode55 = [
     ["path", { d: "M12 4v16", key: "1654pz" }],
     ["path", { d: "M4 7V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2", key: "e0r10z" }],
     ["path", { d: "M9 20h6", key: "s66wpe" }]
   ];
-  var Type = createLucideIcon("type", __iconNode53);
+  var Type = createLucideIcon("type", __iconNode55);
 
   // node_modules/lucide-react/dist/esm/icons/underline.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode54 = [
+  var __iconNode56 = [
     ["path", { d: "M6 4v6a6 6 0 0 0 12 0V4", key: "9kb039" }],
     ["line", { x1: "4", x2: "20", y1: "20", y2: "20", key: "nun2al" }]
   ];
-  var Underline2 = createLucideIcon("underline", __iconNode54);
+  var Underline2 = createLucideIcon("underline", __iconNode56);
 
   // node_modules/lucide-react/dist/esm/icons/undo-2.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode55 = [
+  var __iconNode57 = [
     ["path", { d: "M9 14 4 9l5-5", key: "102s5s" }],
     ["path", { d: "M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11", key: "f3b9sd" }]
   ];
-  var Undo2 = createLucideIcon("undo-2", __iconNode55);
+  var Undo2 = createLucideIcon("undo-2", __iconNode57);
 
   // node_modules/lucide-react/dist/esm/icons/workflow.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode56 = [
+  var __iconNode58 = [
     ["rect", { width: "8", height: "8", x: "3", y: "3", rx: "2", key: "by2w9f" }],
     ["path", { d: "M7 11v4a2 2 0 0 0 2 2h4", key: "xkn7yn" }],
     ["rect", { width: "8", height: "8", x: "13", y: "13", rx: "2", key: "1cgmvn" }]
   ];
-  var Workflow = createLucideIcon("workflow", __iconNode56);
+  var Workflow = createLucideIcon("workflow", __iconNode58);
 
   // node_modules/lucide-react/dist/esm/icons/x.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode57 = [
+  var __iconNode59 = [
     ["path", { d: "M18 6 6 18", key: "1bl5f8" }],
     ["path", { d: "m6 6 12 12", key: "d8bk6v" }]
   ];
-  var X = createLucideIcon("x", __iconNode57);
+  var X = createLucideIcon("x", __iconNode59);
 
   // src/memo-editor/docx-export.ts
   init_define_process_env();
@@ -55382,7 +55404,7 @@ ${promptInput.trim()}`
                 children: [
                   /* @__PURE__ */ jsxs("div", { className: "link-search-item-info", children: [
                     /* @__PURE__ */ jsxs("div", { className: "link-search-item-title", children: [
-                      item.type === "url" ? /* @__PURE__ */ jsx(Link2, { size: 12, style: { marginRight: 8, opacity: 0.6 } }) : /* @__PURE__ */ jsx(Link2, { size: 12, style: { marginRight: 8, opacity: 0.6 } }),
+                      item.type === "url" ? /* @__PURE__ */ jsx(Link3, { size: 12, style: { marginRight: 8, opacity: 0.6 } }) : /* @__PURE__ */ jsx(Link3, { size: 12, style: { marginRight: 8, opacity: 0.6 } }),
                       item.title
                     ] }),
                     item.type === "document" && /* @__PURE__ */ jsx("div", { className: "link-search-item-path", children: item.section === "shared" ? "Partag\xE9" : item.section === "common" ? "Commun" : "Priv\xE9" })
@@ -55495,70 +55517,75 @@ ${promptInput.trim()}`
       setDraftTitle(title);
       setIsEditingTitle(false);
     }, [title]);
+    const handleMainClick = react_shim_default.useCallback((event) => {
+      if (isEditingTitle) return;
+      if (event.detail > 1) return;
+      handleOpen(event);
+    }, [isEditingTitle, handleOpen]);
     return /* @__PURE__ */ jsx(NodeViewWrapper, { className: "memo-link-block-wrap", contentEditable: false, children: /* @__PURE__ */ jsxs(
       "div",
       {
         className: "memo-link-block",
         "data-document-id": documentId,
-        role: "link",
-        tabIndex: 0,
         onMouseDown: (event) => {
           if (isEditingTitle) {
             event.preventDefault();
             event.stopPropagation();
           }
         },
-        onClick: (event) => {
-          const target = event.target;
-          if (isEditingTitle) return;
-          if (event.detail > 1) return;
-          if ((target == null ? void 0 : target.closest(".memo-link-block__action")) || (target == null ? void 0 : target.closest(".memo-link-block__handle"))) return;
-          handleOpen(event);
-        },
-        onDoubleClick: (event) => {
-          const target = event.target;
-          if (!canEdit) return;
-          if ((target == null ? void 0 : target.closest(".memo-link-block__action")) || (target == null ? void 0 : target.closest(".memo-link-block__handle"))) return;
-          event.preventDefault();
-          event.stopPropagation();
-          setIsEditingTitle(true);
-        },
-        onKeyDown: (event) => {
-          if (isEditingTitle) return;
-          if (event.key === "Enter" || event.key === " ") {
-            handleOpen(event);
-          }
-        },
         children: [
           /* @__PURE__ */ jsx("button", { className: "memo-link-block__handle", type: "button", "aria-label": "D\xE9placer", "data-drag-handle": true, children: /* @__PURE__ */ jsx("svg", { viewBox: "0 0 24 24", width: "14", height: "14", "aria-hidden": "true", children: /* @__PURE__ */ jsx("path", { fill: "currentColor", d: "M10 4h2v2h-2V4zm0 7h2v2h-2v-2zm0 7h2v2h-2v-2zm4-14h2v2h-2V4zm0 7h2v2h-2v-2zm0 7h2v2h-2v-2z" }) }) }),
-          /* @__PURE__ */ jsxs("span", { className: "memo-link-block__icon", children: [
-            /* @__PURE__ */ jsx("span", { ref: iconRef, children: icon ? /* @__PURE__ */ jsx("i", { "data-lucide": icon }) : /* @__PURE__ */ jsx("i", { "data-lucide": "file" }) }),
-            /* @__PURE__ */ jsx("span", { className: "memo-link-block__icon-overlay", children: /* @__PURE__ */ jsx(ArrowUpRight, { size: 10 }) })
-          ] }),
-          /* @__PURE__ */ jsx("span", { className: "memo-link-block__title", children: isEditingTitle ? /* @__PURE__ */ jsx(
-            "input",
+          /* @__PURE__ */ jsxs(
+            "button",
             {
-              ref: titleInputRef,
-              className: "memo-link-block__title-input",
-              value: draftTitle,
-              onMouseDown: (event) => {
+              type: "button",
+              className: "memo-link-block__main",
+              onClick: handleMainClick,
+              onDoubleClick: (event) => {
+                if (!canEdit) return;
                 event.preventDefault();
                 event.stopPropagation();
+                setIsEditingTitle(true);
               },
-              onChange: (event) => setDraftTitle(event.target.value),
-              onBlur: () => commitTitle(),
               onKeyDown: (event) => {
-                event.stopPropagation();
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                  commitTitle();
-                } else if (event.key === "Escape") {
-                  event.preventDefault();
-                  cancelTitleEdit();
+                if (isEditingTitle) return;
+                if (event.key === "Enter" || event.key === " ") {
+                  handleOpen(event);
                 }
-              }
+              },
+              "aria-label": title,
+              children: [
+                /* @__PURE__ */ jsxs("span", { className: "memo-link-block__icon", children: [
+                  /* @__PURE__ */ jsx("span", { ref: iconRef, children: icon ? /* @__PURE__ */ jsx("i", { "data-lucide": icon }) : /* @__PURE__ */ jsx("i", { "data-lucide": "file" }) }),
+                  /* @__PURE__ */ jsx("span", { className: "memo-link-block__icon-overlay", children: /* @__PURE__ */ jsx(ArrowUpRight, { size: 10 }) })
+                ] }),
+                /* @__PURE__ */ jsx("span", { className: "memo-link-block__title", children: isEditingTitle ? /* @__PURE__ */ jsx(
+                  "input",
+                  {
+                    ref: titleInputRef,
+                    className: "memo-link-block__title-input",
+                    value: draftTitle,
+                    onMouseDown: (event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                    },
+                    onChange: (event) => setDraftTitle(event.target.value),
+                    onBlur: () => commitTitle(),
+                    onKeyDown: (event) => {
+                      event.stopPropagation();
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        commitTitle();
+                      } else if (event.key === "Escape") {
+                        event.preventDefault();
+                        cancelTitleEdit();
+                      }
+                    }
+                  }
+                ) : title })
+              ]
             }
-          ) : title }),
+          ),
           /* @__PURE__ */ jsxs("span", { className: "memo-link-block__actions", children: [
             /* @__PURE__ */ jsx("button", { type: "button", className: "memo-link-block__action", onClick: handleCopy, "aria-label": "Copier", children: /* @__PURE__ */ jsx(Copy, { size: 13 }) }),
             /* @__PURE__ */ jsx("button", { type: "button", className: "memo-link-block__action", onClick: handleDelete, "aria-label": "Supprimer", children: /* @__PURE__ */ jsx(Trash2, { size: 13 }) })
@@ -55591,9 +55618,10 @@ ${promptInput.trim()}`
       return ReactNodeViewRenderer(MemoLinkBlockView);
     }
   });
-  var MemoSummaryBlockView = ({ node, editor, getPos }) => {
+  var MemoNavigationBlockView = ({ node, editor, getPos }) => {
     var _a, _b;
-    const title = String(((_a = node == null ? void 0 : node.attrs) == null ? void 0 : _a.title) || "Sommaire");
+    const rawTitle = String(((_a = node == null ? void 0 : node.attrs) == null ? void 0 : _a.title) || "Navigation").trim();
+    const title = !rawTitle || rawTitle.toLowerCase() === "sommaire" ? "Navigation" : rawTitle;
     const parentIdAttr = String(((_b = node == null ? void 0 : node.attrs) == null ? void 0 : _b.parentId) || "").trim();
     const [children, setChildren] = react_shim_default.useState([]);
     const blockRef = react_shim_default.useRef(null);
@@ -55693,18 +55721,22 @@ ${promptInput.trim()}`
         "button",
         {
           type: "button",
-          className: "memo-summary-block__item",
+          className: "memo-link-block memo-summary-block__link-block",
           onClick: (event) => handleOpenChild(event, child.id),
+          "aria-label": child.title,
           children: [
-            /* @__PURE__ */ jsx("span", { className: "memo-summary-block__item-icon", children: /* @__PURE__ */ jsx("i", { "data-lucide": child.icon || "file" }) }),
-            /* @__PURE__ */ jsx("span", { className: "memo-summary-block__item-title", children: child.title })
+            /* @__PURE__ */ jsxs("span", { className: "memo-link-block__icon", children: [
+              /* @__PURE__ */ jsx("i", { "data-lucide": child.icon || "file" }),
+              /* @__PURE__ */ jsx("span", { className: "memo-link-block__icon-overlay", children: /* @__PURE__ */ jsx(ArrowUpRight, { size: 10 }) })
+            ] }),
+            /* @__PURE__ */ jsx("span", { className: "memo-link-block__title", children: child.title })
           ]
         },
         child.id
       )) : /* @__PURE__ */ jsx("div", { className: "memo-summary-block__empty", children: "Aucune page enfant" }) })
     ] }) });
   };
-  var MemoSummaryBlock = Node3.create({
+  var MemoNavigationBlock = Node3.create({
     name: "memoSummaryBlock",
     group: "block",
     atom: true,
@@ -55712,18 +55744,114 @@ ${promptInput.trim()}`
     draggable: true,
     addAttributes() {
       return {
-        title: { default: "Sommaire" },
+        title: { default: "Navigation" },
         parentId: { default: "" }
       };
     },
     parseHTML() {
-      return [{ tag: 'div[data-type="memo-summary-block"]' }];
+      return [
+        { tag: 'div[data-type="memo-navigation-block"]' },
+        { tag: 'div[data-type="memo-summary-block"]' }
+      ];
     },
     renderHTML({ HTMLAttributes }) {
-      return ["div", mergeAttributes(HTMLAttributes, { "data-type": "memo-summary-block" })];
+      return ["div", mergeAttributes(HTMLAttributes, { "data-type": "memo-navigation-block" })];
     },
     addNodeView() {
-      return ReactNodeViewRenderer(MemoSummaryBlockView);
+      return ReactNodeViewRenderer(MemoNavigationBlockView);
+    }
+  });
+  var MemoPageSummaryBlockView = ({ node }) => {
+    var _a;
+    const title = String(((_a = node == null ? void 0 : node.attrs) == null ? void 0 : _a.title) || "Sommaire");
+    const blockRef = react_shim_default.useRef(null);
+    const [headings, setHeadings] = react_shim_default.useState([]);
+    const refreshHeadings = react_shim_default.useCallback(() => {
+      const raw = Array.isArray(window.MemoHeadings) ? window.MemoHeadings : [];
+      const next2 = raw.map((h, index) => {
+        var _a2, _b, _c, _d, _e;
+        const level = Number((h == null ? void 0 : h.level) || 0);
+        const id = String((h == null ? void 0 : h.id) || (h == null ? void 0 : h.anchor) || ((_b = (_a2 = h == null ? void 0 : h.node) == null ? void 0 : _a2.attrs) == null ? void 0 : _b.id) || ((_d = (_c = h == null ? void 0 : h.node) == null ? void 0 : _c.attrs) == null ? void 0 : _d["data-toc-id"]) || `memo-heading-${index}`).trim();
+        const text = String((h == null ? void 0 : h.textContent) || (h == null ? void 0 : h.text) || ((_e = h == null ? void 0 : h.node) == null ? void 0 : _e.textContent) || "").trim() || "(Sans titre)";
+        const pos = Number.isFinite(Number(h == null ? void 0 : h.pos)) ? Number(h.pos) : null;
+        return level >= 1 && level <= 4 && id ? { id, text, level, pos } : null;
+      }).filter(Boolean);
+      setHeadings(next2);
+    }, []);
+    react_shim_default.useEffect(() => {
+      refreshHeadings();
+      const onUpdate = () => refreshHeadings();
+      window.addEventListener("memo:headings-updated", onUpdate);
+      return () => window.removeEventListener("memo:headings-updated", onUpdate);
+    }, [refreshHeadings]);
+    react_shim_default.useEffect(() => {
+      var _a2, _b;
+      try {
+        (_b = (_a2 = window.lucide) == null ? void 0 : _a2.createIcons) == null ? void 0 : _b.call(_a2, {
+          attrs: { width: "14", height: "14" },
+          elements: blockRef.current ? [blockRef.current] : void 0
+        });
+      } catch (err) {
+      }
+    }, [headings]);
+    const handleOpenHeading = react_shim_default.useCallback((event, heading2) => {
+      var _a2, _b, _c;
+      event.preventDefault();
+      event.stopPropagation();
+      const editor = window.MemoEditor || window.memoEditor;
+      const scrollArea = document.querySelector(".editor-wrap");
+      if (!editor || !scrollArea) return;
+      try {
+        if (Number.isFinite(Number(heading2 == null ? void 0 : heading2.pos))) {
+          editor.chain().focus().setTextSelection(Number(heading2.pos)).run();
+        }
+      } catch (err) {
+      }
+      const selector = `[id="${heading2.id}"], [data-toc-id="${heading2.id}"], [data-rail-id="${heading2.id}"]`;
+      const element = (_c = (_b = (_a2 = editor.view) == null ? void 0 : _a2.dom) == null ? void 0 : _b.querySelector) == null ? void 0 : _c.call(_b, selector);
+      if (!element) return;
+      const areaRect = scrollArea.getBoundingClientRect();
+      const elementRect = element.getBoundingClientRect();
+      const relativeTop = elementRect.top - areaRect.top + scrollArea.scrollTop;
+      scrollArea.scrollTo({ top: Math.max(0, relativeTop - 20), behavior: "smooth" });
+    }, []);
+    return /* @__PURE__ */ jsx(NodeViewWrapper, { className: "memo-summary-block-wrap", contentEditable: false, children: /* @__PURE__ */ jsxs("div", { className: "memo-summary-block", ref: blockRef, children: [
+      /* @__PURE__ */ jsx("div", { className: "memo-summary-block__header", children: /* @__PURE__ */ jsx("span", { className: "memo-summary-block__title", children: title }) }),
+      /* @__PURE__ */ jsx("div", { className: "memo-summary-block__list", children: headings.length ? headings.map((heading2) => /* @__PURE__ */ jsxs(
+        "button",
+        {
+          type: "button",
+          className: `memo-summary-block__item memo-summary-block__item--h${heading2.level}`,
+          onClick: (event) => handleOpenHeading(event, heading2),
+          "aria-label": heading2.text,
+          children: [
+            /* @__PURE__ */ jsx("span", { className: "memo-summary-block__item-icon", children: /* @__PURE__ */ jsx("i", { "data-lucide": "list" }) }),
+            /* @__PURE__ */ jsx("span", { className: "memo-summary-block__item-title", children: heading2.text })
+          ]
+        },
+        heading2.id
+      )) : /* @__PURE__ */ jsx("div", { className: "memo-summary-block__empty", children: "Aucun titre" }) })
+    ] }) });
+  };
+  var MemoPageSummaryBlock = Node3.create({
+    name: "memoPageSummaryBlock",
+    group: "block",
+    atom: true,
+    selectable: true,
+    draggable: true,
+    addAttributes() {
+      return {
+        title: { default: "Sommaire" }
+      };
+    },
+    parseHTML() {
+      return [{ tag: 'div[data-type="memo-page-summary-block"]' }];
+    },
+    renderHTML({ HTMLAttributes }) {
+      return ["div", mergeAttributes(HTMLAttributes, { "data-type": "memo-page-summary-block" })];
+    },
+    addNodeView() {
+      return ReactNodeViewRenderer(MemoPageSummaryBlockView);
     }
   });
   var TEXT_COLORS = [
@@ -56107,7 +56235,7 @@ ${promptInput.trim()}`
                 onClick: onLink,
                 "data-active-state": editor.isActive("link") ? "on" : "off",
                 title: "Lien",
-                children: /* @__PURE__ */ jsx(Link2, { size: 14 })
+                children: /* @__PURE__ */ jsx(Link3, { size: 14 })
               }
             )
           ] }),
@@ -56529,7 +56657,9 @@ ${promptInput.trim()}`
       { label: "Liste \xE0 puces", value: "bulletList", icon: List, active: editor.isActive("bulletList") },
       { label: "T\xE2che", value: "taskList", icon: SquareCheckBig, active: editor.isActive("taskList") },
       { label: "Bloc de code", value: "codeBlock", icon: SquareCode, active: editor.isActive("codeBlock") },
-      { label: "Lien", value: "link", icon: Link2, active: editor.isActive("link") },
+      { label: "Lien", value: "link", icon: Link3, active: editor.isActive("link") },
+      { label: "Navigation", value: "navigation", icon: List, active: editor.isActive("memoSummaryBlock") },
+      { label: "Sommaire", value: "summary", icon: List, active: editor.isActive("memoPageSummaryBlock") },
       { label: "Libell\xE9", value: "label", icon: Tag, active: editor.isActive("code") },
       { label: "Citation", value: "quote", icon: Shapes, active: editor.isActive("blockquote") },
       { label: "Tableau", value: "table", icon: Table2, active: editor.isActive("table") },
@@ -56662,7 +56792,7 @@ ${promptInput.trim()}`
     ] });
   };
   var runEditorDropdownAction = (editor, value, callbacks) => {
-    var _a, _b, _c, _d;
+    var _a, _b, _c, _d, _e;
     const chain = editor.chain().focus();
     if (value === "paragraph") chain.setParagraph().run();
     else if (value === "h1") chain.toggleHeading({ level: 1 }).run();
@@ -56693,8 +56823,10 @@ ${promptInput.trim()}`
       (_b = callbacks.onInsertImage) == null ? void 0 : _b.call(callbacks);
     } else if (value === "video") {
       (_c = callbacks.onInsertVideo) == null ? void 0 : _c.call(callbacks);
+    } else if (value === "navigation") {
+      (_d = callbacks.onInsertNavigation) == null ? void 0 : _d.call(callbacks);
     } else if (value === "summary") {
-      (_d = callbacks.onInsertSummary) == null ? void 0 : _d.call(callbacks);
+      (_e = callbacks.onInsertPageSummary) == null ? void 0 : _e.call(callbacks);
     }
   };
   var CodeList = react_shim_default.forwardRef((props, ref2) => {
@@ -57155,6 +57287,33 @@ ${promptInput.trim()}`
     reader.onerror = () => reject(reader.error || new Error("Impossible de lire le fichier image"));
     reader.readAsDataURL(file);
   });
+  var INITIAL_NAV_DISMISSED_KEY = "go-toolkit-memo-initial-navigation-dismissed-v1";
+  var parseDismissedInitialNavigation = () => {
+    try {
+      const raw = localStorage.getItem(INITIAL_NAV_DISMISSED_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      return new Set(Array.isArray(parsed) ? parsed.map((item) => String(item || "").trim()).filter(Boolean) : []);
+    } catch (err) {
+      return /* @__PURE__ */ new Set();
+    }
+  };
+  var persistDismissedInitialNavigation = (next2) => {
+    try {
+      localStorage.setItem(INITIAL_NAV_DISMISSED_KEY, JSON.stringify(Array.from(next2)));
+    } catch (err) {
+    }
+  };
+  var hasPersistedNavigationBlock = (html2) => {
+    const source = String(html2 || "");
+    return /data-type=["'](?:memo-navigation-block|memo-summary-block)["']/.test(source);
+  };
+  var isHtmlEffectivelyEmptyForInitialNavigation = (html2) => {
+    const source = String(html2 || "");
+    if (!source.trim()) return true;
+    const withoutBlocks = source.replace(/<div[^>]*data-type=["'](?:memo-navigation-block|memo-summary-block|memo-page-summary-block)["'][\s\S]*?<\/div>/gi, "").replace(/<p>(?:\s|&nbsp;|<br\s*\/?>)*<\/p>/gi, "");
+    const textOnly = withoutBlocks.replace(/<[^>]+>/g, "").replace(/&nbsp;/gi, "").replace(/\s+/g, "");
+    return !textOnly;
+  };
   var SimpleEditor = ({
     content = "",
     onChange,
@@ -57193,6 +57352,9 @@ ${promptInput.trim()}`
     const [showSlashActionMenu, setShowSlashActionMenu] = react_shim_default.useState(false);
     const [slashActionMenuPos, setSlashActionMenuPos] = react_shim_default.useState({ top: 0, left: 0 });
     const [slashActionQuery, setSlashActionQuery] = react_shim_default.useState("");
+    const [editorHtmlSnapshot, setEditorHtmlSnapshot] = react_shim_default.useState(String(content || ""));
+    const [initialNavigationChildren, setInitialNavigationChildren] = react_shim_default.useState([]);
+    const [dismissedInitialNavigation, setDismissedInitialNavigation] = react_shim_default.useState(() => parseDismissedInitialNavigation());
     const slashActionMenuRef = react_shim_default.useRef(null);
     const [isFocusWithinMemoCard, setIsFocusWithinMemoCard] = react_shim_default.useState(false);
     const [tableSelectionBox, setTableSelectionBox] = react_shim_default.useState(null);
@@ -57200,6 +57362,58 @@ ${promptInput.trim()}`
     const blockDragMovedRef = react_shim_default.useRef(false);
     const tableLayoutRafRef = react_shim_default.useRef(null);
     const isAutoLayoutRef = react_shim_default.useRef(false);
+    const activeDocumentId = String(editorId || window.__memoActiveDocumentId || "").trim();
+    react_shim_default.useEffect(() => {
+      setEditorHtmlSnapshot(String(content || ""));
+    }, [content, editorId]);
+    react_shim_default.useEffect(() => {
+      const resolver = window.GoToolkitMemoGetChildrenForDocument;
+      const docId = String(activeDocumentId || "").trim();
+      if (!docId || typeof resolver !== "function") {
+        setInitialNavigationChildren([]);
+        return;
+      }
+      let cancelled = false;
+      const run3 = async () => {
+        try {
+          const rows = await resolver(docId);
+          if (cancelled) return;
+          const next2 = (Array.isArray(rows) ? rows : []).map((item) => ({
+            id: String((item == null ? void 0 : item.id) || "").trim(),
+            title: String((item == null ? void 0 : item.title) || "Document").trim() || "Document",
+            icon: String((item == null ? void 0 : item.icon) || "").trim()
+          })).filter((item) => item.id);
+          setInitialNavigationChildren(next2);
+        } catch (err) {
+          if (!cancelled) setInitialNavigationChildren([]);
+        }
+      };
+      run3();
+      const onChildrenUpdated = (event) => {
+        const detail = (event == null ? void 0 : event.detail) || {};
+        const parentId = String((detail == null ? void 0 : detail.parentId) || "").trim();
+        if (parentId && parentId !== docId) return;
+        run3();
+      };
+      window.addEventListener("goToolkitMemoChildrenUpdated", onChildrenUpdated);
+      return () => {
+        cancelled = true;
+        window.removeEventListener("goToolkitMemoChildrenUpdated", onChildrenUpdated);
+      };
+    }, [activeDocumentId]);
+    const isInitialNavigationDismissed = react_shim_default.useMemo(() => {
+      const docId = String(activeDocumentId || "").trim();
+      if (!docId) return false;
+      return dismissedInitialNavigation.has(docId);
+    }, [activeDocumentId, dismissedInitialNavigation]);
+    const showInitialNavigationBlock = react_shim_default.useMemo(() => {
+      if (!editable) return false;
+      if (!activeDocumentId) return false;
+      if (!initialNavigationChildren.length) return false;
+      if (isInitialNavigationDismissed) return false;
+      if (hasPersistedNavigationBlock(editorHtmlSnapshot)) return false;
+      return isHtmlEffectivelyEmptyForInitialNavigation(editorHtmlSnapshot);
+    }, [activeDocumentId, editable, editorHtmlSnapshot, initialNavigationChildren.length, isInitialNavigationDismissed]);
     const editor = useEditor({
       extensions: [
         StarterKit.configure({
@@ -57237,7 +57451,8 @@ ${promptInput.trim()}`
           }
         }),
         MemoLinkBlock,
-        MemoSummaryBlock,
+        MemoNavigationBlock,
+        MemoPageSummaryBlock,
         CustomImage,
         VideoEmbed,
         ExternalVideoEmbed,
@@ -57837,13 +58052,14 @@ ${promptInput.trim()}`
       },
       onUpdate: ({ editor: editor2 }) => {
         const start = performance.now();
+        const html2 = editor2.getHTML();
+        setEditorHtmlSnapshot(html2);
         if (onChange) {
           if (window._memoSaveTimeout) {
             clearTimeout(window._memoSaveTimeout);
           }
           window._memoSaveTimeout = setTimeout(() => {
             const innerStart = performance.now();
-            const html2 = editor2.getHTML();
             onChange(html2, editorId);
             const duration = Math.round(performance.now() - innerStart);
             if (duration > 50) {
@@ -57856,6 +58072,7 @@ ${promptInput.trim()}`
         }
       },
       onBlur: ({ editor: editor2 }) => {
+        setEditorHtmlSnapshot(editor2.getHTML());
         if (onChange) {
           if (window._memoSaveTimeout) {
             clearTimeout(window._memoSaveTimeout);
@@ -59988,14 +60205,46 @@ ${innerMarkdown}
       setLinkModalRange({ from: from2, to });
       setShowLinkModal(true);
     }, [editor]);
-    const insertSummaryBlock = react_shim_default.useCallback(() => {
+    const insertNavigationBlock = react_shim_default.useCallback(() => {
       if (!editor) return;
       const parentId = String(window.__memoActiveDocumentId || "").trim();
       editor.chain().focus().insertContent([
-        { type: "memoSummaryBlock", attrs: { title: "Sommaire", parentId } },
+        { type: "memoSummaryBlock", attrs: { title: "Navigation", parentId } },
         { type: "paragraph" }
       ]).run();
     }, [editor]);
+    const insertPageSummaryBlock = react_shim_default.useCallback(() => {
+      if (!editor) return;
+      editor.chain().focus().insertContent([
+        { type: "memoPageSummaryBlock", attrs: { title: "Sommaire" } },
+        { type: "paragraph" }
+      ]).run();
+    }, [editor]);
+    const handlePersistInitialNavigation = react_shim_default.useCallback((event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      insertNavigationBlock();
+    }, [insertNavigationBlock]);
+    const handleDismissInitialNavigation = react_shim_default.useCallback((event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const docId = String(activeDocumentId || "").trim();
+      if (!docId) return;
+      setDismissedInitialNavigation((prev) => {
+        const next2 = new Set(prev);
+        next2.add(docId);
+        persistDismissedInitialNavigation(next2);
+        return next2;
+      });
+    }, [activeDocumentId]);
+    react_shim_default.useEffect(() => {
+      var _a2, _b2;
+      if (!showInitialNavigationBlock) return;
+      try {
+        (_b2 = (_a2 = window.lucide) == null ? void 0 : _a2.createIcons) == null ? void 0 : _b2.call(_a2);
+      } catch (err) {
+      }
+    }, [showInitialNavigationBlock, initialNavigationChildren]);
     react_shim_default.useEffect(() => {
       if (!showSlashActionMenu) return;
       const onMouseDown = (event) => {
@@ -60053,8 +60302,9 @@ ${innerMarkdown}
       { label: "Liste \xE0 puces", value: "bulletList", icon: List, markdownShortcut: "-", aliases: ["liste", "puce", "list"] },
       { label: "T\xE2che", value: "taskList", icon: SquareCheckBig, markdownShortcut: "[]", aliases: ["todo", "task", "checklist"] },
       { label: "Bloc de code", value: "codeBlock", icon: SquareCode, markdownShortcut: "```", aliases: ["code", "snippet"] },
-      { label: "Lien", value: "link", icon: Link2, markdownShortcut: "[texte](url)", aliases: ["url", "hyperlink"] },
-      { label: "Sommaire", value: "summary", icon: List, markdownShortcut: "sommaire", aliases: ["summary", "children", "enfants"] },
+      { label: "Lien", value: "link", icon: Link3, markdownShortcut: "[texte](url)", aliases: ["url", "hyperlink"] },
+      { label: "Navigation", value: "navigation", icon: Link2, markdownShortcut: "navigation", aliases: ["children", "enfants", "pages"] },
+      { label: "Sommaire", value: "summary", icon: ListTree, markdownShortcut: "sommaire", aliases: ["summary", "toc", "titres", "headings"] },
       { label: "Libell\xE9", value: "label", icon: Tag, markdownShortcut: "@", aliases: ["tag", "etiquette"] },
       { label: "Citation", value: "quote", icon: Shapes, markdownShortcut: ">", aliases: ["blockquote", "citation"] },
       { label: "Tableau", value: "table", icon: Table2, markdownShortcut: "|", aliases: ["table", "grille"] },
@@ -60096,11 +60346,12 @@ ${innerMarkdown}
         onLink: openLinkModal,
         onInsertImage: openImagePicker,
         onInsertVideo: openVideoInsertDialog,
-        onInsertSummary: insertSummaryBlock
+        onInsertNavigation: insertNavigationBlock,
+        onInsertPageSummary: insertPageSummaryBlock
       });
       setSlashActionQuery("");
       setShowSlashActionMenu(false);
-    }, [editor, insertSummaryBlock, openImagePicker, openLinkModal, openVideoInsertDialog]);
+    }, [editor, insertNavigationBlock, insertPageSummaryBlock, openImagePicker, openLinkModal, openVideoInsertDialog]);
     const runFirstSlashAction = react_shim_default.useCallback(() => {
       const firstAction = filteredSlashActions[0];
       runSlashAction(firstAction);
@@ -60220,6 +60471,37 @@ ${innerMarkdown}
               onDropdownToggle: setIsDropdownOpen
             }
           ),
+          showInitialNavigationBlock && /* @__PURE__ */ jsxs("div", { className: "memo-summary-block memo-summary-block--initial", "data-parent-id": activeDocumentId, children: [
+            /* @__PURE__ */ jsxs("div", { className: "memo-summary-block__header", children: [
+              /* @__PURE__ */ jsx("span", { className: "memo-summary-block__title", children: "Navigation" }),
+              /* @__PURE__ */ jsxs("span", { className: "memo-summary-block__actions", style: { opacity: 1 }, children: [
+                /* @__PURE__ */ jsx("button", { type: "button", className: "memo-summary-block__action", onClick: handlePersistInitialNavigation, "aria-label": "Ajouter", children: /* @__PURE__ */ jsx(Plus, { size: 13 }) }),
+                /* @__PURE__ */ jsx("button", { type: "button", className: "memo-summary-block__action", onClick: handleDismissInitialNavigation, "aria-label": "Masquer", children: /* @__PURE__ */ jsx(Trash2, { size: 13 }) })
+              ] })
+            ] }),
+            /* @__PURE__ */ jsx("div", { className: "memo-summary-block__list", children: initialNavigationChildren.map((child) => /* @__PURE__ */ jsxs(
+              "button",
+              {
+                type: "button",
+                className: "memo-link-block memo-summary-block__link-block",
+                onClick: (event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  const open = window.GoToolkitMemoOpenDocumentByLink;
+                  if (typeof open === "function") open(child.id);
+                },
+                "aria-label": child.title,
+                children: [
+                  /* @__PURE__ */ jsxs("span", { className: "memo-link-block__icon", children: [
+                    /* @__PURE__ */ jsx("i", { "data-lucide": child.icon || "file" }),
+                    /* @__PURE__ */ jsx("span", { className: "memo-link-block__icon-overlay", children: /* @__PURE__ */ jsx(ArrowUpRight, { size: 10 }) })
+                  ] }),
+                  /* @__PURE__ */ jsx("span", { className: "memo-link-block__title", children: child.title })
+                ]
+              },
+              child.id
+            )) })
+          ] }),
           /* @__PURE__ */ jsx(EditorContent, { editor }),
           showSlashActionMenu && editor && /* @__PURE__ */ jsxs(
             "div",
@@ -61110,7 +61392,9 @@ lucide-react/dist/esm/icons/image.js:
 lucide-react/dist/esm/icons/info.js:
 lucide-react/dist/esm/icons/italic.js:
 lucide-react/dist/esm/icons/lightbulb.js:
+lucide-react/dist/esm/icons/link-2.js:
 lucide-react/dist/esm/icons/link.js:
+lucide-react/dist/esm/icons/list-tree.js:
 lucide-react/dist/esm/icons/list.js:
 lucide-react/dist/esm/icons/loader-circle.js:
 lucide-react/dist/esm/icons/pencil.js:

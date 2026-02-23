@@ -2170,6 +2170,21 @@ ul[data-type="taskList"] li p {
   cursor: pointer;
 }
 
+.memo-link-block__main {
+  border: none;
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  cursor: pointer;
+}
+
 .memo-link-block:hover {
   background: var(--bg-surface-soft);
 }
@@ -2287,6 +2302,10 @@ ul[data-type="taskList"] li p {
   padding: 8px;
 }
 
+.memo-summary-block--initial {
+  margin-bottom: 8px;
+}
+
 .memo-summary-block__header {
   display: flex;
   align-items: center;
@@ -2354,6 +2373,11 @@ ul[data-type="taskList"] li p {
   text-align: left;
 }
 
+.memo-summary-block__link-block {
+  border: none;
+  text-align: left;
+}
+
 .memo-summary-block__item:hover {
   background: var(--bg-surface-soft);
 }
@@ -2372,6 +2396,18 @@ ul[data-type="taskList"] li p {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.memo-summary-block__item--h2 {
+  padding-left: 20px;
+}
+
+.memo-summary-block__item--h3 {
+  padding-left: 30px;
+}
+
+.memo-summary-block__item--h4 {
+  padding-left: 40px;
 }
 
 .memo-summary-block__empty {

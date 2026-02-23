@@ -53,7 +53,7 @@ import {
   CheckSquare,
   Pencil, Copy, Image as ImageIcon, Clapperboard,
   Square, RectangleHorizontal, Tag,
-  ArrowDownAZ, ArrowUpAZ, ArrowUpRight
+  ArrowDownAZ, ArrowUpAZ, ArrowUpRight, Link2, ListTree
 } from 'lucide-react';
 
 
@@ -766,76 +766,77 @@ const MemoLinkBlockView = ({ node, editor, getPos, updateAttributes }: any) => {
     setDraftTitle(title);
     setIsEditingTitle(false);
   }, [title]);
+  const handleMainClick = React.useCallback((event: React.MouseEvent) => {
+    if (isEditingTitle) return;
+    if (event.detail > 1) return;
+    handleOpen(event);
+  }, [isEditingTitle, handleOpen]);
 
   return (
     <NodeViewWrapper className="memo-link-block-wrap" contentEditable={false}>
       <div
         className="memo-link-block"
         data-document-id={documentId}
-        role="link"
-        tabIndex={0}
         onMouseDown={(event) => {
           if (isEditingTitle) {
             event.preventDefault();
             event.stopPropagation();
           }
         }}
-        onClick={(event) => {
-          const target = event.target as HTMLElement | null;
-          if (isEditingTitle) return;
-          if (event.detail > 1) return;
-          if (target?.closest('.memo-link-block__action') || target?.closest('.memo-link-block__handle')) return;
-          handleOpen(event);
-        }}
-        onDoubleClick={(event) => {
-          const target = event.target as HTMLElement | null;
-          if (!canEdit) return;
-          if (target?.closest('.memo-link-block__action') || target?.closest('.memo-link-block__handle')) return;
-          event.preventDefault();
-          event.stopPropagation();
-          setIsEditingTitle(true);
-        }}
-        onKeyDown={(event) => {
-          if (isEditingTitle) return;
-          if (event.key === 'Enter' || event.key === ' ') {
-            handleOpen(event);
-          }
-        }}
       >
         <button className="memo-link-block__handle" type="button" aria-label="Déplacer" data-drag-handle>
           <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M10 4h2v2h-2V4zm0 7h2v2h-2v-2zm0 7h2v2h-2v-2zm4-14h2v2h-2V4zm0 7h2v2h-2v-2zm0 7h2v2h-2v-2z" /></svg>
         </button>
-        <span className="memo-link-block__icon">
-          <span ref={iconRef}>{icon ? <i data-lucide={icon}></i> : <i data-lucide="file"></i>}</span>
-          <span className="memo-link-block__icon-overlay"><ArrowUpRight size={10} /></span>
-        </span>
-        <span className="memo-link-block__title">
-          {isEditingTitle ? (
-            <input
-              ref={titleInputRef}
-              className="memo-link-block__title-input"
-              value={draftTitle}
-              onMouseDown={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-              }}
-              onChange={(event) => setDraftTitle(event.target.value)}
-              onBlur={() => commitTitle()}
-              onKeyDown={(event) => {
-                event.stopPropagation();
-                if (event.key === 'Enter') {
+        <button
+          type="button"
+          className="memo-link-block__main"
+          onClick={handleMainClick}
+          onDoubleClick={(event) => {
+            if (!canEdit) return;
+            event.preventDefault();
+            event.stopPropagation();
+            setIsEditingTitle(true);
+          }}
+          onKeyDown={(event) => {
+            if (isEditingTitle) return;
+            if (event.key === 'Enter' || event.key === ' ') {
+              handleOpen(event);
+            }
+          }}
+          aria-label={title}
+        >
+          <span className="memo-link-block__icon">
+            <span ref={iconRef}>{icon ? <i data-lucide={icon}></i> : <i data-lucide="file"></i>}</span>
+            <span className="memo-link-block__icon-overlay"><ArrowUpRight size={10} /></span>
+          </span>
+          <span className="memo-link-block__title">
+            {isEditingTitle ? (
+              <input
+                ref={titleInputRef}
+                className="memo-link-block__title-input"
+                value={draftTitle}
+                onMouseDown={(event) => {
                   event.preventDefault();
-                  commitTitle();
-                } else if (event.key === 'Escape') {
-                  event.preventDefault();
-                  cancelTitleEdit();
-                }
-              }}
-            />
-          ) : (
-            title
-          )}
-        </span>
+                  event.stopPropagation();
+                }}
+                onChange={(event) => setDraftTitle(event.target.value)}
+                onBlur={() => commitTitle()}
+                onKeyDown={(event) => {
+                  event.stopPropagation();
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                    commitTitle();
+                  } else if (event.key === 'Escape') {
+                    event.preventDefault();
+                    cancelTitleEdit();
+                  }
+                }}
+              />
+            ) : (
+              title
+            )}
+          </span>
+        </button>
         <span className="memo-link-block__actions">
           <button type="button" className="memo-link-block__action" onClick={handleCopy} aria-label="Copier"><Copy size={13} /></button>
           <button type="button" className="memo-link-block__action" onClick={handleDelete} aria-label="Supprimer"><Trash2 size={13} /></button>
@@ -870,8 +871,9 @@ const MemoLinkBlock = TiptapNode.create({
   },
 });
 
-const MemoSummaryBlockView = ({ node, editor, getPos }: any) => {
-  const title = String(node?.attrs?.title || 'Sommaire');
+const MemoNavigationBlockView = ({ node, editor, getPos }: any) => {
+  const rawTitle = String(node?.attrs?.title || 'Navigation').trim();
+  const title = (!rawTitle || rawTitle.toLowerCase() === 'sommaire') ? 'Navigation' : rawTitle;
   const parentIdAttr = String(node?.attrs?.parentId || '').trim();
   const [children, setChildren] = React.useState<Array<{ id: string; title: string; icon?: string }>>([]);
   const blockRef = React.useRef<HTMLDivElement | null>(null);
@@ -983,11 +985,15 @@ const MemoSummaryBlockView = ({ node, editor, getPos }: any) => {
             <button
               key={child.id}
               type="button"
-              className="memo-summary-block__item"
+              className="memo-link-block memo-summary-block__link-block"
               onClick={(event) => handleOpenChild(event, child.id)}
+              aria-label={child.title}
             >
-              <span className="memo-summary-block__item-icon"><i data-lucide={child.icon || 'file'}></i></span>
-              <span className="memo-summary-block__item-title">{child.title}</span>
+              <span className="memo-link-block__icon">
+                <i data-lucide={child.icon || 'file'}></i>
+                <span className="memo-link-block__icon-overlay"><ArrowUpRight size={10} /></span>
+              </span>
+              <span className="memo-link-block__title">{child.title}</span>
             </button>
           )) : (
             <div className="memo-summary-block__empty">Aucune page enfant</div>
@@ -998,7 +1004,7 @@ const MemoSummaryBlockView = ({ node, editor, getPos }: any) => {
   );
 };
 
-const MemoSummaryBlock = TiptapNode.create({
+const MemoNavigationBlock = TiptapNode.create({
   name: 'memoSummaryBlock',
   group: 'block',
   atom: true,
@@ -1006,18 +1012,129 @@ const MemoSummaryBlock = TiptapNode.create({
   draggable: true,
   addAttributes() {
     return {
-      title: { default: 'Sommaire' },
+      title: { default: 'Navigation' },
       parentId: { default: '' },
     };
   },
   parseHTML() {
-    return [{ tag: 'div[data-type="memo-summary-block"]' }];
+    return [
+      { tag: 'div[data-type="memo-navigation-block"]' },
+      { tag: 'div[data-type="memo-summary-block"]' },
+    ];
   },
   renderHTML({ HTMLAttributes }) {
-    return ['div', mergeAttributes(HTMLAttributes, { 'data-type': 'memo-summary-block' })];
+    return ['div', mergeAttributes(HTMLAttributes, { 'data-type': 'memo-navigation-block' })];
   },
   addNodeView() {
-    return ReactNodeViewRenderer(MemoSummaryBlockView);
+    return ReactNodeViewRenderer(MemoNavigationBlockView);
+  },
+});
+
+const MemoPageSummaryBlockView = ({ node }: any) => {
+  const title = String(node?.attrs?.title || 'Sommaire');
+  const blockRef = React.useRef<HTMLDivElement | null>(null);
+  const [headings, setHeadings] = React.useState<Array<{ id: string; text: string; level: number; pos: number | null }>>([]);
+
+  const refreshHeadings = React.useCallback(() => {
+    const raw = Array.isArray((window as any).MemoHeadings) ? (window as any).MemoHeadings : [];
+    const next = raw
+      .map((h: any, index: number) => {
+        const level = Number(h?.level || 0);
+        const id = String(h?.id || h?.anchor || h?.node?.attrs?.id || h?.node?.attrs?.['data-toc-id'] || `memo-heading-${index}`).trim();
+        const text = String(h?.textContent || h?.text || h?.node?.textContent || '').trim() || '(Sans titre)';
+        const pos = Number.isFinite(Number(h?.pos)) ? Number(h.pos) : null;
+        return (level >= 1 && level <= 4 && id) ? { id, text, level, pos } : null;
+      })
+      .filter(Boolean) as Array<{ id: string; text: string; level: number; pos: number | null }>;
+    setHeadings(next);
+  }, []);
+
+  React.useEffect(() => {
+    refreshHeadings();
+    const onUpdate = () => refreshHeadings();
+    window.addEventListener('memo:headings-updated', onUpdate as EventListener);
+    return () => window.removeEventListener('memo:headings-updated', onUpdate as EventListener);
+  }, [refreshHeadings]);
+
+  React.useEffect(() => {
+    try {
+      (window as any).lucide?.createIcons?.({
+        attrs: { width: '14', height: '14' },
+        elements: blockRef.current ? [blockRef.current] : undefined
+      });
+    } catch (err) {
+      // ignore
+    }
+  }, [headings]);
+
+  const handleOpenHeading = React.useCallback((event: React.MouseEvent, heading: { id: string; pos: number | null }) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const editor = (window as any).MemoEditor || (window as any).memoEditor;
+    const scrollArea = document.querySelector('.editor-wrap');
+    if (!editor || !scrollArea) return;
+    try {
+      if (Number.isFinite(Number(heading?.pos))) {
+        editor.chain().focus().setTextSelection(Number(heading.pos)).run();
+      }
+    } catch (err) {
+      // ignore
+    }
+    const selector = `[id="${heading.id}"], [data-toc-id="${heading.id}"], [data-rail-id="${heading.id}"]`;
+    const element = editor.view?.dom?.querySelector?.(selector);
+    if (!element) return;
+    const areaRect = scrollArea.getBoundingClientRect();
+    const elementRect = element.getBoundingClientRect();
+    const relativeTop = elementRect.top - areaRect.top + (scrollArea as HTMLElement).scrollTop;
+    (scrollArea as HTMLElement).scrollTo({ top: Math.max(0, relativeTop - 20), behavior: 'smooth' });
+  }, []);
+
+  return (
+    <NodeViewWrapper className="memo-summary-block-wrap" contentEditable={false}>
+      <div className="memo-summary-block" ref={blockRef}>
+        <div className="memo-summary-block__header">
+          <span className="memo-summary-block__title">{title}</span>
+        </div>
+        <div className="memo-summary-block__list">
+          {headings.length ? headings.map((heading) => (
+            <button
+              key={heading.id}
+              type="button"
+              className={`memo-summary-block__item memo-summary-block__item--h${heading.level}`}
+              onClick={(event) => handleOpenHeading(event, heading)}
+              aria-label={heading.text}
+            >
+              <span className="memo-summary-block__item-icon"><i data-lucide="list"></i></span>
+              <span className="memo-summary-block__item-title">{heading.text}</span>
+            </button>
+          )) : (
+            <div className="memo-summary-block__empty">Aucun titre</div>
+          )}
+        </div>
+      </div>
+    </NodeViewWrapper>
+  );
+};
+
+const MemoPageSummaryBlock = TiptapNode.create({
+  name: 'memoPageSummaryBlock',
+  group: 'block',
+  atom: true,
+  selectable: true,
+  draggable: true,
+  addAttributes() {
+    return {
+      title: { default: 'Sommaire' },
+    };
+  },
+  parseHTML() {
+    return [{ tag: 'div[data-type="memo-page-summary-block"]' }];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ['div', mergeAttributes(HTMLAttributes, { 'data-type': 'memo-page-summary-block' })];
+  },
+  addNodeView() {
+    return ReactNodeViewRenderer(MemoPageSummaryBlockView);
   },
 });
 
@@ -2078,6 +2195,8 @@ const TiptapActionsDropdown = ({
     { label: 'Tâche', value: 'taskList', icon: CheckSquare, active: editor.isActive('taskList') },
     { label: 'Bloc de code', value: 'codeBlock', icon: SquareCode, active: editor.isActive('codeBlock') },
     { label: 'Lien', value: 'link', icon: Link, active: editor.isActive('link') },
+    { label: 'Navigation', value: 'navigation', icon: List, active: editor.isActive('memoSummaryBlock') },
+    { label: 'Sommaire', value: 'summary', icon: List, active: editor.isActive('memoPageSummaryBlock') },
     { label: 'Libellé', value: 'label', icon: Tag, active: editor.isActive('code') },
     { label: 'Citation', value: 'quote', icon: Shapes, active: editor.isActive('blockquote') },
     { label: 'Tableau', value: 'table', icon: TableIcon, active: editor.isActive('table') },
@@ -2163,6 +2282,8 @@ const BubbleActionsDropdown = ({
     { label: 'Tâche', value: 'taskList', icon: CheckSquare, active: editor.isActive('taskList') },
     { label: 'Bloc de code', value: 'codeBlock', icon: SquareCode, active: editor.isActive('codeBlock') },
     { label: 'Lien', value: 'link', icon: Link, active: editor.isActive('link') },
+    { label: 'Navigation', value: 'navigation', icon: List, active: editor.isActive('memoSummaryBlock') },
+    { label: 'Sommaire', value: 'summary', icon: List, active: editor.isActive('memoPageSummaryBlock') },
     { label: 'Libellé', value: 'label', icon: Tag, active: editor.isActive('code') },
     { label: 'Citation', value: 'quote', icon: Shapes, active: editor.isActive('blockquote') },
     { label: 'Tableau', value: 'table', icon: TableIcon, active: editor.isActive('table') },
@@ -2380,7 +2501,13 @@ const Toolbar = ({ editor, onDropdownToggle, onLink, onInsertImage, onInsertVide
 const runEditorDropdownAction = (
   editor: Editor,
   value: string,
-  callbacks: { onLink?: () => void; onInsertImage?: () => void; onInsertVideo?: () => void; onInsertSummary?: () => void }
+  callbacks: {
+    onLink?: () => void;
+    onInsertImage?: () => void;
+    onInsertVideo?: () => void;
+    onInsertNavigation?: () => void;
+    onInsertPageSummary?: () => void;
+  }
 ) => {
   const chain = editor.chain().focus();
   if (value === 'paragraph') chain.setParagraph().run();
@@ -2412,8 +2539,10 @@ const runEditorDropdownAction = (
     callbacks.onInsertImage?.();
   } else if (value === 'video') {
     callbacks.onInsertVideo?.();
+  } else if (value === 'navigation') {
+    callbacks.onInsertNavigation?.();
   } else if (value === 'summary') {
-    callbacks.onInsertSummary?.();
+    callbacks.onInsertPageSummary?.();
   }
 };
 
@@ -3013,6 +3142,44 @@ const readFileAsDataUrl = (file: File) => new Promise<string>((resolve, reject) 
   reader.readAsDataURL(file);
 });
 
+const INITIAL_NAV_DISMISSED_KEY = 'go-toolkit-memo-initial-navigation-dismissed-v1';
+
+const parseDismissedInitialNavigation = () => {
+  try {
+    const raw = localStorage.getItem(INITIAL_NAV_DISMISSED_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return new Set(Array.isArray(parsed) ? parsed.map((item) => String(item || '').trim()).filter(Boolean) : []);
+  } catch (err) {
+    return new Set<string>();
+  }
+};
+
+const persistDismissedInitialNavigation = (next: Set<string>) => {
+  try {
+    localStorage.setItem(INITIAL_NAV_DISMISSED_KEY, JSON.stringify(Array.from(next)));
+  } catch (err) {
+    // ignore storage failures
+  }
+};
+
+const hasPersistedNavigationBlock = (html: string) => {
+  const source = String(html || '');
+  return /data-type=["'](?:memo-navigation-block|memo-summary-block)["']/.test(source);
+};
+
+const isHtmlEffectivelyEmptyForInitialNavigation = (html: string) => {
+  const source = String(html || '');
+  if (!source.trim()) return true;
+  const withoutBlocks = source
+    .replace(/<div[^>]*data-type=["'](?:memo-navigation-block|memo-summary-block|memo-page-summary-block)["'][\s\S]*?<\/div>/gi, '')
+    .replace(/<p>(?:\s|&nbsp;|<br\s*\/?>)*<\/p>/gi, '');
+  const textOnly = withoutBlocks
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/gi, '')
+    .replace(/\s+/g, '');
+  return !textOnly;
+};
+
 const SimpleEditor: React.FC<SimpleEditorProps> = ({ 
   content = '', 
   onChange, 
@@ -3051,6 +3218,9 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   const [showSlashActionMenu, setShowSlashActionMenu] = React.useState(false);
   const [slashActionMenuPos, setSlashActionMenuPos] = React.useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const [slashActionQuery, setSlashActionQuery] = React.useState('');
+  const [editorHtmlSnapshot, setEditorHtmlSnapshot] = React.useState<string>(String(content || ''));
+  const [initialNavigationChildren, setInitialNavigationChildren] = React.useState<Array<{ id: string; title: string; icon?: string }>>([]);
+  const [dismissedInitialNavigation, setDismissedInitialNavigation] = React.useState<Set<string>>(() => parseDismissedInitialNavigation());
   const slashActionMenuRef = React.useRef<HTMLDivElement>(null);
   const [isFocusWithinMemoCard, setIsFocusWithinMemoCard] = React.useState(false);
   const [tableSelectionBox, setTableSelectionBox] = React.useState<{ top: number, left: number, width: number, height: number } | null>(null);
@@ -3058,6 +3228,64 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   const blockDragMovedRef = React.useRef(false);
   const tableLayoutRafRef = React.useRef<number | null>(null);
   const isAutoLayoutRef = React.useRef(false);
+  const activeDocumentId = String(editorId || (window as any).__memoActiveDocumentId || '').trim();
+
+  React.useEffect(() => {
+    setEditorHtmlSnapshot(String(content || ''));
+  }, [content, editorId]);
+
+  React.useEffect(() => {
+    const resolver = (window as any).GoToolkitMemoGetChildrenForDocument;
+    const docId = String(activeDocumentId || '').trim();
+    if (!docId || typeof resolver !== 'function') {
+      setInitialNavigationChildren([]);
+      return;
+    }
+    let cancelled = false;
+    const run = async () => {
+      try {
+        const rows = await resolver(docId);
+        if (cancelled) return;
+        const next = (Array.isArray(rows) ? rows : [])
+          .map((item: any) => ({
+            id: String(item?.id || '').trim(),
+            title: String(item?.title || 'Document').trim() || 'Document',
+            icon: String(item?.icon || '').trim(),
+          }))
+          .filter((item: any) => item.id);
+        setInitialNavigationChildren(next);
+      } catch (err) {
+        if (!cancelled) setInitialNavigationChildren([]);
+      }
+    };
+    run();
+    const onChildrenUpdated = (event: Event) => {
+      const detail = (event as CustomEvent)?.detail || {};
+      const parentId = String(detail?.parentId || '').trim();
+      if (parentId && parentId !== docId) return;
+      run();
+    };
+    window.addEventListener('goToolkitMemoChildrenUpdated', onChildrenUpdated as EventListener);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('goToolkitMemoChildrenUpdated', onChildrenUpdated as EventListener);
+    };
+  }, [activeDocumentId]);
+
+  const isInitialNavigationDismissed = React.useMemo(() => {
+    const docId = String(activeDocumentId || '').trim();
+    if (!docId) return false;
+    return dismissedInitialNavigation.has(docId);
+  }, [activeDocumentId, dismissedInitialNavigation]);
+
+  const showInitialNavigationBlock = React.useMemo(() => {
+    if (!editable) return false;
+    if (!activeDocumentId) return false;
+    if (!initialNavigationChildren.length) return false;
+    if (isInitialNavigationDismissed) return false;
+    if (hasPersistedNavigationBlock(editorHtmlSnapshot)) return false;
+    return isHtmlEffectivelyEmptyForInitialNavigation(editorHtmlSnapshot);
+  }, [activeDocumentId, editable, editorHtmlSnapshot, initialNavigationChildren.length, isInitialNavigationDismissed]);
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -3094,7 +3322,8 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         },
       }),
       MemoLinkBlock,
-      MemoSummaryBlock,
+      MemoNavigationBlock,
+      MemoPageSummaryBlock,
       CustomImage,
       VideoEmbed,
       ExternalVideoEmbed,
@@ -3768,6 +3997,8 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     },
     onUpdate: ({ editor }) => {
       const start = performance.now();
+      const html = editor.getHTML();
+      setEditorHtmlSnapshot(html);
       if (onChange) {
         // Debounce the onChange call to avoid excessive saves
         if ((window as any)._memoSaveTimeout) {
@@ -3775,7 +4006,6 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         }
         (window as any)._memoSaveTimeout = setTimeout(() => {
           const innerStart = performance.now();
-          const html = editor.getHTML();
           onChange(html, editorId);
           const duration = Math.round(performance.now() - innerStart);
           if (duration > 50) {
@@ -3789,6 +4019,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       }
     },
     onBlur: ({ editor }) => {
+      setEditorHtmlSnapshot(editor.getHTML());
       if (onChange) {
         // Save immediately on blur
         if ((window as any)._memoSaveTimeout) {
@@ -6265,14 +6496,50 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     setShowLinkModal(true);
   }, [editor]);
 
-  const insertSummaryBlock = React.useCallback(() => {
+  const insertNavigationBlock = React.useCallback(() => {
     if (!editor) return;
     const parentId = String((window as any).__memoActiveDocumentId || '').trim();
     editor.chain().focus().insertContent([
-      { type: 'memoSummaryBlock', attrs: { title: 'Sommaire', parentId } },
+      { type: 'memoSummaryBlock', attrs: { title: 'Navigation', parentId } },
       { type: 'paragraph' }
     ]).run();
   }, [editor]);
+
+  const insertPageSummaryBlock = React.useCallback(() => {
+    if (!editor) return;
+    editor.chain().focus().insertContent([
+      { type: 'memoPageSummaryBlock', attrs: { title: 'Sommaire' } },
+      { type: 'paragraph' }
+    ]).run();
+  }, [editor]);
+
+  const handlePersistInitialNavigation = React.useCallback((event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    insertNavigationBlock();
+  }, [insertNavigationBlock]);
+
+  const handleDismissInitialNavigation = React.useCallback((event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const docId = String(activeDocumentId || '').trim();
+    if (!docId) return;
+    setDismissedInitialNavigation((prev) => {
+      const next = new Set(prev);
+      next.add(docId);
+      persistDismissedInitialNavigation(next);
+      return next;
+    });
+  }, [activeDocumentId]);
+
+  React.useEffect(() => {
+    if (!showInitialNavigationBlock) return;
+    try {
+      (window as any).lucide?.createIcons?.();
+    } catch (err) {
+      // ignore
+    }
+  }, [showInitialNavigationBlock, initialNavigationChildren]);
 
   React.useEffect(() => {
     if (!showSlashActionMenu) return;
@@ -6350,7 +6617,8 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
     { label: 'Tâche', value: 'taskList', icon: CheckSquare, markdownShortcut: '[]', aliases: ['todo', 'task', 'checklist'] },
     { label: 'Bloc de code', value: 'codeBlock', icon: SquareCode, markdownShortcut: '```', aliases: ['code', 'snippet'] },
     { label: 'Lien', value: 'link', icon: Link, markdownShortcut: '[texte](url)', aliases: ['url', 'hyperlink'] },
-    { label: 'Sommaire', value: 'summary', icon: List, markdownShortcut: 'sommaire', aliases: ['summary', 'children', 'enfants'] },
+    { label: 'Navigation', value: 'navigation', icon: Link2, markdownShortcut: 'navigation', aliases: ['children', 'enfants', 'pages'] },
+    { label: 'Sommaire', value: 'summary', icon: ListTree, markdownShortcut: 'sommaire', aliases: ['summary', 'toc', 'titres', 'headings'] },
     { label: 'Libellé', value: 'label', icon: Tag, markdownShortcut: '@', aliases: ['tag', 'etiquette'] },
     { label: 'Citation', value: 'quote', icon: Shapes, markdownShortcut: '>', aliases: ['blockquote', 'citation'] },
     { label: 'Tableau', value: 'table', icon: TableIcon, markdownShortcut: '|', aliases: ['table', 'grille'] },
@@ -6396,11 +6664,12 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       onLink: openLinkModal,
       onInsertImage: openImagePicker,
       onInsertVideo: openVideoInsertDialog,
-      onInsertSummary: insertSummaryBlock,
+      onInsertNavigation: insertNavigationBlock,
+      onInsertPageSummary: insertPageSummaryBlock,
     });
     setSlashActionQuery('');
     setShowSlashActionMenu(false);
-  }, [editor, insertSummaryBlock, openImagePicker, openLinkModal, openVideoInsertDialog]);
+  }, [editor, insertNavigationBlock, insertPageSummaryBlock, openImagePicker, openLinkModal, openVideoInsertDialog]);
 
   const runFirstSlashAction = React.useCallback(() => {
     const firstAction = filteredSlashActions[0];
@@ -6525,6 +6794,43 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
         onInsertVideo={openVideoInsertDialog}
         onDropdownToggle={setIsDropdownOpen}
       />
+      {showInitialNavigationBlock && (
+        <div className="memo-summary-block memo-summary-block--initial" data-parent-id={activeDocumentId}>
+          <div className="memo-summary-block__header">
+            <span className="memo-summary-block__title">Navigation</span>
+            <span className="memo-summary-block__actions" style={{ opacity: 1 }}>
+              <button type="button" className="memo-summary-block__action" onClick={handlePersistInitialNavigation} aria-label="Ajouter">
+                <Plus size={13} />
+              </button>
+              <button type="button" className="memo-summary-block__action" onClick={handleDismissInitialNavigation} aria-label="Masquer">
+                <Trash2 size={13} />
+              </button>
+            </span>
+          </div>
+          <div className="memo-summary-block__list">
+            {initialNavigationChildren.map((child) => (
+              <button
+                key={child.id}
+                type="button"
+                className="memo-link-block memo-summary-block__link-block"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  const open = (window as any).GoToolkitMemoOpenDocumentByLink;
+                  if (typeof open === 'function') open(child.id);
+                }}
+                aria-label={child.title}
+              >
+                <span className="memo-link-block__icon">
+                  <i data-lucide={child.icon || 'file'}></i>
+                  <span className="memo-link-block__icon-overlay"><ArrowUpRight size={10} /></span>
+                </span>
+                <span className="memo-link-block__title">{child.title}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       <EditorContent editor={editor} />
 
       {showSlashActionMenu && editor && (
