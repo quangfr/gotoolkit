@@ -618,7 +618,7 @@
     function syncTranscriptionTile() {
         if (!state.overlayTranscriptionTile || !state.overlayTranscriptionTitle) return;
         const isLive = Boolean(state.overlayLiveTranscription);
-        state.overlayTranscriptionTitle.textContent = isLive ? "Transcription en direct dans le document" : "Transcription en différé";
+        state.overlayTranscriptionTitle.textContent = isLive ? "Transcription en continu dans le document" : "Transcription en différé";
         state.overlayTranscriptionTile.classList.toggle("voice-overlay__transcription-tile--active", isLive);
         renderLivePreview();
     }
@@ -1137,7 +1137,8 @@
         if (state.overlay) {
             state.overlay.classList.remove("visible");
         }
-        stopMetering();
+        stopOverlayStreams();
+        syncOverlayTiles();
     }
 
     function ensureOverlay() {

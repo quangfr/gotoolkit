@@ -1,7 +1,7 @@
 ## 2026-02-21
 - Docs : Chiffrement du contenu en ligne
 - Docs : Vidéos Youtube et Loom intégrées 
-- Docs : URL par page
+- Docs : Affichage URL par page
 
 ## 2026-02-21
 - Docs : Vue en arborescence des documents
