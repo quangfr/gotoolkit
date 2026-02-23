@@ -1658,6 +1658,7 @@
                 const sectionHeader = document.createElement("button");
                 sectionHeader.type = "button";
                 sectionHeader.className = "document-explorer__section-header";
+                sectionHeader.dataset.section = String(sectionName || "").trim();
                 const sectionMeta = getSectionMeta?.(sectionName) || null;
                 const sectionIcon = iconOverride || sectionMeta?.icon || (sectionName === "recent"
                     ? "history"
@@ -2444,6 +2445,13 @@
             async setItems(items) {
                 cachedItems = normalizeList(items);
                 syncOrderWithItems(cachedItems);
+                await renderList(cachedItems);
+            },
+            async expandItem(id) {
+                const itemId = String(id || "").trim();
+                if (!itemId) return;
+                expandedIds.add(itemId);
+                persistExpandedState();
                 await renderList(cachedItems);
             }
         };
