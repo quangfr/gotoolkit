@@ -1689,7 +1689,10 @@
                         event.stopPropagation();
                         onSectionAdd?.(sectionName);
                     });
-                    actions.appendChild(addBtn);
+                    const canCreateInSection = sectionName === "private" || Boolean(sectionMeta?.canCreatePage !== false);
+                    if (canCreateInSection) {
+                        actions.appendChild(addBtn);
+                    }
                     if (sectionName === "private") {
                         const refreshBtn = document.createElement("button");
                         refreshBtn.type = "button";
@@ -1705,58 +1708,15 @@
                     }
                     if (sectionName.startsWith("shared:")) {
                         const sharedSpaceId = String(sectionMeta?.spaceId || sectionName.replace(/^shared:/, "")).trim().toLowerCase();
+                        const canRefreshSection = Boolean(sectionMeta?.canRefresh !== false);
                         const isSharedSpaceSyncing = Boolean(sectionMeta?.isSyncing);
                         const hasSharedSpaceSyncError = Boolean(sectionMeta?.hasSyncError);
                         const sharedSpaceSyncErrorMessage = String(sectionMeta?.syncErrorMessage || "").trim();
-                        const refreshBtn = document.createElement("button");
-                        refreshBtn.type = "button";
-                        refreshBtn.className = "document-explorer__item-action document-explorer__item-action--sync-refresh";
-                        if (sharedSpaceId) {
-                            refreshBtn.dataset.spaceId = sharedSpaceId;
-                        }
-                        const shouldShowCleanIcon = !isSharedSpaceSyncing && !hasSharedSpaceSyncError && pendingCount <= 0;
-                        refreshBtn.dataset.cleanIcon = shouldShowCleanIcon ? "1" : "0";
-                        const sinceLabel = String(sectionMeta?.lastSyncLabel || "").trim();
-                        const syncSinceLabel = sinceLabel
-                            ? (sinceLabel.toLowerCase().startsWith("il y a")
-                                ? `Synchronisé ${sinceLabel.toLowerCase()}`
-                                : `Synchronisé : ${sinceLabel.toLowerCase()}`)
-                            : "Synchronisé il y a 0 mn";
-                        const pendingNames = Array.isArray(sectionMeta?.pendingNames)
-                            ? sectionMeta.pendingNames.map(name => String(name || "").trim()).filter(Boolean)
-                            : [];
-                        if (hasSharedSpaceSyncError) {
-                            refreshBtn.title = `Problème de synchronisation cloud (accès Firestore).\n${sharedSpaceSyncErrorMessage || "Réessayez."}`;
-                        } else if (pendingNames.length) {
-                            refreshBtn.title = `${syncSinceLabel}\nEn attente: ${pendingNames.join(", ")}`;
-                        } else {
-                            refreshBtn.title = syncSinceLabel;
-                        }
-                        refreshBtn.innerHTML = hasSharedSpaceSyncError
-                            ? '<i data-lucide="triangle-alert"></i>'
-                            : (shouldShowCleanIcon
-                                ? '<i data-lucide="circle-check"></i>'
-                                : '<i data-lucide="refresh-cw"></i>');
-                        if (isSharedSpaceSyncing && !hasSharedSpaceSyncError) {
-                            const icon = refreshBtn.querySelector('svg.lucide-refresh-cw, i[data-lucide="refresh-cw"], svg, i');
-                            if (icon) icon.classList.add("lucide-spin");
-                        }
-                        if (pendingCount > 0) {
-                            const badge = document.createElement("span");
-                            badge.className = "document-explorer__sync-badge";
-                            badge.textContent = String(pendingCount);
-                            refreshBtn.appendChild(badge);
-                        }
-                        refreshBtn.addEventListener("click", (event) => {
-                            event.preventDefault();
-                            event.stopPropagation();
-                            onSectionRefresh?.(sectionName);
-                        });
                         const settingsBtn = document.createElement("button");
                         settingsBtn.type = "button";
                         settingsBtn.className = "document-explorer__item-action";
                         settingsBtn.classList.add("document-explorer__item-action--hover-only");
-                        settingsBtn.title = "Modifier cet espace";
+                        settingsBtn.title = String(sectionMeta?.settingsLabel || "Modifier cet espace");
                         settingsBtn.innerHTML = '<i data-lucide="settings"></i>';
                         settingsBtn.addEventListener("click", (event) => {
                             event.preventDefault();
@@ -1764,7 +1724,53 @@
                             onSectionSettings?.(sectionName);
                         });
                         actions.appendChild(settingsBtn);
-                        actions.appendChild(refreshBtn);
+                        if (canRefreshSection) {
+                            const refreshBtn = document.createElement("button");
+                            refreshBtn.type = "button";
+                            refreshBtn.className = "document-explorer__item-action document-explorer__item-action--sync-refresh";
+                            if (sharedSpaceId) {
+                                refreshBtn.dataset.spaceId = sharedSpaceId;
+                            }
+                            const shouldShowCleanIcon = !isSharedSpaceSyncing && !hasSharedSpaceSyncError && pendingCount <= 0;
+                            refreshBtn.dataset.cleanIcon = shouldShowCleanIcon ? "1" : "0";
+                            const sinceLabel = String(sectionMeta?.lastSyncLabel || "").trim();
+                            const syncSinceLabel = sinceLabel
+                                ? (sinceLabel.toLowerCase().startsWith("il y a")
+                                    ? `Synchronisé ${sinceLabel.toLowerCase()}`
+                                    : `Synchronisé : ${sinceLabel.toLowerCase()}`)
+                                : "Synchronisé il y a 0 mn";
+                            const pendingNames = Array.isArray(sectionMeta?.pendingNames)
+                                ? sectionMeta.pendingNames.map(name => String(name || "").trim()).filter(Boolean)
+                                : [];
+                            if (hasSharedSpaceSyncError) {
+                                refreshBtn.title = `Problème de synchronisation cloud (accès Firestore).\n${sharedSpaceSyncErrorMessage || "Réessayez."}`;
+                            } else if (pendingNames.length) {
+                                refreshBtn.title = `${syncSinceLabel}\nEn attente: ${pendingNames.join(", ")}`;
+                            } else {
+                                refreshBtn.title = syncSinceLabel;
+                            }
+                            refreshBtn.innerHTML = hasSharedSpaceSyncError
+                                ? '<i data-lucide="triangle-alert"></i>'
+                                : (shouldShowCleanIcon
+                                    ? '<i data-lucide="circle-check"></i>'
+                                    : '<i data-lucide="refresh-cw"></i>');
+                            if (isSharedSpaceSyncing && !hasSharedSpaceSyncError) {
+                                const icon = refreshBtn.querySelector('svg.lucide-refresh-cw, i[data-lucide="refresh-cw"], svg, i');
+                                if (icon) icon.classList.add("lucide-spin");
+                            }
+                            if (pendingCount > 0) {
+                                const badge = document.createElement("span");
+                                badge.className = "document-explorer__sync-badge";
+                                badge.textContent = String(pendingCount);
+                                refreshBtn.appendChild(badge);
+                            }
+                            refreshBtn.addEventListener("click", (event) => {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                onSectionRefresh?.(sectionName);
+                            });
+                            actions.appendChild(refreshBtn);
+                        }
                     }
                     sectionHeader.appendChild(actions);
                 }

@@ -88,9 +88,11 @@
       id,
       name: String(value.name || (isDefault ? "Go Live" : createRandomName())).trim() || (isDefault ? "Go Live" : createRandomName()),
       icon: String(value.icon || (isDefault ? "cloud-upload" : "cloud-upload")).trim() || "cloud-upload",
-      spaceJoinCode: isDefault
-        ? ""
-        : normalizeSpaceJoinCode(value.spaceJoinCode || value.spaceCode || ""),
+      spaceJoinCode: normalizeSpaceJoinCode(
+        value.spaceJoinCode
+        || value.spaceCode
+        || (isDefault ? DEFAULT_GOLIVE_JOIN_CODE : "")
+      ),
       isDefault,
       updatedAt: String(value.updatedAt || nowIso()).trim() || nowIso()
     };

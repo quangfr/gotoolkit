@@ -560,7 +560,7 @@
         console.warn("E2EE page: déchiffrement impossible", err);
         return payload;
       });
-      const hydratedPayload = decryptedPayload && (collection === "pages" || collection === "memos")
+      const hydratedPayload = decryptedPayload && (collection === "pages")
         ? await hydratePayloadAssetUrls(decryptedPayload, base, {
           spaceId: String(decryptedPayload?.spaceId || payload?.spaceId || "golive").trim().toLowerCase()
         })
@@ -613,7 +613,7 @@
           console.warn("E2EE page: déchiffrement impossible", err);
           return payload;
         });
-        const hydratedPayload = decryptedPayload && (collection === "pages" || collection === "memos")
+        const hydratedPayload = decryptedPayload && (collection === "pages")
           ? await hydratePayloadAssetUrls(decryptedPayload, base, {
             spaceId: String(decryptedPayload?.spaceId || payload?.spaceId || "golive").trim().toLowerCase()
           })
@@ -740,7 +740,7 @@
           console.warn("E2EE page: déchiffrement impossible", err);
           return payload;
         });
-        const hydratedPayload = decryptedPayload && (collection === "pages" || collection === "memos")
+        const hydratedPayload = decryptedPayload && (collection === "pages")
           ? await hydratePayloadAssetUrls(decryptedPayload, base, {
             spaceId: String(decryptedPayload?.spaceId || payload?.spaceId || "golive").trim().toLowerCase()
           })
@@ -912,6 +912,29 @@
     });
   }
 
+  async function probePagePayloadJoinCode(payload, spaceId, joinCodeRaw) {
+    if (!isEncryptedPagePayload(payload)) return false;
+    const normalizedSpaceId = String(spaceId || payload?.spaceId || "").trim().toLowerCase();
+    const joinCode = normalizeSpaceJoinCode(joinCodeRaw);
+    if (!normalizedSpaceId || !joinCode) return false;
+    try {
+      const key = await deriveSpaceKey(normalizedSpaceId, joinCode);
+      if (!key) return false;
+      const iv = bytesFromBase64(payload.iv || "");
+      const ciphertext = bytesFromBase64(payload.ciphertext || "");
+      const plainBuffer = await crypto.subtle.decrypt(
+        { name: "AES-GCM", iv },
+        key,
+        ciphertext
+      );
+      const plainText = textDecoder.decode(plainBuffer);
+      const parsed = JSON.parse(plainText);
+      return Boolean(parsed && typeof parsed === "object");
+    } catch (error) {
+      return false;
+    }
+  }
+
   window.goToolkitShareWorker = window.goToolkitShareWorker || {
     baseUrl: workerBases[0] || "",
     fallbackBaseUrls: workerBases.slice(1),
@@ -928,6 +951,7 @@
     listShareTree,
     uploadAsset,
     deleteAsset,
+    probePagePayloadJoinCode,
     buildAssetUrl: assetId => buildAssetUrl(workerBases[0], assetId)
   };
 })();

@@ -1,6 +1,6 @@
 ## 2026-02-21
 - Docs : Chiffrement E2EE du contenu
-- DOcs : Liens Youtube and Loom 
+- DOcs : Vidéos Youtube et Loom intégrées 
 
 ## 2026-02-21
 - Docs : Vue en arborescence des documents
