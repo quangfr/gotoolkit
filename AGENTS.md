@@ -70,6 +70,10 @@ Only `public/js` may touch `window`:
   - Pre-run the server when possible (`npm run start:test` preferred, `npm start` acceptable). `playwright.config.ts` uses `reuseExistingServer: true`, so Playwright will attach to an existing server instead of waiting for boot.
   - Use the cache-friendly test server profile for Playwright (`start:test`), which serves JS/CSS with cache headers to reduce cold-start load time across repeated runs.
   - Run Playwright with the local binary (avoid `npx`): `./node_modules/.bin/playwright test <spec> --workers=1 --reporter=line`.
+  - Prefer browser persistency for iterative/local debugging: launch tests with a stable `userDataDir` (`chromium.launchPersistentContext`) so cookies, localStorage, and login sessions survive between runs.
+  - Keep persistent profile data under repo-local temp storage (example: `.tmp/playwright-profile`) and reuse it across reruns; delete it only when you need a clean-state verification.
+  - For suite runs, combine persistency with `--workers=1` to prevent profile contention and avoid repeated browser cold starts.
+  - When authentication is needed, capture once and reuse (`storageState`) rather than logging in per test.
   - Navigate directly to the target page in tests (avoid redirect shims when possible) to reduce startup roundtrips.
   - On WSL, prefer running from native Linux FS (e.g. `~/work/gotoolkit`) rather than `/mnt/c/...`:
     - `rsync -a --delete --exclude node_modules --exclude .git /mnt/c/Users/<you>/Documents/Github/gotoolkit/ ~/work/gotoolkit/`
