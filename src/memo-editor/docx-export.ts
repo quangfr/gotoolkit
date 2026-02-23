@@ -440,6 +440,34 @@ async function transformNode(node: any, editor: any): Promise<any> {
       });
     }
 
+    case 'externalVideoEmbed': {
+      const src = String(node?.attrs?.src || '').trim();
+      if (!src) return null;
+      const provider = String(node?.attrs?.provider || '').trim().toLowerCase();
+      const title = String(node?.attrs?.title || '').trim() || 'Vidéo intégrée';
+      const providerLabel = provider ? provider.toUpperCase() : 'VIDEO';
+      const label = `${title} (${providerLabel})`;
+
+      return new Paragraph({
+        children: [
+          new TextRun({
+            text: "▶ ",
+            bold: true,
+          }),
+          new ExternalHyperlink({
+            link: src,
+            children: [
+              new TextRun({
+                text: label,
+                style: "Hyperlink",
+              }),
+            ],
+          }),
+        ],
+        spacing: { before: 120, after: 120, line: DEFAULT_LINE_SPACING },
+      });
+    }
+
     default:
       return null;
   }

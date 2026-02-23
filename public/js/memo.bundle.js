@@ -28454,19 +28454,33 @@ img.ProseMirror-separator {
   ];
   var Pencil = createLucideIcon("pencil", __iconNode34);
 
-  // node_modules/lucide-react/dist/esm/icons/plus.js
+  // node_modules/lucide-react/dist/esm/icons/play.js
   init_define_process_env();
   init_polyfills();
   var __iconNode35 = [
+    [
+      "path",
+      {
+        d: "M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z",
+        key: "10ikf1"
+      }
+    ]
+  ];
+  var Play = createLucideIcon("play", __iconNode35);
+
+  // node_modules/lucide-react/dist/esm/icons/plus.js
+  init_define_process_env();
+  init_polyfills();
+  var __iconNode36 = [
     ["path", { d: "M5 12h14", key: "1ays0h" }],
     ["path", { d: "M12 5v14", key: "s699le" }]
   ];
-  var Plus = createLucideIcon("plus", __iconNode35);
+  var Plus = createLucideIcon("plus", __iconNode36);
 
   // node_modules/lucide-react/dist/esm/icons/quote.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode36 = [
+  var __iconNode37 = [
     [
       "path",
       {
@@ -28482,38 +28496,38 @@ img.ProseMirror-separator {
       }
     ]
   ];
-  var Quote = createLucideIcon("quote", __iconNode36);
+  var Quote = createLucideIcon("quote", __iconNode37);
 
   // node_modules/lucide-react/dist/esm/icons/rectangle-horizontal.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode37 = [
+  var __iconNode38 = [
     ["rect", { width: "20", height: "12", x: "2", y: "6", rx: "2", key: "9lu3g6" }]
   ];
-  var RectangleHorizontal = createLucideIcon("rectangle-horizontal", __iconNode37);
+  var RectangleHorizontal = createLucideIcon("rectangle-horizontal", __iconNode38);
 
   // node_modules/lucide-react/dist/esm/icons/redo-2.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode38 = [
+  var __iconNode39 = [
     ["path", { d: "m15 14 5-5-5-5", key: "12vg1m" }],
     ["path", { d: "M20 9H9.5A5.5 5.5 0 0 0 4 14.5A5.5 5.5 0 0 0 9.5 20H13", key: "6uklza" }]
   ];
-  var Redo2 = createLucideIcon("redo-2", __iconNode38);
+  var Redo2 = createLucideIcon("redo-2", __iconNode39);
 
   // node_modules/lucide-react/dist/esm/icons/rotate-cw.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode39 = [
+  var __iconNode40 = [
     ["path", { d: "M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8", key: "1p45f6" }],
     ["path", { d: "M21 3v5h-5", key: "1q7to0" }]
   ];
-  var RotateCw = createLucideIcon("rotate-cw", __iconNode39);
+  var RotateCw = createLucideIcon("rotate-cw", __iconNode40);
 
   // node_modules/lucide-react/dist/esm/icons/send.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode40 = [
+  var __iconNode41 = [
     [
       "path",
       {
@@ -28523,12 +28537,12 @@ img.ProseMirror-separator {
     ],
     ["path", { d: "m21.854 2.147-10.94 10.939", key: "12cjpa" }]
   ];
-  var Send = createLucideIcon("send", __iconNode40);
+  var Send = createLucideIcon("send", __iconNode41);
 
   // node_modules/lucide-react/dist/esm/icons/shapes.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode41 = [
+  var __iconNode42 = [
     [
       "path",
       {
@@ -28539,12 +28553,12 @@ img.ProseMirror-separator {
     ["rect", { x: "3", y: "14", width: "7", height: "7", rx: "1", key: "1bkyp8" }],
     ["circle", { cx: "17.5", cy: "17.5", r: "3.5", key: "w3z12y" }]
   ];
-  var Shapes = createLucideIcon("shapes", __iconNode41);
+  var Shapes = createLucideIcon("shapes", __iconNode42);
 
   // node_modules/lucide-react/dist/esm/icons/sparkles.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode42 = [
+  var __iconNode43 = [
     [
       "path",
       {
@@ -28556,72 +28570,72 @@ img.ProseMirror-separator {
     ["path", { d: "M22 4h-4", key: "gwowj6" }],
     ["circle", { cx: "4", cy: "20", r: "2", key: "6kqj1y" }]
   ];
-  var Sparkles = createLucideIcon("sparkles", __iconNode42);
+  var Sparkles = createLucideIcon("sparkles", __iconNode43);
 
   // node_modules/lucide-react/dist/esm/icons/square-check-big.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode43 = [
+  var __iconNode44 = [
     [
       "path",
       { d: "M21 10.656V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h12.344", key: "2acyp4" }
     ],
     ["path", { d: "m9 11 3 3L22 4", key: "1pflzl" }]
   ];
-  var SquareCheckBig = createLucideIcon("square-check-big", __iconNode43);
+  var SquareCheckBig = createLucideIcon("square-check-big", __iconNode44);
 
   // node_modules/lucide-react/dist/esm/icons/square-check.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode44 = [
+  var __iconNode45 = [
     ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }],
     ["path", { d: "m9 12 2 2 4-4", key: "dzmm74" }]
   ];
-  var SquareCheck = createLucideIcon("square-check", __iconNode44);
+  var SquareCheck = createLucideIcon("square-check", __iconNode45);
 
   // node_modules/lucide-react/dist/esm/icons/square-code.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode45 = [
+  var __iconNode46 = [
     ["path", { d: "m10 9-3 3 3 3", key: "1oro0q" }],
     ["path", { d: "m14 15 3-3-3-3", key: "bz13h7" }],
     ["rect", { x: "3", y: "3", width: "18", height: "18", rx: "2", key: "h1oib" }]
   ];
-  var SquareCode = createLucideIcon("square-code", __iconNode45);
+  var SquareCode = createLucideIcon("square-code", __iconNode46);
 
   // node_modules/lucide-react/dist/esm/icons/square.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode46 = [
+  var __iconNode47 = [
     ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }]
   ];
-  var Square = createLucideIcon("square", __iconNode46);
+  var Square = createLucideIcon("square", __iconNode47);
 
   // node_modules/lucide-react/dist/esm/icons/strikethrough.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode47 = [
+  var __iconNode48 = [
     ["path", { d: "M16 4H9a3 3 0 0 0-2.83 4", key: "43sutm" }],
     ["path", { d: "M14 12a4 4 0 0 1 0 8H6", key: "nlfj13" }],
     ["line", { x1: "4", x2: "20", y1: "12", y2: "12", key: "1e0a9i" }]
   ];
-  var Strikethrough = createLucideIcon("strikethrough", __iconNode47);
+  var Strikethrough = createLucideIcon("strikethrough", __iconNode48);
 
   // node_modules/lucide-react/dist/esm/icons/table.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode48 = [
+  var __iconNode49 = [
     ["path", { d: "M12 3v18", key: "108xh3" }],
     ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }],
     ["path", { d: "M3 9h18", key: "1pudct" }],
     ["path", { d: "M3 15h18", key: "5xshup" }]
   ];
-  var Table2 = createLucideIcon("table", __iconNode48);
+  var Table2 = createLucideIcon("table", __iconNode49);
 
   // node_modules/lucide-react/dist/esm/icons/tag.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode49 = [
+  var __iconNode50 = [
     [
       "path",
       {
@@ -28631,24 +28645,24 @@ img.ProseMirror-separator {
     ],
     ["circle", { cx: "7.5", cy: "7.5", r: ".5", fill: "currentColor", key: "kqv944" }]
   ];
-  var Tag = createLucideIcon("tag", __iconNode49);
+  var Tag = createLucideIcon("tag", __iconNode50);
 
   // node_modules/lucide-react/dist/esm/icons/trash-2.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode50 = [
+  var __iconNode51 = [
     ["path", { d: "M10 11v6", key: "nco0om" }],
     ["path", { d: "M14 11v6", key: "outv1u" }],
     ["path", { d: "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6", key: "miytrc" }],
     ["path", { d: "M3 6h18", key: "d0wm0j" }],
     ["path", { d: "M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2", key: "e791ji" }]
   ];
-  var Trash2 = createLucideIcon("trash-2", __iconNode50);
+  var Trash2 = createLucideIcon("trash-2", __iconNode51);
 
   // node_modules/lucide-react/dist/esm/icons/triangle-alert.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode51 = [
+  var __iconNode52 = [
     [
       "path",
       {
@@ -28659,54 +28673,54 @@ img.ProseMirror-separator {
     ["path", { d: "M12 9v4", key: "juzpu7" }],
     ["path", { d: "M12 17h.01", key: "p32p05" }]
   ];
-  var TriangleAlert = createLucideIcon("triangle-alert", __iconNode51);
+  var TriangleAlert = createLucideIcon("triangle-alert", __iconNode52);
 
   // node_modules/lucide-react/dist/esm/icons/type.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode52 = [
+  var __iconNode53 = [
     ["path", { d: "M12 4v16", key: "1654pz" }],
     ["path", { d: "M4 7V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2", key: "e0r10z" }],
     ["path", { d: "M9 20h6", key: "s66wpe" }]
   ];
-  var Type = createLucideIcon("type", __iconNode52);
+  var Type = createLucideIcon("type", __iconNode53);
 
   // node_modules/lucide-react/dist/esm/icons/underline.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode53 = [
+  var __iconNode54 = [
     ["path", { d: "M6 4v6a6 6 0 0 0 12 0V4", key: "9kb039" }],
     ["line", { x1: "4", x2: "20", y1: "20", y2: "20", key: "nun2al" }]
   ];
-  var Underline2 = createLucideIcon("underline", __iconNode53);
+  var Underline2 = createLucideIcon("underline", __iconNode54);
 
   // node_modules/lucide-react/dist/esm/icons/undo-2.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode54 = [
+  var __iconNode55 = [
     ["path", { d: "M9 14 4 9l5-5", key: "102s5s" }],
     ["path", { d: "M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11", key: "f3b9sd" }]
   ];
-  var Undo2 = createLucideIcon("undo-2", __iconNode54);
+  var Undo2 = createLucideIcon("undo-2", __iconNode55);
 
   // node_modules/lucide-react/dist/esm/icons/workflow.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode55 = [
+  var __iconNode56 = [
     ["rect", { width: "8", height: "8", x: "3", y: "3", rx: "2", key: "by2w9f" }],
     ["path", { d: "M7 11v4a2 2 0 0 0 2 2h4", key: "xkn7yn" }],
     ["rect", { width: "8", height: "8", x: "13", y: "13", rx: "2", key: "1cgmvn" }]
   ];
-  var Workflow = createLucideIcon("workflow", __iconNode55);
+  var Workflow = createLucideIcon("workflow", __iconNode56);
 
   // node_modules/lucide-react/dist/esm/icons/x.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode56 = [
+  var __iconNode57 = [
     ["path", { d: "M18 6 6 18", key: "1bl5f8" }],
     ["path", { d: "m6 6 12 12", key: "d8bk6v" }]
   ];
-  var X = createLucideIcon("x", __iconNode56);
+  var X = createLucideIcon("x", __iconNode57);
 
   // src/memo-editor/docx-export.ts
   init_define_process_env();
@@ -48536,7 +48550,7 @@ img.ProseMirror-separator {
     return blob;
   }
   async function transformNode(node, editor) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n;
     switch (node.type) {
       case "heading": {
         const level = ((_a = node.attrs) == null ? void 0 : _a.level) || 1;
@@ -48782,6 +48796,32 @@ img.ProseMirror-separator {
           children: [
             new TextRun({
               text: `\u25B6 ${label}`
+            })
+          ],
+          spacing: { before: 120, after: 120, line: DEFAULT_LINE_SPACING }
+        });
+      }
+      case "externalVideoEmbed": {
+        const src = String(((_l = node == null ? void 0 : node.attrs) == null ? void 0 : _l.src) || "").trim();
+        if (!src) return null;
+        const provider = String(((_m = node == null ? void 0 : node.attrs) == null ? void 0 : _m.provider) || "").trim().toLowerCase();
+        const title = String(((_n = node == null ? void 0 : node.attrs) == null ? void 0 : _n.title) || "").trim() || "Vid\xE9o int\xE9gr\xE9e";
+        const providerLabel = provider ? provider.toUpperCase() : "VIDEO";
+        const label = `${title} (${providerLabel})`;
+        return new Paragraph2({
+          children: [
+            new TextRun({
+              text: "\u25B6 ",
+              bold: true
+            }),
+            new ExternalHyperlink({
+              link: src,
+              children: [
+                new TextRun({
+                  text: label,
+                  style: "Hyperlink"
+                })
+              ]
             })
           ],
           spacing: { before: 120, after: 120, line: DEFAULT_LINE_SPACING }
@@ -54369,6 +54409,14 @@ ${promptInput.trim()}`
   // src/memo-editor/video-node.tsx
   init_define_process_env();
   init_polyfills();
+  var parseSizePx = (value) => {
+    if (value == null) return null;
+    const numeric2 = parseFloat(String(value).replace(/px$/i, "").trim());
+    if (!Number.isFinite(numeric2) || numeric2 <= 0) return null;
+    return numeric2;
+  };
+  var DEFAULT_VIDEO_HEIGHT_PX = 600;
+  var DEFAULT_VIDEO_ASPECT_RATIO = 16 / 9;
   var copyVideoHtml = async (attrs) => {
     var _a;
     const src = String((attrs == null ? void 0 : attrs.src) || "");
@@ -54404,16 +54452,108 @@ ${promptInput.trim()}`
     } catch (err) {
     }
   };
-  var VideoNodeView = ({ node, editor, getPos }) => {
-    var _a, _b;
+  var VideoNodeView = ({ node, editor, getPos, updateAttributes: updateAttributes2 }) => {
+    var _a, _b, _c, _d;
     const src = String(((_a = node == null ? void 0 : node.attrs) == null ? void 0 : _a.src) || "");
     const canEdit = Boolean(editor == null ? void 0 : editor.isEditable);
+    const videoRef = react_shim_default.useRef(null);
+    const frameRef = react_shim_default.useRef(null);
+    const resizeStateRef = react_shim_default.useRef(null);
+    const [isPlaying, setIsPlaying] = react_shim_default.useState(false);
+    const [aspectRatio, setAspectRatio] = react_shim_default.useState(DEFAULT_VIDEO_ASPECT_RATIO);
+    const widthPx = parseSizePx((_b = node == null ? void 0 : node.attrs) == null ? void 0 : _b.width);
+    const heightPx = parseSizePx((_c = node == null ? void 0 : node.attrs) == null ? void 0 : _c.height);
+    react_shim_default.useEffect(() => {
+      const el = videoRef.current;
+      if (!el) return;
+      const onPlay = () => setIsPlaying(true);
+      const onPause = () => setIsPlaying(false);
+      const onEnded = () => setIsPlaying(false);
+      el.addEventListener("play", onPlay);
+      el.addEventListener("pause", onPause);
+      el.addEventListener("ended", onEnded);
+      return () => {
+        el.removeEventListener("play", onPlay);
+        el.removeEventListener("pause", onPause);
+        el.removeEventListener("ended", onEnded);
+      };
+    }, []);
+    react_shim_default.useEffect(() => {
+      const el = videoRef.current;
+      if (!el) return;
+      const syncRatio = () => {
+        const w = Number(el.videoWidth || 0);
+        const h = Number(el.videoHeight || 0);
+        if (w > 0 && h > 0) {
+          setAspectRatio(w / h);
+        }
+      };
+      syncRatio();
+      el.addEventListener("loadedmetadata", syncRatio);
+      return () => {
+        el.removeEventListener("loadedmetadata", syncRatio);
+      };
+    }, [src]);
+    react_shim_default.useEffect(() => {
+      if (!canEdit) return;
+      const onPointerMove = (event) => {
+        const current = resizeStateRef.current;
+        if (!current) return;
+        const nextWidth = Math.max(220, current.width + (event.clientX - current.startX));
+        const nextHeight = Math.max(124, current.height + (event.clientY - current.startY));
+        if (typeof updateAttributes2 === "function") {
+          updateAttributes2({
+            width: `${Math.round(nextWidth)}px`,
+            height: `${Math.round(nextHeight)}px`
+          });
+        }
+      };
+      const onPointerUp = () => {
+        if (!resizeStateRef.current) return;
+        resizeStateRef.current = null;
+        document.body.classList.remove("table-resize-cursor");
+      };
+      window.addEventListener("pointermove", onPointerMove);
+      window.addEventListener("pointerup", onPointerUp);
+      window.addEventListener("pointercancel", onPointerUp);
+      return () => {
+        window.removeEventListener("pointermove", onPointerMove);
+        window.removeEventListener("pointerup", onPointerUp);
+        window.removeEventListener("pointercancel", onPointerUp);
+        document.body.classList.remove("table-resize-cursor");
+      };
+    }, [canEdit, updateAttributes2]);
     const handleDelete = () => {
       if (typeof getPos !== "function") return;
       const pos = getPos();
       editor.chain().focus().setNodeSelection(pos).deleteSelection().run();
     };
-    return /* @__PURE__ */ jsx(NodeViewWrapper, { className: "memo-video-wrapper", children: /* @__PURE__ */ jsxs("div", { className: "memo-video-frame", children: [
+    const handleTogglePlayback = (event) => {
+      const target = event.target;
+      if ((target == null ? void 0 : target.closest(".memo-image-controls")) || (target == null ? void 0 : target.closest(".memo-link-block__handle"))) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const video = videoRef.current;
+      if (!video) return;
+      if (video.paused) {
+        void video.play().catch(() => {
+        });
+        return;
+      }
+      video.pause();
+    };
+    const defaultHeightPx = DEFAULT_VIDEO_HEIGHT_PX;
+    const defaultWidthPx = Math.round(defaultHeightPx * (aspectRatio || DEFAULT_VIDEO_ASPECT_RATIO));
+    const frameStyle = {
+      width: widthPx ? `${widthPx}px` : `${defaultWidthPx}px`,
+      height: `${heightPx != null ? heightPx : defaultHeightPx}px`
+    };
+    const videoStyle = {
+      width: "100%",
+      height: heightPx ? "100%" : "auto"
+    };
+    return /* @__PURE__ */ jsx(NodeViewWrapper, { className: "memo-video-wrapper", children: /* @__PURE__ */ jsxs("div", { ref: frameRef, className: "memo-video-frame", style: frameStyle, onClick: handleTogglePlayback, children: [
+      /* @__PURE__ */ jsx("button", { className: "memo-link-block__handle", type: "button", "aria-label": "D\xE9placer", "data-drag-handle": true, children: /* @__PURE__ */ jsx("i", { "data-lucide": "grip-vertical", "aria-hidden": "true" }) }),
       /* @__PURE__ */ jsxs("div", { className: "memo-image-controls", children: [
         /* @__PURE__ */ jsxs(
           "button",
@@ -54454,12 +54594,104 @@ ${promptInput.trim()}`
       /* @__PURE__ */ jsx(
         "video",
         {
+          ref: videoRef,
           className: "memo-video",
+          style: videoStyle,
           src,
-          controls: true,
           playsInline: true,
           preload: "metadata",
-          title: String(((_b = node == null ? void 0 : node.attrs) == null ? void 0 : _b.title) || "")
+          title: String(((_d = node == null ? void 0 : node.attrs) == null ? void 0 : _d.title) || "")
+        }
+      ),
+      !isPlaying && /* @__PURE__ */ jsxs("div", { className: "memo-video-play-overlay", "aria-hidden": "true", children: [
+        /* @__PURE__ */ jsx("i", { "data-lucide": "play", style: { display: "none" }, "aria-hidden": "true" }),
+        /* @__PURE__ */ jsx(Play, { size: 28 })
+      ] }),
+      canEdit && /* @__PURE__ */ jsx(
+        "div",
+        {
+          className: "memo-video-resize-handle",
+          onPointerDown: (event) => {
+            var _a2;
+            event.preventDefault();
+            event.stopPropagation();
+            const rect = (_a2 = frameRef.current) == null ? void 0 : _a2.getBoundingClientRect();
+            resizeStateRef.current = {
+              startX: event.clientX,
+              startY: event.clientY,
+              width: (rect == null ? void 0 : rect.width) || 320,
+              height: (rect == null ? void 0 : rect.height) || 180
+            };
+            document.body.classList.add("table-resize-cursor");
+          }
+        }
+      )
+    ] }) });
+  };
+  var EmbedNodeView = ({ node, editor, getPos }) => {
+    var _a, _b;
+    const canEdit = Boolean(editor == null ? void 0 : editor.isEditable);
+    const src = String(((_a = node == null ? void 0 : node.attrs) == null ? void 0 : _a.src) || "");
+    const title = String(((_b = node == null ? void 0 : node.attrs) == null ? void 0 : _b.title) || "");
+    const handleDelete = () => {
+      if (typeof getPos !== "function") return;
+      const pos = getPos();
+      editor.chain().focus().setNodeSelection(pos).deleteSelection().run();
+    };
+    const handleCopy = async (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (!src) return;
+      try {
+        await navigator.clipboard.writeText(src);
+      } catch (err) {
+      }
+    };
+    return /* @__PURE__ */ jsx(NodeViewWrapper, { className: "memo-video-wrapper", children: /* @__PURE__ */ jsxs("div", { className: "memo-video-frame memo-embed-frame", children: [
+      /* @__PURE__ */ jsx("button", { className: "memo-link-block__handle", type: "button", "aria-label": "D\xE9placer", "data-drag-handle": true, children: /* @__PURE__ */ jsx("i", { "data-lucide": "grip-vertical", "aria-hidden": "true" }) }),
+      /* @__PURE__ */ jsxs("div", { className: "memo-image-controls", children: [
+        /* @__PURE__ */ jsxs(
+          "button",
+          {
+            type: "button",
+            className: "block-delete-button memo-image-action",
+            title: "Copier",
+            onClick: handleCopy,
+            children: [
+              /* @__PURE__ */ jsx("i", { "data-lucide": "copy", style: { display: "none" }, "aria-hidden": "true" }),
+              /* @__PURE__ */ jsx(Copy, { size: 14 })
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsxs(
+          "button",
+          {
+            type: "button",
+            className: "block-delete-button memo-image-action",
+            title: "Supprimer",
+            style: { display: canEdit ? "inline-flex" : "none" },
+            onClick: (event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              handleDelete();
+            },
+            children: [
+              /* @__PURE__ */ jsx("i", { "data-lucide": "trash-2", style: { display: "none" }, "aria-hidden": "true" }),
+              /* @__PURE__ */ jsx(Trash2, { size: 14 })
+            ]
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsx(
+        "iframe",
+        {
+          className: "memo-embed",
+          src,
+          title: title || "Embedded video",
+          loading: "lazy",
+          allow: "autoplay; fullscreen; picture-in-picture; clipboard-write",
+          referrerPolicy: "strict-origin-when-cross-origin",
+          allowFullScreen: true
         }
       )
     ] }) });
@@ -54500,6 +54732,41 @@ ${promptInput.trim()}`
     },
     addNodeView() {
       return ReactNodeViewRenderer(VideoNodeView);
+    }
+  });
+  var ExternalVideoEmbed = Node3.create({
+    name: "externalVideoEmbed",
+    group: "block",
+    atom: true,
+    selectable: true,
+    draggable: true,
+    addAttributes() {
+      return {
+        src: { default: null },
+        title: { default: null },
+        provider: { default: null }
+      };
+    },
+    parseHTML() {
+      return [{ tag: 'iframe[data-type="external-video-embed"]' }];
+    },
+    renderHTML({ HTMLAttributes }) {
+      return [
+        "iframe",
+        mergeAttributes(
+          {
+            "data-type": "external-video-embed",
+            loading: "lazy",
+            allowfullscreen: "true",
+            allow: "autoplay; fullscreen; picture-in-picture; clipboard-write",
+            referrerpolicy: "strict-origin-when-cross-origin"
+          },
+          HTMLAttributes
+        )
+      ];
+    },
+    addNodeView() {
+      return ReactNodeViewRenderer(EmbedNodeView);
     }
   });
 
@@ -54895,6 +55162,7 @@ ${promptInput.trim()}`
     }, [queryTrimmed, hasUrlQuery]);
     react_shim_default.useEffect(() => {
       const onKeyDown = (e) => {
+        var _a, _b;
         if (e.isComposing) return;
         const key = e.key;
         if (key === "Escape") {
@@ -54906,7 +55174,16 @@ ${promptInput.trim()}`
         if (key === "Enter") {
           e.preventDefault();
           e.stopPropagation();
-          if (items[0]) handleSelect(items[0]);
+          if (items[selectedIndex]) {
+            handleSelect(items[selectedIndex]);
+            return;
+          }
+          if (queryTrimmed) {
+            const from2 = Math.max(1, Math.min((_a = selectionRange == null ? void 0 : selectionRange.from) != null ? _a : editor.state.selection.from, editor.state.doc.content.size));
+            const to = Math.max(from2, Math.min((_b = selectionRange == null ? void 0 : selectionRange.to) != null ? _b : editor.state.selection.to, editor.state.doc.content.size));
+            editor.chain().focus().insertContentAt({ from: from2, to }, queryTrimmed).run();
+            onClose();
+          }
           return;
         }
         if (key === "ArrowDown") {
@@ -54943,7 +55220,7 @@ ${promptInput.trim()}`
       };
       document.addEventListener("keydown", onKeyDown, true);
       return () => document.removeEventListener("keydown", onKeyDown, true);
-    }, [items, onClose]);
+    }, [editor, items, onClose, queryTrimmed, selectedIndex, selectionRange]);
     const insertMemoLinkBlockAt = react_shim_default.useCallback((pos, item) => {
       var _a, _b, _c, _d, _e, _f;
       const schema = (_a = editor == null ? void 0 : editor.state) == null ? void 0 : _a.schema;
@@ -54996,6 +55273,16 @@ ${promptInput.trim()}`
           }).insertContent({ type: "paragraph" }).run();
         }
       } else {
+        const insertedEmbed = insertExternalEmbedAtSelection(editor, from2, to, item.title);
+        if (insertedEmbed) {
+          onClose();
+          return;
+        }
+        if (isExternalVideoCandidateUrl(item.title)) {
+          editor.chain().focus().insertContentAt({ from: from2, to }, item.title).run();
+          onClose();
+          return;
+        }
         if (from2 !== to) {
           editor.chain().focus().setLink({ href: url }).setColor("var(--color-primary)").run();
         } else {
@@ -55018,7 +55305,7 @@ ${promptInput.trim()}`
         className: "link-search-modal",
         style: modalStyle,
         children: [
-          /* @__PURE__ */ jsx("div", { style: { padding: "10px 12px", borderBottom: "1px solid var(--bg-surface-soft)", fontSize: 12, color: "var(--text-muted)" }, children: queryTrimmed ? `Recherche: ${queryTrimmed}` : "Tape pour rechercher un titre ou un lien" }),
+          /* @__PURE__ */ jsx("div", { className: `link-search-modal__query ${queryTrimmed ? "has-value" : ""}`, children: queryTrimmed || "Tape pour rechercher un titre ou un lien" }),
           /* @__PURE__ */ jsxs("div", { className: "link-search-results", children: [
             items.map((item, i) => /* @__PURE__ */ jsxs(
               "div",
@@ -55154,12 +55441,15 @@ ${promptInput.trim()}`
         role: "link",
         tabIndex: 0,
         onMouseDown: (event) => {
-          const target = event.target;
           if (isEditingTitle) {
             event.preventDefault();
             event.stopPropagation();
-            return;
           }
+        },
+        onClick: (event) => {
+          const target = event.target;
+          if (isEditingTitle) return;
+          if (event.detail > 1) return;
           if ((target == null ? void 0 : target.closest(".memo-link-block__action")) || (target == null ? void 0 : target.closest(".memo-link-block__handle"))) return;
           handleOpen(event);
         },
@@ -55386,6 +55676,87 @@ ${promptInput.trim()}`
     { name: "Rose", value: "var(--bg-text-pink)" },
     { name: "Rouge", value: "var(--bg-text-red)" }
   ];
+  var normalizeHttpUrl = (value) => {
+    const raw = String(value || "").trim();
+    if (!raw) return "";
+    if (/^https?:\/\//i.test(raw)) return raw;
+    if (/^www\./i.test(raw)) return `https://${raw}`;
+    return raw;
+  };
+  var parseExternalVideoUrl = (value) => {
+    const normalized = normalizeHttpUrl(value);
+    if (!/^https?:\/\//i.test(normalized)) return null;
+    let parsed;
+    try {
+      parsed = new URL(normalized);
+    } catch (err) {
+      return null;
+    }
+    const host = parsed.hostname.toLowerCase().replace(/^www\./, "");
+    const path = parsed.pathname || "/";
+    if (host === "youtube.com" || host === "m.youtube.com" || host === "youtu.be") {
+      let id = "";
+      if (host === "youtu.be") {
+        id = path.replace(/^\/+/, "").split("/")[0] || "";
+      } else if (path.startsWith("/watch")) {
+        id = parsed.searchParams.get("v") || "";
+      } else if (path.startsWith("/shorts/")) {
+        id = path.split("/")[2] || "";
+      } else if (path.startsWith("/embed/")) {
+        id = path.split("/")[2] || "";
+      }
+      id = id.trim();
+      if (!/^[A-Za-z0-9_-]{11}$/.test(id)) return null;
+      return {
+        provider: "youtube",
+        sourceUrl: normalized,
+        embedUrl: `https://www.youtube.com/embed/${id}`,
+        title: `YouTube ${id}`
+      };
+    }
+    if (host === "loom.com") {
+      const match = path.match(/^\/share\/([A-Za-z0-9]+)(?:\/|$)/i);
+      const id = String((match == null ? void 0 : match[1]) || "").trim();
+      if (!id) return null;
+      return {
+        provider: "loom",
+        sourceUrl: normalized,
+        embedUrl: `https://www.loom.com/embed/${id}`,
+        title: `Loom ${id}`
+      };
+    }
+    return null;
+  };
+  var isExternalVideoCandidateUrl = (value) => {
+    const normalized = normalizeHttpUrl(value);
+    if (!/^https?:\/\//i.test(normalized)) return false;
+    try {
+      const host = new URL(normalized).hostname.toLowerCase().replace(/^www\./, "");
+      return host === "youtube.com" || host === "m.youtube.com" || host === "youtu.be" || host === "loom.com";
+    } catch (err) {
+      return false;
+    }
+  };
+  var insertExternalEmbedAtSelection = (editor, from2, to, rawUrl) => {
+    const match = parseExternalVideoUrl(rawUrl);
+    if (!match) return false;
+    const embedType = editor.state.schema.nodes.externalVideoEmbed;
+    const paragraphType = editor.state.schema.nodes.paragraph;
+    if (!embedType || !paragraphType) return false;
+    const safeFrom = Math.max(1, Math.min(from2, editor.state.doc.content.size));
+    const safeTo = Math.max(safeFrom, Math.min(to, editor.state.doc.content.size));
+    const embedNode = embedType.create({
+      src: match.embedUrl,
+      title: match.title,
+      provider: match.provider
+    });
+    let tr2 = editor.state.tr.replaceWith(safeFrom, safeTo, embedNode);
+    const nextPos = safeFrom + embedNode.nodeSize;
+    tr2 = tr2.insert(nextPos, paragraphType.create());
+    tr2 = tr2.setSelection(TextSelection.near(tr2.doc.resolve(nextPos + 1), 1));
+    editor.view.dispatch(tr2.scrollIntoView());
+    return true;
+  };
   var BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLink, onInsertImage, onInsertVideo, onDropdownToggle }) => {
     const [position, setPosition] = react_shim_default.useState({ top: 0, left: 0, opacity: 0 });
     const [hasMarks, setHasMarks] = react_shim_default.useState(false);
@@ -56807,6 +57178,7 @@ ${promptInput.trim()}`
         MemoSummaryBlock,
         CustomImage,
         VideoEmbed,
+        ExternalVideoEmbed,
         TableNode,
         TableRow,
         TableHeader,
@@ -56952,7 +57324,7 @@ ${promptInput.trim()}`
           return true;
         },
         handleKeyDown: (_view, event) => {
-          var _a2, _b2, _c2, _d2, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t;
+          var _a2, _b2, _c2, _d2, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t, _u, _v;
           if (!editor) return false;
           const selection = editor.state.selection;
           const docEnd = editor.state.doc.content.size;
@@ -57020,6 +57392,24 @@ ${promptInput.trim()}`
               }
             }));
           };
+          if (event.key === " " && isInlineTriggerCandidate && selection.empty) {
+            const { $from: $from2 } = selection;
+            const isParagraph = ((_d2 = (_c2 = $from2.parent) == null ? void 0 : _c2.type) == null ? void 0 : _d2.name) === "paragraph";
+            if (isParagraph) {
+              const beforeText = $from2.parent.textBetween(0, $from2.parentOffset, " ", " ");
+              const match = String(beforeText || "").match(/(?:^|\s)(https?:\/\/[^\s]+|www\.[^\s]+)$/i);
+              const rawUrl = String((match == null ? void 0 : match[1]) || "");
+              if (rawUrl) {
+                const from2 = $from2.start() + beforeText.length - rawUrl.length;
+                const to = $from2.start() + $from2.parentOffset;
+                const inserted = insertExternalEmbedAtSelection(editor, from2, to, rawUrl);
+                if (inserted) {
+                  event.preventDefault();
+                  return true;
+                }
+              }
+            }
+          }
           if (event.key === " " && isInlineTriggerCandidate && isEmptyCurrentLine) {
             event.preventDefault();
             dispatchInlineEditorOpen();
@@ -57052,19 +57442,19 @@ ${promptInput.trim()}`
             editor.view.dispatch(tr2);
           };
           if (event.key === "Backspace" && selection.empty) {
-            if (showSlashActionMenu && ((_c2 = selection.$from.parent) == null ? void 0 : _c2.isTextblock) && selection.$from.parent.textContent === "/" && selection.$from.parentOffset === 1) {
+            if (showSlashActionMenu && ((_e = selection.$from.parent) == null ? void 0 : _e.isTextblock) && selection.$from.parent.textContent === "/" && selection.$from.parentOffset === 1) {
               setSlashActionQuery("");
               setShowSlashActionMenu(false);
             }
             const { $from: $from2 } = selection;
             const isAtStart = $from2.parentOffset === 0;
-            const isEmptyParagraph = ((_e = (_d2 = $from2.parent) == null ? void 0 : _d2.type) == null ? void 0 : _e.name) === "paragraph" && ((_g = (_f = $from2.parent) == null ? void 0 : _f.content) == null ? void 0 : _g.size) === 0;
+            const isEmptyParagraph = ((_g = (_f = $from2.parent) == null ? void 0 : _f.type) == null ? void 0 : _g.name) === "paragraph" && ((_i = (_h = $from2.parent) == null ? void 0 : _h.content) == null ? void 0 : _i.size) === 0;
             const inListItem = editor.isActive("listItem");
             if (isAtStart && isEmptyParagraph && !inListItem) {
               const parentDepth = $from2.depth - 1;
               const indexInParent = parentDepth >= 0 ? $from2.index(parentDepth) : -1;
               const prevSibling = parentDepth >= 0 && indexInParent > 0 ? $from2.node(parentDepth).child(indexInParent - 1) : null;
-              const prevType = ((_h = prevSibling == null ? void 0 : prevSibling.type) == null ? void 0 : _h.name) || "";
+              const prevType = ((_j = prevSibling == null ? void 0 : prevSibling.type) == null ? void 0 : _j.name) || "";
               if (prevType === "bulletList" || prevType === "orderedList" || prevType === "taskList") {
                 event.preventDefault();
                 const currentBlockDepth = $from2.depth;
@@ -57081,7 +57471,7 @@ ${promptInput.trim()}`
               event.preventDefault();
               let listItemDepth = -1;
               for (let depth = $from2.depth; depth > 0; depth -= 1) {
-                if (((_i = $from2.node(depth).type) == null ? void 0 : _i.name) === "listItem") {
+                if (((_k = $from2.node(depth).type) == null ? void 0 : _k.name) === "listItem") {
                   listItemDepth = depth;
                   break;
                 }
@@ -57092,7 +57482,7 @@ ${promptInput.trim()}`
                 const itemIndex = $from2.index(listItemDepth - 1);
                 const hasSiblingBefore = itemIndex > 0;
                 const hasSiblingAfter = itemIndex < ((listNode == null ? void 0 : listNode.childCount) || 0) - 1;
-                const isPlainEmptyItem = listItemNode.childCount === 1 && ((_k = (_j = listItemNode.firstChild) == null ? void 0 : _j.type) == null ? void 0 : _k.name) === "paragraph" && ((_m = (_l = listItemNode.firstChild) == null ? void 0 : _l.content) == null ? void 0 : _m.size) === 0;
+                const isPlainEmptyItem = listItemNode.childCount === 1 && ((_m = (_l = listItemNode.firstChild) == null ? void 0 : _l.type) == null ? void 0 : _m.name) === "paragraph" && ((_o = (_n = listItemNode.firstChild) == null ? void 0 : _n.content) == null ? void 0 : _o.size) === 0;
                 if (isPlainEmptyItem && (hasSiblingBefore || hasSiblingAfter)) {
                   const listItemPos = $from2.before(listItemDepth);
                   const tr2 = editor.state.tr.delete(listItemPos, listItemPos + listItemNode.nodeSize);
@@ -57123,7 +57513,7 @@ ${promptInput.trim()}`
                 const $after = editor.state.doc.resolve(afterPos);
                 const nextNode = $after.nodeAfter;
                 if (!nextNode) continue;
-                const isEmptySpacer = ((_n = nextNode.type) == null ? void 0 : _n.name) === "paragraph" && ((_o = nextNode.content) == null ? void 0 : _o.size) === 0;
+                const isEmptySpacer = ((_p = nextNode.type) == null ? void 0 : _p.name) === "paragraph" && ((_q = nextNode.content) == null ? void 0 : _q.size) === 0;
                 if (isEmptySpacer) {
                   event.preventDefault();
                   let tr2 = editor.state.tr;
@@ -57132,7 +57522,7 @@ ${promptInput.trim()}`
                     if (deletePos <= 0 || deletePos >= tr2.doc.content.size) break;
                     const $probe = tr2.doc.resolve(deletePos);
                     const probeNode = $probe.nodeAfter;
-                    const probeIsEmptyParagraph = ((_p = probeNode == null ? void 0 : probeNode.type) == null ? void 0 : _p.name) === "paragraph" && ((_q = probeNode == null ? void 0 : probeNode.content) == null ? void 0 : _q.size) === 0;
+                    const probeIsEmptyParagraph = ((_r = probeNode == null ? void 0 : probeNode.type) == null ? void 0 : _r.name) === "paragraph" && ((_s = probeNode == null ? void 0 : probeNode.content) == null ? void 0 : _s.size) === 0;
                     if (!probeIsEmptyParagraph) break;
                     tr2 = tr2.delete(deletePos, deletePos + probeNode.nodeSize);
                   }
@@ -57232,7 +57622,7 @@ ${promptInput.trim()}`
               }
             }
             if (tablePos >= 0 && tableNode) {
-              const totalCellCount = ((_r = tableNode.content) == null ? void 0 : _r.childCount) ? tableNode.content.content.reduce((count, row) => {
+              const totalCellCount = ((_t = tableNode.content) == null ? void 0 : _t.childCount) ? tableNode.content.content.reduce((count, row) => {
                 var _a3;
                 const rowCellCount = ((_a3 = row == null ? void 0 : row.content) == null ? void 0 : _a3.childCount) || 0;
                 return count + rowCellCount;
@@ -57272,7 +57662,7 @@ ${promptInput.trim()}`
             const { selection: selection2 } = state2;
             const $from2 = selection2.$from;
             const parent = $from2.parent;
-            if (((_s = parent == null ? void 0 : parent.type) == null ? void 0 : _s.name) === "heading" && ((_t = parent.attrs) == null ? void 0 : _t.collapsed)) {
+            if (((_u = parent == null ? void 0 : parent.type) == null ? void 0 : _u.name) === "heading" && ((_v = parent.attrs) == null ? void 0 : _v.collapsed)) {
               const level = parent.attrs.level || 1;
               const headingPos = $from2.before($from2.depth);
               const docSize = state2.doc.content.size;
@@ -58638,6 +59028,20 @@ ${innerMarkdown}
                   li.classList.add("task-list-item");
                 });
               });
+              doc3.querySelectorAll("video").forEach((video) => {
+                const src = String(video.getAttribute("src") || "").trim();
+                const replacement = doc3.createElement("a");
+                replacement.textContent = src || "video";
+                if (src) replacement.setAttribute("href", src);
+                video.replaceWith(replacement);
+              });
+              doc3.querySelectorAll('iframe[data-type="external-video-embed"], iframe').forEach((iframe) => {
+                const src = String(iframe.getAttribute("src") || "").trim();
+                const replacement = doc3.createElement("a");
+                replacement.textContent = src || "video";
+                if (src) replacement.setAttribute("href", src);
+                iframe.replaceWith(replacement);
+              });
               const tables2 = doc3.querySelectorAll("table");
               tables2.forEach((table) => {
                 table.removeAttribute("class");
@@ -58939,6 +59343,38 @@ ${innerMarkdown}
                 style2.borderRadius = "10px";
                 style2.background = "#000";
               });
+              doc3.querySelectorAll('iframe[data-type="external-video-embed"], iframe').forEach((frame) => {
+                const el = frame;
+                const src = String(el.getAttribute("src") || "").trim();
+                if (format === "pdf") {
+                  const wrap2 = doc3.createElement("p");
+                  wrap2.setAttribute("style", "font-size:12px;color:#6b7280;margin:8px 0 20px 0;");
+                  if (src) {
+                    const link2 = doc3.createElement("a");
+                    link2.href = src;
+                    link2.textContent = src;
+                    link2.setAttribute("style", "color:#2563eb;text-decoration:underline;word-break:break-all;");
+                    wrap2.textContent = "Video: ";
+                    wrap2.appendChild(link2);
+                  } else {
+                    wrap2.textContent = "Video";
+                  }
+                  el.replaceWith(wrap2);
+                  return;
+                }
+                el.setAttribute("loading", "lazy");
+                el.setAttribute("allowfullscreen", "true");
+                el.setAttribute("allow", "autoplay; fullscreen; picture-in-picture; clipboard-write");
+                const style2 = el.style;
+                style2.display = "block";
+                style2.width = "100%";
+                style2.maxWidth = "100%";
+                style2.minHeight = "420px";
+                style2.margin = "20px auto";
+                style2.border = "0";
+                style2.borderRadius = "10px";
+                style2.background = "#000";
+              });
               doc3.querySelectorAll("hr").forEach((hr2) => {
                 const el = hr2;
                 el.style.border = "none";
@@ -58996,6 +59432,13 @@ ${innerMarkdown}
       height: auto;
       max-width: 100%;
     }
+    .html-email-export iframe {
+      width: 100%;
+      min-height: 420px;
+      border: 0;
+      border-radius: 10px;
+      background: #000;
+    }
   </style>
   ${content2}
 </div>`.trim();
@@ -59005,7 +59448,7 @@ ${innerMarkdown}
             }
             if (format === "text") {
               const markdown = getEditorMarkdown();
-              return markdown.replace(/\\-/g, "-").replace(/\[([^\]]+)\]\([^\)]+\)/g, "$1").replace(/(\*\*|__)(.*?)\1/g, "$2").replace(/(\*|_)(.*?)\1/g, "$2").replace(/~~(.*?)~~/g, "$1").replace(/`(.*?)`/g, "$1").replace(/^#+\s+/gm, "").replace(/^\s*>\s*/gm, "> ").replace(/^\s*-\s+/gm, "- ").replace(/\n\n(?=\s*-)/g, "\n");
+              return markdown.replace(/\\-/g, "-").replace(/\[([^\]]+)\]\(([^\)]+)\)/g, "$2").replace(/(\*\*|__)(.*?)\1/g, "$2").replace(/(\*|_)(.*?)\1/g, "$2").replace(/~~(.*?)~~/g, "$1").replace(/`(.*?)`/g, "$1").replace(/^#+\s+/gm, "").replace(/^\s*>\s*/gm, "> ").replace(/^\s*-\s+/gm, "- ").replace(/\n\n(?=\s*-)/g, "\n");
             }
             return getEditorMarkdown();
           } catch (err) {
@@ -60609,6 +61052,7 @@ lucide-react/dist/esm/icons/link.js:
 lucide-react/dist/esm/icons/list.js:
 lucide-react/dist/esm/icons/loader-circle.js:
 lucide-react/dist/esm/icons/pencil.js:
+lucide-react/dist/esm/icons/play.js:
 lucide-react/dist/esm/icons/plus.js:
 lucide-react/dist/esm/icons/quote.js:
 lucide-react/dist/esm/icons/rectangle-horizontal.js:

@@ -497,7 +497,16 @@ const LinkSearchModal = ({
       if (key === 'Enter') {
         e.preventDefault();
         e.stopPropagation();
-        if (items[0]) handleSelect(items[0]);
+        if (items[selectedIndex]) {
+          handleSelect(items[selectedIndex]);
+          return;
+        }
+        if (queryTrimmed) {
+          const from = Math.max(1, Math.min(selectionRange?.from ?? editor.state.selection.from, editor.state.doc.content.size));
+          const to = Math.max(from, Math.min(selectionRange?.to ?? editor.state.selection.to, editor.state.doc.content.size));
+          editor.chain().focus().insertContentAt({ from, to }, queryTrimmed).run();
+          onClose();
+        }
         return;
       }
       if (key === 'ArrowDown') {
@@ -534,7 +543,7 @@ const LinkSearchModal = ({
     };
     document.addEventListener('keydown', onKeyDown, true);
     return () => document.removeEventListener('keydown', onKeyDown, true);
-  }, [items, onClose]);
+  }, [editor, items, onClose, queryTrimmed, selectedIndex, selectionRange]);
 
   const insertMemoLinkBlockAt = React.useCallback((pos: number, item: any) => {
     const schema = editor?.state?.schema;
@@ -590,6 +599,16 @@ const LinkSearchModal = ({
         }).insertContent({ type: 'paragraph' }).run();
       }
     } else {
+      const insertedEmbed = insertExternalEmbedAtSelection(editor, from, to, item.title);
+      if (insertedEmbed) {
+        onClose();
+        return;
+      }
+      if (isExternalVideoCandidateUrl(item.title)) {
+        editor.chain().focus().insertContentAt({ from, to }, item.title).run();
+        onClose();
+        return;
+      }
       if (from !== to) {
         editor.chain().focus().setLink({ href: url }).setColor('var(--color-primary)').run();
       } else {
@@ -612,8 +631,8 @@ const LinkSearchModal = ({
       className="link-search-modal"
       style={modalStyle}
     >
-      <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--bg-surface-soft)', fontSize: 12, color: 'var(--text-muted)' }}>
-        {queryTrimmed ? `Recherche: ${queryTrimmed}` : 'Tape pour rechercher un titre ou un lien'}
+      <div className={`link-search-modal__query ${queryTrimmed ? 'has-value' : ''}`}>
+        {queryTrimmed || 'Tape pour rechercher un titre ou un lien'}
       </div>
       <div className="link-search-results">
         {items.map((item, i) => (
@@ -756,12 +775,15 @@ const MemoLinkBlockView = ({ node, editor, getPos, updateAttributes }: any) => {
         role="link"
         tabIndex={0}
         onMouseDown={(event) => {
-          const target = event.target as HTMLElement | null;
           if (isEditingTitle) {
             event.preventDefault();
             event.stopPropagation();
-            return;
           }
+        }}
+        onClick={(event) => {
+          const target = event.target as HTMLElement | null;
+          if (isEditingTitle) return;
+          if (event.detail > 1) return;
           if (target?.closest('.memo-link-block__action') || target?.closest('.memo-link-block__handle')) return;
           handleOpen(event);
         }}
@@ -1005,7 +1027,7 @@ import { marked } from 'marked';
 import { MermaidNode, insertMermaidDiagram } from './mermaid-node';
 import { Alert, ALERT_TYPES } from './blockquote-node';
 import { CustomImage, isSupportedImageFile } from './image-node';
-import { VideoEmbed } from './video-node';
+import { ExternalVideoEmbed, VideoEmbed } from './video-node';
 import './simple-editor.css';
 
 const TEXT_COLORS = [
@@ -1038,6 +1060,106 @@ interface SimpleEditorProps {
   }) => void;
   placeholder?: string;
 }
+
+type ExternalEmbedMatch = {
+  provider: 'youtube' | 'loom';
+  sourceUrl: string;
+  embedUrl: string;
+  title: string;
+};
+
+const normalizeHttpUrl = (value: string) => {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  if (/^https?:\/\//i.test(raw)) return raw;
+  if (/^www\./i.test(raw)) return `https://${raw}`;
+  return raw;
+};
+
+const parseExternalVideoUrl = (value: string): ExternalEmbedMatch | null => {
+  const normalized = normalizeHttpUrl(value);
+  if (!/^https?:\/\//i.test(normalized)) return null;
+  let parsed: URL;
+  try {
+    parsed = new URL(normalized);
+  } catch (err) {
+    return null;
+  }
+  const host = parsed.hostname.toLowerCase().replace(/^www\./, '');
+  const path = parsed.pathname || '/';
+
+  if (host === 'youtube.com' || host === 'm.youtube.com' || host === 'youtu.be') {
+    let id = '';
+    if (host === 'youtu.be') {
+      id = path.replace(/^\/+/, '').split('/')[0] || '';
+    } else if (path.startsWith('/watch')) {
+      id = parsed.searchParams.get('v') || '';
+    } else if (path.startsWith('/shorts/')) {
+      id = path.split('/')[2] || '';
+    } else if (path.startsWith('/embed/')) {
+      id = path.split('/')[2] || '';
+    }
+    id = id.trim();
+    if (!/^[A-Za-z0-9_-]{11}$/.test(id)) return null;
+    return {
+      provider: 'youtube',
+      sourceUrl: normalized,
+      embedUrl: `https://www.youtube.com/embed/${id}`,
+      title: `YouTube ${id}`,
+    };
+  }
+
+  if (host === 'loom.com') {
+    const match = path.match(/^\/share\/([A-Za-z0-9]+)(?:\/|$)/i);
+    const id = String(match?.[1] || '').trim();
+    if (!id) return null;
+    return {
+      provider: 'loom',
+      sourceUrl: normalized,
+      embedUrl: `https://www.loom.com/embed/${id}`,
+      title: `Loom ${id}`,
+    };
+  }
+
+  return null;
+};
+
+const isExternalVideoCandidateUrl = (value: string) => {
+  const normalized = normalizeHttpUrl(value);
+  if (!/^https?:\/\//i.test(normalized)) return false;
+  try {
+    const host = new URL(normalized).hostname.toLowerCase().replace(/^www\./, '');
+    return host === 'youtube.com' || host === 'm.youtube.com' || host === 'youtu.be' || host === 'loom.com';
+  } catch (err) {
+    return false;
+  }
+};
+
+const insertExternalEmbedAtSelection = (
+  editor: Editor,
+  from: number,
+  to: number,
+  rawUrl: string
+) => {
+  const match = parseExternalVideoUrl(rawUrl);
+  if (!match) return false;
+  const embedType = editor.state.schema.nodes.externalVideoEmbed;
+  const paragraphType = editor.state.schema.nodes.paragraph;
+  if (!embedType || !paragraphType) return false;
+  const safeFrom = Math.max(1, Math.min(from, editor.state.doc.content.size));
+  const safeTo = Math.max(safeFrom, Math.min(to, editor.state.doc.content.size));
+  const embedNode = embedType.create({
+    src: match.embedUrl,
+    title: match.title,
+    provider: match.provider,
+  });
+  let tr = editor.state.tr.replaceWith(safeFrom, safeTo, embedNode);
+  const nextPos = safeFrom + embedNode.nodeSize;
+  tr = tr.insert(nextPos, paragraphType.create());
+  tr = tr.setSelection(TextSelection.near(tr.doc.resolve(nextPos + 1), 1));
+  editor.view.dispatch(tr.scrollIntoView());
+  return true;
+};
 
 // Custom BubbleMenu component for Tiptap v3
 const BubbleMenuComponent = ({ editor, visible, onKeep, onReject, onAssist, onLink, onInsertImage, onInsertVideo, onDropdownToggle }: { 
@@ -2975,6 +3097,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       MemoSummaryBlock,
       CustomImage,
       VideoEmbed,
+      ExternalVideoEmbed,
       TableNode,
       TableRow,
       TableHeader,
@@ -3214,6 +3337,25 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
             }
           }));
         };
+
+        if (event.key === ' ' && isInlineTriggerCandidate && selection.empty) {
+          const { $from } = selection;
+          const isParagraph = $from.parent?.type?.name === 'paragraph';
+          if (isParagraph) {
+            const beforeText = $from.parent.textBetween(0, $from.parentOffset, ' ', ' ');
+            const match = String(beforeText || '').match(/(?:^|\s)(https?:\/\/[^\s]+|www\.[^\s]+)$/i);
+            const rawUrl = String(match?.[1] || '');
+            if (rawUrl) {
+              const from = $from.start() + beforeText.length - rawUrl.length;
+              const to = $from.start() + $from.parentOffset;
+              const inserted = insertExternalEmbedAtSelection(editor, from, to, rawUrl);
+              if (inserted) {
+                event.preventDefault();
+                return true;
+              }
+            }
+          }
+        }
 
         if (event.key === ' ' && isInlineTriggerCandidate && isEmptyCurrentLine) {
           event.preventDefault();
@@ -5070,8 +5212,24 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
                 li.classList.add('task-list-item');
               });
             });
+
+            // 4. For markdown/mail/text flows, represent media embeds as URL text.
+            doc.querySelectorAll('video').forEach(video => {
+              const src = String(video.getAttribute('src') || '').trim();
+              const replacement = doc.createElement('a');
+              replacement.textContent = src || 'video';
+              if (src) replacement.setAttribute('href', src);
+              video.replaceWith(replacement);
+            });
+            doc.querySelectorAll('iframe[data-type="external-video-embed"], iframe').forEach(iframe => {
+              const src = String(iframe.getAttribute('src') || '').trim();
+              const replacement = doc.createElement('a');
+              replacement.textContent = src || 'video';
+              if (src) replacement.setAttribute('href', src);
+              iframe.replaceWith(replacement);
+            });
             
-            // Remove Tiptap-specific classes and styles from table elements
+            // 5. Remove Tiptap-specific classes and styles from table elements
             const tables = doc.querySelectorAll('table');
             tables.forEach(table => {
               table.removeAttribute('class');
@@ -5410,6 +5568,41 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
               style.background = '#000';
             });
 
+            doc.querySelectorAll('iframe[data-type="external-video-embed"], iframe').forEach(frame => {
+              const el = frame as HTMLIFrameElement;
+              const src = String(el.getAttribute('src') || '').trim();
+
+              if (format === 'pdf') {
+                const wrap = doc.createElement('p');
+                wrap.setAttribute('style', 'font-size:12px;color:#6b7280;margin:8px 0 20px 0;');
+                if (src) {
+                  const link = doc.createElement('a');
+                  link.href = src;
+                  link.textContent = src;
+                  link.setAttribute('style', 'color:#2563eb;text-decoration:underline;word-break:break-all;');
+                  wrap.textContent = 'Video: ';
+                  wrap.appendChild(link);
+                } else {
+                  wrap.textContent = 'Video';
+                }
+                el.replaceWith(wrap);
+                return;
+              }
+
+              el.setAttribute('loading', 'lazy');
+              el.setAttribute('allowfullscreen', 'true');
+              el.setAttribute('allow', 'autoplay; fullscreen; picture-in-picture; clipboard-write');
+              const style = el.style;
+              style.display = 'block';
+              style.width = '100%';
+              style.maxWidth = '100%';
+              style.minHeight = '420px';
+              style.margin = '20px auto';
+              style.border = '0';
+              style.borderRadius = '10px';
+              style.background = '#000';
+            });
+
             doc.querySelectorAll('hr').forEach(hr => {
               const el = hr as HTMLElement;
               el.style.border = 'none';
@@ -5472,6 +5665,13 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
       height: auto;
       max-width: 100%;
     }
+    .html-email-export iframe {
+      width: 100%;
+      min-height: 420px;
+      border: 0;
+      border-radius: 10px;
+      background: #000;
+    }
   </style>
   ${content}
 </div>`.trim();
@@ -5486,7 +5686,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
             // Simplify markdown for plain text
             return markdown
               .replace(/\\-/g, '-')                     // Remove escaping: \- -> -
-              .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1') // Strip links: [Text](URL) -> Text
+              .replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '$2') // Keep URL: [Text](URL) -> URL
               .replace(/(\*\*|__)(.*?)\1/g, '$2')      // Strip bold: **Text** -> Text
               .replace(/(\*|_)(.*?)\1/g, '$2')         // Strip italic: *Text* -> Text
               .replace(/~~(.*?)~~/g, '$1')              // Strip strikethrough
