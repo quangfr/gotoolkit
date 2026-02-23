@@ -120,6 +120,9 @@
                 100% { box-shadow: 0 0 0 0 rgba(180, 35, 24, 0); }
             }
             .voice-overlay {
+                --voice-overlay-tile-size: 300px;
+                --voice-overlay-tiles-gap: 18px;
+                --voice-overlay-tiles-width: calc((var(--voice-overlay-tile-size) * 3) + (var(--voice-overlay-tiles-gap) * 2));
                 position: fixed;
                 inset: 0;
                 background: rgba(0, 0, 0, 0.78);
@@ -127,7 +130,7 @@
                 z-index: 11000;
                 display: none;
                 flex-direction: column;
-                justify-content: space-between;
+                justify-content: flex-start;
                 padding: 32px;
                 box-sizing: border-box;
                 font-family: "Inter", system-ui, sans-serif;
@@ -151,39 +154,50 @@
             }
             .voice-overlay__tiles {
                 display: flex;
-                gap: 18px;
+                gap: var(--voice-overlay-tiles-gap);
                 justify-content: center;
                 align-items: flex-end;
-                width: 100%;
-                height: 66vh;
+                width: min(100%, var(--voice-overlay-tiles-width));
+                margin-inline: auto;
+                height: auto;
+                flex: 0 0 auto;
                 pointer-events: none;
                 position: relative;
                 z-index: 2;
-                align-self: flex-end;
+                align-self: center;
+            }
+            .voice-overlay__transcription-slot {
+                width: min(100%, var(--voice-overlay-tiles-width));
+                align-self: center;
+                margin: 8px auto 6px;
+                flex: 1 1 auto;
+                display: flex;
+                align-items: flex-end;
             }
             .voice-overlay__transcription-tile {
-                width: min(100%, 1254px);
+                width: var(--voice-overlay-tiles-width);
+                height: 60px;
                 min-height: 60px;
-                align-self: center;
-                margin: 12px auto 8px;
+                position: relative;
+                overflow: hidden;
                 border-radius: 14px;
                 border: 2px solid rgba(255, 255, 255, 0.4);
                 background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(0, 0, 0, 0.45));
                 box-shadow: 0 14px 28px rgba(0, 0, 0, 0.35), 0 0 0 4px rgba(255, 255, 255, 0.05);
-                padding: 8px 14px;
                 box-sizing: border-box;
                 cursor: pointer;
                 pointer-events: auto;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                gap: 1px;
             }
             .voice-overlay__transcription-tile--active {
                 border-color: var(--intent-warning-border);
                 box-shadow: 0 18px 50px rgba(0, 0, 0, 0.65), 0 0 0 6px rgba(250, 204, 21, 0.18);
             }
             .voice-overlay__transcription-title {
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                transform: translate(-50%, -50%);
+                z-index: 2;
                 font-size: 21px;
                 line-height: 1.05;
                 font-weight: 800;
@@ -191,27 +205,37 @@
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
+                max-width: calc(100% - 28px);
+                pointer-events: none;
+                opacity: 0.94;
             }
             .voice-overlay__transcription-live {
-                min-height: 32px;
+                position: absolute;
+                inset: 0;
+                z-index: 1;
+                min-height: 0;
+                padding: 8px 14px;
+                box-sizing: border-box;
                 font-size: 16px;
                 line-height: 1;
                 font-weight: 650;
                 opacity: 0.95;
                 display: flex;
                 flex-direction: column;
-                justify-content: center;
+                justify-content: flex-end;
+                align-items: flex-start;
                 overflow: hidden;
             }
             .voice-overlay__transcription-line {
                 min-height: 16px;
+                max-width: 100%;
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
             }
             .voice-overlay__tile {
-                width: 300px;
-                height: 300px;
+                width: var(--voice-overlay-tile-size);
+                height: var(--voice-overlay-tile-size);
                 border-radius: 16px;
                 border: 2px solid rgba(255, 255, 255, 0.4);
                 background: radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.18), rgba(0, 0, 0, 0.5));
@@ -1124,11 +1148,13 @@
             <button class="voice-overlay__close" type="button" aria-label="Fermer">×</button>
             <div class="voice-overlay__caption">Demander l'autorisation à vos interlocuteurs pour enregistrer la conversation.</div>
             <div class="voice-overlay__ready">Prêt</div>
-            <div class="voice-overlay__transcription-tile" role="button" tabindex="0" aria-label="Mode de transcription">
-                <div class="voice-overlay__transcription-title">Transcription en différé</div>
-                <div class="voice-overlay__transcription-live" aria-live="polite">
-                    <div class="voice-overlay__transcription-line" data-line="1"></div>
-                    <div class="voice-overlay__transcription-line" data-line="2"></div>
+            <div class="voice-overlay__transcription-slot">
+                <div class="voice-overlay__transcription-tile" role="button" tabindex="0" aria-label="Mode de transcription">
+                    <div class="voice-overlay__transcription-title">Transcription en différé</div>
+                    <div class="voice-overlay__transcription-live" aria-live="polite">
+                        <div class="voice-overlay__transcription-line" data-line="1"></div>
+                        <div class="voice-overlay__transcription-line" data-line="2"></div>
+                    </div>
                 </div>
             </div>
             <div class="voice-overlay__tiles">
