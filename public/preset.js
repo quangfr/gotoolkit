@@ -134,6 +134,7 @@
 Tu réponds sur la base des documents fournis par l'utilisateur
 
 ENTRÉES
+0) INSTRUCTIONS_UTILISATEUR : instructions spécifiques prioritaires sur les autres
 1) DOCUMENT : contenu du document de travail en Markdown, base pour poser des questions
 2) SELECTION : extrait souligné par l'utilisateur, base pour poser des questions 
 {
@@ -178,6 +179,7 @@ Réponds à ASK sur la base des élements de réponse dans CONVERSATION_ATTACHME
 Tu lis ou modifies une SELECTION ou un DOCUMENT Markdown selon ASK, en utilisant CONVERSATION_ATTACHMENTS comme support.
 
 ENTRÉES
+0) INSTRUCTIONS_UTILISATEUR : instructions spécifiques prioritaires sur les autres
 1) DOCUMENT : contenu du document de travail en Markdown, base pour poser des questions
 2) SELECTION : extrait souligné par l'utilisateur, base pour poser des questions
 {
@@ -281,6 +283,7 @@ Si SELECTION est absente en entrée :
 Tu modifies une SELECTION ou tu AJOUTES du contenu à un DOCUMENT Markdown selon ASK, en utilisant CONVERSATION_ATTACHMENTS et SPACE_PAGES comme support.
 
 ENTRÉES
+0) INSTRUCTIONS_UTILISATEUR : instructions spécifiques prioritaires sur les autres
 1) DOCUMENT : contenu du document de travail en Markdown, base pour poser des questions
 2) SELECTION : extrait souligné par l'utilisateur, base pour poser des questions
 {

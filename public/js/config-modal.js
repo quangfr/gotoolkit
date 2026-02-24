@@ -12,7 +12,7 @@
                     <button type="button" class="tab-btn active" data-tab="servicesTab"><i data-lucide="cpu" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Services IA</button>
                     <button type="button" class="tab-btn" data-tab="paramsTab"><i data-lucide="sliders" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Personnalisation</button>
                     <button type="button" class="tab-btn" data-tab="integrationsTab"><i data-lucide="plug-zap" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Intégrations</button>
-                    <button type="button" class="tab-btn" data-tab="promptTab"><i data-lucide="square-terminal" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Prompt</button>
+                    <button type="button" class="tab-btn" data-tab="promptTab"><i data-lucide="square-terminal" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Instructions</button>
                 </div>
                 <div class="settings-tab-panels-wrapper" style="flex: 1; overflow-y: auto; padding-right: 8px; margin-right: -8px;">
                     <div class="settings-tab-panel" data-panel="servicesTab">

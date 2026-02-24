@@ -743,6 +743,33 @@
         return (safeReadLocalStorage(key) || "").trim();
     }
 
+    function getInstructionStorageKeyForPreset(presetId) {
+        var normalized = (presetId || "").toString().trim().toLowerCase();
+        if (normalized === "ask") normalized = "advice";
+        var keyMap = {
+            advice: "goToolkit.chat.instructions.advice",
+            suggest: "goToolkit.chat.instructions.suggest",
+            edit: "goToolkit.chat.instructions.edit",
+            import: "goToolkit.chat.instructions.import",
+            draw: "goToolkit.chat.instructions.draw",
+            extract: "goToolkit.chat.instructions.extract"
+        };
+        return keyMap[normalized] || "goToolkit.chat.instructions.edit";
+    }
+
+    function getUserInstructionsForPreset(presetId) {
+        var key = getInstructionStorageKeyForPreset(presetId);
+        return (safeReadLocalStorage(key) || "").trim();
+    }
+
+    function appendUserInstructionsToSystemPrompt(systemPrompt, presetId) {
+        var base = (systemPrompt || "").toString().trim();
+        var instructions = getUserInstructionsForPreset(presetId);
+        if (!instructions) return base;
+        var section = "INSTRUCTIONS_UTILISATEUR\n" + instructions;
+        return base ? (base + "\n\n" + section) : section;
+    }
+
     function persistConversation(conversation, scopeId) {
         var scoped = (scopeId || DEFAULT_CONVERSATION_SCOPE).toString();
         try {
@@ -3252,49 +3279,53 @@
     };
 
     AssistSidebar.prototype.getActiveSystemPrompt = function () {
+        var prompt = "";
         if (this.promptPresetId === "ask") {
             var persisted = getPersistedPromptOrEmpty("goToolkit.chat.prompt.info");
-            if (persisted) return persisted;
-            return global.GoToolkitChatPrompt?.INFO_PROMPT
+            if (persisted) prompt = persisted;
+            else prompt = global.GoToolkitChatPrompt?.INFO_PROMPT
                 || global.GoToolkitChatPrompt?.DEFAULT_INFO_PROMPT
                 || "";
         }
-        if (this.promptPresetId === "suggest") {
+        if (!prompt && this.promptPresetId === "suggest") {
             var persistedSuggest = getPersistedPromptOrEmpty("goToolkit.chat.prompt.suggest");
-            if (persistedSuggest) return persistedSuggest;
-            return global.GoToolkitChatPrompt?.PRESETS.suggest?.prompt
+            if (persistedSuggest) prompt = persistedSuggest;
+            else prompt = global.GoToolkitChatPrompt?.PRESETS.suggest?.prompt
                 || global.GoToolkitChatPrompt?.PRESETS.suggest?.defaultPrompt
                 || "";
         }
-        if (this.promptPresetId === "edit") {
+        if (!prompt && this.promptPresetId === "edit") {
             var persistedEdit = getPersistedPromptOrEmpty("goToolkit.chat.prompt.edit");
-            if (persistedEdit) return persistedEdit;
-            return global.GoToolkitChatPrompt?.PRESETS.edit.prompt
+            if (persistedEdit) prompt = persistedEdit;
+            else prompt = global.GoToolkitChatPrompt?.PRESETS.edit.prompt
                 || global.GoToolkitChatPrompt?.PRESETS.edit.defaultPrompt
                 || "";
         }
-        if (this.promptPresetId === "import") {
+        if (!prompt && this.promptPresetId === "import") {
             var persistedImport = getPersistedPromptOrEmpty("goToolkit.chat.prompt.import");
-            if (persistedImport) return persistedImport;
-            return global.GoToolkitChatPrompt?.PRESETS.import?.prompt
+            if (persistedImport) prompt = persistedImport;
+            else prompt = global.GoToolkitChatPrompt?.PRESETS.import?.prompt
                 || global.GoToolkitChatPrompt?.PRESETS.import?.defaultPrompt
                 || "";
         }
-        if (this.promptPresetId === "draw") {
+        if (!prompt && this.promptPresetId === "draw") {
             var persistedDraw = getPersistedPromptOrEmpty("goToolkit.chat.prompt.draw");
-            if (persistedDraw) return persistedDraw;
-            return global.GoToolkitChatPrompt?.PRESETS.draw?.prompt
+            if (persistedDraw) prompt = persistedDraw;
+            else prompt = global.GoToolkitChatPrompt?.PRESETS.draw?.prompt
                 || global.GoToolkitChatPrompt?.PRESETS.draw?.defaultPrompt
                 || "";
         }
-        if (this.promptPresetId === "extract") {
+        if (!prompt && this.promptPresetId === "extract") {
             var persistedExtract = getPersistedPromptOrEmpty("goToolkit.chat.prompt.extract");
-            if (persistedExtract) return persistedExtract;
-            return global.GoToolkitChatPrompt?.PRESETS.extract?.prompt
+            if (persistedExtract) prompt = persistedExtract;
+            else prompt = global.GoToolkitChatPrompt?.PRESETS.extract?.prompt
                 || global.GoToolkitChatPrompt?.PRESETS.extract?.defaultPrompt
                 || "";
         }
-        return getSystemPrompt();
+        if (!prompt) {
+            prompt = getSystemPrompt();
+        }
+        return appendUserInstructionsToSystemPrompt(prompt, this.promptPresetId);
     };
 
     AssistSidebar.prototype.filterHitsByPromptPreset = function (hits) {
@@ -3386,6 +3417,7 @@
         var traceId = opts.traceId || "";
         var activePresetId = (opts.promptPresetId || this.promptPresetId || "").toString();
         var promptContent = (systemPrompt && systemPrompt.trim()) ? systemPrompt : getSystemPrompt();
+        promptContent = appendUserInstructionsToSystemPrompt(promptContent, activePresetId);
         var messages = [{ role: "system", content: promptContent }];
         var userContent = (userMessage?.content || "").trim();
         var selectionContext = userMessage?.selectionContext || null;
@@ -9854,6 +9886,8 @@
         var systemPrompt = (typeof requestPayload.system === 'string')
             ? requestPayload.system
             : '';
+        var requestPresetId = (requestPayload.promptPresetId || this.promptPresetId || "edit");
+        systemPrompt = appendUserInstructionsToSystemPrompt(systemPrompt, requestPresetId);
 
         var hasSystemMessage = requestMessages.some(function (m) {
             return m && m.role === 'system';
@@ -11142,9 +11176,13 @@
                 ? requestPayload.messages.slice()
                 : [];
 
-            const systemPrompt = (typeof requestPayload.system === 'string')
+            const requestPresetId = (requestPayload.promptPresetId
+                || assistInstance?.promptPresetId
+                || "edit");
+            let systemPrompt = (typeof requestPayload.system === 'string')
                 ? requestPayload.system
                 : '';
+            systemPrompt = appendUserInstructionsToSystemPrompt(systemPrompt, requestPresetId);
 
             const hasSystemMessage = requestMessages.some(m => m && m.role === 'system');
             if (!hasSystemMessage && systemPrompt && systemPrompt.trim()) {
