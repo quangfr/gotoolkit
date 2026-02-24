@@ -3935,12 +3935,15 @@
             const out = scored.slice(0, topK);
             try {
                 console.log("[AI_IN_DEBUG] vector search", {
+                    traceId: options?.traceId || "",
+                    label: options?.label || "",
                     conversationId: convId,
                     minScore,
                     topK,
                     candidateCount: candidateIds ? candidateIds.size : 0,
                     chunkCount: chunks.length,
-                    hitCount: out.length
+                    hitCount: out.length,
+                    hitChunkIdsPreview: out.slice(0, 10).map((hit) => hit?.id).filter(Boolean)
                 });
             } catch (err) {
                 // ignore
@@ -3948,7 +3951,7 @@
             return out;
         }
 
-        async searchKeywordCandidates(query, conversationId, limit) {
+        async searchKeywordCandidates(query, conversationId, limit, options = {}) {
             if (!query || !this.keywordIndex) return null;
             const cappedLimit = typeof limit === "number" ? limit : 200;
             try {
@@ -3958,9 +3961,12 @@
                 const results = this.keywordIndex.search(query, convId, cappedLimit);
                 try {
                     console.log("[AI_IN_DEBUG] keyword search", {
+                        traceId: options?.traceId || "",
+                        label: options?.label || "",
                         conversationId: convId,
                         limit: cappedLimit,
-                        hitCount: Array.isArray(results) ? results.length : 0
+                        hitCount: Array.isArray(results) ? results.length : 0,
+                        hitChunkIdsPreview: (results || []).slice(0, 10).map((hit) => hit?.chunkId || hit?.id).filter(Boolean)
                     });
                 } catch (err) {
                     // ignore

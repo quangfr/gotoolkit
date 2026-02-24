@@ -329,7 +329,6 @@
     var WIDTH_KEY = "goToolkit.chat.sidebarWidth";
     var OPEN_KEY = scopedKey("goToolkit.chat.sidebarOpen");
     var GLOBAL_OPEN_KEY = "goToolkit.chat.sidebarOpen.global";
-    var KNOWLEDGE_MODAL_OPEN_KEY = scopedKey("goToolkit.chat.knowledgeModalOpen");
     var DEFAULT_WIDTH = 300;
     var MIN_WIDTH = 200;
     var MAX_WIDTH = 800;
@@ -492,20 +491,6 @@
         } catch (err) {
             console.warn("Chat open state save failed", err);
         }
-    }
-
-    function persistKnowledgeModalOpenState(isOpen) {
-        try {
-            global.localStorage.setItem(KNOWLEDGE_MODAL_OPEN_KEY, isOpen ? "1" : "0");
-        } catch (err) {
-            console.warn("Chat knowledge modal open state save failed", err);
-        }
-    }
-
-    function clearKnowledgeModalOpenPreference() {
-        try {
-            global.localStorage.removeItem(KNOWLEDGE_MODAL_OPEN_KEY);
-        } catch (err) { /* ignore */ }
     }
 
     var KNOWLEDGE_PROMPT_IDS = ["advice", "edit", "suggest"];
@@ -1597,34 +1582,18 @@
         this.selectedKnowledgeSpaceIds = new Set();
         this.lastKnowledgeSpaceSyncAt = 0;
         this.knowledgeModal = null;
-        this.knowledgeModalHeader = null;
-        this.knowledgeModalListEl = null;
-        this.knowledgeModalTitleEl = null;
-        this.knowledgeModalCloseBtn = null;
-        this.knowledgeModalAddBtn = null;
-        this.knowledgeModalFileInput = null;
         this.knowledgeModalStatusMessage = "";
         this.knowledgeModalStatusIsError = false;
         this.knowledgeModalStatusTimer = null;
         this.knowledgeModalIndexingProgress = null;
-        this.knowledgeEditOverlay = null;
-        this.knowledgeEditNameInput = null;
-        this.knowledgeEditAbstractInput = null;
-        this.knowledgeEditSaveBtn = null;
-        this.knowledgeEditCloseBtn = null;
-        this.knowledgeEditTargetKey = null;
         this.knowledgeModalSelectionSet = new Set();
-        this.knowledgeModalExpandedKeys = new Set();
-        this.knowledgeModalChildrenByKey = new Map();
         this.knowledgeManifestEntries = [];
         this.contentManifestEntries = [];
         this.knowledgeIndexing = false;
-        this.knowledgeModalSort = { column: "updatedAt", direction: "desc" };
         this.knowledgeLocalDocRefs = new Map();
         this.knowledgeChatDocRefs = new Map();
         this.knowledgeMemoDocRefs = new Map();
         this.assistDropTargetDepth = 0;
-        this.knowledgeModalSourceFilter = null;
         this.mediaTranscriptionActive = false;
         this.deferSendButtonRestoreUntilAI = false;
         this.sendButtonSpinnerTimer = null;
@@ -1768,21 +1737,14 @@
     };
 
     AssistSidebar.prototype.syncKnowledgeModalVisibility = function () {
-        if (!this.isOpen) return;
-        if (this.promptPresetId === "advice") {
-            // Keep knowledge modal as-is; avoid auto-opening.
-            return;
-        }
-        this.closeKnowledgeModal(false);
+        // Legacy knowledge modal removed; memory is handled by Mémoire dropdown only.
+        return;
     };
 
     AssistSidebar.prototype.closeActiveModals = function () {
         this.closeMemorySpacesMenu();
         if (this.previewPanel && this.previewPanel.classList.contains("open")) {
             this.closePreviewPanel();
-        }
-        if (this.knowledgeModal && this.knowledgeModal.classList.contains("open")) {
-            this.closeKnowledgeModal(false);
         }
     };
 
@@ -1884,7 +1846,6 @@
         }
         this.renderQueuedMessages();
         this.persist();
-        clearKnowledgeModalOpenPreference();
         this.updateComposerState();
         this.setPromptPreset(getAllowedPromptPresetIds().includes("edit") ? "edit" : this.promptPresetId);
     };
@@ -3422,6 +3383,7 @@
     AssistSidebar.prototype.buildPayload = function (systemPrompt, userMessage, docInfo, options) {
         var self = this;
         var opts = options || {};
+        var traceId = opts.traceId || "";
         var activePresetId = (opts.promptPresetId || this.promptPresetId || "").toString();
         var promptContent = (systemPrompt && systemPrompt.trim()) ? systemPrompt : getSystemPrompt();
         var messages = [{ role: "system", content: promptContent }];
@@ -3545,9 +3507,22 @@
                 var embeddedCount = embeddedMethods.length + embeddedTools.length + mergedEmbeddedContext.length;
                 var contextCount = Array.isArray(info.context) ? info.context.length : 0;
                 console.log("[AI_IN_DEBUG] append doc sections", {
+                    traceId: traceId,
                     label: label || "CONTEXT",
                     embeddedCount: embeddedCount,
                     contextCount: contextCount
+                });
+                self.logAiInTrace(traceId, "payload-append-doc-sections", {
+                    label: label || "CONTEXT",
+                    embeddedChunkIds: []
+                        .concat(embeddedMethods, embeddedTools, mergedEmbeddedContext)
+                        .map(function (entry) { return entry?.chunkId || entry?.id; })
+                        .filter(Boolean)
+                        .slice(0, 20),
+                    contextChunkIds: (info.context || [])
+                        .map(function (entry) { return entry?.chunkId || entry?.id; })
+                        .filter(Boolean)
+                        .slice(0, 20)
                 });
             } catch (err) {
                 // ignore
@@ -3820,7 +3795,7 @@
         return { topK: fallbackTopK, minScore: fallbackMinScore };
     };
 
-    AssistSidebar.prototype.buildRetrievalContext = async function (conversationId) {
+    AssistSidebar.prototype.buildRetrievalContext = async function (conversationId, traceId) {
         if (!this.docManager) return { chunks: [], docs: [], chunkMap: new Map(), docMap: new Map() };
         await this.docManager.waitReady?.();
         let [chunks, docs] = await Promise.all([
@@ -3854,6 +3829,11 @@
                     return doc?.id && allowedDocIds.has(doc.id);
                 });
             }
+            this.logAiInTrace(traceId, "knowledge-allowed-docs", {
+                conversationId: conversationId,
+                selectedSpaces: Array.from(this.selectedKnowledgeSpaceIds || []),
+                allowedDocCount: allowedDocIds instanceof Set ? allowedDocIds.size : null
+            });
         }
         const docMap = new Map();
         (docs || []).forEach(function (doc) {
@@ -3883,6 +3863,11 @@
         } catch (err) {
             // ignore
         }
+        this.logAiInTrace(traceId, "retrieval-context-built", {
+            conversationId: conversationId,
+            docsCount: docs.length,
+            chunksCount: filteredChunks.length
+        });
         this.cacheDocuments(docs);
         return { chunks: filteredChunks, docs, chunkMap, docMap };
     };
@@ -3990,6 +3975,35 @@
         if (!info) return;
     };
 
+    AssistSidebar.prototype.createAiInTraceId = function () {
+        return "aiin-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8);
+    };
+
+    AssistSidebar.prototype.logAiInTrace = function (traceId, step, payload) {
+        try {
+            console.log("[AI_IN_DEBUG][TRACE]", Object.assign({
+                traceId: traceId || "",
+                step: step || ""
+            }, payload || {}));
+        } catch (err) {
+            // ignore
+        }
+    };
+
+    AssistSidebar.prototype.shouldBypassInlineAssistShortcut = function (options) {
+        if (options && options.forceInlineShortcut === true) return false;
+        if (options && options.forceMainPipeline === true) return true;
+        if (global.GoToolkitAssistEnableInlineShortcut !== true) return true;
+        try {
+            if (global.GoToolkitAssistDisableInlineShortcut === true) return true;
+            var params = new URLSearchParams(global.location?.search || "");
+            var flag = String(params.get("assistMainPipeline") || "").trim().toLowerCase();
+            return flag === "1" || flag === "true";
+        } catch (err) {
+            return false;
+        }
+    };
+
     AssistSidebar.prototype.hybridRetrieveOnce = async function (query, conversationId, params, options) {
         if (!this.docManager || !params) return [];
         var contextLimit = Math.max(
@@ -3999,8 +4013,12 @@
         var kwLimit = options.kwLimit || KEYWORD_CANDIDATE_LIMIT;
         var vector = options.vector;
         var keywordHits = null;
+        var traceId = options?.traceId || "";
         try {
-            keywordHits = await this.docManager.searchKeywordCandidates(query, conversationId, kwLimit);
+            keywordHits = await this.docManager.searchKeywordCandidates(query, conversationId, kwLimit, {
+                traceId: traceId,
+                label: options?.label || ""
+            });
         } catch (err) {
             console.warn("Keyword retrieval failed", err);
             keywordHits = null;
@@ -4027,7 +4045,9 @@
                 candidateIds: candidateIds.length ? candidateIds : null,
                 vector: vector,
                 chunks: options.chunks,
-                docs: options.docs
+                docs: options.docs,
+                traceId: traceId,
+                label: options?.label || ""
             });
         } catch (err) {
             console.warn("Vector retrieval failed", err);
@@ -4061,13 +4081,23 @@
             finalCount: merged.length,
             finalChunks: merged
         });
+        this.logAiInTrace(traceId, "hybrid-retrieve-once", {
+            label: options?.label || "",
+            conversationId: conversationId,
+            keywordCount: keywordCount,
+            vectorCount: Array.isArray(vectorHits) ? vectorHits.length : 0,
+            mergedCount: merged.length,
+            candidateIdsCount: candidateIds.length,
+            candidateIdsPreview: candidateIds.slice(0, 8),
+            mergedChunkIdsPreview: merged.slice(0, 8).map(function (hit) { return hit?.id || hit?.chunkId; }).filter(Boolean)
+        });
         if (!merged.length && keywordFailed && Array.isArray(vectorHits) && vectorHits.length) {
             return vectorHits.slice(0, contextLimit);
         }
         return merged;
     };
 
-    AssistSidebar.prototype.retrieveWithFallback = async function (query, conversationId, params, label) {
+    AssistSidebar.prototype.retrieveWithFallback = async function (query, conversationId, params, label, traceId) {
         if (!params || !this.docManager) return [];
         await this.docManager.waitReady?.();
         var words = String(query || "").trim().split(/\s+/).filter(Boolean);
@@ -4081,7 +4111,15 @@
                 vector = null;
             }
         }
-        var ctx = await this.buildRetrievalContext(conversationId);
+        this.logAiInTrace(traceId, "retrieve-start", {
+            label: label || "",
+            conversationId: conversationId,
+            topK: params?.topK,
+            minScore: params?.minScore,
+            wordCount: wordCount,
+            hasPrecomputedVector: Boolean(vector)
+        });
+        var ctx = await this.buildRetrievalContext(conversationId, traceId);
         // Tuning: bump KEYWORD_CANDIDATE_LIMIT / KEYWORD_RETRY_LIMIT or CONTEXT_LIMIT_* to adjust recall vs. context size.
         var hits = await this.hybridRetrieveOnce(query, conversationId, params, {
             label: label,
@@ -4091,7 +4129,8 @@
             vector: vector,
             chunks: ctx.chunks,
             docs: ctx.docs,
-            chunkMap: ctx.chunkMap
+            chunkMap: ctx.chunkMap,
+            traceId: traceId
         });
         try {
             console.log("[AI_IN_DEBUG] retrieval pass", {
@@ -4115,7 +4154,8 @@
                 vector: vector,
                 chunks: ctx.chunks,
                 docs: ctx.docs,
-                chunkMap: ctx.chunkMap
+                chunkMap: ctx.chunkMap,
+                traceId: traceId
             });
             try {
                 console.log("[AI_IN_DEBUG] retrieval pass", {
@@ -4128,6 +4168,12 @@
                 // ignore
             }
         }
+        this.logAiInTrace(traceId, "retrieve-end", {
+            label: label || "",
+            conversationId: conversationId,
+            hitCount: Array.isArray(hits) ? hits.length : 0,
+            hitChunkIdsPreview: (hits || []).slice(0, 10).map(function (hit) { return hit?.id || hit?.chunkId; }).filter(Boolean)
+        });
         return hits;
     };
 
@@ -4144,6 +4190,14 @@
         if (!this.textarea && !options.editMessage) return;
         var rawValue = (typeof options.value === "string" ? options.value : this.textarea?.value || "");
         var value = rawValue.trim();
+        var aiInTraceId = this.createAiInTraceId();
+        this.logAiInTrace(aiInTraceId, "send-start", {
+            conversationScopeId: conversationScopeId,
+            conversationId: this.conversation?.id || "",
+            knowledgeConversationId: this.knowledgeConversationId,
+            promptPresetId: this.promptPresetId,
+            inputLength: value.length
+        });
         if (this.isListening) {
             this.speechResultStartIndex = 0;
             this.speechClearRequested = false;
@@ -4165,7 +4219,7 @@
         }
         if (!value && !hasAttachment) return;
 
-        if (!hasAttachment && window.sendInlineEditToAssist && window.memoEditor) {
+        if (!hasAttachment && window.sendInlineEditToAssist && window.memoEditor && !this.shouldBypassInlineAssistShortcut(options)) {
             try {
                 var askText = value;
                 var documentMarkdown = (typeof window.getEditorMarkdown === "function"
@@ -4180,6 +4234,13 @@
                     : null;
                 var shouldInlineAppend = (this.promptPresetId === "edit" || this.promptPresetId === "suggest");
                 if (selectionPayload || shouldInlineAppend) {
+                    this.logAiInTrace(aiInTraceId, "send-inline-shortcut", {
+                        reason: selectionPayload ? "selection-payload" : "preset-inline",
+                        promptPresetId: this.promptPresetId,
+                        hasSelectionPayload: Boolean(selectionPayload),
+                        shouldInlineAppend: Boolean(shouldInlineAppend),
+                        retrievalSkipped: true
+                    });
                     var systemPromptInline = this.getActiveSystemPrompt();
                     var userContentInline = selectionPayload
                         ? ("DOCUMENT: \n" + documentContent + " \n\nSELECTION: \n" + JSON.stringify(selectionPayload) + " \n\nASK: \n" + askText)
@@ -4219,6 +4280,9 @@
                 }
             } catch (err) {
                 console.warn("Assist inline selection send failed", err);
+                this.logAiInTrace(aiInTraceId, "send-inline-shortcut-error", {
+                    message: String(err && (err.message || err))
+                });
             }
         }
 
@@ -4310,7 +4374,7 @@
             var contextHits = [];
             if (shouldFetchContextAttachments) {
                 var contextParams = this.getRetrievalParamsForQuestion(value);
-                contextHits = await this.retrieveWithFallback(value, this.conversation.id, contextParams, "context");
+                contextHits = await this.retrieveWithFallback(value, this.conversation.id, contextParams, "context", aiInTraceId);
                 if (!Array.isArray(contextHits)) {
                     contextHits = [];
                 }
@@ -4324,7 +4388,7 @@
             var knowledgeHits = [];
             if (shouldFetchKnowledge) {
                 var knowledgeParams = this.getRetrievalParamsForQuestion(value);
-                knowledgeHits = await this.retrieveWithFallback(value, this.knowledgeConversationId, knowledgeParams, "knowledge");
+                knowledgeHits = await this.retrieveWithFallback(value, this.knowledgeConversationId, knowledgeParams, "knowledge", aiInTraceId);
                 if (!Array.isArray(knowledgeHits)) {
                     knowledgeHits = [];
                 }
@@ -4360,7 +4424,8 @@
         this.setScopeStreamingState(conversationScopeId, true, controller);
 
         var payload = this.buildPayload(systemPrompt, userMessage, docInfo, {
-            promptPresetId: requestPromptPresetId
+            promptPresetId: requestPromptPresetId,
+            traceId: aiInTraceId
         });
         try {
             var userMsg = Array.isArray(payload?.messages)
@@ -4370,6 +4435,7 @@
                 ? (userMsg.content.find(function (part) { return part?.type === "text"; })?.text || "")
                 : String(userMsg?.content || "");
             console.log("[AI_IN_DEBUG] payload sections", {
+                traceId: aiInTraceId,
                 hasConversationAttachments: userContentText.indexOf("CONVERSATION_ATTACHMENTS") !== -1,
                 hasSpacePages: userContentText.indexOf("SPACE_PAGES") !== -1,
                 userContentLength: userContentText.length
@@ -7506,10 +7572,18 @@
 
     AssistSidebar.prototype.getKnowledgeSpaceIdFromEntry = function (entry) {
         var raw = String(entry?.section || "").trim();
+        var entrySpaceId = normalizeKnowledgeSpaceId(entry?.spaceId || "");
+        if (entrySpaceId) return entrySpaceId;
         if (!raw) return "";
         if (raw === "private") return KNOWLEDGE_PRIVATE_SPACE_ID;
+        if (raw === "shared" || raw === "common") {
+            return "";
+        }
         if (raw.indexOf("shared:") === 0) {
             return normalizeKnowledgeSpaceId(raw.slice("shared:".length));
+        }
+        if (raw.indexOf("common:") === 0) {
+            return normalizeKnowledgeSpaceId(raw.slice("common:".length));
         }
         return "";
     };
@@ -7528,22 +7602,50 @@
         return selection;
     };
 
+    AssistSidebar.prototype.getKnowledgeSpaceCounters = function (entries) {
+        var counters = new Map();
+        var seenBySpace = new Map();
+        var indexed = this.knowledgeMemoDocRefs instanceof Map ? this.knowledgeMemoDocRefs : new Map();
+        (Array.isArray(entries) ? entries : []).forEach(function (entry) {
+            var spaceId = this.getKnowledgeSpaceIdFromEntry(entry);
+            if (!spaceId) return;
+            var key = this.normalizeKnowledgeKey(entry?.fileName || entry?.documentId || "");
+            if (!key) return;
+            if (!counters.has(spaceId)) {
+                counters.set(spaceId, { ingested: 0, total: 0 });
+                seenBySpace.set(spaceId, new Set());
+            }
+            var seen = seenBySpace.get(spaceId);
+            if (seen.has(key)) return;
+            seen.add(key);
+            var count = counters.get(spaceId);
+            count.total += 1;
+            if (indexed.has(key)) {
+                count.ingested += 1;
+            }
+        }.bind(this));
+        return counters;
+    };
+
     AssistSidebar.prototype.renderMemorySpacesMenu = function () {
         if (!this.memorySpacesMenuEl) return;
         var spaces = getAvailableKnowledgeSpaces().concat([{ id: KNOWLEDGE_PRIVATE_SPACE_ID, name: "Privé" }]);
         if (!(this.selectedKnowledgeSpaceIds instanceof Set) || !this.selectedKnowledgeSpaceIds.size) {
             this.selectedKnowledgeSpaceIds = this.readSelectedKnowledgeSpaces();
         }
+        var counters = this.getKnowledgeSpaceCounters(this.knowledgeManifestEntries);
         var html = [];
         if (!spaces.length) {
             html.push('<div class="chat-prompt-menu-item" style="cursor:default;opacity:.7;">Aucun espace</div>');
         } else {
             spaces.forEach(function (space) {
                 var checked = this.selectedKnowledgeSpaceIds.has(space.id);
+                var count = counters.get(space.id) || { ingested: 0, total: 0 };
+                var label = space.name + " (" + count.ingested + "/" + count.total + ")";
                 html.push(
                     '<label class="chat-prompt-menu-item" style="display:flex;align-items:center;gap:8px;">' +
                     '<input type="checkbox" class="chat-memory-space-checkbox" data-space-id="' + escapeHtml(space.id) + '" ' + (checked ? "checked" : "") + '>' +
-                    '<span>' + escapeHtml(space.name) + '</span>' +
+                    '<span>' + escapeHtml(label) + '</span>' +
                     "</label>"
                 );
             }.bind(this));
@@ -7633,6 +7735,7 @@
         this.headerDocCountEl.dataset.count = count;
         this.headerDocCountEl.innerHTML = '<i data-lucide="brain"></i>';
         this.headerDocCountEl.classList.toggle("chat-memory-btn--active", count > 0);
+        this.headerDocCountEl.classList.toggle("chat-memory-btn--indexing", Boolean(this.knowledgeIndexing));
         if (window.lucide) window.lucide.createIcons();
     };
 
@@ -7817,8 +7920,13 @@
     AssistSidebar.prototype.stripHtmlText = function (value) {
         if (typeof value !== "string") return "";
         if (!value) return "";
+        var sanitized = value
+            .replace(/<iframe\b[\s\S]*?<\/iframe>/gi, " ")
+            .replace(/<iframe\b[^>]*\/?>/gi, " ")
+            .replace(/<script\b[\s\S]*?<\/script>/gi, " ")
+            .replace(/<style\b[\s\S]*?<\/style>/gi, " ");
         var container = document.createElement("div");
-        container.innerHTML = value;
+        container.innerHTML = sanitized;
         var text = container.textContent || "";
         return text.replace(/\r\n/g, "\n");
     };
@@ -7974,6 +8082,33 @@
         return "private";
     };
 
+    AssistSidebar.prototype.resolveKnowledgeSpaceId = function (item, section, documentId) {
+        var explicit = normalizeKnowledgeSpaceId(item?.spaceId || item?.space || "");
+        if (explicit) return explicit;
+        var sectionRaw = String(section || "").trim().toLowerCase();
+        if (sectionRaw.indexOf("shared:") === 0) {
+            return normalizeKnowledgeSpaceId(sectionRaw.slice("shared:".length));
+        }
+        if (sectionRaw.indexOf("common:") === 0) {
+            return normalizeKnowledgeSpaceId(sectionRaw.slice("common:".length));
+        }
+        var docId = String(documentId || "").trim();
+        if (docId.indexOf("space:") === 0) {
+            var parts = docId.split(":");
+            if (parts.length >= 3) {
+                return normalizeKnowledgeSpaceId(parts[1]);
+            }
+        }
+        if (docId.indexOf("shared:") === 0 || docId.indexOf("common:") === 0) {
+            var first = docId.indexOf(":");
+            var second = docId.indexOf(":", first + 1);
+            if (second > first + 1) {
+                return normalizeKnowledgeSpaceId(docId.slice(first + 1, second));
+            }
+        }
+        return "";
+    };
+
     AssistSidebar.prototype.loadKnowledgeTreeEntries = async function () {
         var entries = [];
         var seenIds = new Set();
@@ -8024,6 +8159,7 @@
             if (!id || seenIds.has(id)) return;
             seenIds.add(id);
             var section = this.inferKnowledgeSection(id, item.section, item.isShared, item.isCommon);
+            var spaceId = this.resolveKnowledgeSpaceId(item, item.section || section, id);
             var parentId = String(item.parentId || "").trim();
             var fileName = this.getMemoLibraryFileName(id);
             if (!fileName) return;
@@ -8071,6 +8207,7 @@
                 documentId: id,
                 parentId: parentId,
                 section: section,
+                spaceId: spaceId,
                 icon: String(item.icon || record?.icon || "").trim()
             });
         }.bind(this));
@@ -8244,81 +8381,8 @@
         }.bind(this));
     };
 
-    AssistSidebar.prototype.buildKnowledgeModal = function () {
-        if (this.knowledgeModal) return;
-        var modal = document.createElement("div");
-        modal.className = "chat-knowledge-modal";
-        modal.setAttribute("aria-hidden", "true");
-
-        var header = document.createElement("div");
-        header.className = "chat-knowledge-modal__header";
-        var left = document.createElement("div");
-        left.className = "chat-knowledge-modal__header-left";
-        var title = document.createElement("div");
-        title.className = "chat-knowledge-modal__title";
-        title.innerHTML = '<i data-lucide="brain"></i> | 0 fichiers';
-        left.appendChild(title);
-        var actions = document.createElement("div");
-        actions.className = "chat-knowledge-modal__header-actions";
-        var closeBtn = document.createElement("button");
-        closeBtn.type = "button";
-        closeBtn.className = "chat-knowledge-modal__close";
-        closeBtn.textContent = "✕";
-        closeBtn.setAttribute("title", "Fermer");
-        closeBtn.addEventListener("click", this.closeKnowledgeModal.bind(this));
-        var resetBtn = document.createElement("button");
-        resetBtn.type = "button";
-        resetBtn.className = "chat-knowledge-modal__reset";
-        resetBtn.textContent = "↺ Réinitialiser";
-        resetBtn.setAttribute("title", "Réinitialiser");
-        resetBtn.addEventListener("click", this.handleKnowledgeResetClick.bind(this));
-        actions.appendChild(resetBtn);
-        actions.appendChild(closeBtn);
-        header.appendChild(left);
-        header.appendChild(actions);
-
-        var list = document.createElement("div");
-        list.className = "chat-knowledge-modal__list document-explorer__list";
-
-        modal.appendChild(header);
-        modal.appendChild(list);
-        document.body.appendChild(modal);
-
-        this.knowledgeModal = modal;
-        this.knowledgeModalHeader = header;
-        this.knowledgeModalListEl = list;
-        this.knowledgeModalTitleEl = title;
-        this.knowledgeModalCloseBtn = closeBtn;
-        if (!this._knowledgeModalEscapeHandler) {
-            this._knowledgeModalEscapeHandler = function (event) {
-                if (event.key !== "Escape") return;
-                if (this.knowledgeModal && this.knowledgeModal.classList.contains("open")) {
-                    event.preventDefault();
-                    this.closeKnowledgeModal();
-                }
-            }.bind(this);
-            document.addEventListener("keydown", this._knowledgeModalEscapeHandler, true);
-        }
-        this.buildKnowledgeEditModal();
-        this.renderKnowledgeModalTitle();
-    };
-
     AssistSidebar.prototype.renderKnowledgeModalTitle = function () {
-        if (!this.knowledgeModalTitleEl) return;
-        if (this.knowledgeIndexing && this.knowledgeModalIndexingProgress) {
-            var processed = Number(this.knowledgeModalIndexingProgress.processed) || 0;
-            var total = Number(this.knowledgeModalIndexingProgress.total) || 0;
-            this.knowledgeModalTitleEl.textContent = "🗎 Indexation en cours " + processed + " / " + total;
-            return;
-        }
-        if (this.knowledgeModalStatusMessage) {
-            this.knowledgeModalTitleEl.textContent = this.knowledgeModalStatusMessage;
-            return;
-        }
-        var count = this.getMemoireDocumentCount();
-        var suffix = count === 1 ? "fichier" : "fichiers";
-        this.knowledgeModalTitleEl.innerHTML = '<i data-lucide="brain"></i> | ' + count + " " + suffix;
-        if (window.lucide) window.lucide.createIcons();
+        return;
     };
 
     AssistSidebar.prototype.setKnowledgeModalStatus = function (message, isError, autoClearMs) {
@@ -8328,289 +8392,11 @@
         }
         this.knowledgeModalStatusMessage = message || "";
         this.knowledgeModalStatusIsError = Boolean(isError);
-        if (this.knowledgeModalTitleEl) {
-            this.knowledgeModalTitleEl.dataset.status = this.knowledgeModalStatusIsError ? "error" : "";
-        }
-        this.renderKnowledgeModalTitle();
         if (autoClearMs && autoClearMs > 0) {
             this.knowledgeModalStatusTimer = setTimeout(function () {
                 this.setKnowledgeModalStatus("", false);
             }.bind(this), autoClearMs);
         }
-    };
-
-    AssistSidebar.prototype.handleKnowledgeResetClick = function () {
-        this.resetKnowledgeIndex();
-    };
-
-    AssistSidebar.prototype.resetKnowledgeIndex = async function () {
-        if (this.knowledgeIndexing) return;
-        this.setKnowledgeModalStatus("Réindexation complète…");
-        try {
-            await this.refreshKnowledgeModal({ skipAutoReindex: true });
-            var entries = Array.isArray(this.knowledgeManifestEntries) ? this.knowledgeManifestEntries : [];
-            var selectionSet = new Set(this.knowledgeModalSelectionSet || []);
-            if (!selectionSet.size) {
-                this.setKnowledgeModalStatus("");
-                return;
-            }
-            this.renderKnowledgeModalList(entries, selectionSet);
-            await this.reindexKnowledgeSelection(entries, selectionSet);
-            this.renderKnowledgeModalList(entries, selectionSet);
-        } catch (err) {
-            console.warn("Knowledge reset failed", err);
-            this.setKnowledgeModalStatus("Réindexation échouée.", true);
-        }
-    };
-
-    AssistSidebar.prototype.buildKnowledgeFilePicker = function () {
-        if (this.knowledgeModalFileInput) return;
-        var input = document.createElement("input");
-        input.type = "file";
-        input.multiple = true;
-        input.accept = this.getFileImportAcceptString();
-        input.style.display = "none";
-        input.addEventListener("change", this.handleKnowledgeFilesSelected.bind(this));
-        document.body.appendChild(input);
-        this.knowledgeModalFileInput = input;
-    };
-
-    AssistSidebar.prototype.openKnowledgeFilePicker = function () {
-        if (this.knowledgeModalFileInput) {
-            this.knowledgeModalFileInput.click();
-        }
-    };
-
-    AssistSidebar.prototype.handleKnowledgeFilesSelected = function (event) {
-        var files = event?.target?.files;
-        if (!files || !files.length) return;
-        this.ingestKnowledgeFiles(files);
-        event.target.value = "";
-    };
-
-    AssistSidebar.prototype.getFileSizeLimit = function (fileName) {
-        try {
-            var config = globalConfig || {};
-            var fileSizeLimits = config.fileImport?.fileSizeLimits || {};
-            var fileExt = (fileName || "").toLowerCase();
-            var lastDotIndex = fileExt.lastIndexOf(".");
-            if (lastDotIndex < 0) {
-                return null;
-            }
-            var ext = fileExt.substring(lastDotIndex);
-            for (var typeKey in fileSizeLimits) {
-                var typeLimit = fileSizeLimits[typeKey];
-                if (!typeLimit || !Array.isArray(typeLimit.extensions)) continue;
-                if (typeLimit.extensions.includes(ext)) {
-                    return typeLimit;
-                }
-            }
-        } catch (err) {
-            console.warn("Error getting file size limit:", err);
-        }
-        return null;
-    };
-
-    AssistSidebar.prototype.validateFileSizes = function (files) {
-        var fileArray = Array.from(files);
-        var errors = [];
-        var allowOverLimitEmbeddings = Boolean(globalConfig?.fileImport?.allowOverLimitEmbeddings);
-        for (var i = 0; i < fileArray.length; i++) {
-            var file = fileArray[i];
-            var limit = this.getFileSizeLimit(file.name);
-            if (limit && limit.maxMB) {
-                var maxBytes = limit.maxMB * 1048576;
-                if (file.size > maxBytes) {
-                    var sizeMB = (file.size / 1048576).toFixed(2);
-                    if (!allowOverLimitEmbeddings) {
-                        errors.push(file.name + " (" + sizeMB + " MB) dépasse la limite de " + limit.maxMB + " MB.");
-                    }
-                }
-            }
-        }
-        return errors;
-    };
-
-    AssistSidebar.prototype.ingestKnowledgeFiles = async function (files) {
-        if (!this.docManager) return;
-        var fileArray = Array.from(files);
-        var sizeErrors = this.validateFileSizes(files);
-        if (sizeErrors.length > 0) {
-            var errorMsg = "Fichier(s) trop volumineux :\n" + sizeErrors.join("\n");
-            this.setKnowledgeModalStatus(errorMsg, true);
-            return;
-        }
-        if (!fileArray.length) return;
-        this.setKnowledgeModalStatus("Importation en cours…");
-        try {
-            var localCache = await this.loadKnowledgeLocalDocsCache();
-            var metadata = new Map();
-            for (var i = 0; i < fileArray.length; i++) {
-                var file = fileArray[i];
-                var importedAt = Date.now();
-                var derivedAbstract = await this.deriveAbstractFromFile(file);
-                var buffer = null;
-                try {
-                    buffer = await file.arrayBuffer();
-                } catch (err) {
-                    buffer = null;
-                }
-                metadata.set(file.name, {
-                    name: file.name,
-                    abstract: derivedAbstract || "",
-                    updatedAt: importedAt,
-                    fileName: file.name,
-                    scope: ["attachments", "local"]
-                });
-                var key = this.normalizeKnowledgeKey(file.name);
-                if (key) {
-                    localCache[key] = {
-                        fileName: file.name,
-                        name: file.name,
-                        abstract: derivedAbstract || "",
-                        updatedAt: importedAt,
-                        mime: file.type || "",
-                        buffer: buffer
-                    };
-                }
-            }
-            await this.docManager.ingestFiles(fileArray, this.knowledgeConversationId, {
-                sourceType: "embedded",
-                metadata: metadata
-            });
-            await this.saveKnowledgeLocalDocsCache(localCache);
-            this.setKnowledgeModalStatus("");
-            this.refreshDocumentStats();
-            this.refreshKnowledgeModal();
-        } catch (err) {
-            console.warn("Knowledge import failed", err);
-            this.setKnowledgeModalStatus("Importation échouée.", true);
-        }
-    };
-
-    AssistSidebar.prototype.buildKnowledgeEditModal = function () {
-        if (this.knowledgeEditOverlay) return;
-        var overlay = document.createElement("div");
-        overlay.className = "modal-overlay";
-        overlay.setAttribute("aria-hidden", "true");
-        var modal = document.createElement("div");
-        modal.className = "modal chat-knowledge-edit";
-        var header = document.createElement("div");
-        header.className = "modal-header";
-        var title = document.createElement("h3");
-        title.textContent = "Modifier le document";
-        var closeBtn = document.createElement("button");
-        closeBtn.type = "button";
-        closeBtn.className = "modal-close";
-        closeBtn.textContent = "✕";
-        closeBtn.setAttribute("title", "Fermer");
-        closeBtn.addEventListener("click", this.closeKnowledgeEditModal.bind(this));
-        header.appendChild(title);
-        header.appendChild(closeBtn);
-
-        var nameLabel = document.createElement("label");
-        nameLabel.textContent = "Nom";
-        var nameInput = document.createElement("input");
-        nameInput.type = "text";
-
-        var abstractLabel = document.createElement("label");
-        abstractLabel.textContent = "Description";
-        var abstractInput = document.createElement("textarea");
-
-        var actions = document.createElement("div");
-        actions.className = "modal-actions";
-        var cancelBtn = document.createElement("button");
-        cancelBtn.type = "button";
-        cancelBtn.className = "btn-secondary";
-        cancelBtn.textContent = "Annuler";
-        cancelBtn.addEventListener("click", this.closeKnowledgeEditModal.bind(this));
-        var saveBtn = document.createElement("button");
-        saveBtn.type = "button";
-        saveBtn.className = "btn-primary";
-        saveBtn.textContent = "Enregistrer";
-        saveBtn.addEventListener("click", this.saveKnowledgeEdit.bind(this));
-        actions.appendChild(cancelBtn);
-        actions.appendChild(saveBtn);
-
-        modal.appendChild(header);
-        modal.appendChild(nameLabel);
-        modal.appendChild(nameInput);
-        modal.appendChild(abstractLabel);
-        modal.appendChild(abstractInput);
-        modal.appendChild(actions);
-        overlay.appendChild(modal);
-        overlay.addEventListener("click", function (event) {
-            if (event.target === overlay) {
-                this.closeKnowledgeEditModal();
-            }
-        }.bind(this));
-        document.body.appendChild(overlay);
-
-        this.knowledgeEditOverlay = overlay;
-        this.knowledgeEditNameInput = nameInput;
-        this.knowledgeEditAbstractInput = abstractInput;
-        this.knowledgeEditSaveBtn = saveBtn;
-        this.knowledgeEditCloseBtn = closeBtn;
-    };
-
-    AssistSidebar.prototype.openKnowledgeEditModal = function (entry) {
-        if (!entry) return;
-        this.buildKnowledgeEditModal();
-        if (!this.knowledgeEditOverlay) return;
-        this.knowledgeEditTargetKey = this.normalizeKnowledgeKey(entry.fileName);
-        this.knowledgeEditNameInput.value = entry.name || "";
-        this.knowledgeEditAbstractInput.value = entry.abstract || "";
-        this.knowledgeEditOverlay.classList.add("open");
-        this.knowledgeEditOverlay.setAttribute("aria-hidden", "false");
-        this.knowledgeEditNameInput.focus();
-    };
-
-    AssistSidebar.prototype.closeKnowledgeEditModal = function () {
-        if (!this.knowledgeEditOverlay) return;
-        this.knowledgeEditOverlay.classList.remove("open");
-        this.knowledgeEditOverlay.setAttribute("aria-hidden", "true");
-        this.knowledgeEditTargetKey = null;
-    };
-
-    AssistSidebar.prototype.saveKnowledgeEdit = async function () {
-        var key = this.normalizeKnowledgeKey(this.knowledgeEditTargetKey || "");
-        if (!key || !this.knowledgeOverridesStore?.read || !this.knowledgeOverridesStore?.write) {
-            this.closeKnowledgeEditModal();
-            return;
-        }
-        var name = (this.knowledgeEditNameInput?.value || "").trim();
-        var abstract = (this.knowledgeEditAbstractInput?.value || "").trim();
-        var overrides = await this.knowledgeOverridesStore.read();
-        overrides = overrides && typeof overrides === "object" ? overrides : {};
-        overrides[key] = { name: name, abstract: abstract };
-        await this.knowledgeOverridesStore.write(overrides);
-        if (this.knowledgeDescriptionOverridesStore?.read && this.knowledgeDescriptionOverridesStore?.write) {
-            var descOverrides = await this.knowledgeDescriptionOverridesStore.read();
-            descOverrides = descOverrides && typeof descOverrides === "object" ? descOverrides : {};
-            descOverrides[key] = abstract;
-            await this.knowledgeDescriptionOverridesStore.write(descOverrides);
-        }
-        if (this.docManager) {
-            try {
-                var docs = await this.docManager.getDocuments(this.knowledgeConversationId);
-                var match = (docs || []).find(function (doc) {
-                    var docKey = this.normalizeKnowledgeKey(doc?.sourceFileName || doc?.name || "");
-                    return docKey === key;
-                }.bind(this));
-                if (match) {
-                    var updatedDoc = Object.assign({}, match, {
-                        name: name || match.name,
-                        abstract: abstract || match.abstract
-                    });
-                    await this.docManager.putDocument(updatedDoc);
-                }
-            } catch (err) {
-                console.warn("Knowledge edit update failed", err);
-            }
-        }
-        this.closeKnowledgeEditModal();
-        this.refreshKnowledgeModal();
-        this.refreshDocumentStats();
     };
 
     AssistSidebar.prototype.openKnowledgeModal = function (persist, options) {
@@ -8628,7 +8414,6 @@
 
     AssistSidebar.prototype.refreshKnowledgeModal = async function (options) {
         options = options || {};
-        if (!this.knowledgeModalListEl) return;
         this.contentManifestEntries = [];
         var storedList = [];
         if (this.knowledgeManifestStore?.read) {
@@ -8733,7 +8518,6 @@
                 if (key) selectionSet.add(key);
             }.bind(this));
         }
-        this.renderKnowledgeModalList(this.knowledgeManifestEntries, selectionSet);
         if (newEntries.length && options.autoReindex === true && selectionSet.size > 0) {
             await this.reindexKnowledgeSelection(this.knowledgeManifestEntries, selectionSet, { reindexIfUpdated: true });
         }
@@ -8819,9 +8603,6 @@
             this.setKnowledgeModalSelection(selection);
             await this.reindexKnowledgeSelection(entries, selection, { reindexIfUpdated: true });
             if (token !== this._knowledgeScopeApplyToken) return;
-            if (this.knowledgeModal?.classList?.contains("open")) {
-                this.renderKnowledgeModalList(entries, selection);
-            }
             this.setKnowledgeModalStatus("");
             this.refreshDocumentStats();
         } catch (err) {
@@ -8909,172 +8690,6 @@
         return allowed;
     };
 
-    AssistSidebar.prototype.renderKnowledgeModalList = function (entries, selectionSet) {
-        if (!this.knowledgeModalListEl) return;
-        var list = this.knowledgeModalListEl;
-        if (!Array.isArray(entries) || !entries.length) {
-            list.innerHTML = "<div class=\"chat-knowledge-modal__empty\">Aucun document disponible.</div>";
-            return;
-        }
-        var selection = selectionSet instanceof Set ? selectionSet : new Set();
-        var sectionRank = { common: 0, shared: 1, private: 2 };
-        var normalizeSectionKey = function (value) {
-            var raw = String(value || "private").trim();
-            if (!raw) return "private";
-            if (raw.indexOf("shared:") === 0) return raw;
-            if (raw.indexOf("shared") === 0) return "shared";
-            if (raw === "common" || raw === "private") return raw;
-            return "private";
-        };
-        var getSectionBucket = function (value) {
-            var key = normalizeSectionKey(value);
-            if (key.indexOf("shared") === 0) return "shared";
-            return key;
-        };
-        var getSectionLabel = function (sectionId) {
-            var key = normalizeSectionKey(sectionId);
-            if (key === "common") return "Golive";
-            if (key === "private") return "Privé";
-            if (key.indexOf("shared:") === 0) {
-                var spaceId = String(key.slice("shared:".length) || "").trim().toLowerCase();
-                if (!spaceId) return "Partagé";
-                var spaceName = "";
-                try {
-                    var spacesApi = window.GoToolkitSpaces;
-                    if (spacesApi && typeof spacesApi.getSpaceById === "function") {
-                        spaceName = String(spacesApi.getSpaceById(spaceId)?.name || "").trim();
-                    }
-                } catch (err) {
-                    spaceName = "";
-                }
-                return spaceName || spaceId || "Partagé";
-            }
-            return "Partagé";
-        };
-        var getSectionIcon = function (sectionId) {
-            var key = normalizeSectionKey(sectionId);
-            if (key === "common") return "component";
-            if (key === "private") return "lock-keyhole-open";
-            return "cloud-upload";
-        };
-        var all = entries.slice().sort(function (a, b) {
-            var aSection = getSectionBucket(a?.section);
-            var bSection = getSectionBucket(b?.section);
-            var rank = (sectionRank[aSection] ?? 9) - (sectionRank[bSection] ?? 9);
-            if (rank) return rank;
-            return this.compareKnowledgeEntries(a, b, { column: "updatedAt", direction: "desc" });
-        }.bind(this));
-        var byKey = new Map();
-        var childrenByKey = new Map();
-        this.knowledgeModalChildrenByKey = childrenByKey;
-        all.forEach(function (entry) {
-            var key = this.normalizeKnowledgeKey(entry.fileName);
-            if (!key) return;
-            byKey.set(key, entry);
-            if (!childrenByKey.has(key)) childrenByKey.set(key, []);
-        }.bind(this));
-        all.forEach(function (entry) {
-            var key = this.normalizeKnowledgeKey(entry.fileName);
-            if (!key) return;
-            var parentId = String(entry.parentId || "").trim();
-            if (!parentId) return;
-            var parentKey = this.normalizeKnowledgeKey(this.getMemoLibraryFileName(parentId));
-            if (!parentKey || !childrenByKey.has(parentKey)) return;
-            childrenByKey.get(parentKey).push(key);
-        }.bind(this));
-        var rootsBySection = {};
-        all.forEach(function (entry) {
-            var key = this.normalizeKnowledgeKey(entry.fileName);
-            if (!key) return;
-            var section = normalizeSectionKey(entry.section);
-            var parentId = String(entry.parentId || "").trim();
-            var parentKey = this.normalizeKnowledgeKey(this.getMemoLibraryFileName(parentId));
-            var parentSection = normalizeSectionKey(byKey.get(parentKey)?.section || "private");
-            if (parentKey && byKey.has(parentKey) && parentSection === section) return;
-            if (!rootsBySection[section]) rootsBySection[section] = [];
-            rootsBySection[section].push(key);
-        }.bind(this));
-        var html = [];
-        var renderBranch = function (key, depth) {
-            var entry = byKey.get(key);
-            if (!entry) return;
-            var children = childrenByKey.get(key) || [];
-            var hasChildren = children.length > 0;
-            var isExpanded = hasChildren && this.knowledgeModalExpandedKeys.has(key);
-            var checked = selection.has(key);
-            var customIcon = String(entry.icon || "").trim();
-            var icon = customIcon || (hasChildren ? "file-text" : "file");
-            html.push(
-                "<div class=\"document-explorer__tree-row\" style=\"margin-left:" + (Math.max(0, Number(depth || 0)) * 12) + "px;\">" +
-                "<div class=\"document-explorer__item chat-knowledge-modal__tree-item\" data-key=\"" + escapeHtml(key) + "\">" +
-                "<button type=\"button\" class=\"document-explorer__item-leading chat-knowledge-modal__tree-toggle\" data-key=\"" + escapeHtml(key) + "\" " + (hasChildren ? "" : "disabled") + " aria-label=\"Développer/Réduire\">" +
-                "<i data-lucide=\"" + (isExpanded ? "chevron-down" : "chevron-right") + "\"></i>" +
-                "</button>" +
-                "<input type=\"checkbox\" class=\"chat-knowledge-modal__checkbox\" data-key=\"" + escapeHtml(key) + "\" " + (checked ? "checked" : "") + " " + (this.knowledgeIndexing ? "disabled" : "") + ">" +
-                "<button type=\"button\" class=\"document-explorer__item-title chat-knowledge-modal__name\" data-key=\"" + escapeHtml(key) + "\" title=\"" + escapeHtml(entry.name || "") + "\">" +
-                "<i data-lucide=\"" + escapeHtml(icon) + "\" style=\"width:14px;height:14px;margin-right:6px;\"></i>" +
-                "<span>" + escapeHtml(entry.name || "Nouvelle page") + "</span>" +
-                "</button>" +
-                "</div>" +
-                "</div>"
-            );
-            if (!isExpanded) return;
-            children.forEach(function (childKey) {
-                renderBranch(childKey, depth + 1);
-            });
-        }.bind(this);
-        var sections = Object.keys(rootsBySection).map(function (id) {
-            return { id: id, label: getSectionLabel(id), bucket: getSectionBucket(id) };
-        }).sort(function (a, b) {
-            var rank = (sectionRank[a.bucket] ?? 9) - (sectionRank[b.bucket] ?? 9);
-            if (rank) return rank;
-            if (a.bucket === "shared" && b.bucket === "shared") {
-                return String(a.label || "").localeCompare(String(b.label || ""), "fr", { sensitivity: "base" });
-            }
-            return 0;
-        });
-        sections.forEach(function (section) {
-            var roots = rootsBySection[section.id] || [];
-            if (!roots.length) return;
-            html.push(
-                "<div class=\"document-explorer__section\">" +
-                "<div class=\"document-explorer__section-header\"><i data-lucide=\"" + getSectionIcon(section.id) + "\"></i><strong>" + escapeHtml(section.label) + "</strong></div>" +
-                "<div class=\"document-explorer__section-body\">"
-            );
-            roots.forEach(function (rootKey) {
-                renderBranch(rootKey, 0);
-            });
-            html.push("</div></div>");
-        });
-        list.innerHTML = html.join("");
-        this.setKnowledgeModalSelection(selection);
-        var toggles = list.querySelectorAll(".chat-knowledge-modal__tree-toggle");
-        toggles.forEach(function (toggle) {
-            toggle.addEventListener("click", this.handleKnowledgeTreeToggle.bind(this));
-        }.bind(this));
-        var checkboxes = list.querySelectorAll(".chat-knowledge-modal__checkbox");
-        checkboxes.forEach(function (checkbox) {
-            checkbox.addEventListener("change", this.handleKnowledgeToggle.bind(this));
-        }.bind(this));
-        var nameButtons = list.querySelectorAll(".chat-knowledge-modal__name");
-        nameButtons.forEach(function (btn) {
-            btn.addEventListener("click", this.handleKnowledgeNameToggle.bind(this));
-        }.bind(this));
-        if (window.lucide) window.lucide.createIcons();
-    };
-
-    AssistSidebar.prototype.handleKnowledgeNameToggle = function (event) {
-        event?.preventDefault?.();
-        event?.stopPropagation?.();
-        var target = event?.currentTarget || event?.target;
-        var key = this.normalizeKnowledgeKey(target?.dataset?.key || "");
-        if (!key || !this.knowledgeModalListEl) return;
-        var checkbox = this.knowledgeModalListEl.querySelector(".chat-knowledge-modal__checkbox[data-key=\"" + cssEscapeValue(key) + "\"]");
-        if (!checkbox || checkbox.disabled) return;
-        checkbox.checked = !checkbox.checked;
-        this.handleKnowledgeToggle({ currentTarget: checkbox, target: checkbox });
-    };
-
     AssistSidebar.prototype.resolveDroppedMemoDocumentId = function (event) {
         var fallbackDragging = global.__goToolkitDraggingMemoDocument;
         var fallbackId = String(fallbackDragging?.id || "").trim();
@@ -9152,9 +8767,6 @@
             this.setKnowledgeModalSelection(selection);
             await this.reindexKnowledgeSelection(entries, selection);
             this.setKnowledgeModalStatus("");
-            if (this.knowledgeModal?.classList?.contains("open")) {
-                this.renderKnowledgeModalList(entries, selection);
-            }
             this.refreshDocumentStats();
             return true;
         } catch (err) {
@@ -9220,20 +8832,6 @@
         }.bind(this));
     };
 
-    AssistSidebar.prototype.getContentManifestKeys = function () {
-        var entries = Array.isArray(this.knowledgeManifestEntries) ? this.knowledgeManifestEntries : [];
-        var keys = new Set();
-        entries.forEach(function (entry) {
-            var key = this.normalizeKnowledgeKey(entry.fileName || entry.name);
-            if (key) keys.add(key);
-        }.bind(this));
-        return keys;
-    };
-
-    AssistSidebar.prototype.updateKnowledgeHeaderCheckboxState = function () {
-        return;
-    };
-
     AssistSidebar.prototype.setKnowledgeModalSelection = function (selectionSet) {
         var selection = new Set();
         if (selectionSet instanceof Set) {
@@ -9246,238 +8844,6 @@
             });
         }
         this.knowledgeModalSelectionSet = selection;
-        this.updateKnowledgeHeaderCheckboxState();
-        this.persistKnowledgeSelection(selection);
-    };
-
-    AssistSidebar.prototype.persistKnowledgeSelection = function (selectionSet) {
-        return selectionSet;
-    };
-
-    AssistSidebar.prototype.handleKnowledgeHeaderToggle = async function (event) {
-        if (this.knowledgeIndexing) return;
-        var target = event?.currentTarget || event?.target;
-        if (!target) return;
-        var manifestKeys = this.getContentManifestKeys();
-        if (!manifestKeys.size) return;
-        var checked = Boolean(target.checked);
-        var selectionSet = new Set(this.knowledgeModalSelectionSet || []);
-        manifestKeys.forEach(function (key) {
-            if (checked) {
-                selectionSet.add(key);
-            } else {
-                selectionSet.delete(key);
-            }
-        });
-        var entries = Array.isArray(this.knowledgeManifestEntries) ? this.knowledgeManifestEntries : [];
-        this.renderKnowledgeModalList(entries, selectionSet);
-        this.setKnowledgeModalSelection(selectionSet);
-        try {
-            var reindexOptions = checked
-                ? { forceReindexSelected: true }
-                : { skipDocPurge: true };
-            await this.reindexKnowledgeSelection(entries, selectionSet, reindexOptions);
-        } catch (err) {
-            console.error("Knowledge header toggle reindex failed", err);
-        }
-        this.renderKnowledgeModalList(entries, selectionSet);
-    };
-
-    AssistSidebar.prototype.handleKnowledgeHeaderSort = function (event) {
-        var target = event?.currentTarget || event?.target;
-        var column = target?.dataset?.sort;
-        if (!column) return;
-        var current = this.knowledgeModalSort || { column: "updatedAt", direction: "desc" };
-        var direction = "asc";
-        if (current.column === column) {
-            direction = current.direction === "asc" ? "desc" : "asc";
-        } else {
-            direction = column === "updatedAt" ? "desc" : "asc";
-        }
-        this.knowledgeModalSort = { column: column, direction: direction };
-        this.renderKnowledgeModalList(this.knowledgeManifestEntries, this.knowledgeModalSelectionSet);
-    };
-
-    AssistSidebar.prototype.collectKnowledgeSelection = function () {
-        var selection = new Set();
-        if (!this.knowledgeModalListEl) return selection;
-        var checkboxes = this.knowledgeModalListEl.querySelectorAll(".chat-knowledge-modal__checkbox");
-        checkboxes.forEach(function (checkbox) {
-            if (checkbox.checked) {
-                var key = this.normalizeKnowledgeKey(checkbox.dataset.key || "");
-                if (key) selection.add(key);
-            }
-        }.bind(this));
-        this.setKnowledgeModalSelection(selection);
-        return selection;
-    };
-
-    AssistSidebar.prototype.handleKnowledgeTreeToggle = function (event) {
-        event?.preventDefault?.();
-        event?.stopPropagation?.();
-        var target = event?.currentTarget || event?.target;
-        var key = this.normalizeKnowledgeKey(target?.dataset?.key || "");
-        if (!key) return;
-        var children = this.knowledgeModalChildrenByKey?.get?.(key) || [];
-        if (!children.length) return;
-        if (this.knowledgeModalExpandedKeys.has(key)) {
-            this.knowledgeModalExpandedKeys.delete(key);
-        } else {
-            this.knowledgeModalExpandedKeys.add(key);
-        }
-        this.renderKnowledgeModalList(this.knowledgeManifestEntries, this.knowledgeModalSelectionSet);
-    };
-
-    AssistSidebar.prototype.handleKnowledgeToggle = async function (event) {
-        if (this.knowledgeIndexing) return;
-        var target = event?.currentTarget || event?.target;
-        if (!target) return;
-        var key = this.normalizeKnowledgeKey(target?.dataset?.key || "");
-        var checked = Boolean(target.checked);
-        var entry = (this.knowledgeManifestEntries || []).find(function (item) {
-            return this.normalizeKnowledgeKey(item.fileName) === key;
-        }.bind(this));
-        if (!entry) {
-            if (target) {
-                target.checked = !checked;
-            }
-            return;
-        }
-        var selection = new Set(this.knowledgeModalSelectionSet || []);
-        if (checked) {
-            selection.add(key);
-        } else {
-            selection.delete(key);
-        }
-        if (checked) {
-            this.knowledgeModalExpandedKeys.add(key);
-            var immediateChildren = this.knowledgeModalChildrenByKey?.get?.(key) || [];
-            if (immediateChildren.length) {
-                immediateChildren.forEach(function (childKey) {
-                    if (childKey) selection.add(childKey);
-                });
-            }
-        }
-        this.setKnowledgeModalSelection(selection);
-        await this.reindexKnowledgeSelection(this.knowledgeManifestEntries, selection, { forceReindexSelected: true });
-        this.setKnowledgeModalStatus("");
-        this.renderKnowledgeModalList(this.knowledgeManifestEntries, selection);
-    };
-
-    AssistSidebar.prototype.deleteKnowledgeEntryDocument = async function (entry) {
-        if (!entry || !this.docManager) return false;
-        var key = this.normalizeKnowledgeKey(entry.fileName);
-        if (!key) return false;
-        var targetId = entry.source === "Chat" ? this.conversation?.id : this.knowledgeConversationId;
-        if (!targetId) return false;
-        var ref = entry.source === "Chat"
-            ? this.knowledgeChatDocRefs.get(key)
-            : (entry.source === "Mémo"
-                ? this.knowledgeMemoDocRefs.get(key)
-                : this.knowledgeLocalDocRefs.get(key));
-        var names = (ref?.name ? [ref.name] : []);
-        if (!names.length) return false;
-        try {
-            await this.docManager.deleteDocumentsByNames(targetId, names);
-            if (entry.source === "Chat") {
-                this.knowledgeChatDocRefs.delete(key);
-            } else if (entry.source === "Mémo") {
-                this.knowledgeMemoDocRefs.delete(key);
-            } else {
-                this.knowledgeLocalDocRefs.delete(key);
-                if (this.knowledgeLocalDocsStore?.read && this.knowledgeLocalDocsStore?.write) {
-                    var cache = await this.knowledgeLocalDocsStore.read();
-                    cache = cache && typeof cache === "object" ? cache : {};
-                    delete cache[key];
-                    await this.knowledgeLocalDocsStore.write(cache);
-                }
-            }
-            return true;
-        } catch (err) {
-            console.warn("Knowledge document delete failed", err);
-            return false;
-        }
-    };
-
-    AssistSidebar.prototype.handleKnowledgePreviewClick = function (event) {
-        var target = event?.currentTarget;
-        var key = this.normalizeKnowledgeKey(target?.dataset?.key || "");
-        if (!key) return;
-        var entry = (this.knowledgeManifestEntries || []).find(function (item) {
-            return this.normalizeKnowledgeKey(item.fileName) === key;
-        }.bind(this));
-        if (!entry) return;
-        this.closeKnowledgeModal();
-        this.openKnowledgePreview(entry);
-    };
-
-    AssistSidebar.prototype.handleKnowledgeEditClick = function (event) {
-        event?.stopPropagation?.();
-        var target = event?.currentTarget;
-        var key = this.normalizeKnowledgeKey(target?.dataset?.key || "");
-        if (!key) return;
-        var entry = (this.knowledgeManifestEntries || []).find(function (item) {
-            return this.normalizeKnowledgeKey(item.fileName) === key;
-        }.bind(this));
-        if (!entry) return;
-        this.openKnowledgeEditModal(entry);
-    };
-
-    AssistSidebar.prototype.handleKnowledgeReindexClick = function (event) {
-        event?.stopPropagation?.();
-        if (this.knowledgeIndexing) return;
-        var target = event?.currentTarget;
-        var key = this.normalizeKnowledgeKey(target?.dataset?.key || "");
-        if (!key) return;
-        var entry = (this.knowledgeManifestEntries || []).find(function (item) {
-            return this.normalizeKnowledgeKey(item.fileName) === key;
-        }.bind(this));
-        if (!entry || entry.source !== "Mémo") return;
-        this.reindexMemoKnowledgeEntry(entry);
-    };
-
-    AssistSidebar.prototype.reindexMemoKnowledgeEntry = async function (entry) {
-        if (!this.docManager || this.knowledgeIndexing || !entry) return;
-        this.knowledgeIndexing = true;
-        this.setKnowledgeModalStatus("Réindexation en cours…");
-        try {
-            await this.docManager.waitReady?.();
-            var memoText = typeof entry.memoText === "string" ? entry.memoText : "";
-            if (!memoText && typeof entry.memoHtml === "string") {
-                memoText = this.stripHtmlText(entry.memoHtml);
-            }
-            if (!memoText && entry.memoHtml) {
-                memoText = String(entry.memoHtml);
-            }
-            var file = this.createKnowledgeFile(memoText, entry.fileName, "text/plain");
-            if (!file) {
-                this.setKnowledgeModalStatus("Réindexation échouée.", true);
-                return;
-            }
-            await this.docManager.deleteDocumentsByNames(this.knowledgeConversationId, [entry.fileName]);
-            var derivedAbstract = entry.abstract || this.extractFirstChunkLine(memoText);
-            var metadata = new Map();
-            metadata.set(entry.fileName, {
-                name: entry.name,
-                abstract: derivedAbstract || "",
-                updatedAt: entry.updatedAt,
-                fileName: entry.fileName,
-                scope: ["memo"]
-            });
-            await this.docManager.ingestFiles([file], this.knowledgeConversationId, {
-                sourceType: "embedded",
-                metadata: metadata
-            });
-            await this.refreshKnowledgeModal({ skipAutoReindex: true });
-            this.refreshDocumentStats();
-            this.setKnowledgeModalStatus("");
-        } catch (err) {
-            console.warn("Memo knowledge reindex failed", err);
-            this.setKnowledgeModalStatus("Réindexation échouée.", true);
-        } finally {
-            this.knowledgeIndexing = false;
-            this.renderKnowledgeModalTitle();
-        }
     };
 
     AssistSidebar.prototype.detectFileTypeFromPath = function (path) {
@@ -9707,6 +9073,7 @@
         });
         var hadError = false;
         this.knowledgeIndexing = true;
+        this.updateHeaderDocumentCount();
         this.setKnowledgeModalStatus("Indexation en cours…");
         try {
             var existingDocs = await this.docManager.getDocuments(this.knowledgeConversationId);
@@ -9892,6 +9259,7 @@
             this.setKnowledgeModalStatus("Indexation échouée.", true);
         } finally {
             this.knowledgeIndexing = false;
+            this.updateHeaderDocumentCount();
             this.knowledgeModalIndexingProgress = null;
             this.renderKnowledgeModalTitle();
             if (!hadError) {
@@ -10196,7 +9564,7 @@
         backBtn.setAttribute("title", "Retour");
         backBtn.addEventListener("click", function () {
             this.closePreviewPanel();
-            this.openKnowledgeModal();
+            this.openMemorySpacesMenu();
         }.bind(this));
         var title = document.createElement("div");
         title.className = "chat-doc-preview__title";
@@ -10945,9 +10313,6 @@
 
     AssistSidebar.prototype.openReferencePreview = async function (message, reference) {
         if (!reference) return;
-        if (this.knowledgeModal && this.knowledgeModal.classList.contains("open")) {
-            this.closeKnowledgeModal(false);
-        }
         this.buildPreviewPanel();
         if (!this.previewPanel) return;
         this.previewPanel.classList.add("open");

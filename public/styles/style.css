@@ -1990,6 +1990,11 @@ ul.release-roadmap-text li::before {
   border-color: var(--color-primary);
 }
 
+#chatMemoryBtn.chat-memory-btn--indexing {
+  border-color: var(--intent-warning-border);
+  box-shadow: inset 0 0 0 1px var(--intent-warning-border);
+}
+
 #assistSidebar.chat-sidebar--drop-target {
   border-color: var(--color-primary);
   box-shadow: inset 0 0 0 1px var(--color-primary);
