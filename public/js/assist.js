@@ -2207,10 +2207,8 @@
             title = this.buildTechnicalHover(message);
         }
         if (title) {
-            entry.bubbleEl.setAttribute("data-chat-tooltip", title);
-            entry.bubbleEl.removeAttribute("title");
+            entry.bubbleEl.title = title;
         } else {
-            entry.bubbleEl.removeAttribute("data-chat-tooltip");
             entry.bubbleEl.removeAttribute("title");
         }
     };
@@ -2218,16 +2216,11 @@
     AssistSidebar.prototype.applyTechnicalHover = function (entry, message) {
         if (!entry || !entry.contentEl) return;
         var title = this.buildTechnicalHover(message);
-        if (entry.bubbleEl) {
-            if (title) {
-                entry.bubbleEl.setAttribute("data-chat-tooltip", title);
-                entry.bubbleEl.removeAttribute("title");
-            } else {
-                entry.bubbleEl.removeAttribute("data-chat-tooltip");
-                entry.bubbleEl.removeAttribute("title");
-            }
+        if (title) {
+            entry.contentEl.title = title;
+        } else {
+            entry.contentEl.removeAttribute("title");
         }
-        entry.contentEl.removeAttribute("title");
     };
 
     AssistSidebar.prototype.updateUserMessage = function (message) {
