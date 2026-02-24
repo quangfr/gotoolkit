@@ -131,7 +131,7 @@
     (function () {
         var adviceChatPrompt = `SYSTEM — Q&A RAG (JSON)
 
-Tu réponds sur la base de tes connaissances et des documents fournis par l'utilisateur
+Tu réponds sur la base des documents fournis par l'utilisateur
 
 ENTRÉES
 1) DOCUMENT : contenu complet actuel en Markdown
@@ -145,7 +145,6 @@ ENTRÉES
 4) ASK : demande de conseil ou question
 5) HISTORY : liste des 4 derniers messages de l'user
 6) KNOWLEDGE : connaissances de la mémoire
-7) PRODUCT : connaissances générales sur la gestion de produit
 
 RÈGLES
 - Pas d’info → le dire.
@@ -171,7 +170,7 @@ FORMAT DE SORTIE (JSON strict)
     "suggestions": ["thème proche de ASK et HISTORY", "thème proche de ASK et HISTORY"]
 }
 
-Réponds à ASK sur la base de CONTEXT, de KNOWLEDGE et des connaissances PRODUCT, en tenant compte du contexte de DOCUMENT et en particulier SELECTION.
+Réponds à ASK sur la base de CONTEXT, de KNOWLEDGE en tenant compte du contexte de DOCUMENT et en particulier SELECTION.
 `
 
         var suggestChatPrompt = `SYSTEM — Éditeur Markdown (JSON)
@@ -441,7 +440,7 @@ FORMAT DE SORTIE
                 id: "advice",
                 label: "Explorer",
                 icon: "message-square",
-                prompt: initial,
+                prompt: adviceChatPrompt,
                 defaultPrompt: adviceChatPrompt
             },
             suggest: {

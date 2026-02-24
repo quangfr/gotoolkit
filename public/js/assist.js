@@ -2115,18 +2115,74 @@
             parts.push("Temps réponse: " + stats.responseMs + " ms");
         }
         if (stats && Number.isFinite(stats.requestTokens)) {
-            parts.push("Tokens requête : " + stats.requestTokens);
+            parts.push("Token entrée: " + stats.requestTokens);
         }
         if (stats && Number.isFinite(stats.responseTokens)) {
-            parts.push("Tokens réponse : " + stats.responseTokens);
+            parts.push("Token sortie: " + stats.responseTokens);
         }
-        if (stats && typeof stats.cost === "number" && stats.cost > 0) {
-            parts.push("Coût : $" + stats.cost.toFixed(6));
+        return parts.join(" | ");
+    };
+
+    AssistSidebar.prototype.buildAIInTooltip = function (payload) {
+        if (!payload || typeof payload !== "object") return "";
+        var messages = Array.isArray(payload.messages) ? payload.messages : [];
+        var userText = "";
+        for (var i = messages.length - 1; i >= 0; i -= 1) {
+            var msg = messages[i];
+            if (!msg || msg.role !== "user") continue;
+            if (typeof msg.content === "string") {
+                userText = msg.content;
+                break;
+            }
+            if (Array.isArray(msg.content)) {
+                userText = msg.content
+                    .map(function (part) {
+                        if (!part || typeof part !== "object") return "";
+                        if (part.type !== "text") return "";
+                        return String(part.text || "");
+                    })
+                    .filter(Boolean)
+                    .join("\n");
+                break;
+            }
         }
-        if (message.aiOutPayloadTooltip) {
-            parts.push("AI OUT\n" + message.aiOutPayloadTooltip);
+        if (!userText) return "";
+
+        var lines = userText.split(/\r?\n/);
+        var sections = [];
+        var targets = { KNOWLEDGE: true, CONTEXT: true };
+        var activeHeader = null;
+        var activeLines = [];
+
+        function flushActive() {
+            if (!activeHeader || !activeLines.length) return;
+            var body = activeLines.join("\n").trim();
+            if (!body) return;
+            sections.push(activeHeader + "\n" + body);
         }
-        return parts.join("\n\n");
+
+        for (var idx = 0; idx < lines.length; idx += 1) {
+            var line = String(lines[idx] || "");
+            var trimmed = line.trim();
+            var normalized = trimmed.replace(/:$/, "");
+            if (targets[normalized]) {
+                flushActive();
+                activeHeader = normalized;
+                activeLines = [];
+                continue;
+            }
+            if (/^[A-Z][A-Z0-9_ ]{1,40}:?$/.test(trimmed)) {
+                flushActive();
+                activeHeader = null;
+                activeLines = [];
+                continue;
+            }
+            if (activeHeader) {
+                activeLines.push(line);
+            }
+        }
+        flushActive();
+        return sections.join("\n\n").trim();
     };
 
     AssistSidebar.prototype.stringifyPayloadForTooltip = function (payload) {
@@ -4043,7 +4099,7 @@
         var payload = this.buildPayload(systemPrompt, userMessage, docInfo, {
             promptPresetId: requestPromptPresetId
         });
-        userMessage.aiInPayloadTooltip = this.stringifyPayloadForTooltip(payload);
+        userMessage.aiInPayloadTooltip = this.buildAIInTooltip(payload);
         var self = this;
         var conversationRef = this.conversation;
         var conversationId = conversationRef?.id || null;
@@ -7389,6 +7445,7 @@
         var entries = [];
         var seenIds = new Set();
         var privateRecordMap = new Map();
+        var sharedRecordMap = new Map();
         try {
             var records = await global.goToolkitDocumentApi?.getAllRecords?.();
             (records || []).forEach(function (record) {
@@ -7397,6 +7454,17 @@
             });
         } catch (err) {
             console.warn("Knowledge private records load failed", err);
+        }
+        try {
+            var sharedRecords = await global.goToolkitShareHistory?.getRecordsByApp?.("memo");
+            (sharedRecords || []).forEach(function (record) {
+                if (!record) return;
+                var token = String(record.token || "").trim();
+                if (!token) return;
+                sharedRecordMap.set(token, record);
+            });
+        } catch (err) {
+            console.warn("Knowledge shared records load failed", err);
         }
         var explorerItems = [];
         try {
@@ -7428,6 +7496,29 @@
             if (!fileName) return;
             var record = privateRecordMap.get(id);
             var payload = record?.payload;
+            if (!payload && id.indexOf("share:") === 0) {
+                var token = id.slice("share:".length).trim();
+                var sharedRecord = token ? sharedRecordMap.get(token) : null;
+                if (sharedRecord?.payload) {
+                    payload = sharedRecord.payload;
+                }
+                if (!record && sharedRecord) {
+                    record = {
+                        title: sharedRecord.title || item.title || "",
+                        description: sharedRecord.description || item.description || "",
+                        icon: sharedRecord.icon || item.icon || "",
+                        updatedAt: sharedRecord.updatedAt || item.updatedAt || ""
+                    };
+                }
+            }
+            if (!payload && id.indexOf("common:") === 0) {
+                var templateHtml = String(item?.templateData?.html || "").trim();
+                if (templateHtml) {
+                    payload = {
+                        tabs: [{ content: templateHtml }]
+                    };
+                }
+            }
             var firstTab = payload && Array.isArray(payload.tabs) ? payload.tabs[0] : null;
             var memoHtml = typeof firstTab?.content === "string"
                 ? firstTab.content
@@ -8184,7 +8275,7 @@
             if (token !== this._knowledgeScopeApplyToken) return;
             var selection = new Set((persistedSelection || []).map(this.normalizeKnowledgeKey.bind(this)));
             this.setKnowledgeModalSelection(selection);
-            await this.reindexKnowledgeSelection(entries, selection);
+            await this.reindexKnowledgeSelection(entries, selection, { forceReindexSelected: true });
             if (token !== this._knowledgeScopeApplyToken) return;
             if (this.knowledgeModal?.classList?.contains("open")) {
                 this.renderKnowledgeModalList(entries, selection);
@@ -8584,7 +8675,9 @@
         this.renderKnowledgeModalList(entries, selectionSet);
         this.setKnowledgeModalSelection(selectionSet);
         try {
-            var reindexOptions = checked ? undefined : { skipDocPurge: true };
+            var reindexOptions = checked
+                ? { forceReindexSelected: true }
+                : { skipDocPurge: true };
             await this.reindexKnowledgeSelection(entries, selectionSet, reindexOptions);
         } catch (err) {
             console.error("Knowledge header toggle reindex failed", err);
@@ -8668,7 +8761,7 @@
             }
         }
         this.setKnowledgeModalSelection(selection);
-        await this.reindexKnowledgeSelection(this.knowledgeManifestEntries, selection);
+        await this.reindexKnowledgeSelection(this.knowledgeManifestEntries, selection, { forceReindexSelected: true });
         this.setKnowledgeModalStatus("");
         this.renderKnowledgeModalList(this.knowledgeManifestEntries, selection);
     };
@@ -9018,6 +9111,31 @@
                 existingByKey.set(key, doc);
                 localDocMap.set(key, doc);
             }.bind(this));
+            var forceReindexSelected = Boolean(options && options.forceReindexSelected);
+            if (forceReindexSelected && filtered.length) {
+                var selectedKeySet = new Set(filtered.map(function (entry) {
+                    return this.normalizeKnowledgeKey(entry.fileName);
+                }.bind(this)).filter(Boolean));
+                var docsToDelete = (existingDocs || []).filter(function (doc) {
+                    if (!doc) return false;
+                    var key = this.normalizeKnowledgeKey(doc.sourceFileName || doc.name);
+                    return key && selectedKeySet.has(key);
+                }.bind(this));
+                if (docsToDelete.length && this.docManager?.deleteDocumentsByNames) {
+                    var namesToDelete = Array.from(new Set(docsToDelete
+                        .map(function (doc) {
+                            return (doc.name || doc.sourceFileName || "").toString().trim();
+                        })
+                        .filter(Boolean)));
+                    if (namesToDelete.length) {
+                        await this.docManager.deleteDocumentsByNames(this.knowledgeConversationId, namesToDelete);
+                    }
+                    docsToDelete.forEach(function (doc) {
+                        var key = this.normalizeKnowledgeKey(doc.sourceFileName || doc.name);
+                        if (key) existingByKey.delete(key);
+                    }.bind(this));
+                }
+            }
             var missing = filtered.filter(function (entry) {
                 var key = this.normalizeKnowledgeKey(entry.fileName);
                 return key && !existingByKey.has(key);
