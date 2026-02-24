@@ -2083,6 +2083,7 @@
             addCopyButtonsToChatContent(entry.contentEl);
         }
         this.applyTechnicalHover(entry, message);
+        this.applyMessagePayloadHover(entry, message);
         this.syncBotExtras(entry, message);
         this.scrollToBottom();
     };
@@ -2090,21 +2091,107 @@
     AssistSidebar.prototype.buildTechnicalHover = function (message) {
         if (!message || message.role !== "bot") return "";
         var stats = message.techStats;
-        if (!stats) return "";
         var parts = [];
-        if (Number.isFinite(stats.responseMs)) {
+        if (stats && Number.isFinite(stats.responseMs)) {
             parts.push("Temps réponse: " + stats.responseMs + " ms");
         }
-        if (Number.isFinite(stats.requestTokens)) {
+        if (stats && Number.isFinite(stats.requestTokens)) {
             parts.push("Tokens requête : " + stats.requestTokens);
         }
-        if (Number.isFinite(stats.responseTokens)) {
+        if (stats && Number.isFinite(stats.responseTokens)) {
             parts.push("Tokens réponse : " + stats.responseTokens);
         }
-        if (typeof stats.cost === "number" && stats.cost > 0) {
+        if (stats && typeof stats.cost === "number" && stats.cost > 0) {
             parts.push("Coût : $" + stats.cost.toFixed(6));
         }
-        return parts.join(" · ");
+        if (message.aiOutPayloadTooltip) {
+            parts.push("AI OUT\n" + message.aiOutPayloadTooltip);
+        }
+        return parts.join("\n\n");
+    };
+
+    AssistSidebar.prototype.stringifyPayloadForTooltip = function (payload) {
+        if (!payload || typeof payload !== "object") return "";
+        var maxLength = 1800;
+        var safePayload = {};
+        Object.keys(payload).forEach(function (key) {
+            if (key === "messages") return;
+            safePayload[key] = payload[key];
+        });
+        if (Array.isArray(payload.messages)) {
+            safePayload.messages = payload.messages
+                .filter(function (message) {
+                    return message && message.role !== "system";
+                })
+                .map(function (message) {
+                    var safeMessage = { role: message.role };
+                    if (Array.isArray(message.content)) {
+                        safeMessage.content = message.content
+                            .map(function (part) {
+                                if (!part || typeof part !== "object") return null;
+                                if (part.type === "text") {
+                                    return { type: "text", text: String(part.text || "") };
+                                }
+                                if (part.type === "image_url") {
+                                    return { type: "image_url", image_url: "[omitted]" };
+                                }
+                                return { type: String(part.type || "unknown") };
+                            })
+                            .filter(Boolean);
+                    } else {
+                        safeMessage.content = message.content;
+                    }
+                    return safeMessage;
+                });
+        }
+        var text = "";
+        try {
+            text = JSON.stringify(safePayload, null, 2);
+        } catch (err) {
+            text = "";
+        }
+        if (!text) return "";
+        if (text.length > maxLength) return text.slice(0, maxLength) + "\n…";
+        return text;
+    };
+
+    AssistSidebar.prototype.buildAIOutTooltip = function (details) {
+        if (!details || typeof details !== "object") return "";
+        var maxLength = 1800;
+        var payload = {};
+        if (details.usage && typeof details.usage === "object") {
+            payload.usage = details.usage;
+        }
+        if (details.parsedResponse && typeof details.parsedResponse === "object") {
+            payload.parsedResponse = details.parsedResponse;
+        }
+        if (typeof details.responseText === "string" && details.responseText.trim()) {
+            payload.responseText = details.responseText.trim();
+        }
+        var text = "";
+        try {
+            text = JSON.stringify(payload, null, 2);
+        } catch (err) {
+            text = "";
+        }
+        if (!text) return "";
+        if (text.length > maxLength) return text.slice(0, maxLength) + "\n…";
+        return text;
+    };
+
+    AssistSidebar.prototype.applyMessagePayloadHover = function (entry, message) {
+        if (!entry || !entry.bubbleEl || !message) return;
+        var title = "";
+        if (message.role === "user" && message.aiInPayloadTooltip) {
+            title = "AI IN\n" + message.aiInPayloadTooltip;
+        } else if (message.role === "bot") {
+            title = this.buildTechnicalHover(message);
+        }
+        if (title) {
+            entry.bubbleEl.title = title;
+        } else {
+            entry.bubbleEl.removeAttribute("title");
+        }
     };
 
     AssistSidebar.prototype.applyTechnicalHover = function (entry, message) {
@@ -2235,6 +2322,7 @@
         var entry = {
             wrapper: wrapper,
             contentWrapper: contentWrapper,
+            bubbleEl: bubble,
             contentEl: content,
             refsEl: null,
             suggestionsEl: null
@@ -2280,6 +2368,7 @@
             this.syncBotExtras(entry, message);
         }
         this.messageNodes[message.id] = entry;
+        this.applyMessagePayloadHover(entry, message);
         if (message.role === "user" && window.lucide) {
             window.lucide.createIcons({ props: { size: 14 } });
         }
@@ -3917,6 +4006,7 @@
         this.setScopeStreamingState(conversationScopeId, true, controller);
 
         var payload = this.buildPayload(systemPrompt, userMessage, docInfo);
+        userMessage.aiInPayloadTooltip = this.stringifyPayloadForTooltip(payload);
         var self = this;
         var conversationRef = this.conversation;
         var conversationId = conversationRef?.id || null;
@@ -3929,6 +4019,9 @@
         var isActiveScope = function () {
             return self.currentConversationScopeId === conversationScopeId;
         };
+        if (isActiveScope()) {
+            self.applyMessagePayloadHover(self.messageNodes[userMessage.id], userMessage);
+        }
         recordChatAIInHistory(payload, conversationId);
         var requestTokenEstimate = estimatePayloadTokens(payload);
         var appendBotMessageIfNeeded = function () {
@@ -4129,6 +4222,11 @@
                 usage: resultUsage,
                 parsedResponse: parsed
             }, conversationId);
+            botMessage.aiOutPayloadTooltip = this.buildAIOutTooltip({
+                responseText: resultText,
+                usage: resultUsage,
+                parsedResponse: parsed
+            });
             botMessage.content = parsed.content;
             botMessage.references = parsed.references;
             botMessage.suggestions = parsed.suggestions;
@@ -6947,6 +7045,21 @@
         return (value || "").toString().trim().toLowerCase();
     };
 
+    AssistSidebar.prototype.getKnowledgeDocCandidateKeys = function (doc) {
+        var keys = new Set();
+        if (!doc || typeof doc !== "object") return keys;
+        var addKey = function (value) {
+            var key = this.normalizeKnowledgeKey(value);
+            if (key) keys.add(key);
+        }.bind(this);
+        addKey(doc.sourceFileName);
+        addKey(doc.name);
+        if (doc.memoId) {
+            addKey(this.getMemoLibraryFileName(doc.memoId));
+        }
+        return keys;
+    };
+
     AssistSidebar.prototype.deduplicateKnowledgeWebEntries = function (entries) {
         if (!Array.isArray(entries) || !entries.length) return [];
         var seen = new Set();
@@ -8060,8 +8173,14 @@
         var allowed = new Set();
         docs.forEach(function (doc) {
             if (!doc?.id) return;
-            var key = this.normalizeKnowledgeKey(doc.sourceFileName || doc.name || "");
-            if (key && selection.has(key)) {
+            var candidates = this.getKnowledgeDocCandidateKeys(doc);
+            var isSelected = false;
+            candidates.forEach(function (key) {
+                if (!isSelected && selection.has(key)) {
+                    isSelected = true;
+                }
+            });
+            if (isSelected) {
                 allowed.add(doc.id);
             }
         }.bind(this));

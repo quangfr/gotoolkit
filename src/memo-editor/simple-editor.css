@@ -351,7 +351,8 @@ td .node-text.node-paragraph,
   outline: none;
   min-height: 200px;
   padding: 0px 1rem 56px 1rem;
-  font-family: inherit;
+  font-family: var(--font-sans);
+  font-size: var(--go-ui-font-size, 16px);
   line-height: 1.3;
   flex: 1;
   border: 2px solid transparent;
@@ -1704,14 +1705,13 @@ body.table-resize-cursor * {
   width: 100%;
   border: none;
   padding: 12px;
-  font-family: 'Fira Code', 'Monaco', 'Consolas', monospace;
-  font-size: 0.875rem;
+  font-family: var(--font-sans);
+  font-size: var(--go-ui-font-size, 16px);
   line-height: 1.5;
   resize: none;
   outline: none;
   background-color: black;
   color: white;
-  font-size:12px;
 }
 
 .mermaid-modal-textarea-actions {
@@ -1760,7 +1760,7 @@ body.table-resize-cursor * {
   pointer-events: none;
   z-index: 10;
   box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-  font-family: sans-serif;
+  font-family: var(--font-sans);
 }
 
 .mermaid-modal-footer {
@@ -1812,7 +1812,7 @@ button.btn-secondary {
   border-radius: 8px;
   overflow-x: auto;
   margin: 1rem 0;
-  font-size:12px;
+  font-size: var(--go-ui-font-size, 16px);
 }
 
 .ProseMirror code {
@@ -1828,7 +1828,7 @@ button.btn-secondary {
   background: var(--bg-surface-soft);
   color: inherit;
   padding: 0;
-  font-size: 0.875rem;
+  font-size: var(--go-ui-font-size, 16px);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
@@ -1891,10 +1891,7 @@ li .node-text.node-paragraph {
 }
 
 .bubble-menu-separator {
-  width: 1px;
-  height: 18px;
-  background-color: var(--border-main);
-  margin: 0 6px;
+  display: none;
 }
 
 .bubble-menu-button {
@@ -2382,20 +2379,37 @@ ul[data-type="taskList"] li p {
   background: var(--bg-surface-soft);
 }
 
-.memo-summary-block__item-icon {
+.memo-summary-block__item-title {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.memo-summary-block__item-top {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 16px;
   height: 16px;
   color: var(--text-muted);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  border-radius: 4px;
 }
 
-.memo-summary-block__item-title {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.memo-summary-block__item:hover .memo-summary-block__item-top {
+  opacity: 1;
+}
+
+.memo-summary-block__item-top:hover {
+  background: var(--bg-surface-soft);
+  color: var(--text-main);
+}
+
+.memo-summary-block__item--h1 {
+  font-weight: 700;
 }
 
 .memo-summary-block__item--h2 {
@@ -2404,6 +2418,7 @@ ul[data-type="taskList"] li p {
 
 .memo-summary-block__item--h3 {
   padding-left: 30px;
+  font-style: italic;
 }
 
 .memo-summary-block__item--h4 {

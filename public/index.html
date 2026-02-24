@@ -9,6 +9,9 @@
             const storedTheme = localStorage.getItem('go-toolkit-theme');
             const theme = storedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'cream');
             document.documentElement.setAttribute('data-theme', theme);
+            const storedFontSize = localStorage.getItem('go-toolkit-ui-font-size');
+            const normalizedFontSize = Math.min(20, Math.max(12, Math.round(Number(storedFontSize) || 16)));
+            document.documentElement.style.setProperty('--go-ui-font-size', normalizedFontSize + 'px');
         })();
     </script>
     <script>
@@ -75,10 +78,10 @@
         crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.min.js" crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.min.js" crossorigin></script>
-    <link rel="stylesheet" href="styles/style.css?v=2026.02.24.9">
+    <link rel="stylesheet" href="styles/style.css?v=2026.02.24.10">
     <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
-    <link rel="stylesheet" href="styles/memo.css?v=2026.02.24.9">
-    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.24.9">
+    <link rel="stylesheet" href="styles/memo.css?v=2026.02.24.10">
+    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.24.10">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.css">
     <script src="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.js"></script>
     <style>
@@ -230,7 +233,7 @@
 
 <body class="app-body">
     <div class="memo-shell">
-        <aside id="documentExplorer" class="document-explorer document-explorer--collapsed" aria-label="Exploration">
+        <aside id="documentExplorer" class="document-explorer" aria-label="Exploration">
             <div class="document-explorer__header">
                 <button type="button" class="document-explorer__tab-btn active" data-tab="library" title="Bibliothèque">
                     <i data-lucide="book-open"></i>
@@ -259,7 +262,7 @@
             <div class="app-header">
                 <div class="tabs-actions">
                     <button id="documentExplorerToggle" class="app-home-link" type="button" title="GoToolkit"
-                        aria-expanded="false" aria-controls="documentExplorer"><i data-lucide="panel-left"></i></button>
+                        aria-expanded="true" aria-controls="documentExplorer"><i data-lucide="panel-left"></i></button>
 
                     <div id="breadcrumb" class="tabs">
                         <div class="document-breadcrumb-icon-picker">
@@ -373,7 +376,7 @@
                     créer un nouveau depuis la Bibliothèque.</div>
                 <section class="memo-card">
                     <div class="memo-page-title-bar">
-                        <input id="memoPageTitleInput" class="memo-page-title-input" type="text" value="Nouvelle page"
+                        <input id="memoPageTitleInput" class="memo-page-title-input" type="text" value="Page 1"
                             aria-label="Titre de la page" />
                     </div>
                     <div class="editor-wrap">
@@ -460,7 +463,7 @@
         <img src="img/logo.gif" alt="Logo GoToolkit" class="logo-light">
         <img src="img/logo-inverted.gif" alt="Logo GoToolkit" class="logo-dark">
         <strong>GoToolkit</strong>
-        <span id="memoNewsTrigger" class="info-popup-news-link" role="button" tabindex="0">Version 2026.02.24.9</span>
+        <span id="memoNewsTrigger" class="info-popup-news-link" role="button" tabindex="0">Version 2026.02.24.10</span>
         <span>Usage réservé à Savane Consulting.</span>
         <div class="info-actions info-actions--stacked">
             <div class="info-actions-row">
@@ -539,24 +542,24 @@
         window.GO_TOOLKIT_GOOGLE_TTS_API_URL =
             window.GO_TOOLKIT_GOOGLE_TTS_API_URL || "https://googletts.gotoolkit.workers.dev";
     </script>
-    <script src="js/config.js?v=2026.02.24.9"></script>
-    <script src="js/config-modal.js?v=2026.02.24.9"></script>
-    <script src="js/feature-visibility.js?v=2026.02.24.9"></script>
-    <script src="js/document-storage.js?v=2026.02.24.9"></script>
-    <script src="js/storage-service.js?v=2026.02.24.9"></script>
-    <script src="js/shared-ui.js?v=2026.02.24.9"></script>
-    <script src="js/spaces-store.js?v=2026.02.24.9"></script>
-    <script src="js/share-worker-client.js?v=2026.02.24.9"></script>
-    <script src="js/share-history.js?v=2026.02.24.9"></script>
-    <script src="js/document-api.js?v=2026.02.24.9"></script>
-    <script src="js/keywordIndex.js?v=2026.02.24.9"></script>
-    <script src="js/document-rag.js?v=2026.02.24.9"></script>
-    <script src="js/ia-config.js?v=2026.02.24.9"></script>
-    <script src="preset.js?v=2026.02.24.9"></script>
-    <script src="prompt.js?v=2026.02.24.9"></script>
-    <script src="js/ia-client.js?v=2026.02.24.9"></script>
-    <script src="js/document-markdown.js?v=2026.02.24.9"></script>
-    <script src="js/notion-export.js?v=2026.02.24.9"></script>
+    <script src="js/config.js?v=2026.02.24.10"></script>
+    <script src="js/config-modal.js?v=2026.02.24.10"></script>
+    <script src="js/feature-visibility.js?v=2026.02.24.10"></script>
+    <script src="js/document-storage.js?v=2026.02.24.10"></script>
+    <script src="js/storage-service.js?v=2026.02.24.10"></script>
+    <script src="js/shared-ui.js?v=2026.02.24.10"></script>
+    <script src="js/spaces-store.js?v=2026.02.24.10"></script>
+    <script src="js/share-worker-client.js?v=2026.02.24.10"></script>
+    <script src="js/share-history.js?v=2026.02.24.10"></script>
+    <script src="js/document-api.js?v=2026.02.24.10"></script>
+    <script src="js/keywordIndex.js?v=2026.02.24.10"></script>
+    <script src="js/document-rag.js?v=2026.02.24.10"></script>
+    <script src="js/ia-config.js?v=2026.02.24.10"></script>
+    <script src="preset.js?v=2026.02.24.10"></script>
+    <script src="prompt.js?v=2026.02.24.10"></script>
+    <script src="js/ia-client.js?v=2026.02.24.10"></script>
+    <script src="js/document-markdown.js?v=2026.02.24.10"></script>
+    <script src="js/notion-export.js?v=2026.02.24.10"></script>
     <script>
         document.addEventListener("click", function (event) {
             const legalTrigger = event.target?.closest?.("[data-open-nexus-modal]");
@@ -590,15 +593,15 @@
             ]
         };
     </script>
-    <script src="js/feedback.js?v=2026.02.24.9"></script>
-    <script src="js/news.js?v=2026.02.24.9"></script>
-    <script src="js/voice-video-player.js?v=2026.02.24.9"></script>
-    <script src="js/voice-audio-player.js?v=2026.02.24.9"></script>
-    <script src="js/youtube-publish.js?v=2026.02.24.9"></script>
-    <script src="js/voice.js?v=2026.02.24.9"></script>
-    <script src="js/voice-transcript.js?v=2026.02.24.9"></script>
-    <script src="js/googletts.js?v=2026.02.24.9"></script>
-    <script src="js/draw-memo.js?v=2026.02.24.9"></script>
+    <script src="js/feedback.js?v=2026.02.24.10"></script>
+    <script src="js/news.js?v=2026.02.24.10"></script>
+    <script src="js/voice-video-player.js?v=2026.02.24.10"></script>
+    <script src="js/voice-audio-player.js?v=2026.02.24.10"></script>
+    <script src="js/youtube-publish.js?v=2026.02.24.10"></script>
+    <script src="js/voice.js?v=2026.02.24.10"></script>
+    <script src="js/voice-transcript.js?v=2026.02.24.10"></script>
+    <script src="js/googletts.js?v=2026.02.24.10"></script>
+    <script src="js/draw-memo.js?v=2026.02.24.10"></script>
     <script>
         // Suppress React DevTools prompt in dev builds.
         window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = window.__REACT_DEVTOOLS_GLOBAL_HOOK__ || {
@@ -608,9 +611,9 @@
             onCommitFiberUnmount: function () { }
         };
     </script>
-    <script src="js/memo.bundle.js?v=2026.02.24.9"></script>
-    <script src="js/assist.js?v=2026.02.24.9"></script>
-    <script src="js/document-panel.js?v=2026.02.24.9"></script>
+    <script src="js/memo.bundle.js?v=2026.02.24.10"></script>
+    <script src="js/assist.js?v=2026.02.24.10"></script>
+    <script src="js/document-panel.js?v=2026.02.24.10"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             setTimeout(function () {
@@ -630,6 +633,7 @@
             const DOCUMENT_OPEN_REQUEST_KEY = "goToolkit.memo.documentToOpen";
             const NOTION_PATH_STORAGE_KEY = "goToolkit.memo.notionPath";
             const VOICE_RECORDING_SPEED_STORAGE_KEY = "go-toolkit-voice-recording-speed";
+            const UI_FONT_SIZE_STORAGE_KEY = "go-toolkit-ui-font-size";
             const SHARE_QUERY_PARAM = "share";
             const SPACE_JOIN_CODE_PLACEHOLDER = "Passphrase en 5 mots espacés (ex : equipe produit cloud securite intelligence)";
             const SHARED_DOC_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -676,6 +680,20 @@
 
             const tabsEl = document.getElementById("memo-tabs");
             const THEME_STORAGE_KEY = "go-toolkit-theme";
+            function normalizeUiFontSize(value) {
+                const numeric = Number(value);
+                if (!Number.isFinite(numeric)) return "16";
+                return String(Math.min(20, Math.max(12, Math.round(numeric))));
+            }
+            function getSavedUiFontSize() {
+                const fromLocal = localStorage.getItem(UI_FONT_SIZE_STORAGE_KEY);
+                if (fromLocal != null) return normalizeUiFontSize(fromLocal);
+                return "16";
+            }
+            function applyUiFontSize(size) {
+                const normalized = normalizeUiFontSize(size);
+                document.documentElement.style.setProperty("--go-ui-font-size", `${normalized}px`);
+            }
             function applyTheme(theme) {
                 if (theme === "auto") {
                     const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -905,6 +923,7 @@
             const closeSettingsBtn = document.getElementById("closeSettingsBtn");
             const saveSettingsBtn = document.getElementById("saveSettingsBtn");
             const themeSelectMemo = document.getElementById("themeSelectMemo");
+            const uiFontSizeSelect = document.getElementById("uiFontSizeSelect");
             const voiceRecordingSpeedSelect = document.getElementById("voiceRecordingSpeedSelect");
             const aiBackendSelect = document.getElementById("aiBackendSelect");
             const iaApiKeyInput = document.getElementById("iaApiKeyInput");
@@ -1649,6 +1668,33 @@
                 return "memo-" + Math.random().toString(16).slice(2);
             }
 
+            function extractPageIndexFromTitle(value) {
+                const match = String(value || "").trim().match(/^Page\s+(\d+)$/i);
+                if (!match) return null;
+                const num = Number(match[1]);
+                if (!Number.isFinite(num) || num < 1) return null;
+                return Math.floor(num);
+            }
+
+            function getNextPageTitle(extraTitles = []) {
+                const titles = [];
+                if (state?.tabs?.length) {
+                    state.tabs.forEach(tab => titles.push(String(tab?.title || "")));
+                }
+                if (Array.isArray(openDocuments) && openDocuments.length) {
+                    openDocuments.forEach(doc => titles.push(String(doc?.title || "")));
+                }
+                if (Array.isArray(extraTitles) && extraTitles.length) {
+                    extraTitles.forEach(title => titles.push(String(title || "")));
+                }
+                let maxIndex = 0;
+                titles.forEach(title => {
+                    const idx = extractPageIndexFromTitle(title);
+                    if (idx && idx > maxIndex) maxIndex = idx;
+                });
+                return `Page ${maxIndex + 1}`;
+            }
+
             function createTemplateUuid() {
                 if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
                     return crypto.randomUUID();
@@ -2005,11 +2051,10 @@
                 });
                 refreshSpaceAwareUi();
                 setSpaceAccessOverlayVisible(false);
-                const opened = await openSharedTokenFirst(request.token, { canonicalize: false });
+                const opened = await openSharedTokenFirst(request.token, { canonicalize: true });
                 if (!opened) {
                     return false;
                 }
-                replaceUrlPath(`/${encodeURIComponent(String(request.token || "").trim().toLowerCase())}`);
                 setTimeout(() => {
                     backgroundSyncAllCloudDocuments({
                         force: false,
@@ -2037,6 +2082,10 @@
                         const localRecord = await documentApi.getRecord(routeId).catch(() => null);
                         if (localRecord?.payload) {
                             await openDocumentFromRecord(localRecord);
+                            replaceUrlPath(buildLocalCanonicalPath(
+                                localRecord.id,
+                                localRecord.title || getDocumentTitleFromState(localRecord.payload)
+                            ));
                             return true;
                         }
                     }
@@ -2047,7 +2096,7 @@
                     const hasAccess = hasLocalSpaceAccess(localRecord.spaceId);
                     if (hasAccess && localRecord.payload) {
                         await openSharedWorkingCopy(localRecord, { pushHistory: false });
-                        replaceUrlPath(`/${encodeURIComponent(token)}`);
+                        updateSharedDocumentCanonicalPath(localRecord);
                         return true;
                     }
                     if (!hasAccess) {
@@ -2068,11 +2117,10 @@
                 }
                 const hasAccess = hasLocalSpaceAccess(meta.spaceId);
                 if (hasAccess) {
-                    const opened = await openSharedTokenFirst(token, { canonicalize: false });
+                    const opened = await openSharedTokenFirst(token, { canonicalize: true });
                     if (!opened) {
                         return false;
                     }
-                    replaceUrlPath(`/${encodeURIComponent(token)}`);
                     return true;
                 }
                 deepLinkRequest = {
@@ -3185,9 +3233,6 @@
                         updateSharedSpaceSyncButtonState(spaceId, false);
                     }
                     await memoExplorer?.refresh?.({ forceReload: true });
-                    if (announceStatus) {
-                        setStatus("Cloud synchronisé", false);
-                    }
                 } catch (err) {
                     console.warn("Background cloud sync failed", err);
                     if (announceStatus) {
@@ -3821,7 +3866,7 @@
                     tabs: [
                         {
                             id,
-                            title: "Nouvelle page",
+                            title: getNextPageTitle(),
                             description: "",
                             superpowers: [],
                             category: "",
@@ -3854,7 +3899,7 @@
                     const id = typeof tab.id === "string" && tab.id ? tab.id : createId();
                     const title = typeof tab.title === "string" && tab.title.trim()
                         ? tab.title.trim()
-                        : "Nouvelle page";
+                        : "Page 1";
                     const description = typeof tab.description === "string" ? tab.description : "";
                     const category = typeof tab.category === "string" ? tab.category : "";
                     const superpowers = Array.isArray(tab.superpowers) ? tab.superpowers : (category ? [category] : []);
@@ -4145,7 +4190,7 @@
             function syncPageTitleInput() {
                 if (!memoPageTitleInput) return;
                 const activeDoc = openDocuments.find(item => String(item?.id || "").trim() === String(activeDocumentId || "").trim()) || null;
-                const nextTitle = String(activeDoc?.title || getDocumentTitleFromState(state) || "Nouvelle page").trim() || "Nouvelle page";
+                const nextTitle = String(activeDoc?.title || getDocumentTitleFromState(state) || "Page 1").trim() || "Page 1";
                 if (memoPageTitleInput.value !== nextTitle) {
                     memoPageTitleInput.value = nextTitle;
                 }
@@ -4153,7 +4198,7 @@
 
             async function commitPageTitleInput() {
                 if (!memoPageTitleInput) return;
-                const nextTitle = String(memoPageTitleInput.value || "").trim() || "Nouvelle page";
+                const nextTitle = String(memoPageTitleInput.value || "").trim() || "Page 1";
                 const activeTab = getActiveTab();
                 if (!activeTab) {
                     memoPageTitleInput.value = nextTitle;
@@ -4519,7 +4564,7 @@
                             : {
                                 tabs: [{
                                     id: createId(),
-                                    title: "Nouvelle page",
+                                    title: "Page 1",
                                     content: typeof target?.payload === "string" ? target.payload : ""
                                 }]
                             }
@@ -4975,7 +5020,7 @@
                 const payload = normalizeState({
                     tabs: [{
                         id: tabId,
-                        title: String(template.label || "Nouvelle page"),
+                        title: String(template.label || "Page 1"),
                         description: String(template.description || ""),
                         superpowers: Array.isArray(template.superpowers) ? template.superpowers : [],
                         content: String(template.html || ""),
@@ -5415,14 +5460,29 @@
             }
 
             function slugifyDocumentName(value) {
-                const raw = String(value || "").trim().toLowerCase();
+                const raw = String(value || "").trim();
                 if (!raw) return "document";
                 const normalized = raw
                     .normalize("NFD")
                     .replace(/[\u0300-\u036f]/g, "")
-                    .replace(/[^a-z0-9]+/g, "-")
+                    .replace(/[^A-Za-z0-9]+/g, "-")
                     .replace(/^-+|-+$/g, "");
                 return normalized || "document";
+            }
+
+            function buildSharedCanonicalPath(token, title) {
+                const normalizedToken = String(token || "").trim().toLowerCase();
+                if (!normalizedToken) return "/";
+                return `/${slugifyDocumentName(title || "document")}-${normalizedToken}`;
+            }
+
+            function buildLocalCanonicalPath(id, title) {
+                const normalizedId = String(id || "").trim();
+                if (!normalizedId) return "/";
+                if (SHARED_DOC_UUID_RE.test(normalizedId)) {
+                    return `/${slugifyDocumentName(title || "document")}-${normalizedId.toLowerCase()}`;
+                }
+                return `/${encodeURIComponent(normalizedId)}`;
             }
 
             function parseSharedDocumentRoute() {
@@ -5432,7 +5492,9 @@
                     const lastSegment = decodeURIComponent(path.split("/").filter(Boolean).pop() || "");
                     if (!lastSegment || lastSegment.endsWith(".html")) return null;
                     const match = lastSegment.match(/(?:.*-)?([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i);
-                    const token = String(match?.[1] || lastSegment || "").trim().toLowerCase();
+                    const token = match
+                        ? String(match[1] || "").trim().toLowerCase()
+                        : String(lastSegment || "").trim();
                     if (!token) return null;
                     return { token };
                 } catch (err) {
@@ -5471,7 +5533,15 @@
                 const routeId = id.startsWith("share:")
                     ? String(item?.token || id.replace(/^share:/, "")).trim().toLowerCase()
                     : id;
-                url.pathname = routeId ? `/${encodeURIComponent(routeId)}` : "/";
+                if (id.startsWith("share:")) {
+                    url.pathname = routeId
+                        ? buildSharedCanonicalPath(routeId, item?.title || "document")
+                        : "/";
+                } else {
+                    url.pathname = routeId
+                        ? buildLocalCanonicalPath(routeId, item?.title || "document")
+                        : "/";
+                }
                 url.searchParams.delete("edit");
                 return url;
             }
@@ -5479,7 +5549,7 @@
             function updateSharedDocumentCanonicalPath(item) {
                 const token = String(item?.token || "").trim().toLowerCase();
                 if (!SHARED_DOC_UUID_RE.test(token)) return;
-                const canonical = `/${slugifyDocumentName(item?.title || "document")}-${token}`;
+                const canonical = buildSharedCanonicalPath(token, item?.title || "document");
                 if (window.location.pathname !== canonical) {
                     replaceUrlPath(canonical);
                 }
@@ -5526,10 +5596,10 @@
                 }
             }
 
-            function updateUrlWithShareToken(token) {
+            function updateUrlWithShareToken(token, titleHint) {
                 const url = new URL(window.location.href);
                 if (token) {
-                    url.pathname = `/${encodeURIComponent(String(token || "").trim().toLowerCase())}`;
+                    url.pathname = buildSharedCanonicalPath(token, titleHint || getActiveTab()?.title || "document");
                     url.searchParams.delete(SHARE_QUERY_PARAM);
                 } else {
                     url.pathname = "/";
@@ -5560,6 +5630,7 @@
                     throw new Error("Service de partage indisponible");
                 }
                 const payload = buildSharePayload();
+                const preview = buildSharePreview();
                 const meta = await shareWorker.saveSharePayload(
                     FIRESTORE_CONTENT_COLLECTION,
                     token,
@@ -5567,9 +5638,8 @@
                     { inlineAssets: true, assetScope: "pages" }
                 );
                 currentShareToken = token;
-                updateUrlWithShareToken(token);
+                updateUrlWithShareToken(token, preview.title);
                 if (shareHistory && typeof shareHistory.upsertRecord === "function") {
-                    const preview = buildSharePreview();
                     const activeTab = getActiveTab();
                     const superpowers = Array.isArray(activeTab?.superpowers)
                         ? activeTab.superpowers
@@ -5585,10 +5655,10 @@
                 return meta;
             }
 
-            function buildShareUrl(token) {
+            function buildShareUrl(token, titleHint) {
                 if (!token) return "";
                 const url = new URL(window.location.href);
-                url.pathname = `/${encodeURIComponent(String(token || "").trim().toLowerCase())}`;
+                url.pathname = buildSharedCanonicalPath(token, titleHint || getActiveTab()?.title || "document");
                 url.searchParams.delete(SHARE_QUERY_PARAM);
                 url.searchParams.delete("edit");
                 return url.toString();
@@ -5605,7 +5675,7 @@
             function syncShareLink() {
                 if (!shareLinkField) return;
                 if (currentShareToken) {
-                    shareLinkField.value = buildShareUrl(currentShareToken);
+                    shareLinkField.value = buildShareUrl(currentShareToken, getActiveTab()?.title || "document");
                     shareLinkField.style.cursor = "pointer";
                     shareLinkField.title = "Cliquez pour copier";
                 } else {
@@ -5748,14 +5818,34 @@
                 try {
                     const url = new URL(window.location.href);
                     if (request.type === "share") {
-                        url.pathname = `/${encodeURIComponent(String(request.token || "").trim().toLowerCase())}`;
+                        const token = String(request.token || "").trim().toLowerCase();
+                        let titleHint = "document";
+                        try {
+                            const sharedItem = await resolveSharedRecordByToken(token);
+                            if (sharedItem?.title) {
+                                titleHint = sharedItem.title;
+                            }
+                        } catch (err) {
+                            // keep default title fallback
+                        }
+                        url.pathname = buildSharedCanonicalPath(token, titleHint);
                         url.searchParams.delete(SHARE_QUERY_PARAM);
                         url.searchParams.delete("edit");
                         history.replaceState(null, "", url.toString());
                         return await loadSharedRouteFromPath();
                     }
                     if (request.type === "edit") {
-                        url.pathname = `/${encodeURIComponent(String(request.id || "").trim())}`;
+                        const docId = String(request.id || "").trim();
+                        let titleHint = "document";
+                        try {
+                            const localRecord = await documentApi?.getRecord?.(docId);
+                            if (localRecord?.title) {
+                                titleHint = localRecord.title;
+                            }
+                        } catch (err) {
+                            // keep fallback
+                        }
+                        url.pathname = buildLocalCanonicalPath(docId, titleHint);
                         url.searchParams.delete("edit");
                         url.searchParams.delete(SHARE_QUERY_PARAM);
                         history.replaceState(null, "", url.toString());
@@ -5828,7 +5918,7 @@
                     const loaded = normalizeState(
                         hydratedRecord.payload.tabs
                             ? hydratedRecord.payload
-                            : { tabs: [{ id: createId(), title: "Nouvelle page", content: hydratedRecord.payload }] }
+                            : { tabs: [{ id: createId(), title: "Page 1", content: hydratedRecord.payload }] }
                     );
                     if (!loaded) return;
                     const previousState = state;
@@ -6250,7 +6340,7 @@
                 if (section === "private") {
                     const record = await documentApi?.getRecord?.(docId);
                     if (!record) return null;
-                    return { id: docId, title: record.title || "Nouvelle page", icon: record.icon || "", section };
+                    return { id: docId, title: record.title || "Page 1", icon: record.icon || "", section };
                 }
                 if (section === "shared") {
                     const token = docId.startsWith("share:") ? docId.slice("share:".length) : docId;
@@ -6326,7 +6416,7 @@
                             allDocs
                                 .filter(item => item && item.app === "memo" && String(item.parentId || "").trim() === activeId)
                                 .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")))
-                                .map(item => ({ id: item.id, title: item.title || "Nouvelle page", icon: item.icon || "" }))
+                                .map(item => ({ id: item.id, title: item.title || "Page 1", icon: item.icon || "" }))
                         );
                     }
                 } else if (section === "shared") {
@@ -6853,7 +6943,7 @@
                 await documentApi?.upsertRecord?.({
                     id,
                     app: "memo",
-                    title: meta.title || "Nouvelle page",
+                    title: meta.title || "Page 1",
                     description: meta.description || "",
                     superpowers: Array.isArray(meta.superpowers) ? meta.superpowers : [],
                     payload,
@@ -6869,7 +6959,7 @@
             async function createCommonFromPayload(payload, meta = {}) {
                 const firstTab = payload?.tabs?.[0] || {};
                 const templatePayload = {
-                    label: meta.title || firstTab.title || "Nouvelle page",
+                    label: meta.title || firstTab.title || "Page 1",
                     description: meta.description || firstTab.description || "",
                     category: "",
                     superpowers: Array.isArray(meta.superpowers) ? meta.superpowers : (Array.isArray(firstTab.superpowers) ? firstTab.superpowers : []),
@@ -6962,6 +7052,11 @@
                     payload: doc?.payload || (docId === activeDocumentId ? buildSharePayload() : null),
                     updatedAt: new Date().toISOString()
                 })).catch(() => null);
+                window.dispatchEvent(new CustomEvent("goToolkitMemoLinkTargetsUpdated", {
+                    detail: {
+                        ids: [String(docId || "").trim()].filter(Boolean)
+                    }
+                }));
                 Promise.resolve().then(() => renderDocumentTabs()).catch(() => null);
             }
 
@@ -7062,6 +7157,11 @@
                         title: nextName
                     });
                 }
+                window.dispatchEvent(new CustomEvent("goToolkitMemoLinkTargetsUpdated", {
+                    detail: {
+                        ids: [String(id || "").trim()].filter(Boolean)
+                    }
+                }));
                 return { payload: cloudPayload, updatedAt: now, icon, parentId, token, spaceId, position };
             }
 
@@ -7100,7 +7200,7 @@
                 const explorer = getExplorer();
                 const currentDocMeta = openDocuments.find(doc => doc.id === docId) || null;
                 const currentIcon = String(currentDocMeta?.icon || "").trim();
-                const currentMetaTitle = String(currentDocMeta?.title || currentTitle || "").trim() || "Nouvelle page";
+                const currentMetaTitle = String(currentDocMeta?.title || currentTitle || "").trim() || "Page 1";
                 const result = await explorer?.openRenameModal?.(currentMetaTitle, currentDescription || "", {
                     superpowers: currentSuperpowers || [],
                     documentId: docId,
@@ -7108,7 +7208,7 @@
                     allowPublish: true
                 });
                 if (!result) return;
-                const finalName = String(result.name || "").trim() || "Nouvelle page";
+                const finalName = String(result.name || "").trim() || "Page 1";
                 const nextIcon = String(result.icon ?? currentIcon).trim();
                 if (isCloudDocumentId(docId)) {
                     await applyCloudDocumentRename(
@@ -7491,8 +7591,10 @@
             }
 
             async function getAutoDocumentName(templateName = null) {
-                const baseName = templateName ? `Nouvelle page [${templateName}]` : "Nouvelle page";
-                return baseName;
+                if (templateName) {
+                    return `${getNextPageTitle()} [${templateName}]`;
+                }
+                return getNextPageTitle();
             }
 
             function escapeRegExp(string) {
@@ -7520,7 +7622,7 @@
                 const fallback = normalizeState({
                     tabs: [{
                         id: tabId,
-                        title: String(record?.title || "Nouvelle page").trim() || "Nouvelle page",
+                        title: String(record?.title || "Page 1").trim() || "Page 1",
                         description: String(record?.description || ""),
                         superpowers: Array.isArray(record?.superpowers) ? record.superpowers : [],
                         content: legacyContent
@@ -7690,7 +7792,7 @@
                 },
                 onSectionAdd: async (sectionName) => {
                     if (String(sectionName || "") === "private") {
-                        await createNewDocument("Nouvelle page", "", [], "", "", "");
+                        await createNewDocument(getNextPageTitle(), "", [], "", "", "");
                         const createdId = String(activeDocumentId || "").trim();
                         if (createdId) {
                             await memoExplorer?.prioritizeItem?.(createdId);
@@ -7699,7 +7801,7 @@
                         return;
                     }
                     const spaceId = normalizeSpaceId(String(sectionName || "").replace(/^shared:/, "") || DEFAULT_SPACE_ID);
-                    const title = "Nouvelle page";
+                    const title = getNextPageTitle();
                     const baseState = createDefaultState();
                     if (baseState?.tabs?.[0]) {
                         baseState.tabs[0].title = title;
@@ -7789,7 +7891,7 @@
                     );
                     if (item.isCommon) {
                         const parentTemplateId = parseCommonTemplateId(item.id);
-                        const baseLabel = "Nouvelle page";
+                        const baseLabel = getNextPageTitle();
                         const labels = new Set((cloudTemplates || []).map(t => String(t?.label || "").trim()).filter(Boolean));
                         let label = baseLabel;
                         let i = 2;
@@ -7846,7 +7948,7 @@
                     if (isSharedItem) {
                         const targetSpaceId = normalizeSpaceId(item.spaceId || DEFAULT_SPACE_ID);
                         const parentId = normalizeSharedParentId(itemId || item.token || "");
-                        const title = "Nouvelle page";
+                        const title = getNextPageTitle();
                         const baseState = createDefaultState();
                         if (baseState?.tabs?.[0]) {
                             baseState.tabs[0].title = title;
@@ -7903,7 +8005,7 @@
                         return;
                     }
                     const parentId = item.id;
-                    const childName = "Nouvelle page";
+                    const childName = getNextPageTitle();
                     await createNewDocument(childName, "", [], "", parentId, "");
                     await memoExplorer?.expandItem?.(parentId);
                 },
@@ -8333,7 +8435,7 @@
                         if (!record) return;
                         const payload = record.payload || buildSharePayload();
                         const created = await createCommonFromPayload(payload, {
-                            title: record.title || "Nouvelle page",
+                            title: record.title || "Page 1",
                             description: record.description || "",
                             superpowers: Array.isArray(record.superpowers) ? record.superpowers : [],
                             parentId: nextParentId
@@ -8364,7 +8466,7 @@
                         const payload = normalizeState({
                             tabs: [{
                                 id: tabId,
-                                title: String(template.label || "Nouvelle page"),
+                                title: String(template.label || "Page 1"),
                                 description: String(template.description || ""),
                                 superpowers: Array.isArray(template.superpowers) ? template.superpowers : [],
                                 content: String(template.html || ""),
@@ -8374,7 +8476,7 @@
                             promptPresetId: "edit"
                         }) || buildSharePayload();
                         const created = await createPrivateFromPayload(payload, {
-                            title: template.label || "Nouvelle page",
+                            title: template.label || "Page 1",
                             description: template.description || "",
                             superpowers: Array.isArray(template.superpowers) ? template.superpowers : [],
                             parentId: nextParentId
@@ -8388,7 +8490,7 @@
                         await memoExplorer?.upsertItem?.({
                             id: created.id,
                             app: "memo",
-                            title: template.label || "Nouvelle page",
+                            title: template.label || "Page 1",
                             description: template.description || "",
                             superpowers: Array.isArray(template.superpowers) ? template.superpowers : [],
                             parentId: nextParentId,
@@ -8572,7 +8674,7 @@
                             await documentApi?.upsertRecord?.({
                                 id: localId,
                                 app: "memo",
-                                title: source.title || "Nouvelle page",
+                                title: source.title || "Page 1",
                                 description: source.description || "",
                                 superpowers: Array.isArray(source.superpowers) ? source.superpowers : [],
                                 payload,
@@ -8584,7 +8686,7 @@
                             await memoExplorer?.upsertItem?.({
                                 id: localId,
                                 app: "memo",
-                                title: source.title || "Nouvelle page",
+                                title: source.title || "Page 1",
                                 description: source.description || "",
                                 superpowers: Array.isArray(source.superpowers) ? source.superpowers : [],
                                 payload,
@@ -8623,7 +8725,7 @@
                         const sharedRecord = (records || []).find(item => item && String(item.token || "") === token);
                         if (!sharedRecord) return;
                         const created = await createCommonFromPayload(sharedRecord.payload, {
-                            title: sharedRecord.title || "Nouvelle page",
+                            title: sharedRecord.title || "Page 1",
                             description: sharedRecord.description || "",
                             superpowers: Array.isArray(sharedRecord.superpowers) ? sharedRecord.superpowers : [],
                             parentId: nextParentId
@@ -8661,7 +8763,7 @@
                         const payload = normalizeState({
                             tabs: [{
                                 id: tabId,
-                                title: String(template.label || "Nouvelle page"),
+                                title: String(template.label || "Page 1"),
                                 description: String(template.description || ""),
                                 superpowers: Array.isArray(template.superpowers) ? template.superpowers : [],
                                 content: String(template.html || ""),
@@ -9820,6 +9922,7 @@
                 onOpen: function () {
                     const currentTheme = localStorage.getItem(THEME_STORAGE_KEY) || "auto";
                     if (themeSelectMemo) themeSelectMemo.value = currentTheme;
+                    if (uiFontSizeSelect) uiFontSizeSelect.value = getSavedUiFontSize();
                     if (voiceRecordingSpeedSelect) {
                         voiceRecordingSpeedSelect.value = getSavedVoiceRecordingSpeed();
                     }
@@ -9866,6 +9969,11 @@
                 const theme = themeSelectMemo.value || "auto";
                 localStorage.setItem(THEME_STORAGE_KEY, theme);
                 applyTheme(theme);
+            });
+            uiFontSizeSelect?.addEventListener("change", () => {
+                const size = normalizeUiFontSize(uiFontSizeSelect.value || "16");
+                localStorage.setItem(UI_FONT_SIZE_STORAGE_KEY, size);
+                applyUiFontSize(size);
             });
 
             resetPromptBtn?.addEventListener("click", () => {
@@ -9919,6 +10027,9 @@
                     const theme = themeSelectMemo?.value || "auto";
                     localStorage.setItem(THEME_STORAGE_KEY, theme);
                     applyTheme(theme);
+                    const uiFontSize = normalizeUiFontSize(uiFontSizeSelect?.value || "16");
+                    localStorage.setItem(UI_FONT_SIZE_STORAGE_KEY, uiFontSize);
+                    applyUiFontSize(uiFontSize);
 
                     const voiceSpeed = normalizeVoiceRecordingSpeed(voiceRecordingSpeedSelect?.value || "1.2");
                     localStorage.setItem(VOICE_RECORDING_SPEED_STORAGE_KEY, voiceSpeed);

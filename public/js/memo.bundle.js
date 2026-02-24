@@ -28135,31 +28135,40 @@ img.ProseMirror-separator {
   ];
   var ArrowUpRight = createLucideIcon("arrow-up-right", __iconNode6);
 
-  // node_modules/lucide-react/dist/esm/icons/baseline.js
+  // node_modules/lucide-react/dist/esm/icons/arrow-up.js
   init_define_process_env();
   init_polyfills();
   var __iconNode7 = [
+    ["path", { d: "m5 12 7-7 7 7", key: "hav0vg" }],
+    ["path", { d: "M12 19V5", key: "x0mq9r" }]
+  ];
+  var ArrowUp = createLucideIcon("arrow-up", __iconNode7);
+
+  // node_modules/lucide-react/dist/esm/icons/baseline.js
+  init_define_process_env();
+  init_polyfills();
+  var __iconNode8 = [
     ["path", { d: "M4 20h16", key: "14thso" }],
     ["path", { d: "m6 16 6-12 6 12", key: "1b4byz" }],
     ["path", { d: "M8 12h8", key: "1wcyev" }]
   ];
-  var Baseline = createLucideIcon("baseline", __iconNode7);
+  var Baseline = createLucideIcon("baseline", __iconNode8);
 
   // node_modules/lucide-react/dist/esm/icons/bold.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode8 = [
+  var __iconNode9 = [
     [
       "path",
       { d: "M6 12h9a4 4 0 0 1 0 8H7a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h7a4 4 0 0 1 0 8", key: "mg9rjx" }
     ]
   ];
-  var Bold2 = createLucideIcon("bold", __iconNode8);
+  var Bold2 = createLucideIcon("bold", __iconNode9);
 
   // node_modules/lucide-react/dist/esm/icons/bot.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode9 = [
+  var __iconNode10 = [
     ["path", { d: "M12 8V4H8", key: "hb8ula" }],
     ["rect", { width: "16", height: "12", x: "4", y: "8", rx: "2", key: "enze0r" }],
     ["path", { d: "M2 14h2", key: "vft8re" }],
@@ -28167,12 +28176,12 @@ img.ProseMirror-separator {
     ["path", { d: "M15 13v2", key: "1xurst" }],
     ["path", { d: "M9 13v2", key: "rq6x2g" }]
   ];
-  var Bot = createLucideIcon("bot", __iconNode9);
+  var Bot = createLucideIcon("bot", __iconNode10);
 
   // node_modules/lucide-react/dist/esm/icons/boxes.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode10 = [
+  var __iconNode11 = [
     [
       "path",
       {
@@ -28204,49 +28213,49 @@ img.ProseMirror-separator {
     ["path", { d: "m12 8 4.74-2.85", key: "3rx089" }],
     ["path", { d: "M12 13.5V8", key: "1io7kd" }]
   ];
-  var Boxes = createLucideIcon("boxes", __iconNode10);
+  var Boxes = createLucideIcon("boxes", __iconNode11);
 
   // node_modules/lucide-react/dist/esm/icons/check-check.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode11 = [
+  var __iconNode12 = [
     ["path", { d: "M18 6 7 17l-5-5", key: "116fxf" }],
     ["path", { d: "m22 10-7.5 7.5L13 16", key: "ke71qq" }]
   ];
-  var CheckCheck = createLucideIcon("check-check", __iconNode11);
+  var CheckCheck = createLucideIcon("check-check", __iconNode12);
 
   // node_modules/lucide-react/dist/esm/icons/check.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode12 = [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]];
-  var Check = createLucideIcon("check", __iconNode12);
+  var __iconNode13 = [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]];
+  var Check = createLucideIcon("check", __iconNode13);
 
   // node_modules/lucide-react/dist/esm/icons/chevron-down.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode13 = [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]];
-  var ChevronDown = createLucideIcon("chevron-down", __iconNode13);
+  var __iconNode14 = [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]];
+  var ChevronDown = createLucideIcon("chevron-down", __iconNode14);
 
   // node_modules/lucide-react/dist/esm/icons/chevron-up.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode14 = [["path", { d: "m18 15-6-6-6 6", key: "153udz" }]];
-  var ChevronUp = createLucideIcon("chevron-up", __iconNode14);
+  var __iconNode15 = [["path", { d: "m18 15-6-6-6 6", key: "153udz" }]];
+  var ChevronUp = createLucideIcon("chevron-up", __iconNode15);
 
   // node_modules/lucide-react/dist/esm/icons/circle-alert.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode15 = [
+  var __iconNode16 = [
     ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
     ["line", { x1: "12", x2: "12", y1: "8", y2: "12", key: "1pkeuh" }],
     ["line", { x1: "12", x2: "12.01", y1: "16", y2: "16", key: "4dfq90" }]
   ];
-  var CircleAlert = createLucideIcon("circle-alert", __iconNode15);
+  var CircleAlert = createLucideIcon("circle-alert", __iconNode16);
 
   // node_modules/lucide-react/dist/esm/icons/circle-play.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode16 = [
+  var __iconNode17 = [
     [
       "path",
       {
@@ -28256,22 +28265,22 @@ img.ProseMirror-separator {
     ],
     ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }]
   ];
-  var CirclePlay = createLucideIcon("circle-play", __iconNode16);
+  var CirclePlay = createLucideIcon("circle-play", __iconNode17);
 
   // node_modules/lucide-react/dist/esm/icons/circle-x.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode17 = [
+  var __iconNode18 = [
     ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
     ["path", { d: "m15 9-6 6", key: "1uzhvr" }],
     ["path", { d: "m9 9 6 6", key: "z0biqf" }]
   ];
-  var CircleX = createLucideIcon("circle-x", __iconNode17);
+  var CircleX = createLucideIcon("circle-x", __iconNode18);
 
   // node_modules/lucide-react/dist/esm/icons/clapperboard.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode18 = [
+  var __iconNode19 = [
     [
       "path",
       { d: "M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3Z", key: "1tn4o7" }
@@ -28280,125 +28289,125 @@ img.ProseMirror-separator {
     ["path", { d: "m12.4 3.4 3.1 4", key: "6hsd6n" }],
     ["path", { d: "M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z", key: "ltgou9" }]
   ];
-  var Clapperboard = createLucideIcon("clapperboard", __iconNode18);
+  var Clapperboard = createLucideIcon("clapperboard", __iconNode19);
 
   // node_modules/lucide-react/dist/esm/icons/copy.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode19 = [
+  var __iconNode20 = [
     ["rect", { width: "14", height: "14", x: "8", y: "8", rx: "2", ry: "2", key: "17jyea" }],
     ["path", { d: "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2", key: "zix9uf" }]
   ];
-  var Copy = createLucideIcon("copy", __iconNode19);
+  var Copy = createLucideIcon("copy", __iconNode20);
 
   // node_modules/lucide-react/dist/esm/icons/crop.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode20 = [
+  var __iconNode21 = [
     ["path", { d: "M6 2v14a2 2 0 0 0 2 2h14", key: "ron5a4" }],
     ["path", { d: "M18 22V8a2 2 0 0 0-2-2H2", key: "7s9ehn" }]
   ];
-  var Crop = createLucideIcon("crop", __iconNode20);
+  var Crop = createLucideIcon("crop", __iconNode21);
 
   // node_modules/lucide-react/dist/esm/icons/download.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode21 = [
+  var __iconNode22 = [
     ["path", { d: "M12 15V3", key: "m9g1x1" }],
     ["path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", key: "ih7n3h" }],
     ["path", { d: "m7 10 5 5 5-5", key: "brsn70" }]
   ];
-  var Download = createLucideIcon("download", __iconNode21);
+  var Download = createLucideIcon("download", __iconNode22);
 
   // node_modules/lucide-react/dist/esm/icons/fullscreen.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode22 = [
+  var __iconNode23 = [
     ["path", { d: "M3 7V5a2 2 0 0 1 2-2h2", key: "aa7l1z" }],
     ["path", { d: "M17 3h2a2 2 0 0 1 2 2v2", key: "4qcy5o" }],
     ["path", { d: "M21 17v2a2 2 0 0 1-2 2h-2", key: "6vwrx8" }],
     ["path", { d: "M7 21H5a2 2 0 0 1-2-2v-2", key: "ioqczr" }],
     ["rect", { width: "10", height: "8", x: "7", y: "8", rx: "1", key: "vys8me" }]
   ];
-  var Fullscreen = createLucideIcon("fullscreen", __iconNode22);
+  var Fullscreen = createLucideIcon("fullscreen", __iconNode23);
 
   // node_modules/lucide-react/dist/esm/icons/heading-1.js
-  init_define_process_env();
-  init_polyfills();
-  var __iconNode23 = [
-    ["path", { d: "M4 12h8", key: "17cfdx" }],
-    ["path", { d: "M4 18V6", key: "1rz3zl" }],
-    ["path", { d: "M12 18V6", key: "zqpxq5" }],
-    ["path", { d: "m17 12 3-2v8", key: "1hhhft" }]
-  ];
-  var Heading1 = createLucideIcon("heading-1", __iconNode23);
-
-  // node_modules/lucide-react/dist/esm/icons/heading-2.js
   init_define_process_env();
   init_polyfills();
   var __iconNode24 = [
     ["path", { d: "M4 12h8", key: "17cfdx" }],
     ["path", { d: "M4 18V6", key: "1rz3zl" }],
     ["path", { d: "M12 18V6", key: "zqpxq5" }],
-    ["path", { d: "M21 18h-4c0-4 4-3 4-6 0-1.5-2-2.5-4-1", key: "9jr5yi" }]
+    ["path", { d: "m17 12 3-2v8", key: "1hhhft" }]
   ];
-  var Heading2 = createLucideIcon("heading-2", __iconNode24);
+  var Heading1 = createLucideIcon("heading-1", __iconNode24);
 
-  // node_modules/lucide-react/dist/esm/icons/heading-3.js
+  // node_modules/lucide-react/dist/esm/icons/heading-2.js
   init_define_process_env();
   init_polyfills();
   var __iconNode25 = [
     ["path", { d: "M4 12h8", key: "17cfdx" }],
     ["path", { d: "M4 18V6", key: "1rz3zl" }],
     ["path", { d: "M12 18V6", key: "zqpxq5" }],
+    ["path", { d: "M21 18h-4c0-4 4-3 4-6 0-1.5-2-2.5-4-1", key: "9jr5yi" }]
+  ];
+  var Heading2 = createLucideIcon("heading-2", __iconNode25);
+
+  // node_modules/lucide-react/dist/esm/icons/heading-3.js
+  init_define_process_env();
+  init_polyfills();
+  var __iconNode26 = [
+    ["path", { d: "M4 12h8", key: "17cfdx" }],
+    ["path", { d: "M4 18V6", key: "1rz3zl" }],
+    ["path", { d: "M12 18V6", key: "zqpxq5" }],
     ["path", { d: "M17.5 10.5c1.7-1 3.5 0 3.5 1.5a2 2 0 0 1-2 2", key: "68ncm8" }],
     ["path", { d: "M17 17.5c2 1.5 4 .3 4-1.5a2 2 0 0 0-2-2", key: "1ejuhz" }]
   ];
-  var Heading3 = createLucideIcon("heading-3", __iconNode25);
+  var Heading3 = createLucideIcon("heading-3", __iconNode26);
 
   // node_modules/lucide-react/dist/esm/icons/highlighter.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode26 = [
+  var __iconNode27 = [
     ["path", { d: "m9 11-6 6v3h9l3-3", key: "1a3l36" }],
     ["path", { d: "m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4", key: "14a9rk" }]
   ];
-  var Highlighter = createLucideIcon("highlighter", __iconNode26);
+  var Highlighter = createLucideIcon("highlighter", __iconNode27);
 
   // node_modules/lucide-react/dist/esm/icons/image.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode27 = [
+  var __iconNode28 = [
     ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", ry: "2", key: "1m3agn" }],
     ["circle", { cx: "9", cy: "9", r: "2", key: "af1f0g" }],
     ["path", { d: "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21", key: "1xmnt7" }]
   ];
-  var Image2 = createLucideIcon("image", __iconNode27);
+  var Image2 = createLucideIcon("image", __iconNode28);
 
   // node_modules/lucide-react/dist/esm/icons/info.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode28 = [
+  var __iconNode29 = [
     ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
     ["path", { d: "M12 16v-4", key: "1dtifu" }],
     ["path", { d: "M12 8h.01", key: "e9boi3" }]
   ];
-  var Info = createLucideIcon("info", __iconNode28);
+  var Info = createLucideIcon("info", __iconNode29);
 
   // node_modules/lucide-react/dist/esm/icons/italic.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode29 = [
+  var __iconNode30 = [
     ["line", { x1: "19", x2: "10", y1: "4", y2: "4", key: "15jd3p" }],
     ["line", { x1: "14", x2: "5", y1: "20", y2: "20", key: "bu0au3" }],
     ["line", { x1: "15", x2: "9", y1: "4", y2: "20", key: "uljnxc" }]
   ];
-  var Italic2 = createLucideIcon("italic", __iconNode29);
+  var Italic2 = createLucideIcon("italic", __iconNode30);
 
   // node_modules/lucide-react/dist/esm/icons/lightbulb.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode30 = [
+  var __iconNode31 = [
     [
       "path",
       {
@@ -28409,43 +28418,43 @@ img.ProseMirror-separator {
     ["path", { d: "M9 18h6", key: "x1upvd" }],
     ["path", { d: "M10 22h4", key: "ceow96" }]
   ];
-  var Lightbulb = createLucideIcon("lightbulb", __iconNode30);
+  var Lightbulb = createLucideIcon("lightbulb", __iconNode31);
 
   // node_modules/lucide-react/dist/esm/icons/link-2.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode31 = [
+  var __iconNode32 = [
     ["path", { d: "M9 17H7A5 5 0 0 1 7 7h2", key: "8i5ue5" }],
     ["path", { d: "M15 7h2a5 5 0 1 1 0 10h-2", key: "1b9ql8" }],
     ["line", { x1: "8", x2: "16", y1: "12", y2: "12", key: "1jonct" }]
   ];
-  var Link2 = createLucideIcon("link-2", __iconNode31);
+  var Link2 = createLucideIcon("link-2", __iconNode32);
 
   // node_modules/lucide-react/dist/esm/icons/link.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode32 = [
+  var __iconNode33 = [
     ["path", { d: "M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71", key: "1cjeqo" }],
     ["path", { d: "M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71", key: "19qd67" }]
   ];
-  var Link3 = createLucideIcon("link", __iconNode32);
+  var Link3 = createLucideIcon("link", __iconNode33);
 
   // node_modules/lucide-react/dist/esm/icons/list-tree.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode33 = [
+  var __iconNode34 = [
     ["path", { d: "M8 5h13", key: "1pao27" }],
     ["path", { d: "M13 12h8", key: "h98zly" }],
     ["path", { d: "M13 19h8", key: "c3s6r1" }],
     ["path", { d: "M3 10a2 2 0 0 0 2 2h3", key: "1npucw" }],
     ["path", { d: "M3 5v12a2 2 0 0 0 2 2h3", key: "x1gjn2" }]
   ];
-  var ListTree = createLucideIcon("list-tree", __iconNode33);
+  var ListTree = createLucideIcon("list-tree", __iconNode34);
 
   // node_modules/lucide-react/dist/esm/icons/list.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode34 = [
+  var __iconNode35 = [
     ["path", { d: "M3 5h.01", key: "18ugdj" }],
     ["path", { d: "M3 12h.01", key: "nlz23k" }],
     ["path", { d: "M3 19h.01", key: "noohij" }],
@@ -28453,18 +28462,18 @@ img.ProseMirror-separator {
     ["path", { d: "M8 12h13", key: "1za7za" }],
     ["path", { d: "M8 19h13", key: "m83p4d" }]
   ];
-  var List = createLucideIcon("list", __iconNode34);
+  var List = createLucideIcon("list", __iconNode35);
 
   // node_modules/lucide-react/dist/esm/icons/loader-circle.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode35 = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
-  var LoaderCircle = createLucideIcon("loader-circle", __iconNode35);
+  var __iconNode36 = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
+  var LoaderCircle = createLucideIcon("loader-circle", __iconNode36);
 
   // node_modules/lucide-react/dist/esm/icons/pencil.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode36 = [
+  var __iconNode37 = [
     [
       "path",
       {
@@ -28474,12 +28483,12 @@ img.ProseMirror-separator {
     ],
     ["path", { d: "m15 5 4 4", key: "1mk7zo" }]
   ];
-  var Pencil = createLucideIcon("pencil", __iconNode36);
+  var Pencil = createLucideIcon("pencil", __iconNode37);
 
   // node_modules/lucide-react/dist/esm/icons/play.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode37 = [
+  var __iconNode38 = [
     [
       "path",
       {
@@ -28488,21 +28497,21 @@ img.ProseMirror-separator {
       }
     ]
   ];
-  var Play = createLucideIcon("play", __iconNode37);
+  var Play = createLucideIcon("play", __iconNode38);
 
   // node_modules/lucide-react/dist/esm/icons/plus.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode38 = [
+  var __iconNode39 = [
     ["path", { d: "M5 12h14", key: "1ays0h" }],
     ["path", { d: "M12 5v14", key: "s699le" }]
   ];
-  var Plus = createLucideIcon("plus", __iconNode38);
+  var Plus = createLucideIcon("plus", __iconNode39);
 
   // node_modules/lucide-react/dist/esm/icons/quote.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode39 = [
+  var __iconNode40 = [
     [
       "path",
       {
@@ -28518,38 +28527,38 @@ img.ProseMirror-separator {
       }
     ]
   ];
-  var Quote = createLucideIcon("quote", __iconNode39);
+  var Quote = createLucideIcon("quote", __iconNode40);
 
   // node_modules/lucide-react/dist/esm/icons/rectangle-horizontal.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode40 = [
+  var __iconNode41 = [
     ["rect", { width: "20", height: "12", x: "2", y: "6", rx: "2", key: "9lu3g6" }]
   ];
-  var RectangleHorizontal = createLucideIcon("rectangle-horizontal", __iconNode40);
+  var RectangleHorizontal = createLucideIcon("rectangle-horizontal", __iconNode41);
 
   // node_modules/lucide-react/dist/esm/icons/redo-2.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode41 = [
+  var __iconNode42 = [
     ["path", { d: "m15 14 5-5-5-5", key: "12vg1m" }],
     ["path", { d: "M20 9H9.5A5.5 5.5 0 0 0 4 14.5A5.5 5.5 0 0 0 9.5 20H13", key: "6uklza" }]
   ];
-  var Redo2 = createLucideIcon("redo-2", __iconNode41);
+  var Redo2 = createLucideIcon("redo-2", __iconNode42);
 
   // node_modules/lucide-react/dist/esm/icons/rotate-cw.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode42 = [
+  var __iconNode43 = [
     ["path", { d: "M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8", key: "1p45f6" }],
     ["path", { d: "M21 3v5h-5", key: "1q7to0" }]
   ];
-  var RotateCw = createLucideIcon("rotate-cw", __iconNode42);
+  var RotateCw = createLucideIcon("rotate-cw", __iconNode43);
 
   // node_modules/lucide-react/dist/esm/icons/send.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode43 = [
+  var __iconNode44 = [
     [
       "path",
       {
@@ -28559,12 +28568,12 @@ img.ProseMirror-separator {
     ],
     ["path", { d: "m21.854 2.147-10.94 10.939", key: "12cjpa" }]
   ];
-  var Send = createLucideIcon("send", __iconNode43);
+  var Send = createLucideIcon("send", __iconNode44);
 
   // node_modules/lucide-react/dist/esm/icons/shapes.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode44 = [
+  var __iconNode45 = [
     [
       "path",
       {
@@ -28575,12 +28584,12 @@ img.ProseMirror-separator {
     ["rect", { x: "3", y: "14", width: "7", height: "7", rx: "1", key: "1bkyp8" }],
     ["circle", { cx: "17.5", cy: "17.5", r: "3.5", key: "w3z12y" }]
   ];
-  var Shapes = createLucideIcon("shapes", __iconNode44);
+  var Shapes = createLucideIcon("shapes", __iconNode45);
 
   // node_modules/lucide-react/dist/esm/icons/sparkles.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode45 = [
+  var __iconNode46 = [
     [
       "path",
       {
@@ -28592,72 +28601,72 @@ img.ProseMirror-separator {
     ["path", { d: "M22 4h-4", key: "gwowj6" }],
     ["circle", { cx: "4", cy: "20", r: "2", key: "6kqj1y" }]
   ];
-  var Sparkles = createLucideIcon("sparkles", __iconNode45);
+  var Sparkles = createLucideIcon("sparkles", __iconNode46);
 
   // node_modules/lucide-react/dist/esm/icons/square-check-big.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode46 = [
+  var __iconNode47 = [
     [
       "path",
       { d: "M21 10.656V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h12.344", key: "2acyp4" }
     ],
     ["path", { d: "m9 11 3 3L22 4", key: "1pflzl" }]
   ];
-  var SquareCheckBig = createLucideIcon("square-check-big", __iconNode46);
+  var SquareCheckBig = createLucideIcon("square-check-big", __iconNode47);
 
   // node_modules/lucide-react/dist/esm/icons/square-check.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode47 = [
+  var __iconNode48 = [
     ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }],
     ["path", { d: "m9 12 2 2 4-4", key: "dzmm74" }]
   ];
-  var SquareCheck = createLucideIcon("square-check", __iconNode47);
+  var SquareCheck = createLucideIcon("square-check", __iconNode48);
 
   // node_modules/lucide-react/dist/esm/icons/square-code.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode48 = [
+  var __iconNode49 = [
     ["path", { d: "m10 9-3 3 3 3", key: "1oro0q" }],
     ["path", { d: "m14 15 3-3-3-3", key: "bz13h7" }],
     ["rect", { x: "3", y: "3", width: "18", height: "18", rx: "2", key: "h1oib" }]
   ];
-  var SquareCode = createLucideIcon("square-code", __iconNode48);
+  var SquareCode = createLucideIcon("square-code", __iconNode49);
 
   // node_modules/lucide-react/dist/esm/icons/square.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode49 = [
+  var __iconNode50 = [
     ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }]
   ];
-  var Square = createLucideIcon("square", __iconNode49);
+  var Square = createLucideIcon("square", __iconNode50);
 
   // node_modules/lucide-react/dist/esm/icons/strikethrough.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode50 = [
+  var __iconNode51 = [
     ["path", { d: "M16 4H9a3 3 0 0 0-2.83 4", key: "43sutm" }],
     ["path", { d: "M14 12a4 4 0 0 1 0 8H6", key: "nlfj13" }],
     ["line", { x1: "4", x2: "20", y1: "12", y2: "12", key: "1e0a9i" }]
   ];
-  var Strikethrough = createLucideIcon("strikethrough", __iconNode50);
+  var Strikethrough = createLucideIcon("strikethrough", __iconNode51);
 
   // node_modules/lucide-react/dist/esm/icons/table.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode51 = [
+  var __iconNode52 = [
     ["path", { d: "M12 3v18", key: "108xh3" }],
     ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }],
     ["path", { d: "M3 9h18", key: "1pudct" }],
     ["path", { d: "M3 15h18", key: "5xshup" }]
   ];
-  var Table2 = createLucideIcon("table", __iconNode51);
+  var Table2 = createLucideIcon("table", __iconNode52);
 
   // node_modules/lucide-react/dist/esm/icons/tag.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode52 = [
+  var __iconNode53 = [
     [
       "path",
       {
@@ -28667,24 +28676,24 @@ img.ProseMirror-separator {
     ],
     ["circle", { cx: "7.5", cy: "7.5", r: ".5", fill: "currentColor", key: "kqv944" }]
   ];
-  var Tag = createLucideIcon("tag", __iconNode52);
+  var Tag = createLucideIcon("tag", __iconNode53);
 
   // node_modules/lucide-react/dist/esm/icons/trash-2.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode53 = [
+  var __iconNode54 = [
     ["path", { d: "M10 11v6", key: "nco0om" }],
     ["path", { d: "M14 11v6", key: "outv1u" }],
     ["path", { d: "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6", key: "miytrc" }],
     ["path", { d: "M3 6h18", key: "d0wm0j" }],
     ["path", { d: "M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2", key: "e791ji" }]
   ];
-  var Trash2 = createLucideIcon("trash-2", __iconNode53);
+  var Trash2 = createLucideIcon("trash-2", __iconNode54);
 
   // node_modules/lucide-react/dist/esm/icons/triangle-alert.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode54 = [
+  var __iconNode55 = [
     [
       "path",
       {
@@ -28695,54 +28704,54 @@ img.ProseMirror-separator {
     ["path", { d: "M12 9v4", key: "juzpu7" }],
     ["path", { d: "M12 17h.01", key: "p32p05" }]
   ];
-  var TriangleAlert = createLucideIcon("triangle-alert", __iconNode54);
+  var TriangleAlert = createLucideIcon("triangle-alert", __iconNode55);
 
   // node_modules/lucide-react/dist/esm/icons/type.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode55 = [
+  var __iconNode56 = [
     ["path", { d: "M12 4v16", key: "1654pz" }],
     ["path", { d: "M4 7V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2", key: "e0r10z" }],
     ["path", { d: "M9 20h6", key: "s66wpe" }]
   ];
-  var Type = createLucideIcon("type", __iconNode55);
+  var Type = createLucideIcon("type", __iconNode56);
 
   // node_modules/lucide-react/dist/esm/icons/underline.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode56 = [
+  var __iconNode57 = [
     ["path", { d: "M6 4v6a6 6 0 0 0 12 0V4", key: "9kb039" }],
     ["line", { x1: "4", x2: "20", y1: "20", y2: "20", key: "nun2al" }]
   ];
-  var Underline2 = createLucideIcon("underline", __iconNode56);
+  var Underline2 = createLucideIcon("underline", __iconNode57);
 
   // node_modules/lucide-react/dist/esm/icons/undo-2.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode57 = [
+  var __iconNode58 = [
     ["path", { d: "M9 14 4 9l5-5", key: "102s5s" }],
     ["path", { d: "M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11", key: "f3b9sd" }]
   ];
-  var Undo2 = createLucideIcon("undo-2", __iconNode57);
+  var Undo2 = createLucideIcon("undo-2", __iconNode58);
 
   // node_modules/lucide-react/dist/esm/icons/workflow.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode58 = [
+  var __iconNode59 = [
     ["rect", { width: "8", height: "8", x: "3", y: "3", rx: "2", key: "by2w9f" }],
     ["path", { d: "M7 11v4a2 2 0 0 0 2 2h4", key: "xkn7yn" }],
     ["rect", { width: "8", height: "8", x: "13", y: "13", rx: "2", key: "1cgmvn" }]
   ];
-  var Workflow = createLucideIcon("workflow", __iconNode58);
+  var Workflow = createLucideIcon("workflow", __iconNode59);
 
   // node_modules/lucide-react/dist/esm/icons/x.js
   init_define_process_env();
   init_polyfills();
-  var __iconNode59 = [
+  var __iconNode60 = [
     ["path", { d: "M18 6 6 18", key: "1bl5f8" }],
     ["path", { d: "m6 6 12 12", key: "d8bk6v" }]
   ];
-  var X = createLucideIcon("x", __iconNode59);
+  var X = createLucideIcon("x", __iconNode60);
 
   // src/memo-editor/docx-export.ts
   init_define_process_env();
@@ -55429,11 +55438,17 @@ ${promptInput.trim()}`
     const canEdit = Boolean(editor == null ? void 0 : editor.isEditable);
     const [isEditingTitle, setIsEditingTitle] = react_shim_default.useState(false);
     const [draftTitle, setDraftTitle] = react_shim_default.useState(title);
+    const [resolvedTitle, setResolvedTitle] = react_shim_default.useState(title);
+    const [resolvedIcon, setResolvedIcon] = react_shim_default.useState(icon);
     const iconRef = react_shim_default.useRef(null);
     const titleInputRef = react_shim_default.useRef(null);
     react_shim_default.useEffect(() => {
       setDraftTitle(title);
+      setResolvedTitle(title);
     }, [title]);
+    react_shim_default.useEffect(() => {
+      setResolvedIcon(icon);
+    }, [icon]);
     react_shim_default.useEffect(() => {
       var _a2, _b2;
       if (!isEditingTitle) return;
@@ -55453,6 +55468,49 @@ ${promptInput.trim()}`
       } catch (err) {
       }
     }, [icon]);
+    react_shim_default.useEffect(() => {
+      let cancelled = false;
+      const resolveTarget = async () => {
+        const resolver = window.GoToolkitMemoResolveLinkTarget;
+        const targetId = documentId || href.replace(/^memo:\/\//, "");
+        if (!targetId || typeof resolver !== "function") return;
+        try {
+          const target = await resolver(targetId);
+          if (cancelled || !target) return;
+          const nextTitle = String((target == null ? void 0 : target.title) || "").trim() || title || "Document";
+          const nextIcon = String((target == null ? void 0 : target.icon) || "").trim();
+          setResolvedTitle(nextTitle);
+          setResolvedIcon(nextIcon || icon);
+          if (typeof updateAttributes2 === "function") {
+            const patch = {};
+            if (nextTitle && nextTitle !== title) patch.title = nextTitle;
+            if (nextIcon !== icon) patch.icon = nextIcon;
+            if (Object.keys(patch).length) {
+              updateAttributes2(patch);
+            }
+          }
+        } catch (err) {
+        }
+      };
+      const onTargetsUpdated = (event) => {
+        var _a2;
+        const detailIds = (_a2 = event == null ? void 0 : event.detail) == null ? void 0 : _a2.ids;
+        if (!Array.isArray(detailIds) || !detailIds.length) {
+          void resolveTarget();
+          return;
+        }
+        const targetId = documentId || href.replace(/^memo:\/\//, "");
+        if (targetId && detailIds.map((value) => String(value || "").trim()).includes(targetId)) {
+          void resolveTarget();
+        }
+      };
+      void resolveTarget();
+      window.addEventListener("goToolkitMemoLinkTargetsUpdated", onTargetsUpdated);
+      return () => {
+        cancelled = true;
+        window.removeEventListener("goToolkitMemoLinkTargetsUpdated", onTargetsUpdated);
+      };
+    }, [documentId, href, icon, title, updateAttributes2]);
     const handleOpen = (event) => {
       event.preventDefault();
       event.stopPropagation();
@@ -55519,9 +55577,9 @@ ${promptInput.trim()}`
     }, [title]);
     const handleMainClick = react_shim_default.useCallback((event) => {
       if (isEditingTitle) return;
-      if (event.detail > 1) return;
-      handleOpen(event);
-    }, [isEditingTitle, handleOpen]);
+      event.preventDefault();
+      event.stopPropagation();
+    }, [isEditingTitle]);
     return /* @__PURE__ */ jsx(NodeViewWrapper, { className: "memo-link-block-wrap", contentEditable: false, children: /* @__PURE__ */ jsxs(
       "div",
       {
@@ -55542,10 +55600,13 @@ ${promptInput.trim()}`
               className: "memo-link-block__main",
               onClick: handleMainClick,
               onDoubleClick: (event) => {
-                if (!canEdit) return;
                 event.preventDefault();
                 event.stopPropagation();
-                setIsEditingTitle(true);
+                if (canEdit && event.shiftKey) {
+                  setIsEditingTitle(true);
+                  return;
+                }
+                handleOpen(event);
               },
               onKeyDown: (event) => {
                 if (isEditingTitle) return;
@@ -55555,8 +55616,8 @@ ${promptInput.trim()}`
               },
               "aria-label": title,
               children: [
-                /* @__PURE__ */ jsxs("span", { className: "memo-link-block__icon", children: [
-                  /* @__PURE__ */ jsx("span", { ref: iconRef, children: icon ? /* @__PURE__ */ jsx("i", { "data-lucide": icon }) : /* @__PURE__ */ jsx("i", { "data-lucide": "file" }) }),
+                /* @__PURE__ */ jsxs("span", { className: "memo-link-block__icon", onClick: (event) => handleOpen(event), children: [
+                  /* @__PURE__ */ jsx("span", { ref: iconRef, children: resolvedIcon ? /* @__PURE__ */ jsx("i", { "data-lucide": resolvedIcon }) : /* @__PURE__ */ jsx("i", { "data-lucide": "file" }) }),
                   /* @__PURE__ */ jsx("span", { className: "memo-link-block__icon-overlay", children: /* @__PURE__ */ jsx(ArrowUpRight, { size: 10 }) })
                 ] }),
                 /* @__PURE__ */ jsx("span", { className: "memo-link-block__title", children: isEditingTitle ? /* @__PURE__ */ jsx(
@@ -55582,7 +55643,7 @@ ${promptInput.trim()}`
                       }
                     }
                   }
-                ) : title })
+                ) : resolvedTitle })
               ]
             }
           ),
@@ -55815,6 +55876,22 @@ ${promptInput.trim()}`
       const relativeTop = elementRect.top - areaRect.top + scrollArea.scrollTop;
       scrollArea.scrollTo({ top: Math.max(0, relativeTop - 20), behavior: "smooth" });
     }, []);
+    const handleBackToTop = react_shim_default.useCallback((event) => {
+      var _a2;
+      event.preventDefault();
+      event.stopPropagation();
+      const scrollArea = document.querySelector(".editor-wrap");
+      if (!scrollArea) return;
+      const summaryEl = ((_a2 = blockRef.current) == null ? void 0 : _a2.closest('[data-type="memo-page-summary-block"]')) || document.querySelector('[data-type="memo-page-summary-block"]');
+      if (summaryEl) {
+        const areaRect = scrollArea.getBoundingClientRect();
+        const elementRect = summaryEl.getBoundingClientRect();
+        const relativeTop = elementRect.top - areaRect.top + scrollArea.scrollTop;
+        scrollArea.scrollTo({ top: Math.max(0, relativeTop - 20), behavior: "smooth" });
+        return;
+      }
+      scrollArea.scrollTo({ top: 0, behavior: "smooth" });
+    }, []);
     return /* @__PURE__ */ jsx(NodeViewWrapper, { className: "memo-summary-block-wrap", contentEditable: false, children: /* @__PURE__ */ jsxs("div", { className: "memo-summary-block", ref: blockRef, children: [
       /* @__PURE__ */ jsx("div", { className: "memo-summary-block__header", children: /* @__PURE__ */ jsx("span", { className: "memo-summary-block__title", children: title }) }),
       /* @__PURE__ */ jsx("div", { className: "memo-summary-block__list", children: headings.length ? headings.map((heading2) => /* @__PURE__ */ jsxs(
@@ -55825,8 +55902,18 @@ ${promptInput.trim()}`
           onClick: (event) => handleOpenHeading(event, heading2),
           "aria-label": heading2.text,
           children: [
-            /* @__PURE__ */ jsx("span", { className: "memo-summary-block__item-icon", children: /* @__PURE__ */ jsx("i", { "data-lucide": "list" }) }),
-            /* @__PURE__ */ jsx("span", { className: "memo-summary-block__item-title", children: heading2.text })
+            /* @__PURE__ */ jsx("span", { className: "memo-summary-block__item-title", children: heading2.text }),
+            /* @__PURE__ */ jsx(
+              "span",
+              {
+                className: "memo-summary-block__item-top",
+                onClick: handleBackToTop,
+                role: "button",
+                "aria-label": "Revenir en haut",
+                title: "Revenir en haut",
+                children: /* @__PURE__ */ jsx(ArrowUp, { size: 12 })
+              }
+            )
           ]
         },
         heading2.id
@@ -57510,10 +57597,10 @@ ${promptInput.trim()}`
             const href = (anchor == null ? void 0 : anchor.getAttribute("href")) || "";
             const blockDocId = (linkBlock == null ? void 0 : linkBlock.getAttribute("data-document-id")) || "";
             const open = window.GoToolkitMemoOpenDocumentByLink;
-            if (typeof open === "function" && (href.startsWith("memo://") || blockDocId)) {
+            if (typeof open === "function" && href.startsWith("memo://") && !blockDocId) {
               event.preventDefault();
               event.stopPropagation();
-              const id = blockDocId || href.replace(/^memo:\/\//, "");
+              const id = href.replace(/^memo:\/\//, "");
               if (id) open(id);
               return true;
             }
@@ -61368,6 +61455,7 @@ lucide-react/dist/esm/icons/arrow-left-right.js:
 lucide-react/dist/esm/icons/arrow-up-a-z.js:
 lucide-react/dist/esm/icons/arrow-up-left.js:
 lucide-react/dist/esm/icons/arrow-up-right.js:
+lucide-react/dist/esm/icons/arrow-up.js:
 lucide-react/dist/esm/icons/baseline.js:
 lucide-react/dist/esm/icons/bold.js:
 lucide-react/dist/esm/icons/bot.js:

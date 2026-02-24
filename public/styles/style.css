@@ -3,6 +3,7 @@
   --white: #ffffff;
   --black: #000000;
   --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --go-ui-font-size: 16px;
 
   /* 2. Brand Palette */
   --color-primary: #2a7a57;
@@ -38,10 +39,13 @@
   --bg-app: #000000;
   --bg-surface: #222222;
   --bg-surface-soft: #424242;
+  --bg-surface-strong: #2d2d2d;
+  --bg-hover: #3a3a3a;
   --text-main: #373530;
   --text-muted: #9ca3af;
   --border-main: #262626;
   --border-strong: #404040;
+  --border-subtle: #343434;
 
   /* 5. Radii & Effects */
   --radius-sm: 4px;
@@ -76,10 +80,13 @@
   --bg-app: #f1f5f9; 
   --bg-surface: #ebe5e5; 
   --bg-surface-soft: #c7c7c7; 
+  --bg-surface-strong: #d8d8d8;
+  --bg-hover: #dfe7f3;
   --text-main: #0f172a; 
   --text-muted: #64748b;
   --border-main: #dfe3f5;
   --border-strong: #cdd4ed;
+  --border-subtle: #d6dbe8;
 }
 
 /* Memo (Cream) Theme */
@@ -88,10 +95,13 @@
   --bg-app: #f5f2eb;
   --bg-surface: #fffbfb; 
   --bg-surface-soft: #f3ecec; 
+  --bg-surface-strong: #ebe2e2;
+  --bg-hover: #f4ecec;
   --text-main: #2f2922;
   --text-muted: #817a71;
   --border-main: #ece4e4;
   --border-strong: #ededed;
+  --border-subtle: #e2d9d9;
   --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.12);
   --shadow-lg: 0 18px 40px rgba(47, 41, 34, 0.08);
   --color-primary-soft: rgba(42, 122, 87, 0.08);
@@ -105,10 +115,13 @@
   --bg-app: #000000;
   --bg-surface: #222222;
   --bg-surface-soft: #363636;
-  --text-main: #f5f5f5;
+  --bg-surface-strong: #454545;
+  --bg-hover: #2f2f2f;
+  --text-main: #ffffff;
   --text-muted: #6d6664;
   --border-main: #4b4949;
   --border-strong: #7d7979;
+  --border-subtle: #5d5959;
   --bg-text-gray: #9b9b9b;
   --bg-text-brown: #a27763;
   --bg-text-orange: #cb7b37;
@@ -1848,6 +1861,8 @@ ul.release-roadmap-text li::before {
   top: 0 !important;
   height: 100vh !important;
   background: var(--bg-surface) !important;
+  font-size: var(--go-ui-font-size, 16px);
+  font-family: var(--font-sans);
   border-left: 1px solid var(--border-main);
   box-shadow: -4px 0 12px rgba(0, 0, 0, 0.05);
   display: flex !important;
@@ -1858,6 +1873,13 @@ ul.release-roadmap-text li::before {
   overflow: visible;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   transform: translateX(100%);
+}
+
+.chat-sidebar button,
+.chat-sidebar input,
+.chat-sidebar textarea,
+.chat-sidebar select {
+  font-family: var(--font-sans);
 }
 
 .chat-sidebar--open {
@@ -1913,14 +1935,14 @@ ul.release-roadmap-text li::before {
 
 .chat-header span {
   font-weight: 700;
-  font-size : 11px;
+  font-size: var(--go-ui-font-size, 16px);
   letter-spacing: 0.02em;
 }
 
 .chat-header-title {
   order: 0;
   margin-right:auto;
-  font-size: 14px;
+  font-size: var(--go-ui-font-size, 16px);
   display: flex;
   align-items: center;
 }
@@ -2080,7 +2102,7 @@ ul.release-roadmap-text li::before {
 }
 
 .chat-prepend {
-  font-size: 13px;
+  font-size: var(--go-ui-font-size, 16px);
   color: var(--text-main);
   margin-bottom: 8px;
   white-space: nowrap;
@@ -2116,9 +2138,10 @@ ul.release-roadmap-text li::before {
 }
 
 .chat-content {
-  font-size: 14px;
+  font-size: var(--go-ui-font-size, 16px);
   color: var(--text-main);
   line-height: 1.45;
+  font-family: var(--font-sans);
 }
 
 .chat-content h1,
@@ -2262,7 +2285,7 @@ ul.release-roadmap-text li::before {
   border-radius: var(--radius-md);
   width: 100%;
   padding: 4px 10px;
-  font-size: 14px;
+  font-size: var(--go-ui-font-size, 16px);
   cursor: pointer;
   transition: background 0.15s ease, border-color 0.15s ease;
 }
@@ -2338,6 +2361,8 @@ ul.release-roadmap-text li::before {
   padding: 16px;
   gap: 10px;
   overflow: hidden;
+  font-size: var(--go-ui-font-size, 16px);
+  font-family: var(--font-sans);
 }
 
 .chat-doc-preview.open {
@@ -2387,8 +2412,9 @@ ul.release-roadmap-text li::before {
   border-radius: var(--radius-md);
   padding: 10px;
   background: var(--bg-surface);
-  font-size: 0.78rem;
+  font-size: var(--go-ui-font-size, 16px);
   line-height: 1.45;
+  font-family: var(--font-sans);
 }
 
 .chat-knowledge-modal {
@@ -2411,7 +2437,8 @@ ul.release-roadmap-text li::before {
   padding: 16px;
   gap: 10px;
   overflow: hidden;
-  font-size: 14px;
+  font-size: var(--go-ui-font-size, 16px);
+  font-family: var(--font-sans);
 }
 
 .chat-knowledge-modal.open {
@@ -2439,7 +2466,7 @@ ul.release-roadmap-text li::before {
 
 .chat-knowledge-modal__title {
   font-weight: 500;
-  font-size: 14px;
+  font-size: var(--go-ui-font-size, 16px);
   color: var(--text-main);
 }
 
@@ -2450,7 +2477,7 @@ ul.release-roadmap-text li::before {
 .chat-knowledge-modal__close {
   border: none;
   background: transparent;
-  font-size: 14px;
+  font-size: var(--go-ui-font-size, 16px);
   cursor: pointer;
   color: var(--text-main);
 }
@@ -2460,7 +2487,7 @@ ul.release-roadmap-text li::before {
   background: var(--bg-surface);
   border-radius: var(--radius-md);
   padding: 6px 10px;
-  font-size: 14px;
+  font-size: var(--go-ui-font-size, 16px);
   cursor: pointer;
   color: var(--text-main);
 }
@@ -2473,7 +2500,7 @@ ul.release-roadmap-text li::before {
   border-radius: 0;
   padding: 0;
   background: transparent;
-  font-size: 14px;
+  font-size: var(--go-ui-font-size, 16px);
 }
 
 .chat-knowledge-modal__row {
@@ -2647,7 +2674,7 @@ ul.release-roadmap-text li::before {
   background: transparent;
   cursor: pointer;
   color: var(--text-main);
-  font-size: 14px;
+  font-size: var(--go-ui-font-size, 16px);
   padding: 0;
 }
 
@@ -2656,13 +2683,13 @@ ul.release-roadmap-text li::before {
   background: transparent;
   cursor: pointer;
   color: var(--text-main);
-  font-size: 14px;
+  font-size: var(--go-ui-font-size, 16px);
   padding: 0;
 }
 
 .chat-knowledge-modal__source {
   color: var(--text-main);
-  font-size: 14px;
+  font-size: var(--go-ui-font-size, 16px);
 }
 
 .chat-knowledge-modal__name:hover {
@@ -2684,7 +2711,7 @@ ul.release-roadmap-text li::before {
 
 .chat-knowledge-modal__empty {
   color: var(--text-muted);
-  font-size: 14px;
+  font-size: var(--go-ui-font-size, 16px);
   padding: 12px;
 }
 
@@ -2964,7 +2991,7 @@ ul.release-roadmap-text li::before {
   padding: 0;
   resize: none;
   font-family: var(--font-sans);
-  font-size: 14px;
+  font-size: var(--go-ui-font-size, 16px);
   min-height: 56px;
   max-height: 140px;
   color: var(--text-main);
@@ -3038,7 +3065,7 @@ ul.release-roadmap-text li::before {
   text-align: left;
   padding: 6px 8px;
   border-radius: var(--radius-md);
-  font-size: 14px;
+  font-size: var(--go-ui-font-size, 16px);
   cursor: pointer;
   color: var(--text-main);
 }

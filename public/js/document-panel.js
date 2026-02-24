@@ -724,7 +724,7 @@
             return normalizeName(name);
         }
 
-        let isOpen = (window.innerWidth < 900) ? false : readBool(openKey, false);
+        let isOpen = (window.innerWidth < 900) ? false : readBool(openKey, true);
         let width = clamp(readNumber(widthKey, DEFAULT_WIDTH), MIN_WIDTH, MAX_WIDTH);
 
         function applyWidth(nextWidth) {

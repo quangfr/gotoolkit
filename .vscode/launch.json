@@ -2,12 +2,12 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Launch Chrome (Serve public)",
+      "name": "Launch Chrome (Firebase Hosting main)",
       "type": "chrome",
       "request": "launch",
-      "url": "http://localhost:5000/index.html",
+      "url": "http://127.0.0.1:5000/",
       "webRoot": "${workspaceFolder}/public",
-      "preLaunchTask": "Dev + Serve public",
+      "preLaunchTask": "Dev + Firebase Hosting Emulator",
       "runtimeArgs": [
         "--disable-features=SpellCheck"
       ]

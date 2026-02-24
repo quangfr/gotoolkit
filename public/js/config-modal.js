@@ -144,6 +144,22 @@
                         </div>
                         <div class="field-row">
                             <label style="width:100%">
+                                <span class="label-title">Taille</span>
+                                <select id="uiFontSizeSelect">
+                                    <option value="12">12px</option>
+                                    <option value="13">13px</option>
+                                    <option value="14">14px</option>
+                                    <option value="15">15px</option>
+                                    <option value="16" selected>16px</option>
+                                    <option value="17">17px</option>
+                                    <option value="18">18px</option>
+                                    <option value="19">19px</option>
+                                    <option value="20">20px</option>
+                                </select>
+                            </label>
+                        </div>
+                        <div class="field-row">
+                            <label style="width:100%">
                                 <span class="label-title">Vitesse d'enregistrement</span>
                                 <select id="voiceRecordingSpeedSelect"></select>
                             </label>

@@ -54,6 +54,7 @@ import {
   Pencil, Copy, Image as ImageIcon, Clapperboard,
   Square, RectangleHorizontal, Tag,
   ArrowDownAZ, ArrowUpAZ, ArrowUpRight, Link2, ListTree
+  , ArrowUp
 } from 'lucide-react';
 
 
@@ -676,12 +677,18 @@ const MemoLinkBlockView = ({ node, editor, getPos, updateAttributes }: any) => {
   const canEdit = Boolean(editor?.isEditable);
   const [isEditingTitle, setIsEditingTitle] = React.useState(false);
   const [draftTitle, setDraftTitle] = React.useState(title);
+  const [resolvedTitle, setResolvedTitle] = React.useState(title);
+  const [resolvedIcon, setResolvedIcon] = React.useState(icon);
   const iconRef = React.useRef<HTMLSpanElement | null>(null);
   const titleInputRef = React.useRef<HTMLInputElement | null>(null);
 
   React.useEffect(() => {
     setDraftTitle(title);
+    setResolvedTitle(title);
   }, [title]);
+  React.useEffect(() => {
+    setResolvedIcon(icon);
+  }, [icon]);
 
   React.useEffect(() => {
     if (!isEditingTitle) return;
@@ -701,6 +708,50 @@ const MemoLinkBlockView = ({ node, editor, getPos, updateAttributes }: any) => {
       // ignore
     }
   }, [icon]);
+  React.useEffect(() => {
+    let cancelled = false;
+    const resolveTarget = async () => {
+      const resolver = (window as any).GoToolkitMemoResolveLinkTarget;
+      const targetId = documentId || href.replace(/^memo:\/\//, '');
+      if (!targetId || typeof resolver !== 'function') return;
+      try {
+        const target = await resolver(targetId);
+        if (cancelled || !target) return;
+        const nextTitle = String(target?.title || '').trim() || title || 'Document';
+        const nextIcon = String(target?.icon || '').trim();
+        setResolvedTitle(nextTitle);
+        setResolvedIcon(nextIcon || icon);
+        if (typeof updateAttributes === 'function') {
+          const patch: Record<string, string> = {};
+          if (nextTitle && nextTitle !== title) patch.title = nextTitle;
+          if (nextIcon !== icon) patch.icon = nextIcon;
+          if (Object.keys(patch).length) {
+            updateAttributes(patch);
+          }
+        }
+      } catch (err) {
+        // ignore
+      }
+    };
+    const onTargetsUpdated = (event: Event) => {
+      const detailIds = (event as CustomEvent)?.detail?.ids;
+      if (!Array.isArray(detailIds) || !detailIds.length) {
+        void resolveTarget();
+        return;
+      }
+      const targetId = documentId || href.replace(/^memo:\/\//, '');
+      if (targetId && detailIds.map((value: any) => String(value || '').trim()).includes(targetId)) {
+        void resolveTarget();
+      }
+    };
+    void resolveTarget();
+    window.addEventListener('goToolkitMemoLinkTargetsUpdated', onTargetsUpdated as EventListener);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('goToolkitMemoLinkTargetsUpdated', onTargetsUpdated as EventListener);
+    };
+  }, [documentId, href, icon, title, updateAttributes]);
+
   const handleOpen = (event: React.MouseEvent | React.KeyboardEvent) => {
     event.preventDefault();
     event.stopPropagation();
@@ -768,9 +819,9 @@ const MemoLinkBlockView = ({ node, editor, getPos, updateAttributes }: any) => {
   }, [title]);
   const handleMainClick = React.useCallback((event: React.MouseEvent) => {
     if (isEditingTitle) return;
-    if (event.detail > 1) return;
-    handleOpen(event);
-  }, [isEditingTitle, handleOpen]);
+    event.preventDefault();
+    event.stopPropagation();
+  }, [isEditingTitle]);
 
   return (
     <NodeViewWrapper className="memo-link-block-wrap" contentEditable={false}>
@@ -792,10 +843,13 @@ const MemoLinkBlockView = ({ node, editor, getPos, updateAttributes }: any) => {
           className="memo-link-block__main"
           onClick={handleMainClick}
           onDoubleClick={(event) => {
-            if (!canEdit) return;
             event.preventDefault();
             event.stopPropagation();
-            setIsEditingTitle(true);
+            if (canEdit && event.shiftKey) {
+              setIsEditingTitle(true);
+              return;
+            }
+            handleOpen(event);
           }}
           onKeyDown={(event) => {
             if (isEditingTitle) return;
@@ -805,8 +859,8 @@ const MemoLinkBlockView = ({ node, editor, getPos, updateAttributes }: any) => {
           }}
           aria-label={title}
         >
-          <span className="memo-link-block__icon">
-            <span ref={iconRef}>{icon ? <i data-lucide={icon}></i> : <i data-lucide="file"></i>}</span>
+          <span className="memo-link-block__icon" onClick={(event) => handleOpen(event)}>
+            <span ref={iconRef}>{resolvedIcon ? <i data-lucide={resolvedIcon}></i> : <i data-lucide="file"></i>}</span>
             <span className="memo-link-block__icon-overlay"><ArrowUpRight size={10} /></span>
           </span>
           <span className="memo-link-block__title">
@@ -833,7 +887,7 @@ const MemoLinkBlockView = ({ node, editor, getPos, updateAttributes }: any) => {
                 }}
               />
             ) : (
-              title
+              resolvedTitle
             )}
           </span>
         </button>
@@ -1089,6 +1143,23 @@ const MemoPageSummaryBlockView = ({ node }: any) => {
     (scrollArea as HTMLElement).scrollTo({ top: Math.max(0, relativeTop - 20), behavior: 'smooth' });
   }, []);
 
+  const handleBackToTop = React.useCallback((event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const scrollArea = document.querySelector('.editor-wrap') as HTMLElement | null;
+    if (!scrollArea) return;
+    const summaryEl = (blockRef.current?.closest('[data-type="memo-page-summary-block"]') as HTMLElement | null)
+      || (document.querySelector('[data-type="memo-page-summary-block"]') as HTMLElement | null);
+    if (summaryEl) {
+      const areaRect = scrollArea.getBoundingClientRect();
+      const elementRect = summaryEl.getBoundingClientRect();
+      const relativeTop = elementRect.top - areaRect.top + scrollArea.scrollTop;
+      scrollArea.scrollTo({ top: Math.max(0, relativeTop - 20), behavior: 'smooth' });
+      return;
+    }
+    scrollArea.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   return (
     <NodeViewWrapper className="memo-summary-block-wrap" contentEditable={false}>
       <div className="memo-summary-block" ref={blockRef}>
@@ -1104,8 +1175,16 @@ const MemoPageSummaryBlockView = ({ node }: any) => {
               onClick={(event) => handleOpenHeading(event, heading)}
               aria-label={heading.text}
             >
-              <span className="memo-summary-block__item-icon"><i data-lucide="list"></i></span>
               <span className="memo-summary-block__item-title">{heading.text}</span>
+              <span
+                className="memo-summary-block__item-top"
+                onClick={handleBackToTop}
+                role="button"
+                aria-label="Revenir en haut"
+                title="Revenir en haut"
+              >
+                <ArrowUp size={12} />
+              </span>
             </button>
           )) : (
             <div className="memo-summary-block__empty">Aucun titre</div>
@@ -3382,10 +3461,10 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           const href = anchor?.getAttribute('href') || '';
           const blockDocId = linkBlock?.getAttribute('data-document-id') || '';
           const open = (window as any).GoToolkitMemoOpenDocumentByLink;
-          if (typeof open === 'function' && (href.startsWith('memo://') || blockDocId)) {
+          if (typeof open === 'function' && href.startsWith('memo://') && !blockDocId) {
             event.preventDefault();
             event.stopPropagation();
-            const id = blockDocId || href.replace(/^memo:\/\//, '');
+            const id = href.replace(/^memo:\/\//, '');
             if (id) open(id);
             return true;
           }
