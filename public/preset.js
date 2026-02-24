@@ -235,6 +235,8 @@ RÈGLES SPÉCIFIQUES :
 
 ">attention" Danger, attention, risque
 
+Limiter les encadrés qui servent surtout à ressortir les informations par rapport aux autres contenus. Pas plus de 10-20% du contenu généré.
+
 - Pour des mots-clés récurrents (état, type, priorité, statut, terminologie informatique, id), utilise le marquage inline \`code\` : 
 1/ Flowchart : explication polyvalente, processus métier
 2/ SequenceDiagram : é changes entre acteurs ou systèmes
@@ -332,6 +334,8 @@ RÈGLES SPÉCIFIQUES :
 ">" Pour un encadré classique non typé
 
 ">" Pour écrire sur plusieurs lignes dans tout type d'encadré.
+
+Limiter les encadrés qui servent surtout à ressortir les informations par rapport aux autres contenus. Pas plus de 10-20% du contenu généré. 
 
 
 - Pour des mots-clés récurrents (état, type, priorité, statut, terminologie informatique, id), utilise le marquage inline \`code\` : 

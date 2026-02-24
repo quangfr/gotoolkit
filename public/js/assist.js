@@ -3175,10 +3175,21 @@
 
     AssistSidebar.prototype.updateMemoSelectionOverlayPosition = function () {
         if (!this.memoSelectionOverlay || !this.memoSelectionBlockCoords) return;
+        var overlayLeft = this.memoSelectionBlockCoords.left;
+        var overlayWidth = Math.max(this.memoSelectionBlockCoords.width, 100);
+        try {
+            var editorRect = window.memoEditor?.view?.dom?.getBoundingClientRect?.();
+            if (editorRect && Number.isFinite(editorRect.left) && Number.isFinite(editorRect.width)) {
+                overlayLeft = editorRect.left;
+                overlayWidth = Math.max(editorRect.width, 100);
+            }
+        } catch (err) {
+            // ignore and fallback to selection bounds
+        }
         this.memoSelectionOverlay.style.position = "fixed";
         this.memoSelectionOverlay.style.top = this.memoSelectionBlockCoords.top + "px";
-        this.memoSelectionOverlay.style.left = this.memoSelectionBlockCoords.left + "px";
-        this.memoSelectionOverlay.style.width = Math.max(this.memoSelectionBlockCoords.width, 100) + "px";
+        this.memoSelectionOverlay.style.left = overlayLeft + "px";
+        this.memoSelectionOverlay.style.width = overlayWidth + "px";
         this.memoSelectionOverlay.style.height = Math.max(this.memoSelectionBlockCoords.height, 20) + "px";
     };
 
@@ -7147,6 +7158,20 @@
             if (this.docsIndicatorLabelEl) {
                 var uploadedTotal = this.mediaUploadCount || 0;
                 this.docsIndicatorLabelEl.textContent = "♫ " + this.mediaTranscribedCount + "/" + uploadedTotal + " fichiers";
+            }
+            if (this.docsIndicatorDeleteEl) {
+                this.docsIndicatorDeleteEl.style.display = "none";
+            }
+            return;
+        }
+        // Hide the toaster-like indicator while attachment ingestion is running.
+        // Keep only the attachment chips/list visible during upload.
+        if (this.attachmentsTotalCount > 0) {
+            this.docsIndicatorButton.hidden = true;
+            this.docsIndicatorButton.style.display = "none";
+            this.docsIndicatorButton.classList.remove("visible");
+            if (this.docsIndicatorLabelEl) {
+                this.docsIndicatorLabelEl.textContent = "";
             }
             if (this.docsIndicatorDeleteEl) {
                 this.docsIndicatorDeleteEl.style.display = "none";
