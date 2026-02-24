@@ -735,12 +735,6 @@
 
         function applyOpen(nextOpen) {
             isOpen = Boolean(nextOpen);
-            if (isOpen && window.innerWidth < 900) {
-                const assist = window.GoToolkitAssistInstance;
-                if (assist?.isOpen && typeof assist.close === "function") {
-                    assist.close();
-                }
-            }
             sidebar.classList.toggle("document-explorer--collapsed", !isOpen);
             if (resizer) {
                 resizer.classList.toggle("is-hidden", !isOpen);

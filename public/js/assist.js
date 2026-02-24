@@ -328,6 +328,7 @@
     var STORAGE_KEY = scopedKey("goToolkit.chat.conversations");
     var WIDTH_KEY = "goToolkit.chat.sidebarWidth";
     var OPEN_KEY = scopedKey("goToolkit.chat.sidebarOpen");
+    var GLOBAL_OPEN_KEY = "goToolkit.chat.sidebarOpen.global";
     var KNOWLEDGE_MODAL_OPEN_KEY = scopedKey("goToolkit.chat.knowledgeModalOpen");
     var DEFAULT_WIDTH = 300;
     var MIN_WIDTH = 200;
@@ -460,6 +461,16 @@
     function loadOpenState() {
         if (window.innerWidth < 1200) return false;
         try {
+            if (typeof global.__goToolkitChatSidebarOpenState === "boolean") {
+                return global.__goToolkitChatSidebarOpenState;
+            }
+        } catch (err) { /* ignore */ }
+        try {
+            var globalStored = global.sessionStorage?.getItem(GLOBAL_OPEN_KEY);
+            if (globalStored === "1") return true;
+            if (globalStored === "0") return false;
+        } catch (err) { /* ignore */ }
+        try {
             var stored = global.localStorage.getItem(OPEN_KEY);
             if (stored === "1") return true;
             if (stored === "0") return false;
@@ -468,6 +479,14 @@
     }
 
     function persistOpenState(isOpen) {
+        try {
+            global.__goToolkitChatSidebarOpenState = Boolean(isOpen);
+        } catch (err) { /* ignore */ }
+        try {
+            global.sessionStorage?.setItem(GLOBAL_OPEN_KEY, isOpen ? "1" : "0");
+        } catch (err) {
+            console.warn("Chat global open state save failed", err);
+        }
         try {
             global.localStorage.setItem(OPEN_KEY, isOpen ? "1" : "0");
         } catch (err) {
@@ -2188,8 +2207,10 @@
             title = this.buildTechnicalHover(message);
         }
         if (title) {
-            entry.bubbleEl.title = title;
+            entry.bubbleEl.setAttribute("data-chat-tooltip", title);
+            entry.bubbleEl.removeAttribute("title");
         } else {
+            entry.bubbleEl.removeAttribute("data-chat-tooltip");
             entry.bubbleEl.removeAttribute("title");
         }
     };
@@ -2197,11 +2218,16 @@
     AssistSidebar.prototype.applyTechnicalHover = function (entry, message) {
         if (!entry || !entry.contentEl) return;
         var title = this.buildTechnicalHover(message);
-        if (title) {
-            entry.contentEl.title = title;
-        } else {
-            entry.contentEl.removeAttribute("title");
+        if (entry.bubbleEl) {
+            if (title) {
+                entry.bubbleEl.setAttribute("data-chat-tooltip", title);
+                entry.bubbleEl.removeAttribute("title");
+            } else {
+                entry.bubbleEl.removeAttribute("data-chat-tooltip");
+                entry.bubbleEl.removeAttribute("title");
+            }
         }
+        entry.contentEl.removeAttribute("title");
     };
 
     AssistSidebar.prototype.updateUserMessage = function (message) {
@@ -3167,8 +3193,10 @@
         return hits;
     };
 
-    AssistSidebar.prototype.buildPayload = function (systemPrompt, userMessage, docInfo) {
+    AssistSidebar.prototype.buildPayload = function (systemPrompt, userMessage, docInfo, options) {
         var self = this;
+        var opts = options || {};
+        var activePresetId = (opts.promptPresetId || this.promptPresetId || "").toString();
         var promptContent = (systemPrompt && systemPrompt.trim()) ? systemPrompt : getSystemPrompt();
         var messages = [{ role: "system", content: promptContent }];
         var userContent = (userMessage?.content || "").trim();
@@ -3252,17 +3280,24 @@
             var embeddedContext = Array.isArray(info.embedded?.context)
                 ? info.embedded.context
                 : [];
+            var embeddedAttachments = Array.isArray(info.embedded?.attachments)
+                ? info.embedded.attachments
+                : [];
             if (embeddedMethods.length) {
                 embeddedSections.methods = self.formatEntriesForPayload(embeddedMethods);
             }
             if (embeddedTools.length) {
                 embeddedSections.tools = self.formatEntriesForPayload(embeddedTools);
             }
-            if (embeddedContext.length) {
+            var mergedEmbeddedContext = embeddedContext.slice();
+            if (embeddedAttachments.length) {
+                mergedEmbeddedContext = mergedEmbeddedContext.concat(embeddedAttachments);
+            }
+            if (mergedEmbeddedContext.length) {
                 var contextKey = label && label !== "CONTEXT"
                     ? label.toLowerCase()
                     : "context";
-                embeddedSections[contextKey] = self.formatEntriesForPayload(embeddedContext);
+                embeddedSections[contextKey] = self.formatEntriesForPayload(mergedEmbeddedContext);
             }
             if (Object.keys(embeddedSections).length) {
                 var embedText = self.buildEmbeddedResultsText(embeddedSections);
@@ -3284,10 +3319,12 @@
 
         var contextDocInfo = docInfo?.context;
         var knowledgeDocInfo = docInfo?.knowledge;
-        if (shouldIncludeKnowledgeForPreset(this.promptPresetId) && hasDocEntries(knowledgeDocInfo)) {
+        if (shouldIncludeKnowledgeForPreset(activePresetId) && hasDocEntries(knowledgeDocInfo)) {
             appendDocSections(knowledgeDocInfo, "KNOWLEDGE");
         }
-        appendDocSections(contextDocInfo, "CONTEXT");
+        if (shouldIncludeKnowledgeForPreset(activePresetId)) {
+            appendDocSections(contextDocInfo, "CONTEXT");
+        }
 
         var historyText = self.buildHistoryText();
         if (historyText) {
@@ -3976,15 +4013,20 @@
         var docInfo = null;
 
         if (this.docManager) {
-            var contextParams = this.getRetrievalParamsForQuestion(value);
-            var contextHits = await this.retrieveWithFallback(value, this.conversation.id, contextParams, "context");
-            if (!Array.isArray(contextHits)) {
-                contextHits = [];
+            var contextHits = [];
+            if (shouldFetchKnowledge) {
+                var contextParams = this.getRetrievalParamsForQuestion(value);
+                contextHits = await this.retrieveWithFallback(value, this.conversation.id, contextParams, "context");
+                if (!Array.isArray(contextHits)) {
+                    contextHits = [];
+                }
+                contextHits = contextHits.filter(function (hit) {
+                    if ((hit?.sourceType || "context") !== "embedded") return true;
+                    var scopes = Array.isArray(hit?.docScopes) ? hit.docScopes : [];
+                    return scopes.includes("attachments");
+                });
+                contextHits = this.filterHitsByPromptPreset(contextHits);
             }
-            contextHits = contextHits.filter(function (hit) {
-                return (hit?.sourceType || "context") !== "embedded";
-            });
-            contextHits = this.filterHitsByPromptPreset(contextHits);
             var knowledgeHits = [];
             if (shouldFetchKnowledge) {
                 var knowledgeParams = this.getRetrievalParamsForQuestion(value);
@@ -4005,7 +4047,9 @@
         var controller = new AbortController();
         this.setScopeStreamingState(conversationScopeId, true, controller);
 
-        var payload = this.buildPayload(systemPrompt, userMessage, docInfo);
+        var payload = this.buildPayload(systemPrompt, userMessage, docInfo, {
+            promptPresetId: requestPromptPresetId
+        });
         userMessage.aiInPayloadTooltip = this.stringifyPayloadForTooltip(payload);
         var self = this;
         var conversationRef = this.conversation;
@@ -4987,14 +5031,6 @@
             if (!this.mainApp.hasAttribute("tabindex")) {
                 this.mainApp.setAttribute("tabindex", "-1");
             }
-            this.mainApp.addEventListener("focusin", function () {
-                if (!this.isOpen) return;
-                if (window.innerWidth >= 1200) return;
-                this.close();
-                try {
-                    this.mainApp.focus();
-                } catch (err) { /* ignore */ }
-            }.bind(this));
         }
         var staticLauncher = document.getElementById("assistLauncherBtn");
         if (!staticLauncher) {
@@ -5073,7 +5109,6 @@
         this.composer = composer;
         var pendingAttachmentRow = document.createElement("div");
         pendingAttachmentRow.className = "chat-composer-attachments chat-composer-attachments--pending";
-        pendingAttachmentRow.style.display = "none";
         this.pendingAttachmentRow = pendingAttachmentRow;
         this.pendingAttachmentList = document.createElement("div");
         this.pendingAttachmentList.className = "chat-composer-attachments__list";
@@ -5084,7 +5119,7 @@
         memoAttachmentRow.style.display = "none";
         this.memoContextAttachmentRow = memoAttachmentRow;
         this.memoContextAttachmentList = document.createElement("div");
-        this.memoContextAttachmentList.className = "chat-composer-attachments__list";
+        this.memoContextAttachmentList.className = "chat-composer-attachments__memo-list";
         memoAttachmentRow.appendChild(this.memoContextAttachmentList);
         this.sidebar.appendChild(memoAttachmentRow);
         var queuedMessageRow = document.createElement("div");
@@ -6248,16 +6283,20 @@
 
     AssistSidebar.prototype.renderPendingDocumentAttachments = function () {
         if (!this.pendingAttachmentRow || !this.pendingAttachmentList) return;
-        var names = Array.isArray(this.pendingDocumentAttachments)
-            ? this.pendingDocumentAttachments.filter(Boolean)
-            : [];
-        var showList = names.length > 0 && !this.mediaTranscriptionActive;
-        if (!showList) {
+        if (CHAT_APP_ID === "memo") {
             this.pendingAttachmentRow.style.display = "none";
             this.pendingAttachmentList.innerHTML = "";
             return;
         }
-        this.pendingAttachmentRow.style.display = "flex";
+        var names = Array.isArray(this.pendingDocumentAttachments)
+            ? this.pendingDocumentAttachments.filter(Boolean)
+            : [];
+        var showList = names.length > 0 && !this.mediaTranscriptionActive;
+        this.pendingAttachmentRow.style.display = showList ? "flex" : "none";
+        if (!showList) {
+            this.pendingAttachmentList.innerHTML = "";
+            return;
+        }
         this.pendingAttachmentList.innerHTML = "";
         names.forEach(function (name) {
             var isEnabled = !this.pendingExcludedAttachments?.has?.(name);
@@ -6457,6 +6496,7 @@
         if (CHAT_APP_ID !== "memo" || !entries.length) {
             this.memoContextAttachmentRow.style.display = "none";
             this.memoContextAttachmentList.innerHTML = "";
+            this.renderPendingDocumentAttachments();
             return;
         }
         this.memoContextAttachmentRow.style.display = "flex";
@@ -6498,6 +6538,7 @@
 
             this.memoContextAttachmentList.appendChild(item);
         }.bind(this));
+        this.renderPendingDocumentAttachments();
     };
 
     AssistSidebar.prototype.refreshMemoContextAttachments = async function () {
