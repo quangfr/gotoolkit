@@ -517,6 +517,36 @@
     var AI_HISTORY_LIMIT = 20;
     var AI_IN_HISTORY_KEY = "__memoEditorAIInHistory";
     var AI_OUT_HISTORY_KEY = "__memoEditorAIOutHistory";
+    var KNOWLEDGE_SPACES_STORAGE_KEY = "goToolkit.chat.knowledge.selectedSpaces.v1";
+    var KNOWLEDGE_SYNC_INTERVAL_MS = 60 * 60 * 1000;
+    var KNOWLEDGE_SYNC_LAST_RUN_KEY = "goToolkit.chat.knowledge.lastSyncRunAt";
+
+    function normalizeKnowledgeSpaceId(value) {
+        var spacesApi = global.GoToolkitSpaces;
+        if (spacesApi && typeof spacesApi.normalizeSpaceId === "function") {
+            return String(spacesApi.normalizeSpaceId(value || "") || "").trim();
+        }
+        return String(value || "").trim().toLowerCase();
+    }
+
+    function getAvailableKnowledgeSpaces() {
+        var spacesApi = global.GoToolkitSpaces;
+        var spaces = [];
+        if (spacesApi && typeof spacesApi.readSpaces === "function") {
+            spaces = spacesApi.readSpaces() || [];
+        }
+        if (!Array.isArray(spaces) || !spaces.length) return [];
+        return spaces
+            .map(function (space) {
+                var id = normalizeKnowledgeSpaceId(space?.id || "");
+                if (!id) return null;
+                return {
+                    id: id,
+                    name: String(space?.name || id).trim() || id
+                };
+            })
+            .filter(Boolean);
+    }
 
     function readDocumentContent() {
         try {
@@ -1480,6 +1510,10 @@
         this.memoPendingAttachmentMemos = new Set();
         this.memoConfirmedAttachmentMemos = new Set();
         this.headerDocCountEl = null;
+        this.memorySpacesDropdownEl = null;
+        this.memorySpacesMenuEl = null;
+        this.memorySpacesSyncHintEl = null;
+        this.memorySpacesOutsideClickHandler = null;
         this.knowledgeDocumentNames = [];
         this.headerDocCountTooltipDefault = "Mémoire";
         this.previewPanel = null;
@@ -1533,6 +1567,8 @@
         this.knowledgeDescriptionOverridesStore = createKnowledgeDescriptionOverridesStore();
         this.knowledgeLocalDocsStore = createKnowledgeLocalDocsStore();
         this.knowledgeSelectionStore = createKnowledgeSelectionStore();
+        this.selectedKnowledgeSpaceIds = new Set();
+        this.lastKnowledgeSpaceSyncAt = 0;
         this.knowledgeModal = null;
         this.knowledgeModalHeader = null;
         this.knowledgeModalListEl = null;
@@ -1630,9 +1666,7 @@
         this.renderPendingDocumentAttachments();
         this.renderQueuedMessages();
         this.refreshAiRequestToaster?.();
-        this.applyKnowledgeSelectionForCurrentScope().catch(function (err) {
-            console.warn("Knowledge scope sync failed", err);
-        });
+        this.updateHeaderDocumentCount();
         return true;
     };
 
@@ -1716,6 +1750,7 @@
     };
 
     AssistSidebar.prototype.closeActiveModals = function () {
+        this.closeMemorySpacesMenu();
         if (this.previewPanel && this.previewPanel.classList.contains("open")) {
             this.closePreviewPanel();
         }
@@ -3369,10 +3404,10 @@
         var contextDocInfo = docInfo?.context;
         var knowledgeDocInfo = docInfo?.knowledge;
         if (shouldIncludeKnowledgeForPreset(activePresetId) && hasDocEntries(knowledgeDocInfo)) {
-            appendDocSections(knowledgeDocInfo, "KNOWLEDGE");
+            appendDocSections(knowledgeDocInfo, "SPACE_PAGES");
         }
         if (shouldIncludeKnowledgeForPreset(activePresetId)) {
-            appendDocSections(contextDocInfo, "CONTEXT");
+            appendDocSections(contextDocInfo, "CONVERSATION_ATTACHMENTS");
         }
 
         var historyText = self.buildHistoryText();
@@ -4267,10 +4302,13 @@
             }
             if (answerContent !== null) {
                 botMessage.content = answerContent;
-                botMessage.references = (Array.isArray(parsed.references) ? parsed.references : [])
+                var extracted = extractReferencesAndSuggestions(parsed);
+                botMessage.references = (Array.isArray(extracted.references) ? extracted.references : [])
                     .map(normalizeReference)
                     .filter(Boolean);
-                botMessage.suggestions = Array.isArray(parsed.suggestions) ? parsed.suggestions : [];
+                botMessage.suggestions = (Array.isArray(extracted.suggestions) ? extracted.suggestions : [])
+                    .filter(Boolean)
+                    .slice(0, 3);
             } else {
                 var partial = extractContent(botMessage._jsonBuffer);
                 if (partial) {
@@ -5111,6 +5149,9 @@
         var headerActions = document.createElement("div");
         headerActions.className = "chat-header-actions";
 
+        this.memorySpacesDropdownEl = document.createElement("div");
+        this.memorySpacesDropdownEl.className = "chat-prompt-dropdown";
+
         this.headerDocCountEl = document.createElement("button");
         this.headerDocCountEl.id = "chatMemoryBtn";
         this.headerDocCountEl.type = "button";
@@ -5124,7 +5165,13 @@
                 this.handleHeaderDocCountClick();
             }
         }.bind(this));
-        headerActions.appendChild(this.headerDocCountEl);
+        this.memorySpacesDropdownEl.appendChild(this.headerDocCountEl);
+
+        this.memorySpacesMenuEl = document.createElement("div");
+        this.memorySpacesMenuEl.className = "chat-prompt-menu chat-memory-spaces-menu";
+        this.memorySpacesMenuEl.setAttribute("aria-hidden", "true");
+        this.memorySpacesDropdownEl.appendChild(this.memorySpacesMenuEl);
+        headerActions.appendChild(this.memorySpacesDropdownEl);
         this.clearButton = document.createElement("button");
         this.clearButton.id = "chatClearBtn";
         this.clearButton.type = "button";
@@ -5455,14 +5502,14 @@
         this.buildPreviewPanel();
         this.initMemoSelectionTracking();
         this.prefetchKnowledgeModalList();
+        this.renderMemorySpacesMenu();
         this.renderPendingDocumentAttachments();
         this.renderQueuedMessages();
         return true;
     };
 
     AssistSidebar.prototype.prefetchKnowledgeModalList = function () {
-        if (this.knowledgeIndexing || this.knowledgeModal) return;
-        this.buildKnowledgeModal();
+        if (this.knowledgeIndexing) return;
         this.refreshKnowledgeModal({ skipAutoReindex: true }).catch(function (err) {
             console.warn("Knowledge prefetch failed", err);
         });
@@ -7064,35 +7111,154 @@
     };
 
     AssistSidebar.prototype.getMemoireDocumentCount = function () {
-        var entries = Array.isArray(this.knowledgeManifestEntries) ? this.knowledgeManifestEntries : [];
-        var seen = new Set();
-        var count = 0;
-        if (this.knowledgeModalSelectionSet instanceof Set) {
-            return this.knowledgeModalSelectionSet.size;
+        if (this.selectedKnowledgeSpaceIds instanceof Set && this.selectedKnowledgeSpaceIds.size) {
+            return this.selectedKnowledgeSpaceIds.size;
         }
-        entries.forEach(function (entry) {
-            var source = (entry?.source || "").toString();
-            if (source !== "Local" && source !== "Web") {
-                return;
+        return getAvailableKnowledgeSpaces().length;
+    };
+
+    AssistSidebar.prototype.readSelectedKnowledgeSpaces = function () {
+        var allSpaces = getAvailableKnowledgeSpaces();
+        var allIds = allSpaces.map(function (space) { return space.id; });
+        if (!allIds.length) return new Set();
+        var parsed = [];
+        try {
+            var raw = localStorage.getItem(KNOWLEDGE_SPACES_STORAGE_KEY);
+            if (raw) {
+                var json = JSON.parse(raw);
+                if (Array.isArray(json)) {
+                    parsed = json.map(normalizeKnowledgeSpaceId).filter(Boolean);
+                }
             }
-            var key = this.normalizeKnowledgeKey(entry.fileName || entry.name);
-            if (!key || seen.has(key)) {
-                return;
-            }
-            seen.add(key);
-            count += 1;
+        } catch (err) {
+            parsed = [];
+        }
+        var allowed = new Set(allIds);
+        var selected = new Set(parsed.filter(function (id) { return allowed.has(id); }));
+        if (!selected.size) {
+            allIds.forEach(function (id) { selected.add(id); });
+        }
+        return selected;
+    };
+
+    AssistSidebar.prototype.persistSelectedKnowledgeSpaces = function (spaceSet) {
+        var list = [];
+        if (spaceSet instanceof Set) {
+            spaceSet.forEach(function (id) {
+                var normalized = normalizeKnowledgeSpaceId(id);
+                if (normalized) list.push(normalized);
+            });
+        }
+        try {
+            localStorage.setItem(KNOWLEDGE_SPACES_STORAGE_KEY, JSON.stringify(list));
+        } catch (err) {
+            console.warn("Knowledge spaces selection save failed", err);
+        }
+    };
+
+    AssistSidebar.prototype.getKnowledgeSpaceIdFromEntry = function (entry) {
+        var raw = String(entry?.section || "").trim();
+        if (!raw || raw.indexOf("shared:") !== 0) return "";
+        return normalizeKnowledgeSpaceId(raw.slice("shared:".length));
+    };
+
+    AssistSidebar.prototype.buildKnowledgeSelectionFromSpaces = function (entries) {
+        var selectedSpaces = this.selectedKnowledgeSpaceIds instanceof Set
+            ? this.selectedKnowledgeSpaceIds
+            : new Set();
+        var selection = new Set();
+        (Array.isArray(entries) ? entries : []).forEach(function (entry) {
+            var spaceId = this.getKnowledgeSpaceIdFromEntry(entry);
+            if (!spaceId || !selectedSpaces.has(spaceId)) return;
+            var key = this.normalizeKnowledgeKey(entry.fileName || "");
+            if (key) selection.add(key);
         }.bind(this));
-        if (count) {
-            return count;
+        return selection;
+    };
+
+    AssistSidebar.prototype.renderMemorySpacesMenu = function () {
+        if (!this.memorySpacesMenuEl) return;
+        var spaces = getAvailableKnowledgeSpaces();
+        if (!(this.selectedKnowledgeSpaceIds instanceof Set) || !this.selectedKnowledgeSpaceIds.size) {
+            this.selectedKnowledgeSpaceIds = this.readSelectedKnowledgeSpaces();
         }
-        var fallback = Number.isFinite(this.knowledgeDocumentCount) ? this.knowledgeDocumentCount : 0;
-        return fallback;
+        var html = [];
+        if (!spaces.length) {
+            html.push('<div class="chat-prompt-menu-item" style="cursor:default;opacity:.7;">Aucun espace</div>');
+        } else {
+            spaces.forEach(function (space) {
+                var checked = this.selectedKnowledgeSpaceIds.has(space.id);
+                html.push(
+                    '<label class="chat-prompt-menu-item" style="display:flex;align-items:center;gap:8px;">' +
+                    '<input type="checkbox" class="chat-memory-space-checkbox" data-space-id="' + escapeHtml(space.id) + '" ' + (checked ? "checked" : "") + '>' +
+                    '<span>' + escapeHtml(space.name) + '</span>' +
+                    "</label>"
+                );
+            }.bind(this));
+        }
+        html.push('<div class="chat-prompt-menu-item" data-memory-sync-hint style="cursor:default;opacity:.7;font-size:11px;">Sync auto: 1h</div>');
+        this.memorySpacesMenuEl.innerHTML = html.join("");
+        this.memorySpacesSyncHintEl = this.memorySpacesMenuEl.querySelector("[data-memory-sync-hint]");
+        var boxes = this.memorySpacesMenuEl.querySelectorAll(".chat-memory-space-checkbox");
+        boxes.forEach(function (box) {
+            box.addEventListener("change", this.handleMemorySpaceToggle.bind(this));
+        }.bind(this));
+    };
+
+    AssistSidebar.prototype.openMemorySpacesMenu = function () {
+        if (!this.memorySpacesMenuEl) return;
+        this.renderMemorySpacesMenu();
+        this.memorySpacesMenuEl.classList.add("open");
+        this.memorySpacesMenuEl.setAttribute("aria-hidden", "false");
+        if (!this.memorySpacesOutsideClickHandler) {
+            this.memorySpacesOutsideClickHandler = function (event) {
+                if (!this.memorySpacesDropdownEl?.contains(event.target)) {
+                    this.closeMemorySpacesMenu();
+                }
+            }.bind(this);
+            document.addEventListener("click", this.memorySpacesOutsideClickHandler, true);
+        }
+    };
+
+    AssistSidebar.prototype.closeMemorySpacesMenu = function () {
+        if (!this.memorySpacesMenuEl) return;
+        this.memorySpacesMenuEl.classList.remove("open");
+        this.memorySpacesMenuEl.setAttribute("aria-hidden", "true");
+        if (this.memorySpacesOutsideClickHandler) {
+            document.removeEventListener("click", this.memorySpacesOutsideClickHandler, true);
+            this.memorySpacesOutsideClickHandler = null;
+        }
+    };
+
+    AssistSidebar.prototype.handleMemorySpaceToggle = async function (event) {
+        var target = event?.currentTarget || event?.target;
+        if (!target) return;
+        var spaceId = normalizeKnowledgeSpaceId(target.dataset.spaceId || "");
+        if (!spaceId) return;
+        var next = new Set(this.selectedKnowledgeSpaceIds || []);
+        if (target.checked) {
+            next.add(spaceId);
+        } else {
+            next.delete(spaceId);
+        }
+        if (!next.size) {
+            target.checked = true;
+            return;
+        }
+        this.selectedKnowledgeSpaceIds = next;
+        this.persistSelectedKnowledgeSpaces(next);
+        this.updateHeaderDocumentCount();
+        this.setKnowledgeModalStatus("Mise à jour de la mémoire…");
+        await this.syncKnowledgeFromSelectedSpaces({ force: true });
     };
 
     AssistSidebar.prototype.updateHeaderDocumentCount = function () {
         if (!this.headerDocCountEl) return;
         var showMemoireButton = this.promptPresetId !== "ask";
         this.headerDocCountEl.style.display = showMemoireButton ? "" : "none";
+        if (this.memorySpacesDropdownEl) {
+            this.memorySpacesDropdownEl.style.display = showMemoireButton ? "" : "none";
+        }
         var count = this.getMemoireDocumentCount();
         this.headerDocCountEl.dataset.count = count;
         if (count > 0) {
@@ -7654,11 +7820,18 @@
 
     AssistSidebar.prototype.updateHeaderDocTooltip = function () {
         if (!this.headerDocCountEl) return;
-        if (!this.knowledgeDocumentNames || !this.knowledgeDocumentNames.length) {
+        var spaces = getAvailableKnowledgeSpaces();
+        var selected = this.selectedKnowledgeSpaceIds instanceof Set
+            ? this.selectedKnowledgeSpaceIds
+            : this.readSelectedKnowledgeSpaces();
+        var selectedNames = spaces
+            .filter(function (space) { return selected.has(space.id); })
+            .map(function (space) { return space.name; });
+        if (!selectedNames.length) {
             this.headerDocCountEl.setAttribute("title", this.headerDocCountTooltipDefault);
             return;
         }
-        this.headerDocCountEl.setAttribute("title", this.knowledgeDocumentNames.join("\n"));
+        this.headerDocCountEl.setAttribute("title", "Espaces mémoire:\n" + selectedNames.join("\n"));
     };
 
     AssistSidebar.prototype.applyKnowledgeOverrides = async function (entries) {
@@ -8061,17 +8234,7 @@
     };
 
     AssistSidebar.prototype.openKnowledgeModal = function (persist, options) {
-        this.buildKnowledgeModal();
-        if (!this.knowledgeModal) return;
-        if (this.previewPanel && this.previewPanel.classList.contains("open")) {
-            this.closePreviewPanel();
-        }
-        this.knowledgeModal.classList.add("open");
-        this.knowledgeModal.setAttribute("aria-hidden", "false");
-        if (persist !== false) {
-            persistKnowledgeModalOpenState(true);
-        }
-        this.refreshKnowledgeModal();
+        this.openMemorySpacesMenu();
     };
 
     AssistSidebar.prototype.openKnowledgeModalWithSourceFilter = function (source) {
@@ -8079,12 +8242,7 @@
     };
 
     AssistSidebar.prototype.closeKnowledgeModal = function (persist) {
-        if (!this.knowledgeModal) return;
-        this.knowledgeModal.classList.remove("open");
-        this.knowledgeModal.setAttribute("aria-hidden", "true");
-        if (persist !== false) {
-            persistKnowledgeModalOpenState(false);
-        }
+        this.closeMemorySpacesMenu();
         this.setKnowledgeModalStatus("");
     };
 
@@ -8132,12 +8290,8 @@
         }
         this.knowledgeManifestEntries = memoEntries;
 
-        // Load user's persistent selection (independent of preset)
-        var persistedSelection = await this.readKnowledgeSelectionForScope(this.currentConversationScopeId);
-        var persistedSelectionSet = new Set((persistedSelection || []).map(this.normalizeKnowledgeKey.bind(this)));
-
-        // Use persisted selection if available, otherwise start with empty selection for new users
-        var selectionSet = persistedSelectionSet.size > 0 ? persistedSelectionSet : new Set();
+        this.selectedKnowledgeSpaceIds = this.readSelectedKnowledgeSpaces();
+        var selectionSet = this.buildKnowledgeSelectionFromSpaces(memoEntries);
 
         var memoKeySet = new Set();
         memoEntries.forEach(function (entry) {
@@ -8190,7 +8344,7 @@
         }
         this.renderKnowledgeModalList(this.knowledgeManifestEntries, selectionSet);
         if (newEntries.length && options.autoReindex === true && selectionSet.size > 0) {
-            await this.reindexKnowledgeSelection(this.knowledgeManifestEntries, selectionSet);
+            await this.reindexKnowledgeSelection(this.knowledgeManifestEntries, selectionSet, { reindexIfUpdated: true });
         }
         if (this.knowledgeManifestStore?.write) {
             await this.knowledgeManifestStore.write(
@@ -8264,18 +8418,15 @@
 
     AssistSidebar.prototype.applyKnowledgeSelectionForCurrentScope = async function () {
         if (!this.docManager) return;
-        var scopeId = this.currentConversationScopeId || DEFAULT_CONVERSATION_SCOPE;
         this._knowledgeScopeApplyToken = (this._knowledgeScopeApplyToken || 0) + 1;
         var token = this._knowledgeScopeApplyToken;
         try {
             await this.refreshKnowledgeModal({ skipAutoReindex: true });
             if (token !== this._knowledgeScopeApplyToken) return;
             var entries = Array.isArray(this.knowledgeManifestEntries) ? this.knowledgeManifestEntries : [];
-            var persistedSelection = await this.readKnowledgeSelectionForScope(scopeId);
-            if (token !== this._knowledgeScopeApplyToken) return;
-            var selection = new Set((persistedSelection || []).map(this.normalizeKnowledgeKey.bind(this)));
+            var selection = this.buildKnowledgeSelectionFromSpaces(entries);
             this.setKnowledgeModalSelection(selection);
-            await this.reindexKnowledgeSelection(entries, selection, { forceReindexSelected: true });
+            await this.reindexKnowledgeSelection(entries, selection, { reindexIfUpdated: true });
             if (token !== this._knowledgeScopeApplyToken) return;
             if (this.knowledgeModal?.classList?.contains("open")) {
                 this.renderKnowledgeModalList(entries, selection);
@@ -8284,6 +8435,42 @@
             this.refreshDocumentStats();
         } catch (err) {
             console.warn("Knowledge scope selection apply failed", err);
+        }
+    };
+
+    AssistSidebar.prototype.shouldRunKnowledgeSync = function (force) {
+        if (force) return true;
+        var now = Date.now();
+        var lastRun = Number(this.lastKnowledgeSpaceSyncAt) || 0;
+        if (!lastRun) {
+            try {
+                lastRun = Number(localStorage.getItem(KNOWLEDGE_SYNC_LAST_RUN_KEY) || 0) || 0;
+            } catch (err) {
+                lastRun = 0;
+            }
+        }
+        return now - lastRun >= KNOWLEDGE_SYNC_INTERVAL_MS;
+    };
+
+    AssistSidebar.prototype.markKnowledgeSyncRun = function () {
+        this.lastKnowledgeSpaceSyncAt = Date.now();
+        try {
+            localStorage.setItem(KNOWLEDGE_SYNC_LAST_RUN_KEY, String(this.lastKnowledgeSpaceSyncAt));
+        } catch (err) {
+            // ignore
+        }
+    };
+
+    AssistSidebar.prototype.syncKnowledgeFromSelectedSpaces = async function (options) {
+        var opts = options || {};
+        if (!this.shouldRunKnowledgeSync(Boolean(opts.force))) return false;
+        try {
+            await this.applyKnowledgeSelectionForCurrentScope();
+            this.markKnowledgeSyncRun();
+            return true;
+        } catch (err) {
+            console.warn("Knowledge spaces sync failed", err);
+            return false;
         }
     };
 
@@ -8530,6 +8717,9 @@
     AssistSidebar.prototype.addDroppedMemoDocumentToKnowledge = async function (documentId) {
         var docId = String(documentId || "").trim();
         if (!docId || this.knowledgeIndexing) return false;
+        if (this.selectedKnowledgeSpaceIds instanceof Set) {
+            return false;
+        }
         try {
             await this.refreshKnowledgeModal({ skipAutoReindex: true });
             var entries = Array.isArray(this.knowledgeManifestEntries) ? this.knowledgeManifestEntries : [];
@@ -8651,9 +8841,7 @@
     };
 
     AssistSidebar.prototype.persistKnowledgeSelection = function (selectionSet) {
-        this.writeKnowledgeSelectionForScope(this.currentConversationScopeId, selectionSet).catch(function (err) {
-            console.warn("Failed to persist knowledge selection", err);
-        });
+        return selectionSet;
     };
 
     AssistSidebar.prototype.handleKnowledgeHeaderToggle = async function (event) {
@@ -9112,6 +9300,7 @@
                 localDocMap.set(key, doc);
             }.bind(this));
             var forceReindexSelected = Boolean(options && options.forceReindexSelected);
+            var reindexIfUpdated = options?.reindexIfUpdated !== false;
             if (forceReindexSelected && filtered.length) {
                 var selectedKeySet = new Set(filtered.map(function (entry) {
                     return this.normalizeKnowledgeKey(entry.fileName);
@@ -9134,6 +9323,28 @@
                         var key = this.normalizeKnowledgeKey(doc.sourceFileName || doc.name);
                         if (key) existingByKey.delete(key);
                     }.bind(this));
+                }
+            }
+            if (reindexIfUpdated && filtered.length && this.docManager?.deleteDocumentsByNames) {
+                var staleNamesToDelete = [];
+                filtered.forEach(function (entry) {
+                    var key = this.normalizeKnowledgeKey(entry.fileName);
+                    if (!key) return;
+                    var stored = existingByKey.get(key);
+                    if (!stored) return;
+                    var incomingUpdatedAt = Number(entry.updatedAt) || 0;
+                    var storedUpdatedAt = Number(stored.updatedAt) || 0;
+                    if (incomingUpdatedAt > 0 && incomingUpdatedAt > storedUpdatedAt) {
+                        var name = (stored.name || stored.sourceFileName || "").toString().trim();
+                        if (name) staleNamesToDelete.push(name);
+                        existingByKey.delete(key);
+                    }
+                }.bind(this));
+                if (staleNamesToDelete.length) {
+                    await this.docManager.deleteDocumentsByNames(
+                        this.knowledgeConversationId,
+                        Array.from(new Set(staleNamesToDelete))
+                    );
                 }
             }
             var missing = filtered.filter(function (entry) {
@@ -9257,11 +9468,11 @@
     };
 
     AssistSidebar.prototype.handleHeaderDocCountClick = function () {
-        if (this.knowledgeModal && this.knowledgeModal.classList.contains("open")) {
-            this.closeKnowledgeModal();
+        if (this.memorySpacesMenuEl && this.memorySpacesMenuEl.classList.contains("open")) {
+            this.closeMemorySpacesMenu();
             return;
         }
-        this.openKnowledgeModal();
+        this.openMemorySpacesMenu();
     };
 
     AssistSidebar.prototype.refreshDocumentStats = function () {
@@ -9451,6 +9662,28 @@
         }
     }
 
+    function extractReferencesAndSuggestions() {
+        var containers = Array.prototype.slice.call(arguments);
+        var refs = [];
+        var suggestions = [];
+        var collect = function (container) {
+            if (!container || typeof container !== "object") return;
+            var containerRefs = Array.isArray(container.references) ? container.references : [];
+            var containerSuggestions = Array.isArray(container.suggestions) ? container.suggestions : [];
+            if (containerRefs.length) refs = refs.concat(containerRefs);
+            if (containerSuggestions.length) suggestions = suggestions.concat(containerSuggestions);
+        };
+        containers.forEach(function (container) {
+            collect(container);
+            collect(container?.answer);
+            collect(container?.content);
+        });
+        return {
+            references: refs,
+            suggestions: suggestions
+        };
+    }
+
     AssistSidebar.prototype.parseAssistantResponse = function (raw) {
         var fallback = {
             content: "Réponse illisible.",
@@ -9485,8 +9718,9 @@
             } else if (answerPayload && typeof answerPayload.content === "string") {
                 answerContent = answerPayload.content.trim();
             }
-            var references = Array.isArray(payload?.references) ? payload.references : [];
-            var suggestions = Array.isArray(payload?.suggestions) ? payload.suggestions : [];
+            var extracted = extractReferencesAndSuggestions(parsed, payload);
+            var references = Array.isArray(extracted.references) ? extracted.references : [];
+            var suggestions = Array.isArray(extracted.suggestions) ? extracted.suggestions : [];
             var operations = Array.isArray(payload?.operations) ? payload.operations : [];
             var output = (typeof payload?.output === "string") ? payload.output : "";
             var finalContent = (answerContent && answerContent.length)
@@ -10736,6 +10970,7 @@
         this.syncScopeFromActiveDocument({ force: true });
         this.updateComposerState();
         this.refreshMemoContextAttachments();
+        this.selectedKnowledgeSpaceIds = this.readSelectedKnowledgeSpaces();
         if (this.docManager) {
             this.documentStatsWatcher = this.docManager.onStatsChange(this.refreshDocumentStats.bind(this));
             this.refreshDocumentStats();
@@ -10752,6 +10987,13 @@
             var docId = event?.detail?.documentId || null;
             this.syncScopeFromActiveDocument({ documentId: docId });
         }.bind(this));
+        document.addEventListener("goToolkitSpaceSyncCompleted", function () {
+            this.syncKnowledgeFromSelectedSpaces({ force: true });
+        }.bind(this));
+        document.addEventListener("goToolkitDocumentPanelRefresh", function () {
+            this.syncKnowledgeFromSelectedSpaces({ force: true });
+        }.bind(this));
+        this.syncKnowledgeFromSelectedSpaces({ force: false });
         this.ensureKnowledgeIndexWarm();
     };
 

@@ -3080,6 +3080,20 @@ ul.release-roadmap-text li::before {
   background: var(--bg-surface-soft);
 }
 
+.chat-memory-space-checkbox {
+  margin: 0;
+}
+
+.chat-memory-spaces-menu {
+  top: calc(100% + 6px);
+  bottom: auto;
+  right: 0;
+  left: auto;
+  min-width: 180px;
+  max-height: 280px;
+  overflow: auto;
+}
+
 .chat-prompt-shortcuts-modal {
   width: min(95vw, 1100px);
   height: auto;
