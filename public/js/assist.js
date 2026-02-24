@@ -9240,6 +9240,18 @@
                     sourceType: "embedded",
                     metadata: metadata
                 });
+                metadata.forEach(function (meta, fileName) {
+                    var key = this.normalizeKnowledgeKey(fileName);
+                    if (!key) return;
+                    this.knowledgeMemoDocRefs.set(key, {
+                        id: "",
+                        name: fileName,
+                        updatedAt: Number(meta?.updatedAt) || Date.now()
+                    });
+                }.bind(this));
+                if (this.memorySpacesMenuEl && this.memorySpacesMenuEl.classList.contains("open")) {
+                    this.renderMemorySpacesMenu();
+                }
             }
             try {
                 console.log("[AI_IN_DEBUG] reindex selection ingest done", {
