@@ -2741,7 +2741,6 @@
         promptShortcutsBtn.type = "button";
         promptShortcutsBtn.className = "btn-secondary chat-prompt-shortcuts-btn";
         promptShortcutsBtn.innerHTML = '<i data-lucide="sparkles"></i>';
-        promptShortcutsBtn.setAttribute("title", "Raccourcis Prompt");
         promptShortcutsBtn.addEventListener("click", function () {
             this.openPromptShortcutsModal(textarea);
         }.bind(this));
@@ -2857,6 +2856,68 @@
         return renderBotMarkdown(message.content || "");
     };
 
+    AssistSidebar.prototype.formatReferenceTooltip = function (ref, docLabel) {
+        if (!ref) return (docLabel || "Document");
+        var lines = [];
+        var documentName = (docLabel || "").trim() || "Document";
+        var abstractText = typeof ref.abstract === "string" ? ref.abstract.trim() : "";
+        var snippetText = "";
+        if (Array.isArray(ref.snippet)) {
+            snippetText = ref.snippet
+                .map(function (entry) { return String(entry || "").trim(); })
+                .filter(Boolean)
+                .join(" ");
+        } else if (typeof ref.snippet === "string") {
+            snippetText = ref.snippet.trim();
+        }
+        if (snippetText) {
+            snippetText = snippetText.replace(/\s+/g, " ");
+            if (snippetText.length > 280) {
+                snippetText = snippetText.slice(0, 277) + "...";
+            }
+        }
+        lines.push("Document: " + documentName);
+        if (abstractText) {
+            lines.push("Résumé: " + abstractText);
+        }
+        if (snippetText) {
+            lines.push("Extrait: " + snippetText);
+        }
+        return lines.join("\n");
+    };
+
+    AssistSidebar.prototype.extractSpacePagesTooltip = function (message) {
+        var source = typeof message?.aiInPayloadTooltip === "string"
+            ? message.aiInPayloadTooltip
+            : "";
+        if (!source) return "SPACE_PAGES";
+        var lines = source.split(/\r?\n/);
+        var started = false;
+        var collected = [];
+        for (var i = 0; i < lines.length; i += 1) {
+            var rawLine = String(lines[i] || "");
+            var trimmed = rawLine.trim();
+            var normalized = trimmed.replace(/:$/, "");
+            if (!started && normalized === "SPACE_PAGES") {
+                started = true;
+                collected.push("SPACE_PAGES");
+                continue;
+            }
+            if (!started) continue;
+            if (/^[A-Z][A-Z0-9_ ]{1,40}:?$/.test(trimmed) && normalized !== "SPACE_PAGES") {
+                break;
+            }
+            collected.push(rawLine);
+        }
+        var tooltip = collected.join("\n").trim();
+        if (!tooltip) return "SPACE_PAGES";
+        var maxLength = 1800;
+        if (tooltip.length > maxLength) {
+            return tooltip.slice(0, maxLength) + "\n…";
+        }
+        return tooltip;
+    };
+
     AssistSidebar.prototype.syncBotExtras = function (entry, message) {
         if (!entry) return;
         var references = Array.isArray(message.references) ? message.references : [];
@@ -2875,7 +2936,7 @@
                     if (docLabel === "Non fourni") return;
                     var abstractLabel = (ref.abstract || "").trim();
                     var displayTitle = abstractLabel || docLabel;
-                    var titleText = docLabel;
+                    var titleText = this.formatReferenceTooltip(ref, docLabel);
                     var item = document.createElement("li");
                     item.className = "chat-reference-item";
                     var link = document.createElement("button");
@@ -2905,6 +2966,7 @@
             entry.suggestionsEl.innerHTML = "";
             if (suggestions.length) {
                 entry.suggestionsEl.style.display = "";
+                var suggestionTooltip = this.extractSpacePagesTooltip(message);
                 var wrap = document.createElement("div");
                 wrap.className = "chat-suggestions-list";
                 suggestions.forEach(function (text) {
@@ -2913,6 +2975,7 @@
                     btn.type = "button";
                     btn.className = "chat-suggestion-btn";
                     btn.textContent = text;
+                    btn.title = suggestionTooltip;
                     btn.addEventListener("click", function () {
                         this.handleSuggestionClick(text);
                     }.bind(this));
@@ -5773,7 +5836,6 @@
         this.promptShortcutsButton.type = "button";
         this.promptShortcutsButton.className = "btn-secondary chat-prompt-shortcuts-btn";
         this.promptShortcutsButton.innerHTML = '<i data-lucide="sparkles"></i>';
-        this.promptShortcutsButton.setAttribute("title", "Raccourcis");
         this.promptShortcutsButton.addEventListener("click", function () {
             this.openPromptShortcutsModal(this.textarea);
         }.bind(this));
@@ -8046,6 +8108,24 @@
         return fallback.slice(0, 150);
     };
 
+    AssistSidebar.prototype.computeTextHash = async function (text) {
+        var value = typeof text === "string" ? text : String(text || "");
+        if (!value) return "";
+        if (!global.crypto || !global.crypto.subtle || typeof TextEncoder === "undefined") {
+            return "";
+        }
+        try {
+            var data = new TextEncoder().encode(value);
+            var digest = await global.crypto.subtle.digest("SHA-256", data);
+            var bytes = Array.from(new Uint8Array(digest));
+            return bytes.map(function (b) {
+                return b.toString(16).padStart(2, "0");
+            }).join("");
+        } catch (err) {
+            return "";
+        }
+    };
+
     AssistSidebar.prototype.deriveAbstractFromFile = async function (file) {
         if (!file || !this.docManager) return "";
         try {
@@ -9106,7 +9186,8 @@
         var selected = selectionSet instanceof Set ? selectionSet : new Set();
         var filtered = entries.filter(function (entry) {
             var key = this.normalizeKnowledgeKey(entry.fileName);
-            return key && selected.has(key);
+            var source = String(entry?.source || "").trim();
+            return key && selected.has(key) && source === "Mémo";
         }.bind(this));
         try {
             console.log("[AI_IN_DEBUG] reindex selection start", {
@@ -9135,21 +9216,31 @@
         try {
             var existingDocs = await this.docManager.getDocuments(this.knowledgeConversationId);
             var existingByKey = new Map();
-            var localDocMap = new Map();
-            var localCache = await this.loadKnowledgeLocalDocsCache();
+            var contentHashByKey = new Map();
             (existingDocs || []).forEach(function (doc) {
                 if (!doc) return;
                 var key = this.normalizeKnowledgeKey(doc.sourceFileName || doc.name);
                 if (!key) return;
                 existingByKey.set(key, doc);
-                localDocMap.set(key, doc);
             }.bind(this));
+            for (var h = 0; h < filtered.length; h++) {
+                var hashEntry = filtered[h];
+                var hashKey = this.normalizeKnowledgeKey(hashEntry?.fileName || "");
+                if (!hashKey) continue;
+                var hashText = typeof hashEntry?.memoText === "string"
+                    ? hashEntry.memoText
+                    : (typeof hashEntry?.memoHtml === "string" ? this.stripHtmlText(hashEntry.memoHtml) : "");
+                if (!hashText && hashEntry?.memoHtml) {
+                    hashText = String(hashEntry.memoHtml);
+                }
+                var nextHash = await this.computeTextHash(hashText);
+                if (nextHash) {
+                    contentHashByKey.set(hashKey, nextHash);
+                }
+            }
             var forceReindexSelected = Boolean(options && options.forceReindexSelected);
-            var reindexIfUpdated = options?.reindexIfUpdated !== false;
+            var reindexIfHashChanged = options?.reindexIfUpdated !== false;
             if (forceReindexSelected && filtered.length) {
-                var selectedKeySet = new Set(filtered.map(function (entry) {
-                    return this.normalizeKnowledgeKey(entry.fileName);
-                }.bind(this)).filter(Boolean));
                 var docsToDelete = (existingDocs || []).filter(function (doc) {
                     if (!doc) return false;
                     var key = this.normalizeKnowledgeKey(doc.sourceFileName || doc.name);
@@ -9167,16 +9258,16 @@
                     existingByKey.clear();
                 }
             }
-            if (reindexIfUpdated && filtered.length && this.docManager?.deleteDocumentsByNames) {
+            if (reindexIfHashChanged && filtered.length && this.docManager?.deleteDocumentsByNames) {
                 var staleNamesToDelete = [];
                 filtered.forEach(function (entry) {
                     var key = this.normalizeKnowledgeKey(entry.fileName);
                     if (!key) return;
                     var stored = existingByKey.get(key);
                     if (!stored) return;
-                    var incomingUpdatedAt = Number(entry.updatedAt) || 0;
-                    var storedUpdatedAt = Number(stored.updatedAt) || 0;
-                    if (incomingUpdatedAt > 0 && incomingUpdatedAt > storedUpdatedAt) {
+                    var incomingHash = contentHashByKey.get(key) || "";
+                    var storedHash = String(stored.fileHash || "").trim();
+                    if (incomingHash && storedHash && incomingHash !== storedHash) {
                         var name = (stored.name || stored.sourceFileName || "").toString().trim();
                         if (name) staleNamesToDelete.push(name);
                         existingByKey.delete(key);
@@ -9213,74 +9304,27 @@
             for (var i = 0; i < missing.length; i++) {
                 var entry = missing[i];
                 var key = this.normalizeKnowledgeKey(entry.fileName);
-                var source = entry.source || "Web";
                 var file = null;
                 var derivedAbstract = "";
-                if (source === "Local") {
-                    var localDoc = localDocMap.get(key);
-                    var buffer = localDoc?.fileBuffer || localCache[key]?.buffer || null;
-                    var mime = localDoc?.mime || localCache[key]?.mime || "";
-                    if (buffer) {
-                        file = this.createKnowledgeFile(
-                            buffer,
-                            localDoc?.sourceFileName || localDoc?.name || entry.fileName,
-                            mime
-                        );
-                    }
-                    if (!entry.abstract) {
-                        derivedAbstract = await this.deriveAbstractFromFile(file);
-                    }
+                var memoText = typeof entry.memoText === "string" ? entry.memoText : "";
+                if (!memoText && typeof entry.memoHtml === "string") {
+                    memoText = this.stripHtmlText(entry.memoHtml);
+                }
+                if (!memoText && entry.memoHtml) {
+                    memoText = String(entry.memoHtml);
+                }
+                file = this.createKnowledgeFile(memoText, entry.fileName, "text/plain");
+                if (!entry.abstract) {
+                    derivedAbstract = this.extractFirstChunkLine(memoText);
+                }
+                if (file) {
                     metadata.set(entry.fileName, {
                         name: entry.name,
                         abstract: entry.abstract || derivedAbstract || "",
                         updatedAt: entry.updatedAt,
                         fileName: entry.fileName,
-                        scope: ["attachments", "local"]
+                        scope: ["memo"]
                     });
-                    if (localCache && entry.fileName) {
-                        localCache[key] = {
-                            fileName: entry.fileName,
-                            name: entry.name || entry.fileName,
-                            abstract: entry.abstract || derivedAbstract || "",
-                            updatedAt: entry.updatedAt,
-                            mime: mime,
-                            buffer: buffer
-                        };
-                    }
-                } else if (source === "Mémo") {
-                    var memoText = typeof entry.memoText === "string" ? entry.memoText : "";
-                    if (!memoText && typeof entry.memoHtml === "string") {
-                        memoText = this.stripHtmlText(entry.memoHtml);
-                    }
-                    if (!memoText && entry.memoHtml) {
-                        memoText = String(entry.memoHtml);
-                    }
-                    file = this.createKnowledgeFile(memoText, entry.fileName, "text/plain");
-                    if (!entry.abstract) {
-                        derivedAbstract = this.extractFirstChunkLine(memoText);
-                    }
-                    if (file) {
-                        metadata.set(entry.fileName, {
-                            name: entry.name,
-                            abstract: entry.abstract || derivedAbstract || "",
-                            updatedAt: entry.updatedAt,
-                            fileName: entry.fileName,
-                            scope: ["memo"]
-                        });
-                    }
-                } else {
-                    file = await this.fetchKnowledgeDocument(entry);
-                    if (file) {
-                        if (!entry.abstract) {
-                            derivedAbstract = await this.deriveAbstractFromFile(file);
-                        }
-                        metadata.set(entry.fileName, {
-                            name: entry.name,
-                            abstract: entry.abstract || derivedAbstract || "",
-                            updatedAt: entry.updatedAt,
-                            fileName: entry.fileName
-                        });
-                    }
                 }
                 processed += 1;
                 var label = total ? processed + " / " + total : processed;
@@ -9317,9 +9361,6 @@
                 });
             } catch (err) {
                 // ignore
-            }
-            if (localCache) {
-                await this.saveKnowledgeLocalDocsCache(localCache);
             }
             this.cacheKnowledgeDocumentNames(filtered);
         } catch (err) {
@@ -10892,10 +10933,10 @@
             this.syncScopeFromActiveDocument({ documentId: docId });
         }.bind(this));
         document.addEventListener("goToolkitSpaceSyncCompleted", function () {
-            this.syncKnowledgeFromSelectedSpaces({ force: true });
+            this.syncKnowledgeFromSelectedSpaces({ force: false });
         }.bind(this));
         document.addEventListener("goToolkitDocumentPanelRefresh", function () {
-            this.syncKnowledgeFromSelectedSpaces({ force: true });
+            this.syncKnowledgeFromSelectedSpaces({ force: false });
         }.bind(this));
         this.syncKnowledgeFromSelectedSpaces({ force: false });
         this.ensureKnowledgeIndexWarm();
