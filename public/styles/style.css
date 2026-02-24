@@ -1986,6 +1986,10 @@ ul.release-roadmap-text li::before {
   border-color: var(--color-primary);
 }
 
+#chatMemoryBtn.chat-memory-btn--active {
+  border-color: var(--color-primary);
+}
+
 #assistSidebar.chat-sidebar--drop-target {
   border-color: var(--color-primary);
   box-shadow: inset 0 0 0 1px var(--color-primary);
@@ -2926,6 +2930,7 @@ ul.release-roadmap-text li::before {
 }
 
 .chat-composer-attachment {
+  --chat-attachment-border: var(--border-main);
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -2934,7 +2939,7 @@ ul.release-roadmap-text li::before {
   background: transparent;
   border-radius: var(--radius-full);
   color: var(--text-main);
-  border: 1px solid var(--border-main);
+  border: 2px solid var(--chat-attachment-border);
   cursor: pointer;
 }
 
@@ -2943,11 +2948,28 @@ ul.release-roadmap-text li::before {
 }
 
 .chat-composer-attachment[data-enabled="true"] {
-  border: 2px solid var(--color-primary);
+  --chat-attachment-border: var(--color-primary);
 }
 
 .chat-composer-attachment[data-enabled="false"] {
-  border: 1px solid var(--border-main);
+  --chat-attachment-border: var(--border-main);
+  color: var(--text-muted);
+}
+
+.chat-composer-attachment[data-kind="pending"][data-status="waiting"] {
+  --chat-attachment-border: var(--intent-error-border);
+}
+
+.chat-composer-attachment[data-kind="pending"][data-status="processing"] {
+  --chat-attachment-border: var(--bg-text-yellow);
+}
+
+.chat-composer-attachment[data-kind="pending"][data-status="done"] {
+  --chat-attachment-border: var(--color-primary);
+}
+
+.chat-composer-attachment[data-kind="pending"][data-enabled="false"] {
+  --chat-attachment-border: var(--border-main);
   color: var(--text-muted);
 }
 
@@ -3082,6 +3104,7 @@ ul.release-roadmap-text li::before {
 
 .chat-memory-space-checkbox {
   margin: 0;
+  accent-color: var(--color-primary);
 }
 
 .chat-memory-spaces-menu {

@@ -1,5 +1,7 @@
 export default {
   async fetch(request, env) {
+    const requestUrl = new URL(request.url);
+    const isEmbeddingsRoute = requestUrl.pathname.includes("/embeddings");
     const allowedOrigins = [
       "https://gotoolkit.fr",
       "https://gotoolkit.workers.dev"
@@ -60,7 +62,7 @@ export default {
     const ipWhitelist = ["78.112.62.208"];
 
     if (ipWhitelist.includes(clientIp)) {
-      return forwardToOpenRouter(request, env, corsOrigin);
+      return forwardToOpenRouter(request, env, corsOrigin, { embeddings: isEmbeddingsRoute });
     }
 
     let clientId = request.headers.get("x-client-id");
@@ -85,11 +87,11 @@ export default {
       }
     }
 
-    return forwardToOpenRouter(request, env, corsOrigin);
+    return forwardToOpenRouter(request, env, corsOrigin, { embeddings: isEmbeddingsRoute });
   }
 };
 
-async function forwardToOpenRouter(request, env, corsOrigin) {
+async function forwardToOpenRouter(request, env, corsOrigin, options = {}) {
   const raw = await request.text();
   const maxBytes = 2_500_000;
 
@@ -111,13 +113,20 @@ async function forwardToOpenRouter(request, env, corsOrigin) {
   let upstreamResponse;
   const wantsStream = Boolean(payload && payload.stream);
   const acceptHeader = request.headers.get("Accept");
+  const targetUrl = options.embeddings
+    ? "https://openrouter.ai/api/v1/embeddings"
+    : "https://openrouter.ai/api/v1/chat/completions";
   try {
-    upstreamResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    upstreamResponse = await fetch(targetUrl, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${env.OPENROUTER_API_KEY}`,
         "Content-Type": "application/json",
-        ...(wantsStream || acceptHeader ? { Accept: acceptHeader || "text/event-stream" } : {})
+        ...(
+          !options.embeddings && (wantsStream || acceptHeader)
+            ? { Accept: acceptHeader || "text/event-stream" }
+            : {}
+        )
       },
       body: JSON.stringify(payload)
     });

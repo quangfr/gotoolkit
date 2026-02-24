@@ -520,6 +520,7 @@
     var KNOWLEDGE_SPACES_STORAGE_KEY = "goToolkit.chat.knowledge.selectedSpaces.v1";
     var KNOWLEDGE_SYNC_INTERVAL_MS = 60 * 60 * 1000;
     var KNOWLEDGE_SYNC_LAST_RUN_KEY = "goToolkit.chat.knowledge.lastSyncRunAt";
+    var KNOWLEDGE_PRIVATE_SPACE_ID = "__private__";
 
     function normalizeKnowledgeSpaceId(value) {
         var spacesApi = global.GoToolkitSpaces;
@@ -546,6 +547,19 @@
                 };
             })
             .filter(Boolean);
+    }
+
+    function formatKnowledgeLastIndexedAgo(value) {
+        var ms = Number(value) || 0;
+        if (!ms) return "Jamais";
+        var deltaSeconds = Math.max(0, Math.floor((Date.now() - ms) / 1000));
+        if (deltaSeconds < 60) return "<1 mn";
+        var minutes = Math.floor(deltaSeconds / 60);
+        if (minutes < 60) return minutes + " mn";
+        var hours = Math.floor(minutes / 60);
+        if (hours < 24) return hours + " h";
+        var days = Math.floor(hours / 24);
+        return days + " j";
     }
 
     function readDocumentContent() {
@@ -1112,8 +1126,18 @@
             || payload.chunkid
             || payload.chunk
             || null;
+        var documentName = payload.documentName
+            || payload.document_name
+            || payload.filename
+            || payload.fileName
+            || payload.file
+            || ((typeof payload.document === "string" || typeof payload.doc === "string")
+                ? (payload.document || payload.doc)
+                : null)
+            || null;
         var abstractLabel = typeof payload.abstract === "string" ? payload.abstract.trim() : "";
         var line = typeof payload.line === "number" ? payload.line : null;
+        var page = normalizePageNumber(payload.page);
 
         // Support snippet as array (1-3 citations from AI) or string (backward compat)
         var snippetValue = null;
@@ -1128,8 +1152,10 @@
         return {
             documentId: documentId,
             chunkId: chunkId,
+            documentName: typeof documentName === "string" ? documentName.trim() : "",
             abstract: abstractLabel,
             line: line,
+            page: page,
             snippet: snippetValue
         };
     }
@@ -1492,6 +1518,7 @@
         this.attachmentsTotalCount = 0;
         this.attachmentsCompletedFiles = new Set();
         this.attachmentsFailedFiles = new Set();
+        this.attachmentsProcessingFiles = new Set();
         this.attachmentsFileSizes = new Map();
         this.mediaTranscriptFileSizes = new Map();
         this.memoContextAttachments = [];
@@ -1898,6 +1925,7 @@
         this.attachmentsTotalSize = 0;
         this.attachmentsCompletedFiles = new Set();
         this.attachmentsFailedFiles = new Set();
+        this.attachmentsProcessingFiles = new Set();
         this.attachmentsFileSizes = new Map();
         this.mediaTranscriptFileSizes = new Map();
         this.updateAttachmentIndicator();
@@ -1914,6 +1942,7 @@
         this.attachmentsTotalSize = 0;
         this.attachmentsCompletedFiles = new Set();
         this.attachmentsFailedFiles = new Set();
+        this.attachmentsProcessingFiles = new Set();
         this.attachmentsFileSizes = new Map();
         this.mediaTranscriptFileSizes = new Map();
         this.updateAttachmentIndicator();
@@ -2220,6 +2249,36 @@
         return sections.join("\n\n").trim();
     };
 
+    AssistSidebar.prototype.buildAIInUserMessagesTooltip = function (payload) {
+        if (!payload || typeof payload !== "object") return "";
+        var messages = Array.isArray(payload.messages) ? payload.messages : [];
+        var userContents = [];
+        messages.forEach(function (msg) {
+            if (!msg || msg.role !== "user") return;
+            if (typeof msg.content === "string") {
+                var text = msg.content.trim();
+                if (text) userContents.push(text);
+                return;
+            }
+            if (Array.isArray(msg.content)) {
+                var richText = msg.content
+                    .map(function (part) {
+                        if (!part || typeof part !== "object") return "";
+                        if (part.type !== "text") return "";
+                        return String(part.text || "");
+                    })
+                    .join("\n")
+                    .trim();
+                if (richText) userContents.push(richText);
+            }
+        });
+        if (!userContents.length) return "";
+        var text = userContents.join("\n\n");
+        var maxLength = 1800;
+        if (text.length > maxLength) return text.slice(0, maxLength) + "\n…";
+        return text;
+    };
+
     AssistSidebar.prototype.stringifyPayloadForTooltip = function (payload) {
         if (!payload || typeof payload !== "object") return "";
         var maxLength = 1800;
@@ -2295,7 +2354,11 @@
         if (message.role === "user" && message.aiInPayloadTooltip) {
             title = "AI IN\n" + message.aiInPayloadTooltip;
         } else if (message.role === "bot") {
-            title = this.buildTechnicalHover(message);
+            if (message.aiInPayloadTooltip) {
+                title = "AI IN\n" + message.aiInPayloadTooltip;
+            } else {
+                title = this.buildTechnicalHover(message);
+            }
         }
         if (title) {
             entry.bubbleEl.title = title;
@@ -2818,7 +2881,9 @@
                 var list = document.createElement("ul");
                 list.className = "chat-references-list";
                 references.forEach(function (ref) {
-                    var docLabel = this.resolveDocName(ref.documentId) || "Document";
+                    var docLabel = this.resolveDocName(ref.documentId)
+                        || (typeof ref.documentName === "string" ? ref.documentName.trim() : "")
+                        || "Document";
                     if (docLabel === "Non fourni") return;
                     var abstractLabel = (ref.abstract || "").trim();
                     var displayTitle = abstractLabel || docLabel;
@@ -3037,7 +3102,6 @@
         document.addEventListener("memoEditorSelectionChanged", function (event) {
             var detail = event?.detail || {};
             var keepSelection = !detail.isSelected
-                && this.memoSelectionFollowActive
                 && document.activeElement === this.textarea
                 && this.memoSelection;
             if (!detail.isSelected) {
@@ -3277,6 +3341,84 @@
         return hits;
     };
 
+    AssistSidebar.prototype.getKnowledgeFallbackHits = async function (limit) {
+        if (!this.docManager) return [];
+        try {
+            var ctx = await this.buildRetrievalContext(this.knowledgeConversationId);
+            var chunks = Array.isArray(ctx?.chunks) ? ctx.chunks : [];
+            var chunkMap = ctx?.chunkMap instanceof Map ? ctx.chunkMap : new Map();
+            var docs = Array.isArray(ctx?.docs) ? ctx.docs : [];
+            if (!chunks.length) {
+                var rawDocHits = (docs || [])
+                    .map(function (doc, index) {
+                        var text = String(doc?.rawText || "").trim();
+                        if (!text) {
+                            text = String(doc?.abstract || "").trim();
+                        }
+                        if (!text) return null;
+                        return {
+                            id: "docraw-" + String(doc?.id || index) + "-0",
+                            chunkId: "docraw-" + String(doc?.id || index) + "-0",
+                            docId: String(doc?.id || ""),
+                            documentId: String(doc?.id || ""),
+                            docName: doc?.name || doc?.sourceFileName || "Document",
+                            documentName: doc?.name || doc?.sourceFileName || "Document",
+                            fileName: doc?.sourceFileName || doc?.name || "Document",
+                            sourceType: doc?.sourceType || "embedded",
+                            docScopes: Array.isArray(doc?.scope) ? doc.scope : [],
+                            text: text.slice(0, 1500),
+                            score: 0
+                        };
+                    })
+                    .filter(Boolean);
+                var rawCap = Math.max(CONTEXT_LIMIT_MIN, Math.min(CONTEXT_LIMIT_MAX, Number(limit) || CONTEXT_LIMIT_MIN));
+                try {
+                    console.log("[AI_IN_DEBUG] knowledge raw-doc fallback", {
+                        docs: docs.length,
+                        hitCount: rawDocHits.length
+                    });
+                } catch (err) {
+                    // ignore
+                }
+                return rawDocHits.slice(0, rawCap);
+            }
+            var docUpdatedAtById = new Map();
+            docs.forEach(function (doc) {
+                var id = String(doc?.id || "").trim();
+                if (!id) return;
+                var updatedAt = Number(doc?.updatedAt) || Date.parse(String(doc?.updatedAt || "").trim()) || 0;
+                docUpdatedAtById.set(id, updatedAt);
+            });
+            var ranked = chunks
+                .map(function (chunk) {
+                    return chunkMap.get(chunk?.id) || chunk;
+                })
+                .filter(function (chunk) {
+                    return Boolean(String(chunk?.text || "").trim());
+                })
+                .sort(function (a, b) {
+                    var docA = Number(docUpdatedAtById.get(String(a?.docId || "")) || 0);
+                    var docB = Number(docUpdatedAtById.get(String(b?.docId || "")) || 0);
+                    if (docB !== docA) return docB - docA;
+                    var pageA = Number.isFinite(Number(a?.page)) ? Number(a.page) : Number.MAX_SAFE_INTEGER;
+                    var pageB = Number.isFinite(Number(b?.page)) ? Number(b.page) : Number.MAX_SAFE_INTEGER;
+                    if (pageA !== pageB) return pageA - pageB;
+                    var idxA = Number.isFinite(Number(a?.idx)) ? Number(a.idx) : Number.MAX_SAFE_INTEGER;
+                    var idxB = Number.isFinite(Number(b?.idx)) ? Number(b.idx) : Number.MAX_SAFE_INTEGER;
+                    return idxA - idxB;
+                });
+            var capped = Math.max(CONTEXT_LIMIT_MIN, Math.min(CONTEXT_LIMIT_MAX, Number(limit) || CONTEXT_LIMIT_MIN));
+            return ranked.slice(0, capped).map(function (chunk) {
+                return Object.assign({}, chunk, {
+                    score: Number(chunk?.score) || 0
+                });
+            });
+        } catch (err) {
+            console.warn("Knowledge fallback retrieval failed", err);
+            return [];
+        }
+    };
+
     AssistSidebar.prototype.buildPayload = function (systemPrompt, userMessage, docInfo, options) {
         var self = this;
         var opts = options || {};
@@ -3399,14 +3541,25 @@
                     appendToUser(contextText);
                 }
             }
+            try {
+                var embeddedCount = embeddedMethods.length + embeddedTools.length + mergedEmbeddedContext.length;
+                var contextCount = Array.isArray(info.context) ? info.context.length : 0;
+                console.log("[AI_IN_DEBUG] append doc sections", {
+                    label: label || "CONTEXT",
+                    embeddedCount: embeddedCount,
+                    contextCount: contextCount
+                });
+            } catch (err) {
+                // ignore
+            }
         }
 
         var contextDocInfo = docInfo?.context;
         var knowledgeDocInfo = docInfo?.knowledge;
-        if (shouldIncludeKnowledgeForPreset(activePresetId) && hasDocEntries(knowledgeDocInfo)) {
+        if (hasDocEntries(knowledgeDocInfo)) {
             appendDocSections(knowledgeDocInfo, "SPACE_PAGES");
         }
-        if (shouldIncludeKnowledgeForPreset(activePresetId)) {
+        if (hasDocEntries(contextDocInfo)) {
             appendDocSections(contextDocInfo, "CONVERSATION_ATTACHMENTS");
         }
 
@@ -3502,12 +3655,18 @@
     AssistSidebar.prototype.buildEmbeddedResultsText = function (sections) {
         if (!sections || typeof sections !== "object") return "";
         var parts = [];
+        function isJsonSection(header) {
+            return header === "CONTEXT"
+                || header === "KNOWLEDGE"
+                || header === "CONVERSATION_ATTACHMENTS"
+                || header === "SPACE_PAGES";
+        }
         Object.keys(sections).forEach(function (key) {
             var entries = sections[key];
             if (!entries || !entries.length) return;
             var header = key.toUpperCase();
-            var includeJson = header === "CONTEXT" || header === "KNOWLEDGE";
-            var includePlain = header !== "CONTEXT" && header !== "KNOWLEDGE";
+            var includeJson = isJsonSection(header);
+            var includePlain = !isJsonSection(header);
             var rows = "";
             if (includePlain) {
                 rows = entries
@@ -3682,6 +3841,14 @@
         }
         if (conversationId === this.knowledgeConversationId) {
             var allowedDocIds = await this.getKnowledgeAllowedDocIdsForCurrentScope();
+            try {
+                console.log("[AI_IN_DEBUG] knowledge allowed docs", {
+                    selectedSpaces: Array.from(this.selectedKnowledgeSpaceIds || []),
+                    allowedDocCount: allowedDocIds instanceof Set ? allowedDocIds.size : null
+                });
+            } catch (err) {
+                // ignore
+            }
             if (allowedDocIds instanceof Set) {
                 docs = (docs || []).filter(function (doc) {
                     return doc?.id && allowedDocIds.has(doc.id);
@@ -3707,6 +3874,15 @@
                 docAbstract: docMeta?.abstract || ""
             }));
         });
+        try {
+            console.log("[AI_IN_DEBUG] retrieval context built", {
+                conversationId: conversationId,
+                docs: docs.length,
+                chunks: filteredChunks.length
+            });
+        } catch (err) {
+            // ignore
+        }
         this.cacheDocuments(docs);
         return { chunks: filteredChunks, docs, chunkMap, docMap };
     };
@@ -3861,6 +4037,19 @@
             wordCount: options.wordCount,
             chunkMap: options.chunkMap
         });
+        try {
+            console.log("[AI_IN_DEBUG] hybrid retrieval", {
+                label: options?.label || "",
+                conversationId: conversationId,
+                keywordCount: keywordCount,
+                vectorCount: Array.isArray(vectorHits) ? vectorHits.length : 0,
+                mergedCount: merged.length,
+                minScore: params?.minScore,
+                topK: params?.topK
+            });
+        } catch (err) {
+            // ignore
+        }
         this.logHybridRetrieval({
             label: options.label,
             query: query,
@@ -3904,6 +4093,16 @@
             docs: ctx.docs,
             chunkMap: ctx.chunkMap
         });
+        try {
+            console.log("[AI_IN_DEBUG] retrieval pass", {
+                label: label,
+                conversationId: conversationId,
+                pass: "primary",
+                hitCount: Array.isArray(hits) ? hits.length : 0
+            });
+        } catch (err) {
+            // ignore
+        }
         if (hits.length) return hits;
         var fallbackParams = this.getRetrievalFallbackParams(params);
         if (fallbackParams) {
@@ -3918,6 +4117,16 @@
                 docs: ctx.docs,
                 chunkMap: ctx.chunkMap
             });
+            try {
+                console.log("[AI_IN_DEBUG] retrieval pass", {
+                    label: label,
+                    conversationId: conversationId,
+                    pass: "fallback",
+                    hitCount: Array.isArray(hits) ? hits.length : 0
+                });
+            } catch (err) {
+                // ignore
+            }
         }
         return hits;
     };
@@ -4093,12 +4302,13 @@
 
         var requestPromptPresetId = this.promptPresetId;
         var systemPrompt = this.getActiveSystemPrompt();
-        var shouldFetchKnowledge = shouldIncludeKnowledgeForPreset(requestPromptPresetId);
+        var shouldFetchKnowledge = true;
+        var shouldFetchContextAttachments = true;
         var docInfo = null;
 
         if (this.docManager) {
             var contextHits = [];
-            if (shouldFetchKnowledge) {
+            if (shouldFetchContextAttachments) {
                 var contextParams = this.getRetrievalParamsForQuestion(value);
                 contextHits = await this.retrieveWithFallback(value, this.conversation.id, contextParams, "context");
                 if (!Array.isArray(contextHits)) {
@@ -4118,6 +4328,16 @@
                 if (!Array.isArray(knowledgeHits)) {
                     knowledgeHits = [];
                 }
+                if (!knowledgeHits.length) {
+                    knowledgeHits = await this.getKnowledgeFallbackHits(knowledgeParams?.topK);
+                    try {
+                        console.log("[AI_IN_DEBUG] knowledge fallback used", {
+                            hitCount: Array.isArray(knowledgeHits) ? knowledgeHits.length : 0
+                        });
+                    } catch (err) {
+                        // ignore
+                    }
+                }
             }
             docInfo = {
                 context: this.categorizeHits(contextHits)
@@ -4126,6 +4346,14 @@
                 docInfo.knowledge = this.categorizeHits(knowledgeHits);
             }
             botMessage.retrievalEntries = docInfo;
+            try {
+                console.log("[AI_IN_DEBUG] retrieval summary", {
+                    contextHits: Array.isArray(contextHits) ? contextHits.length : 0,
+                    knowledgeHits: Array.isArray(knowledgeHits) ? knowledgeHits.length : 0
+                });
+            } catch (err) {
+                // ignore
+            }
         }
 
         var controller = new AbortController();
@@ -4134,7 +4362,24 @@
         var payload = this.buildPayload(systemPrompt, userMessage, docInfo, {
             promptPresetId: requestPromptPresetId
         });
+        try {
+            var userMsg = Array.isArray(payload?.messages)
+                ? payload.messages.find(function (msg) { return msg?.role === "user"; })
+                : null;
+            var userContentText = Array.isArray(userMsg?.content)
+                ? (userMsg.content.find(function (part) { return part?.type === "text"; })?.text || "")
+                : String(userMsg?.content || "");
+            console.log("[AI_IN_DEBUG] payload sections", {
+                hasConversationAttachments: userContentText.indexOf("CONVERSATION_ATTACHMENTS") !== -1,
+                hasSpacePages: userContentText.indexOf("SPACE_PAGES") !== -1,
+                userContentLength: userContentText.length
+            });
+        } catch (err) {
+            // ignore
+        }
+        var aiInUserMessagesTooltip = this.buildAIInUserMessagesTooltip(payload);
         userMessage.aiInPayloadTooltip = this.buildAIInTooltip(payload);
+        botMessage.aiInPayloadTooltip = aiInUserMessagesTooltip;
         var self = this;
         var conversationRef = this.conversation;
         var conversationId = conversationRef?.id || null;
@@ -5209,7 +5454,9 @@
         this.pendingAttachmentList = document.createElement("div");
         this.pendingAttachmentList.className = "chat-composer-attachments__list";
         pendingAttachmentRow.appendChild(this.pendingAttachmentList);
-        this.sidebar.appendChild(pendingAttachmentRow);
+        if (CHAT_APP_ID !== "memo") {
+            this.sidebar.appendChild(pendingAttachmentRow);
+        }
         var memoAttachmentRow = document.createElement("div");
         memoAttachmentRow.className = "chat-composer-attachments";
         memoAttachmentRow.style.display = "none";
@@ -5482,12 +5729,16 @@
         this.memoSelectionFollowButton.type = "button";
         this.memoSelectionFollowButton.className = "btn-secondary chat-selection-follow-btn active";
         this.memoSelectionFollowButton.innerHTML = '<i data-lucide="mouse-pointer-click"></i>';
-        this.memoSelectionFollowButton.setAttribute("title", "Auto");
+        this.memoSelectionFollowButton.setAttribute("title", "Sélection auto");
         this.memoSelectionFollowButton.setAttribute("aria-pressed", "true");
         this.memoSelectionFollowButton.addEventListener("click", function () {
             this.memoSelectionFollowActive = !this.memoSelectionFollowActive;
             this.memoSelectionFollowButton.classList.toggle("active", this.memoSelectionFollowActive);
             this.memoSelectionFollowButton.setAttribute("aria-pressed", String(this.memoSelectionFollowActive));
+            this.memoSelectionFollowButton.setAttribute(
+                "title",
+                this.memoSelectionFollowActive ? "Sélection auto" : "Sélection manuelle"
+            );
             if (this.memoSelectionFollowActive && document.activeElement === this.textarea) {
                 this.textarea.dispatchEvent(new Event("focus"));
             }
@@ -5706,7 +5957,6 @@
                         errors.push({ name: file?.name || "", error: validation.error || "Fichier invalide" });
                         continue;
                     }
-                    this.setDocumentUploadStatus("Upload audio/vidéo → " + (file?.name || ""));
                     var uploadUrl = await transcriptApi.uploadAudioToAssembly(file, key);
                     this.mediaUploadCount += 1;
                     if (!options?.skipIndicator) {
@@ -5714,7 +5964,6 @@
                     }
                     var payload = transcriptApi.buildAssemblyTranscriptPayload(uploadUrl, 0);
                     var transcriptId = await transcriptApi.requestAssemblyTranscript(payload, key);
-                    this.setDocumentUploadStatus("Transcription → " + (file?.name || ""));
                     var result = await transcriptApi.pollAssemblyTranscript(transcriptId, key);
                     this.mediaTranscribedCount += 1;
                     if (!options?.skipIndicator) {
@@ -6354,6 +6603,13 @@
             this.pendingExcludedAttachments = new Set();
         }
         this.pendingDocumentAttachments = nextNames;
+        if (this.attachmentsProcessingFiles instanceof Set) {
+            this.attachmentsProcessingFiles.forEach(function (name) {
+                if (!nextNames.includes(name)) {
+                    this.attachmentsProcessingFiles.delete(name);
+                }
+            }, this);
+        }
         if (this.pendingVisionAttachmentDataUrls instanceof Map) {
             Array.from(this.pendingVisionAttachmentDataUrls.keys()).forEach(function (name) {
                 if (!nextNames.includes(name)) {
@@ -6378,12 +6634,11 @@
     };
 
     AssistSidebar.prototype.renderPendingDocumentAttachments = function () {
-        if (!this.pendingAttachmentRow || !this.pendingAttachmentList) return;
         if (CHAT_APP_ID === "memo") {
-            this.pendingAttachmentRow.style.display = "none";
-            this.pendingAttachmentList.innerHTML = "";
+            this.renderMemoContextAttachments();
             return;
         }
+        if (!this.pendingAttachmentRow || !this.pendingAttachmentList) return;
         var names = Array.isArray(this.pendingDocumentAttachments)
             ? this.pendingDocumentAttachments.filter(Boolean)
             : [];
@@ -6398,7 +6653,18 @@
             var isEnabled = !this.pendingExcludedAttachments?.has?.(name);
             var item = document.createElement("span");
             item.className = "chat-composer-attachment";
+            item.dataset.kind = "pending";
             item.dataset.enabled = isEnabled ? "true" : "false";
+            item.addEventListener("click", function () {
+                this.togglePendingAttachment(name);
+            }.bind(this));
+            var status = "waiting";
+            if (this.attachmentsCompletedFiles?.has?.(name)) {
+                status = "done";
+            } else if (this.attachmentsProcessingFiles?.has?.(name)) {
+                status = "processing";
+            }
+            item.dataset.status = status;
             var label = document.createElement("span");
             label.className = "chat-composer-attachment__name";
             label.textContent = truncateFilename(name);
@@ -6526,6 +6792,9 @@
         var isVisionAttachment = Boolean(this.pendingVisionAttachmentDataUrls?.has?.(name));
         this.pendingVisionAttachmentDataUrls?.delete?.(name);
         this.pendingExcludedAttachments?.delete?.(name);
+        this.attachmentsProcessingFiles?.delete?.(name);
+        this.attachmentsCompletedFiles?.delete?.(name);
+        this.attachmentsFailedFiles?.delete?.(name);
         this.pendingDocumentAttachments = (this.pendingDocumentAttachments || []).filter(function (item) {
             return item !== name;
         });
@@ -6589,20 +6858,27 @@
     AssistSidebar.prototype.renderMemoContextAttachments = function () {
         if (!this.memoContextAttachmentRow || !this.memoContextAttachmentList) return;
         var entries = Array.isArray(this.memoContextAttachments) ? this.memoContextAttachments : [];
-        if (CHAT_APP_ID !== "memo" || !entries.length) {
+        var pendingNames = Array.isArray(this.pendingDocumentAttachments)
+            ? this.pendingDocumentAttachments.filter(Boolean)
+            : [];
+        if (CHAT_APP_ID !== "memo" || (!entries.length && !pendingNames.length)) {
             this.memoContextAttachmentRow.style.display = "none";
             this.memoContextAttachmentList.innerHTML = "";
-            this.renderPendingDocumentAttachments();
             return;
         }
         this.memoContextAttachmentRow.style.display = "flex";
         this.memoContextAttachmentList.innerHTML = "";
         entries.forEach(function (entry) {
-            var isEnabled = entry?.enabled !== false;
+            var fileName = String(entry?.fileName || "").trim();
+            var isExcluded = fileName ? this.pendingExcludedAttachments?.has?.(fileName) : false;
+            var isEnabled = !isExcluded && entry?.enabled !== false;
             var item = document.createElement("span");
             item.className = "chat-composer-attachment";
             item.dataset.enabled = isEnabled ? "true" : "false";
             item.title = this.formatMemoAttachmentTooltip(entry);
+            item.addEventListener("click", function () {
+                this.toggleMemoContextAttachment(entry);
+            }.bind(this));
 
             var name = document.createElement("span");
             name.className = "chat-composer-attachment__name";
@@ -6634,7 +6910,61 @@
 
             this.memoContextAttachmentList.appendChild(item);
         }.bind(this));
-        this.renderPendingDocumentAttachments();
+
+        var embeddedNames = new Set(entries.map(function (entry) {
+            return String(entry?.fileName || "").trim();
+        }).filter(Boolean));
+
+        pendingNames.forEach(function (name) {
+            if (embeddedNames.has(name)) return;
+            var isEnabled = !this.pendingExcludedAttachments?.has?.(name);
+            var item = document.createElement("span");
+            item.className = "chat-composer-attachment";
+            item.dataset.kind = "pending";
+            item.dataset.enabled = isEnabled ? "true" : "false";
+            item.addEventListener("click", function () {
+                this.togglePendingAttachment(name);
+            }.bind(this));
+            var status = "waiting";
+            if (this.attachmentsCompletedFiles?.has?.(name)) {
+                status = "done";
+            } else if (this.attachmentsProcessingFiles?.has?.(name)) {
+                status = "processing";
+            }
+            item.dataset.status = status;
+
+            var label = document.createElement("span");
+            label.className = "chat-composer-attachment__name";
+            label.textContent = truncateFilename(name);
+            label.setAttribute("role", "button");
+            label.setAttribute("tabindex", "0");
+            label.setAttribute("aria-pressed", isEnabled ? "true" : "false");
+            label.addEventListener("click", function (event) {
+                event.stopPropagation();
+                this.togglePendingAttachment(name);
+            }.bind(this));
+            label.addEventListener("keydown", function (event) {
+                if (event.key !== "Enter" && event.key !== " ") return;
+                event.preventDefault();
+                this.togglePendingAttachment(name);
+            }.bind(this));
+            item.appendChild(label);
+
+            var removeBtn = document.createElement("button");
+            removeBtn.type = "button";
+            removeBtn.className = "chat-composer-attachment__remove";
+            removeBtn.textContent = "⊗";
+            removeBtn.setAttribute("aria-label", "Supprimer la pièce jointe");
+            removeBtn.addEventListener("click", function (event) {
+                event.stopPropagation();
+                this.handleRemovePendingAttachment(name);
+            }.bind(this));
+            item.appendChild(removeBtn);
+
+            this.memoContextAttachmentList.appendChild(item);
+        }.bind(this));
+
+        if (window.lucide) window.lucide.createIcons();
     };
 
     AssistSidebar.prototype.refreshMemoContextAttachments = async function () {
@@ -6666,8 +6996,19 @@
         if (!entry || !this.docManager) return;
         var memoId = this.getActiveMemoId();
         if (!memoId) return;
-        var nextEnabled = entry.enabled === false ? true : false;
+        var fileName = String(entry.fileName || "").trim();
+        var isExcluded = fileName ? this.pendingExcludedAttachments?.has?.(fileName) : false;
+        var currentEnabled = !isExcluded && entry.enabled !== false;
+        var nextEnabled = !currentEnabled;
         entry.enabled = nextEnabled;
+        if (fileName) {
+            if (nextEnabled) {
+                this.pendingExcludedAttachments?.delete?.(fileName);
+            } else {
+                this.pendingExcludedAttachments?.add?.(fileName);
+            }
+            this.persistPendingAttachments?.();
+        }
         try {
             await this.docManager.upsertMemoEmbedding(entry);
             await this.refreshMemoContextAttachments();
@@ -6752,15 +7093,18 @@
     AssistSidebar.prototype.markAttachmentCompleted = function (fileName) {
         if (!fileName) return;
         if (this.attachmentsCompletedFiles?.has(fileName)) return;
+        this.attachmentsProcessingFiles?.delete?.(fileName);
         this.attachmentsCompletedFiles.add(fileName);
         this.attachmentsCompletedCount += 1;
         this.attachmentsCompletedSize += this.getAttachmentSize(fileName);
         this.updateAttachmentIndicator();
+        this.renderPendingDocumentAttachments();
     };
 
     AssistSidebar.prototype.markAttachmentFailed = function (fileName) {
         if (!fileName) return;
         if (this.attachmentsFailedFiles?.has(fileName)) return;
+        this.attachmentsProcessingFiles?.delete?.(fileName);
         this.attachmentsFailedFiles.add(fileName);
         var size = this.getAttachmentSize(fileName);
         if (size > 0) {
@@ -6770,6 +7114,7 @@
             this.attachmentsTotalCount = Math.max(0, this.attachmentsTotalCount - 1);
         }
         this.updateAttachmentIndicator();
+        this.renderPendingDocumentAttachments();
     };
 
     AssistSidebar.prototype.computeDocsIndicatorLabel = function () {
@@ -6815,13 +7160,18 @@
     };
 
     AssistSidebar.prototype.setTranscriptionUiState = function (active, options) {
+        options = options || {};
         this.mediaTranscriptionActive = Boolean(active);
         if (!active) {
             this.mediaUploadCount = 0;
             this.mediaTranscribedCount = 0;
             this.mediaTotalCount = 0;
         }
-        this.setSendButtonBusy(Boolean(active), options);
+        if (!options.skipSendBusy) {
+            this.setSendButtonBusy(Boolean(active), options);
+        } else {
+            this.updateComposerState();
+        }
     };
 
     AssistSidebar.prototype.handleDocumentFilesSelected = async function (event) {
@@ -6850,14 +7200,18 @@
 
     AssistSidebar.prototype.startDocumentIngestion = async function (files) {
         if (!this.docManager) {
-            this.setDocumentUploadStatus("Gestion des documents indisponible.");
             return;
         }
         var uiScopeId = this.currentConversationScopeId || getConversationScopeId();
-        this.setSendButtonBusy(true, { scopeId: uiScopeId });
         var fileArray = Array.from(files);
         if (!fileArray.length) return;
         var originalFiles = fileArray.slice();
+        var existingPendingAtStart = Array.isArray(this.pendingDocumentAttachments)
+            ? this.pendingDocumentAttachments.slice()
+            : [];
+        var incomingAllNames = originalFiles.map(function (file) { return file?.name || ""; }).filter(Boolean);
+        this.pendingDocumentAttachments = Array.from(new Set(existingPendingAtStart.concat(incomingAllNames)));
+        this.renderPendingDocumentAttachments();
         this.attachmentsIngestionStart = Date.now();
         this.attachmentsIngestionEnd = 0;
         this.attachmentsTotalSize = originalFiles.reduce(function (acc, file) {
@@ -6869,11 +7223,13 @@
         this.attachmentsCompletedSize = 0;
         this.attachmentsCompletedFiles = new Set();
         this.attachmentsFailedFiles = new Set();
+        this.attachmentsProcessingFiles = new Set();
         this.attachmentsFileSizes = new Map();
         this.mediaTranscriptFileSizes = new Map();
         originalFiles.forEach(function (file) {
             if (file?.name) {
                 this.attachmentsFileSizes.set(file.name, Number(file.size) || 0);
+                this.attachmentsProcessingFiles.add(file.name);
             }
         }, this);
         var mediaTranscriptMap = new Map();
@@ -6887,8 +7243,7 @@
         });
         if (mediaFiles.length) {
             hadMediaTranscription = true;
-            this.setTranscriptionUiState(true, { scopeId: uiScopeId });
-            this.setDocumentUploadStatus("Transcription audio/vidéo en cours…");
+            this.setTranscriptionUiState(true, { scopeId: uiScopeId, skipSendBusy: true });
             try {
                 var transcriptResult = await this.prepareMediaTranscripts(mediaFiles, {
                     concurrency: 2,
@@ -6910,18 +7265,18 @@
                             sourceType: "context",
                             metadata: metadata,
                             memoId: memoId,
-                            tabId: tabId
+                            tabId: tabId,
+                            suppressEmbeddingsToaster: true
                         });
                         mediaIngestResults.push.apply(mediaIngestResults, results);
                     }.bind(this)
                 });
                 if (transcriptResult.errors && transcriptResult.errors.length) {
-                    var firstError = transcriptResult.errors[0];
-                    this.setDocumentUploadStatus("Erreur : " + (firstError.error || "transcription échouée"));
+                    // keep silent status-wise for attachment ingestion
                 }
                 fileArray = docFiles;
             } catch (err) {
-                this.setDocumentUploadStatus("Erreur : " + ((err && err.message) || "transcription échouée"));
+                // keep silent status-wise for attachment ingestion
             }
         }
         if (!fileArray.length && !mediaIngestResults.length) {
@@ -6954,7 +7309,6 @@
         this.updateAttachmentIndicator();
         this.renderPendingDocumentAttachments();
         this.updateComposerState();
-        this.setDocumentUploadStatus("Indexation en cours…");
         var memoId = this.getActiveMemoId();
         var tabId = memoId || null;
         try {
@@ -6980,7 +7334,8 @@
                     sourceType: "context",
                     metadata: metadata,
                     memoId: memoId,
-                    tabId: tabId
+                    tabId: tabId,
+                    suppressEmbeddingsToaster: true
                 });
             }
             if (mediaIngestResults.length) {
@@ -6998,20 +7353,13 @@
                 errors.forEach(function (entry) {
                     if (entry?.name) {
                         this.markAttachmentFailed(entry.name);
-                        if (window.GoToolkitMemoToast) {
-                            window.GoToolkitMemoToast("Import échoué : " + entry.name, true);
-                        }
                     }
                 }, this);
                 this.attachmentsIngestionEnd = Date.now();
-                this.setDocumentUploadStatus("Erreur : " + (errors[0].error || "échec d'indexation"));
             } else if (duplicates.length) {
-                var dupNames = duplicates.map(function (item) { return item.name; }).filter(Boolean);
                 this.attachmentsIngestionEnd = Date.now();
-                this.setDocumentUploadStatus("Doublon ignoré : " + (dupNames.join(", ") || "fichier"));
             } else {
                 this.attachmentsIngestionEnd = Date.now();
-                this.setDocumentUploadStatus("Indexation terminée.");
             }
             var readyDocs = results
                 .filter(function (item) {
@@ -7040,19 +7388,19 @@
                 window.GoToolkitMemoSyncContextEmbeddings?.(memoId);
             }
             if (!errors.length) {
-                this.clearAttachmentProgress();
+                this.attachmentsProcessingFiles = new Set();
+                this.renderPendingDocumentAttachments();
             }
         } catch (error) {
             console.error("Document ingestion exception:", error);
             this.attachmentsIngestionEnd = Date.now();
-            this.setDocumentUploadStatus("Erreur : " + ((error && error.message) || "échec"));
+            this.attachmentsProcessingFiles = new Set();
             this.setPendingDocumentAttachments([]);
         } finally {
             if (hadMediaTranscription) {
-                this.setTranscriptionUiState(false, { scopeId: uiScopeId });
+                this.setTranscriptionUiState(false, { scopeId: uiScopeId, skipSendBusy: true });
             }
             if (this.documentsFileInput) this.documentsFileInput.disabled = false;
-            this.setSendButtonBusy(false, { scopeId: uiScopeId });
         }
     };
 
@@ -7119,7 +7467,7 @@
 
     AssistSidebar.prototype.readSelectedKnowledgeSpaces = function () {
         var allSpaces = getAvailableKnowledgeSpaces();
-        var allIds = allSpaces.map(function (space) { return space.id; });
+        var allIds = allSpaces.map(function (space) { return space.id; }).concat([KNOWLEDGE_PRIVATE_SPACE_ID]);
         if (!allIds.length) return new Set();
         var parsed = [];
         try {
@@ -7158,8 +7506,12 @@
 
     AssistSidebar.prototype.getKnowledgeSpaceIdFromEntry = function (entry) {
         var raw = String(entry?.section || "").trim();
-        if (!raw || raw.indexOf("shared:") !== 0) return "";
-        return normalizeKnowledgeSpaceId(raw.slice("shared:".length));
+        if (!raw) return "";
+        if (raw === "private") return KNOWLEDGE_PRIVATE_SPACE_ID;
+        if (raw.indexOf("shared:") === 0) {
+            return normalizeKnowledgeSpaceId(raw.slice("shared:".length));
+        }
+        return "";
     };
 
     AssistSidebar.prototype.buildKnowledgeSelectionFromSpaces = function (entries) {
@@ -7178,7 +7530,7 @@
 
     AssistSidebar.prototype.renderMemorySpacesMenu = function () {
         if (!this.memorySpacesMenuEl) return;
-        var spaces = getAvailableKnowledgeSpaces();
+        var spaces = getAvailableKnowledgeSpaces().concat([{ id: KNOWLEDGE_PRIVATE_SPACE_ID, name: "Privé" }]);
         if (!(this.selectedKnowledgeSpaceIds instanceof Set) || !this.selectedKnowledgeSpaceIds.size) {
             this.selectedKnowledgeSpaceIds = this.readSelectedKnowledgeSpaces();
         }
@@ -7196,7 +7548,8 @@
                 );
             }.bind(this));
         }
-        html.push('<div class="chat-prompt-menu-item" data-memory-sync-hint style="cursor:default;opacity:.7;font-size:11px;">Sync auto: 1h</div>');
+        var lastIndexedAgo = formatKnowledgeLastIndexedAgo(this.lastKnowledgeSpaceSyncAt);
+        html.push('<div class="chat-prompt-menu-item" data-memory-sync-hint style="cursor:default;opacity:.7;font-size:11px;">Indexé il y a ' + escapeHtml(lastIndexedAgo) + "</div>");
         this.memorySpacesMenuEl.innerHTML = html.join("");
         this.memorySpacesSyncHintEl = this.memorySpacesMenuEl.querySelector("[data-memory-sync-hint]");
         var boxes = this.memorySpacesMenuEl.querySelectorAll(".chat-memory-space-checkbox");
@@ -7247,9 +7600,26 @@
         }
         this.selectedKnowledgeSpaceIds = next;
         this.persistSelectedKnowledgeSpaces(next);
+        try {
+            console.log("[AI_IN_DEBUG] memory spaces toggled", {
+                selectedSpaces: Array.from(next)
+            });
+        } catch (err) {
+            // ignore
+        }
         this.updateHeaderDocumentCount();
         this.setKnowledgeModalStatus("Mise à jour de la mémoire…");
-        await this.syncKnowledgeFromSelectedSpaces({ force: true });
+        await this.refreshKnowledgeModal({ skipAutoReindex: true });
+        var entries = Array.isArray(this.knowledgeManifestEntries) ? this.knowledgeManifestEntries : [];
+        var selection = this.buildKnowledgeSelectionFromSpaces(entries);
+        this.setKnowledgeModalSelection(selection);
+        await this.reindexKnowledgeSelection(entries, selection, {
+            forceReindexSelected: true,
+            reindexIfUpdated: true
+        });
+        this.markKnowledgeSyncRun();
+        this.setKnowledgeModalStatus("");
+        this.renderMemorySpacesMenu();
     };
 
     AssistSidebar.prototype.updateHeaderDocumentCount = function () {
@@ -7261,11 +7631,8 @@
         }
         var count = this.getMemoireDocumentCount();
         this.headerDocCountEl.dataset.count = count;
-        if (count > 0) {
-            this.headerDocCountEl.innerHTML = '<i data-lucide="brain"></i><span class="chat-header-badge">' + count + '</span>';
-        } else {
-            this.headerDocCountEl.innerHTML = '<i data-lucide="brain"></i>';
-        }
+        this.headerDocCountEl.innerHTML = '<i data-lucide="brain"></i>';
+        this.headerDocCountEl.classList.toggle("chat-memory-btn--active", count > 0);
         if (window.lucide) window.lucide.createIcons();
     };
 
@@ -7707,6 +8074,19 @@
                 icon: String(item.icon || record?.icon || "").trim()
             });
         }.bind(this));
+        try {
+            var bySection = {};
+            entries.forEach(function (entry) {
+                var key = String(entry?.section || "unknown");
+                bySection[key] = (bySection[key] || 0) + 1;
+            });
+            console.log("[AI_IN_DEBUG] knowledge tree entries", {
+                total: entries.length,
+                bySection: bySection
+            });
+        } catch (err) {
+            // ignore
+        }
         return entries;
     };
 
@@ -8292,6 +8672,17 @@
 
         this.selectedKnowledgeSpaceIds = this.readSelectedKnowledgeSpaces();
         var selectionSet = this.buildKnowledgeSelectionFromSpaces(memoEntries);
+        try {
+            console.log("[AI_IN_DEBUG] refresh knowledge modal", {
+                storedCount: (storedList || []).length,
+                indexedCount: indexedSet.size,
+                memoEntriesCount: memoEntries.length,
+                selectedSpaces: Array.from(this.selectedKnowledgeSpaceIds || []),
+                selectionCount: selectionSet.size
+            });
+        } catch (err) {
+            // ignore
+        }
 
         var memoKeySet = new Set();
         memoEntries.forEach(function (entry) {
@@ -8479,7 +8870,17 @@
         var selection = this.knowledgeModalSelectionSet instanceof Set
             ? this.knowledgeModalSelectionSet
             : new Set();
-        if (!selection.size) return new Set();
+        if (!selection.size) {
+            try {
+                console.log("[AI_IN_DEBUG] allowed docs fallback", {
+                    reason: "empty-manifest-selection",
+                    selectionSize: 0
+                });
+            } catch (err) {
+                // ignore
+            }
+            return null;
+        }
         var docs = await this.docManager.getDocuments(this.knowledgeConversationId);
         if (!Array.isArray(docs) || !docs.length) return new Set();
         var allowed = new Set();
@@ -8496,6 +8897,15 @@
                 allowed.add(doc.id);
             }
         }.bind(this));
+        try {
+            console.log("[AI_IN_DEBUG] allowed docs computed", {
+                docsCount: docs.length,
+                selectionCount: selection.size,
+                allowedCount: allowed.size
+            });
+        } catch (err) {
+            // ignore
+        }
         return allowed;
     };
 
@@ -9275,6 +9685,17 @@
             var key = this.normalizeKnowledgeKey(entry.fileName);
             return key && selected.has(key);
         }.bind(this));
+        try {
+            console.log("[AI_IN_DEBUG] reindex selection start", {
+                selectedCount: selected.size,
+                manifestCount: entries.length,
+                filteredCount: filtered.length,
+                forceReindexSelected: Boolean(options && options.forceReindexSelected),
+                reindexIfUpdated: options?.reindexIfUpdated !== false
+            });
+        } catch (err) {
+            // ignore
+        }
         var seenPaths = new Set();
         filtered = filtered.filter(function (entry) {
             if (!entry || !entry.path) return true;
@@ -9308,7 +9729,7 @@
                 var docsToDelete = (existingDocs || []).filter(function (doc) {
                     if (!doc) return false;
                     var key = this.normalizeKnowledgeKey(doc.sourceFileName || doc.name);
-                    return key && selectedKeySet.has(key);
+                    return key;
                 }.bind(this));
                 if (docsToDelete.length && this.docManager?.deleteDocumentsByNames) {
                     var namesToDelete = Array.from(new Set(docsToDelete
@@ -9319,10 +9740,7 @@
                     if (namesToDelete.length) {
                         await this.docManager.deleteDocumentsByNames(this.knowledgeConversationId, namesToDelete);
                     }
-                    docsToDelete.forEach(function (doc) {
-                        var key = this.normalizeKnowledgeKey(doc.sourceFileName || doc.name);
-                        if (key) existingByKey.delete(key);
-                    }.bind(this));
+                    existingByKey.clear();
                 }
             }
             if (reindexIfUpdated && filtered.length && this.docManager?.deleteDocumentsByNames) {
@@ -9351,6 +9769,14 @@
                 var key = this.normalizeKnowledgeKey(entry.fileName);
                 return key && !existingByKey.has(key);
             }.bind(this));
+            try {
+                console.log("[AI_IN_DEBUG] reindex selection resolved", {
+                    existingCount: existingByKey.size,
+                    missingCount: missing.length
+                });
+            } catch (err) {
+                // ignore
+            }
             var total = missing.length;
             var processed = 0;
             var files = [];
@@ -9447,6 +9873,14 @@
                     sourceType: "embedded",
                     metadata: metadata
                 });
+            }
+            try {
+                console.log("[AI_IN_DEBUG] reindex selection ingest done", {
+                    ingestedFiles: files.length,
+                    metadataCount: metadata.size
+                });
+            } catch (err) {
+                // ignore
             }
             if (localCache) {
                 await this.saveKnowledgeLocalDocsCache(localCache);
@@ -10198,6 +10632,8 @@
 
     AssistSidebar.prototype.resolvePreviewSnippet = async function (message, reference) {
         var targetDocId = reference?.documentId;
+        var targetDocName = this.normalizeDocName(reference?.documentName || reference?.abstract || "");
+        var targetChunkId = reference?.chunkId || null;
         var entries = [];
         if (message?.retrievalEntries) {
             var contextEntries = message.retrievalEntries.context || { embedded: {}, context: [] };
@@ -10221,6 +10657,17 @@
             match = entries.find(function (entry) {
                 return entry.documentId === targetDocId;
             });
+        }
+        if (!match && targetChunkId) {
+            match = entries.find(function (entry) {
+                return entry?.chunkId === targetChunkId;
+            });
+        }
+        if (!match && targetDocName) {
+            match = entries.find(function (entry) {
+                var entryName = (entry?.docName || entry?.name || entry?.sourceFileName || "").toString();
+                return this.normalizeDocName(entryName) === targetDocName;
+            }.bind(this));
         }
         if (match?.text) {
             return match.text;
@@ -10515,15 +10962,36 @@
             if (reference.documentId) {
                 doc = this.docCache.get(reference.documentId) || await this.ensureDocumentCached(reference.documentId);
             }
+            if (!doc && reference.documentName) {
+                doc = await this.findDocumentForPreview(reference.documentName);
+            }
+            if (!doc && reference.abstract) {
+                doc = await this.findDocumentForPreview(reference.abstract);
+            }
             var title = doc?.name || "Document";
             this.previewTitleEl && (this.previewTitleEl.textContent = title);
             if (doc?.id) {
+                if (!reference.documentId) {
+                    reference.documentId = doc.id;
+                }
                 var docChunks = await this.getDocumentChunks(doc.id, doc.conversationId);
                 var highlightChunk = null;
                 if (reference.chunkId) {
                     highlightChunk = docChunks.find(function (chunk) {
                         return chunk?.id === reference.chunkId;
                     });
+                }
+                if (!highlightChunk) {
+                    var snippetNeedle = Array.isArray(reference?.snippet)
+                        ? reference.snippet.find(Boolean)
+                        : reference?.snippet;
+                    var normalizedNeedle = normalizeHighlightSnippet(snippetNeedle);
+                    if (normalizedNeedle) {
+                        highlightChunk = docChunks.find(function (chunk) {
+                            var content = normalizeHighlightSnippet(chunk?.text || "");
+                            return content && content.indexOf(normalizedNeedle) !== -1;
+                        });
+                    }
                 }
                 var highlightInfo = null;
                 var previewSnippet = snippet;

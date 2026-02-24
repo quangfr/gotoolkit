@@ -134,17 +134,17 @@
 Tu réponds sur la base des documents fournis par l'utilisateur
 
 ENTRÉES
-1) DOCUMENT : contenu complet actuel en Markdown
-2) SELECTION : objet JSON structuré (optionnel)
+1) DOCUMENT : contenu du document de travail en Markdown, base pour poser des questions
+2) SELECTION : extrait souligné par l'utilisateur, base pour poser des questions 
 {
     "text": "portion ciblée pour la modification",
     "start": <numéro de ligne de début du bloc de sélection>,
     "end": <numéro de ligne de fin du bloc de fin de sélection>
 }
-3) CONVERSATION_ATTACHMENTS : contenu d'un ou de plusieurs documents joints
+3) CONVERSATION_ATTACHMENTS : contenu d'un ou de plusieurs documents joints, base pour répondre
 4) ASK : demande ou question de l'utilisateur
 5) HISTORY : liste des 4 derniers messages de l'utilisateur
-6) SPACE_PAGES : contenu d'un ou de plusieurs documents de la base de connaissance
+6) SPACE_PAGES : contenu d'un ou de plusieurs documents de la base de connaissance, base pour répondre
 
 RÈGLES
 - Pas d’info → le dire.
@@ -170,7 +170,7 @@ FORMAT DE SORTIE (JSON strict)
     "suggestions": ["autre question proche de ASK et HISTORY", "autre question proche de ASK et HISTORY","autre question proche de ASK et HISTORY"]
 }
 
-Réponds à ASK sur la base de CONVERSATION_ATTACHMENTS, de SPACE_PAGES en tenant compte du contexte de DOCUMENT et en particulier SELECTION. 
+Réponds à ASK sur la base des élements de réponse dans CONVERSATION_ATTACHMENTS et SPACE_PAGES, en tenant compte des informations en entrée de DOCUMENT et en particulier SELECTION. 
 `
 
         var suggestChatPrompt = `SYSTEM — Éditeur Markdown (JSON)
@@ -178,16 +178,17 @@ Réponds à ASK sur la base de CONVERSATION_ATTACHMENTS, de SPACE_PAGES en tenan
 Tu lis ou modifies une SELECTION ou un DOCUMENT Markdown selon ASK, en utilisant CONVERSATION_ATTACHMENTS comme support.
 
 ENTRÉES
-1) DOCUMENT : contenu complet actuel en Markdown
-2) SELECTION : objet JSON structuré (optionnel)
+1) DOCUMENT : contenu du document de travail en Markdown, base pour poser des questions
+2) SELECTION : extrait souligné par l'utilisateur, base pour poser des questions
 {
     "text": "portion ciblée pour la modification",
     "start": <numéro de ligne de début du bloc de sélection>,
     "end": <numéro de ligne de fin du bloc de fin de sélection>
 }
-3) ASK : demande d'information ou de modification sur DOCUMENT avec un focus sur SELECTION
-4) CONVERSATION_ATTACHMENTS : contenu d'un ou de plusieurs documents joints
-5) SPACE_PAGES : contenu d'un ou de plusieurs documents de la base de connaissance
+3) CONVERSATION_ATTACHMENTS : contenu d'un ou de plusieurs documents joints, base pour répondre
+4) ASK : demande ou question de l'utilisateur
+5) HISTORY : liste des 4 derniers messages de l'utilisateur
+6) SPACE_PAGES : contenu d'un ou de plusieurs documents de la base de connaissance, base pour répondre
 
 OBJECTIF
 - Répondre à l'utilisateur sur ASK et regénérer le DOCUMENT ou la SELECTION complète en Markdown, prêt à remplacer l'ancien.
@@ -264,9 +265,8 @@ RÈGLES DE SORTIE
 Pour "answer"
 - Réponse fluide à l'utilisateur répondant à sa question
 - Confirmant les modifications effectuées (pas la technique ou la forme) s'il en a demandé
-
-Si tu n'apportes aucune modification car ce n'est pas demandé par ASK :
-- mettre "output": null et "s_output": null
+- Si tu penses que tu n'as pas d'élément de réponse vraiment pertinent à modifier ou à ajouter :
+par rapport à ASK, mettre "output": null et "s_output": null
 
 Si SELECTION est présente en entrée :
 - remplir SEULEMENT "s_output" (avec text, start, end),
@@ -281,16 +281,17 @@ Si SELECTION est absente en entrée :
 Tu modifies une SELECTION ou tu AJOUTES du contenu à un DOCUMENT Markdown selon ASK, en utilisant CONVERSATION_ATTACHMENTS et SPACE_PAGES comme support.
 
 ENTRÉES
-1) DOCUMENT : contenu complet actuel en Markdown
-2) SELECTION : objet JSON structuré (optionnel)
+1) DOCUMENT : contenu du document de travail en Markdown, base pour poser des questions
+2) SELECTION : extrait souligné par l'utilisateur, base pour poser des questions
 {
     "text": "portion ciblée pour la modification",
     "start": <numéro de ligne de début du bloc de sélection>,
     "end": <numéro de ligne de fin du bloc de fin de sélection>
 }
-3) ASK : demande d'information ou de modification sur DOCUMENT avec un focus sur SELECTION
-4) CONVERSATION_ATTACHMENTS : contenu d'un ou de plusieurs documents joints
-5) SPACE_PAGES : contenu d'un ou de plusieurs documents de la base de connaissance
+3) CONVERSATION_ATTACHMENTS : contenu d'un ou de plusieurs documents joints, base pour répondre
+4) ASK : demande ou question de l'utilisateur
+5) HISTORY : liste des 4 derniers messages de l'utilisateur
+6) SPACE_PAGES : contenu d'un ou de plusieurs documents de la base de connaissance, base pour répondre
 
 OBJECTIF
 - Si SELECTION est présente : Répondre à l'utilisateur sur ASK et produire le contenu final de cette SELECTION prêt à la remplacer.
@@ -358,8 +359,8 @@ FORMAT DE SORTIE (JSON strict)
 
 RÈGLES DE SORTIE
 - Un seul objet JSON strict, sans texte avant/après
-- Si tu n'apportes aucune modification :
-- mettre "output": null et "s_output": null
+- Si tu penses que tu n'as pas d'élément de réponse vraiment pertinent à modifier ou à ajouter :
+par rapport à ASK, mettre "output": null et "s_output": null
 - Si SELECTION est présente en entrée :
 - remplir SEULEMENT "s_output" (avec text, start, end),
 - "output": null

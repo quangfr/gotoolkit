@@ -2064,14 +2064,17 @@
             return results;
         }
 
-        async embedBatchCloud(texts) {
+        async embedBatchCloud(texts, options = {}) {
             if (!texts || !texts.length) return [];
             const backend = resolveOpenRouterEmbeddingBackend();
             if (!backend) {
                 throw new Error("OpenRouter embeddings indisponible");
             }
+            const suppressToaster = Boolean(options?.suppressToaster);
             const embeddingDuration = clampDuration(20000 + texts.length * 200, 20000, 90000);
-            setAiRequestToasterVisible("aiRequestCounterToasterEmbeddings", "search", "Embeddings cloud", true, { durationMs: embeddingDuration });
+            if (!suppressToaster) {
+                setAiRequestToasterVisible("aiRequestCounterToasterEmbeddings", "search", "Embeddings cloud", true, { durationMs: embeddingDuration });
+            }
             const results = new Array(texts.length);
             const batchSize = Math.max(1, Math.min(CLOUD_EMBEDDING_BATCH_SIZE, texts.length));
             try {
@@ -2102,7 +2105,9 @@
                     });
                 }
             } finally {
-                setAiRequestToasterVisible("aiRequestCounterToasterEmbeddings", "search", "Embeddings cloud", false);
+                if (!suppressToaster) {
+                    setAiRequestToasterVisible("aiRequestCounterToasterEmbeddings", "search", "Embeddings cloud", false);
+                }
             }
             return results;
         }
@@ -2709,6 +2714,15 @@
         async ingestFiles(files, conversationId, options = {}) {
             if (!files || !files.length) return [];
             const convId = normalizeConversationId(conversationId);
+            try {
+                console.log("[AI_IN_DEBUG] ingest start", {
+                    conversationId: convId,
+                    fileCount: files.length,
+                    sourceType: options?.sourceType || "context"
+                });
+            } catch (err) {
+                // ignore
+            }
             await this.waitReady();
             const onProgress = options.onProgress;
             const sourceType = typeof options.sourceType === "string" && options.sourceType
@@ -2721,6 +2735,7 @@
                 ? options.tabId.trim()
                 : null;
             const skipEmbeddings = Boolean(options.skipEmbeddings);
+            const suppressEmbeddingsToaster = Boolean(options.suppressEmbeddingsToaster);
             const results = [];
             const queue = Array.from(files);
             const allDocs = await this.getAllDocuments();
@@ -2916,6 +2931,16 @@
                     ? meta.fileName.trim()
                     : file.name;
                 const docScopes = normalizeScopes(meta.scope);
+                try {
+                    console.log("[AI_IN_DEBUG] ingest file", {
+                        conversationId: convId,
+                        fileName: file?.name || "",
+                        sourceFileName,
+                        scopes: docScopes
+                    });
+                } catch (err) {
+                    // ignore
+                }
                 const isPdf = (file.type || "").toLowerCase().includes("pdf")
                     || (file.name || "").toLowerCase().endsWith(".pdf");
                 const shouldStoreBuffer = docScopes.includes("attachments") || isPdf;
@@ -3047,9 +3072,19 @@
                     // Normal embedding flow
                     onProgress?.({ type: "chunk", file: file.name, progress: 5 });
                     const startEmbedTime = performance.now();
-                    const allEmbeddings = useCloudEmbeddings
-                        ? await this.embedBatchCloud(allTexts)
-                        : await this.embedBatch(allTexts);
+                    let allEmbeddings;
+                    if (useCloudEmbeddings) {
+                        try {
+                            allEmbeddings = await this.embedBatchCloud(allTexts, {
+                                suppressToaster: suppressEmbeddingsToaster
+                            });
+                        } catch (cloudErr) {
+                            console.warn("Cloud embeddings failed, fallback to local embedder", file?.name, cloudErr);
+                            allEmbeddings = await this.embedBatch(allTexts);
+                        }
+                    } else {
+                        allEmbeddings = await this.embedBatch(allTexts);
+                    }
                     const embedDuration = performance.now() - startEmbedTime;
                     onProgress?.({ type: "chunk", file: file.name, progress: 50 });
                     const zeroEmb = new Int8Array(384);
@@ -3124,6 +3159,15 @@
                 }
                 results.push({ docId, name: file.name, success: true, chunkTotal });
                 onProgress?.({ type: "file-done", file: file.name });
+            }
+            try {
+                console.log("[AI_IN_DEBUG] ingest end", {
+                    conversationId: convId,
+                    processed: results.length,
+                    successCount: results.filter((item) => item?.success).length
+                });
+            } catch (err) {
+                // ignore
             }
             await this.emitStats(convId);
             return results;
@@ -3888,7 +3932,20 @@
                 scored.push(this.buildChunkResult(chunk, docMap, similarity));
             }
             scored.sort((a, b) => b.score - a.score);
-            return scored.slice(0, topK);
+            const out = scored.slice(0, topK);
+            try {
+                console.log("[AI_IN_DEBUG] vector search", {
+                    conversationId: convId,
+                    minScore,
+                    topK,
+                    candidateCount: candidateIds ? candidateIds.size : 0,
+                    chunkCount: chunks.length,
+                    hitCount: out.length
+                });
+            } catch (err) {
+                // ignore
+            }
+            return out;
         }
 
         async searchKeywordCandidates(query, conversationId, limit) {
@@ -3897,7 +3954,18 @@
             try {
                 await this.waitReady();
                 await this.ensureKeywordIndexReady();
-                return this.keywordIndex.search(query, normalizeConversationId(conversationId), cappedLimit);
+                const convId = normalizeConversationId(conversationId);
+                const results = this.keywordIndex.search(query, convId, cappedLimit);
+                try {
+                    console.log("[AI_IN_DEBUG] keyword search", {
+                        conversationId: convId,
+                        limit: cappedLimit,
+                        hitCount: Array.isArray(results) ? results.length : 0
+                    });
+                } catch (err) {
+                    // ignore
+                }
+                return results;
             } catch (err) {
                 console.warn("Keyword search failed", err);
                 return null;

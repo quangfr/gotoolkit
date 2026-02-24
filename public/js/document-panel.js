@@ -1689,6 +1689,18 @@
                 if (sectionName.startsWith("shared:") || sectionName === "private") {
                     const actions = document.createElement("span");
                     actions.className = "document-explorer__section-actions";
+                    const parseSectionLastSyncAt = () => {
+                        const raw = String(
+                            sectionMeta?.lastSyncAt
+                            || sectionMeta?.lastSyncedAt
+                            || sectionMeta?.indexedAt
+                            || ""
+                        ).trim();
+                        const ms = Date.parse(raw);
+                        return Number.isFinite(ms) ? ms : 0;
+                    };
+                    const sectionLastSyncMs = parseSectionLastSyncAt();
+                    const sectionSyncedWithinHour = sectionLastSyncMs > 0 && (Date.now() - sectionLastSyncMs) < (60 * 60 * 1000);
                     const pendingCount = sectionName.startsWith("shared:")
                         ? Number(sectionMeta?.pendingCount || 0)
                         : 0;
@@ -1717,7 +1729,9 @@
                         refreshBtn.type = "button";
                         refreshBtn.className = "document-explorer__item-action";
                         refreshBtn.title = "Rafraîchir et nettoyer l'espace privé";
-                        refreshBtn.innerHTML = '<i data-lucide="refresh-cw"></i>';
+                        refreshBtn.innerHTML = sectionSyncedWithinHour
+                            ? '<i data-lucide="circle-check"></i>'
+                            : '<i data-lucide="refresh-ccw"></i>';
                         refreshBtn.addEventListener("click", (event) => {
                             event.preventDefault();
                             event.stopPropagation();
@@ -1750,7 +1764,7 @@
                             if (sharedSpaceId) {
                                 refreshBtn.dataset.spaceId = sharedSpaceId;
                             }
-                            const shouldShowCleanIcon = !isSharedSpaceSyncing && !hasSharedSpaceSyncError && pendingCount <= 0;
+                            const shouldShowCleanIcon = !isSharedSpaceSyncing && !hasSharedSpaceSyncError && sectionSyncedWithinHour;
                             refreshBtn.dataset.cleanIcon = shouldShowCleanIcon ? "1" : "0";
                             const sinceLabel = String(sectionMeta?.lastSyncLabel || "").trim();
                             const syncSinceLabel = sinceLabel
@@ -1772,9 +1786,9 @@
                                 ? '<i data-lucide="triangle-alert"></i>'
                                 : (shouldShowCleanIcon
                                     ? '<i data-lucide="circle-check"></i>'
-                                    : '<i data-lucide="refresh-cw"></i>');
+                                    : '<i data-lucide="refresh-ccw"></i>');
                             if (isSharedSpaceSyncing && !hasSharedSpaceSyncError) {
-                                const icon = refreshBtn.querySelector('svg.lucide-refresh-cw, i[data-lucide="refresh-cw"], svg, i');
+                                const icon = refreshBtn.querySelector('svg.lucide-refresh-ccw, i[data-lucide="refresh-ccw"], svg, i');
                                 if (icon) icon.classList.add("lucide-spin");
                             }
                             if (pendingCount > 0) {
