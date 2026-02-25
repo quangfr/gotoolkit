@@ -1554,7 +1554,7 @@
         this.memorySpacesSyncHintEl = null;
         this.memorySpacesOutsideClickHandler = null;
         this.knowledgeDocumentNames = [];
-        this.headerDocCountTooltipDefault = "Mémoire";
+        this.headerDocCountTooltipDefault = "Base de connaissance";
         this.previewPanel = null;
         this.previewTitleEl = null;
         this.previewBodyEl = null;
@@ -1764,7 +1764,7 @@
     };
 
     AssistSidebar.prototype.syncKnowledgeModalVisibility = function () {
-        // Legacy knowledge modal removed; memory is handled by Mémoire dropdown only.
+        // Legacy knowledge modal removed; memory is handled by Base de connaissance dropdown only.
         return;
     };
 
@@ -5539,7 +5539,7 @@
         this.headerDocCountEl.type = "button";
         this.headerDocCountEl.className = "btn-secondary chat-header-btn";
         this.headerDocCountEl.innerHTML = '<i data-lucide="brain"></i>';
-        this.headerDocCountEl.setAttribute("title", "Mémoire");
+        this.headerDocCountEl.setAttribute("title", "Base de connaissance");
         this.headerDocCountEl.addEventListener("click", this.handleHeaderDocCountClick.bind(this));
         this.headerDocCountEl.addEventListener("keydown", function (event) {
             if (event.key === "Enter" || event.key === " ") {
@@ -5558,7 +5558,7 @@
         this.clearButton.id = "chatClearBtn";
         this.clearButton.type = "button";
         this.clearButton.className = "btn-secondary chat-header-btn";
-        this.clearButton.innerHTML = '<i data-lucide="message-circle-x"></i>';
+        this.clearButton.innerHTML = '<i data-lucide="circle-x"></i>';
         this.clearButton.setAttribute("title", "Effacer");
         this.clearButton.addEventListener("click", this.clearConversation.bind(this));
         headerActions.appendChild(this.clearButton);
@@ -7041,7 +7041,7 @@
             var removeBtn = document.createElement("button");
             removeBtn.type = "button";
             removeBtn.className = "chat-composer-attachment__remove";
-            removeBtn.textContent = "⊗";
+            removeBtn.innerHTML = '<i data-lucide="x" style="width:12px;height:12px;"></i>';
             removeBtn.setAttribute("aria-label", "Supprimer l'embedding");
             removeBtn.addEventListener("click", function (event) {
                 event.stopPropagation();
@@ -7094,7 +7094,7 @@
             var removeBtn = document.createElement("button");
             removeBtn.type = "button";
             removeBtn.className = "chat-composer-attachment__remove";
-            removeBtn.textContent = "⊗";
+            removeBtn.innerHTML = '<i data-lucide="x" style="width:12px;height:12px;"></i>';
             removeBtn.setAttribute("aria-label", "Supprimer la pièce jointe");
             removeBtn.addEventListener("click", function (event) {
                 event.stopPropagation();
@@ -7810,7 +7810,7 @@
             // ignore
         }
         this.updateHeaderDocumentCount();
-        this.setKnowledgeModalStatus("Mise à jour de la mémoire…");
+        this.setKnowledgeModalStatus("Mise à jour de la base de connaissance…");
         await this.refreshKnowledgeModal({ skipAutoReindex: true });
         var entries = Array.isArray(this.knowledgeManifestEntries) ? this.knowledgeManifestEntries : [];
         var selection = this.buildKnowledgeSelectionFromSpaces(entries);
@@ -8463,7 +8463,7 @@
             this.headerDocCountEl.setAttribute("title", this.headerDocCountTooltipDefault);
             return;
         }
-        this.headerDocCountEl.setAttribute("title", "Espaces mémoire:\n" + selectedNames.join("\n"));
+        this.headerDocCountEl.setAttribute("title", "Espaces base de connaissance:\n" + selectedNames.join("\n"));
     };
 
     AssistSidebar.prototype.applyKnowledgeOverrides = async function (entries) {
@@ -8870,7 +8870,7 @@
             return true;
         } catch (err) {
             console.warn("Knowledge drop add failed", err);
-            this.setKnowledgeModalStatus("Ajout à la mémoire échoué.", true, 2200);
+            this.setKnowledgeModalStatus("Ajout à la base de connaissance échoué.", true, 2200);
             return false;
         }
     };
@@ -8913,7 +8913,7 @@
             event.preventDefault();
             var added = await this.addDroppedMemoDocumentToKnowledge(docId);
             if (added) {
-                this.setKnowledgeModalStatus("Ajouté à la mémoire.", false, 1400);
+                this.setKnowledgeModalStatus("Ajouté à la base de connaissance.", false, 1400);
             }
         }.bind(this);
         target.addEventListener("dragenter", onDragEnter);
@@ -9854,7 +9854,7 @@
             console.error("Payload size exceeds limit:", payloadBytes, "bytes");
             var errorMessage = "Document trop volumineux pour Docs\n\n" +
                 "Le document dépasse la limite de " + Math.floor(maxPayloadBytes / 1_000_000) + " Mo.\n\n" +
-                "Suggestion : Ajoutez-le à la Mémoire ou avec +";
+                "Suggestion : Ajoutez-le à la Base de connaissance ou avec +";
             alert(errorMessage);
             this._inFlightPayloadHash = null;
             return;

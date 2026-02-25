@@ -80,17 +80,17 @@
         crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.min.js" crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.min.js" crossorigin></script>
-    <link rel="stylesheet" href="styles/style.css?v=2026.02.25.10">
+    <link rel="stylesheet" href="styles/style.css?v=2026.02.25.11">
     <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
-    <link rel="stylesheet" href="styles/memo.css?v=2026.02.25.10">
-    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.25.10">
+    <link rel="stylesheet" href="styles/memo.css?v=2026.02.25.11">
+    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.25.11">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.css">
     <script src="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.js"></script>
     <style>
         .docs-tour-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(15, 23, 42, 0.38);
+            background: transparent;
             z-index: 30000;
         }
 
@@ -98,8 +98,8 @@
             position: fixed;
             border: 2px solid var(--color-primary);
             border-radius: 10px;
-            background: transparent;
-            box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.20);
+            background: rgba(16, 185, 129, 0.05);
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.08);
             z-index: 30001;
             pointer-events: none;
         }
@@ -466,7 +466,7 @@
         <img src="img/logo.gif" alt="Logo GoToolkit" class="logo-light">
         <img src="img/logo-inverted.gif" alt="Logo GoToolkit" class="logo-dark">
         <strong>GoToolkit</strong>
-        <span id="memoNewsTrigger" class="info-popup-news-link" role="button" tabindex="0">Version 2026.02.25.10</span>
+        <span id="memoNewsTrigger" class="info-popup-news-link" role="button" tabindex="0">Version 2026.02.25.11</span>
         <span>Usage réservé à Savane Consulting.</span>
         <div class="info-actions info-actions--stacked">
             <div class="info-actions-row">
@@ -545,24 +545,24 @@
         window.GO_TOOLKIT_GOOGLE_TTS_API_URL =
             window.GO_TOOLKIT_GOOGLE_TTS_API_URL || "https://googletts.gotoolkit.workers.dev";
     </script>
-    <script src="js/config.js?v=2026.02.25.10"></script>
-    <script src="js/config-modal.js?v=2026.02.25.10"></script>
-    <script src="js/feature-visibility.js?v=2026.02.25.10"></script>
-    <script src="js/document-storage.js?v=2026.02.25.10"></script>
-    <script src="js/storage-service.js?v=2026.02.25.10"></script>
-    <script src="js/shared-ui.js?v=2026.02.25.10"></script>
-    <script src="js/spaces-store.js?v=2026.02.25.10"></script>
-    <script src="js/share-worker-client.js?v=2026.02.25.10"></script>
-    <script src="js/share-history.js?v=2026.02.25.10"></script>
-    <script src="js/document-api.js?v=2026.02.25.10"></script>
-    <script src="js/keywordIndex.js?v=2026.02.25.10"></script>
-    <script src="js/document-rag.js?v=2026.02.25.10"></script>
-    <script src="js/ia-config.js?v=2026.02.25.10"></script>
-    <script src="preset.js?v=2026.02.25.10"></script>
-    <script src="prompt.js?v=2026.02.25.10"></script>
-    <script src="js/ia-client.js?v=2026.02.25.10"></script>
-    <script src="js/document-markdown.js?v=2026.02.25.10"></script>
-    <script src="js/notion-export.js?v=2026.02.25.10"></script>
+    <script src="js/config.js?v=2026.02.25.11"></script>
+    <script src="js/config-modal.js?v=2026.02.25.11"></script>
+    <script src="js/feature-visibility.js?v=2026.02.25.11"></script>
+    <script src="js/document-storage.js?v=2026.02.25.11"></script>
+    <script src="js/storage-service.js?v=2026.02.25.11"></script>
+    <script src="js/shared-ui.js?v=2026.02.25.11"></script>
+    <script src="js/spaces-store.js?v=2026.02.25.11"></script>
+    <script src="js/share-worker-client.js?v=2026.02.25.11"></script>
+    <script src="js/share-history.js?v=2026.02.25.11"></script>
+    <script src="js/document-api.js?v=2026.02.25.11"></script>
+    <script src="js/keywordIndex.js?v=2026.02.25.11"></script>
+    <script src="js/document-rag.js?v=2026.02.25.11"></script>
+    <script src="js/ia-config.js?v=2026.02.25.11"></script>
+    <script src="preset.js?v=2026.02.25.11"></script>
+    <script src="prompt.js?v=2026.02.25.11"></script>
+    <script src="js/ia-client.js?v=2026.02.25.11"></script>
+    <script src="js/document-markdown.js?v=2026.02.25.11"></script>
+    <script src="js/notion-export.js?v=2026.02.25.11"></script>
     <script>
         document.addEventListener("click", function (event) {
             const legalTrigger = event.target?.closest?.("[data-open-nexus-modal]");
@@ -596,16 +596,16 @@
             ]
         };
     </script>
-    <script src="js/feedback.js?v=2026.02.25.10"></script>
-    <script src="js/news.js?v=2026.02.25.10"></script>
-    <script src="js/voice-video-player.js?v=2026.02.25.10"></script>
-    <script src="js/voice-audio-player.js?v=2026.02.25.10"></script>
-    <script src="js/youtube-publish.js?v=2026.02.25.10"></script>
-    <script src="js/voice.js?v=2026.02.25.10"></script>
-    <script src="js/voice-transcript.js?v=2026.02.25.10"></script>
-    <script src="js/googletts.js?v=2026.02.25.10"></script>
-    <script src="js/draw-memo.js?v=2026.02.25.10"></script>
-    <script src="js/document-tabs.js?v=2026.02.25.10"></script>
+    <script src="js/feedback.js?v=2026.02.25.11"></script>
+    <script src="js/news.js?v=2026.02.25.11"></script>
+    <script src="js/voice-video-player.js?v=2026.02.25.11"></script>
+    <script src="js/voice-audio-player.js?v=2026.02.25.11"></script>
+    <script src="js/youtube-publish.js?v=2026.02.25.11"></script>
+    <script src="js/voice.js?v=2026.02.25.11"></script>
+    <script src="js/voice-transcript.js?v=2026.02.25.11"></script>
+    <script src="js/googletts.js?v=2026.02.25.11"></script>
+    <script src="js/draw-memo.js?v=2026.02.25.11"></script>
+    <script src="js/document-tabs.js?v=2026.02.25.11"></script>
     <script>
         // Suppress React DevTools prompt in dev builds.
         window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = window.__REACT_DEVTOOLS_GLOBAL_HOOK__ || {
@@ -615,10 +615,10 @@
             onCommitFiberUnmount: function () { }
         };
     </script>
-    <script src="js/memo.bundle.js?v=2026.02.25.10"></script>
-    <script src="js/assist.js?v=2026.02.25.10"></script>
-    <script src="js/space-sync.js?v=2026.02.25.10"></script>
-    <script src="js/document-panel.js?v=2026.02.25.10"></script>
+    <script src="js/memo.bundle.js?v=2026.02.25.11"></script>
+    <script src="js/assist.js?v=2026.02.25.11"></script>
+    <script src="js/space-sync.js?v=2026.02.25.11"></script>
+    <script src="js/document-panel.js?v=2026.02.25.11"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             setTimeout(function () {
@@ -8638,57 +8638,74 @@
                 isDocumentSaving = true;
                 const savePromise = (async () => {
                     try {
-                    if (isCloudDocumentId(activeDocumentId)) {
-                        const ensureSharedTreePayload = (sourcePayload, options = {}) => {
-                            const payload = (sourcePayload && typeof sourcePayload === "object")
-                                ? { ...sourcePayload }
-                                : {};
-                            const docId = String(options.docId || activeDocumentId || "").trim();
-                            if (!docId.startsWith("share:")) return payload;
-                            const existing = openDocuments.find(item => String(item?.id || "").trim() === docId) || null;
-                            const parentId = normalizeSharedParentId(
-                                options.parentId
-                                ?? existing?.parentId
-                                ?? payload.parentId
-                                ?? ""
-                            );
-                            const spaceId = normalizeSpaceId(
-                                options.spaceId
-                                ?? existing?.spaceId
-                                ?? payload.spaceId
-                                ?? DEFAULT_SPACE_ID
-                            );
-                            const positionCandidate = options.position
-                                ?? existing?.position
-                                ?? payload.position;
-                            const position = parseSharedPosition(positionCandidate);
-                            payload.parentId = parentId;
-                            payload.spaceId = spaceId;
-                            payload.status = String(options.status || payload.status || "active").trim() || "active";
-                            if (position !== null) payload.position = position;
-                            else delete payload.position;
-                            return payload;
-                        };
-                        const payload = ensureSharedTreePayload(buildSharePayload(), { docId: activeDocumentId });
-                        const payloadPosition = parseSharedPosition(payload?.position);
-                        const payloadSpaceId = normalizeSpaceId(payload?.spaceId || DEFAULT_SPACE_ID);
-                        const payloadParentId = normalizeSharedParentId(payload?.parentId || "");
-                        const preview = buildSharePreview();
-                        const activeTab = getActiveTab();
-                        const superpowers = activeTab?.superpowers || options?.superpowers || [];
-                        const existingOpenDoc = openDocuments.find(item => String(item?.id || "").trim() === String(activeDocumentId || "").trim()) || null;
-                        const existingDraft = getCloudDraft(activeDocumentId);
-                        const existingDraftOpType = String(existingDraft?.opType || existingDraft?.reason || "").trim().toLowerCase();
-                        const hasNonEditPendingOp = Boolean(existingDraftOpType)
-                            && !["edit", "content"].includes(existingDraftOpType);
-                        const baselinePayload = getComparableCloudPayload(existingOpenDoc?.payload);
-                        const nextPayload = getComparableCloudPayload(payload);
-                        const isStrictEditNoop = !hasNonEditPendingOp
-                            && Boolean(existingOpenDoc)
-                            && arePayloadsStrictlyEqual(nextPayload, baselinePayload);
-                        const now = new Date().toISOString();
-                        if (isStrictEditNoop) {
-                            clearCloudDraft(activeDocumentId);
+                        if (isCloudDocumentId(activeDocumentId)) {
+                            const ensureSharedTreePayload = (sourcePayload, options = {}) => {
+                                const payload = (sourcePayload && typeof sourcePayload === "object")
+                                    ? { ...sourcePayload }
+                                    : {};
+                                const docId = String(options.docId || activeDocumentId || "").trim();
+                                if (!docId.startsWith("share:")) return payload;
+                                const existing = openDocuments.find(item => String(item?.id || "").trim() === docId) || null;
+                                const parentId = normalizeSharedParentId(
+                                    options.parentId
+                                    ?? existing?.parentId
+                                    ?? payload.parentId
+                                    ?? ""
+                                );
+                                const spaceId = normalizeSpaceId(
+                                    options.spaceId
+                                    ?? existing?.spaceId
+                                    ?? payload.spaceId
+                                    ?? DEFAULT_SPACE_ID
+                                );
+                                const positionCandidate = options.position
+                                    ?? existing?.position
+                                    ?? payload.position;
+                                const position = parseSharedPosition(positionCandidate);
+                                payload.parentId = parentId;
+                                payload.spaceId = spaceId;
+                                payload.status = String(options.status || payload.status || "active").trim() || "active";
+                                if (position !== null) payload.position = position;
+                                else delete payload.position;
+                                return payload;
+                            };
+                            const payload = ensureSharedTreePayload(buildSharePayload(), { docId: activeDocumentId });
+                            const payloadPosition = parseSharedPosition(payload?.position);
+                            const payloadSpaceId = normalizeSpaceId(payload?.spaceId || DEFAULT_SPACE_ID);
+                            const payloadParentId = normalizeSharedParentId(payload?.parentId || "");
+                            const preview = buildSharePreview();
+                            const activeTab = getActiveTab();
+                            const superpowers = activeTab?.superpowers || options?.superpowers || [];
+                            const existingOpenDoc = openDocuments.find(item => String(item?.id || "").trim() === String(activeDocumentId || "").trim()) || null;
+                            const existingDraft = getCloudDraft(activeDocumentId);
+                            const existingDraftOpType = String(existingDraft?.opType || existingDraft?.reason || "").trim().toLowerCase();
+                            const hasNonEditPendingOp = Boolean(existingDraftOpType)
+                                && !["edit", "content"].includes(existingDraftOpType);
+                            const baselinePayload = getComparableCloudPayload(existingOpenDoc?.payload);
+                            const nextPayload = getComparableCloudPayload(payload);
+                            const isStrictEditNoop = !hasNonEditPendingOp
+                                && Boolean(existingOpenDoc)
+                                && arePayloadsStrictlyEqual(nextPayload, baselinePayload);
+                            const now = new Date().toISOString();
+                            if (isStrictEditNoop) {
+                                clearCloudDraft(activeDocumentId);
+                                upsertOpenDocument({
+                                    id: activeDocumentId,
+                                    title: preview.title || getDocumentTitleFromState(state),
+                                    description: options?.description !== undefined ? options.description : preview.description,
+                                    superpowers,
+                                    payload,
+                                    parentId: payloadParentId,
+                                    spaceId: payloadSpaceId,
+                                    position: payloadPosition,
+                                    cloudDirty: false,
+                                    cloudDirtyReason: "",
+                                    cloudSyncedAt: String(existingOpenDoc?.cloudSyncedAt || existingOpenDoc?.updatedAt || now).trim() || now
+                                });
+                                renderDocumentTabs();
+                                memoExplorer?.refreshIndicators?.();
+                                return { id: activeDocumentId, updatedAt: String(existingOpenDoc?.updatedAt || now).trim() || now };
+                            }
                             upsertOpenDocument({
                                 id: activeDocumentId,
                                 title: preview.title || getDocumentTitleFromState(state),
@@ -8698,100 +8715,83 @@
                                 parentId: payloadParentId,
                                 spaceId: payloadSpaceId,
                                 position: payloadPosition,
-                                cloudDirty: false,
-                                cloudDirtyReason: "",
-                                cloudSyncedAt: String(existingOpenDoc?.cloudSyncedAt || existingOpenDoc?.updatedAt || now).trim() || now
+                                updatedAt: now,
+                                cloudDirty: true,
+                                cloudDirtyReason: hasNonEditPendingOp ? existingDraftOpType : "edit",
+                                cloudLastEditedAt: now
+                            });
+                            setCloudDraft(activeDocumentId, {
+                                ...(getCloudDraft(activeDocumentId) || {}),
+                                id: activeDocumentId,
+                                payload,
+                                title: preview.title || getDocumentTitleFromState(state),
+                                description: options?.description !== undefined ? options.description : preview.description,
+                                superpowers,
+                                updatedAt: now,
+                                parentId: payloadParentId,
+                                spaceId: payloadSpaceId,
+                                position: payloadPosition,
+                                opType: hasNonEditPendingOp ? existingDraftOpType : "edit"
                             });
                             renderDocumentTabs();
                             memoExplorer?.refreshIndicators?.();
-                            return { id: activeDocumentId, updatedAt: String(existingOpenDoc?.updatedAt || now).trim() || now };
+                            if (options && options.showToast) {
+                                setStatus("Brouillon local enregistré");
+                            }
+                            return { id: activeDocumentId, updatedAt: now };
                         }
-                        upsertOpenDocument({
-                            id: activeDocumentId,
-                            title: preview.title || getDocumentTitleFromState(state),
-                            description: options?.description !== undefined ? options.description : preview.description,
-                            superpowers,
-                            payload,
-                            parentId: payloadParentId,
-                            spaceId: payloadSpaceId,
-                            position: payloadPosition,
-                            updatedAt: now,
-                            cloudDirty: true,
-                            cloudDirtyReason: hasNonEditPendingOp ? existingDraftOpType : "edit",
-                            cloudLastEditedAt: now
-                        });
-                        setCloudDraft(activeDocumentId, {
-                            ...(getCloudDraft(activeDocumentId) || {}),
-                            id: activeDocumentId,
-                            payload,
-                            title: preview.title || getDocumentTitleFromState(state),
-                            description: options?.description !== undefined ? options.description : preview.description,
-                            superpowers,
-                            updatedAt: now,
-                            parentId: payloadParentId,
-                            spaceId: payloadSpaceId,
-                            position: payloadPosition,
-                            opType: hasNonEditPendingOp ? existingDraftOpType : "edit"
-                        });
-                        renderDocumentTabs();
-                        memoExplorer?.refreshIndicators?.();
-                        if (options && options.showToast) {
-                            setStatus("Brouillon local enregistré");
-                        }
-                        return { id: activeDocumentId, updatedAt: now };
-                    }
-                    const payload = buildSharePayload();
-                    const preview = buildSharePreview();
-                    const activeTab = getActiveTab();
-                    const superpowers = activeTab?.superpowers || options?.superpowers || [];
-                    // IMPORTANT: Preserve existing activeDocumentId if it exists
-                    const startedWithId = activeDocumentId;
-                    const id = startedWithId || (documentApi.generateId && documentApi.generateId()) || createId();
-                    const currentDocMeta = openDocuments.find(item => item.id === id) || null;
-                    const now = new Date().toISOString();
-                    const record = await documentApi.upsertRecord({
-                        id,
-                        app: "memo",
-                        payload,
-                        title: preview.title,
-                        description: options?.description !== undefined ? options.description : preview.description,
-                        superpowers: superpowers,
-                        voiceRecordingId: activeTab?.voiceRecordingId || null,
-                        handoffId: resolveHandoffId(id, activeTab?.handoffId),
-                        parentId: String(options?.parentId ?? currentDocMeta?.parentId ?? "").trim(),
-                        icon: String(options?.icon ?? currentDocMeta?.icon ?? "").trim(),
-                        updatedAt: now
-                    });
-                    if (record) {
-                        // Avoid overriding a newer active document selected mid-save.
-                        if (!activeDocumentId || activeDocumentId === startedWithId) {
-                            activeDocumentId = id;
-                        }
-                        upsertOpenDocument({
+                        const payload = buildSharePayload();
+                        const preview = buildSharePreview();
+                        const activeTab = getActiveTab();
+                        const superpowers = activeTab?.superpowers || options?.superpowers || [];
+                        // IMPORTANT: Preserve existing activeDocumentId if it exists
+                        const startedWithId = activeDocumentId;
+                        const id = startedWithId || (documentApi.generateId && documentApi.generateId()) || createId();
+                        const currentDocMeta = openDocuments.find(item => item.id === id) || null;
+                        const now = new Date().toISOString();
+                        const record = await documentApi.upsertRecord({
                             id,
-                            title: preview.title || getDocumentTitleFromState(state),
+                            app: "memo",
+                            payload,
+                            title: preview.title,
                             description: options?.description !== undefined ? options.description : preview.description,
                             superpowers: superpowers,
-                            parentId: String(record.parentId || options?.parentId || currentDocMeta?.parentId || "").trim(),
-                            icon: String(record.icon || options?.icon || currentDocMeta?.icon || "").trim(),
-                            payload,
-                            voiceRecordingId: record.voiceRecordingId || activeTab?.voiceRecordingId || null,
-                            handoffId: resolveHandoffId(id, record.handoffId !== undefined ? record.handoffId : activeTab?.handoffId),
+                            voiceRecordingId: activeTab?.voiceRecordingId || null,
+                            handoffId: resolveHandoffId(id, activeTab?.handoffId),
+                            parentId: String(options?.parentId ?? currentDocMeta?.parentId ?? "").trim(),
+                            icon: String(options?.icon ?? currentDocMeta?.icon ?? "").trim(),
                             updatedAt: now
                         });
-                        renderDocumentTabs();
-                        if (options && options.showToast) {
-                            const message = options.created ? "Docs créé" : "Docs enregistré";
-                            setStatus(message);
+                        if (record) {
+                            // Avoid overriding a newer active document selected mid-save.
+                            if (!activeDocumentId || activeDocumentId === startedWithId) {
+                                activeDocumentId = id;
+                            }
+                            upsertOpenDocument({
+                                id,
+                                title: preview.title || getDocumentTitleFromState(state),
+                                description: options?.description !== undefined ? options.description : preview.description,
+                                superpowers: superpowers,
+                                parentId: String(record.parentId || options?.parentId || currentDocMeta?.parentId || "").trim(),
+                                icon: String(record.icon || options?.icon || currentDocMeta?.icon || "").trim(),
+                                payload,
+                                voiceRecordingId: record.voiceRecordingId || activeTab?.voiceRecordingId || null,
+                                handoffId: resolveHandoffId(id, record.handoffId !== undefined ? record.handoffId : activeTab?.handoffId),
+                                updatedAt: now
+                            });
+                            renderDocumentTabs();
+                            if (options && options.showToast) {
+                                const message = options.created ? "Docs créé" : "Docs enregistré";
+                                setStatus(message);
+                            }
                         }
+                        return record;
+                    } catch (err) {
+                        console.error("Document save failed", err);
+                        return null;
+                    } finally {
+                        isDocumentSaving = false;
                     }
-                    return record;
-                } catch (err) {
-                    console.error("Document save failed", err);
-                    return null;
-                } finally {
-                    isDocumentSaving = false;
-                }
                 })();
                 documentSaveInFlightPromise = savePromise;
                 try {
@@ -10467,6 +10467,12 @@
                     menu.classList.add("open");
                 }
 
+                function ensureShareMenuOpen() {
+                    const menu = document.getElementById("shareMenu");
+                    if (!menu) return;
+                    menu.classList.add("open");
+                }
+
                 function ensureDocumentPanelOpen() {
                     const toggle = document.getElementById("documentExplorerToggle");
                     const explorer = document.getElementById("documentExplorer");
@@ -10475,6 +10481,138 @@
                     const isVisible = !explorer.classList.contains("document-explorer--collapsed");
                     if (!isExpanded || !isVisible) toggle.click();
                 }
+
+                function closeSpaceEditorModal() {
+                    const closeBtn = document.getElementById("spaceCreateJoinCloseBtn");
+                    if (closeBtn instanceof HTMLElement) {
+                        closeBtn.click();
+                    }
+                }
+
+                function closeAssistPresetDropdown() {
+                    const assist = window.GoToolkitAssistInstance;
+                    if (assist?.promptDropdownMenu) {
+                        assist.promptDropdownMenu.classList.remove("open");
+                        assist.promptDropdownMenu.hidden = true;
+                    }
+                    const menu = document.querySelector("#assistSidebar .chat-prompt-menu");
+                    if (menu) {
+                        menu.classList.remove("open");
+                        menu.hidden = true;
+                    }
+                }
+
+                function forceVisibleForTour(element) {
+                    if (!(element instanceof HTMLElement)) return;
+                    if (element.dataset.tourForcedVisible === "1") return;
+                    element.dataset.tourForcedVisible = "1";
+                    element.dataset.tourPrevOpacity = element.style.opacity || "";
+                    element.dataset.tourPrevVisibility = element.style.visibility || "";
+                    element.style.opacity = "1";
+                    element.style.visibility = "visible";
+                }
+
+                function resetForcedTourVisibility() {
+                    document.querySelectorAll("[data-tour-forced-visible='1']").forEach(node => {
+                        const el = node;
+                        el.style.opacity = el.dataset.tourPrevOpacity || "";
+                        el.style.visibility = el.dataset.tourPrevVisibility || "";
+                        delete el.dataset.tourForcedVisible;
+                        delete el.dataset.tourPrevOpacity;
+                        delete el.dataset.tourPrevVisibility;
+                    });
+                }
+
+                function hideTourSlashMenu() {
+                    document.getElementById("goToolkitTourSlashMenu")?.remove();
+                }
+
+                function showTourSlashMenu() {
+                    const editor = document.querySelector("#editor .ProseMirror") || document.getElementById("editor");
+                    if (!editor) return;
+                    hideTourSlashMenu();
+                    const rect = editor.getBoundingClientRect();
+                    const slash = document.createElement("div");
+                    slash.id = "goToolkitTourSlashMenu";
+                    slash.className = "memo-slash-actions-menu";
+                    slash.setAttribute("role", "menu");
+                    slash.innerHTML = `
+                        <button type="button" class="chat-prompt-menu-item"><i data-lucide="heading-1"></i><span>Titre</span></button>
+                        <button type="button" class="chat-prompt-menu-item"><i data-lucide="list"></i><span>Liste</span></button>
+                        <button type="button" class="chat-prompt-menu-item"><i data-lucide="table"></i><span>Tableau</span></button>
+                    `;
+                    slash.style.position = "fixed";
+                    slash.style.zIndex = "30003";
+                    slash.style.background = "var(--bg-surface)";
+                    slash.style.border = "1px solid var(--border-main)";
+                    slash.style.borderRadius = "10px";
+                    slash.style.padding = "6px";
+                    slash.style.boxShadow = "var(--shadow-md)";
+                    slash.style.left = Math.max(12, rect.left + 24) + "px";
+                    slash.style.top = Math.max(12, rect.top + 24) + "px";
+                    document.body.appendChild(slash);
+                    if (window.lucide?.createIcons) window.lucide.createIcons({ attrs: { width: "14", height: "14" } });
+                }
+
+                function cleanupSlashTypingSimulation() {
+                    const tourState = window.__goToolkitDocsTourState || {};
+                    const slashPos = Number(tourState.slashInsertedPos);
+                    if (Number.isFinite(slashPos) && window.memoEditor?.commands?.deleteRange) {
+                        try {
+                            window.memoEditor.commands.deleteRange({ from: slashPos, to: slashPos + 1 });
+                        } catch (err) {
+                            // ignore cleanup errors
+                        }
+                    }
+                    delete tourState.slashInsertedPos;
+                    hideTourSlashMenu();
+                }
+
+                function simulateSlashTypingInSimpleEditor() {
+                    const editorEl = document.querySelector("#editor .ProseMirror");
+                    if (!(editorEl instanceof HTMLElement)) {
+                        showTourSlashMenu();
+                        return;
+                    }
+                    try {
+                        editorEl.focus({ preventScroll: true });
+                    } catch (err) {
+                        editorEl.focus();
+                    }
+                    const tourState = window.__goToolkitDocsTourState || {};
+                    try {
+                        const from = Number(window.memoEditor?.view?.state?.selection?.from);
+                        try {
+                            const slashKeyDown = new KeyboardEvent("keydown", {
+                                key: "/",
+                                code: "Slash",
+                                keyCode: 191,
+                                which: 191,
+                                bubbles: true,
+                                cancelable: true
+                            });
+                            editorEl.dispatchEvent(slashKeyDown);
+                        } catch (err) {
+                            // ignore key event simulation failures
+                        }
+                        if (Number.isFinite(from) && window.memoEditor?.commands?.insertContent) {
+                            tourState.slashInsertedPos = from;
+                            window.memoEditor.commands.insertContent("/");
+                        } else {
+                            document.execCommand("insertText", false, "/");
+                        }
+                    } catch (err) {
+                        showTourSlashMenu();
+                        return;
+                    }
+                    requestAnimationFrame(() => {
+                        const slashMenuVisible = Boolean(document.querySelector(".memo-slash-actions-menu"));
+                        if (!slashMenuVisible) {
+                            showTourSlashMenu();
+                        }
+                    });
+                }
+
 
                 function getUnionRect(elements) {
                     const valid = (Array.isArray(elements) ? elements : []).filter(Boolean);
@@ -10501,23 +10639,130 @@
                     };
                 }
 
+                function getViewportAnchorRect() {
+                    const width = 40;
+                    const height = 40;
+                    const left = Math.max(12, Math.round((window.innerWidth - width) / 2));
+                    const top = Math.max(12, Math.round(window.innerHeight * 0.25));
+                    return {
+                        left,
+                        top,
+                        right: left + width,
+                        bottom: top + height,
+                        width,
+                        height
+                    };
+                }
+
                 const steps = [
                     {
+                        title: "Bienvenue sur GoToolkit",
+                        text: "GoToolkit est un outil de prise de notes gratuit, respectueux de ta vie privée. Tes données sont stockées en local, et les espaces partagés sont chiffrés avec une clé que toi seul connais. Aucun compte n’est requis. Les échanges d’informations se font uniquement avec ton consentement, selon une politique de rétention de données minimale.",
+                        noFocus: true,
+                        focus: () => null
+                    },
+                    {
                         title: "Écrire dans le document",
-                        text: "Tape directement dans l'éditeur pour rédiger. Changer le format du texte, créer des listes, des tableaux, des diagrammes et des libellés depuis la barre de format.",
+                        text: "Tape directement dans l'éditeur pour rédiger. Ouvre les actions document avec <i data-lucide=\"file-text\"></i> puis importe, envoie ou télécharge rapidement.",
                         focus: () => document.querySelector("#editor .ProseMirror") || document.getElementById("editor")
                     },
                     {
-                        title: "Panneau documents et onglets",
-                        text: "Utilise Bibliothèque pour ouvrir le document-panel puis change d'onglet document en haut.",
-                        before: () => ensureDocumentPanelOpen(),
-                        focus: () => document.querySelector("#documentExplorer .document-explorer__tab-btn[data-tab='library']") || document.getElementById("document-breadcrumb")
+                        title: "Blocs et mise en forme",
+                        text: "Tape <code>/</code> pour ouvrir le menu slash, puis sélectionne du texte pour afficher le bubble menu et lancer des actions rapides.",
+                        before: () => simulateSlashTypingInSimpleEditor(),
+                        focus: () => document.getElementById("goToolkitTourSlashMenu") || document.querySelector(".memo-slash-actions-menu") || document.querySelector("#editor .ProseMirror") || document.getElementById("editor")
                     },
                     {
-                        title: "Assist: édition sélection + fichier",
-                        text: "Ouvre Assist, puis utilise le mode Éditer sur une sélection et ajoute un fichier avec le bouton de pièce jointe.",
+                        title: "Explorateur de document",
+                        text: "Organise ta base de connaissance en arborescence : <i data-lucide=\"panel-left\"></i> affiche le panneau, <i data-lucide=\"plus\"></i> crée des pages/sous-pages, <i data-lucide=\"chevron-right\"></i>/<i data-lucide=\"chevron-down\"></i> déplie/replie, puis glisse-dépose les pages pour réorganiser la structure.",
+                        cardPosition: "right",
+                        before: () => {
+                            ensureDocumentPanelOpen();
+                            const privateHeader = document.querySelector("#documentExplorer .document-explorer__section-header[data-section='private']");
+                            if (privateHeader instanceof HTMLElement) {
+                                privateHeader.dispatchEvent(new MouseEvent("mouseenter", { bubbles: true }));
+                            }
+                            const addPageBtn = document.querySelector("#documentExplorer .document-explorer__section-header[data-section='private'] .document-explorer__item-action[title='Créer une page racine'], #documentExplorer .document-explorer__section-header[data-section='private'] .document-explorer__item-action[title='Ajouter une page']");
+                            forceVisibleForTour(addPageBtn);
+                            const firstItem = document.querySelector("#documentExplorer .document-explorer__item");
+                            if (firstItem) {
+                                firstItem.dispatchEvent(new MouseEvent("mouseenter", { bubbles: true }));
+                                const subPageBtn = firstItem.querySelector(".document-explorer__item-action[title='Créer une sous-page']");
+                                forceVisibleForTour(subPageBtn);
+                            }
+                        },
+                        focus: () => document.getElementById("documentExplorerToggle")
+                    },
+                    {
+                        title: "Cloud chiffré + partage de lien",
+                        text: "L'accès à l'espace partagé se fait via passphrase ou via le lien de la page unique. Les données sont synchronisées en ligne automatiquement <i data-lucide=\"refresh-cw\"></i>, etc.).",
+                        before: () => {
+                            ensureDocumentPanelOpen();
+                            const sharedHeader = document.querySelector("#documentExplorer .document-explorer__section-header[data-section^='shared:']");
+                            if (sharedHeader instanceof HTMLElement) {
+                                sharedHeader.dispatchEvent(new MouseEvent("mouseenter", { bubbles: true }));
+                            }
+                            const sectionActions = document.querySelector("#documentExplorer .document-explorer__section-header[data-section^='shared:'] .document-explorer__section-actions");
+                            forceVisibleForTour(sectionActions);
+                        },
+                        focus: () => ([
+                            document.querySelector("#documentExplorer .document-explorer__section-header[data-section^='shared:'] .document-explorer__section-actions")
+                        ].filter(Boolean))
+                    },
+                    {
+                        title: "Discussion ou édition augmentée avec l'IA",
+                        text: "Choisir entre <i data-lucide=\"pen-line\"></i> <strong>Éditer</strong> pour créer ou modifier la page et <i data-lucide=\"message-square\"></i> <strong>Explorer</strong> pour poser des questions.",
+                        cardPosition: "left",
+                        before: () => {
+                            closeSpaceEditorModal();
+                            const assist = window.GoToolkitAssistInstance;
+                            assist?.open?.();
+                            if (assist?.promptDropdownMenu && assist?.promptDropdownButton) {
+                                assist.promptDropdownMenu.hidden = false;
+                                assist.promptDropdownMenu.classList.add("open");
+                            } else {
+                                document.querySelector("#assistSidebar .chat-prompt-btn")?.click?.();
+                                const menu = document.querySelector("#assistSidebar .chat-prompt-menu");
+                                if (menu) {
+                                    menu.hidden = false;
+                                    menu.classList.add("open");
+                                }
+                            }
+                        },
+                        focus: () => ([
+                            document.getElementById("assistLauncherBtn"),
+                            document.querySelector("#assistSidebar .chat-prompt-btn")
+                        ].filter(Boolean))
+                    },
+                    {
+                        title: "Commande vocale et raccourcis de prompt",
+                        text: "Tu veux gagner en productivité ? Utilise les raccourcis de prompt <i data-lucide=\"sparkles\"></i> et la commande vocale <i data-lucide=\"mic\"></i>.",
+                        before: () => {
+                            window.GoToolkitAssistInstance?.open?.();
+                        },
+                        focus: () => ([
+                            document.querySelector("#assistSidebar .chat-prompt-shortcuts-btn"),
+                            document.querySelector("#assistSidebar .chat-speech-btn")
+                        ].filter(Boolean))
+                    },
+                    {
+                        title: "Enregistrement et export vidéo",
+                        text: "Lance l'enregistrement <i data-lucide=\"mic\"></i>, utilise le partage d'écran et la transcription, puis exporte en MP4/GIF avec <i data-lucide=\"download\"></i> ou publie sur Youtube.",
+                        focus: () => ([
+                            document.querySelector(".go-toolkit-voice-button"),
+                            document.querySelector(".voice-overlay"),
+                            document.querySelector(".voice-overlay__transcription-tile")
+                        ].filter(Boolean))
+                    },
+                    {
+                        title: "Base de connaissance personnalisée pour l'IA",
+                        text: "Joindre des <i data-lucide=\"paperclip\"></i> fichiers et sélectionne les espaces pertinents de la <i data-lucide=\"brain\"></i> base de connaissance pour l'IA",
                         before: () => window.GoToolkitAssistInstance?.open?.(),
-                        focus: () => document.querySelector("#assistSidebar .chat-composer") || document.getElementById("assistLauncherBtn")
+                        focus: () => ([
+                            document.querySelector("#assistSidebar .chat-prompt-btn"),
+                            document.querySelector("#assistSidebar #chatAttachFilesBtn"),
+                            document.getElementById("chatMemoryBtn")
+                        ].filter(Boolean))
                     },
                     {
                         title: "File menu: importer, envoyer, télécharger",
@@ -10525,19 +10770,6 @@
                         keepFileMenuOpen: true,
                         before: () => ensureFileMenuOpen(),
                         focus: () => document.getElementById("fileMenu")
-                    },
-                    {
-                        title: "Quick hacks",
-                        text: "Accélère ton flux avec Raccourcis Prompt et Capture mobile pour importer depuis ton smartphone.",
-                        keepFileMenuOpen: true,
-                        before: () => {
-                            ensureFileMenuOpen();
-                            window.GoToolkitAssistInstance?.open?.();
-                        },
-                        focus: () => ([
-                            document.querySelector("#assistSidebar .chat-prompt-shortcuts-btn"),
-                            document.getElementById("handoffFocusBtn")
-                        ].filter(Boolean))
                     }
                 ];
 
@@ -10571,6 +10803,10 @@
                 }
 
                 function cleanup() {
+                    cleanupSlashTypingSimulation();
+                    resetForcedTourVisibility();
+                    closeAssistPresetDropdown();
+                    closeSpaceEditorModal();
                     overlay.remove();
                     clearHighlights();
                     card.remove();
@@ -10582,13 +10818,23 @@
                 }
                 window.__goToolkitDocsTourCleanup = cleanup;
 
-                function positionCard(rect) {
+                function positionCard(rect, preferredSide) {
                     const margin = 12;
                     const cardRect = card.getBoundingClientRect();
                     let left = rect.left;
                     let top = rect.bottom + margin;
+                    if (preferredSide === "right") {
+                        left = rect.right + margin;
+                        top = rect.top;
+                    } else if (preferredSide === "left") {
+                        left = rect.left - cardRect.width - margin;
+                        top = rect.top;
+                    }
                     if (left + cardRect.width > window.innerWidth - margin) {
                         left = window.innerWidth - cardRect.width - margin;
+                    }
+                    if (left < margin) {
+                        left = margin;
                     }
                     if (top + cardRect.height > window.innerHeight - margin) {
                         top = Math.max(margin, rect.top - cardRect.height - margin);
@@ -10620,6 +10866,11 @@
                 function render() {
                     const step = steps[activeIndex];
                     if (!step) return cleanup();
+                    cleanupSlashTypingSimulation();
+                    resetForcedTourVisibility();
+                    closeAssistPresetDropdown();
+                    closeSpaceEditorModal();
+                    closeMenus();
                     if (window.__goToolkitDocsTourState) {
                         window.__goToolkitDocsTourState.keepFileMenuOpen = Boolean(step.keepFileMenuOpen);
                     }
@@ -10629,19 +10880,30 @@
                     const targets = Array.isArray(focused) ? focused : [focused];
                     const visibleTargets = targets.filter(Boolean);
                     const target = visibleTargets[0] || document.getElementById("page") || document.body;
-                    target.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
-                    const rect = getUnionRect(visibleTargets) || target.getBoundingClientRect();
-                    renderHighlights(visibleTargets.length ? visibleTargets : [target]);
+                    let rect;
+                    if (step.noFocus) {
+                        clearHighlights();
+                        rect = getViewportAnchorRect();
+                    } else {
+                        target.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+                        rect = getUnionRect(visibleTargets) || target.getBoundingClientRect();
+                        renderHighlights(visibleTargets.length ? visibleTargets : [target]);
+                    }
+                    const hasCloseAndPrev = activeIndex > 0;
                     card.innerHTML = `
                         <div class="docs-tour-step">Étape ${activeIndex + 1} / ${steps.length}</div>
                         <div class="docs-tour-title">${step.title}</div>
                         <p class="docs-tour-text">${step.text}</p>
                         <div class="docs-tour-actions">
+                            ${hasCloseAndPrev ? '<button type="button" class="btn btn-secondary" data-tour-close>Fermer</button>' : ""}
                             <button type="button" class="btn btn-secondary" data-tour-prev>${activeIndex === 0 ? "Fermer" : "Précédent"}</button>
                             <button type="button" class="btn-primary" data-tour-next>${activeIndex === steps.length - 1 ? "Terminer" : "Suivant"}</button>
                         </div>
                     `;
-                    positionCard(rect);
+                    positionCard(rect, step.cardPosition);
+                    card.querySelector("[data-tour-close]")?.addEventListener("click", () => {
+                        cleanup();
+                    });
                     card.querySelector("[data-tour-prev]")?.addEventListener("click", () => {
                         if (activeIndex === 0) return cleanup();
                         activeIndex -= 1;
@@ -10652,6 +10914,9 @@
                         activeIndex += 1;
                         render();
                     });
+                    if (window.lucide?.createIcons) {
+                        window.lucide.createIcons({ attrs: { width: "14", height: "14" } });
+                    }
                 }
 
                 overlay.addEventListener("click", cleanup);
@@ -10938,9 +11203,10 @@
 
                 const presetId = assistSidebar.promptPresetId || "edit";
                 const presets = assistSidebar.getPromptPresets();
-                const activePreset = presets[presetId] || { label: presetId };
+                const activePreset = presets[presetId] || { label: presetId, icon: "terminal" };
+                const presetIcon = (activePreset.icon || "terminal").toString().trim() || "terminal";
 
-                inlineBtn.innerHTML = `${activePreset.label} <i data-lucide="chevron-down" style="width:12px;height:12px;margin-left:2px"></i>`;
+                inlineBtn.innerHTML = `<i data-lucide="${presetIcon}" style="width:12px;height:12px;margin-right:4px"></i>${activePreset.label} <i data-lucide="chevron-down" style="width:12px;height:12px;margin-left:2px"></i>`;
                 if (window.lucide) window.lucide.createIcons();
 
                 if (inlineMenu) {
@@ -10986,12 +11252,13 @@
                 presetIds.forEach(id => {
                     const preset = presets[id];
                     if (!preset) return;
+                    const iconName = (preset.icon || "terminal").toString().trim() || "terminal";
 
                     const item = document.createElement('button');
                     item.type = 'button';
                     item.className = 'chat-prompt-menu-item';
                     item.dataset.preset = id;
-                    item.textContent = preset.label || id;
+                    item.innerHTML = `<i data-lucide="${iconName}" class="chat-prompt-menu-item__icon"></i><span class="chat-prompt-menu-item__label">${preset.label || id}</span>`;
 
                     item.addEventListener('click', (e) => {
                         e.stopPropagation();
@@ -11002,6 +11269,7 @@
 
                     inlineMenu.appendChild(item);
                 });
+                if (window.lucide) window.lucide.createIcons();
             };
 
             if (inlineBtn && inlineMenu) {
