@@ -56,7 +56,7 @@
                             <div class="field-row" id="openrouterOcrModelRow">
                                 <label style="width:100%">
                                     <span class="label-title">Modèle OCR</span>
-                                    <input id="openrouterOcrModelInput" type="text" placeholder="qwen/qwen2.5-vl-72b-instruct" />
+                                    <input id="openrouterOcrModelInput" type="text" placeholder="nvidia/nemotron-nano-12b-v2-vl" />
                                 </label>
                             </div>
                             <div class="field-row">

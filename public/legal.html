@@ -14,7 +14,7 @@
             document.documentElement.setAttribute('data-theme', resolvedTheme);
         })();
     </script>
-    <link rel="stylesheet" href="styles/style.css?v=2026.02.25.16">
+    <link rel="stylesheet" href="styles/style.css?v=2026.02.26.2">
     <style>
         .legal-page {
             max-width: 920px;
@@ -133,11 +133,17 @@
                 un consentement spécifique de votre part et disposent de leur propre politique de confidentialité.</p>
             <p><strong>6. Durées de conservation</strong><br>Les données locales sont conservées jusqu’à suppression par
                 l’utilisateur (ou nettoyage navigateur). Les contenus partagés en ligne sont conservés jusqu’à
-                suppression via l’outil ou selon les règles du service tiers concerné. Les journaux techniques sont
-                conservés pour une durée proportionnée aux besoins de sécurité et d’exploitation.</p>
+                suppression via l’outil ou archivage/suppression par vos soins. Les données OAuth et journaux
+                techniques sont conservés pour une durée limitée et proportionnée aux besoins de sécurité, de
+                maintenance et de continuité de service. Lorsque des services tiers sont utilisés, leurs propres
+                durées de conservation s’appliquent.</p>
             <p><strong>7. Vos droits</strong><br>Conformément au RGPD, vous disposez des droits d’accès, rectification,
-                effacement, limitation, opposition et portabilité, selon les conditions légales applicables. Vous
-                pouvez également introduire une réclamation auprès de la CNIL.</p>
+                effacement, limitation, opposition et portabilité, selon les conditions légales applicables. Pour
+                exercer vos droits, vous pouvez écrire à <a href="mailto:contact@gotoolkit.fr">contact@gotoolkit.fr</a>.
+                En cas de doute raisonnable sur l’identité du demandeur, un justificatif d’identité peut être demandé.
+                Une réponse vous est adressée dans les meilleurs délais, et en principe sous un mois (prolongeable dans
+                les cas prévus par la réglementation). Vous pouvez également introduire une réclamation auprès de la
+                CNIL.</p>
             <p><strong>8. Chiffrement côté client (E2EE) des contenus et fichiers</strong><br>Les contenus de pages et
                 les fichiers média associés peuvent être chiffrés de bout en bout avant envoi, directement dans le
                 navigateur, à partir d’une phrase d’accès d’espace (5 mots). Le chiffrement média est réalisé côté
@@ -161,10 +167,11 @@
                 réglementaire globale dépend aussi de votre usage, de vos bases légales, de votre gouvernance interne
                 et des services tiers éventuellement connectés.</p>
             <p><strong>13. Services tiers, politique de données et chiffrement</strong><br>Les échanges de données
-                personnelles sont
-                réalisés avec des fournisseurs tiers en UE avec une politique de rétention limitée. L'hébergement des
-                données personnelles se fait avec un chiffrement de
-                bout en bout (E2EE). Les modalités par service sont résumées ci-dessous :</p>
+                personnelles sont réalisés avec des fournisseurs tiers uniquement lorsque la fonctionnalité utilisée le
+                nécessite. Selon le fournisseur et la configuration retenue, les traitements peuvent être réalisés dans
+                l’Union européenne ou en dehors de l’Union européenne. Lorsque des transferts hors UE existent, ils
+                sont encadrés par des mécanismes juridiques appropriés (notamment clauses contractuelles types, le cas
+                échéant). Les modalités par service sont résumées ci-dessous :</p>
             <table class="legal-table">
                 <thead>
                     <tr>
@@ -176,8 +183,9 @@
                 <tbody>
                     <tr>
                         <td>Hébergement application</td>
-                        <td>Google Firebase</td>
-                        <td>UE. Pas de données personnelles.
+                        <td>Google Firebase (UE)</td>
+                        <td>Infrastructure cloud configurée pour l’application. Les traitements exacts dépendent des
+                            fonctionnalités activées et de la configuration projet.
                             <a href="https://firebase.google.com/support/privacy">Lien</a>
                         </td>
                     </tr>
@@ -189,49 +197,54 @@
                     <tr>
                         <td>Données espaces partagés + Capture mobile</td>
                         <td>Google Firebase (UE)</td>
-                        <td>Chiffré de bout en bout (E2EE).
+                        <td>Contenus de partage chiffrés côté client (E2EE) avant envoi lorsque l’option est activée.
                             <a href="https://firebase.google.com/support/privacy">Lien</a>
                         </td>
                     </tr>
                     <tr>
                         <td>Fichiers multimédia</td>
-                        <td>Cloudflare R2 (UE)</td>
-                        <td>Chiffré de bout en bout (E2EE).
+                        <td>Cloudflare</td>
+                        <td>Fichiers stockés via R2. Chiffrement côté client (E2EE) des médias lorsque l’option est
+                            activée.
                             <a href="https://www.cloudflare.com/fr-fr/trust-hub/privacy-and-data-protection/">Lien</a>
                         </td>
                     </tr>
                     <tr>
                         <td>Appels API</td>
                         <td>Cloudflare Workers</td>
-                        <td>Aucune conservation de données.
+                        <td>Pas de conservation applicative volontaire du contenu dans les workers GoToolkit, hors
+                            traces techniques transitoires nécessaires à l’exploitation et à la sécurité.
                             <a href="https://www.cloudflare.com/fr-fr/trust-hub/privacy-and-data-protection/">Lien</a>
                         </td>
                     </tr>
                     <tr>
                         <td>Session OAuth</td>
-                        <td>Cloudflare KV</td>
-                        <td>ID session non identifiable.
+                        <td>Cloudflare (UE)</td>
+                        <td>Clés stockés via D1. ID session non identifiable.
                             <a href="https://www.cloudflare.com/fr-fr/trust-hub/privacy-and-data-protection/">Lien</a>
                         </td>
                     </tr>
                     <tr>
                         <td>Transcription vocale</td>
                         <td>AssemblyAI (UE)</td>
-                        <td>Données supprimées après 3 jours au maximum.
+                        <td>Traitement de transcription via endpoint européen. Durées de rétention selon la politique
+                            du fournisseur et sa documentation.
                             <a href="https://www.assemblyai.com/docs/faq/how-long-does-aai-retain-data">Lien</a>
                         </td>
                     </tr>
                     <tr>
                         <td>Synthèse vocale</td>
                         <td>Google TTS</td>
-                        <td>Aucune conservation de données.
+                        <td>Traitement via API Google Cloud Text-to-Speech. La rétention dépend des paramètres de
+                            journalisation et de la politique Google.
                             <a href="https://docs.cloud.google.com/text-to-speech/docs/data-logging?hl=fr">Lien</a>
                         </td>
                     </tr>
                     <tr>
                         <td>IA + Reconnaissance d'image (OCR) + Ingestion fichiers volumineux</td>
-                        <td>Openrouter / Nebius Token Factory (NL)</td>
-                        <td>Aucune conservation de données.
+                        <td>OpenRouter / Nebius Token Factory (UE)</td>
+                        <td>Traitement IA selon le modèle/fournisseur sélectionné. La localisation et la rétention
+                            peuvent varier selon le fournisseur.
                             <a href="https://docs.tokenfactory.nebius.com/data-lab/data-processing">Lien</a>
                         </td>
                     </tr>
@@ -258,15 +271,23 @@
             <p><strong>14. Ressources tierces et contenus embarqués</strong><br>Certaines ressources techniques
                 nécessaires à l’interface (CDN, polices) sont chargées au démarrage de l’application. En outre, les
                 contenus vidéo externes (YouTube/Loom) sont fournis par des services tiers susceptibles d’appliquer
-                leurs propres cookies/traceurs et règles de traitement. Nous vous invitons à consulter leurs politiques
-                de confidentialité respectives.</p>
-            <p><strong>15. Mises à jour</strong><br>La présente section peut évoluer pour refléter les changements
-                réglementaires, techniques ou fonctionnels.</p>
+                leurs propres cookies/traceurs et règles de traitement. Selon le type de traceurs, votre consentement
+                peut être requis avant dépôt/lecture, conformément à la réglementation applicable. Nous vous invitons à
+                consulter leurs politiques de confidentialité respectives.</p>
+            <p><strong>15. Transferts internationaux</strong><br>Lorsque des prestataires situés hors de l’Union
+                européenne sont utilisés, les transferts de données sont encadrés par des garanties appropriées
+                prévues par le RGPD (par exemple clauses contractuelles types), sous réserve des options activées et de
+                la configuration contractuelle retenue.</p>
+            <p><strong>16. Mises à jour</strong><br>La présente section peut évoluer pour refléter les changements
+                réglementaires, techniques ou fonctionnels. Dernière mise à jour : 25 février 2026.</p>
         </section>
         <p style="margin-top:6px;font-size:0.85em;opacity:0.85;">
-            Éditeur du site : Xuan Quang Tran (832 489 355) – Directeur de la publication : Xuan Quang Tran
-            (contact@gotoolkit.fr) – Hébergement
-            technique : Google / Cloudflare.
+            Éditeur du site : Xuan Quang Tran (EI - SIREN 832 489 355) – Directeur de la publication : Xuan Quang Tran
+            (EI - contact@gotoolkit.fr) – Adresse : 19 rue Marie Madeleine Fourcade, 69007 LYON – Hébergement technique
+            :
+            Google / Cloudflare.
+            <br>Informations légales complémentaires à compléter si applicables : forme juridique, adresse du siège
+            social, capital social, numéro RCS et coordonnées complètes des hébergeurs.
         </p>
     </main>
 </body>

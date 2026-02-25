@@ -9,6 +9,7 @@ const GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo";
 const GMAIL_API_BASE = "https://gmail.googleapis.com/gmail/v1/users/me";
 const SESSION_COOKIE_NAME = "gt_gmail_sid";
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
+const OAUTH_PROVIDER = "gmail";
 const DEFAULT_SCOPE = [
   "https://www.googleapis.com/auth/gmail.compose",
   "openid",
@@ -214,8 +215,18 @@ function normalizeStoredToken(raw) {
 }
 
 async function readToken(env, sessionId) {
-  if (!env?.GMAIL_OAUTH || !sessionId) return null;
-  const raw = await env.GMAIL_OAUTH.get(getTokenKey(sessionId));
+  if (!env?.OAUTH_DB || !sessionId) return null;
+  const key = getTokenKey(sessionId);
+  let raw = null;
+  try {
+    const row = await env.OAUTH_DB
+      .prepare("SELECT payload FROM oauth_sessions WHERE provider = ?1 AND session_key = ?2 LIMIT 1")
+      .bind(OAUTH_PROVIDER, key)
+      .first();
+    raw = row?.payload ? String(row.payload) : null;
+  } catch (err) {
+    console.warn("gmail oauth d1 read failed", err);
+  }
   if (!raw) return null;
   try {
     return JSON.parse(raw);
@@ -225,13 +236,33 @@ async function readToken(env, sessionId) {
 }
 
 async function writeToken(env, sessionId, value) {
-  if (!env?.GMAIL_OAUTH || !sessionId || !value) return;
-  await env.GMAIL_OAUTH.put(getTokenKey(sessionId), JSON.stringify(value));
+  if (!env?.OAUTH_DB || !sessionId || !value) return;
+  const key = getTokenKey(sessionId);
+  const payload = JSON.stringify(value);
+  try {
+    await env.OAUTH_DB
+      .prepare(`INSERT INTO oauth_sessions (provider, session_key, payload, updated_at, expires_at)
+                VALUES (?1, ?2, ?3, ?4, NULL)
+                ON CONFLICT(provider, session_key)
+                DO UPDATE SET payload = excluded.payload, updated_at = excluded.updated_at, expires_at = excluded.expires_at`)
+      .bind(OAUTH_PROVIDER, key, payload, new Date().toISOString())
+      .run();
+  } catch (err) {
+    console.warn("gmail oauth d1 write failed", err);
+  }
 }
 
 async function clearToken(env, sessionId) {
-  if (!env?.GMAIL_OAUTH || !sessionId) return;
-  await env.GMAIL_OAUTH.delete(getTokenKey(sessionId));
+  if (!env?.OAUTH_DB || !sessionId) return;
+  const key = getTokenKey(sessionId);
+  try {
+    await env.OAUTH_DB
+      .prepare("DELETE FROM oauth_sessions WHERE provider = ?1 AND session_key = ?2")
+      .bind(OAUTH_PROVIDER, key)
+      .run();
+  } catch (err) {
+    console.warn("gmail oauth d1 delete failed", err);
+  }
 }
 
 async function exchangeCodeForToken(request, env, code) {

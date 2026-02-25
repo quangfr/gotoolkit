@@ -9,6 +9,7 @@ const YOUTUBE_UPLOAD_URL = "https://www.googleapis.com/upload/youtube/v3/videos"
 const YOUTUBE_CAPTIONS_UPLOAD_URL = "https://www.googleapis.com/upload/youtube/v3/captions";
 const SESSION_COOKIE_NAME = "gt_youtube_sid";
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
+const OAUTH_PROVIDER = "youtube";
 const DEFAULT_SCOPE = [
   "https://www.googleapis.com/auth/youtube.upload",
   "https://www.googleapis.com/auth/youtube.force-ssl"
@@ -122,8 +123,18 @@ function normalizeLanguage(raw) {
 }
 
 async function getStoredToken(env, sessionId) {
-  if (!env?.YOUTUBE_OAUTH || !sessionId) return null;
-  const raw = await env.YOUTUBE_OAUTH.get(getTokenKey(sessionId));
+  if (!env?.OAUTH_DB || !sessionId) return null;
+  const key = getTokenKey(sessionId);
+  let raw = null;
+  try {
+    const row = await env.OAUTH_DB
+      .prepare("SELECT payload FROM oauth_sessions WHERE provider = ?1 AND session_key = ?2 LIMIT 1")
+      .bind(OAUTH_PROVIDER, key)
+      .first();
+    raw = row?.payload ? String(row.payload) : null;
+  } catch (err) {
+    console.warn("youtube oauth d1 read failed", err);
+  }
   if (!raw) return null;
   try {
     return JSON.parse(raw);
@@ -133,28 +144,77 @@ async function getStoredToken(env, sessionId) {
 }
 
 async function storeToken(env, sessionId, token) {
-  if (!env?.YOUTUBE_OAUTH || !sessionId || !token) return;
-  await env.YOUTUBE_OAUTH.put(getTokenKey(sessionId), JSON.stringify(token));
+  if (!env?.OAUTH_DB || !sessionId || !token) return;
+  const key = getTokenKey(sessionId);
+  const payload = JSON.stringify(token);
+  try {
+    await env.OAUTH_DB
+      .prepare(`INSERT INTO oauth_sessions (provider, session_key, payload, updated_at, expires_at)
+                VALUES (?1, ?2, ?3, ?4, NULL)
+                ON CONFLICT(provider, session_key)
+                DO UPDATE SET payload = excluded.payload, updated_at = excluded.updated_at, expires_at = excluded.expires_at`)
+      .bind(OAUTH_PROVIDER, key, payload, new Date().toISOString())
+      .run();
+  } catch (err) {
+    console.warn("youtube oauth d1 write failed", err);
+  }
 }
 
 async function clearToken(env, sessionId) {
-  if (!env?.YOUTUBE_OAUTH || !sessionId) return;
-  await env.YOUTUBE_OAUTH.delete(getTokenKey(sessionId));
+  if (!env?.OAUTH_DB || !sessionId) return;
+  const key = getTokenKey(sessionId);
+  try {
+    await env.OAUTH_DB
+      .prepare("DELETE FROM oauth_sessions WHERE provider = ?1 AND session_key = ?2")
+      .bind(OAUTH_PROVIDER, key)
+      .run();
+  } catch (err) {
+    console.warn("youtube oauth d1 delete failed", err);
+  }
 }
 
 async function getSelectedChannelId(env, sessionId) {
-  if (!env?.YOUTUBE_OAUTH || !sessionId) return "";
-  return String((await env.YOUTUBE_OAUTH.get(getSelectedChannelKey(sessionId))) || "").trim();
+  if (!env?.OAUTH_DB || !sessionId) return "";
+  const key = getSelectedChannelKey(sessionId);
+  let raw = "";
+  try {
+    const row = await env.OAUTH_DB
+      .prepare("SELECT payload FROM oauth_sessions WHERE provider = ?1 AND session_key = ?2 LIMIT 1")
+      .bind(OAUTH_PROVIDER, key)
+      .first();
+    raw = row?.payload ? String(row.payload) : "";
+  } catch (err) {
+    console.warn("youtube oauth d1 read channel failed", err);
+  }
+  return raw.trim();
 }
 
 async function setSelectedChannelId(env, sessionId, channelId) {
-  if (!env?.YOUTUBE_OAUTH || !sessionId) return;
+  if (!env?.OAUTH_DB || !sessionId) return;
+  const key = getSelectedChannelKey(sessionId);
   const normalized = String(channelId || "").trim();
   if (!normalized) {
-    await env.YOUTUBE_OAUTH.delete(getSelectedChannelKey(sessionId));
+    try {
+      await env.OAUTH_DB
+        .prepare("DELETE FROM oauth_sessions WHERE provider = ?1 AND session_key = ?2")
+        .bind(OAUTH_PROVIDER, key)
+        .run();
+    } catch (err) {
+      console.warn("youtube oauth d1 clear channel failed", err);
+    }
     return;
   }
-  await env.YOUTUBE_OAUTH.put(getSelectedChannelKey(sessionId), normalized);
+  try {
+    await env.OAUTH_DB
+      .prepare(`INSERT INTO oauth_sessions (provider, session_key, payload, updated_at, expires_at)
+                VALUES (?1, ?2, ?3, ?4, NULL)
+                ON CONFLICT(provider, session_key)
+                DO UPDATE SET payload = excluded.payload, updated_at = excluded.updated_at, expires_at = excluded.expires_at`)
+      .bind(OAUTH_PROVIDER, key, normalized, new Date().toISOString())
+      .run();
+  } catch (err) {
+    console.warn("youtube oauth d1 write channel failed", err);
+  }
 }
 
 async function listOwnedChannels(accessToken) {

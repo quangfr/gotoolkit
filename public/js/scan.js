@@ -2,7 +2,7 @@
   const STORAGE_KEY = "goToolkit.handoff.documents";
   const HANDOFF_COLLECTION = "handoffs";
   const CODE_COLLECTION = "codes_map";
-  const OCR_MODEL = "qwen/qwen2.5-vl-72b-instruct";
+  const OCR_MODEL = "nvidia/nemotron-nano-12b-v2-vl";
   const MOBILE_EDIT_MODEL = "openai/gpt-oss-120b";
   const MOBILE_EDIT_TEMPERATURE = 0.3;
   const MOBILE_EDIT_PRESET_FALLBACK =

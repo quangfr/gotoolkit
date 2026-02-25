@@ -157,7 +157,7 @@
     const OCR_QUALITY_BLUR_THRESHOLD = 0.8;
     const OCR_LAPLACIAN_NORM = 1000;
     const MAX_IMAGE_DIM = 2048;
-    const DEFAULT_QWEN_VISION_MODEL = "qwen/qwen2.5-vl-72b-instruct";
+    const DEFAULT_QWEN_VISION_MODEL = "nvidia/nemotron-nano-12b-v2-vl";
     const QWEN_OCR_TOAST_MESSAGE = "OCR : Reconnaissance en cours";
     const OCR_TOAST_ID = "aiRequestCounterToasterOcr";
     let qwenOcrToastCount = 0;

@@ -4,9 +4,10 @@ compatibility_date = "2024-12-01"
 workers_dev = true
 preview_urls = true
 
-[[kv_namespaces]]
-binding = "NOTION_OAUTH"
-id = "ca4aadddc2e74c66a06843673aa0a669"
+[[d1_databases]]
+binding = "OAUTH_DB"
+database_name = "gotoolkit-oauth"
+database_id = "045c8946-c438-4846-871d-cd34b131266d"
 
 [observability]
 enabled = false

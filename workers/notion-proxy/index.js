@@ -9,6 +9,7 @@ const NOTION_API_BASE = "https://api.notion.com/v1";
 const NOTION_VERSION = "2022-06-28";
 const SESSION_COOKIE_NAME = "gt_notion_sid";
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
+const OAUTH_PROVIDER = "notion";
 
 function normalizeOrigin(origin) {
   return (origin || "").trim();
@@ -126,8 +127,18 @@ function base64Basic(clientId, clientSecret) {
 }
 
 async function readDeviceData(env, sessionId) {
-  if (!env?.NOTION_OAUTH || !sessionId) return null;
-  const raw = await env.NOTION_OAUTH.get(getDeviceKey(sessionId));
+  if (!env?.OAUTH_DB || !sessionId) return null;
+  const key = getDeviceKey(sessionId);
+  let raw = null;
+  try {
+    const row = await env.OAUTH_DB
+      .prepare("SELECT payload FROM oauth_sessions WHERE provider = ?1 AND session_key = ?2 LIMIT 1")
+      .bind(OAUTH_PROVIDER, key)
+      .first();
+    raw = row?.payload ? String(row.payload) : null;
+  } catch (err) {
+    console.warn("notion oauth d1 read failed", err);
+  }
   if (!raw) return null;
   try {
     return JSON.parse(raw);
@@ -137,13 +148,33 @@ async function readDeviceData(env, sessionId) {
 }
 
 async function writeDeviceData(env, sessionId, value) {
-  if (!env?.NOTION_OAUTH || !sessionId || !value) return;
-  await env.NOTION_OAUTH.put(getDeviceKey(sessionId), JSON.stringify(value));
+  if (!env?.OAUTH_DB || !sessionId || !value) return;
+  const key = getDeviceKey(sessionId);
+  const payload = JSON.stringify(value);
+  try {
+    await env.OAUTH_DB
+      .prepare(`INSERT INTO oauth_sessions (provider, session_key, payload, updated_at, expires_at)
+                VALUES (?1, ?2, ?3, ?4, NULL)
+                ON CONFLICT(provider, session_key)
+                DO UPDATE SET payload = excluded.payload, updated_at = excluded.updated_at, expires_at = excluded.expires_at`)
+      .bind(OAUTH_PROVIDER, key, payload, new Date().toISOString())
+      .run();
+  } catch (err) {
+    console.warn("notion oauth d1 write failed", err);
+  }
 }
 
 async function clearDeviceData(env, sessionId) {
-  if (!env?.NOTION_OAUTH || !sessionId) return;
-  await env.NOTION_OAUTH.delete(getDeviceKey(sessionId));
+  if (!env?.OAUTH_DB || !sessionId) return;
+  const key = getDeviceKey(sessionId);
+  try {
+    await env.OAUTH_DB
+      .prepare("DELETE FROM oauth_sessions WHERE provider = ?1 AND session_key = ?2")
+      .bind(OAUTH_PROVIDER, key)
+      .run();
+  } catch (err) {
+    console.warn("notion oauth d1 delete failed", err);
+  }
 }
 
 function normalizeWorkspaceFromToken(tokenPayload) {

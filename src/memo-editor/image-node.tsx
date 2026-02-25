@@ -10,6 +10,7 @@ import {
   ALargeSmall,
   Pencil,
   ArrowUpLeft,
+  MousePointer2,
   Redo2,
   RotateCw,
   Square,
@@ -43,9 +44,17 @@ const SIZE_PRESETS = {
   L: { line: 6, font: 20 },
 } as const;
 
+const resolveDefaultStrokeColor = () => {
+  const themeAttr = String(document?.documentElement?.getAttribute('data-theme') || '').toLowerCase();
+  const isDarkTheme = themeAttr === 'dark';
+  if (isDarkTheme) return '#FFFFFF';
+  return '#000000';
+};
+
 type SizePreset = keyof typeof SIZE_PRESETS;
 type EditTool = 'none' | 'crop' | 'pencil' | 'line' | 'square' | 'text';
 type Surface = 'inline' | 'fullscreen';
+type DraftSelection = 'text' | 'shape' | null;
 type Point = { x: number; y: number };
 type DragState = {
   tool: Exclude<EditTool, 'none' | 'text'>;
@@ -261,7 +270,6 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
     start: Point;
     end: Point;
   }>(null);
-  const prevToolRef = React.useRef<EditTool>('none');
 
   const [gifPoster, setGifPoster] = React.useState<string | null>(null);
   const [gifPlaying, setGifPlaying] = React.useState(!isGif);
@@ -270,12 +278,13 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
   const [fullscreenOpen, setFullscreenOpen] = React.useState(false);
   const [activeTool, setActiveTool] = React.useState<EditTool>('none');
   const [sizePreset, setSizePreset] = React.useState<SizePreset>('M');
-  const [strokeColor, setStrokeColor] = React.useState('#000000');
+  const [strokeColor, setStrokeColor] = React.useState(resolveDefaultStrokeColor);
   const [history, setHistory] = React.useState<string[]>([src]);
   const [historyIndex, setHistoryIndex] = React.useState(0);
   const [drag, setDrag] = React.useState<DragState | null>(null);
   const [textDraft, setTextDraft] = React.useState<TextDraft | null>(null);
   const [shapeDraft, setShapeDraft] = React.useState<ShapeDraft | null>(null);
+  const [selectedDraft, setSelectedDraft] = React.useState<DraftSelection>(null);
 
   const widthPx = getPixels(node.attrs?.width);
   const heightPx = getPixels(node.attrs?.height);
@@ -295,6 +304,11 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
     historyRef.current = [src];
     historyIndexRef.current = 0;
   }, [src]);
+
+  React.useEffect(() => {
+    if (!fullscreenOpen) return;
+    setStrokeColor(resolveDefaultStrokeColor());
+  }, [fullscreenOpen]);
 
   React.useEffect(() => {
     if (gifPlayTimeoutRef.current !== null) {
@@ -340,19 +354,6 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
       }
     };
   }, [isGif, src]);
-
-  React.useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setFullscreenOpen(false);
-        setActiveTool('none');
-        setDrag(null);
-        setTextDraft(null);
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, []);
 
   React.useEffect(() => {
     const onPointerMove = (event: PointerEvent) => {
@@ -537,6 +538,79 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
     setHistoryIndex(nextIndex);
     setNodeSource(historyRef.current[nextIndex]);
   }, [setNodeSource]);
+
+  const handleDeleteSelectedDraft = React.useCallback(() => {
+    if (selectedDraft === 'text') {
+      setTextDraft(null);
+      setSelectedDraft(null);
+      return;
+    }
+    if (selectedDraft === 'shape') {
+      setShapeDraft(null);
+      setSelectedDraft(null);
+    }
+  }, [selectedDraft]);
+
+  React.useEffect(() => {
+    if (!textDraft && selectedDraft === 'text') setSelectedDraft(null);
+  }, [selectedDraft, textDraft]);
+
+  React.useEffect(() => {
+    if (!shapeDraft && selectedDraft === 'shape') setSelectedDraft(null);
+  }, [selectedDraft, shapeDraft]);
+
+  React.useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const isTextInput = Boolean(
+        target && (
+          target.tagName === 'INPUT'
+          || target.tagName === 'TEXTAREA'
+          || target.isContentEditable
+        )
+      );
+      const key = String(event.key || '').toLowerCase();
+      const withMod = event.metaKey || event.ctrlKey;
+      const inFullscreen = fullscreenOpen;
+
+      if (key === 'escape') {
+        setFullscreenOpen(false);
+        setActiveTool('none');
+        setDrag(null);
+        return;
+      }
+
+      if (!inFullscreen) return;
+
+      if (withMod && key === 'z' && !event.shiftKey) {
+        if (isTextInput) return;
+        event.preventDefault();
+        event.stopPropagation();
+        (event as any).stopImmediatePropagation?.();
+        handleUndo();
+        return;
+      }
+      if ((withMod && key === 'y') || (withMod && event.shiftKey && key === 'z')) {
+        if (isTextInput) return;
+        event.preventDefault();
+        event.stopPropagation();
+        (event as any).stopImmediatePropagation?.();
+        handleRedo();
+        return;
+      }
+      if ((key === 'delete' || key === 'backspace') && !withMod) {
+        if (isTextInput) return;
+        if (selectedDraft) {
+          event.preventDefault();
+          event.stopPropagation();
+          (event as any).stopImmediatePropagation?.();
+          handleDeleteSelectedDraft();
+        }
+      }
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [fullscreenOpen, handleDeleteSelectedDraft, handleRedo, handleUndo, selectedDraft]);
 
   const handleDownload = React.useCallback(async () => {
     try {
@@ -747,16 +821,21 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
   const handleSurfacePointerDown = React.useCallback((surface: Surface, event: React.PointerEvent<HTMLDivElement>) => {
     if (!canEdit) return;
 
-    if (activeTool === 'none') return;
+    if (activeTool === 'none') {
+      setSelectedDraft(null);
+      return;
+    }
 
     event.preventDefault();
     event.stopPropagation();
 
     if (activeTool === 'text') {
       if (textDraft && textDraft.surface === surface) {
-        void commitTextDraft();
+        setSelectedDraft('text');
+        return;
       }
       handleTextPlacement(surface, event);
+      setSelectedDraft('text');
       return;
     }
 
@@ -771,7 +850,7 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
     }, viewport.width, viewport.height);
 
     if ((activeTool === 'line' || activeTool === 'square') && shapeDraft && shapeDraft.surface === surface) {
-      void commitShapeDraft(shapeDraft);
+      // Start a fresh draft without embedding the previous draft into pixels.
       setShapeDraft(null);
     }
 
@@ -825,6 +904,7 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
             canvasWidth: current.width,
             canvasHeight: current.height,
           });
+          setSelectedDraft('shape');
           return;
         }
         void commitDragOperation(current);
@@ -937,24 +1017,8 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
     };
   }, []);
 
-  React.useEffect(() => {
-    const prevTool = prevToolRef.current;
-    prevToolRef.current = activeTool;
-    if (prevTool === activeTool) return;
-    if (prevTool === 'text' && textDraft) {
-      void commitTextDraft();
-    }
-    if ((prevTool === 'line' || prevTool === 'square') && shapeDraft) {
-      void commitShapeDraft(shapeDraft);
-      setShapeDraft(null);
-    }
-  }, [activeTool, commitShapeDraft, commitTextDraft, shapeDraft, textDraft]);
-
   const toggleTool = (tool: EditTool) => {
     setDrag(null);
-    if (tool !== 'line' && tool !== 'square') {
-      setShapeDraft(null);
-    }
     setActiveTool(prev => (prev === tool ? 'none' : tool));
   };
 
@@ -998,6 +1062,9 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
       </div>
 
       <div className="memo-image-edit-group">
+        <button type="button" className={`memo-image-edit-btn ${activeTool === 'none' ? 'is-active' : ''}`} title="Souris / sélection" onClick={() => toggleTool('none')}>
+          <MousePointer2 size={14} />
+        </button>
         <button type="button" className={`memo-image-edit-btn ${activeTool === 'pencil' ? 'is-active' : ''}`} title="Crayon" onClick={() => toggleTool('pencil')}>
           <Pencil size={14} />
         </button>
@@ -1051,6 +1118,18 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
             )}
           </button>
         ))}
+      </div>
+
+      <div className="memo-image-edit-group">
+        <button
+          type="button"
+          className="memo-image-edit-btn"
+          title="Supprimer l'élément sélectionné"
+          onClick={handleDeleteSelectedDraft}
+          disabled={!selectedDraft}
+        >
+          <Trash2 size={14} />
+        </button>
       </div>
 
     </div>
@@ -1109,6 +1188,7 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
           }}
           onPointerDown={(event) => {
             event.stopPropagation();
+            setSelectedDraft('text');
           }}
         >
           <div
@@ -1175,6 +1255,7 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
             onPointerDown={(event) => {
               event.preventDefault();
               event.stopPropagation();
+              setSelectedDraft('shape');
               const surfaceEl = surface === 'fullscreen' ? fullscreenSurfaceRef.current : inlineSurfaceRef.current;
               if (!surfaceEl) return;
               const rect = surfaceEl.getBoundingClientRect();
@@ -1193,6 +1274,7 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
             onPointerDown={(event) => {
               event.preventDefault();
               event.stopPropagation();
+              setSelectedDraft('shape');
               shapeEditRef.current = { surface, mode: 'start', start: shapeDraft.start, end: shapeDraft.end };
             }}
           />
@@ -1202,6 +1284,7 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
             onPointerDown={(event) => {
               event.preventDefault();
               event.stopPropagation();
+              setSelectedDraft('shape');
               shapeEditRef.current = { surface, mode: 'end', start: shapeDraft.start, end: shapeDraft.end };
             }}
           />
@@ -1222,6 +1305,7 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
           onPointerDown={(event) => {
             event.preventDefault();
             event.stopPropagation();
+            setSelectedDraft('shape');
             const surfaceEl = surface === 'fullscreen' ? fullscreenSurfaceRef.current : inlineSurfaceRef.current;
             if (!surfaceEl) return;
             const rect = surfaceEl.getBoundingClientRect();
@@ -1240,6 +1324,7 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
             onPointerDown={(event) => {
               event.preventDefault();
               event.stopPropagation();
+              setSelectedDraft('shape');
               shapeEditRef.current = { surface, mode: 'square-resize', start: shapeDraft.start, end: shapeDraft.end };
             }}
           />
@@ -1257,6 +1342,8 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
               width: `${activeDragRect.width}px`,
               height: `${activeDragRect.height}px`,
               borderColor: strokeColor,
+              borderStyle: drag?.tool === 'crop' ? 'dashed' : 'solid',
+              borderWidth: `${drag?.tool === 'crop' ? 2 : SIZE_PRESETS[sizePreset].line}px`,
             }}
           />
         </>
