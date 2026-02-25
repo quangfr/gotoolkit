@@ -7,7 +7,7 @@ const MICROSOFT_AUTH_URL = "https://login.microsoftonline.com/common/oauth2/v2.0
 const MICROSOFT_TOKEN_URL = "https://login.microsoftonline.com/common/oauth2/v2.0/token";
 const GRAPH_API_BASE = "https://graph.microsoft.com/v1.0";
 const SESSION_COOKIE_NAME = "gt_ms_sid";
-const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
+const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24;
 const OAUTH_PROVIDER = "microsoft";
 const DEFAULT_SCOPE = "offline_access User.Read Mail.ReadWrite";
 

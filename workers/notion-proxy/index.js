@@ -8,7 +8,7 @@ const NOTION_TOKEN_URL = "https://api.notion.com/v1/oauth/token";
 const NOTION_API_BASE = "https://api.notion.com/v1";
 const NOTION_VERSION = "2022-06-28";
 const SESSION_COOKIE_NAME = "gt_notion_sid";
-const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
+const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24;
 const OAUTH_PROVIDER = "notion";
 
 function normalizeOrigin(origin) {

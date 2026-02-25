@@ -14,7 +14,7 @@
             document.documentElement.setAttribute('data-theme', resolvedTheme);
         })();
     </script>
-    <link rel="stylesheet" href="styles/style.css?v=2026.02.26.2">
+    <link rel="stylesheet" href="styles/style.css?v=2026.02.26.3">
     <style>
         .legal-page {
             max-width: 920px;
@@ -124,8 +124,11 @@
                 stockée localement dans votre navigateur (IndexedDB/localStorage) pour le fonctionnement de
                 l’application. Les seuls cookies utilisés sont des cookies techniques strictement nécessaires à la
                 gestion de session OAuth (connexion, vérification d’état de session, rafraîchissement et déconnexion)
-                pour les services Gmail, YouTube, Notion et Outlook. Aucun cookie publicitaire ou de mesure d’audience
-                n’est déposé par GoToolkit.</p>
+                pour les services Gmail, YouTube, Notion et Outlook. Ces cookies ne contiennent qu’un identifiant de
+                session opaque (non directement identifiant). Les données de session OAuth associées (jetons et
+                métadonnées techniques minimales) sont stockées côté serveur dans Cloudflare D1, avec suppression lors
+                de la déconnexion via l’outil. Aucun cookie publicitaire ou de mesure d’audience n’est déposé par
+                GoToolkit.</p>
             <p><strong>5. Destinataires et sous-traitants</strong><br>Des données peuvent être transmises, uniquement
                 lorsque nécessaire à la fonctionnalité déclenchée, à des prestataires techniques (ex. IA, transcription
                 vocale, hébergement cloud, publication vidéo, connecteurs externes). Chaque service tiers applique ses
@@ -183,7 +186,7 @@
                 <tbody>
                     <tr>
                         <td>Hébergement application</td>
-                        <td>Google Firebase (UE)</td>
+                        <td>Google Firebase (UE) - Hosting</td>
                         <td>Infrastructure cloud configurée pour l’application. Les traitements exacts dépendent des
                             fonctionnalités activées et de la configuration projet.
                             <a href="https://firebase.google.com/support/privacy">Lien</a>
@@ -196,16 +199,15 @@
                     </tr>
                     <tr>
                         <td>Données espaces partagés + Capture mobile</td>
-                        <td>Google Firebase (UE)</td>
-                        <td>Contenus de partage chiffrés côté client (E2EE) avant envoi lorsque l’option est activée.
+                        <td>Google Firebase (UE) - Firestore</td>
+                        <td>Contenus de partage chiffrés côté client (E2EE) avant envoi par GoToolkit.
                             <a href="https://firebase.google.com/support/privacy">Lien</a>
                         </td>
                     </tr>
                     <tr>
                         <td>Fichiers multimédia</td>
-                        <td>Cloudflare</td>
-                        <td>Fichiers stockés via R2. Chiffrement côté client (E2EE) des médias lorsque l’option est
-                            activée.
+                        <td>Cloudflare (UE) - R2</td>
+                        <td>Fichiers stockés via R2. Chiffrement côté client (E2EE) des médias par GoToolkit.
                             <a href="https://www.cloudflare.com/fr-fr/trust-hub/privacy-and-data-protection/">Lien</a>
                         </td>
                     </tr>
@@ -219,33 +221,34 @@
                     </tr>
                     <tr>
                         <td>Session OAuth</td>
-                        <td>Cloudflare (UE)</td>
-                        <td>Clés stockés via D1. ID session non identifiable.
+                        <td>Cloudflare (UE) - D1</td>
+                        <td>Données OAuth stockées dans D1, reliées à un
+                            identifiant de session caléatoire par GoToolkit. Suppression à la
+                            déconnexion ou renouvellement de la clé tous les jours.
                             <a href="https://www.cloudflare.com/fr-fr/trust-hub/privacy-and-data-protection/">Lien</a>
                         </td>
                     </tr>
                     <tr>
                         <td>Transcription vocale</td>
                         <td>AssemblyAI (UE)</td>
-                        <td>Traitement de transcription via endpoint européen. Durées de rétention selon la politique
-                            du fournisseur et sa documentation.
+                        <td>Traitement de transcription via endpoint européen. Suppression à la récupération du
+                            transcript par GoToolkit.
                             <a href="https://www.assemblyai.com/docs/faq/how-long-does-aai-retain-data">Lien</a>
                         </td>
                     </tr>
                     <tr>
                         <td>Synthèse vocale</td>
-                        <td>Google TTS</td>
-                        <td>Traitement via API Google Cloud Text-to-Speech. La rétention dépend des paramètres de
-                            journalisation et de la politique Google.
+                        <td>Google Cloud - TTS</td>
+                        <td>Traitement via API Google Cloud Text-to-Speech. Pas de rétention des données.
                             <a href="https://docs.cloud.google.com/text-to-speech/docs/data-logging?hl=fr">Lien</a>
                         </td>
                     </tr>
                     <tr>
                         <td>IA + Reconnaissance d'image (OCR) + Ingestion fichiers volumineux</td>
                         <td>OpenRouter / Nebius Token Factory (UE)</td>
-                        <td>Traitement IA selon le modèle/fournisseur sélectionné. La localisation et la rétention
-                            peuvent varier selon le fournisseur.
-                            <a href="https://docs.tokenfactory.nebius.com/data-lab/data-processing">Lien</a>
+                        <td>Traitement IA via un unique fournisseur. Pas de rétention des données.
+                            <a
+                                href="https://openrouter.ai/docs/guides/features/zdr#openrouters-retention-policy">Lien</a>
                         </td>
                     </tr>
                     <tr>

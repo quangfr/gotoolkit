@@ -895,6 +895,29 @@
         }
     }
 
+    async function deleteAssemblyTranscript(transcriptId, key) {
+        if (!transcriptId) return false;
+        const url = getAssemblyProxyUrl(`transcript/${transcriptId}`);
+        if (!url) return false;
+        try {
+            const response = await fetch(url, {
+                method: "DELETE",
+                headers: key ? { "X-AssemblyAI-Key": key } : {}
+            });
+            if (!response.ok) {
+                const detail = (await response.text().catch(() => "")).replace(/\s+/g, " ").trim();
+                console.warn(
+                    `Assembly transcript delete failed (${response.status})${detail ? `: ${detail}` : ""}`
+                );
+                return false;
+            }
+            return true;
+        } catch (err) {
+            console.warn("Assembly transcript delete failed", err);
+            return false;
+        }
+    }
+
     function buildAssemblyTranscriptPayload(uploadUrl, speakersExpected) {
         const browserLang = (window.navigator?.language || "").toLowerCase();
         const fallbackLanguage = browserLang.startsWith("vi") ? "vi" : "fr";
@@ -2023,6 +2046,7 @@
                 state.transcriptionCountdownTimer = null;
             }
             updateButton();
+            await deleteAssemblyTranscript(transcriptId, assemblyKey);
         } catch (err) {
             console.error("Transcription failed", err);
             hideTranscriptionToast();

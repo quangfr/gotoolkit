@@ -6133,6 +6133,9 @@
                         await onTranscript(entry);
                     }
                     results.push(entry);
+                    if (transcriptApi.deleteAssemblyTranscript) {
+                        await transcriptApi.deleteAssemblyTranscript(transcriptId, key);
+                    }
                 }
             }.bind(this);
             var workers = [];

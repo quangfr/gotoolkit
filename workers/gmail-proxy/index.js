@@ -8,7 +8,7 @@ const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo";
 const GMAIL_API_BASE = "https://gmail.googleapis.com/gmail/v1/users/me";
 const SESSION_COOKIE_NAME = "gt_gmail_sid";
-const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
+const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24;
 const OAUTH_PROVIDER = "gmail";
 const DEFAULT_SCOPE = [
   "https://www.googleapis.com/auth/gmail.compose",

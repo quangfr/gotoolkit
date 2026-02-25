@@ -1199,11 +1199,15 @@
     setCaptureStep(2);
     setCaptureTitle("audio");
     setLoaderActive(true, "audio");
+    let transcriptId = "";
+    let storedTranscript = false;
+    const key = transcriptApi.getAssemblyApiKey?.() || "";
+    const shouldDeleteTranscript =
+      window.GO_TOOLKIT_DELETE_ASSEMBLY_TRANSCRIPT_AFTER_STORE !== false;
     try {
-      const key = transcriptApi.getAssemblyApiKey?.() || "";
       const uploadUrl = await transcriptApi.uploadAudioToAssembly(file, key);
       const payload = transcriptApi.buildAssemblyTranscriptPayload(uploadUrl, 0);
-      const transcriptId = await transcriptApi.requestAssemblyTranscript(payload, key);
+      transcriptId = await transcriptApi.requestAssemblyTranscript(payload, key);
       const result = await transcriptApi.pollAssemblyTranscript(transcriptId, key);
       const transcript =
         transcriptApi.buildTranscriptFromUtterances(result) || result?.text || "";
@@ -1212,6 +1216,7 @@
       }
       setCapturePreviewValue(transcript);
       recordHandoffOperation(activeDocId, transcript, true);
+      storedTranscript = true;
       updateHistoryButtons();
       await sendHandoff(transcript);
       setStatus("Transcription terminée");
@@ -1219,6 +1224,14 @@
       console.error(err);
       setStatus("Transcription échouée");
     } finally {
+      if (
+        shouldDeleteTranscript &&
+        storedTranscript &&
+        transcriptId &&
+        transcriptApi.deleteAssemblyTranscript
+      ) {
+        await transcriptApi.deleteAssemblyTranscript(transcriptId, key);
+      }
       setLoaderActive(false);
     }
   }

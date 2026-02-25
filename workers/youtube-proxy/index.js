@@ -8,7 +8,7 @@ const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const YOUTUBE_UPLOAD_URL = "https://www.googleapis.com/upload/youtube/v3/videos";
 const YOUTUBE_CAPTIONS_UPLOAD_URL = "https://www.googleapis.com/upload/youtube/v3/captions";
 const SESSION_COOKIE_NAME = "gt_youtube_sid";
-const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
+const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24;
 const OAUTH_PROVIDER = "youtube";
 const DEFAULT_SCOPE = [
   "https://www.googleapis.com/auth/youtube.upload",

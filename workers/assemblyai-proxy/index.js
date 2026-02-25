@@ -40,7 +40,7 @@ function computeCorsHeaders(request) {
       : defaultOrigin;
   const headers = {
     "Access-Control-Allow-Origin": corsOrigin,
-    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+    "Access-Control-Allow-Methods": "GET,POST,DELETE,OPTIONS",
     "Access-Control-Allow-Headers": "Authorization,X-AssemblyAI-Key,Content-Type"
   };
   if (!allowLocal) {
@@ -245,13 +245,17 @@ export default {
       return proxyAssemblyRequest(request, corsMeta, env, `/transcript/${segments[1]}`);
     }
 
+    if (request.method === "DELETE" && segments.length === 2 && segments[0] === "transcript") {
+      return proxyAssemblyRequest(request, corsMeta, env, `/transcript/${segments[1]}`);
+    }
+
     if (request.method === "GET" && pathname.endsWith("/token")) {
       return proxyTokenRequest(request, corsMeta, env);
     }
 
     const headers = {
       ...corsMeta.headers,
-      Allow: "GET,POST,OPTIONS"
+      Allow: "GET,POST,DELETE,OPTIONS"
     };
     return new Response("Not found", {
       status: 404,
