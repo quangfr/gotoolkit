@@ -1161,42 +1161,6 @@
         }
 
         async function testOpenAiConnection({ showToasts = true } = {}) {
-            var config = window.GoToolkitIAConfig;
-            var apiKey = config && typeof config.getApiKey === "function" ? (config.getApiKey() || "").trim() : "";
-            setOpenAiStatusLabel("Vérification OpenAI...", { state: "verifying" });
-            if (apiKey) {
-                try {
-                    const startTime = getTimestampMs();
-                    var response = await fetch("https://api.openai.com/v1/models", {
-                        method: "GET",
-                        headers: {
-                            Authorization: "Bearer " + apiKey
-                        }
-                    });
-                    if (!response.ok) {
-                        throw new Error("HTTP " + response.status + " " + (response.statusText || ""));
-                    }
-                    const latencyMs = Math.max(0, getTimestampMs() - startTime);
-                    const rateLimitRemaining = getRateLimitRemaining(response.headers);
-                    if (showToasts) {
-                        showToast("Connexion OpenAI prête");
-                    }
-                    openAiLatencies.private = latencyMs;
-                    openAiRateLimits.private = rateLimitRemaining;
-                    setOpenAiStatusLabel("Accès privé", {
-                        state: "ready",
-                        latencyMs,
-                        rateLimitRemaining
-                    });
-                    return true;
-                } catch (err) {
-                    console.warn("OpenAI test failed", err);
-                    var message = (err && err.message) || String(err) || "erreur inconnue";
-                    if (showToasts) {
-                        showToast("Échec de la connexion OpenAI (" + message + ")", true);
-                    }
-                }
-            }
             return await testOpenAiProxyConnection({ showToasts });
         }
 
@@ -1279,7 +1243,7 @@
             }
             updateStatusIcon(assemblyAiStatusEl, "verifying");
             try {
-                var response = await fetch("https://api.assemblyai.com/v2/transcript", {
+                var response = await fetch("https://api.eu.assemblyai.com/v2/transcript", {
                     method: "GET",
                     headers: {
                         Authorization: apiKey
@@ -2522,37 +2486,6 @@
         }
         checkIaConnection(true);
 
-        // Indélébile launcher: open external tool with a one-time confirmation
-        (function () {
-            const indelebileLauncher = document.getElementById("indelebileLauncher");
-            const STORAGE_KEY = "indelebile_confirmed_v1";
-            const TARGET_URL = "https://teach.tldraw.com/";
-            if (!indelebileLauncher) return;
-            indelebileLauncher.addEventListener("click", function (e) {
-                e.preventDefault();
-                try {
-                    const already = localStorage.getItem(STORAGE_KEY) === "1";
-                    if (already) {
-                        window.open(TARGET_URL, "_blank", "noopener");
-                        return;
-                    }
-                }
-                catch (err) {
-                    // ignore storage errors and proceed to confirmation
-                }
-
-                const message = "Tu vas ouvrir un outil externe (https://teach.tldraw.com/).\nCe service est géré par un tiers et est soumis à des conditions d'utilisation différentes. Continuer ?";
-                const ok = window.confirm(message);
-                if (!ok) return;
-                try {
-                    localStorage.setItem(STORAGE_KEY, "1");
-                }
-                catch (err) {
-                    // ignore
-                }
-                window.open(TARGET_URL, "_blank", "noopener");
-            });
-        })();
     </script>
 
     <script>

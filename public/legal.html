@@ -14,7 +14,7 @@
             document.documentElement.setAttribute('data-theme', resolvedTheme);
         })();
     </script>
-    <link rel="stylesheet" href="styles/style.css?v=2026.02.25.15">
+    <link rel="stylesheet" href="styles/style.css?v=2026.02.25.16">
     <style>
         .legal-page {
             max-width: 920px;
@@ -160,10 +160,10 @@
                 des pratiques reconnues de protection des données en contexte professionnel. Toutefois, la conformité
                 réglementaire globale dépend aussi de votre usage, de vos bases légales, de votre gouvernance interne
                 et des services tiers éventuellement connectés.</p>
-            <p><strong>13. Services tiers, politique de données et chiffrement</strong><br>Des échanges de données sont
-                réalisés avec des
-                fournisseurs tiers
-                en UE et avec une politique de rétention limitée ou si ce n'est pas le cas, avec un chiffrement de
+            <p><strong>13. Services tiers, politique de données et chiffrement</strong><br>Les échanges de données
+                personnelles sont
+                réalisés avec des fournisseurs tiers en UE avec une politique de rétention limitée. L'hébergement des
+                données personnelles se fait avec un chiffrement de
                 bout en bout (E2EE). Les modalités par service sont résumées ci-dessous :</p>
             <table class="legal-table">
                 <thead>
@@ -188,36 +188,36 @@
                     </tr>
                     <tr>
                         <td>Données espaces partagés + Capture mobile</td>
-                        <td>Google Firebase</td>
-                        <td>UE. Chiffré de bout en bout (E2EE).
+                        <td>Google Firebase (UE)</td>
+                        <td>Chiffré de bout en bout (E2EE).
                             <a href="https://firebase.google.com/support/privacy">Lien</a>
                         </td>
                     </tr>
                     <tr>
                         <td>Fichiers multimédia</td>
-                        <td>Cloudflare R2</td>
-                        <td>Monde. Chiffré de bout en bout (E2EE).
+                        <td>Cloudflare R2 (UE)</td>
+                        <td>Chiffré de bout en bout (E2EE).
                             <a href="https://www.cloudflare.com/fr-fr/trust-hub/privacy-and-data-protection/">Lien</a>
                         </td>
                     </tr>
                     <tr>
                         <td>Appels API</td>
                         <td>Cloudflare Workers</td>
-                        <td>Monde. Aucune conservation de données.
+                        <td>Aucune conservation de données.
                             <a href="https://www.cloudflare.com/fr-fr/trust-hub/privacy-and-data-protection/">Lien</a>
                         </td>
                     </tr>
                     <tr>
                         <td>Session OAuth</td>
                         <td>Cloudflare KV</td>
-                        <td>Monde. ID session non identifiable.
+                        <td>ID session non identifiable.
                             <a href="https://www.cloudflare.com/fr-fr/trust-hub/privacy-and-data-protection/">Lien</a>
                         </td>
                     </tr>
                     <tr>
                         <td>Transcription vocale</td>
-                        <td>AssemblyAI</td>
-                        <td>UE. Données supprimées après 3 jours au maximum.
+                        <td>AssemblyAI (UE)</td>
+                        <td>Données supprimées après 3 jours au maximum.
                             <a href="https://www.assemblyai.com/docs/faq/how-long-does-aai-retain-data">Lien</a>
                         </td>
                     </tr>
@@ -230,16 +230,16 @@
                     </tr>
                     <tr>
                         <td>IA + Reconnaissance d'image (OCR) + Ingestion fichiers volumineux</td>
-                        <td>Openrouter / Nebius Token Factory</td>
-                        <td>UE. Aucune conservation de données.
+                        <td>Openrouter / Nebius Token Factory (NL)</td>
+                        <td>Aucune conservation de données.
                             <a href="https://docs.tokenfactory.nebius.com/data-lab/data-processing">Lien</a>
                         </td>
                     </tr>
                     <tr>
                         <td>Ressources front (bibliothèques JS/CSS, polices)</td>
                         <td>jsDelivr / Google Fonts</td>
-                        <td>Chargées par le navigateur. Peuvent entraîner la transmission de données techniques
-                            (ex. IP, User-Agent, métadonnées de requête) aux fournisseurs concernés.
+                        <td>Chargement via des services tiers, avec partage de données techniques (IP, User-Agent,
+                            requêtes).
                             <a href="https://www.jsdelivr.com/terms/privacy-policy-jsdelivr-net">Lien</a> /
                             <a href="https://policies.google.com/privacy">Lien</a>
                         </td>
@@ -247,8 +247,8 @@
                     <tr>
                         <td>Vidéos externes intégrées (iframe)</td>
                         <td>YouTube / Loom</td>
-                        <td>L’affichage de contenus externes peut déclencher des appels vers ces plateformes et, selon
-                            leurs réglages, l’usage de cookies/traceurs tiers sous leur responsabilité.
+                        <td>L’affichage peut envoyer des données à ces plateformes et activer des cookies/traceurs
+                            tiers.
                             <a href="https://policies.google.com/privacy">Lien</a> /
                             <a href="https://www.loom.com/privacy-policy">Lien</a>
                         </td>
