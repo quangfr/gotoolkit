@@ -685,21 +685,6 @@
             if (err?.name === "AbortError") {
                 throw err;
             }
-            if (backend?.type === "openai" && global.GoToolkitAIBackend) {
-                const fallback = await global.GoToolkitAIBackend.getBackend(endpointType, { forceProxy: true });
-                const fallbackPayload = { ...initial };
-                if (!fallbackPayload.model && fallback.model) {
-                    fallbackPayload.model = fallback.model;
-                }
-                return chatCompletion({
-                    endpoint: fallback.endpoint,
-                    apiKey: fallback.apiKey,
-                    payload: fallbackPayload,
-                    stopCondition,
-                    signal,
-                    onChunk
-                });
-            }
             if (backend?.type === "openrouter" && global.GoToolkitAIBackend) {
                 const fallback = await global.GoToolkitAIBackend.getBackend(endpointType, { forceOpenRouterProxy: true });
                 if (fallback) {
@@ -708,17 +693,10 @@
                 }
             }
             if (backend?.type === "openrouter-proxy" && global.GoToolkitAIBackend) {
-                const fallback = await global.GoToolkitAIBackend.getBackend(endpointType, { forceProxy: true });
+                const fallback = await global.GoToolkitAIBackend.getBackend(endpointType, { forceOpenRouterProxy: true });
                 if (fallback) {
                     const fallbackPayload = { ...initial };
-                    return chatCompletion({
-                        endpoint: fallback.endpoint,
-                        apiKey: fallback.apiKey,
-                        payload: fallbackPayload,
-                        stopCondition,
-                        signal,
-                        onChunk
-                    });
+                    return executeOpenRouter(fallback, fallbackPayload, stopCondition, signal, onChunk);
                 }
             }
             throw err;
@@ -732,16 +710,13 @@
         recordAIRequest(payload);
 
         if (!backendProvider || typeof backendProvider.getBackend !== "function") {
-            const fallbackEndpoint =
-                global.GoToolkitIAConfig?.PROXY_ENDPOINTS?.responses || "https://openai.gotoolkit.workers.dev/v1/responses";
-            const result = await chatCompletion({
-                endpoint: fallbackEndpoint,
+            const fallbackBackend = {
+                type: "openrouter-proxy",
+                endpoint: global.GoToolkitIAConfig?.OPENROUTER_PROXY_ENDPOINT || "https://openrouter.gotoolkit.workers.dev/api/v1/chat/completions",
                 apiKey: "",
-                payload: payload || {},
-                stopCondition,
-                signal,
-                onChunk
-            });
+                model: global.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_MODEL || "openai/gpt-oss-120b"
+            };
+            const result = await executeOpenRouter(fallbackBackend, payload || {}, stopCondition, signal, onChunk);
             recordAIResponse(result);
             return result;
         }

@@ -9,11 +9,11 @@
             </header>
             <form class="feedback-form" onsubmit="return false;" style="flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; padding-right: 8px; margin-right: -8px;">
                 <div class="settings-tabs tabs">
-                    <button type="button" class="tab-btn active" data-tab="servicesTab"><i data-lucide="cpu" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Services IA</button>
                     <button type="button" class="tab-btn" data-tab="paramsTab"><i data-lucide="palette" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Personnalisation</button>
                     <button type="button" class="tab-btn" data-tab="categoryTab"><i data-lucide="tag" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Catégorie</button>
                     <button type="button" class="tab-btn" data-tab="integrationsTab"><i data-lucide="plug-zap" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Intégrations</button>
                     <button type="button" class="tab-btn" data-tab="promptTab"><i data-lucide="square-terminal" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Instructions</button>
+                    <button type="button" class="tab-btn active" data-tab="servicesTab"><i data-lucide="cpu" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Services IA</button>
                 </div>
                 <div class="settings-tab-panels-wrapper" style="flex: 1; overflow-y: auto; padding-right: 8px; margin-right: -8px;">
                     <div class="settings-tab-panel" data-panel="servicesTab">
@@ -31,52 +31,7 @@
                                 <input id="assemblyAiKeyInput" type="text" placeholder="sk-..." />
                             </label>
                         </div>
-                        <div class="field-row">
-                            <label>
-                                <span class="label-title">Moteur IA</span>
-                                <select id="aiBackendSelect">
-                                    <option value="openrouter" selected>OpenRouter (recommandé)</option>
-                                    <option value="openai">OpenAI</option>
-                                </select>
-                            </label>
-                        </div>
-                        <div id="openaiSettings">
-                            <div class="field-row">
-                                <label style="width:100%">
-                                    <div style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem;">
-                                        <div>
-                                            <a href="https://platform.openai.com/settings/organization/api-keys" class="label-title dashed-link" target="_blank" rel="noopener noreferrer">Clé OpenAI</a>
-                                            <span class="ia-status" id="openaiStatus" aria-hidden="true"></span>
-                                        </div>
-                                        <div style="display:flex; gap:0.35rem;">
-                                            <button id="openaiVerifyBtn" type="button" class="btn-secondary">Vérifier</button>
-                                        </div>
-                                    </div>
-                                    <input id="iaApiKeyInput" type="text" placeholder="sk-..." />
-                                </label>
-                            </div>
-                            <div class="field-row">
-                                <label>
-                                    <span class="label-title">Modèle OpenAI</span>
-                                    <select id="openaiModelSelect">
-                                        <option value="gpt-5-nano">gpt-5-nano</option>
-                                        <option value="gpt-5-mini">gpt-5-mini</option>
-                                    </select>
-                                </label>
-                            </div>
-                            <div class="field-row">
-                                <label>
-                                    <span class="label-title">Effort de raisonnement OpenAI</span>
-                                    <select id="reasoningEffortSelect">
-                                        <option value="minimal">Minimal</option>
-                                        <option value="low">Faible</option>
-                                        <option value="medium">Moyen</option>
-                                        <option value="high">Élevé</option>
-                                    </select>
-                                </label>
-                            </div>
-                        </div>
-                        <div id="openrouterSettings" style="display:none;">
+                        <div id="openrouterSettings">
                             <div class="field-row">
                                 <label style="width:100%">
                                     <div style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem;">
@@ -94,7 +49,7 @@
                             </div>
                             <div class="field-row">
                                 <label style="width:100%">
-                                    <span class="label-title">Modèle IA</span>
+                                    <span class="label-title">Modèle OpenRouter</span>
                                     <input id="openrouterModelInput" type="text" placeholder="@preset/gotoolkit ou openai/gpt-oss-120b" />
                                 </label>
                             </div>
@@ -643,9 +598,6 @@
 
     function persistModalAiSettings() {
         const cfg = global.GoToolkitIAConfig;
-        const apiKeyInput = doc.getElementById("iaApiKeyInput");
-        const openaiModelSelect = doc.getElementById("openaiModelSelect");
-        const aiBackendSelect = doc.getElementById("aiBackendSelect");
         const openrouterApiKeyInput = doc.getElementById("openrouterApiKeyInput");
         const openrouterDataCollectionSelect = doc.getElementById("openrouterDataCollectionSelect");
         const openrouterModelInput = doc.getElementById("openrouterModelInput");
@@ -653,9 +605,6 @@
         const openrouterEmbeddingsModelInput = doc.getElementById("openrouterEmbeddingsModelInput");
         const openrouterEffortSelect = doc.getElementById("openrouterEffortSelect");
 
-        const openAiKey = (apiKeyInput?.value || "").trim();
-        const openAiModel = (openaiModelSelect?.value || "").trim();
-        const backend = (aiBackendSelect?.value || "openrouter").trim();
         const openRouterKey = (openrouterApiKeyInput?.value || "").trim();
         const openRouterData = (openrouterDataCollectionSelect?.value || cfg?.DEFAULTS?.OPENROUTER_DATA_COLLECTION || "deny").trim();
         const openRouterModel = (openrouterModelInput?.value || "").trim() || (cfg?.DEFAULTS?.OPENROUTER_MODEL || "");
@@ -664,9 +613,7 @@
         const openRouterEffort = (openrouterEffortSelect?.value || cfg?.DEFAULTS?.OPENROUTER_REASONING_EFFORT || "low").trim().toLowerCase();
 
         try {
-            if (cfg?.setApiKey) cfg.setApiKey(openAiKey);
-            if (cfg?.setOpenAiModel && openAiModel) cfg.setOpenAiModel(openAiModel);
-            if (cfg?.setBackend) cfg.setBackend(backend);
+            if (cfg?.setBackend) cfg.setBackend("openrouter");
             if (cfg?.setOpenRouterApiKey) cfg.setOpenRouterApiKey(openRouterKey);
             if (cfg?.setOpenRouterDataCollection) cfg.setOpenRouterDataCollection(openRouterData);
             if (cfg?.setOpenRouterModel) cfg.setOpenRouterModel(openRouterModel);
@@ -675,55 +622,8 @@
             if (cfg?.setOpenRouterReasoningEffort) cfg.setOpenRouterReasoningEffort(openRouterEffort);
         } catch (err) { /* noop */ }
         try {
-            localStorage.setItem("go-toolkit-ai-backend", backend || "openrouter");
+            localStorage.setItem("go-toolkit-ai-backend", "openrouter");
         } catch (err) { /* noop */ }
-    }
-
-    async function testOpenAiConnection() {
-        persistModalAiSettings();
-        const statusEl = doc.getElementById("openaiStatus");
-        const cfg = global.GoToolkitIAConfig;
-        const endpoint = (cfg?.PROXY_ENDPOINTS?.responses) || "https://openai.gotoolkit.workers.dev/v1/responses";
-        const model = (cfg?.getOpenAiModel?.() || cfg?.DEFAULTS?.OPENAI_MODEL || "gpt-5-nano");
-        const apiKey = (cfg?.getApiKey?.() || "").trim();
-        setStatus(statusEl, { state: "verifying", label: "Vérification..." });
-        if (apiKey) {
-            try {
-                const start = getTimestampMs();
-                const response = await fetch("https://api.openai.com/v1/models", {
-                    method: "GET",
-                    headers: { Authorization: "Bearer " + apiKey }
-                });
-                if (!response.ok) throw new Error("HTTP " + response.status);
-                const latency = Math.max(0, getTimestampMs() - start);
-                const remain = getRateLimitRemaining(response.headers);
-                let label = appendLatencyToLabel("Accès privé", latency);
-                if (remain) label += ` • Disponible : ${remain}`;
-                setStatus(statusEl, { state: "ready", label });
-                return true;
-            } catch (err) {
-                // fallback to proxy below
-            }
-        }
-        try {
-            const start = getTimestampMs();
-            const response = await fetch(endpoint, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    model,
-                    input: [{ role: "user", content: [{ type: "input_text", text: "Vérification" }] }],
-                    stream: false
-                })
-            });
-            if (!response.ok) throw new Error("HTTP " + response.status);
-            const latency = Math.max(0, getTimestampMs() - start);
-            setStatus(statusEl, { state: "ready", label: appendLatencyToLabel("Accès partagé", latency) });
-            return true;
-        } catch (err) {
-            setStatus(statusEl, { state: "warning", label: "Clé invalide" });
-            return false;
-        }
     }
 
     async function testAssemblyAiConnection() {
@@ -819,23 +719,8 @@
     }
 
     function bindVerifyButtons() {
-        const openaiVerifyBtn = doc.getElementById("openaiVerifyBtn");
         const assemblyAiVerifyBtn = doc.getElementById("assemblyAiVerifyBtn");
         const openrouterVerifyBtn = doc.getElementById("openrouterVerifyBtn");
-
-        if (openaiVerifyBtn && openaiVerifyBtn.dataset.verifyBound !== "1") {
-            openaiVerifyBtn.addEventListener("click", async function () {
-                try {
-                    const handlers = global.GoToolkitSettingsModalHandlers || {};
-                    if (typeof handlers.onVerifyOpenAi === "function") {
-                        await handlers.onVerifyOpenAi();
-                    } else {
-                        await testOpenAiConnection();
-                    }
-                } catch (err) { /* noop */ }
-            });
-            openaiVerifyBtn.dataset.verifyBound = "1";
-        }
 
         if (assemblyAiVerifyBtn && assemblyAiVerifyBtn.dataset.verifyBound !== "1") {
             assemblyAiVerifyBtn.addEventListener("click", async function () {
@@ -864,41 +749,6 @@
             });
             openrouterVerifyBtn.dataset.verifyBound = "1";
         }
-    }
-
-    function syncBackendSettingsVisibility() {
-        const aiBackendSelect = doc.getElementById("aiBackendSelect");
-        const openaiSettingsEl = doc.getElementById("openaiSettings");
-        const openrouterSettingsEl = doc.getElementById("openrouterSettings");
-        if (!aiBackendSelect) return;
-        const value = (aiBackendSelect.value || "openrouter").toLowerCase();
-        if (openaiSettingsEl) openaiSettingsEl.style.display = value === "openai" ? "" : "none";
-        if (openrouterSettingsEl) openrouterSettingsEl.style.display = value === "openrouter" ? "" : "none";
-        if (value === "openrouter") {
-            populateOpenrouterModelInput();
-            populateOpenrouterOcrModelInput();
-            populateOpenrouterEmbeddingsModelInput();
-            populateOpenrouterEffortSelect();
-        }
-    }
-
-    function bindBackendSelector() {
-        const aiBackendSelect = doc.getElementById("aiBackendSelect");
-        if (!aiBackendSelect || aiBackendSelect.dataset.backendBound === "1") return;
-        try {
-            const stored = localStorage.getItem("go-toolkit-ai-backend");
-            if (stored && !aiBackendSelect.value) {
-                aiBackendSelect.value = stored;
-            }
-        } catch (err) { /* noop */ }
-        aiBackendSelect.addEventListener("change", function () {
-            try {
-                localStorage.setItem("go-toolkit-ai-backend", aiBackendSelect.value || "openrouter");
-            } catch (err) { /* noop */ }
-            syncBackendSettingsVisibility();
-        });
-        aiBackendSelect.dataset.backendBound = "1";
-        syncBackendSettingsVisibility();
     }
 
     function getSettingsTabNodes(modal) {
@@ -1189,8 +1039,6 @@
         const api = {
             open: function () {
                 if (onOpen) onOpen();
-                bindBackendSelector();
-                syncBackendSettingsVisibility();
                 prepareCategorySettingsTab(modal).catch(() => { /* noop */ });
                 activateSettingsTab(modal, defaultTab);
                 if (typeof requestAnimationFrame === "function") {
@@ -1269,7 +1117,6 @@
         },
         formatLatencyMs,
         appendLatencyToLabel,
-        testOpenAiConnection,
         testAssemblyAiConnection,
         testOpenRouterConnection
     };
@@ -1302,8 +1149,10 @@
         bindSettingsTabs(modal);
         bindCategoryResetButton(modal);
         activateSettingsTab(modal, "servicesTab");
-        bindBackendSelector();
-        syncBackendSettingsVisibility();
+        populateOpenrouterModelInput();
+        populateOpenrouterOcrModelInput();
+        populateOpenrouterEmbeddingsModelInput();
+        populateOpenrouterEffortSelect();
         bindRepairButton();
         bindVerifyButtons();
         prepareCategorySettingsTab(modal).catch(() => { /* noop */ });

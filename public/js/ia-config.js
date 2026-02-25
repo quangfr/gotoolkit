@@ -1,7 +1,5 @@
 ; (function (global) {
     var STORAGE_KEYS = {
-        API_KEY: "go-toolkit-api-key",
-        OPENAI_MODEL: "go-toolkit-openai-model",
         CONTEXT_WINDOW: "go-toolkit-context-window"
     };
     var STORAGE_KEYS_BACKEND = "go-toolkit-ai-backend";
@@ -14,7 +12,6 @@
     };
 
     var DEFAULTS = {
-        OPENAI_MODEL: "gpt-5-nano",
         CONTEXT_WINDOW: "0",
         OPENROUTER_MODEL: "openai/gpt-oss-120b",
         OPENROUTER_OCR_MODEL: "qwen/qwen2.5-vl-72b-instruct",
@@ -22,20 +19,9 @@
         OPENROUTER_REASONING_EFFORT: "low"
     };
 
-    var OPENAI_MODELS = ["gpt-5-nano", "gpt-5-mini"];
     var OPENROUTER_MODELS = [
         "openai/gpt-oss-120b",
     ];
-
-    var OPENAI_ENDPOINTS = {
-        responses: "https://api.openai.com/v1/responses",
-        chat: "https://api.openai.com/v1/chat/completions"
-    };
-
-    var PROXY_ENDPOINTS = {
-        responses: "https://openai.gotoolkit.workers.dev/v1/responses",
-        chat: "https://openai.gotoolkit.workers.dev/v1/chat/completions"
-    };
 
     var OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
     var OPENROUTER_PROXY_ENDPOINT = "https://openrouter.gotoolkit.workers.dev/api/v1/chat/completions";
@@ -70,35 +56,22 @@
         }
     }
 
-    function normalizeUrl(value) {
-        var trimmed = (value || "").trim();
-        if (!trimmed) {
-            return "";
-        }
-        if (!/^https?:\/\//i.test(trimmed)) {
-            trimmed = "http://" + trimmed;
-        }
-        return trimmed.replace(/\/+$/, "");
-    }
-
     var GoToolkitIAConfig = {
-        OPENAI_MODELS: OPENAI_MODELS,
         getApiKey: function () {
-            return (safeStorageRead(STORAGE_KEYS.API_KEY) || "").trim();
+            // OpenAI keys are no longer supported.
+            return "";
         },
         setApiKey: function (value) {
-            safeStorageWrite(STORAGE_KEYS.API_KEY, (value || "").trim());
+            // Remove legacy key if still present.
+            safeStorageWrite("go-toolkit-api-key", "");
         },
         getOpenAiModel: function () {
-            var model = safeStorageRead(STORAGE_KEYS.OPENAI_MODEL);
-            return model || DEFAULTS.OPENAI_MODEL;
+            // OpenAI model selection is no longer supported.
+            return "";
         },
         setOpenAiModel: function (value) {
-            var normalized = (value || "").trim();
-            if (!normalized) {
-                normalized = DEFAULTS.OPENAI_MODEL;
-            }
-            safeStorageWrite(STORAGE_KEYS.OPENAI_MODEL, normalized);
+            // Remove legacy model if still present.
+            safeStorageWrite("go-toolkit-openai-model", "");
         },
         getContextWindow: function () {
             var val = (safeStorageRead(STORAGE_KEYS.CONTEXT_WINDOW) || "").trim();
@@ -181,16 +154,13 @@
             return Boolean(GoToolkitIAConfig.getOpenRouterApiKey() || OPENROUTER_PROXY_ENDPOINT);
         },
         getBackend: function () {
-            return safeStorageRead(STORAGE_KEYS_BACKEND) || "openrouter";
+            return "openrouter";
         },
         setBackend: function (value) {
-            var v = (value || "").trim().toLowerCase();
-            if (!v) v = "openrouter";
-            safeStorageWrite(STORAGE_KEYS_BACKEND, v);
+            // Keep storage normalized to openrouter to clear legacy values.
+            safeStorageWrite(STORAGE_KEYS_BACKEND, "openrouter");
         },
         DEFAULTS: DEFAULTS,
-        OPENAI_ENDPOINTS: OPENAI_ENDPOINTS,
-        PROXY_ENDPOINTS: PROXY_ENDPOINTS,
         OPENROUTER_MODELS: OPENROUTER_MODELS,
         OPENROUTER_ENDPOINT: OPENROUTER_ENDPOINT,
         OPENROUTER_PROXY_ENDPOINT: OPENROUTER_PROXY_ENDPOINT,
@@ -200,76 +170,24 @@
 
     var GoToolkitAIBackend = (function () {
         async function getBackend(endpointType, options) {
-            var type = endpointType === "chat" ? "chat" : "responses";
             options = options || {};
-            var forceProxy = options.forceProxy === true;
             var forceOpenRouterProxy = options.forceOpenRouterProxy === true || Boolean(global?.GoToolkitForceOpenRouterProxy);
-            // respect explicit force to use the public proxy
-            if (forceProxy) {
-                return {
-                    type: "proxy",
-                    endpoint: PROXY_ENDPOINTS[type],
-                    apiKey: "",
-                    model: GoToolkitIAConfig.getOpenAiModel()
-                };
-            }
-            // Check selected backend preference (global flag or storage)
-            var selected = (global.GoToolkitSelectedAIBackend && String(global.GoToolkitSelectedAIBackend)) || safeStorageRead(STORAGE_KEYS_BACKEND) || "openrouter";
-
-            if (selected === "openai") {
-                var apiKey = GoToolkitIAConfig.getApiKey();
-                if (apiKey) {
-                    return {
-                        type: "openai",
-                        endpoint: OPENAI_ENDPOINTS[type],
-                        apiKey: apiKey,
-                        model: GoToolkitIAConfig.getOpenAiModel()
-                    };
-                }
-                // no key -> fall back to proxy when OpenAI selected
-                return {
-                    type: "proxy",
-                    endpoint: PROXY_ENDPOINTS[type],
-                    apiKey: "",
-                    model: GoToolkitIAConfig.getOpenAiModel()
-                };
-            }
-
-            if (selected === "openrouter") {
-                var openrouterKey = GoToolkitIAConfig.getOpenRouterApiKey();
-                var openrouterModel = GoToolkitIAConfig.getOpenRouterModel();
-                var useProxy = forceOpenRouterProxy || !openrouterKey;
-                var targetEndpoint = useProxy ? OPENROUTER_PROXY_ENDPOINT : OPENROUTER_ENDPOINT;
-                var backendType = useProxy ? "openrouter-proxy" : "openrouter";
-                var apiKeyValue = useProxy ? "" : openrouterKey;
-                var openrouterHasKey = !useProxy;
-                return {
-                    type: backendType,
-                    endpoint: targetEndpoint,
-                    apiKey: apiKeyValue,
-                    model: openrouterModel,
-                    dataCollection: "deny",
-                    zdr: true,
-                    edit: openrouterHasKey,
-                    hasOpenRouterKey: openrouterHasKey
-                };
-            }
-
-            // default behavior: prefer API key, then proxy
-            var apiKey = GoToolkitIAConfig.getApiKey();
-            if (apiKey) {
-                return {
-                    type: "openai",
-                    endpoint: OPENAI_ENDPOINTS[type],
-                    apiKey: apiKey,
-                    model: GoToolkitIAConfig.getOpenAiModel()
-                };
-            }
+            var openrouterKey = GoToolkitIAConfig.getOpenRouterApiKey();
+            var openrouterModel = GoToolkitIAConfig.getOpenRouterModel();
+            var useProxy = forceOpenRouterProxy || !openrouterKey;
+            var targetEndpoint = useProxy ? OPENROUTER_PROXY_ENDPOINT : OPENROUTER_ENDPOINT;
+            var backendType = useProxy ? "openrouter-proxy" : "openrouter";
+            var apiKeyValue = useProxy ? "" : openrouterKey;
+            var openrouterHasKey = !useProxy;
             return {
-                type: "proxy",
-                endpoint: PROXY_ENDPOINTS[type],
-                apiKey: "",
-                model: GoToolkitIAConfig.getOpenAiModel()
+                type: backendType,
+                endpoint: targetEndpoint,
+                apiKey: apiKeyValue,
+                model: openrouterModel,
+                dataCollection: "deny",
+                zdr: true,
+                edit: openrouterHasKey,
+                hasOpenRouterKey: openrouterHasKey
             };
         }
 

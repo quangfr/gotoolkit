@@ -236,6 +236,9 @@ const EmbedNodeView = ({ node, editor, getPos, updateAttributes }: any) => {
   const canEdit = Boolean(editor?.isEditable);
   const src = String(node?.attrs?.src || '');
   const title = String(node?.attrs?.title || '');
+  const provider = String(node?.attrs?.provider || '').trim().toLowerCase();
+  const providerLabel = provider === 'youtube' ? 'Youtube' : provider === 'loom' ? 'Loom' : 'Video';
+  const watchLabel = `Regarder (${providerLabel})`;
   const frameRef = React.useRef<HTMLDivElement | null>(null);
   const resizeStateRef = React.useRef<null | { startX: number; startY: number; width: number; height: number }>(null);
   const widthPx = parseSizePx(node?.attrs?.width);
@@ -338,6 +341,13 @@ const EmbedNodeView = ({ node, editor, getPos, updateAttributes }: any) => {
           referrerPolicy="strict-origin-when-cross-origin"
           allowFullScreen
         />
+        <div className="memo-video-embed-overlay" aria-hidden="true">
+          <span className="memo-video-embed-overlay__icon">
+            <i data-lucide="play" style={{ display: 'none' }} aria-hidden="true"></i>
+            <Play size={28} />
+          </span>
+          <span className="memo-video-embed-overlay__label">{watchLabel}</span>
+        </div>
         {canEdit && (
           <div
             className="memo-video-resize-handle"

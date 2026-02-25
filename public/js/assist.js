@@ -5525,7 +5525,11 @@
         header.className = "chat-header";
         var title = document.createElement("span");
         title.className = "chat-header-title";
-        title.innerHTML = '<i data-lucide="bot" style="width: 20px; height: 20px; vertical-align: middle; margin-right: 6px;"></i>';
+        title.innerHTML = ''
+            + '<span class="chat-header-title-icon" aria-hidden="true">'
+            + '<i data-lucide="bot"></i>'
+            + '</span>'
+            + '<span class="chat-header-title-brand">Assistant</span>';
         header.appendChild(title);
 
         var headerActions = document.createElement("div");

@@ -53917,42 +53917,18 @@ ${promptInput.trim()}`
     const isTextTool = activeTool === "text";
     const renderEditToolbar = (surface, permanent) => /* @__PURE__ */ jsxs("div", { className: `memo-image-edit-toolbar ${permanent ? "is-permanent" : ""}`, children: [
       /* @__PURE__ */ jsxs("div", { className: "memo-image-edit-group", children: [
-        /* @__PURE__ */ jsxs("button", { type: "button", className: "memo-image-edit-btn", title: "Annuler", onClick: handleUndo, disabled: !canUndo, children: [
-          /* @__PURE__ */ jsx("i", { "data-lucide": "undo", style: { display: "none" }, "aria-hidden": "true" }),
-          /* @__PURE__ */ jsx(Undo2, { size: 14 })
-        ] }),
-        /* @__PURE__ */ jsxs("button", { type: "button", className: "memo-image-edit-btn", title: "R\xE9tablir", onClick: handleRedo, disabled: !canRedo, children: [
-          /* @__PURE__ */ jsx("i", { "data-lucide": "redo", style: { display: "none" }, "aria-hidden": "true" }),
-          /* @__PURE__ */ jsx(Redo2, { size: 14 })
-        ] })
+        /* @__PURE__ */ jsx("button", { type: "button", className: "memo-image-edit-btn", title: "Annuler", onClick: handleUndo, disabled: !canUndo, children: /* @__PURE__ */ jsx(Undo2, { size: 14 }) }),
+        /* @__PURE__ */ jsx("button", { type: "button", className: "memo-image-edit-btn", title: "R\xE9tablir", onClick: handleRedo, disabled: !canRedo, children: /* @__PURE__ */ jsx(Redo2, { size: 14 }) })
       ] }),
       /* @__PURE__ */ jsxs("div", { className: "memo-image-edit-group", children: [
-        /* @__PURE__ */ jsxs("button", { type: "button", className: `memo-image-edit-btn ${activeTool === "crop" ? "is-active" : ""}`, title: "Rogner", onClick: () => toggleTool("crop"), children: [
-          /* @__PURE__ */ jsx("i", { "data-lucide": "crop", style: { display: "none" }, "aria-hidden": "true" }),
-          /* @__PURE__ */ jsx(Crop, { size: 14 })
-        ] }),
-        /* @__PURE__ */ jsxs("button", { type: "button", className: "memo-image-edit-btn", title: "Rotation droite 90\xB0", onClick: () => void runRotate(), children: [
-          /* @__PURE__ */ jsx("i", { "data-lucide": "rotate-cw", style: { display: "none" }, "aria-hidden": "true" }),
-          /* @__PURE__ */ jsx(RotateCw, { size: 14 })
-        ] })
+        /* @__PURE__ */ jsx("button", { type: "button", className: `memo-image-edit-btn ${activeTool === "crop" ? "is-active" : ""}`, title: "Rogner", onClick: () => toggleTool("crop"), children: /* @__PURE__ */ jsx(Crop, { size: 14 }) }),
+        /* @__PURE__ */ jsx("button", { type: "button", className: "memo-image-edit-btn", title: "Rotation droite 90\xB0", onClick: () => void runRotate(), children: /* @__PURE__ */ jsx(RotateCw, { size: 14 }) })
       ] }),
       /* @__PURE__ */ jsxs("div", { className: "memo-image-edit-group", children: [
-        /* @__PURE__ */ jsxs("button", { type: "button", className: `memo-image-edit-btn ${activeTool === "pencil" ? "is-active" : ""}`, title: "Crayon", onClick: () => toggleTool("pencil"), children: [
-          /* @__PURE__ */ jsx("i", { "data-lucide": "pencil", style: { display: "none" }, "aria-hidden": "true" }),
-          /* @__PURE__ */ jsx(Pencil, { size: 14 })
-        ] }),
-        /* @__PURE__ */ jsxs("button", { type: "button", className: `memo-image-edit-btn ${activeTool === "line" ? "is-active" : ""}`, title: "Ligne", onClick: () => toggleTool("line"), children: [
-          /* @__PURE__ */ jsx("i", { "data-lucide": "arrow-up-left", style: { display: "none" }, "aria-hidden": "true" }),
-          /* @__PURE__ */ jsx(ArrowUpLeft, { size: 14 })
-        ] }),
-        /* @__PURE__ */ jsxs("button", { type: "button", className: `memo-image-edit-btn ${activeTool === "square" ? "is-active" : ""}`, title: "Rectangle", onClick: () => toggleTool("square"), children: [
-          /* @__PURE__ */ jsx("i", { "data-lucide": "square", style: { display: "none" }, "aria-hidden": "true" }),
-          /* @__PURE__ */ jsx(Square, { size: 14 })
-        ] }),
-        /* @__PURE__ */ jsxs("button", { type: "button", className: `memo-image-edit-btn ${activeTool === "text" ? "is-active" : ""}`, title: "Texte", onClick: () => toggleTool("text"), children: [
-          /* @__PURE__ */ jsx("i", { "data-lucide": "type", style: { display: "none" }, "aria-hidden": "true" }),
-          /* @__PURE__ */ jsx(Type, { size: 14 })
-        ] })
+        /* @__PURE__ */ jsx("button", { type: "button", className: `memo-image-edit-btn ${activeTool === "pencil" ? "is-active" : ""}`, title: "Crayon", onClick: () => toggleTool("pencil"), children: /* @__PURE__ */ jsx(Pencil, { size: 14 }) }),
+        /* @__PURE__ */ jsx("button", { type: "button", className: `memo-image-edit-btn ${activeTool === "line" ? "is-active" : ""}`, title: "Ligne", onClick: () => toggleTool("line"), children: /* @__PURE__ */ jsx(ArrowUpLeft, { size: 14 }) }),
+        /* @__PURE__ */ jsx("button", { type: "button", className: `memo-image-edit-btn ${activeTool === "square" ? "is-active" : ""}`, title: "Rectangle", onClick: () => toggleTool("square"), children: /* @__PURE__ */ jsx(Square, { size: 14 }) }),
+        /* @__PURE__ */ jsx("button", { type: "button", className: `memo-image-edit-btn ${activeTool === "text" ? "is-active" : ""}`, title: "Texte", onClick: () => toggleTool("text"), children: /* @__PURE__ */ jsx(Type, { size: 14 }) })
       ] }),
       /* @__PURE__ */ jsx("div", { className: "memo-image-edit-group memo-image-color-group", children: IMAGE_EDIT_COLORS.map((color) => /* @__PURE__ */ jsx(
         "button",
@@ -53983,10 +53959,7 @@ ${promptInput.trim()}`
               strokeWidth: size2 === "S" ? 2 : size2 === "M" ? 4 : 6,
               strokeLinecap: "round"
             }
-          ) }) : /* @__PURE__ */ jsxs(Fragment3, { children: [
-            /* @__PURE__ */ jsx("i", { "data-lucide": "a-large-small", style: { display: "none" }, "aria-hidden": "true" }),
-            /* @__PURE__ */ jsx(ALargeSmall, { size: size2 === "S" ? 12 : size2 === "M" ? 14 : 16 })
-          ] })
+          ) }) : /* @__PURE__ */ jsx(ALargeSmall, { size: size2 === "S" ? 12 : size2 === "M" ? 14 : 16 })
         },
         size2
       )) })
@@ -54211,7 +54184,7 @@ ${promptInput.trim()}`
                 }
               )
             ] }),
-            isGif && !gifPlaying && surface === "inline" && activeTool === "none" && /* @__PURE__ */ jsxs(
+            isGif && !gifPlaying && surface === "inline" && activeTool === "none" && /* @__PURE__ */ jsx(
               "button",
               {
                 type: "button",
@@ -54222,10 +54195,7 @@ ${promptInput.trim()}`
                   event.stopPropagation();
                   replayGif();
                 },
-                children: [
-                  /* @__PURE__ */ jsx("i", { "data-lucide": "circle-play", style: { display: "none" }, "aria-hidden": "true" }),
-                  /* @__PURE__ */ jsx(CirclePlay, { size: 52 })
-                ]
+                children: /* @__PURE__ */ jsx(CirclePlay, { size: 52 })
               }
             )
           ]
@@ -54241,7 +54211,7 @@ ${promptInput.trim()}`
           style: frameStyle,
           children: [
             /* @__PURE__ */ jsxs("div", { className: "memo-image-controls", children: [
-              /* @__PURE__ */ jsxs(
+              /* @__PURE__ */ jsx(
                 "button",
                 {
                   type: "button",
@@ -54252,13 +54222,10 @@ ${promptInput.trim()}`
                     event.stopPropagation();
                     setFullscreenOpen(true);
                   },
-                  children: [
-                    /* @__PURE__ */ jsx("i", { "data-lucide": "fullscreen", style: { display: "none" }, "aria-hidden": "true" }),
-                    /* @__PURE__ */ jsx(Fullscreen, { size: 14 })
-                  ]
+                  children: /* @__PURE__ */ jsx(Fullscreen, { size: 14 })
                 }
               ),
-              /* @__PURE__ */ jsxs(
+              /* @__PURE__ */ jsx(
                 "button",
                 {
                   type: "button",
@@ -54269,13 +54236,10 @@ ${promptInput.trim()}`
                     event.stopPropagation();
                     void handleDownload();
                   },
-                  children: [
-                    /* @__PURE__ */ jsx("i", { "data-lucide": "download", style: { display: "none" }, "aria-hidden": "true" }),
-                    /* @__PURE__ */ jsx(Download, { size: 14 })
-                  ]
+                  children: /* @__PURE__ */ jsx(Download, { size: 14 })
                 }
               ),
-              /* @__PURE__ */ jsxs(
+              /* @__PURE__ */ jsx(
                 "button",
                 {
                   type: "button",
@@ -54286,13 +54250,10 @@ ${promptInput.trim()}`
                     event.stopPropagation();
                     copyImageHtml(node.attrs || {});
                   },
-                  children: [
-                    /* @__PURE__ */ jsx("i", { "data-lucide": "copy", style: { display: "none" }, "aria-hidden": "true" }),
-                    /* @__PURE__ */ jsx(Copy, { size: 14 })
-                  ]
+                  children: /* @__PURE__ */ jsx(Copy, { size: 14 })
                 }
               ),
-              /* @__PURE__ */ jsxs(
+              /* @__PURE__ */ jsx(
                 "button",
                 {
                   type: "button",
@@ -54304,10 +54265,7 @@ ${promptInput.trim()}`
                     event.stopPropagation();
                     handleDelete();
                   },
-                  children: [
-                    /* @__PURE__ */ jsx("i", { "data-lucide": "trash-2", style: { display: "none" }, "aria-hidden": "true" }),
-                    /* @__PURE__ */ jsx(Trash2, { size: 14 })
-                  ]
+                  children: /* @__PURE__ */ jsx(Trash2, { size: 14 })
                 }
               )
             ] }),
@@ -54350,7 +54308,7 @@ ${promptInput.trim()}`
                 /* @__PURE__ */ jsxs("div", { className: "memo-image-fullscreen-actions", children: [
                   /* @__PURE__ */ jsx("div", { className: "memo-image-fullscreen-toolbar-center", children: renderEditToolbar("fullscreen", true) }),
                   /* @__PURE__ */ jsxs("div", { className: "memo-image-fullscreen-action-buttons", children: [
-                    /* @__PURE__ */ jsxs(
+                    /* @__PURE__ */ jsx(
                       "button",
                       {
                         type: "button",
@@ -54361,13 +54319,10 @@ ${promptInput.trim()}`
                           event.stopPropagation();
                           void handleDownload();
                         },
-                        children: [
-                          /* @__PURE__ */ jsx("i", { "data-lucide": "download", style: { display: "none" }, "aria-hidden": "true" }),
-                          /* @__PURE__ */ jsx(Download, { size: 14 })
-                        ]
+                        children: /* @__PURE__ */ jsx(Download, { size: 14 })
                       }
                     ),
-                    /* @__PURE__ */ jsxs(
+                    /* @__PURE__ */ jsx(
                       "button",
                       {
                         type: "button",
@@ -54376,10 +54331,7 @@ ${promptInput.trim()}`
                         onClick: () => {
                           void handleCloseFullscreen();
                         },
-                        children: [
-                          /* @__PURE__ */ jsx("i", { "data-lucide": "x", style: { display: "none" }, "aria-hidden": "true" }),
-                          /* @__PURE__ */ jsx(X, { size: 14 })
-                        ]
+                        children: /* @__PURE__ */ jsx(X, { size: 14 })
                       }
                     )
                   ] })
@@ -54660,14 +54612,17 @@ ${promptInput.trim()}`
     ] }) });
   };
   var EmbedNodeView = ({ node, editor, getPos, updateAttributes: updateAttributes2 }) => {
-    var _a, _b, _c, _d;
+    var _a, _b, _c, _d, _e;
     const canEdit = Boolean(editor == null ? void 0 : editor.isEditable);
     const src = String(((_a = node == null ? void 0 : node.attrs) == null ? void 0 : _a.src) || "");
     const title = String(((_b = node == null ? void 0 : node.attrs) == null ? void 0 : _b.title) || "");
+    const provider = String(((_c = node == null ? void 0 : node.attrs) == null ? void 0 : _c.provider) || "").trim().toLowerCase();
+    const providerLabel = provider === "youtube" ? "Youtube" : provider === "loom" ? "Loom" : "Video";
+    const watchLabel = `Regarder (${providerLabel})`;
     const frameRef = react_shim_default.useRef(null);
     const resizeStateRef = react_shim_default.useRef(null);
-    const widthPx = parseSizePx((_c = node == null ? void 0 : node.attrs) == null ? void 0 : _c.width);
-    const heightPx = parseSizePx((_d = node == null ? void 0 : node.attrs) == null ? void 0 : _d.height);
+    const widthPx = parseSizePx((_d = node == null ? void 0 : node.attrs) == null ? void 0 : _d.width);
+    const heightPx = parseSizePx((_e = node == null ? void 0 : node.attrs) == null ? void 0 : _e.height);
     const handleDelete = () => {
       if (typeof getPos !== "function") return;
       const pos = getPos();
@@ -54766,6 +54721,13 @@ ${promptInput.trim()}`
           allowFullScreen: true
         }
       ),
+      /* @__PURE__ */ jsxs("div", { className: "memo-video-embed-overlay", "aria-hidden": "true", children: [
+        /* @__PURE__ */ jsxs("span", { className: "memo-video-embed-overlay__icon", children: [
+          /* @__PURE__ */ jsx("i", { "data-lucide": "play", style: { display: "none" }, "aria-hidden": "true" }),
+          /* @__PURE__ */ jsx(Play, { size: 28 })
+        ] }),
+        /* @__PURE__ */ jsx("span", { className: "memo-video-embed-overlay__label", children: watchLabel })
+      ] }),
       canEdit && /* @__PURE__ */ jsx(
         "div",
         {
@@ -57407,7 +57369,7 @@ ${promptInput.trim()}`
     editorId,
     onReady,
     editable = true,
-    placeholder = "Appuie sur 'espace' pour l'IA ou '/' pour les commandes"
+    placeholder = "Appuyer sur 'espace' pour l'Assistant ou '/' pour les commandes"
   }) => {
     var _a, _b, _c, _d;
     const mountStart = react_shim_default.useRef(performance.now());

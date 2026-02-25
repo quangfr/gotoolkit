@@ -3265,7 +3265,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
   editorId,
   onReady,
   editable = true,
-  placeholder = "Appuie sur 'espace' pour l'IA ou '/' pour les commandes"
+  placeholder = "Appuyer sur 'espace' pour l'Assistant ou '/' pour les commandes"
 }) => {
   const mountStart = React.useRef(performance.now());
   const turndownRef = React.useRef<any>(null);

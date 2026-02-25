@@ -981,41 +981,33 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
     <div className={`memo-image-edit-toolbar ${permanent ? 'is-permanent' : ''}`}>
       <div className="memo-image-edit-group">
         <button type="button" className="memo-image-edit-btn" title="Annuler" onClick={handleUndo} disabled={!canUndo}>
-          <i data-lucide="undo" style={{ display: 'none' }} aria-hidden="true"></i>
           <Undo2 size={14} />
         </button>
         <button type="button" className="memo-image-edit-btn" title="Rétablir" onClick={handleRedo} disabled={!canRedo}>
-          <i data-lucide="redo" style={{ display: 'none' }} aria-hidden="true"></i>
           <Redo2 size={14} />
         </button>
       </div>
 
       <div className="memo-image-edit-group">
         <button type="button" className={`memo-image-edit-btn ${activeTool === 'crop' ? 'is-active' : ''}`} title="Rogner" onClick={() => toggleTool('crop')}>
-          <i data-lucide="crop" style={{ display: 'none' }} aria-hidden="true"></i>
           <Crop size={14} />
         </button>
         <button type="button" className="memo-image-edit-btn" title="Rotation droite 90°" onClick={() => void runRotate()}>
-          <i data-lucide="rotate-cw" style={{ display: 'none' }} aria-hidden="true"></i>
           <RotateCw size={14} />
         </button>
       </div>
 
       <div className="memo-image-edit-group">
         <button type="button" className={`memo-image-edit-btn ${activeTool === 'pencil' ? 'is-active' : ''}`} title="Crayon" onClick={() => toggleTool('pencil')}>
-          <i data-lucide="pencil" style={{ display: 'none' }} aria-hidden="true"></i>
           <Pencil size={14} />
         </button>
         <button type="button" className={`memo-image-edit-btn ${activeTool === 'line' ? 'is-active' : ''}`} title="Ligne" onClick={() => toggleTool('line')}>
-          <i data-lucide="arrow-up-left" style={{ display: 'none' }} aria-hidden="true"></i>
           <ArrowUpLeft size={14} />
         </button>
         <button type="button" className={`memo-image-edit-btn ${activeTool === 'square' ? 'is-active' : ''}`} title="Rectangle" onClick={() => toggleTool('square')}>
-          <i data-lucide="square" style={{ display: 'none' }} aria-hidden="true"></i>
           <Square size={14} />
         </button>
         <button type="button" className={`memo-image-edit-btn ${activeTool === 'text' ? 'is-active' : ''}`} title="Texte" onClick={() => toggleTool('text')}>
-          <i data-lucide="type" style={{ display: 'none' }} aria-hidden="true"></i>
           <Type size={14} />
         </button>
       </div>
@@ -1055,10 +1047,7 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
                 />
               </svg>
             ) : (
-              <>
-                <i data-lucide="a-large-small" style={{ display: 'none' }} aria-hidden="true"></i>
-                <ALargeSmall size={size === 'S' ? 12 : size === 'M' ? 14 : 16} />
-              </>
+              <ALargeSmall size={size === 'S' ? 12 : size === 'M' ? 14 : 16} />
             )}
           </button>
         ))}
@@ -1284,7 +1273,6 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
             replayGif();
           }}
         >
-          <i data-lucide="circle-play" style={{ display: 'none' }} aria-hidden="true"></i>
           <CirclePlay size={52} />
         </button>
       )}
@@ -1309,7 +1297,6 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
               setFullscreenOpen(true);
             }}
           >
-            <i data-lucide="fullscreen" style={{ display: 'none' }} aria-hidden="true"></i>
             <Fullscreen size={14} />
           </button>
           <button
@@ -1322,7 +1309,6 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
               void handleDownload();
             }}
           >
-            <i data-lucide="download" style={{ display: 'none' }} aria-hidden="true"></i>
             <Download size={14} />
           </button>
           <button
@@ -1335,7 +1321,6 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
               copyImageHtml(node.attrs || {});
             }}
           >
-            <i data-lucide="copy" style={{ display: 'none' }} aria-hidden="true"></i>
             <Copy size={14} />
           </button>
           <button
@@ -1349,7 +1334,6 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
               handleDelete();
             }}
           >
-            <i data-lucide="trash-2" style={{ display: 'none' }} aria-hidden="true"></i>
             <Trash2 size={14} />
           </button>
         </div>
@@ -1399,7 +1383,6 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
                     void handleDownload();
                   }}
                 >
-                  <i data-lucide="download" style={{ display: 'none' }} aria-hidden="true"></i>
                   <Download size={14} />
                 </button>
                 <button
@@ -1408,7 +1391,6 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
                   title="Fermer"
                   onClick={() => { void handleCloseFullscreen(); }}
                 >
-                  <i data-lucide="x" style={{ display: 'none' }} aria-hidden="true"></i>
                   <X size={14} />
                 </button>
               </div>

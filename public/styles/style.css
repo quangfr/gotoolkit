@@ -1951,11 +1951,34 @@ ul.release-roadmap-text li::before {
   font-size: var(--go-ui-font-size, 16px);
   display: flex;
   align-items: center;
+  gap: 6px;
 }
 
 .chat-header-title [data-lucide] {
   width: var(--go-ui-icon-size) !important;
   height: var(--go-ui-icon-size) !important;
+}
+
+.chat-header-title-icon {
+  border: none;
+  background: var(--bg-surface-soft);
+  color: var(--text-main);
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.chat-header-title-brand {
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  text-transform: uppercase;
+  opacity: 0.42;
+  pointer-events: none;
+  user-select: none;
 }
 
 #assistSidebar [data-lucide],

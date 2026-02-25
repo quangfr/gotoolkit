@@ -14,7 +14,7 @@
             document.documentElement.setAttribute('data-theme', resolvedTheme);
         })();
     </script>
-    <link rel="stylesheet" href="styles/style.css?v=2026.02.25.14">
+    <link rel="stylesheet" href="styles/style.css?v=2026.02.25.15">
     <style>
         .legal-page {
             max-width: 920px;
@@ -122,9 +122,10 @@
                 (exécution du service et, selon les cas, consentement).</p>
             <p><strong>4. Stockage local et cookies techniques OAuth</strong><br>Une part importante des données est
                 stockée localement dans votre navigateur (IndexedDB/localStorage) pour le fonctionnement de
-                l’application. Les seuls cookies utilisés sont des cookies techniques de session liés à
-                l’authentification OAuth des services Gmail, YouTube, Notion et Outlook. Ces cookies ne sont déposés
-                qu’avec votre consentement explicite. Aucun autre cookie n’est déposé.</p>
+                l’application. Les seuls cookies utilisés sont des cookies techniques strictement nécessaires à la
+                gestion de session OAuth (connexion, vérification d’état de session, rafraîchissement et déconnexion)
+                pour les services Gmail, YouTube, Notion et Outlook. Aucun cookie publicitaire ou de mesure d’audience
+                n’est déposé par GoToolkit.</p>
             <p><strong>5. Destinataires et sous-traitants</strong><br>Des données peuvent être transmises, uniquement
                 lorsque nécessaire à la fonctionnalité déclenchée, à des prestataires techniques (ex. IA, transcription
                 vocale, hébergement cloud, publication vidéo, connecteurs externes). Chaque service tiers applique ses
@@ -159,15 +160,16 @@
                 des pratiques reconnues de protection des données en contexte professionnel. Toutefois, la conformité
                 réglementaire globale dépend aussi de votre usage, de vos bases légales, de votre gouvernance interne
                 et des services tiers éventuellement connectés.</p>
-            <p><strong>13. Transferts et conservation des données</strong><br>Tous les envois de données sont opérés par
-                des serveurs
-                en UE avec une politique de rétention limitée ou si ce n'est pas le cas, stockés avec un chiffrement de
+            <p><strong>13. Services tiers, politique de données et chiffrement</strong><br>Des échanges de données sont
+                réalisés avec des
+                fournisseurs tiers
+                en UE et avec une politique de rétention limitée ou si ce n'est pas le cas, avec un chiffrement de
                 bout en bout (E2EE). Les modalités par service sont résumées ci-dessous :</p>
             <table class="legal-table">
                 <thead>
                     <tr>
                         <th>Service</th>
-                        <th>Fournisseur</th>
+                        <th>Fournisseur tiers</th>
                         <th>Politique de données</th>
                     </tr>
                 </thead>
@@ -175,7 +177,7 @@
                     <tr>
                         <td>Hébergement application</td>
                         <td>Google Firebase</td>
-                        <td>UE. Permanent.
+                        <td>UE. Pas de données personnelles.
                             <a href="https://firebase.google.com/support/privacy">Lien</a>
                         </td>
                     </tr>
@@ -187,14 +189,14 @@
                     <tr>
                         <td>Données espaces partagés + Capture mobile</td>
                         <td>Google Firebase</td>
-                        <td>UE. Permanent. Chiffré de bout en bout (E2EE).
+                        <td>UE. Chiffré de bout en bout (E2EE).
                             <a href="https://firebase.google.com/support/privacy">Lien</a>
                         </td>
                     </tr>
                     <tr>
                         <td>Fichiers multimédia</td>
                         <td>Cloudflare R2</td>
-                        <td>Monde. Permanent. Chiffré de bout en bout (E2EE).
+                        <td>Monde. Chiffré de bout en bout (E2EE).
                             <a href="https://www.cloudflare.com/fr-fr/trust-hub/privacy-and-data-protection/">Lien</a>
                         </td>
                     </tr>
@@ -208,14 +210,14 @@
                     <tr>
                         <td>Session OAuth</td>
                         <td>Cloudflare KV</td>
-                        <td>Monde. ID session opaque.
+                        <td>Monde. ID session non identifiable.
                             <a href="https://www.cloudflare.com/fr-fr/trust-hub/privacy-and-data-protection/">Lien</a>
                         </td>
                     </tr>
                     <tr>
                         <td>Transcription vocale</td>
                         <td>AssemblyAI</td>
-                        <td>UE. Enregistrements supprimés après 3 jours.
+                        <td>UE. Données supprimées après 3 jours au maximum.
                             <a href="https://www.assemblyai.com/docs/faq/how-long-does-aai-retain-data">Lien</a>
                         </td>
                     </tr>
@@ -233,13 +235,38 @@
                             <a href="https://docs.tokenfactory.nebius.com/data-lab/data-processing">Lien</a>
                         </td>
                     </tr>
+                    <tr>
+                        <td>Ressources front (bibliothèques JS/CSS, polices)</td>
+                        <td>jsDelivr / Google Fonts</td>
+                        <td>Chargées par le navigateur. Peuvent entraîner la transmission de données techniques
+                            (ex. IP, User-Agent, métadonnées de requête) aux fournisseurs concernés.
+                            <a href="https://www.jsdelivr.com/terms/privacy-policy-jsdelivr-net">Lien</a> /
+                            <a href="https://policies.google.com/privacy">Lien</a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Vidéos externes intégrées (iframe)</td>
+                        <td>YouTube / Loom</td>
+                        <td>L’affichage de contenus externes peut déclencher des appels vers ces plateformes et, selon
+                            leurs réglages, l’usage de cookies/traceurs tiers sous leur responsabilité.
+                            <a href="https://policies.google.com/privacy">Lien</a> /
+                            <a href="https://www.loom.com/privacy-policy">Lien</a>
+                        </td>
+                    </tr>
                 </tbody>
             </table>
+            <p><strong>14. Ressources tierces et contenus embarqués</strong><br>Certaines ressources techniques
+                nécessaires à l’interface (CDN, polices) sont chargées au démarrage de l’application. En outre, les
+                contenus vidéo externes (YouTube/Loom) sont fournis par des services tiers susceptibles d’appliquer
+                leurs propres cookies/traceurs et règles de traitement. Nous vous invitons à consulter leurs politiques
+                de confidentialité respectives.</p>
             <p><strong>15. Mises à jour</strong><br>La présente section peut évoluer pour refléter les changements
                 réglementaires, techniques ou fonctionnels.</p>
         </section>
-        <p style="margin-top:14px;font-size:0.85em;opacity:0.85;">Responsable : Xuan Quang Tran
-            (832 489 355) – Contact : Xuan Quang Tran - contact@gotoolkit.fr – Hébergement / Données : UE
+        <p style="margin-top:6px;font-size:0.85em;opacity:0.85;">
+            Éditeur du site : Xuan Quang Tran (832 489 355) – Directeur de la publication : Xuan Quang Tran
+            (contact@gotoolkit.fr) – Hébergement
+            technique : Google / Cloudflare.
         </p>
     </main>
 </body>

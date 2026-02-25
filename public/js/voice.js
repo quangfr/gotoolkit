@@ -937,8 +937,14 @@
         if (state.isRecording) {
             const duration = Math.floor((Date.now() - state.recordingStartTime) / 1000);
             const timeLabel = formatDuration(duration);
+            if (isRecordingCurrentMemo()) {
+                return `<i data-lucide="square"></i><span>${timeLabel}</span>${badge}`;
+            }
             const activeMemoName = String(state.recordingMemoName || "Autre onglet").trim() || "Autre onglet";
-            const label = `En cours : ${activeMemoName} (${timeLabel})`;
+            const truncatedMemoName = activeMemoName.length > 10
+                ? `${activeMemoName.slice(0, 10)}...`
+                : activeMemoName;
+            const label = `${truncatedMemoName} (${timeLabel})`;
             return `<i data-lucide="square"></i><span>${label}</span>${badge}`;
         }
         if (state.currentMemoRecordingId) {
