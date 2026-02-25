@@ -2489,6 +2489,27 @@
         };
     }
 
+    window.GoToolkitDocumentPanelEvents = {
+        dispatchRefresh: function (detail) {
+            try {
+                document.dispatchEvent(new CustomEvent("goToolkitDocumentPanelRefresh", {
+                    detail: detail || {}
+                }));
+            } catch (err) {
+                // ignore
+            }
+        },
+        dispatchSpaceSyncCompleted: function (detail) {
+            try {
+                document.dispatchEvent(new CustomEvent("goToolkitSpaceSyncCompleted", {
+                    detail: detail || {}
+                }));
+            } catch (err) {
+                // ignore
+            }
+        }
+    };
+
     window.GoToolkitDocumentExplorer = {
         create: createDocumentExplorer
     };

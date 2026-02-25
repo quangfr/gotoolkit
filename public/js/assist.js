@@ -3439,10 +3439,6 @@
                     .filter(Boolean);
                 var rawCap = Math.max(CONTEXT_LIMIT_MIN, Math.min(CONTEXT_LIMIT_MAX, Number(limit) || CONTEXT_LIMIT_MIN));
                 try {
-                    console.log("[AI_IN_DEBUG] knowledge raw-doc fallback", {
-                        docs: docs.length,
-                        hitCount: rawDocHits.length
-                    });
                 } catch (err) {
                     // ignore
                 }
@@ -3612,12 +3608,6 @@
             try {
                 var embeddedCount = embeddedMethods.length + embeddedTools.length + mergedEmbeddedContext.length;
                 var contextCount = Array.isArray(info.context) ? info.context.length : 0;
-                console.log("[AI_IN_DEBUG] append doc sections", {
-                    traceId: traceId,
-                    label: label || "CONTEXT",
-                    embeddedCount: embeddedCount,
-                    contextCount: contextCount
-                });
                 self.logAiInTrace(traceId, "payload-append-doc-sections", {
                     label: label || "CONTEXT",
                     embeddedChunkIds: []
@@ -3923,10 +3913,6 @@
         if (conversationId === this.knowledgeConversationId) {
             var allowedDocIds = await this.getKnowledgeAllowedDocIdsForCurrentScope();
             try {
-                console.log("[AI_IN_DEBUG] knowledge allowed docs", {
-                    selectedSpaces: Array.from(this.selectedKnowledgeSpaceIds || []),
-                    allowedDocCount: allowedDocIds instanceof Set ? allowedDocIds.size : null
-                });
             } catch (err) {
                 // ignore
             }
@@ -3961,11 +3947,6 @@
             }));
         });
         try {
-            console.log("[AI_IN_DEBUG] retrieval context built", {
-                conversationId: conversationId,
-                docs: docs.length,
-                chunks: filteredChunks.length
-            });
         } catch (err) {
             // ignore
         }
@@ -4087,10 +4068,9 @@
 
     AssistSidebar.prototype.logAiInTrace = function (traceId, step, payload) {
         try {
-            console.log("[AI_IN_DEBUG][TRACE]", Object.assign({
-                traceId: traceId || "",
-                step: step || ""
-            }, payload || {}));
+            void traceId;
+            void step;
+            void payload;
         } catch (err) {
             // ignore
         }
@@ -4163,19 +4143,6 @@
             wordCount: options.wordCount,
             chunkMap: options.chunkMap
         });
-        try {
-            console.log("[AI_IN_DEBUG] hybrid retrieval", {
-                label: options?.label || "",
-                conversationId: conversationId,
-                keywordCount: keywordCount,
-                vectorCount: Array.isArray(vectorHits) ? vectorHits.length : 0,
-                mergedCount: merged.length,
-                minScore: params?.minScore,
-                topK: params?.topK
-            });
-        } catch (err) {
-            // ignore
-        }
         this.logHybridRetrieval({
             label: options.label,
             query: query,
@@ -4239,12 +4206,6 @@
             traceId: traceId
         });
         try {
-            console.log("[AI_IN_DEBUG] retrieval pass", {
-                label: label,
-                conversationId: conversationId,
-                pass: "primary",
-                hitCount: Array.isArray(hits) ? hits.length : 0
-            });
         } catch (err) {
             // ignore
         }
@@ -4264,12 +4225,6 @@
                 traceId: traceId
             });
             try {
-                console.log("[AI_IN_DEBUG] retrieval pass", {
-                    label: label,
-                    conversationId: conversationId,
-                    pass: "fallback",
-                    hitCount: Array.isArray(hits) ? hits.length : 0
-                });
             } catch (err) {
                 // ignore
             }
@@ -4501,9 +4456,6 @@
                 if (!knowledgeHits.length) {
                     knowledgeHits = await this.getKnowledgeFallbackHits(knowledgeParams?.topK);
                     try {
-                        console.log("[AI_IN_DEBUG] knowledge fallback used", {
-                            hitCount: Array.isArray(knowledgeHits) ? knowledgeHits.length : 0
-                        });
                     } catch (err) {
                         // ignore
                     }
@@ -4517,10 +4469,6 @@
             }
             botMessage.retrievalEntries = docInfo;
             try {
-                console.log("[AI_IN_DEBUG] retrieval summary", {
-                    contextHits: Array.isArray(contextHits) ? contextHits.length : 0,
-                    knowledgeHits: Array.isArray(knowledgeHits) ? knowledgeHits.length : 0
-                });
             } catch (err) {
                 // ignore
             }
@@ -4540,12 +4488,6 @@
             var userContentText = Array.isArray(userMsg?.content)
                 ? (userMsg.content.find(function (part) { return part?.type === "text"; })?.text || "")
                 : String(userMsg?.content || "");
-            console.log("[AI_IN_DEBUG] payload sections", {
-                traceId: aiInTraceId,
-                hasConversationAttachments: userContentText.indexOf("CONVERSATION_ATTACHMENTS") !== -1,
-                hasSpacePages: userContentText.indexOf("SPACE_PAGES") !== -1,
-                userContentLength: userContentText.length
-            });
         } catch (err) {
             // ignore
         }
@@ -7822,9 +7764,6 @@
         this.selectedKnowledgeSpaceIds = next;
         this.persistSelectedKnowledgeSpaces(next);
         try {
-            console.log("[AI_IN_DEBUG] memory spaces toggled", {
-                selectedSpaces: Array.from(next)
-            });
         } catch (err) {
             // ignore
         }
@@ -8354,10 +8293,6 @@
                 var key = String(entry?.section || "unknown");
                 bySection[key] = (bySection[key] || 0) + 1;
             });
-            console.log("[AI_IN_DEBUG] knowledge tree entries", {
-                total: entries.length,
-                bySection: bySection
-            });
         } catch (err) {
             // ignore
         }
@@ -8595,13 +8530,6 @@
         this.selectedKnowledgeSpaceIds = this.readSelectedKnowledgeSpaces();
         var selectionSet = this.buildKnowledgeSelectionFromSpaces(memoEntries);
         try {
-            console.log("[AI_IN_DEBUG] refresh knowledge modal", {
-                storedCount: (storedList || []).length,
-                indexedCount: indexedSet.size,
-                memoEntriesCount: memoEntries.length,
-                selectedSpaces: Array.from(this.selectedKnowledgeSpaceIds || []),
-                selectionCount: selectionSet.size
-            });
         } catch (err) {
             // ignore
         }
@@ -8790,10 +8718,6 @@
             : new Set();
         if (!selection.size) {
             try {
-                console.log("[AI_IN_DEBUG] allowed docs fallback", {
-                    reason: "empty-manifest-selection",
-                    selectionSize: 0
-                });
             } catch (err) {
                 // ignore
             }
@@ -8816,11 +8740,6 @@
             }
         }.bind(this));
         try {
-            console.log("[AI_IN_DEBUG] allowed docs computed", {
-                docsCount: docs.length,
-                selectionCount: selection.size,
-                allowedCount: allowed.size
-            });
         } catch (err) {
             // ignore
         }
@@ -9190,13 +9109,6 @@
             return key && selected.has(key) && source === "Mémo";
         }.bind(this));
         try {
-            console.log("[AI_IN_DEBUG] reindex selection start", {
-                selectedCount: selected.size,
-                manifestCount: entries.length,
-                filteredCount: filtered.length,
-                forceReindexSelected: Boolean(options && options.forceReindexSelected),
-                reindexIfUpdated: options?.reindexIfUpdated !== false
-            });
         } catch (err) {
             // ignore
         }
@@ -9285,10 +9197,6 @@
                 return key && !existingByKey.has(key);
             }.bind(this));
             try {
-                console.log("[AI_IN_DEBUG] reindex selection resolved", {
-                    existingCount: existingByKey.size,
-                    missingCount: missing.length
-                });
             } catch (err) {
                 // ignore
             }
@@ -9355,10 +9263,6 @@
                 }
             }
             try {
-                console.log("[AI_IN_DEBUG] reindex selection ingest done", {
-                    ingestedFiles: files.length,
-                    metadataCount: metadata.size
-                });
             } catch (err) {
                 // ignore
             }

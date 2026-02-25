@@ -2715,11 +2715,6 @@
             if (!files || !files.length) return [];
             const convId = normalizeConversationId(conversationId);
             try {
-                console.log("[AI_IN_DEBUG] ingest start", {
-                    conversationId: convId,
-                    fileCount: files.length,
-                    sourceType: options?.sourceType || "context"
-                });
             } catch (err) {
                 // ignore
             }
@@ -2932,12 +2927,6 @@
                     : file.name;
                 const docScopes = normalizeScopes(meta.scope);
                 try {
-                    console.log("[AI_IN_DEBUG] ingest file", {
-                        conversationId: convId,
-                        fileName: file?.name || "",
-                        sourceFileName,
-                        scopes: docScopes
-                    });
                 } catch (err) {
                     // ignore
                 }
@@ -3161,11 +3150,6 @@
                 onProgress?.({ type: "file-done", file: file.name });
             }
             try {
-                console.log("[AI_IN_DEBUG] ingest end", {
-                    conversationId: convId,
-                    processed: results.length,
-                    successCount: results.filter((item) => item?.success).length
-                });
             } catch (err) {
                 // ignore
             }
@@ -3934,17 +3918,6 @@
             scored.sort((a, b) => b.score - a.score);
             const out = scored.slice(0, topK);
             try {
-                console.log("[AI_IN_DEBUG] vector search", {
-                    traceId: options?.traceId || "",
-                    label: options?.label || "",
-                    conversationId: convId,
-                    minScore,
-                    topK,
-                    candidateCount: candidateIds ? candidateIds.size : 0,
-                    chunkCount: chunks.length,
-                    hitCount: out.length,
-                    hitChunkIdsPreview: out.slice(0, 10).map((hit) => hit?.id).filter(Boolean)
-                });
             } catch (err) {
                 // ignore
             }
@@ -3960,14 +3933,6 @@
                 const convId = normalizeConversationId(conversationId);
                 const results = this.keywordIndex.search(query, convId, cappedLimit);
                 try {
-                    console.log("[AI_IN_DEBUG] keyword search", {
-                        traceId: options?.traceId || "",
-                        label: options?.label || "",
-                        conversationId: convId,
-                        limit: cappedLimit,
-                        hitCount: Array.isArray(results) ? results.length : 0,
-                        hitChunkIdsPreview: (results || []).slice(0, 10).map((hit) => hit?.chunkId || hit?.id).filter(Boolean)
-                    });
                 } catch (err) {
                     // ignore
                 }

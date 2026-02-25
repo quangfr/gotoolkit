@@ -1,0 +1,183 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - complementary "Exploration" [ref=e3]:
+      - generic [ref=e4]:
+        - button "Bibliothèque" [ref=e5] [cursor=pointer]:
+          - img [ref=e6]
+        - button "Sommaire" [ref=e8] [cursor=pointer]:
+          - img [ref=e9]
+        - generic: GoToolkit
+        - button "Importer" [ref=e12] [cursor=pointer]:
+          - img [ref=e13]
+        - button "Paramètres" [ref=e17] [cursor=pointer]:
+          - img [ref=e18]
+        - button "Fermer" [ref=e21] [cursor=pointer]:
+          - img [ref=e22]
+      - generic [ref=e26]:
+        - generic [ref=e27]:
+          - img
+          - textbox "Rechercher un document" [ref=e28]
+        - generic [ref=e29]:
+          - button "Récent" [ref=e31] [cursor=pointer]:
+            - img [ref=e32]
+            - strong [ref=e36]: Récent
+            - img [ref=e37]
+          - generic [ref=e39]:
+            - button "Privé" [ref=e40] [cursor=pointer]:
+              - img [ref=e41]
+              - strong [ref=e44]: Privé
+              - img [ref=e45]
+              - generic [ref=e47]:
+                - button "Créer une page racine" [ref=e48]:
+                  - img [ref=e49]
+                - button "Rafraîchir et nettoyer l'espace privé" [ref=e50]:
+                  - img [ref=e51]
+            - generic [ref=e56]:
+              - button "Afficher les sous-documents Page 2" [ref=e58] [cursor=pointer]:
+                - button "Afficher les sous-documents" [ref=e59]:
+                  - img [ref=e60]
+                - generic [ref=e63]: Page 2
+                - generic [ref=e64]:
+                  - button "Créer une sous-page" [ref=e65]:
+                    - img [ref=e66]
+                  - button "Supprimer" [ref=e67]:
+                    - img [ref=e68]
+              - button "Afficher les sous-documents Page 3" [ref=e72] [cursor=pointer]:
+                - button "Afficher les sous-documents" [ref=e73]:
+                  - img [ref=e74]
+                - generic [ref=e77]: Page 3
+                - generic [ref=e78]:
+                  - button "Créer une sous-page" [ref=e79]:
+                    - img [ref=e80]
+                  - button "Supprimer" [ref=e81]:
+                    - img [ref=e82]
+              - button "Afficher les sous-documents Page 4" [ref=e86] [cursor=pointer]:
+                - button "Afficher les sous-documents" [ref=e87]:
+                  - img [ref=e88]
+                - generic [ref=e91]: Page 4
+                - generic [ref=e92]:
+                  - button "Créer une sous-page" [ref=e93]:
+                    - img [ref=e94]
+                  - button "Supprimer" [ref=e95]:
+                    - img [ref=e96]
+              - button "Afficher les sous-documents Page 5" [ref=e100] [cursor=pointer]:
+                - button "Afficher les sous-documents" [ref=e101]:
+                  - img [ref=e102]
+                - generic [ref=e105]: Page 5
+                - generic [ref=e106]:
+                  - button "Créer une sous-page" [ref=e107]:
+                    - img [ref=e108]
+                  - button "Supprimer" [ref=e109]:
+                    - img [ref=e110]
+          - button "Go Live" [ref=e114] [cursor=pointer]:
+            - img [ref=e115]
+            - strong [ref=e118]: Go Live
+            - img [ref=e119]
+            - generic [ref=e121]:
+              - button "Ajouter une page":
+                - img
+              - button "Modifier cet espace":
+                - img
+              - 'button "Synchronisé : jamais synchronisé" [ref=e122]':
+                - img [ref=e123]
+          - button "Superpouvoirs" [ref=e127] [cursor=pointer]:
+            - img [ref=e128]
+            - strong [ref=e130]: Superpouvoirs
+            - img [ref=e131]
+          - button "Archives" [ref=e134] [cursor=pointer]:
+            - img [ref=e135]
+            - strong [ref=e138]: Archives
+            - img [ref=e139]
+    - separator "Redimensionner" [ref=e141]
+    - generic [ref=e142]:
+      - generic [ref=e143]:
+        - generic [ref=e144]:
+          - button "Masquer les documents" [expanded] [ref=e145] [cursor=pointer]:
+            - img [ref=e146]
+          - generic [ref=e148]:
+            - button "Icône de la page" [ref=e150] [cursor=pointer]:
+              - img [ref=e151]
+            - button "Page 5" [ref=e155] [cursor=pointer]
+        - generic [ref=e157]: Il y a <1 min
+        - generic [ref=e158]:
+          - button "Document" [ref=e160] [cursor=pointer]:
+            - img [ref=e161]
+          - button "Enregistrer une conversation" [ref=e165] [cursor=pointer]:
+            - img [ref=e166]
+          - button "Aide" [ref=e169] [cursor=pointer]:
+            - img [ref=e170]
+          - button "Assist" [ref=e173] [cursor=pointer]:
+            - img [ref=e174]
+      - generic [ref=e178]:
+        - text: Appuie sur 'espace' pour l'IA ou '/' pour les commandes Appuie sur 'espace' pour l'IA ou '/' pour les commandes Appuie sur 'espace' pour l'IA ou '/' pour les commandes Appuie sur 'espace' pour l'IA ou '/' pour les commandes
+        - generic [ref=e180]:
+          - toolbar "toolbar" [ref=e181]:
+            - group [ref=e182]:
+              - button "Undo" [disabled] [ref=e183]:
+                - img [ref=e184]
+              - button "Redo" [disabled] [ref=e187]:
+                - img [ref=e188]
+            - group
+          - generic [ref=e191]:
+            - generic:
+              - group:
+                - button "Assistant":
+                  - img
+                - generic:
+                  - button "Texte":
+                    - img
+                    - generic: Texte
+                    - img
+              - group:
+                - button "Gras":
+                  - img
+                - button "Italique":
+                  - img
+                - button "Souligné":
+                  - img
+                - generic:
+                  - button "Couleur":
+                    - img
+                - button "Barré":
+                  - img
+                - button "Surligné":
+                  - img
+                - button "Lien":
+                  - img
+          - textbox [ref=e193]:
+            - paragraph [ref=e194]: Appuie sur 'espace' pour l'IA ou '/' pour les commandes
+  - status: Docs créé
+  - generic [ref=e195]:
+    - generic [ref=e197]:
+      - img [ref=e199]
+      - generic [ref=e202]:
+        - button "Mémoire" [ref=e204] [cursor=pointer]:
+          - img [ref=e205]
+        - button "Effacer" [ref=e213] [cursor=pointer]:
+          - img [ref=e214]
+    - generic [ref=e219]:
+      - textbox "Que veux-tu modifier ?" [active] [ref=e221]
+      - generic [ref=e222]:
+        - generic [ref=e223]:
+          - button "Éditer" [ref=e225] [cursor=pointer]:
+            - text: Éditer
+            - img [ref=e226]
+          - button "Raccourcis" [ref=e228] [cursor=pointer]:
+            - img [ref=e229]
+          - button "Fichiers" [ref=e232] [cursor=pointer]:
+            - img [ref=e233]
+          - button "Dictée" [ref=e235] [cursor=pointer]:
+            - img [ref=e236]
+          - button "Sélection auto" [pressed] [ref=e239] [cursor=pointer]:
+            - img [ref=e240]
+        - button "Envoyer" [disabled] [ref=e246] [cursor=pointer]:
+          - img [ref=e247]
+  - status [ref=e250]
+  - generic [ref=e252]:
+    - button [ref=e253] [cursor=pointer]: ←
+    - button [ref=e254] [cursor=pointer]: ✕
+  - text: "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"
+```
