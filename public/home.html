@@ -6,8 +6,10 @@
     <script>
         (function () {
             const storedTheme = localStorage.getItem('go-toolkit-theme');
-            const theme = storedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'cream');
-            document.documentElement.setAttribute('data-theme', theme);
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const theme = storedTheme || (prefersDark ? 'dark' : 'cream');
+            const resolvedTheme = theme === 'auto' ? (prefersDark ? 'dark' : 'cream') : theme;
+            document.documentElement.setAttribute('data-theme', resolvedTheme);
         })();
     </script>
     <script>

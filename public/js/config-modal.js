@@ -120,6 +120,17 @@
                                     </label>
                                 </div>
                             </div>
+                            <div class="field-row">
+                                <label style="width:100%">
+                                    <span class="label-title">Effort</span>
+                                    <select id="openrouterEffortSelect">
+                                        <option value="minimal">Minimal</option>
+                                        <option value="low" selected>Faible</option>
+                                        <option value="medium">Moyen</option>
+                                        <option value="high">Élevé</option>
+                                    </select>
+                                </label>
+                            </div>
                         </div>
                     </div>
                     <div class="settings-tab-panel" data-panel="paramsTab" hidden>
@@ -303,6 +314,18 @@
         if (stored) input.value = stored;
     }
 
+    function populateOpenrouterEffortSelect() {
+        const select = doc.getElementById("openrouterEffortSelect");
+        if (!select) return;
+        const stored = (
+            (global.GoToolkitIAConfig && typeof global.GoToolkitIAConfig.getOpenRouterReasoningEffort === "function"
+                ? global.GoToolkitIAConfig.getOpenRouterReasoningEffort()
+                : "") ||
+            (global.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_REASONING_EFFORT || "low")
+        ).trim().toLowerCase();
+        if (stored) select.value = stored;
+    }
+
     async function performFullReset() {
         try {
             const databases = ["go-toolkit", "gotoolkit-documents"];
@@ -409,6 +432,7 @@
         const openrouterModelInput = doc.getElementById("openrouterModelInput");
         const openrouterOcrModelInput = doc.getElementById("openrouterOcrModelInput");
         const openrouterEmbeddingsModelInput = doc.getElementById("openrouterEmbeddingsModelInput");
+        const openrouterEffortSelect = doc.getElementById("openrouterEffortSelect");
 
         const openAiKey = (apiKeyInput?.value || "").trim();
         const openAiModel = (openaiModelSelect?.value || "").trim();
@@ -418,6 +442,7 @@
         const openRouterModel = (openrouterModelInput?.value || "").trim() || (cfg?.DEFAULTS?.OPENROUTER_MODEL || "");
         const openRouterOcrModel = (openrouterOcrModelInput?.value || "").trim() || (cfg?.DEFAULTS?.OPENROUTER_OCR_MODEL || "");
         const openRouterEmbModel = (openrouterEmbeddingsModelInput?.value || "").trim() || (cfg?.DEFAULTS?.OPENROUTER_EMBEDDINGS_MODEL || "");
+        const openRouterEffort = (openrouterEffortSelect?.value || cfg?.DEFAULTS?.OPENROUTER_REASONING_EFFORT || "low").trim().toLowerCase();
 
         try {
             if (cfg?.setApiKey) cfg.setApiKey(openAiKey);
@@ -428,6 +453,7 @@
             if (cfg?.setOpenRouterModel) cfg.setOpenRouterModel(openRouterModel);
             if (cfg?.setOpenRouterOcrModel) cfg.setOpenRouterOcrModel(openRouterOcrModel);
             if (cfg?.setOpenRouterEmbeddingsModel) cfg.setOpenRouterEmbeddingsModel(openRouterEmbModel);
+            if (cfg?.setOpenRouterReasoningEffort) cfg.setOpenRouterReasoningEffort(openRouterEffort);
         } catch (err) { /* noop */ }
         try {
             localStorage.setItem("go-toolkit-ai-backend", backend || "openrouter");
@@ -633,6 +659,7 @@
             populateOpenrouterModelInput();
             populateOpenrouterOcrModelInput();
             populateOpenrouterEmbeddingsModelInput();
+            populateOpenrouterEffortSelect();
         }
     }
 

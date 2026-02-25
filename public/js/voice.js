@@ -935,19 +935,11 @@
             return `<i data-lucide="loader-2" class="lucide-spin" style="width:14px;height:14px;"></i>${badge}`;
         }
         if (state.isRecording) {
-            if (isRecordingAnotherMemoWithoutCurrentRecording()) {
-                const ongoingMemoName = state.recordingMemoName || "Autre onglet";
-                const duration = Math.floor((Date.now() - state.recordingStartTime) / 1000);
-                const timeLabel = formatDuration(duration);
-                return `■ ${timeLabel} (${ongoingMemoName})`;
-            }
-            if (!isRecordingCurrentMemo()) {
-                const recordingIcon = state.currentMemoRecordingHasVideo ? "video" : "cassette-tape";
-                return `<i data-lucide="${recordingIcon}"></i>${badge}`;
-            }
             const duration = Math.floor((Date.now() - state.recordingStartTime) / 1000);
             const timeLabel = formatDuration(duration);
-            return `■ ${timeLabel}${badge}`;
+            const activeMemoName = String(state.recordingMemoName || "Autre onglet").trim() || "Autre onglet";
+            const label = `En cours : ${activeMemoName} (${timeLabel})`;
+            return `<i data-lucide="square"></i><span>${label}</span>${badge}`;
         }
         if (state.currentMemoRecordingId) {
             const recordingIcon = state.currentMemoRecordingHasVideo ? "video" : "cassette-tape";
@@ -2216,20 +2208,17 @@
         }
     }
 
-    function handleButtonClick() {
-        const isRecordingCurrentMemo = Boolean(
-            state.isRecording && state.currentMemoId && state.recordingMemoId && state.currentMemoId === state.recordingMemoId
-        );
-        if (isRecordingCurrentMemo) {
-            stopRecording();
+    async function handleButtonClick() {
+        if (state.isRecording) {
+            const targetDocumentId = String(state.recordingDocumentId || "").trim();
+            await stopRecording();
+            if (targetDocumentId && window.GoToolkitMemoOpenDocumentByLink) {
+                await window.GoToolkitMemoOpenDocumentByLink(targetDocumentId);
+            }
             return;
         }
         if (state.currentMemoRecordingId) {
             openRecordingPlayer();
-            return;
-        }
-        if (state.isRecording) {
-            stopRecording();
             return;
         }
         requestPermissionsThenOverlay();

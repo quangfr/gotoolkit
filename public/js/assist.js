@@ -3043,31 +3043,37 @@
             advice: {
                 id: "advice",
                 label: storePresets?.advice?.label || "Demander",
+                icon: storePresets?.advice?.icon || "message-square",
                 prompt: advicePrompt
             },
             suggest: {
                 id: "suggest",
                 label: storePresets?.suggest?.label || "Suggérer",
+                icon: storePresets?.suggest?.icon || "wand-2",
                 prompt: suggestPrompt
             },
             edit: {
                 id: "edit",
                 label: storePresets?.edit?.label || "Éditer",
+                icon: storePresets?.edit?.icon || "pen-line",
                 prompt: editPrompt
             },
             import: {
                 id: "import",
                 label: storePresets?.import?.label || "Importer",
+                icon: storePresets?.import?.icon || "download",
                 prompt: importPrompt
             },
             draw: {
                 id: "draw",
                 label: storePresets?.draw?.label || "Draw",
+                icon: storePresets?.draw?.icon || "palette",
                 prompt: drawPrompt
             },
             extract: {
                 id: "extract",
                 label: storePresets?.extract?.label || "Extraire",
+                icon: storePresets?.extract?.icon || "file-text",
                 prompt: extractPrompt
             }
         };
@@ -4941,7 +4947,12 @@
             var activePreset = presets && presets[this.promptPresetId];
             var iconName = activePreset?.icon || "terminal";
             var label = activePreset?.label || ("/" + this.promptPresetId);
-            this.promptDropdownButton.innerHTML = label + ' <i data-lucide="chevron-down" style="width:12px;height:12px;margin-left:2px"></i>';
+            this.promptDropdownButton.innerHTML =
+                '<span class="chat-prompt-btn__content">' +
+                '<i data-lucide="' + escapeHtml(iconName) + '" class="chat-prompt-btn__icon"></i>' +
+                '<span class="chat-prompt-btn__label">' + escapeHtml(label) + '</span>' +
+                '<i data-lucide="chevron-down" class="chat-prompt-btn__chevron"></i>' +
+                "</span>";
             this.promptDropdownButton.title = "Mode: " + label;
             if (global.lucide) global.lucide.createIcons();
         }
@@ -4957,8 +4968,14 @@
         if (this.inlinePromptDropdownButton) {
             var presets = this.getPromptPresets();
             var activePreset = presets && presets[this.promptPresetId];
+            var iconName = activePreset?.icon || "terminal";
             var label = activePreset?.label || ("/" + this.promptPresetId);
-            this.inlinePromptDropdownButton.innerHTML = label + ' <i data-lucide="chevron-down" style="width:12px;height:12px;margin-left:2px"></i>';
+            this.inlinePromptDropdownButton.innerHTML =
+                '<span class="chat-prompt-btn__content">' +
+                '<i data-lucide="' + escapeHtml(iconName) + '" class="chat-prompt-btn__icon"></i>' +
+                '<span class="chat-prompt-btn__label">' + escapeHtml(label) + '</span>' +
+                '<i data-lucide="chevron-down" class="chat-prompt-btn__chevron"></i>' +
+                "</span>";
             this.inlinePromptDropdownButton.title = "Mode: " + label;
             if (global.lucide) global.lucide.createIcons();
         }
@@ -5017,7 +5034,10 @@
             item.dataset.preset = preset.id;
 
             var label = preset.label || ("/" + preset.id);
-            item.innerHTML = label;
+            var iconName = preset.icon || "terminal";
+            item.innerHTML =
+                '<i data-lucide="' + escapeHtml(iconName) + '" class="chat-prompt-menu-item__icon"></i>' +
+                '<span class="chat-prompt-menu-item__label">' + escapeHtml(label) + "</span>";
 
             item.addEventListener("click", function (event) {
                 event.stopPropagation();
@@ -5082,7 +5102,10 @@
             item.dataset.preset = preset.id;
 
             var label = preset.label || ("/" + preset.id);
-            item.innerHTML = label;
+            var iconName = preset.icon || "terminal";
+            item.innerHTML =
+                '<i data-lucide="' + escapeHtml(iconName) + '" class="chat-prompt-menu-item__icon"></i>' +
+                '<span class="chat-prompt-menu-item__label">' + escapeHtml(label) + "</span>";
 
             item.addEventListener("click", function (event) {
                 event.stopPropagation();
@@ -5786,11 +5809,15 @@
         this.scrollButton = document.createElement("button");
         this.scrollButton.type = "button";
         this.scrollButton.id = "chatAttachFilesBtn";
-        this.scrollButton.className = "btn-secondary chat-attach-files-btn chat-scroll-btn";
+        this.scrollButton.className = "chat-attach-files-btn chat-composer-attachment chat-composer-attachments__trigger";
         this.scrollButton.innerHTML = '<i data-lucide="paperclip"></i>';
         this.scrollButton.setAttribute("title", "Fichiers");
         this.scrollButton.addEventListener("click", this.openDocumentSelector.bind(this));
-        composerLeftActions.appendChild(this.scrollButton);
+        if (CHAT_APP_ID === "memo") {
+            memoAttachmentRow.insertBefore(this.scrollButton, this.memoContextAttachmentList);
+        } else {
+            pendingAttachmentRow.insertBefore(this.scrollButton, this.pendingAttachmentList);
+        }
 
         this.docsIndicatorButton = document.createElement("button");
         this.docsIndicatorButton.type = "button";
@@ -6756,7 +6783,8 @@
             ? this.pendingDocumentAttachments.filter(Boolean)
             : [];
         var showList = names.length > 0 && !this.mediaTranscriptionActive;
-        this.pendingAttachmentRow.style.display = showList ? "flex" : "none";
+        this.pendingAttachmentRow.style.display = "flex";
+        this.pendingAttachmentList.style.display = showList ? "flex" : "none";
         if (!showList) {
             this.pendingAttachmentList.innerHTML = "";
             return;
@@ -6974,7 +7002,7 @@
         var pendingNames = Array.isArray(this.pendingDocumentAttachments)
             ? this.pendingDocumentAttachments.filter(Boolean)
             : [];
-        if (CHAT_APP_ID !== "memo" || (!entries.length && !pendingNames.length)) {
+        if (CHAT_APP_ID !== "memo") {
             this.memoContextAttachmentRow.style.display = "none";
             this.memoContextAttachmentList.innerHTML = "";
             return;
@@ -7589,7 +7617,28 @@
         if (this.selectedKnowledgeSpaceIds instanceof Set && this.selectedKnowledgeSpaceIds.size) {
             return this.selectedKnowledgeSpaceIds.size;
         }
-        return getAvailableKnowledgeSpaces().length;
+        return 0;
+    };
+
+    AssistSidebar.prototype.getMemoryButtonIngestionState = function () {
+        var selected = this.selectedKnowledgeSpaceIds instanceof Set
+            ? this.selectedKnowledgeSpaceIds
+            : this.readSelectedKnowledgeSpaces();
+        if (!(selected instanceof Set) || !selected.size) {
+            return "none";
+        }
+        var counters = this.getKnowledgeSpaceCounters(this.knowledgeManifestEntries);
+        var hasPartial = false;
+        selected.forEach(function (spaceId) {
+            var count = counters.get(spaceId) || { ingested: 0, total: 0 };
+            if (count.ingested < count.total) {
+                hasPartial = true;
+            }
+        });
+        if (Boolean(this.knowledgeIndexing) || hasPartial) {
+            return "partial";
+        }
+        return "full";
     };
 
     AssistSidebar.prototype.readSelectedKnowledgeSpaces = function () {
@@ -7610,9 +7659,6 @@
         }
         var allowed = new Set(allIds);
         var selected = new Set(parsed.filter(function (id) { return allowed.has(id); }));
-        if (!selected.size) {
-            allIds.forEach(function (id) { selected.add(id); });
-        }
         return selected;
     };
 
@@ -7757,10 +7803,6 @@
         } else {
             next.delete(spaceId);
         }
-        if (!next.size) {
-            target.checked = true;
-            return;
-        }
         this.selectedKnowledgeSpaceIds = next;
         this.persistSelectedKnowledgeSpaces(next);
         try {
@@ -7790,10 +7832,11 @@
             this.memorySpacesDropdownEl.style.display = showMemoireButton ? "" : "none";
         }
         var count = this.getMemoireDocumentCount();
+        var ingestionState = this.getMemoryButtonIngestionState();
         this.headerDocCountEl.dataset.count = count;
         this.headerDocCountEl.innerHTML = '<i data-lucide="brain"></i>';
-        this.headerDocCountEl.classList.toggle("chat-memory-btn--active", count > 0);
-        this.headerDocCountEl.classList.toggle("chat-memory-btn--indexing", Boolean(this.knowledgeIndexing));
+        this.headerDocCountEl.classList.toggle("chat-memory-btn--active", ingestionState === "full");
+        this.headerDocCountEl.classList.toggle("chat-memory-btn--indexing", ingestionState === "partial");
         if (window.lucide) window.lucide.createIcons();
     };
 

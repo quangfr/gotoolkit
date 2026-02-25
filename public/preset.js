@@ -381,6 +381,7 @@ par rapport à ASK, mettre "output": null et "s_output": null
 Tu reçois le contenu d'un DOCUMENT externe et tu dois le réadapter en conservant exactement le même contenu et la même structure.
 
 ENTRÉES
+- INSTRUCTIONS_UTILISATEUR : instructions spécifiques prioritaires sur les autres
 - DOCUMENT : le contenu texte brut ou JSON du document à importer
 
 OBJECTIF
@@ -411,6 +412,7 @@ RÈGLES DE SORTIE
 Tu génères ou modifies un diagramme Mermaid selon ASK, en utilisant DOCUMENT comme contexte métier.
 
 ENTRÉES
+0) INSTRUCTIONS_UTILISATEUR : instructions spécifiques prioritaires sur les autres
 1) DOCUMENT : Contenu complet actuel du mémo (contexte métier)
 2) CURRENT_CODE : Code Mermaid actuel du diagramme (si modification)
 3) ASK : Demande de l'utilisateur (description ou modification)
@@ -465,35 +467,35 @@ FORMAT DE SORTIE
             advice: {
                 id: "advice",
                 label: "Explorer",
-                icon: "message-square",
+                icon: "compass",
                 prompt: adviceChatPrompt,
                 defaultPrompt: adviceChatPrompt
             },
             suggest: {
                 id: "suggest",
                 label: "Suggérer",
-                icon: "wand-2",
+                icon: "lightbulb",
                 prompt: suggestChatPrompt,
                 defaultPrompt: suggestChatPrompt
             },
             edit: {
                 id: "edit",
                 label: "Éditer",
-                icon: "pen-line",
+                icon: "pencil",
                 prompt: editChatPrompt,
                 defaultPrompt: editChatPrompt
             },
             import: {
                 id: "import",
                 label: "Importer",
-                icon: "download",
+                icon: "upload",
                 prompt: chatImportPrompt,
                 defaultPrompt: chatImportPrompt
             },
             draw: {
                 id: "draw",
                 label: "Dessiner",
-                icon: "palette",
+                icon: "brush",
                 prompt: drawChatPrompt,
                 defaultPrompt: drawChatPrompt
             },
@@ -507,7 +509,7 @@ FORMAT DE SORTIE
             "mobile-edit": {
                 id: "mobile-edit",
                 label: "Mobile Edit",
-                icon: "bot",
+                icon: "smartphone",
                 prompt: mobileEditPrompt,
                 defaultPrompt: mobileEditPrompt
             }

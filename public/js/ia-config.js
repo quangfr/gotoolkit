@@ -9,7 +9,8 @@
         API_KEY: "go-toolkit-openrouter-key",
         MODEL: "go-toolkit-openrouter-model",
         OCR_MODEL: "go-toolkit-openrouter-ocr-model",
-        EMBEDDINGS_MODEL: "go-toolkit-openrouter-embeddings-model"
+        EMBEDDINGS_MODEL: "go-toolkit-openrouter-embeddings-model",
+        REASONING_EFFORT: "go-toolkit-openrouter-reasoning-effort"
     };
 
     var DEFAULTS = {
@@ -17,7 +18,8 @@
         CONTEXT_WINDOW: "0",
         OPENROUTER_MODEL: "openai/gpt-oss-120b",
         OPENROUTER_OCR_MODEL: "qwen/qwen2.5-vl-72b-instruct",
-        OPENROUTER_EMBEDDINGS_MODEL: "qwen/qwen3-embedding-8b"
+        OPENROUTER_EMBEDDINGS_MODEL: "qwen/qwen3-embedding-8b",
+        OPENROUTER_REASONING_EFFORT: "low"
     };
 
     var OPENAI_MODELS = ["gpt-5-nano", "gpt-5-mini"];
@@ -157,6 +159,23 @@
                 normalized = DEFAULTS.OPENROUTER_EMBEDDINGS_MODEL;
             }
             safeStorageWrite(STORAGE_KEYS_OPENROUTER.EMBEDDINGS_MODEL, normalized);
+        },
+        getOpenRouterReasoningEffort: function () {
+            var effort = (safeStorageRead(STORAGE_KEYS_OPENROUTER.REASONING_EFFORT) || "").trim().toLowerCase();
+            if (!effort) {
+                effort = DEFAULTS.OPENROUTER_REASONING_EFFORT;
+            }
+            if (!/^(minimal|low|medium|high)$/.test(effort)) {
+                effort = DEFAULTS.OPENROUTER_REASONING_EFFORT;
+            }
+            return effort;
+        },
+        setOpenRouterReasoningEffort: function (value) {
+            var normalized = (value || "").trim().toLowerCase();
+            if (!/^(minimal|low|medium|high)$/.test(normalized)) {
+                normalized = DEFAULTS.OPENROUTER_REASONING_EFFORT;
+            }
+            safeStorageWrite(STORAGE_KEYS_OPENROUTER.REASONING_EFFORT, normalized);
         },
         isOpenRouterAvailable: function () {
             return Boolean(GoToolkitIAConfig.getOpenRouterApiKey() || OPENROUTER_PROXY_ENDPOINT);

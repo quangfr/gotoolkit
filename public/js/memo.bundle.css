@@ -35,6 +35,15 @@
   box-sizing: border-box;
   overflow: visible;
 }
+.tiptap-bubble-menu svg,
+.tiptap-bubble-menu [data-lucide],
+.bubble-menu svg,
+.bubble-menu [data-lucide],
+.memo-slash-actions-menu svg,
+.memo-slash-actions-menu [data-lucide] {
+  width: var(--go-ui-icon-size, calc(var(--go-ui-font-size, 14px) + 2px)) !important;
+  height: var(--go-ui-icon-size, calc(var(--go-ui-font-size, 14px) + 2px)) !important;
+}
 .code-dropdown-autocomplete {
   background: var(--bg-surface-soft);
   border-radius: 8px;

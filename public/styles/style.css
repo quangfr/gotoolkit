@@ -4,6 +4,7 @@
   --black: #000000;
   --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --go-ui-font-size: 16px;
+  --go-ui-icon-size: calc(var(--go-ui-font-size, 14px) + 2px);
 
   /* 2. Brand Palette */
   --color-primary: #2a7a57;
@@ -1948,8 +1949,16 @@ ul.release-roadmap-text li::before {
 }
 
 .chat-header-title [data-lucide] {
-  width: 24px !important;
-  height: 24px !important;
+  width: var(--go-ui-icon-size) !important;
+  height: var(--go-ui-icon-size) !important;
+}
+
+#assistSidebar [data-lucide],
+#assistSidebar svg.lucide,
+#chat-inline-editor [data-lucide],
+#chat-inline-editor svg.lucide {
+  width: var(--go-ui-icon-size) !important;
+  height: var(--go-ui-icon-size) !important;
 }
 
 .chat-header-actions {
@@ -2873,12 +2882,28 @@ ul.release-roadmap-text li::before {
   padding: 2px 0;
 }
 
+.chat-composer-attachments__trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  flex: 0 0 auto;
+}
+
+.chat-composer-attachments__trigger i,
+.chat-composer-attachments__trigger svg {
+  width: 14px;
+  height: 14px;
+}
+
 .chat-composer-attachments__list,
 .chat-composer-attachments__memo-list {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .chat-composer-queue {
@@ -2939,7 +2964,7 @@ ul.release-roadmap-text li::before {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: max(10px, calc(var(--go-ui-font-size, 16px) - 4px));
   padding: 2px 8px;
   background: transparent;
   border-radius: var(--radius-full);
@@ -2948,8 +2973,14 @@ ul.release-roadmap-text li::before {
   cursor: pointer;
 }
 
+.chat-composer-attachments--pending .chat-composer-attachment {
+  font-size: max(12px, calc(var(--go-ui-font-size, 16px) - 2px));
+}
+
 .chat-composer-attachment__name {
   color: var(--text-main);
+  font-size: inherit;
+  line-height: 1.2;
 }
 
 .chat-composer-attachment[data-enabled="true"] {
@@ -3045,7 +3076,7 @@ ul.release-roadmap-text li::before {
 .chat-composer-left-actions {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 1px;
 }
 
 .chat-prompt-dropdown {
@@ -3059,7 +3090,25 @@ ul.release-roadmap-text li::before {
   min-width: 32px;
   padding: 4px 8px;
   font-weight: 700;
-  font-size: 12px;
+  font-size: 14px;
+}
+
+.chat-prompt-btn__content {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.chat-prompt-btn__icon,
+.chat-prompt-btn__chevron {
+  width: var(--go-ui-icon-size);
+  height: var(--go-ui-icon-size);
+  flex: 0 0 auto;
+}
+
+.chat-prompt-btn__label {
+  font-size: max(12px, calc(var(--go-ui-font-size, 16px) - 3px));
+  line-height: 1;
 }
 
 .chat-prompt-shortcuts-btn {
@@ -3090,12 +3139,25 @@ ul.release-roadmap-text li::before {
 .chat-prompt-menu-item {
   border: none;
   background: transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   text-align: left;
   padding: 6px 8px;
   border-radius: var(--radius-md);
   font-size: var(--go-ui-font-size, 16px);
   cursor: pointer;
   color: var(--text-main);
+}
+
+.chat-prompt-menu-item__icon {
+  width: var(--go-ui-icon-size);
+  height: var(--go-ui-icon-size);
+  flex: 0 0 auto;
+}
+
+.chat-prompt-menu-item__label {
+  line-height: 1;
 }
 
 .chat-prompt-menu-item.active {
@@ -3371,7 +3433,24 @@ ul.release-roadmap-text li::before {
 
 .chat-speech-btn.active {
   color: var(--intent-error-border);
-  box-shadow: 0 0 12px rgba(177, 18, 38, 0.35);
+  box-shadow: none;
+}
+
+.chat-composer .chat-speech-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 31px;
+  height: 31px;
+  margin: 0;
+  padding: 4px;
+  border: none;
+  background: transparent;
+}
+
+.chat-composer .chat-speech-btn svg {
+  width: 21px;
+  height: 21px;
 }
 
 .chat-selection-follow-btn.active {
@@ -3544,6 +3623,12 @@ ul.release-roadmap-text li::before {
 .bubble-menu-btn:hover {
   background: var(--color-primary-soft);
   border-color: var(--color-primary);
+}
+
+.bubble-menu [data-lucide],
+.bubble-menu svg.lucide {
+  width: var(--go-ui-icon-size) !important;
+  height: var(--go-ui-icon-size) !important;
 }
 
 .bubble-keep {

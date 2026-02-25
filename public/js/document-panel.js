@@ -1988,17 +1988,27 @@
                 const allDocs = normalizeList(safeItems).slice().sort((a, b) => String(b?.updatedAt || "").localeCompare(String(a?.updatedAt || "")));
                 const catalog = Array.isArray(superpowersCatalog) ? superpowersCatalog : [];
                 const groups = new Map();
-                groups.set("none", { id: "none", title: "(Aucun)", icon: "shield-question", docs: [] });
+                catalog.forEach((entry) => {
+                    const id = String(entry?.id || "").trim();
+                    if (!id) return;
+                    groups.set(id, {
+                        id,
+                        title: String(entry?.title || id).trim() || id,
+                        icon: String(entry?.icon || "zap").trim() || "zap",
+                        docs: []
+                    });
+                });
                 const resolveDocSuperpower = (doc) => {
                     const value = Array.isArray(doc?.superpowers) ? doc.superpowers[0] : (doc?.superpowers || doc?.category || "");
                     const token = String(value || "").trim();
-                    if (!token) return "none";
+                    if (!token) return "";
                     const lower = token.toLowerCase();
                     const found = catalog.find(sp => String(sp?.id || "").toLowerCase() === lower || String(sp?.title || "").toLowerCase() === lower);
                     return found ? String(found.id) : token;
                 };
                 allDocs.forEach(doc => {
                     const spKey = resolveDocSuperpower(doc);
+                    if (!spKey) return;
                     if (!groups.has(spKey)) {
                         const found = catalog.find(sp => String(sp?.id || "") === spKey || String(sp?.title || "").toLowerCase() === spKey.toLowerCase());
                         groups.set(spKey, {
@@ -2010,7 +2020,7 @@
                     }
                     groups.get(spKey).docs.push(doc);
                 });
-                const visibleGroups = Array.from(groups.values()).filter(group => group.docs.length > 0);
+                const visibleGroups = Array.from(groups.values());
                 const renderGroupRow = (group) => {
                     const row = document.createElement("div");
                     row.className = "document-explorer__tree-row";

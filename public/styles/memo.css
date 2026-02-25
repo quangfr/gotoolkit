@@ -903,6 +903,14 @@
             stroke-width: 2px;
         }
 
+        .app-header [data-lucide],
+        .app-header svg.lucide,
+        .document-explorer [data-lucide],
+        .document-explorer svg.lucide {
+            width: var(--go-ui-icon-size) !important;
+            height: var(--go-ui-icon-size) !important;
+        }
+
         .menu-panel-btn [data-lucide] {
             margin-right: 10px;
         }
@@ -1562,6 +1570,12 @@
             color: var(--text-muted);
             background: var(--bg-surface);
             flex: 0 0 auto;
+        }
+
+        .slash .ico [data-lucide],
+        .slash .ico svg.lucide {
+            width: var(--go-ui-icon-size) !important;
+            height: var(--go-ui-icon-size) !important;
         }
 
         .slash .meta {

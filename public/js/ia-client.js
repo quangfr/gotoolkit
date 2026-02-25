@@ -505,6 +505,11 @@
 
     function buildOpenRouterPayload(payload, backend) {
         const source = payload || {};
+        const cfgEffort = (global.GoToolkitIAConfig?.getOpenRouterReasoningEffort?.() || global.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_REASONING_EFFORT || "low")
+            .toString()
+            .trim()
+            .toLowerCase();
+        const normalizedEffort = /^(minimal|low|medium|high)$/.test(cfgEffort) ? cfgEffort : "low";
 
         const isDirect = Boolean(backend?.hasOpenRouterKey);
         const requestedModel = String(source?.model || "").trim();
@@ -522,7 +527,7 @@
                 proxyPayload.temperature = source.temperature;
             }
             if (typeof proxyPayload.effort === "undefined") {
-                proxyPayload.effort = "low";
+                proxyPayload.effort = normalizedEffort;
             }
             if (typeof proxyPayload.temperature === "undefined") {
                 proxyPayload.temperature = 0.3;
@@ -565,7 +570,7 @@
             result.temperature = 0.3;
         }
         if (typeof result.effort === "undefined") {
-            result.effort = "low";
+            result.effort = normalizedEffort;
         }
 
         const sortBy = (typeof backend?.sort === "string" && backend.sort.trim()) ? backend.sort.trim() : "throughput";
