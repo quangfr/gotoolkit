@@ -14,7 +14,7 @@
             document.documentElement.setAttribute('data-theme', resolvedTheme);
         })();
     </script>
-    <link rel="stylesheet" href="styles/style.css?v=2026.02.26.3">
+    <link rel="stylesheet" href="styles/style.css?v=2026.02.26.4">
     <style>
         .legal-page {
             max-width: 920px;
@@ -187,27 +187,29 @@
                     <tr>
                         <td>Hébergement application</td>
                         <td>Google Firebase (UE) - Hosting</td>
-                        <td>Infrastructure cloud configurée pour l’application. Les traitements exacts dépendent des
-                            fonctionnalités activées et de la configuration projet.
+                        <td>Ressources applicatives de GoToolkit envoyées à l'utilisateur. Pas de données personnelles.
                             <a href="https://firebase.google.com/support/privacy">Lien</a>
                         </td>
                     </tr>
                     <tr>
-                        <td>Données espace privé + Préférence utilisateur</td>
+                        <td>Espace privé + Préférence utilisateur</td>
                         <td>-</td>
-                        <td>Non envoyé.</td>
+                        <td>Données enregistrées localement dans le navigateur. Pas de données envoyées à GoToolkit.
+                        </td>
                     </tr>
                     <tr>
-                        <td>Données espaces partagés + Capture mobile</td>
+                        <td>Espaces partagés + Capture mobile</td>
                         <td>Google Firebase (UE) - Firestore</td>
-                        <td>Contenus de partage chiffrés côté client (E2EE) avant envoi par GoToolkit.
+                        <td>Contenus partagés en ligne créés ou modifiés à l'initiative de l'utilisateur. Chiffrés côté
+                            client (E2EE) avant envoi par GoToolkit.
                             <a href="https://firebase.google.com/support/privacy">Lien</a>
                         </td>
                     </tr>
                     <tr>
-                        <td>Fichiers multimédia</td>
+                        <td>Fichiers multimédia partagés</td>
                         <td>Cloudflare (UE) - R2</td>
-                        <td>Fichiers stockés via R2. Chiffrement côté client (E2EE) des médias par GoToolkit.
+                        <td>Images ou vidéos des contenus partagées en ligne ajoutées par l'utilisateur et stockés en
+                            ligne. Chiffrement côté client (E2EE) avant l'envoi par GoToolkit.
                             <a href="https://www.cloudflare.com/fr-fr/trust-hub/privacy-and-data-protection/">Lien</a>
                         </td>
                     </tr>
@@ -222,9 +224,9 @@
                     <tr>
                         <td>Session OAuth</td>
                         <td>Cloudflare (UE) - D1</td>
-                        <td>Données OAuth stockées dans D1, reliées à un
-                            identifiant de session caléatoire par GoToolkit. Suppression à la
-                            déconnexion ou renouvellement de la clé tous les jours.
+                        <td>Identifiant OAuth non identifiable généré par GoToolkit lors du consentement de
+                            l'utilisateur pour utiliser un service tiers. Stockée dans D1. Suppression à la
+                            déconnexion ou renouvellement de la clé tous les 24h.
                             <a href="https://www.cloudflare.com/fr-fr/trust-hub/privacy-and-data-protection/">Lien</a>
                         </td>
                     </tr>
@@ -271,7 +273,7 @@
                     </tr>
                 </tbody>
             </table>
-            <p><strong>14. Ressources tierces et contenus embarqués</strong><br>Certaines ressources techniques
+            <p><strong>14. Services tierces et contenus embarqués</strong><br>Certaines ressources techniques
                 nécessaires à l’interface (CDN, polices) sont chargées au démarrage de l’application. En outre, les
                 contenus vidéo externes (YouTube/Loom) sont fournis par des services tiers susceptibles d’appliquer
                 leurs propres cookies/traceurs et règles de traitement. Selon le type de traceurs, votre consentement
