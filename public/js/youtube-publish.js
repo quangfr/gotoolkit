@@ -1,7 +1,6 @@
 (function () {
     "use strict";
 
-    const STORAGE_DEVICE_KEY = "go-toolkit-youtube-device-id";
     const DEFAULT_API_BASE = (window.GO_TOOLKIT_YOUTUBE_API_URL || "https://youtube.gotoolkit.workers.dev").replace(/\/$/, "");
 
     function getApiBaseUrl() {
@@ -9,15 +8,8 @@
     }
 
     function getDeviceId() {
-        try {
-            const existing = (localStorage.getItem(STORAGE_DEVICE_KEY) || "").trim();
-            if (existing) return existing;
-            const next = (crypto?.randomUUID?.() || `yt-${Date.now()}-${Math.random().toString(16).slice(2)}`).trim();
-            localStorage.setItem(STORAGE_DEVICE_KEY, next);
-            return next;
-        } catch (err) {
-            return `yt-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-        }
+        // Deprecated: YouTube auth no longer uses device identifiers.
+        return "";
     }
 
     function normalizeLanguage(language) {
@@ -32,8 +24,9 @@
     async function getAuthStatus() {
         const response = await fetch(`${getApiBaseUrl()}/auth/status`, {
             method: "POST",
+            credentials: "include",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ deviceId: getDeviceId() })
+            body: JSON.stringify({})
         });
         const payload = await response.json().catch(() => ({}));
         if (!response.ok) {
@@ -45,8 +38,9 @@
     async function getChannels() {
         const response = await fetch(`${getApiBaseUrl()}/auth/channels`, {
             method: "POST",
+            credentials: "include",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ deviceId: getDeviceId() })
+            body: JSON.stringify({})
         });
         const payload = await response.json().catch(() => ({}));
         if (!response.ok) {
@@ -58,8 +52,9 @@
     async function selectChannel(channelId) {
         const response = await fetch(`${getApiBaseUrl()}/auth/channel/select`, {
             method: "POST",
+            credentials: "include",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ deviceId: getDeviceId(), channelId: String(channelId || "").trim() })
+            body: JSON.stringify({ channelId: String(channelId || "").trim() })
         });
         const payload = await response.json().catch(() => ({}));
         if (!response.ok) {
@@ -71,8 +66,9 @@
     async function disconnect() {
         const response = await fetch(`${getApiBaseUrl()}/auth/disconnect`, {
             method: "POST",
+            credentials: "include",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ deviceId: getDeviceId() })
+            body: JSON.stringify({})
         });
         const payload = await response.json().catch(() => ({}));
         if (!response.ok) {
@@ -82,10 +78,9 @@
     }
 
     function openOAuthPopup() {
-        const deviceId = getDeviceId();
         const origin = window.location.origin;
         const api = getApiBaseUrl();
-        const url = `${api}/oauth/start?deviceId=${encodeURIComponent(deviceId)}&origin=${encodeURIComponent(origin)}`;
+        const url = `${api}/oauth/start?origin=${encodeURIComponent(origin)}`;
         const popup = window.open(url, "gotoolkit-youtube-oauth", "width=560,height=700");
         if (!popup) {
             return Promise.reject(new Error("Popup OAuth bloquee"));
@@ -136,7 +131,6 @@
         await ensureConnected();
         const form = new FormData();
         const safeTitle = String(title || "Document").trim() || "Document";
-        form.append("deviceId", getDeviceId());
         form.append("title", safeTitle);
         form.append("description", String(description || ""));
         form.append("privacyStatus", "unlisted");
@@ -161,6 +155,7 @@
 
         const response = await fetch(`${getApiBaseUrl()}/videos/upload`, {
             method: "POST",
+            credentials: "include",
             body: form
         });
         const payload = await response.json().catch(() => ({}));

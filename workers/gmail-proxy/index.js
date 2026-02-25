@@ -7,6 +7,8 @@ const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo";
 const GMAIL_API_BASE = "https://gmail.googleapis.com/gmail/v1/users/me";
+const SESSION_COOKIE_NAME = "gt_gmail_sid";
+const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
 const DEFAULT_SCOPE = [
   "https://www.googleapis.com/auth/gmail.compose",
   "openid",
@@ -35,18 +37,20 @@ function corsMeta(request) {
   const headers = {
     "Access-Control-Allow-Origin": corsOrigin,
     "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type"
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Credentials": "true"
   };
   if (!allowLocal) headers["Vary"] = "Origin";
   return { origin, allowLocal, headers };
 }
 
-function jsonResponse(corsHeaders, payload, status = 200) {
+function jsonResponse(corsHeaders, payload, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(payload), {
     status,
     headers: {
       ...corsHeaders,
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
+      ...extraHeaders
     }
   });
 }
@@ -61,7 +65,52 @@ function getRedirectUri(request) {
 }
 
 function getTokenKey(deviceId) {
-  return `gmail-device:${deviceId}`;
+  return `gmail-session:${deviceId}`;
+}
+
+function generateOpaqueSessionId() {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (v) => v.toString(16).padStart(2, "0")).join("");
+}
+
+function parseCookies(request) {
+  const raw = String(request.headers.get("Cookie") || "");
+  const out = {};
+  if (!raw) return out;
+  const entries = raw.split(";");
+  for (const entry of entries) {
+    const [k, ...rest] = entry.split("=");
+    const key = String(k || "").trim();
+    if (!key) continue;
+    out[key] = decodeURIComponent(rest.join("=").trim());
+  }
+  return out;
+}
+
+function getSessionIdFromRequest(request) {
+  const cookies = parseCookies(request);
+  return String(cookies?.[SESSION_COOKIE_NAME] || "").trim();
+}
+
+function buildSessionCookie(sessionId, maxAgeSeconds = SESSION_MAX_AGE_SECONDS) {
+  const safeSid = String(sessionId || "").trim();
+  const maxAge = Number.isFinite(maxAgeSeconds) ? Math.max(0, Math.floor(maxAgeSeconds)) : 0;
+  const parts = [
+    `${SESSION_COOKIE_NAME}=${encodeURIComponent(safeSid)}`,
+    "Path=/",
+    "HttpOnly",
+    "Secure",
+    "SameSite=None",
+    `Max-Age=${maxAge}`
+  ];
+  return parts.join("; ");
+}
+
+function resolveSessionId(request, body = null) {
+  const cookieSid = getSessionIdFromRequest(request);
+  if (cookieSid) return cookieSid;
+  return "";
 }
 
 function encodeState(payload) {
@@ -164,9 +213,9 @@ function normalizeStoredToken(raw) {
   };
 }
 
-async function readToken(env, deviceId) {
-  if (!env?.GMAIL_OAUTH || !deviceId) return null;
-  const raw = await env.GMAIL_OAUTH.get(getTokenKey(deviceId));
+async function readToken(env, sessionId) {
+  if (!env?.GMAIL_OAUTH || !sessionId) return null;
+  const raw = await env.GMAIL_OAUTH.get(getTokenKey(sessionId));
   if (!raw) return null;
   try {
     return JSON.parse(raw);
@@ -175,14 +224,14 @@ async function readToken(env, deviceId) {
   }
 }
 
-async function writeToken(env, deviceId, value) {
-  if (!env?.GMAIL_OAUTH || !deviceId || !value) return;
-  await env.GMAIL_OAUTH.put(getTokenKey(deviceId), JSON.stringify(value));
+async function writeToken(env, sessionId, value) {
+  if (!env?.GMAIL_OAUTH || !sessionId || !value) return;
+  await env.GMAIL_OAUTH.put(getTokenKey(sessionId), JSON.stringify(value));
 }
 
-async function clearToken(env, deviceId) {
-  if (!env?.GMAIL_OAUTH || !deviceId) return;
-  await env.GMAIL_OAUTH.delete(getTokenKey(deviceId));
+async function clearToken(env, sessionId) {
+  if (!env?.GMAIL_OAUTH || !sessionId) return;
+  await env.GMAIL_OAUTH.delete(getTokenKey(sessionId));
 }
 
 async function exchangeCodeForToken(request, env, code) {
@@ -238,8 +287,8 @@ async function fetchGoogleProfile(accessToken) {
   };
 }
 
-async function getValidToken(env, deviceId) {
-  const stored = normalizeStoredToken(await readToken(env, deviceId));
+async function getValidToken(env, sessionId) {
+  const stored = normalizeStoredToken(await readToken(env, sessionId));
   if (!stored.access_token) return null;
   if (stored.expires_at > Date.now() + 30_000) {
     return stored;
@@ -254,7 +303,7 @@ async function getValidToken(env, deviceId) {
     scope: String(refreshed.scope || stored.scope || DEFAULT_SCOPE).trim() || DEFAULT_SCOPE,
     expires_at: Date.now() + (Number(refreshed.expires_in || 3600) * 1000)
   };
-  await writeToken(env, deviceId, next);
+  await writeToken(env, sessionId, next);
   return next;
 }
 
@@ -281,11 +330,8 @@ function renderOAuthCallbackPage(ok, message, targetOrigin) {
 
 async function handleOAuthStart(request, env) {
   const url = new URL(request.url);
-  const deviceId = (url.searchParams.get("deviceId") || "").trim();
   const origin = (url.searchParams.get("origin") || "").trim();
-  if (!deviceId) {
-    return new Response("Missing deviceId", { status: 400 });
-  }
+  const sessionId = getSessionIdFromRequest(request) || generateOpaqueSessionId();
   const authUrl = new URL(GOOGLE_AUTH_URL);
   authUrl.searchParams.set("client_id", env.GMAIL_CLIENT_ID || "");
   authUrl.searchParams.set("redirect_uri", getRedirectUri(request));
@@ -293,8 +339,14 @@ async function handleOAuthStart(request, env) {
   authUrl.searchParams.set("scope", DEFAULT_SCOPE);
   authUrl.searchParams.set("access_type", "offline");
   authUrl.searchParams.set("prompt", "consent");
-  authUrl.searchParams.set("state", encodeState({ deviceId, origin }));
-  return Response.redirect(authUrl.toString(), 302);
+  authUrl.searchParams.set("state", encodeState({ sessionId, origin }));
+  return new Response(null, {
+    status: 302,
+    headers: {
+      Location: authUrl.toString(),
+      "Set-Cookie": buildSessionCookie(sessionId)
+    }
+  });
 }
 
 async function handleOAuthCallback(request, env) {
@@ -302,7 +354,7 @@ async function handleOAuthCallback(request, env) {
   const code = (url.searchParams.get("code") || "").trim();
   const oauthError = (url.searchParams.get("error_description") || url.searchParams.get("error") || "").trim();
   const state = decodeState(url.searchParams.get("state") || "");
-  const deviceId = String(state.deviceId || "").trim();
+  const sessionId = String(state.sessionId || "").trim() || getSessionIdFromRequest(request);
   const targetOrigin = String(state.origin || "").trim();
 
   if (oauthError) {
@@ -311,7 +363,7 @@ async function handleOAuthCallback(request, env) {
       headers: { "Content-Type": "text/html; charset=utf-8" }
     });
   }
-  if (!code || !deviceId) {
+  if (!code || !sessionId) {
     return new Response(renderOAuthCallbackPage(false, "Code OAuth manquant", targetOrigin), {
       status: 400,
       headers: { "Content-Type": "text/html; charset=utf-8" }
@@ -334,14 +386,17 @@ async function handleOAuthCallback(request, env) {
       account_email: profile.email || "",
       account_name: profile.name || ""
     };
-    const previous = normalizeStoredToken(await readToken(env, deviceId));
+    const previous = normalizeStoredToken(await readToken(env, sessionId));
     if (!nextToken.refresh_token && previous.refresh_token) {
       nextToken.refresh_token = previous.refresh_token;
     }
-    await writeToken(env, deviceId, nextToken);
+    await writeToken(env, sessionId, nextToken);
     return new Response(renderOAuthCallbackPage(true, "OK", targetOrigin), {
       status: 200,
-      headers: { "Content-Type": "text/html; charset=utf-8" }
+      headers: {
+        "Content-Type": "text/html; charset=utf-8",
+        "Set-Cookie": buildSessionCookie(sessionId)
+      }
     });
   } catch (err) {
     return new Response(renderOAuthCallbackPage(false, err?.message || "OAuth echoue", targetOrigin), {
@@ -468,9 +523,11 @@ export default {
 
     if (request.method === "POST" && path === "/auth/status") {
       const body = await request.json().catch(() => ({}));
-      const deviceId = String(body?.deviceId || "").trim();
-      if (!deviceId) return errorResponse(cors.headers, 400, "deviceId requis");
-      const token = await getValidToken(env, deviceId).catch(() => null);
+      const sessionId = resolveSessionId(request, body);
+      if (!sessionId) {
+        return jsonResponse(cors.headers, { connected: false, accountEmail: "", accountName: "" });
+      }
+      const token = await getValidToken(env, sessionId).catch(() => null);
       if (!token?.access_token) {
         return jsonResponse(cors.headers, { connected: false, accountEmail: "", accountName: "" });
       }
@@ -478,28 +535,28 @@ export default {
         connected: true,
         accountEmail: token.account_email || "",
         accountName: token.account_name || ""
-      });
+      }, 200, { "Set-Cookie": buildSessionCookie(sessionId) });
     }
 
     if (request.method === "POST" && path === "/auth/disconnect") {
       const body = await request.json().catch(() => ({}));
-      const deviceId = String(body?.deviceId || "").trim();
-      if (!deviceId) return errorResponse(cors.headers, 400, "deviceId requis");
-      await clearToken(env, deviceId);
-      return jsonResponse(cors.headers, { connected: false });
+      const sessionId = resolveSessionId(request, body);
+      if (!sessionId) return jsonResponse(cors.headers, { connected: false });
+      await clearToken(env, sessionId);
+      return jsonResponse(cors.headers, { connected: false }, 200, { "Set-Cookie": buildSessionCookie("", 0) });
     }
 
     if (request.method === "POST" && path === "/mail/draft/create") {
       const body = await request.json().catch(() => ({}));
-      const deviceId = String(body?.deviceId || "").trim();
+      const sessionId = resolveSessionId(request, body);
       const subject = String(body?.subject || "Document").trim() || "Document";
       const html = String(body?.html || "");
       const text = String(body?.text || "");
       const attachments = normalizeAttachments(body?.attachments);
-      if (!deviceId) return errorResponse(cors.headers, 400, "deviceId requis");
+      if (!sessionId) return errorResponse(cors.headers, 401, "session requise");
       if (!String(html || "").trim()) return errorResponse(cors.headers, 400, "Contenu HTML requis");
 
-      const token = await getValidToken(env, deviceId).catch(() => null);
+      const token = await getValidToken(env, sessionId).catch(() => null);
       if (!token?.access_token) return errorResponse(cors.headers, 401, "Connexion Gmail requise");
 
       try {

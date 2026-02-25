@@ -7,6 +7,8 @@ const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const YOUTUBE_UPLOAD_URL = "https://www.googleapis.com/upload/youtube/v3/videos";
 const YOUTUBE_CAPTIONS_UPLOAD_URL = "https://www.googleapis.com/upload/youtube/v3/captions";
+const SESSION_COOKIE_NAME = "gt_youtube_sid";
+const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
 const DEFAULT_SCOPE = [
   "https://www.googleapis.com/auth/youtube.upload",
   "https://www.googleapis.com/auth/youtube.force-ssl"
@@ -33,18 +35,20 @@ function corsMeta(request) {
   const headers = {
     "Access-Control-Allow-Origin": corsOrigin,
     "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type"
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Credentials": "true"
   };
   if (!allowLocal) headers["Vary"] = "Origin";
   return { origin, allowLocal, headers };
 }
 
-function jsonResponse(corsHeaders, payload, status = 200) {
+function jsonResponse(corsHeaders, payload, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(payload), {
     status,
     headers: {
       ...corsHeaders,
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
+      ...extraHeaders
     }
   });
 }
@@ -59,11 +63,56 @@ function getRedirectUri(request) {
 }
 
 function getTokenKey(deviceId) {
-  return `yt-device:${deviceId}`;
+  return `yt-session:${deviceId}`;
 }
 
 function getSelectedChannelKey(deviceId) {
-  return `yt-channel:${deviceId}`;
+  return `yt-channel-session:${deviceId}`;
+}
+
+function generateOpaqueSessionId() {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (v) => v.toString(16).padStart(2, "0")).join("");
+}
+
+function parseCookies(request) {
+  const raw = String(request.headers.get("Cookie") || "");
+  const out = {};
+  if (!raw) return out;
+  const entries = raw.split(";");
+  for (const entry of entries) {
+    const [k, ...rest] = entry.split("=");
+    const key = String(k || "").trim();
+    if (!key) continue;
+    out[key] = decodeURIComponent(rest.join("=").trim());
+  }
+  return out;
+}
+
+function getSessionIdFromRequest(request) {
+  const cookies = parseCookies(request);
+  return String(cookies?.[SESSION_COOKIE_NAME] || "").trim();
+}
+
+function buildSessionCookie(sessionId, maxAgeSeconds = SESSION_MAX_AGE_SECONDS) {
+  const safeSid = String(sessionId || "").trim();
+  const maxAge = Number.isFinite(maxAgeSeconds) ? Math.max(0, Math.floor(maxAgeSeconds)) : 0;
+  const parts = [
+    `${SESSION_COOKIE_NAME}=${encodeURIComponent(safeSid)}`,
+    "Path=/",
+    "HttpOnly",
+    "Secure",
+    "SameSite=None",
+    `Max-Age=${maxAge}`
+  ];
+  return parts.join("; ");
+}
+
+function resolveSessionId(request) {
+  const cookieSid = getSessionIdFromRequest(request);
+  if (cookieSid) return cookieSid;
+  return "";
 }
 
 function normalizeLanguage(raw) {
@@ -72,9 +121,9 @@ function normalizeLanguage(raw) {
   return root || "fr";
 }
 
-async function getStoredToken(env, deviceId) {
-  if (!env?.YOUTUBE_OAUTH || !deviceId) return null;
-  const raw = await env.YOUTUBE_OAUTH.get(getTokenKey(deviceId));
+async function getStoredToken(env, sessionId) {
+  if (!env?.YOUTUBE_OAUTH || !sessionId) return null;
+  const raw = await env.YOUTUBE_OAUTH.get(getTokenKey(sessionId));
   if (!raw) return null;
   try {
     return JSON.parse(raw);
@@ -83,29 +132,29 @@ async function getStoredToken(env, deviceId) {
   }
 }
 
-async function storeToken(env, deviceId, token) {
-  if (!env?.YOUTUBE_OAUTH || !deviceId || !token) return;
-  await env.YOUTUBE_OAUTH.put(getTokenKey(deviceId), JSON.stringify(token));
+async function storeToken(env, sessionId, token) {
+  if (!env?.YOUTUBE_OAUTH || !sessionId || !token) return;
+  await env.YOUTUBE_OAUTH.put(getTokenKey(sessionId), JSON.stringify(token));
 }
 
-async function clearToken(env, deviceId) {
-  if (!env?.YOUTUBE_OAUTH || !deviceId) return;
-  await env.YOUTUBE_OAUTH.delete(getTokenKey(deviceId));
+async function clearToken(env, sessionId) {
+  if (!env?.YOUTUBE_OAUTH || !sessionId) return;
+  await env.YOUTUBE_OAUTH.delete(getTokenKey(sessionId));
 }
 
-async function getSelectedChannelId(env, deviceId) {
-  if (!env?.YOUTUBE_OAUTH || !deviceId) return "";
-  return String((await env.YOUTUBE_OAUTH.get(getSelectedChannelKey(deviceId))) || "").trim();
+async function getSelectedChannelId(env, sessionId) {
+  if (!env?.YOUTUBE_OAUTH || !sessionId) return "";
+  return String((await env.YOUTUBE_OAUTH.get(getSelectedChannelKey(sessionId))) || "").trim();
 }
 
-async function setSelectedChannelId(env, deviceId, channelId) {
-  if (!env?.YOUTUBE_OAUTH || !deviceId) return;
+async function setSelectedChannelId(env, sessionId, channelId) {
+  if (!env?.YOUTUBE_OAUTH || !sessionId) return;
   const normalized = String(channelId || "").trim();
   if (!normalized) {
-    await env.YOUTUBE_OAUTH.delete(getSelectedChannelKey(deviceId));
+    await env.YOUTUBE_OAUTH.delete(getSelectedChannelKey(sessionId));
     return;
   }
-  await env.YOUTUBE_OAUTH.put(getSelectedChannelKey(deviceId), normalized);
+  await env.YOUTUBE_OAUTH.put(getSelectedChannelKey(sessionId), normalized);
 }
 
 async function listOwnedChannels(accessToken) {
@@ -172,8 +221,8 @@ async function refreshAccessToken(request, env, refreshToken) {
   return payload;
 }
 
-async function getValidAccessToken(request, env, deviceId) {
-  const stored = await getStoredToken(env, deviceId);
+async function getValidAccessToken(request, env, sessionId) {
+  const stored = await getStoredToken(env, sessionId);
   if (!stored?.refresh_token) return null;
   const now = Date.now();
   if (stored.access_token && Number(stored.expires_at || 0) > now + 30_000) {
@@ -185,7 +234,7 @@ async function getValidAccessToken(request, env, deviceId) {
     access_token: refreshed.access_token,
     expires_at: now + (Number(refreshed.expires_in || 3600) * 1000)
   };
-  await storeToken(env, deviceId, merged);
+  await storeToken(env, sessionId, merged);
   return merged.access_token;
 }
 
@@ -288,13 +337,10 @@ async function uploadCaptions(accessToken, payload) {
 
 async function handleOAuthStart(request, env) {
   const url = new URL(request.url);
-  const deviceId = (url.searchParams.get("deviceId") || "").trim();
   const origin = (url.searchParams.get("origin") || "").trim();
-  if (!deviceId) {
-    return new Response("Missing deviceId", { status: 400 });
-  }
+  const sessionId = getSessionIdFromRequest(request) || generateOpaqueSessionId();
   const statePayload = {
-    deviceId,
+    sessionId,
     origin
   };
   const authUrl = new URL(GOOGLE_AUTH_URL);
@@ -305,7 +351,13 @@ async function handleOAuthStart(request, env) {
   authUrl.searchParams.set("access_type", "offline");
   authUrl.searchParams.set("prompt", "consent");
   authUrl.searchParams.set("state", btoa(JSON.stringify(statePayload)));
-  return Response.redirect(authUrl.toString(), 302);
+  return new Response(null, {
+    status: 302,
+    headers: {
+      Location: authUrl.toString(),
+      "Set-Cookie": buildSessionCookie(sessionId)
+    }
+  });
 }
 
 function renderOAuthCallbackPage(ok, message, targetOrigin) {
@@ -343,9 +395,9 @@ async function handleOAuthCallback(request, env) {
   const url = new URL(request.url);
   const code = (url.searchParams.get("code") || "").trim();
   const state = decodeState(url.searchParams.get("state") || "");
-  const deviceId = (state.deviceId || "").trim();
+  const sessionId = (state.sessionId || "").trim() || getSessionIdFromRequest(request);
   const targetOrigin = (state.origin || "").trim();
-  if (!code || !deviceId) {
+  if (!code || !sessionId) {
     return new Response(renderOAuthCallbackPage(false, "Code OAuth manquant", targetOrigin), {
       status: 400,
       headers: { "Content-Type": "text/html; charset=utf-8" }
@@ -360,14 +412,17 @@ async function handleOAuthCallback(request, env) {
       token_type: tokenPayload.token_type || "Bearer",
       scope: tokenPayload.scope || DEFAULT_SCOPE
     };
-    const previous = await getStoredToken(env, deviceId);
+    const previous = await getStoredToken(env, sessionId);
     if (!token.refresh_token && previous?.refresh_token) {
       token.refresh_token = previous.refresh_token;
     }
-    await storeToken(env, deviceId, token);
+    await storeToken(env, sessionId, token);
     return new Response(renderOAuthCallbackPage(true, "OK", targetOrigin), {
       status: 200,
-      headers: { "Content-Type": "text/html; charset=utf-8" }
+      headers: {
+        "Content-Type": "text/html; charset=utf-8",
+        "Set-Cookie": buildSessionCookie(sessionId)
+      }
     });
   } catch (err) {
     return new Response(renderOAuthCallbackPage(false, err?.message || "OAuth echoue", targetOrigin), {
@@ -401,12 +456,14 @@ export default {
     }
 
     if (request.method === "POST" && path === "/auth/status") {
-      const body = await request.json().catch(() => ({}));
-      const deviceId = String(body?.deviceId || "").trim();
-      if (!deviceId) return errorResponse(cors.headers, 400, "deviceId requis");
-      const accessToken = await getValidAccessToken(request, env, deviceId).catch(() => null);
+      await request.json().catch(() => ({}));
+      const sessionId = resolveSessionId(request);
+      if (!sessionId) {
+        return jsonResponse(cors.headers, { connected: false, hasChannel: false, channels: [], selectedChannelId: "" });
+      }
+      const accessToken = await getValidAccessToken(request, env, sessionId).catch(() => null);
       if (!accessToken) {
-        await setSelectedChannelId(env, deviceId, "");
+        await setSelectedChannelId(env, sessionId, "");
         return jsonResponse(cors.headers, {
           connected: false,
           hasChannel: false,
@@ -415,29 +472,31 @@ export default {
         });
       }
       const channels = await listOwnedChannels(accessToken).catch(() => []);
-      let selectedChannelId = await getSelectedChannelId(env, deviceId);
+      let selectedChannelId = await getSelectedChannelId(env, sessionId);
       if (selectedChannelId && !channels.some(ch => ch.id === selectedChannelId)) {
         selectedChannelId = "";
       }
       if (!selectedChannelId && channels.length) {
         selectedChannelId = channels[0].id;
       }
-      await setSelectedChannelId(env, deviceId, selectedChannelId);
+      await setSelectedChannelId(env, sessionId, selectedChannelId);
       return jsonResponse(cors.headers, {
         connected: true,
         hasChannel: channels.length > 0,
         channels,
         selectedChannelId
-      });
+      }, 200, { "Set-Cookie": buildSessionCookie(sessionId) });
     }
 
     if (request.method === "POST" && path === "/auth/channels") {
-      const body = await request.json().catch(() => ({}));
-      const deviceId = String(body?.deviceId || "").trim();
-      if (!deviceId) return errorResponse(cors.headers, 400, "deviceId requis");
-      const accessToken = await getValidAccessToken(request, env, deviceId).catch(() => null);
+      await request.json().catch(() => ({}));
+      const sessionId = resolveSessionId(request);
+      if (!sessionId) {
+        return jsonResponse(cors.headers, { connected: false, hasChannel: false, channels: [], selectedChannelId: "" });
+      }
+      const accessToken = await getValidAccessToken(request, env, sessionId).catch(() => null);
       if (!accessToken) {
-        await setSelectedChannelId(env, deviceId, "");
+        await setSelectedChannelId(env, sessionId, "");
         return jsonResponse(cors.headers, {
           connected: false,
           hasChannel: false,
@@ -446,64 +505,64 @@ export default {
         });
       }
       const channels = await listOwnedChannels(accessToken).catch(() => []);
-      let selectedChannelId = await getSelectedChannelId(env, deviceId);
+      let selectedChannelId = await getSelectedChannelId(env, sessionId);
       if (selectedChannelId && !channels.some(ch => ch.id === selectedChannelId)) {
         selectedChannelId = "";
       }
       if (!selectedChannelId && channels.length) {
         selectedChannelId = channels[0].id;
       }
-      await setSelectedChannelId(env, deviceId, selectedChannelId);
+      await setSelectedChannelId(env, sessionId, selectedChannelId);
       return jsonResponse(cors.headers, {
         connected: true,
         hasChannel: channels.length > 0,
         channels,
         selectedChannelId
-      });
+      }, 200, { "Set-Cookie": buildSessionCookie(sessionId) });
     }
 
     if (request.method === "POST" && path === "/auth/channel/select") {
       const body = await request.json().catch(() => ({}));
-      const deviceId = String(body?.deviceId || "").trim();
+      const sessionId = resolveSessionId(request);
       const channelId = String(body?.channelId || "").trim();
-      if (!deviceId) return errorResponse(cors.headers, 400, "deviceId requis");
+      if (!sessionId) return errorResponse(cors.headers, 401, "session requise");
       if (!channelId) return errorResponse(cors.headers, 400, "channelId requis");
-      const accessToken = await getValidAccessToken(request, env, deviceId).catch(() => null);
+      const accessToken = await getValidAccessToken(request, env, sessionId).catch(() => null);
       if (!accessToken) return errorResponse(cors.headers, 401, "Connexion YouTube requise");
       const channels = await listOwnedChannels(accessToken);
       if (!channels.some(ch => ch.id === channelId)) {
         return errorResponse(cors.headers, 400, "Chaîne invalide pour cet utilisateur");
       }
-      await setSelectedChannelId(env, deviceId, channelId);
+      await setSelectedChannelId(env, sessionId, channelId);
       return jsonResponse(cors.headers, {
         connected: true,
         hasChannel: channels.length > 0,
         channels,
         selectedChannelId: channelId
-      });
+      }, 200, { "Set-Cookie": buildSessionCookie(sessionId) });
     }
 
     if (request.method === "POST" && path === "/auth/disconnect") {
-      const body = await request.json().catch(() => ({}));
-      const deviceId = String(body?.deviceId || "").trim();
-      if (!deviceId) return errorResponse(cors.headers, 400, "deviceId requis");
-      await clearToken(env, deviceId);
-      await setSelectedChannelId(env, deviceId, "");
-      return jsonResponse(cors.headers, { connected: false });
+      await request.json().catch(() => ({}));
+      const sessionId = resolveSessionId(request);
+      if (!sessionId) return jsonResponse(cors.headers, { connected: false }, 200, { "Set-Cookie": buildSessionCookie("", 0) });
+      await clearToken(env, sessionId);
+      await setSelectedChannelId(env, sessionId, "");
+      return jsonResponse(cors.headers, { connected: false }, 200, { "Set-Cookie": buildSessionCookie("", 0) });
     }
 
     if (request.method === "POST" && path === "/videos/upload") {
       const form = await request.formData().catch(() => null);
       if (!form) return errorResponse(cors.headers, 400, "Corps invalide");
-      const deviceId = String(form.get("deviceId") || "").trim();
-      if (!deviceId) return errorResponse(cors.headers, 400, "deviceId requis");
-      const accessToken = await getValidAccessToken(request, env, deviceId).catch(() => null);
+      const sessionId = resolveSessionId(request);
+      if (!sessionId) return errorResponse(cors.headers, 401, "session requise");
+      const accessToken = await getValidAccessToken(request, env, sessionId).catch(() => null);
       if (!accessToken) return errorResponse(cors.headers, 401, "Connexion YouTube requise");
       const channels = await listOwnedChannels(accessToken).catch(() => []);
       if (!channels.length) {
         return errorResponse(cors.headers, 400, "Aucune chaîne YouTube disponible");
       }
-      const selectedChannelId = (String(form.get("channelId") || "").trim() || await getSelectedChannelId(env, deviceId));
+      const selectedChannelId = (String(form.get("channelId") || "").trim() || await getSelectedChannelId(env, sessionId));
       if (selectedChannelId && !channels.some(ch => ch.id === selectedChannelId)) {
         return errorResponse(cors.headers, 400, "Chaîne YouTube non disponible");
       }

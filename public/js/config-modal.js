@@ -1340,7 +1340,6 @@
         }
     };
 
-    const NOTION_STORAGE_DEVICE_KEY = "go-toolkit-notion-device-id";
     const DEFAULT_NOTION_API_BASE = (global.GO_TOOLKIT_NOTION_API_URL || "https://notion.gotoolkit.workers.dev").replace(/\/$/, "");
 
     function getNotionApiBaseUrl() {
@@ -1348,20 +1347,14 @@
     }
 
     function getNotionDeviceId() {
-        try {
-            const existing = (localStorage.getItem(NOTION_STORAGE_DEVICE_KEY) || "").trim();
-            if (existing) return existing;
-            const next = (crypto?.randomUUID?.() || `notion-${Date.now()}-${Math.random().toString(16).slice(2)}`).trim();
-            localStorage.setItem(NOTION_STORAGE_DEVICE_KEY, next);
-            return next;
-        } catch (err) {
-            return `notion-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-        }
+        // Deprecated: Notion auth no longer uses device identifiers.
+        return "";
     }
 
     async function notionJsonPost(path, body) {
         const response = await fetch(`${getNotionApiBaseUrl()}${path}`, {
             method: "POST",
+            credentials: "include",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body || {})
         });
@@ -1373,10 +1366,9 @@
     }
 
     function openNotionOAuthPopup() {
-        const deviceId = getNotionDeviceId();
         const origin = global.location.origin;
         const api = getNotionApiBaseUrl();
-        const url = `${api}/oauth/start?deviceId=${encodeURIComponent(deviceId)}&origin=${encodeURIComponent(origin)}`;
+        const url = `${api}/oauth/start?origin=${encodeURIComponent(origin)}`;
         const popup = global.open(url, "gotoolkit-notion-oauth", "width=560,height=700");
         if (!popup) {
             return Promise.reject(new Error("Popup OAuth bloquee"));
@@ -1409,22 +1401,21 @@
     }
 
     async function notionGetAuthStatus() {
-        return notionJsonPost("/auth/status", { deviceId: getNotionDeviceId() });
+        return notionJsonPost("/auth/status", {});
     }
 
     async function notionGetWorkspaces() {
-        return notionJsonPost("/auth/workspaces", { deviceId: getNotionDeviceId() });
+        return notionJsonPost("/auth/workspaces", {});
     }
 
     async function notionSelectWorkspace(workspaceId) {
         return notionJsonPost("/auth/workspace/select", {
-            deviceId: getNotionDeviceId(),
             workspaceId: String(workspaceId || "").trim()
         });
     }
 
     async function notionDisconnect() {
-        return notionJsonPost("/auth/disconnect", { deviceId: getNotionDeviceId() });
+        return notionJsonPost("/auth/disconnect", {});
     }
 
     async function notionEnsureConnected() {
@@ -1436,7 +1427,6 @@
 
     async function notionListPages(options) {
         return notionJsonPost("/pages/list", {
-            deviceId: getNotionDeviceId(),
             workspaceId: String(options?.workspaceId || "").trim(),
             parentId: String(options?.parentId || "").trim()
         });
@@ -1444,7 +1434,6 @@
 
     async function notionPublishPage(options) {
         return notionJsonPost("/pages/publish", {
-            deviceId: getNotionDeviceId(),
             workspaceId: String(options?.workspaceId || "").trim(),
             parentId: String(options?.parentId || "").trim(),
             pageId: String(options?.pageId || "").trim(),
@@ -1461,7 +1450,6 @@
 
     async function notionGetPageContent(options) {
         return notionJsonPost("/pages/content", {
-            deviceId: getNotionDeviceId(),
             workspaceId: String(options?.workspaceId || "").trim(),
             pageId: String(options?.pageId || "").trim()
         });
@@ -1479,7 +1467,6 @@
         getPageContent: notionGetPageContent
     };
 
-    const MICROSOFT_STORAGE_DEVICE_KEY = "go-toolkit-microsoft-device-id";
     const DEFAULT_MICROSOFT_API_BASE = (global.GO_TOOLKIT_MICROSOFT_API_URL || "https://ms.gotoolkit.workers.dev").replace(/\/$/, "");
 
     function getMicrosoftApiBaseUrl() {
@@ -1487,20 +1474,14 @@
     }
 
     function getMicrosoftDeviceId() {
-        try {
-            const existing = (localStorage.getItem(MICROSOFT_STORAGE_DEVICE_KEY) || "").trim();
-            if (existing) return existing;
-            const next = (crypto?.randomUUID?.() || `ms-${Date.now()}-${Math.random().toString(16).slice(2)}`).trim();
-            localStorage.setItem(MICROSOFT_STORAGE_DEVICE_KEY, next);
-            return next;
-        } catch (err) {
-            return `ms-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-        }
+        // Deprecated: Microsoft auth no longer uses device identifiers.
+        return "";
     }
 
     async function microsoftJsonPost(path, body) {
         const response = await fetch(`${getMicrosoftApiBaseUrl()}${path}`, {
             method: "POST",
+            credentials: "include",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body || {})
         });
@@ -1512,10 +1493,9 @@
     }
 
     function openMicrosoftOAuthPopup() {
-        const deviceId = getMicrosoftDeviceId();
         const origin = global.location.origin;
         const api = getMicrosoftApiBaseUrl();
-        const url = `${api}/oauth/start?deviceId=${encodeURIComponent(deviceId)}&origin=${encodeURIComponent(origin)}`;
+        const url = `${api}/oauth/start?origin=${encodeURIComponent(origin)}`;
         const popup = global.open(url, "gotoolkit-microsoft-oauth", "width=560,height=700");
         if (!popup) {
             return Promise.reject(new Error("Popup OAuth bloquee"));
@@ -1548,11 +1528,11 @@
     }
 
     async function microsoftGetAuthStatus() {
-        return microsoftJsonPost("/auth/status", { deviceId: getMicrosoftDeviceId() });
+        return microsoftJsonPost("/auth/status", {});
     }
 
     async function microsoftDisconnect() {
-        return microsoftJsonPost("/auth/disconnect", { deviceId: getMicrosoftDeviceId() });
+        return microsoftJsonPost("/auth/disconnect", {});
     }
 
     async function microsoftEnsureConnected() {
@@ -1564,7 +1544,6 @@
 
     async function microsoftCreateDraft(options = {}) {
         return microsoftJsonPost("/mail/draft/create", {
-            deviceId: getMicrosoftDeviceId(),
             subject: String(options?.subject || "Document").trim() || "Document",
             html: String(options?.html || ""),
             text: String(options?.text || ""),
@@ -1580,7 +1559,6 @@
         createDraft: microsoftCreateDraft
     };
 
-    const GMAIL_STORAGE_DEVICE_KEY = "go-toolkit-gmail-device-id";
     const DEFAULT_GMAIL_API_BASE = (global.GO_TOOLKIT_GMAIL_API_URL || "https://gmail.gotoolkit.workers.dev").replace(/\/$/, "");
 
     function getGmailApiBaseUrl() {
@@ -1588,20 +1566,14 @@
     }
 
     function getGmailDeviceId() {
-        try {
-            const existing = (localStorage.getItem(GMAIL_STORAGE_DEVICE_KEY) || "").trim();
-            if (existing) return existing;
-            const next = (crypto?.randomUUID?.() || `gmail-${Date.now()}-${Math.random().toString(16).slice(2)}`).trim();
-            localStorage.setItem(GMAIL_STORAGE_DEVICE_KEY, next);
-            return next;
-        } catch (err) {
-            return `gmail-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-        }
+        // Deprecated: Gmail auth no longer uses device identifiers.
+        return "";
     }
 
     async function gmailJsonPost(path, body) {
         const response = await fetch(`${getGmailApiBaseUrl()}${path}`, {
             method: "POST",
+            credentials: "include",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body || {})
         });
@@ -1613,10 +1585,9 @@
     }
 
     function openGmailOAuthPopup() {
-        const deviceId = getGmailDeviceId();
         const origin = global.location.origin;
         const api = getGmailApiBaseUrl();
-        const url = `${api}/oauth/start?deviceId=${encodeURIComponent(deviceId)}&origin=${encodeURIComponent(origin)}`;
+        const url = `${api}/oauth/start?origin=${encodeURIComponent(origin)}`;
         const popup = global.open(url, "gotoolkit-gmail-oauth", "width=560,height=700");
         if (!popup) {
             return Promise.reject(new Error("Popup OAuth bloquee"));
@@ -1649,11 +1620,11 @@
     }
 
     async function gmailGetAuthStatus() {
-        return gmailJsonPost("/auth/status", { deviceId: getGmailDeviceId() });
+        return gmailJsonPost("/auth/status", {});
     }
 
     async function gmailDisconnect() {
-        return gmailJsonPost("/auth/disconnect", { deviceId: getGmailDeviceId() });
+        return gmailJsonPost("/auth/disconnect", {});
     }
 
     async function gmailEnsureConnected() {
@@ -1665,7 +1636,6 @@
 
     async function gmailCreateDraft(options = {}) {
         return gmailJsonPost("/mail/draft/create", {
-            deviceId: getGmailDeviceId(),
             subject: String(options?.subject || "Document").trim() || "Document",
             html: String(options?.html || ""),
             text: String(options?.text || ""),

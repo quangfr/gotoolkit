@@ -7,6 +7,8 @@ const NOTION_AUTH_URL = "https://api.notion.com/v1/oauth/authorize";
 const NOTION_TOKEN_URL = "https://api.notion.com/v1/oauth/token";
 const NOTION_API_BASE = "https://api.notion.com/v1";
 const NOTION_VERSION = "2022-06-28";
+const SESSION_COOKIE_NAME = "gt_notion_sid";
+const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
 
 function normalizeOrigin(origin) {
   return (origin || "").trim();
@@ -29,18 +31,20 @@ function corsMeta(request) {
   const headers = {
     "Access-Control-Allow-Origin": corsOrigin,
     "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type"
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Credentials": "true"
   };
   if (!allowLocal) headers["Vary"] = "Origin";
   return { origin, allowLocal, headers };
 }
 
-function jsonResponse(corsHeaders, payload, status = 200) {
+function jsonResponse(corsHeaders, payload, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(payload), {
     status,
     headers: {
       ...corsHeaders,
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
+      ...extraHeaders
     }
   });
 }
@@ -55,7 +59,52 @@ function getRedirectUri(request) {
 }
 
 function getDeviceKey(deviceId) {
-  return `notion-device:${deviceId}`;
+  return `notion-session:${deviceId}`;
+}
+
+function generateOpaqueSessionId() {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (v) => v.toString(16).padStart(2, "0")).join("");
+}
+
+function parseCookies(request) {
+  const raw = String(request.headers.get("Cookie") || "");
+  const out = {};
+  if (!raw) return out;
+  const entries = raw.split(";");
+  for (const entry of entries) {
+    const [k, ...rest] = entry.split("=");
+    const key = String(k || "").trim();
+    if (!key) continue;
+    out[key] = decodeURIComponent(rest.join("=").trim());
+  }
+  return out;
+}
+
+function getSessionIdFromRequest(request) {
+  const cookies = parseCookies(request);
+  return String(cookies?.[SESSION_COOKIE_NAME] || "").trim();
+}
+
+function buildSessionCookie(sessionId, maxAgeSeconds = SESSION_MAX_AGE_SECONDS) {
+  const safeSid = String(sessionId || "").trim();
+  const maxAge = Number.isFinite(maxAgeSeconds) ? Math.max(0, Math.floor(maxAgeSeconds)) : 0;
+  const parts = [
+    `${SESSION_COOKIE_NAME}=${encodeURIComponent(safeSid)}`,
+    "Path=/",
+    "HttpOnly",
+    "Secure",
+    "SameSite=None",
+    `Max-Age=${maxAge}`
+  ];
+  return parts.join("; ");
+}
+
+function resolveSessionId(request) {
+  const cookieSid = getSessionIdFromRequest(request);
+  if (cookieSid) return cookieSid;
+  return "";
 }
 
 function encodeState(payload) {
@@ -76,9 +125,9 @@ function base64Basic(clientId, clientSecret) {
   return btoa(`${clientId}:${clientSecret}`);
 }
 
-async function readDeviceData(env, deviceId) {
-  if (!env?.NOTION_OAUTH || !deviceId) return null;
-  const raw = await env.NOTION_OAUTH.get(getDeviceKey(deviceId));
+async function readDeviceData(env, sessionId) {
+  if (!env?.NOTION_OAUTH || !sessionId) return null;
+  const raw = await env.NOTION_OAUTH.get(getDeviceKey(sessionId));
   if (!raw) return null;
   try {
     return JSON.parse(raw);
@@ -87,14 +136,14 @@ async function readDeviceData(env, deviceId) {
   }
 }
 
-async function writeDeviceData(env, deviceId, value) {
-  if (!env?.NOTION_OAUTH || !deviceId || !value) return;
-  await env.NOTION_OAUTH.put(getDeviceKey(deviceId), JSON.stringify(value));
+async function writeDeviceData(env, sessionId, value) {
+  if (!env?.NOTION_OAUTH || !sessionId || !value) return;
+  await env.NOTION_OAUTH.put(getDeviceKey(sessionId), JSON.stringify(value));
 }
 
-async function clearDeviceData(env, deviceId) {
-  if (!env?.NOTION_OAUTH || !deviceId) return;
-  await env.NOTION_OAUTH.delete(getDeviceKey(deviceId));
+async function clearDeviceData(env, sessionId) {
+  if (!env?.NOTION_OAUTH || !sessionId) return;
+  await env.NOTION_OAUTH.delete(getDeviceKey(sessionId));
 }
 
 function normalizeWorkspaceFromToken(tokenPayload) {
@@ -195,8 +244,8 @@ function normalizeDeviceData(raw) {
   };
 }
 
-async function getWorkspaceToken(env, deviceId, workspaceId) {
-  const raw = await readDeviceData(env, deviceId);
+async function getWorkspaceToken(env, sessionId, workspaceId) {
+  const raw = await readDeviceData(env, sessionId);
   const data = normalizeDeviceData(raw);
   let selected = workspaceId || data.selectedWorkspaceId;
   if (!selected) {
@@ -224,7 +273,7 @@ async function getWorkspaceToken(env, deviceId, workspaceId) {
     expires_at: now + (Number(refreshed.expires_in || 3600) * 1000)
   };
   data.workspaces[selected] = merged;
-  await writeDeviceData(env, deviceId, data);
+  await writeDeviceData(env, sessionId, data);
   return { token: merged.access_token, data, selectedWorkspaceId: selected, workspace: merged };
 }
 
@@ -251,18 +300,23 @@ function renderOAuthCallbackPage(ok, message, targetOrigin) {
 
 async function handleOAuthStart(request, env) {
   const url = new URL(request.url);
-  const deviceId = (url.searchParams.get("deviceId") || "").trim();
   const origin = (url.searchParams.get("origin") || "").trim();
-  if (!deviceId) return new Response("Missing deviceId", { status: 400 });
+  const sessionId = getSessionIdFromRequest(request) || generateOpaqueSessionId();
 
-  const state = encodeState({ deviceId, origin });
+  const state = encodeState({ sessionId, origin });
   const authUrl = new URL(NOTION_AUTH_URL);
   authUrl.searchParams.set("client_id", env.NOTION_CLIENT_ID || "");
   authUrl.searchParams.set("response_type", "code");
   authUrl.searchParams.set("owner", "user");
   authUrl.searchParams.set("redirect_uri", getRedirectUri(request));
   authUrl.searchParams.set("state", state);
-  return Response.redirect(authUrl.toString(), 302);
+  return new Response(null, {
+    status: 302,
+    headers: {
+      Location: authUrl.toString(),
+      "Set-Cookie": buildSessionCookie(sessionId)
+    }
+  });
 }
 
 async function handleOAuthCallback(request, env) {
@@ -270,7 +324,7 @@ async function handleOAuthCallback(request, env) {
   const code = (url.searchParams.get("code") || "").trim();
   const oauthError = (url.searchParams.get("error") || "").trim();
   const state = decodeState(url.searchParams.get("state") || "");
-  const deviceId = String(state.deviceId || "").trim();
+  const sessionId = String(state.sessionId || "").trim() || getSessionIdFromRequest(request);
   const targetOrigin = String(state.origin || "").trim();
 
   if (oauthError) {
@@ -280,7 +334,7 @@ async function handleOAuthCallback(request, env) {
     });
   }
 
-  if (!code || !deviceId) {
+  if (!code || !sessionId) {
     return new Response(renderOAuthCallbackPage(false, "Code OAuth manquant", targetOrigin), {
       status: 400,
       headers: { "Content-Type": "text/html; charset=utf-8" }
@@ -294,7 +348,7 @@ async function handleOAuthCallback(request, env) {
       throw new Error("Workspace Notion introuvable");
     }
 
-    const raw = await readDeviceData(env, deviceId);
+    const raw = await readDeviceData(env, sessionId);
     const data = normalizeDeviceData(raw);
     data.workspaces[workspace.id] = {
       workspace_id: workspace.id,
@@ -305,11 +359,14 @@ async function handleOAuthCallback(request, env) {
       expires_at: Date.now() + (Number(tokenPayload?.expires_in || 3600) * 1000)
     };
     data.selectedWorkspaceId = workspace.id;
-    await writeDeviceData(env, deviceId, data);
+    await writeDeviceData(env, sessionId, data);
 
     return new Response(renderOAuthCallbackPage(true, "OK", targetOrigin), {
       status: 200,
-      headers: { "Content-Type": "text/html; charset=utf-8" }
+      headers: {
+        "Content-Type": "text/html; charset=utf-8",
+        "Set-Cookie": buildSessionCookie(sessionId)
+      }
     });
   } catch (err) {
     return new Response(renderOAuthCallbackPage(false, err?.message || "OAuth echoue", targetOrigin), {
@@ -879,17 +936,17 @@ export default {
     }
 
     if (request.method === "POST" && path === "/auth/status") {
-      const body = await request.json().catch(() => ({}));
-      const deviceId = String(body?.deviceId || "").trim();
-      if (!deviceId) return errorResponse(cors.headers, 400, "deviceId requis");
-      const raw = await readDeviceData(env, deviceId);
+      await request.json().catch(() => ({}));
+      const sessionId = resolveSessionId(request);
+      if (!sessionId) return jsonResponse(cors.headers, { connected: false, selectedWorkspaceId: "", workspaces: [] });
+      const raw = await readDeviceData(env, sessionId);
       const data = normalizeDeviceData(raw);
       const workspaceIds = Object.keys(data.workspaces || {});
       let selectedWorkspaceId = data.selectedWorkspaceId;
       if (!selectedWorkspaceId && workspaceIds.length) {
         selectedWorkspaceId = workspaceIds[0];
         data.selectedWorkspaceId = selectedWorkspaceId;
-        await writeDeviceData(env, deviceId, data);
+        await writeDeviceData(env, sessionId, data);
       }
       const connected = Boolean(workspaceIds.length);
       return jsonResponse(cors.headers, {
@@ -899,14 +956,14 @@ export default {
           id: String(w?.workspace_id || "").trim(),
           name: String(w?.workspace_name || "").trim() || "Workspace"
         })).filter(w => w.id)
-      });
+      }, 200, { "Set-Cookie": buildSessionCookie(sessionId) });
     }
 
     if (request.method === "POST" && path === "/auth/workspaces") {
-      const body = await request.json().catch(() => ({}));
-      const deviceId = String(body?.deviceId || "").trim();
-      if (!deviceId) return errorResponse(cors.headers, 400, "deviceId requis");
-      const raw = await readDeviceData(env, deviceId);
+      await request.json().catch(() => ({}));
+      const sessionId = resolveSessionId(request);
+      if (!sessionId) return jsonResponse(cors.headers, { connected: false, selectedWorkspaceId: "", workspaces: [] });
+      const raw = await readDeviceData(env, sessionId);
       const data = normalizeDeviceData(raw);
       return jsonResponse(cors.headers, {
         connected: Boolean(Object.keys(data.workspaces || {}).length),
@@ -915,23 +972,23 @@ export default {
           id: String(w?.workspace_id || "").trim(),
           name: String(w?.workspace_name || "").trim() || "Workspace"
         })).filter(w => w.id)
-      });
+      }, 200, { "Set-Cookie": buildSessionCookie(sessionId) });
     }
 
     if (request.method === "POST" && path === "/auth/workspace/select") {
       const body = await request.json().catch(() => ({}));
-      const deviceId = String(body?.deviceId || "").trim();
+      const sessionId = resolveSessionId(request);
       const workspaceId = String(body?.workspaceId || "").trim();
-      if (!deviceId) return errorResponse(cors.headers, 400, "deviceId requis");
+      if (!sessionId) return errorResponse(cors.headers, 401, "session requise");
       if (!workspaceId) return errorResponse(cors.headers, 400, "workspaceId requis");
 
-      const raw = await readDeviceData(env, deviceId);
+      const raw = await readDeviceData(env, sessionId);
       const data = normalizeDeviceData(raw);
       if (!data.workspaces[workspaceId]) {
         return errorResponse(cors.headers, 400, "Workspace invalide");
       }
       data.selectedWorkspaceId = workspaceId;
-      await writeDeviceData(env, deviceId, data);
+      await writeDeviceData(env, sessionId, data);
       return jsonResponse(cors.headers, {
         connected: true,
         selectedWorkspaceId: workspaceId,
@@ -939,24 +996,24 @@ export default {
           id: String(w?.workspace_id || "").trim(),
           name: String(w?.workspace_name || "").trim() || "Workspace"
         })).filter(w => w.id)
-      });
+      }, 200, { "Set-Cookie": buildSessionCookie(sessionId) });
     }
 
     if (request.method === "POST" && path === "/auth/disconnect") {
-      const body = await request.json().catch(() => ({}));
-      const deviceId = String(body?.deviceId || "").trim();
-      if (!deviceId) return errorResponse(cors.headers, 400, "deviceId requis");
-      await clearDeviceData(env, deviceId);
-      return jsonResponse(cors.headers, { connected: false });
+      await request.json().catch(() => ({}));
+      const sessionId = resolveSessionId(request);
+      if (!sessionId) return jsonResponse(cors.headers, { connected: false }, 200, { "Set-Cookie": buildSessionCookie("", 0) });
+      await clearDeviceData(env, sessionId);
+      return jsonResponse(cors.headers, { connected: false }, 200, { "Set-Cookie": buildSessionCookie("", 0) });
     }
 
     if (request.method === "POST" && path === "/pages/list") {
       const body = await request.json().catch(() => ({}));
-      const deviceId = String(body?.deviceId || "").trim();
+      const sessionId = resolveSessionId(request);
       const workspaceId = String(body?.workspaceId || "").trim();
       const parentId = String(body?.parentId || "").trim();
-      if (!deviceId) return errorResponse(cors.headers, 400, "deviceId requis");
-      const auth = await getWorkspaceToken(env, deviceId, workspaceId).catch(() => null);
+      if (!sessionId) return errorResponse(cors.headers, 401, "session requise");
+      const auth = await getWorkspaceToken(env, sessionId, workspaceId).catch(() => null);
       if (!auth?.token) return errorResponse(cors.headers, 401, "Connexion Notion requise");
 
       try {
@@ -973,7 +1030,7 @@ export default {
 
     if (request.method === "POST" && path === "/pages/publish") {
       const body = await request.json().catch(() => ({}));
-      const deviceId = String(body?.deviceId || "").trim();
+      const sessionId = resolveSessionId(request);
       const workspaceId = String(body?.workspaceId || "").trim();
       const parentId = String(body?.parentId || "").trim();
       const pageId = String(body?.pageId || "").trim();
@@ -986,8 +1043,8 @@ export default {
       const incomingAssets = normalizeIncomingAssets(body?.assets);
       const hasRecording = Boolean(body?.hasRecording);
 
-      if (!deviceId) return errorResponse(cors.headers, 400, "deviceId requis");
-      const auth = await getWorkspaceToken(env, deviceId, workspaceId).catch(() => null);
+      if (!sessionId) return errorResponse(cors.headers, 401, "session requise");
+      const auth = await getWorkspaceToken(env, sessionId, workspaceId).catch(() => null);
       if (!auth?.token) return errorResponse(cors.headers, 401, "Connexion Notion requise");
 
       try {
@@ -1069,12 +1126,12 @@ export default {
 
     if (request.method === "POST" && path === "/pages/content") {
       const body = await request.json().catch(() => ({}));
-      const deviceId = String(body?.deviceId || "").trim();
+      const sessionId = resolveSessionId(request);
       const workspaceId = String(body?.workspaceId || "").trim();
       const pageId = String(body?.pageId || "").trim();
-      if (!deviceId) return errorResponse(cors.headers, 400, "deviceId requis");
+      if (!sessionId) return errorResponse(cors.headers, 401, "session requise");
       if (!pageId) return errorResponse(cors.headers, 400, "pageId requis");
-      const auth = await getWorkspaceToken(env, deviceId, workspaceId).catch(() => null);
+      const auth = await getWorkspaceToken(env, sessionId, workspaceId).catch(() => null);
       if (!auth?.token) return errorResponse(cors.headers, 401, "Connexion Notion requise");
       try {
         const page = await getPageInfo(auth.token, pageId);
