@@ -101,13 +101,56 @@
 
     let superpowersCatalog = null;
     let currentModalSelectedIds = [];
+    let categoryDisplayEnabled = true;
+
+    function getCategoryConfigApi() {
+        const api = window.GoToolkitCategoryConfig;
+        if (!api || typeof api !== "object") return null;
+        return api;
+    }
+
+    function normalizeCategoryPayload(payload) {
+        if (Array.isArray(payload)) return payload;
+        if (Array.isArray(payload?.templates)) {
+            const templateId = String(payload?.defaultTemplateId || payload?.selectedTemplateId || payload.templates[0]?.id || "").trim();
+            const activeTemplate = payload.templates.find(template => String(template?.id || "").trim() === templateId) || payload.templates[0];
+            const categories = Array.isArray(activeTemplate?.categories)
+                ? activeTemplate.categories
+                : (Array.isArray(activeTemplate?.items) ? activeTemplate.items : []);
+            return categories;
+        }
+        if (Array.isArray(payload?.lists)) {
+            const first = payload.lists[0];
+            const categories = Array.isArray(first?.categories)
+                ? first.categories
+                : (Array.isArray(first?.items) ? first.items : []);
+            return categories;
+        }
+        return [];
+    }
 
     async function ensureSuperpowersLoaded() {
+        const categoryApi = getCategoryConfigApi();
+        if (categoryApi?.ensureLoaded) {
+            try {
+                await categoryApi.ensureLoaded();
+                categoryDisplayEnabled = categoryApi.getDisplayEnabled ? categoryApi.getDisplayEnabled() !== false : true;
+                const categories = categoryApi.getActiveCategories?.({ includeDisabled: true }) || [];
+                superpowersCatalog = Array.isArray(categories) ? categories : [];
+                return superpowersCatalog;
+            } catch (err) {
+                // fallback below
+            }
+        }
         if (superpowersCatalog) return superpowersCatalog;
         try {
-            const response = await fetch('content/superpowers.json');
+            let response = await fetch('content/category.json');
+            if (!response.ok) {
+                response = await fetch('content/superpowers.json');
+            }
             if (response.ok) {
-                superpowersCatalog = await response.json();
+                const payload = await response.json();
+                superpowersCatalog = normalizeCategoryPayload(payload);
                 return superpowersCatalog;
             }
         } catch (err) {
@@ -117,6 +160,28 @@
         return superpowersCatalog;
     }
 
+    function isCategoryDisplayEnabled() {
+        const categoryApi = getCategoryConfigApi();
+        if (categoryApi?.getDisplayEnabled) {
+            return categoryApi.getDisplayEnabled() !== false;
+        }
+        return categoryDisplayEnabled !== false;
+    }
+
+    function openCategorySettingsModal() {
+        const settingsBtn = document.getElementById("memoSettingsBtn");
+        if (settingsBtn instanceof HTMLElement) {
+            settingsBtn.click();
+        }
+        const settingsApi = window.GoToolkitSettingsModal;
+        if (settingsApi?.activateSettingsTab) {
+            settingsApi.activateSettingsTab("categoryTab");
+        }
+        if (settingsApi?.prepareCategorySettings) {
+            settingsApi.prepareCategorySettings().catch(() => { /* noop */ });
+        }
+    }
+
     function normalizeSuperpowersList(list, category) {
         const normalized = Array.isArray(list) ? list.filter(Boolean) : [];
         if (normalized.length) return normalized;
@@ -124,7 +189,11 @@
     }
 
     async function populateSuperpowerCheckboxes(selectedIds = []) {
-        const catalog = await ensureSuperpowersLoaded();
+        const allCategories = await ensureSuperpowersLoaded();
+        const canDisplayCategories = isCategoryDisplayEnabled();
+        const catalog = canDisplayCategories
+            ? (Array.isArray(allCategories) ? allCategories.filter(item => item?.enabled !== false) : [])
+            : [];
         const normalizedSelectedIds = Array.isArray(selectedIds)
             ? selectedIds.filter(Boolean).map(id => String(id).toLowerCase())
             : [];
@@ -133,6 +202,9 @@
         const container = document.getElementById("document-explorer-superpowers-container");
         if (!container) return;
         container.innerHTML = '';
+        if (!catalog.length) {
+            return;
+        }
 
         catalog.forEach(sp => {
             const label = document.createElement('label');
@@ -309,6 +381,12 @@
         let hasDefaultTabSet = false;
 
         ensureSuperpowersLoaded();
+        window.addEventListener("go-toolkit:categories-changed", () => {
+            superpowersCatalog = null;
+            ensureSuperpowersLoaded().finally(() => {
+                renderList(cachedItems);
+            });
+        });
 
         function setActiveTab(target, options) {
             const canUseToc = Boolean(tocPanel && tabBtns.length && Array.from(tabBtns).some(b => b.dataset.tab === "toc"));
@@ -355,36 +433,20 @@
         }
 
         if (appId === "memo") {
-            const importBtn = document.createElement("button");
-            importBtn.type = "button";
-            importBtn.className = "chat-knowledge-modal__add btn btn-secondary";
-            importBtn.innerHTML = '<i data-lucide="file-down"></i>';
-            importBtn.title = "Importer";
-            importBtn.setAttribute("aria-label", "Importer");
-            importBtn.addEventListener("click", async () => {
-                if (typeof window.GoToolkitMemoCreateAutoDocument === "function") {
-                    await window.GoToolkitMemoCreateAutoDocument();
-                }
-                window.GoToolkitAssistInstance?.openImportFileSelector?.({
-                    skipEmbeddings: true
-                });
-            });
             if (headerEl) {
                 const closeBtn = headerEl.querySelector(".chat-knowledge-modal__close");
                 const memoSettingsBtn = document.getElementById("memoSettingsBtn");
                 if (memoSettingsBtn) {
                     memoSettingsBtn.classList.add("chat-knowledge-modal__add");
                     memoSettingsBtn.classList.remove("app-header-btn");
+                    memoSettingsBtn.style.marginLeft = "auto";
                 }
                 if (closeBtn) {
-                    importBtn.style.marginLeft = "auto";
                     closeBtn.style.marginLeft = "0";
-                    headerEl.insertBefore(importBtn, closeBtn);
                     if (memoSettingsBtn) {
                         headerEl.insertBefore(memoSettingsBtn, closeBtn);
                     }
                 } else {
-                    headerEl.appendChild(importBtn);
                     if (memoSettingsBtn) {
                         headerEl.appendChild(memoSettingsBtn);
                     }
@@ -489,8 +551,8 @@
                             <div id="document-explorer-icon-grid" class="document-explorer-icon-grid"></div>
                         </div>
                     </div>
-                    <div class="header-row ia-header-actions" style="display:block;">
-                        <label>Superpouvoirs</label>
+                    <div id="document-explorer-category-row" class="header-row ia-header-actions" style="display:block;">
+                        <label>Catégorie</label>
                         <div id="document-explorer-superpowers-container" class="superpowers-checkbox-group"></div>
                     </div>
                     <div class="header-row ia-header-actions">
@@ -511,6 +573,7 @@
         const modalIconBtn = modalOverlay.querySelector("#document-explorer-icon-btn");
         const modalIconGrid = modalOverlay.querySelector("#document-explorer-icon-grid");
         const modalDescInput = modalOverlay.querySelector("#document-explorer-description-input");
+        const modalCategoryRow = modalOverlay.querySelector("#document-explorer-category-row");
         let searchWrap = null;
         let searchInput = null;
         let searchClearBtn = null;
@@ -520,12 +583,18 @@
         let modalNotionUnlinkRequested = false;
         let modalIcon = "file";
         let modalIconSearch = "";
+        let modalInitialSuperpowers = [];
+        let modalCategoryVisible = true;
 
         function getSelectedSuperpowers() {
+            if (!modalCategoryVisible) {
+                return Array.isArray(modalInitialSuperpowers) ? modalInitialSuperpowers.slice() : [];
+            }
             const container = modalOverlay.querySelector("#document-explorer-superpowers-container");
             if (!container) return [];
             const selected = container.querySelector('input[name="document-superpower"]:checked');
-            return selected ? [selected.value] : [];
+            if (selected) return [selected.value];
+            return Array.isArray(modalInitialSuperpowers) ? modalInitialSuperpowers.slice() : [];
         }
 
         function closeModal() {
@@ -599,8 +668,15 @@
                 options && options.superpowers,
                 options && options.category
             );
+            modalInitialSuperpowers = selectedSuperpowers.slice();
+            modalCategoryVisible = isCategoryDisplayEnabled();
+            if (modalCategoryRow) {
+                modalCategoryRow.style.display = modalCategoryVisible ? "block" : "none";
+            }
 
-            await populateSuperpowerCheckboxes(selectedSuperpowers);
+            if (modalCategoryVisible) {
+                await populateSuperpowerCheckboxes(selectedSuperpowers);
+            }
             if (window.lucide) window.lucide.createIcons();
             modalInput.value = defaultValue || "";
             modalIcon = (options && typeof options.icon === "string" && options.icon.trim()) ? options.icon.trim() : "file";
@@ -617,8 +693,11 @@
                         console.log("[GoToolkit] Document record from IndexedDB:", record);
                         if (record) {
                             const fromStore = normalizeSuperpowersList(record?.superpowers, record?.category);
+                            modalInitialSuperpowers = fromStore.slice();
                             // On repeuple systématiquement si on a un documentId pour être sûr d'avoir la donnée de la source de vérité
-                            await populateSuperpowerCheckboxes(fromStore);
+                            if (modalCategoryVisible) {
+                                await populateSuperpowerCheckboxes(fromStore);
+                            }
                             if (window.lucide) window.lucide.createIcons();
                         }
                     } catch (err) { /* noop */ }
@@ -1963,12 +2042,32 @@
             if (isStale()) return;
             const renderSuperpowersSection = async () => {
                 if (isStale()) return;
+                await ensureSuperpowersLoaded();
+                if (!isCategoryDisplayEnabled()) {
+                    return;
+                }
                 const sectionRoot = document.createElement("div");
                 sectionRoot.className = "document-explorer__section";
                 const sectionHeader = document.createElement("button");
                 sectionHeader.type = "button";
                 sectionHeader.className = "document-explorer__section-header";
-                sectionHeader.innerHTML = `<i data-lucide="zap"></i><strong>Superpouvoirs</strong><i data-lucide="${sectionExpanded.superpowers ? "chevron-down" : "chevron-right"}"></i>`;
+                sectionHeader.innerHTML = `<i data-lucide="tag"></i><strong>Catégorie</strong><i data-lucide="${sectionExpanded.superpowers ? "chevron-down" : "chevron-right"}"></i>`;
+                const sectionActions = document.createElement("span");
+                sectionActions.className = "document-explorer__section-actions";
+                const settingsBtn = document.createElement("button");
+                settingsBtn.type = "button";
+                settingsBtn.className = "document-explorer__item-action";
+                settingsBtn.style.marginLeft = "auto";
+                settingsBtn.title = "Configurer les catégories";
+                settingsBtn.setAttribute("aria-label", "Configurer les catégories");
+                settingsBtn.innerHTML = '<i data-lucide="settings"></i>';
+                settingsBtn.addEventListener("click", event => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    openCategorySettingsModal();
+                });
+                sectionActions.appendChild(settingsBtn);
+                sectionHeader.appendChild(sectionActions);
                 sectionHeader.addEventListener("click", () => {
                     sectionExpanded.superpowers = !sectionExpanded.superpowers;
                     persistSectionExpandedState();
@@ -1989,12 +2088,14 @@
                 const catalog = Array.isArray(superpowersCatalog) ? superpowersCatalog : [];
                 const groups = new Map();
                 catalog.forEach((entry) => {
+                    if (entry?.enabled === false) return;
                     const id = String(entry?.id || "").trim();
                     if (!id) return;
                     groups.set(id, {
                         id,
                         title: String(entry?.title || id).trim() || id,
-                        icon: String(entry?.icon || "zap").trim() || "zap",
+                        icon: String(entry?.icon || "tag").trim() || "tag",
+                        description: String(entry?.description || "").trim(),
                         docs: []
                     });
                 });
@@ -2011,10 +2112,12 @@
                     if (!spKey) return;
                     if (!groups.has(spKey)) {
                         const found = catalog.find(sp => String(sp?.id || "") === spKey || String(sp?.title || "").toLowerCase() === spKey.toLowerCase());
+                        if (found?.enabled === false) return;
                         groups.set(spKey, {
                             id: spKey,
                             title: found?.title || spKey,
-                            icon: found?.icon || "zap",
+                            icon: found?.icon || "tag",
+                            description: String(found?.description || "").trim(),
                             docs: []
                         });
                     }
@@ -2028,6 +2131,12 @@
                     button.type = "button";
                     button.className = "document-explorer__item";
                     button.draggable = false;
+                    if (group.description) {
+                        button.title = group.description;
+                        button.setAttribute("aria-label", `${group.title} — ${group.description}`);
+                    } else {
+                        button.title = group.title;
+                    }
                     const groupKey = `spg:${group.id}`;
                     const isExpanded = expandedIds.has(groupKey);
                     const lead = document.createElement("span");

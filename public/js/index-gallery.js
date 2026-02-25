@@ -95,9 +95,29 @@
             async function getSuperpowersCatalog() {
                 if (superpowersCatalog) return superpowersCatalog;
                 try {
-                    const resp = await fetch('content/superpowers.json');
+                    let resp = await fetch('content/category.json');
+                    if (!resp.ok) {
+                        resp = await fetch('content/superpowers.json');
+                    }
                     if (resp.ok) {
-                        superpowersCatalog = await resp.json();
+                        const payload = await resp.json();
+                        if (Array.isArray(payload)) {
+                            superpowersCatalog = payload;
+                        } else if (Array.isArray(payload?.templates)) {
+                            const templateId = String(payload?.defaultTemplateId || payload?.selectedTemplateId || payload.templates[0]?.id || "").trim();
+                            const activeTemplate = payload.templates.find(template => String(template?.id || "").trim() === templateId) || payload.templates[0];
+                            const categories = Array.isArray(activeTemplate?.categories)
+                                ? activeTemplate.categories
+                                : (Array.isArray(activeTemplate?.items) ? activeTemplate.items : []);
+                            superpowersCatalog = categories;
+                        } else if (Array.isArray(payload?.lists)) {
+                            const first = payload.lists[0];
+                            superpowersCatalog = Array.isArray(first?.categories)
+                                ? first.categories
+                                : (Array.isArray(first?.items) ? first.items : []);
+                        } else {
+                            superpowersCatalog = [];
+                        }
                         return superpowersCatalog;
                     }
                 } catch (e) {

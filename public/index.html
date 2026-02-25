@@ -80,10 +80,10 @@
         crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.min.js" crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.min.js" crossorigin></script>
-    <link rel="stylesheet" href="styles/style.css?v=2026.02.25.11">
+    <link rel="stylesheet" href="styles/style.css?v=2026.02.25.12">
     <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
-    <link rel="stylesheet" href="styles/memo.css?v=2026.02.25.11">
-    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.25.11">
+    <link rel="stylesheet" href="styles/memo.css?v=2026.02.25.12">
+    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.25.12">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.css">
     <script src="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.js"></script>
     <style>
@@ -135,8 +135,12 @@
 
         .docs-tour-actions {
             display: flex;
-            justify-content: space-between;
+            justify-content: flex-start;
             gap: 8px;
+        }
+
+        .docs-tour-prev--with-close {
+            margin-right: auto;
         }
 
         .space-access-overlay {
@@ -466,7 +470,7 @@
         <img src="img/logo.gif" alt="Logo GoToolkit" class="logo-light">
         <img src="img/logo-inverted.gif" alt="Logo GoToolkit" class="logo-dark">
         <strong>GoToolkit</strong>
-        <span id="memoNewsTrigger" class="info-popup-news-link" role="button" tabindex="0">Version 2026.02.25.11</span>
+        <span id="memoNewsTrigger" class="info-popup-news-link" role="button" tabindex="0">Version 2026.02.25.12</span>
         <span>Usage réservé à Savane Consulting.</span>
         <div class="info-actions info-actions--stacked">
             <div class="info-actions-row">
@@ -545,24 +549,24 @@
         window.GO_TOOLKIT_GOOGLE_TTS_API_URL =
             window.GO_TOOLKIT_GOOGLE_TTS_API_URL || "https://googletts.gotoolkit.workers.dev";
     </script>
-    <script src="js/config.js?v=2026.02.25.11"></script>
-    <script src="js/config-modal.js?v=2026.02.25.11"></script>
-    <script src="js/feature-visibility.js?v=2026.02.25.11"></script>
-    <script src="js/document-storage.js?v=2026.02.25.11"></script>
-    <script src="js/storage-service.js?v=2026.02.25.11"></script>
-    <script src="js/shared-ui.js?v=2026.02.25.11"></script>
-    <script src="js/spaces-store.js?v=2026.02.25.11"></script>
-    <script src="js/share-worker-client.js?v=2026.02.25.11"></script>
-    <script src="js/share-history.js?v=2026.02.25.11"></script>
-    <script src="js/document-api.js?v=2026.02.25.11"></script>
-    <script src="js/keywordIndex.js?v=2026.02.25.11"></script>
-    <script src="js/document-rag.js?v=2026.02.25.11"></script>
-    <script src="js/ia-config.js?v=2026.02.25.11"></script>
-    <script src="preset.js?v=2026.02.25.11"></script>
-    <script src="prompt.js?v=2026.02.25.11"></script>
-    <script src="js/ia-client.js?v=2026.02.25.11"></script>
-    <script src="js/document-markdown.js?v=2026.02.25.11"></script>
-    <script src="js/notion-export.js?v=2026.02.25.11"></script>
+    <script src="js/config.js?v=2026.02.25.12"></script>
+    <script src="js/config-modal.js?v=2026.02.25.12"></script>
+    <script src="js/feature-visibility.js?v=2026.02.25.12"></script>
+    <script src="js/document-storage.js?v=2026.02.25.12"></script>
+    <script src="js/storage-service.js?v=2026.02.25.12"></script>
+    <script src="js/shared-ui.js?v=2026.02.25.12"></script>
+    <script src="js/spaces-store.js?v=2026.02.25.12"></script>
+    <script src="js/share-worker-client.js?v=2026.02.25.12"></script>
+    <script src="js/share-history.js?v=2026.02.25.12"></script>
+    <script src="js/document-api.js?v=2026.02.25.12"></script>
+    <script src="js/keywordIndex.js?v=2026.02.25.12"></script>
+    <script src="js/document-rag.js?v=2026.02.25.12"></script>
+    <script src="js/ia-config.js?v=2026.02.25.12"></script>
+    <script src="preset.js?v=2026.02.25.12"></script>
+    <script src="prompt.js?v=2026.02.25.12"></script>
+    <script src="js/ia-client.js?v=2026.02.25.12"></script>
+    <script src="js/document-markdown.js?v=2026.02.25.12"></script>
+    <script src="js/notion-export.js?v=2026.02.25.12"></script>
     <script>
         document.addEventListener("click", function (event) {
             const legalTrigger = event.target?.closest?.("[data-open-nexus-modal]");
@@ -596,16 +600,16 @@
             ]
         };
     </script>
-    <script src="js/feedback.js?v=2026.02.25.11"></script>
-    <script src="js/news.js?v=2026.02.25.11"></script>
-    <script src="js/voice-video-player.js?v=2026.02.25.11"></script>
-    <script src="js/voice-audio-player.js?v=2026.02.25.11"></script>
-    <script src="js/youtube-publish.js?v=2026.02.25.11"></script>
-    <script src="js/voice.js?v=2026.02.25.11"></script>
-    <script src="js/voice-transcript.js?v=2026.02.25.11"></script>
-    <script src="js/googletts.js?v=2026.02.25.11"></script>
-    <script src="js/draw-memo.js?v=2026.02.25.11"></script>
-    <script src="js/document-tabs.js?v=2026.02.25.11"></script>
+    <script src="js/feedback.js?v=2026.02.25.12"></script>
+    <script src="js/news.js?v=2026.02.25.12"></script>
+    <script src="js/voice-video-player.js?v=2026.02.25.12"></script>
+    <script src="js/voice-audio-player.js?v=2026.02.25.12"></script>
+    <script src="js/youtube-publish.js?v=2026.02.25.12"></script>
+    <script src="js/voice.js?v=2026.02.25.12"></script>
+    <script src="js/voice-transcript.js?v=2026.02.25.12"></script>
+    <script src="js/googletts.js?v=2026.02.25.12"></script>
+    <script src="js/draw-memo.js?v=2026.02.25.12"></script>
+    <script src="js/document-tabs.js?v=2026.02.25.12"></script>
     <script>
         // Suppress React DevTools prompt in dev builds.
         window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = window.__REACT_DEVTOOLS_GLOBAL_HOOK__ || {
@@ -615,10 +619,10 @@
             onCommitFiberUnmount: function () { }
         };
     </script>
-    <script src="js/memo.bundle.js?v=2026.02.25.11"></script>
-    <script src="js/assist.js?v=2026.02.25.11"></script>
-    <script src="js/space-sync.js?v=2026.02.25.11"></script>
-    <script src="js/document-panel.js?v=2026.02.25.11"></script>
+    <script src="js/memo.bundle.js?v=2026.02.25.12"></script>
+    <script src="js/assist.js?v=2026.02.25.12"></script>
+    <script src="js/space-sync.js?v=2026.02.25.12"></script>
+    <script src="js/document-panel.js?v=2026.02.25.12"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             setTimeout(function () {
@@ -718,6 +722,9 @@
                 });
                 if (resetPromptBtn) {
                     resetPromptBtn.hidden = tabId !== "promptTab";
+                }
+                if (resetCategoryBtn) {
+                    resetCategoryBtn.hidden = tabId !== "categoryTab";
                 }
             }
 
@@ -1035,6 +1042,7 @@
             const promptPresetSelect = document.getElementById("memoPromptPresetSelect");
             const promptEditor = document.getElementById("memoPromptEditor");
             const resetPromptBtn = document.getElementById("resetPromptBtn");
+            const resetCategoryBtn = document.getElementById("resetCategoryBtn");
             const memoEditorReady = window.GoToolkitMemoEditorReady || Promise.resolve(null);
             let memoEditorApi = null;
             let activeDocumentId = null;
@@ -8866,9 +8874,29 @@
             async function getSuperpowers() {
                 if (window._superpowersCached) return window._superpowersCached;
                 try {
-                    const resp = await fetch('content/superpowers.json');
+                    let resp = await fetch('content/category.json');
+                    if (!resp.ok) {
+                        resp = await fetch('content/superpowers.json');
+                    }
                     if (resp.ok) {
-                        window._superpowersCached = await resp.json();
+                        const payload = await resp.json();
+                        if (Array.isArray(payload)) {
+                            window._superpowersCached = payload;
+                        } else if (Array.isArray(payload?.templates)) {
+                            const templateId = String(payload?.defaultTemplateId || payload?.selectedTemplateId || payload.templates[0]?.id || "").trim();
+                            const activeTemplate = payload.templates.find(template => String(template?.id || "").trim() === templateId) || payload.templates[0];
+                            const categories = Array.isArray(activeTemplate?.categories)
+                                ? activeTemplate.categories
+                                : (Array.isArray(activeTemplate?.items) ? activeTemplate.items : []);
+                            window._superpowersCached = categories;
+                        } else if (Array.isArray(payload?.lists)) {
+                            const first = payload.lists[0];
+                            window._superpowersCached = Array.isArray(first?.categories)
+                                ? first.categories
+                                : (Array.isArray(first?.items) ? first.items : []);
+                        } else {
+                            window._superpowersCached = [];
+                        }
                         return window._superpowersCached;
                     }
                 } catch (e) { }
@@ -9718,6 +9746,7 @@
                     if (notionDefaultPathInput) {
                         notionDefaultPathInput.value = localStorage.getItem(NOTION_PATH_STORAGE_KEY) || "";
                     }
+                    window.GoToolkitSettingsModal?.prepareCategorySettings?.().catch(() => { /* noop */ });
                     activateSettingsTab("integrationsTab");
                     refreshNotionIntegration(false).catch(() => { /* noop */ });
                     refreshYoutubeIntegration(false).catch(() => { /* noop */ });
@@ -9770,9 +9799,15 @@
                 promptEditor.value = "";
             });
 
-            saveSettingsBtn?.addEventListener("click", () => {
+            saveSettingsBtn?.addEventListener("click", async () => {
                 try {
                     const activeSettingsTab = settingsTabButtons.find(button => button.classList.contains("active"))?.dataset?.tab || "";
+                    if (activeSettingsTab === "categoryTab") {
+                        await window.GoToolkitSettingsModal?.saveCategorySettingsDraft?.();
+                        closeSettingsModal();
+                        setStatus("Catégories mises à jour");
+                        return;
+                    }
                     if (activeSettingsTab === "promptTab") {
                         const presetId = (promptPresetSelect?.dataset.value || "edit").trim();
                         applyPromptChanges(presetId, promptEditor?.value || "");
@@ -10508,8 +10543,10 @@
                     element.dataset.tourForcedVisible = "1";
                     element.dataset.tourPrevOpacity = element.style.opacity || "";
                     element.dataset.tourPrevVisibility = element.style.visibility || "";
+                    element.dataset.tourPrevPointerEvents = element.style.pointerEvents || "";
                     element.style.opacity = "1";
                     element.style.visibility = "visible";
+                    element.style.pointerEvents = "auto";
                 }
 
                 function resetForcedTourVisibility() {
@@ -10517,9 +10554,11 @@
                         const el = node;
                         el.style.opacity = el.dataset.tourPrevOpacity || "";
                         el.style.visibility = el.dataset.tourPrevVisibility || "";
+                        el.style.pointerEvents = el.dataset.tourPrevPointerEvents || "";
                         delete el.dataset.tourForcedVisible;
                         delete el.dataset.tourPrevOpacity;
                         delete el.dataset.tourPrevVisibility;
+                        delete el.dataset.tourPrevPointerEvents;
                     });
                 }
 
@@ -10606,10 +10645,7 @@
                         return;
                     }
                     requestAnimationFrame(() => {
-                        const slashMenuVisible = Boolean(document.querySelector(".memo-slash-actions-menu"));
-                        if (!slashMenuVisible) {
-                            showTourSlashMenu();
-                        }
+                        showTourSlashMenu();
                     });
                 }
 
@@ -10691,7 +10727,12 @@
                                 forceVisibleForTour(subPageBtn);
                             }
                         },
-                        focus: () => document.getElementById("documentExplorerToggle")
+                        focus: () => ([
+                            document.getElementById("documentExplorerToggle"),
+                            document.querySelector("#documentExplorer .document-explorer__section-header[data-section='private'] i[data-lucide^='chevron']"),
+                            document.querySelector("#documentExplorer .document-explorer__section-header[data-section='private'] svg.lucide-chevron-right"),
+                            document.querySelector("#documentExplorer .document-explorer__section-header[data-section='private'] svg.lucide-chevron-down")
+                        ].filter(Boolean))
                     },
                     {
                         title: "Cloud chiffré + partage de lien",
@@ -10704,6 +10745,8 @@
                             }
                             const sectionActions = document.querySelector("#documentExplorer .document-explorer__section-header[data-section^='shared:'] .document-explorer__section-actions");
                             forceVisibleForTour(sectionActions);
+                            const hoverOnlyActions = document.querySelectorAll("#documentExplorer .document-explorer__section-header[data-section^='shared:'] .document-explorer__section-actions .document-explorer__item-action--hover-only");
+                            hoverOnlyActions.forEach(action => forceVisibleForTour(action));
                         },
                         focus: () => ([
                             document.querySelector("#documentExplorer .document-explorer__section-header[data-section^='shared:'] .document-explorer__section-actions")
@@ -10712,7 +10755,7 @@
                     {
                         title: "Discussion ou édition augmentée avec l'IA",
                         text: "Choisir entre <i data-lucide=\"pen-line\"></i> <strong>Éditer</strong> pour créer ou modifier la page et <i data-lucide=\"message-square\"></i> <strong>Explorer</strong> pour poser des questions.",
-                        cardPosition: "left",
+                        cardPosition: "bottom-left",
                         before: () => {
                             closeSpaceEditorModal();
                             const assist = window.GoToolkitAssistInstance;
@@ -10757,6 +10800,7 @@
                     {
                         title: "Base de connaissance personnalisée pour l'IA",
                         text: "Joindre des <i data-lucide=\"paperclip\"></i> fichiers et sélectionne les espaces pertinents de la <i data-lucide=\"brain\"></i> base de connaissance pour l'IA",
+                        cardPosition: "left",
                         before: () => window.GoToolkitAssistInstance?.open?.(),
                         focus: () => ([
                             document.querySelector("#assistSidebar .chat-prompt-btn"),
@@ -10829,6 +10873,9 @@
                     } else if (preferredSide === "left") {
                         left = rect.left - cardRect.width - margin;
                         top = rect.top;
+                    } else if (preferredSide === "bottom-left") {
+                        left = rect.left - cardRect.width - margin;
+                        top = window.innerHeight - cardRect.height - margin;
                     }
                     if (left + cardRect.width > window.innerWidth - margin) {
                         left = window.innerWidth - cardRect.width - margin;
@@ -10896,7 +10943,7 @@
                         <p class="docs-tour-text">${step.text}</p>
                         <div class="docs-tour-actions">
                             ${hasCloseAndPrev ? '<button type="button" class="btn btn-secondary" data-tour-close>Fermer</button>' : ""}
-                            <button type="button" class="btn btn-secondary" data-tour-prev>${activeIndex === 0 ? "Fermer" : "Précédent"}</button>
+                            <button type="button" class="btn btn-secondary ${hasCloseAndPrev ? "docs-tour-prev--with-close" : ""}" data-tour-prev>${activeIndex === 0 ? "Fermer" : "Précédent"}</button>
                             <button type="button" class="btn-primary" data-tour-next>${activeIndex === steps.length - 1 ? "Terminer" : "Suivant"}</button>
                         </div>
                     `;

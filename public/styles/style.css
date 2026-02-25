@@ -380,6 +380,11 @@ body.app-body {
   margin-top: 16px;
 }
 
+.category-editor-input,
+.category-editor-input input {
+  padding: 2px 4px;
+}
+
 .feedback-actions {
   display: flex;
   align-items: center;

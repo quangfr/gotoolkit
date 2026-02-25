@@ -10,7 +10,8 @@
             <form class="feedback-form" onsubmit="return false;" style="flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; padding-right: 8px; margin-right: -8px;">
                 <div class="settings-tabs tabs">
                     <button type="button" class="tab-btn active" data-tab="servicesTab"><i data-lucide="cpu" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Services IA</button>
-                    <button type="button" class="tab-btn" data-tab="paramsTab"><i data-lucide="sliders" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Personnalisation</button>
+                    <button type="button" class="tab-btn" data-tab="paramsTab"><i data-lucide="palette" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Personnalisation</button>
+                    <button type="button" class="tab-btn" data-tab="categoryTab"><i data-lucide="tag" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Catégorie</button>
                     <button type="button" class="tab-btn" data-tab="integrationsTab"><i data-lucide="plug-zap" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Intégrations</button>
                     <button type="button" class="tab-btn" data-tab="promptTab"><i data-lucide="square-terminal" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Instructions</button>
                 </div>
@@ -176,6 +177,17 @@
                             </label>
                         </div>
                     </div>
+                    <div class="settings-tab-panel" data-panel="categoryTab" hidden>
+                        <div class="field-row">
+                            <label style="width:100%">
+                                <select id="categoryTemplateSelect" class="category-editor-input"></select>
+                            </label>
+                        </div>
+                        <div class="field-row" style="display:block;">
+                            <div id="categoryListEditor" style="display:flex; flex-direction:column; gap:2px; margin-top:4px;"></div>
+                            <div id="categoryIconPicker" class="document-explorer-icon-grid" style="position:static; display:none; margin-top:8px;"></div>
+                        </div>
+                    </div>
                     <div class="settings-tab-panel" data-panel="integrationsTab" hidden>
                         <div class="field-row">
                             <label style="width:100%">
@@ -247,11 +259,218 @@
                     <div style="flex: 1;"></div>
                     <button id="resetPromptBtn" type="button" class="btn-secondary" hidden><i data-lucide="rotate-ccw"
                             style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i>Réinitialiser</button>
+                    <button id="resetCategoryBtn" type="button" class="btn-secondary" hidden><i data-lucide="rotate-ccw"
+                            style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i>Réinitialiser</button>
                     <button id="saveSettingsBtn" type="button" class="btn-primary" style="margin-left:auto;">Sauvegarder</button>
                 </div>
             </form>
         </div>
     `;
+    const CATEGORY_SETTINGS_STORAGE_KEY = "go-toolkit-category-settings.v1";
+    const CATEGORY_SETTINGS_CHANGE_EVENT = "go-toolkit:categories-changed";
+    const CATEGORY_DEFAULTS_URL = "content/category.json";
+    const CATEGORY_LEGACY_URL = "content/superpowers.json";
+    const CATEGORY_ICON_CHOICES = Array.from(new Set(`
+        tag tags star flag compass map brain book-type clapperboard wand-2 database
+        file file-text folder folder-open briefcase chart-column chart-line
+        target lightbulb rocket sparkles palette pen-tool brush
+        message-circle message-square users user
+        cloud-upload cloud-download refresh-cw lock shield
+        code cpu puzzle component
+        calendar clock timer
+        heart home camera video mic music
+    `.trim().split(/\s+/)));
+    const CATEGORY_ICON_TOKENS = {
+        tag: ["categorie", "etiquette"],
+        star: ["important", "priorite"],
+        compass: ["strategie", "orientation"],
+        map: ["roadmap", "plan"],
+        brain: ["ia", "analyse"],
+        book: ["documentation", "savoir"],
+        clapperboard: ["video", "tutoriel"],
+        wand: ["prompt", "creativite"],
+        database: ["donnees"],
+        briefcase: ["professionnel", "travail"],
+        user: ["prive", "personnel"],
+        home: ["maison", "perso"]
+    };
+    let categorySettingsCache = null;
+    let categorySettingsLoadPromise = null;
+    let categoryTabDraft = null;
+    let categoryTabSaved = null;
+    let categoryTabIconTarget = null;
+    let categoryTabIconSearch = "";
+
+    function deepClone(value) {
+        try {
+            return JSON.parse(JSON.stringify(value));
+        } catch (err) {
+            return null;
+        }
+    }
+
+    function normalizeSearchValue(value) {
+        return String(value || "")
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toLowerCase()
+            .trim();
+    }
+
+    function getIconSearchText(icon) {
+        const parts = String(icon || "").split("-").filter(Boolean);
+        const words = [icon].concat(parts);
+        parts.forEach(token => {
+            const extra = CATEGORY_ICON_TOKENS[token];
+            if (Array.isArray(extra)) words.push(...extra);
+        });
+        return normalizeSearchValue(words.join(" "));
+    }
+
+    function normalizeCategoryItem(item, index) {
+        const rawId = item?.id == null ? "" : String(item.id).trim();
+        const id = rawId || String(index + 1);
+        const title = String(item?.title || item?.name || `Catégorie ${id}`).trim() || `Catégorie ${id}`;
+        const icon = String(item?.icon || "tag").trim() || "tag";
+        const description = String(item?.description || "").trim();
+        const enabled = item?.enabled !== false;
+        return { id, title, icon, description, enabled };
+    }
+
+    function normalizeCategoryTemplate(template, index) {
+        const id = String(template?.id || template?.name || `template-${index + 1}`).trim() || `template-${index + 1}`;
+        const name = String(template?.name || template?.label || `Template ${index + 1}`).trim() || `Template ${index + 1}`;
+        const list = Array.isArray(template?.categories)
+            ? template.categories
+            : (Array.isArray(template?.items) ? template.items : []);
+        const categories = list.map((item, itemIndex) => normalizeCategoryItem(item, itemIndex));
+        return { id, name, categories };
+    }
+
+    function normalizeCategoryTemplatesPayload(payload) {
+        if (Array.isArray(payload)) {
+            return {
+                selectedTemplateId: "superpowers",
+                templates: [{ id: "superpowers", name: "Superpouvoirs", categories: payload.map((item, index) => normalizeCategoryItem(item, index)) }]
+            };
+        }
+        const templatesRaw = Array.isArray(payload?.templates)
+            ? payload.templates
+            : (Array.isArray(payload?.lists) ? payload.lists : []);
+        const templates = templatesRaw.map((entry, index) => normalizeCategoryTemplate(entry, index)).filter(entry => Array.isArray(entry.categories) && entry.categories.length);
+        if (!templates.length) {
+            return { selectedTemplateId: "default", templates: [] };
+        }
+        const selectedTemplateId = String(payload?.defaultTemplateId || payload?.selectedTemplateId || templates[0].id).trim() || templates[0].id;
+        return { selectedTemplateId, templates };
+    }
+
+    async function fetchDefaultCategorySettings() {
+        const tryFetch = async (url) => {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            return response.json();
+        };
+        try {
+            const payload = await tryFetch(CATEGORY_DEFAULTS_URL);
+            const normalized = normalizeCategoryTemplatesPayload(payload);
+            if (normalized.templates.length) return normalized;
+        } catch (err) {
+            // fallback below
+        }
+        try {
+            const legacy = await tryFetch(CATEGORY_LEGACY_URL);
+            const normalized = normalizeCategoryTemplatesPayload(legacy);
+            if (normalized.templates.length) return normalized;
+        } catch (err) {
+            // fallback below
+        }
+        return {
+            selectedTemplateId: "default",
+            templates: [{
+                id: "default",
+                name: "Catégories",
+                categories: []
+            }]
+        };
+    }
+
+    function normalizeStoredCategorySettings(raw, defaults) {
+        const normalizedDefaults = normalizeCategoryTemplatesPayload(defaults || {});
+        const normalizedRaw = normalizeCategoryTemplatesPayload(raw || {});
+        const templates = (normalizedRaw.templates.length ? normalizedRaw.templates : normalizedDefaults.templates).map((template, index) => normalizeCategoryTemplate(template, index));
+        const selectedTemplateId = templates.some(template => template.id === normalizedRaw.selectedTemplateId)
+            ? normalizedRaw.selectedTemplateId
+            : (templates[0]?.id || "");
+        const displayEnabled = raw?.displayEnabled !== false;
+        return {
+            version: 1,
+            selectedTemplateId,
+            displayEnabled,
+            templates
+        };
+    }
+
+    function readStoredCategorySettings() {
+        try {
+            const raw = localStorage.getItem(CATEGORY_SETTINGS_STORAGE_KEY);
+            if (!raw) return null;
+            const parsed = JSON.parse(raw);
+            return parsed && typeof parsed === "object" ? parsed : null;
+        } catch (err) {
+            return null;
+        }
+    }
+
+    function writeStoredCategorySettings(settings) {
+        try {
+            localStorage.setItem(CATEGORY_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+        } catch (err) {
+            // ignore
+        }
+    }
+
+    async function ensureCategorySettingsLoaded() {
+        if (categorySettingsCache) return deepClone(categorySettingsCache) || categorySettingsCache;
+        if (categorySettingsLoadPromise) return categorySettingsLoadPromise;
+        categorySettingsLoadPromise = (async () => {
+            const defaults = await fetchDefaultCategorySettings();
+            const stored = readStoredCategorySettings();
+            const normalized = normalizeStoredCategorySettings(stored, defaults);
+            categorySettingsCache = normalized;
+            writeStoredCategorySettings(normalized);
+            return deepClone(normalized) || normalized;
+        })();
+        try {
+            return await categorySettingsLoadPromise;
+        } finally {
+            categorySettingsLoadPromise = null;
+        }
+    }
+
+    function findActiveCategoryTemplate(settings) {
+        const list = Array.isArray(settings?.templates) ? settings.templates : [];
+        if (!list.length) return null;
+        const selectedId = String(settings?.selectedTemplateId || "").trim();
+        return list.find(template => template.id === selectedId) || list[0] || null;
+    }
+
+    async function saveCategorySettings(nextSettings) {
+        const defaults = await fetchDefaultCategorySettings();
+        const normalized = normalizeStoredCategorySettings(nextSettings || {}, defaults);
+        categorySettingsCache = normalized;
+        writeStoredCategorySettings(normalized);
+        global.dispatchEvent(new CustomEvent(CATEGORY_SETTINGS_CHANGE_EVENT, {
+            detail: { settings: deepClone(normalized) || normalized }
+        }));
+        return deepClone(normalized) || normalized;
+    }
+
+    function getActiveCategoriesFromSettings(settings, includeDisabled = false) {
+        const active = findActiveCategoryTemplate(settings);
+        const categories = Array.isArray(active?.categories) ? active.categories : [];
+        return includeDisabled ? categories.slice() : categories.filter(item => item.enabled !== false);
+    }
 
     function normalizeBackdrop(modal) {
         if (!modal) return;
@@ -715,8 +934,13 @@
 
     function updateSettingsActionButtons(modal, tabId) {
         const resetPromptBtn = modal?.querySelector("#resetPromptBtn");
-        if (!resetPromptBtn) return;
-        resetPromptBtn.hidden = tabId !== "promptTab";
+        const resetCategoryBtn = modal?.querySelector("#resetCategoryBtn");
+        if (resetPromptBtn) {
+            resetPromptBtn.hidden = tabId !== "promptTab";
+        }
+        if (resetCategoryBtn) {
+            resetCategoryBtn.hidden = tabId !== "categoryTab";
+        }
     }
 
     function activateSettingsTab(modal, tabId) {
@@ -742,10 +966,207 @@
             button.addEventListener("click", function () {
                 const nextTab = button.dataset.tab || buttons[0]?.dataset?.tab || "servicesTab";
                 activateSettingsTab(modal, nextTab);
+                if (nextTab === "categoryTab") {
+                    prepareCategorySettingsTab(modal).catch(() => { /* noop */ });
+                }
                 if (onTabChange) onTabChange(nextTab);
             });
         });
         modal.dataset.settingsTabsBound = "1";
+    }
+
+    function renderCategoryIconPicker(modal) {
+        const picker = modal?.querySelector("#categoryIconPicker");
+        if (!picker) return;
+        picker.innerHTML = "";
+        if (!categoryTabIconTarget) {
+            picker.style.display = "none";
+            return;
+        }
+        picker.style.display = "grid";
+        picker.classList.add("open");
+        const searchWrap = doc.createElement("div");
+        searchWrap.className = "document-explorer-icon-search-wrap";
+        searchWrap.style.gridColumn = "1 / -1";
+        const searchInput = doc.createElement("input");
+        searchInput.type = "search";
+        searchInput.className = "document-explorer-icon-search";
+        searchInput.placeholder = "Rechercher une icône";
+        searchInput.value = categoryTabIconSearch;
+        searchInput.addEventListener("input", () => {
+            categoryTabIconSearch = searchInput.value || "";
+            renderCategoryIconPicker(modal);
+        });
+        searchWrap.appendChild(searchInput);
+        picker.appendChild(searchWrap);
+        const q = normalizeSearchValue(categoryTabIconSearch);
+        const icons = !q ? CATEGORY_ICON_CHOICES : CATEGORY_ICON_CHOICES.filter(icon => getIconSearchText(icon).includes(q));
+        icons.forEach(icon => {
+            const btn = doc.createElement("button");
+            btn.type = "button";
+            btn.className = "document-explorer-icon-choice" + (categoryTabIconTarget?.item?.icon === icon ? " active" : "");
+            btn.title = icon;
+            btn.innerHTML = `<i data-lucide="${icon}"></i>`;
+            btn.addEventListener("click", () => {
+                const target = categoryTabIconTarget;
+                if (!target?.item) return;
+                target.item.icon = icon;
+                picker.style.display = "none";
+                categoryTabIconTarget = null;
+                categoryTabIconSearch = "";
+                renderCategoryTab(modal);
+            });
+            picker.appendChild(btn);
+        });
+        if (typeof requestAnimationFrame === "function") {
+            requestAnimationFrame(() => searchInput.focus());
+        } else {
+            setTimeout(() => searchInput.focus(), 0);
+        }
+        global.lucide?.createIcons?.();
+    }
+
+    function renderCategoryTab(modal) {
+        const select = modal?.querySelector("#categoryTemplateSelect");
+        const list = modal?.querySelector("#categoryListEditor");
+        if (!select || !list || !categoryTabDraft) return;
+        const templates = Array.isArray(categoryTabDraft.templates) ? categoryTabDraft.templates : [];
+        const activeTemplate = findActiveCategoryTemplate(categoryTabDraft);
+        const currentTemplateId = String(categoryTabDraft.selectedTemplateId || activeTemplate?.id || "").trim();
+        if (select.dataset.initialized !== "1") {
+            select.addEventListener("change", () => {
+                const selectedId = String(select.value || "").trim();
+                categoryTabDraft.selectedTemplateId = selectedId;
+                categoryTabIconTarget = null;
+                categoryTabIconSearch = "";
+                renderCategoryTab(modal);
+            });
+            select.dataset.initialized = "1";
+        }
+        select.innerHTML = "";
+        templates.forEach(template => {
+            const option = doc.createElement("option");
+            option.value = template.id;
+            option.textContent = template.name || template.id;
+            select.appendChild(option);
+        });
+        select.value = templates.some(template => template.id === currentTemplateId)
+            ? currentTemplateId
+            : (templates[0]?.id || "");
+        list.innerHTML = "";
+        const currentTemplate = findActiveCategoryTemplate(categoryTabDraft);
+        const categories = Array.isArray(currentTemplate?.categories) ? currentTemplate.categories : [];
+        const markTemplateAsCustomized = () => {
+            const active = findActiveCategoryTemplate(categoryTabDraft);
+            if (!active) return;
+            active.name = "Personnalisé";
+            if (!active.id) {
+                active.id = "custom";
+                categoryTabDraft.selectedTemplateId = "custom";
+            }
+            select.innerHTML = "";
+            templates.forEach(template => {
+                const option = doc.createElement("option");
+                option.value = template.id;
+                option.textContent = template.name || template.id;
+                select.appendChild(option);
+            });
+            select.value = active.id;
+        };
+        categories.forEach((item, index) => {
+            const row = doc.createElement("div");
+            row.className = "document-explorer__tree-row";
+            row.style.display = "grid";
+            row.style.gridTemplateColumns = "auto auto auto 1fr";
+            row.style.gap = "2px";
+            row.style.alignItems = "center";
+            row.style.padding = "6px 8px";
+            row.style.borderRadius = "8px";
+            row.style.background = "var(--bg-surface)";
+
+            const toggle = doc.createElement("input");
+            toggle.type = "checkbox";
+            toggle.checked = item.enabled !== false;
+            toggle.style.accentColor = "var(--color-primary)";
+            toggle.title = "Afficher cette catégorie";
+            toggle.addEventListener("change", () => {
+                item.enabled = Boolean(toggle.checked);
+            });
+            row.appendChild(toggle);
+
+            const idLabel = doc.createElement("span");
+            idLabel.textContent = String(item.id || index + 1);
+            idLabel.style.fontSize = "12px";
+            idLabel.style.opacity = "0.8";
+            idLabel.style.minWidth = "16px";
+            row.appendChild(idLabel);
+
+            const iconBtn = doc.createElement("button");
+            iconBtn.type = "button";
+            iconBtn.className = "btn btn-secondary";
+            iconBtn.style.padding = "3px 6px";
+            iconBtn.innerHTML = `<i data-lucide="${item.icon || "tag"}" style="width:14px;height:14px;"></i>`;
+            iconBtn.title = "Choisir une icône";
+            iconBtn.addEventListener("click", () => {
+                categoryTabIconTarget = { item };
+                categoryTabIconSearch = "";
+                renderCategoryIconPicker(modal);
+            });
+            row.appendChild(iconBtn);
+
+            const nameInput = doc.createElement("input");
+            nameInput.type = "text";
+            nameInput.className = "category-editor-input";
+            nameInput.value = String(item.title || "");
+            nameInput.placeholder = "Nom de la catégorie";
+            nameInput.addEventListener("input", () => {
+                item.title = String(nameInput.value || "").trim();
+                markTemplateAsCustomized();
+            });
+            row.appendChild(nameInput);
+            list.appendChild(row);
+        });
+        renderCategoryIconPicker(modal);
+        global.lucide?.createIcons?.();
+    }
+
+    async function prepareCategorySettingsTab(modal) {
+        const settings = await ensureCategorySettingsLoaded();
+        categoryTabSaved = deepClone(settings) || settings;
+        categoryTabDraft = deepClone(settings) || settings;
+        categoryTabIconTarget = null;
+        categoryTabIconSearch = "";
+        renderCategoryTab(modal);
+    }
+
+    async function saveCategorySettingsDraft(modal) {
+        if (!categoryTabDraft) {
+            await prepareCategorySettingsTab(modal);
+        }
+        const saved = await saveCategorySettings(categoryTabDraft);
+        categoryTabSaved = deepClone(saved) || saved;
+        categoryTabDraft = deepClone(saved) || saved;
+        categoryTabIconTarget = null;
+        categoryTabIconSearch = "";
+        renderCategoryTab(modal);
+        return saved;
+    }
+
+    function resetCategorySettingsDraft(modal) {
+        if (!categoryTabSaved) return;
+        categoryTabDraft = deepClone(categoryTabSaved) || categoryTabSaved;
+        categoryTabIconTarget = null;
+        categoryTabIconSearch = "";
+        renderCategoryTab(modal);
+    }
+
+    function bindCategoryResetButton(modal) {
+        const resetBtn = modal?.querySelector("#resetCategoryBtn");
+        if (!resetBtn || resetBtn.dataset.bound === "1") return;
+        resetBtn.addEventListener("click", () => {
+            resetCategorySettingsDraft(modal);
+        });
+        resetBtn.dataset.bound = "1";
     }
 
     function bind(options = {}) {
@@ -763,12 +1184,14 @@
         const defaultTab = options.defaultTab || "servicesTab";
 
         bindSettingsTabs(modal, { onTabChange });
+        bindCategoryResetButton(modal);
 
         const api = {
             open: function () {
                 if (onOpen) onOpen();
                 bindBackendSelector();
                 syncBackendSettingsVisibility();
+                prepareCategorySettingsTab(modal).catch(() => { /* noop */ });
                 activateSettingsTab(modal, defaultTab);
                 if (typeof requestAnimationFrame === "function") {
                     requestAnimationFrame(() => syncSettingsTabHeights(modal));
@@ -821,6 +1244,21 @@
         populateOpenrouterModelInput,
         populateOpenrouterOcrModelInput,
         populateOpenrouterEmbeddingsModelInput,
+        prepareCategorySettings: async function (modalId = "settingsModal") {
+            const modal = doc.getElementById(modalId);
+            if (!modal) return null;
+            return prepareCategorySettingsTab(modal);
+        },
+        saveCategorySettingsDraft: async function (modalId = "settingsModal") {
+            const modal = doc.getElementById(modalId);
+            if (!modal) return null;
+            return saveCategorySettingsDraft(modal);
+        },
+        resetCategorySettingsDraft: function (modalId = "settingsModal") {
+            const modal = doc.getElementById(modalId);
+            if (!modal) return;
+            resetCategorySettingsDraft(modal);
+        },
         activateSettingsTab: function (tabId, modalId = "settingsModal") {
             const modal = doc.getElementById(modalId);
             activateSettingsTab(modal, tabId);
@@ -836,6 +1274,25 @@
         testOpenRouterConnection
     };
 
+    global.GoToolkitCategoryConfig = {
+        ensureLoaded: ensureCategorySettingsLoaded,
+        getSettingsSnapshot: async function () {
+            return ensureCategorySettingsLoaded();
+        },
+        getDisplayEnabled: function () {
+            const displayEnabled = categorySettingsCache?.displayEnabled;
+            return displayEnabled !== false;
+        },
+        getActiveCategories: function (options = {}) {
+            const includeDisabled = Boolean(options?.includeDisabled);
+            const settings = categorySettingsCache;
+            if (!settings) return [];
+            return getActiveCategoriesFromSettings(settings, includeDisabled).map(item => ({ ...item }));
+        },
+        saveSettings: saveCategorySettings,
+        eventName: CATEGORY_SETTINGS_CHANGE_EVENT
+    };
+
     function ensureSharedSettingsModalStructure() {
         const modal = doc.getElementById("settingsModal");
         if (!modal) return;
@@ -843,11 +1300,13 @@
             modal.innerHTML = SHARED_SETTINGS_MODAL_HTML;
         }
         bindSettingsTabs(modal);
+        bindCategoryResetButton(modal);
         activateSettingsTab(modal, "servicesTab");
         bindBackendSelector();
         syncBackendSettingsVisibility();
         bindRepairButton();
         bindVerifyButtons();
+        prepareCategorySettingsTab(modal).catch(() => { /* noop */ });
     }
 
     ensureSharedSettingsModalStructure();
