@@ -3411,12 +3411,15 @@
             return { text: full, pdfPages: pages, pdfBuffer };
         }
 
-        async extractImageWithOcr(file, fileName = "") {
+        async extractImageWithOcr(file, fileName = "", options = null) {
             if (!file) return { text: "" };
+            const opts = options && typeof options === "object" ? options : {};
+            const skipOfflineOcr = Boolean(opts.skipOfflineOcr);
+            const suppressErrors = Boolean(opts.suppressErrors);
             let canvas = null;
             let quality = null;
             let tesseractText = "";
-            const offlineDisabled = isOfflineOcrDisabled();
+            const offlineDisabled = isOfflineOcrDisabled() || skipOfflineOcr;
             try {
                 canvas = await fileToCanvas(file);
                 quality = analyzeCanvasQuality(canvas);
@@ -3458,6 +3461,13 @@
             if (!offlineDisabled && tesseractText) {
                 return {
                     text: tesseractText,
+                    qualityMetrics: { type: "image", ...(quality || {}) }
+                };
+            }
+
+            if (suppressErrors) {
+                return {
+                    text: "",
                     qualityMetrics: { type: "image", ...(quality || {}) }
                 };
             }
@@ -3669,7 +3679,10 @@
                     if (!imageEntry) return;
                     try {
                         const blob = await imageEntry.async("blob");
-                        const ocr = await this.extractImageWithOcr(blob, target);
+                        const ocr = await this.extractImageWithOcr(blob, target, {
+                            skipOfflineOcr: true,
+                            suppressErrors: true
+                        });
                         appendText(ocr?.text || "");
                     } catch (err) {
                         // ignore OCR failures here; ingest flow handles toasts
@@ -3765,7 +3778,10 @@
                         if (!imageEntry) return;
                         try {
                             const blob = await imageEntry.async("blob");
-                            const ocr = await this.extractImageWithOcr(blob, target);
+                            const ocr = await this.extractImageWithOcr(blob, target, {
+                                skipOfflineOcr: true,
+                                suppressErrors: true
+                            });
                             appendText(ocr?.text || "");
                         } catch (err) {
                             // ignore OCR failures here; ingest flow handles toasts
