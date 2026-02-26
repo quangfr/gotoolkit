@@ -19,6 +19,8 @@ const ALLOWED_ASSET_MIME_PREFIXES = ["image/", "video/", "audio/"];
 const ALLOWED_ASSET_MIME_TYPES = new Set([
   "application/x-gotoolkit-e2ee+json"
 ]);
+const SYNC_REPLAY_TTL_SECONDS = 15 * 60;
+const SYNC_SKEW_MS = 10 * 60 * 1000;
 const MAX_ASSET_BYTES = 25 * 1024 * 1024;
 let serviceAccountConfig = null;
 let signingKeyPromise = null;
@@ -167,6 +169,24 @@ function parseShareRepairPath(request) {
   return { collection };
 }
 
+function parseShareControlPath(request) {
+  const url = new URL(request.url);
+  const segments = normalizePathname(url.pathname)
+    .split("/")
+    .filter(Boolean);
+  if (segments.length !== 3) {
+    return null;
+  }
+  if (segments[0] !== API_VERSION || segments[1] !== SHARES_SEGMENT) {
+    return null;
+  }
+  const action = String(segments[2] || "").trim().toLowerCase();
+  if (action !== "sync:revoke" && action !== "sync:unrevoke") {
+    return null;
+  }
+  return { action };
+}
+
 function parseAssetPath(request) {
   const url = new URL(request.url);
   const segments = normalizePathname(url.pathname)
@@ -313,7 +333,7 @@ function corsHeaders(request, env) {
   const requestedHeaders = request.headers.get("Access-Control-Request-Headers");
   const allowHeaders = requestedHeaders && requestedHeaders.trim()
     ? requestedHeaders
-    : "Content-Type,Authorization,Cache-Control";
+    : "Content-Type,Authorization,Cache-Control,X-Admin-Token,X-Sync-Session,X-Sync-JTI,X-Sync-TS";
   const headers = {
     "Access-Control-Allow-Methods": "GET,PUT,POST,DELETE,OPTIONS",
     "Access-Control-Allow-Headers": allowHeaders,
@@ -368,6 +388,83 @@ function getClientIp(request) {
     request.headers.get("X-Forwarded-For")?.split(",")[0]?.trim() ||
     "unknown"
   );
+}
+
+function isSyncProtectionEnabled(env) {
+  return String(env?.SHARE_SYNC_ENFORCE || "").trim() === "1";
+}
+
+function getSyncReplayStore(env) {
+  const kv = env?.SYNC_REPLAY_KV;
+  if (!kv || typeof kv.get !== "function" || typeof kv.put !== "function") {
+    return null;
+  }
+  return kv;
+}
+
+function readSyncEnvelope(request) {
+  return {
+    sessionId: String(request.headers.get("X-Sync-Session") || "").trim(),
+    jti: String(request.headers.get("X-Sync-JTI") || "").trim(),
+    timestampRaw: String(request.headers.get("X-Sync-TS") || "").trim()
+  };
+}
+
+function resolveSyncCheckContext(request, path, batchPath, batchGetPath, batchDeletePath, batchCreatePath, repairPath) {
+  if (repairPath) return null;
+  if (batchPath) return { operation: "write", collection: batchPath.collection };
+  if (batchGetPath) return { operation: "read", collection: batchGetPath.collection };
+  if (batchDeletePath) return { operation: "delete", collection: batchDeletePath.collection };
+  if (batchCreatePath) return { operation: "write", collection: batchCreatePath.collection };
+  if (!path) return null;
+  const method = String(request.method || "GET").toUpperCase();
+  if (method === "GET") return { operation: "read", collection: path.collection };
+  if (method === "DELETE") return { operation: "delete", collection: path.collection };
+  if (method === "POST" || method === "PUT") return { operation: "write", collection: path.collection };
+  return null;
+}
+
+async function enforceSyncEnvelope(request, env, context) {
+  if (!context || !isSyncProtectionEnabled(env)) {
+    return null;
+  }
+  const kv = getSyncReplayStore(env);
+  if (!kv) {
+    return errorResponse("SYNC_REPLAY_KV manquant", 500, request, env);
+  }
+  const envelope = readSyncEnvelope(request);
+  const timestamp = Number(envelope.timestampRaw || 0);
+  const now = Date.now();
+  if (!envelope.sessionId || !envelope.jti || !Number.isFinite(timestamp)) {
+    return errorResponse("En-têtes sync requis (session/jti/ts)", 401, request, env);
+  }
+  if (Math.abs(now - timestamp) > SYNC_SKEW_MS) {
+    return errorResponse("Horodatage sync invalide", 401, request, env);
+  }
+
+  const revokedKey = `sync:revoked:${envelope.sessionId}`;
+  const revoked = await kv.get(revokedKey);
+  if (revoked) {
+    return errorResponse("Session sync révoquée", 403, request, env);
+  }
+
+  if (context.operation !== "read") {
+    const replayKey = `sync:replay:${envelope.sessionId}:${envelope.jti}`;
+    const seen = await kv.get(replayKey);
+    if (seen) {
+      return errorResponse("Requête rejouée", 409, request, env);
+    }
+    await kv.put(
+      replayKey,
+      JSON.stringify({
+        ts: now,
+        op: context.operation,
+        collection: String(context.collection || "")
+      }),
+      { expirationTtl: SYNC_REPLAY_TTL_SECONDS }
+    );
+  }
+  return null;
 }
 
 async function enforceWriteRateLimit(request, env) {
@@ -1078,6 +1175,60 @@ async function handleRequest(request, env) {
   const batchDeletePath = parseShareBatchDeletePath(request);
   const batchCreatePath = parseShareBatchCreatePath(request);
   const repairPath = parseShareRepairPath(request);
+  const controlPath = parseShareControlPath(request);
+
+  if (controlPath) {
+    if (request.method !== "POST") {
+      const headers = Object.assign({ Allow: "POST,OPTIONS" }, corsHeaders(request, env));
+      return new Response(JSON.stringify({ error: "Méthode non autorisée" }), {
+        status: 405,
+        headers: Object.assign({ "Content-Type": "application/json; charset=utf-8" }, headers)
+      });
+    }
+    if (!verifyAdminAccess(request, env)) {
+      return errorResponse("Accès refusé", 403, request, env);
+    }
+    const kv = getSyncReplayStore(env);
+    if (!kv) {
+      return errorResponse("SYNC_REPLAY_KV manquant", 500, request, env);
+    }
+    let body = null;
+    try {
+      body = await request.json();
+    } catch (err) {
+      return errorResponse("Payload JSON attendu", 400, request, env);
+    }
+    const sessionId = String(body?.sessionId || "").trim();
+    if (!sessionId) {
+      return errorResponse("sessionId manquant", 400, request, env);
+    }
+    const revokedKey = `sync:revoked:${sessionId}`;
+    if (controlPath.action === "sync:revoke") {
+      const ttl = Math.max(60, Math.min(7 * 24 * 60 * 60, Number(body?.ttlSeconds || 24 * 60 * 60) || 24 * 60 * 60));
+      await kv.put(revokedKey, JSON.stringify({ revokedAt: new Date().toISOString() }), { expirationTtl: ttl });
+      return jsonResponse({ ok: true, sessionId, revoked: true, ttlSeconds: ttl }, 200, request, env);
+    }
+    if (typeof kv.delete === "function") {
+      await kv.delete(revokedKey);
+    } else {
+      await kv.put(revokedKey, "", { expirationTtl: 1 });
+    }
+    return jsonResponse({ ok: true, sessionId, revoked: false }, 200, request, env);
+  }
+
+  const syncCheckContext = resolveSyncCheckContext(
+    request,
+    path,
+    batchPath,
+    batchGetPath,
+    batchDeletePath,
+    batchCreatePath,
+    repairPath
+  );
+  const syncEnvelopeError = await enforceSyncEnvelope(request, env, syncCheckContext);
+  if (syncEnvelopeError) {
+    return syncEnvelopeError;
+  }
   if (!path && batchPath) {
     if (request.method !== "POST") {
       const headers = Object.assign({ Allow: "POST,OPTIONS" }, corsHeaders(request, env));

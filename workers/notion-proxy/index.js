@@ -10,6 +10,7 @@ const NOTION_VERSION = "2022-06-28";
 const SESSION_COOKIE_NAME = "gt_notion_sid";
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24;
 const OAUTH_PROVIDER = "notion";
+const OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
 
 function normalizeOrigin(origin) {
   return (origin || "").trim();
@@ -67,6 +68,24 @@ function generateOpaqueSessionId() {
   const bytes = new Uint8Array(32);
   crypto.getRandomValues(bytes);
   return Array.from(bytes, (v) => v.toString(16).padStart(2, "0")).join("");
+}
+
+function generateOAuthNonce() {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (v) => v.toString(16).padStart(2, "0")).join("");
+}
+
+function getOAuthStateKey(nonce) {
+  return `notion-oauth-state:${nonce}`;
+}
+
+function normalizeTargetOrigin(origin) {
+  const value = String(origin || "").trim();
+  if (!value) return ALLOWED_ORIGINS[0] || "";
+  if (isLocalOrigin(value)) return value;
+  if (ALLOWED_ORIGINS.includes(value)) return value;
+  return ALLOWED_ORIGINS[0] || "";
 }
 
 function parseCookies(request) {
@@ -174,6 +193,56 @@ async function clearDeviceData(env, sessionId) {
       .run();
   } catch (err) {
     console.warn("notion oauth d1 delete failed", err);
+  }
+}
+
+async function writeOAuthState(env, nonce, value) {
+  if (!env?.OAUTH_DB || !nonce || !value) return false;
+  const key = getOAuthStateKey(nonce);
+  const payload = JSON.stringify(value);
+  const expiresAt = new Date(Date.now() + OAUTH_STATE_TTL_MS).toISOString();
+  try {
+    await env.OAUTH_DB
+      .prepare(`INSERT INTO oauth_sessions (provider, session_key, payload, updated_at, expires_at)
+                VALUES (?1, ?2, ?3, ?4, ?5)
+                ON CONFLICT(provider, session_key)
+                DO UPDATE SET payload = excluded.payload, updated_at = excluded.updated_at, expires_at = excluded.expires_at`)
+      .bind(OAUTH_PROVIDER, key, payload, new Date().toISOString(), expiresAt)
+      .run();
+    return true;
+  } catch (err) {
+    console.warn("notion oauth state write failed", err);
+    return false;
+  }
+}
+
+async function consumeOAuthState(env, nonce) {
+  if (!env?.OAUTH_DB || !nonce) return null;
+  const key = getOAuthStateKey(nonce);
+  let raw = null;
+  try {
+    const row = await env.OAUTH_DB
+      .prepare("SELECT payload FROM oauth_sessions WHERE provider = ?1 AND session_key = ?2 LIMIT 1")
+      .bind(OAUTH_PROVIDER, key)
+      .first();
+    raw = row?.payload ? String(row.payload) : null;
+  } catch (err) {
+    console.warn("notion oauth state read failed", err);
+    return null;
+  }
+  try {
+    await env.OAUTH_DB
+      .prepare("DELETE FROM oauth_sessions WHERE provider = ?1 AND session_key = ?2")
+      .bind(OAUTH_PROVIDER, key)
+      .run();
+  } catch (err) {
+    console.warn("notion oauth state delete failed", err);
+  }
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch (err) {
+    return null;
   }
 }
 
@@ -315,7 +384,7 @@ function renderOAuthCallbackPage(ok, message, targetOrigin) {
     ok,
     error: ok ? "" : safe
   });
-  const normalizedTargetOrigin = String(targetOrigin || "").trim() || "*";
+  const normalizedTargetOrigin = normalizeTargetOrigin(targetOrigin);
   return `<!doctype html><html><head><meta charset="utf-8"><title>Notion OAuth</title></head><body><script>
   (function () {
     try {
@@ -333,8 +402,17 @@ async function handleOAuthStart(request, env) {
   const url = new URL(request.url);
   const origin = (url.searchParams.get("origin") || "").trim();
   const sessionId = getSessionIdFromRequest(request) || generateOpaqueSessionId();
-
-  const state = encodeState({ sessionId, origin });
+  const targetOrigin = normalizeTargetOrigin(origin);
+  const nonce = generateOAuthNonce();
+  const stateStored = await writeOAuthState(env, nonce, {
+    sessionId,
+    targetOrigin,
+    issuedAt: Date.now()
+  });
+  if (!stateStored) {
+    return new Response("OAuth state storage unavailable", { status: 500 });
+  }
+  const state = encodeState({ nonce });
   const authUrl = new URL(NOTION_AUTH_URL);
   authUrl.searchParams.set("client_id", env.NOTION_CLIENT_ID || "");
   authUrl.searchParams.set("response_type", "code");
@@ -355,8 +433,22 @@ async function handleOAuthCallback(request, env) {
   const code = (url.searchParams.get("code") || "").trim();
   const oauthError = (url.searchParams.get("error") || "").trim();
   const state = decodeState(url.searchParams.get("state") || "");
-  const sessionId = String(state.sessionId || "").trim() || getSessionIdFromRequest(request);
-  const targetOrigin = String(state.origin || "").trim();
+  const nonce = String(state.nonce || "").trim();
+  const storedState = await consumeOAuthState(env, nonce);
+  const cookieSessionId = getSessionIdFromRequest(request);
+  const storedSessionId = String(storedState?.sessionId || "").trim();
+  const issuedAt = Number(storedState?.issuedAt || 0);
+  const stateExpired = !issuedAt || (Date.now() - issuedAt > OAUTH_STATE_TTL_MS);
+  const sessionMismatch = cookieSessionId && storedSessionId && cookieSessionId !== storedSessionId;
+  const sessionId = cookieSessionId || storedSessionId;
+  const targetOrigin = normalizeTargetOrigin(storedState?.targetOrigin || "");
+
+  if (!storedState || stateExpired || sessionMismatch) {
+    return new Response(renderOAuthCallbackPage(false, "State OAuth invalide ou expiré", targetOrigin), {
+      status: 400,
+      headers: { "Content-Type": "text/html; charset=utf-8" }
+    });
+  }
 
   if (oauthError) {
     return new Response(renderOAuthCallbackPage(false, oauthError, targetOrigin), {

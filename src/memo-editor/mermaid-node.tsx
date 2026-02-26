@@ -5,6 +5,47 @@ import { Shapes, RectangleHorizontal, Square, ArrowLeftRight, Workflow, Boxes, S
 
 const getMermaidApi = () => (window as any).mermaid;
 
+function sanitizeRenderedSvg(svgMarkup: string): string {
+  const raw = String(svgMarkup || '').trim();
+  if (!raw) return '';
+
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(raw, 'image/svg+xml');
+    const svg = doc.documentElement;
+    if (!svg || svg.nodeName.toLowerCase() !== 'svg') return '';
+
+    const blockedTags = ['script', 'foreignObject', 'iframe', 'object', 'embed', 'link'];
+    blockedTags.forEach(tag => {
+      doc.querySelectorAll(tag).forEach(node => node.remove());
+    });
+
+    doc.querySelectorAll('*').forEach(el => {
+      Array.from(el.attributes).forEach(attr => {
+        const name = attr.name.toLowerCase();
+        const value = String(attr.value || '').trim();
+        if (name.startsWith('on')) {
+          el.removeAttribute(attr.name);
+          return;
+        }
+        if (name === 'href' || name === 'xlink:href') {
+          if (/^\s*javascript:/i.test(value)) {
+            el.removeAttribute(attr.name);
+          }
+          return;
+        }
+        if (name === 'style' && /javascript:/i.test(value)) {
+          el.removeAttribute(attr.name);
+        }
+      });
+    });
+
+    return svg.outerHTML || '';
+  } catch {
+    return '';
+  }
+}
+
 // Mermaid Diagram Component that shows only the diagram
 const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
   const [isEditing, setIsEditing] = React.useState(false);
@@ -165,7 +206,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
                 size: newSize,
                 excalidrawJSON: json || ''
               });
-              if (svgHtml) setSvg(svgHtml);
+              if (svgHtml) setSvg(sanitizeRenderedSvg(svgHtml));
               setLastValidCode(cleanCode);
               setModalError(null);
             } catch (syncErr: any) {
@@ -336,7 +377,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
               updateAttributes({ excalidrawJSON: json });
             }
             if (svgHtml) {
-              setSvg(svgHtml);
+              setSvg(sanitizeRenderedSvg(svgHtml));
             }
             setLastValidCode(code);
             return;
@@ -358,7 +399,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
           const json = (window as any).GoToolkitDrawMemo.getSceneJSON();
           const svgHtml = await (window as any).GoToolkitDrawMemo.getSVG('auto');
           updateAttributes({ excalidrawJSON: json });
-          setSvg(svgHtml);
+          setSvg(sanitizeRenderedSvg(svgHtml));
           setLastValidCode(code);
           document.body.removeChild(tempDiv);
         } catch (e) {
@@ -381,7 +422,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
           if ((window as any).GoToolkitDrawMemo.renderPreview) {
             const result = await (window as any).GoToolkitDrawMemo.renderPreview(excalidrawJSON, 'auto', size);
             if (result?.svg) {
-              setSvg(result.svg);
+              setSvg(sanitizeRenderedSvg(result.svg));
               setError(null);
               return;
             }
@@ -400,7 +441,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
           await new Promise<void>(resolve => window.requestAnimationFrame(() => resolve()));
           await new Promise<void>(resolve => window.requestAnimationFrame(() => resolve()));
           const svgHtml = await (window as any).GoToolkitDrawMemo.getSVG('auto');
-          setSvg(svgHtml);
+          setSvg(sanitizeRenderedSvg(svgHtml));
           document.body.removeChild(tempDiv);
           setError(null);
           return;
@@ -431,11 +472,11 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
       mermaidApi.initialize({ 
         startOnLoad: false,
         theme: 'default',
-        securityLevel: 'loose',
+        securityLevel: 'strict',
       });
 
       const { svg } = await mermaidApi.render(id, code);
-      setSvg(svg);
+      setSvg(sanitizeRenderedSvg(svg));
       setError(null);
     } catch (err: any) {
       console.warn('Mermaid render error:', err);
@@ -586,7 +627,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
           excalidrawJSON: finalExcalidrawJSON,
         });
         if (svgHtml && (finalCode.trim() || !isExcalidrawEmpty)) {
-          setSvg(svgHtml);
+          setSvg(sanitizeRenderedSvg(svgHtml));
         } else {
           setSvg('');
         }
@@ -690,7 +731,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
         size: targetSize // Persist the forced size too
       });
       if (svgHtml) {
-        setSvg(svgHtml);
+        setSvg(sanitizeRenderedSvg(svgHtml));
       }
 
       setModalError(null);
@@ -745,7 +786,7 @@ const MermaidDiagramComponent = ({ node, updateAttributes, editor }: any) => {
           const json = drawMemo.getSceneJSON();
           const svgHtml = await drawMemo.getSVG('auto');
           updateAttributes({ excalidrawJSON: json });
-          if (svgHtml) setSvg(svgHtml);
+          if (svgHtml) setSvg(sanitizeRenderedSvg(svgHtml));
         } catch (err) {
           console.error("Failed to update size", err);
         } finally {

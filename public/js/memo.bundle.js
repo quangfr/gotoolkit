@@ -51937,6 +51937,42 @@ ${content}</tr>
 
   // src/memo-editor/mermaid-node.tsx
   var getMermaidApi = () => window.mermaid;
+  function sanitizeRenderedSvg(svgMarkup) {
+    const raw = String(svgMarkup || "").trim();
+    if (!raw) return "";
+    try {
+      const parser2 = new DOMParser();
+      const doc3 = parser2.parseFromString(raw, "image/svg+xml");
+      const svg = doc3.documentElement;
+      if (!svg || svg.nodeName.toLowerCase() !== "svg") return "";
+      const blockedTags = ["script", "foreignObject", "iframe", "object", "embed", "link"];
+      blockedTags.forEach((tag2) => {
+        doc3.querySelectorAll(tag2).forEach((node) => node.remove());
+      });
+      doc3.querySelectorAll("*").forEach((el) => {
+        Array.from(el.attributes).forEach((attr) => {
+          const name = attr.name.toLowerCase();
+          const value = String(attr.value || "").trim();
+          if (name.startsWith("on")) {
+            el.removeAttribute(attr.name);
+            return;
+          }
+          if (name === "href" || name === "xlink:href") {
+            if (/^\s*javascript:/i.test(value)) {
+              el.removeAttribute(attr.name);
+            }
+            return;
+          }
+          if (name === "style" && /javascript:/i.test(value)) {
+            el.removeAttribute(attr.name);
+          }
+        });
+      });
+      return svg.outerHTML || "";
+    } catch (e) {
+      return "";
+    }
+  }
   var MermaidDiagramComponent = ({ node, updateAttributes: updateAttributes2, editor }) => {
     const [isEditing, setIsEditing] = react_shim_default.useState(false);
     const [svg, setSvg] = react_shim_default.useState("");
@@ -52064,7 +52100,7 @@ ${promptInput.trim()}`
                   size: newSize,
                   excalidrawJSON: json || ""
                 });
-                if (svgHtml) setSvg(svgHtml);
+                if (svgHtml) setSvg(sanitizeRenderedSvg(svgHtml));
                 setLastValidCode(cleanCode);
                 setModalError(null);
               } catch (syncErr) {
@@ -52218,7 +52254,7 @@ ${promptInput.trim()}`
                 updateAttributes2({ excalidrawJSON: json2 });
               }
               if (svgHtml2) {
-                setSvg(svgHtml2);
+                setSvg(sanitizeRenderedSvg(svgHtml2));
               }
               setLastValidCode(code);
               return;
@@ -52238,7 +52274,7 @@ ${promptInput.trim()}`
             const json = window.GoToolkitDrawMemo.getSceneJSON();
             const svgHtml = await window.GoToolkitDrawMemo.getSVG("auto");
             updateAttributes2({ excalidrawJSON: json });
-            setSvg(svgHtml);
+            setSvg(sanitizeRenderedSvg(svgHtml));
             setLastValidCode(code);
             document.body.removeChild(tempDiv);
           } catch (e) {
@@ -52256,7 +52292,7 @@ ${promptInput.trim()}`
             if (window.GoToolkitDrawMemo.renderPreview) {
               const result = await window.GoToolkitDrawMemo.renderPreview(excalidrawJSON, "auto", size2);
               if (result == null ? void 0 : result.svg) {
-                setSvg(result.svg);
+                setSvg(sanitizeRenderedSvg(result.svg));
                 setError(null);
                 return;
               }
@@ -52274,7 +52310,7 @@ ${promptInput.trim()}`
             await new Promise((resolve) => window.requestAnimationFrame(() => resolve()));
             await new Promise((resolve) => window.requestAnimationFrame(() => resolve()));
             const svgHtml = await window.GoToolkitDrawMemo.getSVG("auto");
-            setSvg(svgHtml);
+            setSvg(sanitizeRenderedSvg(svgHtml));
             document.body.removeChild(tempDiv);
             setError(null);
             return;
@@ -52299,10 +52335,10 @@ ${promptInput.trim()}`
         mermaidApi.initialize({
           startOnLoad: false,
           theme: "default",
-          securityLevel: "loose"
+          securityLevel: "strict"
         });
         const { svg: svg2 } = await mermaidApi.render(id, code);
-        setSvg(svg2);
+        setSvg(sanitizeRenderedSvg(svg2));
         setError(null);
       } catch (err) {
         console.warn("Mermaid render error:", err);
@@ -52423,7 +52459,7 @@ ${promptInput.trim()}`
             excalidrawJSON: finalExcalidrawJSON
           });
           if (svgHtml && (finalCode.trim() || !isExcalidrawEmpty)) {
-            setSvg(svgHtml);
+            setSvg(sanitizeRenderedSvg(svgHtml));
           } else {
             setSvg("");
           }
@@ -52513,7 +52549,7 @@ ${promptInput.trim()}`
           // Persist the forced size too
         });
         if (svgHtml) {
-          setSvg(svgHtml);
+          setSvg(sanitizeRenderedSvg(svgHtml));
         }
         setModalError(null);
         setLastValidCode(draftCode);
@@ -52561,7 +52597,7 @@ ${promptInput.trim()}`
             const json = drawMemo.getSceneJSON();
             const svgHtml = await drawMemo.getSVG("auto");
             updateAttributes2({ excalidrawJSON: json });
-            if (svgHtml) setSvg(svgHtml);
+            if (svgHtml) setSvg(sanitizeRenderedSvg(svgHtml));
           } catch (err) {
             console.error("Failed to update size", err);
           } finally {
@@ -61576,4 +61612,3 @@ docx/dist/index.mjs:
    *)
   (*! http://mths.be/fromcodepoint v0.1.0 by @mathias *)
 */
-//# sourceMappingURL=memo.bundle.js.map

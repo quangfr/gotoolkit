@@ -20,10 +20,44 @@
   const isReady = workerBases.length > 0;
   const E2EE_ASSET_MIME = "application/x-gotoolkit-e2ee+json";
   const PBKDF2_ITERATIONS = 310000;
+  const SYNC_SESSION_TTL_MS = 15 * 60 * 1000;
   const textEncoder = new TextEncoder();
   const textDecoder = new TextDecoder();
   const assetBlobCache = new Map();
   const spaceKeyCache = new Map();
+  let syncSessionState = null;
+
+  function randomToken(size = 16) {
+    const bytes = new Uint8Array(size);
+    crypto.getRandomValues(bytes);
+    return Array.from(bytes, byte => byte.toString(16).padStart(2, "0")).join("");
+  }
+
+  function getActiveSyncSession() {
+    const now = Date.now();
+    if (syncSessionState && Number(syncSessionState.expiresAt || 0) > now) {
+      return syncSessionState;
+    }
+    syncSessionState = {
+      id: `sync-${randomToken(12)}`,
+      createdAt: now,
+      expiresAt: now + SYNC_SESSION_TTL_MS
+    };
+    return syncSessionState;
+  }
+
+  function getSyncHeaders() {
+    const session = getActiveSyncSession();
+    return {
+      "X-Sync-Session": session.id,
+      "X-Sync-JTI": randomToken(16),
+      "X-Sync-TS": String(Date.now())
+    };
+  }
+
+  function mergeSyncHeaders(baseHeaders) {
+    return Object.assign({}, getSyncHeaders(), baseHeaders || {});
+  }
 
   function normalizeSpaceJoinCode(value) {
     if (window.GoToolkitSpaces?.normalizeSpaceJoinCode) {
@@ -449,10 +483,10 @@
     try {
       response = await fetch(url, {
         method: "POST",
-        headers: {
+        headers: mergeSyncHeaders({
           "Content-Type": "application/json",
           Accept: "application/json"
-        },
+        }),
         body: JSON.stringify(uploadPayload || {})
       });
     } catch (error) {
@@ -543,9 +577,9 @@
     return withWorkerFallback(async base => {
       const response = await fetchWithBase(base, collection, token, {
         method: "GET",
-        headers: {
+        headers: mergeSyncHeaders({
           Accept: "application/json"
-        }
+        })
       });
       if (response.status === 404) {
         return null;
@@ -577,9 +611,9 @@
     return withWorkerFallback(async base => {
       const response = await fetchWithBase(base, collection, token, {
         method: "DELETE",
-        headers: {
+        headers: mergeSyncHeaders({
           Accept: "application/json"
-        }
+        })
       });
       if (response.status === 404) {
         return null;
@@ -597,9 +631,9 @@
     return withWorkerFallback(async base => {
       const response = await fetchWithBase(base, collection, null, {
         method: "GET",
-        headers: {
+        headers: mergeSyncHeaders({
           Accept: "application/json"
-        }
+        })
       });
       if (!response.ok) {
         const body = await response.text().catch(() => "");
@@ -646,10 +680,10 @@
       const encryptedPayload = await encryptPagePayload(preparedPayload, collection, spaceId);
       const response = await fetch(url, {
         method,
-        headers: {
+        headers: mergeSyncHeaders({
           "Content-Type": "application/json",
           Accept: "application/json"
-        },
+        }),
         body: JSON.stringify({ payload: encryptedPayload })
       });
       if (!response.ok) {
@@ -689,10 +723,10 @@
       try {
         response = await fetch(buildShareBatchUrl(base, collection), {
           method: "POST",
-          headers: {
+          headers: mergeSyncHeaders({
             "Content-Type": "application/json",
             Accept: "application/json"
-          },
+          }),
           body: JSON.stringify({ writes: preparedWrites })
         });
       } catch (error) {
@@ -719,10 +753,10 @@
       try {
         response = await fetch(buildShareBatchGetUrl(base, collection), {
           method: "POST",
-          headers: {
+          headers: mergeSyncHeaders({
             "Content-Type": "application/json",
             Accept: "application/json"
-          },
+          }),
           body: JSON.stringify({ ids: normalizedIds })
         });
       } catch (error) {
@@ -771,10 +805,10 @@
       try {
         response = await fetch(buildShareBatchDeleteUrl(base, collection), {
           method: "POST",
-          headers: {
+          headers: mergeSyncHeaders({
             "Content-Type": "application/json",
             Accept: "application/json"
-          },
+          }),
           body: JSON.stringify({ ids: normalizedIds })
         });
       } catch (error) {
@@ -818,10 +852,10 @@
       try {
         response = await fetch(buildShareBatchCreateUrl(base, collection), {
           method: "POST",
-          headers: {
+          headers: mergeSyncHeaders({
             "Content-Type": "application/json",
             Accept: "application/json"
-          },
+          }),
           body: JSON.stringify({ writes: preparedWrites })
         });
       } catch (error) {
@@ -848,9 +882,9 @@
         response = await fetch(url, {
           method: "GET",
           cache: "no-store",
-          headers: {
+          headers: mergeSyncHeaders({
             Accept: "application/json"
-          }
+          })
         });
       } catch (error) {
         throw markNetworkFailure(error instanceof Error ? error : new Error(String(error)));
@@ -899,7 +933,7 @@
       try {
         response = await fetch(url, {
           method: "DELETE",
-          headers: { Accept: "application/json" }
+          headers: mergeSyncHeaders({ Accept: "application/json" })
         });
       } catch (error) {
         throw markNetworkFailure(error instanceof Error ? error : new Error(String(error)));
