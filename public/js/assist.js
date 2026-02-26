@@ -367,20 +367,25 @@
         }
     }
 
+    function getActiveMemoDocumentId() {
+        if (CHAT_APP_ID !== "memo") return null;
+        try {
+            var docIdFromApi = typeof global.GoToolkitMemoGetActiveDocumentId === "function"
+                ? global.GoToolkitMemoGetActiveDocumentId()
+                : null;
+            var docIdFromState = global.__memoState?.activeTabId;
+            var docIdFromLegacy = global.__memoActiveDocumentId;
+            var docId = docIdFromApi || docIdFromState || docIdFromLegacy || null;
+            return (docId || "").toString().trim() || null;
+        } catch (err) {
+            return null;
+        }
+    }
+
     function getConversationScopeId() {
         if (CHAT_APP_ID !== "memo") return DEFAULT_CONVERSATION_SCOPE;
-        try {
-            var docId = (typeof global.GoToolkitMemoGetActiveDocumentId === "function"
-                ? global.GoToolkitMemoGetActiveDocumentId()
-                : null)
-                || null;
-            if (!docId) {
-                docId = (global.__memoActiveDocumentId || "").toString().trim() || null;
-            }
-            if (docId) return "doc:" + docId;
-        } catch (err) {
-            // ignore
-        }
+        var docId = getActiveMemoDocumentId();
+        if (docId) return "doc:" + docId;
         return DEFAULT_CONVERSATION_SCOPE;
     }
 
@@ -1697,6 +1702,24 @@
 
     AssistSidebar.prototype.refreshAiRequestToaster = function () {
         return;
+    };
+
+    AssistSidebar.prototype.setupConversationScopeAutoSync = function () {
+        if (CHAT_APP_ID !== "memo") return;
+        if (this.scopeSyncIntervalId) {
+            clearInterval(this.scopeSyncIntervalId);
+            this.scopeSyncIntervalId = null;
+        }
+
+        this.lastObservedMemoDocumentId = getActiveMemoDocumentId();
+        this.scopeSyncIntervalId = setInterval(function () {
+            var observedDocId = getActiveMemoDocumentId();
+            if (observedDocId === this.lastObservedMemoDocumentId) {
+                return;
+            }
+            this.lastObservedMemoDocumentId = observedDocId;
+            this.syncScopeFromActiveDocument({ documentId: observedDocId });
+        }.bind(this), 300);
     };
 
     AssistSidebar.prototype.persistPendingAttachments = function () {
@@ -11324,6 +11347,7 @@
             var docId = event?.detail?.documentId || null;
             this.syncScopeFromActiveDocument({ documentId: docId });
         }.bind(this));
+        this.setupConversationScopeAutoSync();
         document.addEventListener("goToolkitSpaceSyncCompleted", function () {
             this.syncKnowledgeFromSelectedSpaces({ force: false });
         }.bind(this));
