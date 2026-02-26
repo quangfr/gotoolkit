@@ -6555,7 +6555,7 @@
             }
 
             // 3. Récupérer le contenu de chaque document depuis IndexedDB
-            var parsedContents = [];
+            var parsedEntries = [];
             var documents = await this.docManager.getDocuments(this.conversation.id);
 
             for (var i = 0; i < readyDocNames.length; i++) {
@@ -6569,7 +6569,10 @@
                     try {
                         var fullDoc = await this.docManager.getDocumentById(doc.id);
                         if (fullDoc && fullDoc.rawText) {
-                            parsedContents.push(fullDoc.rawText);
+                            parsedEntries.push({
+                                name: docName,
+                                content: fullDoc.rawText
+                            });
                         }
                     } catch (err) {
                         console.warn("Failed to retrieve document content for:", docName, err);
@@ -6577,9 +6580,57 @@
                 }
             }
 
+            var parsedContents = parsedEntries.map(function (entry) {
+                return entry.content;
+            }).filter(Boolean);
+
             if (!parsedContents.length) {
                 console.warn("No document content available to import");
                 return;
+            }
+
+            if (memoId && parsedEntries.length > 1) {
+                var parentDocumentId = memoId;
+                var toChildPageTitle = function (fileName, index) {
+                    var base = String(fileName || "").trim();
+                    if (base) {
+                        base = base.replace(/\.[^/.]+$/, "").trim();
+                    }
+                    if (!base) {
+                        base = "Document " + (index + 1);
+                    }
+                    return base;
+                };
+                try {
+                    if (typeof window.GoToolkitMemoInsertPageSummaryBlock === "function") {
+                        window.GoToolkitMemoInsertPageSummaryBlock({ title: "Sommaire" });
+                    }
+                    if (typeof window.GoToolkitMemoCreateDocument === "function") {
+                        for (var parsedIndex = 0; parsedIndex < parsedEntries.length; parsedIndex++) {
+                            var parsedEntry = parsedEntries[parsedIndex];
+                            await window.GoToolkitMemoCreateDocument({
+                                name: toChildPageTitle(parsedEntry?.name, parsedIndex),
+                                description: "",
+                                superpowers: [],
+                                initialContent: String(parsedEntry?.content || ""),
+                                parentId: parentDocumentId,
+                                icon: ""
+                            });
+                        }
+                    }
+                } catch (err) {
+                    console.warn("Failed to create sub-pages for imported files", err);
+                } finally {
+                    try {
+                        if (typeof window.GoToolkitMemoSetActiveDocument === "function") {
+                            await window.GoToolkitMemoSetActiveDocument(parentDocumentId, { pushHistory: false });
+                        } else if (typeof window.GoToolkitMemoOpenDocumentByLink === "function") {
+                            await window.GoToolkitMemoOpenDocumentByLink(parentDocumentId);
+                        }
+                    } catch (restoreErr) {
+                        console.warn("Failed to restore active parent document after import", restoreErr);
+                    }
+                }
             }
             this.clearAttachments();
 

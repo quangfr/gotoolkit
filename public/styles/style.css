@@ -3092,7 +3092,7 @@ ul.release-roadmap-text li::before {
 }
 
 .chat-composer:focus-within {
-  border: 2px solid var(--color-primary);
+  border-color: var(--border-main);
 }
 
 .chat-composer-actions {
