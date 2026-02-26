@@ -11,14 +11,13 @@
   const HANDOFF_HISTORY_KEY = "goToolkit.handoff.history";
   const HANDOFF_HISTORY_LIMIT = 30;
   const HANDOFF_HISTORY_INPUT_DEBOUNCE_MS = 450;
-  const MOBILE_CHAT_DISMISSED_DEFAULTS_KEY = "goToolkit.hub.mobileChatDismissedDefaults";
-  const MOBILE_CHAT_DEFAULT_SUGGESTIONS = Array.isArray(window.GoToolkitPromptShortcuts?.mobileSuggestions)
-    ? window.GoToolkitPromptShortcuts.mobileSuggestions
-    : [
-      "Faire le compte-rendu",
-      "Résumer en 3 lignes",
-      "Faire une foire aux questions"
-    ];
+  const MOBILE_PROMPT_SHORTCUTS = Array.isArray(window.GoToolkitPromptShortcuts?.prompts)
+    ? window.GoToolkitPromptShortcuts.prompts
+    : [];
+  const MOBILE_PROMPT_CATEGORIES =
+    window.GoToolkitPromptShortcuts?.categories && typeof window.GoToolkitPromptShortcuts.categories === "object"
+      ? window.GoToolkitPromptShortcuts.categories
+      : {};
   const MAX_IMAGE_DIM = 2048;
 
   const shareWorker = window.goToolkitShareWorker;
@@ -53,6 +52,7 @@
   const captureDocMeta = document.getElementById("captureDocMeta");
   const mobileBotModal = document.getElementById("mobileBotModal");
   const mobileBotModalClose = document.getElementById("mobileBotModalClose");
+  const mobileBotCategorySelect = document.getElementById("mobileBotCategorySelect");
   const mobileBotSuggestions = document.getElementById("mobileBotSuggestions");
   const mobileChatTextarea = document.getElementById("mobileChatTextarea");
   const mobileChatSendBtn = document.getElementById("mobileChatSendBtn");
@@ -93,6 +93,7 @@
   let qrScanActive = false;
   let googleTtsController = null;
   let mobileEditLoading = false;
+  let mobileBotActiveCategory = "all";
   let toastTimer = null;
   let captureHistoryBufferTimer = null;
   let skipCapturePreviewHistorySync = false;
@@ -242,28 +243,6 @@
     }
   }
 
-  function loadDismissedDefaultSuggestions() {
-    try {
-      const raw = localStorage.getItem(MOBILE_CHAT_DISMISSED_DEFAULTS_KEY);
-      const parsed = JSON.parse(raw || "[]");
-      if (!Array.isArray(parsed)) return [];
-      return parsed.map(item => String(item || "").trim()).filter(Boolean);
-    } catch (err) {
-      return [];
-    }
-  }
-
-  function saveDismissedDefaultSuggestions(list) {
-    try {
-      localStorage.setItem(
-        MOBILE_CHAT_DISMISSED_DEFAULTS_KEY,
-        JSON.stringify((list || []).map(item => String(item || "").trim()).filter(Boolean))
-      );
-    } catch (err) {
-      // ignore
-    }
-  }
-
   function saveMobileChatHistory(list) {
     try {
       localStorage.setItem(MOBILE_CHAT_HISTORY_KEY, JSON.stringify((list || []).slice(0, 20)));
@@ -287,12 +266,47 @@
     saveMobileChatHistory(next);
   }
 
-  function removeDefaultSuggestion(text) {
-    const normalized = String(text || "").trim();
-    if (!normalized) return;
-    const next = loadDismissedDefaultSuggestions().filter(item => item !== normalized);
-    next.push(normalized);
-    saveDismissedDefaultSuggestions(next);
+  function getPromptCategoryEntries() {
+    const allOption = [{ key: "all", label: "Toutes catégories" }];
+    const categoryMap = MOBILE_PROMPT_CATEGORIES;
+    const promptCategories = Array.from(
+      new Set(
+        MOBILE_PROMPT_SHORTCUTS
+          .map(item => String(item?.category || "").trim())
+          .filter(Boolean)
+      )
+    );
+
+    const categoryOptions = promptCategories.map(key => {
+      const meta = categoryMap[key] || {};
+      return {
+        key,
+        label: String(meta.label || key).trim() || key
+      };
+    });
+
+    return allOption.concat(
+      categoryOptions.sort((a, b) => a.label.localeCompare(b.label, "fr", { sensitivity: "base" }))
+    );
+  }
+
+  function renderMobileBotCategoryOptions() {
+    if (!mobileBotCategorySelect) return;
+    const categories = getPromptCategoryEntries();
+    mobileBotCategorySelect.innerHTML = "";
+    categories.forEach(entry => {
+      const option = document.createElement("option");
+      option.value = entry.key;
+      option.textContent = entry.label;
+      if (entry.key === mobileBotActiveCategory) {
+        option.selected = true;
+      }
+      mobileBotCategorySelect.appendChild(option);
+    });
+    if (!categories.some(entry => entry.key === mobileBotActiveCategory)) {
+      mobileBotActiveCategory = "all";
+      mobileBotCategorySelect.value = "all";
+    }
   }
 
   function loadHandoffHistoryMap() {
@@ -481,44 +495,41 @@
 
   function renderMobileBotSuggestions() {
     if (!mobileBotSuggestions) return;
-    const history = loadMobileChatHistory();
-    const dismissedDefaults = new Set(loadDismissedDefaultSuggestions());
-    const entries = history.map(text => ({ text, isHistory: true }))
-      .concat(
-        MOBILE_CHAT_DEFAULT_SUGGESTIONS
-          .filter(text => !dismissedDefaults.has(text))
-          .map(text => ({ text, isHistory: false }))
-      );
+    const entries = MOBILE_PROMPT_SHORTCUTS.filter(item => {
+      if (!item || typeof item !== "object") return false;
+      if (mobileBotActiveCategory === "all") return true;
+      return String(item.category || "").trim() === mobileBotActiveCategory;
+    });
     mobileBotSuggestions.innerHTML = "";
+
+    if (!entries.length) {
+      const empty = document.createElement("div");
+      empty.className = "handoff-empty";
+      empty.textContent = "Aucun prompt dans cette catégorie.";
+      mobileBotSuggestions.appendChild(empty);
+      return;
+    }
 
     entries.forEach(entry => {
       const row = document.createElement("button");
       row.type = "button";
       row.className = "mobile-bot-suggestion";
 
+      const titleEl = document.createElement("span");
+      titleEl.className = "mobile-bot-suggestion-title";
+      titleEl.textContent = String(entry.title || "Prompt").trim() || "Prompt";
+      row.appendChild(titleEl);
+
       const textEl = document.createElement("span");
       textEl.className = "mobile-bot-suggestion-text";
-      textEl.textContent = entry.text;
+      textEl.textContent = String(entry.content || "").trim();
       row.appendChild(textEl);
 
-      const clearBtn = document.createElement("button");
-      clearBtn.type = "button";
-      clearBtn.className = "mobile-bot-suggestion-clear";
-      clearBtn.title = "Supprimer";
-      clearBtn.innerHTML = "<i data-lucide=\"x\" style=\"width:14px;height:14px;\"></i>";
-      clearBtn.addEventListener("click", event => {
-        event.stopPropagation();
-        if (entry.isHistory) {
-          removeMobileChatSuggestion(entry.text);
-        } else {
-          removeDefaultSuggestion(entry.text);
-        }
-        renderMobileBotSuggestions();
-      });
-      row.appendChild(clearBtn);
-
       row.addEventListener("click", () => {
-        applySuggestionToMobileChat(entry.text);
+        const promptContent = String(entry.content || "").trim();
+        if (promptContent) {
+          applySuggestionToMobileChat(promptContent);
+        }
       });
 
       mobileBotSuggestions.appendChild(row);
@@ -544,6 +555,7 @@
 
   function openMobileBotModal() {
     if (!mobileBotModal) return;
+    renderMobileBotCategoryOptions();
     renderMobileBotSuggestions();
     mobileBotModal.classList.add("open");
     if (mobileChatTextarea && !mobileChatTextarea.value) {
@@ -761,8 +773,7 @@
       });
 
       card.addEventListener("click", () => {
-        activeDocId = doc.id;
-        openRenameModal(doc.title);
+        openCaptureModal(doc.id);
       });
 
       actions.appendChild(openBtn);
@@ -1297,7 +1308,6 @@
       }
       renderGrid();
       updateUIState();
-      addMobileChatSuggestion(askText);
       closeMobileBotModal();
       showHubToast("Contenu modifié");
       setStatus("Contenu modifié");
@@ -1593,6 +1603,10 @@
     mobileBotModalClose?.addEventListener("click", () => closeMobileBotModal());
     mobileBotModal?.addEventListener("click", event => {
       if (event.target === mobileBotModal) closeMobileBotModal();
+    });
+    mobileBotCategorySelect?.addEventListener("change", () => {
+      mobileBotActiveCategory = String(mobileBotCategorySelect.value || "all").trim() || "all";
+      renderMobileBotSuggestions();
     });
 
     mobileChatTextarea?.addEventListener("input", () => {

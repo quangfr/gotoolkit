@@ -1905,6 +1905,10 @@
         if (!state.isRecording) {
             if (state.currentRecordingId) {
                 openRecordingPlayer();
+            } else if (openSessionPlayerFromBlobs()) {
+                return;
+            } else if (state.isTranscribing) {
+                showToast("Transcription en cours.", true);
             } else {
                 openOverlay();
             }
@@ -1955,6 +1959,40 @@
         } catch (err) {
             showToast("Transcription impossible");
         }
+    }
+
+    function openSessionPlayerFromBlobs() {
+        const memoName = state.currentMemoName || state.recordingMemoName || "";
+        if (state.videoBlob && window.VoiceVideoPlayerModal) {
+            if (!state.videoModal) {
+                state.videoModal = new window.VoiceVideoPlayerModal();
+            }
+            state.videoModal.open({
+                videoBlob: state.videoBlob,
+                sentences: [],
+                memoName,
+                onCopyAudio: () => {
+                    showToast("Transcription en cours.", true);
+                },
+                onCopyVideo: () => {
+                    showToast("Transcription en cours.", true);
+                }
+            });
+            state.videoModal.startPlayback();
+            return true;
+        }
+        if (state.audioBlob && window.VoiceAudioPlayerModal) {
+            if (!state.audioModal) {
+                state.audioModal = new window.VoiceAudioPlayerModal();
+            }
+            state.audioModal.open({
+                audioBlob: state.audioBlob,
+                transcriptText: "",
+                memoName
+            });
+            return true;
+        }
+        return false;
     }
 
     function startTranscriptionCountdown(durationSeconds) {
@@ -2093,7 +2131,7 @@
             state.recordingMemoId = memoId;
             state.recordingMemoName = memoName || "";
             updateButton();
-            throw err;
+            showToast("Transcription indisponible, enregistrement conservé.", true);
         }
     }
 
@@ -2247,8 +2285,15 @@
             }
             return;
         }
-        if (state.currentMemoRecordingId) {
+        if (state.currentMemoRecordingId || state.currentRecordingId) {
             openRecordingPlayer();
+            return;
+        }
+        if (openSessionPlayerFromBlobs()) {
+            return;
+        }
+        if (state.isTranscribing) {
+            showToast("Transcription en cours.", true);
             return;
         }
         requestPermissionsThenOverlay();

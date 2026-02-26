@@ -45,7 +45,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="apple-touch-icon" href="img/logo.png" />
     <title>GoToolkit Mobile</title>
-    <link rel="stylesheet" href="styles/style.css?v=2026.02.26.9">
+    <link rel="stylesheet" href="styles/style.css?v=2026.02.27.1">
     <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
     <style>
         .scan-shell {
@@ -237,7 +237,7 @@
             background: var(--bg-surface);
             padding: 6px 8px;
             font-family: "JetBrains Mono", monospace;
-            font-size: 15px;
+            font-size: 17px;
             line-height: 1.4;
             resize: none;
             overflow: auto;
@@ -391,36 +391,47 @@
         .mobile-bot-suggestion {
             width: 100%;
             display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 8px;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 4px;
             text-align: left;
             border: 1px solid var(--border-main);
             border-radius: 10px;
             background: var(--bg-surface-soft);
             color: var(--text-main);
             padding: 10px 12px;
-            font-size: 13px;
+            font-size: 15px;
             cursor: pointer;
+        }
+
+        .mobile-bot-suggestion-title {
+            width: 100%;
+            font-size: 14px;
+            font-weight: 700;
+            line-height: 1.2;
         }
 
         .mobile-bot-suggestion-text {
-            flex: 1;
-            min-width: 0;
+            width: 100%;
+            font-size: 14px;
+            line-height: 1.35;
+            opacity: 0.75;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            word-break: break-word;
         }
 
-        .mobile-bot-suggestion-clear {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 22px;
-            height: 22px;
-            border: none;
-            border-radius: 6px;
-            background: transparent;
+        .mobile-bot-category-select {
+            min-width: 140px;
+            max-width: 64vw;
+            padding: 6px 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border-main);
+            background: var(--bg-surface);
             color: var(--text-main);
-            opacity: 0.65;
-            cursor: pointer;
+            font-size: 12px;
         }
 
         .mobile-bot-input-wrap {
@@ -442,7 +453,7 @@
             color: var(--text-main);
             resize: none;
             overflow-y: auto;
-            font-size: 14px;
+            font-size: 16px;
             line-height: 1.4;
             font-family: var(--font-sans);
         }
@@ -555,7 +566,7 @@
     <div class="scan-shell">
         <header class="scan-header">
             <div class="scan-title">
-                <h1>GoToolkit Mobile <span class="hero-version" style="font-size: 10px; opacity: 0.5;">v2026.02.26.9</span></h1>
+                <h1>GoToolkit Mobile <span class="hero-version" style="font-size: 10px; opacity: 0.5;">v2026.02.27.1</span></h1>
             </div>
             <div class="scan-actions">
                 <button id="openSettingsBtn" class="btn btn-secondary" type="button" title="Paramètres">
@@ -643,7 +654,8 @@
                             title="Rétablir la version suivante"><i data-lucide="redo"></i></button>
                         <button id="captureSaveBtn" type="button" class="btn btn-secondary"
                             style="margin-left: auto; display: none;">Terminer</button>
-                        <button id="captureSendBtn" type="button" class="btn btn-primary">Envoyer</button>
+                        <button id="captureSendBtn" type="button" class="btn btn-primary"><i
+                                data-lucide="send"></i></button>
                     </div>
                 </div>
             </div>
@@ -676,6 +688,8 @@
         <div class="modal">
             <div class="modal-header">
                 <h3 id="mobileBotModalTitle"><i data-lucide="bot" style="width:16px;height:16px;"></i></h3>
+                <select id="mobileBotCategorySelect" class="mobile-bot-category-select"
+                    aria-label="Catégorie de prompt"></select>
                 <button class="modal-close" id="mobileBotModalClose" type="button" aria-label="Fermer"><i
                         data-lucide="x"></i></button>
             </div>
@@ -777,16 +791,16 @@
         window.GO_TOOLKIT_DELETE_ASSEMBLY_TRANSCRIPT_AFTER_STORE =
             window.GO_TOOLKIT_DELETE_ASSEMBLY_TRANSCRIPT_AFTER_STORE !== false;
     </script>
-    <script src="js/config.js?v=2026.02.26.9"></script>
-    <script src="prompt.js?v=2026.02.26.9"></script>
-    <script src="js/config-modal.js?v=2026.02.26.9"></script>
-    <script src="js/ia-config.js?v=2026.02.26.9"></script>
-    <script src="js/ia-client.js?v=2026.02.26.9"></script>
-    <script src="js/share-worker-client.js?v=2026.02.26.9"></script>
-    <script src="js/voice-transcript.js?v=2026.02.26.9"></script>
-    <script src="js/googletts.js?v=2026.02.26.9"></script>
-    <script src="js/scan.js?v=2026.02.26.9"></script>
-    <script src="js/news.js?v=2026.02.26.9"></script>
+    <script src="js/config.js?v=2026.02.27.1"></script>
+    <script src="prompt.js?v=2026.02.27.1"></script>
+    <script src="js/config-modal.js?v=2026.02.27.1"></script>
+    <script src="js/ia-config.js?v=2026.02.27.1"></script>
+    <script src="js/ia-client.js?v=2026.02.27.1"></script>
+    <script src="js/share-worker-client.js?v=2026.02.27.1"></script>
+    <script src="js/voice-transcript.js?v=2026.02.27.1"></script>
+    <script src="js/googletts.js?v=2026.02.27.1"></script>
+    <script src="js/scan.js?v=2026.02.27.1"></script>
+    <script src="js/news.js?v=2026.02.27.1"></script>
     <script>
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();

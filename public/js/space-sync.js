@@ -24,6 +24,15 @@
         var getMemoExplorer = typeof d.getMemoExplorer === "function" ? d.getMemoExplorer : function () { return null; };
         var parseIsoMs = d.parseIsoMs;
         var getSpaceLastSyncedAt = d.getSpaceLastSyncedAt;
+        var SYNC_DEBUG_PREFIX = "[MemoCloudDebug]";
+
+        function logSync(event, payload) {
+            try {
+                console.log(SYNC_DEBUG_PREFIX, event, payload || {});
+            } catch (err) {
+                // ignore
+            }
+        }
 
         var SHARED_TREE_MOVE_BATCH_DELAY_MS = 180;
         var sharedTreeMoveBatchQueue = new Map();
@@ -38,6 +47,12 @@
             var nextParentId = normalizeSharedParentId(options.parentId || payload?.parentId || "");
             var nextPosition = parseSharedPosition(options.position ?? payload?.position);
             var nowIso = new Date().toISOString();
+            logSync("page-drag-cloud-move:queued", {
+                token: normalizedToken,
+                spaceId: targetSpaceId,
+                parentId: nextParentId,
+                position: nextPosition
+            });
             var existingDraft = getCloudDraft(activeId) || {};
             var preservedOpType = String(existingDraft?.opType || "").trim().toLowerCase() === "create"
                 ? "create"
@@ -96,6 +111,12 @@
             var activeId = "share:" + normalizedToken;
             var targetSpaceId = normalizeSpaceId(options.spaceId || DEFAULT_SPACE_ID);
             var parentId = normalizeSharedParentId(options.parentId || "");
+            logSync("page-drag-cloud-to-local:queued", {
+                token: normalizedToken,
+                spaceId: targetSpaceId,
+                parentId: parentId,
+                reason: String(options.reason || "moved-to-local").trim() || "moved-to-local"
+            });
             setCloudDraft(activeId, {
                 id: activeId,
                 token: normalizedToken,
@@ -155,6 +176,10 @@
                     payload: item.payload
                 };
             });
+            logSync("page-drag-cloud-move:flush-start", {
+                count: writes.length,
+                tokens: writes.map(function (entry) { return entry.id; })
+            });
             var updatedAtByToken = new Map();
             try {
                 var batchResult = await shareWorker.saveSharePayloadBatch(FIRESTORE_META_COLLECTION, writes);
@@ -164,7 +189,14 @@
                         .map(function (item) { return [String(item?.id || "").trim(), String(item?.meta?.updatedAt || "").trim()]; })
                         .filter(function (pair) { return Boolean(pair[0]) && Boolean(pair[1]); })
                 );
+                logSync("page-drag-cloud-move:flush-done", {
+                    count: results.length,
+                    tokens: results.map(function (entry) { return entry?.id; }).filter(Boolean)
+                });
             } catch (err) {
+                logSync("page-drag-cloud-move:flush-error", {
+                    message: String(err?.message || err || "")
+                });
                 for (var queued of queuedEntries) {
                     var queuedResolvers = Array.isArray(queued?.resolvers) ? queued.resolvers : [];
                     queuedResolvers.forEach(function (resolve) { resolve({ ok: false, error: err }); });
@@ -218,6 +250,10 @@
             var forceSync = Boolean(options.force);
             var skipIfRecentMs = Math.max(0, Number(options.skipIfRecentMs) || 0);
             try {
+                logSync("cloud-sync:start", {
+                    force: forceSync,
+                    skipIfRecentMs: skipIfRecentMs
+                });
                 var localRecords = await shareHistory.getRecordsByApp("memo");
                 var knownSpaceIds = new Set(getSpaces().map(function (space) { return normalizeSpaceId(space?.id || DEFAULT_SPACE_ID); }));
                 (Array.isArray(localRecords) ? localRecords : []).forEach(function (record) {
@@ -231,20 +267,25 @@
                     return (Date.now() - lastSyncedMs) >= skipIfRecentMs;
                 });
                 if (!targetSpaceIds.length) {
+                    logSync("cloud-sync:skipped", { reason: "no-target-space" });
                     return;
                 }
 
                 for (var i = 0; i < targetSpaceIds.length; i++) {
                     var sid = targetSpaceIds[i];
+                    logSync("cloud-sync:space-start", { spaceId: sid });
                     updateSharedSpaceSyncButtonState(sid, true);
                     await syncSpaceFromRemote(sid, { refreshExplorer: false });
                     markSpaceLastSynced(sid);
                     updateSharedSpaceSyncButtonState(sid, false);
+                    logSync("cloud-sync:space-done", { spaceId: sid });
                 }
                 var explorer = getMemoExplorer();
                 await explorer?.refresh?.({ forceReload: true });
+                logSync("cloud-sync:done", { spaces: targetSpaceIds.length });
             } catch (err) {
                 console.warn("Background cloud sync failed", err);
+                logSync("cloud-sync:error", { message: String(err?.message || err || "") });
                 if (announceStatus) {
                     setStatus?.("Impossible de rafraîchir le cloud", true);
                 }

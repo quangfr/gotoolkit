@@ -6115,6 +6115,35 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           const parser = new DOMParser();
           const doc = parser.parseFromString(finalHtml, 'text/html');
           if (doc && doc.body) {
+            doc.querySelectorAll('a[href]').forEach(anchor => {
+              const el = anchor as HTMLAnchorElement;
+              const href = String(el.getAttribute('href') || '').trim();
+              const isDataVideo = /^data:video\/(webm|mp4);/i.test(href);
+              const isWebm = /\.webm([?#].*)?$/i.test(href);
+              const isMp4 = /\.mp4([?#].*)?$/i.test(href);
+              if (!isDataVideo && !isWebm && !isMp4) return;
+
+              const video = doc.createElement('video');
+              video.setAttribute('controls', 'true');
+              video.setAttribute('playsinline', 'true');
+              video.setAttribute('preload', 'metadata');
+              video.setAttribute('src', href);
+
+              const source = doc.createElement('source');
+              source.setAttribute('src', href);
+              if (isMp4) source.setAttribute('type', 'video/mp4');
+              else source.setAttribute('type', 'video/webm');
+              video.appendChild(source);
+
+              const fallback = doc.createElement('p');
+              fallback.textContent = `Video: ${href}`;
+
+              const wrap = doc.createElement('div');
+              wrap.appendChild(video);
+              wrap.appendChild(fallback);
+              el.parentNode?.replaceChild(wrap, el);
+            });
+
             const tables = doc.querySelectorAll('table');
             tables.forEach(table => {
               table.querySelectorAll('td, th').forEach(cell => {

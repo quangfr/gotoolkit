@@ -818,7 +818,7 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
     setTextDraft(null);
   }, [applySimpleOperation, sizePreset, strokeColor, textDraft]);
 
-  const handleSurfacePointerDown = React.useCallback((surface: Surface, event: React.PointerEvent<HTMLDivElement>) => {
+  const handleSurfacePointerDown = React.useCallback(async (surface: Surface, event: React.PointerEvent<HTMLDivElement>) => {
     if (!canEdit) return;
 
     if (activeTool === 'none') {
@@ -829,11 +829,19 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
     event.preventDefault();
     event.stopPropagation();
 
-    if (activeTool === 'text') {
-      if (textDraft && textDraft.surface === surface) {
-        setSelectedDraft('text');
-        return;
+    const startsAnnotationFigure = activeTool === 'text' || activeTool === 'pencil' || activeTool === 'line' || activeTool === 'square';
+    if (startsAnnotationFigure) {
+      if (shapeDraft) {
+        await commitShapeDraft(shapeDraft);
+        setShapeDraft(null);
       }
+      if (textDraft && textDraft.text.trim()) {
+        await commitTextDraft();
+      }
+      setSelectedDraft(null);
+    }
+
+    if (activeTool === 'text') {
       handleTextPlacement(surface, event);
       setSelectedDraft('text');
       return;
@@ -848,11 +856,6 @@ const ImageNodeView = ({ node, editor, updateAttributes, getPos }: any) => {
       x: event.clientX - bounds.left - viewport.offsetX,
       y: event.clientY - bounds.top - viewport.offsetY,
     }, viewport.width, viewport.height);
-
-    if ((activeTool === 'line' || activeTool === 'square') && shapeDraft && shapeDraft.surface === surface) {
-      // Start a fresh draft without embedding the previous draft into pixels.
-      setShapeDraft(null);
-    }
 
     setDrag({
       tool: activeTool,

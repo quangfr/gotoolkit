@@ -17,7 +17,8 @@ const GOOGLE_API_SCOPE = [
 const FIREBASE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const ALLOWED_ASSET_MIME_PREFIXES = ["image/", "video/", "audio/"];
 const ALLOWED_ASSET_MIME_TYPES = new Set([
-  "application/x-gotoolkit-e2ee+json"
+  "application/x-gotoolkit-e2ee+json",
+  "application/json"
 ]);
 const SYNC_REPLAY_TTL_SECONDS = 15 * 60;
 const SYNC_SKEW_MS = 10 * 60 * 1000;
@@ -246,6 +247,7 @@ function detectAssetExtension(mimeType, fileName) {
   if (mime === "audio/wav" || mime === "audio/x-wav") return "wav";
   if (mime === "audio/webm") return "webm";
   if (mime === "audio/ogg") return "ogg";
+  if (mime === "application/json") return "json";
   const lowerName = String(fileName || "").toLowerCase();
   if (lowerName.endsWith(".png")) return "png";
   if (lowerName.endsWith(".gif")) return "gif";
@@ -257,6 +259,7 @@ function detectAssetExtension(mimeType, fileName) {
   if (lowerName.endsWith(".mp3")) return "mp3";
   if (lowerName.endsWith(".wav")) return "wav";
   if (lowerName.endsWith(".ogg")) return "ogg";
+  if (lowerName.endsWith(".json")) return "json";
   return "bin";
 }
 

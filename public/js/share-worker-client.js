@@ -19,6 +19,10 @@
   const API_VERSION = "v1";
   const isReady = workerBases.length > 0;
   const E2EE_ASSET_MIME = "application/x-gotoolkit-e2ee+json";
+  const PAGE_PAYLOAD_REF_TYPE = "page-payload-ref";
+  const PAGE_PAYLOAD_REF_VERSION = 1;
+  const PAGE_PAYLOAD_OFFLOAD_THRESHOLD_BYTES = 350 * 1024;
+  const SHARE_DEBUG_PREFIX = "[MemoCloudDebug]";
   const PBKDF2_ITERATIONS = 310000;
   const SYNC_SESSION_TTL_MS = 15 * 60 * 1000;
   const textEncoder = new TextEncoder();
@@ -26,6 +30,27 @@
   const assetBlobCache = new Map();
   const spaceKeyCache = new Map();
   let syncSessionState = null;
+
+  function logShareDebug(event, payload) {
+    try {
+      console.log(SHARE_DEBUG_PREFIX, event, payload || {});
+    } catch (err) {
+      // ignore
+    }
+  }
+
+  function payloadLikelyHasVideo(payload) {
+    try {
+      const raw = JSON.stringify(payload || {});
+      return raw.includes("data:video/")
+        || raw.includes("<video")
+        || raw.includes("videoEmbed")
+        || raw.includes("video/mp4")
+        || raw.includes("video/webm");
+    } catch (err) {
+      return false;
+    }
+  }
 
   function randomToken(size = 16) {
     const bytes = new Uint8Array(size);
@@ -431,6 +456,178 @@
     return value.includes("data:image/");
   }
 
+  function isPageCollection(collection) {
+    return String(collection || "").trim().toLowerCase() === "pages";
+  }
+
+  function isPagePayloadReference(payload) {
+    return Boolean(
+      payload
+      && typeof payload === "object"
+      && Number(payload.gtkr2) === 1
+      && String(payload.type || "").trim() === PAGE_PAYLOAD_REF_TYPE
+      && (typeof payload.assetId === "string" || typeof payload.assetUrl === "string")
+    );
+  }
+
+  function encodeTextToBase64(text) {
+    const bytes = textEncoder.encode(String(text || ""));
+    return {
+      bytes,
+      base64: toBase64FromBytes(bytes)
+    };
+  }
+
+  async function maybeOffloadPagePayload(base, collection, payload, options = {}) {
+    if (!isPageCollection(collection)) return payload;
+    if (!payload || typeof payload !== "object") return payload;
+    if (isPagePayloadReference(payload)) return payload;
+
+    let serialized = "";
+    try {
+      serialized = JSON.stringify(payload);
+    } catch (err) {
+      return payload;
+    }
+    if (!serialized) return payload;
+
+    const encoded = encodeTextToBase64(serialized);
+    if (!encoded.bytes?.length || encoded.bytes.length < PAGE_PAYLOAD_OFFLOAD_THRESHOLD_BYTES) {
+      return payload;
+    }
+
+    logShareDebug("page-payload-offload:start", {
+      collection,
+      spaceId: resolveSpaceIdForPayload(payload, options),
+      bytes: encoded.bytes.length,
+      threshold: PAGE_PAYLOAD_OFFLOAD_THRESHOLD_BYTES,
+      hasVideo: payloadLikelyHasVideo(payload)
+    });
+
+    const scope = String(options.assetScope || options.scope || "pages-payload").trim() || "pages-payload";
+    const spaceId = resolveSpaceIdForPayload(payload, options);
+    const fileName = `page-payload-${Date.now()}.json`;
+    const shouldEncrypt = shouldEncryptMedia(collection, spaceId);
+    const uploadPayload = shouldEncrypt
+      ? await encryptAssetPayload(
+        encoded.base64,
+        "application/json",
+        fileName,
+        spaceId,
+        getSpaceById(spaceId)?.spaceJoinCode || ""
+      )
+      : {
+        mimeType: "application/json",
+        contentBase64: encoded.base64,
+        fileName
+      };
+    const uploadResult = await uploadAssetWithBase(base, {
+      scope,
+      fileName: uploadPayload.fileName,
+      mimeType: uploadPayload.mimeType,
+      contentBase64: uploadPayload.contentBase64
+    });
+    const assetId = String(uploadResult?.asset?.id || "").trim();
+    if (!assetId) return payload;
+
+    logShareDebug("page-payload-offload:done", {
+      collection,
+      spaceId,
+      assetId,
+      bytes: encoded.bytes.length,
+      hasVideo: payloadLikelyHasVideo(payload)
+    });
+
+    return {
+      gtkr2: 1,
+      type: PAGE_PAYLOAD_REF_TYPE,
+      version: PAGE_PAYLOAD_REF_VERSION,
+      assetId,
+      assetUrl: buildAssetUrl(base, assetId),
+      size: encoded.bytes.length,
+      spaceId,
+      updatedAt: new Date().toISOString()
+    };
+  }
+
+  async function resolvePagePayloadReference(base, collection, payload) {
+    if (!isPageCollection(collection)) return payload;
+    if (!isPagePayloadReference(payload)) return payload;
+
+    const assetId = String(payload.assetId || "").trim()
+      || extractAssetIdFromUrl(base, String(payload.assetUrl || "").trim());
+    if (!assetId) return payload;
+
+    logShareDebug("page-payload-load-from-r2:start", {
+      collection,
+      assetId,
+      spaceId: String(payload.spaceId || "golive").trim().toLowerCase() || "golive"
+    });
+
+    let response;
+    try {
+      response = await fetch(buildAssetUrl(base, assetId), {
+        method: "GET",
+        cache: "no-store",
+        headers: mergeSyncHeaders({
+          Accept: "application/json"
+        })
+      });
+    } catch (error) {
+      throw markNetworkFailure(error instanceof Error ? error : new Error(String(error)));
+    }
+    if (!response.ok) {
+      logShareDebug("page-payload-load-from-r2:error", {
+        collection,
+        assetId,
+        status: response.status
+      });
+      return payload;
+    }
+
+    const contentType = String(response.headers.get("content-type") || "").toLowerCase();
+    const rawBytes = new Uint8Array(await response.arrayBuffer());
+    let payloadBytes = rawBytes;
+
+    const effectiveSpaceId = String(payload.spaceId || "golive").trim().toLowerCase() || "golive";
+    const looksLikeEncryptedEnvelope = rawBytes.length > 2 && rawBytes[0] === 123 && rawBytes[1] === 34;
+    if (contentType.includes(E2EE_ASSET_MIME) || looksLikeEncryptedEnvelope) {
+      try {
+        const decrypted = await decryptAssetEnvelope(rawBytes, effectiveSpaceId);
+        if (decrypted?.bytes?.length) {
+          payloadBytes = decrypted.bytes;
+        }
+      } catch (error) {
+        if (contentType.includes(E2EE_ASSET_MIME)) {
+          console.warn("Impossible de déchiffrer le payload de page offloadé", error);
+        }
+      }
+    }
+
+    try {
+      const text = textDecoder.decode(payloadBytes);
+      const parsed = JSON.parse(text);
+      if (parsed && typeof parsed === "object") {
+        logShareDebug("page-payload-load-from-r2:done", {
+          collection,
+          assetId,
+          bytes: payloadBytes.length,
+          hasVideo: payloadLikelyHasVideo(parsed)
+        });
+        return parsed;
+      }
+      return payload;
+    } catch (error) {
+      console.warn("Payload de page offloadé invalide", error);
+      logShareDebug("page-payload-load-from-r2:parse-error", {
+        collection,
+        assetId,
+        message: String(error?.message || error || "")
+      });
+      return payload;
+    }
+  }
+
   function markNetworkFailure(error) {
     if (error && typeof error === "object") {
       error.__goToolkitShareNetworkFailure = true;
@@ -479,6 +676,12 @@
 
   async function uploadAssetWithBase(base, uploadPayload) {
     const url = `${base}/${API_VERSION}/assets/upload`;
+    logShareDebug("r2-asset-upload:start", {
+      scope: uploadPayload?.scope || "",
+      fileName: uploadPayload?.fileName || "",
+      mimeType: uploadPayload?.mimeType || "",
+      contentBase64Length: String(uploadPayload?.contentBase64 || "").length
+    });
     let response;
     try {
       response = await fetch(url, {
@@ -494,9 +697,18 @@
     }
     if (!response.ok) {
       const body = await response.text().catch(() => "");
+      logShareDebug("r2-asset-upload:error", {
+        status: response.status,
+        message: body || "Upload asset impossible"
+      });
       throw new Error(body || "Upload asset impossible");
     }
     const data = await response.json().catch(() => ({}));
+    logShareDebug("r2-asset-upload:done", {
+      assetId: data?.asset?.id || "",
+      size: data?.asset?.size || 0,
+      mimeType: data?.asset?.mimeType || ""
+    });
     return data;
   }
 
@@ -594,11 +806,12 @@
         console.warn("E2EE page: déchiffrement impossible", err);
         return payload;
       });
-      const hydratedPayload = decryptedPayload && (collection === "pages")
-        ? await hydratePayloadAssetUrls(decryptedPayload, base, {
-          spaceId: String(decryptedPayload?.spaceId || payload?.spaceId || "golive").trim().toLowerCase()
+      const resolvedPayload = await resolvePagePayloadReference(base, collection, decryptedPayload);
+      const hydratedPayload = resolvedPayload && (collection === "pages")
+        ? await hydratePayloadAssetUrls(resolvedPayload, base, {
+          spaceId: String(resolvedPayload?.spaceId || decryptedPayload?.spaceId || payload?.spaceId || "golive").trim().toLowerCase()
         })
-        : decryptedPayload;
+        : resolvedPayload;
       return {
         payload: hydratedPayload,
         meta: data.meta || null
@@ -647,11 +860,12 @@
           console.warn("E2EE page: déchiffrement impossible", err);
           return payload;
         });
-        const hydratedPayload = decryptedPayload && (collection === "pages")
-          ? await hydratePayloadAssetUrls(decryptedPayload, base, {
-            spaceId: String(decryptedPayload?.spaceId || payload?.spaceId || "golive").trim().toLowerCase()
+        const resolvedPayload = await resolvePagePayloadReference(base, collection, decryptedPayload);
+        const hydratedPayload = resolvedPayload && (collection === "pages")
+          ? await hydratePayloadAssetUrls(resolvedPayload, base, {
+            spaceId: String(resolvedPayload?.spaceId || decryptedPayload?.spaceId || payload?.spaceId || "golive").trim().toLowerCase()
           })
-          : decryptedPayload;
+          : resolvedPayload;
         return {
           id: doc.id,
           payload: hydratedPayload,
@@ -670,13 +884,18 @@
       const method = normalizedToken ? "PUT" : "POST";
       const shouldInlineAssets = Boolean(options && options.inlineAssets);
       const spaceId = resolveSpaceIdForPayload(payload, options);
-      const preparedPayload = shouldInlineAssets
+      const preparedInlinePayload = shouldInlineAssets
         ? await processPayloadInlineAssets(payload, base, {
           assetScope: options.assetScope || collection,
           collection,
           spaceId
         })
         : payload;
+      const preparedPayload = await maybeOffloadPagePayload(base, collection, preparedInlinePayload, {
+        assetScope: options.assetScope || collection,
+        scope: options.scope,
+        spaceId
+      });
       const encryptedPayload = await encryptPagePayload(preparedPayload, collection, spaceId);
       const response = await fetch(url, {
         method,
@@ -713,7 +932,11 @@
       for (const entry of normalizedWrites) {
         const payload = entry?.payload;
         const spaceId = resolveSpaceIdForPayload(payload || {}, {});
-        const encryptedPayload = await encryptPagePayload(payload, collection, spaceId);
+        const preparedPayload = await maybeOffloadPagePayload(base, collection, payload, {
+          assetScope: collection,
+          spaceId
+        });
+        const encryptedPayload = await encryptPagePayload(preparedPayload, collection, spaceId);
         preparedWrites.push({
           id: entry.id,
           payload: encryptedPayload
@@ -774,11 +997,12 @@
           console.warn("E2EE page: déchiffrement impossible", err);
           return payload;
         });
-        const hydratedPayload = decryptedPayload && (collection === "pages")
-          ? await hydratePayloadAssetUrls(decryptedPayload, base, {
-            spaceId: String(decryptedPayload?.spaceId || payload?.spaceId || "golive").trim().toLowerCase()
+        const resolvedPayload = await resolvePagePayloadReference(base, collection, decryptedPayload);
+        const hydratedPayload = resolvedPayload && (collection === "pages")
+          ? await hydratePayloadAssetUrls(resolvedPayload, base, {
+            spaceId: String(resolvedPayload?.spaceId || decryptedPayload?.spaceId || payload?.spaceId || "golive").trim().toLowerCase()
           })
-          : decryptedPayload;
+          : resolvedPayload;
         return {
           id: doc?.id,
           payload: hydratedPayload,
@@ -841,7 +1065,11 @@
       for (const entry of normalizedWrites) {
         const contentPayload = entry?.contentPayload;
         const spaceId = resolveSpaceIdForPayload(contentPayload || {}, {});
-        const encryptedContentPayload = await encryptPagePayload(contentPayload, collection, spaceId);
+        const preparedContentPayload = await maybeOffloadPagePayload(base, collection, contentPayload, {
+          assetScope: collection,
+          spaceId
+        });
+        const encryptedContentPayload = await encryptPagePayload(preparedContentPayload, collection, spaceId);
         preparedWrites.push({
           id: entry.id,
           contentPayload: encryptedContentPayload,

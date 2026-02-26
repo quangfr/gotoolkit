@@ -53811,7 +53811,7 @@ ${promptInput.trim()}`
       });
       setTextDraft(null);
     }, [applySimpleOperation, sizePreset, strokeColor, textDraft]);
-    const handleSurfacePointerDown = react_shim_default.useCallback((surface, event) => {
+    const handleSurfacePointerDown = react_shim_default.useCallback(async (surface, event) => {
       if (!canEdit) return;
       if (activeTool === "none") {
         setSelectedDraft(null);
@@ -53819,11 +53819,18 @@ ${promptInput.trim()}`
       }
       event.preventDefault();
       event.stopPropagation();
-      if (activeTool === "text") {
-        if (textDraft && textDraft.surface === surface) {
-          setSelectedDraft("text");
-          return;
+      const startsAnnotationFigure = activeTool === "text" || activeTool === "pencil" || activeTool === "line" || activeTool === "square";
+      if (startsAnnotationFigure) {
+        if (shapeDraft) {
+          await commitShapeDraft(shapeDraft);
+          setShapeDraft(null);
         }
+        if (textDraft && textDraft.text.trim()) {
+          await commitTextDraft();
+        }
+        setSelectedDraft(null);
+      }
+      if (activeTool === "text") {
         handleTextPlacement(surface, event);
         setSelectedDraft("text");
         return;
@@ -53837,9 +53844,6 @@ ${promptInput.trim()}`
         x: event.clientX - bounds.left - viewport.offsetX,
         y: event.clientY - bounds.top - viewport.offsetY
       }, viewport.width, viewport.height);
-      if ((activeTool === "line" || activeTool === "square") && shapeDraft && shapeDraft.surface === surface) {
-        setShapeDraft(null);
-      }
       setDrag({
         tool: activeTool,
         surface,
@@ -59982,6 +59986,31 @@ ${innerMarkdown}
             const parser2 = new DOMParser();
             const doc3 = parser2.parseFromString(finalHtml, "text/html");
             if (doc3 && doc3.body) {
+              doc3.querySelectorAll("a[href]").forEach((anchor) => {
+                var _a2;
+                const el = anchor;
+                const href = String(el.getAttribute("href") || "").trim();
+                const isDataVideo = /^data:video\/(webm|mp4);/i.test(href);
+                const isWebm = /\.webm([?#].*)?$/i.test(href);
+                const isMp4 = /\.mp4([?#].*)?$/i.test(href);
+                if (!isDataVideo && !isWebm && !isMp4) return;
+                const video = doc3.createElement("video");
+                video.setAttribute("controls", "true");
+                video.setAttribute("playsinline", "true");
+                video.setAttribute("preload", "metadata");
+                video.setAttribute("src", href);
+                const source = doc3.createElement("source");
+                source.setAttribute("src", href);
+                if (isMp4) source.setAttribute("type", "video/mp4");
+                else source.setAttribute("type", "video/webm");
+                video.appendChild(source);
+                const fallback = doc3.createElement("p");
+                fallback.textContent = `Video: ${href}`;
+                const wrap2 = doc3.createElement("div");
+                wrap2.appendChild(video);
+                wrap2.appendChild(fallback);
+                (_a2 = el.parentNode) == null ? void 0 : _a2.replaceChild(wrap2, el);
+              });
               const tables2 = doc3.querySelectorAll("table");
               tables2.forEach((table) => {
                 table.querySelectorAll("td, th").forEach((cell2) => {
