@@ -1875,8 +1875,6 @@ ul[data-type=taskList] input[type=checkbox] {
   accent-color: var(--color-primary);
 }
 ul[data-type=taskList] li[data-checked=true] > div {
-  text-decoration: line-through;
-  color: var(--text-muted);
 }
 ul[data-type=taskList] li p {
   margin: 0;

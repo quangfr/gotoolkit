@@ -4787,10 +4787,12 @@
                 } else if (finalSelectionOutput && typeof finalSelectionOutput.text === "string") {
                     selectionText = finalSelectionOutput.text;
                 }
+                var selectionFrom = Number(this.memoSelectionDetail?.positionFrom ?? this.memoSelection?.from);
+                var selectionTo = Number(this.memoSelectionDetail?.positionTo ?? this.memoSelection?.to);
+                var hasSelectionCoords = Number.isFinite(selectionFrom) && Number.isFinite(selectionTo) && selectionTo >= selectionFrom;
+                var hasNonEmptySelection = hasSelectionCoords && selectionTo > selectionFrom;
                 if (!applied && selectionText && selectionText.trim()) {
-                    var selectionFrom = Number(this.memoSelectionDetail?.positionFrom ?? this.memoSelection?.from);
-                    var selectionTo = Number(this.memoSelectionDetail?.positionTo ?? this.memoSelection?.to);
-                    if (isActiveScope() && Number.isFinite(selectionFrom) && Number.isFinite(selectionTo) && selectionTo >= selectionFrom) {
+                    if (isActiveScope() && hasSelectionCoords) {
                         if (typeof window.insertEditorMarkdownAtRange === "function") {
                             window.insertEditorMarkdownAtRange(selectionText, { from: selectionFrom, to: selectionTo });
                             applied = true;
@@ -4801,7 +4803,10 @@
                 if (!applied && parsed.output) {
                     if (requestPromptPresetId === "edit") {
                         if (isActiveScope()) {
-                            if (typeof window.insertEditorMarkdownAtEnd === "function") {
+                            if (typeof window.setEditorMarkdown === "function") {
+                                window.setEditorMarkdown(parsed.output);
+                                applied = true;
+                            } else if (typeof window.insertEditorMarkdownAtEnd === "function") {
                                 window.insertEditorMarkdownAtEnd(parsed.output);
                                 applied = true;
                             }
@@ -4812,7 +4817,7 @@
                                 targetTabId = window.GoToolkitMemoGetDocumentActiveTabId(targetDocId);
                             }
                             if (targetTabId && window.GoToolkitMemoInstance?.applyOutputTo) {
-                                window.GoToolkitMemoInstance.applyOutputTo(targetTabId, parsed.output, "edit");
+                                window.GoToolkitMemoInstance.applyOutputTo(targetTabId, parsed.output, "suggest");
                                 applied = true;
                             }
                         }
@@ -11620,33 +11625,15 @@
                         logInlineEditIssue('L2/selection-range-invalid', { selectionFrom, selectionTo });
                     }
                 } else if (typeof editMetadata.output === 'string' && editMetadata.output.trim()) {
-                    // Cas DOCUMENT entier (Maintenant APPEND par défaut dans le mode "edit" sans sélection)
-                    if (
-                        streamAppliedAnyDelta
-                        && Number.isFinite(streamInsertStart)
-                        && Number.isFinite(streamInsertPos)
-                        && streamInsertPos >= streamInsertStart
-                        && typeof window.insertEditorMarkdownAtRange === 'function'
-                    ) {
-                        window.insertEditorMarkdownAtRange(editMetadata.output, {
-                            from: streamInsertStart,
-                            to: streamInsertPos
-                        });
-                        window.scrollMemoEditorToEnd?.();
+                    // Cas DOCUMENT entier: remplacer tout le document avec output
+                    if (typeof window.setEditorMarkdown === 'function') {
+                        window.setEditorMarkdown(editMetadata.output);
+                        restoreScroll();
                     } else if (typeof window.insertEditorMarkdownAtEnd === 'function') {
                         window.insertEditorMarkdownAtEnd(editMetadata.output);
                         window.scrollMemoEditorToEnd?.();
-                    } else if (typeof window.setEditorMarkdown === 'function') {
-                        // Fallback si insertEditorMarkdownAtEnd n'est pas dispo
-                        const current = window.getEditorMarkdown?.() || '';
-                        window.setEditorMarkdown(current + (current ? '\n\n' : '') + editMetadata.output);
-                        window.scrollMemoEditorToEnd?.();
                     } else {
-                        editor
-                            .chain()
-                            .focus()
-                            .insertContentAt(editor.state.doc.content.size, editMetadata.output)
-                            .run();
+                        editor?.commands?.setContent?.(editMetadata.output);
                         window.scrollMemoEditorToEnd?.();
                     }
                 } else {

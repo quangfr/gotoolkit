@@ -139,8 +139,6 @@ ENTRÉES
 2) SELECTION : extrait souligné par l'utilisateur, base pour poser des questions 
 {
     "text": "portion ciblée pour la modification",
-    "start": <numéro de ligne de début du bloc de sélection>,
-    "end": <numéro de ligne de fin du bloc de fin de sélection>
 }
 3) CONVERSATION_ATTACHMENTS : contenu d'un ou de plusieurs documents joints, base pour répondre
 4) ASK : demande ou question de l'utilisateur
@@ -184,9 +182,7 @@ ENTRÉES
 1) DOCUMENT : contenu du document de travail en Markdown, base pour poser des questions
 2) SELECTION : extrait souligné par l'utilisateur, base pour poser des questions
 {
-    "text": "portion ciblée pour la modification",
-    "start": <numéro de ligne de début du bloc de sélection>,
-    "end": <numéro de ligne de fin du bloc de fin de sélection>
+    "text": "portion ciblée pour la modification"
 }
 3) CONVERSATION_ATTACHMENTS : contenu d'un ou de plusieurs documents joints, base pour répondre
 4) ASK : demande ou question de l'utilisateur
@@ -250,8 +246,8 @@ FORMAT DE SORTIE (JSON strict)
     "output": "DOCUMENT complet régénéré en Markdown suivi par ==ajouts== ou ~~suppressions~~",
     "s_output": {
         "text": "SELECTION complet régénérée en Markdown suivi par ==ajouts== ou ~~suppressions~~",
-        "start": <numéro de ligne exact envoyé en SELECTION start>,
-        "end": <numéro de ligne exact envoyé en SELECTION end>
+        "start": <numéro de ligne de début de SELECTION par rapport à DOCUMENT>,
+        "end": <numéro de ligne de fin de SELECTION par rapport à DOCUMENT>
     },
     "references": [
         {
@@ -273,10 +269,12 @@ Pour "answer"
 - Si tu penses que tu n'as pas d'élément de réponse vraiment pertinent à modifier ou à ajouter :
 par rapport à ASK, mettre "output": null et "s_output": null
 
-Si SELECTION est présente en entrée :
+Si le mot SELECTION est présente en entrée :
+- répondre à l'utilisateur sur ASK et produire le contenu modifié de cette SELECTION prêt à la remplacer.
 - remplir SEULEMENT "s_output" (avec text, start, end),
 - "output": null
-Si SELECTION est absente en entrée :
+Si le mot SELECTION est absente en entrée :
+- répondre à l'utilisateur sur ASK et en envoyant le DOCUMENT modifié complet.
 - remplir SEULEMENT "output"
 - "s_output": null
 `
@@ -290,9 +288,9 @@ ENTRÉES
 1) DOCUMENT : contenu du document de travail en Markdown, base pour poser des questions
 2) SELECTION : extrait souligné par l'utilisateur à remplacer
 {
-    "text": "portion ciblée pour la modification",
-    "start": <numéro de ligne de début du bloc de sélection>,
-    "end": <numéro de ligne de fin du bloc de fin de sélection>
+    "text": "portion ciblée pour la modification",        
+    "start": <numéro de ligne de début de SELECTION par rapport à DOCUMENT>,
+    "end": <numéro de ligne de fin de SELECTION par rapport à DOCUMENT>
 }
 3) CONVERSATION_ATTACHMENTS : contenu d'un ou de plusieurs documents joints, base pour répondre
 4) ASK : demande ou question de l'utilisateur
@@ -301,7 +299,7 @@ ENTRÉES
 
 OBJECTIF
 - Si SELECTION est présente : Répondre à l'utilisateur sur ASK et produire le contenu modifié de cette SELECTION prêt à la remplacer.
-- Si SELECTION est absente : Répondre à l'utilisateur sur ASK et produire DU NOUVEAU CONTENU à ajouter à la suite (append) du DOCUMENT.
+- Si SELECTION est absente : Renvoyer le DOCUMENT modifié complet.
 
 RÈGLES DE MODIFICATION
 - Préserve au maximum la structure/syntaxe Markdown existante (titres, listes, tâches, tableaux, code, liens, blocs de texte).
@@ -348,7 +346,7 @@ Limiter les encadrés qui servent surtout à ressortir les informations par rapp
 FORMAT DE SORTIE (JSON strict)
 {
     "answer": "Réponse en français, ≤150 mots, tutoiement",
-    "output": "Contenu (Markdown) à AJOUTER à la suite du DOCUMENT (si pas de SELECTION)",
+    "output": "DOCUMENT complet régénéré en Markdown",
     "s_output": {
         "text": "SELECTION complète régénérée en Markdown (si SELECTION présente)",
         "start": <numéro de ligne exact envoyé en SELECTION start>,
@@ -369,10 +367,10 @@ RÈGLES DE SORTIE
 - Un seul objet JSON strict, sans texte avant/après
 - Si tu penses que tu n'as pas d'élément de réponse vraiment pertinent à modifier ou à ajouter :
 par rapport à ASK, mettre "output": null et "s_output": null
-- Si SELECTION est présente en entrée :
+- Si le mot SELECTION est présente en entrée :
 - remplir SEULEMENT "s_output" (avec text, start, end),
 - "output": null
-- Si SELECTION est ABSENTE en entrée :
+- Si le mot SELECTION est ABSENTE en entrée :
 - remplir SEULEMENT "output" (qui sera ajouté à la fin du document),
 - "s_output": null
 `
