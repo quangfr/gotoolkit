@@ -1,28 +1,21 @@
 (function () {
     const STORAGE_KEY = "go-toolkit-share-records";
     const storageService = window.goToolkitStorageService;
+
+    try {
+        if (typeof localStorage !== "undefined") {
+            localStorage.removeItem(STORAGE_KEY);
+        }
+    } catch (err) {
+        // ignore
+    }
+
     const fallbackStore = (() => {
         let cached = null;
 
         async function read() {
             if (cached) {
                 return cached;
-            }
-            if (typeof localStorage === "undefined") {
-                cached = {};
-                return cached;
-            }
-            try {
-                const raw = localStorage.getItem(STORAGE_KEY);
-                if (raw) {
-                    const parsed = JSON.parse(raw);
-                    if (parsed && typeof parsed === "object") {
-                        cached = parsed;
-                        return cached;
-                    }
-                }
-            } catch (err) {
-                console.warn("goToolkitShareHistory: fallback read failed", err);
             }
             cached = {};
             return cached;
@@ -31,14 +24,6 @@
         async function write(records) {
             const next = records && typeof records === "object" ? records : {};
             cached = next;
-            if (typeof localStorage === "undefined") {
-                return next;
-            }
-            try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-            } catch (err) {
-                console.warn("goToolkitShareHistory: fallback write failed", err);
-            }
             return next;
         }
 
@@ -59,6 +44,7 @@
         storageService?.createStore({
             storeName: "share-history",
             localStorageKey: STORAGE_KEY,
+            persistToLocalStorage: false,
             defaultValue: () => ({}),
             normalize: value => (value && typeof value === "object" ? value : null),
             logPrefix: "goToolkitShareHistory"

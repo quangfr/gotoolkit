@@ -31,11 +31,13 @@
             recordKey = "records",
             defaultValue = () => ({}),
             normalize = defaultNormalize,
-            logPrefix
+            logPrefix,
+            persistToLocalStorage = true
         } = options;
         const prefix = logPrefix || localStorageKey || storeName || "goToolkitStorageService";
         const docStore = storeName && typeof docStoreFactory === "function" ? docStoreFactory(storeName) : null;
         const hasLocalStorage = Boolean(localStorageKey && isLocalStorageAvailable());
+        const canWriteLocalStorage = hasLocalStorage && persistToLocalStorage !== false;
 
         let cachedValue = null;
         let loadPromise = null;
@@ -109,7 +111,7 @@
         async function write(value) {
             const next = value === null || value === undefined ? getDefaultValue() : value;
             cachedValue = next;
-            if (hasLocalStorage) {
+            if (canWriteLocalStorage) {
                 try {
                     const serialized = JSON.stringify(next);
                     globalScope.localStorage.setItem(localStorageKey, serialized);
