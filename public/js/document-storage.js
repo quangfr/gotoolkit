@@ -1,6 +1,6 @@
 (function () {
     const DB_NAME = "go-toolkit";
-    const DB_VERSION = 10;
+    const DB_VERSION = 11;
     const STORES = [
         "document-api",
         "share-history",
@@ -13,7 +13,8 @@
         "knowledge-selection",
         "knowledge-descriptions-overrides",
         "knowledge-local-docs",
-        "templates"
+        "templates",
+        "cloud-drafts"
     ];
 
     function isIndexedDbAvailable() {

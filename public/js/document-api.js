@@ -2,28 +2,20 @@
     const STORAGE_KEY = "go-toolkit-document-api";
     const storageService = window.goToolkitStorageService;
 
+    try {
+        if (typeof localStorage !== "undefined") {
+            localStorage.removeItem(STORAGE_KEY);
+        }
+    } catch (err) {
+        // ignore
+    }
+
     const fallbackStore = (() => {
         let cached = null;
 
         async function read() {
             if (cached) {
                 return cached;
-            }
-            if (typeof localStorage === "undefined") {
-                cached = {};
-                return cached;
-            }
-            try {
-                const raw = localStorage.getItem(STORAGE_KEY);
-                if (raw) {
-                    const parsed = JSON.parse(raw);
-                    if (parsed && typeof parsed === "object") {
-                        cached = parsed;
-                        return cached;
-                    }
-                }
-            } catch (err) {
-                console.warn("goToolkitDocumentApi: fallback read failed", err);
             }
             cached = {};
             return cached;
@@ -32,14 +24,6 @@
         async function write(records) {
             const next = records && typeof records === "object" ? records : {};
             cached = next;
-            if (typeof localStorage === "undefined") {
-                return next;
-            }
-            try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-            } catch (err) {
-                console.warn("goToolkitDocumentApi: fallback write failed", err);
-            }
             return next;
         }
 
@@ -59,7 +43,6 @@
     const store =
         storageService?.createStore({
             storeName: "document-api",
-            localStorageKey: STORAGE_KEY,
             defaultValue: () => ({}),
             normalize: value => (value && typeof value === "object" ? value : null),
             logPrefix: "goToolkitDocumentApi"

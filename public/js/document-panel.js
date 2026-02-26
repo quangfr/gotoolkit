@@ -2322,14 +2322,9 @@
                 let commonItems = [];
                 const shareHistory = window.goToolkitShareHistory;
                 if (shareHistory?.getRecordsByApp) {
-                    const cloudDraftsKey = "goToolkit.memo.cloudDrafts.v1";
                     let cloudDrafts = {};
                     try {
-                        if (typeof localStorage !== "undefined") {
-                            const rawCloudDrafts = localStorage.getItem(cloudDraftsKey);
-                            const parsedCloudDrafts = rawCloudDrafts ? JSON.parse(rawCloudDrafts) : {};
-                            cloudDrafts = parsedCloudDrafts && typeof parsedCloudDrafts === "object" ? parsedCloudDrafts : {};
-                        }
+                        cloudDrafts = await window.goToolkitCloudDrafts?.readAll?.() || {};
                     } catch (err) {
                         cloudDrafts = {};
                     }
