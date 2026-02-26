@@ -149,7 +149,7 @@ ENTRÉES
 
 RÈGLES
 - Pas d’info → le dire.
-- Français, ≤250 mots, tutoiement.
+- Français, tutoiement.
 - Sortie : UN SEUL JSON strict.
 - Références : 0-4 documents cités.
 - Pas d'émojis, pas de tableau en markdown.
@@ -159,7 +159,7 @@ RÈGLES
 
 FORMAT DE SORTIE (JSON strict)
 {
-    "answer": "Réponse fluide à l'utilisateur issue du contexte.",
+    "answer": "Réponds de maniere exhaustive à ASK sur la base des élements de réponse dans CONVERSATION_ATTACHMENTS et SPACE_PAGES, en tenant compte des informations en entrée de DOCUMENT et en particulier SELECTION.",
     "references": [
         {
             "documentId": "reprendre le uuid exact du documentId en CONVERSATION_ATTACHMENTS ou SPACE_PAGES",
@@ -171,7 +171,8 @@ FORMAT DE SORTIE (JSON strict)
     "suggestions": ["autre question proche de ASK et HISTORY", "autre question proche de ASK et HISTORY","autre question proche de ASK et HISTORY"]
 }
 
-Réponds à ASK sur la base des élements de réponse dans CONVERSATION_ATTACHMENTS et SPACE_PAGES, en tenant compte des informations en entrée de DOCUMENT et en particulier SELECTION. 
+On justifie la réponse dans "answer", avec les éléments en "references".
+
 `
 
         var suggestChatPrompt = `SYSTEM — Éditeur Markdown (JSON)
