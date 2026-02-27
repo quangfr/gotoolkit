@@ -85,10 +85,7 @@
   const renameSubmitBtn = document.getElementById("renameSubmitBtn");
   const renameInput = document.getElementById("renameInput");
   const settingsModal = document.getElementById("settingsModal");
-  const saveSettingsBtn = document.getElementById("saveSettingsBtn");
   const memoPromptEditor = document.getElementById("memoPromptEditor");
-  const memoPromptPresetSelect = document.getElementById("memoPromptPresetSelect");
-  const settingsTabButtons = Array.from(document.querySelectorAll("#settingsModal .settings-tabs .tab-btn"));
   const captureAudioMenu = document.getElementById("captureAudioMenu");
   const captureAudioTranscribeBtn = document.getElementById("captureAudioTranscribeBtn");
   const captureAudioPlayBtn = document.getElementById("captureAudioPlayBtn");
@@ -1883,6 +1880,36 @@
   }
 
   function setupListeners() {
+    function prepareMobileSettingsForm() {
+      const promptEditorEl = document.getElementById("memoPromptEditor");
+      if (promptEditorEl) {
+        promptEditorEl.value = getSavedMobileEditInstructions();
+      }
+
+      const voiceRecordingSpeedSelect = document.getElementById("voiceRecordingSpeedSelect");
+      if (voiceRecordingSpeedSelect) {
+        if (voiceRecordingSpeedSelect.dataset.mobileReady !== "1") {
+          voiceRecordingSpeedSelect.innerHTML = "";
+          for (let speed = 0.4; speed <= 4.001; speed += 0.2) {
+            const normalized = normalizeVoicePlaybackSpeed(speed).toFixed(1);
+            const option = document.createElement("option");
+            option.value = normalized;
+            option.textContent = `${normalized}x`;
+            voiceRecordingSpeedSelect.appendChild(option);
+          }
+          voiceRecordingSpeedSelect.dataset.mobileReady = "1";
+        }
+        voiceRecordingSpeedSelect.value = normalizeVoicePlaybackSpeed(getSavedVoicePlaybackSpeed()).toFixed(1);
+      }
+
+      const memoPromptPresetSelectEl = document.getElementById("memoPromptPresetSelect");
+      if (memoPromptPresetSelectEl) {
+        memoPromptPresetSelectEl.innerHTML = "";
+        memoPromptPresetSelectEl.hidden = true;
+        memoPromptPresetSelectEl.style.display = "none";
+      }
+    }
+
     if (window.GoToolkitGoogleTTS?.createController) {
       googleTtsController = window.GoToolkitGoogleTTS.createController();
     }
@@ -1900,6 +1927,7 @@
     openSettingsBtn?.addEventListener("click", event => {
       event.preventDefault();
       event.stopPropagation();
+      prepareMobileSettingsForm();
       settingsModalApi?.open?.();
     });
 
@@ -2188,37 +2216,48 @@
       }
     });
 
-    saveSettingsBtn?.addEventListener("click", () => {
-      const activeSettingsTab = settingsTabButtons.find(button => button.classList.contains("active"))?.dataset?.tab || "";
-      if (activeSettingsTab !== "promptTab" || !memoPromptEditor) {
+    settingsModal?.addEventListener("click", event => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const saveBtn = target.closest("#saveSettingsBtn");
+      if (!saveBtn) return;
+
+      const runtimeTabButtons = Array.from(document.querySelectorAll("#settingsModal .settings-tabs .tab-btn"));
+      const activeSettingsTab = runtimeTabButtons.find(button => button.classList.contains("active"))?.dataset?.tab || "";
+
+      if (activeSettingsTab === "promptTab") {
+        const promptEditorEl = document.getElementById("memoPromptEditor");
+        const value = String(promptEditorEl?.value || "").trim();
+        try {
+          localStorage.setItem(MOBILE_EDIT_INSTRUCTIONS_KEY, value);
+          settingsModalApi?.close?.();
+          setStatus("Instructions mobile sauvegardées");
+        } catch (err) {
+          setStatus("Sauvegarde des instructions impossible");
+        }
         return;
       }
-      const value = String(memoPromptEditor.value || "").trim();
-      try {
-        localStorage.setItem(MOBILE_EDIT_INSTRUCTIONS_KEY, value);
-        settingsModalApi?.close?.();
-        setStatus("Instructions mobile sauvegardées");
-      } catch (err) {
-        setStatus("Sauvegarde des instructions impossible");
-      }
-    });
 
-    openSettingsBtn?.addEventListener("click", () => {
-      if (memoPromptEditor) {
-        memoPromptEditor.value = getSavedMobileEditInstructions();
-      }
-      if (memoPromptPresetSelect && !memoPromptPresetSelect.dataset.mobileReady) {
-        memoPromptPresetSelect.dataset.mobileReady = "1";
-        memoPromptPresetSelect.innerHTML = "";
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "btn-secondary memo-prompt-preset-btn active";
-        btn.innerHTML = '<i data-lucide="smartphone"></i> Mobile Edit';
-        memoPromptPresetSelect.appendChild(btn);
-        if (typeof lucide !== "undefined" && typeof lucide.createIcons === "function") {
-          lucide.createIcons();
+      if (activeSettingsTab === "paramsTab") {
+        const voiceRecordingSpeedSelect = document.getElementById("voiceRecordingSpeedSelect");
+        const speed = normalizeVoicePlaybackSpeed(voiceRecordingSpeedSelect?.value || getSavedVoicePlaybackSpeed());
+        const speedValue = speed.toFixed(1);
+        try {
+          localStorage.setItem(VOICE_RECORDING_SPEED_STORAGE_KEY, speedValue);
+          window.GoToolkitVoiceRecordingSpeed = speedValue;
+          window.dispatchEvent(new CustomEvent("go-toolkit:voice-recording-speed-changed", {
+            detail: { speed: speedValue }
+          }));
+          settingsModalApi?.close?.();
+          setStatus("Réglages sauvegardés");
+        } catch (err) {
+          setStatus("Sauvegarde des réglages impossible");
         }
+        return;
       }
+
+      settingsModalApi?.close?.();
+      setStatus("Réglages sauvegardés");
     });
 
     document.addEventListener("click", event => {

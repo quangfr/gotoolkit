@@ -131,6 +131,15 @@
                                 <select id="voiceRecordingSpeedSelect"></select>
                             </label>
                         </div>
+                        <div class="field-row">
+                            <label style="width:100%">
+                                <span class="label-title">Capture d'écran</span>
+                                <select id="voiceScreenCaptureQualitySelect">
+                                    <option value="1080">Haute qualité 1080p</option>
+                                    <option value="720">Bonne qualité 720p</option>
+                                </select>
+                            </label>
+                        </div>
                     </div>
                     <div class="settings-tab-panel" data-panel="categoryTab" hidden>
                         <div class="field-row">

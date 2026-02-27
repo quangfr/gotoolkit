@@ -2,6 +2,7 @@
     "use strict";
 
     const STORAGE_KEY = "go-toolkit-assemblyai-key";
+    const SCREEN_CAPTURE_QUALITY_STORAGE_KEY = "go-toolkit-voice-screen-capture-quality";
     const ASSEMBLY_PROXY_TOKEN_URL = (window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL || "https://assemblyai.gotoolkit.workers.dev/token").replace(/\/$/, "");
     const ASSEMBLY_PROXY_BASE_URL = ASSEMBLY_PROXY_TOKEN_URL.replace(/\/token\/?$/i, "").replace(/\/$/, "") || ASSEMBLY_PROXY_TOKEN_URL;
     const RECORDINGS_STORE = window.goToolkitDocStore?.createStore
@@ -37,15 +38,14 @@
         overlay: null,
         overlayReady: null,
         overlayTiles: null,
-        overlayTranscriptionTile: null,
-        overlayTranscriptionTitle: null,
+        overlayTranscriptionOptions: [],
         overlayTranscriptionLine1: null,
         overlayTranscriptionLine2: null,
         overlayMic: true,
         overlayWebcam: false,
         overlayScreen: false,
         overlaySystemAudio: false,
-        overlayLiveTranscription: false,
+        overlayTranscriptionMode: "deferred",
         livePreviewLine1: "",
         livePreviewLine2: "",
         overlayStreams: {
@@ -95,8 +95,22 @@
     };
 
     const voiceConfigState = {
-        disableCamera: false
+        disableCamera: false,
+        screenCaptureQuality: "1080"
     };
+
+    function normalizeScreenCaptureQuality(value) {
+        const normalized = String(value || "").trim();
+        return normalized === "720" ? "720" : "1080";
+    }
+
+    function getScreenCaptureMaxHeight() {
+        return normalizeScreenCaptureQuality(voiceConfigState.screenCaptureQuality) === "720" ? 720 : 1080;
+    }
+
+    function getScreenCaptureFps() {
+        return 20;
+    }
 
     function isCameraAllowed() {
         return !voiceConfigState.disableCamera;
@@ -172,10 +186,17 @@
                 margin: 8px auto 6px;
                 flex: 1 1 auto;
                 display: flex;
-                align-items: flex-end;
+                flex-direction: column;
+                justify-content: flex-end;
+                gap: 8px;
             }
-            .voice-overlay__transcription-tile {
+            .voice-overlay__transcription-options {
                 width: var(--voice-overlay-tiles-width);
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 8px;
+            }
+            .voice-overlay__transcription-option {
                 height: 60px;
                 min-height: 60px;
                 position: relative;
@@ -187,32 +208,27 @@
                 box-sizing: border-box;
                 cursor: pointer;
                 pointer-events: auto;
+                color: var(--white);
+                font-size: 16px;
+                line-height: 1.1;
+                font-weight: 800;
+                letter-spacing: 0.01em;
+                text-align: center;
+                padding: 8px;
             }
-            .voice-overlay__transcription-tile--active {
+            .voice-overlay__transcription-option--selected {
+                border-color: rgba(255, 255, 255, 0.75);
+            }
+            .voice-overlay__transcription-option--active {
                 border-color: var(--intent-warning-border);
                 box-shadow: 0 18px 50px rgba(0, 0, 0, 0.65), 0 0 0 6px rgba(250, 204, 21, 0.18);
             }
-            .voice-overlay__transcription-title {
-                position: absolute;
-                left: 50%;
-                top: 50%;
-                transform: translate(-50%, -50%);
-                z-index: 2;
-                font-size: 21px;
-                line-height: 1.05;
-                font-weight: 800;
-                letter-spacing: 0.01em;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                max-width: calc(100% - 28px);
-                pointer-events: none;
-                opacity: 0.94;
+            .voice-overlay__transcription-option--no-glow.voice-overlay__transcription-option--selected {
+                border-color: rgba(255, 255, 255, 0.85);
+                box-shadow: 0 14px 28px rgba(0, 0, 0, 0.35), 0 0 0 4px rgba(255, 255, 255, 0.05);
             }
             .voice-overlay__transcription-live {
-                position: absolute;
-                inset: 0;
-                z-index: 1;
+                width: var(--voice-overlay-tiles-width);
                 min-height: 0;
                 padding: 8px 14px;
                 box-sizing: border-box;
@@ -225,6 +241,9 @@
                 justify-content: flex-end;
                 align-items: flex-start;
                 overflow: hidden;
+                border-radius: 14px;
+                border: 2px solid rgba(255, 255, 255, 0.2);
+                background: rgba(0, 0, 0, 0.2);
             }
             .voice-overlay__transcription-line {
                 min-height: 16px;
@@ -587,13 +606,13 @@
 
     function renderLivePreview() {
         if (!state.overlayTranscriptionLine1 || !state.overlayTranscriptionLine2) return;
-        const canShowPreview = Boolean(state.overlayMic && state.overlayLiveTranscription);
+        const canShowPreview = Boolean(state.overlayMic && state.overlayTranscriptionMode === "live");
         state.overlayTranscriptionLine1.textContent = canShowPreview ? state.livePreviewLine1 : "";
         state.overlayTranscriptionLine2.textContent = canShowPreview ? state.livePreviewLine2 : "";
     }
 
     function appendLivePreviewText(text) {
-        if (!text || !state.overlayMic || !state.overlayLiveTranscription) return;
+        if (!text || !state.overlayMic || state.overlayTranscriptionMode !== "live") return;
         const chunks = String(text)
             .replace(/\s+/g, " ")
             .trim()
@@ -616,10 +635,15 @@
     }
 
     function syncTranscriptionTile() {
-        if (!state.overlayTranscriptionTile || !state.overlayTranscriptionTitle) return;
-        const isLive = Boolean(state.overlayLiveTranscription);
-        state.overlayTranscriptionTitle.textContent = isLive ? "Transcription en continu dans le document" : "Transcription en différé";
-        state.overlayTranscriptionTile.classList.toggle("voice-overlay__transcription-tile--active", isLive);
+        const mode = String(state.overlayTranscriptionMode || "deferred");
+        state.overlayTranscriptionOptions.forEach(option => {
+            const optionMode = String(option?.dataset?.transcriptionMode || "");
+            const selected = optionMode === mode;
+            option.classList.toggle("voice-overlay__transcription-option--selected", selected);
+            option.classList.toggle("voice-overlay__transcription-option--active", selected && optionMode !== "none");
+            option.classList.toggle("voice-overlay__transcription-option--no-glow", optionMode === "none");
+            option.setAttribute("aria-pressed", selected ? "true" : "false");
+        });
         renderLivePreview();
     }
 
@@ -1038,8 +1062,10 @@
         state.clickHighlights = active;
     }
 
-    async function startVideoCompositor(sourceStream) {
+    async function startVideoCompositor(sourceStream, options = {}) {
         if (!sourceStream?.getVideoTracks?.().length) return null;
+        const maxHeight = Math.max(2, Number(options.maxHeight) || 1080);
+        const fps = Math.max(1, Number(options.fps) || 20);
         const sourceVideo = document.createElement("video");
         sourceVideo.muted = true;
         sourceVideo.playsInline = true;
@@ -1064,7 +1090,7 @@
 
         const sourceWidth = Math.max(2, sourceVideo.videoWidth || 1280);
         const sourceHeight = Math.max(2, sourceVideo.videoHeight || 720);
-        const scale = Math.min(1, 1080 / sourceHeight);
+        const scale = Math.min(1, maxHeight / sourceHeight);
         const width = Math.max(2, Math.round(sourceWidth * scale));
         const height = Math.max(2, Math.round(sourceHeight * scale));
         const canvas = document.createElement("canvas");
@@ -1094,7 +1120,6 @@
         };
         window.addEventListener("pointerdown", onPointerDown, true);
 
-        const fps = 20;
         const composedStream = canvas.captureStream(fps);
         state.videoCompositorCanvas = canvas;
         state.videoCompositorStream = composedStream;
@@ -1171,12 +1196,14 @@
             <div class="voice-overlay__caption">Demander l'autorisation à vos interlocuteurs pour enregistrer la conversation.</div>
             <div class="voice-overlay__ready">Prêt</div>
             <div class="voice-overlay__transcription-slot">
-                <div class="voice-overlay__transcription-tile" role="button" tabindex="0" aria-label="Mode de transcription">
-                    <div class="voice-overlay__transcription-title">Transcription en différé</div>
-                    <div class="voice-overlay__transcription-live" aria-live="polite">
-                        <div class="voice-overlay__transcription-line" data-line="1"></div>
-                        <div class="voice-overlay__transcription-line" data-line="2"></div>
-                    </div>
+                <div class="voice-overlay__transcription-options" role="group" aria-label="Mode de transcription">
+                    <button type="button" class="voice-overlay__transcription-option" data-transcription-mode="deferred">Transcription en différée</button>
+                    <button type="button" class="voice-overlay__transcription-option" data-transcription-mode="none">Pas de transcription</button>
+                    <button type="button" class="voice-overlay__transcription-option" data-transcription-mode="live">Transcription en continu</button>
+                </div>
+                <div class="voice-overlay__transcription-live" aria-live="polite">
+                    <div class="voice-overlay__transcription-line" data-line="1"></div>
+                    <div class="voice-overlay__transcription-line" data-line="2"></div>
                 </div>
             </div>
             <div class="voice-overlay__tiles">
@@ -1205,27 +1232,30 @@
         document.body.appendChild(state.overlay);
         state.overlayTiles = Array.from(state.overlay.querySelectorAll(".voice-overlay__tile"));
         state.overlayReady = state.overlay.querySelector(".voice-overlay__ready");
-        state.overlayTranscriptionTile = state.overlay.querySelector(".voice-overlay__transcription-tile");
-        state.overlayTranscriptionTitle = state.overlay.querySelector(".voice-overlay__transcription-title");
+        state.overlayTranscriptionOptions = Array.from(state.overlay.querySelectorAll(".voice-overlay__transcription-option"));
         state.overlayTranscriptionLine1 = state.overlay.querySelector('.voice-overlay__transcription-line[data-line="1"]');
         state.overlayTranscriptionLine2 = state.overlay.querySelector('.voice-overlay__transcription-line[data-line="2"]');
         const closeBtn = state.overlay.querySelector(".voice-overlay__close");
         closeBtn?.addEventListener("click", closeOverlay);
-        const toggleTranscriptionMode = () => {
-            state.overlayLiveTranscription = !state.overlayLiveTranscription;
-            if (!state.overlayLiveTranscription) {
+        const setTranscriptionMode = mode => {
+            const safeMode = mode === "live" || mode === "none" ? mode : "deferred";
+            const prevMode = state.overlayTranscriptionMode;
+            state.overlayTranscriptionMode = safeMode;
+            if (prevMode === "live" && safeMode !== "live") {
                 stopLiveTranscription();
             }
             state.livePreviewLine1 = "";
             state.livePreviewLine2 = "";
             syncTranscriptionTile();
         };
-        state.overlayTranscriptionTile?.addEventListener("click", toggleTranscriptionMode);
-        state.overlayTranscriptionTile?.addEventListener("keydown", event => {
-            if (event.key === "Enter" || event.key === " ") {
-                event.preventDefault();
-                toggleTranscriptionMode();
-            }
+        state.overlayTranscriptionOptions.forEach(option => {
+            option.addEventListener("click", () => setTranscriptionMode(option.dataset.transcriptionMode));
+            option.addEventListener("keydown", event => {
+                if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    setTranscriptionMode(option.dataset.transcriptionMode);
+                }
+            });
         });
         state.overlayTiles.forEach(tile => {
             tile.addEventListener("click", async () => {
@@ -1472,16 +1502,20 @@
                 }
             };
             state.audioRecorder.start();
-            if (state.overlayLiveTranscription && state.overlayMic) {
+            if (state.overlayTranscriptionMode === "live" && state.overlayMic) {
                 startLiveTranscription(audioStream, memoId);
             } else {
                 stopLiveTranscription();
             }
             if (videoStream) {
                 let videoTrackSource = videoStream;
+                const isScreenRecording = Boolean(state.overlayScreen && screenStream && videoStream === screenStream);
                 if (state.overlayScreen && videoStream === screenStream) {
                     try {
-                        const composedStream = await startVideoCompositor(videoStream);
+                        const composedStream = await startVideoCompositor(videoStream, {
+                            maxHeight: getScreenCaptureMaxHeight(),
+                            fps: getScreenCaptureFps()
+                        });
                         if (composedStream?.getVideoTracks?.().length) {
                             videoTrackSource = composedStream;
                         }
@@ -1496,7 +1530,10 @@
                 for (const track of combinedTracks) {
                     if (track?.kind !== "video") continue;
                     try {
-                        track.applyConstraints?.({ frameRate: 20, height: { max: 1080 } });
+                        track.applyConstraints?.({
+                            frameRate: getScreenCaptureFps(),
+                            height: { max: isScreenRecording ? getScreenCaptureMaxHeight() : 1080 }
+                        });
                     } catch (err) { /* noop */ }
                 }
                 const combinedStream = new MediaStream(combinedTracks);
@@ -1930,6 +1967,19 @@
     function applyVoiceConfig(config) {
         const voiceSettings = config && typeof config === "object" ? config.voice : null;
         const disableCamera = Boolean(voiceSettings && voiceSettings.disableCamera);
+        const screenCaptureQuality = normalizeScreenCaptureQuality(
+            voiceSettings?.screenCaptureQuality ?? window.GoToolkitVoiceScreenCaptureQuality
+        );
+        try {
+            const localQuality = localStorage.getItem(SCREEN_CAPTURE_QUALITY_STORAGE_KEY);
+            if (localQuality != null) {
+                voiceConfigState.screenCaptureQuality = normalizeScreenCaptureQuality(localQuality);
+            } else {
+                voiceConfigState.screenCaptureQuality = screenCaptureQuality;
+            }
+        } catch (err) {
+            voiceConfigState.screenCaptureQuality = screenCaptureQuality;
+        }
         voiceConfigState.disableCamera = disableCamera;
         if (disableCamera) {
             enforceWebcamLock();
@@ -1986,6 +2036,49 @@
         if (!state.audioBlob) {
             showToast("Aucun audio capturé.", true);
             resetSessionState();
+            return;
+        }
+        if (state.overlayTranscriptionMode === "none") {
+            const memoId = state.recordingMemoId;
+            const memoName = state.recordingMemoName;
+            const now = Date.now();
+            const duration = Math.max(0, Math.floor((Date.now() - state.recordingStartTime) / 1000));
+            const recordId = crypto?.randomUUID ? crypto.randomUUID() : `voice-${Date.now()}`;
+            const recording = {
+                id: recordId,
+                type: "voice-recording",
+                memoId: memoId || null,
+                documentId: state.recordingDocumentId || null,
+                audioBlob: state.audioBlob,
+                videoBlob: state.videoBlob || null,
+                audioTranscript: "",
+                audioTranscriptSentences: [],
+                videoTranscript: "",
+                videoTranscriptSentences: [],
+                duration,
+                recordingDate: now,
+                assemblyTranscriptId: null,
+                assemblyLanguageCode: "fr",
+                participants: [],
+                subjects: [],
+                createdAt: now,
+                updatedAt: now
+            };
+            if (RECORDINGS_STORE) {
+                await RECORDINGS_STORE.set(recordId, recording);
+            }
+            state.currentRecordingId = recordId;
+            state.currentRecordingHasVideo = Boolean(state.videoBlob);
+            if (state.currentMemoId && state.currentMemoId === memoId) {
+                state.currentMemoRecordingId = recordId;
+                state.currentMemoRecordingHasVideo = Boolean(state.videoBlob);
+            }
+            setRecordingForMemo(memoId, recordId);
+            state.recordingMemoId = memoId;
+            state.recordingMemoName = memoName || "";
+            state.isTranscribing = false;
+            updateButton();
+            showToast("Enregistrement sauvegardé sans transcription");
             return;
         }
         const durationSeconds = Math.floor((Date.now() - state.recordingStartTime) / 1000);
@@ -2529,6 +2622,11 @@
                 applyVoiceConfig(siteConfig?.getData?.());
             });
         }
+        window.addEventListener("go-toolkit:voice-capture-quality-changed", event => {
+            const nextQuality = normalizeScreenCaptureQuality(event?.detail?.quality);
+            voiceConfigState.screenCaptureQuality = nextQuality;
+            window.GoToolkitVoiceScreenCaptureQuality = nextQuality;
+        });
     })();
 
     window.GoToolkitVoice = {

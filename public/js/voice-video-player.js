@@ -1032,6 +1032,23 @@
             return Math.max(1, Math.round(baseSeconds));
         }
 
+        _getWebmDisplayHeight() {
+            const sourceHeight = Number(this.videoEl?.videoHeight || 0);
+            if (Number.isFinite(sourceHeight) && sourceHeight >= 2) {
+                return Math.max(2, Math.round(sourceHeight));
+            }
+            return 1080;
+        }
+
+        _getGifDisplayHeight() {
+            const duration = this._hasCutRange() ? Math.max(0.1, this.cutEnd - this.cutStart) : Math.max(0.1, this.videoEl?.duration || 0);
+            const speed = this._getExportSpeed();
+            const sourceWidth = this.videoEl?.videoWidth || 640;
+            const sourceHeight = this.videoEl?.videoHeight || 360;
+            const config = this._getGifExportConfig(sourceWidth, sourceHeight, duration, speed);
+            return Math.max(2, Math.round(config.height || 576));
+        }
+
         _getMp4CacheKey() {
             if (!this.videoBlobOriginal) return "";
             const speed = this._getExportSpeed().toFixed(1);
@@ -1160,29 +1177,21 @@
             const gifSize = gifStatus === "ready" ? this._gifBlobCache.size : 0;
             const mp4Ready = mp4Status === "ready";
             const mp4Size = mp4Ready ? this._mp4BlobCache.size : this._estimateMp4Bytes();
+            const webmHeight = this._getWebmDisplayHeight();
+            const gifHeight = this._getGifDisplayHeight();
             if (this.downloadVideoWebmOption) {
-                this._renderOptionWithStatus(this.downloadVideoWebmOption, "ready", `WebM FHD (${this._formatMbLabel(videoSize)})`);
+                this._renderOptionWithStatus(this.downloadVideoWebmOption, "ready", `WebM ${webmHeight}p (${this._formatMbLabel(videoSize)})`);
             }
             if (this.downloadVideoMp4Option) {
-                if (mp4Ready) {
-                    this._renderOptionWithStatus(this.downloadVideoMp4Option, mp4Status, `MP4 HD (${this._formatMbLabel(mp4Size)})`);
-                } else {
-                    if (mp4Status === "running") {
-                        const eta = this._formatSecondsLabel(this._estimateMp4BuildSeconds());
-                        this._renderOptionWithStatus(this.downloadVideoMp4Option, mp4Status, `MP4 HD (~${eta}, ${this._formatMbLabel(mp4Size)})`);
-                    } else {
-                        this._renderOptionWithStatus(this.downloadVideoMp4Option, mp4Status, `MP4 HD (${this._formatMbLabel(mp4Size)})`);
-                    }
-                }
+                this._renderOptionWithStatus(this.downloadVideoMp4Option, mp4Status, `MP4 720p (${this._formatMbLabel(mp4Size)})`);
             }
             if (this.downloadGifOption) {
-                const runningGifLabel = `GIF SD (~${this._formatSecondsLabel(this._estimateGifBuildSeconds())}, ${this._formatMbLabel(this._estimateGifBytes())})`;
                 this._renderOptionWithStatus(
                     this.downloadGifOption,
                     gifStatus,
                     gifSize > 0
-                        ? `GIF SD (${this._formatMbLabel(gifSize)})`
-                        : (gifStatus === "running" ? runningGifLabel : `GIF SD (${this._formatMbLabel(this._estimateGifBytes())})`)
+                        ? `GIF ${gifHeight}p (${this._formatMbLabel(gifSize)})`
+                        : `GIF ${gifHeight}p (${this._formatMbLabel(this._estimateGifBytes())})`
                 );
             }
             this._updateConversionBadges();
