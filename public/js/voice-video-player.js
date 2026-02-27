@@ -713,9 +713,13 @@
                     .trim();
                 this.onCopyVideo(text);
             });
-            this.deleteButton?.addEventListener("click", () => {
+            this.deleteButton?.addEventListener("click", async () => {
                 if (!this.onDelete) return;
-                this.onDelete();
+                try {
+                    await this.onDelete();
+                } catch (err) {
+                    console.warn("Video modal delete failed", err);
+                }
             });
             this.publishButton?.addEventListener("click", () => this._handlePublish());
             this.youtubeLinkButton?.addEventListener("click", () => {

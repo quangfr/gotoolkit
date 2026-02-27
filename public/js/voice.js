@@ -1326,6 +1326,42 @@
         }
     }
 
+    async function deleteRecordingById(recordingId, options = {}) {
+        const targetId = String(recordingId || "").trim();
+        if (!targetId || !RECORDINGS_STORE) return false;
+        let memoId = String(options?.memoId || "").trim();
+        if (!memoId && window.GoToolkitMemoVoice?.findMemoIdByRecordingId) {
+            memoId = String(window.GoToolkitMemoVoice.findMemoIdByRecordingId(targetId) || "").trim();
+        }
+        try {
+            await RECORDINGS_STORE.remove(targetId);
+        } catch (err) {
+            console.warn("Recording delete failed", err);
+            return false;
+        }
+        if (memoId) {
+            setRecordingForMemo(memoId, null);
+        }
+        if (state.currentMemoRecordingId === targetId) {
+            state.currentMemoRecordingId = null;
+            state.currentMemoRecordingHasVideo = false;
+        }
+        if (state.currentRecordingId === targetId) {
+            state.currentRecordingId = null;
+            state.currentRecordingHasVideo = false;
+            if (!state.isRecording) {
+                state.audioBlob = null;
+                state.videoBlob = null;
+            }
+        }
+        if (options?.closeModal !== false) {
+            state.videoModal?.close?.();
+            state.audioModal?.close?.();
+        }
+        updateButton();
+        return true;
+    }
+
     function buildAudioStream({ micStream, systemStream }) {
         stopAudioMix();
         const micTracks = micStream?.getAudioTracks?.() || [];
@@ -2051,6 +2087,8 @@
             const recording = {
                 id: recordId,
                 type: "voice-recording",
+                memoId: memoId || null,
+                documentId: state.recordingDocumentId || null,
                 audioBlob: state.audioBlob,
                 videoBlob: state.videoBlob || null,
                 audioTranscript: audioText,
@@ -2099,6 +2137,8 @@
             const fallbackRecording = {
                 id: recordId,
                 type: "voice-recording",
+                memoId: memoId || null,
+                documentId: state.recordingDocumentId || null,
                 audioBlob: state.audioBlob,
                 videoBlob: state.videoBlob || null,
                 audioTranscript: "",
@@ -2136,7 +2176,7 @@
     }
 
     async function openRecordingPlayer() {
-        const recordingId = state.currentMemoRecordingId || state.currentRecordingId;
+        const recordingId = state.currentMemoRecordingId;
         if (!recordingId || !RECORDINGS_STORE) return;
         const recording = await RECORDINGS_STORE.get(recordingId);
         if (!recording) {
@@ -2149,21 +2189,19 @@
         const memoName = state.currentMemoName || state.recordingMemoName || "";
         const handleDelete = async () => {
             if (!confirm("Supprimer cet enregistrement ?")) return;
-            try {
-                await RECORDINGS_STORE.remove(recording.id);
-            } catch (err) {
-                console.warn("Recording delete failed", err);
-            }
-            if (state.currentMemoId) {
-                setRecordingForMemo(state.currentMemoId, null);
-            }
-            state.currentMemoRecordingId = null;
-            state.currentMemoRecordingHasVideo = false;
-            if (!state.isRecording || state.currentMemoId === state.recordingMemoId) {
-                state.currentRecordingId = null;
-                state.currentRecordingHasVideo = false;
-            }
-            updateButton();
+            const resolvedMemoId = String(
+                recording.memoId
+                || (window.GoToolkitMemoVoice?.findMemoIdByRecordingId
+                    ? window.GoToolkitMemoVoice.findMemoIdByRecordingId(recording.id)
+                    : "")
+                || ""
+            ).trim();
+            const deleted = await deleteRecordingById(recording.id, {
+                memoId: resolvedMemoId,
+                closeModal: false
+            });
+            if (!deleted) return;
+            return true;
         };
         const copyToClipboard = async text => {
             try {
@@ -2243,8 +2281,8 @@
                     }
                 },
                 onDelete: async () => {
-                    await handleDelete();
-                    state.videoModal?.close();
+                    const deleted = await handleDelete();
+                    if (deleted) state.videoModal?.close();
                 }
             });
             state.videoModal.startPlayback();
@@ -2269,8 +2307,8 @@
                 memoName,
                 onTranscriptChange: state.audioModal.onTranscriptChange,
                 onDelete: async () => {
-                    await handleDelete();
-                    state.audioModal?.close();
+                    const deleted = await handleDelete();
+                    if (deleted) state.audioModal?.close();
                 }
             });
         }
@@ -2285,7 +2323,7 @@
             }
             return;
         }
-        if (state.currentMemoRecordingId || state.currentRecordingId) {
+        if (state.currentMemoRecordingId) {
             openRecordingPlayer();
             return;
         }
@@ -2501,6 +2539,7 @@
         getCurrentState,
         setCurrentMemo,
         getCurrentRecording,
+        deleteRecordingById,
         setRecordingForMemo,
         getRecordingForMemo,
         destroy
