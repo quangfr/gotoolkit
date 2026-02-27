@@ -19,6 +19,11 @@ const ALLOWED_ASSET_MIME_TYPES = new Set([
   "application/x-gotoolkit-e2ee+json",
   "application/json"
 ]);
+const DEFAULT_ALLOWED_ORIGINS = Object.freeze([
+  "https://gotoolkit.fr",
+  "https://www.gotoolkit.fr",
+  "https://gotoolkit.workers.dev"
+]);
 const SYNC_REPLAY_TTL_SECONDS = 10 * 60;
 const SYNC_SKEW_MS = 10 * 60 * 1000;
 const MAX_ASSET_BYTES = 25 * 1024 * 1024;
@@ -356,13 +361,26 @@ async function sha256Hex(bytes) {
   return bytesToHex(new Uint8Array(hash));
 }
 
+function normalizeOriginValue(value) {
+  const candidate = String(value || "").trim();
+  if (!candidate) return "";
+  try {
+    return new URL(candidate).origin;
+  } catch {
+    return candidate.replace(/\/+$/, "");
+  }
+}
+
 function parseAllowedOrigins(env) {
-  const raw = env?.SHARE_ALLOWED_ORIGINS;
-  if (!raw) return [];
-  return raw
+  const fromEnv = String(env?.SHARE_ALLOWED_ORIGINS || "")
     .split(",")
-    .map(origin => origin.trim())
+    .map(origin => normalizeOriginValue(origin))
     .filter(Boolean);
+  const merged = new Set([
+    ...DEFAULT_ALLOWED_ORIGINS.map(origin => normalizeOriginValue(origin)),
+    ...fromEnv
+  ]);
+  return Array.from(merged);
 }
 
 function isLocalAllowedOrigin(origin) {
@@ -372,7 +390,7 @@ function isLocalAllowedOrigin(origin) {
 
 function corsHeaders(request, env) {
   const allowedOrigins = parseAllowedOrigins(env);
-  const origin = request.headers.get("Origin");
+  const origin = normalizeOriginValue(request.headers.get("Origin"));
   const isLocalhost = isLocalAllowedOrigin(origin);
   const isExplicitlyAllowed = Boolean(origin && allowedOrigins.includes(origin));
   const allowOrigin = isLocalhost || isExplicitlyAllowed;
@@ -408,7 +426,7 @@ function errorResponse(message, status, request, env) {
 }
 
 function isOriginAllowed(request, env) {
-  const origin = String(request.headers.get("Origin") || "").trim();
+  const origin = normalizeOriginValue(request.headers.get("Origin"));
   if (!origin) return false;
   if (isLocalAllowedOrigin(origin)) return true;
   const allowedOrigins = parseAllowedOrigins(env);
