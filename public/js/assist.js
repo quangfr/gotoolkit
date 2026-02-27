@@ -102,7 +102,9 @@
                 };
 
                 testReq.onupgradeneeded = () => {
-                    // Upgrade triggered; allow onsuccess to handle health check.
+                    // Opening after cleared local site data triggers an upgrade path.
+                    // Surface repair/reset status immediately so UI feedback appears sooner.
+                    emitDocumentsDbStatus("repairing");
                 };
 
                 testReq.onsuccess = () => {
@@ -8798,25 +8800,26 @@
     };
 
     AssistSidebar.prototype.fetchContentManifest = function () {
-        try {
-            const url = new URL("content/files.json", window.location.href);
-            url.searchParams.set("v", this.getVersionParam());
-            return fetch(url.toString(), { cache: "no-cache" })
-                .then(function (response) {
-                    if (!response.ok) {
-                        console.warn("Failed to fetch files.json", response.status);
-                        return [];
-                    }
-                    return response.json();
-                })
-                .catch(function (err) {
-                    console.error("files.json fetch error", err);
-                    return [];
-                });
-        } catch (err) {
-            console.error("files.json manifest URL error", err);
-            return Promise.resolve([]);
-        }
+        return Promise.resolve([
+            {
+                name: "Guide Docs & Assist",
+                abstract: "Documentation technique exhaustive de l'architecture docs/assist.",
+                path: "content/toolkit_guide.md",
+                updatedAt: "2026-01-21T10:00:00Z"
+            },
+            {
+                name: "Notes de version",
+                abstract: "Historique des évolutions et correctifs.",
+                path: "content/index_releases.md",
+                updatedAt: ""
+            },
+            {
+                name: "Roadmap",
+                abstract: "Feuille de route en cours.",
+                path: "content/index_roadmap.md",
+                updatedAt: ""
+            }
+        ]);
     };
 
     AssistSidebar.prototype.loadKnowledgeManifest = async function () {
@@ -8864,14 +8867,7 @@
 
     AssistSidebar.prototype.fetchCurrentManifest = async function () {
         try {
-            const url = new URL("content/files.json", window.location.href);
-            url.searchParams.set("v", this.getVersionParam());
-            const response = await fetch(url.toString(), { cache: "no-cache" });
-            if (!response.ok) {
-                console.warn("Current manifest fetch failed", response.status);
-                return [];
-            }
-            const manifest = await response.json();
+            const manifest = await this.fetchContentManifest();
             if (!Array.isArray(manifest)) return [];
             var entries = manifest
                 .map(function (entry) {

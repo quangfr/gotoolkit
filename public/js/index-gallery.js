@@ -110,10 +110,7 @@
     async function getSuperpowersCatalog() {
         if (superpowersCatalog) return superpowersCatalog;
         try {
-            let resp = await fetch('content/category.json');
-            if (!resp.ok) {
-                resp = await fetch('content/superpowers.json');
-            }
+            const resp = await fetch('content/category.json');
             if (resp.ok) {
                 const payload = await resp.json();
                 if (Array.isArray(payload)) {

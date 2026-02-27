@@ -4,7 +4,7 @@
             id: "default",
             label: "🕊️ Guide rapide",
             description: "Aperçu des fonctionnalités avancées de GoToolkit",
-            path: "content/default_template.md"
+            path: "content/toolkit_guide.md"
         }
     ];
 

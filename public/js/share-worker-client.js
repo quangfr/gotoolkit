@@ -963,7 +963,7 @@
     });
   }
 
-  async function fetchSharePayloadBatch(collection, ids) {
+  async function fetchSharePayloadBatch(collection, ids, options = {}) {
     assertReady();
     const normalizedIds = Array.isArray(ids)
       ? ids.map(id => String(id || "").trim()).filter(Boolean)
@@ -991,6 +991,7 @@
       }
       const data = await response.json().catch(() => ({ documents: [] }));
       const docs = Array.isArray(data?.documents) ? data.documents : [];
+      const shouldHydrateAssets = options?.hydrateAssets !== false;
       const hydratedDocs = await Promise.all(docs.map(async doc => {
         const payload = doc?.payload || null;
         const decryptedPayload = await decryptPagePayload(payload, collection).catch(err => {
@@ -998,7 +999,7 @@
           return payload;
         });
         const resolvedPayload = await resolvePagePayloadReference(base, collection, decryptedPayload);
-        const hydratedPayload = resolvedPayload && (collection === "pages")
+        const hydratedPayload = shouldHydrateAssets && resolvedPayload && (collection === "pages")
           ? await hydratePayloadAssetUrls(resolvedPayload, base, {
             spaceId: String(resolvedPayload?.spaceId || decryptedPayload?.spaceId || payload?.spaceId || "golive").trim().toLowerCase()
           })
@@ -1012,6 +1013,81 @@
       return {
         count: Number(data?.count || normalizedIds.length),
         documents: hydratedDocs
+      };
+    });
+  }
+
+  function collectAssetIdsFromPayload(payload) {
+    const ids = new Set();
+    const walk = value => {
+      if (typeof value === "string") {
+        for (const m of value.matchAll(/\/v1\/assets\/([A-Za-z0-9_-]+)/g)) ids.add(m[1]);
+        for (const m of value.matchAll(/data-gt-asset-id=["']([A-Za-z0-9_-]+)["']/g)) ids.add(m[1]);
+        return;
+      }
+      if (Array.isArray(value)) {
+        value.forEach(walk);
+        return;
+      }
+      if (value && typeof value === "object") {
+        Object.values(value).forEach(walk);
+      }
+    };
+    walk(payload);
+    return Array.from(ids);
+  }
+
+  async function prefetchAssets(assetIds, options = {}) {
+    assertReady();
+    const normalizedIds = Array.isArray(assetIds)
+      ? Array.from(new Set(assetIds.map(id => String(id || "").trim()).filter(Boolean)))
+      : [];
+    if (!normalizedIds.length) {
+      return { count: 0, prefetched: 0, failed: 0 };
+    }
+    const spaceId = String(options?.spaceId || "golive").trim().toLowerCase() || "golive";
+    return withWorkerFallback(async base => {
+      let prefetched = 0;
+      let failed = 0;
+      for (const assetId of normalizedIds) {
+        const key = `${base}::${spaceId}::${assetId}`;
+        if (assetBlobCache.has(key)) continue;
+        try {
+          const assetUrl = buildAssetUrl(base, assetId);
+          const resolved = await resolveAssetBlobUrl(base, assetUrl, spaceId);
+          if (resolved && resolved !== assetUrl) {
+            prefetched += 1;
+          }
+        } catch (err) {
+          failed += 1;
+        }
+      }
+      return { count: normalizedIds.length, prefetched, failed };
+    });
+  }
+
+  async function materializePayloadAssets(collection, payload, options = {}) {
+    assertReady();
+    if (!payload || typeof payload !== "object") {
+      return { payload, changed: false, uploadedAssets: 0 };
+    }
+    return withWorkerFallback(async base => {
+      const spaceId = resolveSpaceIdForPayload(payload, options);
+      const before = JSON.stringify(payload || {});
+      const processed = await processPayloadInlineAssets(payload, base, {
+        assetScope: options.assetScope || collection,
+        collection,
+        spaceId
+      });
+      const after = JSON.stringify(processed || {});
+      const changed = before !== after;
+      const uploadedAssets = changed
+        ? Math.max(0, collectAssetIdsFromPayload(processed).length - collectAssetIdsFromPayload(payload).length)
+        : 0;
+      return {
+        payload: processed,
+        changed,
+        uploadedAssets
       };
     });
   }
@@ -1208,6 +1284,8 @@
     deleteSharePayloadBatch,
     saveSharePayload,
     saveSharePayloadBatch,
+    materializePayloadAssets,
+    prefetchAssets,
     deleteSharePayload,
     listShares,
     listShareTree,

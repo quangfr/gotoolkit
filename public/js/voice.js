@@ -10,7 +10,7 @@
         : null;
     const CLICK_HIGHLIGHT_DURATION_MS = 420;
     const CLICK_HIGHLIGHT_RADIUS_PX = 26;
-    const CLICK_HIGHLIGHT_Y_OFFSET_PX = 6;
+    const CLICK_HIGHLIGHT_Y_OFFSET_PX = 12;
     const RECORDING_BEFORE_UNLOAD_MESSAGE = "Un enregistrement est en cours. Voulez-vous vraiment quitter ?";
 
     const state = {
@@ -1115,7 +1115,7 @@
 
         const onPointerDown = event => {
             if (!state.isRecording) return;
-            if (event.button !== 0) return;
+            if (event.button !== 0 && event.button !== 2) return;
             addClickHighlight(event.clientX, event.clientY);
         };
         window.addEventListener("pointerdown", onPointerDown, true);

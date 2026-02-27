@@ -219,7 +219,7 @@
                     </div>
                 </div>
                 <div class="feedback-actions" style="margin-top: auto;">
-                    <button id="refreshCacheBtn" type="button" class="btn-secondary" title="Réparer">Réparer</button>
+                    <button id="refreshCacheBtn" type="button" class="btn-secondary" title="Reset">Reset</button>
                     <div style="flex: 1;"></div>
                     <button id="resetPromptBtn" type="button" class="btn-secondary" hidden><i data-lucide="rotate-ccw"
                             style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i>Réinitialiser</button>
@@ -233,7 +233,6 @@
     const CATEGORY_SETTINGS_STORAGE_KEY = "go-toolkit-category-settings.v1";
     const CATEGORY_SETTINGS_CHANGE_EVENT = "go-toolkit:categories-changed";
     const CATEGORY_DEFAULTS_URL = "content/category.json";
-    const CATEGORY_LEGACY_URL = "content/superpowers.json";
     const CATEGORY_ICON_CHOICES = Array.from(new Set(`
         tag tags star flag compass map brain book-type clapperboard wand-2 database
         file file-text folder folder-open briefcase chart-column chart-line
@@ -338,13 +337,6 @@
         try {
             const payload = await tryFetch(CATEGORY_DEFAULTS_URL);
             const normalized = normalizeCategoryTemplatesPayload(payload);
-            if (normalized.templates.length) return normalized;
-        } catch (err) {
-            // fallback below
-        }
-        try {
-            const legacy = await tryFetch(CATEGORY_LEGACY_URL);
-            const normalized = normalizeCategoryTemplatesPayload(legacy);
             if (normalized.templates.length) return normalized;
         } catch (err) {
             // fallback below
@@ -511,10 +503,25 @@
 
     async function performFullReset() {
         try {
-            const databases = ["go-toolkit", "gotoolkit-documents"];
-            databases.forEach(dbName => {
-                try { indexedDB.deleteDatabase(dbName); } catch (err) { /* noop */ }
-            });
+            if (indexedDB && typeof indexedDB.databases === "function") {
+                const allDbs = await indexedDB.databases();
+                const names = Array.isArray(allDbs) ? allDbs.map(db => db && db.name).filter(Boolean) : [];
+                await Promise.all(names.map(dbName => {
+                    return new Promise(resolve => {
+                        try {
+                            const req = indexedDB.deleteDatabase(dbName);
+                            req.onsuccess = req.onerror = req.onblocked = () => resolve();
+                        } catch (err) {
+                            resolve();
+                        }
+                    });
+                }));
+            } else {
+                const databases = ["go-toolkit", "gotoolkit-documents"];
+                databases.forEach(dbName => {
+                    try { indexedDB.deleteDatabase(dbName); } catch (err) { /* noop */ }
+                });
+            }
         } catch (err) { /* noop */ }
 
         try { localStorage.clear(); } catch (err) { /* noop */ }
@@ -529,16 +536,42 @@
             });
         } catch (err) { /* noop */ }
 
-        const today = new Date();
-        const version = `${today.getFullYear()}.${String(today.getMonth() + 1).padStart(2, "0")}.${String(today.getDate()).padStart(2, "0")}.1`;
-        const targetUrl = "/?v=" + version;
+        const version = resolveCurrentVersion();
+        const targetUrl = version ? "/?v=" + encodeURIComponent(version) : "/";
         if ("caches" in global) {
             try {
                 const names = await caches.keys();
                 await Promise.all(names.map(name => caches.delete(name)));
             } catch (err) { /* noop */ }
         }
+        if (global.navigator?.serviceWorker && typeof global.navigator.serviceWorker.getRegistrations === "function") {
+            try {
+                const registrations = await global.navigator.serviceWorker.getRegistrations();
+                await Promise.all(registrations.map(reg => reg.unregister()));
+            } catch (err) { /* noop */ }
+        }
         global.location.href = targetUrl;
+    }
+
+    function resolveCurrentVersion() {
+        try {
+            const url = new URL(global.location.href);
+            const fromQuery = (url.searchParams.get("v") || "").trim();
+            if (fromQuery) return fromQuery;
+        } catch (err) { /* noop */ }
+
+        try {
+            const scripts = Array.from(doc.querySelectorAll("script[src]"));
+            for (const script of scripts) {
+                const src = script.getAttribute("src");
+                if (!src) continue;
+                const parsed = new URL(src, global.location.href);
+                const value = (parsed.searchParams.get("v") || "").trim();
+                if (value) return value;
+            }
+        } catch (err) { /* noop */ }
+
+        return "";
     }
 
     function bindRepairButton() {

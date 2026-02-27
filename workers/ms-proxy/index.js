@@ -361,6 +361,10 @@ function renderOAuthCallbackPage(ok, message, targetOrigin) {
 async function handleOAuthStart(request, env) {
   const url = new URL(request.url);
   const origin = (url.searchParams.get("origin") || "").trim();
+  if (!env?.OAUTH_DB) {
+    console.warn("microsoft oauth start failed: missing OAUTH_DB binding");
+    return new Response("OAuth state storage unavailable: missing OAUTH_DB binding", { status: 500 });
+  }
   const sessionId = getSessionIdFromRequest(request) || generateOpaqueSessionId();
   const targetOrigin = normalizeTargetOrigin(origin);
   const nonce = generateOAuthNonce();
@@ -370,7 +374,7 @@ async function handleOAuthStart(request, env) {
     issuedAt: Date.now()
   });
   if (!stateStored) {
-    return new Response("OAuth state storage unavailable", { status: 500 });
+    return new Response("OAuth state storage unavailable: failed to persist state in D1 (microsoft)", { status: 500 });
   }
 
   const state = encodeState({ nonce });

@@ -12,6 +12,10 @@
         "https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/+esm",
         "https://unpkg.com/@ffmpeg/util@0.12.1/dist/esm/index.js"
     ];
+    const FFMPEG_WRAPPER_WORKER_URLS = [
+        "https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/worker.js",
+        "https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/esm/worker.js"
+    ];
     const FFMPEG_CORE_BASE_URLS = [
         "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/esm",
         "https://unpkg.com/@ffmpeg/core@0.12.10/dist/esm"
@@ -585,6 +589,7 @@
                                         <button type="button" class="voice-video-player-download-option" data-download-format="video-webm">Vidéo WebM</button>
                                         <button type="button" class="voice-video-player-download-option" data-download-format="video-mp4">Vidéo MP4</button>
                                         <button type="button" class="voice-video-player-download-option" data-download-format="gif">Gif</button>
+                                        <button type="button" class="voice-video-player-download-option" data-download-format="vtt">Sous-titres VTT</button>
                                     </div>
                                 </div>
                                 <button type="button" class="voice-video-player-cut" title="Couper" aria-label="Couper"><i data-lucide="scissors"></i></button>
@@ -626,6 +631,7 @@
             this.downloadVideoWebmOption = this.overlay.querySelector('[data-download-format="video-webm"]');
             this.downloadVideoMp4Option = this.overlay.querySelector('[data-download-format="video-mp4"]');
             this.downloadGifOption = this.overlay.querySelector('[data-download-format="gif"]');
+            this.downloadVttOption = this.overlay.querySelector('[data-download-format="vtt"]');
             this.cutButton = this.overlay.querySelector(".voice-video-player-cut");
             this.playToggle = this.overlay.querySelector(".voice-video-player-play-toggle");
             this.speedSelect = this.overlay.querySelector(".voice-video-player-speed");
@@ -677,6 +683,7 @@
                 this.downloadVideoWebmOption && (this.downloadVideoWebmOption.disabled = true);
                 this.downloadVideoMp4Option && (this.downloadVideoMp4Option.disabled = true);
                 this.downloadGifOption && (this.downloadGifOption.disabled = true);
+                this.downloadVttOption && (this.downloadVttOption.disabled = true);
             } else {
                 this.downloadButton.disabled = false;
                 this.downloadButton.removeAttribute("aria-busy");
@@ -684,6 +691,7 @@
                 this.downloadVideoWebmOption && (this.downloadVideoWebmOption.disabled = false);
                 this.downloadVideoMp4Option && (this.downloadVideoMp4Option.disabled = false);
                 this.downloadGifOption && (this.downloadGifOption.disabled = false);
+                this.downloadVttOption && (this.downloadVttOption.disabled = false);
             }
             this._updateConversionBadges();
             this._refreshDropdownStatusesIfOpen();
@@ -744,6 +752,11 @@
                 if (this._gifDownloading) return;
                 this._closeDownloadDropdown();
                 await this._handleDownloadGif();
+            });
+            this.downloadVttOption?.addEventListener("click", async () => {
+                if (this._gifDownloading) return;
+                this._closeDownloadDropdown();
+                await this._handleDownloadVtt();
             });
             window.addEventListener("go-toolkit:voice-recording-speed-changed", event => {
                 const nextSpeed = normalizeVoiceRecordingSpeed(event?.detail?.speed);
@@ -923,6 +936,57 @@
             const vttBlob = new Blob([vtt], { type: "text/vtt" });
             const vttFilename = this._buildSidecarVttFilename(videoFilename);
             return this._triggerBlobDownload(vttBlob, vttFilename);
+        }
+
+        async _handleDownloadVtt() {
+            const videoFilename = this._buildExportFilename("webm", this._hasCutRange());
+            const triggered = this._triggerVttSidecarDownload(videoFilename);
+            if (!triggered) {
+                this._showToast("Téléchargement bloqué par le navigateur", true);
+                return;
+            }
+            this._showToast("Sous-titres VTT téléchargés");
+        }
+
+        async _buildWebmWithEmbeddedVtt(videoBlob, options = {}) {
+            if (!(videoBlob instanceof Blob) || videoBlob.size <= 0) return null;
+            const vtt = this._buildVttFromSentences({ relativeToCut: Boolean(options.relativeToCut) });
+            if (!vtt) return null;
+            const ffmpeg = await this._ensureFfmpegLib();
+            const stamp = `${Date.now()}-${Math.round(Math.random() * 1e6)}`;
+            const inputName = `input-${stamp}.webm`;
+            const subtitleName = `subs-${stamp}.vtt`;
+            const outputName = `output-${stamp}.webm`;
+            try {
+                await ffmpeg.writeFile(inputName, new Uint8Array(await videoBlob.arrayBuffer()));
+                await ffmpeg.writeFile(subtitleName, new TextEncoder().encode(vtt));
+                const rc = await ffmpeg.exec([
+                    "-i", inputName,
+                    "-i", subtitleName,
+                    "-map", "0:v:0",
+                    "-map", "0:a?",
+                    "-map", "1:0",
+                    "-c:v", "copy",
+                    "-c:a", "copy",
+                    "-c:s", "webvtt",
+                    "-metadata:s:s:0", "language=fra",
+                    "-disposition:s:0", "default",
+                    outputName
+                ]);
+                if (Number(rc) !== 0) return null;
+                const outputData = await ffmpeg.readFile(outputName);
+                const bytes = outputData instanceof Uint8Array
+                    ? outputData
+                    : new Uint8Array(outputData?.buffer || outputData || []);
+                if (!bytes.length) return null;
+                return new Blob([bytes], { type: "video/webm" });
+            } catch (err) {
+                return null;
+            } finally {
+                try { await ffmpeg.deleteFile(inputName); } catch (err) { /* noop */ }
+                try { await ffmpeg.deleteFile(subtitleName); } catch (err) { /* noop */ }
+                try { await ffmpeg.deleteFile(outputName); } catch (err) { /* noop */ }
+            }
         }
 
         async _prepareSaveTarget(ext, isCut = false) {
@@ -1375,10 +1439,11 @@
                         const coreURL = await toBlobURL(`${baseUrl}/ffmpeg-core.js`, "text/javascript");
                         // eslint-disable-next-line no-await-in-loop
                         const wasmURL = await toBlobURL(`${baseUrl}/ffmpeg-core.wasm`, "application/wasm");
+                        const workerSource = FFMPEG_WRAPPER_WORKER_URLS[Math.min(i, FFMPEG_WRAPPER_WORKER_URLS.length - 1)];
                         // eslint-disable-next-line no-await-in-loop
-                        const workerURL = await toBlobURL(`${baseUrl}/ffmpeg-core.worker.js`, "text/javascript");
+                        const classWorkerURL = await toBlobURL(workerSource, "text/javascript");
                         // eslint-disable-next-line no-await-in-loop
-                        await this._ffmpeg.load({ coreURL, wasmURL, workerURL });
+                        await this._ffmpeg.load({ classWorkerURL, coreURL, wasmURL });
                         return this._ffmpeg;
                     } catch (err) {
                         loadError = err;
@@ -1738,24 +1803,27 @@
 
         async _handleDownloadVideoWebm() {
             if (!this.videoBlobOriginal) return;
-            const blobExt = ((this.videoBlobOriginal.type || "").includes("mp4")) ? "mp4" : "webm";
-            const saveTarget = await this._prepareSaveTarget(blobExt, this._hasCutRange());
+            const saveTarget = await this._prepareSaveTarget("webm", this._hasCutRange());
             if (saveTarget?.aborted) return;
-            const blob = await this._getOutputBlob().catch(() => this.videoBlobOriginal);
-            if (!blob) return;
-            const ext = (blob.type || "").includes("webm") ? "webm" : ((blob.type || "").includes("mp4") ? "mp4" : "webm");
+            const baseBlob = await this._getOutputBlob().catch(() => this.videoBlobOriginal);
+            if (!baseBlob) return;
+            let blob = baseBlob;
+            try {
+                const embeddedBlob = await this._buildWebmWithEmbeddedVtt(baseBlob, { relativeToCut: this._hasCutRange() });
+                if (embeddedBlob) blob = embeddedBlob;
+            } catch (err) {
+                // Best effort: keep plain WEBM download if subtitle muxing fails.
+            }
             const savedViaHandle = await this._writeBlobToSaveTarget(saveTarget, blob);
             const triggered = savedViaHandle || this._triggerBlobDownload(
                 blob,
-                saveTarget?.suggestedName || this._buildExportFilename(ext, this._hasCutRange())
+                saveTarget?.suggestedName || this._buildExportFilename("webm", this._hasCutRange())
             );
             if (!triggered) {
                 this._showToast("Téléchargement bloqué par le navigateur", true);
                 return;
             }
-            const videoFilename = saveTarget?.suggestedName || this._buildExportFilename(ext, this._hasCutRange());
-            this._triggerVttSidecarDownload(videoFilename);
-            this._showToast("Vidéo WebM téléchargée");
+            this._showToast(blob === baseBlob ? "Vidéo WebM téléchargée" : "Vidéo WebM téléchargée (sous-titres intégrés)");
         }
 
         async _handleDownloadVideoMp4() {
@@ -1798,8 +1866,6 @@
                     this._showToast("Téléchargement bloqué par le navigateur", true);
                     return;
                 }
-                const videoFilename = saveTarget?.suggestedName || this._buildExportFilename("mp4", this._hasCutRange());
-                this._triggerVttSidecarDownload(videoFilename);
                 this._showToast("Vidéo MP4 téléchargée");
             } catch (err) {
                 this._showToast("Conversion MP4 impossible sur ce navigateur", true);

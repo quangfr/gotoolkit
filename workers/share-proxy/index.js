@@ -20,12 +20,17 @@ const ALLOWED_ASSET_MIME_TYPES = new Set([
   "application/x-gotoolkit-e2ee+json",
   "application/json"
 ]);
-const SYNC_REPLAY_TTL_SECONDS = 15 * 60;
+const SYNC_REPLAY_TTL_SECONDS = 10 * 60;
 const SYNC_SKEW_MS = 10 * 60 * 1000;
 const MAX_ASSET_BYTES = 25 * 1024 * 1024;
+const LOCAL_SYNC_REVOKE_CACHE_TTL_MS = 60 * 1000;
+const LOCAL_SYNC_JTI_CACHE_TTL_MS = 2 * 60 * 1000;
+const LOCAL_SYNC_CACHE_MAX_ENTRIES = 5000;
 let serviceAccountConfig = null;
 let signingKeyPromise = null;
 let accessTokenCache = { token: null, expiresAt: 0 };
+const syncSessionRevokedCache = new Map();
+const syncReplayLocalCache = new Map();
 
 const textEncoder = new TextEncoder();
 
@@ -397,12 +402,52 @@ function isSyncProtectionEnabled(env) {
   return String(env?.SHARE_SYNC_ENFORCE || "").trim() === "1";
 }
 
+function shouldCheckSyncRevoke(env) {
+  return String(env?.SHARE_SYNC_CHECK_REVOKE || "").trim() === "1";
+}
+
 function getSyncReplayStore(env) {
   const kv = env?.SYNC_REPLAY_KV;
   if (!kv || typeof kv.get !== "function" || typeof kv.put !== "function") {
     return null;
   }
   return kv;
+}
+
+function getLocalSyncRevokeCacheTtlMs(env) {
+  const configured = Number(env?.SHARE_SYNC_REVOKE_CACHE_TTL_MS || 0);
+  if (Number.isFinite(configured) && configured > 0) {
+    return Math.max(5 * 1000, Math.min(10 * 60 * 1000, Math.floor(configured)));
+  }
+  return LOCAL_SYNC_REVOKE_CACHE_TTL_MS;
+}
+
+function getLocalSyncJtiCacheTtlMs(env) {
+  const configured = Number(env?.SHARE_SYNC_LOCAL_JTI_CACHE_TTL_MS || 0);
+  if (Number.isFinite(configured) && configured > 0) {
+    return Math.max(5 * 1000, Math.min(10 * 60 * 1000, Math.floor(configured)));
+  }
+  return LOCAL_SYNC_JTI_CACHE_TTL_MS;
+}
+
+function trimCacheMap(cache, now, maxEntries) {
+  for (const [key, expiresAt] of cache.entries()) {
+    if (!Number.isFinite(expiresAt) || expiresAt <= now) {
+      cache.delete(key);
+    }
+  }
+  if (cache.size <= maxEntries) {
+    return;
+  }
+  const overflow = cache.size - maxEntries;
+  let removed = 0;
+  for (const key of cache.keys()) {
+    cache.delete(key);
+    removed += 1;
+    if (removed >= overflow) {
+      break;
+    }
+  }
 }
 
 function readSyncEnvelope(request) {
@@ -445,18 +490,44 @@ async function enforceSyncEnvelope(request, env, context) {
     return errorResponse("Horodatage sync invalide", 401, request, env);
   }
 
-  const revokedKey = `sync:revoked:${envelope.sessionId}`;
-  const revoked = await kv.get(revokedKey);
-  if (revoked) {
-    return errorResponse("Session sync révoquée", 403, request, env);
+  if (shouldCheckSyncRevoke(env)) {
+    const revokedKey = `sync:revoked:${envelope.sessionId}`;
+    const nowTs = Date.now();
+    const revokeCacheTtlMs = getLocalSyncRevokeCacheTtlMs(env);
+    const cachedRevokeExpiry = Number(syncSessionRevokedCache.get(revokedKey) || 0);
+    if (cachedRevokeExpiry > nowTs) {
+      return errorResponse("Session sync révoquée", 403, request, env);
+    }
+    if (cachedRevokeExpiry) {
+      syncSessionRevokedCache.delete(revokedKey);
+    }
+    const revoked = await kv.get(revokedKey);
+    if (revoked) {
+      syncSessionRevokedCache.set(revokedKey, nowTs + revokeCacheTtlMs);
+      trimCacheMap(syncSessionRevokedCache, nowTs, LOCAL_SYNC_CACHE_MAX_ENTRIES);
+      return errorResponse("Session sync révoquée", 403, request, env);
+    }
   }
 
   if (context.operation !== "read") {
+    const nowTs = Date.now();
+    const jtiCacheTtlMs = getLocalSyncJtiCacheTtlMs(env);
     const replayKey = `sync:replay:${envelope.sessionId}:${envelope.jti}`;
-    const seen = await kv.get(replayKey);
-    if (seen) {
+    const cachedReplayExpiry = Number(syncReplayLocalCache.get(replayKey) || 0);
+    if (cachedReplayExpiry > nowTs) {
       return errorResponse("Requête rejouée", 409, request, env);
     }
+    if (cachedReplayExpiry) {
+      syncReplayLocalCache.delete(replayKey);
+    }
+    const seen = await kv.get(replayKey);
+    if (seen) {
+      syncReplayLocalCache.set(replayKey, nowTs + jtiCacheTtlMs);
+      trimCacheMap(syncReplayLocalCache, nowTs, LOCAL_SYNC_CACHE_MAX_ENTRIES);
+      return errorResponse("Requête rejouée", 409, request, env);
+    }
+    syncReplayLocalCache.set(replayKey, nowTs + jtiCacheTtlMs);
+    trimCacheMap(syncReplayLocalCache, nowTs, LOCAL_SYNC_CACHE_MAX_ENTRIES);
     await kv.put(
       replayKey,
       JSON.stringify({
@@ -1209,6 +1280,7 @@ async function handleRequest(request, env) {
     if (controlPath.action === "sync:revoke") {
       const ttl = Math.max(60, Math.min(7 * 24 * 60 * 60, Number(body?.ttlSeconds || 24 * 60 * 60) || 24 * 60 * 60));
       await kv.put(revokedKey, JSON.stringify({ revokedAt: new Date().toISOString() }), { expirationTtl: ttl });
+      syncSessionRevokedCache.set(revokedKey, Date.now() + getLocalSyncRevokeCacheTtlMs(env));
       return jsonResponse({ ok: true, sessionId, revoked: true, ttlSeconds: ttl }, 200, request, env);
     }
     if (typeof kv.delete === "function") {
@@ -1216,6 +1288,7 @@ async function handleRequest(request, env) {
     } else {
       await kv.put(revokedKey, "", { expirationTtl: 1 });
     }
+    syncSessionRevokedCache.delete(revokedKey);
     return jsonResponse({ ok: true, sessionId, revoked: false }, 200, request, env);
   }
 

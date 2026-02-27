@@ -86,7 +86,7 @@ Chez GoToolkit, on ne plaisante pas avec tes données :
 
 ## 6. Un petit souci ? 🛠️
 
-*  Le Toolkit est encore en **beta**. Si quelque chose ne fonctionne pas, utilise le bouton **Réparer** dans **Document 📄> Aide**. Attention : cela réinitialise l'application et **efface tes données locales** !
+*  Le Toolkit est encore en **beta**. Si quelque chose ne fonctionne pas, utilise le bouton **Reset** dans **Document 📄> Aide**. Attention : cela réinitialise l'application et **efface tes données locales** !
 *  **Donner un feedback** : Utilise l’option **Feedback** pour signaler un bug ou proposer une amélioration.
 ---
 

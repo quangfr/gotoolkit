@@ -132,6 +132,7 @@ Only `public/js` may touch `window`:
 - Inspect `window.GoToolkit*`; local state in `localStorage` (`go-toolkit-*`) and IndexedDB (`go-toolkit`, `gotoolkit-documents`).
 - RAG state: IndexedDB stores `documents`, `chunks`, `memo_context_embeddings` (see `public/content/toolkit_import.md` for schema).
 - Assist state: `window.GoToolkitAssistInstance` exposes sidebar + chat API.
+- Private/cloud sync architecture + current Playwright coverage: `STORAGE_SYNC_PLAYWRIGHT.md`.
 - OAuth browser hooks: `public/js/config-modal.js` + `public/js/youtube-publish.js` orchestrate device-scoped OAuth start/callback/logout for Notion, YouTube, Gmail, and Microsoft.
 - Voice video export cache is persisted per recording (`videoExportCache`) and reused by `VoiceVideoPlayerModal`.
 - Do not edit `public/content/index_releases.md` or `public/content/index_roadmap.md` unless explicitly asked.
