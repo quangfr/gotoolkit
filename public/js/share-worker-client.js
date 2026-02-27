@@ -1038,24 +1038,24 @@
     return String(value || "").trim().toLowerCase().replace(/[^a-z0-9-]/g, "");
   }
 
-  async function getSpaceAuthToken(base, spaceId) {
+  async function authenticateSpaceWithCode(base, spaceId, spaceCodeRaw, options = {}) {
     const normalizedSpaceId = normalizeSpaceId(spaceId);
-    if (!normalizedSpaceId) return null;
-    const now = Date.now();
-    const cached = spaceAuthTokenCache.get(normalizedSpaceId);
-    if (cached && cached.token && Number(cached.expiresAt || 0) > now + 10_000) {
-      return cached.token;
+    const spaceCode = normalizeSpaceJoinCode(spaceCodeRaw);
+    if (!normalizedSpaceId || !spaceCode) return null;
+    const requestBody = {
+      spaceId: normalizedSpaceId,
+      spaceCode
+    };
+    if (options?.createIfMissing === true) {
+      requestBody.createIfMissing = true;
     }
-    const space = getSpaceById(normalizedSpaceId);
-    const spaceCode = normalizeSpaceJoinCode(space?.spaceJoinCode || "");
-    if (!spaceCode) return null;
     const response = await fetch(`${base}/${API_VERSION}/spaces/auth`, {
       method: "POST",
       headers: mergeSyncHeaders({
         "Content-Type": "application/json",
         Accept: "application/json"
       }),
-      body: JSON.stringify({ spaceId: normalizedSpaceId, spaceCode })
+      body: JSON.stringify(requestBody)
     });
     if (!response.ok) {
       const body = await response.text().catch(() => "");
@@ -1069,6 +1069,20 @@
     }
     spaceAuthTokenCache.set(normalizedSpaceId, { token, expiresAt });
     return token;
+  }
+
+  async function getSpaceAuthToken(base, spaceId) {
+    const normalizedSpaceId = normalizeSpaceId(spaceId);
+    if (!normalizedSpaceId) return null;
+    const now = Date.now();
+    const cached = spaceAuthTokenCache.get(normalizedSpaceId);
+    if (cached && cached.token && Number(cached.expiresAt || 0) > now + 10_000) {
+      return cached.token;
+    }
+    const space = getSpaceById(normalizedSpaceId);
+    const spaceCode = normalizeSpaceJoinCode(space?.spaceJoinCode || "");
+    if (!spaceCode) return null;
+    return authenticateSpaceWithCode(base, normalizedSpaceId, spaceCode);
   }
 
   async function rotateSpaceJoinCode(spaceId, currentSpaceCodeRaw, nextSpaceCodeRaw) {
@@ -1143,6 +1157,32 @@
     return Object.assign({}, headers || {}, {
       "X-Space-Id": spaceId,
       "X-Space-Auth": token
+    });
+  }
+
+  async function verifySpaceCredentials(spaceId, spaceCodeRaw) {
+    assertReady();
+    const normalizedSpaceId = normalizeSpaceId(spaceId);
+    const normalizedSpaceCode = normalizeSpaceJoinCode(spaceCodeRaw);
+    if (!normalizedSpaceId || !normalizedSpaceCode) {
+      throw new Error("spaceId et code d'accès requis");
+    }
+    return withWorkerFallback(async base => {
+      await authenticateSpaceWithCode(base, normalizedSpaceId, normalizedSpaceCode);
+      return { ok: true, spaceId: normalizedSpaceId };
+    });
+  }
+
+  async function createSpaceWithCredentials(spaceId, spaceCodeRaw) {
+    assertReady();
+    const normalizedSpaceId = normalizeSpaceId(spaceId);
+    const normalizedSpaceCode = normalizeSpaceJoinCode(spaceCodeRaw);
+    if (!normalizedSpaceId || !normalizedSpaceCode) {
+      throw new Error("spaceId et code d'accès requis");
+    }
+    return withWorkerFallback(async base => {
+      await authenticateSpaceWithCode(base, normalizedSpaceId, normalizedSpaceCode, { createIfMissing: true });
+      return { ok: true, spaceId: normalizedSpaceId };
     });
   }
 
@@ -1430,6 +1470,8 @@
     uploadAsset,
     deleteAsset,
     rotateSpaceJoinCode,
+    verifySpaceCredentials,
+    createSpaceWithCredentials,
     probePagePayloadJoinCode,
     buildAssetUrl: assetId => buildAssetUrl(workerBases[0], assetId)
   };

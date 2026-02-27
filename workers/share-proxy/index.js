@@ -367,7 +367,7 @@ function parseAllowedOrigins(env) {
 
 function isLocalAllowedOrigin(origin) {
   if (!origin) return false;
-  return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin);
+  return /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])(:\d+)?$/i.test(origin);
 }
 
 function corsHeaders(request, env) {
@@ -1396,12 +1396,16 @@ async function handleRequest(request, env) {
       });
     }
 
+    const createIfMissing = body?.createIfMissing === true;
     const spaceCode = normalizeSpaceJoinCode(body?.spaceCode || body?.spaceJoinCode || "");
     if (!spaceCode) {
       return errorResponse("spaceCode manquant", 400, request, env);
     }
     const codeHash = await sha256Hex(textEncoder.encode(`${spaceId}:${spaceCode}`));
     const existingHash = await readSpaceCodeHash(env, spaceId);
+    if (createIfMissing && existingHash) {
+      return errorResponse("Ce spaceId existe déjà", 409, request, env);
+    }
     if (existingHash && existingHash !== codeHash) {
       return errorResponse("Code espace invalide", 403, request, env);
     }
