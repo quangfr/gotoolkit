@@ -1,102 +1,122 @@
 # GoToolkit Security Audit
 
-Date: 2026-02-27
-Scope: `public/` frontend + `workers/` Cloudflare Workers
-Method: Static code review (source only)
+Date: 2026-02-27  
+Auditor: Static code audit (repository analysis)  
+Scope: `public/` frontend and `workers/` Cloudflare Workers
 
 ## Executive Summary
-Overall security level: **Moderate (Medium risk)**.
+Overall posture: **Medium risk**.
 
-Good security controls are present (OAuth state nonce, secure session cookies, rate limiting, sync anti-replay, optional E2EE). The main remaining high-risk issue is missing authentication/authorization on share data routes (including operational routes now treated as normal routes).
+The latest changes removed `openai-proxy`, removed the `openrouter-proxy` IP bypass, and tightened `feedback-proxy` CORS to explicit origin checks. Remaining risk is concentrated in worker proxies that still rely on CORS/origin checks as the primary gate and in incomplete CSP coverage on static pages.
 
-## Implemented Controls (Verified)
-- Sync anti-replay envelope (`X-Sync-Session`, `X-Sync-JTI`, `X-Sync-TS`) + KV replay tracking.
-  - [workers/share-proxy/index.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/workers/share-proxy/index.js#L475)
-- Write-path rate limiting in share and AI proxies.
-  - [workers/share-proxy/index.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/workers/share-proxy/index.js#L1202)
-  - [workers/openai-proxy/index.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/workers/openai-proxy/index.js#L73)
-  - [workers/openrouter-proxy/index.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/workers/openrouter-proxy/index.js#L78)
-- OAuth CSRF state nonce persisted/consumed server-side.
-  - [workers/notion-proxy/index.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/workers/notion-proxy/index.js#L199)
-- OAuth session cookies are `HttpOnly`, `Secure`, `SameSite=None`.
-  - [workers/gmail-proxy/index.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/workers/gmail-proxy/index.js#L116)
-- Share worker CORS tightened to explicit allowlist + localhost/127 dev; unknown origin returns `403`.
-  - [workers/share-proxy/index.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/workers/share-proxy/index.js#L379)
-  - [workers/share-proxy/index.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/workers/share-proxy/index.js#L1179)
+## Methodology
+- Manual static review of worker request gates (Origin/CORS/auth/rate-limit).
+- Route-by-route inspection of sensitive endpoints (AI proxy, feedback, OAuth workers).
+- HTML entrypoint review for CSP presence.
+
+Limitations:
+- No dynamic penetration test.
+- No live Cloudflare/WAF configuration verification.
+
+## Verified Security Controls
+- `share-proxy` and `feedback-proxy` reject unknown origins with explicit `403`.  
+  Evidence: `workers/share-proxy/index.js:1364`, `workers/share-proxy/index.js:1368`, `workers/feedback-proxy/index.js:43`, `workers/feedback-proxy/index.js:48`
+- `openrouter-proxy` no longer has hardcoded IP whitelist bypass and now uses strict origin allowlist resolution.  
+  Evidence: `workers/openrouter-proxy/index.js:1`, `workers/openrouter-proxy/index.js:17`, `workers/openrouter-proxy/index.js:51`, `workers/openrouter-proxy/index.js:92`
+- OAuth workers enforce origin checks and require `Origin` for non-GET requests.  
+  Evidence: `workers/gmail-proxy/index.js:631`, `workers/gmail-proxy/index.js:639`, `workers/notion-proxy/index.js:1044`, `workers/ms-proxy/index.js:511`
+- OAuth session cookies are still configured with `HttpOnly`, `Secure`, `SameSite=None`.  
+  Evidence: `workers/gmail-proxy/index.js:116`, `workers/notion-proxy/index.js:110`, `workers/ms-proxy/index.js:110`
 
 ## Findings
 
-### GT-SEC-001 — Share endpoints are still unauthenticated/unauthorized
-Severity: **High**
+### GT-SEC-2026-001: CORS is still used as primary access control on key-backed proxies
+Severity: **High**  
+Status: **Open**
 
-Impact: Any caller from an allowed origin can read/list/modify/delete share data and trigger maintenance-like operations, because no user/session/token auth is enforced on share routes.
+Risk:
+`openrouter-proxy`, `googletts-proxy`, and `assemblyai-proxy` trust allowlisted origins but do not require strong request authentication (signed token/JWT/service token). Non-browser clients can still forge an `Origin` header and consume paid upstream APIs.
 
 Evidence:
-- CRUD/batch routes execute without auth middleware:
-  - [workers/share-proxy/index.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/workers/share-proxy/index.js#L1308)
-  - [workers/share-proxy/index.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/workers/share-proxy/index.js#L1394)
-  - [workers/share-proxy/index.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/workers/share-proxy/index.js#L1590)
-- Collection list/tree read is open (origin-gated only):
-  - [workers/share-proxy/index.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/workers/share-proxy/index.js#L1538)
-  - [workers/share-proxy/index.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/workers/share-proxy/index.js#L1555)
-- Control/repair/ensureConsistency paths now have no admin-token enforcement:
-  - [workers/share-proxy/index.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/workers/share-proxy/index.js#L1269)
-  - [workers/share-proxy/index.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/workers/share-proxy/index.js#L1535)
-  - [workers/share-proxy/index.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/workers/share-proxy/index.js#L1553)
+- OpenRouter uses origin allowlist + forwards shared key: `workers/openrouter-proxy/index.js:35`, `workers/openrouter-proxy/index.js:51`, `workers/openrouter-proxy/index.js:138`
+- Google TTS treats missing `Origin` as local and allows `*`: `workers/googletts-proxy/index.js:60`, `workers/googletts-proxy/index.js:61`, `workers/googletts-proxy/index.js:74`
+- AssemblyAI treats missing `Origin` as local and allows `*`: `workers/assemblyai-proxy/index.js:23`, `workers/assemblyai-proxy/index.js:24`, `workers/assemblyai-proxy/index.js:37`
 
-Recommendation:
-- Add route-level auth for share endpoints (`X-Share-Token` minimum or scoped short-lived token/JWT).
-- Enforce per-space authorization checks for every read/write/delete/list/control operation.
+Recommendations:
+1. Add real request authentication on these proxies (JWT/service token/HMAC).
+2. Treat missing `Origin` as denied unless a valid non-browser auth token is present.
+3. Keep rate limiting as defense-in-depth, not primary protection.
 
 ---
 
-### GT-SEC-002 — No visible CSP hardening + third-party scripts without SRI
-Severity: **Medium**
+### GT-SEC-2026-003: Feedback list remains publicly enumerable
+Severity: **Medium**  
+Status: **Open**
 
-Impact: If any frontend injection occurs, blast radius is higher; CDN compromise risk is less bounded.
+Risk:
+`GET /v1/feedback` is still intentionally public and returns the full `items` list. If records include sensitive data (message text, share links, media references), external parties can enumerate them from allowed origins.
 
 Evidence:
-- No visible CSP policy in `index.html` head.
-  - [public/index.html](/mnt/c/Users/tranx/Documents/Github/gotoolkit/public/index.html#L4)
-- External scripts without SRI:
-  - [public/index.html](/mnt/c/Users/tranx/Documents/Github/gotoolkit/public/index.html#L77)
-  - [public/index.html](/mnt/c/Users/tranx/Documents/Github/gotoolkit/public/index.html#L85)
+- Public list path: `workers/feedback-proxy/index.js:99`, `workers/feedback-proxy/index.js:102`
 
-Recommendation:
-- Add CSP at edge/worker response headers.
-- Pin and add SRI where practical.
+Recommendations:
+1. Require admin auth for list/read endpoints if feedback is not public by policy.
+2. If public listing is required, return only redacted/minimal fields.
+3. Add explicit retention and purge policy for stored feedback payloads and media metadata.
 
 ---
 
-### GT-SEC-003 — OAuth workers treat empty `Origin` as local/trusted
-Severity: **Low**
+### GT-SEC-2026-004: CSP coverage incomplete across public entry points
+Severity: **Medium**  
+Status: **Open**
 
-Impact: Non-browser clients can bypass origin allowlist behavior by omitting `Origin` header.
+Risk:
+Main apps have CSP, but several public pages do not. Missing CSP weakens XSS blast-radius controls.
 
 Evidence:
-- `isLocalOrigin` returns true when origin is empty:
-  - [workers/notion-proxy/index.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/workers/notion-proxy/index.js#L19)
-  - [workers/gmail-proxy/index.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/workers/gmail-proxy/index.js#L25)
-  - [workers/ms-proxy/index.js](/mnt/c/Users/tranx/Documents/Github/gotoolkit/workers/ms-proxy/index.js#L19)
+- CSP present only in: `public/index.html:7`, `public/grid.html:45`, `public/home.html:108`, `public/mobile.html:43`
+- No CSP meta in: `public/docs.html:1`, `public/debug.html:1`, `public/legal.html:1`, `public/404.html:1`
 
-Recommendation:
-- Require explicit allowed origins for OAuth worker endpoints:
-  - `https://gotoolkit.fr`
-  - `https://gotoolkit.web.app`
-  - `http://localhost:<any-port>` and `http://127.0.0.1:<any-port>` (development only)
-- Reject empty/missing `Origin` in production for browser-facing state-changing routes, unless a separate authenticated server-to-server token path is used.
+Recommendations:
+1. Add CSP to all public HTML entry points.
+2. Prefer edge/header CSP over only meta tags.
+3. Keep a baseline CSP template and document route-level exceptions.
 
-## Updated Risk Matrix
+---
+
+### GT-SEC-2026-005: YouTube proxy also accepts missing `Origin` as local
+Severity: **Low**  
+Status: **Open**
+
+Risk:
+`youtube-proxy` treats a missing `Origin` as local. This does not directly expose a shared paid API key, but it weakens consistency of origin enforcement and may increase attack surface for unauthenticated paths.
+
+Evidence:
+- Missing-origin considered local: `workers/youtube-proxy/index.js:23`, `workers/youtube-proxy/index.js:24`, `workers/youtube-proxy/index.js:35`
+
+Recommendations:
+1. Align with `share-proxy` style: explicit allowlist + `403` on unknown/missing origin.
+2. Keep OAuth/session controls as primary auth, but tighten origin policy for consistency.
+
+## Resolved Since Previous Audit
+- `openai-proxy` removed from repository.
+- Hardcoded IP privilege bypass removed from `openrouter-proxy`.
+- `feedback-proxy` wildcard CORS fallback replaced with explicit allowlist rejection (`403`).
+
+## Risk Matrix
 - Critical: 0
 - High: 1
-- Medium: 1
+- Medium: 2
 - Low: 1
 
-## Delta vs previous audit
-- Closed: wildcard CORS fallback on share worker (now explicit allowlist + 403 deny).
-- Reframed: prior "admin fail-open" finding is no longer the main issue because admin gates were removed on those routes; risk now consolidates into broader unauthenticated share-route access (GT-SEC-001).
+## Priority Remediation Plan
+1. **Immediate (0-2 days)**: Add request authentication to `openrouter-proxy`, `googletts-proxy`, and `assemblyai-proxy`.
+2. **Short term (3-7 days)**: Decide and enforce policy for `GET /v1/feedback` exposure.
+3. **Short term (3-7 days)**: Add CSP to `docs.html`, `debug.html`, `legal.html`, `404.html`.
+4. **Backlog (1-2 sprints)**: Normalize all workers to a single origin-validation utility/policy.
 
-## Priority Remediation
-1. Add authz/authn to all share routes (GT-SEC-001).
-2. Add CSP + SRI hardening (GT-SEC-002).
-3. Tighten OAuth empty-origin behavior (GT-SEC-003).
+## Suggested Verification Checklist (Post-fix)
+1. `curl` with forged `Origin` to key-backed proxies is rejected unless authenticated.
+2. Requests without `Origin` are denied on all browser-facing workers.
+3. `GET /v1/feedback` output matches explicit data exposure policy.
+4. Every `public/*.html` entrypoint has explicit CSP (prefer response header).

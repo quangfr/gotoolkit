@@ -2,7 +2,7 @@
 
 ## Structure
 - Static HTML modules in `public/`.
-- Workers live in `workers/` (OpenAI proxy, OpenRouter proxy, sharing, feedback, AssemblyAI, Notion proxy, YouTube proxy, Gmail proxy, Microsoft proxy, Google TTS proxy).
+- Workers live in `workers/` (OpenRouter proxy, sharing, feedback, AssemblyAI, Notion proxy, YouTube proxy, Gmail proxy, Microsoft proxy, Google TTS proxy).
 
 ## Navigation + cache
 - `public/index.html` is the Docs app entry point.
@@ -35,7 +35,7 @@ Only `public/js` may touch `window`:
 `GoToolkitIAConfig`, `GoToolkitAIBackend`, `GoToolkitIAClient.chatCompletion`, `GoToolkitIA.chatCompletion`, `GoToolkitOpenAI`, `GoToolkitWebLLM`, `GoToolkitExcalidraw`, `goToolkitNexusModal`, `goToolkitDocStore`, `goToolkitDocumentApi`, `goToolkitShareHistory`, `goToolkitShareWorker`, `GoToolkitDocumentManager`.
 
 ## AI + storage
-- `public/js/ia-config.js`: OpenAI / OpenRouter config + endpoints (direct + `https://openai.gotoolkit.workers.dev`). 
+- `public/js/ia-config.js`: OpenRouter config + endpoints (direct + `https://openrouter.gotoolkit.workers.dev`). 
 - `public/js/ia-client.js`: stream normalization + backend routing.
 - `public/js/document-storage.js`: IndexedDB `go-toolkit` (stores `document-api`, `share-history`, `documents-settings`) + shared store wrappers.
 - **RAG System** (`public/js/document-rag.js`): vector search + semantic retrieval via `GoToolkitDocumentManager`. See **[RAG Architecture](public/content/toolkit_import.md)**.
@@ -117,7 +117,6 @@ Only `public/js` may touch `window`:
 - Playwright API timing (when UI MCP is flaky): use `require(\"playwright\").request.newContext()`.
 
 ## Workers env
-- `workers/openai-proxy`: `OPENAI_API_KEY` + Rate Limiter binding `MY_RATE_LIMITER`.
 - `workers/share-proxy`: `FIREBASE_SERVICE_ACCOUNT`, optional `FIREBASE_PROJECT_ID`, `SHARE_ALLOWED_ORIGINS`, Rate Limiter binding `MY_RATE_LIMITER`, and R2 binding `SHARE_MEDIA_BUCKET`.
 - `workers/feedback-proxy`: `FIREBASE_SERVICE_ACCOUNT`, optional `FIREBASE_PROJECT_ID`, `SHARE_ALLOWED_ORIGINS`, optional `ADMIN_TOKEN`, Rate Limiter binding `MY_RATE_LIMITER`, and R2 binding `FEEDBACK_MEDIA_BUCKET`.
 - `workers/assemblyai-proxy`: forwards streaming token; browser sends `X-AssemblyAI-Key` (no secret stored) + Rate Limiter binding `MY_RATE_LIMITER`.

@@ -426,7 +426,6 @@
       ];
 
       const WORKERS = [
-        { id: "openai", label: "OpenAI Proxy", endpoint: "https://openai.gotoolkit.workers.dev/v1/responses", method: "GET", expected: "405 expected" },
         { id: "openrouter", label: "OpenRouter Proxy", endpoint: "https://openrouter.gotoolkit.workers.dev/api/v1/models/user", method: "GET", expected: "200/4xx expected" },
         { id: "share", label: "Share Proxy", endpoint: "https://share.gotoolkit.workers.dev/v1/shares/memos?view=tree&spaceId=golive", method: "GET", expected: "200/4xx expected" },
         { id: "feedback", label: "Feedback Proxy", endpoint: "https://feedback.gotoolkit.workers.dev/v1/feedback", method: "GET", expected: "200 expected" },

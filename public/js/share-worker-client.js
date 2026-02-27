@@ -33,6 +33,7 @@
   const assetBlobCache = new Map();
   const spaceKeyCache = new Map();
   const spaceAuthTokenCache = new Map();
+  const tokenSpaceIdCache = new Map();
   let syncSessionState = null;
 
   function logShareDebug(event, payload) {
@@ -799,14 +800,19 @@
     }
   }
 
-  async function fetchSharePayload(collection, token) {
+  async function fetchSharePayload(collection, token, options = {}) {
     assertReady();
     return withWorkerFallback(async base => {
+      const authHeaders = await withSpaceAuthHeaders(base, mergeSyncHeaders({
+        Accept: "application/json"
+      }), {
+        method: "GET",
+        collection,
+        spaceId: resolveRequestSpaceId(collection, token, options)
+      });
       const response = await fetchWithBase(base, collection, token, {
         method: "GET",
-        headers: mergeSyncHeaders({
-          Accept: "application/json"
-        })
+        headers: authHeaders
       });
       if (response.status === 404) {
         return null;
@@ -834,14 +840,19 @@
     });
   }
 
-  async function deleteSharePayload(collection, token) {
+  async function deleteSharePayload(collection, token, options = {}) {
     assertReady();
     return withWorkerFallback(async base => {
+      const authHeaders = await withSpaceAuthHeaders(base, mergeSyncHeaders({
+        Accept: "application/json"
+      }), {
+        method: "DELETE",
+        collection,
+        spaceId: resolveRequestSpaceId(collection, token, options)
+      });
       const response = await fetchWithBase(base, collection, token, {
         method: "DELETE",
-        headers: mergeSyncHeaders({
-          Accept: "application/json"
-        })
+        headers: authHeaders
       });
       if (response.status === 404) {
         return null;
@@ -854,14 +865,24 @@
     });
   }
 
-  async function listShares(collection) {
+  async function listShares(collection, options = {}) {
     assertReady();
     return withWorkerFallback(async base => {
-      const response = await fetchWithBase(base, collection, null, {
+      const query = {};
+      if ((collection === "pages" || collection === "pages-meta") && options?.spaceId) {
+        query.spaceId = options.spaceId;
+      }
+      const url = Object.keys(query).length ? buildCollectionQueryUrl(base, collection, query) : buildShareUrl(base, collection, null);
+      const authHeaders = await withSpaceAuthHeaders(base, mergeSyncHeaders({
+        Accept: "application/json"
+      }), {
         method: "GET",
-        headers: mergeSyncHeaders({
-          Accept: "application/json"
-        })
+        collection,
+        spaceId: resolveRequestSpaceId(collection, "", options)
+      });
+      const response = await fetch(url, {
+        method: "GET",
+        headers: authHeaders
       });
       if (!response.ok) {
         const body = await response.text().catch(() => "");
@@ -930,6 +951,9 @@
         throw new Error(body || "Impossible de sauvegarder le partage");
       }
       const data = await response.json();
+      if (normalizedToken) {
+        rememberTokenSpaceId(collection, normalizedToken, spaceId);
+      }
       return data.meta || data;
     });
   }
@@ -995,6 +1019,9 @@
           results.push(...data.results);
         }
       }
+      for (const entry of preparedWrites) {
+        rememberTokenSpaceId(collection, entry?.id, uniqueSpaceIds[0]);
+      }
       return { count: preparedWrites.length, results };
     });
   }
@@ -1008,16 +1035,21 @@
       return { count: 0, documents: [] };
     }
     return withWorkerFallback(async base => {
+      const authHeaders = await withSpaceAuthHeaders(base, mergeSyncHeaders({
+        "Content-Type": "application/json",
+        Accept: "application/json"
+      }), {
+        method: "POST",
+        collection,
+        spaceId: resolveRequestSpaceId(collection, "", options)
+      });
       const docs = [];
       for (const chunkIds of chunkArray(normalizedIds, BATCH_IDS_CHUNK_SIZE)) {
         let response;
         try {
           response = await fetch(buildShareBatchGetUrl(base, collection), {
             method: "POST",
-            headers: mergeSyncHeaders({
-              "Content-Type": "application/json",
-              Accept: "application/json"
-            }),
+            headers: authHeaders,
             body: JSON.stringify({ ids: chunkIds })
           });
         } catch (error) {
@@ -1029,6 +1061,9 @@
         }
         const data = await response.json().catch(() => ({ documents: [] }));
         const chunkDocs = Array.isArray(data?.documents) ? data.documents : [];
+        for (const item of chunkDocs) {
+          rememberTokenSpaceId(collection, item?.id, options?.spaceId || item?.payload?.spaceId || "golive");
+        }
         docs.push(...chunkDocs);
       }
       const shouldHydrateAssets = options?.hydrateAssets !== false;
@@ -1059,6 +1094,40 @@
 
   function normalizeSpaceId(value) {
     return String(value || "").trim().toLowerCase().replace(/[^a-z0-9-]/g, "");
+  }
+
+  function rememberTokenSpaceId(collection, token, spaceId) {
+    const normalizedCollection = String(collection || "").trim().toLowerCase();
+    const normalizedToken = String(token || "").trim();
+    const normalizedSpaceId = normalizeSpaceId(spaceId || "");
+    if (!normalizedCollection || !normalizedToken || !normalizedSpaceId) return;
+    tokenSpaceIdCache.set(`${normalizedCollection}:${normalizedToken}`, normalizedSpaceId);
+  }
+
+  function resolveRequestSpaceId(collection, token, options = {}) {
+    const explicit = normalizeSpaceId(options?.spaceId || "");
+    if (explicit) return explicit;
+    const normalizedCollection = String(collection || "").trim().toLowerCase();
+    const normalizedToken = String(token || "").trim();
+    if (normalizedCollection && normalizedToken) {
+      const cached = normalizeSpaceId(tokenSpaceIdCache.get(`${normalizedCollection}:${normalizedToken}`) || "");
+      if (cached) return cached;
+    }
+    if (normalizedCollection === "pages" || normalizedCollection === "pages-meta") {
+      const spacesApi = window.GoToolkitSpaces;
+      const allSpaces = typeof spacesApi?.readSpaces === "function" ? spacesApi.readSpaces() : [];
+      const withCode = (Array.isArray(allSpaces) ? allSpaces : [])
+        .filter(item => normalizeSpaceId(item?.id || "") && normalizeSpaceJoinCode(item?.spaceJoinCode || ""))
+        .map(item => normalizeSpaceId(item?.id || ""));
+      if (withCode.length === 1) return withCode[0];
+      if (withCode.includes("golive")) return "golive";
+      if (withCode.length > 1) {
+        const nonDefault = withCode.find(id => id !== "golive");
+        if (nonDefault) return nonDefault;
+      }
+      return "golive";
+    }
+    return "";
   }
 
   async function authenticateSpaceWithCode(base, spaceId, spaceCodeRaw, options = {}) {
@@ -1165,7 +1234,7 @@
     const method = String(options?.method || "GET").toUpperCase();
     const collection = String(options?.collection || "").trim().toLowerCase();
     const shouldAuth = Boolean(
-      (method === "PUT" || method === "POST")
+      method !== "OPTIONS"
       && (collection === "pages" || collection === "pages-meta")
     );
     if (!shouldAuth) return headers || {};
@@ -1293,16 +1362,21 @@
       return { count: 0, results: [] };
     }
     return withWorkerFallback(async base => {
+      const authHeaders = await withSpaceAuthHeaders(base, mergeSyncHeaders({
+        "Content-Type": "application/json",
+        Accept: "application/json"
+      }), {
+        method: "POST",
+        collection,
+        spaceId: resolveRequestSpaceId(collection, "", {})
+      });
       const results = [];
       for (const chunkIds of chunkArray(normalizedIds, BATCH_IDS_CHUNK_SIZE)) {
         let response;
         try {
           response = await fetch(buildShareBatchDeleteUrl(base, collection), {
             method: "POST",
-            headers: mergeSyncHeaders({
-              "Content-Type": "application/json",
-              Accept: "application/json"
-            }),
+            headers: authHeaders,
             body: JSON.stringify({ ids: chunkIds })
           });
         } catch (error) {
@@ -1398,12 +1472,17 @@
       });
       let response;
       try {
+        const authHeaders = await withSpaceAuthHeaders(base, mergeSyncHeaders({
+          Accept: "application/json"
+        }), {
+          method: "GET",
+          collection,
+          spaceId: resolveRequestSpaceId(collection, "", options)
+        });
         response = await fetch(url, {
           method: "GET",
           cache: "no-store",
-          headers: mergeSyncHeaders({
-            Accept: "application/json"
-          })
+          headers: authHeaders
         });
       } catch (error) {
         throw markNetworkFailure(error instanceof Error ? error : new Error(String(error)));

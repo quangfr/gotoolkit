@@ -57,7 +57,7 @@ test.describe("Cloud/private transfer sync", () => {
       const worker = (window as any).goToolkitShareWorker;
       const history = (window as any).goToolkitShareHistory;
       const spaces = (window as any).GoToolkitSpaces;
-      spaces?.upsertSpace?.({ id: "golive", name: "Go Live", icon: "cloud-upload", isDefault: true });
+      spaces?.upsertSpace?.({ id: "golive", name: "Go Live", icon: "cloud-upload", spaceJoinCode: "golive", isDefault: true });
 
       const cloudPayload = {
         tabs: [{ id: `tab-${cloudToken}`, title: `Cloud ${cloudToken}`, description: "", superpowers: [], content: `<p>${cloudMarker}</p>` }],

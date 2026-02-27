@@ -1,26 +1,54 @@
+const DEFAULT_ALLOWED_ORIGINS = Object.freeze([
+  "https://gotoolkit.fr",
+  "https://www.gotoolkit.fr",
+  "https://gotoolkit.workers.dev"
+]);
+
+function normalizeOriginValue(value) {
+  const candidate = String(value || "").trim();
+  if (!candidate) return "";
+  try {
+    return new URL(candidate).origin;
+  } catch {
+    return candidate.replace(/\/+$/, "");
+  }
+}
+
+function parseAllowedOrigins(env) {
+  const fromEnv = String(env?.SHARE_ALLOWED_ORIGINS || "")
+    .split(",")
+    .map(origin => normalizeOriginValue(origin))
+    .filter(Boolean);
+  const merged = new Set([
+    ...DEFAULT_ALLOWED_ORIGINS.map(origin => normalizeOriginValue(origin)),
+    ...fromEnv
+  ]);
+  return Array.from(merged);
+}
+
+function isLocalAllowedOrigin(origin) {
+  if (!origin) return false;
+  return /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])(:\d+)?$/i.test(origin);
+}
+
+function resolveCors(request, env) {
+  const allowedOrigins = parseAllowedOrigins(env);
+  const origin = normalizeOriginValue(request.headers.get("Origin"));
+  const allowLocal = isLocalAllowedOrigin(origin);
+  const allowListed = Boolean(origin && allowedOrigins.includes(origin));
+  const allowed = allowLocal || allowListed;
+  const corsOrigin = allowed ? origin : "null";
+  return { origin, corsOrigin, allowed, allowedOrigins };
+}
+
 export default {
   async fetch(request, env) {
     const requestUrl = new URL(request.url);
     const isEmbeddingsRoute = requestUrl.pathname.includes("/embeddings");
-    const allowedOrigins = [
-      "https://gotoolkit.fr",
-      "https://gotoolkit.workers.dev"
-    ];
+    const corsMeta = resolveCors(request, env);
+    const corsOrigin = corsMeta.corsOrigin;
 
-    const origin = request.headers.get("Origin") || "";
-    const allowLocal =
-      !origin ||
-      origin.startsWith("http://localhost") ||
-      origin.startsWith("http://127.0.0.1") ||
-      origin.startsWith("http://192.168.");
-
-    const corsOrigin = allowLocal
-      ? origin || "*"
-      : allowedOrigins.includes(origin)
-        ? origin
-        : allowedOrigins[0];
-
-    if (!allowLocal && !allowedOrigins.includes(origin)) {
+    if (!corsMeta.allowed) {
       return new Response("Forbidden", {
         status: 403,
         headers: {
@@ -31,11 +59,14 @@ export default {
     }
 
     if (request.method === "OPTIONS") {
+      const requestedHeaders = request.headers.get("Access-Control-Request-Headers");
       return new Response(null, {
         headers: {
           "Access-Control-Allow-Origin": corsOrigin,
-          "Access-Control-Allow-Methods": "POST, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type, x-app-token, x-client-id",
+          "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+          "Access-Control-Allow-Headers": requestedHeaders && requestedHeaders.trim()
+            ? requestedHeaders
+            : "Content-Type, x-app-token, x-client-id",
           "Vary": "Origin"
         }
       });
@@ -50,29 +81,13 @@ export default {
         status: 405,
         headers: {
           "Access-Control-Allow-Origin": corsOrigin,
-          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
           "Access-Control-Allow-Headers": "Content-Type, x-app-token, x-client-id",
-          Allow: "POST, OPTIONS",
+          Allow: "GET, POST, OPTIONS",
           Vary: "Origin"
         }
       });
     }
-
-    const clientIp = normalizeClientIp(request);
-    const ipWhitelist = ["78.112.62.208"];
-
-    if (ipWhitelist.includes(clientIp)) {
-      return forwardToOpenRouter(request, env, corsOrigin, { embeddings: isEmbeddingsRoute });
-    }
-
-    let clientId = request.headers.get("x-client-id");
-    if (!clientId || clientId.length > 100) {
-      clientId = `anon:${clientIp}`;
-    }
-
-    const now = Date.now();
-    const windowMs = 60_000;
-    const perMinuteLimit = 30;
 
     const ipAddress = request.headers.get("cf-connecting-ip") || "";
     if (env?.MY_RATE_LIMITER && typeof env.MY_RATE_LIMITER.limit === "function") {
@@ -180,18 +195,6 @@ async function forwardToOpenRouterModelsUser(request, env, corsOrigin) {
     status: upstreamResponse.status,
     headers
   });
-}
-
-function normalizeClientIp(request) {
-  const raw =
-    request.headers.get("CF-Connecting-IP") ||
-    request.headers.get("X-Forwarded-For") ||
-    "";
-  const first = raw.split(",")[0].trim();
-  if (!first) return "unknown";
-  const withoutBrackets = first.replace(/^\[/, "").replace(/]$/, "");
-  const [hostPart] = withoutBrackets.split(":");
-  return hostPart || "unknown";
 }
 
 function jsonError(origin, status, code, message) {

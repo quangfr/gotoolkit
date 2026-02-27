@@ -4,6 +4,8 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; connect-src 'self' https: wss:; font-src 'self' data: https://fonts.gstatic.com; frame-src 'self' https:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
     <script>
         (function () {
             const storedTheme = localStorage.getItem('go-toolkit-theme');
@@ -74,17 +76,22 @@
         })();
     </script>
     <title>GoToolkit | Savane Go-Live</title>
-    <script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js" crossorigin defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin
+    <script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"
+        integrity="sha384-DGyLxAyjq0f9SPpVevD6IgztCFlnMF6oW/XQGmfe+IsZ8TqEiDrcHkMLKI6fiB/Z" crossorigin defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"
+        integrity="sha384-gTGxhz21lVGYNMcdJOyq01Edg0jhn/c22nsx0kyqP0TxaV5WVdsSH1fSDUf5YJj1" crossorigin
         defer></script>
     <script src="https://cdn.jsdelivr.net/npm/@excalidraw/excalidraw@0.17.6/dist/excalidraw.production.min.js"
-        crossorigin defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.min.js" crossorigin defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.min.js" crossorigin defer></script>
-    <link rel="stylesheet" href="styles/style.css?v=2026.02.28.11">
-    <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js" defer></script>
-    <link rel="stylesheet" href="styles/memo.css?v=2026.02.28.11">
-    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.28.11">
+        integrity="sha384-2RnaDBiRrWXqT5k4HtP4X4gh/ukRFg9zn1Sjt+JeYQOUWSYYnN1tKE4FL9QA3Wdl" crossorigin defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.min.js"
+        integrity="sha384-LlKSgo4Eo5GuF/ZrstLti44dE+GC5XAJ7TSu0Nw9Q3vIZF2QMnkRcK7BUoLabYLF" crossorigin defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.min.js"
+        integrity="sha384-o5vdFlIHJf1L/hUFEtj8tgNVtCT+02DKNT3MPA47wJ9Eo5HocC7qCL2YL+sWNsk8" crossorigin defer></script>
+    <link rel="stylesheet" href="styles/style.css?v=2026.02.28.13">
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.575.0/dist/umd/lucide.min.js"
+        integrity="sha384-GzE8qT1LzDfRNjtvLN/dXDLPlJOB3BBom3Twb9/RwHkXCgNl6OU1pBxM9397HWGU" crossorigin defer></script>
+    <link rel="stylesheet" href="styles/memo.css?v=2026.02.28.13">
+    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.28.13">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.css">
     <script src="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.js" defer></script>
     <style>
@@ -470,7 +477,7 @@
         <img src="img/logo.gif" alt="Logo GoToolkit" class="logo-light">
         <img src="img/logo-inverted.gif" alt="Logo GoToolkit" class="logo-dark">
         <strong>GoToolkit</strong>
-        <span id="memoNewsTrigger" class="info-popup-news-link" role="button" tabindex="0">Version 2026.02.28.11</span>
+        <span id="memoNewsTrigger" class="info-popup-news-link" role="button" tabindex="0">Version 2026.02.28.13</span>
         <span>Usage réservé à Savane Consulting.</span>
         <div class="info-actions info-actions--stacked">
             <div class="info-actions-row">
@@ -549,24 +556,24 @@
         window.GO_TOOLKIT_GOOGLE_TTS_API_URL =
             window.GO_TOOLKIT_GOOGLE_TTS_API_URL || "https://googletts.gotoolkit.workers.dev";
     </script>
-    <script src="js/config.js?v=2026.02.28.11" defer></script>
-    <script src="js/config-modal.js?v=2026.02.28.11" defer></script>
-    <script src="js/feature-visibility.js?v=2026.02.28.11" defer></script>
-    <script src="js/document-storage.js?v=2026.02.28.11" defer></script>
-    <script src="js/storage-service.js?v=2026.02.28.11" defer></script>
-    <script src="js/shared-ui.js?v=2026.02.28.11" defer></script>
-    <script src="js/spaces-store.js?v=2026.02.28.11" defer></script>
-    <script src="js/share-worker-client.js?v=2026.02.28.11" defer></script>
-    <script src="js/share-history.js?v=2026.02.28.11" defer></script>
-    <script src="js/document-api.js?v=2026.02.28.11" defer></script>
-    <script src="js/keywordIndex.js?v=2026.02.28.11" defer></script>
-    <script src="js/document-rag.js?v=2026.02.28.11" defer></script>
-    <script src="js/ia-config.js?v=2026.02.28.11" defer></script>
-    <script src="preset.js?v=2026.02.28.11" defer></script>
-    <script src="prompt.js?v=2026.02.28.11" defer></script>
-    <script src="js/ia-client.js?v=2026.02.28.11" defer></script>
-    <script src="js/document-markdown.js?v=2026.02.28.11" defer></script>
-    <script src="js/notion-export.js?v=2026.02.28.11" defer></script>
+    <script src="js/config.js?v=2026.02.28.13" defer></script>
+    <script src="js/config-modal.js?v=2026.02.28.13" defer></script>
+    <script src="js/feature-visibility.js?v=2026.02.28.13" defer></script>
+    <script src="js/document-storage.js?v=2026.02.28.13" defer></script>
+    <script src="js/storage-service.js?v=2026.02.28.13" defer></script>
+    <script src="js/shared-ui.js?v=2026.02.28.13" defer></script>
+    <script src="js/spaces-store.js?v=2026.02.28.13" defer></script>
+    <script src="js/share-worker-client.js?v=2026.02.28.13" defer></script>
+    <script src="js/share-history.js?v=2026.02.28.13" defer></script>
+    <script src="js/document-api.js?v=2026.02.28.13" defer></script>
+    <script src="js/keywordIndex.js?v=2026.02.28.13" defer></script>
+    <script src="js/document-rag.js?v=2026.02.28.13" defer></script>
+    <script src="js/ia-config.js?v=2026.02.28.13" defer></script>
+    <script src="preset.js?v=2026.02.28.13" defer></script>
+    <script src="prompt.js?v=2026.02.28.13" defer></script>
+    <script src="js/ia-client.js?v=2026.02.28.13" defer></script>
+    <script src="js/document-markdown.js?v=2026.02.28.13" defer></script>
+    <script src="js/notion-export.js?v=2026.02.28.13" defer></script>
     <script>
         document.addEventListener("click", function (event) {
             const legalTrigger = event.target?.closest?.("[data-open-nexus-modal]");
@@ -600,16 +607,16 @@
             ]
         };
     </script>
-    <script src="js/feedback.js?v=2026.02.28.11" defer></script>
-    <script src="js/news.js?v=2026.02.28.11" defer></script>
-    <script src="js/voice-video-player.js?v=2026.02.28.11" defer></script>
-    <script src="js/voice-audio-player.js?v=2026.02.28.11" defer></script>
-    <script src="js/youtube-publish.js?v=2026.02.28.11" defer></script>
-    <script src="js/voice.js?v=2026.02.28.11" defer></script>
-    <script src="js/voice-transcript.js?v=2026.02.28.11" defer></script>
-    <script src="js/googletts.js?v=2026.02.28.11" defer></script>
-    <script src="js/draw-memo.js?v=2026.02.28.11" defer></script>
-    <script src="js/document-tabs.js?v=2026.02.28.11" defer></script>
+    <script src="js/feedback.js?v=2026.02.28.13" defer></script>
+    <script src="js/news.js?v=2026.02.28.13" defer></script>
+    <script src="js/voice-video-player.js?v=2026.02.28.13" defer></script>
+    <script src="js/voice-audio-player.js?v=2026.02.28.13" defer></script>
+    <script src="js/youtube-publish.js?v=2026.02.28.13" defer></script>
+    <script src="js/voice.js?v=2026.02.28.13" defer></script>
+    <script src="js/voice-transcript.js?v=2026.02.28.13" defer></script>
+    <script src="js/googletts.js?v=2026.02.28.13" defer></script>
+    <script src="js/draw-memo.js?v=2026.02.28.13" defer></script>
+    <script src="js/document-tabs.js?v=2026.02.28.13" defer></script>
     <script>
         // Suppress React DevTools prompt in dev builds.
         window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = window.__REACT_DEVTOOLS_GLOBAL_HOOK__ || {
@@ -619,10 +626,10 @@
             onCommitFiberUnmount: function () { }
         };
     </script>
-    <script src="js/memo.bundle.js?v=2026.02.28.11" defer></script>
-    <script src="js/assist.js?v=2026.02.28.11" defer></script>
-    <script src="js/space-sync.js?v=2026.02.28.11" defer></script>
-    <script src="js/document-panel.js?v=2026.02.28.11" defer></script>
+    <script src="js/memo.bundle.js?v=2026.02.28.13" defer></script>
+    <script src="js/assist.js?v=2026.02.28.13" defer></script>
+    <script src="js/space-sync.js?v=2026.02.28.13" defer></script>
+    <script src="js/document-panel.js?v=2026.02.28.13" defer></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             setTimeout(function () {
@@ -1651,6 +1658,92 @@
             function getSpaceSyncError(spaceId) {
                 const sid = normalizeSpaceId(spaceId || DEFAULT_SPACE_ID);
                 return String(spaceSyncErrors.get(sid) || "").trim();
+            }
+
+            function isSpaceAuthInvalidError(error) {
+                const message = String(error?.message || error || "").toLowerCase();
+                if (!message) return false;
+                return (
+                    message.includes("code d'accès espace requis")
+                    || message.includes("token espace invalide")
+                    || message.includes("auth espace")
+                    || message.includes("x-space-auth")
+                    || message.includes("code d'accès incorrect")
+                    || message.includes("code d'accès")
+                );
+            }
+
+            async function fallbackSharedSpaceToDefault(spaceId) {
+                const sourceSpaceId = normalizeSpaceId(spaceId || DEFAULT_SPACE_ID);
+                if (!sourceSpaceId || sourceSpaceId === DEFAULT_SPACE_ID) return;
+
+                const nextOpenDocuments = [];
+                let openDocsChanged = false;
+                (Array.isArray(openDocuments) ? openDocuments : []).forEach(doc => {
+                    if (!doc || typeof doc !== "object") {
+                        nextOpenDocuments.push(doc);
+                        return;
+                    }
+                    const docSpaceId = normalizeSpaceId(doc?.spaceId || doc?.payload?.spaceId || DEFAULT_SPACE_ID);
+                    if (docSpaceId !== sourceSpaceId) {
+                        nextOpenDocuments.push(doc);
+                        return;
+                    }
+                    openDocsChanged = true;
+                    const nextPayload = doc?.payload && typeof doc.payload === "object"
+                        ? { ...doc.payload, spaceId: DEFAULT_SPACE_ID }
+                        : doc.payload;
+                    nextOpenDocuments.push({
+                        ...doc,
+                        spaceId: DEFAULT_SPACE_ID,
+                        payload: nextPayload
+                    });
+                });
+                if (openDocsChanged) {
+                    openDocuments = nextOpenDocuments;
+                    const active = openDocuments.find(item => String(item?.id || "").trim() === String(activeDocumentId || "").trim());
+                    if (active?.payload && typeof active.payload === "object") {
+                        state = normalizeState(active.payload) || state;
+                    }
+                }
+
+                const drafts = readCloudDrafts();
+                let draftsChanged = false;
+                Object.entries(drafts || {}).forEach(([docId, draft]) => {
+                    if (!draft || typeof draft !== "object") return;
+                    const draftSpaceId = normalizeSpaceId(draft?.spaceId || draft?.payload?.spaceId || DEFAULT_SPACE_ID);
+                    if (draftSpaceId !== sourceSpaceId) return;
+                    draftsChanged = true;
+                    const nextPayload = draft?.payload && typeof draft.payload === "object"
+                        ? { ...draft.payload, spaceId: DEFAULT_SPACE_ID }
+                        : draft.payload;
+                    drafts[docId] = {
+                        ...draft,
+                        spaceId: DEFAULT_SPACE_ID,
+                        payload: nextPayload
+                    };
+                });
+                if (draftsChanged) {
+                    writeCloudDrafts(drafts);
+                }
+
+                const records = await shareHistory?.getRecordsByApp?.("memo");
+                const updates = (Array.isArray(records) ? records : [])
+                    .filter(record => normalizeSpaceId(record?.spaceId || DEFAULT_SPACE_ID) === sourceSpaceId)
+                    .map(record => {
+                        const nextPayload = record?.payload && typeof record.payload === "object"
+                            ? { ...record.payload, spaceId: DEFAULT_SPACE_ID }
+                            : record.payload;
+                        return shareHistory?.upsertRecord?.("memo", {
+                            ...record,
+                            spaceId: DEFAULT_SPACE_ID,
+                            payload: nextPayload,
+                            updatedAt: record?.updatedAt || new Date().toISOString()
+                        });
+                    });
+                if (updates.length) {
+                    await Promise.all(updates);
+                }
             }
 
             function getRelativeSinceLabel(iso) {
@@ -3412,6 +3505,11 @@
                     syncTiming.error = String(err?.message || err || "sync-error");
                     window.__goToolkitLastCloudSyncTiming = syncTiming;
                     setSpaceSyncError(targetSpaceId, String(err?.message || "Erreur de synchronisation"));
+                    if (isSpaceAuthInvalidError(err)) {
+                        await fallbackSharedSpaceToDefault(targetSpaceId).catch(() => null);
+                        refreshSpaceAwareUi();
+                        openSpaceCreateJoinModal(targetSpaceId, { tab: "modify" });
+                    }
                     rejectSyncPromise(err);
                     throw err;
                 } finally {
@@ -3552,17 +3650,19 @@
                 const initialTab = String(options?.tab || "").trim().toLowerCase() === "modify" ? "modify" : "add";
                 let activeTab = initialTab;
                 let selectedSpaceId = normalizeSpaceId(contextSpaceId || DEFAULT_SPACE_ID);
+                const prefillSpaceId = normalizeSpaceId(options?.prefillSpaceId || contextSpaceId || "");
+                const hideCreateTab = options?.hideCreateTab === true;
                 const hasAnyCloudSpace = getVisibleSharedSpaces().length > 0;
                 if (!hasAnyCloudSpace) activeTab = "add";
                 overlay.innerHTML = `
                     <div id="spaceCreateJoinModal" class="modal" style="max-width:520px;">
                         <div class="modal-header">
-                            <h3>Modifier ou ajouter un espace</h3>
+                            <h3>Espace partagé</h3>
                             <button id="spaceCreateJoinCloseBtn" class="modal-close" type="button" aria-label="Fermer"><i data-lucide="x"></i></button>
                         </div>
                         <div class="settings-tabs tabs" style="margin-bottom:12px;">
                             <button type="button" class="tab-btn ${activeTab === "add" ? "active" : ""}" data-space-tab="add"><i data-lucide="cloud"></i> Connexion</button>
-                            <button type="button" class="tab-btn ${activeTab === "create" ? "active" : ""}" data-space-tab="create"><i data-lucide="plus-circle"></i> Création</button>
+                            ${hideCreateTab ? "" : `<button type="button" class="tab-btn ${activeTab === "create" ? "active" : ""}" data-space-tab="create"><i data-lucide="plus-circle"></i> Création</button>`}
                             ${hasAnyCloudSpace ? `<button type="button" class="tab-btn ${activeTab === "modify" ? "active" : ""}" data-space-tab="modify"><i data-lucide="bolt"></i> Configuration</button>` : ""}
                         </div>
                         <div class="ia-actions" data-space-panel="modify" style="${hasAnyCloudSpace && activeTab === "modify" ? "" : "display:none;"}">
@@ -3650,7 +3750,7 @@
                             <div class="modal-actions" style="justify-content: space-between;">
                                 <span></span>
                                 <div style="display:flex; gap:8px;">
-                                    <button id="spaceCreateOnlyBtn" class="btn-primary" type="button">Valider</button>
+                                    <button id="spaceCreateOnlyBtn" class="btn-primary" type="button">Créer</button>
                                 </div>
                             </div>
                         </div>
@@ -3943,6 +4043,7 @@
                     if (joined?.id) {
                         selectedSpaceId = normalizeSpaceId(joined.id);
                         setActiveTab("modify");
+                        await reloadSpaceFromRemote(requestedSpaceId).catch(() => null);
                         setStatus("Accès à l'espace validé");
                         return;
                     }
@@ -3962,7 +4063,31 @@
                         createOnlySpaceIdHelper.textContent = validateSpaceId(normalized, { allowExisting: true }).message;
                     }
                 });
+                if (activeTab === "add" && prefillSpaceId && createSpaceIdInput) {
+                    createSpaceIdInput.value = prefillSpaceId;
+                    if (createSpaceIdHelper) createSpaceIdHelper.textContent = "";
+                }
                 setActiveTab(activeTab);
+            }
+
+            const SPACE_FIRST_LOGIN_MODAL_STORAGE_KEY = "goToolkit.space.first-login-modal.v1";
+            function ensureDefaultCloudSpaceOnFirstStart() {
+                if (!spacesApi?.readSpaces) return;
+                const existingSpaces = spacesApi.readSpaces();
+                if (Array.isArray(existingSpaces) && existingSpaces.length > 0) return;
+                try {
+                    if (localStorage.getItem(SPACE_FIRST_LOGIN_MODAL_STORAGE_KEY) === "1") return;
+                    localStorage.setItem(SPACE_FIRST_LOGIN_MODAL_STORAGE_KEY, "1");
+                } catch (err) {
+                    // ignore
+                }
+                setTimeout(() => {
+                    openSpaceCreateJoinModal(DEFAULT_SPACE_ID, {
+                        tab: "add",
+                        prefillSpaceId: DEFAULT_SPACE_ID,
+                        hideCreateTab: true
+                    });
+                }, 0);
             }
 
             function setHandoffStatus(message) {
@@ -10359,6 +10484,7 @@
                 setSpaceAccessOverlayVisible(false);
                 navigateToDocsHomePath();
             });
+            ensureDefaultCloudSpaceOnFirstStart();
             window.addEventListener("popstate", () => {
                 restoreDocumentFromCurrentRoute().catch(() => null);
             });

@@ -15,7 +15,7 @@ Browser-first productivity toolkit for consultants. GoToolkit combines document 
   - `src/memo-bridge/index.tsx` -> `public/js/memo.bundle.js`
   - `src/draw-editor/index.tsx` -> `public/js/draw.bundle.js`
 - Cloudflare Workers in `workers/`:
-  - `openai-proxy`, `openrouter-proxy`
+  - `openrouter-proxy`
   - `share-proxy`, `feedback-proxy`
   - `assemblyai-proxy`, `googletts-proxy`
   - `notion-proxy`, `youtube-proxy`, `gmail-proxy`, `ms-proxy`
@@ -95,7 +95,7 @@ This updates:
 
 Each worker has its own `wrangler.toml` and required bindings/secrets. Main variables include:
 
-- `OPENAI_API_KEY`, `OPENROUTER_API_KEY`
+- `OPENROUTER_API_KEY`
 - `FIREBASE_SERVICE_ACCOUNT`, optional `FIREBASE_PROJECT_ID`
 - OAuth client credentials for Notion/YouTube/Gmail/Microsoft workers
 - KV bindings for OAuth/session usage
@@ -123,4 +123,3 @@ See each worker under `workers/*/index.js` and `workers/*/wrangler.toml` for exa
 - `workers/`: Cloudflare worker services
 - `tests/`: Playwright scenarios
 - `scripts/`: build/version helper scripts
-

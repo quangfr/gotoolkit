@@ -243,6 +243,25 @@ function normalizeSpaceId(value) {
   return String(value || "").trim().toLowerCase().replace(/[^a-z0-9-]/g, "");
 }
 
+function resolvePayloadSpaceId(payload) {
+  return normalizeSpaceId(payload?.spaceId || "golive");
+}
+
+function isSpaceProtectedCollection(collection) {
+  const normalized = String(collection || "").trim().toLowerCase();
+  return normalized === "pages" || normalized === "pages-meta";
+}
+
+function readSpaceAuthHeaders(request) {
+  const spaceId = normalizeSpaceId(request.headers.get("X-Space-Id") || "");
+  const token = String(
+    request.headers.get("X-Space-Auth")
+    || request.headers.get("Authorization")?.replace(/^Bearer\s+/i, "")
+    || ""
+  ).trim();
+  return { spaceId, token };
+}
+
 function normalizeSpaceJoinCode(value) {
   const raw = String(value || "").trim().toLowerCase();
   if (!raw) return "";
@@ -1234,18 +1253,25 @@ function resolveConsistencyCollections(collection) {
 
 async function reconcileMemosConsistency(env, request, options = {}) {
   const dryRun = Boolean(options?.dryRun);
+  const scopeSpaceId = normalizeSpaceId(options?.spaceId || "");
   const targetCollections = resolveConsistencyCollections(options?.collection || "pages") || { content: "pages", meta: "pages-meta" };
   const [memosDocs, metaDocs] = await Promise.all([
     listShareDocuments(env, targetCollections.content),
     listShareDocuments(env, targetCollections.meta)
   ]);
+  const scopedMemosDocs = scopeSpaceId
+    ? memosDocs.filter(doc => resolvePayloadSpaceId(doc?.payload || {}) === scopeSpaceId)
+    : memosDocs;
+  const scopedMetaDocs = scopeSpaceId
+    ? metaDocs.filter(doc => resolvePayloadSpaceId(doc?.payload || {}) === scopeSpaceId)
+    : metaDocs;
   const memosById = new Map(
-    (memosDocs || [])
+    (scopedMemosDocs || [])
       .map(doc => [String(doc?.id || "").trim(), doc])
       .filter(([id]) => Boolean(id))
   );
   const metaById = new Map(
-    (metaDocs || [])
+    (scopedMetaDocs || [])
       .map(doc => [String(doc?.id || "").trim(), doc])
       .filter(([id]) => Boolean(id))
   );
@@ -1285,6 +1311,7 @@ async function reconcileMemosConsistency(env, request, options = {}) {
   return {
     success: true,
     dryRun,
+    scopeSpaceId: scopeSpaceId || null,
     totals: {
       content: memosById.size,
       meta: metaById.size
@@ -1525,27 +1552,20 @@ async function handleRequest(request, env) {
   const authCollection = String(
     path?.collection
     || batchPath?.collection
+    || batchGetPath?.collection
+    || batchDeletePath?.collection
     || batchCreatePath?.collection
+    || repairPath?.collection
     || ""
   ).trim().toLowerCase();
-  const authProtectedCollection = authCollection === "pages"
-    || authCollection === "pages-meta";
-  const requiresSpaceAuth = Boolean(
-    (path || batchPath || batchCreatePath)
-    && authProtectedCollection
-    && (method === "PUT" || method === "POST")
-  );
+  const authProtectedCollection = isSpaceProtectedCollection(authCollection);
+  const requiresSpaceAuth = Boolean(authProtectedCollection || controlPath);
+  const authHeaders = readSpaceAuthHeaders(request);
   if (requiresSpaceAuth) {
-    const headerSpaceId = normalizeSpaceId(request.headers.get("X-Space-Id") || "");
-    const providedToken = String(
-      request.headers.get("X-Space-Auth")
-      || request.headers.get("Authorization")?.replace(/^Bearer\s+/i, "")
-      || ""
-    ).trim();
-    if (!headerSpaceId || !providedToken) {
+    if (!authHeaders.spaceId || !authHeaders.token) {
       return errorResponse("Authentification espace requise", 401, request, env);
     }
-    const verification = await verifySpaceAuthToken(env, providedToken, headerSpaceId);
+    const verification = await verifySpaceAuthToken(env, authHeaders.token, authHeaders.spaceId);
     if (!verification.ok) {
       return errorResponse(verification.error || "Token espace invalide", 401, request, env);
     }
@@ -1636,6 +1656,12 @@ async function handleRequest(request, env) {
       if (!Object.prototype.hasOwnProperty.call(entry || {}, "payload")) {
         return errorResponse(`Payload manquant pour ${id}`, 400, request, env);
       }
+      if (isSpaceProtectedCollection(batchPath.collection)) {
+        const payloadSpaceId = resolvePayloadSpaceId(entry?.payload && typeof entry.payload === "object" ? entry.payload : {});
+        if (!payloadSpaceId || payloadSpaceId !== authHeaders.spaceId) {
+          return errorResponse(`Scope espace invalide pour ${id}`, 403, request, env);
+        }
+      }
       const result = await upsertShareDocument(env, batchPath.collection, id, entry.payload, request);
       results.push({
         id,
@@ -1674,6 +1700,12 @@ async function handleRequest(request, env) {
     const documents = [];
     for (const id of ids) {
       const doc = await fetchShareDocument(env, batchGetPath.collection, id);
+      if (isSpaceProtectedCollection(batchGetPath.collection) && doc?.payload) {
+        const docSpaceId = resolvePayloadSpaceId(doc.payload || {});
+        if (!docSpaceId || docSpaceId !== authHeaders.spaceId) {
+          return errorResponse("Accès espace refusé", 403, request, env);
+        }
+      }
       documents.push({
         id,
         payload: doc?.payload || null,
@@ -1725,6 +1757,15 @@ async function handleRequest(request, env) {
         fetchShareDocument(env, collections.content, id),
         fetchShareDocument(env, collections.meta, id)
       ]);
+      if (isSpaceProtectedCollection(batchDeletePath.collection)) {
+        const scopedPayload = existingContent?.payload || existingMeta?.payload || null;
+        if (scopedPayload) {
+          const docSpaceId = resolvePayloadSpaceId(scopedPayload);
+          if (!docSpaceId || docSpaceId !== authHeaders.spaceId) {
+            return errorResponse("Accès espace refusé", 403, request, env);
+          }
+        }
+      }
       const archivedMetaPayload = buildArchivedMemosMetaPayload(
         existingMeta?.payload || null,
         existingContent?.payload || null,
@@ -1790,6 +1831,13 @@ async function handleRequest(request, env) {
       if (!metaPayload || typeof metaPayload !== "object") {
         return errorResponse(`metaPayload manquant pour ${id}`, 400, request, env);
       }
+      if (isSpaceProtectedCollection(batchCreatePath.collection)) {
+        const contentSpaceId = resolvePayloadSpaceId(contentPayload);
+        const metaSpaceId = resolvePayloadSpaceId(metaPayload);
+        if (contentSpaceId !== authHeaders.spaceId || metaSpaceId !== authHeaders.spaceId) {
+          return errorResponse(`Scope espace invalide pour ${id}`, 403, request, env);
+        }
+      }
       const [contentResult, metaResult] = await Promise.all([
         upsertShareDocument(env, collections.content, id, contentPayload, request),
         upsertShareDocument(env, collections.meta, id, metaPayload, request)
@@ -1821,7 +1869,11 @@ async function handleRequest(request, env) {
     }
     const url = new URL(request.url);
     const dryRun = ["1", "true", "yes"].includes(String(url.searchParams.get("dryRun") || "").trim().toLowerCase());
-    const report = await reconcileMemosConsistency(env, request, { dryRun, collection: collections.content });
+    const report = await reconcileMemosConsistency(env, request, {
+      dryRun,
+      collection: collections.content,
+      spaceId: authHeaders.spaceId
+    });
     return jsonResponse(report, 200, request, env, {
       "Cache-Control": "no-store, max-age=0"
     });
@@ -1836,13 +1888,26 @@ async function handleRequest(request, env) {
     );
     const consistencyCollections = resolveConsistencyCollections(path.collection);
     if (ensureConsistency && consistencyCollections) {
-      await reconcileMemosConsistency(env, request, { dryRun: false, collection: consistencyCollections.content });
+      await reconcileMemosConsistency(env, request, {
+        dryRun: false,
+        collection: consistencyCollections.content,
+        spaceId: isSpaceProtectedCollection(path.collection) ? authHeaders.spaceId : ""
+      });
     }
     if (!path.documentId) {
       const view = String(requestUrl.searchParams.get("view") || "").trim().toLowerCase();
       const includeArchived = ["1", "true", "yes"].includes(
         String(requestUrl.searchParams.get("includeArchived") || "").trim().toLowerCase()
       );
+      if (isSpaceProtectedCollection(path.collection)) {
+        const querySpaceId = normalizeSpaceId(requestUrl.searchParams.get("spaceId") || "");
+        if (!querySpaceId) {
+          return errorResponse("spaceId requis", 400, request, env);
+        }
+        if (querySpaceId !== authHeaders.spaceId) {
+          return errorResponse("Accès espace refusé", 403, request, env);
+        }
+      }
       if (view === "tree") {
         const spaceFilter = String(requestUrl.searchParams.get("spaceId") || "").trim().toLowerCase();
         const docs = await listShareDocuments(env, path.collection);
@@ -1869,6 +1934,12 @@ async function handleRequest(request, env) {
       });
     }
     const doc = await fetchShareDocument(env, path.collection, path.documentId);
+    if (isSpaceProtectedCollection(path.collection) && doc?.payload) {
+      const docSpaceId = resolvePayloadSpaceId(doc.payload || {});
+      if (!docSpaceId || docSpaceId !== authHeaders.spaceId) {
+        return errorResponse("Accès espace refusé", 403, request, env);
+      }
+    }
     if (!doc) {
       return jsonResponse({ payload: null }, 404, request, env, {
         "Cache-Control": "no-store, max-age=0"
@@ -1881,6 +1952,15 @@ async function handleRequest(request, env) {
   if (request.method === "DELETE") {
     if (!path.documentId) {
       return errorResponse("Identifiant de document manquant", 400, request, env);
+    }
+    if (isSpaceProtectedCollection(path.collection)) {
+      const existing = await fetchShareDocument(env, path.collection, path.documentId);
+      if (existing?.payload) {
+        const docSpaceId = resolvePayloadSpaceId(existing.payload || {});
+        if (!docSpaceId || docSpaceId !== authHeaders.spaceId) {
+          return errorResponse("Accès espace refusé", 403, request, env);
+        }
+      }
     }
     await deleteShareDocument(env, path.collection, path.documentId);
     return jsonResponse({ success: true }, 200, request, env);
@@ -1901,6 +1981,12 @@ async function handleRequest(request, env) {
     }
     if (!body || !Object.prototype.hasOwnProperty.call(body, "payload")) {
       return errorResponse("Payload manquant", 400, request, env);
+    }
+    if (isSpaceProtectedCollection(path.collection)) {
+      const payloadSpaceId = resolvePayloadSpaceId(body.payload && typeof body.payload === "object" ? body.payload : {});
+      if (!payloadSpaceId || payloadSpaceId !== authHeaders.spaceId) {
+        return errorResponse("Scope espace invalide", 403, request, env);
+      }
     }
     if (request.method === "POST") {
       if (path.documentId) {

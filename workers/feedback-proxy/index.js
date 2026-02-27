@@ -11,6 +11,11 @@ var MAX_REQUEST_SIZE = 140 * 1024 * 1024;
 var MAX_MEDIA_FILES = 6;
 var MAX_MEDIA_BASE64_SIZE = 140 * 1024 * 1024;
 var FEEDBACK_MEDIA_SEGMENT = "media";
+var DEFAULT_ALLOWED_ORIGINS = Object.freeze([
+    "https://gotoolkit.fr",
+    "https://www.gotoolkit.fr",
+    "https://gotoolkit.workers.dev"
+]);
 
 
 
@@ -35,7 +40,14 @@ var index_default = {
         try {
             const { pathname } = new URL(request.url);
 
+            if (request.method !== "OPTIONS" && !isOriginAllowed(request, env)) {
+                return jsonResponse({ error: "Origin non autorisee" }, 403, request, env);
+            }
+
             if (request.method === "OPTIONS") {
+                if (!isOriginAllowed(request, env)) {
+                    return jsonResponse({ error: "Origin non autorisee" }, 403, request, env);
+                }
                 return handleOptions(request, env);
             }
 
@@ -183,30 +195,63 @@ function resolveFeedbackMediaBucket(env) {
 __name(resolveFeedbackMediaBucket, "resolveFeedbackMediaBucket");
 
 function parseAllowedOrigins(env) {
-    const raw = env?.SHARE_ALLOWED_ORIGINS;
-    if (!raw) return null;
-    return raw.split(",").map((o) => o.trim()).filter(Boolean);
+    const fromEnv = String(env?.SHARE_ALLOWED_ORIGINS || "")
+        .split(",")
+        .map((origin) => normalizeOriginValue(origin))
+        .filter(Boolean);
+    const merged = /* @__PURE__ */ new Set([
+        ...DEFAULT_ALLOWED_ORIGINS.map((origin) => normalizeOriginValue(origin)),
+        ...fromEnv
+    ]);
+    return Array.from(merged);
 }
 __name(parseAllowedOrigins, "parseAllowedOrigins");
 
 function corsHeaders(request, env) {
     const allowedOrigins = parseAllowedOrigins(env);
-    const origin = request.headers.get("Origin");
-    const isLocalhost = origin && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin);
+    const origin = normalizeOriginValue(request.headers.get("Origin"));
+    const isLocalhost = isLocalAllowedOrigin(origin);
+    const isExplicitlyAllowed = Boolean(origin && allowedOrigins.includes(origin));
+    const requestedHeaders = request.headers.get("Access-Control-Request-Headers");
 
     const headers = {
         "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
-        "Access-Control-Allow-Origin":
-            isLocalhost ? origin : allowedOrigins && origin && allowedOrigins.includes(origin) ? origin : "*"
+        "Access-Control-Allow-Headers": requestedHeaders && requestedHeaders.trim()
+            ? requestedHeaders
+            : "Content-Type, Authorization",
+        "Access-Control-Allow-Origin": isLocalhost || isExplicitlyAllowed ? origin : "null"
     };
 
-    if (allowedOrigins) {
-        headers["Vary"] = "Origin";
-    }
+    headers["Vary"] = "Origin";
     return headers;
 }
 __name(corsHeaders, "corsHeaders");
+
+function normalizeOriginValue(value) {
+    const candidate = String(value || "").trim();
+    if (!candidate) return "";
+    try {
+        return new URL(candidate).origin;
+    } catch {
+        return candidate.replace(/\/+$/, "");
+    }
+}
+__name(normalizeOriginValue, "normalizeOriginValue");
+
+function isLocalAllowedOrigin(origin) {
+    if (!origin) return false;
+    return /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])(:\d+)?$/i.test(origin);
+}
+__name(isLocalAllowedOrigin, "isLocalAllowedOrigin");
+
+function isOriginAllowed(request, env) {
+    const origin = normalizeOriginValue(request.headers.get("Origin"));
+    if (!origin) return false;
+    if (isLocalAllowedOrigin(origin)) return true;
+    const allowedOrigins = parseAllowedOrigins(env);
+    return allowedOrigins.includes(origin);
+}
+__name(isOriginAllowed, "isOriginAllowed");
 
 function handleOptions(request, env) {
     return new Response(null, {
