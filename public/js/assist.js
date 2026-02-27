@@ -47,7 +47,7 @@
     document.addEventListener("contextmenu", function (event) {
         var target = event && event.target;
         if (!(target instanceof Element)) return;
-        if (target.closest("#assistSidebar, .chat-sidebar, .chat-knowledge-modal, #chat-inline-editor-container, #chat-root")) {
+        if (target.closest("#assistSidebar, .chat-sidebar, #chat-inline-editor-container, #chat-root")) {
             event.preventDefault();
         }
     });
@@ -308,7 +308,6 @@
             if (lower.endsWith("/index.html")) return "memo";
             if (lower.endsWith("/home.html")) return "index";
             if (lower.endsWith("/memo.html")) return "memo";
-            if (lower.endsWith("/docs.html")) return "memo";
             if (lower.endsWith("/memo")) return "memo";
             if (lower.endsWith("/docs")) return "memo";
             var last = lower.split("/").filter(Boolean).slice(-1)[0] || "index";
@@ -1784,13 +1783,7 @@
         if (this.textarea) {
             this.textarea.focus();
         }
-        this.syncKnowledgeModalVisibility();
         this.ensureKnowledgeIndexWarm();
-    };
-
-    AssistSidebar.prototype.syncKnowledgeModalVisibility = function () {
-        // Legacy knowledge modal removed; memory is handled by Base de connaissance dropdown only.
-        return;
     };
 
     AssistSidebar.prototype.closeActiveModals = function () {
@@ -3135,7 +3128,6 @@
         this.updateInputPlaceholder();
         this.updateHeaderDocumentCount();
         this.refreshDocumentStats();
-        this.syncKnowledgeModalVisibility();
     };
 
     AssistSidebar.prototype.updateInputPlaceholder = function () {
@@ -11335,7 +11327,6 @@
             this.documentStatsWatcher = this.docManager.onStatsChange(this.refreshDocumentStats.bind(this));
             this.refreshDocumentStats();
         }
-        this.syncKnowledgeModalVisibility();
         if (this.isOpen) {
             this.open();
         }

@@ -8,8 +8,6 @@ Browser-first productivity toolkit for consultants. GoToolkit combines document 
 - `Grid` (`public/grid.html`): AG Grid workspace with templates/criteria helpers, AI-assisted generation, and export capabilities.
 - `Mobile` (`public/mobile.html`): narrow-screen optimized experience. `index.html` auto-redirects to this page for mobile contexts.
 
-`public/docs.html` is a redirect shim to `public/index.html` for backward compatibility.
-
 ## Architecture
 
 - Static frontend: `public/` (HTML/CSS/vanilla JS + bundled bridges in `public/js`).

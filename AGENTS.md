@@ -5,7 +5,7 @@
 - Workers live in `workers/` (OpenAI proxy, OpenRouter proxy, sharing, feedback, AssemblyAI, Notion proxy, YouTube proxy, Gmail proxy, Microsoft proxy, Google TTS proxy).
 
 ## Navigation + cache
-- `public/index.html` is the Docs app entry point; `public/docs.html` redirects to `index.html`.
+- `public/index.html` is the Docs app entry point.
 - Version format: `YYYY.MM.DD.N` (N is an increment number for the day).
 - **Bump the version systematically ONLY when the user asks for a "bump", "commit", or "push".**
 - **Automated Versioning**: Run `npm run bump` to automatically increment the version in `package.json`, update cache-busters `?v=...` in HTML files, and update version labels.
@@ -14,8 +14,8 @@
 - **Commit title format**: Use `v2026.xx.xx.xx : <summary>` with a summary under 15 words.
 - **Manual Bumping checklist** (if `npm run bump` is not used):
   1. Increment `version` in `package.json`.
-  2. Search and replace all `?v=...` cache-busters in `public/index.html`, `public/docs.html`, and `public/grid.html`.
-  3. Update the version label in `public/index.html` (`hero-version`), `public/docs.html` (info panel), and `public/grid.html` (info panel).
+  2. Search and replace all `?v=...` cache-busters in `public/index.html` and `public/grid.html`.
+  3. Update the version label in `public/index.html` (`hero-version`) and `public/grid.html` (info panel).
   4. Verify version labels and cache-busters are consistent across touched pages.
 - `public/prompt.js` is the root for all AI system prompts and templates.
 - Keep the IndexedDB version in `public/js/assist.js` health-check/repair (`indexedDB.open`) aligned with `DB_VERSION` in `public/js/document-rag.js`.
@@ -59,7 +59,7 @@ Only `public/js` may touch `window`:
 ## Build + runtime
 - Build: `npm install` → `npm run build`. This runs drawing and memo bundles in parallel using `esbuild`. 
 - Production: Build is automated via GitHub Actions (`npm run build:prod`). Local build outputs in `public/js` may still appear in Git status depending on changes.
-- Heavy Libraries: React, ReactDOM, Excalidraw, and Mermaid are loaded via CDN (see `docs.html`).
+- Heavy Libraries: React, ReactDOM, Excalidraw, and Mermaid are loaded via CDN (see `index.html`).
 - Shims: Build aliases in `package.json` map module imports (e.g., `react`, `react-dom`, `excalidraw`, `mermaid`) to `window` globals via `src/*-shim.ts` files (react-shim, react-dom-shim, etc.) to keep bundles small and fast.
 - Dev: `npm start` serves `public/` on port 5000.
 - Excalidraw bridge: `src/draw-editor/index.tsx` forces light theme, normalizes Mermaid, exposes `window.GoToolkitExcalidraw`.

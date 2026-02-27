@@ -8,7 +8,7 @@ test.describe("Cloud sync performance", () => {
     const baseUrl = "http://127.0.0.1:5000";
     const token = `perf-sync-${Date.now()}`;
 
-    await page.goto(`${baseUrl}/docs.html`, { waitUntil: "load" });
+    await page.goto(`${baseUrl}/index.html`, { waitUntil: "load" });
     await page.waitForFunction(() => Boolean((window as any).goToolkitShareHistory?.upsertRecord), null, { timeout: 30_000 });
     await page.waitForFunction(() => Boolean((window as any).goToolkitShareWorker), null, { timeout: 30_000 });
 
@@ -180,7 +180,7 @@ test.describe("Cloud sync performance", () => {
     test.setTimeout(180_000);
     const baseUrl = "http://127.0.0.1:5000";
 
-    await page.goto(`${baseUrl}/docs.html`, { waitUntil: "load" });
+    await page.goto(`${baseUrl}/index.html`, { waitUntil: "load" });
     await page.waitForFunction(() => Boolean((window as any).goToolkitShareWorker?.saveSharePayload), null, { timeout: 45_000 });
 
     const result = await page.evaluate(async () => {

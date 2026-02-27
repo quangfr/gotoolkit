@@ -740,7 +740,7 @@
         getLastAIResponse
     };
 
-    // Expose getters to global for direct access (e.g. from docs.html)
+    // Expose getters to global for direct access (e.g. from index.html)
     global.getLastAIRequest = getLastAIRequest;
     global.getLastAIResponse = getLastAIResponse;
 })(window);

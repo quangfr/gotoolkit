@@ -4,7 +4,7 @@ import { SimpleEditor } from '@/memo-editor';
 import { exportEditorToDocx } from '@/memo-editor/docx-export';
 import { EditorState } from '@tiptap/pm/state';
 
-// Bridge to maintain compatibility with docs.html
+// Bridge to maintain compatibility with index.html
 interface MemoEditorApi {
     setValue: (content: string) => void;
     getValue: () => string;
@@ -208,7 +208,7 @@ const App = () => {
         });
         setActiveId(prev => prev || 'default');
 
-        // Expose the API to the window as expected by docs.html
+        // Expose the API to the window as expected by index.html
         (window as any).GoToolkitMemoEditorReady = Promise.resolve(api);
         (window as any).GoToolkitMemoInstance = api;
     }, []);
