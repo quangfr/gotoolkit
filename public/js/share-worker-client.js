@@ -30,6 +30,7 @@
   const textDecoder = new TextDecoder();
   const assetBlobCache = new Map();
   const spaceKeyCache = new Map();
+  const spaceAuthTokenCache = new Map();
   let syncSessionState = null;
 
   function logShareDebug(event, payload) {
@@ -899,12 +900,17 @@
         spaceId
       });
       const encryptedPayload = await encryptPagePayload(preparedPayload, collection, spaceId);
+      const authHeaders = await withSpaceAuthHeaders(base, mergeSyncHeaders({
+        "Content-Type": "application/json",
+        Accept: "application/json"
+      }), {
+        method,
+        collection,
+        spaceId
+      });
       const response = await fetch(url, {
         method,
-        headers: mergeSyncHeaders({
-          "Content-Type": "application/json",
-          Accept: "application/json"
-        }),
+        headers: authHeaders,
         body: JSON.stringify({ payload: encryptedPayload })
       });
       if (!response.ok) {
@@ -944,14 +950,23 @@
           payload: encryptedPayload
         });
       }
+      const uniqueSpaceIds = Array.from(new Set(preparedWrites.map(entry => resolveSpaceIdForPayload(entry?.payload || {}, {}))));
+      if (uniqueSpaceIds.length !== 1) {
+        throw new Error("Le lot doit cibler un seul spaceId");
+      }
+      const authHeaders = await withSpaceAuthHeaders(base, mergeSyncHeaders({
+        "Content-Type": "application/json",
+        Accept: "application/json"
+      }), {
+        method: "POST",
+        collection,
+        spaceId: uniqueSpaceIds[0]
+      });
       let response;
       try {
         response = await fetch(buildShareBatchUrl(base, collection), {
           method: "POST",
-          headers: mergeSyncHeaders({
-            "Content-Type": "application/json",
-            Accept: "application/json"
-          }),
+          headers: authHeaders,
           body: JSON.stringify({ writes: preparedWrites })
         });
       } catch (error) {
@@ -1016,6 +1031,118 @@
         count: Number(data?.count || normalizedIds.length),
         documents: hydratedDocs
       };
+    });
+  }
+
+  function normalizeSpaceId(value) {
+    return String(value || "").trim().toLowerCase().replace(/[^a-z0-9-]/g, "");
+  }
+
+  async function getSpaceAuthToken(base, spaceId) {
+    const normalizedSpaceId = normalizeSpaceId(spaceId);
+    if (!normalizedSpaceId) return null;
+    const now = Date.now();
+    const cached = spaceAuthTokenCache.get(normalizedSpaceId);
+    if (cached && cached.token && Number(cached.expiresAt || 0) > now + 10_000) {
+      return cached.token;
+    }
+    const space = getSpaceById(normalizedSpaceId);
+    const spaceCode = normalizeSpaceJoinCode(space?.spaceJoinCode || "");
+    if (!spaceCode) return null;
+    const response = await fetch(`${base}/${API_VERSION}/spaces/auth`, {
+      method: "POST",
+      headers: mergeSyncHeaders({
+        "Content-Type": "application/json",
+        Accept: "application/json"
+      }),
+      body: JSON.stringify({ spaceId: normalizedSpaceId, spaceCode })
+    });
+    if (!response.ok) {
+      const body = await response.text().catch(() => "");
+      throw new Error(body || "Auth espace impossible");
+    }
+    const data = await response.json().catch(() => ({}));
+    const token = String(data?.token || "").trim();
+    const expiresAt = Number(data?.expiresAt || 0);
+    if (!token || !Number.isFinite(expiresAt)) {
+      throw new Error("Token espace invalide");
+    }
+    spaceAuthTokenCache.set(normalizedSpaceId, { token, expiresAt });
+    return token;
+  }
+
+  async function rotateSpaceJoinCode(spaceId, currentSpaceCodeRaw, nextSpaceCodeRaw) {
+    assertReady();
+    const normalizedSpaceId = normalizeSpaceId(spaceId);
+    const currentSpaceCode = normalizeSpaceJoinCode(currentSpaceCodeRaw);
+    const nextSpaceCode = normalizeSpaceJoinCode(nextSpaceCodeRaw);
+    if (!normalizedSpaceId) {
+      throw new Error("spaceId manquant");
+    }
+    if (!currentSpaceCode || !nextSpaceCode) {
+      throw new Error("Code espace manquant");
+    }
+    if (currentSpaceCode === nextSpaceCode) {
+      return { ok: true, rotated: false };
+    }
+    return withWorkerFallback(async base => {
+      const authHeaders = await withSpaceAuthHeaders(base, mergeSyncHeaders({
+        "Content-Type": "application/json",
+        Accept: "application/json"
+      }), {
+        method: "POST",
+        collection: "pages",
+        spaceId: normalizedSpaceId
+      });
+      const response = await fetch(`${base}/${API_VERSION}/spaces/auth/rotate`, {
+        method: "POST",
+        headers: authHeaders,
+        body: JSON.stringify({
+          spaceId: normalizedSpaceId,
+          currentSpaceCode,
+          nextSpaceCode
+        })
+      });
+      if (!response.ok) {
+        const body = await response.text().catch(() => "");
+        throw new Error(body || "Impossible de mettre à jour le code espace");
+      }
+      const data = await response.json().catch(() => ({}));
+      const token = String(data?.token || "").trim();
+      const expiresAt = Number(data?.expiresAt || 0);
+      if (token && Number.isFinite(expiresAt)) {
+        spaceAuthTokenCache.set(normalizedSpaceId, { token, expiresAt });
+      } else {
+        spaceAuthTokenCache.delete(normalizedSpaceId);
+      }
+      return {
+        ok: true,
+        rotated: Boolean(data?.rotated),
+        token,
+        expiresAt
+      };
+    });
+  }
+
+  async function withSpaceAuthHeaders(base, headers, options = {}) {
+    const method = String(options?.method || "GET").toUpperCase();
+    const collection = String(options?.collection || "").trim().toLowerCase();
+    const shouldAuth = Boolean(
+      (method === "PUT" || method === "POST")
+      && (collection === "pages" || collection === "pages-meta")
+    );
+    if (!shouldAuth) return headers || {};
+    const spaceId = normalizeSpaceId(options?.spaceId || "");
+    if (!spaceId) {
+      throw new Error("spaceId requis pour cette opération");
+    }
+    const token = await getSpaceAuthToken(base, spaceId);
+    if (!token) {
+      throw new Error("Code d'accès espace requis");
+    }
+    return Object.assign({}, headers || {}, {
+      "X-Space-Id": spaceId,
+      "X-Space-Auth": token
     });
   }
 
@@ -1154,14 +1281,23 @@
           metaPayload: entry.metaPayload
         });
       }
+      const uniqueSpaceIds = Array.from(new Set(preparedWrites.map(entry => resolveSpaceIdForPayload(entry?.contentPayload || {}, {}))));
+      if (uniqueSpaceIds.length !== 1) {
+        throw new Error("Le lot doit cibler un seul spaceId");
+      }
+      const authHeaders = await withSpaceAuthHeaders(base, mergeSyncHeaders({
+        "Content-Type": "application/json",
+        Accept: "application/json"
+      }), {
+        method: "POST",
+        collection,
+        spaceId: uniqueSpaceIds[0]
+      });
       let response;
       try {
         response = await fetch(buildShareBatchCreateUrl(base, collection), {
           method: "POST",
-          headers: mergeSyncHeaders({
-            "Content-Type": "application/json",
-            Accept: "application/json"
-          }),
+          headers: authHeaders,
           body: JSON.stringify({ writes: preparedWrites })
         });
       } catch (error) {
@@ -1293,6 +1429,7 @@
     listShareTree,
     uploadAsset,
     deleteAsset,
+    rotateSpaceJoinCode,
     probePagePayloadJoinCode,
     buildAssetUrl: assetId => buildAssetUrl(workerBases[0], assetId)
   };

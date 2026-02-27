@@ -1,6 +1,6 @@
 const ALLOWED_ORIGINS = [
   "https://gotoolkit.fr",
-  "https://gotoolkit.workers.dev"
+  "https://gotoolkit.web.app"
 ];
 
 const NOTION_AUTH_URL = "https://api.notion.com/v1/oauth/authorize";
@@ -17,19 +17,19 @@ function normalizeOrigin(origin) {
 }
 
 function isLocalOrigin(origin) {
-  if (!origin) return true;
-  return origin.startsWith("http://localhost")
-    || origin.startsWith("http://127.")
-    || origin.startsWith("http://192.168.");
+  if (!origin) return false;
+  return /^http:\/\/localhost(?::\d+)?$/i.test(origin)
+    || /^http:\/\/127\.0\.0\.1(?::\d+)?$/i.test(origin);
 }
 
 function corsMeta(request) {
   const origin = normalizeOrigin(request.headers.get("Origin"));
+  const hasOrigin = Boolean(origin);
   const allowLocal = isLocalOrigin(origin);
+  const allowListed = ALLOWED_ORIGINS.includes(origin);
+  const isAllowedOrigin = allowLocal || allowListed;
   const defaultOrigin = ALLOWED_ORIGINS[0];
-  const corsOrigin = allowLocal
-    ? origin || "*"
-    : ALLOWED_ORIGINS.includes(origin) ? origin : defaultOrigin;
+  const corsOrigin = isAllowedOrigin ? origin : defaultOrigin;
   const headers = {
     "Access-Control-Allow-Origin": corsOrigin,
     "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
@@ -37,7 +37,7 @@ function corsMeta(request) {
     "Access-Control-Allow-Credentials": "true"
   };
   if (!allowLocal) headers["Vary"] = "Origin";
-  return { origin, allowLocal, headers };
+  return { origin, hasOrigin, isAllowedOrigin, headers };
 }
 
 function jsonResponse(corsHeaders, payload, status = 200, extraHeaders = {}) {
@@ -1040,12 +1040,17 @@ function blockToMarkdown(block) {
 export default {
   async fetch(request, env) {
     const cors = corsMeta(request);
-    if (!cors.allowLocal && !ALLOWED_ORIGINS.includes(cors.origin)) {
+    if (request.method === "OPTIONS") {
+      if (!cors.hasOrigin || !cors.isAllowedOrigin) {
+        return new Response("Forbidden origin", { status: 403, headers: cors.headers });
+      }
+      return new Response(null, { headers: cors.headers });
+    }
+    if (cors.hasOrigin && !cors.isAllowedOrigin) {
       return new Response("Forbidden origin", { status: 403, headers: cors.headers });
     }
-
-    if (request.method === "OPTIONS") {
-      return new Response(null, { headers: cors.headers });
+    if (!cors.hasOrigin && request.method !== "GET") {
+      return new Response("Origin header required", { status: 403, headers: cors.headers });
     }
 
     const url = new URL(request.url);

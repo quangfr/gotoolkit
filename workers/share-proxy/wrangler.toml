@@ -21,6 +21,11 @@ bucket_name = "gotoolkit-share-media"
 [[kv_namespaces]]
 binding = "SYNC_REPLAY_KV"
 id = "bfe6e648d5734e2f93bd4105278f487c"
+
+[[d1_databases]]
+binding = "SPACE_AUTH_DB"
+database_name = "gotoolkit-space-auth"
+database_id = "ae9794a0-0fdd-4c7c-b22a-f75bac581d40"
 # To bind the worker to a custom domain, Cloudflare requires either
 # `route = { pattern = "example.com/*", zone_id = "..." }` for each
 # zone you control, or a `custom_domain` entry. Commented out for now.

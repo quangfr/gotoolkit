@@ -42,7 +42,7 @@ test.describe("Cloud page switching persistency", () => {
         id: "golive",
         name: "Go Live",
         icon: "cloud-upload",
-        spaceJoinCode: "equipe produit cloud securite intelligence",
+        spaceJoinCode: "atelier projet donnees partage securise",
         isDefault: true
       });
 

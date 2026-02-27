@@ -1,7 +1,7 @@
 (function () {
   const STORAGE_KEY = "go-toolkit-spaces";
   const DEFAULT_SPACE_ID = "golive";
-  const DEFAULT_GOLIVE_JOIN_CODE = "equipe produit cloud securite intelligence";
+  const DEFAULT_GOLIVE_JOIN_CODE = "atelier projet donnees partage securise";
   const DEFAULT_SPACE = {
     id: DEFAULT_SPACE_ID,
     name: "Go Live",
@@ -54,7 +54,7 @@
   function normalizeSpaceId(value) {
     const raw = String(value || "").trim().toLowerCase();
     if (!raw) return "";
-    return raw.replace(/[^a-z0-9_-]/g, "");
+    return raw.replace(/[^a-z0-9-]/g, "");
   }
 
   function normalizeSpaceJoinCode(value) {
@@ -195,9 +195,9 @@
     });
   }
 
-  function createSpace(name, icon) {
-    const trimmedName = String(name || "").trim() || createRandomName();
-    let id = normalizeSpaceId(trimmedName.replace(/\s+/g, "-").toLowerCase());
+  function createSpace(spaceId, icon) {
+    const requestedId = normalizeSpaceId(spaceId);
+    let id = requestedId;
     if (!id || id === DEFAULT_SPACE_ID) {
       id = `space-${Math.random().toString(36).slice(2, 8)}`;
     }
@@ -211,7 +211,7 @@
     }
     return upsertSpace({
       id: candidate,
-      name: trimmedName,
+      name: candidate.toUpperCase(),
       icon: String(icon || "cloud-upload").trim() || "cloud-upload",
       spaceJoinCode: createRandomCode(),
       isDefault: false

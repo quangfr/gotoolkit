@@ -1,12 +1,11 @@
 const API_VERSION = "v1";
 const SHARES_SEGMENT = "shares";
 const ASSETS_SEGMENT = "assets";
+const SPACES_SEGMENT = "spaces";
 const VALID_COLLECTIONS = new Set([
   "grids",
   "pages",
   "pages-meta",
-  "memos",
-  "memos-meta",
   "template-memos",
   "handoffs",
   "codes_map"
@@ -207,6 +206,23 @@ function parseAssetPath(request) {
   };
 }
 
+function parseSpaceAuthPath(request) {
+  const url = new URL(request.url);
+  const segments = normalizePathname(url.pathname)
+    .split("/")
+    .filter(Boolean);
+  if (segments.length !== 3 && segments.length !== 4) return null;
+  if (segments[0] !== API_VERSION || segments[1] !== SPACES_SEGMENT) {
+    return null;
+  }
+  const action = String(segments[2] || "").trim().toLowerCase();
+  if (action !== "auth") return null;
+  const operation = String(segments[3] || "").trim().toLowerCase();
+  if (!operation) return { action, operation: "issue" };
+  if (operation !== "rotate") return null;
+  return { action, operation };
+}
+
 function toBase64UrlString(text) {
   return btoa(text).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
@@ -216,6 +232,21 @@ function fromBase64UrlString(text) {
   const padLength = normalized.length % 4;
   const withPadding = normalized + (padLength ? "=".repeat(4 - padLength) : "");
   return atob(withPadding);
+}
+
+function normalizeSpaceId(value) {
+  return String(value || "").trim().toLowerCase().replace(/[^a-z0-9-]/g, "");
+}
+
+function normalizeSpaceJoinCode(value) {
+  const raw = String(value || "").trim().toLowerCase();
+  if (!raw) return "";
+  return raw
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function resolveR2MediaBucket(env) {
@@ -327,17 +358,24 @@ async function sha256Hex(bytes) {
 
 function parseAllowedOrigins(env) {
   const raw = env?.SHARE_ALLOWED_ORIGINS;
-  if (!raw) return null;
+  if (!raw) return [];
   return raw
     .split(",")
     .map(origin => origin.trim())
     .filter(Boolean);
 }
 
+function isLocalAllowedOrigin(origin) {
+  if (!origin) return false;
+  return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin);
+}
+
 function corsHeaders(request, env) {
   const allowedOrigins = parseAllowedOrigins(env);
   const origin = request.headers.get("Origin");
-  const isLocalhost = origin && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin);
+  const isLocalhost = isLocalAllowedOrigin(origin);
+  const isExplicitlyAllowed = Boolean(origin && allowedOrigins.includes(origin));
+  const allowOrigin = isLocalhost || isExplicitlyAllowed;
   const requestedHeaders = request.headers.get("Access-Control-Request-Headers");
   const allowHeaders = requestedHeaders && requestedHeaders.trim()
     ? requestedHeaders
@@ -345,15 +383,9 @@ function corsHeaders(request, env) {
   const headers = {
     "Access-Control-Allow-Methods": "GET,PUT,POST,DELETE,OPTIONS",
     "Access-Control-Allow-Headers": allowHeaders,
-    "Access-Control-Allow-Origin": isLocalhost
-      ? origin
-      : allowedOrigins && origin && allowedOrigins.includes(origin)
-        ? origin
-        : "*"
+    "Access-Control-Allow-Origin": allowOrigin ? origin : "null"
   };
-  if (allowedOrigins) {
-    headers["Vary"] = "Origin";
-  }
+  headers["Vary"] = "Origin";
   return headers;
 }
 
@@ -375,15 +407,12 @@ function errorResponse(message, status, request, env) {
   return jsonResponse({ error: message }, status, request, env);
 }
 
-function verifyAdminAccess(request, env) {
-  const requiredToken = String(env?.SHARE_ADMIN_TOKEN || "").trim();
-  if (!requiredToken) return true;
-  const provided = String(
-    request.headers.get("X-Admin-Token")
-    || request.headers.get("Authorization")?.replace(/^Bearer\s+/i, "")
-    || ""
-  ).trim();
-  return Boolean(provided) && provided === requiredToken;
+function isOriginAllowed(request, env) {
+  const origin = String(request.headers.get("Origin") || "").trim();
+  if (!origin) return false;
+  if (isLocalAllowedOrigin(origin)) return true;
+  const allowedOrigins = parseAllowedOrigins(env);
+  return allowedOrigins.includes(origin);
 }
 
 function notFoundResponse(request, env) {
@@ -412,6 +441,130 @@ function getSyncReplayStore(env) {
     return null;
   }
   return kv;
+}
+
+function getSpaceAuthStore(env) {
+  const kv = env?.SYNC_REPLAY_KV;
+  if (!kv || typeof kv.get !== "function" || typeof kv.put !== "function") {
+    return null;
+  }
+  return kv;
+}
+
+function getSpaceAuthDb(env) {
+  const db = env?.SPACE_AUTH_DB;
+  if (!db || typeof db.prepare !== "function") return null;
+  return db;
+}
+
+async function readSpaceCodeHash(env, spaceId) {
+  const normalizedSpaceId = normalizeSpaceId(spaceId);
+  if (!normalizedSpaceId) return "";
+  const db = getSpaceAuthDb(env);
+  if (db) {
+    try {
+      const row = await db
+        .prepare("SELECT code_hash FROM space_code_hashes WHERE space_id = ?1 LIMIT 1")
+        .bind(normalizedSpaceId)
+        .first();
+      return String(row?.code_hash || "").trim();
+    } catch (err) {
+      console.warn("space auth d1 read failed", err);
+      throw new Error("Stockage auth espace indisponible");
+    }
+  }
+  const kv = getSpaceAuthStore(env);
+  if (!kv) return "";
+  const hashKey = `space:codehash:${normalizedSpaceId}`;
+  return String(await kv.get(hashKey) || "").trim();
+}
+
+async function writeSpaceCodeHash(env, spaceId, codeHash) {
+  const normalizedSpaceId = normalizeSpaceId(spaceId);
+  const normalizedHash = String(codeHash || "").trim();
+  if (!normalizedSpaceId || !normalizedHash) return;
+  const db = getSpaceAuthDb(env);
+  if (db) {
+    try {
+      await db
+        .prepare(`INSERT INTO space_code_hashes (space_id, code_hash, updated_at)
+          VALUES (?1, ?2, ?3)
+          ON CONFLICT(space_id) DO UPDATE SET code_hash = excluded.code_hash, updated_at = excluded.updated_at`)
+        .bind(normalizedSpaceId, normalizedHash, new Date().toISOString())
+        .run();
+      return;
+    } catch (err) {
+      console.warn("space auth d1 write failed", err);
+      throw new Error("Stockage auth espace indisponible");
+    }
+  }
+  const kv = getSpaceAuthStore(env);
+  if (!kv) throw new Error("Stockage auth espace indisponible");
+  const hashKey = `space:codehash:${normalizedSpaceId}`;
+  await kv.put(hashKey, normalizedHash);
+}
+
+function getSpaceAuthSecret(env) {
+  const secret = String(env?.SHARE_SPACE_AUTH_SECRET || "").trim();
+  return secret;
+}
+
+async function getSpaceAuthSigningKey(env) {
+  const secret = getSpaceAuthSecret(env);
+  if (!secret) return null;
+  return crypto.subtle.importKey(
+    "raw",
+    textEncoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign", "verify"]
+  );
+}
+
+async function signSpaceAuthPayload(env, payload) {
+  const key = await getSpaceAuthSigningKey(env);
+  if (!key) return "";
+  const raw = JSON.stringify(payload || {});
+  const sig = await crypto.subtle.sign("HMAC", key, textEncoder.encode(raw));
+  return `${toBase64UrlString(raw)}.${toBase64UrlString(String.fromCharCode(...new Uint8Array(sig)))}`;
+}
+
+async function verifySpaceAuthToken(env, token, expectedSpaceId) {
+  const key = await getSpaceAuthSigningKey(env);
+  if (!key) return { ok: false, error: "Secret auth manquant" };
+  const rawToken = String(token || "").trim();
+  const dot = rawToken.lastIndexOf(".");
+  if (dot <= 0) return { ok: false, error: "Token invalide" };
+  const payloadPart = rawToken.slice(0, dot);
+  const sigPart = rawToken.slice(dot + 1);
+  let payloadRaw = "";
+  try {
+    payloadRaw = fromBase64UrlString(payloadPart);
+  } catch (err) {
+    return { ok: false, error: "Token invalide" };
+  }
+  let sigBytes;
+  try {
+    const sigRaw = fromBase64UrlString(sigPart);
+    sigBytes = new Uint8Array(sigRaw.length);
+    for (let i = 0; i < sigRaw.length; i += 1) sigBytes[i] = sigRaw.charCodeAt(i);
+  } catch (err) {
+    return { ok: false, error: "Signature invalide" };
+  }
+  const valid = await crypto.subtle.verify("HMAC", key, sigBytes, textEncoder.encode(payloadRaw));
+  if (!valid) return { ok: false, error: "Signature invalide" };
+  let payload = null;
+  try {
+    payload = JSON.parse(payloadRaw);
+  } catch (err) {
+    return { ok: false, error: "Payload token invalide" };
+  }
+  const spaceId = normalizeSpaceId(payload?.spaceId || "");
+  const expected = normalizeSpaceId(expectedSpaceId || "");
+  const exp = Number(payload?.exp || 0);
+  if (!spaceId || !expected || spaceId !== expected) return { ok: false, error: "Token hors scope" };
+  if (!Number.isFinite(exp) || Date.now() >= exp) return { ok: false, error: "Token expiré" };
+  return { ok: true, payload };
 }
 
 function getLocalSyncRevokeCacheTtlMs(env) {
@@ -1049,16 +1202,12 @@ function buildArchivedMemosMetaPayload(metaPayload, contentPayload, options = {}
 
 function resolveContentMetaCollections(contentCollection) {
   const collection = String(contentCollection || "").trim().toLowerCase();
-  if (collection === "memos") return { content: "memos", meta: "memos-meta" };
   if (collection === "pages") return { content: "pages", meta: "pages-meta" };
   return null;
 }
 
 function resolveConsistencyCollections(collection) {
   const normalized = String(collection || "").trim().toLowerCase();
-  if (normalized === "memos" || normalized === "memos-meta") {
-    return { content: "memos", meta: "memos-meta" };
-  }
   if (normalized === "pages" || normalized === "pages-meta") {
     return { content: "pages", meta: "pages-meta" };
   }
@@ -1067,7 +1216,7 @@ function resolveConsistencyCollections(collection) {
 
 async function reconcileMemosConsistency(env, request, options = {}) {
   const dryRun = Boolean(options?.dryRun);
-  const targetCollections = resolveConsistencyCollections(options?.collection || "memos") || { content: "memos", meta: "memos-meta" };
+  const targetCollections = resolveConsistencyCollections(options?.collection || "pages") || { content: "pages", meta: "pages-meta" };
   const [memosDocs, metaDocs] = await Promise.all([
     listShareDocuments(env, targetCollections.content),
     listShareDocuments(env, targetCollections.meta)
@@ -1167,11 +1316,111 @@ async function upsertShareDocument(env, collection, documentId, payload, request
 }
 
 async function handleRequest(request, env) {
+  if (request.method !== "OPTIONS" && !isOriginAllowed(request, env)) {
+    return errorResponse("Origin non autorisee", 403, request, env);
+  }
   if (request.method === "OPTIONS") {
+    if (!isOriginAllowed(request, env)) {
+      return errorResponse("Origin non autorisee", 403, request, env);
+    }
     return new Response(null, { status: 204, headers: corsHeaders(request, env) });
   }
 
   const assetPath = parseAssetPath(request);
+  const spaceAuthPath = parseSpaceAuthPath(request);
+  if (spaceAuthPath) {
+    if (request.method !== "POST") {
+      return errorResponse("Méthode non autorisée", 405, request, env);
+    }
+    if (!getSpaceAuthDb(env) && !getSpaceAuthStore(env)) {
+      return errorResponse("Stockage auth espace manquant", 500, request, env);
+    }
+    const secret = getSpaceAuthSecret(env);
+    if (!secret) return errorResponse("SHARE_SPACE_AUTH_SECRET manquant", 500, request, env);
+    let body = null;
+    try {
+      body = await request.json();
+    } catch (err) {
+      return errorResponse("Payload JSON attendu", 400, request, env);
+    }
+    const spaceId = normalizeSpaceId(body?.spaceId || "");
+    if (!spaceId) {
+      return errorResponse("spaceId manquant", 400, request, env);
+    }
+    if (spaceAuthPath.operation === "rotate") {
+      const currentSpaceCode = normalizeSpaceJoinCode(
+        body?.currentSpaceCode || body?.currentSpaceJoinCode || body?.spaceCode || body?.spaceJoinCode || ""
+      );
+      const nextSpaceCode = normalizeSpaceJoinCode(
+        body?.nextSpaceCode || body?.nextSpaceJoinCode || body?.newSpaceCode || body?.newSpaceJoinCode || ""
+      );
+      if (!currentSpaceCode || !nextSpaceCode) {
+        return errorResponse("currentSpaceCode/nextSpaceCode manquants", 400, request, env);
+      }
+      if (currentSpaceCode === nextSpaceCode) {
+        return errorResponse("Le nouveau code doit être différent", 400, request, env);
+      }
+      const existingHash = await readSpaceCodeHash(env, spaceId);
+      if (!existingHash) {
+        return errorResponse("Aucun code existant pour cet espace", 404, request, env);
+      }
+      const currentHash = await sha256Hex(textEncoder.encode(`${spaceId}:${currentSpaceCode}`));
+      if (existingHash !== currentHash) {
+        return errorResponse("Code espace actuel invalide", 403, request, env);
+      }
+      const providedToken = String(
+        request.headers.get("X-Space-Auth")
+        || request.headers.get("Authorization")?.replace(/^Bearer\s+/i, "")
+        || ""
+      ).trim();
+      if (!providedToken) {
+        return errorResponse("Authentification espace requise", 401, request, env);
+      }
+      const verification = await verifySpaceAuthToken(env, providedToken, spaceId);
+      if (!verification.ok) {
+        return errorResponse(verification.error || "Token espace invalide", 401, request, env);
+      }
+      const nextHash = await sha256Hex(textEncoder.encode(`${spaceId}:${nextSpaceCode}`));
+      await writeSpaceCodeHash(env, spaceId, nextHash);
+      const now = Date.now();
+      const expiresAt = now + (10 * 60 * 1000);
+      const token = await signSpaceAuthPayload(env, {
+        typ: "space-auth",
+        spaceId,
+        iat: now,
+        exp: expiresAt
+      });
+      if (!token) return errorResponse("Impossible de signer le token", 500, request, env);
+      return jsonResponse({ ok: true, rotated: true, token, spaceId, expiresAt }, 200, request, env, {
+        "Cache-Control": "no-store, max-age=0"
+      });
+    }
+
+    const spaceCode = normalizeSpaceJoinCode(body?.spaceCode || body?.spaceJoinCode || "");
+    if (!spaceCode) {
+      return errorResponse("spaceCode manquant", 400, request, env);
+    }
+    const codeHash = await sha256Hex(textEncoder.encode(`${spaceId}:${spaceCode}`));
+    const existingHash = await readSpaceCodeHash(env, spaceId);
+    if (existingHash && existingHash !== codeHash) {
+      return errorResponse("Code espace invalide", 403, request, env);
+    }
+    if (!existingHash) {
+      await writeSpaceCodeHash(env, spaceId, codeHash);
+    }
+    const now = Date.now();
+    const expiresAt = now + (10 * 60 * 1000);
+    const token = await signSpaceAuthPayload(env, {
+      typ: "space-auth",
+      spaceId,
+      iat: now,
+      exp: expiresAt
+    });
+    if (!token) return errorResponse("Impossible de signer le token", 500, request, env);
+    return jsonResponse({ ok: true, token, spaceId, expiresAt }, 200, request, env, {
+      "Cache-Control": "no-store, max-age=0"
+    });
+  }
   if (assetPath) {
     if (request.method === "GET") {
       if (!assetPath.action || assetPath.action === "upload") {
@@ -1250,6 +1499,35 @@ async function handleRequest(request, env) {
   const batchCreatePath = parseShareBatchCreatePath(request);
   const repairPath = parseShareRepairPath(request);
   const controlPath = parseShareControlPath(request);
+  const method = String(request.method || "GET").toUpperCase();
+  const authCollection = String(
+    path?.collection
+    || batchPath?.collection
+    || batchCreatePath?.collection
+    || ""
+  ).trim().toLowerCase();
+  const authProtectedCollection = authCollection === "pages"
+    || authCollection === "pages-meta";
+  const requiresSpaceAuth = Boolean(
+    (path || batchPath || batchCreatePath)
+    && authProtectedCollection
+    && (method === "PUT" || method === "POST")
+  );
+  if (requiresSpaceAuth) {
+    const headerSpaceId = normalizeSpaceId(request.headers.get("X-Space-Id") || "");
+    const providedToken = String(
+      request.headers.get("X-Space-Auth")
+      || request.headers.get("Authorization")?.replace(/^Bearer\s+/i, "")
+      || ""
+    ).trim();
+    if (!headerSpaceId || !providedToken) {
+      return errorResponse("Authentification espace requise", 401, request, env);
+    }
+    const verification = await verifySpaceAuthToken(env, providedToken, headerSpaceId);
+    if (!verification.ok) {
+      return errorResponse(verification.error || "Token espace invalide", 401, request, env);
+    }
+  }
 
   if (controlPath) {
     if (request.method !== "POST") {
@@ -1258,9 +1536,6 @@ async function handleRequest(request, env) {
         status: 405,
         headers: Object.assign({ "Content-Type": "application/json; charset=utf-8" }, headers)
       });
-    }
-    if (!verifyAdminAccess(request, env)) {
-      return errorResponse("Accès refusé", 403, request, env);
     }
     const kv = getSyncReplayStore(env);
     if (!kv) {
@@ -1420,7 +1695,7 @@ async function handleRequest(request, env) {
     }
     const collections = resolveContentMetaCollections(batchDeletePath.collection);
     if (!collections) {
-      return errorResponse("Route de suppression groupée supportée uniquement pour pages/memos", 400, request, env);
+      return errorResponse("Route de suppression groupée supportée uniquement pour pages", 400, request, env);
     }
     const results = [];
     for (const id of ids) {
@@ -1477,7 +1752,7 @@ async function handleRequest(request, env) {
     }
     const collections = resolveContentMetaCollections(batchCreatePath.collection);
     if (!collections) {
-      return errorResponse("Route de création groupée supportée uniquement pour pages/memos", 400, request, env);
+      return errorResponse("Route de création groupée supportée uniquement pour pages", 400, request, env);
     }
     const results = [];
     for (const entry of writes) {
@@ -1518,12 +1793,9 @@ async function handleRequest(request, env) {
         headers: Object.assign({ "Content-Type": "application/json; charset=utf-8" }, headers)
       });
     }
-    if (!verifyAdminAccess(request, env)) {
-      return errorResponse("Accès refusé", 403, request, env);
-    }
     const collections = resolveContentMetaCollections(repairPath.collection);
     if (!collections) {
-      return errorResponse("Route de réparation supportée uniquement pour pages/memos", 400, request, env);
+      return errorResponse("Route de réparation supportée uniquement pour pages", 400, request, env);
     }
     const url = new URL(request.url);
     const dryRun = ["1", "true", "yes"].includes(String(url.searchParams.get("dryRun") || "").trim().toLowerCase());
@@ -1542,9 +1814,6 @@ async function handleRequest(request, env) {
     );
     const consistencyCollections = resolveConsistencyCollections(path.collection);
     if (ensureConsistency && consistencyCollections) {
-      if (!verifyAdminAccess(request, env)) {
-        return errorResponse("Accès refusé", 403, request, env);
-      }
       await reconcileMemosConsistency(env, request, { dryRun: false, collection: consistencyCollections.content });
     }
     if (!path.documentId) {
