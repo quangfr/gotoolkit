@@ -81,10 +81,10 @@
         crossorigin defer></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.min.js" crossorigin defer></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.min.js" crossorigin defer></script>
-    <link rel="stylesheet" href="styles/style.css?v=2026.02.28.7">
+    <link rel="stylesheet" href="styles/style.css?v=2026.02.28.9">
     <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js" defer></script>
-    <link rel="stylesheet" href="styles/memo.css?v=2026.02.28.7">
-    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.28.7">
+    <link rel="stylesheet" href="styles/memo.css?v=2026.02.28.9">
+    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.28.9">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.css">
     <script src="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.js" defer></script>
     <style>
@@ -458,8 +458,7 @@
             </div>
             <div class="space-access-overlay__body">
                 <h2 class="space-access-overlay__title">Code d'accès à l'espace requis</h2>
-                <input id="spaceAccessOverlayInput" class="space-access-overlay__input" type="text"
-                    placeholder="Passphrase en 5 mots espacés (ex : atelier projet donnees partage securise)" />
+                <input id="spaceAccessOverlayInput" class="space-access-overlay__input" type="text" />
                 <button id="spaceAccessOverlaySubmit" class="space-access-overlay__submit" type="button">Valider
                     l'accès</button>
                 <div id="spaceAccessOverlayError" class="space-access-overlay__error" aria-live="polite"></div>
@@ -471,7 +470,7 @@
         <img src="img/logo.gif" alt="Logo GoToolkit" class="logo-light">
         <img src="img/logo-inverted.gif" alt="Logo GoToolkit" class="logo-dark">
         <strong>GoToolkit</strong>
-        <span id="memoNewsTrigger" class="info-popup-news-link" role="button" tabindex="0">Version 2026.02.28.7</span>
+        <span id="memoNewsTrigger" class="info-popup-news-link" role="button" tabindex="0">Version 2026.02.28.9</span>
         <span>Usage réservé à Savane Consulting.</span>
         <div class="info-actions info-actions--stacked">
             <div class="info-actions-row">
@@ -550,24 +549,24 @@
         window.GO_TOOLKIT_GOOGLE_TTS_API_URL =
             window.GO_TOOLKIT_GOOGLE_TTS_API_URL || "https://googletts.gotoolkit.workers.dev";
     </script>
-    <script src="js/config.js?v=2026.02.28.7" defer></script>
-    <script src="js/config-modal.js?v=2026.02.28.7" defer></script>
-    <script src="js/feature-visibility.js?v=2026.02.28.7" defer></script>
-    <script src="js/document-storage.js?v=2026.02.28.7" defer></script>
-    <script src="js/storage-service.js?v=2026.02.28.7" defer></script>
-    <script src="js/shared-ui.js?v=2026.02.28.7" defer></script>
-    <script src="js/spaces-store.js?v=2026.02.28.7" defer></script>
-    <script src="js/share-worker-client.js?v=2026.02.28.7" defer></script>
-    <script src="js/share-history.js?v=2026.02.28.7" defer></script>
-    <script src="js/document-api.js?v=2026.02.28.7" defer></script>
-    <script src="js/keywordIndex.js?v=2026.02.28.7" defer></script>
-    <script src="js/document-rag.js?v=2026.02.28.7" defer></script>
-    <script src="js/ia-config.js?v=2026.02.28.7" defer></script>
-    <script src="preset.js?v=2026.02.28.7" defer></script>
-    <script src="prompt.js?v=2026.02.28.7" defer></script>
-    <script src="js/ia-client.js?v=2026.02.28.7" defer></script>
-    <script src="js/document-markdown.js?v=2026.02.28.7" defer></script>
-    <script src="js/notion-export.js?v=2026.02.28.7" defer></script>
+    <script src="js/config.js?v=2026.02.28.9" defer></script>
+    <script src="js/config-modal.js?v=2026.02.28.9" defer></script>
+    <script src="js/feature-visibility.js?v=2026.02.28.9" defer></script>
+    <script src="js/document-storage.js?v=2026.02.28.9" defer></script>
+    <script src="js/storage-service.js?v=2026.02.28.9" defer></script>
+    <script src="js/shared-ui.js?v=2026.02.28.9" defer></script>
+    <script src="js/spaces-store.js?v=2026.02.28.9" defer></script>
+    <script src="js/share-worker-client.js?v=2026.02.28.9" defer></script>
+    <script src="js/share-history.js?v=2026.02.28.9" defer></script>
+    <script src="js/document-api.js?v=2026.02.28.9" defer></script>
+    <script src="js/keywordIndex.js?v=2026.02.28.9" defer></script>
+    <script src="js/document-rag.js?v=2026.02.28.9" defer></script>
+    <script src="js/ia-config.js?v=2026.02.28.9" defer></script>
+    <script src="preset.js?v=2026.02.28.9" defer></script>
+    <script src="prompt.js?v=2026.02.28.9" defer></script>
+    <script src="js/ia-client.js?v=2026.02.28.9" defer></script>
+    <script src="js/document-markdown.js?v=2026.02.28.9" defer></script>
+    <script src="js/notion-export.js?v=2026.02.28.9" defer></script>
     <script>
         document.addEventListener("click", function (event) {
             const legalTrigger = event.target?.closest?.("[data-open-nexus-modal]");
@@ -601,16 +600,16 @@
             ]
         };
     </script>
-    <script src="js/feedback.js?v=2026.02.28.7" defer></script>
-    <script src="js/news.js?v=2026.02.28.7" defer></script>
-    <script src="js/voice-video-player.js?v=2026.02.28.7" defer></script>
-    <script src="js/voice-audio-player.js?v=2026.02.28.7" defer></script>
-    <script src="js/youtube-publish.js?v=2026.02.28.7" defer></script>
-    <script src="js/voice.js?v=2026.02.28.7" defer></script>
-    <script src="js/voice-transcript.js?v=2026.02.28.7" defer></script>
-    <script src="js/googletts.js?v=2026.02.28.7" defer></script>
-    <script src="js/draw-memo.js?v=2026.02.28.7" defer></script>
-    <script src="js/document-tabs.js?v=2026.02.28.7" defer></script>
+    <script src="js/feedback.js?v=2026.02.28.9" defer></script>
+    <script src="js/news.js?v=2026.02.28.9" defer></script>
+    <script src="js/voice-video-player.js?v=2026.02.28.9" defer></script>
+    <script src="js/voice-audio-player.js?v=2026.02.28.9" defer></script>
+    <script src="js/youtube-publish.js?v=2026.02.28.9" defer></script>
+    <script src="js/voice.js?v=2026.02.28.9" defer></script>
+    <script src="js/voice-transcript.js?v=2026.02.28.9" defer></script>
+    <script src="js/googletts.js?v=2026.02.28.9" defer></script>
+    <script src="js/draw-memo.js?v=2026.02.28.9" defer></script>
+    <script src="js/document-tabs.js?v=2026.02.28.9" defer></script>
     <script>
         // Suppress React DevTools prompt in dev builds.
         window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = window.__REACT_DEVTOOLS_GLOBAL_HOOK__ || {
@@ -620,10 +619,10 @@
             onCommitFiberUnmount: function () { }
         };
     </script>
-    <script src="js/memo.bundle.js?v=2026.02.28.7" defer></script>
-    <script src="js/assist.js?v=2026.02.28.7" defer></script>
-    <script src="js/space-sync.js?v=2026.02.28.7" defer></script>
-    <script src="js/document-panel.js?v=2026.02.28.7" defer></script>
+    <script src="js/memo.bundle.js?v=2026.02.28.9" defer></script>
+    <script src="js/assist.js?v=2026.02.28.9" defer></script>
+    <script src="js/space-sync.js?v=2026.02.28.9" defer></script>
+    <script src="js/document-panel.js?v=2026.02.28.9" defer></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             setTimeout(function () {
@@ -2101,6 +2100,7 @@
             function refreshSpaceAwareUi() {
                 renderPublishSpacesMenu();
                 memoExplorer?.refresh?.();
+                window.GoToolkitDocumentPanelEvents?.dispatchRefresh?.({ section: "shared" });
             }
 
             async function findRemoteSpaceByJoinCode(joinCode) {
@@ -2249,10 +2249,6 @@
                 const request = deepLinkRequest;
                 if (!request?.token || !request?.spaceId) return false;
                 const normalizedCode = String(spacesApi?.normalizeSpaceJoinCode?.(codeInput) || "").trim();
-                if (!normalizedCode || normalizedCode.split(" ").filter(Boolean).length !== 5) {
-                    setSpaceAccessOverlayVisible(true, "Code invalide. Utilisez la passphrase complète en 5 mots.");
-                    return false;
-                }
                 const rawPayload = request.rawPayload || await fetchSharedPayloadRawByToken(request.token);
                 if (!rawPayload || !shareWorker?.probePagePayloadJoinCode) {
                     setSpaceAccessOverlayVisible(true, "Vérification impossible pour ce document. Réessayez.");
@@ -3548,7 +3544,7 @@
                                         <div style="position:absolute; left:10px; top:50%; transform:translateY(-50%); opacity:0.65; pointer-events:none;">
                                             <i data-lucide="cloud-upload"></i>
                                         </div>
-                                        <input id="spaceManageName" type="text" value="" style="padding-left:32px;" />
+                                        <input id="spaceManageName" type="text" value="" placeholder="SpaceId" style="padding-left:32px;" />
                                     </div>
                                 </div>
                             </div>
@@ -3556,15 +3552,14 @@
                                 <div style="display:flex; flex-direction:column; gap:8px; width:100%;">
                                     <div style="position:relative; flex:1; min-width:0;">
                                         <i data-lucide="shield-check" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); width:14px; height:14px; opacity:0.65; pointer-events:none;"></i>
-                                        <input id="spaceManageCurrentJoinCode" type="password" value="" placeholder="Code d'accès actuel (obligatoire)" style="padding-left:32px;" autocomplete="current-password" />
+                                        <input id="spaceManageCurrentJoinCode" type="password" value="" placeholder="Code actuel" style="padding-left:32px;" autocomplete="current-password" />
                                     </div>
                                     <div style="display:flex; gap:8px; align-items:center;">
                                         <div style="position:relative; flex:1; min-width:0;">
                                             <i data-lucide="key-round" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); width:14px; height:14px; opacity:0.65; pointer-events:none;"></i>
-                                            <input id="spaceManageNextJoinCode" type="text" value="" placeholder="Nouveau code d'accès" style="padding-left:32px; padding-right:40px;" />
+                                            <input id="spaceManageNextJoinCode" type="text" value="" placeholder="Nouveau code" style="padding-left:32px; padding-right:40px;" />
                                             <button id="spaceManageRegenerate" class="btn btn-secondary" type="button" aria-label="Régénérer la phrase d'accès" title="Régénérer la phrase d'accès" style="position:absolute; right:4px; top:50%; transform:translateY(-50%); height:28px; width:28px; padding:0; display:inline-flex; align-items:center; justify-content:center; border:none; background:transparent;"><i data-lucide="refresh-ccw"></i></button>
                                         </div>
-                                        <button id="spaceManageCopy" class="btn btn-secondary" type="button" aria-label="Copier la phrase d'accès" title="Copier"><i data-lucide="copy"></i></button>
                                     </div>
                                     <div id="spaceManageCodeHelper" style="display:block; font-size:12px; opacity:0.8; padding-left:2px;">
                                         Saisissez le code actuel puis le nouveau code. Le code actuel n'est jamais affiché.
@@ -3573,15 +3568,7 @@
                             </div>
                             <div class="modal-actions" style="justify-content: flex-end;">
                                 <div style="display:flex; gap:8px; align-items:center; width:100%;">
-                                    <div style="position:relative; margin-right:auto;">
-                                        <button id="spaceManageDelete" class="btn btn-secondary" type="button" aria-label="Supprimer"><i data-lucide="trash-2"></i></button>
-                                        <div id="spaceManageDeleteMenu" class="context-menu" style="position:absolute; left:0; top:calc(100% + 6px); min-width:220px; z-index:20; display:none;">
-                                            <div class="menu-panel">
-                                                <button id="spaceManageDeleteLocal" class="menu-panel-btn" type="button"><i data-lucide="trash-2"></i>Quitter</button>
-                                                <button id="spaceManageDeleteRemote" class="menu-panel-btn" type="button"><i data-lucide="trash-2"></i>Supprimer</button>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <span style="margin-right:auto;"></span>
                                     <button class="btn-primary" type="button" data-save>Enregistrer</button>
                                 </div>
                             </div>
@@ -3593,17 +3580,15 @@
                                         <div style="position:absolute; left:10px; top:50%; transform:translateY(-50%); opacity:0.65; pointer-events:none;">
                                             <i data-lucide="cloud-upload"></i>
                                         </div>
-                                        <input id="spaceCreateName" type="text" value="${escapeHtml(randomSpaceId)}" style="padding-left:32px;" />
+                                        <input id="spaceCreateName" type="text" value="golive" placeholder="SpaceId" style="padding-left:32px;" />
                                     </div>
-                                    <div id="spaceCreateNameHelper" style="font-size:12px; opacity:0.8; padding-left:2px;">
-                                        SpaceId unique: lettres/chiffres minuscules et "-" uniquement.
-                                    </div>
+                                    <div id="spaceCreateNameHelper" style="font-size:12px; opacity:0.8; padding-left:2px;"></div>
                                 </div>
                             </div>
                             <div class="header-row ia-header-actions" style="margin-top:6px;">
                                 <div style="position:relative; flex:1; min-width:0;">
                                     <i data-lucide="key-round" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); width:14px; height:14px; opacity:0.65; pointer-events:none;"></i>
-                                    <input id="spaceJoinCode" type="text" placeholder="Entrez le mot de passe d'accès" style="padding-left:32px; padding-right:40px;" />
+                                    <input id="spaceJoinCode" type="text" placeholder="Code d'accès" style="padding-left:32px; padding-right:40px;" />
                                     <button id="spaceJoinRegenerate" class="btn btn-secondary" type="button" aria-label="Générer une phrase d'accès" title="Générer une phrase d'accès" style="position:absolute; right:4px; top:50%; transform:translateY(-50%); height:28px; width:28px; padding:0; display:inline-flex; align-items:center; justify-content:center; border:none; background:transparent;"><i data-lucide="refresh-ccw"></i></button>
                                 </div>
                             </div>
@@ -3621,17 +3606,15 @@
                                         <div style="position:absolute; left:10px; top:50%; transform:translateY(-50%); opacity:0.65; pointer-events:none;">
                                             <i data-lucide="cloud-upload"></i>
                                         </div>
-                                        <input id="spaceCreateOnlyName" type="text" value="${escapeHtml(randomSpaceId)}" style="padding-left:32px;" />
+                                        <input id="spaceCreateOnlyName" type="text" value="${escapeHtml(randomSpaceId)}" placeholder="SpaceId" style="padding-left:32px;" />
                                     </div>
-                                    <div id="spaceCreateOnlyNameHelper" style="font-size:12px; opacity:0.8; padding-left:2px;">
-                                        SpaceId unique: lettres/chiffres minuscules et "-" uniquement.
-                                    </div>
+                                    <div id="spaceCreateOnlyNameHelper" style="font-size:12px; opacity:0.8; padding-left:2px;"></div>
                                 </div>
                             </div>
                             <div class="header-row ia-header-actions" style="margin-top:6px;">
                                 <div style="position:relative; flex:1; min-width:0;">
                                     <i data-lucide="key-round" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); width:14px; height:14px; opacity:0.65; pointer-events:none;"></i>
-                                    <input id="spaceCreateOnlyJoinCode" type="text" placeholder="Entrez le mot de passe d'accès" style="padding-left:32px; padding-right:40px;" />
+                                    <input id="spaceCreateOnlyJoinCode" type="text" placeholder="Code d'accès" style="padding-left:32px; padding-right:40px;" />
                                     <button id="spaceCreateOnlyJoinRegenerate" class="btn btn-secondary" type="button" aria-label="Générer une phrase d'accès" title="Générer une phrase d'accès" style="position:absolute; right:4px; top:50%; transform:translateY(-50%); height:28px; width:28px; padding:0; display:inline-flex; align-items:center; justify-content:center; border:none; background:transparent;"><i data-lucide="refresh-ccw"></i></button>
                                 </div>
                             </div>
@@ -3666,7 +3649,6 @@
                 const spaceNextCodeInput = overlay.querySelector("#spaceManageNextJoinCode");
                 const spaceCodeRow = overlay.querySelector("#spaceManageCodeRow");
                 const spaceCodeHelper = overlay.querySelector("#spaceManageCodeHelper");
-                const spaceDeleteBtn = overlay.querySelector("#spaceManageDelete");
                 const regenerateBtn = overlay.querySelector("#spaceManageRegenerate");
                 const createSpaceIdInput = overlay.querySelector("#spaceCreateName");
                 const createSpaceIdHelper = overlay.querySelector("#spaceCreateNameHelper");
@@ -3746,14 +3728,13 @@
                     }
                     if (spaceCurrentCodeInput) {
                         spaceCurrentCodeInput.value = "";
-                        spaceCurrentCodeInput.placeholder = "Code d'accès actuel (obligatoire)";
+                        spaceCurrentCodeInput.placeholder = "Code actuel";
                     }
                     if (spaceNextCodeInput) {
                         spaceNextCodeInput.value = "";
-                        spaceNextCodeInput.placeholder = "Nouveau code d'accès";
+                        spaceNextCodeInput.placeholder = "Nouveau code";
                     }
                     if (spaceCodeRow) spaceCodeRow.style.display = "";
-                    if (spaceDeleteBtn) spaceDeleteBtn.style.display = "";
                     if (regenerateBtn) regenerateBtn.style.display = "";
                     refreshManageCodeTooltip();
                 };
@@ -3779,22 +3760,6 @@
                     if (!(modalCard instanceof HTMLElement)) return;
                     if (!modalCard.contains(event.target)) close();
                 });
-                const dangerMenu = overlay.querySelector("#spaceManageDeleteMenu");
-                const closeDangerMenu = () => {
-                    if (dangerMenu) dangerMenu.style.display = "none";
-                };
-                spaceDeleteBtn?.addEventListener("click", event => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    if (!dangerMenu) return;
-                    dangerMenu.style.display = dangerMenu.style.display === "none" || !dangerMenu.style.display ? "block" : "none";
-                });
-                overlay.addEventListener("click", event => {
-                    if (!dangerMenu || !spaceDeleteBtn) return;
-                    const target = event.target;
-                    if (dangerMenu.contains(target) || spaceDeleteBtn.contains(target)) return;
-                    closeDangerMenu();
-                });
                 overlay.querySelector("#spaceCreateJoinCloseBtn")?.addEventListener("click", event => {
                     event.preventDefault();
                     event.stopPropagation();
@@ -3803,16 +3768,6 @@
                 Array.from(overlay.querySelectorAll("[data-close]")).forEach(btn => btn.addEventListener("click", close));
                 spaceCurrentCodeInput?.addEventListener("input", refreshManageCodeTooltip);
                 spaceNextCodeInput?.addEventListener("input", refreshManageCodeTooltip);
-                overlay.querySelector("#spaceManageCopy")?.addEventListener("click", async () => {
-                    const code = String(spaceNextCodeInput?.value || "").trim();
-                    if (!code) return;
-                    try {
-                        await navigator.clipboard.writeText(code);
-                        setStatus("Phrase d'accès copiée");
-                    } catch (err) {
-                        setStatus("Impossible de copier la phrase d'accès", true);
-                    }
-                });
                 overlay.querySelector("[data-save]")?.addEventListener("click", async () => {
                     const target = getSelectedSpace();
                     if (!target) return;
@@ -3845,63 +3800,6 @@
                         spaceNextCodeInput.value = nextCode;
                         refreshManageCodeTooltip();
                     }
-                });
-                overlay.querySelector("#spaceManageDeleteLocal")?.addEventListener("click", async () => {
-                    closeDangerMenu();
-                    const target = getSelectedSpace();
-                    if (!target) return;
-                    const confirmed = window.confirm(
-                        `Supprimer localement l'espace \"${target.name}\" ?\n\nCette action supprime uniquement les données locales de cet espace sur cet appareil. Les données cloud restent intactes.`
-                    );
-                    if (!confirmed) return;
-                    const deleted = spacesApi?.deleteSpace?.(target.id);
-                    if (deleted) {
-                        const records = await shareHistory?.getRecordsByApp?.("memo");
-                        const toDelete = (records || []).filter(item => normalizeSpaceId(item?.spaceId || DEFAULT_SPACE_ID) === target.id);
-                        await Promise.all(toDelete.map(item => shareHistory?.removeRecord?.("memo", item.token)));
-                        setStatus("Espace quitté localement");
-                        refreshSpaceAwareUi();
-                        close();
-                    }
-                });
-                overlay.querySelector("#spaceManageDeleteRemote")?.addEventListener("click", async () => {
-                    closeDangerMenu();
-                    const target = getSelectedSpace();
-                    if (!target) return;
-                    const confirmed = window.confirm(
-                        `Supprimer définitivement l'espace \"${target.name}\" ?\n\nCette action supprime toutes les pages, métadonnées et fichiers médias (R2) de cet espace dans le cloud. Elle est irréversible.`
-                    );
-                    if (!confirmed) return;
-                    const tree = await shareWorker?.listShareTree?.(FIRESTORE_META_COLLECTION, { spaceId: target.id, includeArchived: true }).catch(() => null);
-                    const docs = Array.isArray(tree?.documents) ? tree.documents : [];
-                    const tokens = docs.map(item => String(item?.id || "").trim()).filter(Boolean);
-                    const assetIds = new Set();
-                    if (tokens.length && shareWorker?.fetchSharePayloadBatch) {
-                        const batch = await shareWorker.fetchSharePayloadBatch(FIRESTORE_CONTENT_COLLECTION, tokens).catch(() => null);
-                        const batchDocs = Array.isArray(batch?.documents) ? batch.documents : [];
-                        batchDocs.forEach(entry => {
-                            collectAssetIdsFromPayload(entry?.payload || null).forEach(id => assetIds.add(id));
-                        });
-                    }
-                    if (tokens.length && shareWorker?.deleteSharePayloadBatch) {
-                        await Promise.all([
-                            shareWorker.deleteSharePayloadBatch(FIRESTORE_CONTENT_COLLECTION, tokens).catch(() => null),
-                            shareWorker.deleteSharePayloadBatch(FIRESTORE_META_COLLECTION, tokens).catch(() => null)
-                        ]);
-                    } else if (tokens.length) {
-                        await Promise.all(tokens.map(token => shareWorker?.deleteSharePayload?.(FIRESTORE_CONTENT_COLLECTION, token).catch(() => null)));
-                        await Promise.all(tokens.map(token => shareWorker?.deleteSharePayload?.(FIRESTORE_META_COLLECTION, token).catch(() => null)));
-                    }
-                    if (assetIds.size && shareWorker?.deleteAsset) {
-                        await Promise.all(Array.from(assetIds).map(id => shareWorker.deleteAsset(id).catch(() => null)));
-                    }
-                    const localRecords = await shareHistory?.getRecordsByApp?.("memo");
-                    const localToDelete = (localRecords || []).filter(item => normalizeSpaceId(item?.spaceId || DEFAULT_SPACE_ID) === target.id);
-                    await Promise.all(localToDelete.map(item => shareHistory?.removeRecord?.("memo", item.token)));
-                    spacesApi?.deleteSpace?.(target.id);
-                    setStatus("Espace supprimé du cloud");
-                    refreshSpaceAwareUi();
-                    close();
                 });
                 overlay.querySelector("#spaceCreateOnlyBtn")?.addEventListener("click", async () => {
                     const rawSpaceId = String(createOnlySpaceIdInput?.value || "").trim();

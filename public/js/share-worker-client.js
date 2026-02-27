@@ -24,6 +24,8 @@
   const PAGE_PAYLOAD_OFFLOAD_THRESHOLD_BYTES = 350 * 1024;
   const SHARE_DEBUG_PREFIX = "[MemoCloudDebug]";
   const CLOUD_SYNC_DEBUG_ENABLED = window.GO_TOOLKIT_DEBUG_CLOUD_SYNC === true;
+  const BATCH_IDS_CHUNK_SIZE = 60;
+  const BATCH_WRITES_CHUNK_SIZE = 40;
   const PBKDF2_ITERATIONS = 310000;
   const SYNC_SESSION_TTL_MS = 15 * 60 * 1000;
   const textEncoder = new TextEncoder();
@@ -85,6 +87,16 @@
 
   function mergeSyncHeaders(baseHeaders) {
     return Object.assign({}, getSyncHeaders(), baseHeaders || {});
+  }
+
+  function chunkArray(items, chunkSize) {
+    const list = Array.isArray(items) ? items : [];
+    const size = Math.max(1, Number(chunkSize) || 1);
+    const chunks = [];
+    for (let i = 0; i < list.length; i += size) {
+      chunks.push(list.slice(i, i + size));
+    }
+    return chunks;
   }
 
   function normalizeSpaceJoinCode(value) {
@@ -962,21 +974,28 @@
         collection,
         spaceId: uniqueSpaceIds[0]
       });
-      let response;
-      try {
-        response = await fetch(buildShareBatchUrl(base, collection), {
-          method: "POST",
-          headers: authHeaders,
-          body: JSON.stringify({ writes: preparedWrites })
-        });
-      } catch (error) {
-        throw markNetworkFailure(error instanceof Error ? error : new Error(String(error)));
+      const results = [];
+      for (const chunkWrites of chunkArray(preparedWrites, BATCH_WRITES_CHUNK_SIZE)) {
+        let response;
+        try {
+          response = await fetch(buildShareBatchUrl(base, collection), {
+            method: "POST",
+            headers: authHeaders,
+            body: JSON.stringify({ writes: chunkWrites })
+          });
+        } catch (error) {
+          throw markNetworkFailure(error instanceof Error ? error : new Error(String(error)));
+        }
+        if (!response.ok) {
+          const body = await response.text().catch(() => "");
+          throw new Error(body || "Impossible de sauvegarder le lot");
+        }
+        const data = await response.json().catch(() => ({ count: chunkWrites.length, results: [] }));
+        if (Array.isArray(data?.results)) {
+          results.push(...data.results);
+        }
       }
-      if (!response.ok) {
-        const body = await response.text().catch(() => "");
-        throw new Error(body || "Impossible de sauvegarder le lot");
-      }
-      return await response.json().catch(() => ({ count: normalizedWrites.length, results: [] }));
+      return { count: preparedWrites.length, results };
     });
   }
 
@@ -989,25 +1008,29 @@
       return { count: 0, documents: [] };
     }
     return withWorkerFallback(async base => {
-      let response;
-      try {
-        response = await fetch(buildShareBatchGetUrl(base, collection), {
-          method: "POST",
-          headers: mergeSyncHeaders({
-            "Content-Type": "application/json",
-            Accept: "application/json"
-          }),
-          body: JSON.stringify({ ids: normalizedIds })
-        });
-      } catch (error) {
-        throw markNetworkFailure(error instanceof Error ? error : new Error(String(error)));
+      const docs = [];
+      for (const chunkIds of chunkArray(normalizedIds, BATCH_IDS_CHUNK_SIZE)) {
+        let response;
+        try {
+          response = await fetch(buildShareBatchGetUrl(base, collection), {
+            method: "POST",
+            headers: mergeSyncHeaders({
+              "Content-Type": "application/json",
+              Accept: "application/json"
+            }),
+            body: JSON.stringify({ ids: chunkIds })
+          });
+        } catch (error) {
+          throw markNetworkFailure(error instanceof Error ? error : new Error(String(error)));
+        }
+        if (!response.ok) {
+          const body = await response.text().catch(() => "");
+          throw new Error(body || "Impossible de récupérer le lot");
+        }
+        const data = await response.json().catch(() => ({ documents: [] }));
+        const chunkDocs = Array.isArray(data?.documents) ? data.documents : [];
+        docs.push(...chunkDocs);
       }
-      if (!response.ok) {
-        const body = await response.text().catch(() => "");
-        throw new Error(body || "Impossible de récupérer le lot");
-      }
-      const data = await response.json().catch(() => ({ documents: [] }));
-      const docs = Array.isArray(data?.documents) ? data.documents : [];
       const shouldHydrateAssets = options?.hydrateAssets !== false;
       const hydratedDocs = await Promise.all(docs.map(async doc => {
         const payload = doc?.payload || null;
@@ -1028,7 +1051,7 @@
         };
       }));
       return {
-        count: Number(data?.count || normalizedIds.length),
+        count: normalizedIds.length,
         documents: hydratedDocs
       };
     });
@@ -1270,24 +1293,31 @@
       return { count: 0, results: [] };
     }
     return withWorkerFallback(async base => {
-      let response;
-      try {
-        response = await fetch(buildShareBatchDeleteUrl(base, collection), {
-          method: "POST",
-          headers: mergeSyncHeaders({
-            "Content-Type": "application/json",
-            Accept: "application/json"
-          }),
-          body: JSON.stringify({ ids: normalizedIds })
-        });
-      } catch (error) {
-        throw markNetworkFailure(error instanceof Error ? error : new Error(String(error)));
+      const results = [];
+      for (const chunkIds of chunkArray(normalizedIds, BATCH_IDS_CHUNK_SIZE)) {
+        let response;
+        try {
+          response = await fetch(buildShareBatchDeleteUrl(base, collection), {
+            method: "POST",
+            headers: mergeSyncHeaders({
+              "Content-Type": "application/json",
+              Accept: "application/json"
+            }),
+            body: JSON.stringify({ ids: chunkIds })
+          });
+        } catch (error) {
+          throw markNetworkFailure(error instanceof Error ? error : new Error(String(error)));
+        }
+        if (!response.ok) {
+          const body = await response.text().catch(() => "");
+          throw new Error(body || "Impossible de supprimer le lot");
+        }
+        const data = await response.json().catch(() => ({ count: chunkIds.length, results: [] }));
+        if (Array.isArray(data?.results)) {
+          results.push(...data.results);
+        }
       }
-      if (!response.ok) {
-        const body = await response.text().catch(() => "");
-        throw new Error(body || "Impossible de supprimer le lot");
-      }
-      return await response.json().catch(() => ({ count: normalizedIds.length, results: [] }));
+      return { count: normalizedIds.length, results };
     });
   }
 
@@ -1333,21 +1363,28 @@
         collection,
         spaceId: uniqueSpaceIds[0]
       });
-      let response;
-      try {
-        response = await fetch(buildShareBatchCreateUrl(base, collection), {
-          method: "POST",
-          headers: authHeaders,
-          body: JSON.stringify({ writes: preparedWrites })
-        });
-      } catch (error) {
-        throw markNetworkFailure(error instanceof Error ? error : new Error(String(error)));
+      const results = [];
+      for (const chunkWrites of chunkArray(preparedWrites, BATCH_WRITES_CHUNK_SIZE)) {
+        let response;
+        try {
+          response = await fetch(buildShareBatchCreateUrl(base, collection), {
+            method: "POST",
+            headers: authHeaders,
+            body: JSON.stringify({ writes: chunkWrites })
+          });
+        } catch (error) {
+          throw markNetworkFailure(error instanceof Error ? error : new Error(String(error)));
+        }
+        if (!response.ok) {
+          const body = await response.text().catch(() => "");
+          throw new Error(body || "Impossible de créer le lot");
+        }
+        const data = await response.json().catch(() => ({ count: chunkWrites.length, results: [] }));
+        if (Array.isArray(data?.results)) {
+          results.push(...data.results);
+        }
       }
-      if (!response.ok) {
-        const body = await response.text().catch(() => "");
-        throw new Error(body || "Impossible de créer le lot");
-      }
-      return await response.json().catch(() => ({ count: normalizedWrites.length, results: [] }));
+      return { count: preparedWrites.length, results };
     });
   }
 
