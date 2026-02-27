@@ -2328,6 +2328,17 @@
                     } catch (err) {
                         cloudDrafts = {};
                     }
+                    const draftByToken = new Map(
+                        Object.entries(cloudDrafts || {})
+                            .map(([docId, draft]) => {
+                                const id = String(docId || "").trim();
+                                if (!id.startsWith("share:")) return null;
+                                const token = id.slice("share:".length).trim();
+                                if (!token || !draft || typeof draft !== "object") return null;
+                                return [token, draft];
+                            })
+                            .filter(Boolean)
+                    );
                     const shared = await shareHistory.getRecordsByApp("memo");
                     const staleTokensToRemove = [];
                     const filteredShared = (Array.isArray(shared) ? shared : []).filter(item => {
@@ -2344,10 +2355,74 @@
                     if (staleTokensToRemove.length && shareHistory?.removeRecord) {
                         await Promise.all(staleTokensToRemove.map(token => shareHistory.removeRecord("memo", token)));
                     }
-                    const uniqueShared = normalizeList(filteredShared.map(item => ({
-                        ...item,
-                        id: `share:${item.token}`
-                    })));
+                    const knownSharedTokens = new Set(filteredShared.map(item => String(item?.token || "").trim()).filter(Boolean));
+                    const draftOnlyShared = Array.from(draftByToken.entries())
+                        .map(([token, draft]) => {
+                            const draftOpType = String(draft?.opType || draft?.reason || "").trim().toLowerCase();
+                            if (!token || knownSharedTokens.has(token)) return null;
+                            if (draftOpType === "delete" || draftOpType === "archive") return null;
+                            const payload = draft?.payload && typeof draft.payload === "object" ? draft.payload : null;
+                            return {
+                                token,
+                                id: `share:${token}`,
+                                title: String(draft?.title || payload?.tabs?.[0]?.title || payload?.title || "Document partagé").trim() || "Document partagé",
+                                description: String(draft?.description || payload?.tabs?.[0]?.description || payload?.description || "").trim(),
+                                superpowers: Array.isArray(draft?.superpowers)
+                                    ? draft.superpowers
+                                    : (Array.isArray(payload?.tabs?.[0]?.superpowers) ? payload.tabs[0].superpowers : []),
+                                payload: payload || undefined,
+                                icon: String(draft?.icon || payload?.icon || "file-symlink").trim() || "file-symlink",
+                                parentId: String(draft?.parentId || payload?.parentId || "").trim(),
+                                spaceId: String(draft?.spaceId || payload?.spaceId || "golive").trim() || "golive",
+                                position: draft?.position ?? payload?.position,
+                                updatedAt: String(draft?.updatedAt || new Date().toISOString()).trim(),
+                                cloudDirty: true
+                            };
+                        })
+                        .filter(Boolean);
+                    const uniqueShared = normalizeList(filteredShared.concat(draftOnlyShared).map(item => {
+                        const token = String(item?.token || "").trim();
+                        const draft = token ? draftByToken.get(token) : null;
+                        const draftOpType = String(draft?.opType || draft?.reason || "").trim().toLowerCase();
+                        const hasPendingDraft = Boolean(draft && draftOpType !== "delete" && draftOpType !== "archive");
+                        const draftPayload = draft?.payload && typeof draft.payload === "object" ? draft.payload : null;
+                        const itemPayload = item?.payload && typeof item.payload === "object" ? item.payload : null;
+                        const resolvedPayload = hasPendingDraft ? (draftPayload || itemPayload) : itemPayload;
+                        return {
+                            ...item,
+                            id: `share:${token}`,
+                            title: hasPendingDraft
+                                ? (String(draft?.title || resolvedPayload?.tabs?.[0]?.title || resolvedPayload?.title || item?.title || "Document partagé").trim() || "Document partagé")
+                                : item?.title,
+                            description: hasPendingDraft
+                                ? String(draft?.description || resolvedPayload?.tabs?.[0]?.description || resolvedPayload?.description || item?.description || "").trim()
+                                : item?.description,
+                            superpowers: hasPendingDraft
+                                ? (Array.isArray(draft?.superpowers)
+                                    ? draft.superpowers
+                                    : (Array.isArray(resolvedPayload?.tabs?.[0]?.superpowers)
+                                        ? resolvedPayload.tabs[0].superpowers
+                                        : (Array.isArray(item?.superpowers) ? item.superpowers : [])))
+                                : item?.superpowers,
+                            payload: resolvedPayload || item?.payload,
+                            icon: hasPendingDraft
+                                ? (String(draft?.icon || resolvedPayload?.icon || item?.icon || "file-symlink").trim() || "file-symlink")
+                                : item?.icon,
+                            parentId: hasPendingDraft
+                                ? String(draft?.parentId || resolvedPayload?.parentId || item?.parentId || "").trim()
+                                : String(item?.parentId || "").trim(),
+                            spaceId: hasPendingDraft
+                                ? (String(draft?.spaceId || resolvedPayload?.spaceId || item?.spaceId || "golive").trim() || "golive")
+                                : (String(item?.spaceId || "golive").trim() || "golive"),
+                            position: hasPendingDraft
+                                ? (draft?.position ?? resolvedPayload?.position ?? item?.position)
+                                : item?.position,
+                            updatedAt: hasPendingDraft
+                                ? (String(draft?.updatedAt || item?.updatedAt || new Date().toISOString()).trim() || new Date().toISOString())
+                                : item?.updatedAt,
+                            cloudDirty: hasPendingDraft || Boolean(item?.cloudDirty)
+                        };
+                    }));
                     sharedItems = uniqueShared.map(item => ({
                         ...item,
                         title: item.title || "Document partagé",
