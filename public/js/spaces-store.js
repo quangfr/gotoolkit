@@ -1,15 +1,6 @@
 (function () {
   const STORAGE_KEY = "go-toolkit-spaces";
   const DEFAULT_SPACE_ID = "golive";
-  const DEFAULT_GOLIVE_JOIN_CODE = "atelier projet donnees partage securise";
-  const DEFAULT_SPACE = {
-    id: DEFAULT_SPACE_ID,
-    name: "Go Live",
-    icon: "cloud-upload",
-    spaceJoinCode: DEFAULT_GOLIVE_JOIN_CODE,
-    isDefault: true,
-    updatedAt: ""
-  };
 
   const DICEWARE_FR_WORDS = [
     "abricot", "abeille", "abri", "acier", "acrobate", "adieu", "agenda", "agile", "aigle", "aile",
@@ -83,43 +74,27 @@
     if (!value || typeof value !== "object") return null;
     const id = normalizeSpaceId(value.id);
     if (!id) return null;
-    const isDefault = id === DEFAULT_SPACE_ID || Boolean(value.isDefault);
+    const isDefault = Boolean(value.isDefault);
     return {
       id,
-      name: String(value.name || (isDefault ? "Go Live" : createRandomName())).trim() || (isDefault ? "Go Live" : createRandomName()),
-      icon: String(value.icon || (isDefault ? "cloud-upload" : "cloud-upload")).trim() || "cloud-upload",
+      name: String(value.name || createRandomName()).trim() || createRandomName(),
+      icon: String(value.icon || "cloud-upload").trim() || "cloud-upload",
       spaceJoinCode: normalizeSpaceJoinCode(
         value.spaceJoinCode
         || value.spaceCode
-        || (isDefault ? DEFAULT_GOLIVE_JOIN_CODE : "")
+        || ""
       ),
       isDefault,
       updatedAt: String(value.updatedAt || nowIso()).trim() || nowIso()
     };
   }
 
-  function ensureDefaultSpace(list) {
+  function ensureSpaces(list) {
     const normalized = Array.isArray(list) ? list.map(normalizeSpace).filter(Boolean) : [];
     const byId = new Map(normalized.map(item => [item.id, item]));
-    if (!byId.has(DEFAULT_SPACE_ID)) {
-      byId.set(DEFAULT_SPACE_ID, { ...DEFAULT_SPACE, updatedAt: nowIso() });
-    } else {
-      const current = byId.get(DEFAULT_SPACE_ID);
-      byId.set(DEFAULT_SPACE_ID, {
-        ...current,
-        id: DEFAULT_SPACE_ID,
-        name: current.name || "Go Live",
-        icon: current.icon || "cloud-upload",
-        spaceJoinCode: normalizeSpaceJoinCode(current.spaceJoinCode || DEFAULT_GOLIVE_JOIN_CODE),
-        isDefault: true,
-        updatedAt: current.updatedAt || nowIso()
-      });
-    }
-    return Array.from(byId.values()).sort((a, b) => {
-      if (a.id === DEFAULT_SPACE_ID) return -1;
-      if (b.id === DEFAULT_SPACE_ID) return 1;
-      return String(a.name || "").localeCompare(String(b.name || ""), "fr");
-    });
+    return Array.from(byId.values()).sort((a, b) =>
+      String(a.name || "").localeCompare(String(b.name || ""), "fr")
+    );
   }
 
   function readRaw() {
@@ -134,7 +109,7 @@
   }
 
   function readSpaces() {
-    const next = ensureDefaultSpace(readRaw());
+    const next = ensureSpaces(readRaw());
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     } catch (err) {
@@ -144,7 +119,7 @@
   }
 
   function writeSpaces(list) {
-    const next = ensureDefaultSpace(list);
+    const next = ensureSpaces(list);
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     } catch (err) {
@@ -164,7 +139,7 @@
 
   function deleteSpace(spaceId) {
     const id = normalizeSpaceId(spaceId);
-    if (!id || id === DEFAULT_SPACE_ID) return false;
+    if (!id) return false;
     const spaces = readSpaces();
     const next = spaces.filter(item => item.id !== id);
     writeSpaces(next);
