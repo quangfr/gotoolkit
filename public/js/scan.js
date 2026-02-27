@@ -8,9 +8,15 @@
   const MOBILE_EDIT_PRESET_FALLBACK =
     "Tu modifies le HANDOFF selon ASK. Réponds uniquement avec un objet JSON strict: {\"title\":\"résumé 2-3 mots\",\"content\":\"contenu final complet\"}. Ne pas ajouter spontanément des émojis si ce n'est pas demandé. Pas de tableau. Pas de Markdown.";
   const MOBILE_CHAT_HISTORY_KEY = "goToolkit.hub.mobileChatHistory";
+  const MOBILE_EDIT_INSTRUCTIONS_KEY = "goToolkit.chat.instructions.mobile-edit";
   const HANDOFF_HISTORY_KEY = "goToolkit.handoff.history";
   const HANDOFF_HISTORY_LIMIT = 30;
   const HANDOFF_HISTORY_INPUT_DEBOUNCE_MS = 450;
+  const VOICE_RECORDING_SPEED_STORAGE_KEY = "go-toolkit-voice-recording-speed";
+  const MOBILE_AUDIO_CACHE_DB = "goToolkit.mobile.audio.cache";
+  const MOBILE_AUDIO_CACHE_STORE = "audio";
+  const MOBILE_AUDIO_CACHE_KEY = "latest";
+  const MOBILE_AUDIO_CACHE_MP3_KEY = "latest-mp3";
   const MOBILE_PROMPT_SHORTCUTS = Array.isArray(window.GoToolkitPromptShortcuts?.prompts)
     ? window.GoToolkitPromptShortcuts.prompts
     : [];
@@ -79,6 +85,15 @@
   const renameSubmitBtn = document.getElementById("renameSubmitBtn");
   const renameInput = document.getElementById("renameInput");
   const settingsModal = document.getElementById("settingsModal");
+  const saveSettingsBtn = document.getElementById("saveSettingsBtn");
+  const memoPromptEditor = document.getElementById("memoPromptEditor");
+  const memoPromptPresetSelect = document.getElementById("memoPromptPresetSelect");
+  const settingsTabButtons = Array.from(document.querySelectorAll("#settingsModal .settings-tabs .tab-btn"));
+  const captureAudioMenu = document.getElementById("captureAudioMenu");
+  const captureAudioTranscribeBtn = document.getElementById("captureAudioTranscribeBtn");
+  const captureAudioPlayBtn = document.getElementById("captureAudioPlayBtn");
+  const captureAudioDownloadBtn = document.getElementById("captureAudioDownloadBtn");
+  const captureAudioDownloadBadge = document.getElementById("captureAudioDownloadBadge");
   const settingsModalApi = window.GoToolkitSettingsModal?.bind?.({
     modalId: "settingsModal",
     closeBtnId: "closeSettingsBtn",
@@ -97,7 +112,32 @@
   let toastTimer = null;
   let captureHistoryBufferTimer = null;
   let skipCapturePreviewHistorySync = false;
+  let recordedAudioFile = null;
+  let recordedAudioBlob = null;
+  let recordedAudioName = "";
+  let recordedAudioMp3Blob = null;
+  let recordedAudioMp3Promise = null;
+  let recordedAudioMp3Status = "idle";
+  let recordedAudioPlayback = null;
+  let recordedAudioPlaybackUrl = "";
   const isAutomation = typeof navigator !== "undefined" && navigator.webdriver === true;
+
+  function normalizeVoicePlaybackSpeed(value) {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return 1.2;
+    const rounded = Math.round(numeric * 10) / 10;
+    return Math.min(4, Math.max(0.4, rounded));
+  }
+
+  function getSavedVoicePlaybackSpeed() {
+    try {
+      const fromLocal = localStorage.getItem(VOICE_RECORDING_SPEED_STORAGE_KEY);
+      if (fromLocal != null) return normalizeVoicePlaybackSpeed(fromLocal);
+    } catch (err) {
+      // ignore
+    }
+    return 1.2;
+  }
 
   function setStatus(message) {
     if (handoffStatus) {
@@ -185,6 +225,321 @@
       window.GoToolkitChatPrompt?.PRESETS?.["mobile-edit"]?.prompt ||
       MOBILE_EDIT_PRESET_FALLBACK
     );
+  }
+
+  function getSavedMobileEditInstructions() {
+    try {
+      return String(localStorage.getItem(MOBILE_EDIT_INSTRUCTIONS_KEY) || "").trim();
+    } catch (err) {
+      return "";
+    }
+  }
+
+  function buildMobileEditSystemPrompt() {
+    const basePrompt = String(getMobileEditPresetPrompt() || "").trim();
+    const customInstructions = getSavedMobileEditInstructions();
+    if (!customInstructions) {
+      return basePrompt;
+    }
+    return `${basePrompt}\n\nINSTRUCTIONS\n${customInstructions}`.trim();
+  }
+
+  function openMobileAudioCacheDb() {
+    return new Promise((resolve, reject) => {
+      if (typeof indexedDB === "undefined") {
+        reject(new Error("IndexedDB indisponible"));
+        return;
+      }
+      const request = indexedDB.open(MOBILE_AUDIO_CACHE_DB, 1);
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        if (!db.objectStoreNames.contains(MOBILE_AUDIO_CACHE_STORE)) {
+          db.createObjectStore(MOBILE_AUDIO_CACHE_STORE);
+        }
+      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error || new Error("Ouverture IndexedDB impossible"));
+    });
+  }
+
+  async function saveAudioBlobToIndexedDb(audioBlob, filename, cacheKey = MOBILE_AUDIO_CACHE_KEY) {
+    if (!(audioBlob instanceof Blob)) return false;
+    try {
+      const db = await openMobileAudioCacheDb();
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction(MOBILE_AUDIO_CACHE_STORE, "readwrite");
+        const store = tx.objectStore(MOBILE_AUDIO_CACHE_STORE);
+        store.put(
+          {
+            blob: audioBlob,
+            filename: String(filename || "hub-audio.mp3"),
+            mimeType: audioBlob.type || "audio/mpeg",
+            updatedAt: new Date().toISOString()
+          },
+          String(cacheKey || MOBILE_AUDIO_CACHE_KEY)
+        );
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error || new Error("Écriture IndexedDB impossible"));
+      });
+      db.close();
+      return true;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  async function clearAllAudioBlobsFromIndexedDb() {
+    try {
+      const db = await openMobileAudioCacheDb();
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction(MOBILE_AUDIO_CACHE_STORE, "readwrite");
+        const store = tx.objectStore(MOBILE_AUDIO_CACHE_STORE);
+        store.clear();
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error || new Error("Suppression IndexedDB impossible"));
+      });
+      db.close();
+      return true;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  let lameLoaderPromise = null;
+  function ensureLameJsLoaded() {
+    if (window.lamejs?.Mp3Encoder) {
+      return Promise.resolve(window.lamejs);
+    }
+    if (lameLoaderPromise) return lameLoaderPromise;
+    lameLoaderPromise = new Promise((resolve, reject) => {
+      const existing = document.querySelector('script[data-go-lamejs="1"]');
+      if (existing) {
+        existing.addEventListener("load", () => resolve(window.lamejs || null), { once: true });
+        existing.addEventListener("error", () => reject(new Error("Chargement lamejs échoué")), { once: true });
+        return;
+      }
+      const script = document.createElement("script");
+      script.src = "https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js";
+      script.async = true;
+      script.dataset.goLamejs = "1";
+      script.onload = () => {
+        if (window.lamejs?.Mp3Encoder) {
+          resolve(window.lamejs);
+        } else {
+          reject(new Error("lamejs indisponible"));
+        }
+      };
+      script.onerror = () => reject(new Error("Chargement lamejs échoué"));
+      document.head.appendChild(script);
+    });
+    return lameLoaderPromise;
+  }
+
+  function float32ToInt16(floatArray) {
+    const out = new Int16Array(floatArray.length);
+    for (let index = 0; index < floatArray.length; index += 1) {
+      const sample = Math.max(-1, Math.min(1, floatArray[index] || 0));
+      out[index] = sample < 0 ? sample * 0x8000 : sample * 0x7fff;
+    }
+    return out;
+  }
+
+  function encodePcmToMp3(leftPcm, rightPcm, sampleRate) {
+    const channels = rightPcm ? 2 : 1;
+    const bitrate = 128;
+    const encoder = new window.lamejs.Mp3Encoder(channels, sampleRate, bitrate);
+    const chunkSize = 1152;
+    const chunks = [];
+    for (let offset = 0; offset < leftPcm.length; offset += chunkSize) {
+      const leftChunk = leftPcm.subarray(offset, offset + chunkSize);
+      const mp3buf = rightPcm
+        ? encoder.encodeBuffer(leftChunk, rightPcm.subarray(offset, offset + chunkSize))
+        : encoder.encodeBuffer(leftChunk);
+      if (mp3buf?.length) chunks.push(new Uint8Array(mp3buf));
+    }
+    const end = encoder.flush();
+    if (end?.length) chunks.push(new Uint8Array(end));
+    return new Blob(chunks, { type: "audio/mpeg" });
+  }
+
+  async function convertAudioBlobToMp3(inputBlob) {
+    if (!(inputBlob instanceof Blob)) {
+      throw new Error("Audio invalide");
+    }
+    await ensureLameJsLoaded();
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    try {
+      const arrayBuffer = await inputBlob.arrayBuffer();
+      const decoded = await audioContext.decodeAudioData(arrayBuffer.slice(0));
+      const sampleRate = Math.round(decoded.sampleRate || 44100);
+      const supportedRates = new Set([8000, 11025, 12000, 16000, 22050, 24000, 32000, 44100, 48000]);
+      if (!supportedRates.has(sampleRate)) {
+        throw new Error("Fréquence audio non supportée pour MP3");
+      }
+      const left = float32ToInt16(decoded.getChannelData(0));
+      const right = decoded.numberOfChannels > 1 ? float32ToInt16(decoded.getChannelData(1)) : null;
+      return encodePcmToMp3(left, right, sampleRate);
+    } finally {
+      audioContext.close().catch(() => { });
+    }
+  }
+
+  async function toMp3BlobIfNeeded(inputBlob) {
+    const mime = String(inputBlob?.type || "").toLowerCase();
+    if (mime.includes("audio/mpeg") || mime.includes("audio/mp3")) {
+      return inputBlob;
+    }
+    return convertAudioBlobToMp3(inputBlob);
+  }
+
+  function getRecordedAudioMp3Filename() {
+    const baseName = String(recordedAudioName || "enregistrement").replace(/\.[^/.]+$/, "") || "enregistrement";
+    return `${baseName}.mp3`;
+  }
+
+  function startRecordedAudioMp3Preparation() {
+    if (!(recordedAudioBlob instanceof Blob)) {
+      recordedAudioMp3Blob = null;
+      recordedAudioMp3Promise = null;
+      setRecordedAudioMp3Status("idle");
+      return;
+    }
+    setRecordedAudioMp3Status("pending");
+    const filename = getRecordedAudioMp3Filename();
+    const preparation = (async () => {
+      const mp3Blob = await toMp3BlobIfNeeded(recordedAudioBlob);
+      recordedAudioMp3Blob = mp3Blob;
+      await saveAudioBlobToIndexedDb(mp3Blob, filename, MOBILE_AUDIO_CACHE_MP3_KEY);
+      setRecordedAudioMp3Status("ready");
+      return mp3Blob;
+    })();
+    const trackedPromise = preparation
+      .catch(err => {
+        recordedAudioMp3Blob = null;
+        setRecordedAudioMp3Status("idle");
+        return null;
+      })
+      .finally(() => {
+        if (recordedAudioMp3Promise === trackedPromise) {
+          recordedAudioMp3Promise = null;
+        }
+      });
+    recordedAudioMp3Promise = trackedPromise;
+  }
+
+  function closeCaptureAudioMenu() {
+    if (!captureAudioMenu) return;
+    captureAudioMenu.classList.remove("open");
+  }
+
+  function toggleCaptureAudioMenu() {
+    if (!captureAudioMenu) return;
+    captureAudioMenu.classList.toggle("open");
+  }
+
+  function stopRecordedAudioPlayback() {
+    if (recordedAudioPlayback) {
+      recordedAudioPlayback.pause();
+      recordedAudioPlayback.src = "";
+      recordedAudioPlayback = null;
+    }
+    if (recordedAudioPlaybackUrl) {
+      URL.revokeObjectURL(recordedAudioPlaybackUrl);
+      recordedAudioPlaybackUrl = "";
+    }
+  }
+
+  function setRecordedAudioMp3Status(status) {
+    const normalized = status === "ready" || status === "pending" ? status : "idle";
+    recordedAudioMp3Status = normalized;
+    if (!captureAudioDownloadBadge) return;
+    captureAudioDownloadBadge.className = "chat-header-badge";
+    if (normalized === "pending") {
+      captureAudioDownloadBadge.classList.add("chat-header-badge--pending");
+    }
+    if (normalized === "idle") {
+      captureAudioDownloadBadge.classList.add("chat-header-badge--idle");
+    }
+  }
+
+  function setRecordedAudio(file) {
+    if (!file) {
+      recordedAudioFile = null;
+      recordedAudioBlob = null;
+      recordedAudioName = "";
+      recordedAudioMp3Blob = null;
+      recordedAudioMp3Promise = null;
+      setRecordedAudioMp3Status("idle");
+      stopRecordedAudioPlayback();
+      closeCaptureAudioMenu();
+      if (captureReadAloudBtn) {
+        captureReadAloudBtn.title = "Options audio";
+        captureReadAloudBtn.innerHTML = '<i data-lucide="audio-lines" style="width: 20px; height: 20px;"></i>';
+        if (typeof lucide !== "undefined" && typeof lucide.createIcons === "function") {
+          lucide.createIcons();
+        }
+      }
+      return;
+    }
+    recordedAudioFile = file;
+    recordedAudioBlob = file;
+    recordedAudioName = String(file.name || "enregistrement.webm").trim() || "enregistrement.webm";
+    setRecordedAudioMp3Status("pending");
+    saveAudioBlobToIndexedDb(recordedAudioBlob, recordedAudioName, MOBILE_AUDIO_CACHE_KEY).catch(() => { });
+    startRecordedAudioMp3Preparation();
+    if (captureReadAloudBtn) {
+      captureReadAloudBtn.title = "Options de l'enregistrement";
+      captureReadAloudBtn.innerHTML = '<i data-lucide="cassette-tape" style="width: 20px; height: 20px;"></i>';
+      if (typeof lucide !== "undefined" && typeof lucide.createIcons === "function") {
+        lucide.createIcons();
+      }
+    }
+  }
+
+  async function downloadTextToSpeechAudio() {
+    const textarea = document.getElementById("capturePreview");
+    const text = (textarea?.value || "").trim();
+
+    if (!text) {
+      setStatus("Aucun texte à convertir.");
+      return;
+    }
+
+    if (!window.GoToolkitGoogleTTS?.synthesize) {
+      setStatus("Google TTS indisponible.");
+      return;
+    }
+
+    captureReadAloudBtn?.classList.add("speaking");
+    setStatus("Génération audio...");
+    try {
+      const languageCode = window.GoToolkitGoogleTTS.detectLanguage(text);
+      const result = await window.GoToolkitGoogleTTS.synthesize(text, { languageCode });
+      if (!result?.ok || !result?.audioBlob) {
+        setStatus("Google TTS indisponible pour le téléchargement.");
+        return;
+      }
+      const meta = result?.payload?.meta || {};
+      const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+      const filename = `hub-audio-${meta?.languageCode || languageCode}-${stamp}.mp3`;
+      const eagerMp3Promise = toMp3BlobIfNeeded(result.audioBlob).catch(() => null);
+      await saveAudioBlobToIndexedDb(result.audioBlob, filename, MOBILE_AUDIO_CACHE_KEY);
+      const eagerMp3Blob = await eagerMp3Promise;
+      if (eagerMp3Blob) {
+        await saveAudioBlobToIndexedDb(eagerMp3Blob, filename, MOBILE_AUDIO_CACHE_MP3_KEY);
+      }
+      const saved = await saveAudioBlobWithFallback(eagerMp3Blob || result.audioBlob, filename);
+      if (saved?.ok && saved.mode === "share") {
+        setStatus("Audio MP3 prêt à enregistrer.");
+      } else {
+        setStatus("Audio MP3 téléchargé.");
+      }
+    } catch (err) {
+      console.error("Hub audio download failed", err);
+      setStatus("Échec du téléchargement audio.");
+    } finally {
+      captureReadAloudBtn?.classList.remove("speaking");
+    }
   }
 
   function parseMobileEditJsonResponse(rawText) {
@@ -820,6 +1175,7 @@
     activeDocId = docId;
     captureCanvases = [];
     syncedContent = "";
+    setRecordedAudio(null);
 
     setCapturePreviewValue(doc.isDraft ? (doc.lastContent || "") : "");
     if (captureInput) captureInput.value = "";
@@ -884,6 +1240,7 @@
       captureHistoryBufferTimer = null;
     }
     captureCanvases = [];
+    setRecordedAudio(null);
     setCaptureStep(1);
     closeSendMethodModal();
     updateHistoryButtons();
@@ -899,6 +1256,8 @@
         captureReadAloudBtn.classList.add("active");
       } else {
         captureReadAloudBtn.classList.remove("active");
+        closeCaptureAudioMenu();
+        stopRecordedAudioPlayback();
         if (typeof window.speechSynthesis !== 'undefined') window.speechSynthesis.cancel();
       }
     }
@@ -1272,7 +1631,7 @@
         temperature: MOBILE_EDIT_TEMPERATURE,
         stream: false,
         messages: [
-          { role: "system", content: getMobileEditPresetPrompt() },
+          { role: "system", content: buildMobileEditSystemPrompt() },
           {
             role: "user",
             content: `HANDOFF\n${handoffText}\n\nASK\n${askText}`
@@ -1618,44 +1977,73 @@
     });
 
     captureReadAloudBtn?.addEventListener("click", async () => {
-      // Always get the latest value from the preview textarea
-      const textarea = document.getElementById("capturePreview");
-      const text = (textarea?.value || "").trim();
-
-      if (!text) {
-        setStatus("Aucun texte à convertir.");
+      if (recordedAudioBlob) {
+        toggleCaptureAudioMenu();
         return;
       }
+      await downloadTextToSpeechAudio();
+    });
 
-      if (!window.GoToolkitGoogleTTS?.synthesize) {
-        setStatus("Google TTS indisponible.", true);
+    captureAudioTranscribeBtn?.addEventListener("click", async () => {
+      closeCaptureAudioMenu();
+      if (!recordedAudioFile) {
+        setStatus("Aucun enregistrement audio.");
         return;
       }
+      await clearAllAudioBlobsFromIndexedDb();
+      recordedAudioMp3Blob = null;
+      recordedAudioMp3Promise = null;
+      setRecordedAudioMp3Status("idle");
+      stopRecordedAudioPlayback();
+      await runAudioTranscription(recordedAudioFile);
+    });
 
-      captureReadAloudBtn.classList.add("speaking");
-      setStatus("Génération audio...");
+    captureAudioPlayBtn?.addEventListener("click", () => {
+      closeCaptureAudioMenu();
+      if (!recordedAudioBlob) {
+        setStatus("Aucun enregistrement audio.");
+        return;
+      }
+      const speed = getSavedVoicePlaybackSpeed();
+      if (!recordedAudioPlayback) {
+        recordedAudioPlaybackUrl = URL.createObjectURL(recordedAudioBlob);
+        recordedAudioPlayback = new Audio(recordedAudioPlaybackUrl);
+        recordedAudioPlayback.addEventListener("ended", () => {
+          stopRecordedAudioPlayback();
+        });
+      }
+      recordedAudioPlayback.playbackRate = speed;
+      recordedAudioPlayback.play().catch(() => {
+        setStatus("Lecture audio indisponible.");
+      });
+    });
+
+    captureAudioDownloadBtn?.addEventListener("click", async () => {
+      closeCaptureAudioMenu();
+      if (!recordedAudioBlob) {
+        setStatus("Aucun enregistrement audio.");
+        return;
+      }
+      setStatus("Conversion MP3...");
       try {
-        const languageCode = window.GoToolkitGoogleTTS.detectLanguage(text);
-        const result = await window.GoToolkitGoogleTTS.synthesize(text, { languageCode });
-        if (!result?.ok || !result?.audioBlob) {
-          console.warn("Google TTS synthesis failed", result?.reason || result);
-          setStatus("Google TTS indisponible pour le téléchargement.", true);
-          return;
+        setRecordedAudioMp3Status("pending");
+        let mp3Blob = recordedAudioMp3Blob;
+        if (!mp3Blob && recordedAudioMp3Promise) {
+          mp3Blob = await recordedAudioMp3Promise;
         }
-        const meta = result?.payload?.meta || {};
-        const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-        const filename = `hub-audio-${meta?.languageCode || languageCode}-${stamp}.mp3`;
-        const saved = await saveAudioBlobWithFallback(result.audioBlob, filename);
-        if (saved?.ok && saved.mode === "share") {
-          setStatus("Audio MP3 prêt à enregistrer.");
-        } else {
-          setStatus("Audio MP3 téléchargé.");
+        if (!mp3Blob) {
+          mp3Blob = await toMp3BlobIfNeeded(recordedAudioBlob);
+          recordedAudioMp3Blob = mp3Blob;
         }
+        const filename = getRecordedAudioMp3Filename();
+        await saveAudioBlobToIndexedDb(mp3Blob, filename, MOBILE_AUDIO_CACHE_MP3_KEY);
+        setRecordedAudioMp3Status("ready");
+        await saveAudioBlobWithFallback(mp3Blob, filename);
+        setStatus("Audio MP3 téléchargé.");
       } catch (err) {
-        console.error("Hub audio download failed", err);
-        setStatus("Échec du téléchargement audio.", true);
-      } finally {
-        captureReadAloudBtn.classList.remove("speaking");
+        console.error("MP3 conversion failed", err);
+        setRecordedAudioMp3Status("idle");
+        setStatus("Conversion MP3 indisponible.");
       }
     });
 
@@ -1665,6 +2053,7 @@
 
     captureDeleteBtn?.addEventListener("click", async () => {
       flushCaptureHistoryBuffer();
+      await clearAllAudioBlobsFromIndexedDb();
       const doc = getDocumentById(activeDocId);
       if (doc?.isDraft) {
         upsertDocument({
@@ -1685,6 +2074,7 @@
       if (captureInput) captureInput.value = "";
       if (captureGalleryInput) captureGalleryInput.value = "";
       if (captureAudioInput) captureAudioInput.value = "";
+      setRecordedAudio(null);
       setCaptureStep(1);
       setCaptureTitle("mobile");
       updateUIState();
@@ -1769,6 +2159,7 @@
       if (captureInput) captureInput.value = "";
       if (captureGalleryInput) captureGalleryInput.value = "";
       if (captureAudioInput) captureAudioInput.value = "";
+      setRecordedAudio(null);
       setCaptureStep(1);
       captureAudioInput?.click();
       updateUIState();
@@ -1788,7 +2179,54 @@
     captureAudioInput?.addEventListener("change", event => {
       const file = event.target?.files?.[0] || null;
       if (!file) return;
-      runAudioTranscription(file);
+      setRecordedAudio(file);
+      setCaptureStep(2);
+      setCaptureTitle("audio");
+      setStatus("Enregistrement prêt");
+      if (captureAudioMenu) {
+        captureAudioMenu.classList.add("open");
+      }
+    });
+
+    saveSettingsBtn?.addEventListener("click", () => {
+      const activeSettingsTab = settingsTabButtons.find(button => button.classList.contains("active"))?.dataset?.tab || "";
+      if (activeSettingsTab !== "promptTab" || !memoPromptEditor) {
+        return;
+      }
+      const value = String(memoPromptEditor.value || "").trim();
+      try {
+        localStorage.setItem(MOBILE_EDIT_INSTRUCTIONS_KEY, value);
+        settingsModalApi?.close?.();
+        setStatus("Instructions mobile sauvegardées");
+      } catch (err) {
+        setStatus("Sauvegarde des instructions impossible");
+      }
+    });
+
+    openSettingsBtn?.addEventListener("click", () => {
+      if (memoPromptEditor) {
+        memoPromptEditor.value = getSavedMobileEditInstructions();
+      }
+      if (memoPromptPresetSelect && !memoPromptPresetSelect.dataset.mobileReady) {
+        memoPromptPresetSelect.dataset.mobileReady = "1";
+        memoPromptPresetSelect.innerHTML = "";
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "btn-secondary memo-prompt-preset-btn active";
+        btn.innerHTML = '<i data-lucide="smartphone"></i> Mobile Edit';
+        memoPromptPresetSelect.appendChild(btn);
+        if (typeof lucide !== "undefined" && typeof lucide.createIcons === "function") {
+          lucide.createIcons();
+        }
+      }
+    });
+
+    document.addEventListener("click", event => {
+      if (!captureAudioMenu?.classList.contains("open")) return;
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      if (target.closest("#captureAudioMenu") || target.closest("#captureReadAloudBtn")) return;
+      closeCaptureAudioMenu();
     });
 
     capturePreview?.addEventListener("input", () => {
@@ -1851,6 +2289,7 @@
 
     document.addEventListener("keydown", event => {
       if (event.key === "Escape") {
+        closeCaptureAudioMenu();
         if (captureModal?.classList.contains("open")) closeCaptureModal();
         if (codeModal?.classList.contains("open")) closeCodeModal();
         if (qrModal?.classList.contains("open")) closeQrModal();

@@ -439,6 +439,9 @@ RÈGLES DE SORTIE
         var imageOcrPrompt = `Extrayez tout le texte de cette image. Soyez précis. Retournez uniquement le texte brut.`
         var mobileEditPrompt = `Tu propose une version modifiée du HANDOFF selon ASK.
 
+ENTRÉES
+- INSTRUCTIONS : Consignes personnalisées et prioritaires de l'utilisateur
+
 RÈGLES
 - Ne pas ajouter spontanément des émojis si ce n'est pas demandé.
 - Pas de tableau. Pas de Markdown.

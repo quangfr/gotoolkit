@@ -906,6 +906,21 @@
             return triggered;
         }
 
+        _buildSidecarVttFilename(videoFilename) {
+            const name = String(videoFilename || "video").trim() || "video";
+            const base = name.replace(/\.[^/.]+$/, "") || "video";
+            return `${base}.vtt`;
+        }
+
+        _triggerVttSidecarDownload(videoFilename) {
+            const includeRelativeTime = this._hasCutRange();
+            const vtt = this._buildVttFromSentences({ relativeToCut: includeRelativeTime });
+            if (!vtt) return false;
+            const vttBlob = new Blob([vtt], { type: "text/vtt" });
+            const vttFilename = this._buildSidecarVttFilename(videoFilename);
+            return this._triggerBlobDownload(vttBlob, vttFilename);
+        }
+
         async _prepareSaveTarget(ext, isCut = false) {
             if (typeof window === "undefined" || typeof window.showSaveFilePicker !== "function") return null;
             const extension = String(ext || "").toLowerCase();
@@ -1725,6 +1740,8 @@
                 this._showToast("Téléchargement bloqué par le navigateur", true);
                 return;
             }
+            const videoFilename = saveTarget?.suggestedName || this._buildExportFilename(ext, this._hasCutRange());
+            this._triggerVttSidecarDownload(videoFilename);
             this._showToast("Vidéo WebM téléchargée");
         }
 
@@ -1768,6 +1785,8 @@
                     this._showToast("Téléchargement bloqué par le navigateur", true);
                     return;
                 }
+                const videoFilename = saveTarget?.suggestedName || this._buildExportFilename("mp4", this._hasCutRange());
+                this._triggerVttSidecarDownload(videoFilename);
                 this._showToast("Vidéo MP4 téléchargée");
             } catch (err) {
                 this._showToast("Conversion MP4 impossible sur ce navigateur", true);

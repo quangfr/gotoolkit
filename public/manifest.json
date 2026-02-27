@@ -1,5 +1,5 @@
 {
-  "name": "GoToolkit Mobile",
+  "name": "GoToolkit",
   "short_name": "GoToolkit",
   "description": "Capture de notes, scans et enregistrements pour GoToolkit",
   "start_url": "./mobile",

@@ -127,7 +127,7 @@
                         </div>
                         <div class="field-row">
                             <label style="width:100%">
-                                <span class="label-title">Vitesse d'enregistrement</span>
+                                <span class="label-title">Vitesse de lecture</span>
                                 <select id="voiceRecordingSpeedSelect"></select>
                             </label>
                         </div>
