@@ -23,6 +23,7 @@
   const PAGE_PAYLOAD_REF_VERSION = 1;
   const PAGE_PAYLOAD_OFFLOAD_THRESHOLD_BYTES = 350 * 1024;
   const SHARE_DEBUG_PREFIX = "[MemoCloudDebug]";
+  const CLOUD_SYNC_DEBUG_ENABLED = window.GO_TOOLKIT_DEBUG_CLOUD_SYNC === true;
   const PBKDF2_ITERATIONS = 310000;
   const SYNC_SESSION_TTL_MS = 15 * 60 * 1000;
   const textEncoder = new TextEncoder();
@@ -32,6 +33,7 @@
   let syncSessionState = null;
 
   function logShareDebug(event, payload) {
+    if (!CLOUD_SYNC_DEBUG_ENABLED) return;
     try {
       console.log(SHARE_DEBUG_PREFIX, event, payload || {});
     } catch (err) {

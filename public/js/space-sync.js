@@ -25,8 +25,10 @@
         var parseIsoMs = d.parseIsoMs;
         var getSpaceLastSyncedAt = d.getSpaceLastSyncedAt;
         var SYNC_DEBUG_PREFIX = "[MemoCloudDebug]";
+        var CLOUD_SYNC_DEBUG_ENABLED = global?.GO_TOOLKIT_DEBUG_CLOUD_SYNC === true;
 
         function logSync(event, payload) {
+            if (!CLOUD_SYNC_DEBUG_ENABLED) return;
             try {
                 console.log(SYNC_DEBUG_PREFIX, event, payload || {});
             } catch (err) {

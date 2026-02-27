@@ -11,6 +11,9 @@
 ## Sync behavior (current)
 - Entry point: sync button in shared section (`.document-explorer__item-action--sync-refresh`).
 - Main sync resolves tree/pages conflicts first (LWW + pending ops handling).
+- Remote delete semantics:
+  - cloud delete writes `pages-meta.status = "deleted"` (legacy records may still have `archived`),
+  - sync treats both `archived` and `deleted` as removed from the shared tree UI.
 - After core sync:
   - upload phase materializes inline media assets and pushes updated payloads.
   - download phase prefetches referenced cloud assets for local availability.
@@ -44,3 +47,22 @@
   - `npm run start:test`
 - Run selected specs:
   - `./node_modules/.bin/playwright test tests/cloud-sync-persist.spec.ts tests/cloud-private-transfer-sync.spec.ts --workers=1 --reporter=line`
+
+## Archived -> Deleted migration (remote worker)
+- Script:
+  - `scripts/migrate-archived-pages-to-deleted.mjs`
+- What it migrates:
+  - `pages-meta` records where `status === "archived"` and `archivedReason === "deleted"` to `status = "deleted"`.
+  - It preserves metadata and adds `deletedAt` if missing.
+- Safety:
+  - default mode is dry-run (no writes),
+  - does not touch archive records that are not delete-origin (for example `moved-to-local`).
+- Commands:
+  - Dry-run:
+    - `node scripts/migrate-archived-pages-to-deleted.mjs --dry-run`
+  - Apply:
+    - `node scripts/migrate-archived-pages-to-deleted.mjs --apply`
+  - Optional flags:
+    - `--base-url=https://share.gotoolkit.workers.dev`
+    - `--batch-size=100` (max 200)
+    - `--include-missing-reason` (also migrates archived records with no `archivedReason`)

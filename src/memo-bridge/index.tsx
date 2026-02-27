@@ -101,7 +101,6 @@ const App = () => {
             setValue: (newContent: string) => {
                 const methods = activeInstanceRef.current;
                 const contentLength = newContent?.length || 0;
-                console.log(`[MemoBridge] setValue called, length: ${contentLength}`);
                 const start = performance.now();
                 if (methods?.instance) {
                     methods.instance.commands.setContent(newContent);

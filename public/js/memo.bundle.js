@@ -61363,7 +61363,6 @@ ${innerMarkdown}
         setValue: (newContent) => {
           const methods = activeInstanceRef.current;
           const contentLength = (newContent == null ? void 0 : newContent.length) || 0;
-          console.log(`[MemoBridge] setValue called, length: ${contentLength}`);
           const start = performance.now();
           if (methods == null ? void 0 : methods.instance) {
             methods.instance.commands.setContent(newContent);

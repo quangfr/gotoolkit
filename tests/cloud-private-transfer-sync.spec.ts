@@ -6,6 +6,8 @@ test.describe("Cloud/private transfer sync", () => {
     const baseUrl = "http://127.0.0.1:5000";
     const ts = Date.now();
     const cloudToken = `pw-transfer-cloud-${ts}`;
+    const promotedToken = `pw-transfer-promote-${ts}`;
+    const cleanupTokens = [cloudToken, promotedToken];
     const cloudMarker = `PW_TRANSFER_CLOUD_${ts}`;
     const privateMarker = `PW_TRANSFER_PRIVATE_${ts}`;
 
@@ -45,10 +47,11 @@ test.describe("Cloud/private transfer sync", () => {
       );
     };
 
-    await page.goto(`${baseUrl}/index.html`, { waitUntil: "load" });
-    await page.waitForFunction(() => Boolean((window as any).GoToolkitMemoDocumentExplorer?.refresh), null, { timeout: 45_000 });
-    await page.waitForFunction(() => Boolean((window as any).goToolkitShareHistory?.upsertRecord), null, { timeout: 45_000 });
-    await page.waitForFunction(() => Boolean((window as any).goToolkitCloudDrafts?.set), null, { timeout: 45_000 });
+    try {
+      await page.goto(`${baseUrl}/index.html`, { waitUntil: "load" });
+      await page.waitForFunction(() => Boolean((window as any).GoToolkitMemoDocumentExplorer?.refresh), null, { timeout: 45_000 });
+      await page.waitForFunction(() => Boolean((window as any).goToolkitShareHistory?.upsertRecord), null, { timeout: 45_000 });
+      await page.waitForFunction(() => Boolean((window as any).goToolkitCloudDrafts?.set), null, { timeout: 45_000 });
 
     const seeded = await page.evaluate(async ({ cloudToken, cloudMarker, privateMarker }) => {
       const worker = (window as any).goToolkitShareWorker;
@@ -104,8 +107,7 @@ test.describe("Cloud/private transfer sync", () => {
     await cloudRow.dragTo(privateSectionHeader);
     await expect(page.locator(`.document-explorer__item[data-document-id="share:${cloudToken}"]`)).toHaveCount(0, { timeout: 20_000 });
 
-    const promotedToken = `pw-transfer-promote-${ts}`;
-    await page.evaluate(async ({ privateId, promotedToken }) => {
+      await page.evaluate(async ({ privateId, promotedToken }) => {
       const docApi = (window as any).goToolkitDocumentApi;
       const history = (window as any).goToolkitShareHistory;
       const local = await docApi.getRecord(privateId);
@@ -142,11 +144,11 @@ test.describe("Cloud/private transfer sync", () => {
         updatedAt: new Date().toISOString()
       });
       await (window as any).GoToolkitMemoDocumentExplorer?.refresh?.({ forceReload: true });
-    }, { privateId: seeded.privateId, promotedToken });
+      }, { privateId: seeded.privateId, promotedToken });
 
-    await syncGolive();
+      await syncGolive();
 
-    const promoteState = await page.evaluate(async ({ promotedToken, privateMarker }) => {
+      const promoteState = await page.evaluate(async ({ promotedToken, privateMarker }) => {
       const history = (window as any).goToolkitShareHistory;
       const rows = await history.getRecordsByApp("memo");
       const promoted = (rows || []).find((row: any) => String(row?.token || "") === String(promotedToken || ""));
@@ -155,21 +157,45 @@ test.describe("Cloud/private transfer sync", () => {
         exists: Boolean(promoted),
         hasMarker: content.includes(privateMarker)
       };
-    }, { promotedToken, privateMarker });
-    expect(promoteState.exists).toBe(true);
-    expect(promoteState.hasMarker).toBe(true);
+      }, { promotedToken, privateMarker });
+      expect(promoteState.exists).toBe(true);
+      expect(promoteState.hasMarker).toBe(true);
 
-    await page.reload({ waitUntil: "load" });
-    await page.waitForFunction(() => Boolean((window as any).GoToolkitMemoDocumentExplorer?.refresh), null, { timeout: 45_000 });
-    await page.evaluate(async () => {
-      await (window as any).GoToolkitMemoDocumentExplorer?.refresh?.({ forceReload: true });
-    });
+      await page.reload({ waitUntil: "load" });
+      await page.waitForFunction(() => Boolean((window as any).GoToolkitMemoDocumentExplorer?.refresh), null, { timeout: 45_000 });
+      await page.evaluate(async () => {
+        await (window as any).GoToolkitMemoDocumentExplorer?.refresh?.({ forceReload: true });
+      });
 
-    await expect(page.locator(`.document-explorer__item[data-document-id="share:${cloudToken}"]`)).toHaveCount(0, { timeout: 20_000 });
+      await expect(page.locator(`.document-explorer__item[data-document-id="share:${cloudToken}"]`)).toHaveCount(0, { timeout: 20_000 });
 
-    await clickDoc(`share:${promotedToken}`);
-    await expect
-      .poll(async () => page.evaluate(() => String((window as any).GoToolkitMemoInstance?.getValue?.() || "")), { timeout: 20_000 })
-      .toContain(privateMarker);
+      await clickDoc(`share:${promotedToken}`);
+      await expect
+        .poll(async () => page.evaluate(() => String((window as any).GoToolkitMemoInstance?.getValue?.() || "")), { timeout: 20_000 })
+        .toContain(privateMarker);
+    } finally {
+      try {
+        await page.evaluate(async ({ tokens }) => {
+          try {
+            const worker = (window as any).goToolkitShareWorker;
+            const history = (window as any).goToolkitShareHistory;
+            const explorer = (window as any).GoToolkitMemoDocumentExplorer;
+            const drafts = (window as any).goToolkitCloudDrafts;
+            for (const token of tokens || []) {
+              try { await worker?.deleteSharePayload?.("pages", token); } catch (err) { /* noop */ }
+              try { await worker?.deleteSharePayload?.("pages-meta", token); } catch (err) { /* noop */ }
+              try { await history?.removeRecord?.("memo", token); } catch (err) { /* noop */ }
+              try { drafts?.remove?.(`share:${token}`); } catch (err) { /* noop */ }
+              try { await explorer?.removeItemById?.(`share:${token}`); } catch (err) { /* noop */ }
+            }
+            try { await explorer?.refresh?.({ forceReload: true }); } catch (err) { /* noop */ }
+          } catch (err) {
+            // noop
+          }
+        }, { tokens: cleanupTokens });
+      } catch (err) {
+        // Ignore teardown failures to avoid masking assertion outcomes.
+      }
+    }
   });
 });

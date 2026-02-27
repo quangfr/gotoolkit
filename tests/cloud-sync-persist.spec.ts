@@ -278,9 +278,9 @@ test.describe("Cloud sync persistency", () => {
         }, state),
         { timeout: 60_000, intervals: [1200, 2400, 4000] }
       ).toEqual({
-        existing: { metaStatus: "archived", contentMissing: true },
-        root: { metaStatus: "archived", contentMissing: true },
-        child: { metaStatus: "archived", contentMissing: true }
+        existing: { metaStatus: "deleted", contentMissing: true },
+        root: { metaStatus: "deleted", contentMissing: true },
+        child: { metaStatus: "deleted", contentMissing: true }
       });
 
       await page.reload({ waitUntil: "load" });
@@ -302,9 +302,9 @@ test.describe("Cloud sync persistency", () => {
         const childContent = await worker.fetchSharePayload("pages", childToken);
         return {
           parentTitle: String(parentMeta?.payload?.title || ""),
-          existingArchived: String(existingMeta?.payload?.status || "").trim().toLowerCase() === "archived",
-          rootArchived: String(rootMeta?.payload?.status || "").trim().toLowerCase() === "archived",
-          childArchived: String(childMeta?.payload?.status || "").trim().toLowerCase() === "archived",
+          existingDeleted: String(existingMeta?.payload?.status || "").trim().toLowerCase() === "deleted",
+          rootDeleted: String(rootMeta?.payload?.status || "").trim().toLowerCase() === "deleted",
+          childDeleted: String(childMeta?.payload?.status || "").trim().toLowerCase() === "deleted",
           existingContentMissing: !existingContent?.payload,
           rootContentMissing: !rootContent?.payload,
           childContentMissing: !childContent?.payload,
@@ -313,9 +313,9 @@ test.describe("Cloud sync persistency", () => {
       }, state);
 
       expect(remoteCheck.parentTitle).toContain(remoteCheck.expectedTitle);
-      expect(remoteCheck.existingArchived).toBe(true);
-      expect(remoteCheck.rootArchived).toBe(true);
-      expect(remoteCheck.childArchived).toBe(true);
+      expect(remoteCheck.existingDeleted).toBe(true);
+      expect(remoteCheck.rootDeleted).toBe(true);
+      expect(remoteCheck.childDeleted).toBe(true);
       expect(remoteCheck.existingContentMissing).toBe(true);
       expect(remoteCheck.rootContentMissing).toBe(true);
       expect(remoteCheck.childContentMissing).toBe(true);
