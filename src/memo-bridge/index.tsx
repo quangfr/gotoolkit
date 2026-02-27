@@ -25,15 +25,15 @@ interface EditorInstance {
     methods?: any;
 }
 
-const EditorItem = React.memo(({ editor, activeId, onChangeCb, handleEditorReady }: any) => {
+const EditorItem = React.memo(({ editor, activeId, onEditorChange, handleEditorReady }: any) => {
     // Stable onReady for this specific editor ID
     const onReady = React.useCallback((methods: any) => {
         handleEditorReady(editor.id, methods);
     }, [editor.id, handleEditorReady]);
 
     const onChange = React.useCallback((newContent: string, id?: string) => {
-        if (onChangeCb) onChangeCb(newContent, id || editor.id);
-    }, [editor.id, onChangeCb]);
+        if (onEditorChange) onEditorChange(newContent, id || editor.id);
+    }, [editor.id, onEditorChange]);
 
     return (
         <div 
@@ -55,6 +55,8 @@ const App = () => {
     const [activeId, setActiveId] = useState<string>('');
     const [onChangeCb, setOnChangeCb] = useState<((content: string, id?: string) => void) | null>(null);
     const editorOrderRef = React.useRef<string[]>([]);
+    const editorsRef = React.useRef<Record<string, EditorInstance>>({});
+    const activeIdRef = React.useRef<string>('');
 
     // Track active instance for global functions
     const activeInstanceRef = React.useRef<any>(null);
@@ -70,6 +72,29 @@ const App = () => {
             };
         });
     }, []);
+
+    const handleEditorChange = React.useCallback((newContent: string, id?: string) => {
+        const targetId = String(id || "").trim();
+        if (!targetId) {
+            if (onChangeCb) onChangeCb(newContent, id);
+            return;
+        }
+        setEditors(prev => {
+            const current = prev[targetId];
+            if (!current) return prev;
+            if (current.content === newContent) return prev;
+            const next = {
+                ...prev,
+                [targetId]: {
+                    ...current,
+                    content: newContent
+                }
+            };
+            editorsRef.current = next;
+            return next;
+        });
+        if (onChangeCb) onChangeCb(newContent, targetId);
+    }, [onChangeCb]);
 
     useEffect(() => {
         const api: MemoEditorApi = {
@@ -89,9 +114,14 @@ const App = () => {
                 }
             },
             getValue: () => {
-                const editor = activeInstanceRef.current?.instance || (window as any).MemoEditor;
+                const activeEditorId = String(activeIdRef.current || activeId || '');
+                const byActiveId = activeEditorId ? editorsRef.current?.[activeEditorId] : null;
+                const editor = byActiveId?.methods?.instance || activeInstanceRef.current?.instance || (window as any).MemoEditor;
                 if (editor && typeof editor.getHTML === 'function') {
                     return editor.getHTML();
+                }
+                if (byActiveId && typeof byActiveId.content === 'string') {
+                    return byActiveId.content;
                 }
                 return '';
             },
@@ -141,14 +171,59 @@ const App = () => {
                 const start = performance.now();
     // no-op
                 setActiveId(id);
+                activeIdRef.current = id;
                 setEditors(prev => {
                     const hasExisting = Boolean(prev[id]);
+                    const nextContent = typeof initialContent === 'string' ? initialContent : '';
+                    const existingContent = hasExisting && typeof prev[id]?.content === 'string' ? prev[id].content : '';
+                    const resolvedContent = hasExisting && existingContent
+                        ? existingContent
+                        : nextContent;
                     const next: Record<string, EditorInstance> = hasExisting
-                        ? prev
+                        ? {
+                            ...prev,
+                            [id]: {
+                                ...prev[id],
+                                content: resolvedContent
+                            }
+                        }
                         : {
                             ...prev,
-                            [id]: { id, content: initialContent || '' }
+                            [id]: { id, content: resolvedContent }
                         };
+
+                    const existingMethods = next[id]?.methods;
+                    const existingInstance = existingMethods?.instance;
+                    if (hasExisting && existingInstance?.commands?.setContent) {
+                        try {
+                            existingInstance.commands.setContent(resolvedContent);
+                        } catch (err) {
+                            // ignore editor hydration failures and keep state content as fallback
+                        }
+                    }
+                    if (existingMethods) {
+                        activeInstanceRef.current = existingMethods;
+                        (window as any).MemoEditor = existingMethods.instance;
+                        (window as any).memoEditor = existingMethods.instance;
+                        (window as any).getEditorMarkdown = existingMethods.getMarkdown;
+                        (window as any).setEditorMarkdown = existingMethods.setMarkdown;
+                        (window as any).insertEditorMarkdownAtRange = existingMethods.insertMarkdownAtRange;
+                        (window as any).insertEditorMarkdownAtEnd = existingMethods.insertMarkdownAtEnd;
+                        (window as any).applyEditorStructuredOps = existingMethods.applyStructuredOps;
+                        (window as any).getMemoEditorSource = existingMethods.getSource;
+                        (window as any).exportMemoToDocx = existingMethods.exportDocx;
+                    }
+                    if (!hasExisting) {
+                        const currentMethods = activeInstanceRef.current;
+                        const currentInstance = currentMethods?.instance;
+                        if (currentInstance?.commands?.setContent) {
+                            try {
+                                currentInstance.commands.setContent(resolvedContent);
+                            } catch (err) {
+                                // ignore immediate hydration fallback failures
+                            }
+                        }
+                    }
 
                     let nextOrder = editorOrderRef.current.filter(editorId => Boolean(next[editorId]));
                     nextOrder = nextOrder.filter(editorId => editorId !== id);
@@ -161,6 +236,7 @@ const App = () => {
                         nextOrder = nextOrder.filter(editorId => editorId !== victimId);
                     }
                     editorOrderRef.current = nextOrder;
+                    editorsRef.current = next;
                     return next;
                 });
                 setTimeout(() => {
@@ -215,6 +291,14 @@ const App = () => {
 
     // Update global methods whenever active instance changes
     useEffect(() => {
+        editorsRef.current = editors;
+    }, [editors]);
+
+    useEffect(() => {
+        activeIdRef.current = activeId;
+    }, [activeId]);
+
+    useEffect(() => {
         const methods = editors[activeId]?.methods;
         if (methods) {
             activeInstanceRef.current = methods;
@@ -238,7 +322,7 @@ const App = () => {
                         key={editor.id}
                         editor={editor}
                         activeId={activeId}
-                        onChangeCb={onChangeCb}
+                        onEditorChange={handleEditorChange}
                         handleEditorReady={handleEditorReady}
                     />
                 ))}

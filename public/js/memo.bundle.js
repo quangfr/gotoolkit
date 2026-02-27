@@ -61294,13 +61294,13 @@ ${innerMarkdown}
   var simple_editor_default = SimpleEditor;
 
   // src/memo-bridge/index.tsx
-  var EditorItem = react_shim_default.memo(({ editor, activeId, onChangeCb, handleEditorReady }) => {
+  var EditorItem = react_shim_default.memo(({ editor, activeId, onEditorChange, handleEditorReady }) => {
     const onReady = react_shim_default.useCallback((methods) => {
       handleEditorReady(editor.id, methods);
     }, [editor.id, handleEditorReady]);
     const onChange = react_shim_default.useCallback((newContent, id) => {
-      if (onChangeCb) onChangeCb(newContent, id || editor.id);
-    }, [editor.id, onChangeCb]);
+      if (onEditorChange) onEditorChange(newContent, id || editor.id);
+    }, [editor.id, onEditorChange]);
     return /* @__PURE__ */ jsx(
       "div",
       {
@@ -61323,6 +61323,8 @@ ${innerMarkdown}
     const [activeId, setActiveId] = useState("");
     const [onChangeCb, setOnChangeCb] = useState(null);
     const editorOrderRef = react_shim_default.useRef([]);
+    const editorsRef = react_shim_default.useRef({});
+    const activeIdRef = react_shim_default.useRef("");
     const activeInstanceRef = react_shim_default.useRef(null);
     const handleEditorReady = react_shim_default.useCallback((id, methods) => {
       setEditors((prev) => {
@@ -61334,6 +61336,28 @@ ${innerMarkdown}
         };
       });
     }, []);
+    const handleEditorChange = react_shim_default.useCallback((newContent, id) => {
+      const targetId = String(id || "").trim();
+      if (!targetId) {
+        if (onChangeCb) onChangeCb(newContent, id);
+        return;
+      }
+      setEditors((prev) => {
+        const current = prev[targetId];
+        if (!current) return prev;
+        if (current.content === newContent) return prev;
+        const next2 = {
+          ...prev,
+          [targetId]: {
+            ...current,
+            content: newContent
+          }
+        };
+        editorsRef.current = next2;
+        return next2;
+      });
+      if (onChangeCb) onChangeCb(newContent, targetId);
+    }, [onChangeCb]);
     useEffect(() => {
       const api = {
         setValue: (newContent) => {
@@ -61352,10 +61376,15 @@ ${innerMarkdown}
           }
         },
         getValue: () => {
-          var _a;
-          const editor = ((_a = activeInstanceRef.current) == null ? void 0 : _a.instance) || window.MemoEditor;
+          var _a, _b, _c;
+          const activeEditorId = String(activeIdRef.current || activeId || "");
+          const byActiveId = activeEditorId ? (_a = editorsRef.current) == null ? void 0 : _a[activeEditorId] : null;
+          const editor = ((_b = byActiveId == null ? void 0 : byActiveId.methods) == null ? void 0 : _b.instance) || ((_c = activeInstanceRef.current) == null ? void 0 : _c.instance) || window.MemoEditor;
           if (editor && typeof editor.getHTML === "function") {
             return editor.getHTML();
+          }
+          if (byActiveId && typeof byActiveId.content === "string") {
+            return byActiveId.content;
           }
           return "";
         },
@@ -61406,12 +61435,53 @@ ${innerMarkdown}
         switchTo: (id, initialContent) => {
           const start = performance.now();
           setActiveId(id);
+          activeIdRef.current = id;
           setEditors((prev) => {
+            var _a, _b, _c, _d;
             const hasExisting = Boolean(prev[id]);
-            const next2 = hasExisting ? prev : {
+            const nextContent = typeof initialContent === "string" ? initialContent : "";
+            const existingContent = hasExisting && typeof ((_a = prev[id]) == null ? void 0 : _a.content) === "string" ? prev[id].content : "";
+            const resolvedContent = hasExisting && existingContent ? existingContent : nextContent;
+            const next2 = hasExisting ? {
               ...prev,
-              [id]: { id, content: initialContent || "" }
+              [id]: {
+                ...prev[id],
+                content: resolvedContent
+              }
+            } : {
+              ...prev,
+              [id]: { id, content: resolvedContent }
             };
+            const existingMethods = (_b = next2[id]) == null ? void 0 : _b.methods;
+            const existingInstance = existingMethods == null ? void 0 : existingMethods.instance;
+            if (hasExisting && ((_c = existingInstance == null ? void 0 : existingInstance.commands) == null ? void 0 : _c.setContent)) {
+              try {
+                existingInstance.commands.setContent(resolvedContent);
+              } catch (err) {
+              }
+            }
+            if (existingMethods) {
+              activeInstanceRef.current = existingMethods;
+              window.MemoEditor = existingMethods.instance;
+              window.memoEditor = existingMethods.instance;
+              window.getEditorMarkdown = existingMethods.getMarkdown;
+              window.setEditorMarkdown = existingMethods.setMarkdown;
+              window.insertEditorMarkdownAtRange = existingMethods.insertMarkdownAtRange;
+              window.insertEditorMarkdownAtEnd = existingMethods.insertMarkdownAtEnd;
+              window.applyEditorStructuredOps = existingMethods.applyStructuredOps;
+              window.getMemoEditorSource = existingMethods.getSource;
+              window.exportMemoToDocx = existingMethods.exportDocx;
+            }
+            if (!hasExisting) {
+              const currentMethods = activeInstanceRef.current;
+              const currentInstance = currentMethods == null ? void 0 : currentMethods.instance;
+              if ((_d = currentInstance == null ? void 0 : currentInstance.commands) == null ? void 0 : _d.setContent) {
+                try {
+                  currentInstance.commands.setContent(resolvedContent);
+                } catch (err) {
+                }
+              }
+            }
             let nextOrder = editorOrderRef.current.filter((editorId) => Boolean(next2[editorId]));
             nextOrder = nextOrder.filter((editorId) => editorId !== id);
             nextOrder.push(id);
@@ -61422,6 +61492,7 @@ ${innerMarkdown}
               nextOrder = nextOrder.filter((editorId) => editorId !== victimId);
             }
             editorOrderRef.current = nextOrder;
+            editorsRef.current = next2;
             return next2;
           });
           setTimeout(() => {
@@ -61469,6 +61540,12 @@ ${innerMarkdown}
       window.GoToolkitMemoInstance = api;
     }, []);
     useEffect(() => {
+      editorsRef.current = editors;
+    }, [editors]);
+    useEffect(() => {
+      activeIdRef.current = activeId;
+    }, [activeId]);
+    useEffect(() => {
       var _a;
       const methods = (_a = editors[activeId]) == null ? void 0 : _a.methods;
       if (methods) {
@@ -61489,7 +61566,7 @@ ${innerMarkdown}
       {
         editor,
         activeId,
-        onChangeCb,
+        onEditorChange: handleEditorChange,
         handleEditorReady
       },
       editor.id
@@ -61641,3 +61718,4 @@ docx/dist/index.mjs:
    *)
   (*! http://mths.be/fromcodepoint v0.1.0 by @mathias *)
 */
+//# sourceMappingURL=memo.bundle.js.map

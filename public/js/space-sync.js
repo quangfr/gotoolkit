@@ -250,6 +250,14 @@
             var forceSync = Boolean(options.force);
             var skipIfRecentMs = Math.max(0, Number(options.skipIfRecentMs) || 0);
             try {
+                var activeDocId = String(getActiveDocumentId?.() || "").trim();
+                var isSharedDocActive = activeDocId.indexOf("share:") === 0;
+                if (!forceSync && isSharedDocActive) {
+                    logSync("cloud-sync:skipped", {
+                        reason: "active-shared-document"
+                    });
+                    return;
+                }
                 logSync("cloud-sync:start", {
                     force: forceSync,
                     skipIfRecentMs: skipIfRecentMs
