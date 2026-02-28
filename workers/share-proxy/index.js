@@ -1619,6 +1619,11 @@ async function handleRequest(request, env) {
         return errorResponse("Accès refusé pour cet espace", 403, request, env);
       }
       spaceCode = normalizeSpaceJoinCode(readManagedSpaceCode(env, spaceId));
+      console.log("share oauth managed space code lookup", {
+        spaceId,
+        hasManagedCode: Boolean(spaceCode),
+        managedCodeLength: spaceCode.length
+      });
       if (!spaceCode) {
         return errorResponse("Code espace géré manquant", 500, request, env);
       }
@@ -1628,10 +1633,22 @@ async function handleRequest(request, env) {
     }
     const codeHash = await sha256Hex(textEncoder.encode(`${spaceId}:${spaceCode}`));
     const existingHash = await readSpaceCodeHash(env, spaceId);
+    console.log("share space auth hash check", {
+      spaceId,
+      hasExistingHash: Boolean(existingHash),
+      existingHashSuffix: existingHash ? existingHash.slice(-8) : "",
+      candidateHashSuffix: codeHash.slice(-8),
+      usedOauthManagedCode: !normalizeSpaceJoinCode(body?.spaceCode || body?.spaceJoinCode || "")
+    });
     if (!existingHash) {
       return errorResponse("Aucun code existant pour cet espace", 404, request, env);
     }
     if (existingHash && existingHash !== codeHash) {
+      console.log("share space auth hash mismatch", {
+        spaceId,
+        existingHashSuffix: existingHash.slice(-8),
+        candidateHashSuffix: codeHash.slice(-8)
+      });
       return errorResponse("Code espace invalide", 403, request, env);
     }
     const now = Date.now();

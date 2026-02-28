@@ -1,10 +1,9 @@
 const fs = require("fs");
 const path = require("path");
 
-const repoRoot = path.resolve(__dirname, "..");
+const { APP_CSP, NOT_FOUND_CSP, normalize } = require("./csp-common");
 
-const APP_CSP = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; connect-src 'self' https: wss:; font-src 'self' data: https://fonts.gstatic.com https://unpkg.com; frame-src 'self' https://challenges.cloudflare.com https:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'";
-const NOT_FOUND_CSP = "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; object-src 'none'; base-uri 'self'; form-action 'self'";
+const repoRoot = path.resolve(__dirname, "..");
 
 const APP_HTML_FILES = [
   "public/index.html",
@@ -20,10 +19,6 @@ const SPECIAL_CASES = [
 
 function readFile(relativePath) {
   return fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
-}
-
-function normalize(value) {
-  return String(value || "").replace(/\s+/g, " ").trim();
 }
 
 function extractMetaCsp(html, file) {

@@ -1236,6 +1236,11 @@
     const normalizedSpaceId = normalizeSpaceId(spaceId);
     const spaceCode = normalizeSpaceJoinCode(spaceCodeRaw);
     if (!normalizedSpaceId || !spaceCode) return null;
+    console.log("[SSO Debug] space auth via code", {
+      spaceId: normalizedSpaceId,
+      hasCode: Boolean(spaceCode),
+      codeLength: spaceCode.length
+    });
     const requestBody = {
       spaceId: normalizedSpaceId,
       spaceCode
@@ -1266,6 +1271,12 @@
     const normalizedSpaceId = normalizeSpaceId(spaceId);
     if (!normalizedSpaceId) return null;
     const identity = await getOauthIdentityAssertion();
+    console.log("[SSO Debug] space auth via oauth", {
+      spaceId: normalizedSpaceId,
+      provider: String(identity?.provider || "").trim(),
+      accountEmail: String(identity?.accountEmail || "").trim().toLowerCase(),
+      hasIdentityToken: Boolean(identity?.identityToken)
+    });
     if (!identity?.identityToken) return null;
     const response = await fetchWithSyncRetry(`${base}/${API_VERSION}/spaces/auth`, {
       method: "POST",
@@ -1303,6 +1314,13 @@
     const space = getSpaceById(normalizedSpaceId);
     const hasManagedOauthAccess = Boolean(space?.accessManaged) && String(space?.accessMode || "").trim().toLowerCase() === "oauth";
     const spaceCode = normalizeSpaceJoinCode(space?.spaceJoinCode || "");
+    console.log("[SSO Debug] getSpaceAuthToken", {
+      spaceId: normalizedSpaceId,
+      hasManagedOauthAccess,
+      hasSpaceCode: Boolean(spaceCode),
+      accessMode: String(space?.accessMode || "").trim().toLowerCase(),
+      accessManaged: Boolean(space?.accessManaged)
+    });
     if (hasManagedOauthAccess) {
       return authenticateSpaceWithOauth(base, normalizedSpaceId);
     }
