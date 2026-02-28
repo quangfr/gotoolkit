@@ -4441,6 +4441,7 @@
         this.appendMessage(botMessage);
         this.scrollToBottom();
 
+        try {
         if (CHAT_APP_ID === "memo") {
             var activeMemoDocId = typeof global.GoToolkitMemoGetActiveDocumentId === "function"
                 ? global.GoToolkitMemoGetActiveDocumentId()
@@ -4711,7 +4712,6 @@
         }
 
         var requestStart = 0;
-        try {
             // Calculate total payload token count and start toaster
             var totalPayloadTokens = estimatePayloadTokens(payload);
             startCharacterCounterToaster(totalPayloadTokens, { scopeId: conversationScopeId });
@@ -4877,10 +4877,17 @@
                 botMessage.content = botMessage.content || "Requête interrompue.";
             } else {
                 var msg = (err && err.message) || "";
-                var isBadRequest = /400|Bad Request/i.test(msg);
-                botMessage.content = isBadRequest
-                    ? "Désolé, une erreur de configuration est survenue (400). Vérifie le moteur IA ou ta clé dans Paramètres."
-                    : "Désolé, une erreur est survenue.";
+                var errorCode = String(err?.code || "");
+                var isBadRequest = /400|Bad Request/i.test(msg) || Number(err?.status) === 400;
+                var isMissingProxySecret = errorCode === "MISSING_ENV" || /OpenRouter API key missing/i.test(msg);
+                var isTurnstileIssue = /^TURNSTILE_/.test(errorCode) || /Turnstile/i.test(msg);
+                botMessage.content = isMissingProxySecret
+                    ? "Le proxy OpenRouter partagé n'est plus configuré: le secret `OPENROUTER_API_KEY` manque côté worker."
+                    : isTurnstileIssue
+                        ? "La vérification anti-bot du proxy OpenRouter a échoué. Recharge la page puis réessaie."
+                        : isBadRequest
+                            ? "Désolé, une erreur de configuration est survenue (400). Vérifie le moteur IA ou ta clé dans Paramètres."
+                            : "Désolé, une erreur est survenue.";
             }
             botMessage.references = [];
             botMessage.suggestions = [];

@@ -812,7 +812,26 @@
                 }),
                 cache: "no-cache"
             });
-            if (!response.ok) throw new Error("HTTP " + response.status);
+            if (!response.ok) {
+                let rawBody = "";
+                try {
+                    rawBody = await response.text();
+                } catch (err) {
+                    rawBody = "";
+                }
+                let parsed = null;
+                if (rawBody) {
+                    try {
+                        parsed = JSON.parse(rawBody);
+                    } catch (err) {
+                        parsed = null;
+                    }
+                }
+                const requestError = new Error(parsed?.error?.message || parsed?.message || ("HTTP " + response.status));
+                requestError.status = response.status;
+                requestError.code = parsed?.error?.code || parsed?.code || "";
+                throw requestError;
+            }
             const latencyMs = Math.max(0, getTimestampMs() - start);
             return {
                 rateLimitRemaining: getRateLimitRemaining(response.headers),
@@ -840,8 +859,9 @@
             }
             return true;
         } catch (err) {
-            setStatus(statusEl, { state: "error", label: "Accès partagé indisponible" });
-            if (modelLabelEl) modelLabelEl.textContent = "Accès partagé indisponible";
+            const isMissingProxySecret = String(err?.code || "") === "MISSING_ENV" || /OpenRouter API key missing/i.test(String(err?.message || ""));
+            setStatus(statusEl, { state: "error", label: isMissingProxySecret ? "Proxy sans secret" : "Accès partagé indisponible" });
+            if (modelLabelEl) modelLabelEl.textContent = isMissingProxySecret ? "Le worker OpenRouter n'a plus de secret." : "Accès partagé indisponible";
             return false;
         }
     }

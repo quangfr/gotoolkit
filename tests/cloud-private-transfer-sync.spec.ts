@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { PW_TEST_SPACE_CODE, PW_TEST_SPACE_ID } from "./helpers/share-test-space";
+import { ensureCloudConnected } from "./helpers/cloud-auth";
 
 test.describe("Cloud/private transfer sync", () => {
   test("archives cloud doc to private and promotes private doc to cloud with sync persist", async ({ page }) => {
@@ -49,7 +50,7 @@ test.describe("Cloud/private transfer sync", () => {
     };
 
     try {
-      await page.goto(`${baseUrl}/index.html`, { waitUntil: "load" });
+      await ensureCloudConnected(page, baseUrl);
       await page.waitForFunction(() => Boolean((window as any).GoToolkitMemoDocumentExplorer?.refresh), null, { timeout: 45_000 });
       await page.waitForFunction(() => Boolean((window as any).goToolkitShareHistory?.upsertRecord), null, { timeout: 45_000 });
       await page.waitForFunction(() => Boolean((window as any).goToolkitCloudDrafts?.set), null, { timeout: 45_000 });

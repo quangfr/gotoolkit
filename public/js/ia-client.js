@@ -123,6 +123,33 @@
         return nextHeaders;
     }
 
+    async function buildRequestError(response, fallbackMessage) {
+        const status = Number(response?.status) || 0;
+        let rawBody = "";
+        try {
+            rawBody = await response.text();
+        } catch (error) {
+            rawBody = "";
+        }
+
+        let parsedBody = null;
+        if (rawBody) {
+            try {
+                parsedBody = JSON.parse(rawBody);
+            } catch (error) {
+                parsedBody = null;
+            }
+        }
+
+        const errorCode = parsedBody?.error?.code || parsedBody?.code || "";
+        const errorMessage = parsedBody?.error?.message || parsedBody?.message || rawBody || fallbackMessage;
+        const err = new Error(errorMessage || fallbackMessage || "Request failed");
+        err.status = status;
+        err.code = errorCode;
+        err.body = rawBody;
+        return err;
+    }
+
     async function consumeStream(response, stopCondition, onChunk) {
         const reader = response.body?.getReader?.();
         if (!reader) {
@@ -611,8 +638,7 @@
             signal
         });
         if (!response.ok) {
-            const body = await response.text().catch(() => "");
-            throw new Error(body || "OpenRouter indisponible");
+            throw await buildRequestError(response, "OpenRouter indisponible");
         }
         const contentType = response.headers.get("content-type") || "";
         const isStream = wantsStream && !!response.body && contentType.includes("text/event-stream");

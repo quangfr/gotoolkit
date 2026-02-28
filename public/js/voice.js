@@ -1419,7 +1419,7 @@
     }
 
     async function startRecording(memoId, memoName) {
-        if (state.isRecording || state.currentRecordingId || state.isTranscribing) {
+        if (state.isRecording || state.isTranscribing) {
             if (state.isTranscribing) {
                 showToast("Transcription en cours.", true);
                 return;

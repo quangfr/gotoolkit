@@ -39,7 +39,7 @@ function resolveCors(request, env) {
   const allowListed = Boolean(origin && allowedOrigins.includes(origin));
   const allowed = allowLocal || allowListed;
   const corsOrigin = allowed ? origin : "null";
-  return { origin, corsOrigin, allowed, allowedOrigins };
+  return { origin, corsOrigin, allowed, allowLocal, allowedOrigins };
 }
 
 function getClientIp(request) {
@@ -147,9 +147,11 @@ export default {
       });
     }
 
-    const turnstileResponse = await enforceTurnstile(request, env, corsOrigin, isEmbeddingsRoute ? "embeddings" : "chat");
-    if (turnstileResponse) {
-      return turnstileResponse;
+    if (!corsMeta.allowLocal) {
+      const turnstileResponse = await enforceTurnstile(request, env, corsOrigin, isEmbeddingsRoute ? "embeddings" : "chat");
+      if (turnstileResponse) {
+        return turnstileResponse;
+      }
     }
 
     const ipAddress = request.headers.get("cf-connecting-ip") || "";

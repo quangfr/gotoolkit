@@ -8,6 +8,10 @@
     ]);
 
     let loadPromise = null;
+    let widgetPromise = null;
+    let widgetId = null;
+    let executeChain = Promise.resolve();
+    const WIDGET_CONTAINER_ID = "go-toolkit-turnstile-container";
 
     function getSiteKey() {
         return String(global.GO_TOOLKIT_TURNSTILE_SITE_KEY || DEFAULT_SITE_KEY || "").trim();
@@ -85,14 +89,70 @@
         return loadPromise;
     }
 
+    function ensureWidgetContainer() {
+        let container = document.getElementById(WIDGET_CONTAINER_ID);
+        if (container) return container;
+        container = document.createElement("div");
+        container.id = WIDGET_CONTAINER_ID;
+        container.setAttribute("aria-hidden", "true");
+        container.style.position = "fixed";
+        container.style.right = "0";
+        container.style.bottom = "0";
+        container.style.width = "1px";
+        container.style.height = "1px";
+        container.style.opacity = "0";
+        container.style.pointerEvents = "none";
+        container.style.zIndex = "-1";
+        document.body.appendChild(container);
+        return container;
+    }
+
+    async function ensureWidget() {
+        if (widgetPromise) return widgetPromise;
+        widgetPromise = ensureTurnstileLoaded().then(function (turnstile) {
+            if (widgetId !== null && widgetId !== undefined) {
+                return { turnstile, widgetId };
+            }
+            const container = ensureWidgetContainer();
+            const renderedId = turnstile.render(container, {
+                sitekey: getSiteKey(),
+                execution: "execute",
+                appearance: "interaction-only",
+                size: "normal"
+            });
+            widgetId = renderedId;
+            return { turnstile, widgetId: renderedId };
+        }).catch(function (error) {
+            widgetPromise = null;
+            widgetId = null;
+            throw error;
+        });
+        return widgetPromise;
+    }
+
     async function getTokenForUrl(input, action) {
         const siteKey = getSiteKey();
         if (!siteKey || !shouldProtectUrl(input)) return "";
-        const turnstile = await ensureTurnstileLoaded();
-        const token = await turnstile.execute(siteKey, {
-            action: deriveAction(input, action)
+        const rendered = await ensureWidget();
+        const runExecute = async function () {
+            try {
+                if (typeof rendered.turnstile.reset === "function") {
+                    rendered.turnstile.reset(rendered.widgetId);
+                }
+            } catch (err) {
+                // ignore reset issues and attempt execution anyway
+            }
+            const token = await rendered.turnstile.execute(rendered.widgetId, {
+                action: deriveAction(input, action)
+            });
+            return String(token || "").trim();
+        };
+
+        const token = await executeChain.then(runExecute, runExecute);
+        executeChain = Promise.resolve(token).catch(function () {
+            return "";
         });
-        return String(token || "").trim();
+        return token;
     }
 
     async function getHeadersForUrl(input, action) {

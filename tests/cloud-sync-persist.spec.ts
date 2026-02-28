@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { PW_TEST_SPACE_CODE, PW_TEST_SPACE_ID } from "./helpers/share-test-space";
+import { ensureCloudConnected } from "./helpers/cloud-auth";
 
 test.describe("Cloud sync persistency", () => {
   test("persists cloud create/edit/rename/move/reorder/delete operations and cleans up", async ({ page }) => {
@@ -67,7 +68,7 @@ test.describe("Cloud sync persistency", () => {
     };
 
     try {
-      await page.goto(`${baseUrl}/index.html`, { waitUntil: "load" });
+      await ensureCloudConnected(page, baseUrl);
       await page.waitForFunction(() => Boolean((window as any).GoToolkitMemoDocumentExplorer?.refresh), null, { timeout: 45_000 });
       await page.waitForFunction(() => Boolean((window as any).goToolkitShareHistory?.upsertRecord), null, { timeout: 45_000 });
       await page.waitForFunction(() => Boolean((window as any).goToolkitShareWorker?.saveSharePayload), null, { timeout: 45_000 });
@@ -77,15 +78,15 @@ test.describe("Cloud sync persistency", () => {
       });
 
       const seeded = await page.evaluate(async seed => {
-        const { state } = seed as any;
+        const { state, spaceId, spaceCode } = seed as any;
         const worker = (window as any).goToolkitShareWorker;
         const history = (window as any).goToolkitShareHistory;
         const spaces = (window as any).GoToolkitSpaces;
         spaces?.upsertSpace?.({
-          id: PW_TEST_SPACE_ID,
+          id: spaceId,
           name: "Go Live",
           icon: "cloud-upload",
-          spaceJoinCode: PW_TEST_SPACE_CODE,
+          spaceJoinCode: spaceCode,
           isDefault: true
         });
 
@@ -99,7 +100,7 @@ test.describe("Cloud sync persistency", () => {
           }],
           activeTabId: tabId,
           parentId,
-          spaceId: PW_TEST_SPACE_ID,
+          spaceId,
           status: "active",
           position
         });
@@ -112,7 +113,7 @@ test.describe("Cloud sync persistency", () => {
             superpowers: [],
             icon: "file-symlink",
             parentId,
-            spaceId: PW_TEST_SPACE_ID,
+            spaceId,
             position,
             status: "active"
           };
@@ -126,7 +127,7 @@ test.describe("Cloud sync persistency", () => {
             payload,
             icon: "file-symlink",
             parentId,
-            spaceId: PW_TEST_SPACE_ID,
+            spaceId,
             position,
             updatedAt: String(savedMeta?.updatedAt || new Date().toISOString())
           });
@@ -138,7 +139,7 @@ test.describe("Cloud sync persistency", () => {
         await writeCloudDoc(state.childToken, `PW Child ${Date.now()}`, "CHILD_BASE", 40, state.parentToken);
         await (window as any).GoToolkitMemoDocumentExplorer?.refresh?.({ forceReload: true });
         return [state.existingToken, state.rootToken, state.parentToken, state.childToken];
-      }, { state });
+      }, { state, spaceId: PW_TEST_SPACE_ID, spaceCode: PW_TEST_SPACE_CODE });
       createdTokens.push(...seeded);
 
       await clickDoc(`share:${state.rootToken}`);
@@ -159,7 +160,7 @@ test.describe("Cloud sync persistency", () => {
       await renameInput.fill(state.renamedParentTitle);
       await renameInput.press("Enter");
       await expect(page.locator(`.document-explorer__item[data-document-id="share:${state.parentToken}"]`)).toContainText(state.renamedParentTitle, { timeout: 20_000 });
-      await page.evaluate(async ({ token, title }) => {
+      await page.evaluate(async ({ token, title, spaceId }) => {
         const docId = `share:${token}`;
         const state = (window as any).__memoState;
         if (state?.activeTabId && Array.isArray(state?.tabs) && String((window as any).GoToolkitMemoGetActiveDocumentId?.() || "") === docId) {
@@ -186,7 +187,7 @@ test.describe("Cloud sync persistency", () => {
           superpowers: Array.isArray(current?.superpowers) ? current.superpowers : [],
           icon: String(current?.icon || "file-symlink").trim() || "file-symlink",
           parentId: String(current?.parentId || ""),
-          spaceId: String(current?.spaceId || PW_TEST_SPACE_ID),
+          spaceId: String(current?.spaceId || spaceId),
           position: Number.isFinite(Number(current?.position)) ? Number(current.position) : Date.now(),
           status: "active"
         });
@@ -196,7 +197,7 @@ test.describe("Cloud sync persistency", () => {
           payload: nextPayload || current?.payload || null,
           updatedAt: new Date().toISOString()
         });
-      }, { token: state.parentToken, title: state.renamedParentTitle });
+      }, { token: state.parentToken, title: state.renamedParentTitle, spaceId: PW_TEST_SPACE_ID });
 
       await page.evaluate(async parentId => {
         await (window as any).GoToolkitMemoDocumentExplorer?.expandItem?.(`share:${parentId}`);
