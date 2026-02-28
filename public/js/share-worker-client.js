@@ -26,12 +26,12 @@
   const CLOUD_SYNC_DEBUG_ENABLED = window.GO_TOOLKIT_DEBUG_CLOUD_SYNC === true;
   const BATCH_IDS_CHUNK_SIZE = 60;
   const BATCH_WRITES_CHUNK_SIZE = 40;
-  const PBKDF2_ITERATIONS = 310000;
   const SYNC_SESSION_TTL_MS = 15 * 60 * 1000;
   const textEncoder = new TextEncoder();
   const textDecoder = new TextDecoder();
   const assetBlobCache = new Map();
   const spaceKeyCache = new Map();
+  const spaceContentKeyCache = new Map();
   const spaceAuthTokenCache = new Map();
   const oauthIdentityCache = new Map();
   const tokenSpaceIdCache = new Map();
@@ -247,30 +247,38 @@
     return bytes;
   }
 
-  async function deriveSpaceKey(spaceId, joinCodeRaw) {
-    const normalizedJoinCode = normalizeSpaceJoinCode(joinCodeRaw);
+  function cacheSpaceContentKey(spaceId, contentKeyRaw) {
     const normalizedSpaceId = String(spaceId || "").trim().toLowerCase();
-    if (!normalizedSpaceId || !normalizedJoinCode) return null;
-    const cacheKey = `${normalizedSpaceId}::${normalizedJoinCode}`;
+    const normalizedContentKey = String(contentKeyRaw || "").trim();
+    if (!normalizedSpaceId || !normalizedContentKey) {
+      if (normalizedSpaceId) {
+        spaceContentKeyCache.delete(normalizedSpaceId);
+      }
+      return "";
+    }
+    spaceContentKeyCache.set(normalizedSpaceId, normalizedContentKey);
+    return normalizedContentKey;
+  }
+
+  function getCachedSpaceContentKey(spaceId) {
+    const normalizedSpaceId = String(spaceId || "").trim().toLowerCase();
+    if (!normalizedSpaceId) return "";
+    return String(spaceContentKeyCache.get(normalizedSpaceId) || "").trim();
+  }
+
+  async function importSpaceContentKey(spaceId, contentKeyRaw) {
+    const normalizedSpaceId = String(spaceId || "").trim().toLowerCase();
+    const normalizedContentKey = String(contentKeyRaw || "").trim();
+    if (!normalizedSpaceId || !normalizedContentKey) return null;
+    const cacheKey = `${normalizedSpaceId}::${normalizedContentKey}`;
     if (spaceKeyCache.has(cacheKey)) {
       return spaceKeyCache.get(cacheKey);
     }
     const keyPromise = (async () => {
-      const baseKey = await crypto.subtle.importKey(
+      const rawKey = bytesFromBase64(normalizedContentKey);
+      return crypto.subtle.importKey(
         "raw",
-        textEncoder.encode(normalizedJoinCode),
-        "PBKDF2",
-        false,
-        ["deriveKey"]
-      );
-      return crypto.subtle.deriveKey(
-        {
-          name: "PBKDF2",
-          hash: "SHA-256",
-          iterations: PBKDF2_ITERATIONS,
-          salt: textEncoder.encode(`gotoolkit:space:${normalizedSpaceId}`)
-        },
-        baseKey,
+        rawKey,
         { name: "AES-GCM", length: 256 },
         false,
         ["encrypt", "decrypt"]
@@ -280,10 +288,27 @@
     return keyPromise;
   }
 
-  async function encryptAssetPayload(contentBase64, mimeType, fileName, spaceId, joinCode) {
-    const key = await deriveSpaceKey(spaceId, joinCode);
+  async function ensureSpaceContentKey(base, spaceId) {
+    const normalizedSpaceId = String(spaceId || "").trim().toLowerCase();
+    if (!normalizedSpaceId) return "";
+    const cached = getCachedSpaceContentKey(normalizedSpaceId);
+    if (cached) return cached;
+    await getSpaceAuthToken(base, normalizedSpaceId);
+    return getCachedSpaceContentKey(normalizedSpaceId);
+  }
+
+  async function getSpaceCryptoKey(base, spaceId) {
+    const normalizedSpaceId = String(spaceId || "").trim().toLowerCase();
+    if (!normalizedSpaceId) return null;
+    const contentKey = await ensureSpaceContentKey(base, normalizedSpaceId);
+    if (!contentKey) return null;
+    return importSpaceContentKey(normalizedSpaceId, contentKey);
+  }
+
+  async function encryptAssetPayload(base, contentBase64, mimeType, fileName, spaceId) {
+    const key = await getSpaceCryptoKey(base, spaceId);
     if (!key) {
-      return { mimeType, contentBase64, fileName };
+      throw new Error(`Clé de contenu manquante pour l'espace ${String(spaceId || "").trim().toLowerCase() || "inconnu"}`);
     }
     const plainBytes = bytesFromBase64(contentBase64);
     const iv = crypto.getRandomValues(new Uint8Array(12));
@@ -295,8 +320,6 @@
     const wrapper = {
       gtke: 1,
       alg: "AES-256-GCM",
-      kdf: "PBKDF2-SHA256",
-      iterations: PBKDF2_ITERATIONS,
       spaceId: String(spaceId || "").trim().toLowerCase(),
       iv: toBase64FromBytes(iv),
       ciphertext: toBase64FromBytes(new Uint8Array(cipherBuffer)),
@@ -322,15 +345,14 @@
     );
   }
 
-  async function encryptPagePayload(payload, collection, spaceId) {
+  async function encryptPagePayload(base, payload, collection, spaceId) {
     if (String(collection || "").trim().toLowerCase() !== "pages") return payload;
     if (!payload || typeof payload !== "object") return payload;
     if (isEncryptedPagePayload(payload)) return payload;
-    const space = getSpaceById(spaceId);
-    const joinCode = normalizeSpaceJoinCode(space?.spaceJoinCode || "");
-    if (!joinCode) return payload;
-    const key = await deriveSpaceKey(spaceId, joinCode);
-    if (!key) return payload;
+    const key = await getSpaceCryptoKey(base, spaceId);
+    if (!key) {
+      throw new Error(`Clé de contenu manquante pour l'espace ${String(spaceId || "").trim().toLowerCase() || "inconnu"}`);
+    }
     const plainBytes = textEncoder.encode(JSON.stringify(payload));
     const iv = crypto.getRandomValues(new Uint8Array(12));
     const cipherBuffer = await crypto.subtle.encrypt(
@@ -342,31 +364,23 @@
       gtke: 1,
       type: "page-payload",
       alg: "AES-256-GCM",
-      kdf: "PBKDF2-SHA256",
-      iterations: PBKDF2_ITERATIONS,
       spaceId: String(spaceId || "golive").trim().toLowerCase() || "golive",
       iv: toBase64FromBytes(iv),
       ciphertext: toBase64FromBytes(new Uint8Array(cipherBuffer))
     };
   }
 
-  async function decryptPagePayload(payload, collection) {
+  async function decryptPagePayload(base, payload, collection) {
     if (String(collection || "").trim().toLowerCase() !== "pages") return payload;
     if (!isEncryptedPagePayload(payload)) return payload;
     const effectiveSpaceId = String(payload.spaceId || "golive").trim().toLowerCase() || "golive";
-    const space = getSpaceById(effectiveSpaceId);
-    const joinCode = normalizeSpaceJoinCode(space?.spaceJoinCode || "");
     console.log("[SSO Debug] decrypt page payload start", {
       spaceId: effectiveSpaceId,
-      hasJoinCode: Boolean(joinCode),
-      joinCodePreview: joinCode ? `${joinCode.slice(0, 2)}***${joinCode.slice(-2)}` : "",
+      hasContentKey: Boolean(getCachedSpaceContentKey(effectiveSpaceId)),
       payloadType: String(payload?.type || "").trim(),
       isEncrypted: true
     });
-    if (!joinCode) {
-      throw new Error(`Phrase d'accès manquante pour l'espace ${effectiveSpaceId}`);
-    }
-    const key = await deriveSpaceKey(effectiveSpaceId, joinCode);
+    const key = await getSpaceCryptoKey(base, effectiveSpaceId);
     if (!key) {
       throw new Error("Clé de déchiffrement indisponible");
     }
@@ -387,7 +401,7 @@
     return parsed && typeof parsed === "object" ? parsed : payload;
   }
 
-  async function decryptAssetEnvelope(rawBytes, spaceId) {
+  async function decryptAssetEnvelope(base, rawBytes, spaceId) {
     const payloadText = textDecoder.decode(rawBytes);
     let wrapper = null;
     try {
@@ -397,12 +411,7 @@
     }
     if (!wrapper || Number(wrapper.gtke) !== 1) return null;
     const effectiveSpaceId = String(spaceId || wrapper.spaceId || "").trim().toLowerCase();
-    const space = getSpaceById(effectiveSpaceId);
-    const joinCode = normalizeSpaceJoinCode(space?.spaceJoinCode || "");
-    if (!joinCode) {
-      throw new Error(`Clé d'accès manquante pour l'espace ${effectiveSpaceId || "inconnu"}`);
-    }
-    const key = await deriveSpaceKey(effectiveSpaceId, joinCode);
+    const key = await getSpaceCryptoKey(base, effectiveSpaceId);
     if (!key) {
       throw new Error("Clé de déchiffrement indisponible");
     }
@@ -422,9 +431,7 @@
   function shouldEncryptMedia(collection, spaceId) {
     const normalizedCollection = String(collection || "").trim().toLowerCase();
     if (normalizedCollection !== "pages") return false;
-    const space = getSpaceById(spaceId);
-    const joinCode = normalizeSpaceJoinCode(space?.spaceJoinCode || "");
-    return Boolean(joinCode);
+    return Boolean(String(spaceId || "").trim());
   }
 
   function resolveSpaceIdForPayload(payload, options = {}) {
@@ -466,7 +473,7 @@
     let blob = null;
     if (contentType.includes(E2EE_ASSET_MIME) || (bytes.length && bytes[0] === 123)) {
       try {
-        const decrypted = await decryptAssetEnvelope(bytes, spaceId);
+        const decrypted = await decryptAssetEnvelope(base, bytes, spaceId);
         if (decrypted?.bytes?.length) {
           blob = new Blob([decrypted.bytes], { type: decrypted.mimeType });
         }
@@ -645,11 +652,11 @@
     const shouldEncrypt = shouldEncryptMedia(collection, spaceId);
     const uploadPayload = shouldEncrypt
       ? await encryptAssetPayload(
+        base,
         encoded.base64,
         "application/json",
         fileName,
-        spaceId,
-        getSpaceById(spaceId)?.spaceJoinCode || ""
+        spaceId
       )
       : {
         mimeType: "application/json",
@@ -728,7 +735,7 @@
     const looksLikeEncryptedEnvelope = rawBytes.length > 2 && rawBytes[0] === 123 && rawBytes[1] === 34;
     if (contentType.includes(E2EE_ASSET_MIME) || looksLikeEncryptedEnvelope) {
       try {
-        const decrypted = await decryptAssetEnvelope(rawBytes, effectiveSpaceId);
+        const decrypted = await decryptAssetEnvelope(base, rawBytes, effectiveSpaceId);
         if (decrypted?.bytes?.length) {
           payloadBytes = decrypted.bytes;
         }
@@ -885,11 +892,11 @@
       const shouldEncrypt = shouldEncryptMedia(options?.collection || "", options?.spaceId);
       const encryptedAsset = shouldEncrypt
         ? await encryptAssetPayload(
+          base,
           parsed.contentBase64,
           mimeType,
           fileName,
-          options?.spaceId,
-          getSpaceById(options?.spaceId)?.spaceJoinCode || ""
+          options?.spaceId
         )
         : { mimeType, contentBase64: parsed.contentBase64, fileName };
       const uploadResult = await uploadAssetWithBase(base, {
@@ -957,7 +964,7 @@
       }
       const data = await response.json();
       const payload = data.payload || null;
-      const decryptedPayload = await decryptPagePayload(payload, collection).catch(err => {
+      const decryptedPayload = await decryptPagePayload(base, payload, collection).catch(err => {
         console.warn("E2EE page: déchiffrement impossible", err);
         return payload;
       });
@@ -1027,7 +1034,7 @@
       const docs = Array.isArray(data.documents) ? data.documents : [];
       return Promise.all(docs.map(async doc => {
         const payload = doc?.payload || null;
-        const decryptedPayload = await decryptPagePayload(payload, collection).catch(err => {
+        const decryptedPayload = await decryptPagePayload(base, payload, collection).catch(err => {
           console.warn("E2EE page: déchiffrement impossible", err);
           return payload;
         });
@@ -1067,7 +1074,7 @@
         scope: options.scope,
         spaceId
       });
-      const encryptedPayload = await encryptPagePayload(preparedPayload, collection, spaceId);
+      const encryptedPayload = await encryptPagePayload(base, preparedPayload, collection, spaceId);
       const authHeaders = await withSpaceAuthHeaders(base, mergeSyncHeaders({
         "Content-Type": "application/json",
         Accept: "application/json"
@@ -1115,7 +1122,7 @@
           assetScope: collection,
           spaceId
         });
-        const encryptedPayload = await encryptPagePayload(preparedPayload, collection, spaceId);
+        const encryptedPayload = await encryptPagePayload(base, preparedPayload, collection, spaceId);
         preparedWrites.push({
           id: entry.id,
           payload: encryptedPayload
@@ -1194,7 +1201,7 @@
       const shouldHydrateAssets = options?.hydrateAssets !== false;
       const hydratedDocs = await Promise.all(docs.map(async doc => {
         const payload = doc?.payload || null;
-        const decryptedPayload = await decryptPagePayload(payload, collection).catch(err => {
+        const decryptedPayload = await decryptPagePayload(base, payload, collection).catch(err => {
           console.warn("E2EE page: déchiffrement impossible", err);
           return payload;
         });
@@ -1287,9 +1294,11 @@
     const data = await response.json().catch(() => ({}));
     const token = String(data?.token || "").trim();
     const expiresAt = Number(data?.expiresAt || 0);
+    const contentKey = String(data?.contentKey || "").trim();
     if (!token || !Number.isFinite(expiresAt)) {
       throw new Error("Token espace invalide");
     }
+    cacheSpaceContentKey(normalizedSpaceId, contentKey);
     spaceAuthTokenCache.set(normalizedSpaceId, { token, expiresAt });
     return token;
   }
@@ -1323,9 +1332,11 @@
     const data = await response.json().catch(() => ({}));
     const token = String(data?.token || "").trim();
     const expiresAt = Number(data?.expiresAt || 0);
+    const contentKey = String(data?.contentKey || "").trim();
     if (!token || !Number.isFinite(expiresAt)) {
       throw new Error("Token espace invalide");
     }
+    cacheSpaceContentKey(normalizedSpaceId, contentKey);
     spaceAuthTokenCache.set(normalizedSpaceId, { token, expiresAt });
     return token;
   }
@@ -1396,6 +1407,8 @@
       const data = await response.json().catch(() => ({}));
       const token = String(data?.token || "").trim();
       const expiresAt = Number(data?.expiresAt || 0);
+      const contentKey = String(data?.contentKey || "").trim();
+      cacheSpaceContentKey(normalizedSpaceId, contentKey);
       if (token && Number.isFinite(expiresAt)) {
         spaceAuthTokenCache.set(normalizedSpaceId, { token, expiresAt });
       } else {
@@ -1580,7 +1593,7 @@
           assetScope: collection,
           spaceId
         });
-        const encryptedContentPayload = await encryptPagePayload(preparedContentPayload, collection, spaceId);
+        const encryptedContentPayload = await encryptPagePayload(base, preparedContentPayload, collection, spaceId);
         preparedWrites.push({
           id: entry.id,
           contentPayload: encryptedContentPayload,
@@ -1672,11 +1685,11 @@
       let finalPayload = Object.assign({}, payload || {}, { scope });
       if (shouldEncryptMedia(String(options?.collection || "pages"), spaceId)) {
         const encryptedAsset = await encryptAssetPayload(
+          base,
           String(payload?.contentBase64 || ""),
           String(payload?.mimeType || "application/octet-stream"),
           String(payload?.fileName || "asset.bin"),
-          spaceId,
-          getSpaceById(spaceId)?.spaceJoinCode || ""
+          spaceId
         );
         finalPayload = Object.assign({}, finalPayload, encryptedAsset);
       }

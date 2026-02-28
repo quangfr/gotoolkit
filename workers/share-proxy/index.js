@@ -31,6 +31,7 @@ const LOCAL_SYNC_REVOKE_CACHE_TTL_MS = 60 * 1000;
 const LOCAL_SYNC_JTI_CACHE_TTL_MS = 2 * 60 * 1000;
 const LOCAL_SYNC_CACHE_MAX_ENTRIES = 5000;
 const OAUTH_IDENTITY_TOKEN_TTL_MS = 5 * 60 * 1000;
+const SPACE_CONTENT_KEY_BYTES = 32;
 let serviceAccountConfig = null;
 let signingKeyPromise = null;
 let accessTokenCache = { token: null, expiresAt: 0 };
@@ -526,6 +527,28 @@ async function readSpaceCodeHash(env, spaceId) {
   return String(await kv.get(hashKey) || "").trim();
 }
 
+async function readSpaceContentKey(env, spaceId) {
+  const normalizedSpaceId = normalizeSpaceId(spaceId);
+  if (!normalizedSpaceId) return "";
+  const db = getSpaceAuthDb(env);
+  if (db) {
+    try {
+      const result = await db
+        .prepare("SELECT content_key FROM space_content_keys WHERE space_id = ?1 LIMIT 1")
+        .bind(normalizedSpaceId)
+        .first();
+      return String(result?.content_key || "").trim();
+    } catch (err) {
+      console.warn("space content key d1 read failed", err);
+      throw new Error("Stockage clé contenu espace indisponible");
+    }
+  }
+  const kv = getSpaceAuthStore(env);
+  if (!kv) return "";
+  const contentKey = `space:contentkey:${normalizedSpaceId}`;
+  return String(await kv.get(contentKey) || "").trim();
+}
+
 async function writeSpaceCodeHash(env, spaceId, codeHash) {
   const normalizedSpaceId = normalizeSpaceId(spaceId);
   const normalizedHash = String(codeHash || "").trim();
@@ -549,6 +572,47 @@ async function writeSpaceCodeHash(env, spaceId, codeHash) {
   if (!kv) throw new Error("Stockage auth espace indisponible");
   const hashKey = `space:codehash:${normalizedSpaceId}`;
   await kv.put(hashKey, normalizedHash);
+}
+
+async function writeSpaceContentKey(env, spaceId, contentKey) {
+  const normalizedSpaceId = normalizeSpaceId(spaceId);
+  const normalizedKey = String(contentKey || "").trim();
+  if (!normalizedSpaceId || !normalizedKey) return;
+  const db = getSpaceAuthDb(env);
+  if (db) {
+    try {
+      await db
+        .prepare(`INSERT INTO space_content_keys (space_id, content_key, updated_at)
+          VALUES (?1, ?2, ?3)
+          ON CONFLICT(space_id) DO UPDATE SET content_key = excluded.content_key, updated_at = excluded.updated_at`)
+        .bind(normalizedSpaceId, normalizedKey, new Date().toISOString())
+        .run();
+      return;
+    } catch (err) {
+      console.warn("space content key d1 write failed", err);
+      throw new Error("Stockage clé contenu espace indisponible");
+    }
+  }
+  const kv = getSpaceAuthStore(env);
+  if (!kv) throw new Error("Stockage clé contenu espace indisponible");
+  const storeKey = `space:contentkey:${normalizedSpaceId}`;
+  await kv.put(storeKey, normalizedKey);
+}
+
+function generateSpaceContentKey() {
+  const bytes = new Uint8Array(SPACE_CONTENT_KEY_BYTES);
+  crypto.getRandomValues(bytes);
+  return toBase64UrlString(String.fromCharCode(...bytes));
+}
+
+async function getOrCreateSpaceContentKey(env, spaceId) {
+  const normalizedSpaceId = normalizeSpaceId(spaceId);
+  if (!normalizedSpaceId) return "";
+  const existing = await readSpaceContentKey(env, normalizedSpaceId);
+  if (existing) return existing;
+  const created = generateSpaceContentKey();
+  await writeSpaceContentKey(env, normalizedSpaceId, created);
+  return created;
 }
 
 function getSpaceAuthSecret(env) {
@@ -1547,7 +1611,8 @@ async function handleRequest(request, env) {
         exp: expiresAt
       });
       if (!token) return errorResponse("Impossible de signer le jeton X-Space-Auth à partir du code d'accès de l'espace", 500, request, env);
-      return jsonResponse({ ok: true, created: true, token, spaceId, expiresAt }, 200, request, env, {
+      const contentKey = await getOrCreateSpaceContentKey(env, spaceId);
+      return jsonResponse({ ok: true, created: true, token, spaceId, expiresAt, contentKey, contentKeyVersion: 1 }, 200, request, env, {
         "Cache-Control": "no-store, max-age=0"
       });
     }
@@ -1595,7 +1660,8 @@ async function handleRequest(request, env) {
         exp: expiresAt
       });
       if (!token) return errorResponse("Impossible de signer le nouveau jeton X-Space-Auth après rotation du code d'accès", 500, request, env);
-      return jsonResponse({ ok: true, rotated: true, token, spaceId, expiresAt }, 200, request, env, {
+      const contentKey = await getOrCreateSpaceContentKey(env, spaceId);
+      return jsonResponse({ ok: true, rotated: true, token, spaceId, expiresAt, contentKey, contentKeyVersion: 1 }, 200, request, env, {
         "Cache-Control": "no-store, max-age=0"
       });
     }
@@ -1664,7 +1730,8 @@ async function handleRequest(request, env) {
       exp: expiresAt
     });
     if (!token) return errorResponse("Impossible de signer le jeton X-Space-Auth après validation du code d'accès de l'espace", 500, request, env);
-    return jsonResponse({ ok: true, token, spaceId, expiresAt }, 200, request, env, {
+    const contentKey = await getOrCreateSpaceContentKey(env, spaceId);
+    return jsonResponse({ ok: true, token, spaceId, expiresAt, contentKey, contentKeyVersion: 1 }, 200, request, env, {
       "Cache-Control": "no-store, max-age=0"
     });
   }

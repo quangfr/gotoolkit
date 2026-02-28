@@ -16,7 +16,7 @@
             document.documentElement.setAttribute('data-theme', resolvedTheme);
         })();
     </script>
-    <link rel="stylesheet" href="styles/style.css?v=2026.03.01.1">
+    <link rel="stylesheet" href="styles/style.css?v=2026.03.01.2">
     <style>
         .legal-page {
             max-width: 920px;
@@ -149,29 +149,28 @@
                 Une réponse vous est adressée dans les meilleurs délais, et en principe sous un mois (prolongeable dans
                 les cas prévus par la réglementation). Vous pouvez également introduire une réclamation auprès de la
                 CNIL.</p>
-            <p><strong>8. Chiffrement côté client (E2EE) des contenus et fichiers</strong><br>Les contenus de pages et
-                les fichiers média associés peuvent être chiffrés de bout en bout avant envoi, directement dans le
-                navigateur, à partir d’une phrase d’accès d’espace (5 mots). Le chiffrement média est réalisé côté
-                client en AES-256-GCM. Les serveurs GoToolkit et les intermédiaires techniques ne disposent pas de la
-                phrase d’accès en clair et ne peuvent pas lire les contenus chiffrés.</p>
-            <p><strong>9. Portée et limites du chiffrement</strong><br>Le chiffrement couvre le contenu des pages et
-                les fichiers. Certaines métadonnées restent nécessaires au fonctionnement (ex. identifiants techniques,
-                espace, horodatages, statut, taille/type de fichier, structure de partage) et ne sont pas chiffrées.
-                Le dispositif améliore fortement la confidentialité opérationnelle, mais ne constitue pas une garantie
-                absolue contre tous les risques (poste compromis, partage involontaire, perte de secret, etc.).</p>
-            <p><strong>10. Absence de récupération de la phrase d’accès</strong><br>GoToolkit ne fournit pas de
-                mécanisme
-                de récupération de la phrase d’accès d’un espace. En cas de perte, l’accès aux données chiffrées de cet
-                espace peut devenir impossible.</p>
-            <p><strong>11. Responsabilité utilisateur sur le secret d’accès</strong><br>Vous êtes responsable de la
-                génération, de la conservation, de la transmission et de la révocation de la phrase d’accès de vos
-                espaces. Toute personne disposant de cette phrase peut déchiffrer les contenus correspondants.</p>
-            <p><strong>12. Conformité et standards professionnels</strong><br>L’architecture (chiffrement client,
-                principe de minimisation de l’accès serveur au contenu, séparation contenu/métadonnées) s’aligne avec
-                des pratiques reconnues de protection des données en contexte professionnel. Toutefois, la conformité
-                réglementaire globale dépend aussi de votre usage, de vos bases légales, de votre gouvernance interne
-                et des services tiers éventuellement connectés.</p>
-            <p><strong>13. Services tiers, politique de données et chiffrement</strong><br>Les échanges de données
+            <p><strong>8. Protection des contenus partagés</strong><br>Les contenus et fichiers associés des espaces
+                partagés peuvent faire l’objet d’un chiffrement applicatif avant stockage dans les services de
+                persistance utilisés par GoToolkit. Ce mécanisme vise principalement à éviter le stockage en clair des
+                contenus dans les bases et stockages d’objets sous-jacents. Il ne constitue pas un chiffrement de bout
+                en bout : les composants serveurs GoToolkit participant à l’autorisation d’accès et à la remise du
+                matériel de chiffrement sont dans le périmètre de confiance du service.</p>
+            <p><strong>9. Portée et limites de cette protection</strong><br>La protection couvre prioritairement le
+                contenu des pages et certains fichiers associés. Certaines métadonnées restent nécessaires au
+                fonctionnement (ex. identifiants techniques, espace, horodatages, statut, taille/type de fichier,
+                structure de partage) et peuvent ne pas être chiffrées. Le dispositif améliore la confidentialité
+                opérationnelle au repos, sans constituer une garantie absolue contre tous les risques (poste compromis,
+                partage involontaire, service tiers, erreur de configuration, etc.).</p>
+            <p><strong>10. Contrôle d’accès aux espaces</strong><br>L’accès à certains espaces partagés peut être
+                soumis à un code d’accès, à une authentification OAuth ou à d’autres mécanismes de contrôle d’accès
+                gérés par GoToolkit. Vous êtes responsable de l’usage des accès qui vous sont confiés et de la
+                vérification du périmètre de diffusion avant tout partage.</p>
+            <p><strong>11. Conformité et standards professionnels</strong><br>L’architecture (stockage local lorsque
+                possible, contrôle d’accès dédié, chiffrement applicatif des contenus partagés, séparation
+                contenu/métadonnées) s’aligne avec des pratiques reconnues de protection des données en contexte
+                professionnel. Toutefois, la conformité réglementaire globale dépend aussi de votre usage, de vos bases
+                légales, de votre gouvernance interne et des services tiers éventuellement connectés.</p>
+            <p><strong>12. Services tiers, politique de données et chiffrement</strong><br>Les échanges de données
                 personnelles sont réalisés avec des fournisseurs tiers uniquement lorsque la fonctionnalité utilisée le
                 nécessite. Selon le fournisseur et la configuration retenue, les traitements peuvent être réalisés dans
                 l’Union européenne ou en dehors de l’Union européenne. Lorsque des transferts hors UE existent, ils
@@ -202,16 +201,18 @@
                     <tr>
                         <td>Espaces partagés + Capture mobile</td>
                         <td>Google Firebase (UE) - Firestore</td>
-                        <td>Contenus partagés en ligne créés ou modifiés à l'initiative de l'utilisateur. Chiffrés côté
-                            client (E2EE) avant envoi par GoToolkit.
+                        <td>Contenus partagés en ligne créés ou modifiés à l'initiative de l'utilisateur. Les contenus
+                            peuvent être stockés sous forme chiffrée par GoToolkit afin d'éviter leur conservation en
+                            clair dans le service de persistance.
                             <a href="https://firebase.google.com/support/privacy">Lien</a>
                         </td>
                     </tr>
                     <tr>
                         <td>Fichiers multimédia partagés</td>
                         <td>Cloudflare (UE) - R2</td>
-                        <td>Images ou vidéos des contenus partagées en ligne ajoutées par l'utilisateur et stockés en
-                            ligne. Chiffrement côté client (E2EE) avant l'envoi par GoToolkit.
+                        <td>Images ou vidéos des contenus partagés en ligne ajoutées par l'utilisateur et stockées en
+                            ligne. Les fichiers peuvent être stockés sous forme chiffrée par GoToolkit selon la
+                            fonctionnalité utilisée.
                             <a href="https://www.cloudflare.com/fr-fr/trust-hub/privacy-and-data-protection/">Lien</a>
                         </td>
                     </tr>
@@ -275,18 +276,18 @@
                     </tr>
                 </tbody>
             </table>
-            <p><strong>14. Services tierces et contenus embarqués</strong><br>Certaines ressources techniques
+            <p><strong>13. Services tierces et contenus embarqués</strong><br>Certaines ressources techniques
                 nécessaires à l’interface (CDN, polices) sont chargées au démarrage de l’application. En outre, les
                 contenus vidéo externes (YouTube/Loom) sont fournis par des services tiers susceptibles d’appliquer
                 leurs propres cookies/traceurs et règles de traitement. Selon le type de traceurs, votre consentement
                 peut être requis avant dépôt/lecture, conformément à la réglementation applicable. Nous vous invitons à
                 consulter leurs politiques de confidentialité respectives.</p>
-            <p><strong>15. Transferts internationaux</strong><br>Lorsque des prestataires situés hors de l’Union
+            <p><strong>14. Transferts internationaux</strong><br>Lorsque des prestataires situés hors de l’Union
                 européenne sont utilisés, les transferts de données sont encadrés par des garanties appropriées
                 prévues par le RGPD (par exemple clauses contractuelles types), sous réserve des options activées et de
                 la configuration contractuelle retenue.</p>
-            <p><strong>16. Mises à jour</strong><br>La présente section peut évoluer pour refléter les changements
-                réglementaires, techniques ou fonctionnels. Dernière mise à jour : 25 février 2026.</p>
+            <p><strong>15. Mises à jour</strong><br>La présente section peut évoluer pour refléter les changements
+                réglementaires, techniques ou fonctionnels. Dernière mise à jour : 28 février 2026.</p>
         </section>
         <p style="margin-top:6px;font-size:0.85em;opacity:0.85;">
             Éditeur du site : Xuan Quang Tran (EI - SIREN 832 489 355) – Directeur de la publication : Xuan Quang Tran
