@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { PW_TEST_SPACE_CODE, PW_TEST_SPACE_ID } from "./helpers/share-test-space";
 
 test.describe("Cloud sync persistency", () => {
   test("persists cloud create/edit/rename/move/reorder/delete operations and cleans up", async ({ page }) => {
@@ -47,7 +48,7 @@ test.describe("Cloud sync persistency", () => {
     };
 
     const syncGolive = async () => {
-      const syncBtn = page.locator('.document-explorer__item-action--sync-refresh[data-space-id="golive"]').first();
+      const syncBtn = page.locator(`.document-explorer__item-action--sync-refresh[data-space-id="${PW_TEST_SPACE_ID}"]`).first();
       await expect(syncBtn).toBeVisible({ timeout: 30_000 });
       const prev = await page.evaluate(() => String((window as any).__goToolkitLastCloudSyncTiming?.startedAt || ""));
       await syncBtn.click();
@@ -81,10 +82,10 @@ test.describe("Cloud sync persistency", () => {
         const history = (window as any).goToolkitShareHistory;
         const spaces = (window as any).GoToolkitSpaces;
         spaces?.upsertSpace?.({
-          id: "golive",
+          id: PW_TEST_SPACE_ID,
           name: "Go Live",
           icon: "cloud-upload",
-          spaceJoinCode: "golive",
+          spaceJoinCode: PW_TEST_SPACE_CODE,
           isDefault: true
         });
 
@@ -98,7 +99,7 @@ test.describe("Cloud sync persistency", () => {
           }],
           activeTabId: tabId,
           parentId,
-          spaceId: "golive",
+          spaceId: PW_TEST_SPACE_ID,
           status: "active",
           position
         });
@@ -111,7 +112,7 @@ test.describe("Cloud sync persistency", () => {
             superpowers: [],
             icon: "file-symlink",
             parentId,
-            spaceId: "golive",
+            spaceId: PW_TEST_SPACE_ID,
             position,
             status: "active"
           };
@@ -125,7 +126,7 @@ test.describe("Cloud sync persistency", () => {
             payload,
             icon: "file-symlink",
             parentId,
-            spaceId: "golive",
+            spaceId: PW_TEST_SPACE_ID,
             position,
             updatedAt: String(savedMeta?.updatedAt || new Date().toISOString())
           });
@@ -185,7 +186,7 @@ test.describe("Cloud sync persistency", () => {
           superpowers: Array.isArray(current?.superpowers) ? current.superpowers : [],
           icon: String(current?.icon || "file-symlink").trim() || "file-symlink",
           parentId: String(current?.parentId || ""),
-          spaceId: String(current?.spaceId || "golive"),
+          spaceId: String(current?.spaceId || PW_TEST_SPACE_ID),
           position: Number.isFinite(Number(current?.position)) ? Number(current.position) : Date.now(),
           status: "active"
         });

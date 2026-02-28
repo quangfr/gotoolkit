@@ -1130,7 +1130,7 @@
     return "";
   }
 
-  async function authenticateSpaceWithCode(base, spaceId, spaceCodeRaw, options = {}) {
+  async function authenticateSpaceWithCode(base, spaceId, spaceCodeRaw) {
     const normalizedSpaceId = normalizeSpaceId(spaceId);
     const spaceCode = normalizeSpaceJoinCode(spaceCodeRaw);
     if (!normalizedSpaceId || !spaceCode) return null;
@@ -1138,9 +1138,6 @@
       spaceId: normalizedSpaceId,
       spaceCode
     };
-    if (options?.createIfMissing === true) {
-      requestBody.createIfMissing = true;
-    }
     const response = await fetch(`${base}/${API_VERSION}/spaces/auth`, {
       method: "POST",
       headers: mergeSyncHeaders({
@@ -1261,19 +1258,6 @@
     }
     return withWorkerFallback(async base => {
       await authenticateSpaceWithCode(base, normalizedSpaceId, normalizedSpaceCode);
-      return { ok: true, spaceId: normalizedSpaceId };
-    });
-  }
-
-  async function createSpaceWithCredentials(spaceId, spaceCodeRaw) {
-    assertReady();
-    const normalizedSpaceId = normalizeSpaceId(spaceId);
-    const normalizedSpaceCode = normalizeSpaceJoinCode(spaceCodeRaw);
-    if (!normalizedSpaceId || !normalizedSpaceCode) {
-      throw new Error("spaceId et code d'accès requis");
-    }
-    return withWorkerFallback(async base => {
-      await authenticateSpaceWithCode(base, normalizedSpaceId, normalizedSpaceCode, { createIfMissing: true });
       return { ok: true, spaceId: normalizedSpaceId };
     });
   }
@@ -1587,7 +1571,6 @@
     deleteAsset,
     rotateSpaceJoinCode,
     verifySpaceCredentials,
-    createSpaceWithCredentials,
     probePagePayloadJoinCode,
     buildAssetUrl: assetId => buildAssetUrl(workerBases[0], assetId)
   };

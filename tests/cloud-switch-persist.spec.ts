@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { PW_TEST_SPACE_CODE, PW_TEST_SPACE_ID } from "./helpers/share-test-space";
 
 test.describe("Cloud page switching persistency", () => {
   test("keeps cloud edits across cloud page switches and reload", async ({ page }) => {
@@ -33,16 +34,16 @@ test.describe("Cloud page switching persistency", () => {
         ],
         activeTabId: tabId,
         parentId: "",
-        spaceId: "golive",
+        spaceId: PW_TEST_SPACE_ID,
         status: "active",
         position: ts
       });
 
       (window as any).GoToolkitSpaces?.upsertSpace?.({
-        id: "golive",
+        id: PW_TEST_SPACE_ID,
         name: "Go Live",
         icon: "cloud-upload",
-        spaceJoinCode: "golive",
+        spaceJoinCode: PW_TEST_SPACE_CODE,
         isDefault: true
       });
 
@@ -55,7 +56,7 @@ test.describe("Cloud page switching persistency", () => {
         superpowers: [],
         icon: "file-symlink",
         parentId: "",
-        spaceId: "golive",
+        spaceId: PW_TEST_SPACE_ID,
         position: ts,
         status: "active"
       });
@@ -67,7 +68,7 @@ test.describe("Cloud page switching persistency", () => {
         superpowers: [],
         icon: "file-symlink",
         parentId: "",
-        spaceId: "golive",
+        spaceId: PW_TEST_SPACE_ID,
         position: ts + 1,
         status: "active"
       });
@@ -81,7 +82,7 @@ test.describe("Cloud page switching persistency", () => {
         payload: payloadA,
         icon: "file-symlink",
         parentId: "",
-        spaceId: "golive",
+        spaceId: PW_TEST_SPACE_ID,
         position: ts,
         updatedAt: String(savedMetaA?.updatedAt || new Date().toISOString())
       });
@@ -94,7 +95,7 @@ test.describe("Cloud page switching persistency", () => {
         payload: payloadB,
         icon: "file-symlink",
         parentId: "",
-        spaceId: "golive",
+        spaceId: PW_TEST_SPACE_ID,
         position: ts + 1,
         updatedAt: String(savedMetaB?.updatedAt || new Date().toISOString())
       });

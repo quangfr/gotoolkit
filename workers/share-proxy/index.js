@@ -224,7 +224,7 @@ function parseSpaceAuthPath(request) {
   if (action !== "auth") return null;
   const operation = String(segments[3] || "").trim().toLowerCase();
   if (!operation) return { action, operation: "issue" };
-  if (operation !== "rotate") return null;
+  if (operation !== "rotate" && operation !== "create") return null;
   return { action, operation };
 }
 
@@ -357,6 +357,14 @@ function parseAssetUploadBody(body) {
     throw new Error("Image base64 manquante");
   }
   return { mimeType, contentBase64, fileName, scope };
+}
+
+function readAssetSpaceId(object) {
+  return normalizeSpaceId(
+    object?.customMetadata?.spaceId
+    || object?.customMetadata?.spaceid
+    || ""
+  );
 }
 
 function decodeBase64ToBytes(base64) {
@@ -544,6 +552,21 @@ async function writeSpaceCodeHash(env, spaceId, codeHash) {
 function getSpaceAuthSecret(env) {
   const secret = String(env?.SHARE_SPACE_AUTH_SECRET || "").trim();
   return secret;
+}
+
+function getSpaceCreateSecret(env) {
+  return String(env?.SHARE_SPACE_CREATE_SECRET || "").trim();
+}
+
+function hasValidSpaceCreateSecret(request, env) {
+  const expected = getSpaceCreateSecret(env);
+  if (!expected) return false;
+  const provided = String(
+    request.headers.get("X-Space-Create-Secret")
+    || request.headers.get("Authorization")?.replace(/^Bearer\s+/i, "")
+    || ""
+  ).trim();
+  return Boolean(provided) && provided === expected;
 }
 
 async function getSpaceAuthSigningKey(env) {
@@ -966,6 +989,7 @@ function mapStorageObjectToAsset(objectName, upload) {
     bucket: "share-media",
     mimeType: String(upload?.mimeType || ""),
     size: Number(upload?.size || 0),
+    spaceId: normalizeSpaceId(upload?.spaceId || ""),
     generation: ""
   };
 }
@@ -986,11 +1010,18 @@ async function uploadAssetToStorage(env, upload) {
   await bucket.put(objectName, bytes, {
     httpMetadata: {
       contentType: upload.mimeType
+    },
+    customMetadata: {
+      spaceId: normalizeSpaceId(upload.spaceId || "")
     }
   });
   return {
     hash,
-    asset: mapStorageObjectToAsset(objectName, { mimeType: upload.mimeType, size: bytes.length })
+    asset: mapStorageObjectToAsset(objectName, {
+      mimeType: upload.mimeType,
+      size: bytes.length,
+      spaceId: upload.spaceId
+    })
   };
 }
 
@@ -1361,7 +1392,14 @@ async function upsertShareDocument(env, collection, documentId, payload, request
 }
 
 async function handleRequest(request, env) {
-  if (request.method !== "OPTIONS" && !isOriginAllowed(request, env)) {
+  const assetPath = parseAssetPath(request);
+  const spaceAuthPath = parseSpaceAuthPath(request);
+  const allowSecretSpaceCreate = Boolean(
+    request.method !== "OPTIONS"
+    && spaceAuthPath?.operation === "create"
+    && hasValidSpaceCreateSecret(request, env)
+  );
+  if (request.method !== "OPTIONS" && !isOriginAllowed(request, env) && !allowSecretSpaceCreate) {
     return errorResponse("Origin non autorisee", 403, request, env);
   }
   if (request.method === "OPTIONS") {
@@ -1371,8 +1409,6 @@ async function handleRequest(request, env) {
     return new Response(null, { status: 204, headers: corsHeaders(request, env) });
   }
 
-  const assetPath = parseAssetPath(request);
-  const spaceAuthPath = parseSpaceAuthPath(request);
   if (spaceAuthPath) {
     if (request.method !== "POST") {
       return errorResponse("Méthode non autorisée", 405, request, env);
@@ -1391,6 +1427,33 @@ async function handleRequest(request, env) {
     const spaceId = normalizeSpaceId(body?.spaceId || "");
     if (!spaceId) {
       return errorResponse("spaceId manquant", 400, request, env);
+    }
+    if (spaceAuthPath.operation === "create") {
+      if (!hasValidSpaceCreateSecret(request, env)) {
+        return errorResponse("Secret creation espace invalide", 403, request, env);
+      }
+      const spaceCode = normalizeSpaceJoinCode(body?.spaceCode || body?.spaceJoinCode || "");
+      if (!spaceCode) {
+        return errorResponse("spaceCode manquant", 400, request, env);
+      }
+      const existingHash = await readSpaceCodeHash(env, spaceId);
+      if (existingHash) {
+        return errorResponse("Ce spaceId existe déjà", 409, request, env);
+      }
+      const codeHash = await sha256Hex(textEncoder.encode(`${spaceId}:${spaceCode}`));
+      await writeSpaceCodeHash(env, spaceId, codeHash);
+      const now = Date.now();
+      const expiresAt = now + (10 * 60 * 1000);
+      const token = await signSpaceAuthPayload(env, {
+        typ: "space-auth",
+        spaceId,
+        iat: now,
+        exp: expiresAt
+      });
+      if (!token) return errorResponse("Impossible de signer le token", 500, request, env);
+      return jsonResponse({ ok: true, created: true, token, spaceId, expiresAt }, 200, request, env, {
+        "Cache-Control": "no-store, max-age=0"
+      });
     }
     if (spaceAuthPath.operation === "rotate") {
       const currentSpaceCode = normalizeSpaceJoinCode(
@@ -1441,21 +1504,17 @@ async function handleRequest(request, env) {
       });
     }
 
-    const createIfMissing = body?.createIfMissing === true;
     const spaceCode = normalizeSpaceJoinCode(body?.spaceCode || body?.spaceJoinCode || "");
     if (!spaceCode) {
       return errorResponse("spaceCode manquant", 400, request, env);
     }
     const codeHash = await sha256Hex(textEncoder.encode(`${spaceId}:${spaceCode}`));
     const existingHash = await readSpaceCodeHash(env, spaceId);
-    if (createIfMissing && existingHash) {
-      return errorResponse("Ce spaceId existe déjà", 409, request, env);
+    if (!existingHash) {
+      return errorResponse("Aucun code existant pour cet espace", 404, request, env);
     }
     if (existingHash && existingHash !== codeHash) {
       return errorResponse("Code espace invalide", 403, request, env);
-    }
-    if (!existingHash) {
-      await writeSpaceCodeHash(env, spaceId, codeHash);
     }
     const now = Date.now();
     const expiresAt = now + (10 * 60 * 1000);
@@ -1497,6 +1556,14 @@ async function handleRequest(request, env) {
       if (assetPath.action !== "upload") {
         return errorResponse("Route assets invalide", 404, request, env);
       }
+      const authHeaders = readSpaceAuthHeaders(request);
+      if (!authHeaders.spaceId || !authHeaders.token) {
+        return errorResponse("Authentification espace requise", 401, request, env);
+      }
+      const verification = await verifySpaceAuthToken(env, authHeaders.token, authHeaders.spaceId);
+      if (!verification.ok) {
+        return errorResponse(verification.error || "Token espace invalide", 401, request, env);
+      }
       const rateLimitResponse = await enforceWriteRateLimit(request, env);
       if (rateLimitResponse) {
         return rateLimitResponse;
@@ -1513,6 +1580,7 @@ async function handleRequest(request, env) {
       } catch (err) {
         return errorResponse(err?.message || "Payload image invalide", 400, request, env);
       }
+      parsed.spaceId = authHeaders.spaceId;
       const uploaded = await uploadAssetToStorage(env, parsed);
       return jsonResponse({
         ok: true,
@@ -1526,9 +1594,25 @@ async function handleRequest(request, env) {
       if (!assetPath.action || assetPath.action === "upload") {
         return errorResponse("Identifiant d'asset manquant", 400, request, env);
       }
+      const authHeaders = readSpaceAuthHeaders(request);
+      if (!authHeaders.spaceId || !authHeaders.token) {
+        return errorResponse("Authentification espace requise", 401, request, env);
+      }
+      const verification = await verifySpaceAuthToken(env, authHeaders.token, authHeaders.spaceId);
+      if (!verification.ok) {
+        return errorResponse(verification.error || "Token espace invalide", 401, request, env);
+      }
       const rateLimitResponse = await enforceWriteRateLimit(request, env);
       if (rateLimitResponse) {
         return rateLimitResponse;
+      }
+      const result = await readAssetFromStorage(env, assetPath.action);
+      if (!result) {
+        return notFoundResponse(request, env);
+      }
+      const assetSpaceId = readAssetSpaceId(result.object);
+      if (!assetSpaceId || assetSpaceId !== authHeaders.spaceId) {
+        return errorResponse("Asset hors scope", 403, request, env);
       }
       await deleteAssetFromStorage(env, assetPath.action);
       return jsonResponse({ ok: true }, 200, request, env);

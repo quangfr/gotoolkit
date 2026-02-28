@@ -92,15 +92,6 @@
                     <div class="settings-tab-panel" data-panel="paramsTab" hidden>
                         <div class="field-row">
                             <label style="width:100%">
-                                <span class="label-title">Prénom</span>
-                                <div style="position:relative; width:100%;">
-                                    <i data-lucide="user" style="width:14px;height:14px;position:absolute;left:10px;top:50%;transform:translateY(-50%);opacity:0.7;pointer-events:none;"></i>
-                                    <input id="ownerToken" type="text" style="padding-left:34px;" />
-                                </div>
-                            </label>
-                        </div>
-                        <div class="field-row">
-                            <label style="width:100%">
                                 <span class="label-title">Thème</span>
                                 <select id="themeSelectMemo">
                                     <option value="cream">Clair</option>

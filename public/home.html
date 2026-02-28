@@ -293,24 +293,6 @@
     <script src="js/index-gallery.js?v=2026.02.21.9"></script>
     <script type="module">
         const toastEl = document.getElementById("feedbackToast");
-        const ownerToken = document.getElementById("ownerToken");
-        function normalizeOwnerTokenInput(value) {
-            return String(value || "")
-                .normalize("NFD")
-                .replace(/[\u0300-\u036f]/g, "")
-                .toLowerCase()
-                .replace(/[^a-z0-9]+/g, "-")
-                .replace(/^-+|-+$/g, "")
-                .trim();
-        }
-        try {
-            const storedAdmin = localStorage.getItem("feedback-admin-token");
-            const normalizedAdmin = normalizeOwnerTokenInput(storedAdmin);
-            if (ownerToken && !ownerToken.value && normalizedAdmin) ownerToken.value = normalizedAdmin;
-            if (normalizedAdmin && storedAdmin !== normalizedAdmin) {
-                localStorage.setItem("feedback-admin-token", normalizedAdmin);
-            }
-        } catch (e) { /* noop */ }
         function updateRequestsButtonVisibility() {
             return false;
         }
@@ -1362,14 +1344,6 @@
                     settingsSpeechModeSelect.value = storedSpeechMode === "auto" ? "auto" : "manual";
                 }
             } catch (e) { /* noop */ }
-            try {
-                const storedAdmin = localStorage.getItem("feedback-admin-token");
-                const normalizedAdmin = normalizeOwnerTokenInput(storedAdmin);
-                if (ownerToken && normalizedAdmin) ownerToken.value = normalizedAdmin;
-                if (normalizedAdmin && storedAdmin !== normalizedAdmin) {
-                    localStorage.setItem("feedback-admin-token", normalizedAdmin);
-                }
-            } catch (e) { /* noop */ }
             loadChatPrompt();
             activateSettingsTab("integrationsTab");
             updateRequestsButtonVisibility();
@@ -1649,14 +1623,6 @@
                 try { window.GoToolkitAssemblyAiKey = assemblyKeyValue; } catch (e) { /* noop */ }
                 // expose immediate selection to runtime
                 try { window.GoToolkitSelectedAIBackend = selectedBackend; } catch (e) { }
-                const ownerTokenValue = normalizeOwnerTokenInput(ownerToken?.value || "");
-                try {
-                    if (ownerTokenValue) {
-                        localStorage.setItem("feedback-admin-token", ownerTokenValue);
-                    } else {
-                        localStorage.removeItem("feedback-admin-token");
-                    }
-                } catch (e) { /* noop */ }
                 localStorage.setItem("plan-reasoning-effort", reasoning);
                 try { localStorage.setItem("nuances-reasoning-effort", reasoning); } catch (e) { }
                 // Optionally validate OpenAI key but do not block save.
@@ -1929,18 +1895,6 @@
                 return;
             }
         });
-        ownerToken?.addEventListener("input", () => {
-            const normalized = normalizeOwnerTokenInput(ownerToken.value || "");
-            if (ownerToken.value !== normalized) ownerToken.value = normalized;
-            try {
-                if (normalized) {
-                    localStorage.setItem("feedback-admin-token", normalized);
-                } else {
-                    localStorage.removeItem("feedback-admin-token");
-                }
-            } catch (e) { /* noop */ }
-        });
-
         function setIaStatus(backend) {
             if (openaiStatusEl && !openaiStatusEl.dataset.openaiStatusSticky) {
                 if (backend?.type === "openai") {

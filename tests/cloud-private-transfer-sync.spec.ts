@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { PW_TEST_SPACE_CODE, PW_TEST_SPACE_ID } from "./helpers/share-test-space";
 
 test.describe("Cloud/private transfer sync", () => {
   test("archives cloud doc to private and promotes private doc to cloud with sync persist", async ({ page }) => {
@@ -12,7 +13,7 @@ test.describe("Cloud/private transfer sync", () => {
     const privateMarker = `PW_TRANSFER_PRIVATE_${ts}`;
 
     const syncGolive = async () => {
-      const syncBtn = page.locator('.document-explorer__item-action--sync-refresh[data-space-id="golive"]').first();
+      const syncBtn = page.locator(`.document-explorer__item-action--sync-refresh[data-space-id="${PW_TEST_SPACE_ID}"]`).first();
       await expect(syncBtn).toBeVisible({ timeout: 30_000 });
       const prev = await page.evaluate(() => String((window as any).__goToolkitLastCloudSyncTiming?.startedAt || ""));
       await syncBtn.click();
@@ -57,13 +58,13 @@ test.describe("Cloud/private transfer sync", () => {
       const worker = (window as any).goToolkitShareWorker;
       const history = (window as any).goToolkitShareHistory;
       const spaces = (window as any).GoToolkitSpaces;
-      spaces?.upsertSpace?.({ id: "golive", name: "Go Live", icon: "cloud-upload", spaceJoinCode: "golive", isDefault: true });
+      spaces?.upsertSpace?.({ id: PW_TEST_SPACE_ID, name: "Go Live", icon: "cloud-upload", spaceJoinCode: PW_TEST_SPACE_CODE, isDefault: true });
 
       const cloudPayload = {
         tabs: [{ id: `tab-${cloudToken}`, title: `Cloud ${cloudToken}`, description: "", superpowers: [], content: `<p>${cloudMarker}</p>` }],
         activeTabId: `tab-${cloudToken}`,
         parentId: "",
-        spaceId: "golive",
+        spaceId: PW_TEST_SPACE_ID,
         status: "active",
         position: Date.now()
       };
@@ -74,7 +75,7 @@ test.describe("Cloud/private transfer sync", () => {
         superpowers: [],
         icon: "file-symlink",
         parentId: "",
-        spaceId: "golive",
+        spaceId: PW_TEST_SPACE_ID,
         position: Date.now(),
         status: "active"
       });
@@ -87,7 +88,7 @@ test.describe("Cloud/private transfer sync", () => {
         payload: cloudPayload,
         icon: "file-symlink",
         parentId: "",
-        spaceId: "golive",
+        spaceId: PW_TEST_SPACE_ID,
         position: Date.now(),
         updatedAt: new Date().toISOString()
       });
@@ -112,8 +113,8 @@ test.describe("Cloud/private transfer sync", () => {
       const history = (window as any).goToolkitShareHistory;
       const local = await docApi.getRecord(privateId);
       const payload = local?.payload && typeof local.payload === "object"
-        ? { ...local.payload, spaceId: "golive", parentId: "", status: "active", position: Date.now() }
-        : { tabs: [{ id: "tab-1", title: "Page 1", description: "", superpowers: [], content: "<p></p>" }], activeTabId: "tab-1", spaceId: "golive", parentId: "", status: "active", position: Date.now() };
+        ? { ...local.payload, spaceId: PW_TEST_SPACE_ID, parentId: "", status: "active", position: Date.now() }
+        : { tabs: [{ id: "tab-1", title: "Page 1", description: "", superpowers: [], content: "<p></p>" }], activeTabId: "tab-1", spaceId: PW_TEST_SPACE_ID, parentId: "", status: "active", position: Date.now() };
       const title = String(local?.name || local?.title || "Promoted private").trim() || "Promoted private";
       const docId = `share:${promotedToken}`;
       (window as any).goToolkitCloudDrafts.set(docId, {
@@ -126,7 +127,7 @@ test.describe("Cloud/private transfer sync", () => {
         superpowers: [],
         icon: "file-symlink",
         parentId: "",
-        spaceId: "golive",
+        spaceId: PW_TEST_SPACE_ID,
         position: Date.now(),
         payload,
         updatedAt: new Date().toISOString()
@@ -139,7 +140,7 @@ test.describe("Cloud/private transfer sync", () => {
         payload,
         icon: "file-symlink",
         parentId: "",
-        spaceId: "golive",
+        spaceId: PW_TEST_SPACE_ID,
         position: Date.now(),
         updatedAt: new Date().toISOString()
       });
