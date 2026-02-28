@@ -1276,7 +1276,11 @@
       return cached.token;
     }
     const space = getSpaceById(normalizedSpaceId);
+    const hasManagedOauthAccess = Boolean(space?.accessManaged) && String(space?.accessMode || "").trim().toLowerCase() === "oauth";
     const spaceCode = normalizeSpaceJoinCode(space?.spaceJoinCode || "");
+    if (hasManagedOauthAccess) {
+      return authenticateSpaceWithOauth(base, normalizedSpaceId);
+    }
     if (spaceCode) {
       return authenticateSpaceWithCode(base, normalizedSpaceId, spaceCode);
     }

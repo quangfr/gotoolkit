@@ -429,7 +429,8 @@ function corsHeaders(request, env) {
   const headers = {
     "Access-Control-Allow-Methods": "GET,PUT,POST,DELETE,OPTIONS",
     "Access-Control-Allow-Headers": allowHeaders,
-    "Access-Control-Allow-Origin": allowOrigin ? origin : "null"
+    "Access-Control-Allow-Origin": allowOrigin ? origin : "null",
+    "Access-Control-Expose-Headers": "Date,Content-Type"
   };
   headers["Vary"] = "Origin";
   return headers;

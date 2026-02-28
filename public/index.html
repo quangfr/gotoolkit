@@ -5,7 +5,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; connect-src 'self' https: wss:; font-src 'self' data: https://fonts.gstatic.com; frame-src 'self' https://challenges.cloudflare.com https:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
+        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; connect-src 'self' https: wss:; font-src 'self' data: https://fonts.gstatic.com https://unpkg.com; frame-src 'self' https://challenges.cloudflare.com https:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
     <script>
         (function () {
             const storedTheme = localStorage.getItem('go-toolkit-theme');
@@ -87,11 +87,11 @@
         integrity="sha384-LlKSgo4Eo5GuF/ZrstLti44dE+GC5XAJ7TSu0Nw9Q3vIZF2QMnkRcK7BUoLabYLF" crossorigin defer></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.min.js"
         integrity="sha384-o5vdFlIHJf1L/hUFEtj8tgNVtCT+02DKNT3MPA47wJ9Eo5HocC7qCL2YL+sWNsk8" crossorigin defer></script>
-    <link rel="stylesheet" href="styles/style.css?v=2026.02.28.20">
+    <link rel="stylesheet" href="styles/style.css?v=2026.02.28.21">
     <script src="https://cdn.jsdelivr.net/npm/lucide@0.575.0/dist/umd/lucide.min.js"
         integrity="sha384-GzE8qT1LzDfRNjtvLN/dXDLPlJOB3BBom3Twb9/RwHkXCgNl6OU1pBxM9397HWGU" crossorigin defer></script>
-    <link rel="stylesheet" href="styles/memo.css?v=2026.02.28.20">
-    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.28.20">
+    <link rel="stylesheet" href="styles/memo.css?v=2026.02.28.21">
+    <link rel="stylesheet" href="js/memo.bundle.css?v=2026.02.28.21">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.css">
     <script src="https://cdn.jsdelivr.net/npm/json-viewer-js@1.1.0/dist/json-viewer.min.js" defer></script>
     <style>
@@ -512,7 +512,7 @@
         <img src="img/logo.gif" alt="Logo GoToolkit" class="logo-light">
         <img src="img/logo-inverted.gif" alt="Logo GoToolkit" class="logo-dark">
         <strong>GoToolkit</strong>
-        <span id="memoNewsTrigger" class="info-popup-news-link" role="button" tabindex="0">Version 2026.02.28.20</span>
+        <span id="memoNewsTrigger" class="info-popup-news-link" role="button" tabindex="0">Version 2026.02.28.21</span>
         <span>Usage réservé à Savane Consulting.</span>
         <div class="info-actions info-actions--stacked">
             <div class="info-actions-row">
@@ -595,25 +595,25 @@
         window.GO_TOOLKIT_GOOGLE_TTS_API_URL =
             window.GO_TOOLKIT_GOOGLE_TTS_API_URL || "https://googletts.gotoolkit.workers.dev";
     </script>
-    <script src="js/config.js?v=2026.02.28.20" defer></script>
-    <script src="js/turnstile-helper.js?v=2026.02.28.20" defer></script>
-    <script src="js/config-modal.js?v=2026.02.28.20" defer></script>
-    <script src="js/feature-visibility.js?v=2026.02.28.20" defer></script>
-    <script src="js/document-storage.js?v=2026.02.28.20" defer></script>
-    <script src="js/storage-service.js?v=2026.02.28.20" defer></script>
-    <script src="js/shared-ui.js?v=2026.02.28.20" defer></script>
-    <script src="js/spaces-store.js?v=2026.02.28.20" defer></script>
-    <script src="js/share-worker-client.js?v=2026.02.28.20" defer></script>
-    <script src="js/share-history.js?v=2026.02.28.20" defer></script>
-    <script src="js/document-api.js?v=2026.02.28.20" defer></script>
-    <script src="js/keywordIndex.js?v=2026.02.28.20" defer></script>
-    <script src="js/document-rag.js?v=2026.02.28.20" defer></script>
-    <script src="js/ia-config.js?v=2026.02.28.20" defer></script>
-    <script src="preset.js?v=2026.02.28.20" defer></script>
-    <script src="prompt.js?v=2026.02.28.20" defer></script>
-    <script src="js/ia-client.js?v=2026.02.28.20" defer></script>
-    <script src="js/document-markdown.js?v=2026.02.28.20" defer></script>
-    <script src="js/notion-export.js?v=2026.02.28.20" defer></script>
+    <script src="js/config.js?v=2026.02.28.21" defer></script>
+    <script src="js/turnstile-helper.js?v=2026.02.28.21" defer></script>
+    <script src="js/config-modal.js?v=2026.02.28.21" defer></script>
+    <script src="js/feature-visibility.js?v=2026.02.28.21" defer></script>
+    <script src="js/document-storage.js?v=2026.02.28.21" defer></script>
+    <script src="js/storage-service.js?v=2026.02.28.21" defer></script>
+    <script src="js/shared-ui.js?v=2026.02.28.21" defer></script>
+    <script src="js/spaces-store.js?v=2026.02.28.21" defer></script>
+    <script src="js/share-worker-client.js?v=2026.02.28.21" defer></script>
+    <script src="js/share-history.js?v=2026.02.28.21" defer></script>
+    <script src="js/document-api.js?v=2026.02.28.21" defer></script>
+    <script src="js/keywordIndex.js?v=2026.02.28.21" defer></script>
+    <script src="js/document-rag.js?v=2026.02.28.21" defer></script>
+    <script src="js/ia-config.js?v=2026.02.28.21" defer></script>
+    <script src="preset.js?v=2026.02.28.21" defer></script>
+    <script src="prompt.js?v=2026.02.28.21" defer></script>
+    <script src="js/ia-client.js?v=2026.02.28.21" defer></script>
+    <script src="js/document-markdown.js?v=2026.02.28.21" defer></script>
+    <script src="js/notion-export.js?v=2026.02.28.21" defer></script>
     <script>
         document.addEventListener("click", function (event) {
             const legalTrigger = event.target?.closest?.("[data-open-nexus-modal]");
@@ -629,15 +629,15 @@
             }
         });
     </script>
-    <script src="js/news.js?v=2026.02.28.20" defer></script>
-    <script src="js/voice-video-player.js?v=2026.02.28.20" defer></script>
-    <script src="js/voice-audio-player.js?v=2026.02.28.20" defer></script>
-    <script src="js/youtube-publish.js?v=2026.02.28.20" defer></script>
-    <script src="js/voice.js?v=2026.02.28.20" defer></script>
-    <script src="js/voice-transcript.js?v=2026.02.28.20" defer></script>
-    <script src="js/googletts.js?v=2026.02.28.20" defer></script>
-    <script src="js/draw-memo.js?v=2026.02.28.20" defer></script>
-    <script src="js/document-tabs.js?v=2026.02.28.20" defer></script>
+    <script src="js/news.js?v=2026.02.28.21" defer></script>
+    <script src="js/voice-video-player.js?v=2026.02.28.21" defer></script>
+    <script src="js/voice-audio-player.js?v=2026.02.28.21" defer></script>
+    <script src="js/youtube-publish.js?v=2026.02.28.21" defer></script>
+    <script src="js/voice.js?v=2026.02.28.21" defer></script>
+    <script src="js/voice-transcript.js?v=2026.02.28.21" defer></script>
+    <script src="js/googletts.js?v=2026.02.28.21" defer></script>
+    <script src="js/draw-memo.js?v=2026.02.28.21" defer></script>
+    <script src="js/document-tabs.js?v=2026.02.28.21" defer></script>
     <script>
         // Suppress React DevTools prompt in dev builds.
         window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = window.__REACT_DEVTOOLS_GLOBAL_HOOK__ || {
@@ -647,10 +647,10 @@
             onCommitFiberUnmount: function () { }
         };
     </script>
-    <script src="js/memo.bundle.js?v=2026.02.28.20" defer></script>
-    <script src="js/assist.js?v=2026.02.28.20" defer></script>
-    <script src="js/space-sync.js?v=2026.02.28.20" defer></script>
-    <script src="js/document-panel.js?v=2026.02.28.20" defer></script>
+    <script src="js/memo.bundle.js?v=2026.02.28.21" defer></script>
+    <script src="js/assist.js?v=2026.02.28.21" defer></script>
+    <script src="js/space-sync.js?v=2026.02.28.21" defer></script>
+    <script src="js/document-panel.js?v=2026.02.28.21" defer></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             setTimeout(function () {
@@ -923,6 +923,7 @@
                     microsoftAuthLink.textContent = connected ? "Se déconnecter" : "Se connecter";
                 }
                 window.GoToolkitSettingsModal?.setIntegrationConnected?.(microsoftAuthLink, connected);
+                updateConnectionButtonConnectedState(connected);
             }
 
             async function refreshMicrosoftIntegration(showToastOnError = false) {
@@ -974,28 +975,6 @@
             const MANAGED_SHARED_SPACE_JOIN_CODES = Object.freeze({
                 golive: "golive"
             });
-            const CONNECTION_MODAL_DISMISS_STORAGE_KEY = "goToolkit.connectionModal.dismissed.v1";
-
-            function isConnectionModalDismissed() {
-                try {
-                    return localStorage.getItem(CONNECTION_MODAL_DISMISS_STORAGE_KEY) === "1";
-                } catch (err) {
-                    return false;
-                }
-            }
-
-            function setConnectionModalDismissed(dismissed) {
-                try {
-                    if (dismissed) {
-                        localStorage.setItem(CONNECTION_MODAL_DISMISS_STORAGE_KEY, "1");
-                    } else {
-                        localStorage.removeItem(CONNECTION_MODAL_DISMISS_STORAGE_KEY);
-                    }
-                } catch (err) {
-                    // ignore
-                }
-            }
-
             function getAuthorizedManagedSpaceIdsForEmail(emailRaw) {
                 const email = String(emailRaw || "").trim().toLowerCase();
                 if (!email) return [];
@@ -1082,57 +1061,50 @@
                 return { connected: Boolean(identity), spaces: managedSpaces, identity };
             }
 
-            function setConnectionModalStatus(message = "") {
-                if (connectionModalStatus) {
-                    connectionModalStatus.textContent = message;
+            function updateConnectionButtonConnectedState(connected) {
+                if (!memoConnectionBtn) return;
+                const iconName = connected ? "lock-keyhole" : "lock-keyhole-open";
+                memoConnectionBtn.title = connected ? "Reconnecter Microsoft" : "Connexion Microsoft";
+                memoConnectionBtn.setAttribute("aria-label", memoConnectionBtn.title);
+                memoConnectionBtn.innerHTML = `<i data-lucide="${iconName}"></i>`;
+                if (window.lucide?.createIcons) window.lucide.createIcons();
+            }
+
+            async function refreshConnectionButtonState() {
+                const publisher = window.GoToolkitMicrosoftPublish;
+                if (!publisher?.getAuthStatus) {
+                    updateConnectionButtonConnectedState(false);
+                    return { connected: false };
+                }
+                try {
+                    const status = await publisher.getAuthStatus();
+                    updateConnectionButtonConnectedState(Boolean(status?.connected));
+                    return status || { connected: false };
+                } catch (err) {
+                    updateConnectionButtonConnectedState(false);
+                    return { connected: false };
                 }
             }
 
-            function setConnectionModalVisible(visible) {
-                if (!connectionModal) return;
-                connectionModal.classList.toggle("open", Boolean(visible));
-                connectionModal.setAttribute("aria-hidden", visible ? "false" : "true");
-                connectionModal.style.display = visible ? "flex" : "";
-                if (!visible) return;
-                if (connectionModalDismissToggle) {
-                    connectionModalDismissToggle.checked = isConnectionModalDismissed();
-                }
-                void syncManagedSharedSpaces().then(result => {
-                    if (!result.connected) {
-                        setConnectionModalStatus("Aucune session connectée.");
-                        return;
-                    }
-                    if (connectionModal?.dataset.pendingMicrosoftConnect === "1" && result.identity?.provider === "Microsoft") {
-                        connectionModal.dataset.pendingMicrosoftConnect = "0";
-                        setConnectionModalVisible(false);
-                        return;
-                    }
-                    const spaceNames = (result.spaces || []).map(space => String(space?.name || "").trim()).filter(Boolean);
-                    const identity = result.identity;
-                    setConnectionModalStatus(`${identity.provider} connecté${identity.accountEmail ? ` : ${identity.accountEmail}` : ""}${spaceNames.length ? ` · Espaces : ${spaceNames.join(", ")}` : " · Aucun espace autorisé"}`);
-                }).catch(() => {
-                    setConnectionModalStatus("Aucune session connectée.");
-                });
-            }
-
-            async function connectManagedSpaces(providerName) {
-                const isGoogle = providerName === "google";
-                const publisher = isGoogle ? window.GoToolkitGmailPublish : window.GoToolkitMicrosoftPublish;
-                if (!publisher?.ensureConnected) {
-                    setStatus(`Service ${isGoogle ? "Google" : "Microsoft"} indisponible`);
+            async function runDirectMicrosoftConnectionFlow() {
+                const publisher = window.GoToolkitMicrosoftPublish;
+                if (!publisher?.getAuthStatus || !publisher?.ensureConnected) {
+                    setStatus("Service Microsoft indisponible");
                     return;
                 }
-                await publisher.ensureConnected();
-                await syncManagedSharedSpaces();
-                setConnectionModalVisible(false);
-                setStatus(`Connexion ${isGoogle ? "Google" : "Microsoft"} établie`);
-            }
-
-            async function maybeOpenConnectionModalOnLaunch() {
-                if (isConnectionModalDismissed()) return;
-                const result = await syncManagedSharedSpaces().catch(() => ({ connected: false }));
-                if (result?.connected) return;
-                setConnectionModalVisible(true);
+                try {
+                    const status = await publisher.getAuthStatus();
+                    if (status?.connected && publisher.disconnect) {
+                        await publisher.disconnect();
+                    }
+                    await publisher.ensureConnected();
+                    await refreshMicrosoftIntegration(false);
+                    await syncManagedSharedSpaces();
+                } catch (err) {
+                    setStatus(err?.message || "Connexion Microsoft impossible", true);
+                } finally {
+                    await refreshConnectionButtonState();
+                }
             }
 
             const documentBreadcrumbEl = document.getElementById("document-breadcrumb");
@@ -9434,14 +9406,27 @@
                         }
                         for (const node of subtree) {
                             const source = byToken.get(node.token) || {};
-                            scheduleSharedArchiveSave(node.token, {
+                            const archivePayload = {
                                 title: source.title || "Document partagé",
                                 description: source.description || "",
                                 superpowers: Array.isArray(source.superpowers) ? source.superpowers : [],
                                 spaceId: normalizeSpaceId(source.spaceId || DEFAULT_SPACE_ID),
                                 parentId: normalizeSharedParentId(source.parentId || ""),
                                 reason: "moved-to-local"
-                            });
+                            };
+                            try {
+                                if (shareWorker?.isReady) {
+                                    await archiveSharedDocument(node.token, archivePayload);
+                                } else {
+                                    scheduleSharedArchiveSave(node.token, archivePayload);
+                                }
+                            } catch (err) {
+                                console.warn("[Move cloud->local] Immediate archive failed, queued for sync", {
+                                    token: node.token,
+                                    err
+                                });
+                                scheduleSharedArchiveSave(node.token, archivePayload);
+                            }
                             await shareHistory?.removeRecord?.("memo", node.token);
                             await memoExplorer?.removeItemById?.(`share:${node.token}`);
                         }
@@ -10505,7 +10490,7 @@
                 setSpaceAccessOverlayVisible(false);
                 navigateToDocsHomePath();
             });
-            maybeOpenConnectionModalOnLaunch().catch(() => null);
+            refreshConnectionButtonState().catch(() => null);
             window.addEventListener("popstate", () => {
                 restoreDocumentFromCurrentRoute().catch(() => null);
             });
@@ -10732,33 +10717,7 @@
             memoConnectionBtn?.addEventListener("click", event => {
                 event.stopPropagation();
                 closeMenus();
-                setConnectionModalVisible(true);
-            });
-            connectionModalDismissToggle?.addEventListener("change", () => {
-                setConnectionModalDismissed(Boolean(connectionModalDismissToggle.checked));
-            });
-            connectionModalClose?.addEventListener("click", () => setConnectionModalVisible(false));
-            connectionModalDoneBtn?.addEventListener("click", () => setConnectionModalVisible(false));
-            connectionModal?.addEventListener("mousedown", event => {
-                if (event.target === connectionModal) {
-                    setConnectionModalVisible(false);
-                }
-            });
-            connectionGoogleBtn?.addEventListener("click", async () => {
-                try {
-                    await connectManagedSpaces("google");
-                } catch (err) {
-                    setStatus(err?.message || "Connexion Google impossible", true);
-                }
-            });
-            connectionMicrosoftBtn?.addEventListener("click", async () => {
-                try {
-                    if (connectionModal) connectionModal.dataset.pendingMicrosoftConnect = "1";
-                    await connectManagedSpaces("microsoft");
-                } catch (err) {
-                    if (connectionModal) connectionModal.dataset.pendingMicrosoftConnect = "0";
-                    setStatus(err?.message || "Connexion Microsoft impossible", true);
-                }
+                void runDirectMicrosoftConnectionFlow();
             });
 
             themeSelectMemo?.addEventListener("change", () => {
@@ -12066,7 +12025,7 @@
                 if (fileMenu?.contains(event.target) || fileMenuBtn?.contains(event.target)) return;
                 if (shareMenu?.contains(event.target) || shareBtn?.contains(event.target)) return;
                 if (settingsModal?.contains(event.target) || memoSettingsBtn?.contains(event.target)) return;
-                if (connectionModal?.contains(event.target) || memoConnectionBtn?.contains(event.target)) return;
+                if (memoConnectionBtn?.contains(event.target)) return;
                 const infoTrigger = getInfoPopupTriggerElement();
                 if (memoInfoPopup?.contains(event.target) || infoTrigger?.contains?.(event.target)) return;
                 if (Date.now() < ignoreInfoPopupAutoCloseUntil) return;
@@ -12083,7 +12042,6 @@
                     closeMenus();
                     closeTemplatePreview();
                     closeSettingsModal();
-                    setConnectionModalVisible(false);
                     closeInfoPopup();
                 }
             });
