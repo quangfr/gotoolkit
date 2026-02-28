@@ -47,6 +47,14 @@
     }
   }
 
+  function logFirestoreMutation(kind, details) {
+    try {
+      console.log("[GoToolkitFirestore]", kind, details || {});
+    } catch (err) {
+      // ignore
+    }
+  }
+
   function payloadLikelyHasVideo(payload) {
     try {
       const raw = JSON.stringify(payload || {});
@@ -984,6 +992,11 @@
   async function deleteSharePayload(collection, token, options = {}) {
     assertReady();
     return withWorkerFallback(async base => {
+      logFirestoreMutation("delete", {
+        collection,
+        token: String(token || "").trim(),
+        base
+      });
       const authHeaders = await withSpaceAuthHeaders(base, mergeSyncHeaders({
         Accept: "application/json"
       }), {
@@ -1058,6 +1071,11 @@
     return withWorkerFallback(async base => {
       const normalizedToken =
         !token || token === "undefined" || token === "null" ? null : token;
+      logFirestoreMutation(normalizedToken ? "write" : "create", {
+        collection,
+        token: normalizedToken,
+        base
+      });
       const url = buildShareUrl(base, collection, normalizedToken);
       const method = normalizedToken ? "PUT" : "POST";
       const shouldInlineAssets = Boolean(options && options.inlineAssets);
@@ -1114,6 +1132,12 @@
       return { count: 0, results: [] };
     }
     return withWorkerFallback(async base => {
+      logFirestoreMutation("write-batch", {
+        collection,
+        count: normalizedWrites.length,
+        ids: normalizedWrites.map(entry => entry.id),
+        base
+      });
       const preparedWrites = [];
       for (const entry of normalizedWrites) {
         const payload = entry?.payload;
@@ -1542,6 +1566,12 @@
       return { count: 0, results: [] };
     }
     return withWorkerFallback(async base => {
+      logFirestoreMutation("delete-batch", {
+        collection,
+        count: normalizedIds.length,
+        ids: normalizedIds,
+        base
+      });
       const authHeaders = await withSpaceAuthHeaders(base, mergeSyncHeaders({
         "Content-Type": "application/json",
         Accept: "application/json"
@@ -1585,6 +1615,12 @@
       return { count: 0, results: [] };
     }
     return withWorkerFallback(async base => {
+      logFirestoreMutation("create-batch", {
+        collection,
+        count: normalizedWrites.length,
+        ids: normalizedWrites.map(entry => entry.id),
+        base
+      });
       const preparedWrites = [];
       for (const entry of normalizedWrites) {
         const contentPayload = entry?.contentPayload;
