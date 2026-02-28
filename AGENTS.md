@@ -59,6 +59,7 @@ Only `public/js` may touch `window`:
 ## Build + runtime
 - Build: `npm install` → `npm run build`. This runs drawing and memo bundles in parallel using `esbuild`. 
 - Production: Build is automated via GitHub Actions (`npm run build:prod`). Local build outputs in `public/js` may still appear in Git status depending on changes.
+- CSP guardrail: when editing CSP in `firebase.json` or any HTML `<meta http-equiv="Content-Security-Policy">`, run `npm run check:csp` and keep Hosting headers aligned with the canonical app CSP used by the HTML entry points.
 - Heavy Libraries: React, ReactDOM, Excalidraw, and Mermaid are loaded via CDN (see `index.html`).
 - Shims: Build aliases in `package.json` map module imports (e.g., `react`, `react-dom`, `excalidraw`, `mermaid`) to `window` globals via `src/*-shim.ts` files (react-shim, react-dom-shim, etc.) to keep bundles small and fast.
 - Dev: `npm start` serves `public/` on port 5000.
@@ -112,6 +113,7 @@ Only `public/js` may touch `window`:
 ## Quick diagnostics
 - `git status --short`
 - `rg -n "<feature|error|token>" public workers -S`
+- `npm run check:csp`
 - `node --check <touched-js-file>`
 - `curl -i https://share.gotoolkit.workers.dev/v1/shares/memos?view=tree\\&spaceId=golive`
 - Playwright API timing (when UI MCP is flaky): use `require(\"playwright\").request.newContext()`.

@@ -1,0 +1,95 @@
+const fs = require("fs");
+const path = require("path");
+
+const repoRoot = path.resolve(__dirname, "..");
+
+const APP_CSP = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; connect-src 'self' https: wss:; font-src 'self' data: https://fonts.gstatic.com https://unpkg.com; frame-src 'self' https://challenges.cloudflare.com https:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'";
+const NOT_FOUND_CSP = "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; object-src 'none'; base-uri 'self'; form-action 'self'";
+
+const APP_HTML_FILES = [
+  "public/index.html",
+  "public/grid.html",
+  "public/home.html",
+  "public/mobile.html",
+  "public/legal.html",
+];
+
+const SPECIAL_CASES = [
+  { file: "public/404.html", expected: NOT_FOUND_CSP },
+];
+
+function readFile(relativePath) {
+  return fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
+}
+
+function normalize(value) {
+  return String(value || "").replace(/\s+/g, " ").trim();
+}
+
+function extractMetaCsp(html, file) {
+  const tagMatch = html.match(/<meta\s+http-equiv=["']Content-Security-Policy["'][^>]*>/i);
+  if (!tagMatch) {
+    throw new Error(`Missing CSP meta tag in ${file}`);
+  }
+
+  const contentMatch = tagMatch[0].match(/content="([^"]*)"/i);
+  if (!contentMatch) {
+    throw new Error(`Missing CSP content attribute in ${file}`);
+  }
+
+  return normalize(contentMatch[1]);
+}
+
+function getFirebasePolicies() {
+  const firebaseConfig = JSON.parse(readFile("firebase.json"));
+  const hostingEntries = Array.isArray(firebaseConfig.hosting) ? firebaseConfig.hosting : [firebaseConfig.hosting];
+  const policyEntries = [];
+
+  for (const hosting of hostingEntries.filter(Boolean)) {
+    for (const headerGroup of hosting.headers || []) {
+      for (const header of headerGroup.headers || []) {
+        if (header.key === "Content-Security-Policy") {
+          policyEntries.push({
+            source: headerGroup.source,
+            value: normalize(header.value),
+          });
+        }
+      }
+    }
+  }
+
+  return policyEntries;
+}
+
+function assertEqual(actual, expected, label) {
+  if (actual !== expected) {
+    throw new Error(`${label} does not match the canonical CSP.\nExpected: ${expected}\nActual:   ${actual}`);
+  }
+}
+
+function main() {
+  for (const file of APP_HTML_FILES) {
+    const actual = extractMetaCsp(readFile(file), file);
+    assertEqual(actual, APP_CSP, `${file} CSP`);
+  }
+
+  for (const entry of SPECIAL_CASES) {
+    const actual = extractMetaCsp(readFile(entry.file), entry.file);
+    assertEqual(actual, entry.expected, `${entry.file} CSP`);
+  }
+
+  const firebasePolicies = getFirebasePolicies();
+  const htmlHeader = firebasePolicies.find((entry) => entry.source === "**/*.html");
+  const rootHeader = firebasePolicies.find((entry) => entry.source === "/");
+
+  if (!htmlHeader || !rootHeader) {
+    throw new Error("firebase.json is missing required Hosting CSP headers for **/*.html or /");
+  }
+
+  assertEqual(htmlHeader.value, APP_CSP, "firebase.json **/*.html CSP");
+  assertEqual(rootHeader.value, APP_CSP, "firebase.json / CSP");
+
+  console.log("CSP definitions are aligned.");
+}
+
+main();
