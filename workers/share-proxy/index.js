@@ -621,7 +621,7 @@ function resolveAllowedSpacesForEmail(emailRaw) {
   const email = String(emailRaw || "").trim().toLowerCase();
   const allowed = new Set();
   if (!email) return [];
-  if (email === "tranxq@gmail.com") {
+  if (email === "quang.tran@savane-group.com") {
     allowed.add("golive");
     allowed.add("safran");
     return Array.from(allowed);

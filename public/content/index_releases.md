@@ -1,5 +1,8 @@
+## 2026-02-27
+- Docs : Authentification Microsoft
+
 ## 2026-02-21
-- Docs : Chiffrement du contenu en ligne
+- Docs : Chiffrement du contenu de bout en bout
 - Docs : Vidéos Youtube et Loom intégrées 
 - Docs : Affichage URL par page
 

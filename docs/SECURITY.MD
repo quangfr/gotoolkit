@@ -220,6 +220,37 @@ This is operationally convenient for stable tests, but should be treated as test
 
 ## Managed Shared Spaces: Encryption Decision
 
+### Microsoft OpenID SSO Rules
+
+Managed shared-space access currently relies on Microsoft OpenID SSO for the Microsoft path.
+
+Current Microsoft identity scope:
+
+- `openid profile email offline_access`
+
+Current identity model:
+
+- the Microsoft worker resolves browser session identity from OpenID claims
+- the shared-space authorization decision is then made from the resolved email address
+- access is denied if no valid connected identity is available
+
+Current authorization rules:
+
+- `golive`
+  - any email in `@savane-group.com`
+  - any email in `@safrangroup.com`
+  - exact email `quang.tran@savane-group.com`
+- `safran`
+  - any email in `@safrangroup.com`
+  - exact email `quang.tran@savane-group.com`
+
+Operational notes:
+
+- no connected session means no managed shared-space access
+- worker-side authorization is the source of truth for access control
+- frontend visibility follows the same rules for UX consistency, but must not be treated as a security boundary
+- Google SSO may still exist in the UI for other flows, but managed-space authorization rules should be documented and enforced server-side
+
 ### Current state
 
 Managed shared spaces such as `golive` and `safran` currently use two distinct concepts:
